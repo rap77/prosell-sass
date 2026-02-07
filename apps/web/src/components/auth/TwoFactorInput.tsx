@@ -119,9 +119,6 @@ export function TwoFactorInput({
     return digits;
   });
 
-  // Force re-render counter for each input to handle replacements
-  const [updateCounter, setUpdateCounter] = useState(0);
-
   // Determine if controlled mode
   const isControlled = controlledValue !== undefined;
 
