@@ -13,3 +13,6 @@ export type { TwoFactorInputProps } from "./TwoFactorInput";
 
 export { LoginForm } from "./LoginForm";
 export type { LoginFormValues } from "./LoginForm";
+
+export { RegisterForm } from "./RegisterForm";
+export type { RegisterFormValues } from "./RegisterForm";
