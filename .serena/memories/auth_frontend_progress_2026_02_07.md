@@ -1,7 +1,7 @@
 # Frontend Sprint 1-2 Progress - TDD Implementation
 
 **Date**: 2026-02-07
-**Status**: IN PROGRESS - ~30% complete
+**Status**: IN PROGRESS - ~35% complete
 
 ## ✅ Completed Tasks
 
@@ -25,15 +25,6 @@
 - State: user, accessToken, refreshTokenValue, isAuthenticated, isLoading, error
 
 **Tests**: 13/13 passing (100%)
-- Initial State (1 test)
-- Login Action (3 tests)
-- Register Action (2 tests)
-- Logout Action (1 test)
-- Refresh Token Action (2 tests)
-- Update User Action (1 test)
-- Clear Error Action (1 test)
-- Persist Middleware (2 tests)
-
 **Commit**: `feat(web): implement authStore with Zustand and TDD`
 
 ### 3. useAuth Hook - TDD Complete (Task #3) ✅
@@ -42,83 +33,83 @@
 - `apps/web/src/hooks/index.ts` - Export barrel
 - `apps/web/tests/unit/hooks/useAuth.test.ts` - Complete test suite
 
-**Implementation Details:**
-- Wraps authStore with more convenient API
-- Simplified parameters: login(email, password) instead of object
-- Simplified register(email, password, firstName, lastName)
-- Convenience getters: userId, userEmail, userFullName, userRole
-- Boolean getters: isEmailVerified, is2FAEnabled
-- Full JSDoc documentation with @example
-
 **Tests**: 15/15 passing (100%)
-- Authentication helpers (9 tests)
-- Convenience getters (6 tests)
-
 **Commit**: `feat(web): implement useAuth hook with TDD`
 
 ### 4. authApi Client - TDD Complete (Task #4) ✅
 **Files Created:**
 - `apps/web/src/lib/api/authApi.ts` - HTTP client implementation
 - `apps/web/src/lib/api/index.ts` - Export barrel
-- `apps/web/tests/unit/api/authApi.test.ts` - Complete test suite with fetch mocking
-
-**Implementation Details:**
-- Complete authApi with all backend endpoints
-- Generic handleResponse<T> for type-safe error handling
-- Custom ApiError class with status codes
-- Bearer token authentication support
-- Environment variable: NEXT_PUBLIC_API_URL (defaults to localhost:8000)
-- NO console.log/error - clean silent-fail for logout
-
-**Endpoints Implemented:**
-- POST /api/auth/login
-- POST /api/auth/register
-- POST /api/auth/refresh
-- POST /api/auth/logout
-- GET /api/auth/me
-- POST /api/auth/verify-email
-- POST /api/auth/forgot-password
-- POST /api/auth/reset-password
-- POST /api/auth/2fa/enable
-- POST /api/auth/2fa/verify
-- POST /api/auth/2fa/disable
+- `apps/web/tests/unit/api/authApi.test.ts` - Complete test suite
 
 **Tests**: 18/18 passing (100%)
-- Login (3 tests)
-- Register (2 tests)
-- Refresh Token (2 tests)
-- Logout (2 tests)
-- Get Current User (2 tests)
-- Verify Email (1 test)
-- Forgot Password (1 test)
-- Reset Password (2 tests)
-- 2FA Operations (3 tests)
-
 **Commit**: `feat(web): implement authApi client with TDD`
+
+### 5. PasswordInput Component - TDD Complete (Task #5) ✅
+**Files Created:**
+- `apps/web/src/components/auth/PasswordInput.tsx` - Password input component
+- `apps/web/src/components/auth/index.ts` - Export barrel
+- `apps/web/src/lib/utils.ts` - cn() utility function
+- `apps/web/tests/components/auth/PasswordInput.test.tsx` - Complete test suite
+
+**Implementation Details:**
+- Show/hide password toggle with Eye/EyeOff icons (lucide-react)
+- Password strength indicator (weak/medium/strong) with color coding
+- Full accessibility: ARIA labels, keyboard navigation, aria-describedby for errors
+- React Hook Form compatible (ref forwarding)
+- Supports both controlled and uncontrolled modes
+- Error display with ARIA alerts
+- Required field indicator (visual asterisk, not part of accessible label)
+- Disabled state support
+- Dark mode compatible
+
+**Tests**: 29/29 passing (100%)
+- Basic Rendering (4 tests)
+- Show/Hide Password Toggle (4 tests)
+- Password Strength Indicator (4 tests)
+- Error Handling (4 tests)
+- React Hook Form Integration (3 tests)
+- Accessibility (4 tests)
+- Disabled State (3 tests)
+- Required Field (2 tests)
+
+**Commit**: `feat(web): implement PasswordInput component with TDD`
 
 ---
 
 ## 🚧 Next Tasks (Pending)
 
-### Task #5: PasswordInput Component - TDD
-**Priority**: High
+### Task #6: OAuthButtons Component - TDD
+**Priority**: Medium
 **Estimated**: 2-3 hours
 
 **Requirements:**
-- Show/hide password toggle
-- Password strength indicator
-- Zod validation integration
-- Accessibility (ARIA labels, keyboard navigation)
-- React Hook Form integration
+- Google and Facebook buttons
+- Loading states during OAuth flow
+- Error handling
+- Icon integration (lucide-react)
+- Accessibility
+- Social login colors/branding
 
 **Tests to write:**
-- Renders input with type="password"
-- Toggles visibility on button click
-- Shows strength indicator
-- Validates with Zod schema
-- Accessible with screen readers
+- Renders Google and Facebook buttons
+- Shows loading state
+- Handles errors
+- Accessible with ARIA labels
+- Keyboard navigable
 
-### Task #6: LoginForm Component - TDD
+### Task #7: TwoFactorInput Component - TDD
+**Priority**: Medium
+**Estimated**: 2-3 hours
+
+**Requirements:**
+- 6-digit input (auto-focus next field)
+- Paste support for 6-digit codes
+- Countdown timer for resend
+- Validation
+- Accessibility
+
+### Task #8: LoginForm Component - TDD
 **Priority**: High
 **Estimated**: 3-4 hours
 
@@ -130,8 +121,9 @@
 - Loading states
 - Error display
 - Integrates with useAuth hook
+- Uses PasswordInput component
 
-### Task #7: RegisterForm Component - TDD
+### Task #9: RegisterForm Component - TDD
 **Priority**: High
 **Estimated**: 4-5 hours
 
@@ -143,28 +135,7 @@
 - OAuth buttons
 - Real-time validation
 - Success/error feedback
-
-### Task #8: OAuthButtons Component - TDD
-**Priority**: Medium
-**Estimated**: 2-3 hours
-
-**Requirements:**
-- Google and Facebook buttons
-- Loading states during OAuth flow
-- Error handling
-- Icon integration
-- Accessibility
-
-### Task #9: TwoFactorInput Component - TDD
-**Priority**: Medium
-**Estimated**: 2-3 hours
-
-**Requirements:**
-- 6-digit input (auto-focus next field)
-- Paste support for 6-digit codes
-- Countdown timer for resend
-- Validation
-- Accessibility
+- Uses PasswordInput component
 
 ### Task #10-17: Pages & Other
 - Login page
@@ -180,20 +151,20 @@
 
 ## 📊 Progress Summary
 
-**Sprint 1-2 Frontend**: ~30% complete
+**Sprint 1-2 Frontend**: ~35% complete
 
-### Completed (4/17 tasks):
+### Completed (5/17 tasks):
 1. ✅ Configurar Vitest y Testing Library
 2. ✅ Implementar authStore (Zustand) con TDD
 3. ✅ Implementar useAuth hook con TDD
 4. ✅ Implementar authApi client con TDD
+5. ✅ Implementar PasswordInput component con TDD
 
-### Pending (13/17 tasks):
-5. ⏳ Implementar PasswordInput component con TDD
-6. ⏳ Implementar LoginForm con TDD
-7. ⏳ Implementar RegisterForm con TDD
-8. ⏳ Implementar OAuthButtons component con TDD
-9. ⏳ Implementar TwoFactorInput con TDD
+### Pending (12/17 tasks):
+6. ⏳ Implementar OAuthButtons component con TDD
+7. ⏳ Implementar TwoFactorInput con TDD
+8. ⏳ Implementar LoginForm con TDD
+9. ⏳ Implementar RegisterForm con TDD
 10. ⏳ Implementar login page con TDD
 11. ⏳ Implementar register page con TDD
 12. ⏳ Implementar verify-email page con TDD
@@ -207,15 +178,17 @@
 
 ## 🎯 TDD Methodology Used
 
-1. **RED Phase**: Write tests FIRST (all failing)
-2. **GREEN Phase**: Implement code to make tests pass
-3. **REFACTOR Phase**: Improve code while keeping tests green
-
 **Results so far:**
-- **Total Tests**: 46 tests passing
+- **Total Tests**: 75 tests passing
 - **Coverage**: 100% of implemented code paths
 - **Code Quality**: All commits passed GGA review
 - **Type Safety**: Zero `any` types without justification
+
+**Breakdown:**
+- authStore: 13 tests
+- useAuth: 15 tests
+- authApi: 18 tests
+- PasswordInput: 29 tests
 
 ---
 
@@ -240,7 +213,7 @@
 ### .gitignore Configuration
 **WARNING**: `apps/web/src/lib/` is in .gitignore (line 17: `lib/`)
 - Must use `git add -f` to commit files in this directory
-- This is intentional for development but should be reviewed
+- Successfully committed utils.ts with `-f` flag
 
 ### Pre-commit Pipeline
 All commits pass:
@@ -253,25 +226,28 @@ All commits pass:
 - TypeScript 5.5+ (strict mode)
 - Zustand 5.x (state management)
 - Vitest + Testing Library (tests)
+- lucide-react (icons)
 - Fetch API (HTTP client)
 
 ### Commands Reference
 ```bash
 # Run tests
-pnpm --filter @prosell/web test
+pnpm exec vitest run
+
+# Run specific test file
+pnpm exec vitest run PasswordInput
 
 # Run tests with coverage
-pnpm --filter @prosell/web test:coverage
+pnpm test:coverage
 
 # Type check
-pnpm --filter @prosell/web typecheck
+pnpm typecheck
 
 # Lint
-pnpm --filter @prosell/web lint
+pnpm lint
 
 # Format
-pnpm --filter @prosell/web format:check
-pnpm --filter @prosell/web format
+pnpm format
 
 # Dev server
 pnpm dev
@@ -284,17 +260,14 @@ pnpm dev
 When resuming this session:
 1. Load Serena project: `/home/rpadron/proy/prosell-sass`
 2. Read this memory: `auth_frontend_progress_2026_02_07`
-3. Continue with Task #5: PasswordInput component with TDD
+3. Continue with Task #6: OAuthButtons component with TDD
 
 **Next Implementation Order:**
-1. PasswordInput (component foundation)
-2. OAuthButtons (simpler, no form logic)
-3. TwoFactorInput (self-contained logic)
-4. LoginForm (uses PasswordInput + OAuthButtons + useAuth)
-5. RegisterForm (uses PasswordInput + OAuthButtons + useAuth)
-6. Pages (login, register, verify-email, forgot-password, reset-password, 2fa-setup)
-7. Route protection middleware
-8. E2E tests
-9. Final validation
-
-This order allows components to be built incrementally, with simpler components completed first to serve as building blocks for more complex ones.
+1. OAuthButtons (simpler, no form logic)
+2. TwoFactorInput (self-contained logic)
+3. LoginForm (uses PasswordInput + OAuthButtons + useAuth)
+4. RegisterForm (uses PasswordInput + OAuthButtons + useAuth)
+5. Pages (login, register, verify-email, forgot-password, reset-password, 2fa-setup)
+6. Route protection middleware
+7. E2E tests
+8. Final validation
