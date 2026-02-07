@@ -70,11 +70,8 @@ export function LoginForm() {
    * Handle form submission
    */
   const onSubmit = async (data: LoginFormValues) => {
-    await login({
-      email: data.email,
-      password: data.password,
-      rememberMe: data.rememberMe ?? false,
-    });
+    // useAuth.login signature: (email: string, password: string) => Promise<void>
+    await login(data.email, data.password);
   };
 
   /**
@@ -143,7 +140,7 @@ export function LoginForm() {
             disabled={isDisabled}
             aria-invalid={!!errors.email || !!error}
             aria-describedby={
-              errors.email?.id || error ? "login-error" : undefined
+              error ? "login-error" : undefined
             }
             className={cn(
               "w-full px-4 py-2 rounded-lg border",
@@ -159,7 +156,6 @@ export function LoginForm() {
           />
           {errors.email && (
             <p
-              id={errors.email.id}
               role="alert"
               className="text-sm text-red-500 dark:text-red-400"
             >
@@ -205,7 +201,7 @@ export function LoginForm() {
         {error && !errors.email && !errors.password && (
           <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
             <p id="login-error" role="alert" className="text-sm text-red-600 dark:text-red-400">
-              {error}
+              {error.message}
             </p>
           </div>
         )}

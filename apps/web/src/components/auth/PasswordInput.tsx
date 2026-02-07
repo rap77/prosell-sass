@@ -146,7 +146,8 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     const currentValue = isControlled ? controlledValue : uncontrolledValue;
 
     // Calculate strength from current value
-    const strength = calculatePasswordStrength(currentValue);
+    // Convert to string as controlledValue can be string | number
+    const strength = calculatePasswordStrength(String(currentValue || ""));
 
     // Toggle visibility
     const toggleVisibility = () => {

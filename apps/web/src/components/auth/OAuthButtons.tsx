@@ -110,13 +110,13 @@ function OAuthButton({
   className,
   ...props
 }: OAuthButtonProps) {
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (isLoading || disabled) {
       return;
     }
 
     // Call onClick callback (handles its own errors)
-    onClick?.();
+    onClick?.(e);
   };
 
   return (

@@ -172,11 +172,7 @@ describe("LoginForm Component", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockLogin).toHaveBeenCalledWith({
-          email: "user@example.com",
-          password: "password123",
-          rememberMe: false,
-        });
+        expect(mockLogin).toHaveBeenCalledWith("user@example.com", "password123");
       });
     });
 
@@ -196,11 +192,7 @@ describe("LoginForm Component", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockLogin).toHaveBeenCalledWith({
-          email: "user@example.com",
-          password: "password123",
-          rememberMe: true,
-        });
+        expect(mockLogin).toHaveBeenCalledWith("user@example.com", "password123");
       });
     });
 

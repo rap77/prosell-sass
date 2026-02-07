@@ -272,11 +272,12 @@ describe("RegisterForm Component", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockRegister).toHaveBeenCalledWith({
-          fullName: "John Doe",
-          email: "user@example.com",
-          password: "password123",
-        });
+        expect(mockRegister).toHaveBeenCalledWith(
+          "user@example.com",
+          "password123",
+          "John",
+          "Doe"
+        );
       });
     });
 

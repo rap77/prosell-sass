@@ -96,11 +96,13 @@ export function RegisterForm() {
    * Handle form submission
    */
   const onSubmit = async (data: RegisterFormValues) => {
-    await register({
-      fullName: data.fullName.trim(),
-      email: data.email.trim(),
-      password: data.password,
-    });
+    // Split fullName into firstName and lastName
+    const nameParts = data.fullName.trim().split(" ");
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
+
+    // useAuth.register signature: (email, password, firstName, lastName) => Promise<void>
+    await register(data.email.trim(), data.password, firstName, lastName);
   };
 
   /**
@@ -169,7 +171,7 @@ export function RegisterForm() {
             disabled={isDisabled}
             aria-invalid={!!errors.fullName || !!error}
             aria-describedby={
-              errors.fullName?.id || error ? "register-error" : undefined
+              error ? "register-error" : undefined
             }
             className={cn(
               "w-full px-4 py-2 rounded-lg border",
@@ -185,7 +187,6 @@ export function RegisterForm() {
           />
           {errors.fullName && (
             <p
-              id={errors.fullName.id}
               role="alert"
               className="text-sm text-red-500 dark:text-red-400"
             >
@@ -211,7 +212,7 @@ export function RegisterForm() {
             disabled={isDisabled}
             aria-invalid={!!errors.email || !!error}
             aria-describedby={
-              errors.email?.id || error ? "register-error" : undefined
+              error ? "register-error" : undefined
             }
             className={cn(
               "w-full px-4 py-2 rounded-lg border",
@@ -227,7 +228,6 @@ export function RegisterForm() {
           />
           {errors.email && (
             <p
-              id={errors.email.id}
               role="alert"
               className="text-sm text-red-500 dark:text-red-400"
             >
@@ -286,7 +286,6 @@ export function RegisterForm() {
           </label>
           {errors.acceptTerms && (
             <p
-              id={errors.acceptTerms.id}
               role="alert"
               className="text-sm text-red-500 dark:text-red-400"
             >
@@ -299,7 +298,7 @@ export function RegisterForm() {
         {error && !errors.fullName && !errors.email && !errors.password && !errors.confirmPassword && !errors.acceptTerms && (
           <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
             <p id="register-error" role="alert" className="text-sm text-red-600 dark:text-red-400">
-              {error}
+              {error.message}
             </p>
           </div>
         )}

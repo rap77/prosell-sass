@@ -317,7 +317,9 @@ export function TwoFactorInput({
         {Array.from({ length: CODE_LENGTH }).map((_, index) => (
           <input
             key={`${name}-${index}`}
-            ref={(el) => (inputRefs.current[index] = el)}
+            ref={(el) => {
+              inputRefs.current[index] = el;
+            }}
             type="text"
             inputMode="numeric"
             maxLength={1}

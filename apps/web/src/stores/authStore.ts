@@ -5,7 +5,6 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { persist } from "zustand/middleware";
 
 // ============================================
 // TYPES
