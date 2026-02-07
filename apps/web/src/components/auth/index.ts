@@ -10,3 +10,6 @@ export type { OAuthButtonsProps } from "./OAuthButtons";
 
 export { TwoFactorInput } from "./TwoFactorInput";
 export type { TwoFactorInputProps } from "./TwoFactorInput";
+
+export { LoginForm } from "./LoginForm";
+export type { LoginFormValues } from "./LoginForm";
