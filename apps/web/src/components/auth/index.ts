@@ -16,3 +16,5 @@ export type { LoginFormValues } from "./LoginForm";
 
 export { RegisterForm } from "./RegisterForm";
 export type { RegisterFormValues } from "./RegisterForm";
+
+export { VerifyEmailForm } from "./VerifyEmailForm";

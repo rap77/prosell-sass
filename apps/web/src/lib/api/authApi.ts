@@ -55,7 +55,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 // ERROR HANDLING
 // ============================================
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(message: string, public status?: number) {
     super(message);
     this.name = "ApiError";
