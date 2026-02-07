@@ -11,7 +11,7 @@
  */
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
@@ -54,6 +54,7 @@ export function LoginForm() {
   // React Hook Form setup
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
     setError: setFormError,
@@ -165,14 +166,23 @@ export function LoginForm() {
         </div>
 
         {/* Password Input */}
-        <PasswordInput
-          label="Password"
+        <Controller
           name="password"
-          placeholder="Enter your password"
-          error={errors.password?.message || null}
-          disabled={isDisabled}
-          required
-          onClearError={handleInputChange}
+          control={control}
+          render={({ field, fieldState }) => (
+            <PasswordInput
+              label="Password"
+              name="password"
+              placeholder="Enter your password"
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              error={fieldState.error?.message || errors.password?.message || null}
+              disabled={isDisabled}
+              required
+              onClearError={handleInputChange}
+            />
+          )}
         />
 
         {/* Remember Me & Forgot Password */}

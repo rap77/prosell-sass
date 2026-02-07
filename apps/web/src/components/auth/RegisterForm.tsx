@@ -11,7 +11,7 @@
  */
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
@@ -77,6 +77,7 @@ export function RegisterForm() {
 
   // React Hook Form setup
   const {
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
     setError: setFormError,
@@ -237,25 +238,43 @@ export function RegisterForm() {
         </div>
 
         {/* Password Input */}
-        <PasswordInput
-          label="Password"
+        <Controller
           name="password"
-          placeholder="Enter your password"
-          error={errors.password?.message || null}
-          disabled={isDisabled}
-          required
-          onClearError={handleInputChange}
+          control={control}
+          render={({ field, fieldState }) => (
+            <PasswordInput
+              label="Password"
+              name="password"
+              placeholder="Enter your password"
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              error={fieldState.error?.message || null}
+              disabled={isDisabled}
+              required
+              onClearError={handleInputChange}
+            />
+          )}
         />
 
         {/* Confirm Password Input */}
-        <PasswordInput
-          label="Confirm Password"
+        <Controller
           name="confirmPassword"
-          placeholder="Confirm your password"
-          error={errors.confirmPassword?.message || null}
-          disabled={isDisabled}
-          required
-          onClearError={handleInputChange}
+          control={control}
+          render={({ field, fieldState }) => (
+            <PasswordInput
+              label="Confirm Password"
+              name="confirmPassword"
+              placeholder="Confirm your password"
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              error={fieldState.error?.message || null}
+              disabled={isDisabled}
+              required
+              onClearError={handleInputChange}
+            />
+          )}
         />
 
         {/* Terms and Privacy Checkbox */}

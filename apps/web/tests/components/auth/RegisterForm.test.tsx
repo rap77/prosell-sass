@@ -176,9 +176,8 @@ describe("RegisterForm Component", () => {
       expect(errorMessages.length).toBeGreaterThan(0);
     });
 
-    it.skip("should show error when password is too short", async () => {
-      // SKIPPED: Known issue - PasswordInput internal state conflicts with React Hook Form
-      // Same issue as LoginForm. Future fix: use Controller component.
+    it("should show error when password is too short", async () => {
+      // FIXED: Now using Controller component
       const user = userEvent.setup();
       render(<RegisterForm />);
 
@@ -188,18 +187,19 @@ describe("RegisterForm Component", () => {
       const emailInput = screen.getByLabelText(/^Email$/);
       await user.type(emailInput, "user@example.com");
 
-      const passwordInput = screen.getByPlaceholderText(/enter your password/i);
+      const passwordInput = screen.getByPlaceholderText(/^enter your password/i);
       await user.type(passwordInput, "12345");
 
-      const submitButton = screen.getByRole("button", { name: /create account/i });
-      await user.click(submitButton);
+      // Find submit button by type="submit" (not OAuth buttons)
+      const buttons = screen.getAllByRole("button");
+      const submitButton = buttons.find((btn) => (btn as HTMLButtonElement).type === "submit");
+      await user.click(submitButton!);
 
       expect(await screen.findByText(/at least 8 characters/i)).toBeInTheDocument();
     });
 
-    it.skip("should show error when passwords do not match", async () => {
-      // SKIPPED: Known issue - PasswordInput internal state conflicts with React Hook Form
-      // Same issue as LoginForm. Future fix: use Controller component.
+    it("should show error when passwords do not match", async () => {
+      // FIXED: Now using Controller component
       const user = userEvent.setup();
       render(<RegisterForm />);
 
@@ -209,7 +209,7 @@ describe("RegisterForm Component", () => {
       const emailInput = screen.getByLabelText(/^Email$/);
       await user.type(emailInput, "user@example.com");
 
-      const passwordInput = screen.getByPlaceholderText(/^Enter your password$/i);
+      const passwordInput = screen.getByPlaceholderText(/^enter your password$/i);
       await user.type(passwordInput, "password123");
 
       const confirmPasswordInput = screen.getByPlaceholderText(/^confirm your password$/i);
@@ -218,8 +218,10 @@ describe("RegisterForm Component", () => {
       const termsCheckbox = screen.getByRole("checkbox");
       await user.click(termsCheckbox);
 
-      const submitButton = screen.getByRole("button", { name: /create account/i });
-      await user.click(submitButton);
+      // Find submit button by type="submit" (not OAuth buttons)
+      const buttons = screen.getAllByRole("button");
+      const submitButton = buttons.find((btn) => (btn as HTMLButtonElement).type === "submit");
+      await user.click(submitButton!);
 
       expect(await screen.findByText(/passwords do not match/i)).toBeInTheDocument();
     });
@@ -250,9 +252,8 @@ describe("RegisterForm Component", () => {
   });
 
   describe("Form Submission", () => {
-    it.skip("should call register with correct data", async () => {
-      // SKIPPED: Known issue - PasswordInput internal state conflicts with React Hook Form
-      // Same issue as LoginForm. Future fix: use Controller component.
+    it("should call register with correct data", async () => {
+      // FIXED: Now using Controller component
       const user = userEvent.setup();
       render(<RegisterForm />);
 
@@ -268,8 +269,10 @@ describe("RegisterForm Component", () => {
       await user.type(confirmPasswordInput, "password123");
       await user.click(termsCheckbox);
 
-      const submitButton = screen.getByRole("button", { name: /create account/i });
-      await user.click(submitButton);
+      // Find submit button by type="submit" (not OAuth buttons)
+      const buttons = screen.getAllByRole("button");
+      const submitButton = buttons.find((btn) => (btn as HTMLButtonElement).type === "submit");
+      await user.click(submitButton!);
 
       await waitFor(() => {
         expect(mockRegister).toHaveBeenCalledWith(
@@ -369,7 +372,7 @@ describe("RegisterForm Component", () => {
       (useAuth as any).mockReturnValue({
         register: mockRegister,
         isLoading: false,
-        error: "Email already exists",
+        error: { message: "Email already exists" },
         clearError: mockClearError,
       });
 
@@ -382,7 +385,7 @@ describe("RegisterForm Component", () => {
       (useAuth as any).mockReturnValue({
         register: mockRegister,
         isLoading: false,
-        error: "Email already exists",
+        error: { message: "Email already exists" },
         clearError: mockClearError,
       });
 
