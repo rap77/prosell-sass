@@ -271,97 +271,115 @@ sequenceDiagram
 ### 4.1 Estructura de Directorios
 
 ```
-prosell-saas/
-├── src/
-│   └── prosell/
-│       ├── domain/                      # 🎯 CAPA DE DOMINIO
-│       │   ├── entities/                # Entidades y Agregados
-│       │   │   ├── user/
-│       │   │   │   ├── user.py
-│       │   │   │   ├── role.py
-│       │   │   │   └── permission.py
-│       │   │   ├── organization/
-│       │   │   │   ├── organization.py
-│       │   │   │   └── team.py
-│       │   │   ├── product/
-│       │   │   │   ├── product.py       # Base genérica
-│       │   │   │   ├── vehicle.py       # Extensión vehículos
-│       │   │   │   ├── real_estate.py   # Extensión inmuebles
-│       │   │   │   └── category.py
-│       │   │   ├── sales/
-│       │   │   │   ├── appointment.py
-│       │   │   │   ├── sale.py
-│       │   │   │   └── commission.py
-│       │   │   └── wallet/
-│       │   │       ├── wallet.py
-│       │   │       └── transaction.py
-│       │   ├── value_objects/           # Value Objects
-│       │   │   ├── money.py
-│       │   │   ├── email.py
-│       │   │   ├── phone.py
-│       │   │   └── address.py
-│       │   ├── events/                  # Domain Events
-│       │   │   ├── user_events.py
-│       │   │   ├── product_events.py
-│       │   │   ├── sale_events.py
-│       │   │   └── wallet_events.py
-│       │   ├── interfaces/              # Ports (Interfaces)
-│       │   │   ├── repositories/
-│       │   │   ├── services/
-│       │   │   └── gateways/
-│       │   ├── services/                # Domain Services
-│       │   └── exceptions/              # Domain Exceptions
-│       │
-│       ├── application/                 # 🔄 CAPA DE APLICACIÓN
-│       │   ├── use_cases/
-│       │   │   ├── auth/
-│       │   │   ├── users/
-│       │   │   ├── organizations/
-│       │   │   ├── products/
-│       │   │   ├── sales/
-│       │   │   ├── wallet/
-│       │   │   ├── scraping/
-│       │   │   └── analytics/
-│       │   ├── services/                # Application Services
-│       │   ├── schemas/                 # DTOs
-│       │   └── orchestrators/           # Complex Workflows
-│       │
-│       └── infrastructure/              # 🔧 CAPA DE INFRAESTRUCTURA
-│           ├── http/                    # FastAPI
-│           │   ├── routers/
-│           │   ├── middleware/
-│           │   └── dependencies/
-│           ├── websocket/               # WebSocket handlers
-│           ├── repositories/            # SQLAlchemy implementations
-│           ├── services/                # External service implementations
-│           │   ├── auth/
-│           │   ├── notifications/
-│           │   ├── storage/
-│           │   ├── ai/
-│           │   └── payments/
-│           ├── scrapers/                # Web scrapers
-│           │   ├── facebook/
-│           │   ├── ebay/
-│           │   └── craigslist/
-│           ├── models/                  # SQLAlchemy models
-│           ├── database/                # DB config & migrations
-│           ├── cache/                   # Redis implementations
-│           ├── queue/                   # Redis Streams handlers
-│           └── config/                  # Configuration
+prosell-sass/
+├── apps/
+│   ├── api/                            # 🔧 BACKEND - FastAPI (Python 3.13)
+│   │   ├── src/prosell/
+│   │   │   ├── domain/                 # 🎯 CAPA DE DOMINIO (Sin dependencias externas)
+│   │   │   │   ├── entities/           # Entidades y Agregados
+│   │   │   │   │   ├── user/
+│   │   │   │   │   │   ├── user.py
+│   │   │   │   │   │   ├── role.py
+│   │   │   │   │   │   └── permission.py
+│   │   │   │   │   ├── organization/
+│   │   │   │   │   │   ├── organization.py
+│   │   │   │   │   │   └── team.py
+│   │   │   │   │   ├── product/
+│   │   │   │   │   │   ├── product.py       # Base genérica
+│   │   │   │   │   │   ├── vehicle.py       # Extensión vehículos
+│   │   │   │   │   │   ├── real_estate.py   # Extensión inmuebles
+│   │   │   │   │   │   └── category.py
+│   │   │   │   │   ├── sales/
+│   │   │   │   │   │   ├── appointment.py
+│   │   │   │   │   │   ├── sale.py
+│   │   │   │   │   │   └── commission.py
+│   │   │   │   │   └── wallet/
+│   │   │   │   │       ├── wallet.py
+│   │   │   │   │       └── transaction.py
+│   │   │   │   ├── value_objects/      # Value Objects
+│   │   │   │   │   ├── money.py
+│   │   │   │   │   ├── email.py
+│   │   │   │   │   ├── phone.py
+│   │   │   │   │   └── address.py
+│   │   │   │   ├── events/             # Domain Events
+│   │   │   │   │   ├── user_events.py
+│   │   │   │   │   ├── product_events.py
+│   │   │   │   │   ├── sale_events.py
+│   │   │   │   │   └── wallet_events.py
+│   │   │   │   ├── interfaces/         # Ports (Interfaces)
+│   │   │   │   │   ├── repositories/
+│   │   │   │   │   ├── services/
+│   │   │   │   │   └── gateways/
+│   │   │   │   ├── services/           # Domain Services
+│   │   │   │   └── exceptions/         # Domain Exceptions
+│   │   │   │
+│   │   │   ├── application/            # 🔄 CAPA DE APLICACIÓN
+│   │   │   │   ├── use_cases/
+│   │   │   │   │   ├── auth/
+│   │   │   │   │   ├── users/
+│   │   │   │   │   ├── organizations/
+│   │   │   │   │   ├── products/
+│   │   │   │   │   ├── sales/
+│   │   │   │   │   ├── wallet/
+│   │   │   │   │   ├── scraping/
+│   │   │   │   │   └── analytics/
+│   │   │   │   ├── services/           # Application Services
+│   │   │   │   ├── schemas/            # DTOs
+│   │   │   │   └── orchestrators/      # Complex Workflows
+│   │   │   │
+│   │   │   └── infrastructure/         # 🔧 CAPA DE INFRAESTRUCTURA
+│   │   │       ├── http/               # FastAPI
+│   │   │       │   ├── routers/
+│   │   │       │   ├── middleware/
+│   │   │       │   └── dependencies/
+│   │   │       ├── websocket/          # WebSocket handlers
+│   │   │       ├── repositories/       # SQLAlchemy implementations
+│   │   │       ├── services/           # External service implementations
+│   │   │       │   ├── auth/
+│   │   │       │   ├── notifications/
+│   │   │       │   ├── storage/
+│   │   │       │   ├── ai/
+│   │   │       │   └── payments/
+│   │   │       ├── scrapers/           # Web scrapers
+│   │   │       │   ├── facebook/
+│   │   │       │   ├── ebay/
+│   │   │       │   └── craigslist/
+│   │   │       ├── models/             # SQLAlchemy models
+│   │   │       ├── database/           # DB config & migrations
+│   │   │       ├── cache/              # Redis implementations
+│   │   │       ├── queue/              # Redis Streams handlers
+│   │   │       └── config/             # Configuration
+│   │   │
+│   │   ├── tests/                      # 🧪 Tests del backend
+│   │   │   ├── unit/
+│   │   │   └── integration/
+│   │   └── pyproject.toml
+│   │
+│   └── web/                            # 🎨 FRONTEND - Next.js 16 + React 19
+│       ├── src/
+│       │   ├── app/                    # App Router
+│       │   ├── components/
+│       │   ├── hooks/
+│       │   ├── lib/
+│       │   └── stores/
+│       ├── tests/                      # 🧪 Tests del frontend
+│       │   ├── unit/
+│       │   └── components/
+│       └── package.json
 │
-├── frontend/                            # 🎨 FRONTEND
-│   └── src/
-│       ├── app/                         # Next.js App Router
-│       ├── components/
-│       ├── hooks/
-│       ├── services/
-│       └── stores/
+├── packages/                           # 📦 Shared code (futuro)
+│   └── shared-types/
 │
-├── tests/
-├── scripts/
-├── docker/
-└── docs/
+├── tests/e2e/                          # 🧪 E2E tests centralizados
+│   ├── specs/
+│   └── fixtures/
+│
+├── docker/                             # 🐳 Docker configuration
+├── docs/                               # 📚 Documentation
+└── [configs]                           # ⚙️ Turborepo, pnpm, etc.
 ```
+
+**Nota:** Este proyecto usa **Turborepo** + **pnpm workspaces** para orquestación del monorepo. Ver `docs/00_ESTRUCTURA_PROSELL_SAAS_V2.md` para detalles completos de la estructura.
 
 ### 4.2 Responsabilidades por Capa
 

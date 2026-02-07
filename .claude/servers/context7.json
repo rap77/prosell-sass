@@ -1,0 +1,4 @@
+{
+  "command": "npx",
+  "args": ["-y", "@context7/mcp-server"]
+}

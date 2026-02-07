@@ -32,7 +32,7 @@
 ### Backend - Modelo de Datos
 
 ```
-📁 src/prosell/domain/entities/user/
+📁 apps/api/src/prosell/domain/entities/user/
 ```
 
 - [ ] 🔴 [M] Crear entidad `User` con campos básicos
@@ -43,7 +43,7 @@
 - [ ] 🟡 [S] Crear `RefreshToken` entity
 
 ```
-📁 src/prosell/infrastructure/models/
+📁 apps/api/src/prosell/infrastructure/models/
 ```
 
 - [ ] 🔴 [L] Crear modelo SQLAlchemy `UserModel`
@@ -55,7 +55,7 @@
 ### Backend - Repositorios
 
 ```
-📁 src/prosell/infrastructure/repositories/
+📁 apps/api/src/prosell/infrastructure/repositories/
 ```
 
 - [ ] 🔴 [L] Implementar `UserRepository`
@@ -71,7 +71,7 @@
 ### Backend - Casos de Uso
 
 ```
-📁 src/prosell/application/use_cases/auth/
+📁 apps/api/src/prosell/application/use_cases/auth/
 ```
 
 - [ ] 🔴 [L] `RegisterUserUseCase`
@@ -105,7 +105,7 @@
 ### Backend - API Endpoints
 
 ```
-📁 src/prosell/infrastructure/http/routers/
+📁 apps/api/src/prosell/infrastructure/http/routers/
 ```
 
 - [ ] 🔴 [XL] Crear `auth_router.py`
@@ -127,7 +127,7 @@
 ### Backend - Middleware & Security
 
 ```
-📁 src/prosell/infrastructure/http/middleware/
+📁 apps/api/src/prosell/infrastructure/http/middleware/
 ```
 
 - [ ] 🔴 [L] Crear `JWTMiddleware`
@@ -145,7 +145,7 @@
 ### Backend - Servicios
 
 ```
-📁 src/prosell/infrastructure/services/auth/
+📁 apps/api/src/prosell/infrastructure/services/auth/
 ```
 
 - [ ] 🔴 [M] `JWTService`
@@ -164,7 +164,7 @@
 ### Frontend - Páginas
 
 ```
-📁 frontend/src/app/(auth)/
+📁 apps/web/src/app/(auth)/
 ```
 
 - [ ] 🔴 [L] Página de Login
@@ -183,7 +183,7 @@
 ### Frontend - Componentes
 
 ```
-📁 frontend/src/components/auth/
+📁 apps/web/src/components/auth/
 ```
 
 - [ ] 🔴 [M] `LoginForm`
@@ -194,8 +194,8 @@
 ### Frontend - Estado & Hooks
 
 ```
-📁 frontend/src/stores/
-📁 frontend/src/hooks/
+📁 apps/web/src/stores/
+📁 apps/web/src/hooks/
 ```
 
 - [ ] 🔴 [M] `useAuth` hook
@@ -218,7 +218,7 @@
 ### Backend - Modelo de Datos
 
 ```
-📁 src/prosell/domain/entities/organization/
+📁 apps/api/src/prosell/domain/entities/organization/
 ```
 
 - [ ] 🔴 [L] Crear entidad `Organization`
@@ -233,7 +233,7 @@
 - [ ] 🟡 [M] Crear entidad `Wallet` (básico)
 
 ```
-📁 src/prosell/infrastructure/models/
+📁 apps/api/src/prosell/infrastructure/models/
 ```
 
 - [ ] 🔴 [L] Modelo SQLAlchemy `OrganizationModel`
@@ -246,7 +246,7 @@
 ### Backend - Casos de Uso
 
 ```
-📁 src/prosell/application/use_cases/organizations/
+📁 apps/api/src/prosell/application/use_cases/organizations/
 ```
 
 - [ ] 🔴 [L] `CreateOrganizationUseCase`
@@ -258,7 +258,7 @@
 - [ ] 🟡 [L] `UploadOrgMediaUseCase` (logo, banner)
 
 ```
-📁 src/prosell/application/use_cases/teams/
+📁 apps/api/src/prosell/application/use_cases/teams/
 ```
 
 - [ ] 🔴 [L] `CreateTeamUseCase`
@@ -270,7 +270,7 @@
 ### Backend - API Endpoints
 
 ```
-📁 src/prosell/infrastructure/http/routers/
+📁 apps/api/src/prosell/infrastructure/http/routers/
 ```
 
 - [ ] 🔴 [XL] Crear `organizations_router.py`
@@ -296,7 +296,7 @@
 ### Backend - Storage
 
 ```
-📁 src/prosell/infrastructure/services/storage/
+📁 apps/api/src/prosell/infrastructure/services/storage/
 ```
 
 - [ ] 🔴 [L] `DOSpacesService`
@@ -309,7 +309,7 @@
 ### Frontend - Páginas
 
 ```
-📁 frontend/src/app/admin/organizations/
+📁 apps/web/src/app/admin/organizations/
 ```
 
 - [ ] 🔴 [L] Lista de organizaciones
@@ -318,7 +318,7 @@
 - [ ] 🟡 [M] Página de verificación
 
 ```
-📁 frontend/src/app/admin/teams/
+📁 apps/web/src/app/admin/teams/
 ```
 
 - [ ] 🔴 [L] Lista de equipos
@@ -349,7 +349,7 @@
 ### Backend - Modelo de Datos
 
 ```
-📁 src/prosell/domain/entities/product/
+📁 apps/api/src/prosell/domain/entities/product/
 ```
 
 - [ ] 🔴 [L] Crear entidad `Category`
@@ -367,7 +367,7 @@
 - [ ] 🔴 [M] Crear entidad `ProductImage`
 
 ```
-📁 src/prosell/infrastructure/models/
+📁 apps/api/src/prosell/infrastructure/models/
 ```
 
 - [ ] 🔴 [L] Modelo `CategoryModel`
@@ -380,7 +380,7 @@
 ### Backend - Casos de Uso
 
 ```
-📁 src/prosell/application/use_cases/products/
+📁 apps/api/src/prosell/application/use_cases/products/
 ```
 
 - [ ] 🔴 [XL] `CreateProductUseCase`
@@ -399,7 +399,7 @@
 - [ ] 🔴 [M] `RejectProductUseCase`
 
 ```
-📁 src/prosell/application/use_cases/products/
+📁 apps/api/src/prosell/application/use_cases/products/
 ```
 
 - [ ] 🔴 [L] `UploadProductImagesUseCase`
@@ -411,7 +411,7 @@
 - [ ] 🟡 [L] `DeleteProductImageUseCase`
 
 ```
-📁 src/prosell/application/use_cases/products/
+📁 apps/api/src/prosell/application/use_cases/products/
 ```
 
 - [ ] 🟡 [L] `ImportProductsFromCSVUseCase`
@@ -426,7 +426,7 @@
 ### Backend - API Endpoints
 
 ```
-📁 src/prosell/infrastructure/http/routers/
+📁 apps/api/src/prosell/infrastructure/http/routers/
 ```
 
 - [ ] 🔴 [M] `categories_router.py`
@@ -451,7 +451,7 @@
 ### Frontend - Páginas
 
 ```
-📁 frontend/src/app/dashboard/products/
+📁 apps/web/src/app/dashboard/products/
 ```
 
 - [ ] 🔴 [L] Lista de productos (mi org)
@@ -463,7 +463,7 @@
 - [ ] 🔴 [M] Detalle de producto (admin)
 
 ```
-📁 frontend/src/app/admin/approvals/
+📁 apps/web/src/app/admin/approvals/
 ```
 
 - [ ] 🔴 [L] Cola de aprobaciones
@@ -496,7 +496,7 @@
 ### Backend - Casos de Uso
 
 ```
-📁 src/prosell/application/use_cases/catalog/
+📁 apps/api/src/prosell/application/use_cases/catalog/
 ```
 
 - [ ] 🔴 [L] `SearchProductsUseCase`
@@ -519,7 +519,7 @@
 ### Frontend - Páginas Públicas
 
 ```
-📁 frontend/src/app/(public)/
+📁 apps/web/src/app/(public)/
 ```
 
 - [ ] 🔴 [L] Landing page
@@ -570,7 +570,7 @@
 ### Backend - Modelo de Datos
 
 ```
-📁 src/prosell/domain/entities/sales/
+📁 apps/api/src/prosell/domain/entities/sales/
 ```
 
 - [ ] 🔴 [L] Crear entidad `Appointment`
@@ -588,7 +588,7 @@
 ### Backend - Casos de Uso
 
 ```
-📁 src/prosell/application/use_cases/appointments/
+📁 apps/api/src/prosell/application/use_cases/appointments/
 ```
 
 - [ ] 🔴 [L] `CreateAppointmentUseCase`
@@ -600,7 +600,7 @@
 - [ ] 🔴 [M] `CompleteAppointmentUseCase`
 
 ```
-📁 src/prosell/application/use_cases/sales/
+📁 apps/api/src/prosell/application/use_cases/sales/
 ```
 
 - [ ] 🔴 [XL] `RegisterSaleUseCase`
@@ -627,7 +627,7 @@
 ### Frontend - Páginas
 
 ```
-📁 frontend/src/app/dashboard/appointments/
+📁 apps/web/src/app/dashboard/appointments/
 ```
 
 - [ ] 🔴 [L] Lista de citas (calendario/lista)
@@ -635,7 +635,7 @@
 - [ ] 🔴 [M] Modal de QR
 
 ```
-📁 frontend/src/app/dashboard/sales/
+📁 apps/web/src/app/dashboard/sales/
 ```
 
 - [ ] 🔴 [L] Formulario registrar venta
@@ -674,7 +674,7 @@
 ### Backend - Modelo de Datos
 
 ```
-📁 src/prosell/domain/entities/wallet/
+📁 apps/api/src/prosell/domain/entities/wallet/
 ```
 
 - [ ] 🔴 [M] Completar entidad `Wallet`
@@ -687,7 +687,7 @@
 ### Backend - Integración Stripe
 
 ```
-📁 src/prosell/infrastructure/services/payments/
+📁 apps/api/src/prosell/infrastructure/services/payments/
 ```
 
 - [ ] 🔴 [L] `StripeService`
@@ -702,7 +702,7 @@
 ### Backend - Casos de Uso
 
 ```
-📁 src/prosell/application/use_cases/wallet/
+📁 apps/api/src/prosell/application/use_cases/wallet/
 ```
 
 - [ ] 🔴 [L] `RechargeWalletUseCase`
@@ -724,7 +724,7 @@
 ### Frontend - Páginas
 
 ```
-📁 frontend/src/app/dashboard/wallet/
+📁 apps/web/src/app/dashboard/wallet/
 ```
 
 - [ ] 🔴 [L] Vista de billetera
@@ -801,6 +801,517 @@ chore: update dependencies
 - [ ] Documentación actualizada
 - [ ] Desplegado en staging
 - [ ] QA verificado
+
+---
+
+## 📬 SPRINT 13-14: NOTIFICACIONES AVANZADAS
+
+**Duración**: Semanas 25-28 (Jul 28 - Ago 24, 2026)
+**Objetivo**: Sistema de notificaciones multi-canal
+
+### Backend - Integraciones
+
+```
+📁 apps/api/src/prosell/infrastructure/services/notifications/
+```
+
+- [ ] 🔴 [XL] `WhatsAppBusinessAPI`
+  - [ ] Configuración de API credentials
+  - [ ] Template messages
+  - [ ] Media messages (imágenes, documentos)
+  - [ ] Interactive buttons
+  - [ ] Webhook handler
+- [ ] 🟡 [L] `MessengerService`
+  - [ ] Facebook Graph API
+  - [ ] Quick replies
+  - [ ] Webhook setup
+- [ ] 🟢 [M] `SMSService` (Twilio)
+  - [ ] Send SMS
+  - [ ] Delivery status
+  - [ ] Opt-out management
+
+### Backend - Sistema de Notificaciones
+
+```
+📁 apps/api/src/prosell/domain/entities/notifications/
+```
+
+- [ ] 🔴 [M] `NotificationTemplate` entity
+- [ ] 🔴 [M] `NotificationQueue` entity
+- [ ] 🔴 [M] `NotificationPreference` entity
+
+```
+📁 apps/api/src/prosell/application/use_cases/notifications/
+```
+
+- [ ] 🔴 [L] `SendNotificationUseCase`
+  - [ ] Selección de canal preferido
+  - [ ] Fallback a canales alternativos
+  - [ ] Retry con backoff
+- [ ] 🔴 [M] `CreateTemplateUseCase`
+- [ ] 🔴 [M] `ManagePreferencesUseCase`
+- [ ] 🔴 [M] `BulkSendUseCase`
+
+### Backend - Endpoints
+
+- [ ] 🔴 [M] GET /api/notifications/preferences
+- [ ] 🔴 [M] PUT /api/notifications/preferences
+- [ ] 🔴 [M] GET /api/notifications/history
+- [ ] 🟡 [S] POST /api/notifications/test
+- [ ] 🔴 [L] POST /api/webhooks/whatsapp
+- [ ] 🟡 [L] POST /api/webhooks/messenger
+
+### Backend - Workers/Queues
+
+```
+📁 apps/api/src/prosell/infrastructure/queue/workers/
+```
+
+- [ ] 🔴 [L] `NotificationWorker`
+  - [ ] Procesar cola de notificaciones
+  - [ ] Rate limiting por API
+  - [ ] Retry policy
+  - [ ] Dead letter queue
+
+### Frontend
+
+```
+📁 apps/web/src/app/dashboard/settings/notifications/
+```
+
+- [ ] 🔴 [M] Página de preferencias de notificación
+  - [ ] Canales preferidos
+  - [ ] Tipos de notificación
+  - [ ] Horarios silencio
+
+```
+📁 apps/web/src/components/notifications/
+```
+
+- [ ] 🟡 [M] `NotificationCenter`
+- [ ] 🟡 [M] `NotificationBadge`
+- [ ] 🟡 [S] `NotificationItem`
+
+### Tests
+
+- [ ] 🔴 [M] Tests integración WhatsApp (mock)
+- [ ] 🔴 [M] Tests cola de notificaciones
+- [ ] 🟡 [M] Tests E2E preferencias usuario
+
+---
+
+## 🕷️ SPRINT 15-16: SCRAPING & ANÁLISIS
+
+**Duración**: Semanas 29-32 (Ago 25 - Sep 21, 2026)
+**Objetivo**: Sistema de scraping y análisis de precios
+
+### Backend - Scraping Engine
+
+```
+📁 apps/api/src/prosell/infrastructure/scrapers/
+```
+
+- [ ] 🔴 [XL] `FacebookMarketplaceScraper`
+  - [ ] Playwright async browser
+  - [ ] Login automation
+  - [ ] Search by location/filters
+  - [ ] Extract listing data
+  - [ ] Extract images
+  - [ ] Anti-detection (delays, randomization)
+- [ ] 🟡 [L] `CraigslistScraper`
+- [ ] 🟡 [L] `eBayMotorsScraper`
+- [ ] 🔴 [L] `ScraperOrchestrator`
+  - [ ] Schedule jobs
+  - [ ] Distribute load
+  - [ ] Handle failures
+  - [ ] Proxy rotation
+
+### Backend - Anti-Detección
+
+```
+📁 apps/api/src/prosell/infrastructure/scrapers/anti_detection/
+```
+
+- [ ] 🔴 [L] `ProxyRotator`
+  - [ ] Pool de proxies residenciales
+  - [ ] Health check
+  - [ ] Auto-rotation
+- [ ] 🔴 [M] `UserAgentRotator`
+- [ ] 🔴 [M] `DelayManager`
+  - [ ] Random delays
+  - [ ] Human-like patterns
+- [ ] 🔴 [M] `FingerprintManager`
+  - [ ] Browser fingerprints
+  - [ ] Session management
+
+### Backend - Procesamiento de Datos
+
+```
+📁 apps/api/src/prosell/infrastructure/scrapers/pipeline/
+```
+
+- [ ] 🔴 [L] `ExtractionPipeline`
+  - [ ] Raw data → Structured data
+  - [ ] Image processing
+  - [ ] De-duplication (content hash)
+- [ ] 🔴 [M] `PriceAnalyzer`
+  - [ ] Calculate averages
+  - [ ] Detect outliers
+  - [ ] Trend analysis
+- [ ] 🟡 [M] `MatchingEngine`
+  - [ ] Match scraped vs internal
+  - [ ] Suggest price adjustments
+
+### Backend - Scheduling
+
+```
+📁 apps/api/src/prosell/application/use_cases/scraping/
+```
+
+- [ ] 🔴 [L] `ScheduleScrapingJobUseCase`
+- [ ] 🔴 [M] `GetScrapingResultsUseCase`
+- [ ] 🔴 [M] `GetPriceAnalysisUseCase`
+- [ ] 🟡 [M] `SyncMarketDataUseCase`
+
+### Backend - Endpoints
+
+- [ ] 🔴 [M] POST /api/scraping/jobs
+- [ ] 🔴 [M] GET /api/scraping/jobs/:id
+- [ ] 🔴 [M] GET /api/scraping/jobs
+- [ ] 🔴 [L] GET /api/analytics/price-analysis
+  - [ ] make, model, year, location
+  - [ ] avg, min, max, median prices
+  - [ ] count of listings
+- [ ] 🔴 [M] GET /api/products/:id/price-comparison
+
+### Frontend
+
+```
+📁 apps/web/src/app/analytics/
+```
+
+- [ ] 🔴 [L] Dashboard de análisis de precios
+  - [ ] Gráfico de tendencias
+  - [ ] Comparador de precios
+  - [ ] Mapa de calor por ubicación
+
+```
+📁 apps/web/src/app/admin/scraping/
+```
+
+- [ ] 🔴 [M] Panel de control de scraping
+  - [ ] Jobs programados
+  - [ ] Estado de scrapers
+  - [ ] Logs de errores
+  - [ ] Estadísticas de éxito
+
+### Frontend - Componentes
+
+- [ ] 🔴 [L] `PriceAnalysisCard`
+- [ ] 🔴 [M] `PriceTrendChart`
+- [ ] 🔴 [M] `ScrapingJobList`
+- [ ] 🟡 [M] `MarketComparisonTable`
+
+### Tests
+
+- [ ] 🔴 [L] Tests scraping (con stubs)
+- [ ] 🔴 [M] Tests pipeline de datos
+- [ ] 🔴 [M] Tests análisis de precios
+- [ ] 🟡 [S] Tests E2E dashboard analytics
+
+---
+
+## 🤖 SPRINT 17-18: ANALYTICS & IA
+
+**Duración**: Semanas 33-36 (Sep 22 - Oct 19, 2026)
+**Objetivo**: Dashboards avanzados y agentes IA
+
+### Backend - Dashboards
+
+```
+📁 apps/api/src/prosell/application/use_cases/analytics/
+```
+
+- [ ] 🔴 [L] `GetMasterDashboardUseCase`
+  - [ ] Métricas globales
+  - [ ] Organizaciones por estado
+  - [ ] Productos por categoría
+  - [ ] Ventas por período
+- [ ] 🔴 [L] `GetManagerDashboardUseCase`
+  - [ ] Rendimiento de equipo
+  - [ ] Comisiones por vendedor
+  - [ ] Orgs asignadas
+- [ ] 🔴 [L] `GetOrganizationDashboardUseCase`
+  - [ ] Inventario por estado
+  - [ ] Vistas del catálogo
+  - [ ] Leads y conversiones
+- [ ] 🔴 [M] `GetSalesReportUseCase`
+  - [ ] Ventas por período
+  - [ ] Top productos
+  - [ ] Top vendedores
+
+### Backend - Agentes IA
+
+```
+📁 apps/api/src/prosell/infrastructure/services/ai/
+```
+
+- [ ] 🔴 [L] `ClaudeAIService`
+  - [ ] Anthropic API client
+  - [ ] Streaming responses
+  - [ ] Context management
+  - [ ] Token counting
+- [ ] 🔴 [L] `ProductAssistantAgent`
+  - [ ] Chat de productos
+  - [ ] Recomendaciones
+  - [ ] Comparaciones
+- [ ] 🟡 [L] `PricePredictorAgent`
+  - [ ] Predecir precio óptimo
+  - [ ] Análisis de mercado
+  - [ ] Sugerencias de mejora
+
+### Backend - Endpoints Analytics
+
+- [ ] 🔴 [M] GET /api/analytics/dashboard/master
+- [ ] 🔴 [M] GET /api/analytics/dashboard/manager
+- [ ] 🔴 [M] GET /api/analytics/dashboard/organization/:id
+- [ ] 🔴 [M] GET /api/analytics/reports/sales
+- [ ] 🔴 [M] GET /api/analytics/reports/commissions
+- [ ] 🔴 [M] GET /api/analytics/kpis
+  - [ ] période (daily, weekly, monthly)
+  - [ ] Métricas calculadas
+
+### Backend - Endpoints IA
+
+- [ ] 🔴 [L] POST /api/ai/chat
+  - [ ] message
+  - [ ] context (product_id, organization_id)
+  - [ ] Streaming response
+- [ ] 🔴 [M] POST /api/ai/analyze-price
+  - [ ] product_id
+  - [ ] Sugerencias de precio
+- [ ] 🟡 [M] POST /api/ai/description-generator
+  - [ ] category_id
+  - [ ] attributes
+  - [ ] Generated description
+
+### Frontend - Analytics Dashboards
+
+```
+📁 apps/web/src/app/analytics/
+```
+
+- [ ] 🔴 [XL] Dashboard Master
+  - [ ] KPIs globales
+  - [ ] Gráficos de ventas
+  - [ ] Mapa de organizaciones
+  - [ ] Top performers
+- [ ] 🔴 [L] Dashboard Manager
+  - [ ] Rendimiento equipo
+  - [ ] Comisiones
+  - [ ] Orgs asignadas
+- [ ] 🔴 [L] Dashboard Organización
+  - [ ] Inventario
+  - [ ] Métricas de catálogo
+  - [ ] Leads y conversiones
+
+### Frontend - Componentes Analytics
+
+- [ ] 🔴 [L] `KPICard`
+- [ ] 🔴 [M] `LineChart` (ventas)
+- [ ] 🔴 [M] `BarChart` (categorías)
+- [ ] 🔴 [M] `PieChart` (estados)
+- [ ] 🔴 [M] `MapChart` (ubicaciones)
+- [ ] 🔴 [M] `DataTable` (sortable, filterable)
+- [ ] 🔴 [M] `DateRangePicker`
+- [ ] 🟡 [M] `ReportExportButton`
+
+### Frontend - IA Chat
+
+```
+📁 apps/web/src/components/ai/
+```
+
+- [ ] 🔴 [L] `AIChatInterface`
+  - [ ] Chat bubbles
+  - [ ] Input con typing indicator
+  - [ ] Streaming response
+  - [ ] Context switcher
+- [ ] 🟡 [M] `ProductCardSuggestion`
+- [ ] 🟡 [M] `PriceAnalysisTooltip`
+
+### Frontend - Páginas
+
+```
+📁 apps/web/src/app/ai/
+```
+
+- [ ] 🔴 [M] Página de chat de productos
+- [ ] 🟡 [L] Página de análisis de precio IA
+
+### Tests
+
+- [ ] 🔴 [L] Tests dashboards (data fixtures)
+- [ ] 🔴 [M] Tests endpoints analytics
+- [ ] 🔴 [M] Tests IA service (mock Claude API)
+- [ ] 🟡 [M] Tests E2E chat interface
+
+---
+
+## 📊 RESUMEN COMPLETO DE TAREAS
+
+| Sprint | Tareas Totales | P0 (🔴) | P1 (🟡) | P2 (🟢) | Fase |
+|--------|----------------|---------|---------|---------|------|
+| 1-2 | 52 | 38 | 14 | 0 | MVP Core |
+| 3-4 | 48 | 35 | 13 | 0 | MVP Core |
+| 5-6 | 55 | 40 | 15 | 0 | MVP Core |
+| 7-8 | 38 | 25 | 13 | 0 | MVP Completo |
+| 9-10 | 42 | 32 | 10 | 0 | MVP Completo |
+| 11-12 | 35 | 25 | 10 | 0 | MVP Completo |
+| 13-14 | 36 | 26 | 10 | 0 | Crecimiento |
+| 15-16 | 42 | 30 | 12 | 0 | Crecimiento |
+| 17-18 | 48 | 35 | 13 | 0 | Crecimiento |
+| **Total** | **396** | **286** | **110** | **0** | - |
+
+**Desglose por Capa:**
+
+| Capa | Tareas Totales |
+|------|---------------|
+| Backend - Domain | 68 |
+| Backend - Application | 102 |
+| Backend - Infrastructure | 95 |
+| Backend - API | 58 |
+| Frontend - Pages | 42 |
+| Frontend - Components | 31 |
+| **Total Backend** | **323** |
+| **Total Frontend** | **73** |
+
+---
+
+## ⏱️ ESTIMACIÓN DE TIEMPO TOTAL
+
+| Sprint | Duración | Días hábiles | Horas estimadas |
+|--------|----------|--------------|-----------------|
+| 1-2 | 4 semanas | 20 | 320h |
+| 3-4 | 4 semanas | 20 | 280h |
+| 5-6 | 4 semanas | 20 | 340h |
+| 7-8 | 4 semanas | 20 | 240h |
+| 9-10 | 4 semanas | 20 | 260h |
+| 11-12 | 4 semanas | 20 | 220h |
+| 13-14 | 4 semanas | 20 | 240h |
+| 15-16 | 4 semanas | 20 | 280h |
+| 17-18 | 4 semanas | 20 | 320h |
+| **Total** | **36 semanas** | **180** | **2,500h** |
+
+**Con 2 developers full-time:**
+- 2,500 horas ÷ 160 horas/mes/desarrollador = ~16 meses
+- **Con equipo completo (2 backend + 1 frontend + 1 QA):** ~9 meses
+
+---
+
+## 🎯 CRITERIOS DE ACCEPTANCE DE SPRINT
+
+### Antes de considerar un Sprint como "Completado":
+
+```gherkin
+Scenario: Sprint Review
+  GIVEN todas las tareas P0 del sprint están completas
+  AND tests unitarios tienen cobertura > 80%
+  AND tests E2E críticos pasan
+  AND code review fue aprobado
+  WHEN se hace demo al stakeholder
+  THEN el sprint se marca como COMPLETADO
+  AND se procede al siguiente sprint
+
+Scenario: Sprint Incompleto
+  GIVEN alguna tarea P0 no está completa
+  OR tests críticos fallan
+  OR hay bugs P0/P1 conocidos
+  THEN el sprint NO se marca como completo
+  AND tasks pendientes pasan al siguiente sprint
+```
+
+---
+
+## 📋 SEGUIMIENTO DE PROGRESO
+
+### Métricas de Sprint por Seguir
+
+| Métrica | Fórmula | Objetivo |
+|---------|---------|----------|
+| **Velocity** | Story points completados | Estabilizar en sprint 3-4 |
+| **Sprint Burndown** | Trabajo restante vs días | Pendiente en 0 al final |
+| **Escape Rate** | Trabajo añadido durante sprint | < 20% del compromiso inicial |
+| **Defect Density** | Bugs encontrados por 1000 LOC | < 5 bugs/KLOC |
+| **Test Coverage** | Lines cubiertas / Lines totales | > 80% |
+| **Code Review Time** | Tiempo promedio de aprobación | < 24h |
+| **Build Success Rate** | Builds exitosos / Totales | > 95% |
+
+### Definition of Done (DoD)
+
+**Por User Story:**
+- [ ] Código implementado siguiendo Clean Architecture
+- [ ] Tests unitarios con cobertura > 80%
+- [ ] Tests de integración para repositories
+- [ ] Code review aprobado (1 aprobat mínimo)
+- [ ] Linter pasa sin errores
+- [ ] Type checker pasa sin errores
+- [ ] Documentación de API actualizada (si aplica)
+- [ ] E2E test para flujos críticos
+- [ ] Desplegado en staging para QA
+
+**Por Sprint:**
+- [ ] Todas las US P0 completadas según DoD
+- [ ] P1 backlog está documentado
+- [ ] Retrospectiva completada con action items
+- [ ] Sprint review realizado con demo
+- [ ] Métricas de sprint registradas
+- [ ] Roadmap actualizado si hubo desvíos
+
+---
+
+## 🔄 GESTIÓN DE DEPENDENCIAS ENTRE SPRINTS
+
+```
+Dependencias Críticas:
+
+Sprint 1-2 (Auth) → Sprint 3-4 (Orgs)
+  └── Roles y permisos deben estar definidos
+
+Sprint 3-4 (Orgs) → Sprint 5-6 (Products)
+  └── Organizations debe existir para FK
+
+Sprint 5-6 (Products) → Sprint 7-8 (Catalog)
+  └── Productos publicados para catálogo
+
+Sprint 5-6 (Products) → Sprint 9-10 (Sales)
+  └── Productos para vender
+
+Sprint 9-10 (Sales) → Sprint 11-12 (Wallet)
+  └── Comisiones para calcular consumo
+
+Sprint 11-12 (Wallet) → Sprint 13-14 (Notifications)
+  └── Wallet para cobrar mensajes
+
+Sprint 5-6 (Products) + Sprint 15-16 (Scraping) → Sprint 17-18 (Analytics)
+  └── Datos internos y externos para análisis
+```
+
+---
+
+## 🚨 RIESGOS POR SPRINT Y MITIGACIÓN
+
+| Sprint | Riesgos | Mitigación |
+|--------|---------|------------|
+| 1-2 | OAuth provider rechaza app | Tener email/password como fallback |
+| 3-4 | DO Spaces config compleja | Documentar early, usar local en dev |
+| 5-6 | Campos dinámicos muy complejos | MVP con hardcoded fields primero |
+| 7-8 | Performance búsqueda full-text | Usar PostgreSQL simple primero |
+| 9-10 | Cálculo comisiones con edge cases | Unit tests exhaustivos |
+| 11-12 | Stripe webhook unreliable | Retry + dead letter queue |
+| 13-14 | WhatsApp API rate limits | Queue con rate limiting |
+| 15-16 | Scrapers blocked rapidamente | Proxies + delays + user agents |
+| 17-18 | Claude API costs | Caching + token limits |
 
 ---
 

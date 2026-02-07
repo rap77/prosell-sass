@@ -1,52 +1,14 @@
 services:
-  api:
-    build:
-      context: ..
-      dockerfile: docker/api.Dockerfile
-    ports:
-      - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/prosell
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=dev-secret-key-change-in-production
-      - DEBUG=true
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    volumes:
-      - ../apps/api:/app
-
-  web:
-    build:
-      context: ..
-      dockerfile: docker/web.Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - API_URL=http://api:8000
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
-    depends_on:
-      - api
-    volumes:
-      - ../apps/web:/app
-      - /app/node_modules
-      - /app/.next
-
+  # =============================================================================
+  # POSTGRESQL 17
+  # =============================================================================
   db:
     image: postgres:17-alpine
     container_name: prosell-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: prosell
+      POSTGRES_DB: prosell_dev
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -57,6 +19,9 @@ services:
       timeout: 5s
       retries: 5
 
+  # =============================================================================
+  # REDIS 7.4
+  # =============================================================================
   redis:
     image: redis:7.4-alpine
     container_name: prosell-redis
@@ -71,6 +36,73 @@ services:
       timeout: 5s
       retries: 5
 
+  # =============================================================================
+  # FASTAPI BACKEND
+  # =============================================================================
+  api:
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    container_name: prosell-api
+    ports:
+      - "8000:8000"
+    environment:
+      # DATABASE
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/prosell_dev
+      # REDIS
+      - REDIS_URL=redis://redis:6379/0
+      # JWT
+      - JWT_PRIVATE_KEY_PATH=/app/keys/private.pem
+      - JWT_PUBLIC_KEY_PATH=/app/keys/public.pem
+      # APP
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
+      # SECURITY
+      - BCRYPT_ROUNDS=12
+      - MAX_LOGIN_ATTEMPTS=5
+      - ACCOUNT_LOCK_MINUTES=15
+      # FEATURES
+      - FEATURE_2FA_ENABLED=true
+      - FEATURE_OAUTH_GOOGLE=true
+      - FEATURE_REGISTRATION_ENABLED=true
+      - FEATURE_PASSWORD_RESET=true
+      # EMAIL (Mock)
+      - USE_MOCK_EMAIL=true
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../apps/api:/app
+      - ./keys:/app/keys:ro
+    command: uvicorn prosell.infrastructure.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # =============================================================================
+  # NEXT.JS FRONTEND (future)
+  # =============================================================================
+  web:
+    build:
+      context: ..
+      dockerfile: docker/web.Dockerfile
+    container_name: prosell-web
+    ports:
+      - "3000:3000"
+    environment:
+      - API_URL=http://api:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - api
+    volumes:
+      - ../apps/web:/app
+      - /app/node_modules
+      - /app/.next
+
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local

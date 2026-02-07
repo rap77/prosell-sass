@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/rpadron/proy/prosell-sass/.claude/hooks/activate-serena.sh",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}

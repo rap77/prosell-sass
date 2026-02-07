@@ -116,7 +116,7 @@ Eres el desarrollador principal del proyecto ProSell SaaS. Necesito que me ayude
 ## 📁 ESTRUCTURA MONOREPO
 
 ```
-prosell-saas/
+prosell-sass/
 │
 ├── 📦 apps/                          # Aplicaciones desplegables
 │   │
