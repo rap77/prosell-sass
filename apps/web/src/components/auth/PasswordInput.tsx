@@ -3,6 +3,7 @@
  *
  * A password input field with show/hide toggle and optional strength indicator.
  * Fully accessible with ARIA labels and keyboard navigation.
+ * Uses chadcn/ui Input and Label components.
  *
  * @example
  * ```tsx
@@ -20,6 +21,8 @@
 
 import { useState, forwardRef, type InputHTMLAttributes } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 // ============================================
@@ -82,7 +85,7 @@ function calculatePasswordStrength(password: string): PasswordStrength {
 
 function getStrengthColor(strength: PasswordStrength): string {
   const COLORS = {
-    weak: "bg-red-500",
+    weak: "bg-destructive",
     medium: "bg-yellow-500",
     strong: "bg-green-500",
   } as const;
@@ -113,6 +116,7 @@ function getStrengthText(strength: PasswordStrength): string {
  * - Error display with ARIA attributes
  * - Full keyboard navigation
  * - React Hook Form compatible (ref forwarding)
+ * - chadcn/ui Input and Label components
  */
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
   (
@@ -187,21 +191,18 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     return (
       <div className="flex flex-col gap-2">
         {/* Label with required indicator */}
-        <label
-          htmlFor={inputId}
-          className="text-sm font-medium text-slate-700 dark:text-slate-300"
-        >
+        <Label htmlFor={inputId}>
           {label}
           {required && (
-            <span aria-hidden="true" className="text-red-500 ml-1">
+            <span aria-hidden="true" className="text-destructive ml-1">
               *
             </span>
           )}
-        </label>
+        </Label>
 
         {/* Input wrapper with toggle button */}
         <div className="relative">
-          <input
+          <Input
             {...props}
             id={inputId}
             name={name}
@@ -217,19 +218,8 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             aria-invalid={!!error}
             ref={ref}
             className={cn(
-              // Base styles
-              "w-full px-4 py-2 pr-12 rounded-lg border",
-              "bg-white dark:bg-slate-800",
-              "text-slate-900 dark:text-slate-100",
-              "placeholder:text-slate-400 dark:placeholder:text-slate-500",
-              // Focus states
-              "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-              // Disabled state
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-              // Error state
-              error && "border-red-500 focus:ring-red-500",
-              // Default border
-              !error && "border-slate-300 dark:border-slate-700",
+              "pr-10",
+              error && "border-destructive focus:ring-destructive",
               className
             )}
           />
@@ -243,9 +233,9 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             className={cn(
               "absolute right-3 top-1/2 -translate-y-1/2",
               "p-1 rounded transition-colors",
-              "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200",
-              "focus:outline-none focus:ring-2 focus:ring-blue-500",
-              "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-slate-500"
+              "text-muted-foreground hover:text-foreground",
+              "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+              "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-muted-foreground"
             )}
           >
             {isVisible ? (
@@ -261,7 +251,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           <p
             id={errorId}
             role="alert"
-            className="text-sm text-red-500 dark:text-red-400"
+            className="text-sm text-destructive"
           >
             {error}
           </p>
@@ -275,7 +265,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             className="flex items-center gap-2"
           >
             {/* Strength bar */}
-            <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className={cn(
                   "h-full transition-all duration-300",
@@ -291,7 +281,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             <span
               className={cn(
                 "text-xs font-medium uppercase",
-                strength === "weak" && "text-red-500",
+                strength === "weak" && "text-destructive",
                 strength === "medium" && "text-yellow-500",
                 strength === "strong" && "text-green-500"
               )}

@@ -18,6 +18,12 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordInput } from "./PasswordInput";
 import { OAuthButtons } from "./OAuthButtons";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 // ============================================
@@ -47,6 +53,7 @@ export type LoginFormValues = z.infer<typeof loginSchema>;
  * - Error display from auth state
  * - Navigation to forgot password and register
  * - Full accessibility support
+ * - chadcn/ui components
  */
 export function LoginForm() {
   const { login, isLoading, error, clearError } = useAuth();
@@ -57,7 +64,6 @@ export function LoginForm() {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setError: setFormError,
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -94,10 +100,10 @@ export function LoginForm() {
     <div className="flex flex-col gap-6">
       {/* Heading */}
       <div className="text-center">
-        <h2 id="login-heading" className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+        <h2 id="login-heading" className="text-2xl font-bold text-foreground">
           Sign in to your account
         </h2>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+        <p className="mt-2 text-sm text-muted-foreground">
           Welcome back! Please enter your details
         </p>
       </div>
@@ -108,10 +114,10 @@ export function LoginForm() {
       {/* Divider */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-300 dark:border-slate-700" />
+          <Separator />
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">
+          <span className="bg-background px-2 text-muted-foreground">
             Or continue with email
           </span>
         </div>
@@ -126,13 +132,8 @@ export function LoginForm() {
       >
         {/* Email Input */}
         <div className="flex flex-col gap-2">
-          <label
-            htmlFor="email"
-            className="text-sm font-medium text-slate-700 dark:text-slate-300"
-          >
-            Email
-          </label>
-          <input
+          <Label htmlFor="email">Email</Label>
+          <Input
             {...register("email", { onChange: handleInputChange })}
             id="email"
             type="email"
@@ -140,26 +141,13 @@ export function LoginForm() {
             autoComplete="email"
             disabled={isDisabled}
             aria-invalid={!!errors.email || !!error}
-            aria-describedby={
-              error ? "login-error" : undefined
-            }
+            aria-describedby={error ? "login-error" : undefined}
             className={cn(
-              "w-full px-4 py-2 rounded-lg border",
-              "bg-white dark:bg-slate-800",
-              "text-slate-900 dark:text-slate-100",
-              "placeholder:text-slate-400 dark:placeholder:text-slate-500",
-              "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-              "transition-all duration-200",
-              (errors.email || error) && "border-red-500 focus:ring-red-500",
-              !(errors.email || error) && "border-slate-300 dark:border-slate-700"
+              (errors.email || error) && "border-destructive focus:ring-destructive"
             )}
           />
           {errors.email && (
-            <p
-              role="alert"
-              className="text-sm text-red-500 dark:text-red-400"
-            >
+            <p role="alert" className="text-sm text-destructive">
               {errors.email.message}
             </p>
           )}
@@ -177,7 +165,7 @@ export function LoginForm() {
               value={field.value}
               onChange={field.onChange}
               onBlur={field.onBlur}
-              error={fieldState.error?.message || errors.password?.message || null}
+              error={fieldState.error?.message || null}
               disabled={isDisabled}
               required
               onClearError={handleInputChange}
@@ -188,20 +176,18 @@ export function LoginForm() {
         {/* Remember Me & Forgot Password */}
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2">
-            <input
+            <Checkbox
               {...register("rememberMe")}
-              type="checkbox"
               disabled={isDisabled}
-              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800"
             />
-            <span className="text-sm text-slate-700 dark:text-slate-300">
+            <span className="text-sm text-foreground">
               Remember me
             </span>
           </label>
 
           <Link
             href="/auth/forgot-password"
-            className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+            className="text-sm font-medium text-primary hover:underline"
           >
             Forgot password?
           </Link>
@@ -209,36 +195,25 @@ export function LoginForm() {
 
         {/* Auth Error */}
         {error && !errors.email && !errors.password && (
-          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-            <p id="login-error" role="alert" className="text-sm text-red-600 dark:text-red-400">
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+            <p id="login-error" role="alert" className="text-sm text-destructive">
               {error.message}
             </p>
           </div>
         )}
 
         {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isDisabled}
-          className={cn(
-            "w-full py-3 px-4 rounded-lg font-medium",
-            "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
-            "text-white",
-            "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
-            "disabled:opacity-50 disabled:cursor-not-allowed",
-            "transition-all duration-200"
-          )}
-        >
+        <Button type="submit" disabled={isDisabled} className="w-full">
           {isLoading ? "Signing in..." : "Sign in"}
-        </button>
+        </Button>
       </form>
 
       {/* Register Link */}
-      <p className="text-center text-sm text-slate-600 dark:text-slate-400">
-        Don't have an account?{" "}
+      <p className="text-center text-sm text-muted-foreground">
+        Don&apos;t have an account?{" "}
         <Link
           href="/auth/register"
-          className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+          className="font-medium text-primary hover:underline"
         >
           Sign up
         </Link>

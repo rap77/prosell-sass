@@ -3,6 +3,7 @@
  *
  * Social login buttons for Google and Facebook OAuth providers.
  * Features loading states, disabled state, and full accessibility.
+ * Uses chadcn/ui Button component.
  *
  * @example
  * ```tsx
@@ -18,6 +19,7 @@
 
 import { type ButtonHTMLAttributes } from "react";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 // ============================================
@@ -73,28 +75,13 @@ interface OAuthButtonProps
   icon: React.ReactNode;
 
   /**
-   * Base styling classes
+   * Button variant for chadcn/ui
    */
   variant: "google" | "facebook";
 }
 
 // ============================================
-// STYLES
-// ============================================
-
-const BUTTON_STYLES = {
-  google: {
-    base: "bg-white text-slate-900 border border-slate-300 hover:bg-slate-50 focus:ring-slate-200",
-    icon: "text-slate-900",
-  },
-  facebook: {
-    base: "bg-blue-600 text-white border border-blue-700 hover:bg-blue-700 focus:ring-blue-500",
-    icon: "text-white",
-  },
-} as const;
-
-// ============================================
-// OAUTH BUTTON COMPONENT
+// MAIN COMPONENT
 // ============================================
 
 /**
@@ -119,22 +106,20 @@ function OAuthButton({
     onClick?.(e);
   };
 
+  // chadcn/ui variants for OAuth buttons
+  const buttonVariant = variant === "google" ? "outline" : "default";
+
   return (
-    <button
+    <Button
       {...props}
       type="button"
+      variant={buttonVariant}
       onClick={handleClick}
       disabled={disabled || isLoading}
-      aria-busy={isLoading}
       className={cn(
-        // Base styles
-        "w-full relative flex items-center justify-center gap-3",
-        "px-4 py-2.5 rounded-lg font-medium transition-colors",
-        "focus:outline-none focus:ring-2 focus:ring-offset-2",
-        // Disabled state
-        "disabled:opacity-50 disabled:cursor-not-allowed",
-        // Variant-specific styles
-        BUTTON_STYLES[variant].base,
+        "w-full",
+        variant === "google" && "bg-background text-foreground hover:bg-accent hover:text-accent-foreground",
+        variant === "facebook" && "bg-[#1877F2] hover:bg-[#166FE5] text-white border-[#1877F2]",
         className
       )}
     >
@@ -146,20 +131,16 @@ function OAuthButton({
           aria-hidden="true"
         />
       ) : (
-        <span className={cn("w-5 h-5 flex items-center justify-center", BUTTON_STYLES[variant].icon)}>
+        <span className="w-5 h-5 flex items-center justify-center">
           {icon}
         </span>
       )}
 
       {/* Button text */}
       <span>{label}</span>
-    </button>
+    </Button>
   );
 }
-
-// ============================================
-// MAIN COMPONENT
-// ============================================
 
 /**
  * OAuthButtons component for social login
@@ -170,6 +151,7 @@ function OAuthButton({
  * - Full keyboard navigation
  * - Accessible ARIA attributes
  * - Prevents double-clicks during loading
+ * - chadcn/ui Button components
  */
 export function OAuthButtons({
   onGoogleClick,
