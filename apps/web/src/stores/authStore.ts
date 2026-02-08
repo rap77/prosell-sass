@@ -5,6 +5,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { setAuthCookies, deleteAuthCookies } from "@/lib/auth/cookies";
 
 // ============================================
 // TYPES
@@ -161,6 +162,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await mockLoginApi(credentials);
 
+          // Update state
           set({
             user: response.user,
             accessToken: response.tokens.access_token,
@@ -169,12 +171,29 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
-        } catch (error) {
+
+          // Set auth cookies for server-side middleware
+          await setAuthCookies({
+            accessToken: response.tokens.access_token,
+            refreshToken: response.tokens.refresh_token,
+            user: {
+              id: response.user.id,
+              email: response.user.email,
+              first_name: response.user.first_name,
+              last_name: response.user.last_name,
+              role: response.user.role,
+              is_email_verified: response.user.is_email_verified ?? false,
+              is_2fa_enabled: response.user.is_2fa_enabled ?? false,
+            },
+          });
+        } catch (unknownError) {
+          const message = unknownError instanceof Error
+            ? unknownError.message
+            : "Error al iniciar sesión";
+
           set({
             isLoading: false,
-            error: {
-              message: error instanceof Error ? error.message : "Error al iniciar sesión",
-            },
+            error: { message },
           });
         }
       },
@@ -185,6 +204,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await mockRegisterApi(data);
 
+          // Update state
           set({
             user: response.user,
             accessToken: response.tokens.access_token,
@@ -193,12 +213,29 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
-        } catch (error) {
+
+          // Set auth cookies for server-side middleware
+          await setAuthCookies({
+            accessToken: response.tokens.access_token,
+            refreshToken: response.tokens.refresh_token,
+            user: {
+              id: response.user.id,
+              email: response.user.email,
+              first_name: response.user.first_name,
+              last_name: response.user.last_name,
+              role: response.user.role,
+              is_email_verified: response.user.is_email_verified ?? false,
+              is_2fa_enabled: response.user.is_2fa_enabled ?? false,
+            },
+          });
+        } catch (unknownError) {
+          const message = unknownError instanceof Error
+            ? unknownError.message
+            : "Error al registrarse";
+
           set({
             isLoading: false,
-            error: {
-              message: error instanceof Error ? error.message : "Error al registrarse",
-            },
+            error: { message },
           });
         }
       },
@@ -209,6 +246,7 @@ export const useAuthStore = create<AuthState>()(
 
           await mockLogoutApi();
 
+          // Clear state
           set({
             user: null,
             accessToken: null,
@@ -217,7 +255,10 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
-        } catch (error) {
+
+          // Delete auth cookies
+          await deleteAuthCookies();
+        } catch (_unknownError) {
           // Logout locally even if API fails
           set({
             user: null,
@@ -227,6 +268,9 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
+
+          // Still try to delete cookies on error
+          await deleteAuthCookies();
         }
       },
 
@@ -251,7 +295,7 @@ export const useAuthStore = create<AuthState>()(
             accessToken: tokens.access_token,
             refreshTokenValue: tokens.refresh_token,
           });
-        } catch (error) {
+        } catch (_unknownError) {
           // Refresh failed - logout
           set({
             user: null,
@@ -292,6 +336,9 @@ export const useAuthStore = create<AuthState>()(
           isLoading: false,
           error: null,
         });
+
+        // Also delete cookies on reset
+        deleteAuthCookies();
       },
     }),
     {
