@@ -18,3 +18,7 @@ export { RegisterForm } from "./RegisterForm";
 export type { RegisterFormValues } from "./RegisterForm";
 
 export { VerifyEmailForm } from "./VerifyEmailForm";
+
+export { ForgotPasswordForm } from "./ForgotPasswordForm";
+
+export { ResetPasswordForm } from "./ResetPasswordForm";
