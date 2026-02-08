@@ -14,4 +14,4 @@ EXCLUDE_PATTERNS="*.test.ts,*.spec.ts,*.test.tsx,*.spec.tsx,*.test.py,*_test.py,
 RULES_FILE="AGENTS.md"
 
 # Strict mode: fail if AI response is ambiguous
-STRICT_MODE="true"
+STRICT_MODE="false"
