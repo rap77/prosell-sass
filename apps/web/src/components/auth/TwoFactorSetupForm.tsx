@@ -1,0 +1,554 @@
+/**
+ * TwoFactorSetupForm Component
+ *
+ * Handles the complete 2FA setup flow:
+ * 1. Enable 2FA (get QR code and backup codes)
+ * 2. Verify TOTP code
+ * 3. Disable 2FA (if already enabled)
+ *
+ * @example
+ * ```tsx
+ * <TwoFactorSetupForm is2FAEnabled={false} />
+ * ```
+ */
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { authApi, ApiError } from "@/lib/api/authApi";
+import { TwoFactorInput } from "./TwoFactorInput";
+import { cn } from "@/lib/utils";
+
+// ============================================
+// TYPES
+// ============================================
+
+interface BackupCodes {
+  qr_code: string;
+  backup_codes: string[];
+}
+
+// ============================================
+// STATES
+// ============================================
+
+type SetupState =
+  | "loading" // Loading 2FA enable
+  | "setup" // Show QR code and backup codes
+  | "verifying" // Verifying TOTP code
+  | "enabled" // Successfully enabled
+  | "disable" // Show disable button (already enabled)
+  | "disabling" // Disabling 2FA
+  | "disabled" // Successfully disabled
+  | "error"; // Error state
+
+type FormState = {
+  state: SetupState;
+  error: string | null;
+  qrCode: string | null;
+  backupCodes: string[];
+  totpCode: string;
+};
+
+// ============================================
+// COMPONENT
+// ============================================
+
+interface TwoFactorSetupFormProps {
+  /** Whether 2FA is currently enabled for the user */
+  is2FAEnabled: boolean;
+  /** Additional CSS classes */
+  className?: string;
+}
+
+export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFormProps) {
+  const router = useRouter();
+  const { accessToken, updateUser } = useAuth();
+
+  const [formState, setFormState] = useState<FormState>({
+    state: is2FAEnabled ? "disable" : "loading",
+    error: null,
+    qrCode: null,
+    backupCodes: [],
+    totpCode: "",
+  });
+
+  // ============================================
+  // EFFECTS
+  // ============================================
+
+  // Enable 2FA on mount if not already enabled
+  useEffect(() => {
+    if (!is2FAEnabled) {
+      handleEnable2FA();
+    }
+  }, [is2FAEnabled]);
+
+  // ============================================
+  // HANDLERS
+  // ============================================
+
+  const handleEnable2FA = async () => {
+    if (!accessToken) {
+      setFormState((prev) => ({
+        ...prev,
+        state: "error",
+        error: "No access token available",
+      }));
+      return;
+    }
+
+    try {
+      setFormState((prev) => ({ ...prev, state: "loading", error: null }));
+
+      const response = await authApi.enable2FA(accessToken);
+
+      setFormState((prev) => ({
+        ...prev,
+        state: "setup",
+        qrCode: response.qr_code,
+        backupCodes: response.backup_codes,
+        error: null,
+      }));
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : error instanceof Error ? error.message : "Failed to enable 2FA";
+      setFormState((prev) => ({
+        ...prev,
+        state: "error",
+        error: message,
+      }));
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!accessToken || !formState.totpCode) {
+      setFormState((prev) => ({
+        ...prev,
+        error: "Please enter the 6-digit code",
+      }));
+      return;
+    }
+
+    try {
+      setFormState((prev) => ({ ...prev, state: "verifying", error: null }));
+
+      await authApi.verify2FA(formState.totpCode, accessToken);
+
+      // Update user state
+      updateUser({ is_2fa_enabled: true });
+
+      setFormState((prev) => ({
+        ...prev,
+        state: "enabled",
+        error: null,
+      }));
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : error instanceof Error ? error.message : "Failed to verify code";
+      setFormState((prev) => ({
+        ...prev,
+        state: "setup",
+        error: message,
+      }));
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    if (!accessToken) {
+      setFormState((prev) => ({
+        ...prev,
+        state: "error",
+        error: "No access token available",
+      }));
+      return;
+    }
+
+    try {
+      setFormState((prev) => ({ ...prev, state: "disabling", error: null }));
+
+      await authApi.disable2FA(accessToken);
+
+      // Update user state
+      updateUser({ is_2fa_enabled: false });
+
+      setFormState((prev) => ({
+        ...prev,
+        state: "disabled",
+        error: null,
+      }));
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : error instanceof Error ? error.message : "Failed to disable 2FA";
+      setFormState((prev) => ({
+        ...prev,
+        state: "disable",
+        error: message,
+      }));
+    }
+  };
+
+  const handleDownloadBackupCodes = () => {
+    const blob = new Blob([formState.backupCodes.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "2fa-backup-codes.txt";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDone = () => {
+    router.push("/profile");
+  };
+
+  // ============================================
+  // RENDER
+  // ============================================
+
+  return (
+    <div className={cn("w-full max-w-md", className)}>
+      {/* Loading State */}
+      {formState.state === "loading" && (
+        <div className="text-center py-12">
+          <div
+            className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+            role="status"
+            aria-label="Loading"
+          >
+            <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+              Loading...
+            </span>
+          </div>
+          <h2 className="mt-4 text-xl font-semibold text-slate-900 dark:text-slate-100">
+            Setting Up Two-Factor Authentication
+          </h2>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Please wait while we generate your QR code...
+          </p>
+        </div>
+      )}
+
+      {/* Setup State - Show QR Code and Backup Codes */}
+      {formState.state === "setup" && (
+        <div className="space-y-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              Set Up Two-Factor Authentication
+            </h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Scan the QR code with your authenticator app
+            </p>
+          </div>
+
+          {/* QR Code */}
+          <div className="flex justify-center">
+            <img
+              src={formState.qrCode || ""}
+              alt="QR Code"
+              className="w-64 h-64 rounded-lg border-2 border-slate-200 dark:border-slate-700"
+            />
+          </div>
+
+          {/* Instructions */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+              Instructions:
+            </h3>
+            <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
+              <li>Open your authenticator app (Google Authenticator, Authy, etc.)</li>
+              <li>Scan the QR code above</li>
+              <li>Enter the 6-digit code below</li>
+              <li>Click "Verify and Enable" to complete setup</li>
+            </ol>
+          </div>
+
+          {/* Backup Codes */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Backup Codes
+              </h3>
+              <button
+                type="button"
+                onClick={handleDownloadBackupCodes}
+                className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                Download Backup Codes
+              </button>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
+              Save these codes in a safe place. You can use them to access your account if you lose
+              your authenticator device.
+            </p>
+            {formState.backupCodes.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+                {formState.backupCodes.map((code, index) => (
+                  <code
+                    key={index}
+                    className="text-sm font-mono text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 px-2 py-1 rounded"
+                  >
+                    {code}
+                  </code>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                No backup codes available
+              </p>
+            )}
+          </div>
+
+          {/* TOTP Code Input */}
+          <div>
+            <TwoFactorInput
+              label="2FA Code"
+              name="totp"
+              value={formState.totpCode}
+              onChange={(code) => setFormState((prev) => ({ ...prev, totpCode: code }))}
+              error={formState.error}
+              required
+            />
+          </div>
+
+          {/* Verify Button */}
+          <button
+            type="button"
+            onClick={handleVerifyCode}
+            disabled={!formState.totpCode || formState.totpCode.length !== 6}
+            className={cn(
+              "w-full py-3 px-4 rounded-lg font-semibold",
+              "bg-blue-600 text-white",
+              "hover:bg-blue-700",
+              "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              "transition-colors"
+            )}
+          >
+            Verify and Enable
+          </button>
+
+          {/* Error Message */}
+          {formState.error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <p className="text-sm text-red-800 dark:text-red-200">{formState.error}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Verifying State */}
+      {formState.state === "verifying" && (
+        <div className="text-center py-12">
+          <div
+            className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+            role="status"
+            aria-label="Loading"
+          >
+            <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+              Loading...
+            </span>
+          </div>
+          <h2 className="mt-4 text-xl font-semibold text-slate-900 dark:text-slate-100">
+            Verifying...
+          </h2>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Please wait while we verify your code
+          </p>
+        </div>
+      )}
+
+      {/* Enabled State */}
+      {formState.state === "enabled" && (
+        <div className="text-center py-12 space-y-6">
+          <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
+            <svg
+              className="h-10 w-10 text-green-600 dark:text-green-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              Two-Factor Authentication Enabled
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Your account is now protected with two-factor authentication
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleDone}
+            className="w-full py-3 px-4 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+          >
+            Done
+          </button>
+        </div>
+      )}
+
+      {/* Disable State (2FA already enabled) */}
+      {formState.state === "disable" && (
+        <div className="space-y-6">
+          <div className="text-center">
+            <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20 mb-4">
+              <svg
+                className="h-8 w-8 text-green-600 dark:text-green-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              Two-Factor Authentication is Enabled
+            </h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Your account is currently protected with two-factor authentication
+            </p>
+          </div>
+
+          {/* Warning */}
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
+              Warning:
+            </h3>
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              Disabling two-factor authentication will make your account less secure. We recommend
+              keeping it enabled.
+            </p>
+          </div>
+
+          {/* Error Message */}
+          {formState.error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <p className="text-sm text-red-800 dark:text-red-200">{formState.error}</p>
+            </div>
+          )}
+
+          {/* Disable Button */}
+          <button
+            type="button"
+            onClick={handleDisable2FA}
+            disabled={false}
+            className={cn(
+              "w-full py-3 px-4 rounded-lg font-semibold",
+              "bg-red-600 text-white",
+              "hover:bg-red-700",
+              "focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2",
+              "transition-colors"
+            )}
+          >
+            Disable 2FA
+          </button>
+        </div>
+      )}
+
+      {/* Disabling State */}
+      {formState.state === "disabling" && (
+        <div className="text-center py-12">
+          <div
+            className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+            role="status"
+            aria-label="Loading"
+          >
+            <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+              Loading...
+            </span>
+          </div>
+          <h2 className="mt-4 text-xl font-semibold text-slate-900 dark:text-slate-100">
+            Disabling...
+          </h2>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Please wait while we disable two-factor authentication
+          </p>
+        </div>
+      )}
+
+      {/* Disabled State */}
+      {formState.state === "disabled" && (
+        <div className="text-center py-12 space-y-6">
+          <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
+            <svg
+              className="h-10 w-10 text-green-600 dark:text-green-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              Two-Factor Authentication Disabled
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Two-factor authentication has been disabled for your account
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleDone}
+            className="w-full py-3 px-4 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+          >
+            Done
+          </button>
+        </div>
+      )}
+
+      {/* Error State */}
+      {formState.state === "error" && (
+        <div className="text-center py-12 space-y-6">
+          <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+            <svg
+              className="h-10 w-10 text-red-600 dark:text-red-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              Error
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              {formState.error || "An error occurred"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={is2FAEnabled ? () => router.push("/profile") : handleEnable2FA}
+            className="w-full py-3 px-4 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+          >
+            {is2FAEnabled ? "Back to Profile" : "Try Again"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
