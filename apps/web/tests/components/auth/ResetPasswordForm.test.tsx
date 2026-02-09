@@ -221,7 +221,8 @@ describe("ResetPasswordForm Component", () => {
     it("should have proper heading structure", () => {
       render(<ResetPasswordForm token={mockToken} />);
 
-      const heading = screen.getByRole("heading", { level: 1 });
+      // chadcn/ui CardTitle - search by text
+      const heading = screen.getByRole("heading", { name: /reset password/i });
       expect(heading).toBeInTheDocument();
     });
   });

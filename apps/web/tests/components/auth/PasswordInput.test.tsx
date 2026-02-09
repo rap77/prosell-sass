@@ -235,7 +235,7 @@ describe("PasswordInput Component", () => {
       );
 
       const input = screen.getByLabelText("Password");
-      expect(input).toHaveClass(/border-red-|error/);
+      expect(input).toHaveClass(/border-destructive/);
     });
 
     it("should clear error when user starts typing", async () => {

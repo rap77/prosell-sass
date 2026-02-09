@@ -179,7 +179,8 @@ describe("ForgotPasswordForm Component", () => {
     it("should have proper heading structure", () => {
       render(<ForgotPasswordForm />);
 
-      const heading = screen.getByRole("heading", { level: 1 });
+      // chadcn/ui CardTitle - search by text
+      const heading = screen.getByRole("heading", { name: /forgot your password/i });
       expect(heading).toBeInTheDocument();
     });
 

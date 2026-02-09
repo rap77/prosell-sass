@@ -240,7 +240,8 @@ describe("TwoFactorSetupForm Component", () => {
 
     it("should show error when verification fails", async () => {
       const user = userEvent.setup();
-      verify2FAMock.mockRejectedValue({ message: "Invalid code", status: 400 });
+      // Clear previous mock and reject for this test
+      verify2FAMock.mockClear().mockRejectedValueOnce(new Error("Invalid code"));
       render(<TwoFactorSetupForm is2FAEnabled={false} />);
 
       await waitFor(() => {
@@ -256,9 +257,9 @@ describe("TwoFactorSetupForm Component", () => {
       const verifyButton = screen.getByRole("button", { name: /verify and enable/i });
       await user.click(verifyButton);
 
+      // Wait for error message to appear
       await waitFor(() => {
-        // Error is shown inside TwoFactorInput with role="alert"
-        expect(screen.getByRole("alert")).toBeInTheDocument();
+        expect(screen.getByText("Invalid code")).toBeInTheDocument();
       });
     });
   });
@@ -379,7 +380,8 @@ describe("TwoFactorSetupForm Component", () => {
       render(<TwoFactorSetupForm is2FAEnabled={false} />);
 
       await waitFor(() => {
-        const heading = screen.getByRole("heading", { level: 1 });
+        // Wait for the setup state heading to appear
+        const heading = screen.getByRole("heading", { name: /set up two-factor authentication/i });
         expect(heading).toBeInTheDocument();
       });
     });

@@ -1,11 +1,30 @@
 /**
  * authStore - Zustand store for authentication
- * GREEN PHASE - Implementación para hacer pasar los tests
+ *
+ * Manages authentication state using authApi for API calls.
+ *
+ * SECURITY NOTE: This store uses zustand persist middleware which stores
+ * auth tokens in localStorage. This is acceptable for client-side only
+ * apps but httpOnly cookies are recommended for production apps.
+ *
+ * TODO: Implement cookie-based auth storage using Next.js Server Actions:
+ * - Create server actions for setting/deleting httpOnly cookies
+ * - Use those actions from API routes instead of client-side storage
+ * - This would protect tokens from XSS attacks
  */
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { setAuthCookies, deleteAuthCookies } from "@/lib/auth/cookies";
+import { authApi, ApiError } from "@/lib/api/authApi";
+
+// TODO: Implement Server Actions for httpOnly cookie management
+// For now, using client-side storage with zustand persist
+const setAuthCookies = async (_authData: unknown) => {
+  // NOOP: Will be replaced with Server Actions that set httpOnly cookies
+};
+const deleteAuthCookies = async () => {
+  // NOOP: Will be replaced with Server Actions that delete httpOnly cookies
+};
 
 // ============================================
 // TYPES
@@ -42,78 +61,6 @@ export interface RegisterData {
 export interface AuthError {
   message: string;
   code?: string;
-}
-
-// ============================================
-// API CLIENT (MOCK for tests - replace with real API)
-// ============================================
-
-// TODO: Replace with real authApi import
-async function mockLoginApi(credentials: LoginCredentials): Promise<{
-  user: User;
-  tokens: AuthTokens;
-}> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
-  // Mock validation
-  if (credentials.email === "wrong@example.com") {
-    throw new Error("Credenciales inválidas");
-  }
-
-  return {
-    user: {
-      id: "1",
-      email: credentials.email,
-      first_name: "Test",
-      last_name: "User",
-      role: "sales_agent",
-      is_email_verified: true,
-    },
-    tokens: {
-      access_token: `mock-access-${Date.now()}`,
-      refresh_token: `mock-refresh-${Date.now()}`,
-    },
-  };
-}
-
-async function mockRegisterApi(data: RegisterData): Promise<{
-  user: User;
-  tokens: AuthTokens;
-}> {
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
-  if (data.email === "existing@example.com") {
-    throw new Error("El email ya existe");
-  }
-
-  return {
-    user: {
-      id: "2",
-      email: data.email,
-      first_name: data.first_name,
-      last_name: data.last_name,
-      role: "sales_user",
-      is_email_verified: false,
-    },
-    tokens: {
-      access_token: `mock-access-${Date.now()}`,
-      refresh_token: `mock-refresh-${Date.now()}`,
-    },
-  };
-}
-
-async function mockRefreshTokenApi(refreshToken: string): Promise<AuthTokens> {
-  await new Promise((resolve) => setTimeout(resolve, 50));
-
-  return {
-    access_token: `refreshed-access-${Date.now()}`,
-    refresh_token: refreshToken,
-  };
-}
-
-async function mockLogoutApi(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 50));
 }
 
 // ============================================
@@ -160,7 +107,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await mockLoginApi(credentials);
+          const response = await authApi.login(credentials.email, credentials.password);
 
           // Update state
           set({
@@ -187,7 +134,9 @@ export const useAuthStore = create<AuthState>()(
             },
           });
         } catch (unknownError) {
-          const message = unknownError instanceof Error
+          const message = unknownError instanceof ApiError
+            ? unknownError.message
+            : unknownError instanceof Error
             ? unknownError.message
             : "Error al iniciar sesión";
 
@@ -202,7 +151,12 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await mockRegisterApi(data);
+          const response = await authApi.register(
+            data.email,
+            data.password,
+            data.first_name,
+            data.last_name
+          );
 
           // Update state
           set({
@@ -229,7 +183,9 @@ export const useAuthStore = create<AuthState>()(
             },
           });
         } catch (unknownError) {
-          const message = unknownError instanceof Error
+          const message = unknownError instanceof ApiError
+            ? unknownError.message
+            : unknownError instanceof Error
             ? unknownError.message
             : "Error al registrarse";
 
@@ -244,7 +200,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true });
 
-          await mockLogoutApi();
+          await authApi.logout();
 
           // Clear state
           set({
@@ -289,7 +245,7 @@ export const useAuthStore = create<AuthState>()(
         }
 
         try {
-          const tokens = await mockRefreshTokenApi(currentRefreshToken);
+          const tokens = await authApi.refreshToken(currentRefreshToken);
 
           set({
             accessToken: tokens.access_token,

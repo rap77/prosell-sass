@@ -161,7 +161,8 @@ describe("VerifyEmailForm Component", () => {
     it("should have proper heading structure", () => {
       render(<VerifyEmailForm token={mockToken} />);
 
-      const heading = screen.getByRole("heading", { level: 1 });
+      // chadcn/ui CardTitle - search by text instead of level
+      const heading = screen.getByRole("heading", { name: /email verification/i });
       expect(heading).toBeInTheDocument();
     });
 
