@@ -1,14 +1,35 @@
 /**
  * TDD: authStore Tests (Zustand)
- * RED PHASE - Escribir tests ANTES de implementar
+ * Tests unitarios del store de autenticación
  */
 
 import { renderHook, act, cleanup } from "@testing-library/react";
+import { vi, beforeEach, afterEach, describe, it, expect } from "vitest";
 import { useAuthStore } from "@/stores/authStore";
+
+// Mock authApi module
+vi.mock("@/lib/api/authApi", () => ({
+  authApi: {
+    login: vi.fn(),
+    register: vi.fn(),
+    refreshToken: vi.fn(),
+    logout: vi.fn(),
+    me: vi.fn(),
+  },
+  ApiError: class MockApiError extends Error {
+    constructor(message: string, public status: number) {
+      super(message);
+      this.name = "ApiError";
+    }
+  },
+}));
+
+import { authApi, ApiError } from "@/lib/api/authApi";
 
 // Setup: Clear localStorage and reset store before each test
 beforeEach(() => {
   localStorage.clear();
+  vi.clearAllMocks();
 });
 
 // Cleanup: Clear localStorage after each test
@@ -38,6 +59,21 @@ describe("authStore - Initial State", () => {
 
 describe("authStore - Login Action", () => {
   it("should set user and tokens on successful login", async () => {
+    // Mock authApi.login success response
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     const { result } = renderHook(() => useAuthStore());
 
     // Act: async action
@@ -60,10 +96,14 @@ describe("authStore - Login Action", () => {
   });
 
   it("should set error on failed login", async () => {
+    // Mock authApi.login error
+    vi.mocked(authApi.login).mockRejectedValue(
+      new ApiError("Invalid credentials", 401)
+    );
+
     const { result } = renderHook(() => useAuthStore());
 
     await act(async () => {
-      // Simular error de credenciales inválidas
       await result.current.login({
         email: "wrong@example.com",
         password: "wrongpassword",
@@ -78,6 +118,28 @@ describe("authStore - Login Action", () => {
   });
 
   it("should set isLoading to true during login", async () => {
+    // Mock a slow response
+    vi.mocked(authApi.login).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              user: {
+                id: "1",
+                email: "test@example.com",
+                first_name: "Test",
+                last_name: "User",
+                role: "sales_agent",
+              },
+              tokens: {
+                access_token: "mock-access-token",
+                refresh_token: "mock-refresh-token",
+              },
+            });
+          }, 100);
+        })
+    );
+
     const { result } = renderHook(() => useAuthStore());
 
     act(() => {
@@ -94,6 +156,21 @@ describe("authStore - Login Action", () => {
 
 describe("authStore - Register Action", () => {
   it("should create user and login on successful registration", async () => {
+    // Mock authApi.register success response
+    vi.mocked(authApi.register).mockResolvedValue({
+      user: {
+        id: "2",
+        email: "new@example.com",
+        first_name: "New",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     const { result } = renderHook(() => useAuthStore());
 
     const mockRegisterData = {
@@ -114,6 +191,11 @@ describe("authStore - Register Action", () => {
   });
 
   it("should set error on registration failure (email exists)", async () => {
+    // Mock authApi.register error with "ya existe" message
+    vi.mocked(authApi.register).mockRejectedValue(
+      new ApiError("El email ya existe", 400)
+    );
+
     const { result } = renderHook(() => useAuthStore());
 
     await act(async () => {
@@ -134,6 +216,24 @@ describe("authStore - Register Action", () => {
 
 describe("authStore - Logout Action", () => {
   it("should clear all state on logout", async () => {
+    // Mock authApi.login for setup
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
+    // Mock authApi.logout
+    vi.mocked(authApi.logout).mockResolvedValue(undefined);
+
     const { result } = renderHook(() => useAuthStore());
 
     // First, login
@@ -161,6 +261,27 @@ describe("authStore - Logout Action", () => {
 
 describe("authStore - Refresh Token Action", () => {
   it("should refresh access token successfully", async () => {
+    // Mock authApi.login for setup
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
+    // Mock authApi.refreshToken
+    vi.mocked(authApi.refreshToken).mockResolvedValue({
+      access_token: "new-mock-access-token",
+      refresh_token: "new-mock-refresh-token",
+    });
+
     const { result } = renderHook(() => useAuthStore());
 
     // Setup: login first
@@ -184,6 +305,26 @@ describe("authStore - Refresh Token Action", () => {
   });
 
   it("should logout on refresh failure (invalid refresh token)", async () => {
+    // Mock authApi.login for setup
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
+    // Mock authApi.refreshToken to throw error
+    vi.mocked(authApi.refreshToken).mockRejectedValue(
+      new ApiError("Invalid refresh token", 401)
+    );
+
     const { result } = renderHook(() => useAuthStore());
 
     // Setup: login
@@ -194,17 +335,12 @@ describe("authStore - Refresh Token Action", () => {
       });
     });
 
-    // Manually set an invalid refresh token
-    act(() => {
-      useAuthStore.getState().refreshTokenValue = null;
-    });
-
-    // Act: try to refresh with invalid token (null)
+    // Act: try to refresh with invalid token
     await act(async () => {
       await result.current.refreshToken();
     });
 
-    // Assert: logged out because no valid refresh token
+    // Assert: logged out because refresh token failed
     expect(result.current.user).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
   });
@@ -212,6 +348,21 @@ describe("authStore - Refresh Token Action", () => {
 
 describe("authStore - Update User Action", () => {
   it("should update user data", async () => {
+    // Mock authApi.login for setup
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     const { result } = renderHook(() => useAuthStore());
 
     // Setup: login
@@ -239,6 +390,11 @@ describe("authStore - Update User Action", () => {
 
 describe("authStore - Clear Error Action", () => {
   it("should clear error state", async () => {
+    // Mock authApi.login error
+    vi.mocked(authApi.login).mockRejectedValue(
+      new ApiError("Invalid credentials", 401)
+    );
+
     const { result } = renderHook(() => useAuthStore());
 
     // Setup: trigger error
@@ -263,6 +419,21 @@ describe("authStore - Clear Error Action", () => {
 
 describe("authStore - Persist Middleware", () => {
   it("should persist state to localStorage", async () => {
+    // Mock authApi.login
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "persist@example.com",
+        first_name: "Persist",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     const { result } = renderHook(() => useAuthStore());
 
     const mockUser = {
@@ -288,6 +459,21 @@ describe("authStore - Persist Middleware", () => {
   });
 
   it("should hydrate state from localStorage on mount", async () => {
+    // Mock authApi.login
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "persist@example.com",
+        first_name: "Persist",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     // This test needs special handling because zustand-persist hydrates on first mount
     // We test that persist works by checking localStorage gets updated
 

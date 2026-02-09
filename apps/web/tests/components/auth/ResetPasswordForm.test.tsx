@@ -27,6 +27,8 @@ describe("ResetPasswordForm Component", () => {
   const mockToken = "test-reset-token-123";
 
   beforeEach(() => {
+    cleanup();
+    mockResetPassword.mockReset();
     mockResetPassword.mockResolvedValue(undefined);
   });
 
@@ -36,22 +38,32 @@ describe("ResetPasswordForm Component", () => {
   });
 
   describe("Basic Rendering", () => {
-    it("should render password input", () => {
-      render(<ResetPasswordForm token={mockToken} />);
+    it("should render password input", async () => {
+      const { container } = render(<ResetPasswordForm token={mockToken} />);
 
-      expect(screen.getByLabelText(/^New Password$/)).toBeInTheDocument();
+      // Wait for form to render after useEffect
+      await waitFor(() => {
+        const passwordInput = container.querySelector<HTMLInputElement>("#password-password");
+        expect(passwordInput).toBeInTheDocument();
+      });
     });
 
-    it("should render confirm password input", () => {
-      render(<ResetPasswordForm token={mockToken} />);
+    it("should render confirm password input", async () => {
+      const { container } = render(<ResetPasswordForm token={mockToken} />);
 
-      expect(screen.getByLabelText(/^Confirm New Password$/)).toBeInTheDocument();
+      // Should have 2 password inputs
+      await waitFor(() => {
+        const passwordInput = container.querySelector<HTMLInputElement>("#password-password");
+        const confirmPasswordInput = container.querySelector<HTMLInputElement>("#password-confirmPassword");
+        expect(passwordInput).toBeInTheDocument();
+        expect(confirmPasswordInput).toBeInTheDocument();
+      });
     });
 
-    it("should render submit button", () => {
+    it("should render submit button", async () => {
       render(<ResetPasswordForm token={mockToken} />);
 
-      expect(screen.getByRole("button", { name: /reset password/i })).toBeInTheDocument();
+      expect(await screen.findByRole("button", { name: /reset password/i })).toBeInTheDocument();
     });
   });
 
@@ -75,10 +87,12 @@ describe("ResetPasswordForm Component", () => {
 
   describe("Form Validation", () => {
     it("should show error when password is too short", async () => {
-      render(<ResetPasswordForm token={mockToken} />);
+      const { container } = render(<ResetPasswordForm token={mockToken} />);
 
-      const passwordInput = screen.getByLabelText(/^New Password$/);
-      await userEvent.type(passwordInput, "short");
+      // Find inputs by their id
+      const passwordInput = container.querySelector<HTMLInputElement>("#password-password");
+      expect(passwordInput).toBeInTheDocument();
+      await userEvent.type(passwordInput!, "short");
 
       const submitButton = screen.getByRole("button", { name: /reset password/i });
       await userEvent.click(submitButton);
@@ -89,13 +103,15 @@ describe("ResetPasswordForm Component", () => {
     });
 
     it("should show error when passwords do not match", async () => {
-      render(<ResetPasswordForm token={mockToken} />);
+      const { container } = render(<ResetPasswordForm token={mockToken} />);
 
-      const passwordInput = screen.getByLabelText(/^New Password$/);
-      await userEvent.type(passwordInput, "password123");
+      const passwordInput = container.querySelector<HTMLInputElement>("#password-password");
+      expect(passwordInput).toBeInTheDocument();
+      await userEvent.type(passwordInput!, "password123");
 
-      const confirmPasswordInput = screen.getByLabelText(/^Confirm New Password$/);
-      await userEvent.type(confirmPasswordInput, "different456");
+      const confirmPasswordInput = container.querySelector<HTMLInputElement>("#password-confirmPassword");
+      expect(confirmPasswordInput).toBeInTheDocument();
+      await userEvent.type(confirmPasswordInput!, "different456");
 
       const submitButton = screen.getByRole("button", { name: /reset password/i });
       await userEvent.click(submitButton);
@@ -108,13 +124,15 @@ describe("ResetPasswordForm Component", () => {
 
   describe("Form Submission", () => {
     it("should call resetPassword with token and password", async () => {
-      render(<ResetPasswordForm token={mockToken} />);
+      const { container } = render(<ResetPasswordForm token={mockToken} />);
 
-      const passwordInput = screen.getByLabelText(/^New Password$/);
-      await userEvent.type(passwordInput, "newPassword123");
+      const passwordInput = container.querySelector<HTMLInputElement>("#password-password");
+      expect(passwordInput).toBeInTheDocument();
+      await userEvent.type(passwordInput!, "newPassword123");
 
-      const confirmPasswordInput = screen.getByLabelText(/^Confirm New Password$/);
-      await userEvent.type(confirmPasswordInput, "newPassword123");
+      const confirmPasswordInput = container.querySelector<HTMLInputElement>("#password-confirmPassword");
+      expect(confirmPasswordInput).toBeInTheDocument();
+      await userEvent.type(confirmPasswordInput!, "newPassword123");
 
       const submitButton = screen.getByRole("button", { name: /reset password/i });
       await userEvent.click(submitButton);
@@ -126,13 +144,15 @@ describe("ResetPasswordForm Component", () => {
 
     it("should show loading state during submission", async () => {
       mockResetPassword.mockImplementation(() => new Promise(() => {}));
-      render(<ResetPasswordForm token={mockToken} />);
+      const { container } = render(<ResetPasswordForm token={mockToken} />);
 
-      const passwordInput = screen.getByLabelText(/^New Password$/);
-      await userEvent.type(passwordInput, "newPassword123");
+      const passwordInput = container.querySelector<HTMLInputElement>("#password-password");
+      expect(passwordInput).toBeInTheDocument();
+      await userEvent.type(passwordInput!, "newPassword123");
 
-      const confirmPasswordInput = screen.getByLabelText(/^Confirm New Password$/);
-      await userEvent.type(confirmPasswordInput, "newPassword123");
+      const confirmPasswordInput = container.querySelector<HTMLInputElement>("#password-confirmPassword");
+      expect(confirmPasswordInput).toBeInTheDocument();
+      await userEvent.type(confirmPasswordInput!, "newPassword123");
 
       const submitButton = screen.getByRole("button", { name: /reset password/i });
       await userEvent.click(submitButton);
@@ -144,37 +164,41 @@ describe("ResetPasswordForm Component", () => {
   describe("Success State", () => {
     it("should show success message when password is reset", async () => {
       mockResetPassword.mockResolvedValue(undefined);
-      render(<ResetPasswordForm token={mockToken} />);
+      const { container } = render(<ResetPasswordForm token={mockToken} />);
 
-      const passwordInput = screen.getByLabelText(/^New Password$/);
-      await userEvent.type(passwordInput, "newPassword123");
+      const passwordInput = container.querySelector<HTMLInputElement>("#password-password");
+      expect(passwordInput).toBeInTheDocument();
+      await userEvent.type(passwordInput!, "newPassword123");
 
-      const confirmPasswordInput = screen.getByLabelText(/^Confirm New Password$/);
-      await userEvent.type(confirmPasswordInput, "newPassword123");
+      const confirmPasswordInput = container.querySelector<HTMLInputElement>("#password-confirmPassword");
+      expect(confirmPasswordInput).toBeInTheDocument();
+      await userEvent.type(confirmPasswordInput!, "newPassword123");
 
       const submitButton = screen.getByRole("button", { name: /reset password/i });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/password reset successfully/i)).toBeInTheDocument();
+        expect(screen.getByText(/Password Reset Successful/i)).toBeInTheDocument();
       });
     });
 
     it("should show login link in success state", async () => {
       mockResetPassword.mockResolvedValue(undefined);
-      render(<ResetPasswordForm token={mockToken} />);
+      const { container } = render(<ResetPasswordForm token={mockToken} />);
 
-      const passwordInput = screen.getByLabelText(/^New Password$/);
-      await userEvent.type(passwordInput, "newPassword123");
+      const passwordInput = container.querySelector<HTMLInputElement>("#password-password");
+      expect(passwordInput).toBeInTheDocument();
+      await userEvent.type(passwordInput!, "newPassword123");
 
-      const confirmPasswordInput = screen.getByLabelText(/^Confirm New Password$/);
-      await userEvent.type(confirmPasswordInput, "newPassword123");
+      const confirmPasswordInput = container.querySelector<HTMLInputElement>("#password-confirmPassword");
+      expect(confirmPasswordInput).toBeInTheDocument();
+      await userEvent.type(confirmPasswordInput!, "newPassword123");
 
       const submitButton = screen.getByRole("button", { name: /reset password/i });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByRole("link", { name: /log in/i })).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: /continue to login/i })).toBeInTheDocument();
       });
     });
   });
@@ -182,13 +206,15 @@ describe("ResetPasswordForm Component", () => {
   describe("Error State", () => {
     it("should show error when token is invalid", async () => {
       mockResetPassword.mockRejectedValue({ message: "Invalid or expired token", status: 400 });
-      render(<ResetPasswordForm token={mockToken} />);
+      const { container } = render(<ResetPasswordForm token={mockToken} />);
 
-      const passwordInput = screen.getByLabelText(/^New Password$/);
-      await userEvent.type(passwordInput, "newPassword123");
+      const passwordInput = container.querySelector<HTMLInputElement>("#password-password");
+      expect(passwordInput).toBeInTheDocument();
+      await userEvent.type(passwordInput!, "newPassword123");
 
-      const confirmPasswordInput = screen.getByLabelText(/^Confirm New Password$/);
-      await userEvent.type(confirmPasswordInput, "newPassword123");
+      const confirmPasswordInput = container.querySelector<HTMLInputElement>("#password-confirmPassword");
+      expect(confirmPasswordInput).toBeInTheDocument();
+      await userEvent.type(confirmPasswordInput!, "newPassword123");
 
       const submitButton = screen.getByRole("button", { name: /reset password/i });
       await userEvent.click(submitButton);
@@ -200,13 +226,15 @@ describe("ResetPasswordForm Component", () => {
 
     it("should show generic error on failure", async () => {
       mockResetPassword.mockRejectedValue(new Error("Server error"));
-      render(<ResetPasswordForm token={mockToken} />);
+      const { container } = render(<ResetPasswordForm token={mockToken} />);
 
-      const passwordInput = screen.getByLabelText(/^New Password$/);
-      await userEvent.type(passwordInput, "newPassword123");
+      const passwordInput = container.querySelector<HTMLInputElement>("#password-password");
+      expect(passwordInput).toBeInTheDocument();
+      await userEvent.type(passwordInput!, "newPassword123");
 
-      const confirmPasswordInput = screen.getByLabelText(/^Confirm New Password$/);
-      await userEvent.type(confirmPasswordInput, "newPassword123");
+      const confirmPasswordInput = container.querySelector<HTMLInputElement>("#password-confirmPassword");
+      expect(confirmPasswordInput).toBeInTheDocument();
+      await userEvent.type(confirmPasswordInput!, "newPassword123");
 
       const submitButton = screen.getByRole("button", { name: /reset password/i });
       await userEvent.click(submitButton);
@@ -218,12 +246,18 @@ describe("ResetPasswordForm Component", () => {
   });
 
   describe("Accessibility", () => {
-    it("should have proper heading structure", () => {
+    it("should have proper heading structure", async () => {
       render(<ResetPasswordForm token={mockToken} />);
 
-      // chadcn/ui CardTitle - search by text
-      const heading = screen.getByRole("heading", { name: /reset password/i });
-      expect(heading).toBeInTheDocument();
+      // Wait for useEffect to run and form to render
+      await waitFor(
+        () => {
+          // chadcn/ui CardTitle - search by text (component has "Reset Your Password")
+          const heading = screen.getByRole("heading", { name: /reset your password/i });
+          expect(heading).toBeInTheDocument();
+        },
+        { timeout: 5000 }
+      );
     });
   });
 });

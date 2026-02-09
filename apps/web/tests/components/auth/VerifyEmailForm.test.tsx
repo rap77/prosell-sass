@@ -8,9 +8,17 @@ import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // Mock authApi - use vi.hoisted to avoid hoisting issues
-const { verifyEmailMock } = vi.hoisted(() => {
+const { verifyEmailMock, MockApiError } = vi.hoisted(() => {
   return {
     verifyEmailMock: vi.fn(),
+    MockApiError: class MockApiError extends Error {
+      status: number;
+      constructor(message: string, status: number) {
+        super(message);
+        this.status = status;
+        this.name = "ApiError";
+      }
+    },
   };
 });
 
@@ -18,14 +26,7 @@ vi.mock("@/lib/api/authApi", () => ({
   authApi: {
     verifyEmail: verifyEmailMock,
   },
-  ApiError: class MockApiError extends Error {
-    status: number;
-    constructor(message: string, status: number) {
-      super(message);
-      this.status = status;
-      this.name = "ApiError";
-    }
-  },
+  ApiError: MockApiError,
 }));
 
 // Mock Next.js router
@@ -112,7 +113,8 @@ describe("VerifyEmailForm Component", () => {
 
   describe("Error States", () => {
     it("should show 404 error for not found", async () => {
-      verifyEmailMock.mockRejectedValue({ message: "Not found", status: 404 });
+      // Use ApiError instance to properly test the error handling
+      verifyEmailMock.mockRejectedValue(new MockApiError("Not found", 404));
       render(<VerifyEmailForm token={mockToken} />);
 
       await waitFor(() => {

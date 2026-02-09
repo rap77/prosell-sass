@@ -186,13 +186,18 @@ export function TwoFactorInput({
 
     // Controlled mode
     if (isControlled) {
-      // In controlled mode, call onChange with new value
-      const hasEmptyDigit = newDigits.some((d) => d === "");
-      const newCode = newDigits.join("");
+      // Update local state for immediate UI feedback
+      // This keeps the input showing what the user types
+      setDigits(newDigits);
 
-      // Only call onChange when we have 6 complete digits
-      if (!hasEmptyDigit && /^\d{6}$/.test(newCode)) {
-        onChange?.(newCode);
+      // Notify parent of changes ALWAYS (not just when complete)
+      // This allows parent to track partial codes for button enable/disable logic
+      const newCode = newDigits.join("");
+      onChange?.(newCode);
+
+      // Auto-focus next input when a digit is entered
+      if (index < CODE_LENGTH - 1 && newChar) {
+        inputRefs.current[index + 1]?.focus();
       }
     }
   };
@@ -210,14 +215,15 @@ export function TwoFactorInput({
         // Move to previous input and clear it
         e.preventDefault();
 
+        const newDigits = [...digits];
+        newDigits[index - 1] = "";
+
+        // Always update local state for UI
+        setDigits(newDigits);
+
+        // Notify parent in controlled mode
         if (isControlled) {
-          const newDigits = [...digits];
-          newDigits[index - 1] = "";
           onChange?.(newDigits.join(""));
-        } else {
-          const newDigits = [...digits];
-          newDigits[index - 1] = "";
-          setDigits(newDigits);
         }
 
         inputRefs.current[index - 1]?.focus();
@@ -225,14 +231,15 @@ export function TwoFactorInput({
         // Clear current digit
         e.preventDefault();
 
+        const newDigits = [...digits];
+        newDigits[index] = "";
+
+        // Always update local state for UI
+        setDigits(newDigits);
+
+        // Notify parent in controlled mode
         if (isControlled) {
-          const newDigits = [...digits];
-          newDigits[index] = "";
           onChange?.(newDigits.join(""));
-        } else {
-          const newDigits = [...digits];
-          newDigits[index] = "";
-          setDigits(newDigits);
         }
       }
 
@@ -269,7 +276,9 @@ export function TwoFactorInput({
     const newDigits = pastedData.split("");
 
     if (isControlled) {
-      // In controlled mode, just call onChange
+      // In controlled mode, update local state for visual feedback
+      setDigits(newDigits);
+      // Then call onChange to notify parent
       onChange?.(pastedData);
     } else {
       // In uncontrolled mode, update local state
@@ -299,10 +308,10 @@ export function TwoFactorInput({
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       {/* Label */}
-      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+      <label className="text-sm font-medium text-foreground">
         {label}
         {required && (
-          <span aria-hidden="true" className="text-red-500 ml-1">
+          <span aria-hidden="true" className="text-destructive ml-1">
             *
           </span>
         )}
@@ -328,17 +337,17 @@ export function TwoFactorInput({
               "w-full aspect-square",
               "text-center text-2xl font-bold",
               "rounded-lg border-2",
-              "bg-white dark:bg-slate-800",
-              "text-slate-900 dark:text-slate-100",
+              "bg-background",
+              "text-foreground",
               // Focus states
-              "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+              "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
               // Transition
               "transition-all duration-200",
               // Disabled state
               "disabled:opacity-50 disabled:cursor-not-allowed",
               // Error state
-              error && "border-red-500 focus:ring-red-500",
-              !error && "border-slate-300 dark:border-slate-700"
+              error && "border-destructive focus:ring-destructive",
+              !error && "border-input"
             )}
             aria-label={`Digit ${index + 1} of ${CODE_LENGTH}`}
             aria-required={required}
@@ -360,7 +369,7 @@ export function TwoFactorInput({
         <p
           id={errorId}
           role="alert"
-          className="text-sm text-red-500 dark:text-red-400"
+          className="text-sm text-destructive"
         >
           {error}
         </p>

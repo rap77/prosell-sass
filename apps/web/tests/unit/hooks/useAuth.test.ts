@@ -1,6 +1,6 @@
 /**
  * TDD: useAuth Hook Tests
- * RED PHASE - Escribir tests ANTES de implementar
+ * Tests del hook de autenticación
  */
 
 import { renderHook, act, waitFor } from "@testing-library/react";
@@ -8,10 +8,30 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStore } from "@/stores/authStore";
 
+// Mock authApi module
+vi.mock("@/lib/api/authApi", () => ({
+  authApi: {
+    login: vi.fn(),
+    register: vi.fn(),
+    refreshToken: vi.fn(),
+    logout: vi.fn(),
+    me: vi.fn(),
+  },
+  ApiError: class MockApiError extends Error {
+    constructor(message: string, public status: number) {
+      super(message);
+      this.name = "ApiError";
+    }
+  },
+}));
+
+import { authApi, ApiError } from "@/lib/api/authApi";
+
 describe("useAuth Hook - Authentication Helpers", () => {
   beforeEach(() => {
     localStorage.clear();
     useAuthStore.getState().reset();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -30,6 +50,21 @@ describe("useAuth Hook - Authentication Helpers", () => {
   });
 
   it("should provide login action", async () => {
+    // Mock authApi.login
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     const { result } = renderHook(() => useAuth());
 
     await act(async () => {
@@ -42,6 +77,24 @@ describe("useAuth Hook - Authentication Helpers", () => {
   });
 
   it("should provide logout action", async () => {
+    // Mock authApi.login
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
+    // Mock authApi.logout
+    vi.mocked(authApi.logout).mockResolvedValue(undefined);
+
     const { result } = renderHook(() => useAuth());
 
     // First login
@@ -61,6 +114,21 @@ describe("useAuth Hook - Authentication Helpers", () => {
   });
 
   it("should provide register action", async () => {
+    // Mock authApi.register
+    vi.mocked(authApi.register).mockResolvedValue({
+      user: {
+        id: "2",
+        email: "new@example.com",
+        first_name: "New",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     const { result } = renderHook(() => useAuth());
 
     await act(async () => {
@@ -77,6 +145,27 @@ describe("useAuth Hook - Authentication Helpers", () => {
   });
 
   it("should provide refresh token action", async () => {
+    // Mock authApi.login
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
+    // Mock authApi.refreshToken
+    vi.mocked(authApi.refreshToken).mockResolvedValue({
+      access_token: "new-mock-access-token",
+      refresh_token: "new-mock-refresh-token",
+    });
+
     const { result } = renderHook(() => useAuth());
 
     // First login
@@ -96,6 +185,11 @@ describe("useAuth Hook - Authentication Helpers", () => {
   });
 
   it("should expose error state", async () => {
+    // Mock authApi.login error
+    vi.mocked(authApi.login).mockRejectedValue(
+      new ApiError("Credenciales inválidas", 401)
+    );
+
     const { result } = renderHook(() => useAuth());
 
     await act(async () => {
@@ -107,6 +201,28 @@ describe("useAuth Hook - Authentication Helpers", () => {
   });
 
   it("should expose loading state", async () => {
+    // Mock a slow response
+    vi.mocked(authApi.login).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              user: {
+                id: "1",
+                email: "test@example.com",
+                first_name: "Test",
+                last_name: "User",
+                role: "sales_agent",
+              },
+              tokens: {
+                access_token: "mock-access-token",
+                refresh_token: "mock-refresh-token",
+              },
+            });
+          }, 100);
+        })
+    );
+
     const { result } = renderHook(() => useAuth());
 
     act(() => {
@@ -117,6 +233,11 @@ describe("useAuth Hook - Authentication Helpers", () => {
   });
 
   it("should provide clear error action", async () => {
+    // Mock authApi.login error
+    vi.mocked(authApi.login).mockRejectedValue(
+      new ApiError("Credenciales inválidas", 401)
+    );
+
     const { result } = renderHook(() => useAuth());
 
     // Trigger error
@@ -135,6 +256,21 @@ describe("useAuth Hook - Authentication Helpers", () => {
   });
 
   it("should provide update user action", async () => {
+    // Mock authApi.login
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     const { result } = renderHook(() => useAuth());
 
     await act(async () => {
@@ -158,6 +294,7 @@ describe("useAuth Hook - Convenience Getters", () => {
   beforeEach(() => {
     localStorage.clear();
     useAuthStore.getState().reset();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -166,6 +303,21 @@ describe("useAuth Hook - Convenience Getters", () => {
   });
 
   it("should expose user ID when authenticated", async () => {
+    // Mock authApi.login
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     const { result } = renderHook(() => useAuth());
 
     await act(async () => {
@@ -176,6 +328,21 @@ describe("useAuth Hook - Convenience Getters", () => {
   });
 
   it("should expose user email", async () => {
+    // Mock authApi.login
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     const { result } = renderHook(() => useAuth());
 
     await act(async () => {
@@ -186,6 +353,21 @@ describe("useAuth Hook - Convenience Getters", () => {
   });
 
   it("should expose user full name", async () => {
+    // Mock authApi.login
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     const { result } = renderHook(() => useAuth());
 
     await act(async () => {
@@ -196,6 +378,21 @@ describe("useAuth Hook - Convenience Getters", () => {
   });
 
   it("should expose user role", async () => {
+    // Mock authApi.login
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     const { result } = renderHook(() => useAuth());
 
     await act(async () => {
@@ -206,6 +403,22 @@ describe("useAuth Hook - Convenience Getters", () => {
   });
 
   it("should expose email verification status", async () => {
+    // Mock authApi.login
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+        is_email_verified: true,
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     const { result } = renderHook(() => useAuth());
 
     await act(async () => {
@@ -216,6 +429,22 @@ describe("useAuth Hook - Convenience Getters", () => {
   });
 
   it("should expose 2FA status", async () => {
+    // Mock authApi.login
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "sales_agent",
+        is_2fa_enabled: false,
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    });
+
     const { result } = renderHook(() => useAuth());
 
     await act(async () => {

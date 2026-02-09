@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 
 export const metadata: Metadata = {
   title: "ProSell SaaS",
@@ -12,8 +13,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning>
       <body className="antialiased">
-        {children}
-        <Toaster />
+        <AuthProvider>
+          {children}
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

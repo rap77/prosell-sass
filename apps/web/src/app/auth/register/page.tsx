@@ -11,6 +11,7 @@
 
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import Link from "next/link";
+import { Suspense } from "react";
 
 // ============================================
 // METADATA
@@ -70,7 +71,9 @@ export default function RegisterPage() {
 
         {/* Register Form Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700">
-          <RegisterForm />
+          <Suspense fallback={<div className="py-12 text-center"><div className="h-8 bg-muted rounded-lg animate-pulse mx-auto w-32"></div></div>}>
+            <RegisterForm />
+          </Suspense>
         </div>
 
         {/* Footer */}

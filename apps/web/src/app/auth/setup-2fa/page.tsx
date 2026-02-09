@@ -8,7 +8,18 @@
  */
 
 import Link from "next/link";
-import { TwoFactorSetupForm } from "@/components/auth/TwoFactorSetupForm";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
+import { TwoFactorSetupSkeleton } from "@/components/auth/dynamic/TwoFactorSetupForm";
+
+// Dynamically load the TwoFactorSetupForm component
+const TwoFactorSetupForm = dynamic(
+  () => import("@/components/auth/dynamic/TwoFactorSetupForm").then((mod) => mod.TwoFactorSetupForm),
+  {
+    ssr: false,
+    loading: () => <TwoFactorSetupSkeleton />
+  }
+);
 
 export default function Setup2FAPage() {
   // For now, default to false (2FA not enabled)

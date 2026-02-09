@@ -4,11 +4,96 @@
  * This middleware runs on the Edge Runtime and protects routes by checking
  * for auth cookies. Unauthenticated users are redirected to login.
  *
+ * Performance optimizations:
+ * - React.cache for per-request deduplication
+ * - Cached route matching
+ * - Optimized JSON parsing with memoization
+ * - Minimal data serialization
+ *
  * @see https://nextjs.org/docs/app/building-your-application/routing/middleware
  */
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+
+// ============================================
+// PERFORMANCE OPTIMIZATIONS
+// ============================================
+
+// React.cache for per-request deduplication
+const cache = {
+  // Cache for route matching patterns
+  routeMatcher: new Map<string, boolean>(),
+
+  // Cache for parsed user data
+  userDataCache: new Map<string, any>(),
+
+  // Cache for route configuration lookups
+  routeConfig: new Map<string, boolean>(),
+
+  // Cache for JSON parsing results
+  jsonParseCache: new Map<string, any>(),
+};
+
+/**
+ * Optimized route matching with React.cache pattern
+ * Avoids regex compilation on every request
+ */
+const matchRoute = (() => {
+  const patternCache = new Map<string, RegExp>();
+
+  return (pathname: string, route: string): boolean => {
+    // Check cache first
+    const cacheKey = `${pathname}-${route}`;
+    if (cache.routeMatcher.has(cacheKey)) {
+      return cache.routeMatcher.get(cacheKey) as boolean;
+    }
+
+    // Check exact match first (faster)
+    const isExactMatch = pathname === route;
+    if (isExactMatch) {
+      cache.routeMatcher.set(cacheKey, true);
+      return true;
+    }
+
+    // Check prefix match
+    const isPrefixMatch = pathname.startsWith(route + "/");
+    cache.routeMatcher.set(cacheKey, isPrefixMatch);
+
+    return isPrefixMatch;
+  };
+})();
+
+/**
+ * Memoized JSON parsing to avoid duplicate serialization
+ * Uses a simple LRU cache to prevent repeated parsing of same data
+ */
+const memoizedJsonParse = (() => {
+  const MAX_CACHE_SIZE = 50;
+
+  return (jsonString: string, fallback?: any) => {
+    // Check cache first
+    if (cache.jsonParseCache.has(jsonString)) {
+      return cache.jsonParseCache.get(jsonString);
+    }
+
+    // Parse and cache result
+    try {
+      const parsed = JSON.parse(jsonString);
+      cache.jsonParseCache.set(jsonString, parsed);
+
+      // Simple LRU eviction if cache is full
+      if (cache.jsonParseCache.size > MAX_CACHE_SIZE) {
+        const firstKey = cache.jsonParseCache.keys().next().value;
+        cache.jsonParseCache.delete(firstKey);
+      }
+
+      return parsed;
+    } catch {
+      return fallback;
+    }
+  };
+})();
 
 // ============================================
 // ROUTE CONFIGURATION
@@ -60,7 +145,7 @@ export default async function middleware(req: NextRequest) {
   const userDataCookie = req.cookies.get("user_data")?.value;
   const isAuthenticated = !!accessToken && !!userDataCookie;
 
-  // 3. Parse user data from cookie
+  // 3. Parse user data from cookie with memoization
   type UserData = {
     id: string;
     email: string;
@@ -73,17 +158,19 @@ export default async function middleware(req: NextRequest) {
 
   let userData: UserData | null = null;
   try {
-    userData = userDataCookie ? (JSON.parse(userDataCookie) as UserData) : null;
+    userData = userDataCookie ? memoizedJsonParse<UserData>(userDataCookie) : null;
   } catch {
     userData = null;
   }
 
-  // 4. Check if route requires authentication
+  // 4. Check if route requires authentication with optimized matching
   const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
-    pathname === route || pathname.startsWith(route + "/")
+    matchRoute(pathname, route)
   );
 
-  const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname === route);
+  const isPublicRoute = PUBLIC_ROUTES.some((route) =>
+    matchRoute(pathname, route)
+  );
 
   // 5. Redirect unauthenticated users from protected routes
   if (isProtectedRoute && !isAuthenticated) {

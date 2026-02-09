@@ -10,7 +10,9 @@
  */
 
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { OAuthButtonsSkeleton } from "@/components/auth/dynamic/OAuthButtons";
 
 // ============================================
 // METADATA
@@ -70,7 +72,9 @@ export default function LoginPage() {
 
         {/* Login Form Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700">
-          <LoginForm />
+          <Suspense fallback={<div className="py-12 text-center"><div className="h-8 bg-muted rounded-lg animate-pulse mx-auto w-32"></div></div>}>
+            <LoginForm />
+          </Suspense>
         </div>
 
         {/* Footer */}

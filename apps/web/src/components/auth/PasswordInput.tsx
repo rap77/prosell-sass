@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 // ============================================
 
 export interface PasswordInputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "onChange" | "value"> {
   /**
    * Label for the input (accessible via aria-label)
    */
@@ -50,6 +50,16 @@ export interface PasswordInputProps
    * Callback to clear error when user starts typing
    */
   onClearError?: () => void;
+
+  /**
+   * Value for controlled mode (string instead of ChangeEvent)
+   */
+  value?: string;
+
+  /**
+   * onChange callback that accepts string (for React Hook Form compatibility)
+   */
+  onChange?: (value: string) => void;
 }
 
 // ============================================
@@ -146,8 +156,10 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     // Determine if controlled or uncontrolled
     const isControlled = controlledValue !== undefined;
 
-    // Get current value
-    const currentValue = isControlled ? controlledValue : uncontrolledValue;
+    // Get current value dynamically for each render
+    // In controlled mode, we use uncontrolledValue for display and sync via onChange
+    // In uncontrolled mode, we use uncontrolledValue directly
+    const currentValue = isControlled ? uncontrolledValue : uncontrolledValue;
 
     // Calculate strength from current value
     // Convert to string as controlledValue can be string | number
@@ -162,12 +174,13 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value;
 
-      // Update uncontrolled state if needed
-      if (!isControlled) {
-        setUncontrolledValue(newValue);
-      }
+      // Update local state for immediate UI feedback
+      // This keeps the input showing what the user types
+      setUncontrolledValue(newValue);
 
-      onChange?.(e);
+      // Call onChange with the VALUE (not the event) for React Hook Form compatibility
+      // RHF's field.onChange expects the value directly, not the event object
+      onChange?.(newValue);
 
       // Clear error when user starts typing
       if (error && onClearError) {

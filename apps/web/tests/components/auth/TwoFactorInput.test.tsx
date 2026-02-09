@@ -327,7 +327,7 @@ describe("TwoFactorInput Component", () => {
 
       const inputs = screen.getAllByRole("textbox");
       inputs.forEach((input) => {
-        expect(input).toHaveClass(/border-red-|error/);
+        expect(input).toHaveClass(/border-destructive/);
       });
     });
 
