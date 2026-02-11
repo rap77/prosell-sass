@@ -90,3 +90,6 @@ docker-compose.override.yml
 *.tmp
 *.temp
 apps/web/tsconfig.tsbuildinfo
+
+# Git Worktrees
+.worktrees/
