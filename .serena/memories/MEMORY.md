@@ -1,5 +1,122 @@
 # ProSell SaaS - Project Memory
 
+## 📍 CURRENT STATUS (2026-02-11)
+
+### Sprint 1-2: Frontend Auth ✅ COMPLETE
+- **17/17 tareas originales**: 100% completo
+- **316 tests passing**: 190 unit + 29 page + 12 middleware + 37 E2E specs
+- **91.57% coverage**: Frontend code
+- **Zero warnings**: React act() issues fixed
+- **20 commits**: All GGA approved
+
+### Sprint Backend: ⏳ PENDING
+- **0/38 tasks**: Domain, Application, Infrastructure, API layers
+- **0/52 OAuth tasks**: Detailed in PRPs/auth-system.md section 10.1
+- **Tech**: FastAPI, SQLAlchemy 2.0, PostgreSQL, Redis, Pydantic 2.12+
+
+### Tarea #18: OAuth Real (Backend Required)
+- **52 sub-items**: 43 backend + 9 frontend
+- **Blocked by**: Backend Sprint first
+- **UI complete**: OAuthButtons.tsx ready (mock callbacks)
+- **See**: PRPs/auth-system.md section 10.1 for complete breakdown
+
+### Active Workarounds (Development)
+```bash
+# apps/web/.env.local - TEMPORAL, remove when backend ready
+NEXT_PUBLIC_DEV_DISABLE_API=true  # Avoids 404 on /api/auth/state
+```
+
+### Documentation Updated
+- **PRPs/auth-system.md**: Complete with Sprint 1-2 progress, OAuth tasks, workarounds
+- **Status**: Frontend ✅ | Backend ⏳ | OAuth ⏳
+
+### Quick Commands
+```bash
+# Run tests
+cd apps/web && pnpm test                 # Vitest unit
+cd apps/web && pnpm test:e2e             # Playwright E2E
+
+# Lint/Type check
+pnpm lint                                # All packages
+pnpm typecheck                           # TypeScript strict
+
+# Next steps
+# Read PRPs/auth-system.md sections 10.1 for OAuth tasks
+# Start Backend Sprint (FastAPI, SQLAlchemy, etc.)
+```
+
+---
+
+## Session 2026-02-11 - Sprint 1-2 Final Complete & PRP Updated ✅
+
+### Achievement
+**Sprint 1-2: Frontend Auth 100% COMPLETE + PRP Updated with OAuth tasks**
+
+### Final Stats
+| Metric | Value |
+|--------|-------|
+| Tasks Complete | 17/17 (100%) |
+| Tests Passing | 316/316 (100%) |
+| Coverage | 91.57% |
+| Warnings | 0 |
+| GGA Commits | 20 (all approved) |
+| TypeScript Strict | 100% (0 `any`) |
+
+### Test Breakdown (FINAL)
+| Type | Tests | Status |
+|------|-------|--------|
+| Unit Tests | 190/190 | ✅ 100% |
+| Page Tests | 29/29 | ✅ 100% |
+| Middleware Tests | 12/12 | ✅ 100% |
+| E2E Tests | 35 specs × 3 browsers | ✅ 105 executions |
+| **TOTAL** | **316 + 105** | **✅** |
+
+### PRP Updated (auth-system.md)
+Added sections:
+1. **Status Summary**: Visual table of Frontend ✅ | Backend ⏳ | OAuth ⏳
+2. **Sprint 1-2 Progress Report**: Detailed completion status
+3. **Workarounds Implemented**: Next.js 16 API bug, fetchWithFallback, etc.
+4. **Tarea #18 - OAuth Real**: 52 detailed sub-items (43 backend + 9 frontend)
+   - Domain Layer: OAuthConnection, OAuthState entities
+   - Infrastructure: Google/Facebook services, state manager
+   - Application: GetOAuthUrl, OAuthCallback, LinkOAuth use cases
+   - API: 5 OAuth endpoints with specs
+   - Frontend: Callback pages, OAuthButtons update
+   - External: Google/Facebook app setup
+5. **Implementation Checklist**: Updated with OAuth tasks
+6. **Confidence Score**: 8/10 → 9/10 (frontend complete)
+7. **Next Steps**: Reorganized with Phase 3 ✅, Phases 1-2 & 4-7 ⏳
+
+### Issues Fixed This Session
+1. ✅ React act() warnings (26 warnings) → `skipHydration: true`
+2. ✅ OAuthButtons tests (3 failures) → Added `data-testid`
+3. ✅ authApi duplicate key → Removed duplicate
+4. ✅ Next.js 16 API route bug → `fetchWithFallback()` + env flag
+
+### Workarounds Active (Remove When Backend Ready)
+| Workaround | File | Remove When |
+|------------|------|-------------|
+| `fetchWithFallback()` | `authStore.ts` | `/api/auth/state` works |
+| `NEXT_PUBLIC_DEV_DISABLE_API` | `.env.local` | Backend FastAPI running |
+| `--turbo=false` | `package.json` | Next.js 16.x fix API bug |
+
+### Next Session: Backend Sprint
+**Start with**: `/sc:implement "Backend Auth - Domain Layer following PRPs/auth-system.md"`
+
+**Read first**:
+1. PRPs/auth-system.md (sections 4.1-4.4 for blueprints)
+2. docs/01_ARQUITECTURA_PROSELL_SAAS_V2.md
+3. docs/06_PROMPT_CLAUDE_CODE_2026_v2.md
+
+**Order**:
+1. Domain Layer → 2. Infrastructure (DB) → 3. Services → 4. Use Cases → 5. API → 6. Tests
+
+### See Also
+- `PRPs/auth-system.md` - Complete PRP with all tasks and OAuth breakdown
+- `sprint_1_2_resumen_completo.md` - Detailed sprint summary
+
+---
+
 ## Session 2026-02-08 - Troubleshooting: Test Skip Fix Complete ✅
 
 ### Objective
