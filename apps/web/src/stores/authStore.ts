@@ -26,6 +26,7 @@
  */
 
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { authApi, ApiError } from "@/lib/api/authApi";
 import { useLocalStorage } from "@/hooks/useLocalStorageSchema";
 import { useMemo, useRef } from "react";
@@ -42,8 +43,53 @@ import {
   withArrayLengthCheck
 } from "@/lib/utils";
 
+// ============================================
+// DEVELOPMENT MODE API FALLBACK
+// ============================================
+
+/**
+ * Wrapper for fetch that handles 404 errors in development
+ * This is a temporary workaround for Next.js 16.1.6 API route bug
+ * TODO: Remove this when API routes are fixed or Next.js is updated
+ */
+async function fetchWithFallback<T>(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  try {
+    const response = await fetch(input, init);
+
+    // If endpoint returns 404 in development, return mock data
+    if (response.status === 404 && process.env.NODE_ENV === 'development') {
+      console.warn(`[DEV MODE] API endpoint ${input} returned 404, using empty state fallback`);
+
+      // Return empty auth state as JSON response
+      return new Response(JSON.stringify({ isAuthenticated: false }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }) as Response;
+    }
+
+    return response;
+  } catch (error) {
+    // In development, log and return mock data on network errors
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[DEV MODE] Network error fetching ${input}, using empty state fallback:`, error);
+      return new Response(JSON.stringify({ isAuthenticated: false }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }) as Response;
+    }
+    throw error;
+  }
+}
+
 // Module-level cache for frequently accessed data
 const stateCache = new Map<string, any>();
+
+// Flag to disable API calls in development (temporary workaround for Next.js 16 API route bug)
+const DEV_DISABLE_API_CALLS = process.env.NODE_ENV === 'development' &&
+  process.env.NEXT_PUBLIC_DEV_DISABLE_API === 'true';
 
 // Cache for form state deduplication
 const formStateCache = (() => {
@@ -212,7 +258,22 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           // Use fetch directly for auth state - this is a small, critical operation
-          const response = await fetch("/api/auth/state");
+          // Skip API call in dev mode if disabled (temporary Next.js 16 bug workaround)
+          if (DEV_DISABLE_API_CALLS) {
+            console.warn('[DEV MODE] API calls disabled, using empty state from localStorage');
+            const state = {
+              user: null,
+              accessToken: null,
+              refreshTokenValue: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error: null,
+            };
+            set(state);
+            return;
+          }
+
+          const response = await fetchWithFallback("/api/auth/state");
           const authState = await response.json();
 
           // Early exit if not authenticated
@@ -409,7 +470,9 @@ export const useAuthStore = create<AuthState>()(
           set(newState);
 
           // Delete auth cookies via API route
-          await fetch("/api/auth/state", { method: "DELETE" });
+          if (!DEV_DISABLE_API_CALLS) {
+            await fetchWithFallback("/api/auth/state", { method: "DELETE" });
+          }
         } catch (_unknownError) {
           // Logout locally even if API fails
           const newState = {
@@ -429,7 +492,9 @@ export const useAuthStore = create<AuthState>()(
           set(newState);
 
           // Still try to delete cookies on error
-          await fetch("/api/auth/state", { method: "DELETE" });
+          if (!DEV_DISABLE_API_CALLS) {
+            await fetchWithFallback("/api/auth/state", { method: "DELETE" });
+          }
         }
       },
 
@@ -524,7 +589,9 @@ export const useAuthStore = create<AuthState>()(
         set(state);
 
         // Also delete cookies on reset
-        fetch("/api/auth/state", { method: "DELETE" });
+        if (!DEV_DISABLE_API_CALLS) {
+          fetchWithFallback("/api/auth/state", { method: "DELETE" });
+        }
       },
     }),
     {

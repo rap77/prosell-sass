@@ -182,6 +182,7 @@ export function OAuthButtons({
         disabled={disabled}
         onClick={onGoogleClick}
         icon={<GoogleIcon />}
+        data-testid="google-oauth-button"
       />
 
       {/* Facebook OAuth Button */}
@@ -192,6 +193,7 @@ export function OAuthButtons({
         disabled={disabled}
         onClick={onFacebookClick}
         icon={<FacebookIcon />}
+        data-testid="facebook-oauth-button"
       />
     </div>
   );

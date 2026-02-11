@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LoginForm } from "@/components/auth/LoginForm";
 
@@ -19,6 +19,28 @@ vi.mock("@/hooks/useAuth", () => ({
     error: null,
     clearError: mockClearError,
   })),
+}));
+
+// Mock dynamic OAuthButtons to avoid dynamic import issues in tests
+vi.mock("@/components/auth/dynamic/OAuthButtons", () => ({
+  OAuthButtons: vi.fn(() => (
+    <div className="flex flex-col gap-3 w-full">
+      <button
+        type="button"
+        data-testid="google-oauth-button"
+        className="w-full"
+      >
+        Continue with Google
+      </button>
+      <button
+        type="button"
+        data-testid="facebook-oauth-button"
+        className="w-full"
+      >
+        Continue with Facebook
+      </button>
+    </div>
+  )),
 }));
 
 // Import mocked hook after mock is set up
@@ -89,17 +111,21 @@ describe("LoginForm Component", () => {
   });
 
   describe("OAuth Integration", () => {
-    it("should render OAuth buttons", () => {
+    it("should render OAuth buttons", async () => {
       render(<LoginForm />);
 
-      expect(screen.getByRole("button", { name: /continue with google/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /continue with facebook/i })).toBeInTheDocument();
+      // Wait for dynamic OAuth buttons to load
+      const oauthButtons = await screen.findByRole("button", { name: /continue with google/i });
+      expect(oauthButtons).toBeInTheDocument();
+
+      // Verify divider text is also rendered
+      expect(screen.getByText(/or continue with email/i)).toBeInTheDocument();
     });
 
     it("should render divider between oauth and email login", () => {
       render(<LoginForm />);
 
-      expect(screen.getByText(/or continue with/i)).toBeInTheDocument();
+      expect(screen.getByText(/or continue with email/i)).toBeInTheDocument();
     });
   });
 
@@ -111,7 +137,7 @@ describe("LoginForm Component", () => {
       const submitButton = screen.getByRole("button", { name: /sign in/i });
       await user.click(submitButton);
 
-      expect(await screen.findByText(/email is required/i)).toBeInTheDocument();
+      expect(await screen.findByText("Email is required")).toBeInTheDocument();
     });
 
     it("should show error when email is invalid", async () => {
@@ -124,7 +150,7 @@ describe("LoginForm Component", () => {
       const submitButton = screen.getByRole("button", { name: /sign in/i });
       await user.click(submitButton);
 
-      expect(await screen.findByText(/invalid email/i)).toBeInTheDocument();
+      expect(await screen.findByText("Invalid email address")).toBeInTheDocument();
     });
 
     it("should show error when password is empty", async () => {
@@ -137,7 +163,7 @@ describe("LoginForm Component", () => {
       const submitButton = screen.getByRole("button", { name: /sign in/i });
       await user.click(submitButton);
 
-      expect(await screen.findByText(/password is required/i)).toBeInTheDocument();
+      expect(await screen.findByText("Password is required")).toBeInTheDocument();
     });
 
     it("should show error when password is too short", async () => {
@@ -148,12 +174,12 @@ describe("LoginForm Component", () => {
       await user.type(emailInput, "user@example.com");
 
       const passwordInput = screen.getByPlaceholderText(/enter your password/i);
-      await user.type(passwordInput, "12345");
+      await user.type(passwordInput, "short");
 
       const submitButton = screen.getByRole("button", { name: /sign in/i });
       await user.click(submitButton);
 
-      expect(await screen.findByText(/password must be at least/i)).toBeInTheDocument();
+      expect(await screen.findByText("Password must be at least 8 characters")).toBeInTheDocument();
     });
   });
 
@@ -166,13 +192,13 @@ describe("LoginForm Component", () => {
       const passwordInput = screen.getByPlaceholderText(/enter your password/i);
 
       await user.type(emailInput, "user@example.com");
-      await user.type(passwordInput, "password123");
+      await user.type(passwordInput, "Password123!");
 
       const submitButton = screen.getByRole("button", { name: /sign in/i });
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockLogin).toHaveBeenCalledWith("user@example.com", "password123");
+        expect(mockLogin).toHaveBeenCalledWith("user@example.com", "Password123!");
       });
     });
 
@@ -185,14 +211,14 @@ describe("LoginForm Component", () => {
       const rememberCheckbox = screen.getByRole("checkbox");
 
       await user.type(emailInput, "user@example.com");
-      await user.type(passwordInput, "password123");
+      await user.type(passwordInput, "Password123!");
       await user.click(rememberCheckbox);
 
       const submitButton = screen.getByRole("button", { name: /sign in/i });
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockLogin).toHaveBeenCalledWith("user@example.com", "password123");
+        expect(mockLogin).toHaveBeenCalledWith("user@example.com", "Password123!");
       });
     });
 
@@ -218,9 +244,8 @@ describe("LoginForm Component", () => {
 
       render(<LoginForm />);
 
-      // Find submit button by type="submit" (not OAuth buttons)
-      const buttons = screen.getAllByRole("button");
-      const submitButton = buttons.find((btn) => (btn as HTMLButtonElement).type === "submit");
+      // Find submit button by text content (more specific than role)
+      const submitButton = screen.getByText(/Signing in/i);
       expect(submitButton).toBeDisabled();
     });
 
@@ -247,8 +272,12 @@ describe("LoginForm Component", () => {
 
       render(<LoginForm />);
 
-      expect(screen.getByLabelText(/^Email$/)).toBeDisabled();
-      expect(screen.getByPlaceholderText(/enter your password/i)).toBeDisabled();
+      const emailInput = screen.getByLabelText(/^Email$/);
+      const passwordInput = screen.getByPlaceholderText(/enter your password/i);
+
+      // Check that inputs have disabled attribute
+      expect(emailInput).toHaveAttribute("disabled");
+      expect(passwordInput).toHaveAttribute("disabled");
     });
   });
 
@@ -303,13 +332,11 @@ describe("LoginForm Component", () => {
       const user = userEvent.setup();
       render(<LoginForm />);
 
-      // Find submit button by type="submit" (not OAuth buttons)
-      const buttons = screen.getAllByRole("button");
-      const submitButton = buttons.find((btn) => (btn as HTMLButtonElement).type === "submit");
-      await user.click(submitButton!);
+      const submitButton = screen.getByRole("button", { name: /sign in/i });
+      await user.click(submitButton);
 
       const emailInput = screen.getByLabelText(/^Email$/);
-      const errorMessage = await screen.findByText(/email is required/i);
+      const errorMessage = await screen.findByText("Email is required");
 
       expect(emailInput).toHaveAttribute("aria-invalid", "true");
       // Check that error message exists and has role="alert"
@@ -321,14 +348,14 @@ describe("LoginForm Component", () => {
     it("should have Google button", () => {
       render(<LoginForm />);
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
+      const googleButton = screen.getByTestId("google-oauth-button");
       expect(googleButton).toBeInTheDocument();
     });
 
     it("should have Facebook button", () => {
       render(<LoginForm />);
 
-      const facebookButton = screen.getByRole("button", { name: /continue with facebook/i });
+      const facebookButton = screen.getByTestId("facebook-oauth-button");
       expect(facebookButton).toBeInTheDocument();
     });
   });

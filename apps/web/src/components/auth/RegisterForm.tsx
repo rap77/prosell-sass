@@ -33,7 +33,7 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordInput } from "./PasswordInput";
 import dynamic from "next/dynamic";
-import { useMemo, useCallback, useRef } from "react";
+import { useMemo, useCallback, useRef, useEffect } from "react";
 import {
   cacheFunction,
   createLookupMap,
@@ -53,7 +53,6 @@ const EMAIL_REGEX = hoistRegExp("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 const PASSWORD_REGEX = hoistRegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$");
 
 // Module-level cache for frequent operations
-const formCache = new Map<string, any>();
 const validationCache = new Map<string, any>();
 
 // Event handler ref for common operations
@@ -278,20 +277,6 @@ export function RegisterForm() {
     clearError();
   }, [error, clearError]);
 
-  // Cache validation results to prevent repeated checks
-  const validateField = useMemoize((field: keyof RegisterFormValues, value: any) => {
-    switch (field) {
-      case 'email':
-        return EMAIL_REGEX.test(value);
-      case 'password':
-        return PASSWORD_REGEX.test(value);
-      case 'fullName':
-        return value.trim().length >= 2;
-      default:
-        return true;
-    }
-  }, [EMAIL_REGEX, PASSWORD_REGEX]);
-
   // Pre-compiled error messages for better performance
   const errorMessages = useMemo(() => ({
     fullName: {
@@ -311,7 +296,8 @@ export function RegisterForm() {
   }), []);
 
   /**
-   * Handle form submission with optimized processing
+   * Handle form submission
+   * Note: Zod schema already validates all fields, no need for duplicate validation
    */
   const onSubmit = useCallback(async (data: RegisterFormValues) => {
     // Early exit if form is disabled
@@ -319,36 +305,11 @@ export function RegisterForm() {
       return;
     }
 
-    // Cache form submission to prevent duplicates
-    const submitKey = `register:${data.email}:${Date.now()}`;
-    const cachedSubmit = formStateCache.get(submitKey);
-
-    if (cachedSubmit) {
-      return;
-    }
-
-    formStateCache.set(submitKey, true);
-
-    // Validate all fields with cached validation
-    const isEmailValid = validateField('email', data.email);
-    const isPasswordValid = validateField('password', data.password);
-    const isNameValid = validateField('fullName', data.fullName);
-
-    // Early exit if any validation fails
-    if (!isEmailValid || !isPasswordValid || !isNameValid) {
-      formStateCache.delete(submitKey);
-      return;
-    }
-
     // Use cached name splitting function
     const { firstName, lastName } = nameSplitCache.get(data.fullName);
 
-    try {
-      await registerUser(data.email.trim(), data.password, firstName, lastName);
-    } finally {
-      formStateCache.delete(submitKey);
-    }
-  }, [registerUser, validateField, isDisabled, nameSplitCache]);
+    await registerUser(data.email.trim(), data.password, firstName, lastName);
+  }, [registerUser, isDisabled, nameSplitCache]);
 
   // Batch CSS updates for error states
   useEffect(() => {
@@ -482,35 +443,43 @@ export function RegisterForm() {
         />
 
         {/* Terms and Privacy Checkbox */}
-        <div className="flex flex-col gap-2">
-          <label className="flex items-start gap-2">
-            <Checkbox
-              {...registerInput("acceptTerms")}
-              disabled={isDisabled}
-            />
-            <span className="text-sm text-foreground">
-              I accept the{" "}
-              <Link
-                href="/terms"
-                className="font-medium text-primary hover:underline"
-              >
-                Terms of Service
-              </Link>
-              {" "}and{" "}
-              <Link
-                href="/privacy"
-                className="font-medium text-primary hover:underline"
-              >
-                Privacy Policy
-              </Link>
-            </span>
-          </label>
-          {errors.acceptTerms && (
-            <p role="alert" className="text-sm text-destructive">
-              {errors.acceptTerms.message}
-            </p>
+        <Controller
+          name="acceptTerms"
+          control={control}
+          render={({ field }) => (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="acceptTerms"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  disabled={isDisabled}
+                />
+                <label htmlFor="acceptTerms" className="text-sm text-foreground cursor-pointer">
+                  I accept the{" "}
+                  <Link
+                    href="/terms"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Terms of Service
+                  </Link>
+                  {" "}and{" "}
+                  <Link
+                    href="/privacy"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Privacy Policy
+                  </Link>
+                </label>
+              </div>
+              {errors.acceptTerms && (
+                <p role="alert" className="text-sm text-destructive">
+                  {errors.acceptTerms.message}
+                </p>
+              )}
+            </div>
           )}
-        </div>
+        />
 
         {/* Auth Error */}
         {error && !hasFormErrors && (

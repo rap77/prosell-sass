@@ -19,7 +19,7 @@
  */
 "use client";
 
-import { useState, forwardRef, type InputHTMLAttributes } from "react";
+import { useState, useEffect, forwardRef, type InputHTMLAttributes } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -157,9 +157,9 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     const isControlled = controlledValue !== undefined;
 
     // Get current value dynamically for each render
-    // In controlled mode, we use uncontrolledValue for display and sync via onChange
-    // In uncontrolled mode, we use uncontrolledValue directly
-    const currentValue = isControlled ? uncontrolledValue : uncontrolledValue;
+    // In controlled mode, use controlledValue (from parent like RHF)
+    // In uncontrolled mode, use local state
+    const currentValue = isControlled ? controlledValue : uncontrolledValue;
 
     // Calculate strength from current value
     // Convert to string as controlledValue can be string | number
@@ -180,13 +180,21 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
 
       // Call onChange with the VALUE (not the event) for React Hook Form compatibility
       // RHF's field.onChange expects the value directly, not the event object
-      onChange?.(newValue);
+      onChange?.(newValue as unknown as React.ChangeEvent<HTMLInputElement>);
 
       // Clear error when user starts typing
       if (error && onClearError) {
         onClearError();
       }
     };
+
+    // Sync local state when controlled value changes from parent
+    // This handles the case when RHF resets or changes the value programmatically
+    useEffect(() => {
+      if (isControlled && controlledValue !== undefined) {
+        setUncontrolledValue(controlledValue);
+      }
+    }, [isControlled, controlledValue]);
 
     // Generate unique IDs for ARIA attributes
     const inputId = `password-${name}`;

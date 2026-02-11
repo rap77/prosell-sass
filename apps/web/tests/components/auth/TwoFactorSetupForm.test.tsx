@@ -239,23 +239,15 @@ describe("TwoFactorSetupForm Component", () => {
     });
 
     it("should show error when verification fails", async () => {
-      // MARKED AS SKIP: TwoFactorInput paste doesn't update parent state in jsdom
-      //
-      // ROOT CAUSE: When pasting "123456", TwoFactorInput calls onChange() but the parent
-      // TwoFactorSetupForm's setState doesn't trigger a re-render fast enough to update
-      // the button's disabled state before the click attempt.
-      //
-      // FIXES ATTEMPTED:
-      // 1. ✅ Updated handlePaste to call setDigits() in controlled mode
-      // 2. ✅ Verified onChange has correct type signature
-      // 3. ❌ Test still fails - React state batching/timing issue in jsdom
-      //
-      // NOTE: This functionality WORKS correctly in E2E tests with real browsers.
-      // This is a known jsdom limitation with React state updates during paste events.
       const user = userEvent.setup();
+
+      // First, configure the mock to reject
+      // This MUST be done before rendering the component
+      verify2FAMock.mockRejectedValueOnce(new Error("Invalid code"));
+
       render(<TwoFactorSetupForm is2FAEnabled={false} />);
 
-      // Wait for initial enable2FA call to complete
+      // Wait for initial enable2FA call to complete and setup state
       await waitFor(() => {
         expect(screen.getByRole("heading", { name: /set up two-factor/i })).toBeInTheDocument();
       });
@@ -266,32 +258,52 @@ describe("TwoFactorSetupForm Component", () => {
       firstInput.focus();
       await user.paste("123456");
 
-      // Wait for button to become enabled (with longer timeout)
-      const verifyButton = await screen.findByRole(
-        "button",
-        { name: /verify and enable/i },
-        { timeout: 5000 }
-      );
+      // Find the verify button
+      const verifyButton = screen.getByRole("button", { name: /verify and enable/i });
 
-      // Debug: Check button state
-      console.log("Button disabled:", (verifyButton as HTMLButtonElement).disabled);
-
-      if ((verifyButton as HTMLButtonElement).disabled) {
-        throw new Error("Button is still disabled - formState.totpCode not updated");
-      }
-
-      // Change verify2FA mock to reject
-      verify2FAMock.mockRejectedValue(new Error("Invalid code"));
-
-      // Submit form
+      // Submit form - this will call verify2FA which will reject
       await user.click(verifyButton);
 
-      // Wait for error message to appear
+      // Wait for verify2FA to be called
+      await waitFor(() => {
+        expect(verify2FAMock).toHaveBeenCalled();
+      });
+
+      // Debug: Let's see what happens in the DOM after the API call
+      // The issue is that startTransition delays state updates
+      // We need to wait for React to flush all pending updates
+
+      // Step 1: Wait for the verifying state to appear
+      await waitFor(() => {
+        const verifyingText = screen.queryByText(/verifying/i);
+        if (verifyingText) {
+          expect(verifyingText).toBeInTheDocument();
+        }
+      }, { timeout: 2000 });
+
+      // Step 2: Now wait for the error state to appear
+      // After verification fails, we should be back in setup state with error
       await waitFor(
         () => {
-          expect(screen.getByText("Invalid code")).toBeInTheDocument();
+          // Check for error in multiple ways to handle React 19's async rendering
+          const bodyText = document.body.textContent;
+
+          // The error message should be in the DOM
+          if (!bodyText?.includes("Invalid code")) {
+            throw new Error(
+              `Error message not found in DOM. Current state: ${bodyText?.substring(0, 200)}`
+            );
+          }
+
+          // Verify we're back in setup state
+          const heading = screen.queryByRole("heading", { name: /set up two-factor/i });
+          if (!heading) {
+            throw new Error("Setup heading not found. Current text: " + bodyText?.substring(0, 200));
+          }
+
+          expect(heading).toBeInTheDocument();
         },
-        { timeout: 10000 }
+        { timeout: 8000 }
       );
     });
   });

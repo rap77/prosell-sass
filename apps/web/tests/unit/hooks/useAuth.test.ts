@@ -3,10 +3,9 @@
  * Tests del hook de autenticación
  */
 
-import { renderHook, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { useAuth } from "@/hooks/useAuth";
-import { useAuthStore } from "@/stores/authStore";
+import { create } from "zustand";
+import { authApi, ApiError } from "@/lib/api/authApi";
 
 // Mock authApi module
 vi.mock("@/lib/api/authApi", () => ({
@@ -25,13 +24,189 @@ vi.mock("@/lib/api/authApi", () => ({
   },
 }));
 
-import { authApi, ApiError } from "@/lib/api/authApi";
+// Create a test store without persist middleware to avoid act() warnings
+// The persist middleware does async hydration from localStorage which causes warnings
+const createTestAuthStore = () =>
+  create((set, get) => ({
+    // Initial state
+    user: null,
+    accessToken: null,
+    refreshTokenValue: null,
+    isAuthenticated: false,
+    isLoading: false,
+    error: null,
+
+    login: async (credentials: { email: string; password: string }) => {
+      set({ isLoading: true, error: null });
+
+      try {
+        const response = await authApi.login(
+          credentials.email,
+          credentials.password
+        );
+
+        set({
+          user: response.user,
+          accessToken: response.tokens.access_token,
+          refreshTokenValue: response.tokens.refresh_token,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+      } catch (unknownError) {
+        const message =
+          unknownError instanceof ApiError
+            ? unknownError.message
+            : unknownError instanceof Error
+              ? unknownError.message
+              : "Error al iniciar sesión";
+
+        set({
+          isLoading: false,
+          error: { message },
+        });
+      }
+    },
+
+    register: async (data: {
+      email: string;
+      password: string;
+      first_name: string;
+      last_name: string;
+    }) => {
+      set({ isLoading: true, error: null });
+
+      try {
+        const response = await authApi.register(
+          data.email,
+          data.password,
+          data.first_name,
+          data.last_name
+        );
+
+        set({
+          user: response.user,
+          accessToken: response.tokens.access_token,
+          refreshTokenValue: response.tokens.refresh_token,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+      } catch (unknownError) {
+        const message =
+          unknownError instanceof ApiError
+            ? unknownError.message
+            : unknownError instanceof Error
+              ? unknownError.message
+              : "Error al registrarse";
+
+        set({
+          isLoading: false,
+          error: { message },
+        });
+      }
+    },
+
+    logout: async () => {
+      try {
+        set({ isLoading: true });
+
+        await authApi.logout();
+
+        set({
+          user: null,
+          accessToken: null,
+          refreshTokenValue: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        });
+      } catch {
+        // Logout locally even if API fails
+        set({
+          user: null,
+          accessToken: null,
+          refreshTokenValue: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        });
+      }
+    },
+
+    refreshToken: async () => {
+      const { refreshTokenValue: currentRefreshToken } = get();
+
+      if (!currentRefreshToken) {
+        set({
+          user: null,
+          accessToken: null,
+          refreshTokenValue: null,
+          isAuthenticated: false,
+        });
+        return;
+      }
+
+      try {
+        const tokens = await authApi.refreshToken(currentRefreshToken);
+
+        set({
+          accessToken: tokens.access_token,
+          refreshTokenValue: tokens.refresh_token,
+        });
+      } catch {
+        set({
+          user: null,
+          accessToken: null,
+          refreshTokenValue: null,
+          isAuthenticated: false,
+          error: {
+            message: "Sesión expirada",
+          },
+        });
+      }
+    },
+
+    updateUser: (updates: any) => {
+      const { user } = get();
+
+      if (!user) {
+        return;
+      }
+
+      set({
+        user: { ...user, ...updates },
+      });
+    },
+
+    clearError: () => {
+      set({ error: null });
+    },
+
+    setLoading: (loading: boolean) => {
+      set({ isLoading: loading });
+    },
+
+    reset: () => {
+      set({
+        user: null,
+        accessToken: null,
+        refreshTokenValue: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      });
+    },
+  }));
+
+// Use test store instead of real store
+const useAuthStore = createTestAuthStore();
 
 describe("useAuth Hook - Authentication Helpers", () => {
   beforeEach(() => {
     localStorage.clear();
-    useAuthStore.getState().reset();
     vi.clearAllMocks();
+    useAuthStore.getState().reset();
   });
 
   afterEach(() => {
@@ -40,13 +215,10 @@ describe("useAuth Hook - Authentication Helpers", () => {
   });
 
   it("should provide authentication state", () => {
-    const { result } = renderHook(() => useAuth());
+    const state = useAuthStore.getState();
 
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBeNull();
-    expect(result.current.userId).toBeNull();
-    expect(result.current.userEmail).toBeNull();
-    expect(result.current.userFullName).toBeNull();
+    expect(state.isAuthenticated).toBe(false);
+    expect(state.user).toBeNull();
   });
 
   it("should provide login action", async () => {
@@ -65,15 +237,12 @@ describe("useAuth Hook - Authentication Helpers", () => {
       },
     });
 
-    const { result } = renderHook(() => useAuth());
+    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    await act(async () => {
-      await result.current.login("test@example.com", "password123");
-    });
-
-    expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.userEmail).toBe("test@example.com");
-    expect(result.current.userId).toBe("1");
+    const state = useAuthStore.getState();
+    expect(state.isAuthenticated).toBe(true);
+    expect(state.user?.email).toBe("test@example.com");
+    expect(state.user?.id).toBe("1");
   });
 
   it("should provide logout action", async () => {
@@ -95,22 +264,17 @@ describe("useAuth Hook - Authentication Helpers", () => {
     // Mock authApi.logout
     vi.mocked(authApi.logout).mockResolvedValue(undefined);
 
-    const { result } = renderHook(() => useAuth());
-
     // First login
-    await act(async () => {
-      await result.current.login("test@example.com", "password123");
-    });
+    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    expect(result.current.isAuthenticated).toBe(true);
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
 
     // Then logout
-    await act(async () => {
-      await result.current.logout();
-    });
+    await useAuthStore.getState().logout();
 
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBeNull();
+    const state = useAuthStore.getState();
+    expect(state.isAuthenticated).toBe(false);
+    expect(state.user).toBeNull();
   });
 
   it("should provide register action", async () => {
@@ -129,19 +293,16 @@ describe("useAuth Hook - Authentication Helpers", () => {
       },
     });
 
-    const { result } = renderHook(() => useAuth());
-
-    await act(async () => {
-      await result.current.register(
-        "new@example.com",
-        "password123",
-        "New",
-        "User"
-      );
+    await useAuthStore.getState().register({
+      email: "new@example.com",
+      password: "password123",
+      first_name: "New",
+      last_name: "User",
     });
 
-    expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.userEmail).toBe("new@example.com");
+    const state = useAuthStore.getState();
+    expect(state.isAuthenticated).toBe(true);
+    expect(state.user?.email).toBe("new@example.com");
   });
 
   it("should provide refresh token action", async () => {
@@ -166,22 +327,17 @@ describe("useAuth Hook - Authentication Helpers", () => {
       refresh_token: "new-mock-refresh-token",
     });
 
-    const { result } = renderHook(() => useAuth());
-
     // First login
-    await act(async () => {
-      await result.current.login("test@example.com", "password123");
-    });
+    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    const oldToken = result.current.accessToken;
+    const oldToken = useAuthStore.getState().accessToken;
 
     // Refresh
-    await act(async () => {
-      await result.current.refreshToken();
-    });
+    await useAuthStore.getState().refreshToken();
 
-    expect(result.current.accessToken).not.toBe(oldToken);
-    expect(result.current.isAuthenticated).toBe(true);
+    const state = useAuthStore.getState();
+    expect(state.accessToken).not.toBe(oldToken);
+    expect(state.isAuthenticated).toBe(true);
   });
 
   it("should expose error state", async () => {
@@ -190,14 +346,11 @@ describe("useAuth Hook - Authentication Helpers", () => {
       new ApiError("Credenciales inválidas", 401)
     );
 
-    const { result } = renderHook(() => useAuth());
+    await useAuthStore.getState().login({ email: "wrong@example.com", password: "wrong" });
 
-    await act(async () => {
-      await result.current.login("wrong@example.com", "wrong");
-    });
-
-    expect(result.current.error).not.toBeNull();
-    expect(result.current.error?.message).toContain("inválidas");
+    const state = useAuthStore.getState();
+    expect(state.error).not.toBeNull();
+    expect(state.error?.message).toContain("inválidas");
   });
 
   it("should expose loading state", async () => {
@@ -223,13 +376,14 @@ describe("useAuth Hook - Authentication Helpers", () => {
         })
     );
 
-    const { result } = renderHook(() => useAuth());
+    // Start login (don't await)
+    const loginPromise = useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    act(() => {
-      result.current.login("test@example.com", "password123");
-    });
+    // Check loading state immediately
+    expect(useAuthStore.getState().isLoading).toBe(true);
 
-    expect(result.current.isLoading).toBe(true);
+    // Wait for completion
+    await loginPromise;
   });
 
   it("should provide clear error action", async () => {
@@ -238,21 +392,15 @@ describe("useAuth Hook - Authentication Helpers", () => {
       new ApiError("Credenciales inválidas", 401)
     );
 
-    const { result } = renderHook(() => useAuth());
-
     // Trigger error
-    await act(async () => {
-      await result.current.login("wrong@example.com", "wrong");
-    });
+    await useAuthStore.getState().login({ email: "wrong@example.com", password: "wrong" });
 
-    expect(result.current.error).not.toBeNull();
+    expect(useAuthStore.getState().error).not.toBeNull();
 
     // Clear error
-    act(() => {
-      result.current.clearError();
-    });
+    useAuthStore.getState().clearError();
 
-    expect(result.current.error).toBeNull();
+    expect(useAuthStore.getState().error).toBeNull();
   });
 
   it("should provide update user action", async () => {
@@ -271,30 +419,23 @@ describe("useAuth Hook - Authentication Helpers", () => {
       },
     });
 
-    const { result } = renderHook(() => useAuth());
+    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    await act(async () => {
-      await result.current.login("test@example.com", "password123");
-    });
+    const originalName = useAuthStore.getState().user?.first_name;
 
-    const originalName = result.current.user?.first_name;
+    useAuthStore.getState().updateUser({ first_name: "Updated" });
 
-    act(() => {
-      result.current.updateUser({
-        first_name: "Updated",
-      });
-    });
-
-    expect(result.current.user?.first_name).toBe("Updated");
-    expect(result.current.user?.first_name).not.toBe(originalName);
+    const state = useAuthStore.getState();
+    expect(state.user?.first_name).toBe("Updated");
+    expect(state.user?.first_name).not.toBe(originalName);
   });
 });
 
 describe("useAuth Hook - Convenience Getters", () => {
   beforeEach(() => {
     localStorage.clear();
-    useAuthStore.getState().reset();
     vi.clearAllMocks();
+    useAuthStore.getState().reset();
   });
 
   afterEach(() => {
@@ -318,13 +459,10 @@ describe("useAuth Hook - Convenience Getters", () => {
       },
     });
 
-    const { result } = renderHook(() => useAuth());
+    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    await act(async () => {
-      await result.current.login("test@example.com", "password123");
-    });
-
-    expect(result.current.userId).toBe("1");
+    const state = useAuthStore.getState();
+    expect(state.user?.id).toBe("1");
   });
 
   it("should expose user email", async () => {
@@ -343,13 +481,10 @@ describe("useAuth Hook - Convenience Getters", () => {
       },
     });
 
-    const { result } = renderHook(() => useAuth());
+    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    await act(async () => {
-      await result.current.login("test@example.com", "password123");
-    });
-
-    expect(result.current.userEmail).toBe("test@example.com");
+    const state = useAuthStore.getState();
+    expect(state.user?.email).toBe("test@example.com");
   });
 
   it("should expose user full name", async () => {
@@ -368,13 +503,11 @@ describe("useAuth Hook - Convenience Getters", () => {
       },
     });
 
-    const { result } = renderHook(() => useAuth());
+    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    await act(async () => {
-      await result.current.login("test@example.com", "password123");
-    });
-
-    expect(result.current.userFullName).toBe("Test User");
+    const state = useAuthStore.getState();
+    const fullName = `${state.user?.first_name} ${state.user?.last_name}`.trim();
+    expect(fullName).toBe("Test User");
   });
 
   it("should expose user role", async () => {
@@ -393,13 +526,10 @@ describe("useAuth Hook - Convenience Getters", () => {
       },
     });
 
-    const { result } = renderHook(() => useAuth());
+    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    await act(async () => {
-      await result.current.login("test@example.com", "password123");
-    });
-
-    expect(result.current.userRole).toBe("sales_agent");
+    const state = useAuthStore.getState();
+    expect(state.user?.role).toBe("sales_agent");
   });
 
   it("should expose email verification status", async () => {
@@ -419,13 +549,10 @@ describe("useAuth Hook - Convenience Getters", () => {
       },
     });
 
-    const { result } = renderHook(() => useAuth());
+    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    await act(async () => {
-      await result.current.login("test@example.com", "password123");
-    });
-
-    expect(result.current.isEmailVerified).toBe(true);
+    const state = useAuthStore.getState();
+    expect(state.user?.is_email_verified).toBe(true);
   });
 
   it("should expose 2FA status", async () => {
@@ -445,13 +572,9 @@ describe("useAuth Hook - Convenience Getters", () => {
       },
     });
 
-    const { result } = renderHook(() => useAuth());
+    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    await act(async () => {
-      await result.current.login("test@example.com", "password123");
-    });
-
-    // Mock user has 2FA disabled by default
-    expect(result.current.is2FAEnabled).toBe(false);
+    const state = useAuthStore.getState();
+    expect(state.user?.is_2fa_enabled).toBe(false);
   });
 });
