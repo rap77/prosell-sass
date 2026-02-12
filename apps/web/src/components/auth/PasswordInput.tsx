@@ -5,6 +5,8 @@
  * Fully accessible with ARIA labels and keyboard navigation.
  * Uses chadcn/ui Input and Label components.
  *
+ * React 19: Uses ref as a regular prop instead of forwardRef
+ *
  * @example
  * ```tsx
  * <PasswordInput
@@ -19,7 +21,7 @@
  */
 "use client";
 
-import { useState, useEffect, forwardRef, type InputHTMLAttributes } from "react";
+import { useState, useEffect, type InputHTMLAttributes } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,6 +62,11 @@ export interface PasswordInputProps
    * onChange callback that accepts string (for React Hook Form compatibility)
    */
   onChange?: (value: string) => void;
+
+  /**
+   * Ref to the input element (React 19: ref as a regular prop)
+   */
+  ref?: React.RefObject<HTMLInputElement>;
 }
 
 // ============================================
@@ -120,200 +127,196 @@ function getStrengthText(strength: PasswordStrength): string {
 /**
  * PasswordInput component with show/hide toggle and optional strength indicator
  *
+ * React 19: ref is passed as a regular prop instead of using forwardRef
+ *
  * Features:
  * - Show/hide password toggle with eye icon
  * - Optional password strength indicator
  * - Error display with ARIA attributes
  * - Full keyboard navigation
- * - React Hook Form compatible (ref forwarding)
+ * - React Hook Form compatible (ref as prop)
  * - chadcn/ui Input and Label components
  */
-export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-  (
-    {
-      label,
-      name,
-      placeholder,
-      error = null,
-      showStrength = false,
-      onClearError,
-      disabled = false,
-      required = false,
-      value: controlledValue,
-      onChange,
-      onBlur,
-      className,
-      ...props
-    },
-    ref
-  ) => {
-    // Local state for visibility toggle
-    const [isVisible, setIsVisible] = useState(false);
+export const PasswordInput = ({
+  label,
+  name,
+  placeholder,
+  error = null,
+  showStrength = false,
+  onClearError,
+  disabled = false,
+  required = false,
+  value: controlledValue,
+  onChange,
+  onBlur,
+  className,
+  ref: externalRef,
+  ...props
+}: PasswordInputProps) => {
+  // Local state for visibility toggle
+  const [isVisible, setIsVisible] = useState(false);
 
-    // Local state for uncontrolled input
-    const [uncontrolledValue, setUncontrolledValue] = useState("");
+  // Local state for uncontrolled input
+  const [uncontrolledValue, setUncontrolledValue] = useState("");
 
-    // Determine if controlled or uncontrolled
-    const isControlled = controlledValue !== undefined;
+  // Determine if controlled or uncontrolled
+  const isControlled = controlledValue !== undefined;
 
-    // Get current value dynamically for each render
-    // In controlled mode, use controlledValue (from parent like RHF)
-    // In uncontrolled mode, use local state
-    const currentValue = isControlled ? controlledValue : uncontrolledValue;
+  // Get current value dynamically for each render
+  // In controlled mode, use controlledValue (from parent like RHF)
+  // In uncontrolled mode, use local state
+  const currentValue = isControlled ? controlledValue : uncontrolledValue;
 
-    // Calculate strength from current value
-    // Convert to string as controlledValue can be string | number
-    const strength = calculatePasswordStrength(String(currentValue || ""));
+  // Calculate strength from current value
+  // Convert to string as controlledValue can be string | number
+  const strength = calculatePasswordStrength(String(currentValue || ""));
 
-    // Toggle visibility
-    const toggleVisibility = () => {
-      setIsVisible((prev) => !prev);
-    };
+  // Toggle visibility
+  const toggleVisibility = () => {
+    setIsVisible((prev) => !prev);
+  };
 
-    // Handle input change
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
+  // Handle input change
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
 
-      // Update local state for immediate UI feedback
-      // This keeps the input showing what the user types
-      setUncontrolledValue(newValue);
+    // Update local state for immediate UI feedback
+    // This keeps the input showing what the user types
+    setUncontrolledValue(newValue);
 
-      // Call onChange with the VALUE (not the event) for React Hook Form compatibility
-      // RHF's field.onChange expects the value directly, not the event object
-      onChange?.(newValue as unknown as React.ChangeEvent<HTMLInputElement>);
+    // Call onChange with the VALUE (not the event) for React Hook Form compatibility
+    // RHF's field.onChange expects the value directly, not the event object
+    onChange?.(newValue as unknown as React.ChangeEvent<HTMLInputElement>);
 
-      // Clear error when user starts typing
-      if (error && onClearError) {
-        onClearError();
-      }
-    };
+    // Clear error when user starts typing
+    if (error && onClearError) {
+      onClearError();
+    }
+  };
 
-    // Sync local state when controlled value changes from parent
-    // This handles the case when RHF resets or changes the value programmatically
-    useEffect(() => {
-      if (isControlled && controlledValue !== undefined) {
-        setUncontrolledValue(controlledValue);
-      }
-    }, [isControlled, controlledValue]);
+  // Sync local state when controlled value changes from parent
+  // This handles the case when RHF resets or changes the value programmatically
+  useEffect(() => {
+    if (isControlled && controlledValue !== undefined) {
+      setUncontrolledValue(controlledValue);
+    }
+  }, [isControlled, controlledValue]);
 
-    // Generate unique IDs for ARIA attributes
-    const inputId = `password-${name}`;
-    const errorId = `error-${name}`;
-    const strengthId = `strength-${name}`;
+  // Generate unique IDs for ARIA attributes
+  const inputId = `password-${name}`;
+  const errorId = `error-${name}`;
+  const strengthId = `strength-${name}`;
 
-    // Described by for accessibility
-    const ariaDescribedBy = [
-      error ? errorId : null,
-      showStrength ? strengthId : null,
-    ]
-      .filter(Boolean)
-      .join(" ");
+  // Described by for accessibility
+  const ariaDescribedBy = [
+    error ? errorId : null,
+    showStrength ? strengthId : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-    return (
-      <div className="flex flex-col gap-2">
-        {/* Label with required indicator */}
-        <Label htmlFor={inputId}>
-          {label}
-          {required && (
-            <span aria-hidden="true" className="text-destructive ml-1">
-              *
-            </span>
+  return (
+    <div className="flex flex-col gap-2">
+      {/* Label with required indicator */}
+      <Label htmlFor={inputId}>
+        {label}
+        {required && (
+          <span aria-hidden="true" className="text-destructive ml-1">
+            *
+          </span>
+        )}
+      </Label>
+
+      {/* Input wrapper with toggle button */}
+      <div className="relative">
+        <Input
+          {...props}
+          id={inputId}
+          name={name}
+          type={isVisible ? "text" : "password"}
+          placeholder={placeholder}
+          value={currentValue}
+          onChange={handleChange}
+          onBlur={onBlur}
+          disabled={disabled}
+          required={required}
+          aria-required={required}
+          aria-describedby={ariaDescribedBy || undefined}
+          aria-invalid={!!error}
+          ref={externalRef}
+          className={cn(
+            "pr-10",
+            error && "border-destructive focus:ring-destructive",
+            className
           )}
-        </Label>
+        />
 
-        {/* Input wrapper with toggle button */}
-        <div className="relative">
-          <Input
-            {...props}
-            id={inputId}
-            name={name}
-            type={isVisible ? "text" : "password"}
-            placeholder={placeholder}
-            value={currentValue}
-            onChange={handleChange}
-            onBlur={onBlur}
-            disabled={disabled}
-            required={required}
-            aria-required={required}
-            aria-describedby={ariaDescribedBy || undefined}
-            aria-invalid={!!error}
-            ref={ref}
-            className={cn(
-              "pr-10",
-              error && "border-destructive focus:ring-destructive",
-              className
-            )}
-          />
-
-          {/* Toggle visibility button */}
-          <button
-            type="button"
-            onClick={toggleVisibility}
-            disabled={disabled}
-            aria-label={isVisible ? "Hide password" : "Show password"}
-            className={cn(
-              "absolute right-3 top-1/2 -translate-y-1/2",
-              "p-1 rounded transition-colors",
-              "text-muted-foreground hover:text-foreground",
-              "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-              "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-muted-foreground"
-            )}
-          >
-            {isVisible ? (
-              <EyeOff className="w-5 h-5" aria-hidden="true" />
-            ) : (
-              <Eye className="w-5 h-5" aria-hidden="true" />
-            )}
-          </button>
-        </div>
-
-        {/* Error message */}
-        {error && (
-          <p
-            id={errorId}
-            role="alert"
-            className="text-sm text-destructive"
-          >
-            {error}
-          </p>
-        )}
-
-        {/* Password strength indicator */}
-        {showStrength && currentValue && (
-          <div
-            id={strengthId}
-            data-testid="password-strength"
-            className="flex items-center gap-2"
-          >
-            {/* Strength bar */}
-            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className={cn(
-                  "h-full transition-all duration-300",
-                  getStrengthColor(strength),
-                  strength === "weak" && "w-1/3",
-                  strength === "medium" && "w-2/3",
-                  strength === "strong" && "w-full"
-                )}
-              />
-            </div>
-
-            {/* Strength text */}
-            <span
-              className={cn(
-                "text-xs font-medium uppercase",
-                strength === "weak" && "text-destructive",
-                strength === "medium" && "text-yellow-500",
-                strength === "strong" && "text-green-500"
-              )}
-            >
-              {getStrengthText(strength)}
-            </span>
-          </div>
-        )}
+        {/* Toggle visibility button */}
+        <button
+          type="button"
+          onClick={toggleVisibility}
+          disabled={disabled}
+          aria-label={isVisible ? "Hide password" : "Show password"}
+          className={cn(
+            "absolute right-3 top-1/2 -translate-y-1/2",
+            "p-1 rounded transition-colors",
+            "text-muted-foreground hover:text-foreground",
+            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-muted-foreground"
+          )}
+        >
+          {isVisible ? (
+            <EyeOff className="w-5 h-5" aria-hidden="true" />
+          ) : (
+            <Eye className="w-5 h-5" aria-hidden="true" />
+          )}
+        </button>
       </div>
-    );
-  }
-);
 
-PasswordInput.displayName = "PasswordInput";
+      {/* Error message */}
+      {error && (
+        <p
+          id={errorId}
+          role="alert"
+          className="text-sm text-destructive"
+        >
+          {error}
+        </p>
+      )}
+
+      {/* Password strength indicator */}
+      {showStrength && currentValue && (
+        <div
+          id={strengthId}
+          data-testid="password-strength"
+          className="flex items-center gap-2"
+        >
+          {/* Strength bar */}
+          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className={cn(
+                "h-full transition-all duration-300",
+                getStrengthColor(strength),
+                strength === "weak" && "w-1/3",
+                strength === "medium" && "w-2/3",
+                strength === "strong" && "w-full"
+              )}
+            />
+          </div>
+
+          {/* Strength text */}
+          <span
+            className={cn(
+              "text-xs font-medium uppercase",
+              strength === "weak" && "text-destructive",
+              strength === "medium" && "text-yellow-500",
+              strength === "strong" && "text-green-500"
+            )}
+          >
+            {getStrengthText(strength)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
