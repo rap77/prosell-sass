@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { authApi } from "@/lib/api/authApi";
+import { createAuthCacheKey } from "@/lib/cache/cache-utils";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -391,6 +392,57 @@ describe("authApi Client - Reset Password", () => {
     await expect(
       authApi.resetPassword("invalid-token", "NewPassword123!")
     ).rejects.toThrow("Password does not meet requirements");
+  });
+});
+
+describe("authApi - cache security", () => {
+  it("should NOT include password in cache key", () => {
+    const credentials = {
+      email: 'test@example.com',
+      password: 'SecretPassword123!'
+    };
+
+    // Act: Create cache key for login
+    const cacheKey = createAuthCacheKey('login', credentials);
+
+    // Assert: Password should NOT be in the cache key
+    expect(cacheKey).not.toContain('SecretPassword123!');
+    expect(cacheKey).not.toContain('password');
+  });
+
+  it("should NOT include newPassword in cache key", () => {
+    const resetData = {
+      token: 'reset-token-123',
+      newPassword: 'NewSecret456!'
+    };
+
+    const cacheKey = createAuthCacheKey('reset-password', resetData);
+
+    expect(cacheKey).not.toContain('NewSecret456!');
+    expect(cacheKey).not.toContain('newPassword');
+  });
+
+  it("should NOT include accessToken in cache key", () => {
+    const twoFactorData = {
+      code: '123456',
+      accessToken: 'secret-token-xyz'
+    };
+
+    const cacheKey = createAuthCacheKey('2fa/verify', twoFactorData);
+
+    expect(cacheKey).not.toContain('secret-token-xyz');
+    expect(cacheKey).not.toContain('accessToken');
+  });
+
+  it("should NOT include refreshToken in cache key", () => {
+    const refreshData = {
+      refreshToken: 'secret-refresh-token-abc'
+    };
+
+    const cacheKey = createAuthCacheKey('refresh', refreshData);
+
+    expect(cacheKey).not.toContain('secret-refresh-token-abc');
+    expect(cacheKey).not.toContain('refreshToken');
   });
 });
 
