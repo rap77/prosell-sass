@@ -8,7 +8,7 @@
  * These tests verify the module exports correctly.
  */
 
-import { describe, it, expect, vi} } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 // Import the page component to ensure it loads correctly
 import ResetPasswordPage from "@/app/auth/reset-password/page";
@@ -36,6 +36,6 @@ describe("ResetPasswordPage", () => {
     it("should be an async function", () => {
       // Async Server Components in Next.js are async functions
       expect(ResetPasswordPage.constructor.name).toBe("AsyncFunction"); // @ts-ignore
-      // @ts-ignore
+    });
   });
 });

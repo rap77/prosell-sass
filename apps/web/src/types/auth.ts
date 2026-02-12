@@ -7,8 +7,8 @@
  * @deprecated Use domain types directly
  */
 
-// Domain types - single source of truth
-export type {
+// Import types first for use in interfaces
+import type {
   User,
   AuthTokens,
   LoginCredentials,
@@ -20,6 +20,20 @@ export type {
   EmailVerification,
   TwoFactorVerification,
 } from '@/domain/auth/types';
+
+// Re-export for convenience
+export type {
+  User,
+  AuthTokens,
+  LoginCredentials,
+  RegisterData,
+  AuthError,
+  TwoFactorSetup,
+  PasswordResetRequest,
+  PasswordReset,
+  EmailVerification,
+  TwoFactorVerification,
+};
 
 // Legacy types - maintained for backward compatibility
 // TODO: Migrate consumers to use domain types directly

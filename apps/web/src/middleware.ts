@@ -77,7 +77,9 @@ const memoizedJsonParse = (() => {
       // Simple LRU eviction if cache is full
       if (cache.jsonParseCache.size > MAX_CACHE_SIZE) {
         const firstKey = cache.jsonParseCache.keys().next().value;
-        cache.jsonParseCache.delete(firstKey);
+        if (firstKey !== undefined) {
+          cache.jsonParseCache.delete(firstKey);
+        }
       }
 
       return parsed;
@@ -150,7 +152,7 @@ export default async function middleware(req: NextRequest) {
 
   let userData: UserData | null = null;
   try {
-    userData = userDataCookie ? memoizedJsonParse<UserData>(userDataCookie) : null;
+    userData = userDataCookie ? memoizedJsonParse(userDataCookie) as UserData | null : null;
   } catch {
     userData = null;
   }

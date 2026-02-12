@@ -21,7 +21,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { authApi } from "@/lib/api/authApi";
-import type { ApiError } from "@/lib/api/authApi";
+import { ApiError } from "@/lib/api/authApi";
 
 // ============================================
 // TYPES
@@ -114,7 +114,8 @@ const LOGGED_OUT_STATE = {
 // ============================================
 
 export const useAuthStore = create<AuthState>()(
-  (set, get) => ({
+  persist(
+    (set, get) => ({
     // Initial state
     ...LOGGED_OUT_STATE,
     isLoading: true, // Start with loading state
@@ -150,8 +151,8 @@ export const useAuthStore = create<AuthState>()(
 
         set({
           user: response.user,
-          accessToken: response.tokens.access_token,
-          refreshTokenValue: response.tokens.refresh_token,
+          accessToken: response.tokens?.access_token ?? null,
+          refreshTokenValue: response.tokens?.refresh_token ?? null,
           isAuthenticated: true,
           isLoading: false,
           error: null,
@@ -183,8 +184,8 @@ export const useAuthStore = create<AuthState>()(
 
         set({
           user: response.user,
-          accessToken: response.tokens.access_token,
-          refreshTokenValue: response.tokens.refresh_token,
+          accessToken: response.tokens?.access_token ?? null,
+          refreshTokenValue: response.tokens?.refresh_token ?? null,
           isAuthenticated: true,
           isLoading: false,
           error: null,
@@ -262,10 +263,10 @@ export const useAuthStore = create<AuthState>()(
 
     // SECURITY: Only persist non-sensitive data for optimistic UI
     // Tokens are stored in httpOnly cookies by the backend
-    partialize: (state) => ({
+    partialize: (state: AuthState) => ({
       user: state.user,
       isAuthenticated: state.isAuthenticated,
       // DO NOT persist tokens to localStorage (XSS risk)
     }),
-  }
+  })
 );

@@ -87,8 +87,9 @@ const deduplicateRequest = (() => {
 
   return (key: string, requestFn: () => Promise<any>) => {
     // Early exit if request is already pending
-    if (pendingRequests.has(key)) {
-      return pendingRequests.get(key);
+    const existing = pendingRequests.get(key);
+    if (existing) {
+      return existing;
     }
 
     const promise = requestFn();

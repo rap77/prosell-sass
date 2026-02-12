@@ -7,6 +7,7 @@ import { cleanup } from "@testing-library/react";
 import { vi, beforeEach, afterEach, describe, it, expect } from "vitest";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import type { User } from "@/domain/auth/types";
 
 // Helper type for test store state
 type TestStoreState = {
@@ -48,8 +49,31 @@ import { authApi, ApiError } from "@/lib/api/authApi";
 // Create a test store WITH persist middleware but skipHydration to avoid act() warnings
 // skipHydration prevents async hydration on mount, eliminating React act() warnings
 // We can still test persist functionality by verifying localStorage directly
+
+// Type for test store (same as production authStore)
+type TestAuthStore = {
+  user: User | null;
+  accessToken: string | null;
+  refreshTokenValue: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | { message: string } | null;
+  login: (credentials: { email: string; password: string }) => Promise<void>;
+  register: (data: {
+    email: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+  }) => Promise<void>;
+  logout: () => Promise<void>;
+  refreshToken: () => Promise<void>;
+  updateUser: (user: Partial<User>) => void;
+  clearError: () => void;
+  reset: () => void; // For testing cleanup
+};
+
 const createTestAuthStore = () =>
-  create()(
+  create<TestAuthStore>()(
     persist(
       (set, get) => ({
     // Initial state
@@ -70,7 +94,7 @@ const createTestAuthStore = () =>
         );
 
         set({
-          user: response.user,
+          user: response.user as User,
           accessToken: response.tokens?.access_token,
           refreshTokenValue: response.tokens?.refresh_token,
           isAuthenticated: true,
@@ -109,7 +133,7 @@ const createTestAuthStore = () =>
         );
 
         set({
-          user: response.user,
+          user: response.user as User,
           accessToken: response.tokens?.access_token,
           refreshTokenValue: response.tokens?.refresh_token,
           isAuthenticated: true,

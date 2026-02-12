@@ -6,3 +6,6 @@
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-4.7",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-4.7"
 },
+
+
+/sc:workflow "Implement Backend Auth System following PRPs/auth-system.md"

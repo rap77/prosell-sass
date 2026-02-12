@@ -30,11 +30,11 @@ export class LocalStorageSchemaManager {
     {
       from: '0.9.0',
       to: '1.0.0',
-      migrate: (data) => {
+      migrate: (data: unknown) => {
         // Migration from 0.9.0 to 1.0.0
         // Add timestamp to all stored data
         return {
-          ...data,
+          ...(typeof data === 'object' && data !== null ? data : {}),
           timestamp: Date.now(),
         };
       },
@@ -42,11 +42,11 @@ export class LocalStorageSchemaManager {
     {
       from: '0.8.0',
       to: '0.9.0',
-      migrate: (data) => {
+      migrate: (data: unknown) => {
         // Migration from 0.8.0 to 0.9.0
         // Add version field to all stored data
         return {
-          ...data,
+          ...(typeof data === 'object' && data !== null ? data : {}),
           version: '0.9.0',
           timestamp: Date.now(),
         };
