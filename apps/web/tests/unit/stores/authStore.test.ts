@@ -173,7 +173,7 @@ const createTestAuthStore = () =>
       }
     },
 
-    updateUser: (updates: any) => {
+    updateUser: (updates: Partial<{ id: string; email: string; first_name: string; last_name: string }>) => {
       const { user } = get();
 
       if (!user) {
@@ -207,6 +207,16 @@ const createTestAuthStore = () =>
   {
     name: "auth-storage",
     skipHydration: true, // Key: prevents async hydration on mount, eliminating act() warnings
+
+    // SECURITY: Only persist non-sensitive data for optimistic UI
+    // Tokens are stored in httpOnly cookies by the backend
+    partialize: (state) => ({
+      user: state.user,
+      isAuthenticated: state.isAuthenticated,
+      // DO NOT persist tokens to localStorage (XSS risk)
+      // accessToken: state.accessToken,           // REMOVED
+      // refreshTokenValue: state.refreshTokenValue, // REMOVED
+    }),
   }
 ));
 
@@ -631,6 +641,72 @@ describe("authStore - Persist Middleware", () => {
     expect(state.refreshTokenValue).toBe("stored-refresh-token");
 
     // Cleanup
+    localStorage.clear();
+  });
+});
+
+describe("authStore - token security", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+
+    // Setup authApi.login mock to return successful response
+    vi.mocked(authApi.login).mockResolvedValue({
+      user: {
+        id: "1",
+        email: "test@test.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "user",
+        is_email_verified: true,
+      },
+      tokens: {
+        access_token: "test-access-token",
+        refresh_token: "test-refresh-token",
+      },
+    });
+  });
+
+  it("should NOT persist accessToken to localStorage", async () => {
+    const store = createTestAuthStore();
+
+    // Act: Login to set token - must await for persist to capture final state
+    await store.getState().login({
+      email: "test@test.com",
+      password: "Password123!"
+    });
+
+    // Get localStorage content
+    const stored = localStorage.getItem("auth-storage");
+    expect(stored).toBeTruthy();
+
+    const parsed = JSON.parse(stored!);
+
+    // Assert: accessToken should NOT be in localStorage
+    expect(parsed.state).not.toHaveProperty("accessToken");
+    expect(parsed.state).not.toHaveProperty("refreshTokenValue");
+  });
+
+  it("should persist user and isAuthenticated for optimistic UI", async () => {
+    const store = createTestAuthStore();
+
+    // Must await for persist to capture final state after login completes
+    await store.getState().login({
+      email: "test@test.com",
+      password: "Password123!"
+    });
+
+    const stored = localStorage.getItem("auth-storage");
+    expect(stored).toBeTruthy();
+
+    const parsed = JSON.parse(stored!);
+
+    // These SHOULD be persisted
+    expect(parsed.state.user).toBeDefined();
+    expect(parsed.state.isAuthenticated).toBe(true);
+  });
+
+  afterEach(() => {
     localStorage.clear();
   });
 });
