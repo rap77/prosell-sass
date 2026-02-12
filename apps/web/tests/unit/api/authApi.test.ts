@@ -243,8 +243,8 @@ describe("authApi Client - Logout", () => {
       json: async () => ({ detail: "Internal server error" }),
     } as Response);
 
-    // Logout should throw error when API fails
-    await expect(authApi.logout()).rejects.toThrow("Logout failed");
+    // Logout should NOT throw - it clears local cache and ignores API errors
+    await expect(authApi.logout()).resolves.toBeUndefined();
 
     expect(mockFetch).toHaveBeenCalled();
   });
@@ -392,6 +392,97 @@ describe("authApi Client - Reset Password", () => {
     await expect(
       authApi.resetPassword("invalid-token", "NewPassword123!")
     ).rejects.toThrow("Password does not meet requirements");
+  });
+});
+
+describe("authApi - mutation caching", () => {
+  it("should NOT cache login response (mutation)", async () => {
+    let callCount = 0;
+    const mockResponse = {
+      user: {
+        id: "1",
+        email: "test@test.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "user",
+        is_email_verified: true,
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    };
+
+    mockFetch.mockImplementation(async () => {
+      callCount++;
+      return {
+        ok: true,
+        json: async () => mockResponse,
+      } as Response;
+    });
+
+    // Two identical calls with valid password
+    await authApi.login("test@test.com", "Password123!");
+    await authApi.login("test@test.com", "Password123!");
+
+    // Mutations should NOT be cached - each call should hit the API
+    expect(callCount).toBe(2);
+  });
+
+  it("should NOT cache register response (mutation)", async () => {
+    let callCount = 0;
+    const mockResponse = {
+      user: {
+        id: "2",
+        email: "new@test.com",
+        first_name: "New",
+        last_name: "User",
+        role: "user",
+        is_email_verified: false,
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    };
+
+    mockFetch.mockImplementation(async () => {
+      callCount++;
+      return {
+        ok: true,
+        json: async () => mockResponse,
+      } as Response;
+    });
+
+    // Two identical calls with valid password
+    await authApi.register("new@test.com", "Password123!", "New", "User");
+    await authApi.register("new@test.com", "Password123!", "New", "User");
+
+    // Mutations should NOT be cached - each call should hit the API
+    expect(callCount).toBe(2);
+  });
+
+  it("should NOT cache refreshToken (mutation)", async () => {
+    let callCount = 0;
+    const mockResponse = {
+      access_token: "new-access-token",
+      refresh_token: "mock-refresh-token",
+    };
+
+    mockFetch.mockImplementation(async () => {
+      callCount++;
+      return {
+        ok: true,
+        json: async () => mockResponse,
+      } as Response;
+    });
+
+    // Two identical calls
+    await authApi.refreshToken("mock-refresh-token");
+    await authApi.refreshToken("mock-refresh-token");
+
+    // Mutations should NOT be cached - each call should hit the API
+    expect(callCount).toBe(2);
   });
 });
 

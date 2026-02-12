@@ -159,6 +159,8 @@ export const authApi = {
   /**
    * Login with email and password
    * POST /api/auth/login
+   *
+   * SECURITY: NOT cached - mutations must always hit the server
    */
   async login(
     email: string,
@@ -167,14 +169,6 @@ export const authApi = {
     // Validate inputs with pre-compiled regex (early exit)
     if (!EMAIL_REGEX.test(email) || !PASSWORD_REGEX.test(password)) {
       throw new ApiError("Invalid email or password format", 400);
-    }
-
-    const cacheKey = createAuthCacheKey('login', { email, password });
-    const cached = requestCache.get(cacheKey);
-
-    // Early exit if cached result exists
-    if (cached) {
-      return cached;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -186,17 +180,14 @@ export const authApi = {
       credentials: "include", // Important for cookies to be sent and received
     });
 
-    const result = await handleResponse<LoginResponse>(response);
-
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
-    return result;
+    return await handleResponse<LoginResponse>(response);
   },
 
   /**
    * Register a new user
    * POST /api/auth/register
+   *
+   * SECURITY: NOT cached - mutations must always hit the server
    */
   async register(
     email: string,
@@ -217,14 +208,6 @@ export const authApi = {
       throw new ApiError("First and last name must be at least 2 characters", 400);
     }
 
-    const cacheKey = createAuthCacheKey('register', { email, password, first_name, last_name });
-    const cached = requestCache.get(cacheKey);
-
-    // Early exit if cached result exists
-    if (cached) {
-      return cached;
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
       method: "POST",
       headers: {
@@ -241,30 +224,19 @@ export const authApi = {
 
     const result = await handleResponse<LoginResponse>(response);
 
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
-    // Update user cache for O(1) lookups
-    userLookupCache.set(result.user.id, result.user);
-
     return result;
   },
 
   /**
    * Refresh access token
    * POST /api/auth/refresh
+   *
+   * SECURITY: NOT cached - mutations must always hit the server
    */
   async refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
     // Early exit if no refresh token
     if (!refreshToken || refreshToken.trim() === '') {
       throw new ApiError("Refresh token is required", 400);
-    }
-
-    const cacheKey = createAuthCacheKey('refresh', { refreshToken });
-    const cached = requestCache.get(cacheKey);
-
-    if (cached) {
-      return cached;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
@@ -276,19 +248,21 @@ export const authApi = {
       credentials: "include", // Important for cookies to be sent and received
     });
 
-    const result = await handleResponse<RefreshTokenResponse>(response);
-
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
-    return result;
+    return await handleResponse<RefreshTokenResponse>(response);
   },
 
   /**
    * Logout current user
    * POST /api/auth/logout
+   *
+   * SECURITY: Always clears cache, even if API call fails
    */
   async logout(): Promise<void> {
+    // Always clear local cache (best-effort)
+    requestCache.clear();
+    userLookupCache.clear();
+
+    // Try to notify server (ignore failures - local cache is cleared)
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: "POST",
@@ -299,16 +273,9 @@ export const authApi = {
       });
 
       await handleResponse<void>(response);
-
-      // Clear cache on successful logout
-      requestCache.clear();
-      userLookupCache.clear();
-    } catch {
-      // Logout should not throw even if API fails
-      // Clear cache anyway
-      requestCache.clear();
-      userLookupCache.clear();
-      throw new ApiError("Logout failed", 500);
+    } catch (_error: unknown) {
+      // Ignore API errors - local state is already cleared
+      // This allows logout to succeed even if server is down
     }
   },
 
@@ -362,18 +329,13 @@ export const authApi = {
   /**
    * Verify email with token
    * POST /api/auth/verify-email
+   *
+   * SECURITY: NOT cached - mutations must always hit the server
    */
   async verifyEmail(token: string): Promise<MessageResponse> {
     // Early exit if invalid token
     if (!token || token.trim() === '') {
       throw new ApiError("Token is required", 400);
-    }
-
-    const cacheKey = createAuthCacheKey('verify-email', { token });
-    const cached = requestCache.get(cacheKey);
-
-    if (cached) {
-      return cached;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/verify-email`, {
@@ -384,29 +346,19 @@ export const authApi = {
       body: JSON.stringify({ token }),
     });
 
-    const result = await handleResponse<MessageResponse>(response);
-
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
-    return result;
+    return await handleResponse<MessageResponse>(response);
   },
 
   /**
    * Request password reset
    * POST /api/auth/forgot-password
+   *
+   * SECURITY: NOT cached - mutations must always hit the server
    */
   async forgotPassword(email: string): Promise<MessageResponse> {
     // Early exit if invalid email
     if (!EMAIL_REGEX.test(email)) {
       throw new ApiError("Invalid email format", 400);
-    }
-
-    const cacheKey = createAuthCacheKey('forgot-password', { email });
-    const cached = requestCache.get(cacheKey);
-
-    if (cached) {
-      return cached;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
@@ -417,17 +369,14 @@ export const authApi = {
       body: JSON.stringify({ email }),
     });
 
-    const result = await handleResponse<MessageResponse>(response);
-
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
-    return result;
+    return await handleResponse<MessageResponse>(response);
   },
 
   /**
    * Reset password with token
    * POST /api/auth/reset-password
+   *
+   * SECURITY: NOT cached - mutations must always hit the server
    */
   async resetPassword(
     token: string,
@@ -442,13 +391,6 @@ export const authApi = {
       throw new ApiError("Password does not meet requirements", 400);
     }
 
-    const cacheKey = createAuthCacheKey('reset-password', { token, newPassword });
-    const cached = requestCache.get(cacheKey);
-
-    if (cached) {
-      return cached;
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
       method: "POST",
       headers: {
@@ -460,29 +402,19 @@ export const authApi = {
       }),
     });
 
-    const result = await handleResponse<MessageResponse>(response);
-
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
-    return result;
+    return await handleResponse<MessageResponse>(response);
   },
 
   /**
    * Enable 2FA for current user
    * POST /api/auth/2fa/enable
+   *
+   * SECURITY: NOT cached - mutations must always hit the server
    */
   async enable2FA(accessToken: string): Promise<Enable2FAResponse> {
     // Early exit if no access token
     if (!accessToken || accessToken.trim() === '') {
       throw new ApiError("Access token is required", 401);
-    }
-
-    const cacheKey = createAuthCacheKey('2fa/enable', { accessToken });
-    const cached = requestCache.get(cacheKey);
-
-    if (cached) {
-      return cached;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/2fa/enable`, {
@@ -493,17 +425,14 @@ export const authApi = {
       },
     });
 
-    const result = await handleResponse<Enable2FAResponse>(response);
-
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
-    return result;
+    return await handleResponse<Enable2FAResponse>(response);
   },
 
   /**
    * Verify 2FA code
    * POST /api/auth/2fa/verify
+   *
+   * SECURITY: NOT cached - mutations must always hit the server
    */
   async verify2FA(
     code: string,
@@ -518,13 +447,6 @@ export const authApi = {
       throw new ApiError("Access token is required", 401);
     }
 
-    const cacheKey = createAuthCacheKey('2fa/verify', { code, accessToken });
-    const cached = requestCache.get(cacheKey);
-
-    if (cached) {
-      return cached;
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/auth/2fa/verify`, {
       method: "POST",
       headers: {
@@ -534,29 +456,19 @@ export const authApi = {
       body: JSON.stringify({ code }),
     });
 
-    const result = await handleResponse<MessageResponse>(response);
-
-    // Clear 2FA cache after successful verification
-    requestCache.delete(cacheKey);
-
-    return result;
+    return await handleResponse<MessageResponse>(response);
   },
 
   /**
    * Disable 2FA for current user
    * POST /api/auth/2fa/disable
+   *
+   * SECURITY: NOT cached - mutations must always hit the server
    */
   async disable2FA(accessToken: string): Promise<MessageResponse> {
     // Early exit if no access token
     if (!accessToken || accessToken.trim() === '') {
       throw new ApiError("Access token is required", 401);
-    }
-
-    const cacheKey = createAuthCacheKey('2fa/disable', { accessToken });
-    const cached = requestCache.get(cacheKey);
-
-    if (cached) {
-      return cached;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/2fa/disable`, {
@@ -567,12 +479,7 @@ export const authApi = {
       },
     });
 
-    const result = await handleResponse<MessageResponse>(response);
-
-    // Clear 2FA cache after successful disable
-    requestCache.delete(cacheKey);
-
-    return result;
+    return await handleResponse<MessageResponse>(response);
   },
 
   /**
