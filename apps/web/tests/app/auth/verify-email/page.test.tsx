@@ -8,10 +8,11 @@
  * These tests verify the module exports correctly.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi} } from "vitest";
 
 // Import the page component to ensure it loads correctly
 import VerifyEmailPage from "@/app/auth/verify-email/page";
+import { metadata } from "@/app/auth/verify-email/page";
 import { metadata } from "@/app/auth/verify-email/page";
 
 // ============================================
@@ -35,7 +36,7 @@ describe("VerifyEmailPage", () => {
   describe("Component Type", () => {
     it("should be an async function", () => {
       // Async Server Components in Next.js are async functions
-      expect(VerifyEmailPage.constructor.name).toBe("AsyncFunction");
-    });
+      expect(VerifyEmailPage.constructor.name).toBe("AsyncFunction"); // @ts-ignore
+      // @ts-ignore
   });
 });
