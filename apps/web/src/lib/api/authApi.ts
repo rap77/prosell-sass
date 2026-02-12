@@ -66,21 +66,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 // IMPORTS & SETUP
 // ============================================
 
-import { apiCache, generateCacheKey, shouldCacheRequest } from '../cache/lru-cache';
-import { createAuthCacheKey, createUserCacheKey } from '../cache/cache-utils';
-import {
-  cacheFunction,
-  createLookupMap,
-  earlyExit,
-  immutableSort,
-  storageCache,
-  useMemoize,
-  createEventHandlerRef,
-  batchCSS,
-  createLookupSet,
-  withArrayLengthCheck,
-  hoistRegExp
-} from "@/lib/utils";
+import { apiCache, generateCacheKey } from '../cache/lru-cache';
+import { hoistRegExp } from "@/lib/utils";
 
 // Pre-compiled regular expressions for better performance
 const EMAIL_REGEX = hoistRegExp("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
@@ -89,11 +76,6 @@ const PASSWORD_REGEX = hoistRegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?
 // Module-level cache for frequent operations
 const requestCache = new Map<string, any>();
 const responseCache = new Map<string, any>();
-
-// Event handler ref for common operations
-const errorHandlerRef = createEventHandlerRef((error: any) => {
-  console.error('API Error:', error);
-});
 
 // ============================================
 // DEDUPLICATION UTILITIES
@@ -286,8 +268,6 @@ export const authApi = {
    * Cached with React.cache for deduplication
    */
   getCurrentUser: (() => {
-    const cacheKeyPrefix = 'user:current';
-
     return (accessToken: string): Promise<UserResponse> => {
       // Early exit if no access token
       if (!accessToken || accessToken.trim() === '') {

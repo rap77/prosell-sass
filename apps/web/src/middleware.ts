@@ -25,12 +25,6 @@ const cache = {
   // Cache for route matching patterns
   routeMatcher: new Map<string, boolean>(),
 
-  // Cache for parsed user data
-  userDataCache: new Map<string, any>(),
-
-  // Cache for route configuration lookups
-  routeConfig: new Map<string, boolean>(),
-
   // Cache for JSON parsing results
   jsonParseCache: new Map<string, any>(),
 };
@@ -40,13 +34,11 @@ const cache = {
  * Avoids regex compilation on every request
  */
 const matchRoute = (() => {
-  const patternCache = new Map<string, RegExp>();
-
   return (pathname: string, route: string): boolean => {
     // Check cache first
     const cacheKey = `${pathname}-${route}`;
     if (cache.routeMatcher.has(cacheKey)) {
-      return cache.routeMatcher.get(cacheKey) as boolean;
+      return cache.routeMatcher.get(cacheKey) === true;
     }
 
     // Check exact match first (faster)
@@ -71,7 +63,7 @@ const matchRoute = (() => {
 const memoizedJsonParse = (() => {
   const MAX_CACHE_SIZE = 50;
 
-  return (jsonString: string, fallback?: any) => {
+  return (jsonString: string, fallback?: unknown) => {
     // Check cache first
     if (cache.jsonParseCache.has(jsonString)) {
       return cache.jsonParseCache.get(jsonString);

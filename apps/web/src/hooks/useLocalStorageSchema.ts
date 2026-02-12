@@ -8,16 +8,16 @@
  */
 import { useState, useCallback, useEffect } from 'react';
 
-interface SchemaVersion {
+interface SchemaVersion<T = unknown> {
   version: string;
-  data: any;
+  data: T;
   timestamp: number;
 }
 
-interface Migration {
+interface Migration<TFrom = unknown, TTo = unknown> {
   from: string;
   to: string;
-  migrate: (data: any) => any;
+  migrate: (data: TFrom) => TTo;
 }
 
 /**
@@ -67,6 +67,7 @@ export class LocalStorageSchemaManager {
       const schema: SchemaVersion = JSON.parse(stored);
       return schema.version !== this.CURRENT_VERSION;
     } catch (error) {
+      // Client-side storage error: log for debugging but continue with migration
       console.warn('Failed to check schema version:', error);
       return true;
     }
@@ -117,6 +118,7 @@ export class LocalStorageSchemaManager {
 
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(migratedSchema));
     } catch (error) {
+      // Client-side storage error: log for debugging before throwing
       console.error('Failed to migrate storage:', error);
       throw error;
     }
@@ -192,6 +194,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       const item = localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
+      // Client-side storage error: log for debugging but return initial value
       console.warn(`Error reading localStorage key "${key}":`, error);
       return initialValue;
     }
@@ -206,6 +209,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
         localStorage.setItem(key, JSON.stringify(valueToStore));
       }
     } catch (error) {
+      // Client-side storage error: log for debugging but don't fail
       console.warn(`Error setting localStorage key "${key}":`, error);
     }
   }, [key, storedValue]);

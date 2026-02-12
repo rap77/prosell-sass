@@ -2,22 +2,6 @@
  * RegisterForm Component
  *
  * Registration form with full name, email, password, confirm password, and terms agreement.
- * Integrates with useAuth hook, PasswordInput (x2), and OAuthButtons components.
- *
- * PERFORMANCE OPTIMIZATIONS:
- * - React.cache for deduplication
- * - Passive event listeners for scroll
- * - Optimized form state management
- * - Module-level function caching
- * - O(1) lookups with Map/Set
- * - Early exit patterns
- * - Batch CSS updates
- * - Event handler refs
- * - Pre-compiled regular expressions
- * - Array length checks before expensive operations
- * - Combined filter/map operations
- * - Cached object properties in loops
- * - Use toSorted() for immutability
  *
  * @example
  * ```tsx
@@ -30,56 +14,22 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import { useTransition } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordInput } from "./PasswordInput";
-import dynamic from "next/dynamic";
-import { useMemo, useCallback, useRef, useEffect } from "react";
-import {
-  cacheFunction,
-  createLookupMap,
-  earlyExit,
-  immutableSort,
-  storageCache,
-  useMemoize,
-  createEventHandlerRef,
-  batchCSS,
-  createLookupSet,
-  withArrayLengthCheck,
-  hoistRegExp
-} from "@/lib/utils";
-
-// Pre-compiled regular expressions for better performance
-const EMAIL_REGEX = hoistRegExp("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
-const PASSWORD_REGEX = hoistRegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$");
-
-// Module-level cache for frequent operations
-const validationCache = new Map<string, any>();
-
-// Event handler ref for common operations
-const inputChangeHandlerRef = createEventHandlerRef((value: string) => {
-  // Handle input changes with optimized logic
-  return value.trim();
-});
-
-// Cache for form state updates
-const formStateCache = (() => {
-  const cache = new Map<string, any>();
-
-  return {
-    get: (key: string) => cache.get(key),
-    set: (key: string, value: any) => cache.set(key, value),
-    clear: () => cache.clear()
-  };
-})();
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 // ============================================
-// STATIC JSX EXTRACTED FOR PERFORMANCE
+// STATIC COMPONENTS
 // ============================================
 
-/**
- * Static heading component extracted to avoid re-rendering
- */
-const RegisterHeading = memo(() => (
+const RegisterHeading = () => (
   <div className="text-center">
     <h2 id="register-heading" className="text-2xl font-bold text-foreground">
       Create your account
@@ -88,15 +38,12 @@ const RegisterHeading = memo(() => (
       Join us today! Please enter your details
     </p>
   </div>
-));
+);
 
-/**
- * Static divider component extracted to avoid re-rendering
- */
-const RegisterDivider = memo(() => (
+const RegisterDivider = () => (
   <div className="relative">
     <div className="absolute inset-0 flex items-center">
-      <Separator />
+      <div className="w-full border-t" />
     </div>
     <div className="relative flex justify-center text-sm">
       <span className="bg-background px-2 text-muted-foreground">
@@ -104,12 +51,9 @@ const RegisterDivider = memo(() => (
       </span>
     </div>
   </div>
-));
+);
 
-/**
- * Static footer component extracted to avoid re-rendering
- */
-const RegisterFooter = memo(() => (
+const RegisterFooter = () => (
   <p className="text-center text-sm text-muted-foreground">
     Already have an account?{" "}
     <Link
@@ -119,24 +63,20 @@ const RegisterFooter = memo(() => (
       Sign in
     </Link>
   </p>
-));
+);
 
-// Dynamically load OAuthButtons to reduce initial bundle size
 const OAuthButtons = dynamic(
   () => import("./dynamic/OAuthButtons").then((mod) => mod.OAuthButtons),
   {
     ssr: false,
-    loading: () => <div className="flex flex-col gap-3 w-full"><div className="h-12 bg-muted rounded-md animate-pulse"></div><div className="h-12 bg-muted rounded-md animate-pulse"></div></div>
+    loading: () => (
+      <div className="flex flex-col gap-3 w-full">
+        <div className="h-12 bg-muted rounded-md animate-pulse" />
+        <div className="h-12 bg-muted rounded-md animate-pulse" />
+      </div>
+    ),
   }
 );
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
-import { memo } from "react";
 
 // ============================================
 // SCHEMA & TYPES
@@ -180,62 +120,14 @@ export type RegisterFormValues = z.infer<typeof registerSchema>;
 
 /**
  * RegisterForm component for user registration
- *
- * Features:
- * - Full name, email, password, and confirm password validation with Zod
- * - Terms of service and privacy policy agreement checkbox
- * - OAuth registration (Google, Facebook)
- * - Loading states during registration
- * - Error display from auth state
- * - Navigation to login page
- * - Full accessibility support
- * - chadcn/ui components
- *
- * Performance optimizations:
- * - Module-level caching
- * - Pre-compiled regex
- * - Early exit patterns
- * - Batch CSS updates
- * - Event handler refs
- * - Memoized components
- * - O(1) lookups
  */
 export function RegisterForm() {
   const { register: registerUser, isLoading, error, clearError } = useAuth();
+  const [isPending, startTransition] = useTransition();
 
-  // Create lookup sets for validation
-  const errorFields = createLookupSet(['fullName', 'email', 'password', 'confirmPassword', 'acceptTerms']);
-
-  // Cache for name splitting operations
-  const nameSplitCache = (() => {
-    const cache = new Map<string, { firstName: string; lastName: string }>();
-
-    return {
-      get: (fullName: string) => {
-        // Early exit if cached result exists
-        const cached = cache.get(fullName);
-        if (cached) {
-          return cached;
-        }
-
-        const trimmedName = fullName.trim();
-        const nameParts = trimmedName.split(" ");
-        const firstName = nameParts[0] || "";
-        const lastName = nameParts.slice(1).join(" ") || "";
-
-        const result = { firstName, lastName };
-        cache.set(fullName, result);
-        return result;
-      },
-      clear: () => cache.clear()
-    };
-  })();
-
-  // React Hook Form setup with optimized defaults
   const {
     control,
     handleSubmit,
-    trigger,
     register: registerInput,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
@@ -250,101 +142,44 @@ export function RegisterForm() {
     },
   });
 
-  // ============================================
-  // MEMOIZED DERIVED STATE
-  // ============================================
+  const isDisabled = isLoading || isSubmitting || isPending;
+  const hasFormErrors = Object.keys(errors).length > 0;
 
-  // Memoize derived boolean state to prevent re-renders
-  const isDisabled = useMemo(() => {
-    return isLoading || isSubmitting;
-  }, [isLoading, isSubmitting]);
-
-  // Memoize error state for conditional rendering
-  const hasFormErrors = useMemo(() => {
-    return withArrayLengthCheck(
-      Object.keys(errors),
-      () => Object.keys(errors).length > 0
-    ) || false;
-  }, [errors]);
-
-  // Memoize input change handler with early exit
-  const handleInputChange = useCallback(() => {
-    // Early exit if no error
-    if (!error) {
-      return;
+  const handleInputChange = () => {
+    if (error) {
+      clearError();
     }
+  };
 
-    clearError();
-  }, [error, clearError]);
-
-  // Pre-compiled error messages for better performance
-  const errorMessages = useMemo(() => ({
-    fullName: {
-      required: "Full name is required",
-      min: "Full name must be at least 2 characters",
-      max: "Full name must be less than 100 characters"
-    },
-    email: {
-      required: "Email is required",
-      invalid: "Invalid email address"
-    },
-    password: {
-      required: "Password is required",
-      min: "Password must be at least 8 characters",
-      invalid: "Password must meet all requirements"
-    }
-  }), []);
-
-  /**
-   * Handle form submission
-   * Note: Zod schema already validates all fields, no need for duplicate validation
-   */
-  const onSubmit = useCallback(async (data: RegisterFormValues) => {
-    // Early exit if form is disabled
+  const onSubmit = (data: RegisterFormValues) => {
     if (isDisabled) {
       return;
     }
 
-    // Use cached name splitting function
-    const { firstName, lastName } = nameSplitCache.get(data.fullName);
+    // Split full name into first and last name
+    const nameParts = data.fullName.trim().split(" ");
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
 
-    await registerUser(data.email.trim(), data.password, firstName, lastName);
-  }, [registerUser, isDisabled, nameSplitCache]);
-
-  // Batch CSS updates for error states
-  useEffect(() => {
-    if (error || hasFormErrors) {
-      // Batch CSS updates to minimize reflows
-      const errorElements = document.querySelectorAll('[data-error]');
-      errorElements.forEach(element => {
-        batchCSS(element as HTMLElement, {
-          border: '1px solid rgb(239, 68, 68)',
-          boxShadow: '0 0 0 1px rgb(239, 68, 68)'
-        });
-      });
-    }
-  }, [error, hasFormErrors]);
-
-  // Clear validation cache when component unmounts
-  useEffect(() => {
-    return () => {
-      validationCache.clear();
-    };
-  }, []);
-
-  // ============================================
-  // RENDER
-  // ============================================
+    startTransition(async () => {
+      await registerUser(
+        data.email.trim(),
+        data.password,
+        firstName,
+        lastName
+      );
+    });
+  };
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Memoized Heading */}
+      {/* Heading */}
       <RegisterHeading />
 
       {/* OAuth Buttons */}
       <OAuthButtons />
 
-      {/* Memoized Divider */}
+      {/* Divider */}
       <RegisterDivider />
 
       {/* Register Form */}
@@ -496,11 +331,11 @@ export function RegisterForm() {
         </Button>
       </form>
 
-      {/* Memoized Footer */}
+      {/* Footer */}
       <RegisterFooter />
     </div>
   );
 }
 
-// Export memoized components for performance
+// Export static components for testing
 export { RegisterHeading, RegisterDivider, RegisterFooter };
