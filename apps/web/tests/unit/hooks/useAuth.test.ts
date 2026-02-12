@@ -564,6 +564,7 @@ describe("useAuth Hook - Convenience Getters", () => {
         first_name: "Test",
         last_name: "User",
         role: "sales_agent",
+        is_email_verified: true,
         is_2fa_enabled: false,
       },
       tokens: {

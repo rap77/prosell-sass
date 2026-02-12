@@ -8,6 +8,24 @@ import { vi, beforeEach, afterEach, describe, it, expect } from "vitest";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
+// Helper type for test store state
+type TestStoreState = {
+  user: {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    role: string;
+    is_email_verified: boolean;
+    is_2fa_enabled: boolean;
+  } | null;
+  accessToken: string | null;
+  refreshTokenValue: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | { message: string } | null;
+};
+
 // Mock authApi module
 vi.mock("@/lib/api/authApi", () => ({
   authApi: {
@@ -31,7 +49,7 @@ import { authApi, ApiError } from "@/lib/api/authApi";
 // skipHydration prevents async hydration on mount, eliminating React act() warnings
 // We can still test persist functionality by verifying localStorage directly
 const createTestAuthStore = () =>
-  create<AuthState>()(
+  create()(
     persist(
       (set, get) => ({
     // Initial state
@@ -53,8 +71,8 @@ const createTestAuthStore = () =>
 
         set({
           user: response.user,
-          accessToken: response.tokens.access_token,
-          refreshTokenValue: response.tokens.refresh_token,
+          accessToken: response.tokens?.access_token,
+          refreshTokenValue: response.tokens?.refresh_token,
           isAuthenticated: true,
           isLoading: false,
           error: null,
@@ -92,8 +110,8 @@ const createTestAuthStore = () =>
 
         set({
           user: response.user,
-          accessToken: response.tokens.access_token,
-          refreshTokenValue: response.tokens.refresh_token,
+          accessToken: response.tokens?.access_token,
+          refreshTokenValue: response.tokens?.refresh_token,
           isAuthenticated: true,
           isLoading: false,
           error: null,
@@ -260,6 +278,8 @@ describe("authStore - Login Action", () => {
         first_name: "Test",
         last_name: "User",
         role: "sales_agent",
+        is_email_verified: true,
+        is_2fa_enabled: false,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -317,6 +337,8 @@ describe("authStore - Login Action", () => {
                 first_name: "Test",
                 last_name: "User",
                 role: "sales_agent",
+                is_email_verified: true,
+                is_2fa_enabled: false,
               },
               tokens: {
                 access_token: "mock-access-token",
@@ -348,6 +370,8 @@ describe("authStore - Register Action", () => {
         first_name: "New",
         last_name: "User",
         role: "sales_agent",
+        is_email_verified: false,
+        is_2fa_enabled: false,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -388,7 +412,8 @@ describe("authStore - Register Action", () => {
     expect(state.user).toBeNull();
     expect(state.isAuthenticated).toBe(false);
     expect(state.error).not.toBeNull();
-    expect(state.error?.message).toContain("ya existe");
+    const errorMessage = typeof state.error === "string" ? state.error : state.error?.message;
+    expect(errorMessage).toContain("ya existe");
   });
 });
 
@@ -402,6 +427,8 @@ describe("authStore - Logout Action", () => {
         first_name: "Test",
         last_name: "User",
         role: "sales_agent",
+        is_email_verified: true,
+        is_2fa_enabled: false,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -442,6 +469,8 @@ describe("authStore - Refresh Token Action", () => {
         first_name: "Test",
         last_name: "User",
         role: "sales_agent",
+        is_email_verified: true,
+        is_2fa_enabled: false,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -481,6 +510,8 @@ describe("authStore - Refresh Token Action", () => {
         first_name: "Test",
         last_name: "User",
         role: "sales_agent",
+        is_email_verified: true,
+        is_2fa_enabled: false,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -519,6 +550,8 @@ describe("authStore - Update User Action", () => {
         first_name: "Test",
         last_name: "User",
         role: "sales_agent",
+        is_email_verified: true,
+        is_2fa_enabled: false,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -579,6 +612,8 @@ describe("authStore - Persist Middleware", () => {
         first_name: "Persist",
         last_name: "User",
         role: "sales_agent",
+        is_email_verified: true,
+        is_2fa_enabled: false,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -634,7 +669,12 @@ describe("authStore - Persist Middleware", () => {
     await newStore.persist.rehydrate();
 
     // Assert: state hydrated from localStorage
-    const state = newStore.getState();
+    const state = newStore.getState() as {
+      user?: { email: string } | null;
+      isAuthenticated: boolean;
+      accessToken: string | null;
+      refreshTokenValue: string | null;
+    };
     expect(state.user?.email).toBe("hydrated@example.com");
     expect(state.isAuthenticated).toBe(true);
     expect(state.accessToken).toBe("stored-access-token");

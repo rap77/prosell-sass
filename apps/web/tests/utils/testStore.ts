@@ -67,8 +67,8 @@ export const useTestAuthStore = create<TestAuthState>((set, get) => ({
 
       set({
         user: response.user,
-        accessToken: response.tokens.access_token,
-        refreshTokenValue: response.tokens.refresh_token,
+        accessToken: response.tokens?.access_token,
+        refreshTokenValue: response.tokens?.refresh_token,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -101,8 +101,8 @@ export const useTestAuthStore = create<TestAuthState>((set, get) => ({
 
       set({
         user: response.user,
-        accessToken: response.tokens.access_token,
-        refreshTokenValue: response.tokens.refresh_token,
+        accessToken: response.tokens?.access_token,
+        refreshTokenValue: response.tokens?.refresh_token,
         isAuthenticated: true,
         isLoading: false,
         error: null,
