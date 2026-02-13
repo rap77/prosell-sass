@@ -13,7 +13,7 @@ class UserRegisteredEvent:
     user_id: UUID
     email: str
     full_name: str
-    timestamp: datetime
+    timestamp: datetime | None = None
     metadata: dict[str, Any] | None = None
 
     def __post_init__(self):
@@ -27,9 +27,9 @@ class UserLoggedInEvent:
 
     user_id: UUID
     email: str
-    ip_address: str | None
-    user_agent: str | None
-    timestamp: datetime
+    ip_address: str | None = None
+    user_agent: str | None = None
+    timestamp: datetime | None = None
     metadata: dict[str, Any] | None = None
 
     def __post_init__(self):
@@ -43,7 +43,7 @@ class UserEmailVerifiedEvent:
 
     user_id: UUID
     email: str
-    timestamp: datetime
+    timestamp: datetime | None = None
     metadata: dict[str, Any] | None = None
 
     def __post_init__(self):
@@ -57,7 +57,7 @@ class UserPasswordResetEvent:
 
     user_id: UUID
     email: str
-    timestamp: datetime
+    timestamp: datetime | None = None
     metadata: dict[str, Any] | None = None
 
     def __post_init__(self):
@@ -71,7 +71,7 @@ class User2FAEnabledEvent:
 
     user_id: UUID
     email: str
-    timestamp: datetime
+    timestamp: datetime | None = None
     metadata: dict[str, Any] | None = None
 
     def __post_init__(self):
@@ -85,7 +85,7 @@ class User2FADisabledEvent:
 
     user_id: UUID
     email: str
-    timestamp: datetime
+    timestamp: datetime | None = None
     metadata: dict[str, Any] | None = None
 
     def __post_init__(self):
@@ -99,9 +99,9 @@ class UserSessionCreatedEvent:
 
     user_id: UUID
     session_id: UUID
-    ip_address: str | None
-    user_agent: str | None
-    timestamp: datetime
+    ip_address: str | None = None
+    user_agent: str | None = None
+    timestamp: datetime | None = None
     metadata: dict[str, Any] | None = None
 
     def __post_init__(self):
