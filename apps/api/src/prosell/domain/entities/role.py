@@ -1,9 +1,8 @@
 """Role and Permission entities for RBAC."""
 
 from dataclasses import dataclass
-from datetime import UTC
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
 from uuid import UUID, uuid4
 
 
@@ -131,13 +130,12 @@ class Role:
     description: str | None
     is_system_role: bool
     tenant_id: UUID | None
-    created_at: Any
-    updated_at: Any
+    created_at: datetime | None
+    updated_at: datetime | None
 
     @classmethod
     def create_system_role(cls, role_type: RoleType) -> "Role":
         """Create a system role with default permissions."""
-        from datetime import datetime
 
         return cls(
             id=uuid4(),
@@ -158,7 +156,6 @@ class Role:
         tenant_id: UUID,
     ) -> "Role":
         """Create a custom role for an organization."""
-        from datetime import datetime
 
         return cls(
             id=uuid4(),
@@ -178,14 +175,3 @@ class Role:
     def has_permission(self, permission: Permission) -> bool:
         """Check if role has a specific permission."""
         return permission in self.get_permissions()
-
-
-@dataclass
-class Permission:
-    """Permission entity (for future custom permission support)."""
-
-    id: UUID
-    name: str
-    resource: str
-    action: str
-    description: str | None
