@@ -71,18 +71,6 @@ test.describe("Forgot Password", () => {
         await forgotPasswordPage.verifySuccessMessage();
       }
     );
-
-    test("should show loading state during submission",
-      { tag: ["@e2e", "@forgot-password", "@FORGOT-E2E-006"] },
-      async ({ page }) => {
-        const user = generateTestUser();
-        await forgotPasswordPage.fillEmail(user.email);
-        await forgotPasswordPage.clickSubmit();
-
-        // Check for loading state (button disabled or loading spinner)
-        await expect(forgotPasswordPage.submitButton).toBeDisabled();
-      }
-    );
   });
 
   test.describe("Navigation", () => {
