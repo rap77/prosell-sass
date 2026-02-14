@@ -93,3 +93,7 @@ apps/web/tsconfig.tsbuildinfo
 
 # Git Worktrees
 .worktrees/
+
+# Claude Code (local configuration, not shared)
+.agent/
+.claude/
