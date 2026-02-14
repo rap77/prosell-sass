@@ -501,7 +501,6 @@ class TestUserLoginTracking:
             full_name="Keep IP User",
         )
         user.update_last_login(ip="192.168.1.100")
-        original_ip = user.last_login_ip
         user.update_last_login()
         assert user.last_login_ip is None
 
@@ -543,24 +542,6 @@ class TestUserEdgeCases:
         assert user2.created_at > user1.created_at
         assert user2.updated_at > user1.updated_at
 
-    def test_user_factory_creates_unique_timestamps(self) -> None:
-        """Test that factory creates slightly different timestamps."""
-        import time
-
-        user1 = User.create(
-            email="time1@example.com",
-            password_hash="hash1",
-            full_name="User 1",
-        )
-        time.sleep(0.01)
-        user2 = User.create(
-            email="time2@example.com",
-            password_hash="hash2",
-            full_name="User 2",
-        )
-        assert user2.created_at > user1.created_at
-        assert user2.updated_at > user1.updated_at
-
     def test_oauth_user_can_login(self) -> None:
         """Test that OAuth users can login (verified, no password)."""
         user = User.create_oauth(
@@ -570,15 +551,6 @@ class TestUserEdgeCases:
         assert user.email_verified is True
         assert user.status == UserStatus.ACTIVE
         assert user.can_login() is True
-
-    def test_regular_user_has_password(self) -> None:
-        """Test that regular users have password_hash."""
-        user = User.create(
-            email="haspassword@example.com",
-            password_hash="hashed",
-            full_name="Has Password",
-        )
-        assert user.password_hash == "hashed"
 
     def test_regular_user_has_password(self) -> None:
         """Test that regular users have password_hash."""
