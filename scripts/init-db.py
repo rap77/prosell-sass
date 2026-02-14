@@ -5,6 +5,7 @@ import asyncio
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "apps" / "api" / "src"))
@@ -18,17 +19,15 @@ from prosell.infrastructure.database.session import async_session_maker, engine
 from prosell.infrastructure.models.role_model import RoleModel
 
 
-async def create_tables():
+async def create_tables() -> None:
     """Create all database tables."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     print("✅ Database tables created successfully")
 
 
-async def seed_roles(session: AsyncSession):
+async def seed_roles(session: AsyncSession) -> None:
     """Seed default system roles."""
-    from uuid import uuid4
-
     roles_to_create = [
         RoleModel(
             id=uuid4(),
@@ -56,7 +55,7 @@ async def seed_roles(session: AsyncSession):
     print(f"✅ Seeded {len(roles_to_create)} system roles")
 
 
-async def main():
+async def main() -> None:
     """Main initialization function."""
     print("🔧 Initializing ProSell SaaS database...")
 
