@@ -1,12 +1,14 @@
 """Role and Permission entities for RBAC."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from uuid import UUID, uuid4
 
 
-class RoleType(str, Enum):
+class RoleType(StrEnum):
     """System-defined role types."""
 
     SUPER_ADMIN = "super_admin"
@@ -17,7 +19,7 @@ class RoleType(str, Enum):
     VIEWER = "viewer"
 
 
-class Permission(str, Enum):
+class Permission(StrEnum):
     """System permissions."""
 
     # User management
@@ -33,10 +35,10 @@ class Permission(str, Enum):
     ROLE_DELETE = "role:delete"
 
     # Organization management
-    ORG_CREATE = "organization:create"
-    ORG_READ = "organization:read"
-    ORG_UPDATE = "organization:update"
-    ORG_DELETE = "organization:delete"
+    ORG_CREATE = "org:create"
+    ORG_READ = "org:read"
+    ORG_UPDATE = "org:update"
+    ORG_DELETE = "org:delete"
 
     # Vehicle listings
     VEHICLE_CREATE = "vehicle:create"
@@ -134,7 +136,7 @@ class Role:
     updated_at: datetime | None
 
     @classmethod
-    def create_system_role(cls, role_type: RoleType) -> "Role":
+    def create_system_role(cls, role_type: RoleType) -> Role:
         """Create a system role with default permissions."""
 
         return cls(
@@ -154,7 +156,7 @@ class Role:
         name: str,
         description: str | None,
         tenant_id: UUID,
-    ) -> "Role":
+    ) -> Role:
         """Create a custom role for an organization."""
 
         return cls(
