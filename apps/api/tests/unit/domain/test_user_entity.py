@@ -560,3 +560,6 @@ class TestUserEdgeCases:
             full_name="Has Password",
         )
         assert user.password_hash == "hashed"
+
+
+# test
