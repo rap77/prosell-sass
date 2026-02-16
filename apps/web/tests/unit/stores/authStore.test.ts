@@ -26,6 +26,7 @@ vi.mock("@/lib/api/authApi", () => ({
 }));
 
 import { authApi, ApiError } from "@/lib/api/authApi";
+import type { AuthState } from "@/stores/authStore";
 
 // Create a test store WITH persist middleware but skipHydration to avoid act() warnings
 // skipHydration prevents async hydration on mount, eliminating React act() warnings
@@ -50,6 +51,14 @@ const createTestAuthStore = () =>
           credentials.email,
           credentials.password
         );
+
+        if (!response.tokens) {
+          set({
+            isLoading: false,
+            error: { message: "No tokens received from server" },
+          });
+          return;
+        }
 
         set({
           user: response.user,
@@ -89,6 +98,14 @@ const createTestAuthStore = () =>
           data.first_name,
           data.last_name
         );
+
+        if (!response.tokens) {
+          set({
+            isLoading: false,
+            error: { message: "No tokens received from server" },
+          });
+          return;
+        }
 
         set({
           user: response.user,
@@ -249,7 +266,8 @@ describe("authStore - Login Action", () => {
         email: "test@example.com",
         first_name: "Test",
         last_name: "User",
-        role: "sales_agent",
+        role: "$1",
+        is_email_verified: true,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -306,8 +324,9 @@ describe("authStore - Login Action", () => {
                 email: "test@example.com",
                 first_name: "Test",
                 last_name: "User",
-                role: "sales_agent",
-              },
+                role: "$1",
+        is_email_verified: true,
+      },
               tokens: {
                 access_token: "mock-access-token",
                 refresh_token: "mock-refresh-token",
@@ -337,7 +356,8 @@ describe("authStore - Register Action", () => {
         email: "new@example.com",
         first_name: "New",
         last_name: "User",
-        role: "sales_agent",
+        role: "$1",
+        is_email_verified: true,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -391,7 +411,8 @@ describe("authStore - Logout Action", () => {
         email: "test@example.com",
         first_name: "Test",
         last_name: "User",
-        role: "sales_agent",
+        role: "$1",
+        is_email_verified: true,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -431,7 +452,8 @@ describe("authStore - Refresh Token Action", () => {
         email: "test@example.com",
         first_name: "Test",
         last_name: "User",
-        role: "sales_agent",
+        role: "$1",
+        is_email_verified: true,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -470,7 +492,8 @@ describe("authStore - Refresh Token Action", () => {
         email: "test@example.com",
         first_name: "Test",
         last_name: "User",
-        role: "sales_agent",
+        role: "$1",
+        is_email_verified: true,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -508,7 +531,8 @@ describe("authStore - Update User Action", () => {
         email: "test@example.com",
         first_name: "Test",
         last_name: "User",
-        role: "sales_agent",
+        role: "$1",
+        is_email_verified: true,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -568,7 +592,8 @@ describe("authStore - Persist Middleware", () => {
         email: "persist@example.com",
         first_name: "Persist",
         last_name: "User",
-        role: "sales_agent",
+        role: "$1",
+        is_email_verified: true,
       },
       tokens: {
         access_token: "mock-access-token",
@@ -603,8 +628,9 @@ describe("authStore - Persist Middleware", () => {
           email: "hydrated@example.com",
           first_name: "Hydrated",
           last_name: "User",
-          role: "sales_agent",
-        },
+          role: "$1",
+        is_email_verified: true,
+      },
         accessToken: "stored-access-token",
         refreshTokenValue: "stored-refresh-token",
         isAuthenticated: true,

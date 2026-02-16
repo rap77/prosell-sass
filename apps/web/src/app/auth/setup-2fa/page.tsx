@@ -1,54 +1,28 @@
 /**
  * 2FA Setup Page
  *
- * Server Component that renders the TwoFactorSetupForm.
+ * Server Component that checks authentication and renders Setup2FAPageContent.
  * Users can enable or disable two-factor authentication from this page.
- *
- * NOTE: Route protection will be added in Task #15
  */
 
-import Link from "next/link";
-import { Suspense } from "react";
-import dynamic from "next/dynamic";
-import { TwoFactorSetupSkeleton } from "@/components/auth/dynamic/TwoFactorSetupForm";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { Setup2FAPageContent } from "./Setup2FAPageContent";
 
-// Dynamically load the TwoFactorSetupForm component
-const TwoFactorSetupForm = dynamic(
-  () => import("@/components/auth/dynamic/TwoFactorSetupForm").then((mod) => mod.TwoFactorSetupForm),
-  {
-    ssr: false,
-    loading: () => <TwoFactorSetupSkeleton />
+export default async function Setup2FAPage() {
+  // Server-side authentication check (defense in depth)
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get("access_token")?.value;
+  const userDataCookie = cookieStore.get("user_data")?.value;
+
+  // User must be authenticated to access 2FA setup
+  if (!accessToken || !userDataCookie) {
+    redirect("/auth/login?redirect=/auth/setup-2fa");
   }
-);
 
-export default function Setup2FAPage() {
   // For now, default to false (2FA not enabled)
   // In Task #15, we'll get this from server session
   const is2FAEnabled = false;
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo/Brand */}
-        <div className="text-center mb-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-slate-100"
-          >
-            <svg
-              className="w-8 h-8 text-blue-600"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-            <span>ProSell</span>
-          </Link>
-        </div>
-
-        {/* TwoFactorSetupForm */}
-        <TwoFactorSetupForm is2FAEnabled={is2FAEnabled} />
-      </div>
-    </div>
-  );
+  return <Setup2FAPageContent is2FAEnabled={is2FAEnabled} />;
 }
