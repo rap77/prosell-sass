@@ -5,10 +5,10 @@
  * The async server page (page.tsx) handles auth redirect and renders this.
  */
 
+"use client";
+
 import Link from "next/link";
-import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
-import { OAuthButtonsSkeleton } from "@/components/auth/dynamic/OAuthButtons";
 
 export function LoginPageContent() {
   return (
@@ -34,9 +34,7 @@ export function LoginPageContent() {
 
         {/* Login Form Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700">
-          <Suspense fallback={<div className="py-12 text-center"><div className="h-8 bg-muted rounded-lg animate-pulse mx-auto w-32"></div></div>}>
-            <LoginForm />
-          </Suspense>
+          <LoginForm />
         </div>
 
         {/* Footer */}
