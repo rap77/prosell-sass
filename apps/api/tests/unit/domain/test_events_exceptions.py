@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
+from pydantic import ValidationError
 
 from prosell.domain.events.user_events import (
     User2FADisabledEvent,
@@ -96,7 +97,10 @@ class TestUserRegisteredEvent:
             full_name="Test User",
         )
 
-        with pytest.raises((TypeError, AttributeError)):  # frozen.dataclass raises on modification
+        with pytest.raises(
+            ValidationError,
+            match="Instance is frozen",
+        ):  # Pydantic frozen raises ValidationError
             event.email = "modified@example.com"
 
 

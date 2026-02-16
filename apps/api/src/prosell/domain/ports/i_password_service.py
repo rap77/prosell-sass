@@ -1,9 +1,9 @@
 """Password service interface (port) for secondary actor."""
 
-from abc import ABC, abstractmethod
+from typing import Protocol
 
 
-class IPasswordService(ABC):
+class IPasswordService(Protocol):
     """
     Interface for password hashing and verification.
 
@@ -12,7 +12,6 @@ class IPasswordService(ABC):
     not on the concrete implementation.
     """
 
-    @abstractmethod
     def hash_password(self, password: str) -> str:
         """
         Hash password.
@@ -23,9 +22,8 @@ class IPasswordService(ABC):
         Returns:
             Hashed password
         """
-        pass
+        ...
 
-    @abstractmethod
     def verify_password(self, password: str, hashed: str) -> bool:
         """
         Verify password against hash.
@@ -37,9 +35,8 @@ class IPasswordService(ABC):
         Returns:
             True if password matches hash
         """
-        pass
+        ...
 
-    @abstractmethod
     def validate_password_strength(self, password: str) -> list[str]:
         """
         Validate password strength requirements.
@@ -50,4 +47,4 @@ class IPasswordService(ABC):
         Returns:
             List of validation errors (empty if valid)
         """
-        pass
+        ...

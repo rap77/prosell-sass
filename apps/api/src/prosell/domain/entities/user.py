@@ -1,25 +1,40 @@
 """User entity - Pure domain logic with no external dependencies."""
 
-from dataclasses import dataclass
+from __future__ import annotations
+
 from datetime import UTC, datetime, timedelta
-from enum import Enum
-from typing import TYPE_CHECKING
+from enum import StrEnum
 from uuid import UUID, uuid4
 
-if TYPE_CHECKING:
-    from prosell.domain.entities.role import Role
+from pydantic import Field
+
+from prosell.domain.base import DomainModel
+
+# Import Role for Pydantic forward reference evaluation
+# TODO: Avoid circular import by using string annotations
+from prosell.domain.entities.role import Role
 
 
-class UserStatus(str, Enum):
+class UserStatus(StrEnum):
     """User account status enum."""
 
     PENDING_VERIFICATION = "pending_verification"
     ACTIVE = "active"
     SUSPENDED = "suspended"
 
+    def is_active(self) -> bool:
+        """Check if status is active."""
+        return self == UserStatus.ACTIVE
 
-@dataclass
-class User:
+    def can_login(self) -> bool:
+        """Check if user with this status can login."""
+        return self == UserStatus.ACTIVE
+
+    def __str__(self) -> str:
+        return self.value
+
+
+class User(DomainModel):
     """
     User entity.
 
@@ -27,27 +42,30 @@ class User:
     All business rules for users live here.
     """
 
+    # Required fields
     id: UUID
-    email: str
-    password_hash: str | None  # None for OAuth-only users
-    full_name: str
-    avatar_url: str | None
-    status: UserStatus
-    email_verified: bool
-    email_verified_at: datetime | None
-    is_2fa_enabled: bool
-    totp_secret: str | None
-    backup_codes: list[str] | None
-    last_login_at: datetime | None
-    last_login_ip: str | None
-    failed_login_attempts: int
-    locked_until: datetime | None
-    tenant_id: UUID | None
-    created_at: datetime
-    updated_at: datetime
+    email: str = Field(..., min_length=1)
+    full_name: str = Field(..., min_length=1, max_length=100)
+
+    # Optional fields with defaults (must come after required)
+    password_hash: str | None = None  # None for OAuth-only users
+    avatar_url: str | None = None
+    status: UserStatus = UserStatus.PENDING_VERIFICATION
+    email_verified: bool = False
+    email_verified_at: datetime | None = None
+    is_2fa_enabled: bool = False
+    totp_secret: str | None = None
+    backup_codes: list[str] | None = None
+    last_login_at: datetime | None = None
+    last_login_ip: str | None = None
+    failed_login_attempts: int = 0
+    locked_until: datetime | None = None
+    tenant_id: UUID | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Lazy loaded relationships (not in __init__)
-    roles: list["Role"] | None = None
+    roles: list[Role] | None = None
 
     @classmethod
     def create(
@@ -55,7 +73,7 @@ class User:
         email: str,
         password_hash: str,
         full_name: str,
-    ) -> "User":
+    ) -> User:
         """
         Factory method for new user registration.
 
@@ -89,7 +107,7 @@ class User:
         email: str,
         full_name: str,
         avatar_url: str | None = None,
-    ) -> "User":
+    ) -> User:
         """
         Factory method for OAuth user registration.
 

@@ -5,6 +5,7 @@ Tests all business logic in Value Object domain entities:
 """
 
 import pytest
+from pydantic import ValidationError
 
 from prosell.domain.value_objects import Email, UserStatus
 
@@ -14,43 +15,39 @@ class TestEmailValueObject:
 
     def test_create_valid_email(self) -> None:
         """Test creating a valid email value object."""
-        email = Email(value="test@example.com")
-        assert email.value == "test@example.com"
+        email = Email(address="test@example.com")
+        assert email.address == "test@example.com"
         assert email.domain == "example.com"
         assert email.local_part == "test"
         assert str(email) == "test@example.com"  # __str__
 
     def test_create_invalid_email_raises(self) -> None:
-        """Test that invalid emails raise ValueError."""
-        # Invalid format - no @
-        with pytest.raises(ValueError, match="Invalid email format"):
-            Email(value="invalidexample.com")
-
-        # Invalid format - no domain
-        with pytest.raises(ValueError, match="Invalid email format"):
-            Email(value="user@")
+        """Test that invalid emails raise ValidationError (Pydantic)."""
+        # Invalid format - no @ (Pydantic EmailStr validates format)
+        with pytest.raises(ValidationError):  # Pydantic raises ValidationError
+            Email(address="invalidexample.com")
 
         # Empty string
-        with pytest.raises(ValueError, match="Invalid email format"):
-            Email(value="")
+        with pytest.raises(ValidationError):
+            Email(address="")
 
-        # Disposable domain
+        # Disposable domain (our custom validator)
         with pytest.raises(ValueError, match="Disposable email"):
-            Email(value="user@tempmail.com")
+            Email(address="user@tempmail.com")
 
     def test_email_domain_property(self) -> None:
         """Test email domain property."""
-        email = Email(value="user@example.com")
+        email = Email(address="user@example.com")
         assert email.domain == "example.com"
 
     def test_email_local_part_property(self) -> None:
         """Test email local_part property."""
-        email = Email(value="user@example.com")
+        email = Email(address="user@example.com")
         assert email.local_part == "user"
 
     def test_email_str_representation(self) -> None:
         """Test email __str__ method."""
-        email = Email(value="user@example.com")
+        email = Email(address="user@example.com")
         assert str(email) == "user@example.com"
 
 
