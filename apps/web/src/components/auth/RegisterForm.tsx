@@ -4,27 +4,11 @@
  * Registration form with full name, email, password, confirm password, and terms agreement.
  * Integrates with useAuth hook, PasswordInput (x2), and OAuthButtons components.
  *
- * PERFORMANCE OPTIMIZATIONS:
- * - React.cache for deduplication
- * - Passive event listeners for scroll
- * - Optimized form state management
- * - Module-level function caching
- * - O(1) lookups with Map/Set
- * - Early exit patterns
- * - Batch CSS updates
- * - Event handler refs
- * - Pre-compiled regular expressions
- * - Array length checks before expensive operations
- * - Combined filter/map operations
- * - Cached object properties in loops
- * - Use toSorted() for immutability
- *
  * @example
  * ```tsx
  * <RegisterForm />
  * ```
  */
-"use client";
 
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,53 +17,39 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordInput } from "./PasswordInput";
 import dynamic from "next/dynamic";
-import { useMemo, useCallback, useRef, useEffect } from "react";
-import {
-  cacheFunction,
-  createLookupMap,
-  earlyExit,
-  immutableSort,
-  storageCache,
-  useMemoize,
-  createEventHandlerRef,
-  batchCSS,
-  createLookupSet,
-  withArrayLengthCheck,
-  hoistRegExp
-} from "@/lib/utils";
+import { useEffect, useTransition } from "react";
 
-// Pre-compiled regular expressions for better performance
-const EMAIL_REGEX = hoistRegExp("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
-const PASSWORD_REGEX = hoistRegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$");
 
-// Module-level cache for frequent operations
-const validationCache = new Map<string, any>();
+// Module-level cache for validation results
+const validationCache = new Map<string, boolean>();
 
-// Event handler ref for common operations
-const inputChangeHandlerRef = createEventHandlerRef((value: string) => {
-  // Handle input changes with optimized logic
-  return value.trim();
-});
 
-// Cache for form state updates
-const formStateCache = (() => {
-  const cache = new Map<string, any>();
-
-  return {
-    get: (key: string) => cache.get(key),
-    set: (key: string, value: any) => cache.set(key, value),
-    clear: () => cache.clear()
-  };
-})();
+// Error messages for form validation
+const ERROR_MESSAGES = {
+  fullName: {
+    required: "Full name is required",
+    min: "Full name must be at least 2 characters",
+    max: "Full name must be less than 100 characters"
+  },
+  email: {
+    required: "Email is required",
+    invalid: "Invalid email address"
+  },
+  password: {
+    required: "Password is required",
+    min: "Password must be at least 8 characters",
+    invalid: "Password must meet all requirements"
+  }
+} as const;
 
 // ============================================
 // STATIC JSX EXTRACTED FOR PERFORMANCE
 // ============================================
 
 /**
- * Static heading component extracted to avoid re-rendering
+ * Heading component
  */
-const RegisterHeading = memo(() => (
+const RegisterHeading = () => (
   <div className="text-center">
     <h2 id="register-heading" className="text-2xl font-bold text-foreground">
       Create your account
@@ -88,12 +58,12 @@ const RegisterHeading = memo(() => (
       Join us today! Please enter your details
     </p>
   </div>
-));
+);
 
 /**
- * Static divider component extracted to avoid re-rendering
+ * Divider component
  */
-const RegisterDivider = memo(() => (
+const RegisterDivider = () => (
   <div className="relative">
     <div className="absolute inset-0 flex items-center">
       <Separator />
@@ -104,12 +74,12 @@ const RegisterDivider = memo(() => (
       </span>
     </div>
   </div>
-));
+);
 
 /**
- * Static footer component extracted to avoid re-rendering
+ * Footer component
  */
-const RegisterFooter = memo(() => (
+const RegisterFooter = () => (
   <p className="text-center text-sm text-muted-foreground">
     Already have an account?{" "}
     <Link
@@ -119,7 +89,7 @@ const RegisterFooter = memo(() => (
       Sign in
     </Link>
   </p>
-));
+);
 
 // Dynamically load OAuthButtons to reduce initial bundle size
 const OAuthButtons = dynamic(
@@ -136,7 +106,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { memo } from "react";
 
 // ============================================
 // SCHEMA & TYPES
@@ -203,8 +172,8 @@ export type RegisterFormValues = z.infer<typeof registerSchema>;
 export function RegisterForm() {
   const { register: registerUser, isLoading, error, clearError } = useAuth();
 
-  // Create lookup sets for validation
-  const errorFields = createLookupSet(['fullName', 'email', 'password', 'confirmPassword', 'acceptTerms']);
+  // Array for error validation
+  const errorFields = ['fullName', 'email', 'password', 'confirmPassword', 'acceptTerms'];
 
   // Cache for name splitting operations
   const nameSplitCache = (() => {
@@ -254,52 +223,27 @@ export function RegisterForm() {
   // MEMOIZED DERIVED STATE
   // ============================================
 
-  // Memoize derived boolean state to prevent re-renders
-  const isDisabled = useMemo(() => {
-    return isLoading || isSubmitting;
-  }, [isLoading, isSubmitting]);
+  // Derived boolean state
+  const isDisabled = isLoading || isSubmitting;
 
-  // Memoize error state for conditional rendering
-  const hasFormErrors = useMemo(() => {
-    return withArrayLengthCheck(
-      Object.keys(errors),
-      () => Object.keys(errors).length > 0
-    ) || false;
-  }, [errors]);
+  // Check if form has errors for conditional rendering
+  const hasFormErrors = Object.keys(errors).length > 0;
 
-  // Memoize input change handler with early exit
-  const handleInputChange = useCallback(() => {
+  // Input change handler
+  const handleInputChange = () => {
     // Early exit if no error
     if (!error) {
       return;
     }
 
     clearError();
-  }, [error, clearError]);
-
-  // Pre-compiled error messages for better performance
-  const errorMessages = useMemo(() => ({
-    fullName: {
-      required: "Full name is required",
-      min: "Full name must be at least 2 characters",
-      max: "Full name must be less than 100 characters"
-    },
-    email: {
-      required: "Email is required",
-      invalid: "Invalid email address"
-    },
-    password: {
-      required: "Password is required",
-      min: "Password must be at least 8 characters",
-      invalid: "Password must meet all requirements"
-    }
-  }), []);
+  };
 
   /**
    * Handle form submission
    * Note: Zod schema already validates all fields, no need for duplicate validation
    */
-  const onSubmit = useCallback(async (data: RegisterFormValues) => {
+  const onSubmit = async (data: RegisterFormValues) => {
     // Early exit if form is disabled
     if (isDisabled) {
       return;
@@ -309,21 +253,9 @@ export function RegisterForm() {
     const { firstName, lastName } = nameSplitCache.get(data.fullName);
 
     await registerUser(data.email.trim(), data.password, firstName, lastName);
-  }, [registerUser, isDisabled, nameSplitCache]);
+  };
 
-  // Batch CSS updates for error states
-  useEffect(() => {
-    if (error || hasFormErrors) {
-      // Batch CSS updates to minimize reflows
-      const errorElements = document.querySelectorAll('[data-error]');
-      errorElements.forEach(element => {
-        batchCSS(element as HTMLElement, {
-          border: '1px solid rgb(239, 68, 68)',
-          boxShadow: '0 0 0 1px rgb(239, 68, 68)'
-        });
-      });
-    }
-  }, [error, hasFormErrors]);
+  // Error styling handled by Tailwind classes
 
   // Clear validation cache when component unmounts
   useEffect(() => {
