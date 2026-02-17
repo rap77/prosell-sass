@@ -3,6 +3,16 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   reactCompiler: true,
+
+  // Bundle size optimization: Optimize imports from packages with barrel files
+  // This prevents the bundler from loading the entire barrel file when importing specific exports
+  // See: https://vercel.com/blog/how-we-optimized-package-imports-in-next-js
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react', // Icon library used in chadcn/ui components
+      '@/components/icons', // Local icon components with barrel file
+    ],
+  },
 };
 
 export default nextConfig;
