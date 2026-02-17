@@ -9,7 +9,7 @@
  * @see https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts
  */
 
-import { cookies } from "next/headers";
+import { checkAuthServer } from "@/lib/auth/server-check";
 import { redirect } from "next/navigation";
 import { RegisterPageContent } from "./RegisterPageContent";
 
@@ -42,13 +42,13 @@ export const metadata = {
  * @returns The register page content or redirect to dashboard
  */
 export default async function RegisterPage() {
-  // Server-side authentication check (defense in depth)
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get("access_token")?.value;
-  const userDataCookie = cookieStore.get("user_data")?.value;
+  // Server-side authentication check (cached per request with React.cache)
+  // Vercel best practice: authenticate at the page level, not just middleware
+  const auth = await checkAuthServer();
 
   // If user is authenticated, redirect to dashboard
-  if (accessToken && userDataCookie) {
+  // This prevents flash of register page and improves perceived performance
+  if (auth.isAuthenticated) {
     redirect("/dashboard");
   }
 

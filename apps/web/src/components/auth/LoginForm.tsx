@@ -115,7 +115,7 @@ export function LoginForm() {
   const { login, isLoading, error, clearError } = useAuth();
   const [isPending, startTransition] = useTransition();
 
-  
+
   // React Hook Form setup with deduplication
   const {
     register,
@@ -151,7 +151,7 @@ export function LoginForm() {
     clearError();
   };
 
-  
+
   /**
    * Handle form submission with deduplication and early exit
    */
@@ -161,8 +161,8 @@ export function LoginForm() {
       return;
     }
 
-    
-  
+
+
     // Use transition for non-urgent state updates
     startTransition(async () => {
       await login(data.email, data.password);

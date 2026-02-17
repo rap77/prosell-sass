@@ -9,7 +9,7 @@
  * @see https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts
  */
 
-import { cookies } from "next/headers";
+import { checkAuthServer } from "@/lib/auth/server-check";
 import { redirect } from "next/navigation";
 import { LoginPageContent } from "./LoginPageContent";
 
@@ -42,15 +42,13 @@ export const metadata = {
  * @returns The login page content or redirect to dashboard
  */
 export default async function LoginPage() {
-  // Server-side authentication check (defense in depth)
+  // Server-side authentication check (cached per request with React.cache)
   // Vercel best practice: authenticate at the page level, not just middleware
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get("access_token")?.value;
-  const userDataCookie = cookieStore.get("user_data")?.value;
+  const auth = await checkAuthServer();
 
   // If user is authenticated, redirect to dashboard
   // This prevents flash of login page and improves perceived performance
-  if (accessToken && userDataCookie) {
+  if (auth.isAuthenticated) {
     redirect("/dashboard");
   }
 
