@@ -1,9 +1,9 @@
 """TOTP service interface (port) for secondary actor."""
 
-from abc import ABC, abstractmethod
+from typing import Protocol
 
 
-class ITOTPService(ABC):
+class ITOTPService(Protocol):
     """
     Interface for TOTP (Time-based One-Time Password) generation and verification.
 
@@ -12,7 +12,6 @@ class ITOTPService(ABC):
     not on the concrete implementation.
     """
 
-    @abstractmethod
     def generate_secret(self) -> str:
         """
         Generate a new TOTP secret.
@@ -20,9 +19,8 @@ class ITOTPService(ABC):
         Returns:
             Base32-encoded secret key
         """
-        pass
+        ...
 
-    @abstractmethod
     def generate_qr_code_uri(self, email: str, secret: str) -> str:
         """
         Generate QR code URI for authenticator apps.
@@ -34,9 +32,8 @@ class ITOTPService(ABC):
         Returns:
             otpauth:// URI for QR code generation
         """
-        pass
+        ...
 
-    @abstractmethod
     def generate_backup_codes(self, count: int = 10) -> list[str]:
         """
         Generate backup codes for 2FA.
@@ -47,9 +44,8 @@ class ITOTPService(ABC):
         Returns:
             List of backup codes
         """
-        pass
+        ...
 
-    @abstractmethod
     def verify_code(self, secret: str, code: str) -> bool:
         """
         Verify TOTP code.
@@ -61,4 +57,4 @@ class ITOTPService(ABC):
         Returns:
             True if code is valid
         """
-        pass
+        ...

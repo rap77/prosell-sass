@@ -8,7 +8,7 @@
 
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import LoginPage from "@/app/auth/login/page";
+import { LoginPageContent } from "@/app/auth/login/LoginPageContent";
 
 // ============================================
 // MOCKS
@@ -26,7 +26,7 @@ vi.mock("@/components/auth/LoginForm", () => ({
 describe("LoginPage", () => {
   describe("Rendering", () => {
     it("should render the login page with all main elements", () => {
-      render(<LoginPage />);
+      render(<LoginPageContent />);
 
       // Logo/Brand
       const logo = screen.getByRole("link", { name: /prosell/i });
@@ -42,7 +42,7 @@ describe("LoginPage", () => {
     });
 
     it("should render logo with correct styling and link", () => {
-      render(<LoginPage />);
+      render(<LoginPageContent />);
 
       const logo = screen.getByRole("link", { name: /prosell/i });
       expect(logo).toHaveClass(
@@ -56,7 +56,7 @@ describe("LoginPage", () => {
     });
 
     it("should render LoginForm component inside a card", () => {
-      render(<LoginPage />);
+      render(<LoginPageContent />);
 
       const formCard = screen.getByTestId("login-form").parentElement;
       expect(formCard).toHaveClass(
@@ -70,7 +70,7 @@ describe("LoginPage", () => {
     });
 
     it("should render footer with Terms and Privacy links", () => {
-      render(<LoginPage />);
+      render(<LoginPageContent />);
 
       const termsLink = screen.getByRole("link", { name: /terms of service/i });
       const privacyLink = screen.getByRole("link", { name: /privacy policy/i });
@@ -85,7 +85,7 @@ describe("LoginPage", () => {
 
   describe("Layout and Styling", () => {
     it("should render with full-page gradient background", () => {
-      const { container } = render(<LoginPage />);
+      const { container } = render(<LoginPageContent />);
 
       const mainContainer = container.firstChild as HTMLElement;
       expect(mainContainer).toHaveClass(
@@ -98,7 +98,7 @@ describe("LoginPage", () => {
     });
 
     it("should center content in a max-width container", () => {
-      const { container } = render(<LoginPage />);
+      const { container } = render(<LoginPageContent />);
 
       const centerContainer = container.querySelector(".max-w-md");
       expect(centerContainer).toBeInTheDocument();
@@ -108,7 +108,7 @@ describe("LoginPage", () => {
 
   describe("Accessibility", () => {
     it("should have proper heading structure", () => {
-      render(<LoginPage />);
+      render(<LoginPageContent />);
 
       // The page itself doesn't have h1/h2, those are inside LoginForm
       // This test documents that decision
@@ -117,7 +117,7 @@ describe("LoginPage", () => {
     });
 
     it("should have accessible links with proper labels", () => {
-      render(<LoginPage />);
+      render(<LoginPageContent />);
 
       // Logo link
       expect(screen.getByRole("link", { name: /prosell/i })).toBeInTheDocument();

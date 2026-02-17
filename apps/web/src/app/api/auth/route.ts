@@ -4,12 +4,16 @@
  * This route handler provides the current authentication state
  * from server-side cookies, solving the hydration mismatch issue.
  *
+ * Server-Side Performance: Uses after() for non-blocking error logging
+ *
  * GET /api/auth/state - Returns current auth state
  * DELETE /api/auth/state - Clears auth state (logout)
  */
 
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { after } from "next/server";
+import { logger } from "@/lib/logger";
 
 // ============================================
 // TYPES
@@ -51,7 +55,10 @@ export async function GET(): Promise<NextResponse<AuthStateResponse>> {
     try {
       user = JSON.parse(userDataStr);
     } catch (error) {
-      console.error("Failed to parse user data:", error);
+      // Non-blocking error logging with after() - doesn't delay response
+      after(() => {
+        logger.error("Failed to parse user data", error);
+      });
       return NextResponse.json({
         isAuthenticated: false,
       });
@@ -63,7 +70,10 @@ export async function GET(): Promise<NextResponse<AuthStateResponse>> {
       accessToken,
     });
   } catch (error) {
-    console.error("Error getting auth state:", error);
+    // Non-blocking error logging with after() - doesn't delay response
+    after(() => {
+      logger.error("Error getting auth state", error);
+    });
     return NextResponse.json({
       isAuthenticated: false,
     });
@@ -83,7 +93,10 @@ export async function DELETE(): Promise<NextResponse<{ success: boolean }>> {
       success: true,
     });
   } catch (error) {
-    console.error("Error clearing auth state:", error);
+    // Non-blocking error logging with after() - doesn't delay response
+    after(() => {
+      logger.error("Error clearing auth state", error);
+    });
     return NextResponse.json({
       success: false,
     });

@@ -1,10 +1,10 @@
 """JWT service interface (port) for secondary actor."""
 
-from abc import ABC, abstractmethod
+from typing import Protocol
 from uuid import UUID
 
 
-class IJWTService(ABC):
+class IJWTService(Protocol):
     """
     Interface for JWT token generation and verification.
 
@@ -13,7 +13,6 @@ class IJWTService(ABC):
     not on the concrete implementation.
     """
 
-    @abstractmethod
     def generate_access_token(
         self,
         user_id: UUID,
@@ -29,9 +28,8 @@ class IJWTService(ABC):
         Returns:
             Encoded JWT access token
         """
-        pass
+        ...
 
-    @abstractmethod
     def generate_refresh_token(self, user_id: UUID) -> str:
         """
         Generate JWT refresh token.
@@ -42,9 +40,8 @@ class IJWTService(ABC):
         Returns:
             Encoded JWT refresh token
         """
-        pass
+        ...
 
-    @abstractmethod
     def verify_token(self, token: str) -> dict:
         """
         Verify and decode JWT token.
@@ -58,9 +55,8 @@ class IJWTService(ABC):
         Raises:
             ValueError: If token is invalid or expired
         """
-        pass
+        ...
 
-    @abstractmethod
     def decode_token_without_verification(self, token: str) -> dict:
         """
         Decode token without verification (for debugging).
@@ -71,4 +67,4 @@ class IJWTService(ABC):
         Returns:
             Decoded token payload
         """
-        pass
+        ...

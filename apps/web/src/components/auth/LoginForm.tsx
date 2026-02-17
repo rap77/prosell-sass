@@ -4,27 +4,11 @@
  * Login form with email/password, OAuth options, remember me, and form validation.
  * Integrates with useAuth hook, PasswordInput, and OAuthButtons components.
  *
- * PERFORMANCE OPTIMIZATIONS:
- * - React.cache for deduplication
- * - Passive event listeners for scroll
- * - Optimized form state management
- * - Minimized data passing to client components
- * - SWR integration for data fetching
- * - Module-level function caching
- * - O(1) lookups with Map/Set
- * - Early exit patterns
- * - Batch CSS updates
- * - Event handler refs
- * - Pre-compiled regular expressions
- * - Array length checks before expensive operations
- * - Combined filter/map operations
- *
  * @example
  * ```tsx
  * <LoginForm />
  * ```
  */
-"use client";
 
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,53 +17,9 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordInput } from "./PasswordInput";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useTransition } from "react";
-import {
-  cacheFunction,
-  createLookupMap,
-  earlyExit,
-  immutableSort,
-  storageCache,
-  useMemoize,
-  createEventHandlerRef,
-  batchCSS,
-  createLookupSet,
-  withArrayLengthCheck,
-  hoistRegExp
-} from "@/lib/utils";
+import { useEffect, useTransition } from "react";
 
-// Pre-compiled regular expressions for better performance
-const EMAIL_REGEX = hoistRegExp("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
-const PASSWORD_REGEX = hoistRegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$");
-
-// Module-level cache for frequent operations
-const formCache = new Map<string, any>();
-const inputCache = new Map<string, any>();
-
-// Event handler ref for scroll events
-const scrollEventHandlerRef = createEventHandlerRef(() => {
-  // Passive scroll handler for performance
-});
-
-// Cache for form validation
-const validationCache = (() => {
-  const cache = new Map<string, any>();
-
-  return {
-    get: (email: string) => cache.get(email),
-    set: (email: string, result: any) => cache.set(email, result),
-    clear: () => cache.clear()
-  };
-})();
-
-// ============================================
-// STATIC JSX EXTRACTED FOR PERFORMANCE
-// ============================================
-
-/**
- * Static heading component extracted to avoid re-rendering
- */
+// Static heading component
 const LoginHeading = () => (
   <div className="text-center">
     <h2 id="login-heading" className="text-2xl font-bold text-foreground">
@@ -91,9 +31,7 @@ const LoginHeading = () => (
   </div>
 );
 
-/**
- * Static divider component extracted to avoid re-rendering
- */
+// Static divider component
 const LoginDivider = () => (
   <div className="relative">
     <div className="absolute inset-0 flex items-center">
@@ -107,9 +45,7 @@ const LoginDivider = () => (
   </div>
 );
 
-/**
- * Static footer component extracted to avoid re-rendering
- */
+// Static footer component
 const LoginFooter = () => (
   <p className="text-center text-sm text-muted-foreground">
     Don&apos;t have an account?{" "}
@@ -179,11 +115,6 @@ export function LoginForm() {
   const { login, isLoading, error, clearError } = useAuth();
   const [isPending, startTransition] = useTransition();
 
-  // Create lookup sets for common validation checks
-  const errorTypes = createLookupSet(['email', 'password', 'rememberMe']);
-
-  // Cache form submissions to prevent duplicate requests
-  const submitCache = useRef(new Map<string, boolean>());
 
   // React Hook Form setup with deduplication
   const {
@@ -204,107 +135,41 @@ export function LoginForm() {
   // MEMOIZED DERIVED STATE
   // ============================================
 
-  // Memoize derived boolean state to prevent re-renders
-  const isDisabled = useMemo(() => {
-    return isLoading || isSubmitting || isPending;
-  }, [isLoading, isSubmitting, isPending]);
+  // Derived boolean state
+  const isDisabled = isLoading || isSubmitting || isPending;
 
-  // Memoize error state for conditional rendering
-  const hasFormErrors = useMemo(() => {
-    return withArrayLengthCheck(
-      Object.keys(errors),
-      () => Object.keys(errors).length > 0
-    ) || false;
-  }, [errors]);
+  // Check if form has errors for conditional rendering
+  const hasFormErrors = Object.keys(errors).length > 0;
 
-  // Memoize input change handler with early exit
-  const handleInputChange = useCallback(() => {
+  // Input change handler
+  const handleInputChange = () => {
     // Early exit if no error
     if (!error) {
       return;
     }
 
     clearError();
-  }, [error, clearError]);
+  };
 
-  // Validate email with pre-compiled regex (O(1) lookup)
-  const validateEmail = useCallback((email: string) => {
-    // Early exit if email is empty
-    if (!email || email.trim() === '') {
-      return false;
-    }
-
-    return EMAIL_REGEX.test(email);
-  }, [EMAIL_REGEX]);
-
-  // Check array length before expensive comparison
-  const checkErrorExists = useCallback((field: keyof typeof errors) => {
-    return withArrayLengthCheck(
-      Object.keys(errors),
-      () => !!errors[field]
-    ) || false;
-  }, [errors]);
 
   /**
    * Handle form submission with deduplication and early exit
    */
-  const onSubmit = useCallback(async (data: LoginFormValues) => {
+  const onSubmit = async (data: LoginFormValues) => {
     // Early exit if form is disabled
     if (isDisabled) {
       return;
     }
 
-    // Check cache to prevent duplicate submissions
-    const submitKey = `login:${data.email}:${Date.now()}`;
-    if (submitCache.current.has(submitKey)) {
-      return;
-    }
 
-    submitCache.current.set(submitKey, true);
-
-    // Validate inputs with cached validation
-    const isEmailValid = validateEmail(data.email);
-    if (!isEmailValid) {
-      return;
-    }
 
     // Use transition for non-urgent state updates
     startTransition(async () => {
-      try {
-        await login(data.email, data.password);
-      } finally {
-        submitCache.current.delete(submitKey);
-      }
+      await login(data.email, data.password);
     });
-  }, [login, startTransition, validateEmail, isDisabled]);
+  };
 
-  // Passive scroll event listener for performance
-  useEffect(() => {
-    const handleScroll = () => {
-      // Passive event listener for scroll
-      // Can be used for scroll-triggered animations or calculations
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  // Batch CSS updates for error states
-  useEffect(() => {
-    if (error || hasFormErrors) {
-      // Batch CSS updates to minimize reflows
-      const errorElements = document.querySelectorAll('[data-error]');
-      errorElements.forEach(element => {
-        batchCSS(element as HTMLElement, {
-          border: '1px solid rgb(239, 68, 68)',
-          boxShadow: '0 0 0 1px rgb(239, 68, 68)'
-        });
-      });
-    }
-  }, [error, hasFormErrors]);
+  // Error styling handled by Tailwind classes
 
   // ============================================
   // RENDER
@@ -333,8 +198,7 @@ export function LoginForm() {
           <Label htmlFor="email">Email</Label>
           <Input
             {...register("email", {
-              onChange: handleInputChange,
-              validate: validateEmail
+              onChange: handleInputChange
             })}
             id="email"
             type="email"

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
+
+from pydantic import Field
+
+from prosell.domain.base import DomainModel
 
 
 class RoleType(StrEnum):
@@ -122,18 +125,20 @@ ROLE_PERMISSIONS: dict[RoleType, set[Permission]] = {
 }
 
 
-@dataclass
-class Role:
+class Role(DomainModel):
     """Role entity for RBAC."""
 
+    # Required fields
     id: UUID
     role_type: RoleType
-    name: str
-    description: str | None
-    is_system_role: bool
-    tenant_id: UUID | None
-    created_at: datetime | None
-    updated_at: datetime | None
+    name: str = Field(..., min_length=1)
+
+    # Optional fields with defaults
+    description: str | None = None
+    is_system_role: bool = False
+    tenant_id: UUID | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @classmethod
     def create_system_role(cls, role_type: RoleType) -> Role:

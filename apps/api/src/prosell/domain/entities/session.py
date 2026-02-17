@@ -1,26 +1,29 @@
 """Session entity for user session management."""
 
-from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
+from prosell.domain.base import DomainModel
 
-@dataclass
-class Session:
+
+class Session(DomainModel):
     """
     User session entity.
 
     Tracks active user sessions for security and management.
     """
 
+    # Required fields
     id: UUID
     user_id: UUID
     token_hash: str  # Hashed refresh token
-    user_agent: str | None
-    ip_address: str | None
     expires_at: datetime
-    revoked_at: datetime | None
     created_at: datetime
+
+    # Optional fields with defaults
+    user_agent: str | None = None
+    ip_address: str | None = None
+    revoked_at: datetime | None = None
 
     @classmethod
     def create(
@@ -38,7 +41,7 @@ class Session:
             token_hash=token_hash,
             user_agent=user_agent,
             ip_address=ip_address,
-            expires_at=datetime.now(UTC) + __import__("datetime").timedelta(days=expires_days),
+            expires_at=datetime.now(UTC) + timedelta(days=expires_days),
             revoked_at=None,
             created_at=datetime.now(UTC),
         )

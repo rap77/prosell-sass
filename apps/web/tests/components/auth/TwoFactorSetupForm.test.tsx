@@ -336,8 +336,10 @@ describe("TwoFactorSetupForm Component", () => {
       const disableButton = screen.getByRole("button", { name: /disable 2fa/i });
       await user.click(disableButton);
 
-      expect(screen.getByText(/disabling/i)).toBeInTheDocument();
-      // The button is replaced by the disabling state UI
+      // Button should be replaced with disabling state
+      expect(screen.queryByRole("button", { name: /disable 2fa/i })).not.toBeInTheDocument();
+      // Text "Disabling..." should be present somewhere in the document
+      expect(screen.getAllByText(/disabling/i).length).toBeGreaterThan(0);
     });
 
     it("should show success state after disabling", async () => {

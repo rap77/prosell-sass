@@ -4,11 +4,15 @@
  * These actions handle HTTP-only cookie operations for authentication.
  * They run on the server and cannot be accessed by client-side code,
  * preventing XSS attacks and solving hydration mismatches.
+ *
+ * Server-Side Performance: Uses after() for non-blocking error logging
  */
 
 "use server";
 
 import { setAuthCookies as setAuthCookiesImpl, deleteAuthCookies as deleteAuthCookiesImpl } from "@/lib/auth/cookies";
+import { after } from "next/server";
+import { logger } from "@/lib/logger";
 
 // ============================================
 // TYPES
@@ -40,7 +44,10 @@ export async function setAuthCookies(data: AuthCookieData): Promise<void> {
   try {
     await setAuthCookiesImpl(data);
   } catch (error) {
-    console.error("Failed to set auth cookies:", error);
+    // Non-blocking error logging with after() - doesn't delay response
+    after(() => {
+      logger.error("Failed to set auth cookies", error);
+    });
     // Don't throw - let the client handle the auth state
     // The cookies will be set by the API response directly
   }
@@ -54,7 +61,10 @@ export async function deleteAuthCookies(): Promise<void> {
   try {
     await deleteAuthCookiesImpl();
   } catch (error) {
-    console.error("Failed to delete auth cookies:", error);
+    // Non-blocking error logging with after() - doesn't delay response
+    after(() => {
+      logger.error("Failed to delete auth cookies", error);
+    });
     // Don't throw - the client should clear local state regardless
   }
 }
@@ -83,7 +93,10 @@ export async function getAuthState(): Promise<{
     // For now, we'll implement a different approach using a route handler
     return null;
   } catch (error) {
-    console.error("Failed to get auth state:", error);
+    // Non-blocking error logging with after() - doesn't delay response
+    after(() => {
+      logger.error("Failed to get auth state", error);
+    });
     return null;
   }
 }
@@ -108,7 +121,10 @@ export async function checkAuth(): Promise<{
       isAuthenticated: false,
     };
   } catch (error) {
-    console.error("Auth check failed:", error);
+    // Non-blocking error logging with after() - doesn't delay response
+    after(() => {
+      logger.error("Auth check failed", error);
+    });
     return {
       isAuthenticated: false,
     };

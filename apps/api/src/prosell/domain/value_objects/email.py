@@ -1,21 +1,24 @@
 """Email value object."""
 
-import re
-from dataclasses import dataclass
+from typing import ClassVar
+
+from pydantic import EmailStr, field_validator
+
+from prosell.domain.base import ValueObject
 
 
-@dataclass(frozen=True)
-class Email:
+class Email(ValueObject):
     """
     Email value object.
 
-    Encapsulates email validation logic.
+    Encapsulates email validation logic using Pydantic EmailStr validation.
+    Immutable by inheritance from ValueObject (frozen=True).
     """
 
-    value: str
+    address: EmailStr  # Pydantic validates email format automatically
 
     # Disposable email domains (blocking list)
-    DISPOSABLE_DOMAINS = {
+    DISPOSABLE_DOMAINS: ClassVar[set[str]] = {
         "tempmail.com",
         "guerrillamail.com",
         "mailinator.com",
@@ -24,33 +27,24 @@ class Email:
         "trashmail.com",
     }
 
-    def __post_init__(self):
-        """Validate email on initialization."""
-        if not self._is_valid_format():
-            raise ValueError(f"Invalid email format: {self.value}")
-
-        if self._is_disposable_domain():
-            raise ValueError(f"Disposable email domains are not allowed: {self.value}")
-
-    def _is_valid_format(self) -> bool:
-        """Validate email format using regex."""
-        pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-        return re.match(pattern, self.value) is not None
-
-    def _is_disposable_domain(self) -> bool:
-        """Check if email domain is in disposable list."""
-        domain = self.value.split("@")[-1].lower()
-        return domain in self.DISPOSABLE_DOMAINS
+    @field_validator("address")
+    @classmethod
+    def reject_disposable(cls, v: str) -> str:
+        """Reject disposable email domains."""
+        domain = v.split("@")[-1].lower()
+        if domain in Email.DISPOSABLE_DOMAINS:
+            raise ValueError(f"Disposable email domains are not allowed: {v}")
+        return v
 
     @property
     def domain(self) -> str:
         """Get email domain."""
-        return self.value.split("@")[-1]
+        return self.address.split("@")[-1]
 
     @property
     def local_part(self) -> str:
         """Get email local part (before @)."""
-        return self.value.split("@")[0]
+        return self.address.split("@")[0]
 
     def __str__(self) -> str:
-        return self.value
+        return self.address
