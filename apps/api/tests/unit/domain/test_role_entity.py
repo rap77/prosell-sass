@@ -51,10 +51,10 @@ class TestPermissionEnum:
 
     def test_organization_management_permissions(self) -> None:
         """Test organization management permission values."""
-        assert Permission.ORG_CREATE == "organization:create"
-        assert Permission.ORG_READ == "organization:read"
-        assert Permission.ORG_UPDATE == "organization:update"
-        assert Permission.ORG_DELETE == "organization:delete"
+        assert Permission.ORG_CREATE == "org:create"
+        assert Permission.ORG_READ == "org:read"
+        assert Permission.ORG_UPDATE == "org:update"
+        assert Permission.ORG_DELETE == "org:delete"
 
     def test_vehicle_permissions(self) -> None:
         """Test vehicle listing permission values."""

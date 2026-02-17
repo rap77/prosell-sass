@@ -1,4 +1,47 @@
 repos:
+  # ============================================
+  # Gentleman Guardian Angel (AI Code Review)
+  # Runs FIRST - blocks commit on critical issues
+  # ============================================
+  - repo: local
+    hooks:
+      - id: gga
+        name: Gentleman Guardian Angel
+        entry: bash -c 'unset CLAUDECODE && unset CLAUDE_CODE_ENTRYPOINT && gga run'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+  # ============================================
+  # Python - Ruff (lint + format)
+  # ============================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      # Linter with auto-fix
+      - id: ruff
+        args: [--fix]
+        types_or: [python, pyi, jupyter]
+      # Formatter
+      - id: ruff-format
+        types_or: [python, pyi, jupyter]
+
+  # ============================================
+  # Frontend - ESLint (TODO: currently disabled due to next lint issues)
+  # To enable manually: cd apps/web && pnpm run lint
+  # ============================================
+  # - repo: local
+  #   hooks:
+  #     - id: next-lint
+  #       name: Next.js Lint
+  #       entry: bash -c 'cd apps/web && pnpm run lint'
+  #       language: system
+  #       pass_filenames: false
+  #       files: \.(ts|tsx|js|jsx)$
+
+  # ============================================
+  # General - Pre-commit hooks
+  # ============================================
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -9,10 +52,4 @@ repos:
       - id: check-added-large-files
         args: ['--maxkb=1000']
       - id: check-merge-conflict
-
-  # Python - Ruff (lint + format)
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
-    hooks:
-      - id: ruff
-        args: [--fix]
+      - id: check-toml

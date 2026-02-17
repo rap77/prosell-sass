@@ -266,7 +266,7 @@ class TestUserTwoFactorAuth:
         user.enable_2fa(totp_secret=totp_secret, backup_codes=backup_codes)
         assert user.is_2fa_enabled is True
         assert user.totp_secret == totp_secret
-        assert user.backup_codes == backup_codes
+        assert user.backup_codes is not None and user.backup_codes == backup_codes
 
     def test_enable_2fa_sets_backup_codes(self) -> None:
         """Test that enable_2fa() stores backup codes."""
@@ -277,8 +277,8 @@ class TestUserTwoFactorAuth:
         )
         backup_codes = ["111111", "222222", "333333"]
         user.enable_2fa(totp_secret="secret", backup_codes=backup_codes)
-        assert user.backup_codes == backup_codes
-        assert len(user.backup_codes) == 3
+        assert user.backup_codes is not None and user.backup_codes == backup_codes
+        assert user.backup_codes is not None and len(user.backup_codes) == 3
 
     def test_enable_2fa_sets_flag(self) -> None:
         """Test that enable_2fa() sets the flag."""
@@ -311,7 +311,7 @@ class TestUserTwoFactorAuth:
             full_name="Disable Codes User",
         )
         user.enable_2fa(totp_secret="secret", backup_codes=["111", "222"])
-        assert user.backup_codes == ["111", "222"]
+        assert user.backup_codes is not None and user.backup_codes == ["111", "222"]
         user.disable_2fa()
         assert user.backup_codes is None
 
@@ -338,8 +338,8 @@ class TestUserTwoFactorAuth:
         user.enable_2fa(totp_secret="secret", backup_codes=backup_codes)
         result = user.use_backup_code("222222")
         assert result is True
-        assert "222222" not in user.backup_codes
-        assert len(user.backup_codes) == 2
+        assert user.backup_codes is not None and "222222" not in user.backup_codes  # type: ignore[literal-required]
+        assert user.backup_codes is not None and len(user.backup_codes) == 2
 
     def test_use_backup_code_invalid_returns_false(self) -> None:
         """Test that use_backup_code() returns False for invalid code."""
@@ -352,7 +352,7 @@ class TestUserTwoFactorAuth:
         user.enable_2fa(totp_secret="secret", backup_codes=backup_codes)
         result = user.use_backup_code("999999")
         assert result is False
-        assert len(user.backup_codes) == 2
+        assert user.backup_codes is not None and len(user.backup_codes) == 2
 
     def test_use_backup_code_empty_returns_false(self) -> None:
         """Test that use_backup_code() returns False when no backup codes."""
@@ -374,7 +374,7 @@ class TestUserTwoFactorAuth:
         backup_codes = ["111111"]
         user.enable_2fa(totp_secret="secret", backup_codes=backup_codes)
         user.use_backup_code("111111")
-        assert user.backup_codes == []
+        assert user.backup_codes is not None and user.backup_codes == []
 
 
 class TestUserRoleManagement:
@@ -560,3 +560,6 @@ class TestUserEdgeCases:
             full_name="Has Password",
         )
         assert user.password_hash == "hashed"
+
+
+# test
