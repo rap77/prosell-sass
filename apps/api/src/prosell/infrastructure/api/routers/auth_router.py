@@ -1,9 +1,11 @@
 """Authentication router for ProSell SaaS API."""
 
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr, Field
 
 from prosell.application.use_cases.auth.enable_2fa import (
@@ -38,7 +40,7 @@ from prosell.application.use_cases.auth.refresh_token import (
     RefreshTokenUseCase,
 )
 
-# TODO: Enable per-endpoint rate limiting
+# TODO(security-123): Enable per-endpoint rate limiting
 # from prosell.infrastructure.api.middleware import auth_limits, api_limits
 from prosell.application.use_cases.auth.register_user import (
     RegisterUserRequest,
@@ -138,6 +140,7 @@ class LogoutResponse(BaseModel):
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(
     request: RegisterRequest,
+    response: Response,
     use_case: Annotated[RegisterUserUseCase, Depends(get_register_user_use_case)],
 ) -> RegisterUserResponse:
     """
@@ -147,6 +150,8 @@ async def register(
     - **password**: Password (min 8 characters, must contain uppercase, lowercase, number, special)
     - **full_name**: User's full name
     - **accept_terms**: Must accept terms and conditions
+
+    Sets httpOnly cookies for authentication tokens.
     """
     uc_request = RegisterUserRequest(
         email=request.email,
@@ -154,18 +159,52 @@ async def register(
         full_name=request.full_name,
         accept_terms=request.accept_terms,
     )
-    return await use_case.execute(uc_request)
+    result = await use_case.execute(uc_request)
+
+    # Set httpOnly cookies for tokens (same as login)
+    access_token_expiry = datetime.now(UTC) + timedelta(minutes=15)
+    refresh_token_expiry = datetime.now(UTC) + timedelta(days=7)
+
+    response.set_cookie(
+        key="access_token",
+        value=result.tokens.access_token,
+        expires=access_token_expiry,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=result.tokens.refresh_token,
+        expires=refresh_token_expiry,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
+
+    response.set_cookie(
+        key="user_data",
+        value=result.user.model_dump_json(),
+        expires=refresh_token_expiry,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
+
+    return result
 
 
 @router.post("/login")
 async def login(
     request: LoginRequest,
+    response: Response,
     use_case: Annotated[LoginUserUseCase, Depends(get_login_user_use_case)],
 ) -> LoginUserResponse:
     """
     User login.
 
-    Returns access and refresh tokens.
+    Returns access and refresh tokens via httpOnly cookies.
     If 2FA is enabled, requires_2fa will be True.
     """
     uc_request = LoginUserRequest(
@@ -173,7 +212,41 @@ async def login(
         password=request.password,
         remember_me=request.remember_me,
     )
-    return await use_case.execute(uc_request)
+    result = await use_case.execute(uc_request)
+
+    # Set httpOnly cookies for tokens
+    access_token_expiry = datetime.now(UTC) + timedelta(minutes=15)
+    refresh_token_expiry = datetime.now(UTC) + timedelta(days=7)
+
+    response.set_cookie(
+        key="access_token",
+        value=result.tokens.access_token,
+        expires=access_token_expiry,
+        httponly=True,  # CRITICAL: Prevents JavaScript access (XSS protection)
+        secure=True,  # HTTPS only
+        samesite="strict",  # CSRF protection
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=result.tokens.refresh_token,
+        expires=refresh_token_expiry,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
+
+    # Also set user_data cookie for server components
+    response.set_cookie(
+        key="user_data",
+        value=result.user.model_dump_json(),
+        expires=refresh_token_expiry,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
+
+    return result
 
 
 @router.post("/refresh")
@@ -276,6 +349,43 @@ async def disable_2fa(
     return await use_case.execute(uc_request)
 
 
+@router.get("/state")
+async def get_auth_state(
+    current_user: Annotated[dict | None, Depends(get_current_user)] = None,
+) -> JSONResponse:
+    """
+    Get current authentication state from httpOnly cookies.
+
+    Server Components use this to check auth status without
+    exposing tokens to client-side code.
+
+    Returns user data and authentication status based on cookies.
+    """
+    if not current_user:
+        return JSONResponse(
+            {
+                "isAuthenticated": False,
+                "user": None,
+            }
+        )
+
+    # User is authenticated, return user data
+    return JSONResponse(
+        {
+            "isAuthenticated": True,
+            "user": {
+                "id": current_user["sub"],
+                "email": current_user.get("email"),
+                "first_name": current_user.get("first_name"),
+                "last_name": current_user.get("last_name"),
+                "role": current_user.get("role"),
+                "is_email_verified": current_user.get("is_email_verified", False),
+                "is_2fa_enabled": current_user.get("is_2fa_enabled", False),
+            },
+        }
+    )
+
+
 @router.get("/me")
 async def get_me(
     current_user: Annotated[dict, Depends(get_current_user)],
@@ -292,12 +402,15 @@ async def get_me(
 
 
 @router.post("/logout")
-async def logout() -> LogoutResponse:
+async def logout(response: Response) -> LogoutResponse:
     """
     Logout user.
 
-    Note: In a stateless JWT system, logout is handled client-side
-    by deleting the tokens. Server-side session revocation would
-    require maintaining a blacklist or using refresh tokens.
+    Clears httpOnly cookies by setting them with expiration in the past.
     """
-    return LogoutResponse(message="Logout successful. Please delete your tokens.")
+    # Clear cookies by setting them with expired date
+    response.delete_cookie(key="access_token", httponly=True, secure=True, samesite="strict")
+    response.delete_cookie(key="refresh_token", httponly=True, secure=True, samesite="strict")
+    response.delete_cookie(key="user_data", httponly=True, secure=True, samesite="strict")
+
+    return LogoutResponse(message="Logout successful")

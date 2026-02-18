@@ -1,8 +1,7 @@
 /**
  * authApi Client - HTTP client for authentication endpoints
- * GREEN PHASE - Implementación para hacer pasar los tests
  *
- * Performance optimizations:
+ * Features:
  * - LRU cache for API responses
  * - React.cache for deduplication
  * - SWR integration for data fetching
@@ -10,8 +9,6 @@
  * - Module-level function caching
  * - O(1) lookups with Map/Set
  * - Early exit patterns
- * - Batch CSS updates
- * - Event handler refs
  */
 
 interface LoginResponse {
@@ -86,12 +83,20 @@ import {
 const EMAIL_REGEX = hoistRegExp("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 const PASSWORD_REGEX = hoistRegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$");
 
+// Type union for all possible API responses
+type ApiResponse =
+  | LoginResponse
+  | RefreshTokenResponse
+  | UserResponse
+  | MessageResponse
+  | Enable2FAResponse;
+
 // Module-level cache for frequent operations
-const requestCache = new Map<string, any>();
-const responseCache = new Map<string, any>();
+const requestCache = new Map<string, ApiResponse>();
+const responseCache = new Map<string, ApiResponse>();
 
 // Event handler ref for common operations
-const errorHandlerRef = createEventHandlerRef((error: any) => {
+const errorHandlerRef = createEventHandlerRef((error: unknown) => {
   console.error('API Error:', error);
 });
 
@@ -101,12 +106,12 @@ const errorHandlerRef = createEventHandlerRef((error: any) => {
 
 // React.cache for deduplication
 const deduplicateRequest = (() => {
-  const pendingRequests = new Map<string, Promise<any>>();
+  const pendingRequests = new Map<string, Promise<ApiResponse>>();
 
-  return (key: string, requestFn: () => Promise<any>) => {
+  return (key: string, requestFn: () => Promise<ApiResponse>) => {
     // Early exit if request is already pending
     if (pendingRequests.has(key)) {
-      return pendingRequests.get(key);
+      return pendingRequests.get(key)!;
     }
 
     const promise = requestFn();
@@ -316,21 +321,17 @@ export const authApi = {
    * Get current authenticated user
    * GET /api/auth/me
    *
+   * Uses httpOnly cookies for authentication (no accessToken parameter needed)
    * Cached with React.cache for deduplication
    */
   getCurrentUser: (() => {
     const cacheKeyPrefix = 'user:current';
 
-    return (accessToken: string): Promise<UserResponse> => {
-      // Early exit if no access token
-      if (!accessToken || accessToken.trim() === '') {
-        return Promise.reject(new ApiError("Access token is required", 401));
-      }
-
+    return (): Promise<UserResponse> => {
       const cacheKey = generateCacheKey(
         'GET',
         `${API_BASE_URL}/api/auth/me`,
-        { auth: accessToken.slice(0, 10) } // Don't store full token
+        {}
       );
 
       // Try to get from cache first
@@ -343,9 +344,7 @@ export const authApi = {
       return deduplicateRequest(cacheKey, async () => {
         const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
           method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+          credentials: "include",  // CRITICAL: Sends httpOnly cookies automatically
         });
 
         const result = await handleResponse<UserResponse>(response);
@@ -471,14 +470,11 @@ export const authApi = {
   /**
    * Enable 2FA for current user
    * POST /api/auth/2fa/enable
+   *
+   * Uses httpOnly cookies for authentication (no accessToken parameter needed)
    */
-  async enable2FA(accessToken: string): Promise<Enable2FAResponse> {
-    // Early exit if no access token
-    if (!accessToken || accessToken.trim() === '') {
-      throw new ApiError("Access token is required", 401);
-    }
-
-    const cacheKey = createAuthCacheKey('2fa/enable', { accessToken });
+  async enable2FA(): Promise<Enable2FAResponse> {
+    const cacheKey = createAuthCacheKey('2fa/enable');
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
@@ -489,8 +485,8 @@ export const authApi = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
       },
+      credentials: "include",  // CRITICAL: Sends httpOnly cookies automatically
     });
 
     const result = await handleResponse<Enable2FAResponse>(response);
@@ -504,21 +500,16 @@ export const authApi = {
   /**
    * Verify 2FA code
    * POST /api/auth/2fa/verify
+   *
+   * Uses httpOnly cookies for authentication (no accessToken parameter needed)
    */
-  async verify2FA(
-    code: string,
-    accessToken: string
-  ): Promise<MessageResponse> {
+  async verify2FA(code: string): Promise<MessageResponse> {
     // Early exit if invalid inputs
     if (!code || code.trim() === '' || code.length !== 6) {
       throw new ApiError("2FA code must be 6 digits", 400);
     }
 
-    if (!accessToken || accessToken.trim() === '') {
-      throw new ApiError("Access token is required", 401);
-    }
-
-    const cacheKey = createAuthCacheKey('2fa/verify', { code, accessToken });
+    const cacheKey = createAuthCacheKey('2fa/verify', { code });
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
@@ -529,8 +520,8 @@ export const authApi = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
       },
+      credentials: "include",  // CRITICAL: Sends httpOnly cookies automatically
       body: JSON.stringify({ code }),
     });
 
@@ -545,14 +536,11 @@ export const authApi = {
   /**
    * Disable 2FA for current user
    * POST /api/auth/2fa/disable
+   *
+   * Uses httpOnly cookies for authentication (no accessToken parameter needed)
    */
-  async disable2FA(accessToken: string): Promise<MessageResponse> {
-    // Early exit if no access token
-    if (!accessToken || accessToken.trim() === '') {
-      throw new ApiError("Access token is required", 401);
-    }
-
-    const cacheKey = createAuthCacheKey('2fa/disable', { accessToken });
+  async disable2FA(): Promise<MessageResponse> {
+    const cacheKey = createAuthCacheKey('2fa/disable');
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
@@ -563,8 +551,8 @@ export const authApi = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
       },
+      credentials: "include",  // CRITICAL: Sends httpOnly cookies automatically
     });
 
     const result = await handleResponse<MessageResponse>(response);

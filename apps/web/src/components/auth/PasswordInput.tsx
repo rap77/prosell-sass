@@ -180,7 +180,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
 
       // Call onChange with the VALUE (not the event) for React Hook Form compatibility
       // RHF's field.onChange expects the value directly, not the event object
-      onChange?.(newValue as unknown as React.ChangeEvent<HTMLInputElement>);
+      onChange?.(newValue);
 
       // Clear error when user starts typing
       if (error && onClearError) {

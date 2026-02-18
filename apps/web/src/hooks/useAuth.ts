@@ -29,12 +29,6 @@ export interface UseAuthReturn {
   /** Current authenticated user, or null if not logged in */
   user: User | null;
 
-  /** JWT access token for API requests */
-  accessToken: string | null;
-
-  /** Refresh token for obtaining new access tokens */
-  refreshTokenValue: string | null;
-
   /** Whether a user is currently authenticated */
   isAuthenticated: boolean;
 
@@ -52,9 +46,6 @@ export interface UseAuthReturn {
 
   /** Logout the current user */
   logout: () => Promise<void>;
-
-  /** Refresh the access token using the refresh token */
-  refreshToken: () => Promise<void>;
 
   /** Update user information in state */
   updateUser: (updates: Partial<User>) => void;
@@ -90,15 +81,12 @@ export interface UseAuthReturn {
 export function useAuth(): UseAuthReturn {
   const {
     user,
-    accessToken,
-    refreshTokenValue,
     isAuthenticated,
     isLoading,
     error,
     login: storeLogin,
     register: storeRegister,
     logout: storeLogout,
-    refreshToken: storeRefreshToken,
     updateUser: storeUpdateUser,
     clearError: storeClearError,
   } = useAuthStore();
@@ -129,8 +117,6 @@ export function useAuth(): UseAuthReturn {
   return {
     // State
     user,
-    accessToken,
-    refreshTokenValue,
     isAuthenticated,
     isLoading,
     error,
@@ -139,7 +125,6 @@ export function useAuth(): UseAuthReturn {
     login,
     register,
     logout: storeLogout,
-    refreshToken: storeRefreshToken,
     updateUser: storeUpdateUser,
     clearError: storeClearError,
 

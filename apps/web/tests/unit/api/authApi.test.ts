@@ -259,7 +259,7 @@ describe("authApi Client - Get Current User", () => {
     mockFetch.mockClear();
   });
 
-  it("should call GET /api/auth/me with auth header", async () => {
+  it("should call GET /api/auth/me with credentials", async () => {
     const mockResponse = {
       id: "1",
       email: "test@example.com",
@@ -274,17 +274,19 @@ describe("authApi Client - Get Current User", () => {
       json: async () => mockResponse,
     } as Response);
 
-    const result = await authApi.getCurrentUser("valid-token");
+    const result = await authApi.getCurrentUser();
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/auth/me"),
       expect.objectContaining({
         method: "GET",
-        headers: expect.objectContaining({
-          Authorization: "Bearer valid-token",
-        }),
+        credentials: "include",
       })
     );
+
+    // Verify no Authorization header is present
+    const fetchCall = mockFetch.mock.calls[0];
+    expect(fetchCall[1].headers).not.toHaveProperty("Authorization");
 
     expect(result).toEqual(mockResponse);
   });
@@ -415,17 +417,19 @@ describe("authApi Client - 2FA Operations", () => {
       json: async () => mockResponse,
     } as Response);
 
-    const result = await authApi.enable2FA("access-token");
+    const result = await authApi.enable2FA();
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/auth/2fa/enable"),
       expect.objectContaining({
         method: "POST",
-        headers: expect.objectContaining({
-          Authorization: "Bearer access-token",
-        }),
+        credentials: "include",
       })
     );
+
+    // Verify no Authorization header is present
+    const fetchCall = mockFetch.mock.calls[0];
+    expect(fetchCall[1].headers).not.toHaveProperty("Authorization");
 
     expect(result).toEqual(mockResponse);
   });
@@ -436,18 +440,20 @@ describe("authApi Client - 2FA Operations", () => {
       json: async () => ({ message: "2FA verificado" }),
     } as Response);
 
-    const result = await authApi.verify2FA("123456", "access-token");
+    const result = await authApi.verify2FA("123456");
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/auth/2fa/verify"),
       expect.objectContaining({
         method: "POST",
-        headers: expect.objectContaining({
-          Authorization: "Bearer access-token",
-        }),
+        credentials: "include",
         body: expect.stringContaining("123456"),
       })
     );
+
+    // Verify no Authorization header is present
+    const fetchCall = mockFetch.mock.calls[0];
+    expect(fetchCall[1].headers).not.toHaveProperty("Authorization");
 
     expect(result).toEqual({ message: "2FA verificado" });
   });
@@ -458,17 +464,19 @@ describe("authApi Client - 2FA Operations", () => {
       json: async () => ({ message: "2FA deshabilitado" }),
     } as Response);
 
-    const result = await authApi.disable2FA("access-token");
+    const result = await authApi.disable2FA();
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/auth/2fa/disable"),
       expect.objectContaining({
         method: "POST",
-        headers: expect.objectContaining({
-          Authorization: "Bearer access-token",
-        }),
+        credentials: "include",
       })
     );
+
+    // Verify no Authorization header is present
+    const fetchCall = mockFetch.mock.calls[0];
+    expect(fetchCall[1].headers).not.toHaveProperty("Authorization");
 
     expect(result).toEqual({ message: "2FA deshabilitado" });
   });

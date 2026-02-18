@@ -12,7 +12,9 @@
  * });
  * ```
  */
+'use client';
 
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,6 +32,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { ShieldIcon } from "@/components/icons/dynamic";
+
+// Pre-compiled regex for 6-digit TOTP codes
+const TOTP_REGEX = /^\d{6}$/;
 
 // ============================================
 // TYPES
@@ -78,7 +83,7 @@ export function TwoFactorSetupSkeleton() {
                 role="status"
                 aria-label="Loading"
               >
-                <span className="!absolute !-m-px !h-px !wpx !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+                <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
                   Loading...
                 </span>
               </div>
@@ -133,7 +138,7 @@ interface TwoFactorSetupFormProps {
 
 export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFormProps) {
   const router = useRouter();
-  const { accessToken, updateUser } = useAuth();
+  const { updateUser } = useAuth();
 
   const [formState, setFormState] = useState<FormState>({
     state: is2FAEnabled ? "disable" : "loading",
@@ -150,7 +155,26 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
   // Enable 2FA on mount if not already enabled
   useEffect(() => {
     if (!is2FAEnabled) {
-      handleEnable2FA();
+      (async () => {
+        try {
+          setFormState((prev) => ({ ...prev, state: "loading", error: null }));
+          const response = await authApi.enable2FA();
+          setFormState((prev) => ({
+            ...prev,
+            state: "setup",
+            qrCode: response.qr_code,
+            backupCodes: response.backup_codes,
+            error: null,
+          }));
+        } catch (error) {
+          const message = getErrorMessage(error, "Failed to enable 2FA");
+          setFormState((prev) => ({
+            ...prev,
+            state: "error",
+            error: message,
+          }));
+        }
+      })();
     }
   }, [is2FAEnabled]);
 
@@ -158,51 +182,11 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
   // HANDLERS
   // ============================================
 
-  const handleEnable2FA = async () => {
-    if (!accessToken) {
-      setFormState((prev) => ({
-        ...prev,
-        state: "error",
-        error: "No access token available",
-      }));
-      return;
-    }
-
-    try {
-      setFormState((prev) => ({ ...prev, state: "loading", error: null }));
-
-      const response = await authApi.enable2FA(accessToken);
-
-      setFormState((prev) => ({
-        ...prev,
-        state: "setup",
-        qrCode: response.qr_code,
-        backupCodes: response.backup_codes,
-        error: null,
-      }));
-    } catch (error) {
-      const message = getErrorMessage(error, "Failed to enable 2FA");
-      setFormState((prev) => ({
-        ...prev,
-        state: "error",
-        error: message,
-      }));
-    }
-  };
-
   const handleVerifyCode = async () => {
-    if (!accessToken || !formState.totpCode) {
-      setFormState((prev) => ({
-        ...prev,
-        error: "Please enter the 6-digit code",
-      }));
-      return;
-    }
-
     try {
       setFormState((prev) => ({ ...prev, state: "verifying", error: null }));
 
-      await authApi.verify2FA(formState.totpCode, accessToken);
+      await authApi.verify2FA(formState.totpCode);
 
       // Update user state
       updateUser({ is_2fa_enabled: true });
@@ -223,19 +207,10 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
   };
 
   const handleDisable2FA = async () => {
-    if (!accessToken) {
-      setFormState((prev) => ({
-        ...prev,
-        state: "error",
-        error: "No access token available",
-      }));
-      return;
-    }
-
     try {
       setFormState((prev) => ({ ...prev, state: "disabling", error: null }));
 
-      await authApi.disable2FA(accessToken);
+      await authApi.disable2FA();
 
       // Update user state
       updateUser({ is_2fa_enabled: false });
@@ -288,7 +263,7 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                   role="status"
                   aria-label="Loading"
                 >
-                  <span className="!absolute !-m-px !h-px !wpx !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+                  <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
                     Loading...
                   </span>
                 </div>
@@ -318,11 +293,15 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
               <CardContent className="space-y-6">
                 {/* QR Code */}
                 <div className="flex justify-center">
-                  <img
-                    src={formState.qrCode || ""}
-                    alt="QR Code"
-                    className="w-64 h-64 rounded-lg border-2 border"
-                  />
+                  {formState.qrCode && (
+                    <Image
+                      src={formState.qrCode}
+                      alt="QR Code"
+                      width={256}
+                      height={256}
+                      className="w-64 h-64 rounded-lg border-2 border"
+                    />
+                  )}
                 </div>
 
                 {/* Instructions */}
@@ -421,7 +400,7 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                   role="status"
                   aria-label="Loading"
                 >
-                  <span className="!absolute !-m-px !h-px !wpx !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+                  <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
                     Loading...
                   </span>
                 </div>
@@ -533,7 +512,7 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                   role="status"
                   aria-label="Loading"
                 >
-                  <span className="!absolute !-m-px !h-px !wpx !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+                  <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
                     Loading...
                   </span>
                 </div>

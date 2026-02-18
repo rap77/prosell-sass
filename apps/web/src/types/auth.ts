@@ -21,8 +21,6 @@ export interface User {
  */
 export interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshTokenValue: string | null;
   isAuthenticated: boolean;
   isEmailVerified: boolean;
   is2faEnabled: boolean;
@@ -55,12 +53,4 @@ export interface RegisterData {
   last_name?: string;
   confirmPassword?: string;
   acceptedTerms?: boolean;
-}
-
-/**
- * Authentication tokens interface
- */
-export interface AuthTokens {
-  access_token: string;
-  refresh_token: string;
 }

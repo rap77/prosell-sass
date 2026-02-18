@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  reactCompiler: true,
+  // TODO: Re-enable reactCompiler after installing babel-plugin-react-compiler
+  // reactCompiler: true,
 
   // Bundle size optimization: Optimize imports from packages with barrel files
   // This prevents the bundler from loading the entire barrel file when importing specific exports

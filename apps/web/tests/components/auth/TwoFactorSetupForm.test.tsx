@@ -44,14 +44,12 @@ vi.mock("next/navigation", () => ({
 }));
 
 // Mock useAuth hook
-const { mockAccessToken, mockUpdateUser } = vi.hoisted(() => ({
-  mockAccessToken: "test-access-token",
+const { mockUpdateUser } = vi.hoisted(() => ({
   mockUpdateUser: vi.fn(),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: vi.fn(() => ({
-    accessToken: mockAccessToken,
     updateUser: mockUpdateUser,
     isAuthenticated: true,
   })),
@@ -86,7 +84,7 @@ describe("TwoFactorSetupForm Component", () => {
       render(<TwoFactorSetupForm is2FAEnabled={false} />);
 
       await waitFor(() => {
-        expect(authApi.enable2FA).toHaveBeenCalledWith(mockAccessToken);
+        expect(authApi.enable2FA).toHaveBeenCalledWith();
       });
     });
 
@@ -168,7 +166,7 @@ describe("TwoFactorSetupForm Component", () => {
       await user.click(verifyButton);
 
       await waitFor(() => {
-        expect(authApi.verify2FA).toHaveBeenCalledWith("123456", mockAccessToken);
+        expect(authApi.verify2FA).toHaveBeenCalledWith("123456");
       });
     });
 
@@ -324,7 +322,7 @@ describe("TwoFactorSetupForm Component", () => {
       await user.click(disableButton);
 
       await waitFor(() => {
-        expect(authApi.disable2FA).toHaveBeenCalledWith(mockAccessToken);
+        expect(authApi.disable2FA).toHaveBeenCalledWith();
       });
     });
 

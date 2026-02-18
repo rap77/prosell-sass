@@ -4,6 +4,7 @@
  * This component contains all the visual elements of the 2FA setup page.
  * The async server page (page.tsx) handles auth redirect and renders this.
  */
+'use client';
 
 import Link from "next/link";
 import { Suspense } from "react";

@@ -6,18 +6,21 @@
  *
  * @see https://vercel.com/docs/rules/client-local-storage-schema-versioning.md
  */
-import { useState, useCallback, useEffect } from 'react';
 
-interface SchemaVersion {
+import { useState, useEffect } from 'react';
+
+import { logger } from '@/lib/logger';
+
+interface SchemaVersion<T = unknown> {
   version: string;
-  data: any;
+  data: T;
   timestamp: number;
 }
 
-interface Migration {
+interface Migration<T = unknown> {
   from: string;
   to: string;
-  migrate: (data: any) => any;
+  migrate: (data: T) => T;
 }
 
 /**
@@ -64,10 +67,10 @@ export class LocalStorageSchemaManager {
         return true; // First time setup
       }
 
-      const schema: SchemaVersion = JSON.parse(stored);
+      const schema = JSON.parse(stored) as SchemaVersion;
       return schema.version !== this.CURRENT_VERSION;
     } catch (error) {
-      console.warn('Failed to check schema version:', error);
+      logger.error("Failed to check schema version", error);
       return true;
     }
   }
@@ -91,7 +94,7 @@ export class LocalStorageSchemaManager {
         return;
       }
 
-      const schema: SchemaVersion = JSON.parse(stored);
+      const schema = JSON.parse(stored) as SchemaVersion;
 
       // Find the migration path
       let currentVersion = schema.version;
@@ -117,7 +120,7 @@ export class LocalStorageSchemaManager {
 
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(migratedSchema));
     } catch (error) {
-      console.error('Failed to migrate storage:', error);
+      logger.error("Failed to migrate storage", error);
       throw error;
     }
   }
@@ -179,9 +182,19 @@ export function useLocalStorageSchema() {
 }
 
 /**
- * Hook for safe localStorage access with schema awareness
+ * Hook for safe localStorage access with versioning
+ *
+ * @example
+ * ```tsx
+ * const [theme, setTheme] = useLocalStorage('theme', 'light');
+ * // Stores as 'theme:v1' in localStorage for schema migration support
+ * ```
  */
 export function useLocalStorage<T>(key: string, initialValue: T) {
+  // Version prefix for schema migration support
+  const STORAGE_VERSION = 'v1';
+  const versionedKey = `${key}:${STORAGE_VERSION}`;
+
   const [storedValue, setStoredValue] = useState<T>(() => {
     // Get value only during initial render to avoid SSR issues
     if (typeof window === 'undefined') {
@@ -189,26 +202,27 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     }
 
     try {
-      const item = localStorage.getItem(key);
+      const item = localStorage.getItem(versionedKey);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
+      logger.error(`Error reading localStorage key "${key}"`, error);
       return initialValue;
     }
   });
 
-  const setValue = useCallback((value: T | ((val: T) => T)) => {
+  // React 19: No useCallback needed, React Compiler handles optimization
+  function setValue(value: T | ((val: T) => T)) {
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
 
       if (typeof window !== 'undefined') {
-        localStorage.setItem(key, JSON.stringify(valueToStore));
+        localStorage.setItem(versionedKey, JSON.stringify(valueToStore));
       }
     } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error);
+      logger.error(`Error setting localStorage key "${key}"`, error);
     }
-  }, [key, storedValue]);
+  }
 
   return [storedValue, setValue] as const;
 }

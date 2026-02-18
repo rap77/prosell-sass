@@ -4,7 +4,10 @@
  * These components are loaded on demand to reduce initial bundle size.
  * Icons that are not immediately needed (like OAuth provider icons)
  * should use these dynamic versions.
+ *
+ * CLIENT COMPONENT - Required for ssr: false dynamic imports
  */
+'use client';
 
 import dynamic from 'next/dynamic';
 

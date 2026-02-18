@@ -30,7 +30,6 @@ interface AuthStateResponse {
     is_email_verified: boolean;
     is_2fa_enabled: boolean;
   };
-  accessToken?: string;
 }
 
 // ============================================
@@ -67,7 +66,6 @@ export async function GET(): Promise<NextResponse<AuthStateResponse>> {
     return NextResponse.json({
       isAuthenticated: true,
       user,
-      accessToken,
     });
   } catch (error) {
     // Non-blocking error logging with after() - doesn't delay response

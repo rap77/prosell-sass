@@ -16,7 +16,8 @@
  */
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import Image from "next/image";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { authApi } from "@/lib/api/authApi";
@@ -32,6 +33,9 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+
+// Pre-compiled regex for 6-digit TOTP codes
+const TOTP_REGEX = /^\d{6}$/;
 
 // ============================================
 // TYPES
@@ -77,8 +81,7 @@ interface TwoFactorSetupFormProps {
 
 export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFormProps) {
   const router = useRouter();
-  const { accessToken, updateUser } = useAuth();
-  const [isPending, startTransition] = useTransition();
+  const { updateUser } = useAuth();
 
   const [formState, setFormState] = useState<FormState>({
     state: is2FAEnabled ? "disable" : "loading",
@@ -95,7 +98,26 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
   // Enable 2FA on mount if not already enabled
   useEffect(() => {
     if (!is2FAEnabled) {
-      handleEnable2FA();
+      (async () => {
+        try {
+          setFormState((prev) => ({ ...prev, state: "loading", error: null }));
+          const response = await authApi.enable2FA();
+          setFormState((prev) => ({
+            ...prev,
+            state: "setup",
+            qrCode: response.qr_code,
+            backupCodes: response.backup_codes,
+            error: null,
+          }));
+        } catch (error) {
+          const message = getErrorMessage(error, "Failed to enable 2FA");
+          setFormState((prev) => ({
+            ...prev,
+            state: "error",
+            error: message,
+          }));
+        }
+      })();
     }
   }, [is2FAEnabled]);
 
@@ -104,7 +126,7 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
   // ============================================
 
   const isLoadingState = ["loading", "verifying", "disabling"].includes(formState.state);
-  const isTotpCodeValid = /^\d{6}$/.test(formState.totpCode);
+  const isTotpCodeValid = TOTP_REGEX.test(formState.totpCode);
   const canVerify = !isLoadingState && isTotpCodeValid;
 
   // ============================================
@@ -112,20 +134,10 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
   // ============================================
 
   async function handleEnable2FA() {
-    if (!accessToken || accessToken.trim() === "") {
-      setFormState((prev) => ({
-        ...prev,
-        state: "error",
-        error: "No access token available",
-      }));
-      return;
-    }
+    setFormState((prev) => ({ ...prev, state: "loading", error: null }));
 
     try {
-      setFormState((prev) => ({ ...prev, state: "loading", error: null }));
-
-      const response = await authApi.enable2FA(accessToken);
-
+      const response = await authApi.enable2FA();
       setFormState((prev) => ({
         ...prev,
         state: "setup",
@@ -144,7 +156,7 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
   }
 
   async function handleVerifyCode() {
-    if (!accessToken || !formState.totpCode) {
+    if (!formState.totpCode) {
       setFormState((prev) => ({
         ...prev,
         error: "Please enter the 6-digit code",
@@ -160,60 +172,47 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
       return;
     }
 
-    startTransition(async () => {
-      setFormState((prev) => ({ ...prev, state: "verifying", error: null }));
+    setFormState((prev) => ({ ...prev, state: "verifying", error: null }));
 
-      try {
-        await authApi.verify2FA(formState.totpCode, accessToken);
-        updateUser({ is_2fa_enabled: true });
+    try {
+      await authApi.verify2FA(formState.totpCode);
+      updateUser({ is_2fa_enabled: true });
 
-        setFormState((prev) => ({
-          ...prev,
-          state: "enabled",
-          error: null,
-        }));
-      } catch (error) {
-        const message = getErrorMessage(error, "Failed to verify code");
-        setFormState((prev) => ({
-          ...prev,
-          state: "setup",
-          error: message,
-        }));
-      }
-    });
+      setFormState((prev) => ({
+        ...prev,
+        state: "enabled",
+        error: null,
+      }));
+    } catch (error) {
+      const message = getErrorMessage(error, "Failed to verify code");
+      setFormState((prev) => ({
+        ...prev,
+        state: "setup",
+        error: message,
+      }));
+    }
   }
 
   async function handleDisable2FA() {
-    if (!accessToken || accessToken.trim() === "") {
+    setFormState((prev) => ({ ...prev, state: "disabling", error: null }));
+
+    try {
+      await authApi.disable2FA();
+      updateUser({ is_2fa_enabled: false });
+
       setFormState((prev) => ({
         ...prev,
-        state: "error",
-        error: "No access token available",
+        state: "disabled",
+        error: null,
       }));
-      return;
+    } catch (error) {
+      const message = getErrorMessage(error, "Failed to disable 2FA");
+      setFormState((prev) => ({
+        ...prev,
+        state: "disable",
+        error: message,
+      }));
     }
-
-    startTransition(async () => {
-      setFormState((prev) => ({ ...prev, state: "disabling", error: null }));
-
-      try {
-        await authApi.disable2FA(accessToken);
-        updateUser({ is_2fa_enabled: false });
-
-        setFormState((prev) => ({
-          ...prev,
-          state: "disabled",
-          error: null,
-        }));
-      } catch (error) {
-        const message = getErrorMessage(error, "Failed to disable 2FA");
-        setFormState((prev) => ({
-          ...prev,
-          state: "disable",
-          error: message,
-        }));
-      }
-    });
   }
 
   function handleDownloadBackupCodes() {
@@ -283,9 +282,11 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                 {/* QR Code */}
                 <div className="flex justify-center">
                   {formState.qrCode && (
-                    <img
+                    <Image
                       src={formState.qrCode}
                       alt="QR Code"
+                      width={256}
+                      height={256}
                       className="w-64 h-64 rounded-lg border-2 border"
                     />
                   )}
@@ -360,10 +361,10 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                 <Button
                   type="button"
                   onClick={handleVerifyCode}
-                  disabled={!canVerify || isPending}
+                  disabled={!canVerify || formState.state === "verifying"}
                   className="w-full"
                 >
-                  {isPending ? "Verifying..." : "Verify and Enable"}
+                  {formState.state === "verifying" ? "Verifying..." : "Verify and Enable"}
                 </Button>
 
                 {/* Error Message */}
@@ -494,9 +495,9 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                   onClick={handleDisable2FA}
                   variant="destructive"
                   className="w-full"
-                  disabled={isPending}
+                  disabled={formState.state === "disabling"}
                 >
-                  {isPending ? "Disabling..." : "Disable 2FA"}
+                  {formState.state === "disabling" ? "Disabling..." : "Disable 2FA"}
                 </Button>
               </CardContent>
             </>
