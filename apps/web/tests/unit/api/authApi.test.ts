@@ -284,9 +284,14 @@ describe("authApi Client - Get Current User", () => {
       })
     );
 
-    // Verify no Authorization header is present
+    // Verify the call includes credentials but does NOT include Authorization header
     const fetchCall = mockFetch.mock.calls[0];
-    expect(fetchCall[1].headers).not.toHaveProperty("Authorization");
+    expect(fetchCall[1]).toBeDefined();
+    expect(fetchCall[1].credentials).toBe("include");
+    // If headers exist, ensure Authorization is not present
+    if (fetchCall[1].headers) {
+      expect(fetchCall[1].headers).not.toHaveProperty("Authorization");
+    }
 
     expect(result).toEqual(mockResponse);
   });
@@ -427,9 +432,14 @@ describe("authApi Client - 2FA Operations", () => {
       })
     );
 
-    // Verify no Authorization header is present
+    // Verify the call includes credentials but does NOT include Authorization header
     const fetchCall = mockFetch.mock.calls[0];
-    expect(fetchCall[1].headers).not.toHaveProperty("Authorization");
+    expect(fetchCall[1]).toBeDefined();
+    expect(fetchCall[1].credentials).toBe("include");
+    // If headers exist, ensure Authorization is not present
+    if (fetchCall[1].headers) {
+      expect(fetchCall[1].headers).not.toHaveProperty("Authorization");
+    }
 
     expect(result).toEqual(mockResponse);
   });
@@ -451,9 +461,14 @@ describe("authApi Client - 2FA Operations", () => {
       })
     );
 
-    // Verify no Authorization header is present
+    // Verify the call includes credentials but does NOT include Authorization header
     const fetchCall = mockFetch.mock.calls[0];
-    expect(fetchCall[1].headers).not.toHaveProperty("Authorization");
+    expect(fetchCall[1]).toBeDefined();
+    expect(fetchCall[1].credentials).toBe("include");
+    // If headers exist, ensure Authorization is not present
+    if (fetchCall[1].headers) {
+      expect(fetchCall[1].headers).not.toHaveProperty("Authorization");
+    }
 
     expect(result).toEqual({ message: "2FA verificado" });
   });
@@ -474,9 +489,14 @@ describe("authApi Client - 2FA Operations", () => {
       })
     );
 
-    // Verify no Authorization header is present
+    // Verify the call includes credentials but does NOT include Authorization header
     const fetchCall = mockFetch.mock.calls[0];
-    expect(fetchCall[1].headers).not.toHaveProperty("Authorization");
+    expect(fetchCall[1]).toBeDefined();
+    expect(fetchCall[1].credentials).toBe("include");
+    // If headers exist, ensure Authorization is not present
+    if (fetchCall[1].headers) {
+      expect(fetchCall[1].headers).not.toHaveProperty("Authorization");
+    }
 
     expect(result).toEqual({ message: "2FA deshabilitado" });
   });
