@@ -1,2 +1,2 @@
 export { useAuthStore } from "./authStore";
-export type { User, AuthTokens, LoginCredentials, RegisterData, AuthError } from "./authStore";
+export type { User, LoginCredentials, RegisterData, AuthError } from "./authStore";

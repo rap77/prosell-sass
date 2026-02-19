@@ -63,18 +63,15 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 // IMPORTS & SETUP
 // ============================================
 
-import { apiCache, generateCacheKey, shouldCacheRequest } from '../cache/lru-cache';
+import { apiCache, generateCacheKey } from '../cache/lru-cache';
 import { createAuthCacheKey, createUserCacheKey } from '../cache/cache-utils';
 import {
-  cacheFunction,
-  createLookupMap,
+  createLookupSet,
   earlyExit,
   immutableSort,
   storageCache,
-  useMemoize,
   createEventHandlerRef,
   batchCSS,
-  createLookupSet,
   withArrayLengthCheck,
   hoistRegExp
 } from "@/lib/utils";
@@ -179,7 +176,7 @@ export const authApi = {
 
     // Early exit if cached result exists
     if (cached) {
-      return cached;
+      return cached as unknown as LoginResponse;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -227,7 +224,7 @@ export const authApi = {
 
     // Early exit if cached result exists
     if (cached) {
-      return cached;
+      return cached as unknown as LoginResponse;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
@@ -269,7 +266,7 @@ export const authApi = {
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
-      return cached;
+      return cached as unknown as RefreshTokenResponse;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
@@ -337,7 +334,7 @@ export const authApi = {
       // Try to get from cache first
       const cached = apiCache.get(cacheKey);
       if (cached !== null) {
-        return Promise.resolve(cached);
+        return Promise.resolve(cached as unknown as UserResponse);
       }
 
       // Use deduplication for concurrent requests
@@ -354,7 +351,7 @@ export const authApi = {
         userLookupCache.set(result.id, result);
 
         return result;
-      });
+      }) as Promise<UserResponse>;
     };
   })(),
 
@@ -372,7 +369,7 @@ export const authApi = {
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
-      return cached;
+      return cached as unknown as MessageResponse;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/verify-email`, {
@@ -405,7 +402,7 @@ export const authApi = {
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
-      return cached;
+      return cached as unknown as MessageResponse;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
@@ -445,7 +442,7 @@ export const authApi = {
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
-      return cached;
+      return cached as unknown as MessageResponse;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
@@ -478,7 +475,7 @@ export const authApi = {
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
-      return cached;
+      return cached as unknown as Enable2FAResponse;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/2fa/enable`, {
@@ -513,7 +510,7 @@ export const authApi = {
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
-      return cached;
+      return cached as unknown as MessageResponse;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/2fa/verify`, {
@@ -544,7 +541,7 @@ export const authApi = {
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
-      return cached;
+      return cached as unknown as MessageResponse;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/2fa/disable`, {

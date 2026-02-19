@@ -37,7 +37,7 @@ export class LocalStorageSchemaManager {
         // Migration from 0.9.0 to 1.0.0
         // Add timestamp to all stored data
         return {
-          ...data,
+          ...(data as Record<string, unknown>),
           timestamp: Date.now(),
         };
       },
@@ -49,7 +49,7 @@ export class LocalStorageSchemaManager {
         // Migration from 0.8.0 to 0.9.0
         // Add version field to all stored data
         return {
-          ...data,
+          ...(data as Record<string, unknown>),
           version: '0.9.0',
           timestamp: Date.now(),
         };

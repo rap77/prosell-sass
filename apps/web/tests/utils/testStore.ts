@@ -24,8 +24,6 @@ import type {
 interface TestAuthState {
   // State
   user: User | null;
-  accessToken: string | null;
-  refreshTokenValue: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: AuthError | null;
@@ -34,7 +32,6 @@ interface TestAuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  refreshToken: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
@@ -50,8 +47,6 @@ interface TestAuthState {
 export const useTestAuthStore = create<TestAuthState>((set, get) => ({
   // Initial state
   user: null,
-  accessToken: null,
-  refreshTokenValue: null,
   isAuthenticated: false,
   isLoading: false,
   error: null,
@@ -67,8 +62,6 @@ export const useTestAuthStore = create<TestAuthState>((set, get) => ({
 
       set({
         user: response.user,
-        accessToken: response.tokens.access_token,
-        refreshTokenValue: response.tokens.refresh_token,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -101,8 +94,6 @@ export const useTestAuthStore = create<TestAuthState>((set, get) => ({
 
       set({
         user: response.user,
-        accessToken: response.tokens.access_token,
-        refreshTokenValue: response.tokens.refresh_token,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -130,8 +121,6 @@ export const useTestAuthStore = create<TestAuthState>((set, get) => ({
 
       set({
         user: null,
-        accessToken: null,
-        refreshTokenValue: null,
         isAuthenticated: false,
         isLoading: false,
         error: null,
@@ -140,8 +129,6 @@ export const useTestAuthStore = create<TestAuthState>((set, get) => ({
       // Logout locally even if API fails
       set({
         user: null,
-        accessToken: null,
-        refreshTokenValue: null,
         isAuthenticated: false,
         isLoading: false,
         error: null,
@@ -149,38 +136,7 @@ export const useTestAuthStore = create<TestAuthState>((set, get) => ({
     }
   },
 
-  refreshToken: async () => {
-    const { refreshTokenValue: currentRefreshToken } = get();
 
-    if (!currentRefreshToken) {
-      set({
-        user: null,
-        accessToken: null,
-        refreshTokenValue: null,
-        isAuthenticated: false,
-      });
-      return;
-    }
-
-    try {
-      const tokens = await authApi.refreshToken(currentRefreshToken);
-
-      set({
-        accessToken: tokens.access_token,
-        refreshTokenValue: tokens.refresh_token,
-      });
-    } catch (_unknownError) {
-      set({
-        user: null,
-        accessToken: null,
-        refreshTokenValue: null,
-        isAuthenticated: false,
-        error: {
-          message: "Sesión expirada",
-        },
-      });
-    }
-  },
 
   updateUser: (updates: Partial<User>) => {
     const { user } = get();
@@ -205,8 +161,6 @@ export const useTestAuthStore = create<TestAuthState>((set, get) => ({
   reset: () => {
     set({
       user: null,
-      accessToken: null,
-      refreshTokenValue: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,

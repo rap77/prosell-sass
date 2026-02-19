@@ -361,10 +361,10 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                 <Button
                   type="button"
                   onClick={handleVerifyCode}
-                  disabled={!canVerify || formState.state === "verifying"}
+                  disabled={!canVerify}
                   className="w-full"
                 >
-                  {formState.state === "verifying" ? "Verifying..." : "Verify and Enable"}
+                  Verify and Enable
                 </Button>
 
                 {/* Error Message */}
@@ -495,9 +495,8 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                   onClick={handleDisable2FA}
                   variant="destructive"
                   className="w-full"
-                  disabled={formState.state === "disabling"}
                 >
-                  {formState.state === "disabling" ? "Disabling..." : "Disable 2FA"}
+                  Disable 2FA
                 </Button>
               </CardContent>
             </>

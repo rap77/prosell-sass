@@ -57,7 +57,9 @@ export class LRUCache<K, V> {
     // Check if we need to evict the least recently used item
     if (this.cache.size >= this.maxSize) {
       const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
     }
 
     // Add new entry

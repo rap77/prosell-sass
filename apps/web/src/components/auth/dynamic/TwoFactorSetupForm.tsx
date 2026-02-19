@@ -182,6 +182,28 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
   // HANDLERS
   // ============================================
 
+  const handleEnable2FA = async () => {
+    setFormState((prev) => ({ ...prev, state: "loading", error: null }));
+
+    try {
+      const response = await authApi.enable2FA();
+      setFormState((prev) => ({
+        ...prev,
+        state: "setup",
+        qrCode: response.qr_code,
+        backupCodes: response.backup_codes,
+        error: null,
+      }));
+    } catch (error) {
+      const message = getErrorMessage(error, "Failed to enable 2FA");
+      setFormState((prev) => ({
+        ...prev,
+        state: "error",
+        error: message,
+      }));
+    }
+  };
+
   const handleVerifyCode = async () => {
     try {
       setFormState((prev) => ({ ...prev, state: "verifying", error: null }));
