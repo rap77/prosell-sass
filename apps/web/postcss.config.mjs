@@ -3,9 +3,11 @@
  *
  * @see https://tailwindcss.com/docs/using-with-preprocessors
  */
-export default {
+const config = {
   plugins: {
     tailwindcss: {},
     autoprefixer: {},
   },
 };
+
+export default config;

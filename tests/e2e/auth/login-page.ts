@@ -19,7 +19,7 @@ export class LoginPage extends BasePage {
   readonly passwordInput: Locator;
   readonly submitButton: Locator;
   readonly googleButton: Locator;
-  readonly githubButton: Locator;
+  readonly facebookButton: Locator;
   readonly forgotPasswordLink: Locator;
   readonly registerLink: Locator;
   readonly heading: Locator;
@@ -27,14 +27,14 @@ export class LoginPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    // Form inputs - getByLabel for form controls
-    this.emailInput = page.getByLabel("Email");
-    this.passwordInput = page.getByLabel("Password");
+    // Form inputs - use id selectors which are unique
+    this.emailInput = page.locator("#email");
+    this.passwordInput = page.locator("input#password-password");
 
     // Buttons - getByRole for interactive elements
     this.submitButton = page.getByRole("button", { name: /sign in/i });
     this.googleButton = page.getByRole("button", { name: /google/i });
-    this.githubButton = page.getByRole("button", { name: /github/i });
+    this.facebookButton = page.getByRole("button", { name: /facebook/i });
 
     // Links
     this.forgotPasswordLink = page.getByRole("link", { name: /forgot password/i });

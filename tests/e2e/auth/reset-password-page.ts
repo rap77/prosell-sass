@@ -17,18 +17,18 @@ export class ResetPasswordPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    // Form inputs
-    this.newPasswordInput = page.getByLabel("New Password");
-    this.confirmPasswordInput = page.getByLabel("Confirm Password");
+    // Form inputs - Use specific IDs
+    this.newPasswordInput = page.locator("#password-password");
+    this.confirmPasswordInput = page.locator("#password-confirmPassword");
 
-    // Buttons
-    this.submitButton = page.getByRole("button", { name: /reset password/i });
+    // Buttons - Case-sensitive match
+    this.submitButton = page.getByRole("button", { name: "Reset Password" });
 
-    // Links
-    this.signInLink = page.getByRole("link", { name: /sign in/i });
+    // Links - "Back to Login" instead of "sign in"
+    this.signInLink = page.getByRole("link", { name: "Back to Login" });
 
-    // Heading
-    this.heading = page.getByRole("heading", { name: /reset your password/i });
+    // Heading - Use .first() because of sr-only h1
+    this.heading = page.getByRole("heading", { name: /reset your password/i }).first();
   }
 
   /**
@@ -87,7 +87,8 @@ export class ResetPasswordPage extends BasePage {
    * Verify success message is displayed
    */
   async verifySuccessMessage(): Promise<void> {
-    const successMessage = this.page.getByText(/password has been reset/i);
+    // Look for "Password Reset Successful" heading
+    const successMessage = this.page.getByRole("heading", { name: "Password Reset Successful" });
     await expect(successMessage).toBeVisible();
   }
 

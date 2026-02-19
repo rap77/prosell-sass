@@ -124,6 +124,7 @@ export function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    mode: "onBlur", // Validate on blur (after user leaves field)
     defaultValues: {
       email: "",
       password: "",
@@ -161,8 +162,6 @@ export function LoginForm() {
       return;
     }
 
-
-
     // Use transition for non-urgent state updates
     startTransition(async () => {
       await login(data.email, data.password);
@@ -191,7 +190,6 @@ export function LoginForm() {
         name="login"
         onSubmit={handleSubmit(onSubmit)}
         className="flex flex-col gap-4"
-        noValidate
       >
         {/* Email Input */}
         <div className="flex flex-col gap-2">

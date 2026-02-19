@@ -5,7 +5,7 @@
  * and delegates to ResetPasswordForm client component.
  */
 
-import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
+import { ResetPasswordPageContent } from "./ResetPasswordPageContent";
 
 interface ResetPasswordPageProps {
   searchParams: Promise<{ token?: string }>;
@@ -16,7 +16,7 @@ export default async function ResetPasswordPage({
 }: ResetPasswordPageProps) {
   const { token } = await searchParams;
 
-  return <ResetPasswordForm token={token} />;
+  return <ResetPasswordPageContent token={token} />;
 }
 
 // Metadata for SEO

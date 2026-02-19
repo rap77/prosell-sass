@@ -33,21 +33,15 @@ export function generateTestUser() {
  * Get existing test user credentials for E2E testing
  *
  * NOTE: These should ONLY work in test environment with mock API.
- * Environment variables MUST be set for tests to work.
+ * Falls back to default test credentials if env vars are not set.
  *
- * Required env vars:
- * - TEST_USER_EMAIL
- * - TEST_USER_PASSWORD
+ * Optional env vars:
+ * - TEST_USER_EMAIL (default: test@example.com)
+ * - TEST_USER_PASSWORD (default: TestPassword123!)
  */
 export function getExistingUser() {
-  const email = process.env.TEST_USER_EMAIL;
-  const password = process.env.TEST_USER_PASSWORD;
-
-  if (!email || !password) {
-    throw new Error(
-      "TEST_USER_EMAIL and TEST_USER_PASSWORD environment variables must be set for E2E tests"
-    );
-  }
+  const email = process.env.TEST_USER_EMAIL || "test@example.com";
+  const password = process.env.TEST_USER_PASSWORD || "TestPassword123!";
 
   return { email, password };
 }

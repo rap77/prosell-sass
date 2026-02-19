@@ -417,7 +417,8 @@ describe("RegisterForm Component", () => {
     it("should have proper heading", () => {
       render(<RegisterForm />);
 
-      expect(screen.getByRole("heading", { level: 2, name: /create your account/i })).toBeInTheDocument();
+      // RegisterForm uses <p> for visual heading (h2 is in RegisterPageContent to avoid duplication)
+      expect(screen.getByText(/create your account/i)).toBeInTheDocument();
     });
 
     it("should have proper form structure", () => {

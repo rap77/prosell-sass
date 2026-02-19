@@ -4,10 +4,10 @@
  * Server Component for password reset request.
  */
 
-import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
+import { ForgotPasswordPageContent } from "./ForgotPasswordPageContent";
 
 export default function ForgotPasswordPage() {
-  return <ForgotPasswordForm />;
+  return <ForgotPasswordPageContent />;
 }
 
 // Metadata for SEO

@@ -335,7 +335,7 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                     <li>Open your authenticator app (Google Authenticator, Authy, etc.)</li>
                     <li>Scan the QR code above</li>
                     <li>Enter the 6-digit code below</li>
-                    <li>Click "Verify and Enable" to complete setup</li>
+                    <li>Click &quot;Verify and Enable&quot; to complete setup</li>
                   </ol>
                 </div>
 

@@ -58,6 +58,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   // Validate token on mount
   useEffect(() => {
     if (!token || token.trim() === "") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTokenError(true);
     }
   }, [token]);
@@ -106,9 +107,10 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                   </svg>
                 </div>
 
-                <CardTitle className="text-3xl mb-2">
+                {/* Use h2 for proper heading order after h1 (sr-only) */}
+                <h2 className="text-3xl font-semibold leading-none tracking-tight mb-2">
                   Invalid Reset Link
-                </CardTitle>
+                </h2>
 
                 <CardDescription className="mb-8">
                   The password reset link is invalid or has expired. Please request a new one.
@@ -160,9 +162,10 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                   </svg>
                 </div>
 
-                <CardTitle className="text-3xl mb-2">
+                {/* Use h2 for proper heading order after h1 (sr-only) */}
+                <h2 className="text-3xl font-semibold leading-none tracking-tight mb-2">
                   Password Reset Successful
-                </CardTitle>
+                </h2>
 
                 <CardDescription className="mb-8">
                   Your password has been successfully reset. You can now sign in with your new password.
@@ -187,9 +190,10 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
       <div className="max-w-md w-full">
         <Card>
           <CardHeader>
-            <CardTitle className="text-3xl">
+            {/* Use h2 for proper heading order after h1 (sr-only) */}
+            <h2 className="text-3xl font-semibold leading-none tracking-tight">
               Reset Your Password
-            </CardTitle>
+            </h2>
             <CardDescription>
               Enter your new password below.
             </CardDescription>

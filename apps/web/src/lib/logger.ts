@@ -25,7 +25,6 @@ export const logger = {
    */
   info(message: string, ...args: any[]): void {
     if (process.env.NODE_ENV === "development") {
-      // eslint-disable-next-line no-console
       console.log(`[INFO] ${message}`, ...args);
     }
   },
@@ -36,7 +35,6 @@ export const logger = {
    * TODO: In production, integrate with Sentry/Axiom
    */
   error(message: string, error?: any): void {
-    // eslint-disable-next-line no-console
     console.error(`[ERROR] ${message}`, error);
   },
 
@@ -46,7 +44,6 @@ export const logger = {
    */
   warn(message: string, ...args: any[]): void {
     if (process.env.NODE_ENV === "development") {
-      // eslint-disable-next-line no-console
       console.warn(`[WARN] ${message}`, ...args);
     }
   },

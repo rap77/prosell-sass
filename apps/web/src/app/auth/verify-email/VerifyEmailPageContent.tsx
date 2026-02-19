@@ -1,21 +1,25 @@
 /**
- * LoginPageContent - Client component with the login page UI
+ * VerifyEmailPageContent - Client component with the verify email page UI
  *
- * This component contains all the visual elements of the login page.
- * The async server page (page.tsx) handles auth redirect and renders this.
+ * This component contains all the visual elements of the verify email page.
+ * The async server page (page.tsx) renders this.
  */
 
 "use client";
 
 import Link from "next/link";
-import { LoginForm } from "@/components/auth/LoginForm";
+import { VerifyEmailForm } from "@/components/auth/VerifyEmailForm";
 
-export function LoginPageContent() {
+interface VerifyEmailPageContentProps {
+  token?: string;
+}
+
+export function VerifyEmailPageContent({ token }: VerifyEmailPageContentProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 px-4 py-12 sm:px-6 lg:px-8">
       <main className="max-w-md w-full space-y-8">
         {/* Hidden h1 for accessibility (required by WCAG) */}
-        <h1 className="sr-only">Sign In to ProSell</h1>
+        <h1 className="sr-only">Verify Your Email - ProSell</h1>
 
         {/* Logo/Brand */}
         <div className="text-center">
@@ -35,15 +39,15 @@ export function LoginPageContent() {
           </Link>
         </div>
 
-        {/* Login Form Card */}
+        {/* Verify Email Form Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700">
-          <LoginForm />
+          <VerifyEmailForm token={token} />
         </div>
 
         {/* Footer */}
         <div className="text-center text-sm text-slate-600 dark:text-slate-400">
           <p>
-            By signing in, you agree to our{" "}
+            By using our service, you agree to our{" "}
             <Link
               href="/terms"
               className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"

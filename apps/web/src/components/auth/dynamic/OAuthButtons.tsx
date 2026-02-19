@@ -127,7 +127,7 @@ function OAuthButton({
       className={cn(
         "w-full",
         variant === "google" && "bg-background text-foreground hover:bg-accent hover:text-accent-foreground",
-        variant === "facebook" && "bg-[#1877F2] hover:bg-[#166FE5] text-white border-[#1877F2]",
+        variant === "facebook" && "bg-[#0D5C9E] hover:bg-[#0B4A7D] text-white border-[#0D5C9E] font-semibold",
         className
       )}
     >

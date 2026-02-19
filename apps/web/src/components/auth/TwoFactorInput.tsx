@@ -126,6 +126,7 @@ export function TwoFactorInput({
   useEffect(() => {
     if (isControlled) {
       if (controlledValue === "") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDigits(Array(CODE_LENGTH).fill(""));
       } else {
         const newDigits = controlledValue.split("").slice(0, CODE_LENGTH);

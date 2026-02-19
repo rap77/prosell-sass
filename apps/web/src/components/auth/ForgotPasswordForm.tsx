@@ -73,9 +73,10 @@ export function ForgotPasswordForm() {
                   <CheckIcon className="w-8 h-8 text-green-600 dark:text-green-400" />
                 </div>
 
-                <CardTitle className="text-3xl mb-2">
+                {/* Use h2 for proper heading order after h1 (sr-only) */}
+                <h2 className="text-3xl font-semibold leading-none tracking-tight mb-2">
                   Check Your Email
-                </CardTitle>
+                </h2>
 
                 <CardDescription className="mb-2">
                   We sent a password reset link to{" "}
@@ -117,11 +118,12 @@ export function ForgotPasswordForm() {
       <div className="max-w-md w-full">
         <Card>
           <CardHeader>
-            <CardTitle className="text-3xl">
+            {/* Use h2 for proper heading order after h1 (sr-only) */}
+            <h2 className="text-3xl font-semibold leading-none tracking-tight">
               Forgot Your Password?
-            </CardTitle>
+            </h2>
             <CardDescription>
-              Enter your email address and we'll send you a link to reset your password.
+              Enter your email address and we&apos;ll send you a link to reset your password.
             </CardDescription>
           </CardHeader>
 

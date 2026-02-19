@@ -58,7 +58,7 @@ export interface AuthError {
 // STORE INTERFACE
 // ============================================
 
-interface AuthState {
+export interface AuthState {
   // State
   user: User | null;
   isAuthenticated: boolean;

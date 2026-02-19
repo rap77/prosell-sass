@@ -29,6 +29,7 @@ export function VerifyEmailForm({ token }: VerifyEmailFormProps) {
   useEffect(() => {
     // Validate token exists
     if (!token || token.trim() === "") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState("error");
       setError("Missing or invalid token");
       return;
@@ -95,9 +96,10 @@ export function VerifyEmailForm({ token }: VerifyEmailFormProps) {
             >
               <CheckIcon className="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
-            <CardTitle className="text-2xl mb-2">
+            {/* Use h2 for proper heading order after h1 (sr-only) */}
+            <h2 className="text-2xl font-semibold leading-none tracking-tight mb-2">
               Email Verified Successfully!
-            </CardTitle>
+            </h2>
             <p className="text-muted-foreground text-center mb-8">
               Your email has been verified. You can now log in to your account.
             </p>
@@ -119,11 +121,12 @@ export function VerifyEmailForm({ token }: VerifyEmailFormProps) {
             >
               <XIcon className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
-            <CardTitle className="text-2xl mb-2">
+            {/* Use h2 for proper heading order after h1 (sr-only) */}
+            <h2 className="text-2xl font-semibold leading-none tracking-tight mb-2">
               {state === "error" && error?.includes("not found")
                 ? "Verification Link Not Found"
                 : "Verification Failed"}
-            </CardTitle>
+            </h2>
             <p className="text-muted-foreground text-center mb-2">
               {error ||
                 "Invalid or expired token. The verification link may have expired."}
@@ -153,9 +156,10 @@ export function VerifyEmailForm({ token }: VerifyEmailFormProps) {
       <div className="max-w-md w-full">
         <Card>
           <CardHeader>
-            <CardTitle className="text-3xl">
+            {/* Use h2 for proper heading order after h1 (sr-only) */}
+            <h2 className="text-3xl font-semibold leading-none tracking-tight">
               Email Verification
-            </CardTitle>
+            </h2>
           </CardHeader>
           <CardContent>
             {renderContent()}

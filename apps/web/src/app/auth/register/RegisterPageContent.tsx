@@ -13,7 +13,10 @@ import { RegisterForm } from "@/components/auth/RegisterForm";
 export function RegisterPageContent() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+      <main className="max-w-md w-full space-y-8">
+        {/* Hidden h1 for accessibility (required by WCAG) */}
+        <h1 className="sr-only">Create your account - ProSell</h1>
+
         {/* Logo/Brand */}
         <div className="text-center">
           <Link
@@ -30,6 +33,7 @@ export function RegisterPageContent() {
             </svg>
             <span>ProSell</span>
           </Link>
+          {/* Use h2 for proper heading order after h1 (sr-only) */}
           <h2 className="mt-6 text-3xl font-extrabold text-slate-900 dark:text-slate-100">
             Create your account
           </h2>
@@ -75,7 +79,7 @@ export function RegisterPageContent() {
             </Link>
           </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

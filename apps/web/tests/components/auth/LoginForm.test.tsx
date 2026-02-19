@@ -134,8 +134,9 @@ describe("LoginForm Component", () => {
       const user = userEvent.setup();
       render(<LoginForm />);
 
-      const submitButton = screen.getByRole("button", { name: /sign in/i });
-      await user.click(submitButton);
+      const emailInput = screen.getByLabelText(/^Email$/);
+      await user.click(emailInput); // Focus the field
+      await user.tab(); // Blur to trigger validation with mode="onBlur"
 
       expect(await screen.findByText("Email is required")).toBeInTheDocument();
     });
@@ -146,9 +147,7 @@ describe("LoginForm Component", () => {
 
       const emailInput = screen.getByLabelText(/^Email$/);
       await user.type(emailInput, "invalid-email");
-
-      const submitButton = screen.getByRole("button", { name: /sign in/i });
-      await user.click(submitButton);
+      await user.tab(); // Blur to trigger validation with mode="onBlur"
 
       expect(await screen.findByText("Invalid email address")).toBeInTheDocument();
     });
@@ -157,11 +156,17 @@ describe("LoginForm Component", () => {
       const user = userEvent.setup();
       render(<LoginForm />);
 
+      // Fill email first (valid)
       const emailInput = screen.getByLabelText(/^Email$/);
       await user.type(emailInput, "user@example.com");
+      await user.tab(); // Blur email field to validate it
 
-      const submitButton = screen.getByRole("button", { name: /sign in/i });
-      await user.click(submitButton);
+      // Touch password field and blur to trigger validation
+      const passwordInput = screen.getByLabelText(/Password/); // More flexible matcher
+      await user.click(passwordInput);
+      await user.type(passwordInput, "a"); // Type something to mark as touched
+      await user.clear(passwordInput); // Clear it
+      await user.tab(); // Blur to trigger validation with mode="onBlur"
 
       expect(await screen.findByText("Password is required")).toBeInTheDocument();
     });
@@ -173,11 +178,9 @@ describe("LoginForm Component", () => {
       const emailInput = screen.getByLabelText(/^Email$/);
       await user.type(emailInput, "user@example.com");
 
-      const passwordInput = screen.getByPlaceholderText(/enter your password/i);
+      const passwordInput = screen.getByLabelText(/Password/); // More flexible matcher
       await user.type(passwordInput, "short");
-
-      const submitButton = screen.getByRole("button", { name: /sign in/i });
-      await user.click(submitButton);
+      await user.tab(); // Blur to trigger validation with mode="onBlur"
 
       expect(await screen.findByText("Password must be at least 8 characters")).toBeInTheDocument();
     });
@@ -332,10 +335,10 @@ describe("LoginForm Component", () => {
       const user = userEvent.setup();
       render(<LoginForm />);
 
-      const submitButton = screen.getByRole("button", { name: /sign in/i });
-      await user.click(submitButton);
-
       const emailInput = screen.getByLabelText(/^Email$/);
+      await user.click(emailInput); // Focus the field
+      await user.tab(); // Blur to trigger validation with mode="onBlur"
+
       const errorMessage = await screen.findByText("Email is required");
 
       expect(emailInput).toHaveAttribute("aria-invalid", "true");

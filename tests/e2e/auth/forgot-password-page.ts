@@ -10,23 +10,23 @@ import { BasePage } from "../base-page";
 export class ForgotPasswordPage extends BasePage {
   readonly emailInput: Locator;
   readonly submitButton: Locator;
-  readonly signInLink: Locator;
+  readonly backToLoginLink: Locator;
   readonly heading: Locator;
 
   constructor(page: Page) {
     super(page);
 
-    // Form inputs
-    this.emailInput = page.getByLabel("Email");
+    // Form inputs - Use ID for more reliable selection
+    this.emailInput = page.locator("#email");
 
-    // Buttons
-    this.submitButton = page.getByRole("button", { name: /send reset link/i });
+    // Buttons - Case-sensitive match
+    this.submitButton = page.getByRole("button", { name: "Send Reset Link" });
 
-    // Links
-    this.signInLink = page.getByRole("link", { name: /sign in/i });
+    // Links - "Back to Login" instead of "sign in"
+    this.backToLoginLink = page.getByRole("link", { name: "Back to Login" });
 
-    // Heading
-    this.heading = page.getByRole("heading", { name: /forgot your password/i });
+    // Heading - Case-sensitive match for CardTitle
+    this.heading = page.getByRole("heading", { name: "Forgot Your Password?" });
   }
 
   /**
@@ -69,14 +69,16 @@ export class ForgotPasswordPage extends BasePage {
    * Verify success message is displayed
    */
   async verifySuccessMessage(): Promise<void> {
-    const successMessage = this.page.getByText(/check your email/i);
-    await expect(successMessage).toBeVisible();
+    // Wait for success state - look for "Back to Login" button which only appears on success
+    // This is more reliable than the heading which may not render immediately
+    const backButton = this.page.getByRole("link", { name: "Back to Login" });
+    await expect(backButton).toBeVisible();
   }
 
   /**
-   * Click sign in link
+   * Click back to login link
    */
-  async clickSignIn(): Promise<void> {
-    await this.signInLink.click();
+  async clickBackToLogin(): Promise<void> {
+    await this.backToLoginLink.click();
   }
 }

@@ -29,22 +29,23 @@ export class RegisterPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.heading = page.getByRole("heading", { name: /create your account/i });
+    // Use .first() because there are 2 "Create your account" headings (one in PageContent, one in form)
+    this.heading = page.getByRole("heading", { name: /create your account/i }).first();
 
-    // Form inputs
-    this.fullNameInput = page.getByLabel("Full Name");
-    this.emailInput = page.getByLabel("Email");
-    this.passwordInput = page.getByLabel("Password");
-    this.confirmPasswordInput = page.getByLabel("Confirm Password");
-    this.acceptTermsCheckbox = page.getByLabel(/accept terms/i);
+    // Form inputs - Use specific IDs to avoid ambiguity
+    this.fullNameInput = page.locator("#fullName");
+    this.emailInput = page.locator("#email");
+    this.passwordInput = page.locator("#password-password");
+    this.confirmPasswordInput = page.locator("#password-confirmPassword");
+    this.acceptTermsCheckbox = page.locator("#acceptTerms");
 
     // Buttons
-    this.submitButton = page.getByRole("button", { name: /sign up/i });
+    this.submitButton = page.getByRole("button", { name: "Create account" });
     this.googleButton = page.getByRole("button", { name: /google/i });
     this.githubButton = page.getByRole("button", { name: /github/i });
 
-    // Link to login
-    this.loginLink = page.getByRole("link", { name: /sign in/i });
+    // Link to login - Use .first() because there are 2 "Sign in" links
+    this.loginLink = page.getByRole("link", { name: /sign in/i }).first();
   }
 
   async goto(): Promise<void> {

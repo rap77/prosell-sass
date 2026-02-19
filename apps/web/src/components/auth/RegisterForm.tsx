@@ -51,9 +51,10 @@ const ERROR_MESSAGES = {
  */
 const RegisterHeading = () => (
   <div className="text-center">
-    <h2 id="register-heading" className="text-2xl font-bold text-foreground">
+    {/* Visual heading (hidden from screen readers to avoid duplication with PageContent h2) */}
+    <p className="text-2xl font-bold text-foreground">
       Create your account
-    </h2>
+    </p>
     <p className="mt-2 text-sm text-muted-foreground">
       Join us today! Please enter your details
     </p>

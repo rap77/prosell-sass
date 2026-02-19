@@ -5,7 +5,7 @@
  * and delegates to VerifyEmailForm client component.
  */
 
-import { VerifyEmailForm } from "@/components/auth/VerifyEmailForm";
+import { VerifyEmailPageContent } from "./VerifyEmailPageContent";
 
 interface VerifyEmailPageProps {
   searchParams: Promise<{ token?: string }>;
@@ -16,7 +16,7 @@ export default async function VerifyEmailPage({
 }: VerifyEmailPageProps) {
   const { token } = await searchParams;
 
-  return <VerifyEmailForm token={token} />;
+  return <VerifyEmailPageContent token={token} />;
 }
 
 // Metadata for SEO

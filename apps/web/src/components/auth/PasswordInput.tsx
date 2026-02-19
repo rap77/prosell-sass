@@ -192,6 +192,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     // This handles the case when RHF resets or changes the value programmatically
     useEffect(() => {
       if (isControlled && controlledValue !== undefined) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUncontrolledValue(controlledValue);
       }
     }, [isControlled, controlledValue]);
