@@ -12,7 +12,7 @@ vi.mock("@/lib/api/authApi", () => ({
   authApi: {
     login: vi.fn(),
     register: vi.fn(),
-    refreshToken: vi.fn(),
+    // refreshToken removed - tokens handled by httpOnly cookies
     logout: vi.fn(),
     me: vi.fn(),
   },
@@ -303,41 +303,6 @@ describe("useAuth Hook - Authentication Helpers", () => {
     const state = useAuthStore.getState();
     expect(state.isAuthenticated).toBe(true);
     expect(state.user?.email).toBe("new@example.com");
-  });
-
-  it("should provide refresh token action", async () => {
-    // Mock authApi.login
-    vi.mocked(authApi.login).mockResolvedValue({
-      user: {
-        id: "1",
-        email: "test@example.com",
-        first_name: "Test",
-        last_name: "User",
-        role: "sales_agent",
-      },
-      tokens: {
-        access_token: "mock-access-token",
-        refresh_token: "mock-refresh-token",
-      },
-    });
-
-    // Mock authApi.refreshToken
-    vi.mocked(authApi.refreshToken).mockResolvedValue({
-      access_token: "new-mock-access-token",
-      refresh_token: "new-mock-refresh-token",
-    });
-
-    // First login
-    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
-
-    const oldToken = useAuthStore.getState().accessToken;
-
-    // Refresh
-    await useAuthStore.getState().refreshToken();
-
-    const state = useAuthStore.getState();
-    expect(state.accessToken).not.toBe(oldToken);
-    expect(state.isAuthenticated).toBe(true);
   });
 
   it("should expose error state", async () => {

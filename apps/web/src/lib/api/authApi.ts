@@ -22,16 +22,10 @@ interface LoginResponse {
     is_2fa_enabled?: boolean;
     organization_id?: string | null;
   };
-  tokens?: {
-    access_token: string;
-    refresh_token: string;
-  };
 }
 
-interface RefreshTokenResponse {
-  access_token: string;
-  refresh_token: string;
-}
+// RefreshTokenResponse removed - tokens handled by httpOnly cookies
+// Refresh logic is handled server-side, not client-side
 
 interface UserResponse {
   id: string;
@@ -255,38 +249,9 @@ export const authApi = {
   },
 
   /**
-   * Refresh access token
-   * POST /api/auth/refresh
+   * Refresh token removed - tokens handled by httpOnly cookies server-side
+   * Client-side refresh is no longer needed (automatic via cookies)
    */
-  async refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
-    // Early exit if no refresh token
-    if (!refreshToken || refreshToken.trim() === '') {
-      throw new ApiError("Refresh token is required", 400);
-    }
-
-    const cacheKey = createAuthCacheKey('refresh', { refreshToken });
-    const cached = requestCache.get(cacheKey);
-
-    if (cached) {
-      return cached as unknown as RefreshTokenResponse;
-    }
-
-    const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-      credentials: "include", // Important for cookies to be sent and received
-    });
-
-    const result = await handleResponse<RefreshTokenResponse>(response);
-
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
-    return result;
-  },
 
   /**
    * Logout current user

@@ -159,55 +159,8 @@ describe("authApi Client - Register", () => {
   });
 });
 
-describe("authApi Client - Refresh Token", () => {
-  beforeEach(() => {
-    mockFetch.mockReset();
-    mockFetch.mockClear();
-  });
-
-  afterEach(() => {
-    mockFetch.mockClear();
-  });
-
-  it("should call POST /api/auth/refresh with refresh token", async () => {
-    const mockResponse = {
-      access_token: "new-access-token",
-      refresh_token: "mock-refresh-token",
-    };
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    } as Response);
-
-    const result = await authApi.refreshToken("mock-refresh-token");
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/auth/refresh"),
-      expect.objectContaining({
-        method: "POST",
-        headers: expect.objectContaining({
-          "Content-Type": "application/json",
-        }),
-        body: expect.stringContaining("mock-refresh-token"),
-      })
-    );
-
-    expect(result).toEqual(mockResponse);
-  });
-
-  it("should throw error on refresh failure", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 401,
-      json: async () => ({ detail: "Token inválido" }),
-    } as Response);
-
-    await expect(
-      authApi.refreshToken("invalid-token")
-    ).rejects.toThrow("Token inválido");
-  });
-});
+// Refresh token tests removed - tokens handled by httpOnly cookies server-side
+// Client-side refresh is no longer needed
 
 describe("authApi Client - Logout", () => {
   beforeEach(() => {
