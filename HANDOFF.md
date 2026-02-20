@@ -1,35 +1,38 @@
-# Handoff: Pydantic Refactor - Fase 3 COMPLETADA ✅
+# Handoff: Pydantic Refactor - Fase 4 COMPLETADA ✅
 
 **Fecha**: 2026-02-20
-**Sesión**: Fase 3 Application DTOs COMPLETADA y mergeada
-**Estado**: ✅ FASE 1-3 COMPLETADAS | ❌ FASE 4-8 PENDIENTES
-**Tests**: 417/417 PASSING (113 backend + 304 frontend)
+**Sesión**: Fase 4 Infrastructure Migration COMPLETADA y mergeada
+**Estado**: ✅ FASE 1-4 COMPLETADAS | ❌ FASE 5-8 PENDIENTES
+**Tests**: 113/113 PASSING (backend)
 
 ---
 
 ## 🎉 Lo Que Se Logró Esta Sesión
 
-### ✅ Fase 3 COMPLETADA (2026-02-20)
-- **Rama**: `feature/fase-3-application-dtos-completion`
-- **Commit**: `7dbd6f7` - DTOs movidos a archivos separados
+### ✅ Fase 4 COMPLETADA (2026-02-20)
+- **Rama**: `feature/fase-4-infrastructure`
+- **Commit**: `e4b8775` - Infrastructure migration a Pydantic
 - **Merge**: Fast-forward a main completado
 - **Push**: Origin actualizado
 
-### Archivos creados (application/dto/auth/):
-- `common.py` - UserInfo (compartido)
-- `register.py` - RegisterUserRequest/Response
-- `login.py` - LoginUserRequest/Response
-- `oauth.py` - OAuthLoginRequest/Response
-- `two_factor.py` - Enable/Verify/Disable 2FA DTOs
-- `password.py` - RequestPasswordReset/ResetPassword DTOs
-- `email.py` - VerifyEmailRequest/Response
-- `token.py` - RefreshTokenRequest/Response
-- `__init__.py` - Reexporta todos los DTOs
+### Archivos creados (infrastructure/api/schemas/):
+- `auth.py` - 7 request schemas (Register, Login, RefreshToken, Enable2FA, Verify2FA, Disable2FA, OAuth)
+- `responses.py` - 4 response schemas (UserResponse, AuthTokenResponse, MessageResponse, LogoutResponse)
+- `__init__.py` - Reexporta todos los schemas
 
-### Cambios en use cases:
-- DTOs eliminados de inline
-- Imports actualizados a `prosell.application.dto.auth`
-- Arquitectura limpia: DTOs separados de lógica de negocio
+### Cambios en router:
+- Extraídos 8 request schemas de `auth_router.py` (417 → 362 líneas, -13%)
+- Imports limpios desde nuevo módulo `infrastructure.api.schemas`
+
+### Cambios en repositorios:
+- `user_repository_impl`: 17 campos → 1 línea con `model_validate()`
+- `role_repository_impl`: 8 campos → 1 línea
+- `session_repository_impl`: 9 campos → 1 línea
+- **Custom validator** en User entity para `backup_codes` (JSON string → list[str])
+
+### Cambios en servicios:
+- Removido `@abstractmethod` de email_service Protocol
+- Mantenida herencia de Protocol para documentación
 
 ### ✅ Verificación Completa de Tests
 
@@ -54,9 +57,9 @@
 |------|--------|-------|-------|
 | **Fase 1: Foundation** | ✅ Completa | ✅ main | 113/113 |
 | **Fase 2: Domain** | ✅ Completa | ✅ main | 113/113 |
-| **Fase 3: Application** | ✅ **COMPLETA** | ✅ **main** | 113/113 |
-| **Fase 4: Infrastructure** | ❌ No iniciada | - | - |
-| **Fase 5-8**: Validación, Docs, Tests | ❌ No iniciadas | - | - |
+| **Fase 3: Application** | ✅ Completa | ✅ main | 113/113 |
+| **Fase 4: Infrastructure** | ✅ **COMPLETA** | ✅ **main** | 113/113 |
+| **Fase 5-8**: Python 3.13+, Cleanup, Testing, Validación | ❌ No iniciadas | - | - |
 
 ### ✅ Fase 3 COMPLETADA (2026-02-20)
 **Commit**: `e73dd01` - "refactor: DTOs to Pydantic + fixes"
@@ -283,22 +286,18 @@ db374f0 feat(domain): add Pydantic base models                       ← FASE 1
 |--------|-----|------|-------------|
 | Foundation | `db374f0` | Fase 1 | Creó `domain/base.py` con DomainModel, ValueObject, DomainEvent |
 | Domain Migration | `763e5d3` | Fase 2 | Migró Domain Layer a Pydantic BaseModel |
-| Application DTOs | `e73dd01` | Fase 3 ⚠️ | DTOs Pydantic INLINE (parcial) |
-| **Application DTOs** | **`7dbd6f7`** | **Fase 3** ✅ | **DTOs separados en application/dto/auth/** |
+| Application DTOs | `7dbd6f7` | Fase 3 | DTOs separados en application/dto/auth/ |
+| **Infrastructure** | **`e4b8775`** | **Fase 4** ✅ | **Schemas módulo, model_validate(), sin ABC** |
 
 ---
 
-## ✅ Checklist para Próxima Sesión - Fase 4
+## ✅ Checklist para Próxima Sesión - Fase 5
 
-- [ ] Iniciar Fase 4: Infrastructure Schemas
-- [ ] Crear rama `feature/fase-4-infrastructure-schemas`
-- [ ] Crear `infrastructure/api/schemas/` módulo
-- [ ] Extraer schemas de routers FastAPI
-- [ ] Verificar tests (113 backend + 304 frontend)
-- [ ] Commit con GGA review
-- [ ] Merge a main cuando esté completo
-- [ ] Actualizar imports en use_cases
-- [ ] Verificar tests (113 backend + 299 frontend)
+- [ ] Iniciar Fase 5: Python 3.13+ Syntax
+- [ ] Crear rama `feature/fase-5-python313-syntax`
+- [ ] Actualizar type hints (remover compatibilidad con Python <3.13)
+- [ ] Usar nuevos patterns de Python 3.13+ (match/case, type aliases, etc.)
+- [ ] Verificar tests (113 backend)
 - [ ] Commit con GGA review
 - [ ] Merge a main cuando esté completo
 
@@ -317,7 +316,9 @@ db374f0 feat(domain): add Pydantic base models                       ← FASE 1
 
 ---
 
-**PROYECTO LISTO PARA FASE 3** 🚀
+**PROYECTO LISTO PARA FASE 5** 🚀
+
+**Última actualización**: 2026-02-20 - Fase 4 COMPLETADA ✅
 
 ---
 
