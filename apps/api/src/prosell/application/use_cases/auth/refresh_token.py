@@ -2,24 +2,10 @@
 
 from uuid import UUID
 
-from pydantic import BaseModel, Field
-
+from prosell.application.dto.auth import RefreshTokenRequest, RefreshTokenResponse
 from prosell.domain.ports import IJWTService, ITokenHasher
 from prosell.domain.repositories.session_repository import AbstractSessionRepository
 from prosell.domain.repositories.user_repository import AbstractUserRepository
-
-
-class RefreshTokenRequest(BaseModel):
-    """DTO for token refresh request."""
-
-    refresh_token: str = Field(min_length=1)
-
-
-class RefreshTokenResponse(BaseModel):
-    """DTO for token refresh response."""
-
-    access_token: str
-    refresh_token: str
 
 
 class RefreshTokenUseCase:

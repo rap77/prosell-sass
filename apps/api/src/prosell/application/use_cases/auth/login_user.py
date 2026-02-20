@@ -2,8 +2,7 @@
 
 import secrets
 
-from pydantic import BaseModel, EmailStr, Field
-
+from prosell.application.dto.auth import LoginUserRequest, LoginUserResponse, UserInfo
 from prosell.domain.exceptions.auth_exceptions import (
     AccountLockedException,
     EmailNotVerifiedException,
@@ -11,34 +10,6 @@ from prosell.domain.exceptions.auth_exceptions import (
 )
 from prosell.domain.ports import IJWTService, IPasswordService
 from prosell.domain.repositories.user_repository import AbstractUserRepository
-
-
-class UserInfo(BaseModel):
-    """User info nested model."""
-
-    id: str
-    email: str
-    full_name: str
-    roles: list[str] = []
-
-
-class LoginUserRequest(BaseModel):
-    """DTO for login request."""
-
-    email: EmailStr
-    password: str = Field(min_length=1)
-    remember_me: bool = False
-    ip_address: str | None = None
-    user_agent: str | None = None
-
-
-class LoginUserResponse(BaseModel):
-    """DTO for login response."""
-
-    access_token: str
-    refresh_token: str
-    user: UserInfo
-    requires_2fa: bool = False
 
 
 class LoginUserUseCase:

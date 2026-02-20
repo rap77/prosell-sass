@@ -1,9 +1,6 @@
 """Verify 2FA code use case."""
 
-from uuid import UUID
-
-from pydantic import BaseModel, Field
-
+from prosell.application.dto.auth import UserInfo, Verify2FARequest, Verify2FAResponse
 from prosell.domain.entities.session import Session
 from prosell.domain.exceptions.auth_exceptions import (
     Invalid2FACodeException,
@@ -12,32 +9,6 @@ from prosell.domain.exceptions.auth_exceptions import (
 from prosell.domain.ports import IJWTService, ITokenHasher, ITOTPService
 from prosell.domain.repositories.session_repository import AbstractSessionRepository
 from prosell.domain.repositories.user_repository import AbstractUserRepository
-
-
-class UserInfo(BaseModel):
-    """User info nested model."""
-
-    id: str
-    email: str
-    full_name: str
-    roles: list[str] = []
-
-
-class Verify2FARequest(BaseModel):
-    """DTO for 2FA verification."""
-
-    user_id: UUID
-    code: str = Field(min_length=6, max_length=6)
-    ip_address: str | None = None
-    user_agent: str | None = None
-
-
-class Verify2FAResponse(BaseModel):
-    """DTO for 2FA verification response."""
-
-    access_token: str
-    refresh_token: str
-    user: UserInfo
 
 
 class Verify2FAUseCase:

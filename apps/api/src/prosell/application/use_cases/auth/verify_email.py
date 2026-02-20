@@ -1,21 +1,7 @@
 """Email verification use case."""
 
-from pydantic import BaseModel, Field
-
+from prosell.application.dto.auth import VerifyEmailRequest, VerifyEmailResponse
 from prosell.domain.repositories.user_repository import AbstractUserRepository
-
-
-class VerifyEmailRequest(BaseModel):
-    """DTO for email verification request."""
-
-    token: str = Field(min_length=1)
-
-
-class VerifyEmailResponse(BaseModel):
-    """DTO for email verification response."""
-
-    success: bool
-    message: str
 
 
 class VerifyEmailUseCase:

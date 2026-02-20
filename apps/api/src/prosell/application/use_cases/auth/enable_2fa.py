@@ -1,28 +1,15 @@
 """Enable 2FA use case."""
 
-from uuid import UUID
-
-from pydantic import BaseModel, Field
-
+from prosell.application.dto.auth import (
+    Disable2FARequest,
+    Disable2FAResponse,
+    Enable2FARequest,
+    Enable2FAResponse,
+)
 from prosell.application.ports.email_service import AbstractEmailService
 from prosell.domain.exceptions.auth_exceptions import UserNotFoundException
 from prosell.domain.ports import ITOTPService
 from prosell.domain.repositories.user_repository import AbstractUserRepository
-
-
-class Enable2FARequest(BaseModel):
-    """DTO for enabling 2FA."""
-
-    user_id: UUID
-
-
-class Enable2FAResponse(BaseModel):
-    """DTO for 2FA enable response."""
-
-    secret: str
-    qr_code_uri: str
-    backup_codes: list[str]
-    message: str
 
 
 class Enable2FAUseCase:
@@ -75,19 +62,6 @@ class Enable2FAUseCase:
             backup_codes=backup_codes,
             message="2FA enabled. Save your backup codes securely!",
         )
-
-
-class Disable2FARequest(BaseModel):
-    """DTO for disabling 2FA."""
-
-    user_id: UUID
-    totp_code: str = Field(min_length=6, max_length=6)  # Verify with a code before disabling
-
-
-class Disable2FAResponse(BaseModel):
-    """DTO for 2FA disable response."""
-
-    message: str
 
 
 class Disable2FAUseCase:
