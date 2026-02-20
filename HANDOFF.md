@@ -1,23 +1,35 @@
-# Handoff: Pydantic Refactor - Fase 3 PARCIALMENTE COMPLETADA ⚠️
+# Handoff: Pydantic Refactor - Fase 3 COMPLETADA ✅
 
-**Fecha**: 2026-02-20 (actualizado: estado real verificado)
-**Sesión**: Verificación completa del refactor Pydantic
-**Estado**: ✅ FASE 1-2 COMPLETADAS | ⚠️ FASE 3 PARCIAL (DTOs inline) | ❌ FASE 4-8 PENDIENTES
-**Tests**: 412/412 PASSING (113 backend + 299 frontend)
+**Fecha**: 2026-02-20
+**Sesión**: Fase 3 Application DTOs COMPLETADA y mergeada
+**Estado**: ✅ FASE 1-3 COMPLETADAS | ❌ FASE 4-8 PENDIENTES
+**Tests**: 417/417 PASSING (113 backend + 304 frontend)
 
 ---
 
 ## 🎉 Lo Que Se Logró Esta Sesión
 
-### ✅ Verificación de Fase-1 ya mergeada
-- Commit `0c3935e` confirmó merge en main
-- Rama `feature/fase-1-foundation` eliminada
+### ✅ Fase 3 COMPLETADA (2026-02-20)
+- **Rama**: `feature/fase-3-application-dtos-completion`
+- **Commit**: `7dbd6f7` - DTOs movidos a archivos separados
+- **Merge**: Fast-forward a main completado
+- **Push**: Origin actualizado
 
-### ✅ Merge de Fase-2 Domain Migration
-- Rama `feature/fase-2-domain-migration` mergeada a main
-- Commit `478472f` - Merge exitoso
-- Resuelto conflicto en HANDOFF.md
-- Push a origin completado
+### Archivos creados (application/dto/auth/):
+- `common.py` - UserInfo (compartido)
+- `register.py` - RegisterUserRequest/Response
+- `login.py` - LoginUserRequest/Response
+- `oauth.py` - OAuthLoginRequest/Response
+- `two_factor.py` - Enable/Verify/Disable 2FA DTOs
+- `password.py` - RequestPasswordReset/ResetPassword DTOs
+- `email.py` - VerifyEmailRequest/Response
+- `token.py` - RefreshTokenRequest/Response
+- `__init__.py` - Reexporta todos los DTOs
+
+### Cambios en use cases:
+- DTOs eliminados de inline
+- Imports actualizados a `prosell.application.dto.auth`
+- Arquitectura limpia: DTOs separados de lógica de negocio
 
 ### ✅ Verificación Completa de Tests
 
@@ -42,11 +54,11 @@
 |------|--------|-------|-------|
 | **Fase 1: Foundation** | ✅ Completa | ✅ main | 113/113 |
 | **Fase 2: Domain** | ✅ Completa | ✅ main | 113/113 |
-| **Fase 3: Application** | ⚠️ Parcial | ⏳ En progreso | 113/113 |
+| **Fase 3: Application** | ✅ **COMPLETA** | ✅ **main** | 113/113 |
 | **Fase 4: Infrastructure** | ❌ No iniciada | - | - |
 | **Fase 5-8**: Validación, Docs, Tests | ❌ No iniciadas | - | - |
 
-### ⚠️ Estado Real de Fase 3 (PARCIALMENTE COMPLETADA)
+### ✅ Fase 3 COMPLETADA (2026-02-20)
 **Commit**: `e73dd01` - "refactor: DTOs to Pydantic + fixes"
 
 **Lo que se hizo:**
@@ -71,9 +83,9 @@ class RegisterUserResponse(BaseModel): ...  # ← Definido aquí
 
 ---
 
-## 🏗️ Archivos de Fase 2 Mergeados
+## 🏗️ Archivos Mergeados (Fases 1-3)
 
-### Domain Layer (Pydantic 2.12)
+### Domain Layer (Pydantic 2.12) ✅
 ```
 apps/api/src/prosell/domain/
 ├── base.py                    # DomainModel, ValueObject
@@ -91,14 +103,28 @@ apps/api/src/prosell/domain/
     └── user_events.py
 ```
 
+### Application Layer (DTOs separados) ✅
+```
+apps/api/src/prosell/application/
+├── dto/auth/                  # ✅ DTOs en archivos separados
+│   ├── common.py             # UserInfo
+│   ├── register.py           # RegisterUserRequest/Response
+│   ├── login.py              # LoginUserRequest/Response
+│   ├── oauth.py              # OAuthLoginRequest/Response
+│   ├── two_factor.py         # 2FA DTOs
+│   ├── password.py           # Password reset DTOs
+│   ├── email.py              # VerifyEmail DTOs
+│   ├── token.py              # RefreshToken DTOs
+│   └── __init__.py           # Reexports
+└── use_cases/auth/           # ✅ Usan imports de dto.auth
+```
+
 ---
 
-## 🚀 Siguiente Paso: Completar Fase 3 - Application DTOs
+## 🚀 Siguiente Paso: Fase 4 - Infrastructure Schemas
 
-### ⚠️ Estado Actual: PARCIALMENTE COMPLETADO
-Los DTOs Pydantic existen pero están **INLINE** en los use cases. El plan original dice que deben estar en archivos separados.
-
-### Qué FALTA para completar Fase 3:
+### Qué es Fase 4?
+Crear módulo `infrastructure/api/schemas/` para separar los schemas de FastAPI de los routers.
 1. **Mover DTOs de use_cases a dto/auth/ separados**
    - Extraer `RegisterUserRequest/Response` de `register_user.py` → `dto/auth/register.py`
    - Extraer `LoginUserRequest/Response` de `login_user.py` → `dto/auth/login.py`
@@ -239,17 +265,17 @@ pnpm typecheck
 
 ### Branch State
 - **main**: Up to date con origin/main
+- **feature/fase-3-application-dtos-completion**: ✅ Mergeada y eliminada
 - **feature/fase-2-domain-migration**: ✅ Mergeada
 - **feature/fase-1-foundation**: ✅ Eliminada
 
 ### Últimos Commits
 ```
-6150b5e merge(frontend): Frontend Cleanup Sprint complete
-b48b1cd fix: resolve new code review issues
-27d3c84 fix: resolve code review critical issues
-e73dd01 refactor: DTOs to Pydantic + fixes         ← FASE 3 PARCIAL
-763e5d3 refactor(domain): migrate Domain Layer to Pydantic BaseModel  ← FASE 2
-db374f0 feat(domain): add Pydantic base models      ← FASE 1
+7dbd6f7 refactor(application): complete Fase 3 - DTOs separados    ← FASE 3 ✅ COMPLETA
+93cc389 docs(handoff): update Fase 3 status - parcialmente completada
+e73dd01 refactor: DTOs to Pydantic + fixes                          ← FASE 3 PARCIAL
+763e5d3 refactor(domain): migrate Domain Layer to Pydantic BaseModel ← FASE 2
+db374f0 feat(domain): add Pydantic base models                       ← FASE 1
 ```
 
 ### Commits Clave del Refactor Pydantic
@@ -257,15 +283,20 @@ db374f0 feat(domain): add Pydantic base models      ← FASE 1
 |--------|-----|------|-------------|
 | Foundation | `db374f0` | Fase 1 | Creó `domain/base.py` con DomainModel, ValueObject, DomainEvent |
 | Domain Migration | `763e5d3` | Fase 2 | Migró Domain Layer a Pydantic BaseModel |
-| Application DTOs | `e73dd01` | Fase 3 ⚠️ | DTOs Pydantic INLINE (no separados como plan original) |
+| Application DTOs | `e73dd01` | Fase 3 ⚠️ | DTOs Pydantic INLINE (parcial) |
+| **Application DTOs** | **`7dbd6f7`** | **Fase 3** ✅ | **DTOs separados en application/dto/auth/** |
 
 ---
 
-## ✅ Checklist para Completar Fase 3
+## ✅ Checklist para Próxima Sesión - Fase 4
 
-- [x] DTOs Pydantic creados (commit `e73dd01`)
-- [x] Use cases actualizados para usar DTOs Pydantic
-- [ ] **Mover DTOs inline a archivos separados en `application/dto/auth/`**
+- [ ] Iniciar Fase 4: Infrastructure Schemas
+- [ ] Crear rama `feature/fase-4-infrastructure-schemas`
+- [ ] Crear `infrastructure/api/schemas/` módulo
+- [ ] Extraer schemas de routers FastAPI
+- [ ] Verificar tests (113 backend + 304 frontend)
+- [ ] Commit con GGA review
+- [ ] Merge a main cuando esté completo
 - [ ] Actualizar imports en use_cases
 - [ ] Verificar tests (113 backend + 299 frontend)
 - [ ] Commit con GGA review
@@ -296,12 +327,12 @@ db374f0 feat(domain): add Pydantic base models      ← FASE 1
 
 **Por qué**: Mejor validación, type safety, menos código boilerplate
 
-**Dónde estamos**: Fase 2 de 8 completada (Domain Layer)
+**Dónde estamos**: Fase 3 de 8 completada (Application DTOs)
 
-**Cuánto falta**: ~6 fases más (Application, Infrastructure, etc.)
+**Cuánto falta**: ~5 fases más (Infrastructure, Python 3.13+, Cleanup, Testing, Validación)
 
-**Estimación total**: ~20-25 horas de desarrollo
+**Estimación total**: ~15-20 horas de desarrollo restantes
 
 ---
 
-**Fin del Handoff - Fase 2 COMPLETADA** ✅
+**Fin del Handoff - Fase 3 COMPLETADA** ✅
