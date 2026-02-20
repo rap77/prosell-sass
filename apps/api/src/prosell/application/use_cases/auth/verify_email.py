@@ -2,7 +2,6 @@
 
 from pydantic import BaseModel, Field
 
-from prosell.domain.exceptions.auth_exceptions import InvalidCredentialsException
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 
 
@@ -39,13 +38,13 @@ class VerifyEmailUseCase:
             Verification response DTO
 
         Raises:
-            InvalidCredentialsException: If token is invalid or expired
+            ValueError: If token is invalid or expired
         """
         # 1. Get user by verification token
         user = await self.user_repository.get_by_verification_token(request.token)
 
         if not user:
-            raise InvalidCredentialsException("Invalid or expired verification token")
+            raise ValueError("Invalid or expired verification token")
 
         # 2. Mark email as verified
         user.verify_email()
