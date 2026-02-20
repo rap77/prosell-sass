@@ -241,24 +241,10 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
         return True
 
     def _to_entity(self, model: UserModel) -> User:
-        """Convert ORM model to domain entity."""
-        return User(
-            id=model.id,
-            email=model.email,
-            password_hash=model.password_hash,
-            full_name=model.full_name,
-            avatar_url=model.avatar_url,
-            status=UserStatus(model.status),
-            email_verified=model.email_verified,
-            email_verified_at=model.email_verified_at,
-            is_2fa_enabled=model.is_2fa_enabled,
-            totp_secret=model.totp_secret,
-            backup_codes=json.loads(model.backup_codes) if model.backup_codes else None,
-            last_login_at=model.last_login_at,
-            last_login_ip=model.last_login_ip,
-            failed_login_attempts=model.failed_login_attempts,
-            locked_until=model.locked_until,
-            tenant_id=model.tenant_id,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
-        )
+        """
+        Convert ORM model to domain entity using Pydantic model_validate.
+
+        This leverages Pydantic's from_attributes=True for automatic conversion.
+        The backup_codes field has a custom validator to handle JSON string → list[str].
+        """
+        return User.model_validate(model, from_attributes=True)

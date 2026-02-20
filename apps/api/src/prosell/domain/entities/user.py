@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from prosell.domain.base import DomainModel
 
@@ -66,6 +66,23 @@ class User(DomainModel):
 
     # Lazy loaded relationships (not in __init__)
     roles: list[Role] | None = None
+
+    @field_validator("backup_codes", mode="before")
+    @classmethod
+    def parse_backup_codes(cls, v: list[str] | str | None) -> list[str] | None:
+        """
+        Parse backup_codes from JSON string or list.
+
+        When loading from SQLAlchemy ORM, backup_codes comes as JSON string.
+        This validator converts it to list[str] automatically.
+        """
+        if v is None:
+            return None
+        if isinstance(v, str):
+            import json
+
+            return json.loads(v)
+        return v
 
     @classmethod
     def create(

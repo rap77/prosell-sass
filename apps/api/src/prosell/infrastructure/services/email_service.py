@@ -1,6 +1,5 @@
 """Email service for sending emails (SendGrid)."""
 
-from abc import abstractmethod
 from typing import Protocol
 from uuid import UUID
 
@@ -9,12 +8,12 @@ from prosell.core.config import settings
 
 class AbstractEmailService(Protocol):
     """
-    Email service interface.
+    Email service interface (Protocol).
 
     Abstract port for email sending functionality.
+    Uses Protocol for duck typing, not ABC inheritance.
     """
 
-    @abstractmethod
     async def send_verification_email(
         self,
         email: str,
@@ -24,7 +23,6 @@ class AbstractEmailService(Protocol):
         """Send email verification email."""
         ...
 
-    @abstractmethod
     async def send_password_reset(
         self,
         email: str,
@@ -33,7 +31,6 @@ class AbstractEmailService(Protocol):
         """Send password reset email."""
         ...
 
-    @abstractmethod
     async def send_2fa_enabled(
         self,
         email: str,

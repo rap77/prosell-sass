@@ -2,11 +2,9 @@
 
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, EmailStr, Field
 
 from prosell.application.use_cases.auth.enable_2fa import (
     Disable2FARequest as Disable2FAUCRequest,
@@ -64,72 +62,18 @@ from prosell.infrastructure.api.dependencies import (
     get_verify_2fa_use_case,
 )
 from prosell.infrastructure.api.middleware.auth_middleware import get_current_user
+from prosell.infrastructure.api.schemas import (
+    Disable2FARequest,
+    Enable2FARequest,
+    LoginRequest,
+    LogoutResponse,
+    OAuthLoginRequest,
+    RefreshTokenRequest,
+    RegisterRequest,
+    Verify2FARequest,
+)
 
 router = APIRouter()
-
-
-# =============================================================================
-# PYDANTIC MODELS FOR API
-# =============================================================================
-
-
-class RegisterRequest(BaseModel):
-    """Registration request model."""
-
-    email: EmailStr
-    password: str = Field(..., min_length=8)
-    full_name: str = Field(..., min_length=2)
-    accept_terms: bool = True
-
-
-class LoginRequest(BaseModel):
-    """Login request model."""
-
-    email: EmailStr
-    password: str
-    remember_me: bool = False
-
-
-class RefreshTokenRequest(BaseModel):
-    """Refresh token request model."""
-
-    refresh_token: str
-
-
-class Enable2FARequest(BaseModel):
-    """Enable 2FA request model."""
-
-    user_id: UUID
-
-
-class Verify2FARequest(BaseModel):
-    """Verify 2FA request model."""
-
-    user_id: UUID
-    code: str = Field(..., min_length=6, max_length=6)
-
-
-class Disable2FARequest(BaseModel):
-    """Disable 2FA request model."""
-
-    user_id: UUID
-    totp_code: str = Field(..., min_length=6, max_length=6)
-
-
-class OAuthLoginRequest(BaseModel):
-    """OAuth login request model."""
-
-    provider: str = Field(..., pattern="^(google|facebook)$")
-    provider_user_id: str
-    email: EmailStr
-    full_name: str
-    avatar_url: str | None = None
-
-
-class LogoutResponse(BaseModel):
-    """Logout response model."""
-
-    message: str
 
 
 # =============================================================================

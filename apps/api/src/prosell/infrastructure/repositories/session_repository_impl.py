@@ -133,14 +133,9 @@ class SqlAlchemySessionRepository(AbstractSessionRepository):
         return [self._to_entity(model) for model in models]
 
     def _to_entity(self, model: SessionModel) -> Session:
-        """Convert ORM model to domain entity."""
-        return Session(
-            id=model.id,
-            user_id=model.user_id,
-            token_hash=model.token_hash,
-            user_agent=model.user_agent,
-            ip_address=model.ip_address,
-            expires_at=model.expires_at,
-            revoked_at=model.revoked_at,
-            created_at=model.created_at,
-        )
+        """
+        Convert ORM model to domain entity using Pydantic model_validate.
+
+        This leverages Pydantic's from_attributes=True for automatic conversion.
+        """
+        return Session.model_validate(model, from_attributes=True)

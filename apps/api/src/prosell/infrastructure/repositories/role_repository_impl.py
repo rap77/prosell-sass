@@ -105,14 +105,9 @@ class SqlAlchemyRoleRepository(AbstractRoleRepository):
         return [self._to_entity(model) for model in models]
 
     def _to_entity(self, model: RoleModel) -> Role:
-        """Convert ORM model to domain entity."""
-        return Role(
-            id=model.id,
-            role_type=RoleType(model.role_type),
-            name=model.name,
-            description=model.description,
-            is_system_role=model.is_system_role,
-            tenant_id=model.tenant_id,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
-        )
+        """
+        Convert ORM model to domain entity using Pydantic model_validate.
+
+        This leverages Pydantic's from_attributes=True for automatic conversion.
+        """
+        return Role.model_validate(model, from_attributes=True)
