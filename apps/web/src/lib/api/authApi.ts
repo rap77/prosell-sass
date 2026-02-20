@@ -79,7 +79,6 @@ const PASSWORD_REGEX = hoistRegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?
 // Type union for all possible API responses
 type ApiResponse =
   | LoginResponse
-  | RefreshTokenResponse
   | UserResponse
   | MessageResponse
   | Enable2FAResponse;
