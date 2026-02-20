@@ -1,7 +1,8 @@
 """Token refresh use case."""
 
-from dataclasses import dataclass
 from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 from prosell.domain.ports import IJWTService
 from prosell.domain.repositories.session_repository import AbstractSessionRepository
@@ -9,15 +10,13 @@ from prosell.domain.repositories.user_repository import AbstractUserRepository
 from prosell.infrastructure.repositories.session_repository_impl import hash_token
 
 
-@dataclass
-class RefreshTokenRequest:
+class RefreshTokenRequest(BaseModel):
     """DTO for token refresh request."""
 
-    refresh_token: str
+    refresh_token: str = Field(min_length=1)
 
 
-@dataclass
-class RefreshTokenResponse:
+class RefreshTokenResponse(BaseModel):
     """DTO for token refresh response."""
 
     access_token: str

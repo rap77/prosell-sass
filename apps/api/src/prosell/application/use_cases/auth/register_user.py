@@ -1,7 +1,9 @@
 """User registration use case."""
 
-from dataclasses import dataclass
+import secrets
 from uuid import UUID
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from prosell.application.ports.email_service import AbstractEmailService
 from prosell.domain.entities.user import User
@@ -13,18 +15,23 @@ from prosell.domain.ports import IPasswordService
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 
 
-@dataclass
-class RegisterUserRequest:
+class RegisterUserRequest(BaseModel):
     """DTO for user registration request."""
 
-    email: str
-    password: str
-    full_name: str
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+    full_name: str = Field(min_length=2, max_length=100)
     accept_terms: bool
 
+    @field_validator("accept_terms")
+    @classmethod
+    def must_accept_terms(cls, v: bool) -> bool:
+        if not v:
+            raise ValueError("Must accept terms and conditions")
+        return v
 
-@dataclass
-class RegisterUserResponse:
+
+class RegisterUserResponse(BaseModel):
     """DTO for registration response."""
 
     user_id: UUID
@@ -61,11 +68,7 @@ class RegisterUserUseCase:
             EmailAlreadyExistsException: If email already exists
             WeakPasswordException: If password doesn't meet requirements
         """
-        # 1. Validate terms acceptance
-        if not request.accept_terms:
-            raise ValueError("Must accept terms and conditions")
-
-        # 2. Check if email already exists
+        # 1. Check if email already exists
         existing = await self.user_repository.get_by_email(request.email)
         if existing:
             raise EmailAlreadyExistsException(request.email)
@@ -88,9 +91,17 @@ class RegisterUserUseCase:
         # 6. Save to database
         user = await self.user_repository.create(user)
 
-        # 7. Send verification email
-        # TODO: Generate actual verification token
-        verification_token = "temp_token"  # Placeholder
+        # 7. Generate verification token and send email
+        verification_token = secrets.token_urlsafe(32)
+
+        # Store token in database for verification
+        await self.user_repository.create_verification_token(
+            user_id=user.id,
+            token=verification_token,
+            token_type="email_verification",
+            expires_in_minutes=60,  # 1 hour expiration
+        )
+
         await self.email_service.send_verification_email(
             user.email,
             user.id,

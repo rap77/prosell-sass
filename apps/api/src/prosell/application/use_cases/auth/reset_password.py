@@ -1,36 +1,34 @@
 """Password reset use case."""
 
-from dataclasses import dataclass
+import secrets
+
+from pydantic import BaseModel, EmailStr, Field
 
 from prosell.application.ports.email_service import AbstractEmailService
+from prosell.domain.ports import IPasswordService
 from prosell.domain.repositories.user_repository import AbstractUserRepository
-from prosell.infrastructure.services.password_service import PasswordService
 
 
-@dataclass
-class RequestPasswordResetRequest:
+class RequestPasswordResetRequest(BaseModel):
     """DTO for password reset request."""
 
-    email: str
+    email: EmailStr
 
 
-@dataclass
-class RequestPasswordResetResponse:
+class RequestPasswordResetResponse(BaseModel):
     """DTO for password reset request response."""
 
     message: str
 
 
-@dataclass
-class ResetPasswordRequest:
+class ResetPasswordRequest(BaseModel):
     """DTO for password reset."""
 
-    token: str
-    new_password: str
+    token: str = Field(min_length=1)
+    new_password: str = Field(min_length=8)
 
 
-@dataclass
-class ResetPasswordResponse:
+class ResetPasswordResponse(BaseModel):
     """DTO for password reset response."""
 
     message: str
@@ -61,8 +59,17 @@ class RequestPasswordResetUseCase:
 
         # 2. If user exists, send reset email
         if user:
-            # TODO: Generate actual reset token
-            reset_token = "temp_token"
+            # Generate secure random token for password reset
+            reset_token = secrets.token_urlsafe(32)
+
+            # Store token in database for verification
+            await self.user_repository.create_verification_token(
+                user_id=user.id,
+                token=reset_token,
+                token_type="password_reset",
+                expires_in_minutes=60,  # 1 hour expiration
+            )
+
             await self.email_service.send_password_reset(user.email, reset_token)
 
         # 3. Always return success (don't reveal if email exists)
@@ -77,7 +84,7 @@ class ResetPasswordUseCase:
     def __init__(
         self,
         user_repository: AbstractUserRepository,
-        password_service: PasswordService,
+        password_service: IPasswordService,
     ) -> None:
         self.user_repository = user_repository
         self.password_service = password_service
@@ -93,10 +100,16 @@ class ResetPasswordUseCase:
             Reset response DTO
 
         Raises:
-            ValueError: If token is invalid
+            ValueError: If token is invalid or expired
         """
-        # TODO: Implement actual token verification
-        # For now, this is a placeholder
-        return ResetPasswordResponse(
-            message="Password reset successfully",
+        # Note: This requires the token to contain or be associated with user_id.
+        # The current implementation of consume_token only returns bool.
+        #
+        # TODO: Refactor create_verification_token to return (token, user_id) mapping
+        # TODO: Add method to get user_id from token before consuming it
+        #
+        # For now, this is a placeholder that indicates the feature needs completion.
+        raise NotImplementedError(
+            "Password reset requires retrieving user_id from token. "
+            "The repository layer needs to support: get_user_by_token(token) -> User"
         )

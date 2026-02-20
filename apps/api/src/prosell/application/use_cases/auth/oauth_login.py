@@ -1,7 +1,8 @@
 """OAuth login use case."""
 
-from dataclasses import dataclass
 from datetime import datetime
+
+from pydantic import BaseModel, EmailStr
 
 from prosell.domain.entities.user import User
 from prosell.domain.ports import IJWTService
@@ -9,13 +10,22 @@ from prosell.domain.repositories.oauth_repository import AbstractOAuthRepository
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 
 
-@dataclass
-class OAuthLoginRequest:
+class UserInfo(BaseModel):
+    """User info nested model."""
+
+    id: str
+    email: str
+    full_name: str
+    avatar_url: str | None = None
+    roles: list[str] = []
+
+
+class OAuthLoginRequest(BaseModel):
     """DTO for OAuth login request."""
 
     provider: str  # "google" or "facebook"
     provider_user_id: str
-    email: str
+    email: EmailStr
     full_name: str
     avatar_url: str | None = None
     access_token: str | None = None
@@ -23,13 +33,12 @@ class OAuthLoginRequest:
     expires_at: datetime | None = None
 
 
-@dataclass
-class OAuthLoginResponse:
+class OAuthLoginResponse(BaseModel):
     """DTO for OAuth login response."""
 
     access_token: str
     refresh_token: str
-    user: dict
+    user: UserInfo
 
 
 class OAuthLoginUseCase:
@@ -114,11 +123,11 @@ class OAuthLoginUseCase:
         return OAuthLoginResponse(
             access_token=access_token,
             refresh_token=refresh_token,
-            user={
-                "id": str(user.id),
-                "email": user.email,
-                "full_name": user.full_name,
-                "avatar_url": user.avatar_url,
-                "roles": user_roles,
-            },
+            user=UserInfo(
+                id=str(user.id),
+                email=user.email,
+                full_name=user.full_name,
+                avatar_url=user.avatar_url,
+                roles=user_roles,
+            ),
         )

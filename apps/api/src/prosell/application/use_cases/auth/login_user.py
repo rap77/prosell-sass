@@ -1,6 +1,8 @@
 """User login use case."""
 
-from dataclasses import dataclass
+import secrets
+
+from pydantic import BaseModel, EmailStr, Field
 
 from prosell.domain.exceptions.auth_exceptions import (
     AccountLockedException,
@@ -11,24 +13,31 @@ from prosell.domain.ports import IJWTService, IPasswordService
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 
 
-@dataclass
-class LoginUserRequest:
+class UserInfo(BaseModel):
+    """User info nested model."""
+
+    id: str
+    email: str
+    full_name: str
+    roles: list[str] = []
+
+
+class LoginUserRequest(BaseModel):
     """DTO for login request."""
 
-    email: str
-    password: str
+    email: EmailStr
+    password: str = Field(min_length=1)
     remember_me: bool = False
     ip_address: str | None = None
     user_agent: str | None = None
 
 
-@dataclass
-class LoginUserResponse:
+class LoginUserResponse(BaseModel):
     """DTO for login response."""
 
     access_token: str
     refresh_token: str
-    user: dict
+    user: UserInfo
     requires_2fa: bool = False
 
 
@@ -88,16 +97,27 @@ class LoginUserUseCase:
 
         # 5. Check if 2FA is enabled
         if user.is_2fa_enabled:
-            # Note: In a full implementation, we'd return a temp token
-            # For now, we'll require 2FA in a separate step
+            # Generate a temporary token for 2FA verification
+            # This token expires in 5 minutes and only identifies the user
+            temp_2fa_token = secrets.token_urlsafe(32)
+
+            # Store temp token for 2FA verification
+            await self.user_repository.create_verification_token(
+                user_id=user.id,
+                token=temp_2fa_token,
+                token_type="2fa_temp",
+                expires_in_minutes=5,  # Short expiration for security
+            )
+
+            # Return the temp token as access_token (client will send it to /verify-2fa)
             return LoginUserResponse(
-                access_token="",  # Empty for 2FA flow
-                refresh_token="",
-                user={
-                    "id": str(user.id),
-                    "email": user.email,
-                    "full_name": user.full_name,
-                },
+                access_token=temp_2fa_token,
+                refresh_token="",  # Empty until 2FA is verified
+                user=UserInfo(
+                    id=str(user.id),
+                    email=user.email,
+                    full_name=user.full_name,
+                ),
                 requires_2fa=True,
             )
 
@@ -118,11 +138,11 @@ class LoginUserUseCase:
         return LoginUserResponse(
             access_token=access_token,
             refresh_token=refresh_token,
-            user={
-                "id": str(user.id),
-                "email": user.email,
-                "full_name": user.full_name,
-                "roles": user_roles,
-            },
+            user=UserInfo(
+                id=str(user.id),
+                email=user.email,
+                full_name=user.full_name,
+                roles=user_roles,
+            ),
             requires_2fa=False,
         )
