@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { authApi } from "@/lib/api/authApi";
+import { createAuthCacheKey } from "@/lib/cache/cache-utils";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -195,8 +196,8 @@ describe("authApi Client - Logout", () => {
       json: async () => ({ detail: "Internal server error" }),
     } as Response);
 
-    // Logout should throw error when API fails
-    await expect(authApi.logout()).rejects.toThrow("Logout failed");
+    // Logout should NOT throw - it clears local cache and ignores API errors
+    await expect(authApi.logout()).resolves.toBeUndefined();
 
     expect(mockFetch).toHaveBeenCalled();
   });
@@ -351,6 +352,148 @@ describe("authApi Client - Reset Password", () => {
     await expect(
       authApi.resetPassword("invalid-token", "NewPassword123!")
     ).rejects.toThrow("Password does not meet requirements");
+  });
+});
+
+describe("authApi - mutation caching", () => {
+  it("should NOT cache login response (mutation)", async () => {
+    let callCount = 0;
+    const mockResponse = {
+      user: {
+        id: "1",
+        email: "test@test.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "user",
+        is_email_verified: true,
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    };
+
+    mockFetch.mockImplementation(async () => {
+      callCount++;
+      return {
+        ok: true,
+        json: async () => mockResponse,
+      } as Response;
+    });
+
+    // Two identical calls with valid password
+    await authApi.login("test@test.com", "Password123!");
+    await authApi.login("test@test.com", "Password123!");
+
+    // Mutations should NOT be cached - each call should hit the API
+    expect(callCount).toBe(2);
+  });
+
+  it("should NOT cache register response (mutation)", async () => {
+    let callCount = 0;
+    const mockResponse = {
+      user: {
+        id: "2",
+        email: "new@test.com",
+        first_name: "New",
+        last_name: "User",
+        role: "user",
+        is_email_verified: false,
+      },
+      tokens: {
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+      },
+    };
+
+    mockFetch.mockImplementation(async () => {
+      callCount++;
+      return {
+        ok: true,
+        json: async () => mockResponse,
+      } as Response;
+    });
+
+    // Two identical calls with valid password
+    await authApi.register("new@test.com", "Password123!", "New", "User");
+    await authApi.register("new@test.com", "Password123!", "New", "User");
+
+    // Mutations should NOT be cached - each call should hit the API
+    expect(callCount).toBe(2);
+  });
+
+  it("should NOT cache refreshToken (mutation)", async () => {
+    let callCount = 0;
+    const mockResponse = {
+      access_token: "new-access-token",
+      refresh_token: "mock-refresh-token",
+    };
+
+    mockFetch.mockImplementation(async () => {
+      callCount++;
+      return {
+        ok: true,
+        json: async () => mockResponse,
+      } as Response;
+    });
+
+    // Two identical calls
+    await authApi.refreshToken("mock-refresh-token");
+    await authApi.refreshToken("mock-refresh-token");
+
+    // Mutations should NOT be cached - each call should hit the API
+    expect(callCount).toBe(2);
+  });
+});
+
+describe("authApi - cache security", () => {
+  it("should NOT include password in cache key", () => {
+    const credentials = {
+      email: 'test@example.com',
+      password: 'SecretPassword123!'
+    };
+
+    // Act: Create cache key for login
+    const cacheKey = createAuthCacheKey('login', credentials);
+
+    // Assert: Password should NOT be in the cache key
+    expect(cacheKey).not.toContain('SecretPassword123!');
+    expect(cacheKey).not.toContain('password');
+  });
+
+  it("should NOT include newPassword in cache key", () => {
+    const resetData = {
+      token: 'reset-token-123',
+      newPassword: 'NewSecret456!'
+    };
+
+    const cacheKey = createAuthCacheKey('reset-password', resetData);
+
+    expect(cacheKey).not.toContain('NewSecret456!');
+    expect(cacheKey).not.toContain('newPassword');
+  });
+
+  it("should NOT include accessToken in cache key", () => {
+    const twoFactorData = {
+      code: '123456',
+      accessToken: 'secret-token-xyz'
+    };
+
+    const cacheKey = createAuthCacheKey('2fa/verify', twoFactorData);
+
+    expect(cacheKey).not.toContain('secret-token-xyz');
+    expect(cacheKey).not.toContain('accessToken');
+  });
+
+  it("should NOT include refreshToken in cache key", () => {
+    const refreshData = {
+      refreshToken: 'secret-refresh-token-abc'
+    };
+
+    const cacheKey = createAuthCacheKey('refresh', refreshData);
+
+    expect(cacheKey).not.toContain('secret-refresh-token-abc');
+    expect(cacheKey).not.toContain('refreshToken');
   });
 });
 

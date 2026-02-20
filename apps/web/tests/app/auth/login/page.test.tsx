@@ -6,7 +6,7 @@
  * @see https://nextjs.org/docs/app/building-your-application/testing
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { LoginPageContent } from "@/app/auth/login/LoginPageContent";
 

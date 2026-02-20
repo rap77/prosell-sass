@@ -44,11 +44,55 @@ export function createUserCacheKey(userId: string): string {
 }
 
 /**
- * Create a cache key for auth operations
+ * Sensitive field names that should NEVER be in cache keys
+ *
+ * SECURITY: These fields contain secrets that must not be exposed in:
+ * - Memory/cache keys (could be dumped or logged)
+ * - Error messages (could leak to logs/monitoring)
+ * - Browser devtools (accessible to XSS)
  */
-export function createAuthCacheKey(endpoint: string, data?: any): string {
+const SENSITIVE_FIELDS = new Set<string>([
+  'password',
+  'newPassword',
+  'currentPassword',
+  'token',
+  'accessToken',
+  'refreshToken',
+  'refresh_token',
+  'access_token',
+]);
+
+/**
+ * Create a cache key for auth operations
+ *
+ * SECURITY: Automatically filters out sensitive fields from cache keys
+ * to prevent secrets from being stored in memory or logged.
+ *
+ * @param endpoint - The auth endpoint name (e.g., 'login', 'register')
+ * @param data - The request data (sensitive fields will be filtered out)
+ * @returns A safe cache key without sensitive data
+ */
+export function createAuthCacheKey(endpoint: string, data?: Record<string, unknown>): string {
   const key = `${CACHE_CONFIG.prefixes.auth}${endpoint}`;
-  return data ? `${key}:${JSON.stringify(data)}` : key;
+
+  if (!data || typeof data !== 'object') {
+    return key;
+  }
+
+  // Create safe version of data excluding sensitive fields
+  const safeData = Object.entries(data)
+    .filter(([fieldName]) => !SENSITIVE_FIELDS.has(fieldName))
+    .reduce<Record<string, unknown>>((acc, [k, v]) => {
+      acc[k] = v;
+      return acc;
+    }, {});
+
+  // If no safe data remains, return just the endpoint
+  const dataStr = Object.keys(safeData).length > 0
+    ? `:${JSON.stringify(safeData)}`
+    : '';
+
+  return `${key}${dataStr}`;
 }
 
 /**
@@ -95,7 +139,9 @@ export function shouldCacheRequest(method: string, endpoint: string): boolean {
   // Don't cache auth-related GET requests
   if (endpoint.includes('/auth/')) {
     const endpointName = endpoint.split('/').pop() || '';
-    const config = (CACHE_CONFIG.auth as any)[endpointName];
+    // Type assertion: CACHE_CONFIG.auth has known endpoints with ttl property
+    const authConfig = CACHE_CONFIG.auth as Record<string, { ttl: number }>;
+    const config = authConfig[endpointName];
     return config?.ttl !== 0;
   }
 

@@ -272,7 +272,7 @@ class Settings(BaseSettings):
         path = Path(self.jwt_private_key_path)
         if not path.exists():
             raise FileNotFoundError(
-                f"JWT private key not found at {path}. " "Run: ./scripts/generate-jwt-keys.sh"
+                f"JWT private key not found at {path}. Run: ./scripts/generate-jwt-keys.sh"
             )
         return path.read_text()
 
@@ -282,7 +282,7 @@ class Settings(BaseSettings):
         path = Path(self.jwt_public_key_path)
         if not path.exists():
             raise FileNotFoundError(
-                f"JWT public key not found at {path}. " "Run: ./scripts/generate-jwt-keys.sh"
+                f"JWT public key not found at {path}. Run: ./scripts/generate-jwt-keys.sh"
             )
         return path.read_text()
 

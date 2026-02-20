@@ -493,7 +493,7 @@ describe("useAuth Hook - Convenience Getters", () => {
 
     await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    const state = useAuthStore.getState();
+    const state = useAuthStore.getState() as { user?: { role?: string } | null };
     expect(state.user?.role).toBe("sales_agent");
   });
 
@@ -516,7 +516,9 @@ describe("useAuth Hook - Convenience Getters", () => {
 
     await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    const state = useAuthStore.getState();
+    const state = useAuthStore.getState() as {
+      user?: { is_email_verified?: boolean } | null;
+    };
     expect(state.user?.is_email_verified).toBe(true);
   });
 
@@ -529,6 +531,7 @@ describe("useAuth Hook - Convenience Getters", () => {
         first_name: "Test",
         last_name: "User",
         role: "sales_agent",
+        is_email_verified: true,
         is_2fa_enabled: false,
       },
       tokens: {
@@ -539,7 +542,7 @@ describe("useAuth Hook - Convenience Getters", () => {
 
     await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
 
-    const state = useAuthStore.getState();
+    const state = useAuthStore.getState() as { user?: { is_2fa_enabled?: boolean } | null };
     expect(state.user?.is_2fa_enabled).toBe(false);
   });
 });

@@ -3,7 +3,7 @@
  * RED PHASE - Escribir tests ANTES de implementar
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TwoFactorInput } from "@/components/auth/TwoFactorInput";
