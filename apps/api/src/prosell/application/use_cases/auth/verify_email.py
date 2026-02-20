@@ -41,17 +41,20 @@ class VerifyEmailUseCase:
         Raises:
             InvalidCredentialsException: If token is invalid or expired
         """
-        # 1. Consume the token (marks as used and validates)
-        token_valid = await self.user_repository.consume_token(request.token)
+        # 1. Get user by verification token
+        user = await self.user_repository.get_by_verification_token(request.token)
 
-        if not token_valid:
+        if not user:
             raise InvalidCredentialsException("Invalid or expired verification token")
 
-        # 2. Get user from token
-        # Note: The consume_token method should return user_id or we need
-        # a separate method to get the user associated with a token
-        # TODO: Refactor to return user_id from consume_token
-        # For now, we'll assume success if token was consumed
+        # 2. Mark email as verified
+        user.verify_email()
+
+        # 3. Consume the token (marks as used)
+        await self.user_repository.consume_token(request.token)
+
+        # 4. Update user in database
+        await self.user_repository.update(user)
 
         return VerifyEmailResponse(
             success=True,

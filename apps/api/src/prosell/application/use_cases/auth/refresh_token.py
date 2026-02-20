@@ -4,10 +4,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from prosell.domain.ports import IJWTService
+from prosell.domain.ports import IJWTService, ITokenHasher
 from prosell.domain.repositories.session_repository import AbstractSessionRepository
 from prosell.domain.repositories.user_repository import AbstractUserRepository
-from prosell.infrastructure.repositories.session_repository_impl import hash_token
 
 
 class RefreshTokenRequest(BaseModel):
@@ -31,10 +30,12 @@ class RefreshTokenUseCase:
         user_repository: AbstractUserRepository,
         session_repository: AbstractSessionRepository,
         jwt_service: IJWTService,
+        token_hasher: ITokenHasher,
     ) -> None:
         self.user_repository = user_repository
         self.session_repository = session_repository
         self.jwt_service = jwt_service
+        self.token_hasher = token_hasher
 
     async def execute(self, request: RefreshTokenRequest) -> RefreshTokenResponse:
         """
@@ -61,7 +62,7 @@ class RefreshTokenUseCase:
         user_id = UUID(payload["sub"])
 
         # 2. Check if session exists and is valid
-        token_hash = hash_token(request.refresh_token)
+        token_hash = self.token_hasher.hash(request.refresh_token)
         session = await self.session_repository.get_by_token_hash(token_hash)
 
         if not session or not session.is_valid():

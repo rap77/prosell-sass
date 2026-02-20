@@ -177,6 +177,16 @@ class User(DomainModel):
             self.status = UserStatus.ACTIVE
             self.updated_at = datetime.now(UTC)
 
+    def update_password(self, password_hash: str) -> None:
+        """
+        Update user's password hash.
+
+        Args:
+            password_hash: New hashed password
+        """
+        self.password_hash = password_hash
+        self.updated_at = datetime.now(UTC)
+
     def enable_2fa(self, totp_secret: str, backup_codes: list[str]) -> None:
         """Enable two-factor authentication."""
         self.is_2fa_enabled = True

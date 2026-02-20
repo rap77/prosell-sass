@@ -102,14 +102,24 @@ class ResetPasswordUseCase:
         Raises:
             ValueError: If token is invalid or expired
         """
-        # Note: This requires the token to contain or be associated with user_id.
-        # The current implementation of consume_token only returns bool.
-        #
-        # TODO: Refactor create_verification_token to return (token, user_id) mapping
-        # TODO: Add method to get user_id from token before consuming it
-        #
-        # For now, this is a placeholder that indicates the feature needs completion.
-        raise NotImplementedError(
-            "Password reset requires retrieving user_id from token. "
-            "The repository layer needs to support: get_user_by_token(token) -> User"
+        # 1. Get user by password reset token
+        user = await self.user_repository.get_by_password_reset_token(request.token)
+
+        if not user:
+            raise ValueError("Invalid or expired reset token")
+
+        # 2. Hash the new password
+        password_hash = self.password_service.hash_password(request.new_password)
+
+        # 3. Update user password
+        user.update_password(password_hash)
+
+        # 4. Consume the token (marks as used)
+        await self.user_repository.consume_token(request.token)
+
+        # 5. Update user in database
+        await self.user_repository.update(user)
+
+        return ResetPasswordResponse(
+            message="Password reset successfully",
         )

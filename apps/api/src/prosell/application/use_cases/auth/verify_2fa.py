@@ -9,10 +9,9 @@ from prosell.domain.exceptions.auth_exceptions import (
     Invalid2FACodeException,
     UserNotFoundException,
 )
-from prosell.domain.ports import IJWTService, ITOTPService
+from prosell.domain.ports import IJWTService, ITokenHasher, ITOTPService
 from prosell.domain.repositories.session_repository import AbstractSessionRepository
 from prosell.domain.repositories.user_repository import AbstractUserRepository
-from prosell.infrastructure.repositories.session_repository_impl import hash_token
 
 
 class UserInfo(BaseModel):
@@ -50,11 +49,13 @@ class Verify2FAUseCase:
         session_repository: AbstractSessionRepository,
         totp_service: ITOTPService,
         jwt_service: IJWTService,
+        token_hasher: ITokenHasher,
     ) -> None:
         self.user_repository = user_repository
         self.session_repository = session_repository
         self.totp_service = totp_service
         self.jwt_service = jwt_service
+        self.token_hasher = token_hasher
 
     async def execute(self, request: Verify2FARequest) -> Verify2FAResponse:
         """
@@ -99,7 +100,7 @@ class Verify2FAUseCase:
         refresh_token = self.jwt_service.generate_refresh_token(user.id)
 
         # 7. Create session
-        token_hash = hash_token(refresh_token)
+        token_hash = self.token_hasher.hash(refresh_token)
         session = Session.create(
             user_id=user.id,
             token_hash=token_hash,
