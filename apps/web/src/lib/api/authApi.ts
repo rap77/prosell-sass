@@ -166,14 +166,6 @@ export const authApi = {
       throw new ApiError("Invalid email or password format", 400);
     }
 
-    const cacheKey = createAuthCacheKey('login', { email, password });
-    const cached = requestCache.get(cacheKey);
-
-    // Early exit if cached result exists
-    if (cached) {
-      return cached as unknown as LoginResponse;
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: "POST",
       headers: {
@@ -185,9 +177,7 @@ export const authApi = {
 
     const result = await handleResponse<LoginResponse>(response);
 
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
+    // Mutations should NOT be cached - each call hits the API
     return result;
   },
 
@@ -214,14 +204,6 @@ export const authApi = {
       throw new ApiError("First and last name must be at least 2 characters", 400);
     }
 
-    const cacheKey = createAuthCacheKey('register', { email, password, first_name, last_name });
-    const cached = requestCache.get(cacheKey);
-
-    // Early exit if cached result exists
-    if (cached) {
-      return cached as unknown as LoginResponse;
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
       method: "POST",
       headers: {
@@ -238,10 +220,8 @@ export const authApi = {
 
     const result = await handleResponse<LoginResponse>(response);
 
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
-    // Update user cache for O(1) lookups
+    // Mutations should NOT be cached - each call hits the API
+    // But we do cache the user object for O(1) lookups
     userLookupCache.set(result.user.id, result.user);
 
     return result;
@@ -276,7 +256,7 @@ export const authApi = {
       // Clear cache anyway
       requestCache.clear();
       userLookupCache.clear();
-      throw new ApiError("Logout failed", 500);
+      // Return undefined - logout is always successful from client perspective
     }
   },
 

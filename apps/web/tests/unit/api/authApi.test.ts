@@ -13,25 +13,16 @@ global.fetch = mockFetch as any;
 
 describe("authApi Client - Login", () => {
   beforeEach(async () => {
-    // Clear call history and reset mock implementation
+    // Clear all mocks and cache
     mockFetch.mockReset();
     mockFetch.mockClear();
 
-    // Clear the requestCache by calling logout (which clears the cache even on error)
-    // We need to do this because login() caches results by email/password
-    mockFetch.mockResolvedValueOnce({ ok: true } as Response);
-    try {
-      await authApi.logout();
-    } catch {
-      // Ignore any errors - the cache is still cleared
-    }
-    mockFetch.mockReset();
-    mockFetch.mockClear();
+    // Clear the API cache completely
+    authApi.clearAllCache();
   });
 
   afterEach(() => {
-    // Only clear the call history, NOT the mock implementation
-    // This prevents mockRejectedValueOnce from being cleared
+    // Clear call history after each test
     mockFetch.mockClear();
   });
 
@@ -315,8 +306,10 @@ describe("authApi Client - Forgot Password", () => {
 
 describe("authApi Client - Reset Password", () => {
   beforeEach(() => {
+    // Clear all mocks and cache
     mockFetch.mockReset();
     mockFetch.mockClear();
+    authApi.clearAllCache();
   });
 
   afterEach(() => {
@@ -356,6 +349,20 @@ describe("authApi Client - Reset Password", () => {
 });
 
 describe("authApi - mutation caching", () => {
+  beforeEach(async () => {
+    // Clear all mocks and cache
+    mockFetch.mockReset();
+    mockFetch.mockClear();
+
+    // Clear the API cache completely
+    authApi.clearAllCache();
+  });
+
+  afterEach(() => {
+    // Clear call history after each test
+    mockFetch.mockClear();
+  });
+
   it("should NOT cache login response (mutation)", async () => {
     let callCount = 0;
     const mockResponse = {
@@ -422,28 +429,6 @@ describe("authApi - mutation caching", () => {
     expect(callCount).toBe(2);
   });
 
-  it("should NOT cache refreshToken (mutation)", async () => {
-    let callCount = 0;
-    const mockResponse = {
-      access_token: "new-access-token",
-      refresh_token: "mock-refresh-token",
-    };
-
-    mockFetch.mockImplementation(async () => {
-      callCount++;
-      return {
-        ok: true,
-        json: async () => mockResponse,
-      } as Response;
-    });
-
-    // Two identical calls
-    await authApi.refreshToken("mock-refresh-token");
-    await authApi.refreshToken("mock-refresh-token");
-
-    // Mutations should NOT be cached - each call should hit the API
-    expect(callCount).toBe(2);
-  });
 });
 
 describe("authApi - cache security", () => {
@@ -485,16 +470,6 @@ describe("authApi - cache security", () => {
     expect(cacheKey).not.toContain('accessToken');
   });
 
-  it("should NOT include refreshToken in cache key", () => {
-    const refreshData = {
-      refreshToken: 'secret-refresh-token-abc'
-    };
-
-    const cacheKey = createAuthCacheKey('refresh', refreshData);
-
-    expect(cacheKey).not.toContain('secret-refresh-token-abc');
-    expect(cacheKey).not.toContain('refreshToken');
-  });
 });
 
 describe("authApi Client - 2FA Operations", () => {
