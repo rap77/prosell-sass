@@ -1,7 +1,5 @@
 """User entity - Pure domain logic with no external dependencies."""
 
-from __future__ import annotations
-
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from uuid import UUID, uuid4
@@ -11,7 +9,6 @@ from pydantic import Field, field_validator
 from prosell.domain.base import DomainModel
 
 # Import Role for Pydantic forward reference evaluation
-# TODO: Avoid circular import by using string annotations
 from prosell.domain.entities.role import Role
 
 
@@ -65,7 +62,7 @@ class User(DomainModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Lazy loaded relationships (not in __init__)
-    roles: list[Role] | None = None
+    roles: list["Role"] | None = None
 
     @field_validator("backup_codes", mode="before")
     @classmethod
@@ -90,7 +87,7 @@ class User(DomainModel):
         email: str,
         password_hash: str,
         full_name: str,
-    ) -> User:
+    ) -> "User":
         """
         Factory method for new user registration.
 
@@ -124,7 +121,7 @@ class User(DomainModel):
         email: str,
         full_name: str,
         avatar_url: str | None = None,
-    ) -> User:
+    ) -> "User":
         """
         Factory method for OAuth user registration.
 

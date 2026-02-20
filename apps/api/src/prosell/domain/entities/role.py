@@ -1,7 +1,5 @@
 """Role and Permission entities for RBAC."""
 
-from __future__ import annotations
-
 from datetime import UTC, datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
@@ -141,7 +139,7 @@ class Role(DomainModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @classmethod
-    def create_system_role(cls, role_type: RoleType) -> Role:
+    def create_system_role(cls, role_type: RoleType) -> "Role":
         """Create a system role with default permissions."""
 
         return cls(
@@ -161,7 +159,7 @@ class Role(DomainModel):
         name: str,
         description: str | None,
         tenant_id: UUID,
-    ) -> Role:
+    ) -> "Role":
         """Create a custom role for an organization."""
 
         return cls(
