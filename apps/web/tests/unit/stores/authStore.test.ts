@@ -581,3 +581,108 @@ describe("authStore - Persist Middleware", () => {
     localStorage.clear();
   });
 });
+
+describe("authStore - Performance API Marks", () => {
+  // Mock performance API
+  const mockPerformance = {
+    mark: vi.fn(),
+    measure: vi.fn(),
+    getEntriesByName: vi.fn(() => [{ duration: 123.45 }]),
+    clearMarks: vi.fn(),
+    clearMeasures: vi.fn(),
+  };
+
+  beforeEach(() => {
+    // Setup performance mock
+    Object.defineProperty(global, 'performance', {
+      value: mockPerformance,
+      writable: true,
+    });
+    vi.clearAllMocks();
+  });
+
+  it("should create start and end marks when Performance API available", async () => {
+    // Mock successful fetch for /api/auth/state
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ isAuthenticated: false }),
+      } as Response)
+    );
+
+    // Import the actual authStore (not the test store)
+    const { useAuthStore: realAuthStore } = await import('@/stores/authStore');
+    const { initializeAuth } = realAuthStore.getState();
+
+    await initializeAuth();
+
+    expect(mockPerformance.mark).toHaveBeenCalledWith('auth-init-start');
+    expect(mockPerformance.mark).toHaveBeenCalledWith('auth-init-end');
+  });
+
+  it("should measure duration between marks", async () => {
+    // Mock successful fetch
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ isAuthenticated: false }),
+      } as Response)
+    );
+
+    const { useAuthStore: realAuthStore } = await import('@/stores/authStore');
+    const { initializeAuth } = realAuthStore.getState();
+
+    await initializeAuth();
+
+    expect(mockPerformance.measure).toHaveBeenCalledWith(
+      'auth-init-duration',
+      'auth-init-start',
+      'auth-init-end'
+    );
+  });
+
+  it("should not throw when Performance API unavailable", async () => {
+    // Remove performance API
+    // @ts-expect-error - testing without performance API
+    delete global.performance;
+
+    // Mock successful fetch
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ isAuthenticated: false }),
+      } as Response)
+    );
+
+    const { useAuthStore: realAuthStore } = await import('@/stores/authStore');
+    const { initializeAuth } = realAuthStore.getState();
+
+    // Should not throw
+    await expect(initializeAuth()).resolves.not.toThrow();
+  });
+
+  it("should log duration in development mode", async () => {
+    // Set NODE_ENV to development
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+
+    // Mock successful fetch
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ isAuthenticated: false }),
+      } as Response)
+    );
+
+    const { useAuthStore: realAuthStore } = await import('@/stores/authStore');
+    const { initializeAuth } = realAuthStore.getState();
+
+    await initializeAuth();
+
+    // Verify getEntriesByName was called (for logging duration)
+    expect(mockPerformance.getEntriesByName).toHaveBeenCalledWith('auth-init-duration');
+
+    // Restore NODE_ENV
+    process.env.NODE_ENV = originalEnv;
+  });
+});

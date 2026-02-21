@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-02-21T14:07:34.195Z",
+  "git_commit": "93019c1",
+  "metrics": {
+    "api": {
+      "/api/auth/state": {
+        "method": "GET",
+        "count": "MANUAL_VERIFY",
+        "status": 200,
+        "note": "Verify in DevTools → Network tab → Filter \"state\""
+      }
+    },
+    "lighthouse": {
+      "performance": 47,
+      "fcp": "0.8 s",
+      "lcp": "7.1 s",
+      "tbt": "2,180 ms",
+      "cls": "0.007",
+      "si": "3.4 s",
+      "source": "MANUAL_Lighthouse_UI",
+      "note": "Run: DevTools → Lighthouse → Analyze page load"
+    }
+  }
+}
