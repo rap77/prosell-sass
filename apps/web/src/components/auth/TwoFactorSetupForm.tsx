@@ -20,6 +20,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureFlagStore } from "@/stores/featureFlagStore";
 import { authApi } from "@/lib/api/authApi";
 import { getErrorMessage } from "@/lib/utils/error";
 import { TwoFactorInput } from "./TwoFactorInput";
@@ -37,6 +38,9 @@ import { cn } from "@/lib/utils";
 // Pre-compiled regex for 6-digit TOTP codes
 const TOTP_REGEX = /^\d{6}$/;
 
+// Feature flag name
+const FEATURE_FLAG_2FA_MANAGEMENT = "auth-2fa-management";
+
 // ============================================
 // TYPES
 // ============================================
@@ -47,11 +51,12 @@ interface BackupCodes {
 }
 
 type SetupState =
+  | "idle" // Not started - show "Enable 2FA" button
   | "loading" // Loading 2FA enable
   | "setup" // Show QR code and backup codes
   | "verifying" // Verifying TOTP code
   | "enabled" // Successfully enabled
-  | "disable" // Show disable button (already enabled)
+  | "protected" // Already enabled - show protected view
   | "disabling" // Disabling 2FA
   | "disabled" // Successfully disabled
   | "error"; // Error state
@@ -83,43 +88,52 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
   const router = useRouter();
   const { updateUser } = useAuth();
 
-  const [formState, setFormState] = useState<FormState>({
-    state: is2FAEnabled ? "disable" : "loading",
+  // Feature flag check
+  const useManagementFlow = useFeatureFlagStore((state) =>
+    state.get(FEATURE_FLAG_2FA_MANAGEMENT, true)
+  );
+
+  // Lazy state init: derive from prop (no auto-call to API)
+  const [formState, setFormState] = useState<FormState>(() => ({
+    state: is2FAEnabled ? "protected" : "idle",
     error: null,
     qrCode: null,
     backupCodes: [],
     totpCode: "",
-  });
+  }));
+
+  // Sync state when is2FAEnabled prop changes (external auth update)
+  useEffect(() => {
+    setFormState((prev) => ({
+      ...prev,
+      state: is2FAEnabled ? "protected" : "idle",
+    }));
+  }, [is2FAEnabled]);
 
   // ============================================
   // EFFECTS
   // ============================================
 
-  // Enable 2FA on mount if not already enabled
+  // beforeunload warning during operations (prevent accidental navigation)
   useEffect(() => {
-    if (!is2FAEnabled) {
-      (async () => {
-        try {
-          setFormState((prev) => ({ ...prev, state: "loading", error: null }));
-          const response = await authApi.enable2FA();
-          setFormState((prev) => ({
-            ...prev,
-            state: "setup",
-            qrCode: response.qr_code,
-            backupCodes: response.backup_codes,
-            error: null,
-          }));
-        } catch (error) {
-          const message = getErrorMessage(error, "Failed to enable 2FA");
-          setFormState((prev) => ({
-            ...prev,
-            state: "error",
-            error: message,
-          }));
-        }
-      })();
+    const isOperationInProgress =
+      formState.state === "loading" ||
+      formState.state === "verifying" ||
+      formState.state === "disabling";
+
+    if (!isOperationInProgress) {
+      return;
     }
-  }, [is2FAEnabled]);
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // Chrome requires returnValue to be set
+      e.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [formState.state]);
 
   // ============================================
   // DERIVED STATE (React 19: no useMemo needed)
@@ -243,6 +257,55 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
     <div className={cn("min-h-screen flex items-center justify-center bg-muted px-4 sm:px-6 lg:px-8", className)}>
       <div className="max-w-md w-full">
         <Card>
+          {/* Idle State - Show "Enable 2FA" button */}
+          {formState.state === "idle" && (
+            <>
+              <CardHeader>
+                <CardTitle className="text-2xl">
+                  Set Up Two-Factor Authentication
+                </CardTitle>
+                <CardDescription>
+                  Add an extra layer of security to your account
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-6">
+                <div className="text-center py-8">
+                  <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+                    <svg
+                      className="h-8 w-8 text-primary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    Protect your account
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Two-factor authentication adds an extra layer of security by requiring a code from your
+                    authenticator app when you log in.
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={handleEnable2FA}
+                    className="w-full"
+                    size="lg"
+                  >
+                    Enable 2FA
+                  </Button>
+                </div>
+              </CardContent>
+            </>
+          )}
+
           {/* Loading State */}
           {formState.state === "loading" && (
             <CardContent className="pt-8">
@@ -437,8 +500,8 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
             </CardContent>
           )}
 
-          {/* Disable State (2FA already enabled) */}
-          {formState.state === "disable" && (
+          {/* Protected State (2FA already enabled) */}
+          {formState.state === "protected" && (
             <>
               <CardHeader>
                 <CardTitle className="text-2xl">
@@ -466,7 +529,27 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                       />
                     </svg>
                   </div>
+                  <p className="text-sm text-muted-foreground">
+                    Your account is protected with an authenticator app
+                  </p>
                 </div>
+
+                {/* View Backup Codes Button */}
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => router.push("/auth/backup-codes")}
+                  >
+                    View Backup Codes
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    View or download your backup codes for account recovery
+                  </p>
+                </div>
+
+                <Separator />
 
                 {/* Warning */}
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
@@ -586,12 +669,22 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                     {formState.error || "An error occurred"}
                   </p>
                 </div>
-                <Button
-                  onClick={is2FAEnabled ? () => router.push("/profile") : handleEnable2FA}
-                  className="w-full"
-                >
-                  {is2FAEnabled ? "Back to Profile" : "Try Again"}
-                </Button>
+                {/* Show "Try Again" if not enabled, "Back to Profile" if enabled */}
+                {is2FAEnabled ? (
+                  <Button
+                    onClick={() => router.push("/profile")}
+                    className="w-full"
+                  >
+                    Back to Profile
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleEnable2FA}
+                    className="w-full"
+                  >
+                    Try Again
+                  </Button>
+                )}
               </div>
             </CardContent>
           )}
