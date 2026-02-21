@@ -686,3 +686,113 @@ describe("authStore - Performance API Marks", () => {
     process.env.NODE_ENV = originalEnv;
   });
 });
+
+describe("authStore - initialized Flag", () => {
+  beforeEach(async () => {
+    // Mock performance API
+    Object.defineProperty(global, 'performance', {
+      value: {
+        mark: vi.fn(),
+        measure: vi.fn(),
+        getEntriesByName: vi.fn(() => [{ duration: 100 }]),
+      },
+      writable: true,
+    });
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  it("should initialize with initialized=false", async () => {
+    const { useAuthStore: realAuthStore } = await import('@/stores/authStore');
+    const { initialized } = realAuthStore.getState();
+    expect(initialized).toBe(false);
+  });
+
+  it("should set initialized=true after successful init", async () => {
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          isAuthenticated: true,
+          user: { id: '123', email: 'test@test.com', first_name: 'Test', last_name: 'User', role: 'user' },
+        }),
+      } as Response)
+    );
+
+    const { initializeAuth } = realAuthStore.getState();
+    await initializeAuth();
+
+    const { initialized } = realAuthStore.getState();
+    expect(initialized).toBe(true);
+  });
+
+  it("should set initialized=false when not authenticated", async () => {
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ isAuthenticated: false }),
+      } as Response)
+    );
+
+    const { initializeAuth } = realAuthStore.getState();
+    await initializeAuth();
+
+    const { initialized } = realAuthStore.getState();
+    expect(initialized).toBe(false);
+  });
+
+  it("should skip API call if already initialized", async () => {
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          isAuthenticated: true,
+          user: { id: '123', email: 'test@test.com', first_name: 'Test', last_name: 'User', role: 'user' },
+        }),
+      } as Response)
+    );
+
+    // First call - should initialize
+    await realAuthStore.getState().initializeAuth();
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    // Reset fetch mock
+    vi.clearAllMocks();
+
+    // Second call - should skip (early exit)
+    await realAuthStore.getState().initializeAuth();
+    // fetch should NOT be called again due to early exit
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("should reset initialized=false on logout", async () => {
+    // Mock logout API
+    vi.mocked(authApi.logout).mockResolvedValue(undefined);
+
+    // Set initialized to true
+    realAuthStore.setState({ initialized: true });
+
+    await realAuthStore.getState().logout();
+
+    const { initialized } = realAuthStore.getState();
+    expect(initialized).toBe(false);
+  });
+
+  it("should persist initialized in localStorage", async () => {
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          isAuthenticated: true,
+          user: { id: '123', email: 'test@test.com', first_name: 'Test', last_name: 'User', role: 'user' },
+        }),
+      } as Response)
+    );
+
+    await realAuthStore.getState().initializeAuth();
+
+    // Check localStorage was updated
+    const stored = localStorage.getItem('auth-storage');
+    expect(stored).toContain('"initialized":true');
+  });
+});

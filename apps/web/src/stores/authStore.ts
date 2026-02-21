@@ -18,6 +18,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { authApi, ApiError } from "@/lib/api/authApi";
 import { logger } from "@/lib/logger";
+import { useFeatureFlagStore } from "@/stores/featureFlagStore";
 
 // Email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -101,6 +102,7 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: AuthError | null;
+  initialized: boolean; // Track if auth state has been initialized from server
 
   // Actions
   initializeAuth: () => Promise<void>; // Initialize auth state from server
@@ -125,9 +127,20 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: true, // Start with loading state
       error: null,
+      initialized: false, // Track if auth has been initialized
 
       // Initialize auth state from server
       initializeAuth: async () => {
+        // Early exit if already initialized (when feature flag enabled)
+        const { initialized } = get();
+        const useOptimization = useFeatureFlagStore.getState().get('auth-init-fix', true);
+
+        if (useOptimization && initialized) {
+          logger.info('Auth already initialized, skipping API call');
+          set({ isLoading: false });
+          return;
+        }
+
         markPerformance('auth-init-start');
 
         try {
@@ -142,6 +155,7 @@ export const useAuthStore = create<AuthState>()(
               user: null,
               isAuthenticated: false,
               isLoading: false,
+              initialized: false, // Not initialized if not authenticated
               error: null,
             });
             return;
@@ -152,6 +166,7 @@ export const useAuthStore = create<AuthState>()(
             user: authState.user,
             isAuthenticated: true,
             isLoading: false,
+            initialized: true, // Successfully initialized
             error: null,
           });
         } catch (error) {
@@ -160,6 +175,7 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             isAuthenticated: false,
             isLoading: false,
+            initialized: false, // Reset on error
             error: null,
           });
         } finally {
@@ -188,6 +204,7 @@ export const useAuthStore = create<AuthState>()(
             user: response.user,
             isAuthenticated: true,
             isLoading: false,
+            initialized: true, // Auth is initialized after login/register
             error: null,
           });
         } catch (unknownError) {
@@ -233,6 +250,7 @@ export const useAuthStore = create<AuthState>()(
             user: response.user,
             isAuthenticated: true,
             isLoading: false,
+            initialized: true, // Auth is initialized after login/register
             error: null,
           });
         } catch (unknownError) {
@@ -251,7 +269,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try {
-          set({ isLoading: true });
+          set({ isLoading: true, initialized: false }); // Reset initialized flag on logout
 
           await authApi.logout();
 
@@ -260,6 +278,7 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             isAuthenticated: false,
             isLoading: false,
+            initialized: false, // Confirm reset
             error: null,
           });
 
@@ -275,6 +294,7 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             isAuthenticated: false,
             isLoading: false,
+            initialized: false, // Confirm reset on error
             error: null,
           });
 
@@ -316,6 +336,7 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           isAuthenticated: false,
           isLoading: false,
+          initialized: false, // Reset initialized flag
           error: null,
         });
 
@@ -340,6 +361,7 @@ export const useAuthStore = create<AuthState>()(
           is_2fa_enabled: state.user.is_2fa_enabled,
         } : null,
         isAuthenticated: state.isAuthenticated,
+        initialized: state.initialized, // Persist initialized flag
       }),
       version: 4,
       migrate: (persistedState: unknown, version: number) => {
