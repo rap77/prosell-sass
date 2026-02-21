@@ -700,11 +700,15 @@ describe("authStore - initialized Flag", () => {
     });
     vi.clearAllMocks();
     localStorage.clear();
+
+    // Reset store state between tests
+    const { useAuthStore } = await import('@/stores/authStore');
+    useAuthStore.getState().reset();
   });
 
   it("should initialize with initialized=false", async () => {
-    const { useAuthStore: realAuthStore } = await import('@/stores/authStore');
-    const { initialized } = realAuthStore.getState();
+    const { useAuthStore } = await import('@/stores/authStore');
+    const { initialized } = useAuthStore.getState();
     expect(initialized).toBe(false);
   });
 
@@ -719,10 +723,11 @@ describe("authStore - initialized Flag", () => {
       } as Response)
     );
 
-    const { initializeAuth } = realAuthStore.getState();
+    const { useAuthStore } = await import('@/stores/authStore');
+    const { initializeAuth } = useAuthStore.getState();
     await initializeAuth();
 
-    const { initialized } = realAuthStore.getState();
+    const { initialized } = useAuthStore.getState();
     expect(initialized).toBe(true);
   });
 
@@ -734,10 +739,11 @@ describe("authStore - initialized Flag", () => {
       } as Response)
     );
 
-    const { initializeAuth } = realAuthStore.getState();
+    const { useAuthStore } = await import('@/stores/authStore');
+    const { initializeAuth } = useAuthStore.getState();
     await initializeAuth();
 
-    const { initialized } = realAuthStore.getState();
+    const { initialized } = useAuthStore.getState();
     expect(initialized).toBe(false);
   });
 
@@ -752,15 +758,17 @@ describe("authStore - initialized Flag", () => {
       } as Response)
     );
 
+    const { useAuthStore } = await import('@/stores/authStore');
+
     // First call - should initialize
-    await realAuthStore.getState().initializeAuth();
+    await useAuthStore.getState().initializeAuth();
     expect(fetch).toHaveBeenCalledTimes(1);
 
     // Reset fetch mock
     vi.clearAllMocks();
 
     // Second call - should skip (early exit)
-    await realAuthStore.getState().initializeAuth();
+    await useAuthStore.getState().initializeAuth();
     // fetch should NOT be called again due to early exit
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -769,12 +777,14 @@ describe("authStore - initialized Flag", () => {
     // Mock logout API
     vi.mocked(authApi.logout).mockResolvedValue(undefined);
 
+    const { useAuthStore } = await import('@/stores/authStore');
+
     // Set initialized to true
-    realAuthStore.setState({ initialized: true });
+    useAuthStore.setState({ initialized: true });
 
-    await realAuthStore.getState().logout();
+    await useAuthStore.getState().logout();
 
-    const { initialized } = realAuthStore.getState();
+    const { initialized } = useAuthStore.getState();
     expect(initialized).toBe(false);
   });
 
@@ -789,7 +799,8 @@ describe("authStore - initialized Flag", () => {
       } as Response)
     );
 
-    await realAuthStore.getState().initializeAuth();
+    const { useAuthStore } = await import('@/stores/authStore');
+    await useAuthStore.getState().initializeAuth();
 
     // Check localStorage was updated
     const stored = localStorage.getItem('auth-storage');
