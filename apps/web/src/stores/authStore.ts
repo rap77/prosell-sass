@@ -23,6 +23,43 @@ import { logger } from "@/lib/logger";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // ============================================
+// PERFORMANCE API HELPERS
+// ============================================
+
+/**
+ * Feature detection wrapper for Performance.mark()
+ * Silently skips if Performance API is unavailable
+ */
+const markPerformance = (name: string) => {
+  if (typeof performance !== 'undefined' && performance.mark) {
+    performance.mark(name);
+  }
+};
+
+/**
+ * Feature detection wrapper for Performance.measure()
+ * Measures duration between two marks and logs in dev mode
+ */
+const measurePerformance = (name: string, startMark: string, endMark: string) => {
+  if (typeof performance !== 'undefined' && performance.measure) {
+    try {
+      performance.measure(name, startMark, endMark);
+
+      if (process.env.NODE_ENV === 'development') {
+        const measures = performance.getEntriesByName(name);
+        const measure = measures[0];
+        if (measure) {
+          logger.info(`${name} took ${measure.duration.toFixed(2)}ms`);
+        }
+      }
+    } catch (error) {
+      // Ignore errors from performance.measure (e.g., duplicate marks)
+      logger.info('Performance measure failed', error);
+    }
+  }
+};
+
+// ============================================
 // TYPES
 // ============================================
 
@@ -91,6 +128,8 @@ export const useAuthStore = create<AuthState>()(
 
       // Initialize auth state from server
       initializeAuth: async () => {
+        markPerformance('auth-init-start');
+
         try {
           const response = await fetch("/api/auth/state", {
             credentials: "include",  // CRITICAL: Sends httpOnly cookies
@@ -123,6 +162,9 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
+        } finally {
+          markPerformance('auth-init-end');
+          measurePerformance('auth-init-duration', 'auth-init-start', 'auth-init-end');
         }
       },
 
@@ -287,11 +329,19 @@ export const useAuthStore = create<AuthState>()(
       name: "auth-storage",
       storage: createJSONStorage(() => localStorage),
       // Only persist non-sensitive user data (NO tokens - handled by httpOnly cookies)
+      // Vercel best practice: Minimize serialization - only store essential fields
       partialize: (state) => ({
-        user: state.user,
+        user: state.user ? {
+          id: state.user.id,
+          email: state.user.email,
+          first_name: state.user.first_name,
+          last_name: state.user.last_name,
+          is_email_verified: state.user.is_email_verified,
+          is_2fa_enabled: state.user.is_2fa_enabled,
+        } : null,
         isAuthenticated: state.isAuthenticated,
       }),
-      version: 3,
+      version: 4,
       migrate: (persistedState: unknown, version: number) => {
         // Handle localStorage schema migrations
         // When changing the store structure, increment version and add migration logic
@@ -323,6 +373,24 @@ export const useAuthStore = create<AuthState>()(
           const oldState = persistedState as Partial<AuthState>;
           return {
             user: oldState.user ?? null,
+            isAuthenticated: oldState.isAuthenticated ?? false,
+            isLoading: false,
+            error: null,
+          };
+        }
+
+        // Version 3 -> 4: Optimize user serialization (only essential fields)
+        if (version === 3) {
+          const oldState = persistedState as Partial<AuthState>;
+          return {
+            user: oldState.user ? {
+              id: oldState.user.id,
+              email: oldState.user.email,
+              first_name: oldState.user.first_name,
+              last_name: oldState.user.last_name,
+              is_email_verified: oldState.user.is_email_verified,
+              is_2fa_enabled: oldState.user.is_2fa_enabled,
+            } : null,
             isAuthenticated: oldState.isAuthenticated ?? false,
             isLoading: false,
             error: null,
