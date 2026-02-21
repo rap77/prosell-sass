@@ -7,7 +7,8 @@ Tests all business logic in Value Object domain entities:
 import pytest
 from pydantic import ValidationError
 
-from prosell.domain.value_objects import Email, UserStatus
+from prosell.domain.entities import UserStatus
+from prosell.domain.value_objects import Email
 
 
 class TestEmailValueObject:
