@@ -1,339 +1,128 @@
-# Handoff: Pydantic Refactor - Fase 4 COMPLETADA ✅
+# Handoff: ProSell SaaS - Phase 1 Vercel Performance en Progreso
 
-**Fecha**: 2026-02-20
-**Sesión**: Fase 4 Infrastructure Migration COMPLETADA y mergeada
-**Estado**: ✅ FASE 1-4 COMPLETADAS | ❌ FASE 5-8 PENDIENTES
-**Tests**: 113/113 PASSING (backend)
+**Fecha**: 2026-02-21
+**Sesión**: Vercel Performance Fixes Phase 1 - Sprint 1
+**Estado**: 🔄 F1-002 ✅ | F1-004 ✅ | F1-001 ⏭️ NEXT | F1-003 ⏸️
 
 ---
 
-## 🎉 Lo Que Se Logró Esta Sesión
+## 📊 Phase 1 Progress
 
-### ✅ Fase 4 COMPLETADA (2026-02-20)
-- **Rama**: `feature/fase-4-infrastructure`
-- **Commit**: `e4b8775` - Infrastructure migration a Pydantic
-- **Merge**: Fast-forward a main completado
-- **Push**: Origin actualizado
+### Sprint 1 Status
 
-### Archivos creados (infrastructure/api/schemas/):
-- `auth.py` - 7 request schemas (Register, Login, RefreshToken, Enable2FA, Verify2FA, Disable2FA, OAuth)
-- `responses.py` - 4 response schemas (UserResponse, AuthTokenResponse, MessageResponse, LogoutResponse)
-- `__init__.py` - Reexporta todos los schemas
+| Ticket | Estado | Rama | Commit | Tests |
+|--------|--------|------|--------|-------|
+| **F1-002** | ✅ COMPLETADO | `ticket/F1-002-performance-marks` | `5ddaf07` | 15/15 |
+| **F1-004** | ✅ COMPLETADO | `ticket/F1-004-feature-flags` | `83363d7` | 12/12 |
+| **F1-001** | 🔄 NEXT | - | - | - |
+| **F1-003** | ⏸️ BLOQUEADO | - | - | - |
 
-### Cambios en router:
-- Extraídos 8 request schemas de `auth_router.py` (417 → 362 líneas, -13%)
-- Imports limpios desde nuevo módulo `infrastructure.api.schemas`
+**Progreso**: 50% (2/4 tickets) - 4/10 horas (40%)
 
-### Cambios en repositorios:
-- `user_repository_impl`: 17 campos → 1 línea con `model_validate()`
-- `role_repository_impl`: 8 campos → 1 línea
-- `session_repository_impl`: 9 campos → 1 línea
-- **Custom validator** en User entity para `backup_codes` (JSON string → list[str])
+---
 
-### Cambios en servicios:
-- Removido `@abstractmethod` de email_service Protocol
-- Mantenida herencia de Protocol para documentación
+## ✅ F1-002 - Performance API Marks (COMPLETADO)
 
-### ✅ Verificación Completa de Tests
+**Rama**: `ticket/F1-002-performance-marks`
+**Commit**: `5ddaf07`
+
+**Implementación**:
+- `markPerformance()` wrapper (feature detection)
+- `measurePerformance()` wrapper (dev-only logging)
+- Marks en `initializeAuth()`: `auth-init-start`, `auth-init-end`, `auth-init-duration`
+- 4 nuevos tests para Performance API
+- Script de baseline: `apps/web/scripts/baseline-performance.mjs`
+
+**Baseline Capturado**:
+```
+Performance Score: 47/100 ❌
+LCP: 7.1s ❌ (target: <2.5s)
+TBT: 2,180ms ❌ (target: <200ms)
+CLS: 0.007 ✅
+/api/auth/state requests: 1 ✅
+```
+
+**Tests**: 15/15 passing ✅
+
+---
+
+## ✅ F1-004 - Feature Flag System (COMPLETADO)
+
+**Rama**: `ticket/F1-004-feature-flags`
+**Commit**: `83363d7`
+
+**Implementación**:
+- `featureFlagStore` con Zustand + persist middleware
+- Métodos: `get(flag, default)`, `set(flag, value)`, `reset()`
+- Persistencia en localStorage con fallback a memoria
+- Panel admin dev-only: `FeatureFlagPanel`
+- Flags default: `auth-init-fix`, `oauth-preload`, `svg-wrapper`
+
+**Tests**: 12/12 passing ✅
+
+**Archivos creados**:
+- `src/stores/featureFlagStore.ts`
+- `src/lib/admin/featureFlagPanel.tsx`
+- `tests/unit/stores/featureFlagStore.test.ts`
+- `src/stores/index.ts` (actualizado con export)
+
+---
+
+## 🔄 F1-001 - authStore initialized Flag (NEXT)
+
+**Depende de**: F1-004 ✅ (ya completado)
+**Estimación**: 2 horas
+
+**Qué hacer**:
+- Agregar flag `initialized` a authStore
+- Early exit en `initializeAuth()` si ya está inicializado
+- Usar `featureFlagStore.get('auth-init-fix', true)` para habilitar/deshabilitar
+- Tests para verificar una sola llamada a `initializeAuth()`
+
+**Siguiente paso**: Leer `docs/tickets/F1-001-auth-store-flag.md` e implementar
+
+---
+
+## 📋 Branch Strategy
+
+Cada ticket tiene su propia rama:
+- `ticket/F1-002-performance-marks` ✅ listo para merge
+- `ticket/F1-004-feature-flags` ✅ listo para merge
+- `ticket/F1-001-auth-store-flag` 🔄 NEXT
+- `ticket/F1-003-2fa-management` (último)
+
+**Opciones**:
+1. Merge de F1-002 + F1-004 a main ahora
+2. Esperar a completar F1-001 y merge todo junto
+3. Merge por ticket individualmente
+
+---
+
+## 📂 Archivos de Referencia
+
+- `docs/tickets/F1-002-performance-api.md` - Ticket Performance API
+- `docs/tickets/F1-004-feature-flags.md` - Ticket Feature Flags
+- `docs/tickets/F1-001-auth-store-flag.md` - Ticket authStore Flag (NEXT)
+- `docs/tickets/phase-1-implementation-plan.md` - Plan completo
+- `docs/tickets/baseline-results.json` - Baseline actual (47/100)
+
+---
+
+## 🎯 Próximos Pasos
+
+1. **Crear rama** para F1-001: `git checkout -b ticket/F1-001-auth-store-flag`
+2. **Implementar** flag `initialized` en authStore
+3. **Usar** `featureFlagStore.get('auth-init-fix', true)` para controlar
+4. **Tests** para verificar early exit
+5. **Commit** y actualizar HANDOFF.md
+6. **F1-003** (2FA Management) - último ticket, depende de F1-001 + F1-002
+
+---
+
+## 🧪 Tests Totales
 
 | Suite | Tests | Estado |
 |-------|-------|--------|
-| **Backend (pytest)** | 113/113 | ✅ PASSING |
-| **Frontend Unit (vitest)** | 299/299 | ✅ PASSING |
-| **Build (Next.js)** | - | ✅ EXITOSO |
-| **E2E (Playwright)** | 65/65 | ✅ PASSING (según HANDOFF 2026-02-19) |
-| **TOTAL** | **412/412** | **✅ 100%** |
-
-### ✅ Fix TypeScript Build Error
-- Removido `RefreshTokenResponse` de `ApiResponse` type union
-- Commit `1587fba` - fix(frontend): remove RefreshTokenResponse
-- GGA review passed (cached)
-
----
-
-## 📊 Estado del Pydantic Refactor
-
-| Fase | Estado | Merge | Tests |
-|------|--------|-------|-------|
-| **Fase 1: Foundation** | ✅ Completa | ✅ main | 113/113 |
-| **Fase 2: Domain** | ✅ Completa | ✅ main | 113/113 |
-| **Fase 3: Application** | ✅ Completa | ✅ main | 113/113 |
-| **Fase 4: Infrastructure** | ✅ **COMPLETA** | ✅ **main** | 113/113 |
-| **Fase 5-8**: Python 3.13+, Cleanup, Testing, Validación | ❌ No iniciadas | - | - |
-
-### ✅ Fase 3 COMPLETADA (2026-02-20)
-**Commit**: `e73dd01` - "refactor: DTOs to Pydantic + fixes"
-
-**Lo que se hizo:**
-- ✅ DTOs Pydantic creados DENTRO de use cases (no separados)
-- ✅ Use cases actualizados para usar DTOs Pydantic
-
-**Lo que FALTA según el plan original:**
-- ❌ DTOs NO están en `application/dto/auth/` (están vacíos)
-- ❌ DTOs están definidos inline dentro de cada use case
-- ❌ Schemas de API NO están en módulo separado `infrastructure/api/schemas/`
-
-**Ejemplo de la diferencia:**
-```python
-# Plan original: application/dto/auth/register.py
-class RegisterUserRequest(BaseModel): ...
-class RegisterUserResponse(BaseModel): ...
-
-# Realidad actual: application/use_cases/auth/register_user.py
-class RegisterUserRequest(BaseModel): ...  # ← Definido aquí
-class RegisterUserResponse(BaseModel): ...  # ← Definido aquí
-```
-
----
-
-## 🏗️ Archivos Mergeados (Fases 1-3)
-
-### Domain Layer (Pydantic 2.12) ✅
-```
-apps/api/src/prosell/domain/
-├── base.py                    # DomainModel, ValueObject
-├── entities/
-│   ├── user.py               # User entity con Pydantic
-│   ├── role.py               # RoleType enum + Permissions
-│   └── session.py            # Session entity
-├── value_objects/
-│   └── email.py              # Email value object (inmutable)
-├── repositories/
-│   ├── user_repository.py    # AbstractUserRepository (Protocol)
-│   ├── role_repository.py
-│   └── session_repository.py
-└── events/
-    └── user_events.py
-```
-
-### Application Layer (DTOs separados) ✅
-```
-apps/api/src/prosell/application/
-├── dto/auth/                  # ✅ DTOs en archivos separados
-│   ├── common.py             # UserInfo
-│   ├── register.py           # RegisterUserRequest/Response
-│   ├── login.py              # LoginUserRequest/Response
-│   ├── oauth.py              # OAuthLoginRequest/Response
-│   ├── two_factor.py         # 2FA DTOs
-│   ├── password.py           # Password reset DTOs
-│   ├── email.py              # VerifyEmail DTOs
-│   ├── token.py              # RefreshToken DTOs
-│   └── __init__.py           # Reexports
-└── use_cases/auth/           # ✅ Usan imports de dto.auth
-```
-
----
-
-## 🚀 Siguiente Paso: Fase 4 - Infrastructure Schemas
-
-### Qué es Fase 4?
-Crear módulo `infrastructure/api/schemas/` para separar los schemas de FastAPI de los routers.
-1. **Mover DTOs de use_cases a dto/auth/ separados**
-   - Extraer `RegisterUserRequest/Response` de `register_user.py` → `dto/auth/register.py`
-   - Extraer `LoginUserRequest/Response` de `login_user.py` → `dto/auth/login.py`
-   - Extraer `OAuthLoginRequest/Response` de `oauth_login.py` → `dto/auth/oauth.py`
-   - Extraer `Enable2FARequest/Response` de `enable_2fa.py` → `dto/auth/2fa.py`
-   - Extraer `Verify2FARequest/Response` de `verify_2fa.py` → `dto/auth/2fa.py`
-   - Extraer `ResetPasswordRequest/Response` de `reset_password.py` → `dto/auth/password.py`
-   - Extraer `VerifyEmailRequest/Response` de `verify_email.py` → `dto/auth/email.py`
-
-2. **Crear `infrastructure/api/schemas/`**
-   - Extraer schemas de routers FastAPI
-   - Mapear DTOs a schemas de API
-
-### Comandos para continuar Fase 3
-```bash
-# Ya deberíamos estar en la rama correcta o crear una nueva
-git checkout main
-git pull origin main
-git checkout -b feature/fase-3-application-dtos-completion
-```
-
-### Estimación (lo que falta)
-- **Duración**: 2-3 horas (solo mover DTOs a archivos separados)
-- **Archivos**: ~8 archivos DTO nuevos + actualizaciones en use_cases
-- **Riesgo**: BAJO (es solo mover código existente)
-- **Complejidad**: Baja (reorganización, no lógica nueva)
-
-### Archivos a migrar
-```
-apps/api/src/prosell/application/
-├── use_cases/
-│   ├── auth/
-│   │   ├── register_user.py
-│   │   ├── authenticate_user.py
-│   │   ├── verify_email.py
-│   │   └── ...
-│   └── users/
-│       ├── get_user.py
-│       ├── update_user.py
-│       └── ...
-├── dtos/
-│   ├── auth/
-│   │   ├── register_dto.py
-│   │   ├── login_dto.py
-│   │   └── ...
-│   └── users/
-│       └── ...
-└── services/
-    └── ...
-```
-
----
-
-## 📚 Referencias Útiles
-
-### PRPs Relevantes
-- `PRPs/refactor/fase-1-foundation.md` - ✅ COMPLETADO
-- `PRPs/refactor/fase-2-domain-migration.md` - ✅ COMPLETADO
-- `PRPs/refactor/fase-3-application-dtos.md` - ⚠️ PARCIAL (DTOs inline)
-- `docs/plans/2026-02-14-pydantic-stack-refactoring.md` - Plan maestro original
-- `docs/plans/2026-02-14-pydantic-stack-ejecucion.md` - Plan ejecución
-
-### Documentación de Arquitectura
-- `CLAUDE.md` - Tech Stack 2026, estructura monorepo
-- `docs/06_PROMPT_CLAUDE_CODE_2026_v2.md` - Stack completo
-- `docs/01_ARQUITECTURA_PROSELL_SAAS_V2.md` - Arquitectura detallada
-
-### Patrones Pydantic Usados en Fase 2
-```python
-# DomainModel (entidades mutables)
-class DomainModel(BaseModel):
-    model_config = ConfigDict(
-        frozen=False,              # Mutable
-        validate_assignment=True,  # Validar en cada asignación
-        from_attributes=True,      # ORM integration
-    )
-
-# ValueObject (inmutable)
-class ValueObject(BaseModel):
-    model_config = ConfigDict(
-        frozen=True,  # Inmutable
-    )
-```
-
----
-
-## 🔧 Comandos Útiles
-
-### Verificar tests (por si acaso)
-```bash
-# Backend
-cd apps/api && uv run pytest --tb=short -v
-
-# Frontend unit
-cd apps/web && pnpm vitest run
-
-# E2E (requiere servidor corriendo)
-pnpm playwright test
-```
-
-### Verificar estado del repo
-```bash
-git status
-git log --oneline -10
-git branch -a
-```
-
-### Linters
-```bash
-# Python
-cd apps/api && ruff check . && ruff format .
-
-# Frontend
-cd apps/web && pnpm lint
-cd apps/web && pnpm typecheck
-
-# All
-pnpm lint
-pnpm typecheck
-```
-
----
-
-## 📝 Resumen Técnico
-
-### Tech Stack Confirmado
-| Capa | Tecnología | Versión |
-|------|------------|---------|
-| Backend | Python | 3.14.2 |
-| Backend | Pydantic | 2.12+ |
-| Backend | FastAPI | 0.115+ |
-| Frontend | Next.js | 16.1.6 |
-| Frontend | React | 19.2 |
-| Frontend | TypeScript | 5.5+ (strict) |
-| Testing | pytest | 9.0.2 |
-| Testing | vitest | 2.1.9 |
-| Testing | playwright | latest |
-
-### Branch State
-- **main**: Up to date con origin/main
-- **feature/fase-3-application-dtos-completion**: ✅ Mergeada y eliminada
-- **feature/fase-2-domain-migration**: ✅ Mergeada
-- **feature/fase-1-foundation**: ✅ Eliminada
-
-### Últimos Commits
-```
-7dbd6f7 refactor(application): complete Fase 3 - DTOs separados    ← FASE 3 ✅ COMPLETA
-93cc389 docs(handoff): update Fase 3 status - parcialmente completada
-e73dd01 refactor: DTOs to Pydantic + fixes                          ← FASE 3 PARCIAL
-763e5d3 refactor(domain): migrate Domain Layer to Pydantic BaseModel ← FASE 2
-db374f0 feat(domain): add Pydantic base models                       ← FASE 1
-```
-
-### Commits Clave del Refactor Pydantic
-| Commit | SHA | Fase | Descripción |
-|--------|-----|------|-------------|
-| Foundation | `db374f0` | Fase 1 | Creó `domain/base.py` con DomainModel, ValueObject, DomainEvent |
-| Domain Migration | `763e5d3` | Fase 2 | Migró Domain Layer a Pydantic BaseModel |
-| Application DTOs | `7dbd6f7` | Fase 3 | DTOs separados en application/dto/auth/ |
-| **Infrastructure** | **`e4b8775`** | **Fase 4** ✅ | **Schemas módulo, model_validate(), sin ABC** |
-
----
-
-## ✅ Checklist para Próxima Sesión - Fase 5
-
-- [ ] Iniciar Fase 5: Python 3.13+ Syntax
-- [ ] Crear rama `feature/fase-5-python313-syntax`
-- [ ] Actualizar type hints (remover compatibilidad con Python <3.13)
-- [ ] Usar nuevos patterns de Python 3.13+ (match/case, type aliases, etc.)
-- [ ] Verificar tests (113 backend)
-- [ ] Commit con GGA review
-- [ ] Merge a main cuando esté completo
-
-### Opción A: Terminar refactor según plan original (~35h restantes)
-- Completar Fase 3 (mover DTOs a archivos separados)
-- Fase 4: Infrastructure (schemas separados)
-- Fase 5: Python 3.13+ syntax
-- Fase 6: Cleanup
-- Fase 7: Testing updates
-- Fase 8: Validación final
-
-### Opción B: Aceptar estado actual y continuar con Sprint 3-4 (Organizaciones)
-- Los DTOs inline funcionan correctamente
-- Ahorra ~35 horas de refactor
-- Continuar con funcionalidad de negocio
-
----
-
-**PROYECTO LISTO PARA FASE 5** 🚀
-
-**Última actualización**: 2026-02-20 - Fase 4 COMPLETADA ✅
-
----
-
-## 📞 Contexto Rápido
-
-**Qué estamos haciendo**: Refactor completo del backend a Pydantic 2.12 (Clean Architecture)
-
-**Por qué**: Mejor validación, type safety, menos código boilerplate
-
-**Dónde estamos**: Fase 3 de 8 completada (Application DTOs)
-
-**Cuánto falta**: ~5 fases más (Infrastructure, Python 3.13+, Cleanup, Testing, Validación)
-
-**Estimación total**: ~15-20 horas de desarrollo restantes
-
----
-
-**Fin del Handoff - Fase 3 COMPLETADA** ✅
+| authStore | 15/15 | ✅ |
+| featureFlagStore | 12/12 | ✅ |
+| **Phase 1** | **27/27** | **✅ 100%** |
