@@ -1,6 +1,7 @@
 """SQLAlchemy implementation of OAuth repository."""
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -59,7 +60,7 @@ class SqlAlchemyOAuthRepository(AbstractOAuthRepository):
         await self.session.flush()
         return True
 
-    async def get_user_oauth_providers(self, user_id: UUID) -> list[dict]:
+    async def get_user_oauth_providers(self, user_id: UUID) -> list[dict[str, Any]]:
         """Get all OAuth providers linked to a user."""
         stmt = select(OAuthAccountModel).where(
             OAuthAccountModel.user_id == str(user_id),

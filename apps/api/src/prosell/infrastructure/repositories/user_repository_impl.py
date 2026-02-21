@@ -133,7 +133,7 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
         """Check if email already exists."""
         stmt = select(func.count(UserModel.id)).where(UserModel.email == email)
         result = await self.session.execute(stmt)
-        count = result.scalar()
+        count: int = result.scalar() or 0  # type: ignore[assignment]
         return count > 0
 
     async def get_by_verification_token(self, token: str) -> User | None:

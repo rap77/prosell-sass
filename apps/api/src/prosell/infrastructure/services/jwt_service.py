@@ -1,6 +1,7 @@
 """JWT token generation and verification service."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 import jwt
@@ -65,7 +66,7 @@ class JWTService(IJWTService):
         }
         return jwt.encode(payload, self.private_key, algorithm=self.algorithm)
 
-    def verify_token(self, token: str) -> dict:
+    def verify_token(self, token: str) -> dict[str, Any]:
         """
         Verify and decode JWT token.
 
@@ -90,7 +91,7 @@ class JWTService(IJWTService):
         except jwt.InvalidTokenError as e:
             raise ValueError("Invalid token") from e
 
-    def decode_token_without_verification(self, token: str) -> dict:
+    def decode_token_without_verification(self, token: str) -> dict[str, Any]:
         """
         Decode token without verification (for debugging).
 

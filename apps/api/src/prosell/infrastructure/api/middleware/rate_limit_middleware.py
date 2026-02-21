@@ -1,5 +1,8 @@
 """Rate limiting middleware using slowapi for FastAPI."""
 
+from collections.abc import Callable
+from typing import Any
+
 from fastapi import Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -41,7 +44,7 @@ limiter = Limiter(
 
 
 # Decorator factory for endpoints that have Request parameter
-def rate_limit(limit_string: str):
+def rate_limit(limit_string: str) -> Callable[[Any], Any]:
     """
     Rate limit decorator for endpoints with Request parameter.
 
@@ -51,7 +54,8 @@ def rate_limit(limit_string: str):
         async def endpoint(request: Request, ...):
             ...
     """
-    return limiter.limit(limit_string)
+    limit: Any = limiter.limit(limit_string)  # type: ignore[assignment]
+    return limit  # type: ignore[return-value]
 
 
 # Pre-configured limit strings

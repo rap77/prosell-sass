@@ -2,10 +2,13 @@
 
 from collections.abc import Callable
 from functools import wraps
+from typing import Any, Concatenate, ParamSpec
 
 from fastapi import HTTPException, status
 
 from prosell.domain.entities.role import RoleType
+
+P = ParamSpec("P")
 
 
 class RBACMiddleware:
@@ -16,7 +19,9 @@ class RBACMiddleware:
     """
 
     @staticmethod
-    def require_roles(*roles: str) -> Callable:
+    def require_roles(
+        *roles: str,
+    ) -> Callable[[Callable[Concatenate[dict[str, Any], P], Any]], Callable[P, Any]]:
         """
         Decorator to require specific roles.
 
@@ -30,10 +35,12 @@ class RBACMiddleware:
                 ...
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(
+            func: Callable[Concatenate[dict[str, Any], P], Any],  # type: ignore[valid-type]
+        ) -> Callable[P, Any]:  # type: ignore[misc]
             @wraps(func)
-            async def wrapper(*args, current_user: dict, **kwargs):
-                user_roles = current_user.get("roles", [])
+            async def wrapper(*args: P.args, current_user: dict[str, Any], **kwargs: P.kwargs) -> Any:  # type: ignore[misc]
+                user_roles: list[str] = current_user.get("roles", [])  # type: ignore[assignment]
 
                 # Check if user has any of the required roles
                 if not any(role in user_roles for role in roles):
@@ -42,14 +49,16 @@ class RBACMiddleware:
                         detail=f"Access denied. Required roles: {', '.join(roles)}",
                     )
 
-                return await func(*args, current_user=current_user, **kwargs)
+                return await func(*args, current_user=current_user, **kwargs)  # type: ignore[call-arg]
 
-            return wrapper
+            return wrapper  # type: ignore[return-value]
 
         return decorator
 
     @staticmethod
-    def require_permissions(*permissions: str) -> Callable:
+    def require_permissions(
+        *permissions: str,
+    ) -> Callable[[Callable[Concatenate[dict[str, Any], P], Any]], Callable[P, Any]]:
         """
         Decorator to require specific permissions.
 
@@ -63,15 +72,17 @@ class RBACMiddleware:
                 ...
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(
+            func: Callable[Concatenate[dict[str, Any], P], Any],  # type: ignore[valid-type]
+        ) -> Callable[P, Any]:  # type: ignore[misc]
             @wraps(func)
-            async def wrapper(*args, current_user: dict, **kwargs):
-                user_roles = current_user.get("roles", [])
+            async def wrapper(*args: P.args, current_user: dict[str, Any], **kwargs: P.kwargs) -> Any:  # type: ignore[misc]
+                user_roles: list[str] = current_user.get("roles", [])  # type: ignore[assignment]
 
                 # Get permissions for user's roles
                 from prosell.domain.entities.role import ROLE_PERMISSIONS
 
-                user_permissions = set()
+                user_permissions: set[str] = set()
                 for role in user_roles:
                     try:
                         role_type = RoleType(role)
@@ -87,9 +98,9 @@ class RBACMiddleware:
                         detail=f"Access denied. Missing permissions: {', '.join(missing)}",
                     )
 
-                return await func(*args, current_user=current_user, **kwargs)
+                return await func(*args, current_user=current_user, **kwargs)  # type: ignore[call-arg]
 
-            return wrapper
+            return wrapper  # type: ignore[return-value]
 
         return decorator
 

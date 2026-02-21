@@ -57,7 +57,7 @@ class AbstractOAuthRepository(Protocol):
         """
         ...
 
-    async def get_user_oauth_providers(self, user_id: UUID) -> list[dict]:
+    async def get_user_oauth_providers(self, user_id: UUID) -> list[dict[str, str | int]]:
         """
         Get all OAuth providers linked to a user.
 

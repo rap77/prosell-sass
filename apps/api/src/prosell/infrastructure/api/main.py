@@ -1,11 +1,12 @@
 """FastAPI application entry point for ProSell SaaS."""
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.exc import IntegrityError
+from starlette.middleware.base import RequestResponseEndpoint
 
 from prosell.core.config import settings
 from prosell.domain.exceptions.auth_exceptions import AuthDomainException
@@ -30,9 +31,9 @@ app = FastAPI(
 # EXCEPTION HANDLERS (Centralized)
 # =============================================================================
 
-app.add_exception_handler(AuthDomainException, auth_domain_exception_handler)
-app.add_exception_handler(IntegrityError, integrity_error_handler)
-app.add_exception_handler(Exception, generic_exception_handler)
+app.add_exception_handler(AuthDomainException, auth_domain_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(IntegrityError, integrity_error_handler)  # type: ignore[arg-type]
+app.add_exception_handler(Exception, generic_exception_handler)  # type: ignore[arg-type]
 
 
 # Rate limit exception handler
@@ -77,7 +78,7 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def security_headers_middleware(request: Request, call_next):
+async def security_headers_middleware(request: Request, call_next: RequestResponseEndpoint) -> Response:
     """Add comprehensive security headers to all responses."""
     response = await call_next(request)
 

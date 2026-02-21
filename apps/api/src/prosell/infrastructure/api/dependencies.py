@@ -3,13 +3,20 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from prosell.application.ports.email_service import AbstractEmailService
 from prosell.core.config import settings
-from prosell.domain.ports import IJWTService, IPasswordService, ITOTPService
+from prosell.domain.ports import (
+    IJWTService,
+    IPasswordService,
+    ITokenHasher,
+    ITOTPService,
+)
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.oauth_repository_impl import SqlAlchemyOAuthRepository
 from prosell.infrastructure.repositories.role_repository_impl import SqlAlchemyRoleRepository
 from prosell.infrastructure.repositories.session_repository_impl import SqlAlchemySessionRepository
 from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
+from prosell.infrastructure.security.token_hasher import TokenHasher
 from prosell.infrastructure.services.email_service import (
     MockEmailService,
     SendGridEmailService,
@@ -74,11 +81,16 @@ def get_totp_service() -> ITOTPService:
     return TOTPService()
 
 
-def get_email_service():
+def get_email_service() -> AbstractEmailService:
     """Get email service instance (singleton)."""
     if settings.use_mock_email:
         return MockEmailService()
     return SendGridEmailService()
+
+
+def get_token_hasher() -> ITokenHasher:
+    """Get token hasher service instance (singleton)."""
+    return TokenHasher()
 
 
 # =============================================================================
@@ -89,7 +101,7 @@ def get_email_service():
 async def get_register_user_use_case(
     user_repository: SqlAlchemyUserRepository = Depends(get_user_repository),
     password_service: IPasswordService = Depends(get_password_service),
-    email_service=Depends(get_email_service),
+    email_service: AbstractEmailService = Depends(get_email_service),
 ):
     """Get RegisterUser use case instance."""
     from prosell.application.use_cases.auth.register_user import RegisterUserUseCase
@@ -112,11 +124,12 @@ async def get_refresh_token_use_case(
     user_repository: SqlAlchemyUserRepository = Depends(get_user_repository),
     session_repository: SqlAlchemySessionRepository = Depends(get_session_repository),
     jwt_service: IJWTService = Depends(get_jwt_service),
+    token_hasher: ITokenHasher = Depends(get_token_hasher),
 ):
     """Get RefreshToken use case instance."""
     from prosell.application.use_cases.auth.refresh_token import RefreshTokenUseCase
 
-    return RefreshTokenUseCase(user_repository, session_repository, jwt_service)
+    return RefreshTokenUseCase(user_repository, session_repository, jwt_service, token_hasher)
 
 
 async def get_oauth_login_use_case(
@@ -133,7 +146,7 @@ async def get_oauth_login_use_case(
 async def get_enable_2fa_use_case(
     user_repository: SqlAlchemyUserRepository = Depends(get_user_repository),
     totp_service: ITOTPService = Depends(get_totp_service),
-    email_service=Depends(get_email_service),
+    email_service: AbstractEmailService = Depends(get_email_service),
 ):
     """Get Enable2FA use case instance."""
     from prosell.application.use_cases.auth.enable_2fa import Enable2FAUseCase
@@ -156,8 +169,9 @@ async def get_verify_2fa_use_case(
     session_repository: SqlAlchemySessionRepository = Depends(get_session_repository),
     totp_service: ITOTPService = Depends(get_totp_service),
     jwt_service: IJWTService = Depends(get_jwt_service),
+    token_hasher: ITokenHasher = Depends(get_token_hasher),
 ):
     """Get Verify2FA use case instance."""
     from prosell.application.use_cases.auth.verify_2fa import Verify2FAUseCase
 
-    return Verify2FAUseCase(user_repository, session_repository, totp_service, jwt_service)
+    return Verify2FAUseCase(user_repository, session_repository, totp_service, jwt_service, token_hasher)

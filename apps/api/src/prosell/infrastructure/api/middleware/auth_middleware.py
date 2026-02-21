@@ -1,6 +1,6 @@
 """Authentication middleware for JWT verification."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -14,7 +14,7 @@ security = HTTPBearer()
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
     jwt_service: IJWTService = Depends(get_jwt_service),
-) -> dict:
+) -> dict[str, Any]:
     """
     FastAPI dependency to verify JWT and extract user.
 
@@ -46,7 +46,7 @@ async def get_current_user(
 async def get_optional_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(HTTPBearer(auto_error=False)),
     jwt_service: IJWTService = Depends(get_jwt_service),
-) -> dict | None:
+) -> dict[str, Any] | None:
     """
     Optional JWT verification.
 

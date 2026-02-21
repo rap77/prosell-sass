@@ -58,7 +58,7 @@ class PasswordService(IPasswordService):
         Returns:
             List of validation errors (empty if valid)
         """
-        errors = []
+        errors: list[str] = []
 
         if len(password) < 8:
             errors.append("Password must be at least 8 characters long")

@@ -1,6 +1,6 @@
 """JWT service interface (port) for secondary actor."""
 
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID
 
 
@@ -42,7 +42,7 @@ class IJWTService(Protocol):
         """
         ...
 
-    def verify_token(self, token: str) -> dict:
+    def verify_token(self, token: str) -> dict[str, Any]:
         """
         Verify and decode JWT token.
 
@@ -57,7 +57,7 @@ class IJWTService(Protocol):
         """
         ...
 
-    def decode_token_without_verification(self, token: str) -> dict:
+    def decode_token_without_verification(self, token: str) -> dict[str, Any]:
         """
         Decode token without verification (for debugging).
 

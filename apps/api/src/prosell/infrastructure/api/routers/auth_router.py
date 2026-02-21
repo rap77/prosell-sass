@@ -1,7 +1,7 @@
 """Authentication router for ProSell SaaS API."""
 
 from datetime import UTC, datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import JSONResponse
@@ -61,7 +61,10 @@ from prosell.infrastructure.api.dependencies import (
     get_register_user_use_case,
     get_verify_2fa_use_case,
 )
-from prosell.infrastructure.api.middleware.auth_middleware import get_current_user
+from prosell.infrastructure.api.middleware.auth_middleware import (
+    get_current_user,
+    get_optional_user,
+)
 from prosell.infrastructure.api.schemas import (
     Disable2FARequest,
     Enable2FARequest,
@@ -105,36 +108,8 @@ async def register(
     )
     result = await use_case.execute(uc_request)
 
-    # Set httpOnly cookies for tokens (same as login)
-    access_token_expiry = datetime.now(UTC) + timedelta(minutes=15)
-    refresh_token_expiry = datetime.now(UTC) + timedelta(days=7)
-
-    response.set_cookie(
-        key="access_token",
-        value=result.tokens.access_token,
-        expires=access_token_expiry,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-    )
-
-    response.set_cookie(
-        key="refresh_token",
-        value=result.tokens.refresh_token,
-        expires=refresh_token_expiry,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-    )
-
-    response.set_cookie(
-        key="user_data",
-        value=result.user.model_dump_json(),
-        expires=refresh_token_expiry,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-    )
+    # Note: Registration does NOT set auth cookies because user must verify email first
+    # User will need to login after email verification
 
     return result
 
@@ -164,7 +139,7 @@ async def login(
 
     response.set_cookie(
         key="access_token",
-        value=result.tokens.access_token,
+        value=result.access_token,
         expires=access_token_expiry,
         httponly=True,  # CRITICAL: Prevents JavaScript access (XSS protection)
         secure=True,  # HTTPS only
@@ -173,7 +148,7 @@ async def login(
 
     response.set_cookie(
         key="refresh_token",
-        value=result.tokens.refresh_token,
+        value=result.refresh_token,
         expires=refresh_token_expiry,
         httponly=True,
         secure=True,
@@ -231,7 +206,7 @@ async def oauth_login(
 @router.post("/2fa/enable")
 async def enable_2fa(
     request: Enable2FARequest,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[dict[str, Any], Depends(get_current_user)],
     use_case: Annotated[Enable2FAUseCase, Depends(get_enable_2fa_use_case)],
 ) -> Enable2FAResponse:
     """
@@ -271,7 +246,7 @@ async def verify_2fa(
 @router.post("/2fa/disable")
 async def disable_2fa(
     request: Disable2FARequest,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[dict[str, Any], Depends(get_current_user)],
     use_case: Annotated[Disable2FAUseCase, Depends(get_disable_2fa_use_case)],
 ) -> Disable2FAResponse:
     """
@@ -295,7 +270,7 @@ async def disable_2fa(
 
 @router.get("/state")
 async def get_auth_state(
-    current_user: Annotated[dict | None, Depends(get_current_user)] = None,
+    current_user: Annotated[dict[str, Any] | None, Depends(get_optional_user)] = None,
 ) -> JSONResponse:
     """
     Get current authentication state from httpOnly cookies.
@@ -332,8 +307,8 @@ async def get_auth_state(
 
 @router.get("/me")
 async def get_me(
-    current_user: Annotated[dict, Depends(get_current_user)],
-) -> dict:
+    current_user: Annotated[dict[str, Any], Depends(get_current_user)],
+) -> dict[str, Any]:
     """
     Get current user info from JWT token.
 
