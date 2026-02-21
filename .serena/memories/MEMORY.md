@@ -2,10 +2,7 @@
 
 ## 📍 CURRENT STATUS (2026-02-20)
 
-### Pydantic Refactor: 62.5% COMPLETE ✅
-- **Fase 5 completada**: Python 3.13+ modern syntax
-- **113/113 tests passing**: Backend unit tests
-- **5 de 8 fases completadas**: Foundation, Domain, Application, Infrastructure, Python 3.13+
+### Pydantic Refactor: 75% COMPLETE ✅\n- **Fase 6 completada**: Cleanup (UserStatus single source of truth)\n- **113/113 tests passing**: Backend unit tests\n- **6 de 8 fases completadas**: Foundation, Domain, Application, Infrastructure, Python 3.13+, Cleanup
 - **Commits**: All GGA approved with full pipeline
 
 ### Sprint 1-2: Frontend Auth ✅ COMPLETE
