@@ -39,7 +39,11 @@ class RBACMiddleware:
             func: Callable[Concatenate[dict[str, Any], P], Any],  # type: ignore[valid-type]
         ) -> Callable[P, Any]:  # type: ignore[misc]
             @wraps(func)
-            async def wrapper(*args: P.args, current_user: dict[str, Any], **kwargs: P.kwargs) -> Any:  # type: ignore[misc]
+            async def wrapper(
+                *args: P.args,
+                current_user: dict[str, Any],
+                **kwargs: P.kwargs,
+            ) -> Any:  # type: ignore[misc]
                 user_roles: list[str] = current_user.get("roles", [])  # type: ignore[assignment]
 
                 # Check if user has any of the required roles
@@ -76,7 +80,11 @@ class RBACMiddleware:
             func: Callable[Concatenate[dict[str, Any], P], Any],  # type: ignore[valid-type]
         ) -> Callable[P, Any]:  # type: ignore[misc]
             @wraps(func)
-            async def wrapper(*args: P.args, current_user: dict[str, Any], **kwargs: P.kwargs) -> Any:  # type: ignore[misc]
+            async def wrapper(
+                *args: P.args,
+                current_user: dict[str, Any],
+                **kwargs: P.kwargs,
+            ) -> Any:  # type: ignore[misc]
                 user_roles: list[str] = current_user.get("roles", [])  # type: ignore[assignment]
 
                 # Get permissions for user's roles

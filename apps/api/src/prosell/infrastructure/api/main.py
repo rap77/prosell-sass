@@ -78,7 +78,10 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def security_headers_middleware(request: Request, call_next: RequestResponseEndpoint) -> Response:
+async def security_headers_middleware(
+    request: Request,
+    call_next: RequestResponseEndpoint,
+) -> Response:
     """Add comprehensive security headers to all responses."""
     response = await call_next(request)
 
