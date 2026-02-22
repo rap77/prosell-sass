@@ -77,14 +77,14 @@ C4Context
 
 ### 1.3 Características Clave
 
-| Característica | Descripción |
-|---------------|-------------|
-| **Multi-tenant** | Cada organización es un tenant aislado |
+| Característica      | Descripción                              |
+| ------------------- | ---------------------------------------- |
+| **Multi-tenant**    | Cada organización es un tenant aislado   |
 | **Multi-categoría** | Vehículos, inmuebles, electrónicos, etc. |
-| **Responsive/PWA** | Adaptable a todos los dispositivos |
-| **Event-Driven** | Arquitectura basada en eventos |
-| **AI-Powered** | Agentes inteligentes integrados |
-| **Prepago/Tokens** | Sistema de billetera virtual |
+| **Responsive/PWA**  | Adaptable a todos los dispositivos       |
+| **Event-Driven**    | Arquitectura basada en eventos           |
+| **AI-Powered**      | Agentes inteligentes integrados          |
+| **Prepago/Tokens**  | Sistema de billetera virtual             |
 
 ---
 
@@ -139,13 +139,13 @@ graph TB
 
 ### 2.2 Principios SOLID
 
-| Principio | Aplicación en ProSell |
-|-----------|----------------------|
-| **SRP** | Cada clase tiene una única responsabilidad (ej: `FacebookListingExtractor` solo extrae) |
-| **OCP** | Sistema de categorías extensible sin modificar código base |
-| **LSP** | Todas las implementaciones son sustituibles por sus interfaces |
-| **ISP** | Interfaces pequeñas y específicas (3-7 métodos) |
-| **DIP** | Dependencias inyectadas, dominio no depende de infraestructura |
+| Principio | Aplicación en ProSell                                                                   |
+| --------- | --------------------------------------------------------------------------------------- |
+| **SRP**   | Cada clase tiene una única responsabilidad (ej: `FacebookListingExtractor` solo extrae) |
+| **OCP**   | Sistema de categorías extensible sin modificar código base                              |
+| **LSP**   | Todas las implementaciones son sustituibles por sus interfaces                          |
+| **ISP**   | Interfaces pequeñas y específicas (3-7 métodos)                                         |
+| **DIP**   | Dependencias inyectadas, dominio no depende de infraestructura                          |
 
 ### 2.3 Regla de Dependencias
 
@@ -383,12 +383,12 @@ prosell-sass/
 
 ### 4.2 Responsabilidades por Capa
 
-| Capa | Responsabilidad | Tecnologías |
-|------|-----------------|-------------|
-| **Domain** | Lógica de negocio pura, reglas, invariantes | Python puro, Pydantic |
-| **Application** | Orquestación, casos de uso, workflows | Python, DTOs |
-| **Infrastructure** | Implementaciones, I/O, persistencia | FastAPI, SQLAlchemy, Redis |
-| **Presentation** | UI, API REST, WebSocket | Next.js, React, TailwindCSS |
+| Capa               | Responsabilidad                             | Tecnologías                 |
+| ------------------ | ------------------------------------------- | --------------------------- |
+| **Domain**         | Lógica de negocio pura, reglas, invariantes | Python puro, Pydantic       |
+| **Application**    | Orquestación, casos de uso, workflows       | Python, DTOs                |
+| **Infrastructure** | Implementaciones, I/O, persistencia         | FastAPI, SQLAlchemy, Redis  |
+| **Presentation**   | UI, API REST, WebSocket                     | Next.js, React, TailwindCSS |
 
 ---
 
@@ -572,39 +572,39 @@ graph TB
 
 ### 6.2 Matriz de Permisos
 
-| Permiso | Master | Manager | Seller PS | Org Admin | Org Seller | Client |
-|---------|--------|---------|-----------|-----------|------------|--------|
-| **Organizaciones** |
-| Crear organización | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Ver todas las orgs | ✅ | ✅* | ✅* | ❌ | ❌ | ❌ |
-| Editar org | ✅ | ❌ | ❌ | ✅** | ❌ | ❌ |
-| Suspender org | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Productos** |
-| Ver todos | ✅ | ✅* | ✅ | ❌ | ❌ | 🌐 |
-| Crear producto | ✅ | ❌ | ❌ | ✅** | ❌ | ❌ |
-| Editar producto | ✅ | ❌ | ❌ | ✅** | ❌ | ❌ |
-| Aprobar publicación | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Pausar producto | ✅ | ❌ | ❌ | ✅** | ❌ | ❌ |
-| Marcar vendido | ✅ | ✅* | ❌ | ✅** | ❌ | ❌ |
-| **Ventas** |
-| Crear cita | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Ver todas las citas | ✅ | ✅* | ❌ | ✅** | ❌ | ❌ |
-| Registrar venta | ✅ | ✅* | ❌ | ✅** | ❌ | ❌ |
-| **Equipos** |
-| Crear equipo | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Asignar vendedores | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Ver equipo | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Comisiones** |
-| Ver todas | ✅ | ✅* | ❌ | ✅** | ❌ | ❌ |
-| Ver propias | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Editar % | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Wallet** |
-| Ver todas | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Recargar | ✅ | ❌ | ❌ | ✅** | ❌ | ❌ |
-| Consumir tokens | ✅ | ❌ | ❌ | ✅** | ❌ | ❌ |
+| Permiso             | Master | Manager | Seller PS | Org Admin | Org Seller | Client |
+| ------------------- | ------ | ------- | --------- | --------- | ---------- | ------ |
+| **Organizaciones**  |
+| Crear organización  | ✅     | ❌      | ❌        | ❌        | ❌         | ❌     |
+| Ver todas las orgs  | ✅     | ✅\*    | ✅\*      | ❌        | ❌         | ❌     |
+| Editar org          | ✅     | ❌      | ❌        | ✅\*\*    | ❌         | ❌     |
+| Suspender org       | ✅     | ❌      | ❌        | ❌        | ❌         | ❌     |
+| **Productos**       |
+| Ver todos           | ✅     | ✅\*    | ✅        | ❌        | ❌         | 🌐     |
+| Crear producto      | ✅     | ❌      | ❌        | ✅\*\*    | ❌         | ❌     |
+| Editar producto     | ✅     | ❌      | ❌        | ✅\*\*    | ❌         | ❌     |
+| Aprobar publicación | ✅     | ❌      | ❌        | ❌        | ❌         | ❌     |
+| Pausar producto     | ✅     | ❌      | ❌        | ✅\*\*    | ❌         | ❌     |
+| Marcar vendido      | ✅     | ✅\*    | ❌        | ✅\*\*    | ❌         | ❌     |
+| **Ventas**          |
+| Crear cita          | ✅     | ✅      | ✅        | ✅        | ✅         | ❌     |
+| Ver todas las citas | ✅     | ✅\*    | ❌        | ✅\*\*    | ❌         | ❌     |
+| Registrar venta     | ✅     | ✅\*    | ❌        | ✅\*\*    | ❌         | ❌     |
+| **Equipos**         |
+| Crear equipo        | ✅     | ❌      | ❌        | ❌        | ❌         | ❌     |
+| Asignar vendedores  | ✅     | ✅      | ❌        | ❌        | ❌         | ❌     |
+| Ver equipo          | ✅     | ✅      | ❌        | ❌        | ❌         | ❌     |
+| **Comisiones**      |
+| Ver todas           | ✅     | ✅\*    | ❌        | ✅\*\*    | ❌         | ❌     |
+| Ver propias         | ✅     | ✅      | ✅        | ✅        | ✅         | ❌     |
+| Editar %            | ✅     | ❌      | ❌        | ❌        | ❌         | ❌     |
+| **Wallet**          |
+| Ver todas           | ✅     | ❌      | ❌        | ❌        | ❌         | ❌     |
+| Recargar            | ✅     | ❌      | ❌        | ✅\*\*    | ❌         | ❌     |
+| Consumir tokens     | ✅     | ❌      | ❌        | ✅\*\*    | ❌         | ❌     |
 
-*Solo organizaciones asignadas
-**Solo su organización
+\*Solo organizaciones asignadas
+\*\*Solo su organización
 🌐 Solo productos públicos
 
 ### 6.3 Sistema de Equipos (MLM Simplificado)
@@ -674,12 +674,12 @@ graph TB
 
 ### 7.2 Comunicación Entre Servicios
 
-| Tipo | Protocolo | Uso |
-|------|-----------|-----|
-| Síncrono | REST/HTTP | Queries, operaciones inmediatas |
-| Asíncrono | Redis Streams | Eventos, jobs largos |
-| Real-time | WebSocket | Notificaciones, chat |
-| Cache | Redis Pub/Sub | Invalidación de cache |
+| Tipo      | Protocolo     | Uso                             |
+| --------- | ------------- | ------------------------------- |
+| Síncrono  | REST/HTTP     | Queries, operaciones inmediatas |
+| Asíncrono | Redis Streams | Eventos, jobs largos            |
+| Real-time | WebSocket     | Notificaciones, chat            |
+| Cache     | Redis Pub/Sub | Invalidación de cache           |
 
 ---
 
@@ -1040,20 +1040,20 @@ graph LR
 
 ### 9.2 Eventos del Dominio
 
-| Evento | Payload | Consumers |
-|--------|---------|-----------|
-| `UserRegistered` | user_id, email, role | Notifications, Analytics |
-| `OrganizationCreated` | org_id, name, owner_id | Notifications |
-| `ProductCreated` | product_id, org_id, category | Search Sync, Analytics |
-| `ProductPublished` | product_id, approved_by | Notifications, Search Sync |
-| `ProductSold` | product_id, sale_id, seller_id | Notifications, Commissions |
-| `AppointmentScheduled` | appointment_id, client_id, seller_id | Notifications |
-| `AppointmentCompleted` | appointment_id | Analytics |
-| `SaleCompleted` | sale_id, commissions[] | Wallet, Notifications |
-| `WalletRecharged` | wallet_id, amount | Notifications |
-| `TokensConsumed` | wallet_id, token_type, quantity | Analytics |
-| `ListingsScraped` | source, count, timestamp | Analytics, AI |
-| `PriceAlertTriggered` | listing_id, user_id, threshold | Notifications |
+| Evento                 | Payload                              | Consumers                  |
+| ---------------------- | ------------------------------------ | -------------------------- |
+| `UserRegistered`       | user_id, email, role                 | Notifications, Analytics   |
+| `OrganizationCreated`  | org_id, name, owner_id               | Notifications              |
+| `ProductCreated`       | product_id, org_id, category         | Search Sync, Analytics     |
+| `ProductPublished`     | product_id, approved_by              | Notifications, Search Sync |
+| `ProductSold`          | product_id, sale_id, seller_id       | Notifications, Commissions |
+| `AppointmentScheduled` | appointment_id, client_id, seller_id | Notifications              |
+| `AppointmentCompleted` | appointment_id                       | Analytics                  |
+| `SaleCompleted`        | sale_id, commissions[]               | Wallet, Notifications      |
+| `WalletRecharged`      | wallet_id, amount                    | Notifications              |
+| `TokensConsumed`       | wallet_id, token_type, quantity      | Analytics                  |
+| `ListingsScraped`      | source, count, timestamp             | Analytics, AI              |
+| `PriceAlertTriggered`  | listing_id, user_id, threshold       | Notifications              |
 
 ---
 
@@ -1116,14 +1116,14 @@ graph TB
 
 ### 10.2 Configuración de Integraciones
 
-| Servicio | Credenciales Requeridas | Límites |
-|----------|------------------------|---------|
-| **WhatsApp Business** | Phone Number ID, Access Token, Webhook Secret | 1000 msgs/día (tier 1) |
-| **Messenger** | Page Access Token, App Secret | 200 msgs/día por página |
-| **Stripe** | Secret Key, Webhook Secret | Sin límite |
-| **Anthropic Claude** | API Key | Por tokens consumidos |
-| **NHTSA** | Ninguna (pública) | 5 req/segundo |
-| **DigitalOcean Spaces** | Access Key, Secret Key | Por almacenamiento |
+| Servicio                | Credenciales Requeridas                       | Límites                 |
+| ----------------------- | --------------------------------------------- | ----------------------- |
+| **WhatsApp Business**   | Phone Number ID, Access Token, Webhook Secret | 1000 msgs/día (tier 1)  |
+| **Messenger**           | Page Access Token, App Secret                 | 200 msgs/día por página |
+| **Stripe**              | Secret Key, Webhook Secret                    | Sin límite              |
+| **Anthropic Claude**    | API Key                                       | Por tokens consumidos   |
+| **NHTSA**               | Ninguna (pública)                             | 5 req/segundo           |
+| **DigitalOcean Spaces** | Access Key, Secret Key                        | Por almacenamiento      |
 
 ### 10.3 API NHTSA - VIN Decoder
 
@@ -1214,7 +1214,7 @@ graph TB
 ### 11.2 Docker Compose (Desarrollo)
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   # API Principal
@@ -1368,55 +1368,55 @@ graph LR
 
 ## ### 12.1 Backend
 
-| Componente | Tecnología | Versión | Justificación |
-|------------|------------|---------|---------------|
-| **Framework** | FastAPI | 0.115+ | Async, OpenAPI, Python 3.14 support |
-| **ORM** | SQLAlchemy | 2.0.36+ | Async nativo con asyncpg |
-| **Migrations** | Alembic | 1.14+ | Flexible migrations |
-| **Validation** | Pydantic | 2.12+ | 5-50x más rápido que v1 |
-| **Task Queue** | SAQ/Celery | 5.4+ | Simple Async Queue / Distributed tasks |
-| **Message Broker** | Redis Streams | 7.4+ | Lightweight, nativo de Redis |
-| **Cache** | Redis | 7.4+ | Redis Stack, sessions, cache |
-| **Web Scraping** | Playwright | 1.49+ | Async headless browser |
-| **Auth** | JWT + OAuth2 + TOTP | - | 2FA con TOTP |
+| Componente         | Tecnología          | Versión | Justificación                          |
+| ------------------ | ------------------- | ------- | -------------------------------------- |
+| **Framework**      | FastAPI             | 0.115+  | Async, OpenAPI, Python 3.14 support    |
+| **ORM**            | SQLAlchemy          | 2.0.36+ | Async nativo con asyncpg               |
+| **Migrations**     | Alembic             | 1.14+   | Flexible migrations                    |
+| **Validation**     | Pydantic            | 2.12+   | 5-50x más rápido que v1                |
+| **Task Queue**     | SAQ/Celery          | 5.4+    | Simple Async Queue / Distributed tasks |
+| **Message Broker** | Redis Streams       | 7.4+    | Lightweight, nativo de Redis           |
+| **Cache**          | Redis               | 7.4+    | Redis Stack, sessions, cache           |
+| **Web Scraping**   | Playwright          | 1.49+   | Async headless browser                 |
+| **Auth**           | JWT + OAuth2 + TOTP | -       | 2FA con TOTP                           |
 
 ### 12.2 Frontend
 
-| Componente | Tecnología | Versión | Justificación |
-|------------|------------|---------|---------------|
-| **Framework** | Next.js | 16.1+ | Turbopack default, Cache Components |
-| **Runtime** | React | 19.2 | Server Components, Compiler estable |
-| **Language** | TypeScript | 5.5+ | Strict mode |
-| **Styling** | TailwindCSS | 4.0 | Nueva engine |
-| **State** | Zustand | 5.x | Simple state management |
-| **Data Fetching** | TanStack Query | v5 | Server state management |
-| **Forms** | React Hook Form + Zod | 7+ / 3.x | Performant forms |
-| **Charts** | Recharts | 2+ | React-native charts |
-| **UI Components** | shadcn/ui | latest | Accessible, customizable |
+| Componente        | Tecnología            | Versión  | Justificación                       |
+| ----------------- | --------------------- | -------- | ----------------------------------- |
+| **Framework**     | Next.js               | 16.1+    | Turbopack default, Cache Components |
+| **Runtime**       | React                 | 19.2     | Server Components, Compiler estable |
+| **Language**      | TypeScript            | 5.5+     | Strict mode                         |
+| **Styling**       | TailwindCSS           | 4.0      | Nueva engine                        |
+| **State**         | Zustand               | 5.x      | Simple state management             |
+| **Data Fetching** | TanStack Query        | v5       | Server state management             |
+| **Forms**         | React Hook Form + Zod | 7+ / 3.x | Performant forms                    |
+| **Charts**        | Recharts              | 2+       | React-native charts                 |
+| **UI Components** | shadcn/ui             | latest   | Accessible, customizable            |
 
 ### 12.3 Bases de Datos
 
-| Componente | Tecnología | Uso |
-|------------|------------|-----|
-| **Principal** | PostgreSQL 17 | Datos transaccionales, JSON_TABLE, incremental backup |
-| **Búsqueda** | PostgreSQL Full-Text + pgvector | Full-text search, embeddings |
-| **Cache** | Redis 7.4+ | Sessions, cache, pub/sub |
-| **Object Storage** | DO Spaces (S3) | Imágenes, archivos |
+| Componente         | Tecnología                      | Uso                                                   |
+| ------------------ | ------------------------------- | ----------------------------------------------------- |
+| **Principal**      | PostgreSQL 17                   | Datos transaccionales, JSON_TABLE, incremental backup |
+| **Búsqueda**       | PostgreSQL Full-Text + pgvector | Full-text search, embeddings                          |
+| **Cache**          | Redis 7.4+                      | Sessions, cache, pub/sub                              |
+| **Object Storage** | DO Spaces (S3)                  | Imágenes, archivos                                    |
 
 ### 12.4 DevOps
 
-| Componente | Tecnología | Versión/Uso |
-|------------|------------|-------------|
-| **Containerización** | Docker | Empaquetado |
-| **Orquestación** | Docker Compose / K8s | Dev / Prod |
-| **CI/CD** | GitHub Actions | Automatización |
-| **Hosting** | DigitalOcean App Platform / K8s | Cloud |
-| **CDN** | DO CDN / Cloudflare | Static assets |
-| **Python Linting** | Ruff | 0.8+ (Rust-based) |
-| **Python Type Check** | Pyright | 1.1+ strict |
-| **Package Manager Python** | uv | 10-100x más rápido que pip |
-| **Package Manager JS** | pnpm | 9.x |
-| **Monorepo** | Turborepo | Orquestación de builds |
+| Componente                 | Tecnología                      | Versión/Uso                |
+| -------------------------- | ------------------------------- | -------------------------- |
+| **Containerización**       | Docker                          | Empaquetado                |
+| **Orquestación**           | Docker Compose / K8s            | Dev / Prod                 |
+| **CI/CD**                  | GitHub Actions                  | Automatización             |
+| **Hosting**                | DigitalOcean App Platform / K8s | Cloud                      |
+| **CDN**                    | DO CDN / Cloudflare             | Static assets              |
+| **Python Linting**         | Ruff                            | 0.8+ (Rust-based)          |
+| **Python Type Check**      | Pyright                         | 1.1+ strict                |
+| **Package Manager Python** | uv                              | 10-100x más rápido que pip |
+| **Package Manager JS**     | pnpm                            | 9.x                        |
+| **Monorepo**               | Turborepo                       | Orquestación de builds     |
 
 ---
 
@@ -1493,16 +1493,16 @@ graph LR
 
 ### 13.5 Medidas de Seguridad
 
-| Medida | Implementación |
-|--------|----------------|
-| **Password Hashing** | bcrypt con salt |
-| **Rate Limiting** | 100 req/min por IP |
-| **CORS** | Dominios específicos |
-| **HTTPS** | Obligatorio en producción |
-| **SQL Injection** | SQLAlchemy ORM |
-| **XSS** | React escapes, CSP headers |
-| **CSRF** | SameSite cookies, tokens |
-| **Data Encryption** | AES-256 para datos sensibles |
+| Medida               | Implementación               |
+| -------------------- | ---------------------------- |
+| **Password Hashing** | bcrypt con salt              |
+| **Rate Limiting**    | 100 req/min por IP           |
+| **CORS**             | Dominios específicos         |
+| **HTTPS**            | Obligatorio en producción    |
+| **SQL Injection**    | SQLAlchemy ORM               |
+| **XSS**              | React escapes, CSP headers   |
+| **CSRF**             | SameSite cookies, tokens     |
+| **Data Encryption**  | AES-256 para datos sensibles |
 
 ---
 
@@ -1543,23 +1543,23 @@ graph TB
 
 ### 14.2 Puntos de Escalado
 
-| Componente | Estrategia | Trigger |
-|------------|------------|---------|
-| **API Servers** | Horizontal (auto-scale) | CPU > 70% |
-| **Workers** | Horizontal | Queue depth > 1000 |
-| **PostgreSQL** | Read replicas | Read ops > 10k/s |
-| **Redis** | Cluster mode | Memory > 80% |
-| **OpenSearch** | Sharding | Documents > 10M |
+| Componente      | Estrategia              | Trigger            |
+| --------------- | ----------------------- | ------------------ |
+| **API Servers** | Horizontal (auto-scale) | CPU > 70%          |
+| **Workers**     | Horizontal              | Queue depth > 1000 |
+| **PostgreSQL**  | Read replicas           | Read ops > 10k/s   |
+| **Redis**       | Cluster mode            | Memory > 80%       |
+| **OpenSearch**  | Sharding                | Documents > 10M    |
 
 ### 14.3 Capacidad Estimada
 
-| Métrica | Inicial | 6 meses | 12 meses |
-|---------|---------|---------|----------|
-| **Usuarios Concurrentes** | 20 | 200 | 1,000 |
-| **Requests/segundo** | 50 | 500 | 2,000 |
-| **Productos** | 1,000 | 50,000 | 500,000 |
-| **Imágenes (TB)** | 0.1 | 1 | 10 |
-| **DB Size (GB)** | 5 | 50 | 200 |
+| Métrica                   | Inicial | 6 meses | 12 meses |
+| ------------------------- | ------- | ------- | -------- |
+| **Usuarios Concurrentes** | 20      | 200     | 1,000    |
+| **Requests/segundo**      | 50      | 500     | 2,000    |
+| **Productos**             | 1,000   | 50,000  | 500,000  |
+| **Imágenes (TB)**         | 0.1     | 1       | 10       |
+| **DB Size (GB)**          | 5       | 50      | 200      |
 
 ---
 

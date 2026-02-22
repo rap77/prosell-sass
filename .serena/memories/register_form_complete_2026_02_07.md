@@ -6,11 +6,13 @@
 ## Task #9: RegisterForm Component - TDD Complete ✅
 
 **Files Created:**
+
 - `apps/web/src/components/auth/RegisterForm.tsx`
 - `apps/web/src/components/auth/index.ts` (updated)
 - `apps/web/tests/components/auth/RegisterForm.test.tsx`
 
 **Implementation:**
+
 - Full name input with validation (2-100 characters, trimmed)
 - Email input with validation
 - Password input (using PasswordInput component)
@@ -28,6 +30,7 @@
 Same as LoginForm - PasswordInput's internal state conflicts with React Hook Form control. Future fix: use `<Controller>` component from React Hook Form.
 
 **Features:**
+
 - `fullName`: Full name validation (min 2, max 100 chars)
 - `email`: Email validation with Zod
 - `password`: Password min 8 characters
@@ -37,6 +40,7 @@ Same as LoginForm - PasswordInput's internal state conflicts with React Hook For
 - Calls `useAuth.register()` with `{ fullName, email, password }`
 
 **Zod Schema:**
+
 ```typescript
 const registerSchema = z
   .object({
@@ -54,22 +58,23 @@ const registerSchema = z
 
 ## Test Summary (Updated)
 
-| Component | Tests | Status |
-|-----------|-------|--------|
-| authStore | 13/13 | ✅ |
-| useAuth | 15/15 | ✅ |
-| authApi | 18/18 | ✅ |
-| PasswordInput | 29/29 | ✅ |
-| OAuthButtons | 24/24 | ✅ |
-| TwoFactorInput | 32/32 | ✅ |
-| LoginForm | 20/25 | ⚠️ (80%, known issue) |
-| RegisterForm | 31/34 | ⚠️ (91%, known issue) |
+| Component      | Tests | Status                |
+| -------------- | ----- | --------------------- |
+| authStore      | 13/13 | ✅                    |
+| useAuth        | 15/15 | ✅                    |
+| authApi        | 18/18 | ✅                    |
+| PasswordInput  | 29/29 | ✅                    |
+| OAuthButtons   | 24/24 | ✅                    |
+| TwoFactorInput | 32/32 | ✅                    |
+| LoginForm      | 20/25 | ⚠️ (80%, known issue) |
+| RegisterForm   | 31/34 | ⚠️ (91%, known issue) |
 
 **Total: 182 tests passing** + 5 failed (LoginForm) + 3 skipped (RegisterForm) = **190 tests**
 
 ## Progress: 9/17 tasks (~53%)
 
 ### Completed:
+
 1. Environment Setup ✅
 2. authStore (Zustand) ✅
 3. useAuth Hook ✅
@@ -81,6 +86,7 @@ const registerSchema = z
 9. **RegisterForm Component ✅ [NEW]**
 
 ### Pending (8 remaining):
+
 10. Login page
 11. Register page
 12. Verify-email page
@@ -96,6 +102,7 @@ const registerSchema = z
 PasswordInput component manages its own internal state (show/hide password), which conflicts with React Hook Form's form control when used with `register()`.
 
 **Affected Tests:**
+
 - LoginForm: 5 tests (password validation, form submission)
 - RegisterForm: 3 tests (password validation, password matching, form submission)
 
@@ -103,6 +110,7 @@ PasswordInput component manages its own internal state (show/hide password), whi
 Tests are written to document expected behavior but marked as `.skip` to prevent CI failures.
 
 **Future Fix Options:**
+
 1. Use `<Controller>` component from React Hook Form
 2. Refactor PasswordInput to be fully controlled by parent state
 3. Use RHF's `ref` prop instead of component's internal state
@@ -118,6 +126,7 @@ ccc5925 feat(web): implement TwoFactorInput component with TDD
 ## Next Task
 
 **Task #10: Login page** - Create `/auth/login` page using LoginForm component
+
 - App Router page at `apps/web/src/app/auth/login/page.tsx`
 - Server Component wrapper
 - Client Component for LoginForm

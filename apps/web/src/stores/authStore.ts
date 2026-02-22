@@ -32,7 +32,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * Silently skips if Performance API is unavailable
  */
 const markPerformance = (name: string) => {
-  if (typeof performance !== 'undefined' && performance.mark) {
+  if (typeof performance !== "undefined" && performance.mark) {
     performance.mark(name);
   }
 };
@@ -41,12 +41,16 @@ const markPerformance = (name: string) => {
  * Feature detection wrapper for Performance.measure()
  * Measures duration between two marks and logs in dev mode
  */
-const measurePerformance = (name: string, startMark: string, endMark: string) => {
-  if (typeof performance !== 'undefined' && performance.measure) {
+const measurePerformance = (
+  name: string,
+  startMark: string,
+  endMark: string,
+) => {
+  if (typeof performance !== "undefined" && performance.measure) {
     try {
       performance.measure(name, startMark, endMark);
 
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         const measures = performance.getEntriesByName(name);
         const measure = measures[0];
         if (measure) {
@@ -55,7 +59,7 @@ const measurePerformance = (name: string, startMark: string, endMark: string) =>
       }
     } catch (error) {
       // Ignore errors from performance.measure (e.g., duplicate marks)
-      logger.info('Performance measure failed', error);
+      logger.info("Performance measure failed", error);
     }
   }
 };
@@ -133,19 +137,21 @@ export const useAuthStore = create<AuthState>()(
       initializeAuth: async () => {
         // Early exit if already initialized (when feature flag enabled)
         const { initialized } = get();
-        const useOptimization = useFeatureFlagStore.getState().get('auth-init-fix', true);
+        const useOptimization = useFeatureFlagStore
+          .getState()
+          .get("auth-init-fix", true);
 
         if (useOptimization && initialized) {
-          logger.info('Auth already initialized, skipping API call');
+          logger.info("Auth already initialized, skipping API call");
           set({ isLoading: false });
           return;
         }
 
-        markPerformance('auth-init-start');
+        markPerformance("auth-init-start");
 
         try {
           const response = await fetch("/api/auth/state", {
-            credentials: "include",  // CRITICAL: Sends httpOnly cookies
+            credentials: "include", // CRITICAL: Sends httpOnly cookies
           });
           const authState = await response.json();
 
@@ -179,8 +185,12 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } finally {
-          markPerformance('auth-init-end');
-          measurePerformance('auth-init-duration', 'auth-init-start', 'auth-init-end');
+          markPerformance("auth-init-end");
+          measurePerformance(
+            "auth-init-duration",
+            "auth-init-start",
+            "auth-init-end",
+          );
         }
       },
 
@@ -197,7 +207,10 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await authApi.login(credentials.email, credentials.password);
+          const response = await authApi.login(
+            credentials.email,
+            credentials.password,
+          );
 
           // Update state - tokens are handled by httpOnly cookies
           set({
@@ -208,11 +221,12 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (unknownError) {
-          const message = unknownError instanceof ApiError
-            ? unknownError.message
-            : unknownError instanceof Error
-            ? unknownError.message
-            : "Login failed";
+          const message =
+            unknownError instanceof ApiError
+              ? unknownError.message
+              : unknownError instanceof Error
+                ? unknownError.message
+                : "Login failed";
 
           set({
             isLoading: false,
@@ -242,7 +256,7 @@ export const useAuthStore = create<AuthState>()(
             data.email,
             data.password,
             data.first_name,
-            data.last_name
+            data.last_name,
           );
 
           // Update state - tokens are handled by httpOnly cookies
@@ -254,11 +268,12 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (unknownError) {
-          const message = unknownError instanceof ApiError
-            ? unknownError.message
-            : unknownError instanceof Error
-            ? unknownError.message
-            : "Registration failed";
+          const message =
+            unknownError instanceof ApiError
+              ? unknownError.message
+              : unknownError instanceof Error
+                ? unknownError.message
+                : "Registration failed";
 
           set({
             isLoading: false,
@@ -284,7 +299,10 @@ export const useAuthStore = create<AuthState>()(
 
           // Delete auth cookies via API route
           try {
-            await fetch("/api/auth/state", { method: "DELETE", credentials: "include" });
+            await fetch("/api/auth/state", {
+              method: "DELETE",
+              credentials: "include",
+            });
           } catch (deleteError) {
             logger.error("Failed to delete auth cookies", deleteError);
           }
@@ -300,7 +318,10 @@ export const useAuthStore = create<AuthState>()(
 
           // Try to delete cookies via API
           try {
-            await fetch("/api/auth/state", { method: "DELETE", credentials: "include" });
+            await fetch("/api/auth/state", {
+              method: "DELETE",
+              credentials: "include",
+            });
           } catch (deleteError) {
             logger.error("Failed to delete auth cookies", deleteError);
           }
@@ -341,7 +362,10 @@ export const useAuthStore = create<AuthState>()(
         });
 
         // Also delete cookies via API
-        fetch("/api/auth/state", { method: "DELETE", credentials: "include" }).catch((error) => {
+        fetch("/api/auth/state", {
+          method: "DELETE",
+          credentials: "include",
+        }).catch((error) => {
           logger.error("Failed to delete auth cookies during reset", error);
         });
       },
@@ -352,14 +376,16 @@ export const useAuthStore = create<AuthState>()(
       // Only persist non-sensitive user data (NO tokens - handled by httpOnly cookies)
       // Vercel best practice: Minimize serialization - only store essential fields
       partialize: (state) => ({
-        user: state.user ? {
-          id: state.user.id,
-          email: state.user.email,
-          first_name: state.user.first_name,
-          last_name: state.user.last_name,
-          is_email_verified: state.user.is_email_verified,
-          is_2fa_enabled: state.user.is_2fa_enabled,
-        } : null,
+        user: state.user
+          ? {
+              id: state.user.id,
+              email: state.user.email,
+              first_name: state.user.first_name,
+              last_name: state.user.last_name,
+              is_email_verified: state.user.is_email_verified,
+              is_2fa_enabled: state.user.is_2fa_enabled,
+            }
+          : null,
         isAuthenticated: state.isAuthenticated,
         initialized: state.initialized, // Persist initialized flag
       }),
@@ -405,14 +431,16 @@ export const useAuthStore = create<AuthState>()(
         if (version === 3) {
           const oldState = persistedState as Partial<AuthState>;
           return {
-            user: oldState.user ? {
-              id: oldState.user.id,
-              email: oldState.user.email,
-              first_name: oldState.user.first_name,
-              last_name: oldState.user.last_name,
-              is_email_verified: oldState.user.is_email_verified,
-              is_2fa_enabled: oldState.user.is_2fa_enabled,
-            } : null,
+            user: oldState.user
+              ? {
+                  id: oldState.user.id,
+                  email: oldState.user.email,
+                  first_name: oldState.user.first_name,
+                  last_name: oldState.user.last_name,
+                  is_email_verified: oldState.user.is_email_verified,
+                  is_2fa_enabled: oldState.user.is_2fa_enabled,
+                }
+              : null,
             isAuthenticated: oldState.isAuthenticated ?? false,
             isLoading: false,
             error: null,
@@ -421,6 +449,6 @@ export const useAuthStore = create<AuthState>()(
 
         return persistedState as AuthState;
       },
-    }
-  )
-)
+    },
+  ),
+);

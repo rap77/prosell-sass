@@ -44,7 +44,7 @@ export async function GET(): Promise<
     if (!userDataStr) {
       return NextResponse.json(
         { detail: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -53,10 +53,7 @@ export async function GET(): Promise<
       user = JSON.parse(userDataStr);
     } catch (error) {
       logger.error("Failed to parse user data", error);
-      return NextResponse.json(
-        { detail: "Invalid session" },
-        { status: 401 }
-      );
+      return NextResponse.json({ detail: "Invalid session" }, { status: 401 });
     }
 
     // Return user data
@@ -65,7 +62,7 @@ export async function GET(): Promise<
     logger.error("Mock get current user error", error);
     return NextResponse.json(
       { detail: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

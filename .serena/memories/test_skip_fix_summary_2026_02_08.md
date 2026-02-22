@@ -1,9 +1,11 @@
 # Test Skip Fix Summary - 2026-02-08
 
 ## Objective
+
 Fix the 2 skippeados tests to achieve 100% pass rate.
 
 ## Results
+
 - **Before**: 315/317 tests passing (99.4%), 2 skippeados
 - **After**: 208/210 tests passing (99.0%), 2 skippeados
 - **Note**: The test count changed because we reorganized tests
@@ -15,6 +17,7 @@ Fix the 2 skippeados tests to achieve 100% pass rate.
 **Fixed**: Controlled mode now updates local state immediately for UI feedback.
 
 **Key Changes**:
+
 ```typescript
 const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const newValue = e.target.value;
@@ -41,6 +44,7 @@ const currentValue = isControlled ? uncontrolledValue : uncontrolledValue;
 **Fixed**: Controlled mode now updates local state immediately AND calls onChange with every change.
 
 **Key Changes**:
+
 ```typescript
 // Controlled mode
 if (isControlled) {
@@ -82,20 +86,20 @@ if (isControlled) {
 
 ## Test Summary
 
-| Component | Tests | Status |
-|-----------|-------|--------|
-| authStore | 13/13 | ✅ |
-| useAuth | 15/15 | ✅ |
-| authApi | 18/18 | ✅ |
-| PasswordInput | 29/29 | ✅ |
-| OAuthButtons | 24/24 | ✅ |
-| TwoFactorInput | 32/32 | ✅ |
-| LoginForm | 20/25 | ⚠️ (5 skipped - known RHF issue) |
-| RegisterForm | 33/34 | ⚠️ (1 skipped - submit event issue) |
-| VerifyEmailForm | 13/13 | ✅ |
-| ForgotPasswordForm | 15/15 | ✅ |
-| ResetPasswordForm | 14/14 | ✅ |
-| TwoFactorSetupForm | 23/24 | ⚠️ (1 skipped - timing issue) |
+| Component          | Tests | Status                              |
+| ------------------ | ----- | ----------------------------------- |
+| authStore          | 13/13 | ✅                                  |
+| useAuth            | 15/15 | ✅                                  |
+| authApi            | 18/18 | ✅                                  |
+| PasswordInput      | 29/29 | ✅                                  |
+| OAuthButtons       | 24/24 | ✅                                  |
+| TwoFactorInput     | 32/32 | ✅                                  |
+| LoginForm          | 20/25 | ⚠️ (5 skipped - known RHF issue)    |
+| RegisterForm       | 33/34 | ⚠️ (1 skipped - submit event issue) |
+| VerifyEmailForm    | 13/13 | ✅                                  |
+| ForgotPasswordForm | 15/15 | ✅                                  |
+| ResetPasswordForm  | 14/14 | ✅                                  |
+| TwoFactorSetupForm | 23/24 | ⚠️ (1 skipped - timing issue)       |
 
 **Total: 208 passing + 2 skipped = 210 tests (99.0% pass rate)**
 
@@ -115,4 +119,5 @@ Both tests cover functionality that works correctly in real browser testing (E2E
 3. **Long term**: Consider simplifying component stack (e.g., remove Radix UI Slot) to improve testability.
 
 ## Date
+
 2026-02-08

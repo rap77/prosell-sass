@@ -11,6 +11,7 @@ The authentication and authorization system has been fully implemented following
 ## Completed Layers
 
 ### 1. Domain Layer ✅
+
 **Location**: `apps/api/src/prosell/domain/`
 
 - **Entities**: User, Role, Permission, Session
@@ -20,6 +21,7 @@ The authentication and authorization system has been fully implemented following
 - **Repository Interfaces**: AbstractUserRepository, AbstractRoleRepository, AbstractSessionRepository
 
 ### 2. Configuration ✅
+
 **Location**: `apps/api/src/prosell/core/config.py`
 
 - Pydantic BaseSettings with type validation
@@ -29,30 +31,37 @@ The authentication and authorization system has been fully implemented following
 - Feature flags
 
 ### 3. Infrastructure Layer ✅
+
 **Location**: `apps/api/src/prosell/infrastructure/`
 
 #### Database
+
 - SQLAlchemy 2.0 async session management
 - Declarative base
 
 #### Models
+
 - UserModel, RoleModel, UserRoleModel, SessionModel
 - Using SQLAlchemy 2.0 `Mapped[]` and `mapped_column()`
 
 #### Repositories
+
 - SqlAlchemyUserRepository, SqlAlchemyRoleRepository, SqlAlchemySessionRepository
 - Using `select()` instead of deprecated `query()`
 
 #### Services
+
 - JWTService (RS256 asymmetric encryption)
 - PasswordService (bcrypt hashing with configurable rounds)
 - TOTPService (pyotp for 2FA, QR code generation)
 - EmailService (MockEmailService for dev, SendGridEmailService for prod)
 
 ### 4. Application Layer ✅
+
 **Location**: `apps/api/src/prosell/application/`
 
 #### Use Cases
+
 - RegisterUserUseCase
 - LoginUserUseCase
 - VerifyEmailUseCase
@@ -63,17 +72,21 @@ The authentication and authorization system has been fully implemented following
 - Verify2FAUseCase
 
 #### Ports
+
 - AbstractEmailService (secondary interface)
 
 ### 5. API Layer ✅
+
 **Location**: `apps/api/src/prosell/infrastructure/api/`
 
 #### Main Application
+
 - FastAPI app with CORS middleware
 - Health check endpoints
 - Auto docs in development
 
 #### Routers
+
 - auth_router.py with endpoints:
   - POST /api/auth/register
   - POST /api/auth/login
@@ -86,15 +99,18 @@ The authentication and authorization system has been fully implemented following
   - POST /api/auth/logout
 
 #### Middleware
+
 - auth_middleware.py: JWT verification, get_current_user dependency
 - rbac_middleware.py: Role and permission checking decorators
 
 #### Dependencies
+
 - Full DI container for repositories, services, and use cases
 
 ## Files Created
 
 ### Domain Layer (18 files)
+
 ```
 domain/
 ├── entities/
@@ -120,6 +136,7 @@ domain/
 ```
 
 ### Infrastructure Layer (15 files)
+
 ```
 infrastructure/
 ├── database/
@@ -145,6 +162,7 @@ infrastructure/
 ```
 
 ### Application Layer (12 files)
+
 ```
 application/
 ├── use_cases/
@@ -165,6 +183,7 @@ application/
 ```
 
 ### API Layer (7 files)
+
 ```
 infrastructure/api/
 ├── main.py (FastAPI app)
@@ -179,6 +198,7 @@ infrastructure/api/
 ```
 
 ### Configuration & Scripts (5 files)
+
 ```
 ├── core/
 │   └── config.py (Pydantic settings)

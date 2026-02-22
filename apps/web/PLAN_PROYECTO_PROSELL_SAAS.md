@@ -8,6 +8,7 @@
 ## Visión General
 
 ProSell SaaS es una plataforma de análisis de mercado de vehículos que combina:
+
 - **Marketplace Público:** E-commerce para compradores de vehículos
 - **SaaS Analytics:** Inteligencia de mercado en tiempo real para concesionarios
 - **Scraping Automatizado:** Multi-marketplace (Facebook Marketplace primario)
@@ -26,6 +27,7 @@ ProSell SaaS es una plataforma de análisis de mercado de vehículos que combina
 ## Fases del Proyecto
 
 ### Fase 1: Fundamentos y Configuración ✅
+
 - Monorepo estructurado (Turborepo)
 - Tech stack definido (Next.js 16, FastAPI, etc.)
 - Linters configurados (Ruff, Pyright, ESLint, Prettier)
@@ -33,10 +35,12 @@ ProSell SaaS es una plataforma de análisis de mercado de vehículos que combina
 - CI/CD con GitHub Actions
 
 ### Fase 2: Frontend - Sprint 1-2 (Auth) ✅ COMPLETADO
+
 **Periodo:** 2026-02-06 to 2026-02-08 (3 días)
 **Objetivo:** Sistema de autenticación frontend completo
 
 #### Tareas Completadas (17/17):
+
 1. ✅ Environment Setup
 2. ✅ authStore (Zustand)
 3. ✅ useAuth Hook
@@ -56,6 +60,7 @@ ProSell SaaS es una plataforma de análisis de mercado de vehículos que combina
 17. ✅ Final Validation
 
 #### Logros:
+
 - **316 tests** unitarios pasando
 - **64 specs** E2E (Chromium, Firefox, WebKit)
 - **91.57% coverage** de código
@@ -63,19 +68,23 @@ ProSell SaaS es una plataforma de análisis de mercado de vehículos que combina
 - **Todos los commits** aprobados por GGA
 
 #### NOTA IMPORTANTE - OAuth:
+
 - **Task #6 (OAuthButtons)** implementó solo el **COMPONENTE UI** con callbacks mock
 - **NO incluía:** Backend FastAPI, NextAuth.js config, Google Console apps
 - **Los callbacks** `signIn('google')` son funciones MOCK que no conectan a nada
 
 #### Issues Conocidos:
+
 1. ✅ **RESUELTO:** Error de JSON en consola (`/api/auth/state` → 404)
    - Solución: Wrapper `fetchWithFallback()` + flag `NEXT_PUBLIC_DEV_DISABLE_API=true`
    - Estado: Funcionando en dev con localStorage mock
 
 ### Fase 3: Frontend - Sprint 3 (Dashboard) 🚧 PRÓXIMO
+
 **Objetivo:** Dashboard principal para análisis de mercado
 
 #### Tareas Planeadas:
+
 - Diseño de layout principal (sidebar, contenido, header)
 - Sistema de navegación y menús
 - Cards de métricas y KPIs
@@ -86,9 +95,11 @@ ProSell SaaS es una plataforma de análisis de mercado de vehículos que combina
 **Estado:** No iniciado
 
 ### Fase 4: Backend - Sprint 1 (Core API) 🚧 PRÓXIMO
+
 **Objetivo:** APIs core de usuarios, autenticación, productos
 
 #### Tareas Planeadas:
+
 - **Autenticación:**
   - Login con email/password
   - Registro de usuario
@@ -115,9 +126,11 @@ ProSell SaaS es una plataforma de análisis de mercado de vehículos que combina
 **Estado:** No iniciado
 
 ### Fase 5: Scraping & ML 🚧 PRÓXIMO
+
 **Objetivo:** Scraping automatizado y modelos de ML
 
 #### Tareas Planeadas:
+
 - **Scraping:**
   - Facebook Marketplace scraper (Playwright async)
   - Sistema de colas de scraping
@@ -135,6 +148,7 @@ ProSell SaaS es una plataforma de análisis de mercado de vehículos que combina
 ## Prioridades Actuales
 
 ### URGENTE - Completar Fase 2 (Sprint 1-2)
+
 **Motivo:** Sprint 1-2 frontend está "completo" según la memoria, PERO:
 
 1. **OAuth NO ESTÁ FUNCIONAL** - Los botones están pero no conectan a backend
@@ -145,6 +159,7 @@ ProSell SaaS es una plataforma de análisis de mercado de vehículos que combina
    - Environment variables
 
 **ACCIONES NECESARIAS:**
+
 1. ✅ **CORREGIR PLAN DEL SPRINT 1-2** - Agregar tarea pendiente de OAuth real
 2. ✅ **INICIAR FASE 3 (Backend Sprint 1)** - Implementar endpoints OAuth en FastAPI
 3. ✅ **ACTUALIZAR ROADMAP** - Crear documento formal de fases y sprints
@@ -169,9 +184,11 @@ ProSell SaaS es una plataforma de análisis de mercado de vehículos que combina
 ## Métricas de Éxito
 
 ### Fase 1: Fundamentos ✅
+
 - Setup completado al 100%
 
 ### Fase 2: Frontend Auth ✅ 98%
+
 - 17/17 tareas completadas
 - 316/317 tests pasando
 - 91.57% coverage
@@ -187,6 +204,7 @@ ProSell SaaS es una plataforma de análisis de mercado de vehículos que combina
 - OAuthButtons UI está correcta - solo falta el backend
 
 **Próximos pasos:**
+
 1. Revisar y aprobar este plan maestro
 2. Actualizar memoria del Sprint 1-2
 3. Crear roadmap detallado en ROADMAP.md

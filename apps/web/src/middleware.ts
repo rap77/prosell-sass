@@ -105,7 +105,12 @@ const memoizedJsonParse = (() => {
  * Routes that require authentication
  * Users without auth cookies will be redirected to login
  */
-const PROTECTED_ROUTES = ["/dashboard", "/profile", "/settings", "/auth/setup-2fa"];
+const PROTECTED_ROUTES = [
+  "/dashboard",
+  "/profile",
+  "/settings",
+  "/auth/setup-2fa",
+];
 
 /**
  * Routes that are public (accessible without auth)
@@ -160,18 +165,20 @@ export default async function middleware(req: NextRequest) {
 
   let userData: UserData | null = null;
   try {
-    userData = userDataCookie ? (memoizedJsonParse(userDataCookie) as UserData | null) : null;
+    userData = userDataCookie
+      ? (memoizedJsonParse(userDataCookie) as UserData | null)
+      : null;
   } catch {
     userData = null;
   }
 
   // 4. Check if route requires authentication with optimized matching
   const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
-    matchRoute(pathname, route)
+    matchRoute(pathname, route),
   );
 
   const isPublicRoute = PUBLIC_ROUTES.some((route) =>
-    matchRoute(pathname, route)
+    matchRoute(pathname, route),
   );
 
   // 5. Redirect unauthenticated users from protected routes

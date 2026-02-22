@@ -141,3 +141,48 @@ button {
     transform: scale(1) translateZ(0);
   }
 }
+
+/* ============================================
+// CONTENT-VISIBILITY OPTIMIZATION
+// ============================================ */
+
+/**
+ * Content Visibility - CSS optimization for long lists
+ * Skips rendering of off-screen content until needed
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/CSS/content-visibility
+ *
+ * Uses content-visibility: auto which:
+ * - Skips rendering work for off-screen content
+ * - Improves initial load performance
+ * - Reduces layout/reflow work
+ *
+ * contain-intrinsic-size provides placeholder size
+ * to prevent layout shift when content renders
+ */
+@layer utilities {
+  .content-visible-auto {
+    content-visibility: auto;
+  }
+
+  .content-visible-visible {
+    content-visibility: visible;
+  }
+
+  .content-visible-hidden {
+    content-visibility: hidden;
+  }
+
+  /* Intrinsic size placeholders for common list item heights */
+  .contain-intrinsic-64 {
+    contain-intrinsic-size: auto 64px;
+  }
+
+  .contain-intrinsic-128 {
+    contain-intrinsic-size: auto 128px;
+  }
+
+  .contain-intrinsic-256 {
+    contain-intrinsic-size: auto 256px;
+  }
+}

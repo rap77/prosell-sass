@@ -98,8 +98,12 @@ describe("TwoFactorInput Component", () => {
       const user = userEvent.setup();
       render(<TwoFactorInput label="2FA Code" name="totp" />);
 
-      const firstInput = screen.getByLabelText("Digit 1 of 6") as HTMLInputElement;
-      const secondInput = screen.getByLabelText("Digit 2 of 6") as HTMLInputElement;
+      const firstInput = screen.getByLabelText(
+        "Digit 1 of 6",
+      ) as HTMLInputElement;
+      const secondInput = screen.getByLabelText(
+        "Digit 2 of 6",
+      ) as HTMLInputElement;
 
       // Type two digits (auto-focus moves to second input)
       await user.click(firstInput);
@@ -122,7 +126,9 @@ describe("TwoFactorInput Component", () => {
       const user = userEvent.setup();
       render(<TwoFactorInput label="2FA Code" name="totp" />);
 
-      const firstInput = screen.getByLabelText("Digit 1 of 6") as HTMLInputElement;
+      const firstInput = screen.getByLabelText(
+        "Digit 1 of 6",
+      ) as HTMLInputElement;
 
       await user.click(firstInput);
       await user.keyboard("1");
@@ -136,9 +142,15 @@ describe("TwoFactorInput Component", () => {
       const user = userEvent.setup();
       render(<TwoFactorInput label="2FA Code" name="totp" />);
 
-      const firstInput = screen.getByLabelText("Digit 1 of 6") as HTMLInputElement;
-      const secondInput = screen.getByLabelText("Digit 2 of 6") as HTMLInputElement;
-      const thirdInput = screen.getByLabelText("Digit 3 of 6") as HTMLInputElement;
+      const firstInput = screen.getByLabelText(
+        "Digit 1 of 6",
+      ) as HTMLInputElement;
+      const secondInput = screen.getByLabelText(
+        "Digit 2 of 6",
+      ) as HTMLInputElement;
+      const thirdInput = screen.getByLabelText(
+        "Digit 3 of 6",
+      ) as HTMLInputElement;
 
       // Type three digits (auto-focus through them)
       await user.click(firstInput);
@@ -191,7 +203,9 @@ describe("TwoFactorInput Component", () => {
       const user = userEvent.setup();
       render(<TwoFactorInput label="2FA Code" name="totp" />);
 
-      const firstInput = screen.getByLabelText("Digit 1 of 6") as HTMLInputElement;
+      const firstInput = screen.getByLabelText(
+        "Digit 1 of 6",
+      ) as HTMLInputElement;
 
       await user.click(firstInput);
 
@@ -215,7 +229,9 @@ describe("TwoFactorInput Component", () => {
       const user = userEvent.setup();
       render(<TwoFactorInput label="2FA Code" name="totp" />);
 
-      const firstInput = screen.getByLabelText("Digit 1 of 6") as HTMLInputElement;
+      const firstInput = screen.getByLabelText(
+        "Digit 1 of 6",
+      ) as HTMLInputElement;
 
       await user.click(firstInput);
 
@@ -240,7 +256,9 @@ describe("TwoFactorInput Component", () => {
     it("should call onChange with complete 6-digit code", async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
-      render(<TwoFactorInput label="2FA Code" name="totp" onChange={handleChange} />);
+      render(
+        <TwoFactorInput label="2FA Code" name="totp" onChange={handleChange} />,
+      );
 
       const firstInput = screen.getByLabelText("Digit 1 of 6");
 
@@ -253,7 +271,9 @@ describe("TwoFactorInput Component", () => {
     it("should call onChange when last digit is entered", async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
-      render(<TwoFactorInput label="2FA Code" name="totp" onChange={handleChange} />);
+      render(
+        <TwoFactorInput label="2FA Code" name="totp" onChange={handleChange} />,
+      );
 
       const firstInput = screen.getByLabelText("Digit 1 of 6");
 
@@ -269,7 +289,9 @@ describe("TwoFactorInput Component", () => {
 
     it("should call onChange when pasting valid code", async () => {
       const handleChange = vi.fn();
-      render(<TwoFactorInput label="2FA Code" name="totp" onChange={handleChange} />);
+      render(
+        <TwoFactorInput label="2FA Code" name="totp" onChange={handleChange} />,
+      );
 
       const firstInput = screen.getByLabelText("Digit 1 of 6");
 
@@ -290,7 +312,9 @@ describe("TwoFactorInput Component", () => {
     it("should NOT call onChange if code is incomplete", async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
-      render(<TwoFactorInput label="2FA Code" name="totp" onChange={handleChange} />);
+      render(
+        <TwoFactorInput label="2FA Code" name="totp" onChange={handleChange} />,
+      );
 
       const firstInput = screen.getByLabelText("Digit 1 of 6");
 
@@ -304,11 +328,7 @@ describe("TwoFactorInput Component", () => {
   describe("Error Handling", () => {
     it("should show error message when error prop is provided", () => {
       render(
-        <TwoFactorInput
-          label="2FA Code"
-          name="totp"
-          error="Invalid code"
-        />
+        <TwoFactorInput label="2FA Code" name="totp" error="Invalid code" />,
       );
 
       const errorMessage = screen.getByText("Invalid code");
@@ -318,11 +338,7 @@ describe("TwoFactorInput Component", () => {
 
     it("should apply error styling to all inputs when error exists", () => {
       render(
-        <TwoFactorInput
-          label="2FA Code"
-          name="totp"
-          error="Invalid code"
-        />
+        <TwoFactorInput label="2FA Code" name="totp" error="Invalid code" />,
       );
 
       const inputs = screen.getAllByRole("textbox");
@@ -352,7 +368,9 @@ describe("TwoFactorInput Component", () => {
       const user = userEvent.setup();
       render(<TwoFactorInput label="2FA Code" name="totp" disabled />);
 
-      const firstInput = screen.getByLabelText("Digit 1 of 6") as HTMLInputElement;
+      const firstInput = screen.getByLabelText(
+        "Digit 1 of 6",
+      ) as HTMLInputElement;
 
       await user.click(firstInput);
       await user.keyboard("1");
@@ -376,7 +394,7 @@ describe("TwoFactorInput Component", () => {
 
     it("should update when value prop changes", () => {
       const { rerender } = render(
-        <TwoFactorInput label="2FA Code" name="totp" value="111111" />
+        <TwoFactorInput label="2FA Code" name="totp" value="111111" />,
       );
 
       const inputs = screen.getAllByRole("textbox");
@@ -431,11 +449,7 @@ describe("TwoFactorInput Component", () => {
   describe("Accessibility", () => {
     it("should have proper aria-describedby for error message", () => {
       render(
-        <TwoFactorInput
-          label="2FA Code"
-          name="totp"
-          error="Invalid code"
-        />
+        <TwoFactorInput label="2FA Code" name="totp" error="Invalid code" />,
       );
 
       const inputs = screen.getAllByRole("textbox");
@@ -473,7 +487,9 @@ describe("TwoFactorInput Component", () => {
       const user = userEvent.setup();
       render(<TwoFactorInput label="2FA Code" name="totp" />);
 
-      const firstInput = screen.getByLabelText("Digit 1 of 6") as HTMLInputElement;
+      const firstInput = screen.getByLabelText(
+        "Digit 1 of 6",
+      ) as HTMLInputElement;
 
       await user.click(firstInput);
       await user.keyboard("a");
@@ -485,7 +501,9 @@ describe("TwoFactorInput Component", () => {
       const user = userEvent.setup();
       render(<TwoFactorInput label="2FA Code" name="totp" />);
 
-      const firstInput = screen.getByLabelText("Digit 1 of 6") as HTMLInputElement;
+      const firstInput = screen.getByLabelText(
+        "Digit 1 of 6",
+      ) as HTMLInputElement;
 
       await user.click(firstInput);
       await user.keyboard("1");

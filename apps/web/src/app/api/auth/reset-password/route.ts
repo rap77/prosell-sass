@@ -31,9 +31,9 @@ interface ErrorResponse {
 // ROUTE HANDLER
 // ============================================
 
-export async function POST(request: Request): Promise<
-  NextResponse<MessageResponse | ErrorResponse>
-> {
+export async function POST(
+  request: Request,
+): Promise<NextResponse<MessageResponse | ErrorResponse>> {
   try {
     const body: ResetPasswordRequest = await request.json();
 
@@ -41,7 +41,7 @@ export async function POST(request: Request): Promise<
     if (!body.token || typeof body.token !== "string") {
       return NextResponse.json(
         { detail: "Token is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -49,7 +49,7 @@ export async function POST(request: Request): Promise<
     if (!body.new_password || typeof body.new_password !== "string") {
       return NextResponse.json(
         { detail: "New password is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -57,7 +57,7 @@ export async function POST(request: Request): Promise<
     if (body.new_password.length < 8) {
       return NextResponse.json(
         { detail: "Password must be at least 8 characters" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -66,7 +66,7 @@ export async function POST(request: Request): Promise<
     if (body.token === "invalid" || body.token === "expired") {
       return NextResponse.json(
         { detail: "Invalid or expired token" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -77,7 +77,7 @@ export async function POST(request: Request): Promise<
     logger.error("Mock reset password error", error);
     return NextResponse.json(
       { detail: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

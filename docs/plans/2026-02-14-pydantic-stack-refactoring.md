@@ -25,11 +25,13 @@ git checkout -b refactor/pydantic-stack-2026
 ## Fase 1: Foundation - Dependencias y Configuración
 
 ### 1.1 Limpiar `apps/api/pyproject.toml`
+
 - **Eliminar**: `python-jose[cryptography]` (fantasma - se usa `pyjwt`)
 - **Verificar**: Python `requires-python = ">=3.13"` correcto
 - **Verificar**: Todas las versiones de deps matchean con CLAUDE.md
 
 ### 1.2 Crear Base Models Pydantic reutilizables
+
 **Archivo nuevo**: `apps/api/src/prosell/domain/base.py`
 
 ```python
@@ -65,11 +67,13 @@ class DomainEvent(BaseModel):
 ```
 
 ### 1.3 Verificar tests pasan antes de tocar nada
+
 ```bash
 cd apps/api && uv run pytest
 ```
 
 **Archivos afectados:**
+
 - `apps/api/pyproject.toml`
 - `apps/api/src/prosell/domain/base.py` (NUEVO)
 
@@ -80,6 +84,7 @@ cd apps/api && uv run pytest
 ### 2.1 Value Objects (`domain/value_objects/`)
 
 **`email.py`**: `@dataclass(frozen=True)` → `ValueObject` (Pydantic)
+
 ```python
 class Email(ValueObject):
     address: EmailStr  # Pydantic valida automáticamente formato
@@ -106,6 +111,7 @@ class Email(ValueObject):
 ### 2.2 Entities (`domain/entities/`)
 
 **`user.py`**: `@dataclass` → `DomainModel` (Pydantic)
+
 - Migrar todos los campos a Pydantic Field() con validación
 - Mantener factory methods (`create()`, `create_oauth()`) como `@classmethod`
 - Mantener business logic methods
@@ -113,29 +119,35 @@ class Email(ValueObject):
 - `UserStatus` queda como `StrEnum` aquí (eliminar el duplicado)
 
 **`role.py`**: `@dataclass` → `DomainModel` (Pydantic)
+
 - `RoleType` y `Permission` quedan como `StrEnum` (ya lo son)
 - `ROLE_PERMISSIONS` dict queda igual
 - Migrar `Role` a Pydantic con Field()
 
 **`session.py`**: `@dataclass` → `DomainModel` (Pydantic)
+
 - Campos con Field() y validación
 
 ### 2.3 Domain Events (`domain/events/`)
 
 **`user_events.py`**: `@dataclass(frozen=True)` → `DomainEvent` (Pydantic)
+
 - Todos los eventos heredan de `DomainEvent`
 - `timestamp` ya viene del base
 
 ### 2.4 Domain Exceptions
+
 - NO cambian - son clases Python puras, no necesitan Pydantic
 
 ### 2.5 Repository Interfaces (`domain/repositories/`)
+
 - Ya usan `Protocol` - solo revisar y asegurar consistencia
 - NO necesitan Pydantic
 
 ### 2.6 Service Interfaces (`domain/ports/`)
 
 **MIGRAR ABC → Protocol**:
+
 - `i_jwt_service.py`: `IJWTService(ABC)` → `IJWTService(Protocol)`
 - `i_password_service.py`: `IPasswordService(ABC)` → `IPasswordService(Protocol)`
 - `i_totp_service.py`: `ITOTPService(ABC)` → `ITOTPService(Protocol)`
@@ -143,6 +155,7 @@ class Email(ValueObject):
 Eliminar `@abstractmethod`, usar `...` (Ellipsis) como body.
 
 **Archivos afectados:**
+
 - `apps/api/src/prosell/domain/value_objects/email.py`
 - `apps/api/src/prosell/domain/value_objects/user_status.py` (ELIMINAR)
 - `apps/api/src/prosell/domain/entities/user.py`
@@ -162,6 +175,7 @@ Eliminar `@abstractmethod`, usar `...` (Ellipsis) como body.
 Migrar TODOS los DTOs de `@dataclass` a Pydantic `BaseModel` con validación:
 
 **Request DTOs** (con validación estricta):
+
 ```python
 class RegisterUserRequest(BaseModel):
     email: EmailStr
@@ -178,6 +192,7 @@ class RegisterUserRequest(BaseModel):
 ```
 
 **Response DTOs** (serializables):
+
 ```python
 class RegisterUserResponse(BaseModel):
     user_id: UUID
@@ -187,11 +202,13 @@ class RegisterUserResponse(BaseModel):
 ```
 
 ### 3.2 Actualizar Use Cases
+
 - Actualizar imports en todos los use cases
 - Los use cases reciben/devuelven Pydantic DTOs
 - Verificar que la lógica sigue funcionando
 
 **Archivos afectados:**
+
 - `apps/api/src/prosell/application/dto/auth/*.py` (todos)
 - `apps/api/src/prosell/application/use_cases/auth/*.py` (todos los imports)
 
@@ -214,6 +231,7 @@ infrastructure/api/schemas/
 ```
 
 **`auth.py`** - Request schemas con validación Pydantic completa:
+
 ```python
 class RegisterRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -225,6 +243,7 @@ class RegisterRequest(BaseModel):
 ```
 
 **`responses.py`** - Response schemas para documentación OpenAPI:
+
 ```python
 class UserResponse(BaseModel):
     id: UUID
@@ -246,22 +265,26 @@ class MessageResponse(BaseModel):
 ```
 
 ### 4.2 Actualizar `auth_router.py`
+
 - Eliminar schemas inline
 - Importar desde `schemas/`
 - Agregar `response_model` a TODOS los endpoints
 - Ejemplo: `@router.post("/register", response_model=MessageResponse)`
 
 ### 4.3 Actualizar Repository Implementations
+
 - Los repos ahora trabajan con Pydantic entities (tienen `from_attributes=True`)
 - Actualizar `_to_entity()` methods para usar `Model.model_validate()`
 - Ejemplo: `User.model_validate(user_model, from_attributes=True)`
 
 ### 4.4 Actualizar Service Implementations
+
 - Eliminar herencia de ABC (`class JWTService(IJWTService):`)
 - Solo implementar los métodos del Protocol (duck typing)
 - Eliminar `@abstractmethod` overrides innecesarios
 
 **Archivos afectados:**
+
 - `apps/api/src/prosell/infrastructure/api/schemas/` (NUEVO directorio)
 - `apps/api/src/prosell/infrastructure/api/routers/auth_router.py`
 - `apps/api/src/prosell/infrastructure/repositories/user_repository_impl.py`
@@ -276,7 +299,9 @@ class MessageResponse(BaseModel):
 ## Fase 5: Python 3.13+ Modernización
 
 ### 5.1 PEP 695 Type Aliases (`type` statement)
+
 Donde aplique, usar nueva sintaxis:
+
 ```python
 # Antes
 from typing import TypeAlias
@@ -287,7 +312,9 @@ type RolePermissions = dict[RoleType, set[Permission]]
 ```
 
 ### 5.2 StrEnum Consistencia
+
 Verificar que TODOS los enums usan `StrEnum` (no `str, Enum`):
+
 ```python
 # Antes
 class UserStatus(str, Enum):
@@ -298,7 +325,9 @@ class UserStatus(StrEnum):
 ```
 
 ### 5.3 Annotated para Constraints
+
 Usar `Annotated` para constraints reutilizables:
+
 ```python
 from typing import Annotated
 from pydantic import Field
@@ -308,6 +337,7 @@ type UserName = Annotated[str, Field(min_length=2, max_length=100)]
 ```
 
 ### 5.4 Limpiar imports obsoletos
+
 - Eliminar `from __future__ import annotations` si existe
 - Usar `X | None` en lugar de `Optional[X]` (ya se hace, verificar consistencia)
 - Usar `list[X]` en lugar de `List[X]` (ya se hace, verificar)
@@ -319,19 +349,23 @@ type UserName = Annotated[str, Field(min_length=2, max_length=100)]
 ## Fase 6: Limpieza y Deduplicación
 
 ### 6.1 Eliminar `UserStatus` duplicado
+
 - Mantener en `domain/entities/user.py`
 - Eliminar `domain/value_objects/user_status.py`
 - Actualizar todos los imports
 
 ### 6.2 Eliminar `python-jose` de dependencias
+
 - Remover de `pyproject.toml`
 - Solo se usa `pyjwt`
 
 ### 6.3 Limpiar re-exports innecesarios
+
 - Verificar `__init__.py` files
 - Asegurar exports claros y mínimos
 
 **Archivos afectados:**
+
 - `apps/api/pyproject.toml`
 - `apps/api/src/prosell/domain/value_objects/user_status.py` (ELIMINAR)
 - Todos los `__init__.py` relevantes
@@ -341,6 +375,7 @@ type UserName = Annotated[str, Field(min_length=2, max_length=100)]
 ## Fase 7: Testing - Actualizar y Validar
 
 ### 7.1 Actualizar tests existentes
+
 Los 4 archivos de test del domain layer necesitan actualizarse para Pydantic:
 
 ```python
@@ -354,13 +389,16 @@ user = User(id=uuid4(), email="test@example.com", ...)  # Pydantic valida autom�
 ```
 
 **Tests a actualizar:**
+
 - `tests/unit/domain/test_user_entity.py` (45 tests)
 - `tests/unit/domain/test_role_entity.py`
 - `tests/unit/domain/test_value_objects.py` (cambios significativos por Email → Pydantic)
 - `tests/unit/domain/test_events_exceptions.py`
 
 ### 7.2 Agregar tests de validación Pydantic
+
 Nuevos tests que validan que Pydantic rechaza datos inválidos:
+
 ```python
 def test_user_rejects_invalid_email() -> None:
     with pytest.raises(ValidationError):
@@ -372,6 +410,7 @@ def test_register_dto_rejects_short_password() -> None:
 ```
 
 ### 7.3 Ejecutar suite completa
+
 ```bash
 cd apps/api && uv run pytest -v
 cd apps/api && uv run ruff check .
@@ -379,6 +418,7 @@ cd apps/api && uv run pyright
 ```
 
 **Archivos afectados:**
+
 - `apps/api/tests/unit/domain/test_user_entity.py`
 - `apps/api/tests/unit/domain/test_role_entity.py`
 - `apps/api/tests/unit/domain/test_value_objects.py`
@@ -389,6 +429,7 @@ cd apps/api && uv run pyright
 ## Fase 8: Validación Final y Commit
 
 ### 8.1 Checklist de validación
+
 - [ ] `uv run pytest` - Todos los tests pasan
 - [ ] `uv run ruff check .` - Sin errores de lint
 - [ ] `uv run pyright` - Sin errores de tipos
@@ -396,6 +437,7 @@ cd apps/api && uv run pyright
 - [ ] Verificar que la API sigue funcionando: `fastapi dev src/prosell/infrastructure/api/main.py`
 
 ### 8.2 Commits (uno por fase completada)
+
 ```
 refactor(domain): create Pydantic base models (DomainModel, ValueObject, DomainEvent)
 refactor(domain): migrate value objects to Pydantic
@@ -416,34 +458,37 @@ test: update domain tests for Pydantic migration
 ## Resumen de Archivos
 
 ### Nuevos
-| Archivo | Propósito |
-|---------|-----------|
-| `domain/base.py` | Base models: DomainModel, ValueObject, DomainEvent |
-| `infrastructure/api/schemas/__init__.py` | Package init |
-| `infrastructure/api/schemas/auth.py` | Auth request schemas |
+
+| Archivo                                   | Propósito                                          |
+| ----------------------------------------- | -------------------------------------------------- |
+| `domain/base.py`                          | Base models: DomainModel, ValueObject, DomainEvent |
+| `infrastructure/api/schemas/__init__.py`  | Package init                                       |
+| `infrastructure/api/schemas/auth.py`      | Auth request schemas                               |
 | `infrastructure/api/schemas/responses.py` | Response schemas (UserResponse, AuthTokenResponse) |
-| `infrastructure/api/schemas/common.py` | Shared schemas |
+| `infrastructure/api/schemas/common.py`    | Shared schemas                                     |
 
 ### Modificados
-| Archivo | Cambio |
-|---------|--------|
-| `pyproject.toml` | Eliminar python-jose |
-| `domain/entities/user.py` | @dataclass → DomainModel |
-| `domain/entities/role.py` | @dataclass → DomainModel |
-| `domain/entities/session.py` | @dataclass → DomainModel |
-| `domain/value_objects/email.py` | frozen dataclass → ValueObject |
-| `domain/events/user_events.py` | frozen dataclass → DomainEvent |
-| `domain/ports/i_*.py` (3 files) | ABC → Protocol |
-| `application/dto/auth/*.py` | @dataclass → BaseModel |
-| `application/use_cases/auth/*.py` | Actualizar imports |
+
+| Archivo                                     | Cambio                                  |
+| ------------------------------------------- | --------------------------------------- |
+| `pyproject.toml`                            | Eliminar python-jose                    |
+| `domain/entities/user.py`                   | @dataclass → DomainModel                |
+| `domain/entities/role.py`                   | @dataclass → DomainModel                |
+| `domain/entities/session.py`                | @dataclass → DomainModel                |
+| `domain/value_objects/email.py`             | frozen dataclass → ValueObject          |
+| `domain/events/user_events.py`              | frozen dataclass → DomainEvent          |
+| `domain/ports/i_*.py` (3 files)             | ABC → Protocol                          |
+| `application/dto/auth/*.py`                 | @dataclass → BaseModel                  |
+| `application/use_cases/auth/*.py`           | Actualizar imports                      |
 | `infrastructure/api/routers/auth_router.py` | Extraer schemas, agregar response_model |
-| `infrastructure/repositories/*_impl.py` | Usar model_validate() |
-| `infrastructure/services/*.py` | Eliminar ABC herencia |
-| `tests/unit/domain/*.py` (4 files) | Actualizar para Pydantic |
+| `infrastructure/repositories/*_impl.py`     | Usar model_validate()                   |
+| `infrastructure/services/*.py`              | Eliminar ABC herencia                   |
+| `tests/unit/domain/*.py` (4 files)          | Actualizar para Pydantic                |
 
 ### Eliminados
-| Archivo | Razón |
-|---------|-------|
+
+| Archivo                               | Razón                                     |
+| ------------------------------------- | ----------------------------------------- |
 | `domain/value_objects/user_status.py` | Duplicado - UserStatus ya está en user.py |
 
 ---

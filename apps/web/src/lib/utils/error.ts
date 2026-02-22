@@ -13,7 +13,10 @@
  * @param fallbackMessage - Default message if error type cannot be determined
  * @returns Error message string
  */
-export function getErrorMessage(error: unknown, fallbackMessage: string): string {
+export function getErrorMessage(
+  error: unknown,
+  fallbackMessage: string,
+): string {
   // Handle ApiError instances (from authApi)
   if (error instanceof Error && error.name === "ApiError") {
     return error.message;

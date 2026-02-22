@@ -8,12 +8,12 @@ This report documents the bundle size optimizations implemented for the ProSell 
 
 ### 1. Bundle Size Reduction
 
-| Component | Size Before | Size After | Reduction | Notes |
-|-----------|------------|------------|----------|-------|
-| OAuthButtons | ~15KB | ~4KB | ~73% | Icons now loaded dynamically |
-| TwoFactorSetupForm | ~35KB | ~8KB | ~77% | Large component loaded on demand |
-| Auth Icons | ~8KB | ~2KB | ~75% | Only critical icons loaded initially |
-| **Total Auth Bundle** | **~58KB** | **~14KB** | **~76%** | **Massive improvement** |
+| Component             | Size Before | Size After | Reduction | Notes                                |
+| --------------------- | ----------- | ---------- | --------- | ------------------------------------ |
+| OAuthButtons          | ~15KB       | ~4KB       | ~73%      | Icons now loaded dynamically         |
+| TwoFactorSetupForm    | ~35KB       | ~8KB       | ~77%      | Large component loaded on demand     |
+| Auth Icons            | ~8KB        | ~2KB       | ~75%      | Only critical icons loaded initially |
+| **Total Auth Bundle** | **~58KB**   | **~14KB**  | **~76%**  | **Massive improvement**              |
 
 ### 2. Waterfall Elimination
 
@@ -26,35 +26,35 @@ This report documents the bundle size optimizations implemented for the ProSell 
 ### 1. Dynamic Imports with `next/dynamic`
 
 #### OAuthButtons Component
+
 ```tsx
 // Before: Icons loaded with main bundle
 import { GoogleIcon, FacebookIcon } from "@/components/icons";
 
 // After: Icons loaded on demand
-const OAuthButtons = dynamic(
-  () => import("./dynamic/OAuthButtons"),
-  {
-    ssr: false,
-    loading: () => <OAuthButtonsSkeleton />
-  }
-);
+const OAuthButtons = dynamic(() => import("./dynamic/OAuthButtons"), {
+  ssr: false,
+  loading: () => <OAuthButtonsSkeleton />,
+});
 ```
 
 #### TwoFactorSetupForm Component
+
 ```tsx
 // Before: 576 lines loaded immediately
 const TwoFactorSetupForm = dynamic(
   () => import("@/components/auth/dynamic/TwoFactorSetupForm"),
   {
     ssr: false,
-    loading: () => <TwoFactorSetupSkeleton />
-  }
+    loading: () => <TwoFactorSetupSkeleton />,
+  },
 );
 ```
 
 ### 2. Icon Component Optimization
 
 #### Dynamic Icons
+
 - **Critical icons** (Email, Check, Alert, X, Shield): Keep synchronous
 - **Non-critical icons** (Google, Facebook): Load dynamically
 - **Fallback**: Loading skeletons for smooth UX
@@ -62,17 +62,18 @@ const TwoFactorSetupForm = dynamic(
 ```tsx
 // Dynamic Google Icon
 export const GoogleIcon = dynamic(
-  () => import('./index').then((mod) => mod.GoogleIcon),
+  () => import("./index").then((mod) => mod.GoogleIcon),
   {
     ssr: false,
-    loading: () => <SkeletonIcon />
-  }
+    loading: () => <SkeletonIcon />,
+  },
 );
 ```
 
 ### 3. Suspense Boundaries
 
 #### Page-Level Suspense
+
 ```tsx
 // Login page with proper boundaries
 function LoginPage() {
@@ -91,6 +92,7 @@ function LoginPage() {
 ```
 
 #### Component-Level Streaming
+
 - Critical content (forms, buttons): Load immediately
 - Non-critical content (OAuth, footer): Load with Suspense
 - Prevents blocking entire pages on data fetches
@@ -98,12 +100,13 @@ function LoginPage() {
 ### 4. Parallel API Calls
 
 #### New Parallel Fetching Utilities
+
 ```tsx
 // parallelApi.ts
 export async function parallelFetch<T>(
-  requests: Array<() => Promise<T>>
+  requests: Array<() => Promise<T>>,
 ): Promise<T[]> {
-  return Promise.all(requests.map(request => request()));
+  return Promise.all(requests.map((request) => request()));
 }
 
 // Usage example
@@ -117,6 +120,7 @@ const [user, preferences, settings] = await parallelFetch([
 ### 5. Optimized Loading States
 
 #### Skeleton Components
+
 - Consistent design system
 - Smooth animations
 - Proper accessibility
@@ -160,28 +164,31 @@ apps/web/src/
 
 ## 🔍 Vercel Rule Compliance
 
-| Rule | Status | Implementation |
-|------|--------|----------------|
-| `bundle-dynamic-imports.md` | ✅ | Dynamic OAuthButtons and TwoFactorSetupForm |
-| `async-parallel.md` | ✅ | parallelFetch utility and optimized authStore |
-| `async-suspense-boundaries.md` | ✅ | Suspense boundaries on all auth pages |
-| `bundle-defer-third-party.md` | ✅ | Icons deferred to after hydration |
+| Rule                           | Status | Implementation                                |
+| ------------------------------ | ------ | --------------------------------------------- |
+| `bundle-dynamic-imports.md`    | ✅     | Dynamic OAuthButtons and TwoFactorSetupForm   |
+| `async-parallel.md`            | ✅     | parallelFetch utility and optimized authStore |
+| `async-suspense-boundaries.md` | ✅     | Suspense boundaries on all auth pages         |
+| `bundle-defer-third-party.md`  | ✅     | Icons deferred to after hydration             |
 
 ## 🎯 Performance Metrics
 
 ### Before Optimization
+
 - **LCP (Largest Contentful Paint)**: ~1.8s
 - **TBT (Total Blocking Time)**: ~350ms
 - **FID (First Input Delay)**: ~120ms
 - **Bundle Size**: ~58KB
 
 ### After Optimization
+
 - **LCP (Largest Contentful Paint)**: ~0.8s
 - **TBT (Total Blocking Time)**: ~120ms
 - **FID (First Input Delay)**: ~40ms
 - **Bundle Size**: ~14KB
 
 ### Improvement Summary
+
 - **LCP**: 55% faster
 - **TBT**: 66% reduction
 - **FID**: 67% improvement
@@ -190,16 +197,19 @@ apps/web/src/
 ## 🚦 Future Optimizations
 
 ### 1. Image Optimization
+
 - Implement Next.js Image component for profile pictures
 - WebP format where supported
 - Lazy loading for non-avatars
 
 ### 2. Code Splitting by Route
+
 - Implement route-based code splitting
 - Use Next.js `pages` directory if needed
 - Prefetching for critical routes
 
 ### 3. Caching Strategy
+
 - Implement React.cache for memoization
 - Service worker for offline support
 - CDN caching for static assets
@@ -215,6 +225,7 @@ apps/web/src/
 ## 🔧 Development Commands
 
 ### Testing Optimizations
+
 ```bash
 # Check bundle size
 pnpm build

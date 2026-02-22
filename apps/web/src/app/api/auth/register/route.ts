@@ -42,9 +42,9 @@ interface ErrorResponse {
 // ROUTE HANDLER
 // ============================================
 
-export async function POST(request: Request): Promise<
-  NextResponse<LoginResponse | ErrorResponse>
-> {
+export async function POST(
+  request: Request,
+): Promise<NextResponse<LoginResponse | ErrorResponse>> {
   try {
     const body: RegisterRequest = await request.json();
 
@@ -52,7 +52,7 @@ export async function POST(request: Request): Promise<
     if (!body.email || !body.password || !body.first_name || !body.last_name) {
       return NextResponse.json(
         { detail: "All fields are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -61,7 +61,7 @@ export async function POST(request: Request): Promise<
     if (!emailRegex.test(body.email)) {
       return NextResponse.json(
         { detail: "Invalid email format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -69,7 +69,7 @@ export async function POST(request: Request): Promise<
     if (body.password.length < 8) {
       return NextResponse.json(
         { detail: "Password must be at least 8 characters" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -124,7 +124,7 @@ export async function POST(request: Request): Promise<
     logger.error("Mock register error", error);
     return NextResponse.json(
       { detail: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

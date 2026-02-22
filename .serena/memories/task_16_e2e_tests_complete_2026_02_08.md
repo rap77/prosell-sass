@@ -8,6 +8,7 @@
 ### Files Created
 
 #### Base Infrastructure
+
 - **`tests/e2e/base-page.ts`** - Base class for all Page Objects
   - Common methods: goto(), waitForNotification(), verifyUrl(), screenshot()
   - All Page Objects extend this class
@@ -19,6 +20,7 @@
   - `getExistingUser()` - Loads test credentials from env vars
 
 #### Login E2E Tests (12 tests)
+
 - **`tests/e2e/auth/login-page.ts`** - LoginPage Page Object
   - Locators: emailInput, passwordInput, submitButton, OAuth buttons
   - Methods: login(), verifyPageLoaded(), verifyErrorMessage()
@@ -34,6 +36,7 @@
   - Priority, tags, flow steps, expected results
 
 #### Register E2E Tests (10 tests)
+
 - **`tests/e2e/auth/register-page.ts`** - RegisterPage Page Object
   - Locators: fullName, email, password, confirmPassword, terms checkbox
   - Methods: register(), verifyPageLoaded(), clickSignIn()
@@ -45,12 +48,14 @@
   - Navigation: Sign in link (1 test)
 
 #### Middleware E2E Tests (13 tests)
+
 - **`tests/e2e/auth/middleware.spec.ts`** - Route protection tests
   - Protected Routes: Dashboard, profile, settings, 2FA redirect (5 tests)
   - Public Routes: Home, login, register, forgot-password, reset-password, verify-email (6 tests)
   - API/Static bypass: API routes, static files (2 tests)
 
 #### Configuration
+
 - **`tests/e2e/playwright.config.ts`** - Updated
   - Changed `testDir: "./"` to include both `specs/` and `auth/`
   - Removed API webServer (only need Next.js dev server)
@@ -59,13 +64,20 @@
 ## Implementation Details
 
 ### Page Object Model Pattern
+
 ```typescript
 // BasePage - parent class for all pages
 export class BasePage {
   constructor(protected page: Page) {}
-  async goto(path: string): Promise<void> { /* ... */ }
-  async waitForNotification(): Promise<void> { /* ... */ }
-  async verifyUrl(path: string): Promise<void> { /* ... */ }
+  async goto(path: string): Promise<void> {
+    /* ... */
+  }
+  async waitForNotification(): Promise<void> {
+    /* ... */
+  }
+  async verifyUrl(path: string): Promise<void> {
+    /* ... */
+  }
 }
 
 // LoginPage extends BasePage
@@ -81,11 +93,14 @@ export class LoginPage extends BasePage {
     this.submitButton = page.getByRole("button", { name: /sign in/i });
   }
 
-  async login(data: LoginData): Promise<void> { /* ... */ }
+  async login(data: LoginData): Promise<void> {
+    /* ... */
+  }
 }
 ```
 
 ### Selector Strategy (Playwright Best Practices)
+
 ```typescript
 // ✅ GOOD - getByRole for interactive elements
 this.submitButton = page.getByRole("button", { name: /sign in/i });
@@ -99,21 +114,24 @@ this.passwordInput = page.getByLabel("Password");
 this.errorMessage = page.getByText("Invalid credentials");
 
 // ❌ AVOID - fragile selectors
-this.button = page.locator(".btn-primary");  // NO
-this.input = page.locator("#email");         // NO
+this.button = page.locator(".btn-primary"); // NO
+this.input = page.locator("#email"); // NO
 ```
 
 ### Test Tags
+
 ```typescript
-test("should login successfully with valid credentials",
+test(
+  "should login successfully with valid credentials",
   { tag: ["@critical", "@e2e", "@login", "@LOGIN-E2E-007"] },
   async ({ page }) => {
     // test implementation
-  }
+  },
 );
 ```
 
 **Tag Categories:**
+
 - Priority: `@critical`, `@high`, `@medium`, `@low`
 - Type: `@e2e`
 - Feature: `@login`, `@register`, `@middleware`
@@ -123,20 +141,25 @@ test("should login successfully with valid credentials",
 ## GGA Review - Required Fixes
 
 ### 1. Missing `expect` import
+
 **Files:** `login-page.ts`, `register-page.ts`
 **Fix:** Added `expect` to Playwright imports
 
 ### 2. Hardcoded credentials
+
 **File:** `helpers.ts`
 **Original Issue:** Fallback values `test@example.com / password123`
 **Fix:** Removed fallbacks, now requires env vars:
+
 ```typescript
 export function getExistingUser() {
   const email = process.env.TEST_USER_EMAIL;
   const password = process.env.TEST_USER_PASSWORD;
 
   if (!email || !password) {
-    throw new Error("TEST_USER_EMAIL and TEST_USER_PASSWORD environment variables must be set");
+    throw new Error(
+      "TEST_USER_EMAIL and TEST_USER_PASSWORD environment variables must be set",
+    );
   }
 
   return { email, password };
@@ -144,11 +167,13 @@ export function getExistingUser() {
 ```
 
 ### 3. Sleep function
+
 **File:** `helpers.ts`
 **Original Issue:** `sleep()` function encourages bad practices
 **Fix:** Removed entirely - use proper waits (waitForSelector, waitForURL)
 
 ### 4. Custom screenshot method
+
 **File:** `base-page.ts`
 **Original Issue:** Custom screenshot path not managed by Playwright
 **Fix:** Removed `screenshot()` method - use Playwright's built-in screenshot management
@@ -186,6 +211,7 @@ export TEST_USER_PASSWORD="password123"
 ## Progress: 16/17 tasks (~94%)
 
 ### Completed (16/17):
+
 1. ✅ Environment Setup
 2. ✅ authStore (Zustand)
 3. ✅ useAuth Hook
@@ -204,9 +230,11 @@ export TEST_USER_PASSWORD="password123"
 16. ✅ **E2E Tests (Playwright)**
 
 ### Pending (1/17):
+
 17. ⏳ Final validation >80% coverage
 
 ## Commit
+
 **Hash:** 189d8f4
 **Message:** feat(e2e): implement auth flow E2E tests with Playwright
 **Files:** 9 files changed, 1007 insertions(+), 15 deletions(-)

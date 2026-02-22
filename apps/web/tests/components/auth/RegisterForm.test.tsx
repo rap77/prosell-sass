@@ -100,7 +100,9 @@ describe("RegisterForm Component", () => {
     it("should render register button", () => {
       render(<RegisterForm />);
 
-      expect(screen.getByRole("button", { name: /create account/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /create account/i }),
+      ).toBeInTheDocument();
     });
 
     it("should render login link", () => {
@@ -133,10 +135,14 @@ describe("RegisterForm Component", () => {
       const user = userEvent.setup();
       render(<RegisterForm />);
 
-      const submitButton = screen.getByRole("button", { name: /create account/i });
+      const submitButton = screen.getByRole("button", {
+        name: /create account/i,
+      });
       await user.click(submitButton);
 
-      expect(await screen.findByText(/full name is required/i)).toBeInTheDocument();
+      expect(
+        await screen.findByText(/full name is required/i),
+      ).toBeInTheDocument();
     });
 
     it("should show error when full name is too short", async () => {
@@ -147,7 +153,9 @@ describe("RegisterForm Component", () => {
       await user.type(nameInput, "J"); // Only 1 character
 
       // With mode: "all", error should appear immediately after typing
-      expect(await screen.findByText("Full name must be at least 2 characters")).toBeInTheDocument();
+      expect(
+        await screen.findByText("Full name must be at least 2 characters"),
+      ).toBeInTheDocument();
     });
 
     it("should show error when email is empty", async () => {
@@ -157,7 +165,9 @@ describe("RegisterForm Component", () => {
       const nameInput = screen.getByLabelText(/^Full Name$/);
       await user.type(nameInput, "John Doe");
 
-      const submitButton = screen.getByRole("button", { name: /create account/i });
+      const submitButton = screen.getByRole("button", {
+        name: /create account/i,
+      });
       await user.click(submitButton);
 
       expect(await screen.findByText("Email is required")).toBeInTheDocument();
@@ -173,10 +183,14 @@ describe("RegisterForm Component", () => {
       const emailInput = screen.getByLabelText(/^Email$/);
       await user.type(emailInput, "invalid-email");
 
-      const submitButton = screen.getByRole("button", { name: /create account/i });
+      const submitButton = screen.getByRole("button", {
+        name: /create account/i,
+      });
       await user.click(submitButton);
 
-      expect(await screen.findByText("Invalid email address")).toBeInTheDocument();
+      expect(
+        await screen.findByText("Invalid email address"),
+      ).toBeInTheDocument();
     });
 
     it("should show error when password is empty", async () => {
@@ -189,7 +203,9 @@ describe("RegisterForm Component", () => {
       const emailInput = screen.getByLabelText(/^Email$/);
       await user.type(emailInput, "user@example.com");
 
-      const submitButton = screen.getByRole("button", { name: /create account/i });
+      const submitButton = screen.getByRole("button", {
+        name: /create account/i,
+      });
       await user.click(submitButton);
 
       // PasswordInput shows "Password is required" - there may be 2 instances (confirm password too)
@@ -208,15 +224,20 @@ describe("RegisterForm Component", () => {
       const emailInput = screen.getByLabelText(/^Email$/);
       await user.type(emailInput, "user@example.com");
 
-      const passwordInput = screen.getByPlaceholderText(/^enter your password/i);
+      const passwordInput =
+        screen.getByPlaceholderText(/^enter your password/i);
       await user.type(passwordInput, "short");
 
       // Find submit button by type="submit" (not OAuth buttons)
       const buttons = screen.getAllByRole("button");
-      const submitButton = buttons.find((btn) => (btn as HTMLButtonElement).type === "submit");
+      const submitButton = buttons.find(
+        (btn) => (btn as HTMLButtonElement).type === "submit",
+      );
       await user.click(submitButton!);
 
-      expect(await screen.findByText(/at least 8 characters/i)).toBeInTheDocument();
+      expect(
+        await screen.findByText(/at least 8 characters/i),
+      ).toBeInTheDocument();
     });
 
     it("should show error when passwords do not match", async () => {
@@ -230,10 +251,14 @@ describe("RegisterForm Component", () => {
       const emailInput = screen.getByLabelText(/^Email$/);
       await user.type(emailInput, "user@example.com");
 
-      const passwordInput = screen.getByPlaceholderText(/^enter your password$/i);
+      const passwordInput = screen.getByPlaceholderText(
+        /^enter your password$/i,
+      );
       await user.type(passwordInput, "Password123!");
 
-      const confirmPasswordInput = screen.getByPlaceholderText(/^confirm your password$/i);
+      const confirmPasswordInput = screen.getByPlaceholderText(
+        /^confirm your password$/i,
+      );
       await user.type(confirmPasswordInput, "Password456!");
 
       const termsCheckbox = screen.getByRole("checkbox");
@@ -241,10 +266,14 @@ describe("RegisterForm Component", () => {
 
       // Find submit button by type="submit" (not OAuth buttons)
       const buttons = screen.getAllByRole("button");
-      const submitButton = buttons.find((btn) => (btn as HTMLButtonElement).type === "submit");
+      const submitButton = buttons.find(
+        (btn) => (btn as HTMLButtonElement).type === "submit",
+      );
       await user.click(submitButton!);
 
-      expect(await screen.findByText(/passwords do not match/i)).toBeInTheDocument();
+      expect(
+        await screen.findByText(/passwords do not match/i),
+      ).toBeInTheDocument();
     });
 
     it("should show error when terms are not accepted", async () => {
@@ -257,29 +286,40 @@ describe("RegisterForm Component", () => {
       const emailInput = screen.getByLabelText(/^Email$/);
       await user.type(emailInput, "user@example.com");
 
-      const passwordInput = screen.getByPlaceholderText(/^Enter your password$/i);
+      const passwordInput = screen.getByPlaceholderText(
+        /^Enter your password$/i,
+      );
       await user.type(passwordInput, "Password123!");
 
-      const confirmPasswordInput = screen.getByPlaceholderText(/^confirm your password$/i);
+      const confirmPasswordInput = screen.getByPlaceholderText(
+        /^confirm your password$/i,
+      );
       await user.type(confirmPasswordInput, "Password123!");
 
       // Don't click terms checkbox
 
-      const submitButton = screen.getByRole("button", { name: /create account/i });
+      const submitButton = screen.getByRole("button", {
+        name: /create account/i,
+      });
       await user.click(submitButton);
 
-      expect(await screen.findByText(/you must accept the terms/i)).toBeInTheDocument();
+      expect(
+        await screen.findByText(/you must accept the terms/i),
+      ).toBeInTheDocument();
     });
   });
 
   describe("Form Submission", () => {
-    it("should call register with correct data", async () => {      const user = userEvent.setup();
+    it("should call register with correct data", async () => {
+      const user = userEvent.setup();
       render(<RegisterForm />);
 
       const nameInput = screen.getByLabelText(/^Full Name$/);
       const emailInput = screen.getByLabelText(/^Email$/);
       const passwordInput = screen.getByPlaceholderText(/enter your password/i);
-      const confirmPasswordInput = screen.getByPlaceholderText(/confirm your password/i);
+      const confirmPasswordInput = screen.getByPlaceholderText(
+        /confirm your password/i,
+      );
       const termsCheckbox = screen.getByRole("checkbox");
 
       await user.type(nameInput, "John Doe");
@@ -298,7 +338,7 @@ describe("RegisterForm Component", () => {
         () => {
           expect(mockRegister).toHaveBeenCalled();
         },
-        { timeout: 5000 }
+        { timeout: 5000 },
       );
     });
 
@@ -306,7 +346,9 @@ describe("RegisterForm Component", () => {
       const user = userEvent.setup();
       render(<RegisterForm />);
 
-      const submitButton = screen.getByRole("button", { name: /create account/i });
+      const submitButton = screen.getByRole("button", {
+        name: /create account/i,
+      });
       await user.click(submitButton);
 
       expect(mockRegister).not.toHaveBeenCalled();
@@ -326,7 +368,9 @@ describe("RegisterForm Component", () => {
 
       // We can't directly type in PasswordInput due to state conflict
       // So we just verify validation prevents submission when terms aren't checked
-      const submitButton = screen.getByRole("button", { name: /create account/i });
+      const submitButton = screen.getByRole("button", {
+        name: /create account/i,
+      });
       await user.click(submitButton);
 
       expect(mockRegister).not.toHaveBeenCalled();
@@ -432,7 +476,9 @@ describe("RegisterForm Component", () => {
       const user = userEvent.setup();
       render(<RegisterForm />);
 
-      const submitButton = screen.getByRole("button", { name: /create account/i });
+      const submitButton = screen.getByRole("button", {
+        name: /create account/i,
+      });
       await user.click(submitButton);
 
       const nameInput = screen.getByLabelText(/^Full Name$/);
@@ -492,7 +538,9 @@ describe("RegisterForm Component", () => {
       const termsCheckbox = screen.getByRole("checkbox");
       await user.click(termsCheckbox);
 
-      const submitButton = screen.getByRole("button", { name: /create account/i });
+      const submitButton = screen.getByRole("button", {
+        name: /create account/i,
+      });
       await user.click(submitButton);
 
       // Form submission will be prevented by validation (password is required)
@@ -514,7 +562,9 @@ describe("RegisterForm Component", () => {
       const termsCheckbox = screen.getByRole("checkbox");
       await user.click(termsCheckbox);
 
-      const submitButton = screen.getByRole("button", { name: /create account/i });
+      const submitButton = screen.getByRole("button", {
+        name: /create account/i,
+      });
       await user.click(submitButton);
 
       // Verify the input accepts the long name

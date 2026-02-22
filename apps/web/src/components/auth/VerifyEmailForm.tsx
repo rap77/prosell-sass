@@ -53,11 +53,15 @@ export function VerifyEmailForm({ token }: VerifyEmailFormProps) {
             setError(err.message || "Invalid or expired token");
           } else {
             // For other ApiError statuses, use the error message
-            setError(err.message || "Unable to verify email. Please try again.");
+            setError(
+              err.message || "Unable to verify email. Please try again.",
+            );
           }
         } else {
           // Handle all other error types (Error instances, plain objects, unknown types)
-          setError(getErrorMessage(err, "Unable to verify email. Please try again."));
+          setError(
+            getErrorMessage(err, "Unable to verify email. Please try again."),
+          );
         }
       }
     };
@@ -104,9 +108,7 @@ export function VerifyEmailForm({ token }: VerifyEmailFormProps) {
               Your email has been verified. You can now log in to your account.
             </p>
             <Button asChild className="w-full">
-              <Link href="/auth/login">
-                Continue to Login
-              </Link>
+              <Link href="/auth/login">Continue to Login</Link>
             </Button>
           </div>
         );
@@ -133,14 +135,10 @@ export function VerifyEmailForm({ token }: VerifyEmailFormProps) {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
               <Button variant="outline" asChild className="flex-1">
-                <Link href="/auth/login">
-                  Back to Login
-                </Link>
+                <Link href="/auth/login">Back to Login</Link>
               </Button>
               <Button asChild className="flex-1">
-                <Link href="/auth/register">
-                  Request New Verification
-                </Link>
+                <Link href="/auth/register">Request New Verification</Link>
               </Button>
             </div>
           </div>
@@ -161,9 +159,7 @@ export function VerifyEmailForm({ token }: VerifyEmailFormProps) {
               Email Verification
             </h2>
           </CardHeader>
-          <CardContent>
-            {renderContent()}
-          </CardContent>
+          <CardContent>{renderContent()}</CardContent>
         </Card>
       </div>
     </div>

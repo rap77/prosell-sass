@@ -32,7 +32,7 @@ export function cn(...inputs: ClassValue[]): string {
 export function batchCSS(element: HTMLElement, styles: Record<string, string>) {
   const cssText = Object.entries(styles)
     .map(([prop, value]) => `${prop}: ${value}`)
-    .join('; ');
+    .join("; ");
 
   element.style.cssText += `; ${cssText}`;
 }
@@ -45,7 +45,7 @@ export function batchCSS(element: HTMLElement, styles: Record<string, string>) {
  */
 export function withArrayLengthCheck<T>(
   array: unknown[],
-  expensiveOperation: () => T
+  expensiveOperation: () => T,
 ): T | undefined {
   if (!array.length) {
     return undefined;
@@ -59,11 +59,11 @@ export function withArrayLengthCheck<T>(
  * @param handler - Event handler function
  * @returns Ref object with stable handler
  */
-export function createEventHandlerRef<T extends (...args: unknown[]) => unknown>(
-  handler: T
-) {
+export function createEventHandlerRef<
+  T extends (...args: unknown[]) => unknown,
+>(handler: T) {
   return {
-    current: handler
+    current: handler,
   };
 }
 
@@ -92,10 +92,7 @@ export function createLookupSet<T>(items: T[]): Set<T> {
  * @param fn - Function to execute if condition is true
  * @returns Result of function or undefined
  */
-export function earlyExit<T>(
-  condition: boolean,
-  fn: () => T
-): T | undefined {
+export function earlyExit<T>(condition: boolean, fn: () => T): T | undefined {
   if (!condition) {
     return undefined;
   }
@@ -111,11 +108,11 @@ export function earlyExit<T>(
  */
 export function immutableSort<T>(
   array: T[],
-  compareFn?: (a: T, b: T) => number
+  compareFn?: (a: T, b: T) => number,
 ): T[] {
-  return array.toSorted ?
-    array.toSorted(compareFn) :
-    [...array].sort(compareFn);
+  return array.toSorted
+    ? array.toSorted(compareFn)
+    : [...array].sort(compareFn);
 }
 
 /**
@@ -125,7 +122,10 @@ export function immutableSort<T>(
  * All keys are prefixed with version (e.g., "cache-key:v1").
  */
 export const storageCache = (() => {
-  const cache = new Map<string, { value: unknown; timestamp: number; ttl?: number }>();
+  const cache = new Map<
+    string,
+    { value: unknown; timestamp: number; ttl?: number }
+  >();
   const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
   const STORAGE_VERSION = "v1"; // Version for localStorage schema migration
 
@@ -162,7 +162,7 @@ export const storageCache = (() => {
       cache.set(key, {
         value,
         timestamp: Date.now(),
-        ttl: ttl || DEFAULT_TTL
+        ttl: ttl || DEFAULT_TTL,
       });
 
       try {
@@ -188,10 +188,10 @@ export const storageCache = (() => {
       try {
         // Clear only current version keys
         const keysToDelete = Object.keys(localStorage)
-          .filter(k => k.endsWith(`:${STORAGE_VERSION}`))
-          .map(k => versionedKey(k.replace(`:${STORAGE_VERSION}`, '')));
+          .filter((k) => k.endsWith(`:${STORAGE_VERSION}`))
+          .map((k) => versionedKey(k.replace(`:${STORAGE_VERSION}`, "")));
 
-        keysToDelete.forEach(k => localStorage.removeItem(k));
+        keysToDelete.forEach((k) => localStorage.removeItem(k));
       } catch (error) {
         logger.error("Failed to clear localStorage", error);
       }
@@ -204,6 +204,6 @@ export const storageCache = (() => {
       } catch (error) {
         logger.error("Failed to clear old version from localStorage", error);
       }
-    }
+    },
   };
 })();

@@ -1,7 +1,7 @@
 # Phase 1 Tickets - Index
 
-**Sprint**: Phase 1 - Vercel Performance Fixes  
-**Created**: 2025-02-21  
+**Sprint**: Phase 1 - Vercel Performance Fixes
+**Created**: 2025-02-21
 **Status**: Ready to Start
 
 ---
@@ -23,14 +23,14 @@ docs/tickets/
 
 ## 🎫 Tickets Overview
 
-| ID | Title | Estimation | Risk | Dependencies |
-|----|-------|------------|------|--------------|
-| **F1-004** | Feature Flag System | 3h | 🟡 Medium | None |
-| **F1-002** | Performance API Marks | 1h | 🟢 Low | None |
-| **F1-001** | authStore initialized Flag | 2h | 🟡 Medium | F1-004 |
-| **F1-003** | 2FA Management Center | 4h | 🔴 High | F1-001, F1-002 |
+| ID         | Title                      | Estimation | Risk      | Dependencies   |
+| ---------- | -------------------------- | ---------- | --------- | -------------- |
+| **F1-004** | Feature Flag System        | 3h         | 🟡 Medium | None           |
+| **F1-002** | Performance API Marks      | 1h         | 🟢 Low    | None           |
+| **F1-001** | authStore initialized Flag | 2h         | 🟡 Medium | F1-004         |
+| **F1-003** | 2FA Management Center      | 4h         | 🔴 High   | F1-001, F1-002 |
 
-**Total Estimation**: 10 hours  
+**Total Estimation**: 10 hours
 **Target Duration**: 1.5 days (2 developers)
 
 ---
@@ -66,18 +66,21 @@ docs/tickets/
 ## 🔗 Quick Links
 
 ### Planning
+
 - [Implementation Plan](./phase-1-implementation-plan.md)
 - [Sprint Summary](./sprint-summary.md)
 - [Original PRD](../prp/vercel-performance-fixes.md)
 - [Clarification Session](../prp/vercel-performance-fixes-clarification-session.md)
 
 ### Tickets
+
 - [F1-004: Feature Flags](./F1-004-feature-flags.md)
 - [F1-002: Performance API](./F1-002-performance-api.md)
 - [F1-001: authStore Flag](./F1-001-auth-store-flag.md)
 - [F1-003: 2FA Center](./F1-003-2fa-management-center.md)
 
 ### Export
+
 - [CSV for Jira/Linear](./phase-1-tickets.csv)
 
 ---
@@ -118,10 +121,10 @@ cat sprint-summary.md
 
 ## 📞 Sprint Team
 
-| Role | Name | Responsibilities |
-|------|------|-----------------|
-| Dev A | [Assign] | F1-004, F1-001, F1-003 (pair) |
-| Dev B | [Assign] | F1-002, Reviews, F1-003 (pair) |
+| Role     | Name       | Responsibilities               |
+| -------- | ---------- | ------------------------------ |
+| Dev A    | [Assign]   | F1-004, F1-001, F1-003 (pair)  |
+| Dev B    | [Assign]   | F1-002, Reviews, F1-003 (pair) |
 | Reviewer | [Approver] | Final approval for all tickets |
 
 ---
@@ -145,6 +148,6 @@ Phase 1 is **COMPLETE** when:
 
 ---
 
-**Last Updated**: 2025-02-21  
-**Phase**: 1 of 3  
+**Last Updated**: 2025-02-21
+**Phase**: 1 of 3
 **Next**: Phase 2 (OAuth Preload + SVG Wrapper)

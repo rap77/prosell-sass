@@ -92,15 +92,24 @@ describe("VerifyEmailForm Component", () => {
       render(<VerifyEmailForm token={mockToken} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/email verified successfully/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/email verified successfully/i),
+        ).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/your email has been verified/i)).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /continue to login/i })).toBeInTheDocument();
+      expect(
+        screen.getByText(/your email has been verified/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /continue to login/i }),
+      ).toBeInTheDocument();
     });
 
     it("should show error state when verification fails", async () => {
-      verifyEmailMock.mockRejectedValue({ message: "Invalid or expired token", status: 400 });
+      verifyEmailMock.mockRejectedValue({
+        message: "Invalid or expired token",
+        status: 400,
+      });
       render(<VerifyEmailForm token={mockToken} />);
 
       await waitFor(() => {
@@ -119,7 +128,9 @@ describe("VerifyEmailForm Component", () => {
 
       await waitFor(() => {
         // Check that the heading shows "Verification Link Not Found"
-        expect(screen.getByText("Verification Link Not Found")).toBeInTheDocument();
+        expect(
+          screen.getByText("Verification Link Not Found"),
+        ).toBeInTheDocument();
       });
     });
 
@@ -139,10 +150,14 @@ describe("VerifyEmailForm Component", () => {
       render(<VerifyEmailForm token={mockToken} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/email verified successfully/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/email verified successfully/i),
+        ).toBeInTheDocument();
       });
 
-      const continueButton = screen.getByRole("link", { name: /continue to login/i });
+      const continueButton = screen.getByRole("link", {
+        name: /continue to login/i,
+      });
       expect(continueButton).toHaveAttribute("href", "/auth/login");
     });
 
@@ -155,7 +170,9 @@ describe("VerifyEmailForm Component", () => {
       });
 
       // Verify there's a way to request new verification
-      expect(screen.getByRole("link", { name: /request new verification/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /request new verification/i }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -164,7 +181,9 @@ describe("VerifyEmailForm Component", () => {
       render(<VerifyEmailForm token={mockToken} />);
 
       // chadcn/ui CardTitle - search by text instead of level
-      const heading = screen.getByRole("heading", { name: /email verification/i });
+      const heading = screen.getByRole("heading", {
+        name: /email verification/i,
+      });
       expect(heading).toBeInTheDocument();
     });
 
@@ -181,7 +200,9 @@ describe("VerifyEmailForm Component", () => {
       render(<VerifyEmailForm token="" />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Missing or invalid token/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Missing or invalid token/i),
+        ).toBeInTheDocument();
       });
     });
 
@@ -189,7 +210,9 @@ describe("VerifyEmailForm Component", () => {
       render(<VerifyEmailForm token={undefined} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Missing or invalid token/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Missing or invalid token/i),
+        ).toBeInTheDocument();
       });
     });
   });

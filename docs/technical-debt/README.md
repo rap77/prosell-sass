@@ -33,6 +33,7 @@ This directory tracks technical debt items that require attention but are not bl
 OAuth code is 100% implemented but requires external OAuth app creation (Google Cloud Console + Meta Developers) to function.
 
 **Impact**:
+
 - OAuth login cannot be used without external credentials
 - Not blocking other development (email/password login works)
 - Required for production deployment
@@ -40,11 +41,13 @@ OAuth code is 100% implemented but requires external OAuth app creation (Google 
 **Documentation**: [`oauth-external-setup.md`](./oauth-external-setup.md)
 
 **What's Needed**:
+
 1. Create Google OAuth app (15 min)
 2. Create Facebook OAuth app (15 min)
 3. Configure environment variables
 
 **Next Steps**:
+
 - See `oauth-external-setup.md` for complete implementation guide
 - Can be done independently when needed
 - No code changes required
@@ -53,9 +56,9 @@ OAuth code is 100% implemented but requires external OAuth app creation (Google 
 
 ## 📊 Summary
 
-| Item | Priority | Estimate | Status | Blocking? |
-|------|----------|----------|--------|-----------|
-| OAuth External Setup | P1 | 30 min | ⏳ Pending | No |
+| Item                 | Priority | Estimate | Status     | Blocking? |
+| -------------------- | -------- | -------- | ---------- | --------- |
+| OAuth External Setup | P1       | 30 min   | ⏳ Pending | No        |
 
 **Total Time Estimate**: 30 minutes
 
@@ -64,16 +67,20 @@ OAuth code is 100% implemented but requires external OAuth app creation (Google 
 ## 🔍 How to Use This Tracker
 
 ### For Planning
+
 Review technical debt items when planning sprints to decide if any should be addressed.
 
 ### For Implementation
+
 Each debt item has a dedicated markdown file with:
+
 - Detailed steps
 - Troubleshooting guide
 - Security best practices
 - Checklist for completion
 
 ### For Tracking
+
 Mark items as resolved by updating the status in their respective documentation files.
 
 ---

@@ -17,14 +17,20 @@ describe("OAuthButtons Component", () => {
     it("should render Google and Facebook buttons", () => {
       render(<OAuthButtons />);
 
-      expect(screen.getByRole("button", { name: /continue with google/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /continue with facebook/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /continue with google/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /continue with facebook/i }),
+      ).toBeInTheDocument();
     });
 
     it("should render Google button with outline variant", () => {
       render(<OAuthButtons />);
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
+      const googleButton = screen.getByRole("button", {
+        name: /continue with google/i,
+      });
       // chadcn/ui outline variant applies different classes
       expect(googleButton).toHaveClass(/inline-flex/);
       expect(googleButton).toHaveClass(/items-center/);
@@ -33,7 +39,9 @@ describe("OAuthButtons Component", () => {
     it("should render Facebook button with default styling", () => {
       render(<OAuthButtons />);
 
-      const facebookButton = screen.getByRole("button", { name: /continue with facebook/i });
+      const facebookButton = screen.getByRole("button", {
+        name: /continue with facebook/i,
+      });
       // chadcn/ui Button uses flex classes
       expect(facebookButton).toHaveClass(/inline-flex/);
       expect(facebookButton).toHaveClass(/items-center/);
@@ -42,8 +50,12 @@ describe("OAuthButtons Component", () => {
     it("should render both buttons with icons", () => {
       render(<OAuthButtons />);
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
-      const facebookButton = screen.getByRole("button", { name: /continue with facebook/i });
+      const googleButton = screen.getByRole("button", {
+        name: /continue with google/i,
+      });
+      const facebookButton = screen.getByRole("button", {
+        name: /continue with facebook/i,
+      });
 
       expect(googleButton.querySelector("svg")).toBeInTheDocument();
       expect(facebookButton.querySelector("svg")).toBeInTheDocument();
@@ -57,7 +69,9 @@ describe("OAuthButtons Component", () => {
 
       render(<OAuthButtons onGoogleClick={onGoogleClick} />);
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
+      const googleButton = screen.getByRole("button", {
+        name: /continue with google/i,
+      });
       await user.click(googleButton);
 
       expect(onGoogleClick).toHaveBeenCalledTimes(1);
@@ -69,7 +83,9 @@ describe("OAuthButtons Component", () => {
 
       render(<OAuthButtons onFacebookClick={onFacebookClick} />);
 
-      const facebookButton = screen.getByRole("button", { name: /continue with facebook/i });
+      const facebookButton = screen.getByRole("button", {
+        name: /continue with facebook/i,
+      });
       await user.click(facebookButton);
 
       expect(onFacebookClick).toHaveBeenCalledTimes(1);
@@ -80,8 +96,12 @@ describe("OAuthButtons Component", () => {
 
       render(<OAuthButtons />);
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
-      const facebookButton = screen.getByRole("button", { name: /continue with facebook/i });
+      const googleButton = screen.getByRole("button", {
+        name: /continue with google/i,
+      });
+      const facebookButton = screen.getByRole("button", {
+        name: /continue with facebook/i,
+      });
 
       await user.click(googleButton);
       await user.click(facebookButton);
@@ -94,7 +114,9 @@ describe("OAuthButtons Component", () => {
     it("should show loading state on Google button when googleLoading is true", () => {
       render(<OAuthButtons googleLoading />);
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
+      const googleButton = screen.getByRole("button", {
+        name: /continue with google/i,
+      });
       expect(googleButton).toBeDisabled();
       expect(googleButton).toHaveAttribute("aria-busy", "true");
     });
@@ -102,7 +124,9 @@ describe("OAuthButtons Component", () => {
     it("should show loading state on Facebook button when facebookLoading is true", () => {
       render(<OAuthButtons facebookLoading />);
 
-      const facebookButton = screen.getByRole("button", { name: /continue with facebook/i });
+      const facebookButton = screen.getByRole("button", {
+        name: /continue with facebook/i,
+      });
       expect(facebookButton).toBeDisabled();
       expect(facebookButton).toHaveAttribute("aria-busy", "true");
     });
@@ -110,16 +134,24 @@ describe("OAuthButtons Component", () => {
     it("should show loading spinner on Google button when loading", () => {
       render(<OAuthButtons googleLoading />);
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
-      const spinner = googleButton.querySelector('[data-present="loader-icon"]');
+      const googleButton = screen.getByRole("button", {
+        name: /continue with google/i,
+      });
+      const spinner = googleButton.querySelector(
+        '[data-present="loader-icon"]',
+      );
       expect(spinner).toBeInTheDocument();
     });
 
     it("should show loading spinner on Facebook button when loading", () => {
       render(<OAuthButtons facebookLoading />);
 
-      const facebookButton = screen.getByRole("button", { name: /continue with facebook/i });
-      const spinner = facebookButton.querySelector('[data-present="loader-icon"]');
+      const facebookButton = screen.getByRole("button", {
+        name: /continue with facebook/i,
+      });
+      const spinner = facebookButton.querySelector(
+        '[data-present="loader-icon"]',
+      );
       expect(spinner).toBeInTheDocument();
     });
 
@@ -129,7 +161,9 @@ describe("OAuthButtons Component", () => {
 
       render(<OAuthButtons onGoogleClick={onGoogleClick} googleLoading />);
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
+      const googleButton = screen.getByRole("button", {
+        name: /continue with google/i,
+      });
       await user.click(googleButton);
 
       expect(onGoogleClick).not.toHaveBeenCalled();
@@ -139,9 +173,13 @@ describe("OAuthButtons Component", () => {
       const user = userEvent.setup();
       const onFacebookClick = vi.fn();
 
-      render(<OAuthButtons onFacebookClick={onFacebookClick} facebookLoading />);
+      render(
+        <OAuthButtons onFacebookClick={onFacebookClick} facebookLoading />,
+      );
 
-      const facebookButton = screen.getByRole("button", { name: /continue with facebook/i });
+      const facebookButton = screen.getByRole("button", {
+        name: /continue with facebook/i,
+      });
       await user.click(facebookButton);
 
       expect(onFacebookClick).not.toHaveBeenCalled();
@@ -152,8 +190,12 @@ describe("OAuthButtons Component", () => {
     it("should disable both buttons when disabled prop is true", () => {
       render(<OAuthButtons disabled />);
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
-      const facebookButton = screen.getByRole("button", { name: /continue with facebook/i });
+      const googleButton = screen.getByRole("button", {
+        name: /continue with google/i,
+      });
+      const facebookButton = screen.getByRole("button", {
+        name: /continue with facebook/i,
+      });
 
       expect(googleButton).toBeDisabled();
       expect(facebookButton).toBeDisabled();
@@ -169,11 +211,15 @@ describe("OAuthButtons Component", () => {
           onGoogleClick={onGoogleClick}
           onFacebookClick={onFacebookClick}
           disabled
-        />
+        />,
       );
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
-      const facebookButton = screen.getByRole("button", { name: /continue with facebook/i });
+      const googleButton = screen.getByRole("button", {
+        name: /continue with google/i,
+      });
+      const facebookButton = screen.getByRole("button", {
+        name: /continue with facebook/i,
+      });
 
       await user.click(googleButton);
       await user.click(facebookButton);
@@ -187,21 +233,27 @@ describe("OAuthButtons Component", () => {
     it("should have accessible name on Google button from visible text", () => {
       render(<OAuthButtons />);
 
-      const googleButton = screen.getByRole("button", { name: "Continue with Google" });
+      const googleButton = screen.getByRole("button", {
+        name: "Continue with Google",
+      });
       expect(googleButton).toBeInTheDocument();
     });
 
     it("should have accessible name on Facebook button from visible text", () => {
       render(<OAuthButtons />);
 
-      const facebookButton = screen.getByRole("button", { name: "Continue with Facebook" });
+      const facebookButton = screen.getByRole("button", {
+        name: "Continue with Facebook",
+      });
       expect(facebookButton).toBeInTheDocument();
     });
 
     it("should announce loading state to screen readers", () => {
       render(<OAuthButtons googleLoading />);
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
+      const googleButton = screen.getByRole("button", {
+        name: /continue with google/i,
+      });
       expect(googleButton).toHaveAttribute("aria-busy", "true");
     });
 
@@ -211,7 +263,9 @@ describe("OAuthButtons Component", () => {
 
       render(<OAuthButtons onGoogleClick={onGoogleClick} />);
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
+      const googleButton = screen.getByRole("button", {
+        name: /continue with google/i,
+      });
 
       googleButton.focus();
       expect(googleButton).toHaveFocus();
@@ -226,14 +280,18 @@ describe("OAuthButtons Component", () => {
     it("should stack buttons vertically by default", () => {
       const { container } = render(<OAuthButtons />);
 
-      const wrapper = container.querySelector('[data-testid="oauth-buttons-wrapper"]');
+      const wrapper = container.querySelector(
+        '[data-testid="oauth-buttons-wrapper"]',
+      );
       expect(wrapper).toHaveClass(/flex-col/);
     });
 
     it("should have gap between buttons", () => {
       const { container } = render(<OAuthButtons />);
 
-      const wrapper = container.querySelector('[data-testid="oauth-buttons-wrapper"]');
+      const wrapper = container.querySelector(
+        '[data-testid="oauth-buttons-wrapper"]',
+      );
       expect(wrapper).toHaveClass(/gap-3/);
     });
 
@@ -254,7 +312,9 @@ describe("OAuthButtons Component", () => {
 
       render(<OAuthButtons onGoogleClick={onGoogleClick} />);
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
+      const googleButton = screen.getByRole("button", {
+        name: /continue with google/i,
+      });
 
       await user.click(googleButton);
       await user.click(googleButton);
@@ -266,8 +326,12 @@ describe("OAuthButtons Component", () => {
     it("should handle both buttons loading simultaneously", () => {
       render(<OAuthButtons googleLoading facebookLoading />);
 
-      const googleButton = screen.getByRole("button", { name: /continue with google/i });
-      const facebookButton = screen.getByRole("button", { name: /continue with facebook/i });
+      const googleButton = screen.getByRole("button", {
+        name: /continue with google/i,
+      });
+      const facebookButton = screen.getByRole("button", {
+        name: /continue with facebook/i,
+      });
 
       expect(googleButton).toBeDisabled();
       expect(facebookButton).toBeDisabled();
@@ -279,9 +343,13 @@ describe("OAuthButtons Component", () => {
       const user = userEvent.setup();
       const onMouseEnter = vi.fn();
 
-      const { container } = render(<OAuthButtons onMouseEnter={onMouseEnter} />);
+      const { container } = render(
+        <OAuthButtons onMouseEnter={onMouseEnter} />,
+      );
 
-      const wrapper = container.querySelector('[data-testid="oauth-buttons-wrapper"]');
+      const wrapper = container.querySelector(
+        '[data-testid="oauth-buttons-wrapper"]',
+      );
       await user.hover(wrapper!);
 
       expect(onMouseEnter).toHaveBeenCalledTimes(1);
@@ -292,7 +360,9 @@ describe("OAuthButtons Component", () => {
 
       const { container } = render(<OAuthButtons />);
 
-      const wrapper = container.querySelector('[data-testid="oauth-buttons-wrapper"]');
+      const wrapper = container.querySelector(
+        '[data-testid="oauth-buttons-wrapper"]',
+      );
       expect(() => user.hover(wrapper!)).not.toThrow();
     });
 
@@ -300,9 +370,13 @@ describe("OAuthButtons Component", () => {
       const user = userEvent.setup();
       const onMouseEnter = vi.fn();
 
-      const { container } = render(<OAuthButtons onMouseEnter={onMouseEnter} />);
+      const { container } = render(
+        <OAuthButtons onMouseEnter={onMouseEnter} />,
+      );
 
-      const wrapper = container.querySelector('[data-testid="oauth-buttons-wrapper"]');
+      const wrapper = container.querySelector(
+        '[data-testid="oauth-buttons-wrapper"]',
+      );
 
       await user.hover(wrapper!);
       await user.unhover(wrapper!);

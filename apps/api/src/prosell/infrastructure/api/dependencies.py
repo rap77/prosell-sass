@@ -174,4 +174,10 @@ async def get_verify_2fa_use_case(
     """Get Verify2FA use case instance."""
     from prosell.application.use_cases.auth.verify_2fa import Verify2FAUseCase
 
-    return Verify2FAUseCase(user_repository, session_repository, totp_service, jwt_service, token_hasher)
+    return Verify2FAUseCase(
+        user_repository,
+        session_repository,
+        totp_service,
+        jwt_service,
+        token_hasher,
+    )

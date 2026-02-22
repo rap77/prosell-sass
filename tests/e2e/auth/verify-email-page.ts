@@ -17,8 +17,12 @@ export class VerifyEmailPage extends BasePage {
     super(page);
 
     // Buttons - verification is automatic, page has continue and/or resend buttons
-    this.continueButton = page.getByRole("button", { name: /continue|sign in/i });
-    this.resendButton = page.getByRole("button", { name: /resend|send again/i });
+    this.continueButton = page.getByRole("button", {
+      name: /continue|sign in/i,
+    });
+    this.resendButton = page.getByRole("button", {
+      name: /resend|send again/i,
+    });
 
     // Links
     this.signInLink = page.getByRole("link", { name: /sign in/i });
@@ -31,7 +35,9 @@ export class VerifyEmailPage extends BasePage {
    * Navigate to verify email page with token
    */
   async goto(token?: string): Promise<void> {
-    const url = token ? `/auth/verify-email?token=${token}` : "/auth/verify-email";
+    const url = token
+      ? `/auth/verify-email?token=${token}`
+      : "/auth/verify-email";
     await super.goto(url);
   }
 
@@ -53,7 +59,9 @@ export class VerifyEmailPage extends BasePage {
    * Verify success message is displayed
    */
   async verifySuccessMessage(): Promise<void> {
-    const successMessage = this.page.getByText(/email verified|verification successful/i);
+    const successMessage = this.page.getByText(
+      /email verified|verification successful/i,
+    );
     await expect(successMessage).toBeVisible();
   }
 

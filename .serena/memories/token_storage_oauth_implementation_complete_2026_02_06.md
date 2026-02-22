@@ -1,14 +1,17 @@
 # Token Storage and OAuth Implementation Complete - 2026-02-06
 
 ## Summary
+
 All TODOs in user_repository_impl.py have been implemented. Token storage and OAuth functionality are now fully operational.
 
 ## What Was Implemented
 
 ### 1. Token Storage Methods ✅
+
 **File**: `user_repository_impl.py`
 
 #### `get_by_verification_token()`
+
 - Queries `user_tokens` table
 - Filters by token type `email_verification`
 - Validates token is not used (`used_at IS NULL`)
@@ -16,12 +19,14 @@ All TODOs in user_repository_impl.py have been implemented. Token storage and OA
 - Returns user entity if valid
 
 #### `get_by_password_reset_token()`
+
 - Queries `user_tokens` table
 - Filters by token type `password_reset`
 - Validates token is not used and not expired
 - Returns user entity if valid
 
 #### `get_by_oauth()`
+
 - Queries `oauth_accounts` table
 - Filters by provider and provider_user_id
 - Returns linked user entity
@@ -29,18 +34,22 @@ All TODOs in user_repository_impl.py have been implemented. Token storage and OA
 ### 2. Token Management Methods ✅
 
 #### `create_verification_token()`
+
 - Creates token record in `user_tokens` table
 - Supports custom expiration time
 - Token types: `email_verification`, `password_reset`
 
 #### `consume_token()`
+
 - Marks token as used by setting `used_at`
 - Returns True if token was found and consumed
 
 ### 3. OAuth Repository ✅
 
 #### New Protocol (Domain)
+
 **File**: `domain/repositories/oauth_repository.py`
+
 ```python
 class AbstractOAuthRepository(Protocol):
     async def link_oauth_account(...)
@@ -49,15 +58,19 @@ class AbstractOAuthRepository(Protocol):
 ```
 
 #### New Implementation (Infrastructure)
+
 **File**: `infrastructure/repositories/oauth_repository_impl.py`
+
 - `SqlAlchemyOAuthRepository` created
 - Link/unlink OAuth accounts
 - List user's OAuth providers
 
 ### 4. OAuth Login Use Case Enhanced ✅
+
 **File**: `application/use_cases/auth/oauth_login.py`
 
 New flow:
+
 1. Check if user exists via OAuth (provider + provider_user_id)
 2. If exists → update login time
 3. If not:
@@ -66,15 +79,18 @@ New flow:
 4. Generate JWT tokens
 
 ### 5. Dependency Injection Updated ✅
+
 **File**: `infrastructure/api/dependencies.py`
 
 Added:
+
 - `get_oauth_repository()` factory
 - Updated `get_oauth_login_use_case()` to inject oauth_repository
 
 ## Database Schema Used
 
 ### `user_tokens` table
+
 ```sql
 id (UUID)
 user_id (UUID, indexed)
@@ -86,6 +102,7 @@ used_at (TIMESTAMPTZ, nullable)
 ```
 
 ### `oauth_accounts` table
+
 ```sql
 id (UUID)
 user_id (UUID, foreign key → users.id)
@@ -102,10 +119,12 @@ updated_at (TIMESTAMPTZ)
 ## Files Created/Modified
 
 ### Created
+
 1. `domain/repositories/oauth_repository.py` - Protocol
 2. `infrastructure/repositories/oauth_repository_impl.py` - Implementation
 
 ### Modified
+
 1. `domain/repositories/user_repository.py` - Added token management methods
 2. `infrastructure/repositories/user_repository_impl.py` - Implemented all TODOs
 3. `infrastructure/repositories/__init__.py` - Exported OAuth repository
@@ -115,6 +134,7 @@ updated_at (TIMESTAMPTZ)
 ## Usage Examples
 
 ### Email Verification
+
 ```python
 # Create token
 await user_repository.create_verification_token(
@@ -133,6 +153,7 @@ if user:
 ```
 
 ### Password Reset
+
 ```python
 # Create reset token
 await user_repository.create_verification_token(
@@ -150,6 +171,7 @@ if user:
 ```
 
 ### OAuth Link/Unlink
+
 ```python
 # Link OAuth account
 await oauth_repository.link_oauth_account(
@@ -188,6 +210,7 @@ The implementation is ready for testing. Key test scenarios:
 ## Cleanup Opportunities
 
 The following imports can be cleaned up (local imports):
+
 - `UserTokenModel` imported in methods
 - `OAuthAccountModel` imported in methods
 - `datetime, timezone` imported in methods

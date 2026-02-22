@@ -4,7 +4,7 @@
  * This component contains all the visual elements of the 2FA setup page.
  * The async server page (page.tsx) handles auth redirect and renders this.
  */
-'use client';
+"use client";
 
 import Link from "next/link";
 import { Suspense } from "react";
@@ -13,18 +13,23 @@ import { TwoFactorSetupSkeleton } from "@/components/auth/dynamic/TwoFactorSetup
 
 // Dynamically load the TwoFactorSetupForm component
 const TwoFactorSetupForm = dynamic(
-  () => import("@/components/auth/dynamic/TwoFactorSetupForm").then((mod) => mod.TwoFactorSetupForm),
+  () =>
+    import("@/components/auth/dynamic/TwoFactorSetupForm").then(
+      (mod) => mod.TwoFactorSetupForm,
+    ),
   {
     ssr: false,
-    loading: () => <TwoFactorSetupSkeleton />
-  }
+    loading: () => <TwoFactorSetupSkeleton />,
+  },
 );
 
 interface Setup2FAPageContentProps {
   is2FAEnabled?: boolean;
 }
 
-export function Setup2FAPageContent({ is2FAEnabled = false }: Setup2FAPageContentProps) {
+export function Setup2FAPageContent({
+  is2FAEnabled = false,
+}: Setup2FAPageContentProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md">

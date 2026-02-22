@@ -53,9 +53,9 @@ const MOCK_PASSWORD = process.env.TEST_USER_PASSWORD || "TestPassword123!";
 // ROUTE HANDLER
 // ============================================
 
-export async function POST(request: Request): Promise<
-  NextResponse<LoginResponse | ErrorResponse>
-> {
+export async function POST(
+  request: Request,
+): Promise<NextResponse<LoginResponse | ErrorResponse>> {
   try {
     const body: LoginRequest = await request.json();
 
@@ -63,7 +63,7 @@ export async function POST(request: Request): Promise<
     if (!body.email || !body.password) {
       return NextResponse.json(
         { detail: "Email and password are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -85,13 +85,13 @@ export async function POST(request: Request): Promise<
     if (!isValidEmail || !isValidPassword || isShortPassword) {
       return NextResponse.json(
         { detail: "Invalid credentials" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     // Artificial delay to simulate network latency for E2E tests
     // This allows the UI to show loading states
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Create mock tokens (in real backend, these would be JWT)
     const mockAccessToken = `mock_access_token_${Date.now()}`;
@@ -133,7 +133,7 @@ export async function POST(request: Request): Promise<
     logger.error("Mock login error", error);
     return NextResponse.json(
       { detail: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

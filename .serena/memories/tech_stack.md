@@ -1,6 +1,7 @@
 # Tech Stack 2026 - ProSell SaaS
 
 ## Backend (Python 3.13+)
+
 - **Framework**: FastAPI 0.115+
 - **Validation**: Pydantic 2.12+
 - **ORM**: SQLAlchemy 2.0.36+ (async) with `Mapped`, `mapped_column`, `select()`
@@ -10,6 +11,7 @@
 - **Testing**: pytest, pytest-asyncio
 
 ## Frontend (Next.js 16 + React 19)
+
 - **Framework**: Next.js 16.1+ (Turbopack)
 - **UI**: React 19.2 (Server Components by default)
 - **Language**: TypeScript 5.5+ (strict mode)
@@ -20,6 +22,7 @@
 - **Testing**: Vitest, Testing Library
 
 ## Infrastructure
+
 - **Monorepo**: Turborepo
 - **Containers**: Docker, docker-compose
 - **CI/CD**: GitHub Actions

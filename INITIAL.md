@@ -22,6 +22,7 @@ Implement a complete authentication and authorization system for ProSell SaaS, i
 **So that** I can access the platform
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Successful registration with valid email
   GIVEN an unregistered user
@@ -57,6 +58,7 @@ Scenario: Invalid email format
 ```
 
 **Negative Scenarios**:
+
 - Email with + alias (test+alias@gmail.com) → treat as unique
 - Temporary domain (tempmail.com) → block with warning
 - IP with multiple registrations → rate limit 3/hour
@@ -71,6 +73,7 @@ Scenario: Invalid email format
 **So that** I can access my account
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Successful login
   GIVEN a verified user
@@ -109,6 +112,7 @@ Scenario: "Remember me" enabled
 ```
 
 **Password Recovery Flow**:
+
 ```gherkin
 Scenario: Successful password recovery
   GIVEN user forgot their password
@@ -130,6 +134,7 @@ Scenario: Successful password recovery
 **So that** I can access the platform quickly
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: First time Google login
   GIVEN user without account in ProSell
@@ -158,6 +163,7 @@ Scenario: Account linking
 ```
 
 **Google Data Mapping**:
+
 ```
 Google Profile → ProSell User
   email         → email (VERIFIED)
@@ -175,6 +181,7 @@ Google Profile → ProSell User
 **So that** my account is more secure
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Initial 2FA setup
   GIVEN user with ADMIN/MANAGER role
@@ -228,6 +235,7 @@ Scenario: Using backup code
 **So that** users can only access what they're allowed
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Permission verification on endpoint
   GIVEN user with ORG_ADMIN role
@@ -376,17 +384,17 @@ PUBLIC
 └── CLIENT (Buyer)
 ```
 
-| Action | Master | Manager | Seller PS | Org Admin | Org Seller | Client |
-|--------|--------|---------|-----------|-----------|------------|--------|
-| Create organization | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Approve products | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| View all products | ✅ | ✅* | ✅ | ❌ | ❌ | 🌐 |
-| Create product | ✅ | ❌ | ❌ | ✅** | ❌ | ❌ |
-| Create appointment | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Register sale | ✅ | ✅* | ❌ | ✅** | ❌ | ❌ |
-| View own commissions | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Edit % commissions | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Manage teams | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Action               | Master | Manager | Seller PS | Org Admin | Org Seller | Client |
+| -------------------- | ------ | ------- | --------- | --------- | ---------- | ------ |
+| Create organization  | ✅     | ❌      | ❌        | ❌        | ❌         | ❌     |
+| Approve products     | ✅     | ❌      | ❌        | ❌        | ❌         | ❌     |
+| View all products    | ✅     | ✅\*    | ✅        | ❌        | ❌         | 🌐     |
+| Create product       | ✅     | ❌      | ❌        | ✅\*\*    | ❌         | ❌     |
+| Create appointment   | ✅     | ✅      | ✅        | ✅        | ✅         | ❌     |
+| Register sale        | ✅     | ✅\*    | ❌        | ✅\*\*    | ❌         | ❌     |
+| View own commissions | ✅     | ✅      | ✅        | ✅        | ✅         | ❌     |
+| Edit % commissions   | ✅     | ❌      | ❌        | ❌        | ❌         | ❌     |
+| Manage teams         | ✅     | ✅      | ❌        | ❌        | ❌         | ❌     |
 
 \*Only assigned orgs | \*\*Only their org | 🌐Public only
 
@@ -674,6 +682,7 @@ apps/web/src/stores/
 ## 6. Success Criteria
 
 ### 6.1 Functional
+
 - [ ] User can register and receive verification email
 - [ ] User can verify email and login
 - [ ] Login works with email/password and OAuth
@@ -684,6 +693,7 @@ apps/web/src/stores/
 - [ ] RBAC prevents unauthorized access
 
 ### 6.2 Non-Functional
+
 - [ ] All endpoints respond < 200ms (p95)
 - [ ] Password hashing uses bcrypt (cost factor 12)
 - [ ] JWT tokens signed with RS256
@@ -692,12 +702,14 @@ apps/web/src/stores/
 - [ ] All sensitive data encrypted at rest
 
 ### 6.3 Testing
+
 - [ ] Unit test coverage > 80%
 - [ ] All critical paths have E2E tests
 - [ ] Security tests for auth endpoints
 - [ ] Load tests handle 1000 concurrent users
 
 ### 6.4 Documentation
+
 - [ ] API documentation (OpenAPI/Swagger)
 - [ ] Component documentation (Storybook)
 - [ ] Auth flow diagrams
@@ -708,6 +720,7 @@ apps/web/src/stores/
 ## 7. Dependencies & Constraints
 
 ### 7.1 Technical Constraints
+
 - **Python 3.13+** with free-threading enabled
 - **FastAPI 0.115+** for API framework
 - **SQLAlchemy 2.0.36+** with async support
@@ -717,12 +730,14 @@ apps/web/src/stores/
 - **TailwindCSS 4** for styling
 
 ### 7.2 External Dependencies
+
 - **SendGrid** for transactional emails
 - **Google OAuth 2.0** for social login
 - **Facebook Login** for social login
 - **reCAPTCHA v3** for bot protection
 
 ### 7.3 Security Requirements
+
 - All passwords hashed with bcrypt (cost 12)
 - JWT signed with RS256 (asymmetric keys)
 - HTTPS only in production
@@ -735,6 +750,7 @@ apps/web/src/stores/
 ## 8. References
 
 ### 8.1 Internal Documentation
+
 - Architecture: `docs/01_ARQUITECTURA_PROSELL_SAAS_V2.md`
 - Full PRD: `docs/02_REQUISITOS_PRD_PROSELL_SAAS_V2.md`
 - Data Model: `docs/03_MODELO_DATOS_PROSELL_SAAS_V2.md`
@@ -743,6 +759,7 @@ apps/web/src/stores/
 - Stack 2026: `docs/06_PROMPT_CLAUDE_CODE_2026_v2.md`
 
 ### 8.2 External Resources
+
 - FastAPI Security: https://fastapi.tiangolo.com/tutorial/security/
 - OAuth 2.0: https://datatracker.ietf.org/doc/html/rfc6749
 - TOTP: https://datatracker.ietf.org/doc/html/rfc6238

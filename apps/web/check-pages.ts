@@ -30,12 +30,21 @@ console.log("🔍 Checking if server is running...");
  */
 function checkPage(path: string): Promise<PageCheck> {
   return new Promise((resolve) => {
-    http.get(`${BASE_URL}${path}`, (res) => {
-      resolve({ path, success: res.statusCode === 200, status: res.statusCode });
-    }).on("error", (error) => {
-      console.error(`Error checking ${path}:`, error instanceof Error ? error.message : error);
-      resolve({ path, success: false });
-    });
+    http
+      .get(`${BASE_URL}${path}`, (res) => {
+        resolve({
+          path,
+          success: res.statusCode === 200,
+          status: res.statusCode,
+        });
+      })
+      .on("error", (error) => {
+        console.error(
+          `Error checking ${path}:`,
+          error instanceof Error ? error.message : error,
+        );
+        resolve({ path, success: false });
+      });
   });
 }
 
@@ -66,7 +75,9 @@ async function checkPages(): Promise<void> {
     pages.forEach((p) => console.log(`   - ${BASE_URL}${p}`));
     process.exit(0);
   } else {
-    console.log(`\n⚠️  Error: Server does not seem to be running on ${BASE_URL}`);
+    console.log(
+      `\n⚠️  Error: Server does not seem to be running on ${BASE_URL}`,
+    );
     process.exit(1);
   }
 }

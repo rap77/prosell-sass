@@ -17,6 +17,7 @@ Implement complete OAuth flow for Google and Facebook providers, following the P
 ## Tasks
 
 ### 5.1 - OAuth Domain Entities
+
 - **Files**:
   - `apps/api/src/prosell/domain/entities/oauth.py` - `OAuthConnection`, `OAuthState`
   - Verify/extend `apps/api/src/prosell/domain/repositories/oauth_repository.py`
@@ -29,6 +30,7 @@ Implement complete OAuth flow for Google and Facebook providers, following the P
   ```
 
 ### 5.2 - OAuth State Manager Service
+
 - **File**: `apps/api/src/prosell/infrastructure/services/oauth/state_manager.py`
 - Implement `generate_state()` with Redis storage (CSRF protection)
 - Implement `verify_state()` with expiration check
@@ -36,6 +38,7 @@ Implement complete OAuth flow for Google and Facebook providers, following the P
 - **Test File**: `apps/api/tests/unit/services/test_oauth_state_manager.py` (~10 tests)
 
 ### 5.3 - Google OAuth Service
+
 - **File**: `apps/api/src/prosell/infrastructure/services/oauth/google_service.py`
 - `get_authorization_url()` - Build Google OAuth URL
 - `exchange_code_for_token()` - Exchange auth code for access token (httpx)
@@ -43,11 +46,13 @@ Implement complete OAuth flow for Google and Facebook providers, following the P
 - **Test File**: `apps/api/tests/unit/services/test_google_oauth.py` (~15 tests, mocked httpx)
 
 ### 5.4 - Facebook OAuth Service
+
 - **File**: `apps/api/src/prosell/infrastructure/services/oauth/facebook_service.py`
 - Same pattern as Google service
 - **Test File**: `apps/api/tests/unit/services/test_facebook_oauth.py` (~15 tests, mocked httpx)
 
 ### 5.5 - OAuth SQLAlchemy Model & Migration
+
 - Verify existing `oauth_account_model.py` matches PRP spec
 - Create Alembic migration if schema changes needed
 - Implement `SqlAlchemyOAuthConnectionRepository` (verify/extend existing)
@@ -55,6 +60,7 @@ Implement complete OAuth flow for Google and Facebook providers, following the P
 - **Test File**: `apps/api/tests/integration/repositories/test_oauth_repository.py` (~8 tests)
 
 ### 5.6 - OAuth Use Cases
+
 - **Files**:
   - `apps/api/src/prosell/application/use_cases/oauth/get_oauth_url.py`
   - `apps/api/src/prosell/application/use_cases/oauth/oauth_callback.py`
@@ -73,6 +79,7 @@ Implement complete OAuth flow for Google and Facebook providers, following the P
   - `apps/api/tests/unit/use_cases/test_link_oauth.py` (~5 tests)
 
 ### 5.7 - OAuth API Router
+
 - **File**: `apps/api/src/prosell/infrastructure/api/routers/oauth_router.py`
 - **Endpoints**:
   - `GET /api/auth/oauth/google/url` - Get authorization URL
@@ -85,6 +92,7 @@ Implement complete OAuth flow for Google and Facebook providers, following the P
 - **Test File**: `apps/api/tests/integration/api/test_oauth_endpoints.py` (~10 tests)
 
 ### 5.8 - OAuth Environment Configuration
+
 - Add OAuth env vars to `.env.example`, `.env.staging.example`, `.env.production.example`
 - Update `core/config.py` if needed for new OAuth settings
 - Environment variables needed:

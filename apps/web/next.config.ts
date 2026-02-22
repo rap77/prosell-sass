@@ -10,8 +10,8 @@ const nextConfig: NextConfig = {
   // See: https://vercel.com/blog/how-we-optimized-package-imports-in-next-js
   experimental: {
     optimizePackageImports: [
-      'lucide-react', // Icon library used in chadcn/ui components
-      '@/components/icons', // Local icon components with barrel file
+      "lucide-react", // Icon library used in chadcn/ui components
+      "@/components/icons", // Local icon components with barrel file
     ],
   },
 };

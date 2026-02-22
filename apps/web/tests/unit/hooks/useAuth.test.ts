@@ -17,7 +17,10 @@ vi.mock("@/lib/api/authApi", () => ({
     me: vi.fn(),
   },
   ApiError: class MockApiError extends Error {
-    constructor(message: string, public status: number) {
+    constructor(
+      message: string,
+      public status: number,
+    ) {
       super(message);
       this.name = "ApiError";
     }
@@ -42,7 +45,7 @@ const createTestAuthStore = () =>
       try {
         const response = await authApi.login(
           credentials.email,
-          credentials.password
+          credentials.password,
         );
 
         set({
@@ -81,7 +84,7 @@ const createTestAuthStore = () =>
           data.email,
           data.password,
           data.first_name,
-          data.last_name
+          data.last_name,
         );
 
         set({
@@ -237,7 +240,9 @@ describe("useAuth Hook - Authentication Helpers", () => {
       },
     });
 
-    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
+    await useAuthStore
+      .getState()
+      .login({ email: "test@example.com", password: "password123" });
 
     const state = useAuthStore.getState();
     expect(state.isAuthenticated).toBe(true);
@@ -265,7 +270,9 @@ describe("useAuth Hook - Authentication Helpers", () => {
     vi.mocked(authApi.logout).mockResolvedValue(undefined);
 
     // First login
-    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
+    await useAuthStore
+      .getState()
+      .login({ email: "test@example.com", password: "password123" });
 
     expect(useAuthStore.getState().isAuthenticated).toBe(true);
 
@@ -308,10 +315,12 @@ describe("useAuth Hook - Authentication Helpers", () => {
   it("should expose error state", async () => {
     // Mock authApi.login error
     vi.mocked(authApi.login).mockRejectedValue(
-      new ApiError("Credenciales inválidas", 401)
+      new ApiError("Credenciales inválidas", 401),
     );
 
-    await useAuthStore.getState().login({ email: "wrong@example.com", password: "wrong" });
+    await useAuthStore
+      .getState()
+      .login({ email: "wrong@example.com", password: "wrong" });
 
     const state = useAuthStore.getState();
     expect(state.error).not.toBeNull();
@@ -338,11 +347,13 @@ describe("useAuth Hook - Authentication Helpers", () => {
               },
             });
           }, 100);
-        })
+        }),
     );
 
     // Start login (don't await)
-    const loginPromise = useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
+    const loginPromise = useAuthStore
+      .getState()
+      .login({ email: "test@example.com", password: "password123" });
 
     // Check loading state immediately
     expect(useAuthStore.getState().isLoading).toBe(true);
@@ -354,11 +365,13 @@ describe("useAuth Hook - Authentication Helpers", () => {
   it("should provide clear error action", async () => {
     // Mock authApi.login error
     vi.mocked(authApi.login).mockRejectedValue(
-      new ApiError("Credenciales inválidas", 401)
+      new ApiError("Credenciales inválidas", 401),
     );
 
     // Trigger error
-    await useAuthStore.getState().login({ email: "wrong@example.com", password: "wrong" });
+    await useAuthStore
+      .getState()
+      .login({ email: "wrong@example.com", password: "wrong" });
 
     expect(useAuthStore.getState().error).not.toBeNull();
 
@@ -384,7 +397,9 @@ describe("useAuth Hook - Authentication Helpers", () => {
       },
     });
 
-    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
+    await useAuthStore
+      .getState()
+      .login({ email: "test@example.com", password: "password123" });
 
     const originalName = useAuthStore.getState().user?.first_name;
 
@@ -424,7 +439,9 @@ describe("useAuth Hook - Convenience Getters", () => {
       },
     });
 
-    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
+    await useAuthStore
+      .getState()
+      .login({ email: "test@example.com", password: "password123" });
 
     const state = useAuthStore.getState();
     expect(state.user?.id).toBe("1");
@@ -446,7 +463,9 @@ describe("useAuth Hook - Convenience Getters", () => {
       },
     });
 
-    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
+    await useAuthStore
+      .getState()
+      .login({ email: "test@example.com", password: "password123" });
 
     const state = useAuthStore.getState();
     expect(state.user?.email).toBe("test@example.com");
@@ -468,10 +487,13 @@ describe("useAuth Hook - Convenience Getters", () => {
       },
     });
 
-    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
+    await useAuthStore
+      .getState()
+      .login({ email: "test@example.com", password: "password123" });
 
     const state = useAuthStore.getState();
-    const fullName = `${state.user?.first_name} ${state.user?.last_name}`.trim();
+    const fullName =
+      `${state.user?.first_name} ${state.user?.last_name}`.trim();
     expect(fullName).toBe("Test User");
   });
 
@@ -491,9 +513,13 @@ describe("useAuth Hook - Convenience Getters", () => {
       },
     });
 
-    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
+    await useAuthStore
+      .getState()
+      .login({ email: "test@example.com", password: "password123" });
 
-    const state = useAuthStore.getState() as { user?: { role?: string } | null };
+    const state = useAuthStore.getState() as {
+      user?: { role?: string } | null;
+    };
     expect(state.user?.role).toBe("sales_agent");
   });
 
@@ -514,7 +540,9 @@ describe("useAuth Hook - Convenience Getters", () => {
       },
     });
 
-    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
+    await useAuthStore
+      .getState()
+      .login({ email: "test@example.com", password: "password123" });
 
     const state = useAuthStore.getState() as {
       user?: { is_email_verified?: boolean } | null;
@@ -540,9 +568,13 @@ describe("useAuth Hook - Convenience Getters", () => {
       },
     });
 
-    await useAuthStore.getState().login({ email: "test@example.com", password: "password123" });
+    await useAuthStore
+      .getState()
+      .login({ email: "test@example.com", password: "password123" });
 
-    const state = useAuthStore.getState() as { user?: { is_2fa_enabled?: boolean } | null };
+    const state = useAuthStore.getState() as {
+      user?: { is_2fa_enabled?: boolean } | null;
+    };
     expect(state.user?.is_2fa_enabled).toBe(false);
   });
 });

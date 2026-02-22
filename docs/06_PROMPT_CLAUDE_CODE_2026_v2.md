@@ -91,20 +91,22 @@ Eres el desarrollador principal del proyecto ProSell SaaS. Necesito que me ayude
 ### Clean Architecture (Capas bien definidas)
 
 ```
+
 ┌─────────────────────────────────────────────────────────────┐
-│                    INFRASTRUCTURE                            │
-│  (FastAPI, SQLAlchemy, Redis, External APIs, UI)            │
+│ INFRASTRUCTURE │
+│ (FastAPI, SQLAlchemy, Redis, External APIs, UI) │
 ├─────────────────────────────────────────────────────────────┤
-│                 INTERFACE ADAPTERS                           │
-│  (Controllers, Presenters, Gateways, Repositories Impl)     │
+│ INTERFACE ADAPTERS │
+│ (Controllers, Presenters, Gateways, Repositories Impl) │
 ├─────────────────────────────────────────────────────────────┤
-│                 APPLICATION LAYER                            │
-│  (Use Cases, DTOs, Application Services, Ports)             │
+│ APPLICATION LAYER │
+│ (Use Cases, DTOs, Application Services, Ports) │
 ├─────────────────────────────────────────────────────────────┤
-│                    DOMAIN LAYER                              │
-│  (Entities, Value Objects, Domain Services, Events)         │
-│  ⚠️ CERO dependencias externas - Solo Python puro           │
+│ DOMAIN LAYER │
+│ (Entities, Value Objects, Domain Services, Events) │
+│ ⚠️ CERO dependencias externas - Solo Python puro │
 └─────────────────────────────────────────────────────────────┘
+
 ```
 
 **Regla de Dependencia**: Las dependencias SOLO apuntan hacia adentro (Domain).
@@ -116,325 +118,327 @@ Eres el desarrollador principal del proyecto ProSell SaaS. Necesito que me ayude
 ## 📁 ESTRUCTURA MONOREPO
 
 ```
+
 prosell-sass/
 │
-├── 📦 apps/                          # Aplicaciones desplegables
-│   │
-│   ├── 🐍 api/                       # Backend FastAPI
-│   │   ├── src/
-│   │   │   └── prosell/
-│   │   │       │
-│   │   │       ├── domain/           # 🔴 CAPA DOMINIO (sin dependencias)
-│   │   │       │   ├── __init__.py
-│   │   │       │   ├── entities/     # Entidades de negocio
-│   │   │       │   │   ├── __init__.py
-│   │   │       │   │   ├── user.py
-│   │   │       │   │   ├── organization.py
-│   │   │       │   │   ├── product.py
-│   │   │       │   │   ├── sale.py
-│   │   │       │   │   └── wallet.py
-│   │   │       │   ├── value_objects/ # Objetos de valor inmutables
-│   │   │       │   │   ├── __init__.py
-│   │   │       │   │   ├── email.py
-│   │   │       │   │   ├── money.py
-│   │   │       │   │   ├── phone.py
-│   │   │       │   │   └── vin.py
-│   │   │       │   ├── events/       # Eventos de dominio
-│   │   │       │   │   ├── __init__.py
-│   │   │       │   │   ├── user_events.py
-│   │   │       │   │   └── sale_events.py
-│   │   │       │   ├── exceptions/   # Excepciones de dominio
-│   │   │       │   │   ├── __init__.py
-│   │   │       │   │   └── domain_exceptions.py
-│   │   │       │   ├── services/     # Servicios de dominio
-│   │   │       │   │   ├── __init__.py
-│   │   │       │   │   └── commission_calculator.py
-│   │   │       │   └── repositories/ # 🔌 INTERFACES (Ports)
-│   │   │       │       ├── __init__.py
-│   │   │       │       ├── user_repository.py      # Abstract
-│   │   │       │       ├── product_repository.py   # Abstract
-│   │   │       │       └── sale_repository.py      # Abstract
-│   │   │       │
-│   │   │       ├── application/      # 🟡 CAPA APLICACIÓN
-│   │   │       │   ├── __init__.py
-│   │   │       │   ├── use_cases/    # Casos de uso (1 clase = 1 acción)
-│   │   │       │   │   ├── __init__.py
-│   │   │       │   │   ├── users/
-│   │   │       │   │   │   ├── __init__.py
-│   │   │       │   │   │   ├── create_user.py
-│   │   │       │   │   │   ├── authenticate_user.py
-│   │   │       │   │   │   └── get_user_by_id.py
-│   │   │       │   │   ├── products/
-│   │   │       │   │   │   ├── __init__.py
-│   │   │       │   │   │   ├── create_product.py
-│   │   │       │   │   │   ├── list_products.py
-│   │   │       │   │   │   └── approve_product.py
-│   │   │       │   │   └── sales/
-│   │   │       │   │       ├── __init__.py
-│   │   │       │   │       ├── create_sale.py
-│   │   │       │   │       └── calculate_commissions.py
-│   │   │       │   ├── dto/          # Data Transfer Objects
-│   │   │       │   │   ├── __init__.py
-│   │   │       │   │   ├── user_dto.py
-│   │   │       │   │   ├── product_dto.py
-│   │   │       │   │   └── sale_dto.py
-│   │   │       │   ├── ports/        # Puertos secundarios (interfaces)
-│   │   │       │   │   ├── __init__.py
-│   │   │       │   │   ├── email_service.py       # Abstract
-│   │   │       │   │   ├── storage_service.py     # Abstract
-│   │   │       │   │   └── payment_service.py     # Abstract
-│   │   │       │   └── services/     # Servicios de aplicación
-│   │   │       │       ├── __init__.py
-│   │   │       │       └── auth_service.py
-│   │   │       │
-│   │   │       └── infrastructure/   # 🟢 CAPA INFRAESTRUCTURA
-│   │   │           ├── __init__.py
-│   │   │           │
-│   │   │           ├── api/          # FastAPI (Primary Adapters)
-│   │   │           │   ├── __init__.py
-│   │   │           │   ├── main.py   # App entry point
-│   │   │           │   ├── dependencies.py  # DI container
-│   │   │           │   ├── middleware/
-│   │   │           │   │   ├── __init__.py
-│   │   │           │   │   ├── auth.py
-│   │   │           │   │   ├── cors.py
-│   │   │           │   │   └── rate_limit.py
-│   │   │           │   └── v1/       # Versionado de API
-│   │   │           │       ├── __init__.py
-│   │   │           │       ├── router.py
-│   │   │           │       ├── schemas/  # Pydantic Request/Response
-│   │   │           │       │   ├── __init__.py
-│   │   │           │       │   ├── user_schemas.py
-│   │   │           │       │   └── product_schemas.py
-│   │   │           │       └── endpoints/
-│   │   │           │           ├── __init__.py
-│   │   │           │           ├── auth.py
-│   │   │           │           ├── users.py
-│   │   │           │           ├── products.py
-│   │   │           │           └── health.py
-│   │   │           │
-│   │   │           ├── persistence/  # SQLAlchemy (Secondary Adapters)
-│   │   │           │   ├── __init__.py
-│   │   │           │   ├── database.py      # Engine, Session
-│   │   │           │   ├── models/          # ORM Models
-│   │   │           │   │   ├── __init__.py
-│   │   │           │   │   ├── base.py
-│   │   │           │   │   ├── user_model.py
-│   │   │           │   │   └── product_model.py
-│   │   │           │   ├── repositories/    # Implementaciones concretas
-│   │   │           │   │   ├── __init__.py
-│   │   │           │   │   ├── sqlalchemy_user_repository.py
-│   │   │           │   │   └── sqlalchemy_product_repository.py
-│   │   │           │   └── mappers/         # Entity <-> Model
-│   │   │           │       ├── __init__.py
-│   │   │           │       └── user_mapper.py
-│   │   │           │
-│   │   │           ├── external/     # Servicios externos (Secondary Adapters)
-│   │   │           │   ├── __init__.py
-│   │   │           │   ├── stripe_payment_service.py
-│   │   │           │   ├── do_spaces_storage_service.py
-│   │   │           │   ├── sendgrid_email_service.py
-│   │   │           │   └── nhtsa_vin_decoder.py
-│   │   │           │
-│   │   │           ├── cache/        # Redis
-│   │   │           │   ├── __init__.py
-│   │   │           │   └── redis_cache.py
-│   │   │           │
-│   │   │           └── config/       # Configuración
-│   │   │               ├── __init__.py
-│   │   │               └── settings.py
-│   │   │
-│   │   ├── alembic/                  # Migraciones DB
-│   │   │   ├── versions/
-│   │   │   ├── env.py
-│   │   │   └── alembic.ini
-│   │   │
-│   │   ├── pyproject.toml
-│   │   ├── Dockerfile
-│   │   └── README.md
-│   │
-│   └── 🌐 web/                       # Frontend Next.js
-│       ├── src/
-│       │   ├── app/                  # Next.js App Router
-│       │   │   ├── (auth)/           # Grupo: páginas de auth
-│       │   │   │   ├── login/
-│       │   │   │   │   └── page.tsx
-│       │   │   │   ├── register/
-│       │   │   │   │   └── page.tsx
-│       │   │   │   └── layout.tsx
-│       │   │   ├── (dashboard)/      # Grupo: páginas protegidas
-│       │   │   │   ├── dashboard/
-│       │   │   │   │   └── page.tsx
-│       │   │   │   ├── products/
-│       │   │   │   │   ├── page.tsx
-│       │   │   │   │   ├── [id]/
-│       │   │   │   │   │   └── page.tsx
-│       │   │   │   │   └── new/
-│       │   │   │   │       └── page.tsx
-│       │   │   │   ├── sales/
-│       │   │   │   │   └── page.tsx
-│       │   │   │   └── layout.tsx
-│       │   │   ├── (public)/         # Grupo: páginas públicas
-│       │   │   │   ├── catalog/
-│       │   │   │   │   ├── page.tsx
-│       │   │   │   │   └── [slug]/
-│       │   │   │   │       └── page.tsx
-│       │   │   │   └── layout.tsx
-│       │   │   ├── api/              # Route Handlers (BFF)
-│       │   │   │   └── [...proxy]/
-│       │   │   │       └── route.ts
-│       │   │   ├── layout.tsx        # Root layout
-│       │   │   ├── page.tsx          # Home
-│       │   │   └── globals.css
-│       │   │
-│       │   ├── components/
-│       │   │   ├── ui/               # shadcn/ui components
-│       │   │   │   ├── button.tsx
-│       │   │   │   ├── input.tsx
-│       │   │   │   └── ...
-│       │   │   ├── forms/            # Formularios específicos
-│       │   │   │   ├── login-form.tsx
-│       │   │   │   └── product-form.tsx
-│       │   │   ├── layouts/          # Layouts reutilizables
-│       │   │   │   ├── header.tsx
-│       │   │   │   ├── sidebar.tsx
-│       │   │   │   └── footer.tsx
-│       │   │   └── features/         # Componentes por feature
-│       │   │       ├── products/
-│       │   │       │   ├── product-card.tsx
-│       │   │       │   └── product-list.tsx
-│       │   │       └── sales/
-│       │   │           └── sale-card.tsx
-│       │   │
-│       │   ├── lib/                  # Utilidades
-│       │   │   ├── api/              # Cliente API
-│       │   │   │   ├── client.ts
-│       │   │   │   └── endpoints.ts
-│       │   │   ├── utils/
-│       │   │   │   ├── cn.ts         # classnames helper
-│       │   │   │   └── formatters.ts
-│       │   │   └── validations/      # Zod schemas
-│       │   │       ├── user.ts
-│       │   │       └── product.ts
-│       │   │
-│       │   ├── hooks/                # Custom hooks
-│       │   │   ├── use-auth.ts
-│       │   │   ├── use-products.ts
-│       │   │   └── use-debounce.ts
-│       │   │
-│       │   ├── stores/               # Zustand stores
-│       │   │   ├── auth-store.ts
-│       │   │   └── cart-store.ts
-│       │   │
-│       │   ├── types/                # TypeScript types
-│       │   │   ├── api.ts
-│       │   │   ├── user.ts
-│       │   │   └── product.ts
-│       │   │
-│       │   └── styles/               # Estilos adicionales
-│       │       └── themes.css
-│       │
-│       ├── public/                   # Assets estáticos
-│       │   ├── images/
-│       │   └── favicon.ico
-│       │
-│       ├── package.json
-│       ├── next.config.ts
-│       ├── tailwind.config.ts
-│       ├── tsconfig.json
-│       ├── Dockerfile
-│       └── README.md
+├── 📦 apps/ # Aplicaciones desplegables
+│ │
+│ ├── 🐍 api/ # Backend FastAPI
+│ │ ├── src/
+│ │ │ └── prosell/
+│ │ │ │
+│ │ │ ├── domain/ # 🔴 CAPA DOMINIO (sin dependencias)
+│ │ │ │ ├── **init**.py
+│ │ │ │ ├── entities/ # Entidades de negocio
+│ │ │ │ │ ├── **init**.py
+│ │ │ │ │ ├── user.py
+│ │ │ │ │ ├── organization.py
+│ │ │ │ │ ├── product.py
+│ │ │ │ │ ├── sale.py
+│ │ │ │ │ └── wallet.py
+│ │ │ │ ├── value_objects/ # Objetos de valor inmutables
+│ │ │ │ │ ├── **init**.py
+│ │ │ │ │ ├── email.py
+│ │ │ │ │ ├── money.py
+│ │ │ │ │ ├── phone.py
+│ │ │ │ │ └── vin.py
+│ │ │ │ ├── events/ # Eventos de dominio
+│ │ │ │ │ ├── **init**.py
+│ │ │ │ │ ├── user_events.py
+│ │ │ │ │ └── sale_events.py
+│ │ │ │ ├── exceptions/ # Excepciones de dominio
+│ │ │ │ │ ├── **init**.py
+│ │ │ │ │ └── domain_exceptions.py
+│ │ │ │ ├── services/ # Servicios de dominio
+│ │ │ │ │ ├── **init**.py
+│ │ │ │ │ └── commission_calculator.py
+│ │ │ │ └── repositories/ # 🔌 INTERFACES (Ports)
+│ │ │ │ ├── **init**.py
+│ │ │ │ ├── user_repository.py # Abstract
+│ │ │ │ ├── product_repository.py # Abstract
+│ │ │ │ └── sale_repository.py # Abstract
+│ │ │ │
+│ │ │ ├── application/ # 🟡 CAPA APLICACIÓN
+│ │ │ │ ├── **init**.py
+│ │ │ │ ├── use_cases/ # Casos de uso (1 clase = 1 acción)
+│ │ │ │ │ ├── **init**.py
+│ │ │ │ │ ├── users/
+│ │ │ │ │ │ ├── **init**.py
+│ │ │ │ │ │ ├── create_user.py
+│ │ │ │ │ │ ├── authenticate_user.py
+│ │ │ │ │ │ └── get_user_by_id.py
+│ │ │ │ │ ├── products/
+│ │ │ │ │ │ ├── **init**.py
+│ │ │ │ │ │ ├── create_product.py
+│ │ │ │ │ │ ├── list_products.py
+│ │ │ │ │ │ └── approve_product.py
+│ │ │ │ │ └── sales/
+│ │ │ │ │ ├── **init**.py
+│ │ │ │ │ ├── create_sale.py
+│ │ │ │ │ └── calculate_commissions.py
+│ │ │ │ ├── dto/ # Data Transfer Objects
+│ │ │ │ │ ├── **init**.py
+│ │ │ │ │ ├── user_dto.py
+│ │ │ │ │ ├── product_dto.py
+│ │ │ │ │ └── sale_dto.py
+│ │ │ │ ├── ports/ # Puertos secundarios (interfaces)
+│ │ │ │ │ ├── **init**.py
+│ │ │ │ │ ├── email_service.py # Abstract
+│ │ │ │ │ ├── storage_service.py # Abstract
+│ │ │ │ │ └── payment_service.py # Abstract
+│ │ │ │ └── services/ # Servicios de aplicación
+│ │ │ │ ├── **init**.py
+│ │ │ │ └── auth_service.py
+│ │ │ │
+│ │ │ └── infrastructure/ # 🟢 CAPA INFRAESTRUCTURA
+│ │ │ ├── **init**.py
+│ │ │ │
+│ │ │ ├── api/ # FastAPI (Primary Adapters)
+│ │ │ │ ├── **init**.py
+│ │ │ │ ├── main.py # App entry point
+│ │ │ │ ├── dependencies.py # DI container
+│ │ │ │ ├── middleware/
+│ │ │ │ │ ├── **init**.py
+│ │ │ │ │ ├── auth.py
+│ │ │ │ │ ├── cors.py
+│ │ │ │ │ └── rate_limit.py
+│ │ │ │ └── v1/ # Versionado de API
+│ │ │ │ ├── **init**.py
+│ │ │ │ ├── router.py
+│ │ │ │ ├── schemas/ # Pydantic Request/Response
+│ │ │ │ │ ├── **init**.py
+│ │ │ │ │ ├── user_schemas.py
+│ │ │ │ │ └── product_schemas.py
+│ │ │ │ └── endpoints/
+│ │ │ │ ├── **init**.py
+│ │ │ │ ├── auth.py
+│ │ │ │ ├── users.py
+│ │ │ │ ├── products.py
+│ │ │ │ └── health.py
+│ │ │ │
+│ │ │ ├── persistence/ # SQLAlchemy (Secondary Adapters)
+│ │ │ │ ├── **init**.py
+│ │ │ │ ├── database.py # Engine, Session
+│ │ │ │ ├── models/ # ORM Models
+│ │ │ │ │ ├── **init**.py
+│ │ │ │ │ ├── base.py
+│ │ │ │ │ ├── user_model.py
+│ │ │ │ │ └── product_model.py
+│ │ │ │ ├── repositories/ # Implementaciones concretas
+│ │ │ │ │ ├── **init**.py
+│ │ │ │ │ ├── sqlalchemy_user_repository.py
+│ │ │ │ │ └── sqlalchemy_product_repository.py
+│ │ │ │ └── mappers/ # Entity <-> Model
+│ │ │ │ ├── **init**.py
+│ │ │ │ └── user_mapper.py
+│ │ │ │
+│ │ │ ├── external/ # Servicios externos (Secondary Adapters)
+│ │ │ │ ├── **init**.py
+│ │ │ │ ├── stripe_payment_service.py
+│ │ │ │ ├── do_spaces_storage_service.py
+│ │ │ │ ├── sendgrid_email_service.py
+│ │ │ │ └── nhtsa_vin_decoder.py
+│ │ │ │
+│ │ │ ├── cache/ # Redis
+│ │ │ │ ├── **init**.py
+│ │ │ │ └── redis_cache.py
+│ │ │ │
+│ │ │ └── config/ # Configuración
+│ │ │ ├── **init**.py
+│ │ │ └── settings.py
+│ │ │
+│ │ ├── alembic/ # Migraciones DB
+│ │ │ ├── versions/
+│ │ │ ├── env.py
+│ │ │ └── alembic.ini
+│ │ │
+│ │ ├── pyproject.toml
+│ │ ├── Dockerfile
+│ │ └── README.md
+│ │
+│ └── 🌐 web/ # Frontend Next.js
+│ ├── src/
+│ │ ├── app/ # Next.js App Router
+│ │ │ ├── (auth)/ # Grupo: páginas de auth
+│ │ │ │ ├── login/
+│ │ │ │ │ └── page.tsx
+│ │ │ │ ├── register/
+│ │ │ │ │ └── page.tsx
+│ │ │ │ └── layout.tsx
+│ │ │ ├── (dashboard)/ # Grupo: páginas protegidas
+│ │ │ │ ├── dashboard/
+│ │ │ │ │ └── page.tsx
+│ │ │ │ ├── products/
+│ │ │ │ │ ├── page.tsx
+│ │ │ │ │ ├── [id]/
+│ │ │ │ │ │ └── page.tsx
+│ │ │ │ │ └── new/
+│ │ │ │ │ └── page.tsx
+│ │ │ │ ├── sales/
+│ │ │ │ │ └── page.tsx
+│ │ │ │ └── layout.tsx
+│ │ │ ├── (public)/ # Grupo: páginas públicas
+│ │ │ │ ├── catalog/
+│ │ │ │ │ ├── page.tsx
+│ │ │ │ │ └── [slug]/
+│ │ │ │ │ └── page.tsx
+│ │ │ │ └── layout.tsx
+│ │ │ ├── api/ # Route Handlers (BFF)
+│ │ │ │ └── [...proxy]/
+│ │ │ │ └── route.ts
+│ │ │ ├── layout.tsx # Root layout
+│ │ │ ├── page.tsx # Home
+│ │ │ └── globals.css
+│ │ │
+│ │ ├── components/
+│ │ │ ├── ui/ # shadcn/ui components
+│ │ │ │ ├── button.tsx
+│ │ │ │ ├── input.tsx
+│ │ │ │ └── ...
+│ │ │ ├── forms/ # Formularios específicos
+│ │ │ │ ├── login-form.tsx
+│ │ │ │ └── product-form.tsx
+│ │ │ ├── layouts/ # Layouts reutilizables
+│ │ │ │ ├── header.tsx
+│ │ │ │ ├── sidebar.tsx
+│ │ │ │ └── footer.tsx
+│ │ │ └── features/ # Componentes por feature
+│ │ │ ├── products/
+│ │ │ │ ├── product-card.tsx
+│ │ │ │ └── product-list.tsx
+│ │ │ └── sales/
+│ │ │ └── sale-card.tsx
+│ │ │
+│ │ ├── lib/ # Utilidades
+│ │ │ ├── api/ # Cliente API
+│ │ │ │ ├── client.ts
+│ │ │ │ └── endpoints.ts
+│ │ │ ├── utils/
+│ │ │ │ ├── cn.ts # classnames helper
+│ │ │ │ └── formatters.ts
+│ │ │ └── validations/ # Zod schemas
+│ │ │ ├── user.ts
+│ │ │ └── product.ts
+│ │ │
+│ │ ├── hooks/ # Custom hooks
+│ │ │ ├── use-auth.ts
+│ │ │ ├── use-products.ts
+│ │ │ └── use-debounce.ts
+│ │ │
+│ │ ├── stores/ # Zustand stores
+│ │ │ ├── auth-store.ts
+│ │ │ └── cart-store.ts
+│ │ │
+│ │ ├── types/ # TypeScript types
+│ │ │ ├── api.ts
+│ │ │ ├── user.ts
+│ │ │ └── product.ts
+│ │ │
+│ │ └── styles/ # Estilos adicionales
+│ │ └── themes.css
+│ │
+│ ├── public/ # Assets estáticos
+│ │ ├── images/
+│ │ └── favicon.ico
+│ │
+│ ├── package.json
+│ ├── next.config.ts
+│ ├── tailwind.config.ts
+│ ├── tsconfig.json
+│ ├── Dockerfile
+│ └── README.md
 │
-├── 📦 packages/                      # Paquetes compartidos
-│   │
-│   ├── 📘 shared-types/              # Tipos compartidos Backend/Frontend
-│   │   ├── src/
-│   │   │   ├── index.ts
-│   │   │   ├── user.ts
-│   │   │   ├── product.ts
-│   │   │   └── api-responses.ts
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   │
-│   ├── 📘 ui/                        # Componentes UI compartidos (si hay mobile)
-│   │   ├── src/
-│   │   │   └── index.ts
-│   │   └── package.json
-│   │
-│   └── 📘 config/                    # Configuraciones compartidas
-│       ├── eslint/
-│       │   └── index.js
-│       ├── typescript/
-│       │   └── base.json
-│       └── tailwind/
-│           └── preset.js
+├── 📦 packages/ # Paquetes compartidos
+│ │
+│ ├── 📘 shared-types/ # Tipos compartidos Backend/Frontend
+│ │ ├── src/
+│ │ │ ├── index.ts
+│ │ │ ├── user.ts
+│ │ │ ├── product.ts
+│ │ │ └── api-responses.ts
+│ │ ├── package.json
+│ │ └── tsconfig.json
+│ │
+│ ├── 📘 ui/ # Componentes UI compartidos (si hay mobile)
+│ │ ├── src/
+│ │ │ └── index.ts
+│ │ └── package.json
+│ │
+│ └── 📘 config/ # Configuraciones compartidas
+│ ├── eslint/
+│ │ └── index.js
+│ ├── typescript/
+│ │ └── base.json
+│ └── tailwind/
+│ └── preset.js
 │
-├── 🧪 tests/                         # Tests centralizados
-│   │
-│   ├── api/                          # Tests del Backend
-│   │   ├── unit/                     # Tests unitarios
-│   │   │   ├── domain/
-│   │   │   │   ├── entities/
-│   │   │   │   │   └── test_user.py
-│   │   │   │   ├── value_objects/
-│   │   │   │   │   └── test_email.py
-│   │   │   │   └── services/
-│   │   │   │       └── test_commission_calculator.py
-│   │   │   ├── application/
-│   │   │   │   └── use_cases/
-│   │   │   │       └── test_create_user.py
-│   │   │   └── conftest.py
-│   │   │
-│   │   ├── integration/              # Tests de integración
-│   │   │   ├── repositories/
-│   │   │   │   └── test_user_repository.py
-│   │   │   ├── api/
-│   │   │   │   └── test_auth_endpoints.py
-│   │   │   └── conftest.py           # Fixtures DB, etc.
-│   │   │
-│   │   └── conftest.py               # Fixtures globales
-│   │
-│   ├── web/                          # Tests del Frontend
-│   │   ├── unit/                     # Tests unitarios (Vitest)
-│   │   │   ├── components/
-│   │   │   │   └── product-card.test.tsx
-│   │   │   ├── hooks/
-│   │   │   │   └── use-auth.test.ts
-│   │   │   └── setup.ts
-│   │   │
-│   │   └── e2e/                      # Tests E2E (Playwright)
-│   │       ├── auth.spec.ts
-│   │       ├── products.spec.ts
-│   │       └── playwright.config.ts
-│   │
-│   └── shared/                       # Tests de tipos compartidos
-│       └── types.test.ts
+├── 🧪 tests/ # Tests centralizados
+│ │
+│ ├── api/ # Tests del Backend
+│ │ ├── unit/ # Tests unitarios
+│ │ │ ├── domain/
+│ │ │ │ ├── entities/
+│ │ │ │ │ └── test_user.py
+│ │ │ │ ├── value_objects/
+│ │ │ │ │ └── test_email.py
+│ │ │ │ └── services/
+│ │ │ │ └── test_commission_calculator.py
+│ │ │ ├── application/
+│ │ │ │ └── use_cases/
+│ │ │ │ └── test_create_user.py
+│ │ │ └── conftest.py
+│ │ │
+│ │ ├── integration/ # Tests de integración
+│ │ │ ├── repositories/
+│ │ │ │ └── test_user_repository.py
+│ │ │ ├── api/
+│ │ │ │ └── test_auth_endpoints.py
+│ │ │ └── conftest.py # Fixtures DB, etc.
+│ │ │
+│ │ └── conftest.py # Fixtures globales
+│ │
+│ ├── web/ # Tests del Frontend
+│ │ ├── unit/ # Tests unitarios (Vitest)
+│ │ │ ├── components/
+│ │ │ │ └── product-card.test.tsx
+│ │ │ ├── hooks/
+│ │ │ │ └── use-auth.test.ts
+│ │ │ └── setup.ts
+│ │ │
+│ │ └── e2e/ # Tests E2E (Playwright)
+│ │ ├── auth.spec.ts
+│ │ ├── products.spec.ts
+│ │ └── playwright.config.ts
+│ │
+│ └── shared/ # Tests de tipos compartidos
+│ └── types.test.ts
 │
-├── 🐳 docker/                        # Configuración Docker
-│   ├── api/
-│   │   └── Dockerfile
-│   ├── web/
-│   │   └── Dockerfile
-│   └── docker-compose.yml
+├── 🐳 docker/ # Configuración Docker
+│ ├── api/
+│ │ └── Dockerfile
+│ ├── web/
+│ │ └── Dockerfile
+│ └── docker-compose.yml
 │
-├── 📜 scripts/                       # Scripts de utilidad
-│   ├── setup.sh                      # Setup inicial
-│   ├── seed-db.py                    # Seed de datos
-│   └── generate-types.ts             # Generar tipos desde OpenAPI
+├── 📜 scripts/ # Scripts de utilidad
+│ ├── setup.sh # Setup inicial
+│ ├── seed-db.py # Seed de datos
+│ └── generate-types.ts # Generar tipos desde OpenAPI
 │
-├── 📄 docs/                          # Documentación
-│   ├── architecture.md
-│   ├── api.md
-│   └── deployment.md
+├── 📄 docs/ # Documentación
+│ ├── architecture.md
+│ ├── api.md
+│ └── deployment.md
 │
 ├── 🔧 Archivos de configuración raíz
-├── turbo.json                        # Turborepo config
-├── pnpm-workspace.yaml               # pnpm workspaces
+├── turbo.json # Turborepo config
+├── pnpm-workspace.yaml # pnpm workspaces
 ├── .env.example
 ├── .gitignore
 ├── .dockerignore
 ├── README.md
-└── Makefile                          # Comandos útiles
+└── Makefile # Comandos útiles
+
 ```
 
 ---
@@ -442,44 +446,46 @@ prosell-sass/
 ## 🔄 FLUJO DE DEPENDENCIAS (Clean Architecture)
 
 ```
+
 ┌──────────────────────────────────────────────────────────────────┐
-│                         INFRASTRUCTURE                            │
-│  ┌─────────────┐    ┌─────────────────┐    ┌─────────────────┐   │
-│  │  FastAPI    │    │  SQLAlchemy     │    │  External APIs  │   │
-│  │  Endpoints  │    │  Repositories   │    │  (Stripe, S3)   │   │
-│  └──────┬──────┘    └────────┬────────┘    └────────┬────────┘   │
-│         │                    │                      │             │
-│         │         ┌──────────┴──────────┐          │             │
-│         │         │ Repository Impls    │          │             │
-│         │         │ (Adapters)          │          │             │
-│         │         └──────────┬──────────┘          │             │
+│ INFRASTRUCTURE │
+│ ┌─────────────┐ ┌─────────────────┐ ┌─────────────────┐ │
+│ │ FastAPI │ │ SQLAlchemy │ │ External APIs │ │
+│ │ Endpoints │ │ Repositories │ │ (Stripe, S3) │ │
+│ └──────┬──────┘ └────────┬────────┘ └────────┬────────┘ │
+│ │ │ │ │
+│ │ ┌──────────┴──────────┐ │ │
+│ │ │ Repository Impls │ │ │
+│ │ │ (Adapters) │ │ │
+│ │ └──────────┬──────────┘ │ │
 └─────────┼────────────────────┼─────────────────────┼─────────────┘
-          │                    │                      │
-          ▼                    ▼                      ▼
+│ │ │
+▼ ▼ ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                      APPLICATION LAYER                            │
-│  ┌─────────────────────────────────────────────────────────────┐ │
-│  │                      USE CASES                               │ │
-│  │  CreateUser │ AuthenticateUser │ CreateProduct │ CreateSale  │ │
-│  └─────────────────────────┬───────────────────────────────────┘ │
-│                            │                                      │
-│  ┌─────────────────────────┴───────────────────────────────────┐ │
-│  │                   PORTS (Interfaces)                         │ │
-│  │  IUserRepository │ IProductRepository │ IPaymentService      │ │
-│  └─────────────────────────────────────────────────────────────┘ │
+│ APPLICATION LAYER │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ USE CASES │ │
+│ │ CreateUser │ AuthenticateUser │ CreateProduct │ CreateSale │ │
+│ └─────────────────────────┬───────────────────────────────────┘ │
+│ │ │
+│ ┌─────────────────────────┴───────────────────────────────────┐ │
+│ │ PORTS (Interfaces) │ │
+│ │ IUserRepository │ IProductRepository │ IPaymentService │ │
+│ └─────────────────────────────────────────────────────────────┘ │
 └────────────────────────────────┬─────────────────────────────────┘
-                                 │
-                                 ▼
+│
+▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                        DOMAIN LAYER                               │
-│  ┌───────────────┐  ┌────────────────┐  ┌─────────────────────┐  │
-│  │   ENTITIES    │  │ VALUE OBJECTS  │  │  DOMAIN SERVICES    │  │
-│  │  User, Sale   │  │ Email, Money   │  │ CommissionCalc      │  │
-│  └───────────────┘  └────────────────┘  └─────────────────────┘  │
-│                                                                   │
-│  ⚠️  CERO DEPENDENCIAS EXTERNAS - SOLO PYTHON PURO               │
+│ DOMAIN LAYER │
+│ ┌───────────────┐ ┌────────────────┐ ┌─────────────────────┐ │
+│ │ ENTITIES │ │ VALUE OBJECTS │ │ DOMAIN SERVICES │ │
+│ │ User, Sale │ │ Email, Money │ │ CommissionCalc │ │
+│ └───────────────┘ └────────────────┘ └─────────────────────┘ │
+│ │
+│ ⚠️ CERO DEPENDENCIAS EXTERNAS - SOLO PYTHON PURO │
 └──────────────────────────────────────────────────────────────────┘
-```
+
+````
 
 ---
 
@@ -579,13 +585,14 @@ docker compose logs -f api
 
 # Rebuild
 docker compose up -d --build
-```
+````
 
 ---
 
 ## 📝 ARCHIVOS DE CONFIGURACIÓN
 
 ### turbo.json (Raíz del monorepo)
+
 ```json
 {
   "$schema": "https://turbo.build/schema.json",
@@ -614,6 +621,7 @@ docker compose up -d --build
 ```
 
 ### pnpm-workspace.yaml
+
 ```yaml
 packages:
   - "apps/*"
@@ -622,6 +630,7 @@ packages:
 ```
 
 ### apps/api/pyproject.toml
+
 ```toml
 [project]
 name = "prosell-api"
@@ -702,6 +711,7 @@ addopts = "-v --tb=short"
 ```
 
 ### docker/docker-compose.yml
+
 ```yaml
 services:
   db:
@@ -774,6 +784,7 @@ volumes:
 ```
 
 ### Makefile (Raíz)
+
 ```makefile
 .PHONY: install dev test lint build docker-up docker-down migrate
 
@@ -872,12 +883,14 @@ Comienza configurando el monorepo base:
 8. **Crear .env.example** con todas las variables
 
 Sigue estrictamente:
+
 - SOLID principles
 - Clean Architecture
 - Dependency Inversion (interfaces en domain, implementaciones en infrastructure)
 - Tipado estricto (pyright strict, TypeScript strict)
 
 ¿Listo para comenzar? Responde "Sí" y empezamos con el setup del monorepo.
+
 ```
 
 ---
@@ -887,9 +900,11 @@ Sigue estrictamente:
 ### Para implementar un módulo con Clean Architecture:
 
 ```
+
 Implementa el módulo de [USUARIOS/PRODUCTOS/VENTAS] siguiendo Clean Architecture y SOLID.
 
 Estructura del monorepo:
+
 - apps/api/src/prosell/domain/ → Entities, Value Objects, Interfaces
 - apps/api/src/prosell/application/ → Use Cases, DTOs, Ports
 - apps/api/src/prosell/infrastructure/ → FastAPI, SQLAlchemy, External Services
@@ -897,6 +912,7 @@ Estructura del monorepo:
 - tests/api/integration/ → Tests de integración
 
 Genera en este orden:
+
 1. **Domain Layer**:
    - Entity con reglas de negocio
    - Value Objects necesarios
@@ -919,19 +935,23 @@ Genera en este orden:
    - Integration tests para Repository y Endpoint
 
 Aplica SOLID:
+
 - S: Cada clase tiene una sola responsabilidad
 - O: Extensible sin modificar código existente
 - L: Implementaciones sustituibles
 - I: Interfaces pequeñas y específicas
 - D: Dependencias inyectadas, no hardcodeadas
+
 ```
 
 ### Para agregar tests:
 
 ```
+
 Agrega tests para el módulo de [NOMBRE].
 
 Ubicación:
+
 - tests/api/unit/domain/ → Tests de entities y value objects
 - tests/api/unit/application/ → Tests de use cases (con mocks)
 - tests/api/integration/ → Tests con DB real
@@ -939,22 +959,26 @@ Ubicación:
 Stack: pytest + pytest-asyncio + factory-boy + faker
 
 Genera:
+
 1. Fixtures en conftest.py
 2. Factories para crear entidades de prueba
 3. Unit tests con mocks para dependencias
 4. Integration tests con TestClient y DB de prueba
 
 Coverage objetivo: >90%
+
 ```
 
 ### Para el frontend:
 
 ```
+
 Implementa la página/feature de [DESCRIPCIÓN] en apps/web.
 
 Stack: Next.js 16.1, React 19.2, TypeScript 5.5, TailwindCSS 4, shadcn/ui
 
 Estructura:
+
 - src/app/(grupo)/ruta/page.tsx → Página
 - src/components/features/[feature]/ → Componentes específicos
 - src/lib/api/ → Cliente API
@@ -964,11 +988,13 @@ Estructura:
 - tests/web/e2e/ → Tests con Playwright
 
 Usa:
+
 - Server Components por defecto
 - 'use client' solo cuando sea necesario
 - `use cache` para datos que pueden cachearse
 - TanStack Query para fetching client-side
 - Zod para validación de formularios
+
 ```
 
 ---
@@ -1004,3 +1030,4 @@ Usa:
 | Ruff | 0.8+ | Linting Rust-based |
 
 ---
+```

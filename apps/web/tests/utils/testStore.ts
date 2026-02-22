@@ -57,7 +57,7 @@ export const useTestAuthStore = create<TestAuthState>((set, get) => ({
     try {
       const response = await authApi.login(
         credentials.email,
-        credentials.password
+        credentials.password,
       );
 
       set({
@@ -89,7 +89,7 @@ export const useTestAuthStore = create<TestAuthState>((set, get) => ({
         data.email,
         data.password,
         data.first_name,
-        data.last_name
+        data.last_name,
       );
 
       set({
@@ -135,8 +135,6 @@ export const useTestAuthStore = create<TestAuthState>((set, get) => ({
       });
     }
   },
-
-
 
   updateUser: (updates: Partial<User>) => {
     const { user } = get();

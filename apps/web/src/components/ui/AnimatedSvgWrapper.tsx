@@ -48,7 +48,7 @@ interface WrapperStyle extends React.CSSProperties {
 const createAnimationStyle = (
   animation: AnimationType,
   duration: number,
-  delay: number
+  delay: number,
 ): WrapperStyle => ({
   animation: `${animation} ${duration}ms ease-out ${delay}ms`,
   // Force GPU layer creation for hardware acceleration
@@ -64,33 +64,45 @@ const createAnimationStyle = (
 export const AnimatedSvgWrapper = React.forwardRef<
   HTMLDivElement,
   AnimatedSvgWrapperProps
->(({ animation = "fadeIn", duration = 300, delay = 0, children, className, ...props }, ref) => {
-  // Feature flag check
-  const useSvgWrapper = useFeatureFlagStore((state) =>
-    state.get("svg-wrapper", true)
-  );
+>(
+  (
+    {
+      animation = "fadeIn",
+      duration = 300,
+      delay = 0,
+      children,
+      className,
+      ...props
+    },
+    ref,
+  ) => {
+    // Feature flag check
+    const useSvgWrapper = useFeatureFlagStore((state) =>
+      state.get("svg-wrapper", true),
+    );
 
-  // If feature flag is disabled, render without animation
-  if (!useSvgWrapper) {
+    // If feature flag is disabled, render without animation
+    if (!useSvgWrapper) {
+      return (
+        <div ref={ref} className={className} {...props}>
+          {children}
+        </div>
+      );
+    }
+
+    const style = createAnimationStyle(animation, duration, delay);
+
     return (
-      <div ref={ref} className={className} {...props}>
+      <div
+        ref={ref}
+        className={cn("inline-block", className)}
+        style={style}
+        {...props}
+      >
         {children}
       </div>
     );
-  }
-
-  const style = createAnimationStyle(animation, duration, delay);
-
-  return (
-    <div
-      ref={ref}
-      className={cn("inline-block", className)}
-      style={style}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-});
+  },
+);
 
 AnimatedSvgWrapper.displayName = "AnimatedSvgWrapper";

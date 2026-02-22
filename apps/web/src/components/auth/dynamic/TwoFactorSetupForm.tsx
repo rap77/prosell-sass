@@ -12,7 +12,7 @@
  * });
  * ```
  */
-'use client';
+"use client";
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
@@ -109,10 +109,7 @@ export function SetupStateSkeleton() {
       {/* Backup codes skeleton */}
       <div className="grid grid-cols-2 gap-2 bg-muted rounded-lg p-4">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div
-            key={i}
-            className="h-8 bg-muted animate-pulse rounded"
-          />
+          <div key={i} className="h-8 bg-muted animate-pulse rounded" />
         ))}
       </div>
 
@@ -136,7 +133,10 @@ interface TwoFactorSetupFormProps {
   className?: string;
 }
 
-export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFormProps) {
+export function TwoFactorSetupForm({
+  is2FAEnabled,
+  className,
+}: TwoFactorSetupFormProps) {
   const router = useRouter();
   const { updateUser } = useAuth();
 
@@ -253,7 +253,9 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
   };
 
   const handleDownloadBackupCodes = () => {
-    const blob = new Blob([formState.backupCodes.join("\n")], { type: "text/plain" });
+    const blob = new Blob([formState.backupCodes.join("\n")], {
+      type: "text/plain",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -273,7 +275,12 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
   // ============================================
 
   return (
-    <div className={cn("min-h-screen flex items-center justify-center bg-muted px-4 sm:px-6 lg:px-8", className)}>
+    <div
+      className={cn(
+        "min-h-screen flex items-center justify-center bg-muted px-4 sm:px-6 lg:px-8",
+        className,
+      )}
+    >
       <div className="max-w-md w-full">
         <Card>
           {/* Loading State */}
@@ -332,10 +339,15 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                     Instructions:
                   </h3>
                   <ol className="text-sm text-primary space-y-1 list-decimal list-inside">
-                    <li>Open your authenticator app (Google Authenticator, Authy, etc.)</li>
+                    <li>
+                      Open your authenticator app (Google Authenticator, Authy,
+                      etc.)
+                    </li>
                     <li>Scan the QR code above</li>
                     <li>Enter the 6-digit code below</li>
-                    <li>Click &quot;Verify and Enable&quot; to complete setup</li>
+                    <li>
+                      Click &quot;Verify and Enable&quot; to complete setup
+                    </li>
                   </ol>
                 </div>
 
@@ -357,8 +369,8 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mb-2">
-                    Save these codes in a safe place. You can use them to access your account if you lose
-                    your authenticator device.
+                    Save these codes in a safe place. You can use them to access
+                    your account if you lose your authenticator device.
                   </p>
                   {formState.backupCodes.length > 0 ? (
                     <div className="grid grid-cols-2 gap-2 bg-muted rounded-lg p-4">
@@ -384,7 +396,9 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                     label="2FA Code"
                     name="totp"
                     value={formState.totpCode}
-                    onChange={(code) => setFormState((prev) => ({ ...prev, totpCode: code }))}
+                    onChange={(code) =>
+                      setFormState((prev) => ({ ...prev, totpCode: code }))
+                    }
                     error={formState.error}
                     required
                   />
@@ -394,7 +408,9 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                 <Button
                   type="button"
                   onClick={handleVerifyCode}
-                  disabled={!formState.totpCode || formState.totpCode.length !== 6}
+                  disabled={
+                    !formState.totpCode || formState.totpCode.length !== 6
+                  }
                   className="w-full"
                 >
                   Verify and Enable
@@ -406,7 +422,9 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                     className="p-4 bg-destructive/10 border border-destructive/20 rounded-md"
                     role="alert"
                   >
-                    <p className="text-sm text-destructive">{formState.error}</p>
+                    <p className="text-sm text-destructive">
+                      {formState.error}
+                    </p>
                   </div>
                 )}
               </CardContent>
@@ -480,7 +498,8 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                   Two-Factor Authentication is Enabled
                 </CardTitle>
                 <CardDescription>
-                  Your account is currently protected with two-factor authentication
+                  Your account is currently protected with two-factor
+                  authentication
                 </CardDescription>
               </CardHeader>
 
@@ -497,8 +516,8 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                     Warning:
                   </h3>
                   <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                    Disabling two-factor authentication will make your account less secure. We recommend
-                    keeping it enabled.
+                    Disabling two-factor authentication will make your account
+                    less secure. We recommend keeping it enabled.
                   </p>
                 </div>
 
@@ -508,7 +527,9 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                     className="p-4 bg-destructive/10 border border-destructive/20 rounded-md"
                     role="alert"
                   >
-                    <p className="text-sm text-destructive">{formState.error}</p>
+                    <p className="text-sm text-destructive">
+                      {formState.error}
+                    </p>
                   </div>
                 )}
 
@@ -602,15 +623,17 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground">
-                    Error
-                  </h2>
+                  <h2 className="text-2xl font-bold text-foreground">Error</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {formState.error || "An error occurred"}
                   </p>
                 </div>
                 <Button
-                  onClick={is2FAEnabled ? () => router.push("/profile") : handleEnable2FA}
+                  onClick={
+                    is2FAEnabled
+                      ? () => router.push("/profile")
+                      : handleEnable2FA
+                  }
                   className="w-full"
                 >
                   {is2FAEnabled ? "Back to Profile" : "Try Again"}

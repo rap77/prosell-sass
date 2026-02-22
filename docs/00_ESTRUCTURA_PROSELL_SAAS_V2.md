@@ -10,6 +10,7 @@
 ## Visión General
 
 ProSell SaaS está organizado como un **monorepo moderno** usando:
+
 - **Turborepo**: Orquestación de builds y tareas
 - **pnpm workspaces**: Gestión de dependencias
 - **Clean Architecture**: Separación de dominio, aplicación e infraestructura
@@ -282,6 +283,7 @@ stores/
 ### Imports
 
 **Backend (relativo a `apps/api/src/prosell/`)**:
+
 ```python
 from domain.entities.user import User
 from application.use_cases.auth import RegisterUserUseCase
@@ -289,9 +291,10 @@ from infrastructure.repositories.user_repository_impl import UserRepositoryImpl
 ```
 
 **Frontend (usando alias `@/`)**:
+
 ```typescript
-import { ProductCard } from '@/components/products/ProductCard';
-import { useAuthStore } from '@/stores/authStore';
+import { ProductCard } from "@/components/products/ProductCard";
+import { useAuthStore } from "@/stores/authStore";
 ```
 
 ### Variables de Entorno

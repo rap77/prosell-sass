@@ -32,29 +32,32 @@ Phase 6: Security Hardening ──> Phase 7: Performance & Monitoring ──> Ph
 
 ## Workflow Files
 
-| File | Phases | Description |
-|------|--------|-------------|
-| [`phase-0-environment.md`](./phase-0-environment.md) | Phase 0 | Environment validation, Docker, Alembic, smoke tests |
-| [`phases-1-4-testing.md`](./phases-1-4-testing.md) | Phases 1-4 | All unit + integration tests (critical path) |
-| [`phase-5-oauth.md`](./phase-5-oauth.md) | Phase 5 | OAuth implementation - Task #18 from PRP |
-| [`phases-6-8-hardening.md`](./phases-6-8-hardening.md) | Phases 6-8 | Security, monitoring, frontend integration |
+| File                                                   | Phases     | Description                                          |
+| ------------------------------------------------------ | ---------- | ---------------------------------------------------- |
+| [`phase-0-environment.md`](./phase-0-environment.md)   | Phase 0    | Environment validation, Docker, Alembic, smoke tests |
+| [`phases-1-4-testing.md`](./phases-1-4-testing.md)     | Phases 1-4 | All unit + integration tests (critical path)         |
+| [`phase-5-oauth.md`](./phase-5-oauth.md)               | Phase 5    | OAuth implementation - Task #18 from PRP             |
+| [`phases-6-8-hardening.md`](./phases-6-8-hardening.md) | Phases 6-8 | Security, monitoring, frontend integration           |
 
 ---
 
 ## Execution Order & Parallelism
 
 ### Sequential (must be in order)
+
 ```
 Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4
 ```
 
 ### Parallel (can run after Phase 4)
+
 ```
 Phase 5 (OAuth)          --> Phase 6 (Security) --> Phase 7 (Monitoring)
 Phase 8 (FE Integration) --> (can start after Phase 4 passes)
 ```
 
 ### Critical Path (minimum to connect FE to tested backend)
+
 ```
 Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4 -> Phase 8
 ```
@@ -63,26 +66,26 @@ Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4 -> Phase 8
 
 ## Coverage Targets
 
-| Layer | Target | Method |
-|-------|--------|--------|
-| Domain entities | 90%+ | `pytest --cov=prosell.domain` |
-| Use cases | 85%+ | `pytest --cov=prosell.application` |
-| Services | 80%+ | `pytest --cov=prosell.infrastructure.services` |
-| API endpoints | 70%+ | `pytest --cov=prosell.infrastructure.api` |
-| Overall backend | 80%+ | `pytest --cov=prosell` |
+| Layer           | Target | Method                                         |
+| --------------- | ------ | ---------------------------------------------- |
+| Domain entities | 90%+   | `pytest --cov=prosell.domain`                  |
+| Use cases       | 85%+   | `pytest --cov=prosell.application`             |
+| Services        | 80%+   | `pytest --cov=prosell.infrastructure.services` |
+| API endpoints   | 70%+   | `pytest --cov=prosell.infrastructure.api`      |
+| Overall backend | 80%+   | `pytest --cov=prosell`                         |
 
 ## Test Count Targets
 
-| Phase | Expected Tests |
-|-------|---------------|
-| Phase 1: Domain | ~57 |
-| Phase 2: Services | ~43 |
-| Phase 3: Use Cases | ~72 |
-| Phase 4: API Integration | ~40 |
-| Phase 5: OAuth | ~91 |
-| Phase 6: Security | ~31 |
-| Phase 7: Monitoring | ~13 |
-| **TOTAL** | **~347** |
+| Phase                    | Expected Tests |
+| ------------------------ | -------------- |
+| Phase 1: Domain          | ~57            |
+| Phase 2: Services        | ~43            |
+| Phase 3: Use Cases       | ~72            |
+| Phase 4: API Integration | ~40            |
+| Phase 5: OAuth           | ~91            |
+| Phase 6: Security        | ~31            |
+| Phase 7: Monitoring      | ~13            |
+| **TOTAL**                | **~347**       |
 
 ---
 
@@ -102,14 +105,14 @@ Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4 -> Phase 8
 
 ## Risk Register
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Existing backend code has bugs | High | Phase 0 smoke test catches early |
+| Risk                                        | Impact | Mitigation                                        |
+| ------------------------------------------- | ------ | ------------------------------------------------- |
+| Existing backend code has bugs              | High   | Phase 0 smoke test catches early                  |
 | Test DB setup complexity (async SQLAlchemy) | Medium | SQLite async for unit, PostgreSQL for integration |
-| OAuth provider API changes | Low | Mocked providers in tests, manual real API test |
-| Rate limiting interferes with tests | Medium | Disable rate limiting in test environment |
-| JWT key management in tests | Low | Generate test keys in conftest.py |
-| Alembic migration conflicts | Medium | Fresh DB per test run |
+| OAuth provider API changes                  | Low    | Mocked providers in tests, manual real API test   |
+| Rate limiting interferes with tests         | Medium | Disable rate limiting in test environment         |
+| JWT key management in tests                 | Low    | Generate test keys in conftest.py                 |
+| Alembic migration conflicts                 | Medium | Fresh DB per test run                             |
 
 ---
 

@@ -16,7 +16,13 @@ import { authApi } from "@/lib/api/authApi";
 import { getErrorMessage } from "@/lib/utils/error";
 import { PasswordInput } from "./PasswordInput";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 
 // Zod schema for form validation
 const resetPasswordSchema = z
@@ -78,7 +84,9 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
       setFormState("success");
     } catch (err) {
       setFormState("error");
-      setErrorMessage(getErrorMessage(err, "Unable to reset password. Please try again."));
+      setErrorMessage(
+        getErrorMessage(err, "Unable to reset password. Please try again."),
+      );
     }
   };
 
@@ -113,7 +121,8 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                 </h2>
 
                 <CardDescription className="mb-8">
-                  The password reset link is invalid or has expired. Please request a new one.
+                  The password reset link is invalid or has expired. Please
+                  request a new one.
                 </CardDescription>
 
                 <div className="flex flex-col gap-4">
@@ -124,9 +133,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                   </Button>
 
                   <Button variant="outline" asChild>
-                    <Link href="/auth/login">
-                      Back to Login
-                    </Link>
+                    <Link href="/auth/login">Back to Login</Link>
                   </Button>
                 </div>
               </div>
@@ -168,13 +175,12 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                 </h2>
 
                 <CardDescription className="mb-8">
-                  Your password has been successfully reset. You can now sign in with your new password.
+                  Your password has been successfully reset. You can now sign in
+                  with your new password.
                 </CardDescription>
 
                 <Button asChild className="w-full">
-                  <Link href="/auth/login">
-                    Continue to Login
-                  </Link>
+                  <Link href="/auth/login">Continue to Login</Link>
                 </Button>
               </div>
             </CardContent>
@@ -194,9 +200,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             <h2 className="text-3xl font-semibold leading-none tracking-tight">
               Reset Your Password
             </h2>
-            <CardDescription>
-              Enter your new password below.
-            </CardDescription>
+            <CardDescription>Enter your new password below.</CardDescription>
           </CardHeader>
 
           <CardContent>

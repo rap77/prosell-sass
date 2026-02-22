@@ -8,19 +8,24 @@
 ## 1. Overview
 
 ### 1.1 Summary
+
 Extract API schemas from router, update repositories to use `model_validate()`, and remove ABC inheritance from services. This is Phase 4 of 8-phase Pydantic migration.
 
 ### 1.2 Dependencies
+
 - [x] Phase 2: Domain entities are Pydantic DomainModel ✅
 - [x] Phase 3: Application DTOs are Pydantic BaseModel ✅
 
 ### 1.3 Completion Status
+
 **Phase 4 COMPLETED** - 2026-02-14
+
 - **Commit**: `e4b8775` - "refactor(infrastructure): complete Fase 4 - Pydantic migration"
 - **Tests**: 113/113 passing ✅
 - **GGA**: Approved ✅
 
 ### 1.3 Links
+
 - Plan: `docs/plans/2026-02-14-pydantic-stack-refactoring.md#fase-4-infrastructure`
 - Domain Models: `apps/api/src/prosell/domain/base.py`
 
@@ -31,11 +36,13 @@ Extract API schemas from router, update repositories to use `model_validate()`, 
 ### 2.1 User Stories
 
 #### US-INF-001: Extract API Schemas to Separate Module
+
 **As a** Developer
 **I want** API request/response schemas in dedicated files
 **So that** Router is cleaner and schemas are reusable
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Schemas directory created
   GIVEN Inline schemas in auth_router.py
@@ -47,11 +54,13 @@ Scenario: Schemas directory created
 ```
 
 #### US-INF-002: Update Repositories for Pydantic
+
 **As a** Developer
 **I want** Repositories to use Pydantic model_validate()
 **So that** ORM → Domain conversion is automatic
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: User repository uses model_validate()
   GIVEN manual field mapping in _to_entity()
@@ -61,11 +70,13 @@ Scenario: User repository uses model_validate()
 ```
 
 #### US-INF-003: Remove ABC from Service Implementations
+
 **As a** Developer
 **I want** Services to use Protocol without ABC inheritance
 **So that** Duck typing is consistent
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: JWT service keeps Protocol interface
   GIVEN class JWTService(IJWTService)
@@ -75,6 +86,7 @@ Scenario: JWT service keeps Protocol interface
 ```
 
 ### 2.2 Functional Requirements
+
 - [x] FR-001 Create `infrastructure/api/schemas/` directory structure ✅
 - [x] FR-002 Extract 8 request/response schemas to `auth.py` ✅
 - [x] FR-003 Create response schemas in `responses.py` ✅
@@ -85,6 +97,7 @@ Scenario: JWT service keeps Protocol interface
 - [x] FR-008 Remove ABC inheritance from services (keep Protocol for docs) ✅
 
 ### 2.3 Non-Functional Requirements
+
 - **Performance**: model_validate() is faster than manual mapping
 - **Security**: response_model ensures OpenAPI docs are accurate
 - **Scalability**: Extracted schemas reusable across routers
@@ -95,11 +108,11 @@ Scenario: JWT service keeps Protocol interface
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|------------|---------|-------|
-| SQLAlchemy | 2.0.36+ | Mapped[], mapped_column(), from_attributes |
-| Pydantic | 2.12.0+ | model_validate(), from_attributes, BaseModel |
-| FastAPI | 0.115+ | response_model, automatic OpenAPI |
+| Component  | Technology | Version                                      | Notes |
+| ---------- | ---------- | -------------------------------------------- | ----- |
+| SQLAlchemy | 2.0.36+    | Mapped[], mapped_column(), from_attributes   |
+| Pydantic   | 2.12.0+    | model_validate(), from_attributes, BaseModel |
+| FastAPI    | 0.115+     | response_model, automatic OpenAPI            |
 
 ### 3.2 Key Libraries
 
@@ -115,6 +128,7 @@ from prosell.domain.base import DomainModel
 ```
 
 ### 3.3 External Documentation
+
 - **FastAPI response_model**: https://fastapi.tiangolo.com/tutorial/response-model/
 - **Pydantic from_attributes**: https://docs.pydantic.dev/2.12/api/base_model/#pydantic.BaseModel.model_validate
 - **SQLAlchemy 2.0**: https://docs.sqlalchemy.org/en/20/changelog/migration_20.html
@@ -142,12 +156,15 @@ flowchart TD
 ### 4.2 Implementation Steps
 
 #### Step 1: Extract API Schemas
+
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/api/schemas/__init__.py` (NEW)
 - `apps/api/src/prosell/infrastructure/api/schemas/auth.py` (NEW)
 - `apps/api/src/prosell/infrastructure/api/schemas/responses.py` (NEW)
 
 **schemas/auth.py**:
+
 ```python
 """Request/response schemas for authentication endpoints."""
 from pydantic import BaseModel, EmailStr, Field
@@ -186,6 +203,7 @@ class OAuthLoginRequest(BaseModel):
 ```
 
 **schemas/responses.py**:
+
 ```python
 """Response schemas for API endpoints."""
 from pydantic import BaseModel
@@ -211,15 +229,19 @@ class MessageResponse(BaseModel):
 ```
 
 **Gotchas**:
+
 - Use `model_config = ConfigDict(str_strip_whitespace=True)` for request models
 - EmailStr automatically validates format
 - `Field()` for constraints (min_length, max_length)
 
 #### Step 2: Update Router with response_model
+
 **Files to modify**:
+
 - `apps/api/src/prosell/infrastructure/api/routers/auth_router.py` (307 lines)
 
 **Before**:
+
 ```python
 from pydantic import BaseModel, EmailStr, Field
 
@@ -236,6 +258,7 @@ async def register(request: RegisterRequest, use_case: RegisterUserUseCase):
 ```
 
 **After**:
+
 ```python
 from prosell.infrastructure.api.schemas.auth import RegisterRequest, LoginRequest, RefreshTokenRequest, ...
 from prosell.infrastructure.api.schemas.responses import UserResponse, AuthTokenResponse, MessageResponse
@@ -260,17 +283,21 @@ async def register(request: RegisterRequest, use_case: RegisterUserUseCase):
 ```
 
 **Gotchas**:
+
 - Import schemas from new module
 - Add `response_model=UserResponse` to ALL endpoints
 - Manual translation still needed (use cases expect dataclass DTOs)
 
 #### Step 3: Update Repository Implementations
+
 **Files to modify**:
+
 - `apps/api/src/prosell/infrastructure/repositories/user_repository_impl.py`
 - `apps/api/src/prosell/infrastructure/repositories/role_repository_impl.py`
 - `apps/api/src/prosell/infrastructure/repositories/session_repository_impl.py`
 
 **user_repository_impl.py - Before**:
+
 ```python
 def _to_entity(self, model: UserModel) -> User:
     return User(
@@ -285,6 +312,7 @@ def _to_entity(self, model: UserModel) -> User:
 ```
 
 **user_repository_impl.py - After**:
+
 ```python
 from prosell.domain.base import DomainModel
 
@@ -297,6 +325,7 @@ def _to_entity(self, model: UserModel) -> User:
 ```
 
 **For backup_codes field specifically**:
+
 ```python
 from pydantic import field_validator, BaseModel
 
@@ -314,17 +343,21 @@ class User(DomainModel):
 ```
 
 **Gotchas**:
+
 - `model_validate()` works with `from_attributes=True`
 - JSON fields stored as strings need custom handling
 - Other fields auto-convert (UUID, str, int, datetime, bool)
 
 #### Step 4: Update Service Implementations
+
 **Files to modify**:
+
 - `apps/api/src/prosell/infrastructure/services/jwt_service.py`
 - `apps/api/src/prosell/infrastructure/services/password_service.py`
 - `apps/api/src/prosell/infrastructure/services/totp_service.py`
 
 **Before**:
+
 ```python
 from abc import ABC  # Even though Protocol is used in interface
 from prosell.domain.ports import IJWTService
@@ -335,6 +368,7 @@ class JWTService(IJWTService):  # IJWTService was ABC
 ```
 
 **After**:
+
 ```python
 # No ABC import needed
 from prosell.domain.ports import IJWTService
@@ -345,6 +379,7 @@ class JWTService(IJWTService):  # IJWTService is Protocol now
 ```
 
 **Gotchas**:
+
 - Remove `from abc import ABC`
 - Keep inheritance for documentation purposes (Protocol supports this)
 - No `@abstractmethod` overrides needed
@@ -436,15 +471,18 @@ cd apps/api && uv run pytest tests/integration/ -v
 ## 7. Testing Strategy
 
 ### 7.1 Unit Tests
+
 - **Repository tests**: Update to use Pydantic entities
 - **Service tests**: No changes needed
 - **Schema tests**: Create tests for request/response validation
 
 ### 7.2 Integration Tests
+
 - Test API endpoints with real Pydantic validation
 - Verify OpenAPI schema is correct
 
 ### 7.3 Coverage Targets
+
 - Infrastructure tests: >70%
 - Repository tests: >80%
 
@@ -453,14 +491,17 @@ cd apps/api && uv run pytest tests/integration/ -v
 ## 8. Common Pitfalls
 
 ### 8.1 JSON String Fields
+
 **Problem**: `backup_codes` stored as JSON string but `list[str]` in entity
 **Solution**: Custom field_validator to parse JSON string
 
 ### 8.2 Forgetting response_model
+
 **Problem**: Missing `response_model=` on endpoint
 **Solution**: Add `response_model` to ALL endpoints
 
 ### 8.3 Manual Field Mapping
+
 **Problem**: Still manually mapping ORM → Entity
 **Solution**: Use `model_validate(from_attributes=True)`
 
@@ -469,6 +510,7 @@ cd apps/api && uv run pytest tests/integration/ -v
 ## 9. Rollback Plan
 
 If implementation fails:
+
 1. `git checkout apps/api/src/prosell/infrastructure/`
 2. Migrate one repository at a time
 3. Test each before moving to next
@@ -496,6 +538,7 @@ If implementation fails:
 **Score**: 7/10
 
 **Reasoning**:
+
 - **Positive factors**:
   - Clear patterns (schema extraction, model_validate)
   - Pydantic from_attributes is well-documented
@@ -531,8 +574,9 @@ If implementation fails:
 7. **OpenAPI Docs** - Auto-generated with proper Pydantic schemas ✅
 
 ### 📊 Statistics
+
 - **New directories**: 1 (`infrastructure/api/schemas/`)
-- **New schema files**: 3 (auth.py, responses.py, __init__.py)
+- **New schema files**: 3 (auth.py, responses.py, **init**.py)
 - **Router updated**: `auth_router.py` - response_model added to all endpoints
 - **Repositories updated**: 3 (user, role, session)
 - **Services updated**: 3 (jwt, password, totp) - ABC removed
@@ -540,6 +584,7 @@ If implementation fails:
 - **GGA**: Approved ✅
 
 ### 📁 Files Created (infrastructure/api/schemas/)
+
 - `__init__.py` - Package init
 - `auth.py` - RegisterRequest, LoginRequest, RefreshTokenRequest, 2FA requests, OAuth requests
 - `responses.py` - UserResponse, AuthTokenResponse, MessageResponse
@@ -553,6 +598,7 @@ If implementation fails:
 5. **Clean Architecture** - Infrastructure properly implements domain interfaces
 
 ### 🚀 Next Steps
+
 Phase 4 is **100% COMPLETE** and ready to move to Phase 5 (Python 3.13+ Syntax).
 
 ---
@@ -562,6 +608,7 @@ Phase 4 is **100% COMPLETE** and ready to move to Phase 5 (Python 3.13+ Syntax).
 **Score**: 10/10 ✅ **PHASE COMPLETED SUCCESSFULLY**
 
 **Reasoning**:
+
 - **All schemas extracted successfully**: Clean separation achieved ✅
 - **Response models working**: OpenAPI docs generate correctly ✅
 - **Repositories using model_validate()**: Automatic conversion working ✅

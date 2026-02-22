@@ -28,14 +28,18 @@ export class ResetPasswordPage extends BasePage {
     this.signInLink = page.getByRole("link", { name: "Back to Login" });
 
     // Heading - Use .first() because of sr-only h1
-    this.heading = page.getByRole("heading", { name: /reset your password/i }).first();
+    this.heading = page
+      .getByRole("heading", { name: /reset your password/i })
+      .first();
   }
 
   /**
    * Navigate to reset password page with token
    */
   async goto(token?: string): Promise<void> {
-    const url = token ? `/auth/reset-password?token=${token}` : "/auth/reset-password";
+    const url = token
+      ? `/auth/reset-password?token=${token}`
+      : "/auth/reset-password";
     await super.goto(url);
   }
 
@@ -88,7 +92,9 @@ export class ResetPasswordPage extends BasePage {
    */
   async verifySuccessMessage(): Promise<void> {
     // Look for "Password Reset Successful" heading
-    const successMessage = this.page.getByRole("heading", { name: "Password Reset Successful" });
+    const successMessage = this.page.getByRole("heading", {
+      name: "Password Reset Successful",
+    });
     await expect(successMessage).toBeVisible();
   }
 

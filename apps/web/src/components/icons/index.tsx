@@ -46,7 +46,11 @@ export function GoogleIcon({ className, width = 18, height = 18 }: IconProps) {
 /**
  * Facebook f logo icon
  */
-export function FacebookIcon({ className, width = 18, height = 18 }: IconProps) {
+export function FacebookIcon({
+  className,
+  width = 18,
+  height = 18,
+}: IconProps) {
   return (
     <svg
       className={className}
@@ -149,7 +153,11 @@ export function XIcon({ className, width = 24, height = 24 }: IconProps) {
       strokeWidth={2}
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M6 18L18 6M6 6l12 12"
+      />
     </svg>
   );
 }

@@ -19,7 +19,8 @@ import { LoginPageContent } from "./LoginPageContent";
 
 export const metadata = {
   title: "Sign In | ProSell SaaS",
-  description: "Sign in to your ProSell account to access your dashboard and analytics.",
+  description:
+    "Sign in to your ProSell account to access your dashboard and analytics.",
   robots: {
     index: false, // Don't index authentication pages
     follow: false,

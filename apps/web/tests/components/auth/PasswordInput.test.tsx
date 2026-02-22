@@ -38,10 +38,12 @@ describe("PasswordInput Component", () => {
           label="Password"
           name="password"
           placeholder="Enter your password"
-        />
+        />,
       );
 
-      expect(screen.getByPlaceholderText("Enter your password")).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText("Enter your password"),
+      ).toBeInTheDocument();
     });
 
     it("should be accessible via name attribute", () => {
@@ -56,7 +58,9 @@ describe("PasswordInput Component", () => {
     it("should render eye icon button for toggle", () => {
       render(<PasswordInput label="Password" name="password" />);
 
-      const toggleButton = screen.getByRole("button", { name: /show password/i });
+      const toggleButton = screen.getByRole("button", {
+        name: /show password/i,
+      });
       expect(toggleButton).toBeInTheDocument();
     });
 
@@ -65,7 +69,9 @@ describe("PasswordInput Component", () => {
       render(<PasswordInput label="Password" name="password" />);
 
       const input = screen.getByLabelText("Password");
-      const toggleButton = screen.getByRole("button", { name: /show password/i });
+      const toggleButton = screen.getByRole("button", {
+        name: /show password/i,
+      });
 
       expect(input).toHaveAttribute("type", "password");
 
@@ -80,7 +86,9 @@ describe("PasswordInput Component", () => {
       render(<PasswordInput label="Password" name="password" />);
 
       const input = screen.getByLabelText("Password");
-      const toggleButton = screen.getByRole("button", { name: /show password/i });
+      const toggleButton = screen.getByRole("button", {
+        name: /show password/i,
+      });
 
       // First click to show
       await user.click(toggleButton);
@@ -97,7 +105,9 @@ describe("PasswordInput Component", () => {
       render(<PasswordInput label="Password" name="password" />);
 
       const input = screen.getByLabelText("Password") as HTMLInputElement;
-      const toggleButton = screen.getByRole("button", { name: /show password/i });
+      const toggleButton = screen.getByRole("button", {
+        name: /show password/i,
+      });
 
       await user.type(input, "mypassword123");
       expect(input).toHaveValue("mypassword123");
@@ -115,11 +125,7 @@ describe("PasswordInput Component", () => {
   describe("Password Strength Indicator", () => {
     it("should not show strength indicator when disabled", () => {
       render(
-        <PasswordInput
-          label="Password"
-          name="password"
-          showStrength={false}
-        />
+        <PasswordInput label="Password" name="password" showStrength={false} />,
       );
 
       expect(screen.queryByTestId("password-strength")).not.toBeInTheDocument();
@@ -127,13 +133,7 @@ describe("PasswordInput Component", () => {
 
     it("should show weak strength for short passwords", async () => {
       const user = userEvent.setup();
-      render(
-        <PasswordInput
-          label="Password"
-          name="password"
-          showStrength
-        />
-      );
+      render(<PasswordInput label="Password" name="password" showStrength />);
 
       const input = screen.getByLabelText("Password");
 
@@ -146,13 +146,7 @@ describe("PasswordInput Component", () => {
 
     it("should show medium strength for moderate passwords", async () => {
       const user = userEvent.setup();
-      render(
-        <PasswordInput
-          label="Password"
-          name="password"
-          showStrength
-        />
-      );
+      render(<PasswordInput label="Password" name="password" showStrength />);
 
       const input = screen.getByLabelText("Password");
 
@@ -164,13 +158,7 @@ describe("PasswordInput Component", () => {
 
     it("should show strong strength for complex passwords", async () => {
       const user = userEvent.setup();
-      render(
-        <PasswordInput
-          label="Password"
-          name="password"
-          showStrength
-        />
-      );
+      render(<PasswordInput label="Password" name="password" showStrength />);
 
       const input = screen.getByLabelText("Password");
 
@@ -182,13 +170,7 @@ describe("PasswordInput Component", () => {
 
     it("should update strength indicator in real-time", async () => {
       const user = userEvent.setup();
-      render(
-        <PasswordInput
-          label="Password"
-          name="password"
-          showStrength
-        />
-      );
+      render(<PasswordInput label="Password" name="password" showStrength />);
 
       const input = screen.getByLabelText("Password");
 
@@ -217,7 +199,7 @@ describe("PasswordInput Component", () => {
           label="Password"
           name="password"
           error="Password is required"
-        />
+        />,
       );
 
       const errorMessage = screen.getByText("Password is required");
@@ -231,7 +213,7 @@ describe("PasswordInput Component", () => {
           label="Password"
           name="password"
           error="Password is required"
-        />
+        />,
       );
 
       const input = screen.getByLabelText("Password");
@@ -248,7 +230,7 @@ describe("PasswordInput Component", () => {
           name="password"
           error="Password is required"
           onClearError={onClearError}
-        />
+        />,
       );
 
       const input = screen.getByLabelText("Password");
@@ -263,13 +245,7 @@ describe("PasswordInput Component", () => {
     it("should forward ref correctly", () => {
       const ref = { current: null as HTMLInputElement | null };
 
-      render(
-        <PasswordInput
-          label="Password"
-          name="password"
-          ref={ref}
-        />
-      );
+      render(<PasswordInput label="Password" name="password" ref={ref} />);
 
       expect(ref.current).toBeInstanceOf(HTMLInputElement);
     });
@@ -283,7 +259,7 @@ describe("PasswordInput Component", () => {
           label="Password"
           name="password"
           onChange={handleChange}
-        />
+        />,
       );
 
       const input = screen.getByLabelText("Password");
@@ -298,11 +274,7 @@ describe("PasswordInput Component", () => {
       const handleBlur = vi.fn();
 
       render(
-        <PasswordInput
-          label="Password"
-          name="password"
-          onBlur={handleBlur}
-        />
+        <PasswordInput label="Password" name="password" onBlur={handleBlur} />,
       );
 
       const input = screen.getByLabelText("Password");
@@ -318,7 +290,9 @@ describe("PasswordInput Component", () => {
     it("should have proper aria-label on toggle button", () => {
       render(<PasswordInput label="Password" name="password" />);
 
-      const toggleButton = screen.getByRole("button", { name: /show password/i });
+      const toggleButton = screen.getByRole("button", {
+        name: /show password/i,
+      });
       expect(toggleButton).toHaveAttribute("aria-label", "Show password");
     });
 
@@ -326,7 +300,9 @@ describe("PasswordInput Component", () => {
       const user = userEvent.setup();
       render(<PasswordInput label="Password" name="password" />);
 
-      const toggleButton = screen.getByRole("button", { name: /show password/i });
+      const toggleButton = screen.getByRole("button", {
+        name: /show password/i,
+      });
 
       await user.click(toggleButton);
 
@@ -339,7 +315,7 @@ describe("PasswordInput Component", () => {
           label="Password"
           name="password"
           error="Password is required"
-        />
+        />,
       );
 
       const input = screen.getByLabelText("Password");
@@ -361,20 +337,16 @@ describe("PasswordInput Component", () => {
       // Tab to toggle button
       await user.tab();
 
-      const toggleButton = screen.getByRole("button", { name: /show password/i });
+      const toggleButton = screen.getByRole("button", {
+        name: /show password/i,
+      });
       expect(toggleButton).toHaveFocus();
     });
   });
 
   describe("Disabled State", () => {
     it("should render as disabled when disabled prop is true", () => {
-      render(
-        <PasswordInput
-          label="Password"
-          name="password"
-          disabled
-        />
-      );
+      render(<PasswordInput label="Password" name="password" disabled />);
 
       const input = screen.getByLabelText("Password");
       expect(input).toBeDisabled();
@@ -382,13 +354,7 @@ describe("PasswordInput Component", () => {
 
     it("should not allow typing when disabled", async () => {
       const user = userEvent.setup();
-      render(
-        <PasswordInput
-          label="Password"
-          name="password"
-          disabled
-        />
-      );
+      render(<PasswordInput label="Password" name="password" disabled />);
 
       const input = screen.getByLabelText("Password") as HTMLInputElement;
 
@@ -398,44 +364,30 @@ describe("PasswordInput Component", () => {
     });
 
     it("should disable toggle button when input is disabled", () => {
-      render(
-        <PasswordInput
-          label="Password"
-          name="password"
-          disabled
-        />
-      );
+      render(<PasswordInput label="Password" name="password" disabled />);
 
-      const toggleButton = screen.getByRole("button", { name: /show password/i });
+      const toggleButton = screen.getByRole("button", {
+        name: /show password/i,
+      });
       expect(toggleButton).toBeDisabled();
     });
   });
 
   describe("Required Field", () => {
     it("should show required indicator when required", () => {
-      render(
-        <PasswordInput
-          label="Password"
-          name="password"
-          required
-        />
-      );
+      render(<PasswordInput label="Password" name="password" required />);
 
       const requiredIndicator = screen.getByText("*");
       expect(requiredIndicator).toBeInTheDocument();
     });
 
     it("should have aria-required attribute when required", () => {
-      render(
-        <PasswordInput
-          label="Password"
-          name="password"
-          required
-        />
-      );
+      render(<PasswordInput label="Password" name="password" required />);
 
       // Query by id which is derived from name
-      const input = document.getElementById("password-password") as HTMLInputElement;
+      const input = document.getElementById(
+        "password-password",
+      ) as HTMLInputElement;
       expect(input).toBeInTheDocument();
       expect(input).toHaveAttribute("aria-required", "true");
     });

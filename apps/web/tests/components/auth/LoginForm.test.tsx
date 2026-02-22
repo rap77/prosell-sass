@@ -83,7 +83,9 @@ describe("LoginForm Component", () => {
     it("should render login button", () => {
       render(<LoginForm />);
 
-      expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /sign in/i }),
+      ).toBeInTheDocument();
     });
 
     it("should render remember me checkbox", () => {
@@ -115,7 +117,9 @@ describe("LoginForm Component", () => {
       render(<LoginForm />);
 
       // Wait for dynamic OAuth buttons to load
-      const oauthButtons = await screen.findByRole("button", { name: /continue with google/i });
+      const oauthButtons = await screen.findByRole("button", {
+        name: /continue with google/i,
+      });
       expect(oauthButtons).toBeInTheDocument();
 
       // Verify divider text is also rendered
@@ -149,7 +153,9 @@ describe("LoginForm Component", () => {
       await user.type(emailInput, "invalid-email");
       await user.tab(); // Blur to trigger validation with mode="onBlur"
 
-      expect(await screen.findByText("Invalid email address")).toBeInTheDocument();
+      expect(
+        await screen.findByText("Invalid email address"),
+      ).toBeInTheDocument();
     });
 
     it("should show error when password is empty", async () => {
@@ -168,7 +174,9 @@ describe("LoginForm Component", () => {
       await user.clear(passwordInput); // Clear it
       await user.tab(); // Blur to trigger validation with mode="onBlur"
 
-      expect(await screen.findByText("Password is required")).toBeInTheDocument();
+      expect(
+        await screen.findByText("Password is required"),
+      ).toBeInTheDocument();
     });
 
     it("should show error when password is too short", async () => {
@@ -182,7 +190,9 @@ describe("LoginForm Component", () => {
       await user.type(passwordInput, "short");
       await user.tab(); // Blur to trigger validation with mode="onBlur"
 
-      expect(await screen.findByText("Password must be at least 8 characters")).toBeInTheDocument();
+      expect(
+        await screen.findByText("Password must be at least 8 characters"),
+      ).toBeInTheDocument();
     });
   });
 
@@ -201,7 +211,10 @@ describe("LoginForm Component", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockLogin).toHaveBeenCalledWith("user@example.com", "Password123!");
+        expect(mockLogin).toHaveBeenCalledWith(
+          "user@example.com",
+          "Password123!",
+        );
       });
     });
 
@@ -221,7 +234,10 @@ describe("LoginForm Component", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockLogin).toHaveBeenCalledWith("user@example.com", "Password123!");
+        expect(mockLogin).toHaveBeenCalledWith(
+          "user@example.com",
+          "Password123!",
+        );
       });
     });
 
@@ -320,7 +336,12 @@ describe("LoginForm Component", () => {
     it("should have proper heading", () => {
       render(<LoginForm />);
 
-      expect(screen.getByRole("heading", { level: 2, name: /sign in to your account/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", {
+          level: 2,
+          name: /sign in to your account/i,
+        }),
+      ).toBeInTheDocument();
     });
 
     it("should have proper form structure", () => {

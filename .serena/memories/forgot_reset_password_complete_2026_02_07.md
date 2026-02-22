@@ -8,11 +8,13 @@
 ### Part 1: Forgot-password Page ✅
 
 **Files Created:**
+
 - `apps/web/src/app/auth/forgot-password/page.tsx` - Server Component
 - `apps/web/src/components/auth/ForgotPasswordForm.tsx` - Client Component
 - `apps/web/tests/components/auth/ForgotPasswordForm.test.tsx`
 
 **Implementation:**
+
 - User enters email address
 - Calls `authApi.forgotPassword(email)`
 - Shows loading state during submission
@@ -24,6 +26,7 @@
 **Tests:** 15/15 passing ✅
 
 **Test Coverage:**
+
 - Email input rendering
 - Submit button rendering
 - Back to login link
@@ -38,11 +41,13 @@
 ### Part 2: Reset-password Page ✅
 
 **Files Created:**
+
 - `apps/web/src/app/auth/reset-password/page.tsx` - Server Component
 - `apps/web/src/components/auth/ResetPasswordForm.tsx` - Client Component
 - `apps/web/tests/components/auth/ResetPasswordForm.test.tsx`
 
 **Implementation:**
+
 - Server Component extracts token from URL searchParams
 - Token validation on mount (shows error if missing)
 - Password + confirm password inputs with PasswordInput component
@@ -55,6 +60,7 @@
 **Tests:** 14/14 passing ✅
 
 **Test Coverage:**
+
 - Password and confirm password inputs rendering
 - Token validation (empty, undefined)
 - Password validation (min 8 characters)
@@ -79,25 +85,26 @@
 
 ## Test Summary (Updated)
 
-| Component | Tests | Status |
-|-----------|-------|--------|
-| authStore | 13/13 | ✅ |
-| useAuth | 15/15 | ✅ |
-| authApi | 18/18 | ✅ |
-| PasswordInput | 29/29 | ✅ |
-| OAuthButtons | 24/24 | ✅ |
-| TwoFactorInput | 32/32 | ✅ |
-| LoginForm | 20/25 | ⚠️ (80%, known issue) |
-| RegisterForm | 31/34 | ⚠️ (91%, known issue) |
-| VerifyEmailForm | 13/13 | ✅ |
-| **ForgotPasswordForm** | **15/15** | **✅** |
-| **ResetPasswordForm** | **14/14** | **✅** |
+| Component              | Tests     | Status                |
+| ---------------------- | --------- | --------------------- |
+| authStore              | 13/13     | ✅                    |
+| useAuth                | 15/15     | ✅                    |
+| authApi                | 18/18     | ✅                    |
+| PasswordInput          | 29/29     | ✅                    |
+| OAuthButtons           | 24/24     | ✅                    |
+| TwoFactorInput         | 32/32     | ✅                    |
+| LoginForm              | 20/25     | ⚠️ (80%, known issue) |
+| RegisterForm           | 31/34     | ⚠️ (91%, known issue) |
+| VerifyEmailForm        | 13/13     | ✅                    |
+| **ForgotPasswordForm** | **15/15** | **✅**                |
+| **ResetPasswordForm**  | **14/14** | **✅**                |
 
 **Total: 240 tests passing** + 5 failed (LoginForm) + 3 skipped (RegisterForm) = **248 tests**
 
 ## Progress: 13/17 tasks (~76%)
 
 ### Completed:
+
 1. Environment Setup ✅
 2. authStore (Zustand) ✅
 3. useAuth Hook ✅
@@ -113,6 +120,7 @@
 13. **Forgot-password & Reset-password Pages ✅ [NEW]**
 
 ### Pending (4 remaining):
+
 14. 2FA-setup page
 15. Route protection middleware
 16. E2E tests (Playwright)
@@ -121,6 +129,7 @@
 ## Known Issues
 
 ### PasswordInput + React Hook Form
+
 **Problem:** PasswordInput manages internal state which conflicts with RHF when used with `register()`.
 
 **Workaround:** Component works but tests for password field interactions are skipped.
@@ -130,6 +139,7 @@
 ## TDD Methodology
 
 Strict TDD cycle maintained:
+
 1. **RED**: Tests written first with proper mocking (vi.hoisted for vitest)
 2. **GREEN**: Components implemented to pass tests
 3. **REFACTOR**: Cleaned up error handling, validation modes, accessibility
@@ -147,6 +157,7 @@ e1eba7f feat(web): implement login page and fix React 19/TypeScript issues
 ## Next Task
 
 **Task #14: 2FA-setup page** - Two-factor authentication setup flow
+
 - QR code display
 - Backup codes generation
 - Enable/disable 2FA

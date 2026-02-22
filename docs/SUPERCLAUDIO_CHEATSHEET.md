@@ -7,12 +7,12 @@
 
 ## 📊 Resumen Ejecutivo
 
-| Componente | Cantidad | Propósito |
-|------------|----------|-----------|
-| **Slash Commands** | 30 | Cubren el ciclo de vida completo del desarrollo |
-| **Agents** | 16 | Especialistas de dominio que se activan por contexto |
-| **Modes** | 7 | Comportamientos adaptativos según complejidad |
-| **MCP Servers** | 8 | Herramientas especializadas (docs, testing, UI, etc.) |
+| Componente         | Cantidad | Propósito                                             |
+| ------------------ | -------- | ----------------------------------------------------- |
+| **Slash Commands** | 30       | Cubren el ciclo de vida completo del desarrollo       |
+| **Agents**         | 16       | Especialistas de dominio que se activan por contexto  |
+| **Modes**          | 7        | Comportamientos adaptativos según complejidad         |
+| **MCP Servers**    | 8        | Herramientas especializadas (docs, testing, UI, etc.) |
 
 ---
 
@@ -39,60 +39,60 @@ superclaude mcp                  # Instalación interactiva
 
 ### 🧠 Planificación y Diseño (4)
 
-| Comando | Propósito | Cuándo Usar |
-|---------|-----------|-------------|
-| `/sc:brainstorm` | Descubrimiento interactivo de requisitos | Requisitos vagos, ideas sin definir |
-| `/sc:design` | Arquitectura de sistemas | Diseñar APIs, microservicios, sistemas distribuidos |
-| `/sc:estimate` | Estimación de esfuerzo/tiempo | Planificación de sprints, evaluación de tareas |
-| `/sc:spec-panel` | Análisis multi-experto de especificaciones | Revisión técnica profunda de PRDs |
+| Comando          | Propósito                                  | Cuándo Usar                                         |
+| ---------------- | ------------------------------------------ | --------------------------------------------------- |
+| `/sc:brainstorm` | Descubrimiento interactivo de requisitos   | Requisitos vagos, ideas sin definir                 |
+| `/sc:design`     | Arquitectura de sistemas                   | Diseñar APIs, microservicios, sistemas distribuidos |
+| `/sc:estimate`   | Estimación de esfuerzo/tiempo              | Planificación de sprints, evaluación de tareas      |
+| `/sc:spec-panel` | Análisis multi-experto de especificaciones | Revisión técnica profunda de PRDs                   |
 
 ### 💻 Desarrollo (5)
 
-| Comando | Propósito | Cuándo Usar |
-|---------|-----------|-------------|
-| `/sc:implement` | Implementación de código con mejores prácticas | Nuevas características, features |
-| `/sc:build` | Workflows de compilación | Compilar, empaquetar proyectos |
-| `/sc:improve` | Mejoras sistemáticas de código | Refactorización, optimización |
-| `/sc:cleanup` | Limpieza de código técnico | Eliminar código muerto, optimizar estructura |
-| `/sc:explain` | Explicación de código | Entender código complejo, documentación |
+| Comando         | Propósito                                      | Cuándo Usar                                  |
+| --------------- | ---------------------------------------------- | -------------------------------------------- |
+| `/sc:implement` | Implementación de código con mejores prácticas | Nuevas características, features             |
+| `/sc:build`     | Workflows de compilación                       | Compilar, empaquetar proyectos               |
+| `/sc:improve`   | Mejoras sistemáticas de código                 | Refactorización, optimización                |
+| `/sc:cleanup`   | Limpieza de código técnico                     | Eliminar código muerto, optimizar estructura |
+| `/sc:explain`   | Explicación de código                          | Entender código complejo, documentación      |
 
 ### 🧪 Testing y Calidad (4)
 
-| Comando | Propósito | Cuándo Usar |
-|---------|-----------|-------------|
-| `/sc:test` | Generación y ejecución de tests | Suites de prueba, cobertura |
-| `/sc:analyze` | Análisis de código y arquitectura | Code reviews, auditorías |
-| `/sc:troubleshoot` | Debugging sistemático | Bugs, problemas complejos |
-| `/sc:reflect` | Retrospectivas y análisis | Post-mortem, mejoras continuas |
+| Comando            | Propósito                         | Cuándo Usar                    |
+| ------------------ | --------------------------------- | ------------------------------ |
+| `/sc:test`         | Generación y ejecución de tests   | Suites de prueba, cobertura    |
+| `/sc:analyze`      | Análisis de código y arquitectura | Code reviews, auditorías       |
+| `/sc:troubleshoot` | Debugging sistemático             | Bugs, problemas complejos      |
+| `/sc:reflect`      | Retrospectivas y análisis         | Post-mortem, mejoras continuas |
 
 ### 📊 Gestión de Proyectos (3)
 
-| Comando | Propósito | Cuándo Usar |
-|---------|-----------|-------------|
-| `/sc:pm` | Project management | Coordinación de tareas, roadmap |
-| `/sc:task` | Tracking de tareas | Gestión de TODOs, dependencias |
+| Comando        | Propósito                   | Cuándo Usar                      |
+| -------------- | --------------------------- | -------------------------------- |
+| `/sc:pm`       | Project management          | Coordinación de tareas, roadmap  |
+| `/sc:task`     | Tracking de tareas          | Gestión de TODOs, dependencias   |
 | `/sc:workflow` | Automatización de workflows | Automatizar procesos repetitivos |
 
 ### 🔍 Investigación y Análisis (2)
 
-| Comando | Propósito | Cuándo Usar |
-|---------|-----------|-------------|
-| `/sc:research` | Investigación web profunda | Documentation, tendencias, mejores prácticas |
-| `/sc:business-panel` | Análisis multi-experto de negocio | Análisis estratégico, viabilidad |
+| Comando              | Propósito                         | Cuándo Usar                                  |
+| -------------------- | --------------------------------- | -------------------------------------------- |
+| `/sc:research`       | Investigación web profunda        | Documentation, tendencias, mejores prácticas |
+| `/sc:business-panel` | Análisis multi-experto de negocio | Análisis estratégico, viabilidad             |
 
 ### 🎯 Utilidades Clave (9)
 
-| Comando | Propósito | Cuándo Usar |
-|---------|-----------|-------------|
-| `/sc:agent` | Ejecutar agentes especializados | Activar experticia específica |
-| `/sc:index-repo` | Indexar repositorio | Optimizar contexto en código grandes |
-| `/sc:recommend` | Recomendar comandos | No sé qué comando usar |
-| `/sc:spawn` | Tareas paralelas | Operaciones independientes simultáneas |
-| `/sc:load` | Cargar sesión guardada | Retomar trabajo anterior |
-| `/sc:save` | Guardar sesión actual | Persistir progreso |
-| `/sc:sc` | Mostrar todos los comandos | Ayuda general |
-| `/sc:select-tool` | Selección inteligente de herramientas | Decidir qué herramienta usar |
-| `/sc:git` | Operaciones Git optimizadas | Commits, branches, PRs |
+| Comando           | Propósito                             | Cuándo Usar                            |
+| ----------------- | ------------------------------------- | -------------------------------------- |
+| `/sc:agent`       | Ejecutar agentes especializados       | Activar experticia específica          |
+| `/sc:index-repo`  | Indexar repositorio                   | Optimizar contexto en código grandes   |
+| `/sc:recommend`   | Recomendar comandos                   | No sé qué comando usar                 |
+| `/sc:spawn`       | Tareas paralelas                      | Operaciones independientes simultáneas |
+| `/sc:load`        | Cargar sesión guardada                | Retomar trabajo anterior               |
+| `/sc:save`        | Guardar sesión actual                 | Persistir progreso                     |
+| `/sc:sc`          | Mostrar todos los comandos            | Ayuda general                          |
+| `/sc:select-tool` | Selección inteligente de herramientas | Decidir qué herramienta usar           |
+| `/sc:git`         | Operaciones Git optimizadas           | Commits, branches, PRs                 |
 
 ---
 
@@ -100,43 +100,43 @@ superclaude mcp                  # Instalación interactiva
 
 ### Meta-Layer
 
-| Agent | Expertise | Auto-Activación |
-|-------|-----------|-----------------|
+| Agent        | Expertise                           | Auto-Activación                           |
+| ------------ | ----------------------------------- | ----------------------------------------- |
 | **pm-agent** | Auto-mejora continua, documentación | Post-implementación, detección de errores |
 
 ### Arquitectura y Diseño
 
-| Agent | Expertise | Keywords Trigger |
-|-------|-----------|------------------|
-| **system-architect** | Sistemas distribuidos, microservicios | "architecture", "microservices", "scalability" |
-| **backend-architect** | APIs robustas, data integrity | "API", "backend", "database", "REST", "GraphQL" |
-| **frontend-architect** | UI/UX, accesibilidad, componentes | "UI", "frontend", "React", "component", "responsive" |
-| **devops-architect** | CI/CD, infraestructura, deployment | "deploy", "CI/CD", "Docker", "Kubernetes" |
+| Agent                  | Expertise                             | Keywords Trigger                                     |
+| ---------------------- | ------------------------------------- | ---------------------------------------------------- |
+| **system-architect**   | Sistemas distribuidos, microservicios | "architecture", "microservices", "scalability"       |
+| **backend-architect**  | APIs robustas, data integrity         | "API", "backend", "database", "REST", "GraphQL"      |
+| **frontend-architect** | UI/UX, accesibilidad, componentes     | "UI", "frontend", "React", "component", "responsive" |
+| **devops-architect**   | CI/CD, infraestructura, deployment    | "deploy", "CI/CD", "Docker", "Kubernetes"            |
 
 ### Calidad y Análisis
 
-| Agent | Expertise | Keywords Trigger |
-|-------|-----------|------------------|
-| **security-engineer** | Seguridad, threat modeling | "security", "auth", "vulnerability", "OWASP" |
-| **performance-engineer** | Optimización, escalabilidad | "slow", "optimization", "bottleneck", "latency" |
-| **root-cause-analyst** | Debugging sistemático | "bug", "issue", "debugging", "troubleshoot" |
-| **quality-engineer** | Testing, QA, automatización | "test", "QA", "validation", "coverage" |
-| **refactoring-expert** | Clean code, SOLID, deuda técnica | "refactor", "clean code", "technical debt" |
+| Agent                    | Expertise                        | Keywords Trigger                                |
+| ------------------------ | -------------------------------- | ----------------------------------------------- |
+| **security-engineer**    | Seguridad, threat modeling       | "security", "auth", "vulnerability", "OWASP"    |
+| **performance-engineer** | Optimización, escalabilidad      | "slow", "optimization", "bottleneck", "latency" |
+| **root-cause-analyst**   | Debugging sistemático            | "bug", "issue", "debugging", "troubleshoot"     |
+| **quality-engineer**     | Testing, QA, automatización      | "test", "QA", "validation", "coverage"          |
+| **refactoring-expert**   | Clean code, SOLID, deuda técnica | "refactor", "clean code", "technical debt"      |
 
 ### Desarrollo Especializado
 
-| Agent | Expertise | Keywords Trigger |
-|-------|-----------|------------------|
-| **python-expert** | Python moderno, FastAPI, asyncio | ".py", "Django", "FastAPI", "asyncio" |
-| **requirements-analyst** | Descubrir y especificar requisitos | "requirements", "PRD", "user story" |
-| **deep-research-agent** | Investigación adaptativa multi-hop | "research", "investigate", "latest", "current" |
+| Agent                    | Expertise                          | Keywords Trigger                               |
+| ------------------------ | ---------------------------------- | ---------------------------------------------- |
+| **python-expert**        | Python moderno, FastAPI, asyncio   | ".py", "Django", "FastAPI", "asyncio"          |
+| **requirements-analyst** | Descubrir y especificar requisitos | "requirements", "PRD", "user story"            |
+| **deep-research-agent**  | Investigación adaptativa multi-hop | "research", "investigate", "latest", "current" |
 
 ### Comunicación y Aprendizaje
 
-| Agent | Expertise | Keywords Trigger |
-|-------|-----------|------------------|
-| **technical-writer** | Documentación técnica | "documentation", "readme", "API docs" |
-| **learning-guide** | Educación, tutoriales progresivos | "explain", "learn", "tutorial", "teaching" |
+| Agent                | Expertise                         | Keywords Trigger                           |
+| -------------------- | --------------------------------- | ------------------------------------------ |
+| **technical-writer** | Documentación técnica             | "documentation", "readme", "API docs"      |
+| **learning-guide**   | Educación, tutoriales progresivos | "explain", "learn", "tutorial", "teaching" |
 
 ### Formas de Uso
 
@@ -156,15 +156,15 @@ superclaude mcp                  # Instalación interactiva
 
 ## 🧠 Modes - Comportamientos Adaptativos
 
-| Mode | Propósito | Auto-Triggers | Comportamiento Clave |
-|------|-----------|---------------|---------------------|
-| **🧠 Brainstorming** | Descubrimiento interactivo | "brainstorm", peticiones vagas | Preguntas socráticas, elicición de requisitos |
-| **🔍 Introspection** | Análisis meta-cognitivo | Error recovery, "analyze reasoning" | Marcadores de pensamiento transparente (🤔, 🎯, 💡) |
-| **🔬 Deep Research** | Investigación sistemática | `/sc:research`, keywords investigación | 6-fases workflow, reasoning basado en evidencia |
-| **📋 Task Management** | Coordinación compleja | >3 pasos, >2 directorios | Plan por fases, persistencia de sesión |
-| **🎯 Orchestration** | Selección inteligente de tools | Multi-tool ops, alto consumo de recursos | Routing óptimo, ejecución paralela |
-| **⚡ Token Efficiency** | Comunicación comprimida | Alto uso de contexto, `--uc` | Sistemas de símbolos, 30-50% reducción de tokens |
-| **🎨 Standard** | Balance por defecto | Tareas simples sin indicadores de complejidad | Comunicación profesional estándar |
+| Mode                    | Propósito                      | Auto-Triggers                                 | Comportamiento Clave                                |
+| ----------------------- | ------------------------------ | --------------------------------------------- | --------------------------------------------------- |
+| **🧠 Brainstorming**    | Descubrimiento interactivo     | "brainstorm", peticiones vagas                | Preguntas socráticas, elicición de requisitos       |
+| **🔍 Introspection**    | Análisis meta-cognitivo        | Error recovery, "analyze reasoning"           | Marcadores de pensamiento transparente (🤔, 🎯, 💡) |
+| **🔬 Deep Research**    | Investigación sistemática      | `/sc:research`, keywords investigación        | 6-fases workflow, reasoning basado en evidencia     |
+| **📋 Task Management**  | Coordinación compleja          | >3 pasos, >2 directorios                      | Plan por fases, persistencia de sesión              |
+| **🎯 Orchestration**    | Selección inteligente de tools | Multi-tool ops, alto consumo de recursos      | Routing óptimo, ejecución paralela                  |
+| **⚡ Token Efficiency** | Comunicación comprimida        | Alto uso de contexto, `--uc`                  | Sistemas de símbolos, 30-50% reducción de tokens    |
+| **🎨 Standard**         | Balance por defecto            | Tareas simples sin indicadores de complejidad | Comunicación profesional estándar                   |
 
 ### Control Manual de Modes
 
@@ -181,16 +181,16 @@ superclaude mcp                  # Instalación interactiva
 
 ## 🔌 MCP Servers - Herramientas Especializadas
 
-| Server | Propósito | Triggers | API Key Requerida |
-|--------|-----------|----------|-------------------|
-| **context7** | Documentación oficial de librerías | Imports, framework keywords | ❌ No |
-| **sequential-thinking** | Reasoning multi-paso | `--think`, debugging | ❌ No |
-| **magic** | Generación de componentes UI modernos | "component", "UI", frontend | ✅ Sí |
-| **playwright** | Browser automation, E2E testing | "test", "e2e", "browser" | ❌ No |
-| **morphllm-fast-apply** | Transformaciones de código patrón | Multi-file edits, refactoring | ✅ Sí |
-| **serena** | Entendimiento semántico, memoria de proyecto | Symbol ops, proyectos grandes | ❌ No |
-| **tavily** | Web search, información en tiempo real | `/sc:research`, "latest" | ✅ Sí (free tier) |
-| **chrome-devtools** | Performance analysis, debugging | "performance", "debug", LCP | ❌ No |
+| Server                  | Propósito                                    | Triggers                      | API Key Requerida |
+| ----------------------- | -------------------------------------------- | ----------------------------- | ----------------- |
+| **context7**            | Documentación oficial de librerías           | Imports, framework keywords   | ❌ No             |
+| **sequential-thinking** | Reasoning multi-paso                         | `--think`, debugging          | ❌ No             |
+| **magic**               | Generación de componentes UI modernos        | "component", "UI", frontend   | ✅ Sí             |
+| **playwright**          | Browser automation, E2E testing              | "test", "e2e", "browser"      | ❌ No             |
+| **morphllm-fast-apply** | Transformaciones de código patrón            | Multi-file edits, refactoring | ✅ Sí             |
+| **serena**              | Entendimiento semántico, memoria de proyecto | Symbol ops, proyectos grandes | ❌ No             |
+| **tavily**              | Web search, información en tiempo real       | `/sc:research`, "latest"      | ✅ Sí (free tier) |
+| **chrome-devtools**     | Performance analysis, debugging              | "performance", "debug", LCP   | ❌ No             |
 
 ### Configuración de API Keys
 

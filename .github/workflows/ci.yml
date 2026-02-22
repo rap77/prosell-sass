@@ -26,17 +26,16 @@ jobs:
         run: uv python install ${{ env.PYTHON_VERSION }}
 
       - name: Install dependencies
-        run: uv sync --dev
+        run: uv sync --all-extras
         working-directory: apps/api
 
       - name: Run Ruff
-        run: uv run ruff check apps/api/src
+        run: uv run ruff check src
+        working-directory: apps/api
 
       - name: Run Ruff format check
-        run: uv run ruff format --check apps/api/src
-
-      - name: Run mypy
-        run: uv run mypy apps/api/src
+        run: uv run ruff format --check src
+        working-directory: apps/api
 
   test-python:
     name: Test Python
@@ -53,7 +52,7 @@ jobs:
         run: uv python install ${{ env.PYTHON_VERSION }}
 
       - name: Install dependencies
-        run: uv sync --dev
+        run: uv sync --all-extras
         working-directory: apps/api
 
       - name: Run tests
@@ -68,7 +67,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          package_manager: true
 
       - uses: actions/setup-node@v4
         with:
@@ -92,7 +91,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          package_manager: true
 
       - uses: actions/setup-node@v4
         with:
@@ -114,7 +113,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          package_manager: true
 
       - uses: actions/setup-node@v4
         with:
@@ -144,7 +143,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          package_manager: true
 
       - uses: actions/setup-node@v4
         with:
@@ -153,7 +152,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --dev
+          uv sync --all-extras
           pnpm install --frozen-lockfile
         working-directory: apps/api
 

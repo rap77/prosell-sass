@@ -7,12 +7,15 @@
 ---
 
 ## Phase 1: Domain Layer Unit Tests
+
 > **Target Coverage**: 90%+
 
 ### Objective
+
 Test all domain entities, value objects, and exceptions. Domain is pure Python with zero dependencies - fast and deterministic.
 
 ### 1.1 - User Entity Tests
+
 - **File**: `apps/api/tests/unit/domain/test_user_entity.py`
 - **Test Cases** (~20 tests):
   - `User.create()` factory method (default values, status, timestamps)
@@ -25,6 +28,7 @@ Test all domain entities, value objects, and exceptions. Domain is pure Python w
 - **Source**: `apps/api/src/prosell/domain/entities/user.py`
 
 ### 1.2 - Role & Permission Entity Tests
+
 - **File**: `apps/api/tests/unit/domain/test_role_entity.py`
 - **Test Cases** (~12 tests):
   - `RoleType` enum values (MASTER, MANAGER, SELLER_PROSELL, ORG_ADMIN, ORG_SELLER, CLIENT)
@@ -34,6 +38,7 @@ Test all domain entities, value objects, and exceptions. Domain is pure Python w
 - **Source**: `apps/api/src/prosell/domain/entities/role.py`
 
 ### 1.3 - Value Object Tests
+
 - **File**: `apps/api/tests/unit/domain/test_value_objects.py`
 - **Test Cases** (~15 tests):
   - `Email` VO: valid emails, invalid formats, disposable domain check
@@ -42,6 +47,7 @@ Test all domain entities, value objects, and exceptions. Domain is pure Python w
 - **Source**: `apps/api/src/prosell/domain/value_objects/`
 
 ### 1.4 - Domain Events & Exceptions Tests
+
 - **File**: `apps/api/tests/unit/domain/test_events_exceptions.py`
 - **Test Cases** (~10 tests):
   - All 7 domain events can be instantiated with correct data
@@ -50,6 +56,7 @@ Test all domain entities, value objects, and exceptions. Domain is pure Python w
 - **Source**: `apps/api/src/prosell/domain/events/`, `apps/api/src/prosell/domain/exceptions/`
 
 ### Checkpoint Gate 1
+
 - [ ] All domain tests pass (~57 tests)
 - [ ] Domain coverage >= 90%
 - [ ] No domain code changes needed (or changes documented)
@@ -57,12 +64,15 @@ Test all domain entities, value objects, and exceptions. Domain is pure Python w
 ---
 
 ## Phase 2: Infrastructure Service Unit Tests
+
 > **Target Coverage**: 80%+
 
 ### Objective
+
 Test all infrastructure services in isolation. Mock external dependencies (Redis, DB, file system).
 
 ### 2.1 - Password Service Tests
+
 - **File**: `apps/api/tests/unit/services/test_password_service.py`
 - **Test Cases** (~10 tests):
   - `hash_password()` - produces valid bcrypt hash
@@ -73,6 +83,7 @@ Test all infrastructure services in isolation. Mock external dependencies (Redis
 - **Source**: `apps/api/src/prosell/infrastructure/services/password_service.py`
 
 ### 2.2 - JWT Service Tests
+
 - **File**: `apps/api/tests/unit/services/test_jwt_service.py`
 - **Test Cases** (~15 tests):
   - `generate_access_token()` - payload contains sub, roles, type, exp, iat
@@ -87,6 +98,7 @@ Test all infrastructure services in isolation. Mock external dependencies (Redis
 - **Source**: `apps/api/src/prosell/infrastructure/services/jwt_service.py`
 
 ### 2.3 - TOTP Service Tests
+
 - **File**: `apps/api/tests/unit/services/test_totp_service.py`
 - **Test Cases** (~10 tests):
   - `generate_secret()` - produces valid base32 string
@@ -98,6 +110,7 @@ Test all infrastructure services in isolation. Mock external dependencies (Redis
 - **Source**: `apps/api/src/prosell/infrastructure/services/totp_service.py`
 
 ### 2.4 - Email Service Tests
+
 - **File**: `apps/api/tests/unit/services/test_email_service.py`
 - **Test Cases** (~8 tests):
   - `MockEmailService` - captures emails for testing
@@ -107,6 +120,7 @@ Test all infrastructure services in isolation. Mock external dependencies (Redis
 - **Source**: `apps/api/src/prosell/infrastructure/services/email_service.py`
 
 ### 2.5 - Test Configuration & Fixtures
+
 - **File**: `apps/api/tests/conftest.py`
 - **Setup**:
   - Test RSA key pair generation (in-memory, not file-based)
@@ -118,6 +132,7 @@ Test all infrastructure services in isolation. Mock external dependencies (Redis
 - **File**: `apps/api/tests/unit/conftest.py` (unit-specific fixtures)
 
 ### Checkpoint Gate 2
+
 - [ ] All service tests pass (~43 tests)
 - [ ] Service coverage >= 80%
 - [ ] Test infrastructure (conftest, factories) established
@@ -126,12 +141,15 @@ Test all infrastructure services in isolation. Mock external dependencies (Redis
 ---
 
 ## Phase 3: Application Layer Unit Tests (Use Cases)
+
 > **Target Coverage**: 85%+
 
 ### Objective
+
 Test all use cases with mocked repositories and services. Verify business logic orchestration.
 
 ### 3.1 - RegisterUser Use Case Tests
+
 - **File**: `apps/api/tests/unit/use_cases/test_register_user.py`
 - **Test Cases** (~12 tests):
   - Successful registration (happy path)
@@ -145,6 +163,7 @@ Test all use cases with mocked repositories and services. Verify business logic 
 - **Source**: `apps/api/src/prosell/application/use_cases/auth/register_user.py`
 
 ### 3.2 - LoginUser Use Case Tests
+
 - **File**: `apps/api/tests/unit/use_cases/test_login_user.py`
 - **Test Cases** (~18 tests):
   - Successful login (happy path, returns tokens)
@@ -161,6 +180,7 @@ Test all use cases with mocked repositories and services. Verify business logic 
 - **Source**: `apps/api/src/prosell/application/use_cases/auth/login_user.py`
 
 ### 3.3 - VerifyEmail & ResetPassword Use Case Tests
+
 - **File**: `apps/api/tests/unit/use_cases/test_verify_email.py`
 - **File**: `apps/api/tests/unit/use_cases/test_reset_password.py`
 - **Test Cases** (~15 tests combined):
@@ -175,6 +195,7 @@ Test all use cases with mocked repositories and services. Verify business logic 
 - **Mocks**: `user_repository`, `email_service`, `password_service`
 
 ### 3.4 - 2FA Use Case Tests
+
 - **File**: `apps/api/tests/unit/use_cases/test_2fa.py`
 - **Test Cases** (~15 tests):
   - Enable 2FA: generates secret + QR URI + backup codes
@@ -187,6 +208,7 @@ Test all use cases with mocked repositories and services. Verify business logic 
 - **Mocks**: `user_repository`, `totp_service`, `jwt_service`
 
 ### 3.5 - RefreshToken & OAuthLogin Use Case Tests
+
 - **File**: `apps/api/tests/unit/use_cases/test_refresh_token.py`
 - **File**: `apps/api/tests/unit/use_cases/test_oauth_login.py`
 - **Test Cases** (~12 tests combined):
@@ -198,6 +220,7 @@ Test all use cases with mocked repositories and services. Verify business logic 
   - OAuth login: invalid provider -> error
 
 ### Checkpoint Gate 3
+
 - [ ] All use case tests pass (~72 tests)
 - [ ] Use case coverage >= 85%
 - [ ] Business logic validated end-to-end (mocked)
@@ -206,12 +229,15 @@ Test all use cases with mocked repositories and services. Verify business logic 
 ---
 
 ## Phase 4: API Integration Tests
+
 > **Target Coverage**: 70%+
 
 ### Objective
+
 Test FastAPI endpoints with TestClient against a real (test) database. Verify HTTP contracts, status codes, and error responses.
 
 ### 4.1 - Integration Test Infrastructure
+
 - **File**: `apps/api/tests/integration/conftest.py`
 - **Setup**:
   - Test database (separate PostgreSQL schema or SQLite async)
@@ -222,6 +248,7 @@ Test FastAPI endpoints with TestClient against a real (test) database. Verify HT
 - **Pattern**: Use `app.dependency_overrides` for DI in tests
 
 ### 4.2 - Auth Endpoint Integration Tests
+
 - **File**: `apps/api/tests/integration/api/test_auth_endpoints.py`
 - **Test Cases** (~20 tests):
   - `POST /api/auth/register` - 201 Created with valid data
@@ -240,6 +267,7 @@ Test FastAPI endpoints with TestClient against a real (test) database. Verify HT
   - Content-Type is application/json
 
 ### 4.3 - 2FA Endpoint Integration Tests
+
 - **File**: `apps/api/tests/integration/api/test_2fa_endpoints.py`
 - **Test Cases** (~10 tests):
   - `POST /api/auth/2fa/enable` - 200 with QR code URI and backup codes
@@ -249,6 +277,7 @@ Test FastAPI endpoints with TestClient against a real (test) database. Verify HT
   - Full 2FA lifecycle: enable -> login -> verify -> disable
 
 ### 4.4 - Middleware & Security Integration Tests
+
 - **File**: `apps/api/tests/integration/api/test_middleware.py`
 - **Test Cases** (~10 tests):
   - JWT middleware: valid token passes
@@ -261,6 +290,7 @@ Test FastAPI endpoints with TestClient against a real (test) database. Verify HT
   - Exception handlers: domain exceptions -> correct HTTP status codes
 
 ### Checkpoint Gate 4
+
 - [ ] All integration tests pass (~40 tests)
 - [ ] API coverage >= 70%
 - [ ] HTTP contracts validated (status codes, response shapes)

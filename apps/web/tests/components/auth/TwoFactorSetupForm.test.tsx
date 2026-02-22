@@ -68,7 +68,18 @@ import { authApi } from "@/lib/api/authApi";
 describe("TwoFactorSetupForm Component", () => {
   const mockQRCode =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-  const mockBackupCodes = ["123456", "234567", "345678", "456789", "567890", "678901", "789012", "890123", "901234", "012345"];
+  const mockBackupCodes = [
+    "123456",
+    "234567",
+    "345678",
+    "456789",
+    "567890",
+    "678901",
+    "789012",
+    "890123",
+    "901234",
+    "012345",
+  ];
 
   beforeEach(() => {
     enable2FAMock.mockResolvedValue({
@@ -96,7 +107,9 @@ describe("TwoFactorSetupForm Component", () => {
       // Should show idle state with "Enable 2FA" button
       await waitFor(() => {
         expect(screen.getByText(/protect your account/i)).toBeInTheDocument();
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
     });
 
@@ -106,7 +119,9 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Wait for idle state
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
 
       // Click Enable button
@@ -125,12 +140,16 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Wait for idle state and click Enable
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
       // Should show loading state
-      expect(screen.getByText(/setting up two-factor authentication/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/setting up two-factor authentication/i),
+      ).toBeInTheDocument();
       expect(screen.getByRole("status")).toBeInTheDocument();
     });
 
@@ -140,7 +159,9 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Wait for idle state and click Enable
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
@@ -158,13 +179,17 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Wait for idle state and click Enable
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
       // Wait for setup state
       await waitFor(() => {
-        expect(screen.getByRole("heading", { name: /set up two-factor/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("heading", { name: /set up two-factor/i }),
+        ).toBeInTheDocument();
       });
 
       // Check if backup codes section is shown
@@ -184,7 +209,9 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Wait for idle state and click Enable
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
@@ -202,13 +229,17 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable button first
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
       // Now should show setup state with input
       await waitFor(() => {
-        expect(screen.getByRole("heading", { name: /set up two-factor/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("heading", { name: /set up two-factor/i }),
+        ).toBeInTheDocument();
       });
 
       expect(screen.getByLabelText(/2fa code/i)).toBeInTheDocument();
@@ -220,13 +251,17 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable button first
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
       // Wait for setup state
       await waitFor(() => {
-        expect(screen.getByRole("heading", { name: /set up two-factor/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("heading", { name: /set up two-factor/i }),
+        ).toBeInTheDocument();
       });
 
       // Wait for TwoFactorInput to be ready
@@ -239,7 +274,9 @@ describe("TwoFactorSetupForm Component", () => {
       await user.paste("123456");
 
       // Submit form
-      const verifyButton = screen.getByRole("button", { name: /verify and enable/i });
+      const verifyButton = screen.getByRole("button", {
+        name: /verify and enable/i,
+      });
       await user.click(verifyButton);
 
       await waitFor(() => {
@@ -254,13 +291,17 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable button first
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
       // Wait for setup state
       await waitFor(() => {
-        expect(screen.getByRole("heading", { name: /set up two-factor/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("heading", { name: /set up two-factor/i }),
+        ).toBeInTheDocument();
       });
 
       const inputs = screen.getAllByRole("textbox");
@@ -269,7 +310,9 @@ describe("TwoFactorSetupForm Component", () => {
 
       await user.paste("123456");
 
-      const verifyButton = screen.getByRole("button", { name: /verify and enable/i });
+      const verifyButton = screen.getByRole("button", {
+        name: /verify and enable/i,
+      });
       await user.click(verifyButton);
 
       expect(screen.getByText(/verifying/i)).toBeInTheDocument();
@@ -281,13 +324,17 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable button first
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
       // Wait for setup state
       await waitFor(() => {
-        expect(screen.getByRole("heading", { name: /set up two-factor/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("heading", { name: /set up two-factor/i }),
+        ).toBeInTheDocument();
       });
 
       const inputs = screen.getAllByRole("textbox");
@@ -296,11 +343,15 @@ describe("TwoFactorSetupForm Component", () => {
 
       await user.paste("123456");
 
-      const verifyButton = screen.getByRole("button", { name: /verify and enable/i });
+      const verifyButton = screen.getByRole("button", {
+        name: /verify and enable/i,
+      });
       await user.click(verifyButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/two-factor authentication enabled/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/two-factor authentication enabled/i),
+        ).toBeInTheDocument();
       });
     });
 
@@ -310,13 +361,17 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable button first
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
       // Wait for setup state
       await waitFor(() => {
-        expect(screen.getByRole("heading", { name: /set up two-factor/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("heading", { name: /set up two-factor/i }),
+        ).toBeInTheDocument();
       });
 
       const inputs = screen.getAllByRole("textbox");
@@ -325,7 +380,9 @@ describe("TwoFactorSetupForm Component", () => {
 
       await user.paste("123456");
 
-      const verifyButton = screen.getByRole("button", { name: /verify and enable/i });
+      const verifyButton = screen.getByRole("button", {
+        name: /verify and enable/i,
+      });
       await user.click(verifyButton);
 
       await waitFor(() => {
@@ -340,13 +397,17 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable button first
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
       // Wait for setup state
       await waitFor(() => {
-        expect(screen.getByRole("heading", { name: /set up two-factor/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("heading", { name: /set up two-factor/i }),
+        ).toBeInTheDocument();
       });
 
       const inputs = screen.getAllByRole("textbox");
@@ -355,7 +416,9 @@ describe("TwoFactorSetupForm Component", () => {
 
       await user.paste("123456");
 
-      const verifyButton = screen.getByRole("button", { name: /verify and enable/i });
+      const verifyButton = screen.getByRole("button", {
+        name: /verify and enable/i,
+      });
       await user.click(verifyButton);
 
       // Should show error message - use more specific matcher or getAllByText
@@ -370,15 +433,21 @@ describe("TwoFactorSetupForm Component", () => {
     it("should show disable section when 2FA is already enabled", () => {
       render(<TwoFactorSetupForm is2FAEnabled={true} />);
 
-      expect(screen.getByText(/two-factor authentication is enabled/i)).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /disable 2fa/i })).toBeInTheDocument();
+      expect(
+        screen.getByText(/two-factor authentication is enabled/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /disable 2fa/i }),
+      ).toBeInTheDocument();
     });
 
     it("should call disable2FA when clicking disable button", async () => {
       const user = userEvent.setup();
       render(<TwoFactorSetupForm is2FAEnabled={true} />);
 
-      const disableButton = screen.getByRole("button", { name: /disable 2fa/i });
+      const disableButton = screen.getByRole("button", {
+        name: /disable 2fa/i,
+      });
       await user.click(disableButton);
 
       await waitFor(() => {
@@ -391,11 +460,15 @@ describe("TwoFactorSetupForm Component", () => {
       disable2FAMock.mockImplementation(() => new Promise(() => {})); // Never resolves
       render(<TwoFactorSetupForm is2FAEnabled={true} />);
 
-      const disableButton = screen.getByRole("button", { name: /disable 2fa/i });
+      const disableButton = screen.getByRole("button", {
+        name: /disable 2fa/i,
+      });
       await user.click(disableButton);
 
       // Button should be replaced with disabling state
-      expect(screen.queryByRole("button", { name: /disable 2fa/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /disable 2fa/i }),
+      ).not.toBeInTheDocument();
       // Text "Disabling..." should be present somewhere in the document
       expect(screen.getAllByText(/disabling/i).length).toBeGreaterThan(0);
     });
@@ -404,11 +477,15 @@ describe("TwoFactorSetupForm Component", () => {
       const user = userEvent.setup();
       render(<TwoFactorSetupForm is2FAEnabled={true} />);
 
-      const disableButton = screen.getByRole("button", { name: /disable 2fa/i });
+      const disableButton = screen.getByRole("button", {
+        name: /disable 2fa/i,
+      });
       await user.click(disableButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/two-factor authentication disabled/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/two-factor authentication disabled/i),
+        ).toBeInTheDocument();
       });
     });
 
@@ -416,7 +493,9 @@ describe("TwoFactorSetupForm Component", () => {
       const user = userEvent.setup();
       render(<TwoFactorSetupForm is2FAEnabled={true} />);
 
-      const disableButton = screen.getByRole("button", { name: /disable 2fa/i });
+      const disableButton = screen.getByRole("button", {
+        name: /disable 2fa/i,
+      });
       await user.click(disableButton);
 
       await waitFor(() => {
@@ -429,7 +508,9 @@ describe("TwoFactorSetupForm Component", () => {
       disable2FAMock.mockRejectedValue(new Error("Failed to disable 2FA"));
       render(<TwoFactorSetupForm is2FAEnabled={true} />);
 
-      const disableButton = screen.getByRole("button", { name: /disable 2fa/i });
+      const disableButton = screen.getByRole("button", {
+        name: /disable 2fa/i,
+      });
       await user.click(disableButton);
 
       // The component should handle the error gracefully
@@ -447,13 +528,17 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable button first
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
       // Wait for setup state and complete verification
       await waitFor(() => {
-        expect(screen.getByRole("heading", { name: /set up two-factor/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("heading", { name: /set up two-factor/i }),
+        ).toBeInTheDocument();
       });
 
       const inputs = screen.getAllByRole("textbox");
@@ -462,11 +547,15 @@ describe("TwoFactorSetupForm Component", () => {
 
       await user.paste("123456");
 
-      const verifyButton = screen.getByRole("button", { name: /verify and enable/i });
+      const verifyButton = screen.getByRole("button", {
+        name: /verify and enable/i,
+      });
       await user.click(verifyButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/two-factor authentication enabled/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/two-factor authentication enabled/i),
+        ).toBeInTheDocument();
       });
 
       const doneButton = screen.getByRole("button", { name: /done/i });
@@ -481,17 +570,23 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable button first
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
       // Wait for setup state
       await waitFor(() => {
-        expect(screen.getByRole("heading", { name: /set up two-factor/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("heading", { name: /set up two-factor/i }),
+        ).toBeInTheDocument();
       });
 
       // Check if download button exists
-      const downloadButton = screen.getByRole("button", { name: /download backup codes/i });
+      const downloadButton = screen.getByRole("button", {
+        name: /download backup codes/i,
+      });
       expect(downloadButton).toBeInTheDocument();
     });
   });
@@ -502,7 +597,9 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Should show idle state with heading
       await waitFor(() => {
-        expect(screen.getByText(/set up two-factor authentication/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/set up two-factor authentication/i),
+        ).toBeInTheDocument();
       });
     });
 
@@ -513,7 +610,9 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable to trigger loading
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
@@ -527,13 +626,17 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable first
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
       // Wait for setup state
       await waitFor(() => {
-        expect(screen.getByRole("heading", { name: /set up two-factor/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("heading", { name: /set up two-factor/i }),
+        ).toBeInTheDocument();
       });
 
       expect(screen.getByLabelText(/2fa code/i)).toBeInTheDocument();
@@ -551,16 +654,22 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable first
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
       // Wait for setup state
       await waitFor(() => {
-        expect(screen.getByRole("heading", { name: /set up two-factor/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("heading", { name: /set up two-factor/i }),
+        ).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/no backup codes available/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/no backup codes available/i),
+      ).toBeInTheDocument();
     });
 
     it("should handle network errors gracefully", async () => {
@@ -570,7 +679,9 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable first
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
@@ -592,12 +703,17 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable to trigger loading state
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 
       // Should add beforeunload listener during loading
-      expect(addEventListenerSpy).toHaveBeenCalledWith("beforeunload", expect.any(Function));
+      expect(addEventListenerSpy).toHaveBeenCalledWith(
+        "beforeunload",
+        expect.any(Function),
+      );
 
       addEventListenerSpy.mockRestore();
     });
@@ -607,7 +723,10 @@ describe("TwoFactorSetupForm Component", () => {
       render(<TwoFactorSetupForm is2FAEnabled={false} />);
 
       // Should NOT add beforeunload listener in idle state
-      expect(addEventListenerSpy).not.toHaveBeenCalledWith("beforeunload", expect.any(Function));
+      expect(addEventListenerSpy).not.toHaveBeenCalledWith(
+        "beforeunload",
+        expect.any(Function),
+      );
 
       addEventListenerSpy.mockRestore();
     });
@@ -621,7 +740,9 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Click Enable
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: /enable 2fa/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /enable 2fa/i }),
+        ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: /enable 2fa/i }));
 

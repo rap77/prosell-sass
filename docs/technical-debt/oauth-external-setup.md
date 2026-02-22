@@ -10,17 +10,20 @@
 ## 📋 Overview
 
 **Current State**:
+
 - ✅ Backend OAuth code: 100% complete
 - ✅ Frontend OAuth UI: 100% complete
 - ✅ OAuth flow logic: 100% complete
 - ❌ External OAuth apps: NOT CREATED (blocking production use)
 
 **What's Missing**:
+
 1. Google OAuth app creation (Google Cloud Console)
 2. Facebook OAuth app creation (Meta Developers)
 3. Environment variables configuration
 
 **Estimated Time**: 30 minutes total
+
 - Google OAuth: 15 minutes
 - Facebook OAuth: 15 minutes
 
@@ -64,6 +67,7 @@ However, OAuth 2.0 protocol requires **external configuration**:
    - Sign in with your Google account
 
 2. **Create new project** (or select existing)
+
    ```
    Click "Select a project" → "New Project"
    Project name: ProSell OAuth (or any name you prefer)
@@ -81,6 +85,7 @@ However, OAuth 2.0 protocol requires **external configuration**:
 ### Step 2: Configure OAuth Consent Screen
 
 1. **Go to OAuth consent screen**
+
    ```
    Navigation menu → "APIs & Services" → "OAuth consent screen"
    ```
@@ -90,6 +95,7 @@ However, OAuth 2.0 protocol requires **external configuration**:
    - Click "Create"
 
 3. **Fill in app information**
+
    ```
    App name: ProSell
    User support email: your-email@example.com
@@ -100,6 +106,7 @@ However, OAuth 2.0 protocol requires **external configuration**:
    ```
 
 4. **Add scopes** (permissions)
+
    ```
    Click "Add or remove scopes"
    Search and add:
@@ -110,6 +117,7 @@ However, OAuth 2.0 protocol requires **external configuration**:
    ```
 
 5. **Add test users** (for External user type)
+
    ```
    Click "Add users"
    Add your email address as test user
@@ -123,22 +131,26 @@ However, OAuth 2.0 protocol requires **external configuration**:
 ### Step 3: Create OAuth 2.0 Credentials
 
 1. **Go to Credentials page**
+
    ```
    Navigation menu → "APIs & Services" → "Credentials"
    ```
 
 2. **Create OAuth client ID**
+
    ```
    Click "Create Credentials" → "OAuth client ID"
    ```
 
 3. **Configure application type**
+
    ```
    Application type: Web application
    Name: ProSell Web Client
    ```
 
 4. **Configure authorized JavaScript origins**
+
    ```
    For DEVELOPMENT:
    - http://localhost:3000
@@ -150,6 +162,7 @@ However, OAuth 2.0 protocol requires **external configuration**:
    ```
 
 5. **Configure authorized redirect URIs**
+
    ```
    For DEVELOPMENT:
    - http://localhost:3000/auth/callback/google
@@ -161,11 +174,13 @@ However, OAuth 2.0 protocol requires **external configuration**:
    ```
 
 6. **Create and save credentials**
+
    ```
    Click "Create"
    ```
 
 7. **Copy your credentials** ⚠️ **IMPORTANT**
+
    ```
    Client ID: 123456789-abcdefg.apps.googleusercontent.com
    Client Secret: GOCSPX-xxxxxxxxxxxxxxxxxxxx
@@ -200,6 +215,7 @@ GOOGLE_OAUTH_REDIRECT_URI="http://localhost:3000/auth/callback/google"
 #### Option A: Test with Frontend UI
 
 1. **Start backend** (Terminal 1)
+
    ```bash
    cd apps/api
    source .venv/bin/activate
@@ -207,12 +223,14 @@ GOOGLE_OAUTH_REDIRECT_URI="http://localhost:3000/auth/callback/google"
    ```
 
 2. **Start frontend** (Terminal 2)
+
    ```bash
    cd apps/web
    pnpm dev
    ```
 
 3. **Open browser**
+
    ```
    http://localhost:3000/auth/login
    ```
@@ -227,11 +245,13 @@ GOOGLE_OAUTH_REDIRECT_URI="http://localhost:3000/auth/callback/google"
 #### Option B: Test with cURL
 
 1. **Get OAuth URL**
+
    ```bash
    curl "http://localhost:8000/api/auth/oauth/google?url" | jq
    ```
 
 2. **Copy `auth_url` from response**
+
    ```json
    {
      "auth_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=..."
@@ -244,11 +264,13 @@ GOOGLE_OAUTH_REDIRECT_URI="http://localhost:3000/auth/callback/google"
    - Google redirects to: `http://localhost:3000/auth/callback/google?code=4/0AXXXXX...`
 
 4. **Copy `code` from URL**
+
    ```
    http://localhost:3000/auth/callback/google?code=4/0AXXXXX&scope=...
    ```
 
 5. **Exchange code for tokens**
+
    ```bash
    curl -X POST "http://localhost:8000/api/auth/oauth/callback" \
      -H "Content-Type: application/json" \
@@ -284,17 +306,20 @@ GOOGLE_OAUTH_REDIRECT_URI="http://localhost:3000/auth/callback/google"
    - Sign in with your Facebook account
 
 2. **Create new app**
+
    ```
    Click "My Apps" → "Create App"
    ```
 
 3. **Choose app type**
+
    ```
    Select: "Consumer"
    Click "Next"
    ```
 
 4. **Fill in app information**
+
    ```
    App name: ProSell
    App contact email: your-email@example.com
@@ -309,12 +334,14 @@ GOOGLE_OAUTH_REDIRECT_URI="http://localhost:3000/auth/callback/google"
 ### Step 2: Configure Facebook Login
 
 1. **Add Facebook Login product**
+
    ```
    Dashboard → "Add Product" → "Facebook Login"
    Click "Set Up"
    ```
 
 2. **Configure OAuth redirect URIs**
+
    ```
    Go to "Facebook Login" → "Settings"
 
@@ -331,6 +358,7 @@ GOOGLE_OAUTH_REDIRECT_URI="http://localhost:3000/auth/callback/google"
    ```
 
 3. **Get your app credentials**
+
    ```
    Dashboard → "Settings" → "Basic"
 
@@ -376,12 +404,14 @@ Same process as Google (Option A or B above), using "Login with Facebook" button
    - https://console.cloud.google.com/
 
 2. **Edit OAuth client**
+
    ```
    APIs & Services → Credentials
    Click on your OAuth 2.0 Client ID
    ```
 
 3. **Add production URIs**
+
    ```
    Authorized JavaScript origins:
    - https://your-domain.com
@@ -400,11 +430,13 @@ Same process as Google (Option A or B above), using "Login with Facebook" button
    - https://developers.facebook.com/
 
 2. **Edit app settings**
+
    ```
    Facebook Login → Settings
    ```
 
 3. **Add production redirect URI**
+
    ```
    Valid OAuth Redirect URIs:
    - https://your-domain.com/auth/callback/facebook
@@ -415,6 +447,7 @@ Same process as Google (Option A or B above), using "Login with Facebook" button
 #### 3. Update Environment Variables
 
 **Production** `.env`:
+
 ```bash
 # Production URIs
 GOOGLE_OAUTH_REDIRECT_URI="https://your-domain.com/auth/callback/google"
@@ -437,11 +470,13 @@ FACEBOOK_OAUTH_REDIRECT_URI="https://your-domain.com/auth/callback/facebook"
 #### 1. `redirect_uri_mismatch` Error
 
 **Symptom**:
+
 ```
 Error 400: redirect_uri_mismatch
 ```
 
 **Solution**:
+
 - Check that the redirect URI in your `.env` **EXACTLY MATCHES** the one in Google/Facebook Console
 - Include `http://` or `https://`
 - Include port number for development (`:3000`)
@@ -450,11 +485,13 @@ Error 400: redirect_uri_mismatch
 #### 2. `invalid_client` Error
 
 **Symptom**:
+
 ```
 Error 401: invalid_client
 ```
 
 **Solution**:
+
 - Verify `client_id` and `client_secret` are correct
 - Check for extra spaces in `.env` file
 - Regenerate credentials if needed
@@ -464,6 +501,7 @@ Error 401: invalid_client
 **Symptom**: Click "Login with Google" but nothing happens
 
 **Solution**:
+
 - Check browser console for errors
 - Verify backend is running on port 8000
 - Verify frontend is running on port 3000
@@ -474,6 +512,7 @@ Error 401: invalid_client
 **Symptom**: OAuth flow completes but user not in database
 
 **Solution**:
+
 - Check backend logs for errors
 - Verify database connection
 - Check `oauth_login.py` use case logic
@@ -482,6 +521,7 @@ Error 401: invalid_client
 ### Debug Mode
 
 **Enable verbose logging**:
+
 ```python
 # apps/api/src/prosell/infrastructure/api/main.py
 import logging
@@ -490,6 +530,7 @@ logging.basicConfig(level=logging.DEBUG)
 ```
 
 **Check backend logs**:
+
 ```bash
 # Should show OAuth flow steps
 DEBUG:prosell.application.use_cases.auth.oauth_login:Executing OAuth login
@@ -523,6 +564,7 @@ DEBUG:prosell.infrastructure.repositories.oauth_repository:Getting user by OAuth
 ## 📋 Checklist
 
 ### Development Setup
+
 - [ ] Create Google Cloud project
 - [ ] Enable Google+ API / People API
 - [ ] Configure OAuth consent screen
@@ -539,6 +581,7 @@ DEBUG:prosell.infrastructure.repositories.oauth_repository:Getting user by OAuth
 - [ ] Test Facebook OAuth flow
 
 ### Production Setup (when ready)
+
 - [ ] Add production domain to Google OAuth app
 - [ ] Add production domain to Facebook app
 - [ ] Update `.env` with production URIs
@@ -551,17 +594,20 @@ DEBUG:prosell.infrastructure.repositories.oauth_repository:Getting user by OAuth
 ## 🔗 Resources
 
 ### Google OAuth
+
 - [Google Cloud Console](https://console.cloud.google.com/)
 - [Google+ API Documentation](https://developers.google.com/+/api/latest)
 - [People API Documentation](https://developers.google.com/people/api/rest/v1/people)
 - [OAuth 2.0 for Mobile & Desktop Apps](https://developers.google.com/identity/protocols/oauth2)
 
 ### Facebook OAuth
+
 - [Meta for Developers](https://developers.facebook.com/)
 - [Facebook Login Documentation](https://developers.facebook.com/docs/facebook-login)
 - [OAuth Reference](https://developers.facebook.com/docs/reference/android/com.facebook/login)
 
 ### OAuth 2.0
+
 - [RFC 6749 - OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749)
 - [OAuth 2.0 Security Best Practices](https://datatracker.ietf.org/doc/html/rfc6819)
 

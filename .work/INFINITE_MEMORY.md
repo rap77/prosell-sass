@@ -19,6 +19,7 @@
 ### DURANTE la sesión
 
 **Auto-guardado cada**:
+
 - ✅ Tarea completada
 - 🔄 Decisión arquitectónica importante
 - 💡 Nueva regla/patrón descubierto
@@ -30,11 +31,13 @@
 ### ANTES de perder contexto
 
 **Señales de peligro**:
+
 - Aparece tag `<summmary>` en system reminder = comprimiendo contexto
 - Muchos mensajes acumulados (>50)
 - Sensación de "bucle" o repetición
 
 **Acción inmediata**:
+
 ```bash
 ./.work/memory.sh save
 ./.work/memory.sh clean
@@ -42,16 +45,16 @@
 
 ## Comandos Disponibles
 
-| Comando | Descripción |
-|---------|-------------|
-| `./.work/memory.sh load` | Cargar contexto actual |
-| `./.work/memory.sh save` | Crear checkpoint |
-| `./.work/memory.sh status` | Ver tamaño de memoria (tokens estimados) |
-| `./.work/memory.sh add "tarea"` | Agregar a cola |
-| `./.work/memory.sh lesson "x"` | Registrar lección |
-| `./.work/memory.sh rule "x"` | Agregar regla |
-| `./.work/memory.sh rules` | Ver todas las reglas |
-| `./.work/memory.sh clean` | Limpiar checkpoints viejos |
+| Comando                         | Descripción                              |
+| ------------------------------- | ---------------------------------------- |
+| `./.work/memory.sh load`        | Cargar contexto actual                   |
+| `./.work/memory.sh save`        | Crear checkpoint                         |
+| `./.work/memory.sh status`      | Ver tamaño de memoria (tokens estimados) |
+| `./.work/memory.sh add "tarea"` | Agregar a cola                           |
+| `./.work/memory.sh lesson "x"`  | Registrar lección                        |
+| `./.work/memory.sh rule "x"`    | Agregar regla                            |
+| `./.work/memory.sh rules`       | Ver todas las reglas                     |
+| `./.work/memory.sh clean`       | Limpiar checkpoints viejos               |
 
 ## Reglas CRÍTICAS del Proyecto
 
@@ -66,6 +69,7 @@ Estas reglas están en `.work/rules.md` y DEBEN respetarse:
 ## Estimación de Tokens
 
 El script `memory.sh status` muestra:
+
 - Líneas por archivo
 - Tokens estimados (~3.5 chars/token en español)
 - Total de memoria activa
