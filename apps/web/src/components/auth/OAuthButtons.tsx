@@ -53,6 +53,12 @@ export interface OAuthButtonsProps {
    * Disable both buttons
    */
   disabled?: boolean;
+
+  /**
+   * Callback when mouse enters the button container
+   * Used for intent-based preload optimization
+   */
+  onMouseEnter?: () => void;
 }
 
 // ============================================
@@ -162,11 +168,13 @@ export function OAuthButtons({
   googleLoading = false,
   facebookLoading = false,
   disabled = false,
+  onMouseEnter,
 }: OAuthButtonsProps) {
   return (
     <div
       data-testid="oauth-buttons-wrapper"
       className="flex flex-col gap-3 w-full"
+      onMouseEnter={onMouseEnter}
     >
       {/* Google OAuth Button */}
       <OAuthButton
