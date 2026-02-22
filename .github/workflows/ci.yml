@@ -26,7 +26,7 @@ jobs:
         run: uv python install ${{ env.PYTHON_VERSION }}
 
       - name: Install dependencies
-        run: uv sync --dev
+        run: uv sync --all-extras
         working-directory: apps/api
 
       - name: Run Ruff
@@ -53,7 +53,7 @@ jobs:
         run: uv python install ${{ env.PYTHON_VERSION }}
 
       - name: Install dependencies
-        run: uv sync --dev
+        run: uv sync --all-extras
         working-directory: apps/api
 
       - name: Run tests
