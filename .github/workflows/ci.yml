@@ -30,15 +30,15 @@ jobs:
         working-directory: apps/api
 
       - name: Run Ruff
-        run: uv run ruff check apps/api/src
+        run: uv run ruff check src
         working-directory: apps/api
 
       - name: Run Ruff format check
-        run: uv run ruff format --check apps/api/src
+        run: uv run ruff format --check src
         working-directory: apps/api
 
       - name: Run mypy
-        run: uv run mypy apps/api/src
+        run: uv run mypy src
         working-directory: apps/api
 
   test-python:
