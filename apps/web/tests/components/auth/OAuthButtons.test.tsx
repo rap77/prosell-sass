@@ -273,4 +273,42 @@ describe("OAuthButtons Component", () => {
       expect(facebookButton).toBeDisabled();
     });
   });
+
+  describe("OAuth Preload (F4)", () => {
+    it("should call onMouseEnter when mouse enters button container", async () => {
+      const user = userEvent.setup();
+      const onMouseEnter = vi.fn();
+
+      const { container } = render(<OAuthButtons onMouseEnter={onMouseEnter} />);
+
+      const wrapper = container.querySelector('[data-testid="oauth-buttons-wrapper"]');
+      await user.hover(wrapper!);
+
+      expect(onMouseEnter).toHaveBeenCalledTimes(1);
+    });
+
+    it("should not call onMouseEnter when prop is not provided", async () => {
+      const user = userEvent.setup();
+
+      const { container } = render(<OAuthButtons />);
+
+      const wrapper = container.querySelector('[data-testid="oauth-buttons-wrapper"]');
+      expect(() => user.hover(wrapper!)).not.toThrow();
+    });
+
+    it("should call onMouseEnter on each mouse enter event", async () => {
+      const user = userEvent.setup();
+      const onMouseEnter = vi.fn();
+
+      const { container } = render(<OAuthButtons onMouseEnter={onMouseEnter} />);
+
+      const wrapper = container.querySelector('[data-testid="oauth-buttons-wrapper"]');
+
+      await user.hover(wrapper!);
+      await user.unhover(wrapper!);
+      await user.hover(wrapper!);
+
+      expect(onMouseEnter).toHaveBeenCalledTimes(2);
+    });
+  });
 });

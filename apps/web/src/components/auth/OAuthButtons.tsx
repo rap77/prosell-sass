@@ -20,6 +20,7 @@
 import { type ButtonHTMLAttributes } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AnimatedSvgWrapper } from "@/components/ui";
 import { GoogleIcon, FacebookIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +53,12 @@ export interface OAuthButtonsProps {
    * Disable both buttons
    */
   disabled?: boolean;
+
+  /**
+   * Callback when mouse enters the button container
+   * Used for intent-based preload optimization
+   */
+  onMouseEnter?: () => void;
 }
 
 // ============================================
@@ -161,11 +168,13 @@ export function OAuthButtons({
   googleLoading = false,
   facebookLoading = false,
   disabled = false,
+  onMouseEnter,
 }: OAuthButtonsProps) {
   return (
     <div
       data-testid="oauth-buttons-wrapper"
       className="flex flex-col gap-3 w-full"
+      onMouseEnter={onMouseEnter}
     >
       {/* Google OAuth Button */}
       <OAuthButton
@@ -174,7 +183,11 @@ export function OAuthButtons({
         isLoading={googleLoading}
         disabled={disabled}
         onClick={onGoogleClick}
-        icon={<GoogleIcon />}
+        icon={
+          <AnimatedSvgWrapper animation="fadeIn" duration={300}>
+            <GoogleIcon />
+          </AnimatedSvgWrapper>
+        }
         data-testid="google-oauth-button"
       />
 
@@ -185,7 +198,11 @@ export function OAuthButtons({
         isLoading={facebookLoading}
         disabled={disabled}
         onClick={onFacebookClick}
-        icon={<FacebookIcon />}
+        icon={
+          <AnimatedSvgWrapper animation="fadeIn" duration={300}>
+            <FacebookIcon />
+          </AnimatedSvgWrapper>
+        }
         data-testid="facebook-oauth-button"
       />
     </div>
