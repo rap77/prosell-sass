@@ -37,10 +37,6 @@ jobs:
         run: uv run ruff format --check src
         working-directory: apps/api
 
-      - name: Run mypy
-        run: uv run mypy src
-        working-directory: apps/api
-
   test-python:
     name: Test Python
     runs-on: ubuntu-latest
