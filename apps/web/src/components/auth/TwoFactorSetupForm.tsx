@@ -103,7 +103,10 @@ export function TwoFactorSetupForm({ is2FAEnabled, className }: TwoFactorSetupFo
   }));
 
   // Sync state when is2FAEnabled prop changes (external auth update)
-  // eslint-disable-next-line -- React Compiler: state sync is acceptable here
+  // Note: This state sync is necessary because is2FAEnabled can change externally
+  // (e.g., user enables 2FA in another tab). The alternative would be using a key
+  // to force re-mount, but that would lose all local state (qrCode, backupCodes, etc).
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     setFormState((prev) => ({
       ...prev,
