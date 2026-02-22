@@ -1,0 +1,5 @@
+ID,Title,Status,Priority,Estimation,Risk,Dependencies,Assignee,Reviewer,Description
+F1-004,Feature Flag System,TODO,P0,3h,Medium,None,Dev A,Dev B,"Create runtime feature flag system with localStorage persistence for Phase 1 optimizations"
+F1-002,Performance API Marks,TODO,P0,1h,Low,None,Dev B,Dev A,"Add Performance API marks to measure initializeAuth duration with feature detection"
+F1-001,authStore initialized Flag,TODO,P0,2h,Medium,F1-004,Dev A,Dev B,"Add initialized flag to authStore to prevent duplicate API calls"
+F1-003,2FA Management Center,TODO,P0,4h,High,"F1-001,F1-002",Dev A+Dev B,Both,"Refactor 2FA setup to user-initiated management center with conditional behavior (State A: setup, State B: protected)"
