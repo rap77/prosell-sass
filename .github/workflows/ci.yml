@@ -31,12 +31,15 @@ jobs:
 
       - name: Run Ruff
         run: uv run ruff check apps/api/src
+        working-directory: apps/api
 
       - name: Run Ruff format check
         run: uv run ruff format --check apps/api/src
+        working-directory: apps/api
 
       - name: Run mypy
         run: uv run mypy apps/api/src
+        working-directory: apps/api
 
   test-python:
     name: Test Python
