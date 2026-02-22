@@ -20,6 +20,7 @@
 import { type ButtonHTMLAttributes } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AnimatedSvgWrapper } from "@/components/ui";
 import { GoogleIcon, FacebookIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
@@ -174,7 +175,11 @@ export function OAuthButtons({
         isLoading={googleLoading}
         disabled={disabled}
         onClick={onGoogleClick}
-        icon={<GoogleIcon />}
+        icon={
+          <AnimatedSvgWrapper animation="fadeIn" duration={300}>
+            <GoogleIcon />
+          </AnimatedSvgWrapper>
+        }
         data-testid="google-oauth-button"
       />
 
@@ -185,7 +190,11 @@ export function OAuthButtons({
         isLoading={facebookLoading}
         disabled={disabled}
         onClick={onFacebookClick}
-        icon={<FacebookIcon />}
+        icon={
+          <AnimatedSvgWrapper animation="fadeIn" duration={300}>
+            <FacebookIcon />
+          </AnimatedSvgWrapper>
+        }
         data-testid="facebook-oauth-button"
       />
     </div>
