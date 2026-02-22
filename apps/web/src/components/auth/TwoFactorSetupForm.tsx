@@ -233,7 +233,7 @@ export function TwoFactorSetupForm({
       const message = getErrorMessage(error, "Failed to disable 2FA");
       setFormState((prev) => ({
         ...prev,
-        state: "disable",
+        state: "disabled",
         error: message,
       }));
     }
