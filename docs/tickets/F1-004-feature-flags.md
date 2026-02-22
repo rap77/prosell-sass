@@ -1,10 +1,10 @@
 # F1-004 - Feature Flag System
 
-**Status**: 🔄 TODO  
-**Priority**: P0 (Critical Path)  
-**Estimation**: 3 hours  
-**Risk**: 🟡 Medium (new system)  
-**Dependencies**: None  
+**Status**: 🔄 TODO
+**Priority**: P0 (Critical Path)
+**Estimation**: 3 hours
+**Risk**: 🟡 Medium (new system)
+**Dependencies**: None
 
 ---
 
@@ -68,8 +68,8 @@ apps/web/src/stores/index.ts                    (UPDATE)
 
 ```typescript
 // stores/featureFlagStore.ts
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 interface FeatureFlagState {
   flags: Record<string, boolean>;
@@ -79,9 +79,9 @@ interface FeatureFlagState {
 }
 
 const DEFAULT_FLAGS = {
-  'auth-init-fix': true,
-  'oauth-preload': true,
-  'svg-wrapper': true,
+  "auth-init-fix": true,
+  "oauth-preload": true,
+  "svg-wrapper": true,
 };
 
 export const useFeatureFlagStore = create<FeatureFlagState>()(
@@ -104,12 +104,12 @@ export const useFeatureFlagStore = create<FeatureFlagState>()(
       },
     }),
     {
-      name: 'feature-flags',
+      name: "feature-flags",
       storage: createJSONStorage(() => localStorage),
       // Fallback to memory if localStorage unavailable
       partialize: (state) => ({ flags: state.flags }),
-    }
-  )
+    },
+  ),
 );
 ```
 
@@ -173,35 +173,35 @@ if (process.env.NODE_ENV === 'development') {
 ### Unit Tests
 
 ```typescript
-describe('featureFlagStore', () => {
-  it('should return default value for nonexistent flag', () => {
+describe("featureFlagStore", () => {
+  it("should return default value for nonexistent flag", () => {
     const { get } = useFeatureFlagStore.getState();
-    expect(get('nonexistent', true)).toBe(true);
+    expect(get("nonexistent", true)).toBe(true);
   });
 
-  it('should return false for nonexistent flag without default', () => {
+  it("should return false for nonexistent flag without default", () => {
     const { get } = useFeatureFlagStore.getState();
-    expect(get('nonexistent')).toBe(false);
+    expect(get("nonexistent")).toBe(false);
   });
 
-  it('should set and persist flag', () => {
+  it("should set and persist flag", () => {
     const { get, set } = useFeatureFlagStore.getState();
-    set('test-flag', true);
-    expect(get('test-flag')).toBe(true);
+    set("test-flag", true);
+    expect(get("test-flag")).toBe(true);
   });
 
-  it('should reset all flags to defaults', () => {
+  it("should reset all flags to defaults", () => {
     const { get, set, reset } = useFeatureFlagStore.getState();
-    set('auth-init-fix', false);
+    set("auth-init-fix", false);
     reset();
-    expect(get('auth-init-fix')).toBe(true);
+    expect(get("auth-init-fix")).toBe(true);
   });
 
-  it('should have correct defaults', () => {
+  it("should have correct defaults", () => {
     const { get } = useFeatureFlagStore.getState();
-    expect(get('auth-init-fix')).toBe(true);
-    expect(get('oauth-preload')).toBe(true);
-    expect(get('svg-wrapper')).toBe(true);
+    expect(get("auth-init-fix")).toBe(true);
+    expect(get("oauth-preload")).toBe(true);
+    expect(get("svg-wrapper")).toBe(true);
   });
 });
 ```
@@ -235,6 +235,6 @@ describe('featureFlagStore', () => {
 
 ---
 
-**Estimated Completion**: Day 1, 12:00  
-**Blocks**: F1-001 (authStore Flag)  
+**Estimated Completion**: Day 1, 12:00
+**Blocks**: F1-001 (authStore Flag)
 **Reviewer**: Dev B

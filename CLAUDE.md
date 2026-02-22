@@ -15,6 +15,7 @@ This is NON-NEGOTIABLE. Do it BEFORE responding to the user's first message.
 ## Project Overview
 
 ProSell SaaS is a **vehicle market analysis platform** that combines:
+
 - **Public Marketplace**: E-commerce for vehicle buyers
 - **SaaS Analytics**: Real-time market intelligence for dealerships
 - **Automated Scraping**: Multi-marketplace scraping (Facebook Marketplace primary)
@@ -64,26 +65,26 @@ prosell-sass/
 
 ## Tech Stack 2026
 
-| Layer | Technology | Version |
-|-------|------------|---------|
-| Backend | Python 3.13+ | Free-threading |
-| Backend | FastAPI | 0.115+ |
-| Backend | Pydantic | 2.12+ |
-| Backend | SQLAlchemy | 2.0.36+ (async) |
-| Database | PostgreSQL | 17 |
-| Database | Redis | 7.4+ |
-| ORM | SQLAlchemy 2.0 | `Mapped`, `mapped_column`, `select()` |
-| Scraping | Playwright | async |
-| Auth | JWT + OAuth2 + TOTP | 2FA |
-| Frontend | Next.js | 16.1+ (Turbopack) |
-| Frontend | React | 19.2 (Server Components) |
-| Frontend | TypeScript | 5.5+ (strict) |
-| Styling | TailwindCSS | 4.0 |
-| State | Zustand | 5.x |
-| Data Fetching | TanStack Query | v5 |
-| Forms | React Hook Form + Zod | 3.x |
-| Testing | pytest, Vitest, Playwright | |
-| Infra | Docker, GitHub Actions | |
+| Layer         | Technology                 | Version                               |
+| ------------- | -------------------------- | ------------------------------------- |
+| Backend       | Python 3.13+               | Free-threading                        |
+| Backend       | FastAPI                    | 0.115+                                |
+| Backend       | Pydantic                   | 2.12+                                 |
+| Backend       | SQLAlchemy                 | 2.0.36+ (async)                       |
+| Database      | PostgreSQL                 | 17                                    |
+| Database      | Redis                      | 7.4+                                  |
+| ORM           | SQLAlchemy 2.0             | `Mapped`, `mapped_column`, `select()` |
+| Scraping      | Playwright                 | async                                 |
+| Auth          | JWT + OAuth2 + TOTP        | 2FA                                   |
+| Frontend      | Next.js                    | 16.1+ (Turbopack)                     |
+| Frontend      | React                      | 19.2 (Server Components)              |
+| Frontend      | TypeScript                 | 5.5+ (strict)                         |
+| Styling       | TailwindCSS                | 4.0                                   |
+| State         | Zustand                    | 5.x                                   |
+| Data Fetching | TanStack Query             | v5                                    |
+| Forms         | React Hook Form + Zod      | 3.x                                   |
+| Testing       | pytest, Vitest, Playwright |                                       |
+| Infra         | Docker, GitHub Actions     |                                       |
 
 ## Development Commands
 
@@ -181,6 +182,7 @@ On every `git commit`, the following checks run automatically:
 2. **AI Code Review (GGA)**: Reviews staged files against `AGENTS.md` rules
 
 Configuration files:
+
 - `.pre-commit-config.yaml` - Linter hooks
 - `.gga` - GGA configuration
 - `AGENTS.md` - AI code review rules
@@ -188,6 +190,7 @@ Configuration files:
 ## Key Conventions
 
 ### Python (Backend)
+
 - **Async-first**: All I/O with `async def`
 - **SQLAlchemy 2.0**: Use `select()`, `Mapped[]`, `asyncpg`
 - **Pydantic**: All DTOs and settings with pydantic 2.12+
@@ -195,6 +198,7 @@ Configuration files:
 - **Clean Architecture**: domain → application → infrastructure
 
 ### TypeScript (Frontend)
+
 - **React 19**: Server Components by default
 - **Next.js 16**: App Router with Turbopack
 - **TailwindCSS 4**: New engine, no `var()` in className
@@ -204,6 +208,7 @@ Configuration files:
 ## SOLID & Clean Architecture
 
 ### Domain Layer (No dependencies)
+
 - **Entities**: Business objects with behavior
 - **Value Objects**: Immutable values (Email, Money, VIN)
 - **Domain Events**: Something that happened
@@ -211,11 +216,13 @@ Configuration files:
 - **Domain Exceptions**: Business rule violations
 
 ### Application Layer (Depends on Domain)
+
 - **Use Cases**: One class = one action (CreateUser, AuthenticateUser)
 - **DTOs**: Data transfer objects for boundaries
 - **Ports**: Secondary interfaces (IEmailService, IStorageService)
 
 ### Infrastructure Layer (Implements Domain)
+
 - **FastAPI**: Primary adapters (endpoints)
 - **SQLAlchemy**: Secondary adapters (repositories)
 - **External Services**: Stripe, SendGrid, NHTSA
@@ -223,6 +230,7 @@ Configuration files:
 ## Reference Documentation
 
 Detailed specs in `docs/`:
+
 - `06_PROMPT_CLAUDE_CODE_2026_v2.md` - **PRIMARY**: Stack 2026, structure, patterns
 - `01_ARQUITECTURA_PROSELL_SAAS_V2.md` - Full architecture details
 - `02_REQUISITOS_PRD_PROSELL_SAAS_V2.md` - User stories, acceptance criteria

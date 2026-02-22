@@ -1,10 +1,10 @@
 # F1-001 - authStore `initialized` Flag
 
-**Status**: 🔄 TODO  
-**Priority**: P0 (Critical Path)  
-**Estimation**: 2 hours  
-**Risk**: 🟡 Medium (touches core auth logic)  
-**Dependencies**: F1-004 (Feature Flags)  
+**Status**: 🔄 TODO
+**Priority**: P0 (Critical Path)
+**Estimation**: 2 hours
+**Risk**: 🟡 Medium (touches core auth logic)
+**Dependencies**: F1-004 (Feature Flags)
 
 ---
 
@@ -14,7 +14,8 @@ PRD F1 requires preventing duplicate `initializeAuth()` calls when multiple comp
 
 **Current Behavior**: Every component using `useAuthInitializer` triggers a new API call to `/api/auth/state`.
 
-**Problem**: 
+**Problem**:
+
 - Multiple unnecessary network requests
 - Race conditions possible
 - Wasted server resources
@@ -73,7 +74,7 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: AuthError | null;
-  initialized: boolean;  // <-- NEW
+  initialized: boolean; // <-- NEW
   // ... rest of existing state
 }
 
@@ -86,53 +87,57 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: true,
       error: null,
-      initialized: false,  // <-- NEW
-      
+      initialized: false, // <-- NEW
+
       // Initialize auth state from server
       initializeAuth: async () => {
         // Early exit if already initialized
         const { initialized } = get();
-        
+
         // Feature flag check
-        const useOptimization = featureFlags.get('auth-init-fix', true);
+        const useOptimization = featureFlags.get("auth-init-fix", true);
         if (!useOptimization) {
           // Original behavior: always call API
         } else if (initialized) {
           // Optimized behavior: early exit
-          logger.debug('Auth already initialized, skipping API call');
+          logger.debug("Auth already initialized, skipping API call");
           set({ isLoading: false });
           return;
         }
-        
+
         set({ isLoading: true, error: null });
-        
+
         try {
-          markPerformance('auth-init-start');
-          
+          markPerformance("auth-init-start");
+
           const response = await fetch("/api/auth/state", {
             credentials: "include",
           });
           const authState = await response.json();
-          
-          markPerformance('auth-init-end');
-          measurePerformance('auth-init-duration', 'auth-init-start', 'auth-init-end');
-          
+
+          markPerformance("auth-init-end");
+          measurePerformance(
+            "auth-init-duration",
+            "auth-init-start",
+            "auth-init-end",
+          );
+
           if (!authState.isAuthenticated || !authState.user) {
             set({
               user: null,
               isAuthenticated: false,
               isLoading: false,
-              initialized: false,  // <-- Set false if not auth
+              initialized: false, // <-- Set false if not auth
               error: null,
             });
             return;
           }
-          
+
           set({
             user: authState.user,
             isAuthenticated: true,
             isLoading: false,
-            initialized: true,  // <-- Set true after success
+            initialized: true, // <-- Set true after success
             error: null,
           });
         } catch (error) {
@@ -141,58 +146,60 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             isAuthenticated: false,
             isLoading: false,
-            initialized: false,  // <-- Set false on error
+            initialized: false, // <-- Set false on error
             error: null,
           });
         }
       },
-      
+
       // Update logout to reset flag
       logout: async () => {
         try {
-          set({ isLoading: true, initialized: false });  // <-- Reset on logout
-          
+          set({ isLoading: true, initialized: false }); // <-- Reset on logout
+
           await authApi.logout();
-          
+
           set({
             user: null,
             isAuthenticated: false,
             isLoading: false,
-            initialized: false,  // <-- Confirm reset
+            initialized: false, // <-- Confirm reset
             error: null,
           });
-          
+
           // ... rest of logout logic
         } catch (error) {
           set({
             user: null,
             isAuthenticated: false,
             isLoading: false,
-            initialized: false,  // <-- Confirm reset on error
+            initialized: false, // <-- Confirm reset on error
             error: null,
           });
         }
       },
-      
+
       // ... rest of existing actions
     }),
     {
-      name: 'auth-storage',
+      name: "auth-storage",
       partialize: (state) => ({
-        user: state.user ? {
-          id: state.user.id,
-          email: state.user.email,
-          first_name: state.user.first_name,
-          last_name: state.user.last_name,
-          is_email_verified: state.user.is_email_verified,
-          is_2fa_enabled: state.user.is_2fa_enabled,
-        } : null,
+        user: state.user
+          ? {
+              id: state.user.id,
+              email: state.user.email,
+              first_name: state.user.first_name,
+              last_name: state.user.last_name,
+              is_email_verified: state.user.is_email_verified,
+              is_2fa_enabled: state.user.is_2fa_enabled,
+            }
+          : null,
         isAuthenticated: state.isAuthenticated,
-        initialized: state.initialized,  // <-- Persist flag
+        initialized: state.initialized, // <-- Persist flag
       }),
       // ... rest of persist config
-    }
-  )
+    },
+  ),
 );
 ```
 
@@ -203,71 +210,71 @@ export const useAuthStore = create<AuthState>()(
 ### Unit Tests
 
 ```typescript
-describe('authStore initialized flag', () => {
-  it('should initialize with initialized=false', () => {
+describe("authStore initialized flag", () => {
+  it("should initialize with initialized=false", () => {
     const { initialized } = useAuthStore.getState();
     expect(initialized).toBe(false);
   });
 
-  it('should set initialized=true after successful init', async () => {
+  it("should set initialized=true after successful init", async () => {
     const { initializeAuth, initialized } = useAuthStore.getState();
-    
+
     // Mock successful API response
     global.fetch = vi.fn().mockResolvedValue({
       json: async () => ({
         isAuthenticated: true,
-        user: { id: '123', email: 'test@test.com' },
+        user: { id: "123", email: "test@test.com" },
       }),
     });
-    
+
     await initializeAuth();
-    
+
     const { initialized: afterInit } = useAuthStore.getState();
     expect(afterInit).toBe(true);
   });
 
-  it('should skip API call if already initialized', async () => {
+  it("should skip API call if already initialized", async () => {
     const { initializeAuth } = useAuthStore.getState();
-    
+
     // Set initialized = true
     useAuthStore.setState({ initialized: true });
-    
+
     await initializeAuth();
-    
+
     // Verify fetch was NOT called
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('should reset initialized=false on logout', async () => {
+  it("should reset initialized=false on logout", async () => {
     const { logout } = useAuthStore.getState();
-    
+
     useAuthStore.setState({ initialized: true });
-    
+
     // Mock logout API
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
     });
-    
+
     await logout();
-    
+
     const { initialized } = useAuthStore.getState();
     expect(initialized).toBe(false);
   });
 
-  it('should persist initialized in localStorage', async () => {
+  it("should persist initialized in localStorage", async () => {
     const { initializeAuth } = useAuthStore.getState();
-    
+
     global.fetch = vi.fn().mockResolvedValue({
       json: async () => ({
         isAuthenticated: true,
-        user: { id: '123', email: 'test@test.com' },
+        user: { id: "123", email: "test@test.com" },
       }),
     });
-    
+
     await initializeAuth();
-    
+
     // Check localStorage was updated
-    const stored = localStorage.getItem('auth-storage');
+    const stored = localStorage.getItem("auth-storage");
     expect(stored).toContain('"initialized":true');
   });
 });
@@ -277,45 +284,45 @@ describe('authStore initialized flag', () => {
 
 ```typescript
 // E2E test: Playwright
-test('should call /api/auth/state exactly once', async ({ page }) => {
+test("should call /api/auth/state exactly once", async ({ page }) => {
   // Track network requests
   const requests = [];
-  
-  page.on('request', (request) => {
-    if (request.url().includes('/api/auth/state')) {
+
+  page.on("request", (request) => {
+    if (request.url().includes("/api/auth/state")) {
       requests.push(request);
     }
   });
-  
+
   // Navigate to login page (triggers initializeAuth)
-  await page.goto('/auth/login');
-  
+  await page.goto("/auth/login");
+
   // Wait for page load
-  await page.waitForLoadState('networkidle');
-  
+  await page.waitForLoadState("networkidle");
+
   // Verify exactly ONE request
   expect(requests).toHaveLength(1);
 });
 
-test('should not call API on second mount', async ({ page }) => {
+test("should not call API on second mount", async ({ page }) => {
   let requestCount = 0;
-  
-  page.on('request', (request) => {
-    if (request.url().includes('/api/auth/state')) {
+
+  page.on("request", (request) => {
+    if (request.url().includes("/api/auth/state")) {
       requestCount++;
     }
   });
-  
+
   // First mount
-  await page.goto('/auth/login');
-  await page.waitForLoadState('networkidle');
+  await page.goto("/auth/login");
+  await page.waitForLoadState("networkidle");
   const firstCount = requestCount;
-  
+
   // Navigate away and back
-  await page.goto('/profile');
-  await page.goto('/auth/login');
-  await page.waitForLoadState('networkidle');
-  
+  await page.goto("/profile");
+  await page.goto("/auth/login");
+  await page.waitForLoadState("networkidle");
+
   // Should still be same count (no new requests)
   expect(requestCount).toBe(firstCount);
 });
@@ -339,11 +346,11 @@ test('should not call API on second mount', async ({ page }) => {
 
 ## Risk Mitigation
 
-| Risk | Mitigation |
-|------|------------|
-| Flag desync | Feature flag allows bypass to original behavior |
-| localStorage full | Graceful degradation to memory-only |
-| Stale flag | Reset on logout + API failure |
+| Risk              | Mitigation                                      |
+| ----------------- | ----------------------------------------------- |
+| Flag desync       | Feature flag allows bypass to original behavior |
+| localStorage full | Graceful degradation to memory-only             |
+| Stale flag        | Reset on logout + API failure                   |
 
 ---
 
@@ -355,7 +362,7 @@ test('should not call API on second mount', async ({ page }) => {
 
 ---
 
-**Estimated Completion**: Day 1, 16:00  
-**Blocks**: F1-003 (2FA Management Center)  
-**Reviewer**: Dev B  
+**Estimated Completion**: Day 1, 16:00
+**Blocks**: F1-003 (2FA Management Center)
+**Reviewer**: Dev B
 **Dependencies**: F1-004 MUST be complete

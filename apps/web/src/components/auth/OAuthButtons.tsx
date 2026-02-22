@@ -65,8 +65,10 @@ export interface OAuthButtonsProps {
 // BUTTON PROPS TYPE
 // ============================================
 
-interface OAuthButtonProps
-  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
+interface OAuthButtonProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "children"
+> {
   /**
    * Button label text
    */
@@ -127,9 +129,11 @@ function OAuthButton({
       aria-busy={isLoading}
       className={cn(
         "w-full",
-        variant === "google" && "bg-background text-foreground hover:bg-accent hover:text-accent-foreground",
-        variant === "facebook" && "bg-[#1877F2] hover:bg-[#166FE5] text-white border-[#1877F2]",
-        className
+        variant === "google" &&
+          "bg-background text-foreground hover:bg-accent hover:text-accent-foreground",
+        variant === "facebook" &&
+          "bg-[#1877F2] hover:bg-[#166FE5] text-white border-[#1877F2]",
+        className,
       )}
     >
       {/* Icon or loading spinner */}
@@ -140,9 +144,7 @@ function OAuthButton({
           aria-hidden="true"
         />
       ) : (
-        <span className="w-5 h-5 flex items-center justify-center">
-          {icon}
-        </span>
+        <span className="w-5 h-5 flex items-center justify-center">{icon}</span>
       )}
 
       {/* Button text */}

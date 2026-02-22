@@ -69,13 +69,13 @@ export interface UseOAuthPreloadReturn {
  * Uses feature flag "oauth-preload" for opt-in/opt-out.
  */
 export function useOAuthPreload(
-  options: UseOAuthPreloadOptions = {}
+  options: UseOAuthPreloadOptions = {},
 ): UseOAuthPreloadReturn {
   const { importPath = "@/components/auth/OAuthButtons" } = options;
 
   // Feature flag check
   const usePreload = useFeatureFlagStore((state) =>
-    state.get("oauth-preload", true)
+    state.get("oauth-preload", true),
   );
 
   // Track preload state
@@ -101,7 +101,9 @@ export function useOAuthPreload(
       })
       .catch(() => {
         // Silent failure - will retry on hover
-        logger.warn("[OAuth Preload] Initial preload failed (will retry on hover)");
+        logger.warn(
+          "[OAuth Preload] Initial preload failed (will retry on hover)",
+        );
       });
   }, [importPath, usePreload]);
 

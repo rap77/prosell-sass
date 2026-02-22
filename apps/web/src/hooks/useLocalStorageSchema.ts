@@ -6,7 +6,7 @@
  *
  * @see https://vercel.com/docs/rules/client-local-storage-schema-versioning.md
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from "react";
 
 interface SchemaVersion<T = unknown> {
   version: string;
@@ -24,30 +24,30 @@ interface Migration<TFrom = unknown, TTo = unknown> {
  * Schema version manager
  */
 export class LocalStorageSchemaManager {
-  private static readonly STORAGE_KEY = 'app_schema_version';
-  private static readonly CURRENT_VERSION = '1.0.0';
+  private static readonly STORAGE_KEY = "app_schema_version";
+  private static readonly CURRENT_VERSION = "1.0.0";
   private static readonly MIGRATIONS: Migration[] = [
     {
-      from: '0.9.0',
-      to: '1.0.0',
+      from: "0.9.0",
+      to: "1.0.0",
       migrate: (data: unknown) => {
         // Migration from 0.9.0 to 1.0.0
         // Add timestamp to all stored data
         return {
-          ...(typeof data === 'object' && data !== null ? data : {}),
+          ...(typeof data === "object" && data !== null ? data : {}),
           timestamp: Date.now(),
         };
       },
     },
     {
-      from: '0.8.0',
-      to: '0.9.0',
+      from: "0.8.0",
+      to: "0.9.0",
       migrate: (data: unknown) => {
         // Migration from 0.8.0 to 0.9.0
         // Add version field to all stored data
         return {
-          ...(typeof data === 'object' && data !== null ? data : {}),
-          version: '0.9.0',
+          ...(typeof data === "object" && data !== null ? data : {}),
+          version: "0.9.0",
           timestamp: Date.now(),
         };
       },
@@ -68,7 +68,7 @@ export class LocalStorageSchemaManager {
       return schema.version !== this.CURRENT_VERSION;
     } catch (error) {
       // Client-side storage error: log for debugging but continue with migration
-      console.warn('Failed to check schema version:', error);
+      console.warn("Failed to check schema version:", error);
       return true;
     }
   }
@@ -99,7 +99,9 @@ export class LocalStorageSchemaManager {
       let currentData = schema.data;
 
       while (currentVersion !== this.CURRENT_VERSION) {
-        const migration = this.MIGRATIONS.find(m => m.from === currentVersion);
+        const migration = this.MIGRATIONS.find(
+          (m) => m.from === currentVersion,
+        );
 
         if (!migration) {
           throw new Error(`No migration found from version ${currentVersion}`);
@@ -119,7 +121,7 @@ export class LocalStorageSchemaManager {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(migratedSchema));
     } catch (error) {
       // Client-side storage error: log for debugging before throwing
-      console.error('Failed to migrate storage:', error);
+      console.error("Failed to migrate storage:", error);
       throw error;
     }
   }
@@ -162,7 +164,9 @@ export function useLocalStorageSchema() {
         }
         setIsLoading(false);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to initialize schema');
+        setError(
+          err instanceof Error ? err.message : "Failed to initialize schema",
+        );
         setIsLoading(false);
       }
     };
@@ -186,7 +190,7 @@ export function useLocalStorageSchema() {
 export function useLocalStorage<T>(key: string, initialValue: T) {
   const [storedValue, setStoredValue] = useState<T>(() => {
     // Get value only during initial render to avoid SSR issues
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       return initialValue;
     }
 
@@ -200,19 +204,23 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     }
   });
 
-  const setValue = useCallback((value: T | ((val: T) => T)) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
+  const setValue = useCallback(
+    (value: T | ((val: T) => T)) => {
+      try {
+        const valueToStore =
+          value instanceof Function ? value(storedValue) : value;
+        setStoredValue(valueToStore);
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(key, JSON.stringify(valueToStore));
+        if (typeof window !== "undefined") {
+          localStorage.setItem(key, JSON.stringify(valueToStore));
+        }
+      } catch (error) {
+        // Client-side storage error: log for debugging but don't fail
+        console.warn(`Error setting localStorage key "${key}":`, error);
       }
-    } catch (error) {
-      // Client-side storage error: log for debugging but don't fail
-      console.warn(`Error setting localStorage key "${key}":`, error);
-    }
-  }, [key, storedValue]);
+    },
+    [key, storedValue],
+  );
 
   return [storedValue, setValue] as const;
 }

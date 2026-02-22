@@ -9,6 +9,7 @@
 All authentication endpoints now use **httpOnly cookies** for token storage. This prevents XSS attacks from stealing tokens.
 
 **Security Benefits:**
+
 - ✅ **HttpOnly flag**: JavaScript cannot access cookies
 - ✅ **SameSite=lax**: Prevents CSRF attacks
 - ✅ **Secure flag** (production): HTTPS-only transmission
@@ -21,11 +22,11 @@ All authentication endpoints now use **httpOnly cookies** for token storage. Thi
 
 ### Cookie Types
 
-| Cookie | Purpose | Duration | HttpOnly | SameSite |
-|--------|---------|----------|----------|----------|
-| `access_token` | JWT access token | 1 hour (3600s) | ✅ | lax |
-| `refresh_token` | JWT refresh token | 7 days (604800s) | ✅ | lax |
-| `user_data` | User profile data | 1 hour (3600s) | ✅ | lax |
+| Cookie          | Purpose           | Duration         | HttpOnly | SameSite |
+| --------------- | ----------------- | ---------------- | -------- | -------- |
+| `access_token`  | JWT access token  | 1 hour (3600s)   | ✅       | lax      |
+| `refresh_token` | JWT refresh token | 7 days (604800s) | ✅       | lax      |
+| `user_data`     | User profile data | 1 hour (3600s)   | ✅       | lax      |
 
 ### Cookie Attributes
 
@@ -48,6 +49,7 @@ Set-Cookie: access_token=<value>; Path=/; Expires=...; HttpOnly; SameSite=lax
 **Endpoint:** `POST /api/auth/login`
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -56,6 +58,7 @@ Set-Cookie: access_token=<value>; Path=/; Expires=...; HttpOnly; SameSite=lax
 ```
 
 **Response:** `200 OK`
+
 ```json
 {
   "user": {
@@ -71,6 +74,7 @@ Set-Cookie: access_token=<value>; Path=/; Expires=...; HttpOnly; SameSite=lax
 ```
 
 **Cookies Set:**
+
 ```
 set-cookie: access_token=...; Path=/; Expires=...; HttpOnly; SameSite=lax
 set-cookie: refresh_token=...; Path=/; Expires=...; HttpOnly; SameSite=lax
@@ -78,11 +82,13 @@ set-cookie: user_data=%7B...%7D; Path=/; Expires=...; HttpOnly; SameSite=lax
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Invalid email/password format
 - `401 Unauthorized`: Invalid credentials
 - `500 Internal Server Error`: Server error
 
 **Example:**
+
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
@@ -97,6 +103,7 @@ curl -X POST http://localhost:3000/api/auth/login \
 **Endpoint:** `POST /api/auth/register`
 
 **Request:**
+
 ```json
 {
   "email": "newuser@example.com",
@@ -107,6 +114,7 @@ curl -X POST http://localhost:3000/api/auth/login \
 ```
 
 **Response:** `200 OK`
+
 ```json
 {
   "user": {
@@ -124,11 +132,13 @@ curl -X POST http://localhost:3000/api/auth/login \
 **Cookies Set:** Same as login
 
 **Error Responses:**
+
 - `400 Bad Request`: Validation errors
 - `409 Conflict`: Email already exists
 - `500 Internal Server Error`: Server error
 
 **Example:**
+
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
@@ -142,10 +152,12 @@ curl -X POST http://localhost:3000/api/auth/register \
 **Endpoint:** `GET /api/auth/me`
 
 **Request:**
+
 - Requires valid httpOnly cookies
 - No Authorization header needed (cookies sent automatically)
 
 **Response:** `200 OK`
+
 ```json
 {
   "id": "user-123",
@@ -159,9 +171,11 @@ curl -X POST http://localhost:3000/api/auth/register \
 ```
 
 **Error Responses:**
+
 - `401 Unauthorized`: Not authenticated or invalid cookies
 
 **Example:**
+
 ```bash
 curl http://localhost:3000/api/auth/me -b cookies.txt
 ```
@@ -175,6 +189,7 @@ curl http://localhost:3000/api/auth/me -b cookies.txt
 **Request:** Empty body
 
 **Response:** `200 OK`
+
 ```json
 {
   "message": "Logout successful"
@@ -182,6 +197,7 @@ curl http://localhost:3000/api/auth/me -b cookies.txt
 ```
 
 **Cookies Cleared:**
+
 ```
 set-cookie: access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT
 set-cookie: refresh_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT
@@ -189,6 +205,7 @@ set-cookie: user_data=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT
 ```
 
 **Example:**
+
 ```bash
 curl -X POST http://localhost:3000/api/auth/logout -b cookies.txt
 ```
@@ -200,6 +217,7 @@ curl -X POST http://localhost:3000/api/auth/logout -b cookies.txt
 **Endpoint:** `POST /api/auth/forgot-password`
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com"
@@ -207,6 +225,7 @@ curl -X POST http://localhost:3000/api/auth/logout -b cookies.txt
 ```
 
 **Response:** `200 OK`
+
 ```json
 {
   "message": "Password reset email sent"
@@ -214,10 +233,12 @@ curl -X POST http://localhost:3000/api/auth/logout -b cookies.txt
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Invalid email
 - `404 Not Found`: Email not found (may still return 200 for security)
 
 **Example:**
+
 ```bash
 curl -X POST http://localhost:3000/api/auth/forgot-password \
   -H "Content-Type: application/json" \
@@ -231,6 +252,7 @@ curl -X POST http://localhost:3000/api/auth/forgot-password \
 **Endpoint:** `POST /api/auth/reset-password`
 
 **Request:**
+
 ```json
 {
   "token": "reset-token-from-email",
@@ -239,6 +261,7 @@ curl -X POST http://localhost:3000/api/auth/forgot-password \
 ```
 
 **Response:** `200 OK`
+
 ```json
 {
   "message": "Password reset successful"
@@ -246,10 +269,12 @@ curl -X POST http://localhost:3000/api/auth/forgot-password \
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Invalid token or password
 - `401 Unauthorized`: Token expired or invalid
 
 **Example:**
+
 ```bash
 curl -X POST http://localhost:3000/api/auth/reset-password \
   -H "Content-Type: application/json" \
@@ -263,6 +288,7 @@ curl -X POST http://localhost:3000/api/auth/reset-password \
 **Endpoint:** `POST /api/auth/verify-email`
 
 **Request:**
+
 ```json
 {
   "token": "verification-token-from-email"
@@ -270,6 +296,7 @@ curl -X POST http://localhost:3000/api/auth/reset-password \
 ```
 
 **Response:** `200 OK`
+
 ```json
 {
   "message": "Email verified successfully"
@@ -277,10 +304,12 @@ curl -X POST http://localhost:3000/api/auth/reset-password \
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Invalid token
 - `401 Unauthorized`: Token expired
 
 **Example:**
+
 ```bash
 curl -X POST http://localhost:3000/api/auth/verify-email \
   -H "Content-Type: application/json" \
@@ -322,8 +351,8 @@ const token = localStorage.getItem("access_token"); // ❌ DOESN'T EXIST
 // NEVER send Authorization header manually
 fetch("/api/auth/me", {
   headers: {
-    "Authorization": `Bearer ${token}` // ❌ NOT NEEDED
-  }
+    Authorization: `Bearer ${token}`, // ❌ NOT NEEDED
+  },
 });
 ```
 
@@ -350,6 +379,7 @@ curl -i -X POST http://localhost:3000/api/auth/logout -b cookies.txt
 ### Browser DevTools
 
 **Application Tab → Cookies:**
+
 1. Open Chrome DevTools (F12)
 2. Go to **Application** tab
 3. Select **Cookies** → `http://localhost:3000`
@@ -360,6 +390,7 @@ curl -i -X POST http://localhost:3000/api/auth/logout -b cookies.txt
    - **Path: /**
 
 **Console Tab:**
+
 ```javascript
 // This should return EMPTY (cookies not accessible)
 document.cookie;
@@ -377,6 +408,7 @@ localStorage.getItem("access_token");
 ### XSS Protection
 
 **Before (Vulnerable):**
+
 ```typescript
 // localStorage - XSS CAN steal this
 localStorage.setItem("access_token", "eyJhbG...");
@@ -385,6 +417,7 @@ localStorage.setItem("access_token", "eyJhbG...");
 ```
 
 **After (Protected):**
+
 ```typescript
 // httpOnly cookies - XSS CANNOT access
 // Cookies are automatically sent by browser
@@ -395,6 +428,7 @@ document.cookie; // Returns: "" (empty, httpOnly cookies hidden)
 ### CSRF Protection
 
 **SameSite=lax** prevents CSRF attacks:
+
 - Cookies sent with top-level navigation
 - Cookies NOT sent with cross-origin POST requests
 - Additional CSRF tokens can be added if needed
@@ -412,13 +446,13 @@ document.cookie; // Returns: "" (empty, httpOnly cookies hidden)
 
 ### Changes from localStorage
 
-| Before | After |
-|--------|-------|
+| Before                                 | After                         |
+| -------------------------------------- | ----------------------------- |
 | `localStorage.getItem("access_token")` | Server reads httpOnly cookies |
-| `Authorization: Bearer ${token}` | Cookies sent automatically |
-| Manual token refresh | Server handles refresh |
-| Client-side token storage | Server-side only |
-| XSS vulnerable | XSS protected |
+| `Authorization: Bearer ${token}`       | Cookies sent automatically    |
+| Manual token refresh                   | Server handles refresh        |
+| Client-side token storage              | Server-side only              |
+| XSS vulnerable                         | XSS protected                 |
 
 ### Breaking Changes
 
@@ -444,6 +478,7 @@ const { user, isAuthenticated } = useAuthStore();
 **Cause:** Cookies not being sent
 
 **Solutions:**
+
 1. Check browser cookies in DevTools
 2. Verify cookies have `HttpOnly` flag
 3. Check cookie domain/path matches request
@@ -454,6 +489,7 @@ const { user, isAuthenticated } = useAuthStore();
 **Cause:** Cross-origin requests blocked
 
 **Solutions:**
+
 1. Ensure API and frontend share same domain
 2. Check CORS configuration allows credentials
 3. Verify `SameSite` cookie attribute
@@ -463,6 +499,7 @@ const { user, isAuthenticated } = useAuthStore();
 **Cause:** Cookie attributes incorrect
 
 **Solutions:**
+
 1. Check `Path=/` is set
 2. Verify domain matches (localhost vs 127.0.0.1)
 3. Check expiration dates are valid
@@ -473,6 +510,7 @@ const { user, isAuthenticated } = useAuthStore();
 ## Implementation Files
 
 **Server Actions (Next.js 15+):**
+
 - `apps/web/src/app/api/auth/login/route.ts`
 - `apps/web/src/app/api/auth/register/route.ts`
 - `apps/web/src/app/api/auth/logout/route.ts`
@@ -482,10 +520,12 @@ const { user, isAuthenticated } = useAuthStore();
 - `apps/web/src/app/api/auth/verify-email/route.ts`
 
 **Client Store:**
+
 - `apps/web/src/stores/authStore.ts`
 - `apps/web/src/hooks/useAuth.ts`
 
 **API Client:**
+
 - `apps/web/src/lib/api/authApi.ts`
 
 ---

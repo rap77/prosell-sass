@@ -43,13 +43,17 @@ describe("ForgotPasswordForm Component", () => {
     it("should render submit button", () => {
       render(<ForgotPasswordForm />);
 
-      expect(screen.getByRole("button", { name: /send reset link/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /send reset link/i }),
+      ).toBeInTheDocument();
     });
 
     it("should render back to login link", () => {
       render(<ForgotPasswordForm />);
 
-      expect(screen.getByRole("link", { name: /back to login/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /back to login/i }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -57,7 +61,9 @@ describe("ForgotPasswordForm Component", () => {
     it("should show error when email is empty", async () => {
       render(<ForgotPasswordForm />);
 
-      const submitButton = screen.getByRole("button", { name: /send reset link/i });
+      const submitButton = screen.getByRole("button", {
+        name: /send reset link/i,
+      });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
@@ -71,7 +77,9 @@ describe("ForgotPasswordForm Component", () => {
       const emailInput = screen.getByLabelText(/email/i);
       await userEvent.type(emailInput, "invalid-email");
 
-      const submitButton = screen.getByRole("button", { name: /send reset link/i });
+      const submitButton = screen.getByRole("button", {
+        name: /send reset link/i,
+      });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
@@ -87,7 +95,9 @@ describe("ForgotPasswordForm Component", () => {
       const emailInput = screen.getByLabelText(/email/i);
       await userEvent.type(emailInput, "test@example.com");
 
-      const submitButton = screen.getByRole("button", { name: /send reset link/i });
+      const submitButton = screen.getByRole("button", {
+        name: /send reset link/i,
+      });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
@@ -102,10 +112,14 @@ describe("ForgotPasswordForm Component", () => {
       const emailInput = screen.getByLabelText(/email/i);
       await userEvent.type(emailInput, "test@example.com");
 
-      const submitButton = screen.getByRole("button", { name: /send reset link/i });
+      const submitButton = screen.getByRole("button", {
+        name: /send reset link/i,
+      });
       await userEvent.click(submitButton);
 
-      expect(screen.getByRole("button", { name: /sending/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /sending/i }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -117,14 +131,18 @@ describe("ForgotPasswordForm Component", () => {
       const emailInput = screen.getByLabelText(/email/i);
       await userEvent.type(emailInput, "test@example.com");
 
-      const submitButton = screen.getByRole("button", { name: /send reset link/i });
+      const submitButton = screen.getByRole("button", {
+        name: /send reset link/i,
+      });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
         expect(screen.getByText(/check your email/i)).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/we sent a password reset link/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/we sent a password reset link/i),
+      ).toBeInTheDocument();
     });
 
     it("should show link to login in success state", async () => {
@@ -134,24 +152,33 @@ describe("ForgotPasswordForm Component", () => {
       const emailInput = screen.getByLabelText(/email/i);
       await userEvent.type(emailInput, "test@example.com");
 
-      const submitButton = screen.getByRole("button", { name: /send reset link/i });
+      const submitButton = screen.getByRole("button", {
+        name: /send reset link/i,
+      });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByRole("link", { name: /back to login/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("link", { name: /back to login/i }),
+        ).toBeInTheDocument();
       });
     });
   });
 
   describe("Error State", () => {
     it("should show error when forgotPassword fails", async () => {
-      mockForgotPassword.mockRejectedValue({ message: "User not found", status: 404 });
+      mockForgotPassword.mockRejectedValue({
+        message: "User not found",
+        status: 404,
+      });
       render(<ForgotPasswordForm />);
 
       const emailInput = screen.getByLabelText(/email/i);
       await userEvent.type(emailInput, "nonexistent@example.com");
 
-      const submitButton = screen.getByRole("button", { name: /send reset link/i });
+      const submitButton = screen.getByRole("button", {
+        name: /send reset link/i,
+      });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
@@ -166,7 +193,9 @@ describe("ForgotPasswordForm Component", () => {
       const emailInput = screen.getByLabelText(/email/i);
       await userEvent.type(emailInput, "test@example.com");
 
-      const submitButton = screen.getByRole("button", { name: /send reset link/i });
+      const submitButton = screen.getByRole("button", {
+        name: /send reset link/i,
+      });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
@@ -180,7 +209,9 @@ describe("ForgotPasswordForm Component", () => {
       render(<ForgotPasswordForm />);
 
       // chadcn/ui CardTitle - search by text
-      const heading = screen.getByRole("heading", { name: /forgot your password/i });
+      const heading = screen.getByRole("heading", {
+        name: /forgot your password/i,
+      });
       expect(heading).toBeInTheDocument();
     });
 
@@ -209,7 +240,9 @@ describe("ForgotPasswordForm Component", () => {
       const emailInput = screen.getByLabelText(/email/i);
       await userEvent.type(emailInput, "test@example.com");
 
-      const submitButton = screen.getByRole("button", { name: /send reset link/i });
+      const submitButton = screen.getByRole("button", {
+        name: /send reset link/i,
+      });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
@@ -217,7 +250,9 @@ describe("ForgotPasswordForm Component", () => {
       });
 
       // Should have option to send again
-      expect(screen.queryByRole("button", { name: /send another/i })).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /send another/i }),
+      ).toBeInTheDocument();
     });
   });
 });

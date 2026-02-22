@@ -16,9 +16,9 @@
  * ```
  */
 
-'use client';
+"use client";
 
-import { useFeatureFlagStore } from '@/stores/featureFlagStore';
+import { useFeatureFlagStore } from "@/stores/featureFlagStore";
 
 /**
  * Feature Flag Panel Component
@@ -40,7 +40,10 @@ export function FeatureFlagPanel() {
 
       <div className="space-y-2 mb-3">
         {Object.entries(flags).map(([key, value]) => (
-          <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-800 p-1 rounded">
+          <label
+            key={key}
+            className="flex items-center gap-2 cursor-pointer hover:bg-gray-800 p-1 rounded"
+          >
             <input
               type="checkbox"
               checked={value}
@@ -48,8 +51,10 @@ export function FeatureFlagPanel() {
               className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-900"
             />
             <span className="text-sm font-mono text-gray-300">{key}</span>
-            <span className={`text-xs ml-auto ${value ? 'text-green-400' : 'text-red-400'}`}>
-              {value ? 'ON' : 'OFF'}
+            <span
+              className={`text-xs ml-auto ${value ? "text-green-400" : "text-red-400"}`}
+            >
+              {value ? "ON" : "OFF"}
             </span>
           </label>
         ))}

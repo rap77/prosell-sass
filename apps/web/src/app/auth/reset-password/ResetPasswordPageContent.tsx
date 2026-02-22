@@ -14,7 +14,9 @@ interface ResetPasswordPageContentProps {
   token?: string;
 }
 
-export function ResetPasswordPageContent({ token }: ResetPasswordPageContentProps) {
+export function ResetPasswordPageContent({
+  token,
+}: ResetPasswordPageContentProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 px-4 py-12 sm:px-6 lg:px-8">
       <main className="max-w-md w-full space-y-8">

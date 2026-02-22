@@ -19,7 +19,8 @@ test.describe("Reset Password", () => {
   });
 
   test.describe("Page Layout", () => {
-    test("should display reset password page elements correctly",
+    test(
+      "should display reset password page elements correctly",
       { tag: ["@e2e", "@reset-password", "@RESET-E2E-001"] },
       async ({ page }) => {
         await expect(resetPasswordPage.heading).toBeVisible();
@@ -27,30 +28,37 @@ test.describe("Reset Password", () => {
         await expect(resetPasswordPage.confirmPasswordInput).toBeVisible();
         await expect(resetPasswordPage.submitButton).toBeVisible();
         await expect(resetPasswordPage.signInLink).toBeVisible();
-      }
+      },
     );
 
-    test("should pass accessibility checks",
+    test(
+      "should pass accessibility checks",
       { tag: ["@e2e", "@reset-password", "@a11y", "@RESET-E2E-002"] },
       async ({ page }) => {
-        const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
+        const accessibilityScanResults = await new AxeBuilder({
+          page,
+        }).analyze();
         expect(accessibilityScanResults.violations).toEqual([]);
-      }
+      },
     );
   });
 
   test.describe("Form Validation", () => {
-    test("should show validation error for short password",
+    test(
+      "should show validation error for short password",
       { tag: ["@e2e", "@reset-password", "@validation", "@RESET-E2E-003"] },
       async ({ page }) => {
         await resetPasswordPage.fillPasswords("short");
 
-        const passwordError = page.getByText(/password must be at least 8 characters/i);
+        const passwordError = page.getByText(
+          /password must be at least 8 characters/i,
+        );
         await expect(passwordError).toBeVisible();
-      }
+      },
     );
 
-    test("should show validation error for mismatched passwords",
+    test(
+      "should show validation error for mismatched passwords",
       { tag: ["@e2e", "@reset-password", "@validation", "@RESET-E2E-004"] },
       async ({ page }) => {
         await resetPasswordPage.fillNewPassword("password123");
@@ -59,10 +67,11 @@ test.describe("Reset Password", () => {
 
         const mismatchError = page.getByText(/passwords do not match/i);
         await expect(mismatchError).toBeVisible();
-      }
+      },
     );
 
-    test("should show validation error for empty confirm password",
+    test(
+      "should show validation error for empty confirm password",
       { tag: ["@e2e", "@reset-password", "@validation", "@RESET-E2E-005"] },
       async ({ page }) => {
         // Navigate with a token to avoid token error state
@@ -75,12 +84,13 @@ test.describe("Reset Password", () => {
         // Confirm password validation error should be visible
         // Submit button should be clicked (form submitted)
         await page.waitForTimeout(500);
-      }
+      },
     );
   });
 
   test.describe("Password Reset Flow", () => {
-    test("should submit password reset with valid data",
+    test(
+      "should submit password reset with valid data",
       { tag: ["@critical", "@e2e", "@reset-password", "@RESET-E2E-006"] },
       async ({ page }) => {
         // Navigate with a valid token
@@ -91,10 +101,11 @@ test.describe("Reset Password", () => {
 
         // Form should submit without error
         await page.waitForTimeout(500);
-      }
+      },
     );
 
-    test("should show loading state during submission",
+    test(
+      "should show loading state during submission",
       { tag: ["@e2e", "@reset-password", "@RESET-E2E-007"] },
       async ({ page }) => {
         const newPassword = generateTestPassword();
@@ -104,10 +115,11 @@ test.describe("Reset Password", () => {
         // With mock API (500ms delay), loading state is brief
         // Just verify form submits without error
         await page.waitForTimeout(500);
-      }
+      },
     );
 
-    test("should handle invalid token gracefully",
+    test(
+      "should handle invalid token gracefully",
       { tag: ["@e2e", "@reset-password", "@error", "@RESET-E2E-008"] },
       async ({ page }) => {
         // Navigate with invalid token
@@ -115,22 +127,24 @@ test.describe("Reset Password", () => {
 
         // Form should still be visible even with invalid token
         await expect(resetPasswordPage.heading).toBeVisible();
-      }
+      },
     );
   });
 
   test.describe("Navigation", () => {
-    test("should navigate to login page when clicking sign in link",
+    test(
+      "should navigate to login page when clicking sign in link",
       { tag: ["@e2e", "@reset-password", "@RESET-E2E-009"] },
       async ({ page }) => {
         await resetPasswordPage.clickSignIn();
 
         await page.waitForURL(/\/auth\/login/);
         await expect(page).toHaveURL(/\/auth\/login/);
-      }
+      },
     );
 
-    test("should navigate to login after successful reset",
+    test(
+      "should navigate to login after successful reset",
       { tag: ["@e2e", "@reset-password", "@RESET-E2E-010"] },
       async ({ page }) => {
         const newPassword = generateTestPassword();
@@ -138,12 +152,13 @@ test.describe("Reset Password", () => {
 
         // After success, just verify form submitted without error
         await page.waitForTimeout(500);
-      }
+      },
     );
   });
 
   test.describe("Edge Cases", () => {
-    test("should handle page without token",
+    test(
+      "should handle page without token",
       { tag: ["@e2e", "@reset-password", "@RESET-E2E-011"] },
       async ({ page }) => {
         // Navigate without token
@@ -151,7 +166,7 @@ test.describe("Reset Password", () => {
 
         // Should still load the page
         await resetPasswordPage.verifyPageLoaded();
-      }
+      },
     );
   });
 });

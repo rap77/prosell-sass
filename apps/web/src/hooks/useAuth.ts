@@ -42,7 +42,12 @@ export interface UseAuthReturn {
   login: (email: string, password: string) => Promise<void>;
 
   /** Register a new user account */
-  register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+  ) => Promise<void>;
 
   /** Logout the current user */
   logout: () => Promise<void>;
@@ -97,7 +102,12 @@ export function useAuth(): UseAuthReturn {
   };
 
   // Wrap register to accept separate parameters
-  const register = async (email: string, password: string, firstName: string, lastName: string) => {
+  const register = async (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+  ) => {
     await storeRegister({
       email,
       password,
@@ -109,7 +119,9 @@ export function useAuth(): UseAuthReturn {
   // Convenience getters
   const userId = user?.id ?? null;
   const userEmail = user?.email ?? null;
-  const userFullName = user ? `${user.first_name} ${user.last_name}`.trim() : null;
+  const userFullName = user
+    ? `${user.first_name} ${user.last_name}`.trim()
+    : null;
   const userRole = user?.role ?? null;
   const isEmailVerified = user?.is_email_verified ?? false;
   const is2FAEnabled = user?.is_2fa_enabled ?? false;

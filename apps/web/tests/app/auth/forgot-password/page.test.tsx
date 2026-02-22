@@ -14,7 +14,9 @@ import ForgotPasswordPage from "@/app/auth/forgot-password/page";
 
 // Mock ForgotPasswordForm component
 vi.mock("@/components/auth/ForgotPasswordForm", () => ({
-  ForgotPasswordForm: () => <div data-testid="forgot-password-form">ForgotPasswordForm</div>,
+  ForgotPasswordForm: () => (
+    <div data-testid="forgot-password-form">ForgotPasswordForm</div>
+  ),
 }));
 
 // ============================================

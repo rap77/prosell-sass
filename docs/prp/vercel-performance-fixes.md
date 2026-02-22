@@ -14,6 +14,7 @@
 ## 2. Demo Goal (What Success Looks Like)
 
 ### Success Criteria
+
 - **No duplicate `initializeAuth()` calls** when multiple components mount
 - **2FA setup as a management center** with conditional behavior based on current state
 - **Pre-loaded OAuth buttons** with "Intent-based Retry" fallback strategy
@@ -21,7 +22,9 @@
 - **Smooth 60fps SVG animations** using hardware-accelerated transforms
 
 ### What the Demo Shows
+
 A side-by-side comparison (before/after) or a clear demonstration of:
+
 1. Auth initialization happening exactly once per session
 2. 2FA management center (setup OR protected state view)
 3. Intent-based OAuth preload with fallback
@@ -31,6 +34,7 @@ A side-by-side comparison (before/after) or a clear demonstration of:
 ### Non-Goals & Scope Boundaries
 
 **EXPLICITLY OUT OF SCOPE:**
+
 - ❌ Complete redesign of auth UI (keep existing visual design)
 - ❌ Migration to new state management library (stay with Zustand)
 - ❌ Adding new authentication providers (Twitter, GitHub, etc.)
@@ -38,6 +42,7 @@ A side-by-side comparison (before/after) or a clear demonstration of:
 - ❌ Changing OAuth provider implementations (Google/Facebook only)
 
 **IN SCOPE:**
+
 - ✅ Performance optimizations within existing auth layer
 - ✅ Internal refactoring without visual changes
 - ✅ New utility components (`<AnimatedSvgWrapper>`)
@@ -48,6 +53,7 @@ A side-by-side comparison (before/after) or a clear demonstration of:
 ## 3. Target User (Role-Based)
 
 ### Primary User: Frontend Developer
+
 - **Context**: Maintaining and optimizing the React authentication system
 - **Skill Level**: Intermediate to Senior React developer
 - **Key Constraint**: Must maintain backward compatibility with existing auth flow
@@ -58,6 +64,7 @@ A side-by-side comparison (before/after) or a clear demonstration of:
 ## 4. Core Use Case (Happy Path)
 
 ### Start Condition
+
 Developer opens the auth-related pages (login, register, setup-2fa) in development mode with React DevTools Profiler enabled.
 
 ### Step-by-Step Flow
@@ -88,6 +95,7 @@ Developer opens the auth-related pages (login, register, setup-2fa) in developme
    - **Navigation interruption**: If user navigates during loading → `beforeunload` warning → operation cancelled → fresh fetch on return
 
 ### End Condition
+
 - Auth state initialized exactly once (verified via Performance API)
 - No duplicate network requests visible in Network tab
 - All components render without unnecessary re-renders (verified via Profiler)
@@ -98,38 +106,42 @@ Developer opens the auth-related pages (login, register, setup-2fa) in developme
 
 ## 5. Functional Decisions (What It Must Do)
 
-| ID | Function | Notes |
-|----|----------|-------|
-| F1 | Prevent duplicate `initializeAuth()` calls | Add `initialized` flag to authStore with early exit |
-| F2 | 2FA as management center | Conditional behavior: setup flow OR protected state view |
-| F3 | User-initiated 2FA enable | Remove automatic enable2FA call from useEffect; explicit button click |
-| F4 | Intent-based OAuth preload | Initial preload → onMouseEnter retry → on-click fallback |
-| F5 | `<AnimatedSvgWrapper>` component | Hardware-accelerated CSS transforms; apply to all auth SVGs |
-| F6 | Loading states for all flows | Spinner while enabling 2FA; beforeunload warning on navigation |
-| F7 | Feature flags for all optimizations | Runtime toggle for immediate rollback capability |
-| F8 | Performance API marks | `performance.mark()` in initializeAuth flow for metrics |
-| F9 | Feature detection everywhere | Graceful degradation if APIs not supported |
-| F10 | Backward compatibility | Existing auth flow must continue working |
+| ID  | Function                                   | Notes                                                                 |
+| --- | ------------------------------------------ | --------------------------------------------------------------------- |
+| F1  | Prevent duplicate `initializeAuth()` calls | Add `initialized` flag to authStore with early exit                   |
+| F2  | 2FA as management center                   | Conditional behavior: setup flow OR protected state view              |
+| F3  | User-initiated 2FA enable                  | Remove automatic enable2FA call from useEffect; explicit button click |
+| F4  | Intent-based OAuth preload                 | Initial preload → onMouseEnter retry → on-click fallback              |
+| F5  | `<AnimatedSvgWrapper>` component           | Hardware-accelerated CSS transforms; apply to all auth SVGs           |
+| F6  | Loading states for all flows               | Spinner while enabling 2FA; beforeunload warning on navigation        |
+| F7  | Feature flags for all optimizations        | Runtime toggle for immediate rollback capability                      |
+| F8  | Performance API marks                      | `performance.mark()` in initializeAuth flow for metrics               |
+| F9  | Feature detection everywhere               | Graceful degradation if APIs not supported                            |
+| F10 | Backward compatibility                     | Existing auth flow must continue working                              |
 
 ---
 
 ## 6. UX Decisions (What the Experience Is Like)
 
 ### 6.1 Entry Point
+
 - **Developers**: Open React DevTools Profiler + Network tab
 - **End Users**: No visible change (internal optimization)
 
 ### 6.2 Inputs
+
 - **Developer**: Runs performance profiler, observes network requests
 - **End User**: Clicks "Enable 2FA" button or views protected state
 
 ### 6.3 Outputs
+
 - **Developer**: Sees reduced render times (Profiler), fewer network requests, Performance API metrics
 - **End User**: Same visual experience, faster perceived load times
 
 ### 6.4 Feedback & States
 
 #### Auth Initialization
+
 - **Loading**: Existing spinner in AuthProvider
 - **Success**: Children render
 - **Failure**: Error logged, app continues (graceful degradation)
@@ -138,6 +150,7 @@ Developer opens the auth-related pages (login, register, setup-2fa) in developme
 #### 2FA Management Center (NEW)
 
 **State A: Not Enabled (`!is2FAEnabled`)**
+
 - **Idle**: Show "Enable 2FA" button + description
 - **Loading**: Spinner while generating QR code
 - **Success**: Show QR code + backup codes + verify input
@@ -145,12 +158,14 @@ Developer opens the auth-related pages (login, register, setup-2fa) in developme
 - **Navigation Interrupted**: `beforeunload` warning → cancel → reset on return
 
 **State B: Already Enabled (`is2FAEnabled`)**
+
 - **View**: Show "Protected" badge + current method
 - **Backup Codes**: View/download codes option
 - **Disable**: "Disable 2FA" button with confirmation
 - **Navigation**: No warning (view-only state)
 
 #### OAuth Preload (Intent-based Retry)
+
 - **Initial Preload**: Silent, on mount of login page
 - **Fallback (onMouseEnter)**: Silent retry if initial failed
 - **Final Fallback**: Load on-click (existing behavior)
@@ -158,26 +173,26 @@ Developer opens the auth-related pages (login, register, setup-2fa) in developme
 
 ### 6.5 Errors (Minimum Viable Handling)
 
-| Scenario | Handling |
-|----------|----------|
-| `initializeAuth()` fails | Log error, continue with unauthenticated state |
-| 2FA enable fails | Show error message, retry button |
-| OAuth preload fails | Silent fallback to onMouseEnter retry → on-click load |
-| Duplicate mount detected | Log warning, skip redundant initialization (early exit) |
-| Performance API not supported | Skip marks, log warning in dev mode only |
+| Scenario                            | Handling                                                          |
+| ----------------------------------- | ----------------------------------------------------------------- |
+| `initializeAuth()` fails            | Log error, continue with unauthenticated state                    |
+| 2FA enable fails                    | Show error message, retry button                                  |
+| OAuth preload fails                 | Silent fallback to onMouseEnter retry → on-click load             |
+| Duplicate mount detected            | Log warning, skip redundant initialization (early exit)           |
+| Performance API not supported       | Skip marks, log warning in dev mode only                          |
 | User navigates during 2FA operation | `beforeunload` warning → cancel operation → fresh fetch on return |
 
 ### 6.6 Security Rules
 
 **CRITICAL**: These rules are non-negotiable for security reasons.
 
-| Rule | Rationale |
-|------|-----------|
-| **NEVER persist TOTP secrets in storage** | Secret compromise risk |
-| **beforeunload warning during 2FA operations** | Prevent accidental navigation |
-| **Fresh fetch on return to 2FA page** | Ensure secret hasn't expired |
-| **Feature flags for runtime toggle** | Immediate rollback if issues arise |
-| **Feature detection for all APIs** | Prevent crashes on older browsers |
+| Rule                                           | Rationale                          |
+| ---------------------------------------------- | ---------------------------------- |
+| **NEVER persist TOTP secrets in storage**      | Secret compromise risk             |
+| **beforeunload warning during 2FA operations** | Prevent accidental navigation      |
+| **Fresh fetch on return to 2FA page**          | Ensure secret hasn't expired       |
+| **Feature flags for runtime toggle**           | Immediate rollback if issues arise |
+| **Feature detection for all APIs**             | Prevent crashes on older browsers  |
 
 ---
 
@@ -185,18 +200,19 @@ Developer opens the auth-related pages (login, register, setup-2fa) in developme
 
 ### 7.1 Inputs
 
-| Source | Data |
-|--------|-------|
-| Cookie (`access_token`) | Authentication token |
-| Cookie (`user_data`) | User profile information + `is_2fa_enabled` |
-| User action | Click events for 2FA enable/disable |
-| Hover event | Trigger for OAuth preload (Intent-based Retry) |
-| Feature flag | Runtime toggle for optimizations |
-| Performance API | Marks for timing measurements |
+| Source                  | Data                                           |
+| ----------------------- | ---------------------------------------------- |
+| Cookie (`access_token`) | Authentication token                           |
+| Cookie (`user_data`)    | User profile information + `is_2fa_enabled`    |
+| User action             | Click events for 2FA enable/disable            |
+| Hover event             | Trigger for OAuth preload (Intent-based Retry) |
+| Feature flag            | Runtime toggle for optimizations               |
+| Performance API         | Marks for timing measurements                  |
 
 ### 7.2 Processing
 
 #### Auth Initialization Flow
+
 ```
 Mount → Check `initialized` flag
   ├─ If false → performance.mark('auth-init-start') → Call API → performance.mark('auth-init-end') → set `initialized = true`
@@ -204,6 +220,7 @@ Mount → Check `initialized` flag
 ```
 
 #### 2FA Management Center Flow
+
 ```
 Mount → Check `is_2fa_enabled` flag
   ├─ If false → Show "Enable 2FA" button
@@ -216,6 +233,7 @@ Mount → Check `is_2fa_enabled` flag
 ```
 
 #### OAuth Preload Flow (Intent-based Retry)
+
 ```
 Mount → Attempt initial preload
   ├─ Success → Cache module → Done
@@ -228,12 +246,12 @@ Mount → Attempt initial preload
 
 ### 7.3 Outputs
 
-| Destination | Data |
-|-------------|-------|
+| Destination         | Data                                                       |
+| ------------------- | ---------------------------------------------------------- |
 | authStore (Zustand) | `user`, `isAuthenticated`, `initialized`, `is_2fa_enabled` |
-| localStorage | Minimal user data only (NO tokens, NO secrets) |
-| Console (dev only) | Performance metrics, warnings |
-| Performance API | Marks for `auth-init-start`, `auth-init-end` |
+| localStorage        | Minimal user data only (NO tokens, NO secrets)             |
+| Console (dev only)  | Performance metrics, warnings                              |
+| Performance API     | Marks for `auth-init-start`, `auth-init-end`               |
 
 ---
 
@@ -247,19 +265,21 @@ All optimizations MUST implement feature detection:
 
 ```typescript
 // Pattern to apply everywhere
-if (typeof performance !== 'undefined' && performance.mark) {
-  performance.mark('event-name');
+if (typeof performance !== "undefined" && performance.mark) {
+  performance.mark("event-name");
 } else {
   // Silently skip - no error thrown
 }
 ```
 
 **Supported Browsers:**
+
 - Chrome/Edge: Latest 2 years (full feature support)
 - Firefox: Latest 2 years (graceful degradation)
 - Safari: Latest 2 years (feature detection critical)
 
 **Behavior:**
+
 - If feature supported → Use optimization
 - If feature NOT supported → Silently fall back to default behavior
 - NO errors thrown to user
@@ -267,21 +287,21 @@ if (typeof performance !== 'undefined' && performance.mark) {
 
 ### 8.2 APIs Used
 
-| API | Purpose | Fallback |
-|-----|---------|----------|
-| `Performance.mark()` | Timing measurements | Skip marks in production |
-| `Performance.measure()` | Calculate duration | Skip in production |
-| `dynamic import()` | OAuth preload | Static import |
-| `React.cache()` | Server-side deduplication | No fallback (Next.js 15+) |
-| `beforeunload` | Navigation warning | No fallback |
+| API                     | Purpose                   | Fallback                  |
+| ----------------------- | ------------------------- | ------------------------- |
+| `Performance.mark()`    | Timing measurements       | Skip marks in production  |
+| `Performance.measure()` | Calculate duration        | Skip in production        |
+| `dynamic import()`      | OAuth preload             | Static import             |
+| `React.cache()`         | Server-side deduplication | No fallback (Next.js 15+) |
+| `beforeunload`          | Navigation warning        | No fallback               |
 
 ### 8.3 Component Constraints
 
-| Component | Constraint |
-|-----------|------------|
+| Component              | Constraint                                                |
+| ---------------------- | --------------------------------------------------------- |
 | `<AnimatedSvgWrapper>` | Must use CSS transforms only (no SVG attribute animation) |
-| authStore | Must NOT persist TOTP secrets in any storage |
-| Feature flags | Must be runtime-toggable (no build-time only) |
+| authStore              | Must NOT persist TOTP secrets in any storage              |
+| Feature flags          | Must be runtime-toggable (no build-time only)             |
 
 ---
 
@@ -291,42 +311,46 @@ if (typeof performance !== 'undefined' && performance.mark) {
 
 ### 9.1 Unit Tests (Jest/Vitest)
 
-| Test | Purpose |
-|------|---------|
-| `initialized` flag behavior | Verify early exit prevents duplicate calls |
-| Feature detection | Verify graceful degradation when APIs missing |
-| `AnimatedSvgWrapper` | Verify CSS transforms applied correctly |
-| Performance API marks | Verify marks created in correct order |
+| Test                        | Purpose                                       |
+| --------------------------- | --------------------------------------------- |
+| `initialized` flag behavior | Verify early exit prevents duplicate calls    |
+| Feature detection           | Verify graceful degradation when APIs missing |
+| `AnimatedSvgWrapper`        | Verify CSS transforms applied correctly       |
+| Performance API marks       | Verify marks created in correct order         |
 
 **Mock Strategy:**
+
 - Mock `performance.mark` and `performance.measure`
 - Mock `cookies()` for server components
 - Mock API responses
 
 ### 9.2 Integration Tests (React Profiler)
 
-| Test | Purpose |
-|------|---------|
-| Re-render count | Verify no unnecessary re-renders after fixes |
-| Mount/unmount cycles | Verify `initialized` flag persists correctly |
-| 2FA state transitions | Verify conditional behavior works |
+| Test                  | Purpose                                      |
+| --------------------- | -------------------------------------------- |
+| Re-render count       | Verify no unnecessary re-renders after fixes |
+| Mount/unmount cycles  | Verify `initialized` flag persists correctly |
+| 2FA state transitions | Verify conditional behavior works            |
 
 **Tool:** React DevTools Profiler automated snapshots
 
 ### 9.3 E2E Tests (Playwright)
 
-| Test | Purpose |
-|------|---------|
-| Single `/api/auth/state` call | Verify initialization happens once |
-| OAuth preload Network tab | Verify preload triggered on hover |
-| 2FA enable flow | Verify user-initiated flow works |
-| Navigation interruption | Verify `beforeunload` warning appears |
-| Feature flag toggle | Verify runtime toggle works |
+| Test                          | Purpose                               |
+| ----------------------------- | ------------------------------------- |
+| Single `/api/auth/state` call | Verify initialization happens once    |
+| OAuth preload Network tab     | Verify preload triggered on hover     |
+| 2FA enable flow               | Verify user-initiated flow works      |
+| Navigation interruption       | Verify `beforeunload` warning appears |
+| Feature flag toggle           | Verify runtime toggle works           |
 
 **Critical E2E Validation:**
+
 ```javascript
 // Verify exactly ONE auth state call
-const requests = page.requests().filter(r => r.url().includes('/api/auth/state'));
+const requests = page
+  .requests()
+  .filter((r) => r.url().includes("/api/auth/state"));
 expect(requests).toHaveLength(1);
 ```
 
@@ -341,12 +365,13 @@ expect(requests).toHaveLength(1);
 **All optimizations MUST be behind feature flags:**
 
 ```typescript
-const ENABLE_AUTH_INIT_FIX = featureFlags.get('auth-init-fix', true);
-const ENABLE_OAUTH_PRELOAD = featureFlags.get('oauth-preload', true);
-const ENABLE_SVG_WRAPPER = featureFlags.get('svg-wrapper', true);
+const ENABLE_AUTH_INIT_FIX = featureFlags.get("auth-init-fix", true);
+const ENABLE_OAUTH_PRELOAD = featureFlags.get("oauth-preload", true);
+const ENABLE_SVG_WRAPPER = featureFlags.get("svg-wrapper", true);
 ```
 
 **Process if issues detected:**
+
 1. Toggle feature flag OFF in admin panel
 2. Optimizations disabled immediately (no deploy needed)
 3. Users revert to previous behavior
@@ -355,6 +380,7 @@ const ENABLE_SVG_WRAPPER = featureFlags.get('svg-wrapper', true);
 ### 10.2 Code Rollback (Permanent)
 
 **Process for permanent fix:**
+
 1. Create fix branch
 2. Address issue
 3. PR + review
@@ -363,12 +389,12 @@ const ENABLE_SVG_WRAPPER = featureFlags.get('svg-wrapper', true);
 
 ### 10.3 Rollback Triggers
 
-| Trigger | Action |
-|---------|--------|
+| Trigger                               | Action                    |
+| ------------------------------------- | ------------------------- |
 | Auth not working for specific devices | Toggle flags, investigate |
-| Performance degradation | Toggle flags, investigate |
-| Console errors in production | Toggle flags, investigate |
-| User reports of login failure | Toggle flags immediately |
+| Performance degradation               | Toggle flags, investigate |
+| Console errors in production          | Toggle flags, investigate |
+| User reports of login failure         | Toggle flags immediately  |
 
 ---
 
@@ -397,20 +423,21 @@ npm run dev
 
 **ALL of these must pass:**
 
-| Criterion | How to Verify | Target |
-|-----------|---------------|--------|
-| Unit tests pass | `npm test` | 100% passing |
-| E2E tests pass | `npm run test:e2e` | 100% passing |
-| Integration tests pass | `npm run test:integration` | 100% passing |
-| Baseline improved | Performance API comparison | Targets met |
-| No regressions | Compare to baseline | ≤ baseline |
-| Code review approved | Peer review | Approved |
-| Feature flags tested | Toggle on/off | Works both ways |
-| Feature detection tested | Test on old browsers | No crashes |
+| Criterion                | How to Verify              | Target          |
+| ------------------------ | -------------------------- | --------------- |
+| Unit tests pass          | `npm test`                 | 100% passing    |
+| E2E tests pass           | `npm run test:e2e`         | 100% passing    |
+| Integration tests pass   | `npm run test:integration` | 100% passing    |
+| Baseline improved        | Performance API comparison | Targets met     |
+| No regressions           | Compare to baseline        | ≤ baseline      |
+| Code review approved     | Peer review                | Approved        |
+| Feature flags tested     | Toggle on/off              | Works both ways |
+| Feature detection tested | Test on old browsers       | No crashes      |
 
 ### 11.3 Phase 1 → Phase 2 Transition
 
 **Gatekeeper Question:**
+
 > "Have we measured baseline, passed all tests, and verified Performance API shows improvements?"
 
 - **YES** → Proceed to Phase 2
@@ -471,18 +498,19 @@ npm run dev
 
 **Measured via Performance API:**
 
-| Metric | Baseline | Target | How to Measure |
-|--------|----------|--------|----------------|
-| `initializeAuth()` calls per session | 2-3 | 1 | Count Network requests |
-| Time to interactive (login) | ~500ms | ~400ms | `performance.measure()` |
-| OAuth bundle load time | On mount | On hover | Network tab timing |
-| Re-renders (login mount) | Baseline | -10% | React Profiler |
-| 2FA setup unnecessary calls | 1 (on mount) | 0 | Network tab |
+| Metric                               | Baseline     | Target   | How to Measure          |
+| ------------------------------------ | ------------ | -------- | ----------------------- |
+| `initializeAuth()` calls per session | 2-3          | 1        | Count Network requests  |
+| Time to interactive (login)          | ~500ms       | ~400ms   | `performance.measure()` |
+| OAuth bundle load time               | On mount     | On hover | Network tab timing      |
+| Re-renders (login mount)             | Baseline     | -10%     | React Profiler          |
+| 2FA setup unnecessary calls          | 1 (on mount) | 0        | Network tab             |
 
 **Automated Verification:**
+
 ```typescript
 // In tests
-const authInitMeasure = performance.getEntriesByName('auth-init-duration');
+const authInitMeasure = performance.getEntriesByName("auth-init-duration");
 expect(authInitMeasure[0].duration).toBeLessThan(100); // ms
 ```
 
@@ -495,16 +523,18 @@ expect(authInitMeasure[0].duration).toBeLessThan(100); // ms
 **Purpose:** Standardized SVG animation wrapper with 60fps performance
 
 **API:**
+
 ```typescript
 interface AnimatedSvgWrapperProps {
   children: React.ReactNode;
-  animation?: 'fadeIn' | 'slideUp' | 'scaleIn';
+  animation?: "fadeIn" | "slideUp" | "scaleIn";
   duration?: number; // ms
   delay?: number; // ms
 }
 ```
 
 **Implementation:**
+
 ```typescript
 export function AnimatedSvgWrapper({
   children,
@@ -524,10 +554,15 @@ export function AnimatedSvgWrapper({
 ```
 
 **CSS (global):**
+
 ```css
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
@@ -556,6 +591,7 @@ export function AnimatedSvgWrapper({
 ### 14.2 Feature Flag System
 
 **Interface:**
+
 ```typescript
 interface FeatureFlagStore {
   get(flag: string, defaultValue: boolean): boolean;
@@ -565,9 +601,10 @@ interface FeatureFlagStore {
 ```
 
 **Usage:**
+
 ```typescript
 // In components
-if (featureFlags.get('auth-init-fix', false)) {
+if (featureFlags.get("auth-init-fix", false)) {
   // Use optimized path
 } else {
   // Use original path
@@ -610,6 +647,7 @@ if (featureFlags.get('auth-init-fix', false)) {
 **Outcome:** All ambiguities resolved
 
 **Key Decisions Made:**
+
 1. 2FA page = Management center with conditional behavior
 2. Navigation interruption = `beforeunload` warning + fresh fetch
 3. Metrics = Performance API (not manual DevTools)

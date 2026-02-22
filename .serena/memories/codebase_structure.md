@@ -1,6 +1,7 @@
 # Codebase Structure - ProSell SaaS
 
 ## Monorepo Layout
+
 ```
 prosell-sass/
 ├── apps/
@@ -41,6 +42,7 @@ prosell-sass/
 ```
 
 ## Key Directories
+
 - `apps/api/src/prosell/domain/` - Clean Architecture domain layer (no dependencies)
 - `apps/api/src/prosell/application/` - Use cases and orchestration
 - `apps/api/src/prosell/infrastructure/` - FastAPI endpoints and adapters
@@ -57,11 +59,13 @@ prosell-sass/
 - `docs/06_PROMPT_CLAUDE_CODE_2026_v2.md` - ACTUALIZADO (nombre correcto)
 
 **Rutas Correctas**:
+
 - Backend: `apps/api/src/prosell/` (NO `src/prosell/` solo)
 - Frontend: `apps/web/src/` (NO `frontend/src/`)
 - Proyecto: `prosell-sass/` (NO `prosell-saas/`)
 
 **Documentos con Rutas Correctas**:
+
 - `CLAUDE.md` ✅
 - `PRPs/auth-system.md` ✅
 - `.serena/memories/codebase_structure.md` ✅

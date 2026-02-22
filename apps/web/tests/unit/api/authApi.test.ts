@@ -57,7 +57,7 @@ describe("authApi Client - Login", () => {
           "Content-Type": "application/json",
         }),
         body: expect.stringContaining("test@example.com"),
-      })
+      }),
     );
 
     expect(result).toEqual(mockResponse);
@@ -71,7 +71,7 @@ describe("authApi Client - Login", () => {
     } as Response);
 
     await expect(
-      authApi.login("wrong@example.com", "wrongpassword")
+      authApi.login("wrong@example.com", "wrongpassword"),
     ).rejects.toThrow("Invalid email or password format");
   });
 
@@ -81,7 +81,7 @@ describe("authApi Client - Login", () => {
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
     await expect(
-      authApi.login("test@example.com", "Password123!")
+      authApi.login("test@example.com", "Password123!"),
     ).rejects.toThrow("Network error");
   });
 });
@@ -121,7 +121,7 @@ describe("authApi Client - Register", () => {
       "new@example.com",
       "Password123!",
       "New",
-      "User"
+      "User",
     );
 
     expect(mockFetch).toHaveBeenCalledWith(
@@ -132,7 +132,7 @@ describe("authApi Client - Register", () => {
           "Content-Type": "application/json",
         }),
         body: expect.stringContaining("new@example.com"),
-      })
+      }),
     );
 
     expect(result).toEqual(mockResponse);
@@ -146,7 +146,7 @@ describe("authApi Client - Register", () => {
     } as Response);
 
     await expect(
-      authApi.register("existing@example.com", "Password123!", "Test", "User")
+      authApi.register("existing@example.com", "Password123!", "Test", "User"),
     ).rejects.toThrow("Invalid email or password format");
   });
 });
@@ -176,7 +176,7 @@ describe("authApi Client - Logout", () => {
       expect.stringContaining("/api/auth/logout"),
       expect.objectContaining({
         method: "POST",
-      })
+      }),
     );
   });
 
@@ -226,7 +226,7 @@ describe("authApi Client - Get Current User", () => {
       expect.objectContaining({
         method: "GET",
         credentials: "include",
-      })
+      }),
     );
 
     // Verify the call includes credentials but does NOT include Authorization header
@@ -240,8 +240,6 @@ describe("authApi Client - Get Current User", () => {
 
     expect(result).toEqual(mockResponse);
   });
-
-
 });
 
 describe("authApi Client - Verify Email", () => {
@@ -267,7 +265,7 @@ describe("authApi Client - Verify Email", () => {
       expect.objectContaining({
         method: "POST",
         body: expect.stringContaining("verification-token"),
-      })
+      }),
     );
 
     expect(result).toEqual({ message: "Email verificado" });
@@ -297,7 +295,7 @@ describe("authApi Client - Forgot Password", () => {
       expect.objectContaining({
         method: "POST",
         body: expect.stringContaining("test@example.com"),
-      })
+      }),
     );
 
     expect(result).toEqual({ message: "Email enviado" });
@@ -322,14 +320,17 @@ describe("authApi Client - Reset Password", () => {
       json: async () => ({ message: "Contraseña actualizada" }),
     } as Response);
 
-    const result = await authApi.resetPassword("reset-token", "NewPassword123!");
+    const result = await authApi.resetPassword(
+      "reset-token",
+      "NewPassword123!",
+    );
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/auth/reset-password"),
       expect.objectContaining({
         method: "POST",
         body: expect.stringContaining("reset-token"),
-      })
+      }),
     );
 
     expect(result).toEqual({ message: "Contraseña actualizada" });
@@ -343,7 +344,7 @@ describe("authApi Client - Reset Password", () => {
     } as Response);
 
     await expect(
-      authApi.resetPassword("invalid-token", "NewPassword123!")
+      authApi.resetPassword("invalid-token", "NewPassword123!"),
     ).rejects.toThrow("Password does not meet requirements");
   });
 });
@@ -428,48 +429,46 @@ describe("authApi - mutation caching", () => {
     // Mutations should NOT be cached - each call should hit the API
     expect(callCount).toBe(2);
   });
-
 });
 
 describe("authApi - cache security", () => {
   it("should NOT include password in cache key", () => {
     const credentials = {
-      email: 'test@example.com',
-      password: 'SecretPassword123!'
+      email: "test@example.com",
+      password: "SecretPassword123!",
     };
 
     // Act: Create cache key for login
-    const cacheKey = createAuthCacheKey('login', credentials);
+    const cacheKey = createAuthCacheKey("login", credentials);
 
     // Assert: Password should NOT be in the cache key
-    expect(cacheKey).not.toContain('SecretPassword123!');
-    expect(cacheKey).not.toContain('password');
+    expect(cacheKey).not.toContain("SecretPassword123!");
+    expect(cacheKey).not.toContain("password");
   });
 
   it("should NOT include newPassword in cache key", () => {
     const resetData = {
-      token: 'reset-token-123',
-      newPassword: 'NewSecret456!'
+      token: "reset-token-123",
+      newPassword: "NewSecret456!",
     };
 
-    const cacheKey = createAuthCacheKey('reset-password', resetData);
+    const cacheKey = createAuthCacheKey("reset-password", resetData);
 
-    expect(cacheKey).not.toContain('NewSecret456!');
-    expect(cacheKey).not.toContain('newPassword');
+    expect(cacheKey).not.toContain("NewSecret456!");
+    expect(cacheKey).not.toContain("newPassword");
   });
 
   it("should NOT include accessToken in cache key", () => {
     const twoFactorData = {
-      code: '123456',
-      accessToken: 'secret-token-xyz'
+      code: "123456",
+      accessToken: "secret-token-xyz",
     };
 
-    const cacheKey = createAuthCacheKey('2fa/verify', twoFactorData);
+    const cacheKey = createAuthCacheKey("2fa/verify", twoFactorData);
 
-    expect(cacheKey).not.toContain('secret-token-xyz');
-    expect(cacheKey).not.toContain('accessToken');
+    expect(cacheKey).not.toContain("secret-token-xyz");
+    expect(cacheKey).not.toContain("accessToken");
   });
-
 });
 
 describe("authApi Client - 2FA Operations", () => {
@@ -500,7 +499,7 @@ describe("authApi Client - 2FA Operations", () => {
       expect.objectContaining({
         method: "POST",
         credentials: "include",
-      })
+      }),
     );
 
     // Verify the call includes credentials but does NOT include Authorization header
@@ -529,7 +528,7 @@ describe("authApi Client - 2FA Operations", () => {
         method: "POST",
         credentials: "include",
         body: expect.stringContaining("123456"),
-      })
+      }),
     );
 
     // Verify the call includes credentials but does NOT include Authorization header
@@ -557,7 +556,7 @@ describe("authApi Client - 2FA Operations", () => {
       expect.objectContaining({
         method: "POST",
         credentials: "include",
-      })
+      }),
     );
 
     // Verify the call includes credentials but does NOT include Authorization header

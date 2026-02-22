@@ -63,8 +63,13 @@ const OAuthButtons = dynamic(
   () => import("./dynamic/OAuthButtons").then((mod) => mod.OAuthButtons),
   {
     ssr: false,
-    loading: () => <div className="flex flex-col gap-3 w-full"><div className="h-12 bg-muted rounded-md animate-pulse"></div><div className="h-12 bg-muted rounded-md animate-pulse"></div></div>
-  }
+    loading: () => (
+      <div className="flex flex-col gap-3 w-full">
+        <div className="h-12 bg-muted rounded-md animate-pulse"></div>
+        <div className="h-12 bg-muted rounded-md animate-pulse"></div>
+      </div>
+    ),
+  },
 );
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,7 +85,10 @@ import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email address"),
-  password: z.string().min(1, "Password is required").min(8, "Password must be at least 8 characters"),
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .min(8, "Password must be at least 8 characters"),
   rememberMe: z.boolean().optional().default(false),
 });
 
@@ -114,7 +122,6 @@ export type LoginFormValues = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const { login, isLoading, error, clearError } = useAuth();
   const [isPending, startTransition] = useTransition();
-
 
   // React Hook Form setup with deduplication
   const {
@@ -151,7 +158,6 @@ export function LoginForm() {
 
     clearError();
   };
-
 
   /**
    * Handle form submission with deduplication and early exit
@@ -196,7 +202,7 @@ export function LoginForm() {
           <Label htmlFor="email">Email</Label>
           <Input
             {...register("email", {
-              onChange: handleInputChange
+              onChange: handleInputChange,
             })}
             id="email"
             type="email"
@@ -206,7 +212,8 @@ export function LoginForm() {
             aria-invalid={!!errors.email || !!error}
             aria-describedby={error ? "login-error" : undefined}
             className={cn(
-              (errors.email || error) && "border-destructive focus:ring-destructive"
+              (errors.email || error) &&
+                "border-destructive focus:ring-destructive",
             )}
           />
           {errors.email && (
@@ -239,13 +246,8 @@ export function LoginForm() {
         {/* Remember Me & Forgot Password */}
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2">
-            <Checkbox
-              {...register("rememberMe")}
-              disabled={isDisabled}
-            />
-            <span className="text-sm text-foreground">
-              Remember me
-            </span>
+            <Checkbox {...register("rememberMe")} disabled={isDisabled} />
+            <span className="text-sm text-foreground">Remember me</span>
           </label>
 
           <Link
@@ -259,7 +261,11 @@ export function LoginForm() {
         {/* Auth Error */}
         {error && !hasFormErrors && (
           <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-            <p id="login-error" role="alert" className="text-sm text-destructive">
+            <p
+              id="login-error"
+              role="alert"
+              className="text-sm text-destructive"
+            >
               {error.message}
             </p>
           </div>

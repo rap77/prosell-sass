@@ -16,6 +16,7 @@
 - 🟢 = Nice to have
 
 **Estimaciones:**
+
 - XS = < 2 horas
 - S = 2-4 horas
 - M = 4-8 horas (1 día)
@@ -759,15 +760,15 @@
 
 ## 📊 RESUMEN DE TAREAS
 
-| Sprint | Tareas Totales | P0 (🔴) | P1 (🟡) | P2 (🟢) |
-|--------|----------------|---------|---------|---------|
-| 1-2 | 52 | 38 | 14 | 0 |
-| 3-4 | 48 | 35 | 13 | 0 |
-| 5-6 | 55 | 40 | 15 | 0 |
-| 7-8 | 38 | 25 | 13 | 0 |
-| 9-10 | 42 | 32 | 10 | 0 |
-| 11-12 | 35 | 25 | 10 | 0 |
-| **Total** | **270** | **195** | **75** | **0** |
+| Sprint    | Tareas Totales | P0 (🔴) | P1 (🟡) | P2 (🟢) |
+| --------- | -------------- | ------- | ------- | ------- |
+| 1-2       | 52             | 38      | 14      | 0       |
+| 3-4       | 48             | 35      | 13      | 0       |
+| 5-6       | 55             | 40      | 15      | 0       |
+| 7-8       | 38             | 25      | 13      | 0       |
+| 9-10      | 42             | 32      | 10      | 0       |
+| 11-12     | 35             | 25      | 10      | 0       |
+| **Total** | **270**        | **195** | **75**  | **0**   |
 
 ---
 
@@ -1160,50 +1161,51 @@ chore: update dependencies
 
 ## 📊 RESUMEN COMPLETO DE TAREAS
 
-| Sprint | Tareas Totales | P0 (🔴) | P1 (🟡) | P2 (🟢) | Fase |
-|--------|----------------|---------|---------|---------|------|
-| 1-2 | 52 | 38 | 14 | 0 | MVP Core |
-| 3-4 | 48 | 35 | 13 | 0 | MVP Core |
-| 5-6 | 55 | 40 | 15 | 0 | MVP Core |
-| 7-8 | 38 | 25 | 13 | 0 | MVP Completo |
-| 9-10 | 42 | 32 | 10 | 0 | MVP Completo |
-| 11-12 | 35 | 25 | 10 | 0 | MVP Completo |
-| 13-14 | 36 | 26 | 10 | 0 | Crecimiento |
-| 15-16 | 42 | 30 | 12 | 0 | Crecimiento |
-| 17-18 | 48 | 35 | 13 | 0 | Crecimiento |
-| **Total** | **396** | **286** | **110** | **0** | - |
+| Sprint    | Tareas Totales | P0 (🔴) | P1 (🟡) | P2 (🟢) | Fase         |
+| --------- | -------------- | ------- | ------- | ------- | ------------ |
+| 1-2       | 52             | 38      | 14      | 0       | MVP Core     |
+| 3-4       | 48             | 35      | 13      | 0       | MVP Core     |
+| 5-6       | 55             | 40      | 15      | 0       | MVP Core     |
+| 7-8       | 38             | 25      | 13      | 0       | MVP Completo |
+| 9-10      | 42             | 32      | 10      | 0       | MVP Completo |
+| 11-12     | 35             | 25      | 10      | 0       | MVP Completo |
+| 13-14     | 36             | 26      | 10      | 0       | Crecimiento  |
+| 15-16     | 42             | 30      | 12      | 0       | Crecimiento  |
+| 17-18     | 48             | 35      | 13      | 0       | Crecimiento  |
+| **Total** | **396**        | **286** | **110** | **0**   | -            |
 
 **Desglose por Capa:**
 
-| Capa | Tareas Totales |
-|------|---------------|
-| Backend - Domain | 68 |
-| Backend - Application | 102 |
-| Backend - Infrastructure | 95 |
-| Backend - API | 58 |
-| Frontend - Pages | 42 |
-| Frontend - Components | 31 |
-| **Total Backend** | **323** |
-| **Total Frontend** | **73** |
+| Capa                     | Tareas Totales |
+| ------------------------ | -------------- |
+| Backend - Domain         | 68             |
+| Backend - Application    | 102            |
+| Backend - Infrastructure | 95             |
+| Backend - API            | 58             |
+| Frontend - Pages         | 42             |
+| Frontend - Components    | 31             |
+| **Total Backend**        | **323**        |
+| **Total Frontend**       | **73**         |
 
 ---
 
 ## ⏱️ ESTIMACIÓN DE TIEMPO TOTAL
 
-| Sprint | Duración | Días hábiles | Horas estimadas |
-|--------|----------|--------------|-----------------|
-| 1-2 | 4 semanas | 20 | 320h |
-| 3-4 | 4 semanas | 20 | 280h |
-| 5-6 | 4 semanas | 20 | 340h |
-| 7-8 | 4 semanas | 20 | 240h |
-| 9-10 | 4 semanas | 20 | 260h |
-| 11-12 | 4 semanas | 20 | 220h |
-| 13-14 | 4 semanas | 20 | 240h |
-| 15-16 | 4 semanas | 20 | 280h |
-| 17-18 | 4 semanas | 20 | 320h |
-| **Total** | **36 semanas** | **180** | **2,500h** |
+| Sprint    | Duración       | Días hábiles | Horas estimadas |
+| --------- | -------------- | ------------ | --------------- |
+| 1-2       | 4 semanas      | 20           | 320h            |
+| 3-4       | 4 semanas      | 20           | 280h            |
+| 5-6       | 4 semanas      | 20           | 340h            |
+| 7-8       | 4 semanas      | 20           | 240h            |
+| 9-10      | 4 semanas      | 20           | 260h            |
+| 11-12     | 4 semanas      | 20           | 220h            |
+| 13-14     | 4 semanas      | 20           | 240h            |
+| 15-16     | 4 semanas      | 20           | 280h            |
+| 17-18     | 4 semanas      | 20           | 320h            |
+| **Total** | **36 semanas** | **180**      | **2,500h**      |
 
 **Con 2 developers full-time:**
+
 - 2,500 horas ÷ 160 horas/mes/desarrollador = ~16 meses
 - **Con equipo completo (2 backend + 1 frontend + 1 QA):** ~9 meses
 
@@ -1237,19 +1239,20 @@ Scenario: Sprint Incompleto
 
 ### Métricas de Sprint por Seguir
 
-| Métrica | Fórmula | Objetivo |
-|---------|---------|----------|
-| **Velocity** | Story points completados | Estabilizar en sprint 3-4 |
-| **Sprint Burndown** | Trabajo restante vs días | Pendiente en 0 al final |
-| **Escape Rate** | Trabajo añadido durante sprint | < 20% del compromiso inicial |
-| **Defect Density** | Bugs encontrados por 1000 LOC | < 5 bugs/KLOC |
-| **Test Coverage** | Lines cubiertas / Lines totales | > 80% |
-| **Code Review Time** | Tiempo promedio de aprobación | < 24h |
-| **Build Success Rate** | Builds exitosos / Totales | > 95% |
+| Métrica                | Fórmula                         | Objetivo                     |
+| ---------------------- | ------------------------------- | ---------------------------- |
+| **Velocity**           | Story points completados        | Estabilizar en sprint 3-4    |
+| **Sprint Burndown**    | Trabajo restante vs días        | Pendiente en 0 al final      |
+| **Escape Rate**        | Trabajo añadido durante sprint  | < 20% del compromiso inicial |
+| **Defect Density**     | Bugs encontrados por 1000 LOC   | < 5 bugs/KLOC                |
+| **Test Coverage**      | Lines cubiertas / Lines totales | > 80%                        |
+| **Code Review Time**   | Tiempo promedio de aprobación   | < 24h                        |
+| **Build Success Rate** | Builds exitosos / Totales       | > 95%                        |
 
 ### Definition of Done (DoD)
 
 **Por User Story:**
+
 - [ ] Código implementado siguiendo Clean Architecture
 - [ ] Tests unitarios con cobertura > 80%
 - [ ] Tests de integración para repositories
@@ -1261,6 +1264,7 @@ Scenario: Sprint Incompleto
 - [ ] Desplegado en staging para QA
 
 **Por Sprint:**
+
 - [ ] Todas las US P0 completadas según DoD
 - [ ] P1 backlog está documentado
 - [ ] Retrospectiva completada con action items
@@ -1301,21 +1305,22 @@ Sprint 5-6 (Products) + Sprint 15-16 (Scraping) → Sprint 17-18 (Analytics)
 
 ## 🚨 RIESGOS POR SPRINT Y MITIGACIÓN
 
-| Sprint | Riesgos | Mitigación |
-|--------|---------|------------|
-| 1-2 | OAuth provider rechaza app | Tener email/password como fallback |
-| 3-4 | DO Spaces config compleja | Documentar early, usar local en dev |
-| 5-6 | Campos dinámicos muy complejos | MVP con hardcoded fields primero |
-| 7-8 | Performance búsqueda full-text | Usar PostgreSQL simple primero |
-| 9-10 | Cálculo comisiones con edge cases | Unit tests exhaustivos |
-| 11-12 | Stripe webhook unreliable | Retry + dead letter queue |
-| 13-14 | WhatsApp API rate limits | Queue con rate limiting |
-| 15-16 | Scrapers blocked rapidamente | Proxies + delays + user agents |
-| 17-18 | Claude API costs | Caching + token limits |
+| Sprint | Riesgos                           | Mitigación                          |
+| ------ | --------------------------------- | ----------------------------------- |
+| 1-2    | OAuth provider rechaza app        | Tener email/password como fallback  |
+| 3-4    | DO Spaces config compleja         | Documentar early, usar local en dev |
+| 5-6    | Campos dinámicos muy complejos    | MVP con hardcoded fields primero    |
+| 7-8    | Performance búsqueda full-text    | Usar PostgreSQL simple primero      |
+| 9-10   | Cálculo comisiones con edge cases | Unit tests exhaustivos              |
+| 11-12  | Stripe webhook unreliable         | Retry + dead letter queue           |
+| 13-14  | WhatsApp API rate limits          | Queue con rate limiting             |
+| 15-16  | Scrapers blocked rapidamente      | Proxies + delays + user agents      |
+| 17-18  | Claude API costs                  | Caching + token limits              |
 
 ---
 
 **Documentos relacionados:**
+
 - [Arquitectura](./01_ARQUITECTURA_PROSELL_SAAS_V2.md)
 - [Requisitos](./02_REQUISITOS_PRD_PROSELL_SAAS_V2.md)
 - [Roadmap](./04_ROADMAP_PROSELL_SAAS_V2.md)

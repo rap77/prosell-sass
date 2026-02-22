@@ -19,27 +19,25 @@ import { PasswordInput } from "./PasswordInput";
 import dynamic from "next/dynamic";
 import { useEffect, useTransition } from "react";
 
-
 // Module-level cache for validation results
 const validationCache = new Map<string, boolean>();
-
 
 // Error messages for form validation
 const ERROR_MESSAGES = {
   fullName: {
     required: "Full name is required",
     min: "Full name must be at least 2 characters",
-    max: "Full name must be less than 100 characters"
+    max: "Full name must be less than 100 characters",
   },
   email: {
     required: "Email is required",
-    invalid: "Invalid email address"
+    invalid: "Invalid email address",
   },
   password: {
     required: "Password is required",
     min: "Password must be at least 8 characters",
-    invalid: "Password must meet all requirements"
-  }
+    invalid: "Password must meet all requirements",
+  },
 } as const;
 
 // ============================================
@@ -52,9 +50,7 @@ const ERROR_MESSAGES = {
 const RegisterHeading = () => (
   <div className="text-center">
     {/* Visual heading (hidden from screen readers to avoid duplication with PageContent h2) */}
-    <p className="text-2xl font-bold text-foreground">
-      Create your account
-    </p>
+    <p className="text-2xl font-bold text-foreground">Create your account</p>
     <p className="mt-2 text-sm text-muted-foreground">
       Join us today! Please enter your details
     </p>
@@ -97,8 +93,13 @@ const OAuthButtons = dynamic(
   () => import("./dynamic/OAuthButtons").then((mod) => mod.OAuthButtons),
   {
     ssr: false,
-    loading: () => <div className="flex flex-col gap-3 w-full"><div className="h-12 bg-muted rounded-md animate-pulse"></div><div className="h-12 bg-muted rounded-md animate-pulse"></div></div>
-  }
+    loading: () => (
+      <div className="flex flex-col gap-3 w-full">
+        <div className="h-12 bg-muted rounded-md animate-pulse"></div>
+        <div className="h-12 bg-muted rounded-md animate-pulse"></div>
+      </div>
+    ),
+  },
 );
 
 import { Button } from "@/components/ui/button";
@@ -128,14 +129,10 @@ const registerSchema = z
       .string()
       .min(1, "Password is required")
       .min(8, "Password must be at least 8 characters"),
-    confirmPassword: z
-      .string()
-      .min(1, "Confirm password is required"),
-    acceptTerms: z
-      .boolean()
-      .refine((val) => val === true, {
-        message: "You must accept the terms and conditions",
-      }),
+    confirmPassword: z.string().min(1, "Confirm password is required"),
+    acceptTerms: z.boolean().refine((val) => val === true, {
+      message: "You must accept the terms and conditions",
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -174,7 +171,13 @@ export function RegisterForm() {
   const { register: registerUser, isLoading, error, clearError } = useAuth();
 
   // Array for error validation
-  const errorFields = ['fullName', 'email', 'password', 'confirmPassword', 'acceptTerms'];
+  const errorFields = [
+    "fullName",
+    "email",
+    "password",
+    "confirmPassword",
+    "acceptTerms",
+  ];
 
   // Cache for name splitting operations
   const nameSplitCache = (() => {
@@ -197,7 +200,7 @@ export function RegisterForm() {
         cache.set(fullName, result);
         return result;
       },
-      clear: () => cache.clear()
+      clear: () => cache.clear(),
     };
   })();
 
@@ -301,7 +304,8 @@ export function RegisterForm() {
             aria-invalid={!!errors.fullName || !!error}
             aria-describedby={error ? "register-error" : undefined}
             className={cn(
-              (errors.fullName || error) && "border-destructive focus:ring-destructive"
+              (errors.fullName || error) &&
+                "border-destructive focus:ring-destructive",
             )}
           />
           {errors.fullName && (
@@ -325,7 +329,8 @@ export function RegisterForm() {
             aria-invalid={!!errors.email || !!error}
             aria-describedby={error ? "register-error" : undefined}
             className={cn(
-              (errors.email || error) && "border-destructive focus:ring-destructive"
+              (errors.email || error) &&
+                "border-destructive focus:ring-destructive",
             )}
           />
           {errors.email && (
@@ -388,15 +393,18 @@ export function RegisterForm() {
                   onCheckedChange={field.onChange}
                   disabled={isDisabled}
                 />
-                <label htmlFor="acceptTerms" className="text-sm text-foreground cursor-pointer">
+                <label
+                  htmlFor="acceptTerms"
+                  className="text-sm text-foreground cursor-pointer"
+                >
                   I accept the{" "}
                   <Link
                     href="/terms"
                     className="font-medium text-primary hover:underline"
                   >
                     Terms of Service
-                  </Link>
-                  {" "}and{" "}
+                  </Link>{" "}
+                  and{" "}
                   <Link
                     href="/privacy"
                     className="font-medium text-primary hover:underline"
@@ -417,7 +425,11 @@ export function RegisterForm() {
         {/* Auth Error */}
         {error && !hasFormErrors && (
           <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-            <p id="register-error" role="alert" className="text-sm text-destructive">
+            <p
+              id="register-error"
+              role="alert"
+              className="text-sm text-destructive"
+            >
               {error.message}
             </p>
           </div>

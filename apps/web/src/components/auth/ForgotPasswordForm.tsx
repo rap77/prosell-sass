@@ -19,7 +19,13 @@ import { Button } from "@/components/ui/button";
 import { CheckIcon } from "@/components/icons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 
 // Zod schema for form validation
 const forgotPasswordSchema = z.object({
@@ -57,7 +63,9 @@ export function ForgotPasswordForm() {
       setSubmittedEmail(data.email);
     } catch (err) {
       setFormState("error");
-      setErrorMessage(getErrorMessage(err, "Unable to send reset email. Please try again."));
+      setErrorMessage(
+        getErrorMessage(err, "Unable to send reset email. Please try again."),
+      );
     }
   };
 
@@ -80,18 +88,19 @@ export function ForgotPasswordForm() {
 
                 <CardDescription className="mb-2">
                   We sent a password reset link to{" "}
-                  <span className="font-medium text-foreground">{submittedEmail}</span>
+                  <span className="font-medium text-foreground">
+                    {submittedEmail}
+                  </span>
                 </CardDescription>
 
                 <p className="text-sm text-muted-foreground mb-8">
-                  Click the link in the email to reset your password. The link expires in 24 hours.
+                  Click the link in the email to reset your password. The link
+                  expires in 24 hours.
                 </p>
 
                 <div className="flex flex-col gap-4">
                   <Button asChild>
-                    <Link href="/auth/login">
-                      Back to Login
-                    </Link>
+                    <Link href="/auth/login">Back to Login</Link>
                   </Button>
 
                   <Button
@@ -123,7 +132,8 @@ export function ForgotPasswordForm() {
               Forgot Your Password?
             </h2>
             <CardDescription>
-              Enter your email address and we&apos;ll send you a link to reset your password.
+              Enter your email address and we&apos;ll send you a link to reset
+              your password.
             </CardDescription>
           </CardHeader>
 
@@ -151,7 +161,11 @@ export function ForgotPasswordForm() {
                   placeholder="you@example.com"
                   aria-invalid={errors.email ? "true" : "false"}
                   aria-describedby={errors.email ? "email-error" : undefined}
-                  className={errors.email ? "border-destructive focus:ring-destructive" : ""}
+                  className={
+                    errors.email
+                      ? "border-destructive focus:ring-destructive"
+                      : ""
+                  }
                 />
                 {errors.email && (
                   <p id="email-error" className="mt-2 text-sm text-destructive">

@@ -112,7 +112,7 @@ export const apiCache = new LRUCache<string, any>();
 export function generateCacheKey(
   method: string,
   url: string,
-  data?: any
+  data?: any,
 ): string {
   const normalizedMethod = method.toUpperCase();
   const normalizedUrl = url.replace(/https?:\/\/[^\/]+/, "");
@@ -130,12 +130,10 @@ export function withCache<T>(
   options: {
     ttl?: number;
     keyGenerator?: (key: string) => string;
-  } = {}
+  } = {},
 ) {
   return async (key: string, fetchOptions?: any): Promise<T> => {
-    const cacheKey = options.keyGenerator
-      ? options.keyGenerator(key)
-      : key;
+    const cacheKey = options.keyGenerator ? options.keyGenerator(key) : key;
 
     // Try to get from cache first
     const cached = apiCache.get(cacheKey);

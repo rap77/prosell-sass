@@ -1,6 +1,7 @@
 # Development Commands - ProSell SaaS
 
 ## Initial Setup
+
 ```bash
 # Install all dependencies (from root)
 pnpm install
@@ -10,6 +11,7 @@ cd apps/api && uv venv && source .venv/bin/activate && uv pip install -e ".[dev]
 ```
 
 ## Development
+
 ```bash
 # Start all services with Turbo
 pnpm dev
@@ -25,6 +27,7 @@ docker compose -f docker/docker-compose.yml up
 ```
 
 ## Testing
+
 ```bash
 # Python unit tests
 cd apps/api && uv run pytest
@@ -43,6 +46,7 @@ pnpm test
 ```
 
 ## Linting & Type Checking
+
 ```bash
 # Python (from apps/api)
 ruff check . && ruff format .
@@ -61,6 +65,7 @@ pnpm typecheck
 ```
 
 ## AI Code Review (GGA)
+
 ```bash
 # Manual review of staged files
 gga run
@@ -73,6 +78,7 @@ gga cache clear
 ```
 
 ## System Utilities (Linux)
+
 - `fd` - alternative to find
 - `rg` - alternative to grep
 - `bat` - alternative to cat

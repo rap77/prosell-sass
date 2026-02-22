@@ -38,7 +38,9 @@ describe("RegisterPage", () => {
       expect(formCard).toBeInTheDocument();
 
       // Footer text
-      expect(screen.getByText(/by creating an account, you agree to our/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/by creating an account, you agree to our/i),
+      ).toBeInTheDocument();
     });
 
     it("should render logo with correct styling and link", () => {
@@ -50,7 +52,7 @@ describe("RegisterPage", () => {
         "items-center",
         "gap-2",
         "text-2xl",
-        "font-bold"
+        "font-bold",
       );
       expect(logo).toHaveAttribute("href", "/");
     });
@@ -65,7 +67,7 @@ describe("RegisterPage", () => {
         "rounded-2xl",
         "shadow-xl",
         "p-8",
-        "border"
+        "border",
       );
     });
 
@@ -106,7 +108,7 @@ describe("RegisterPage", () => {
         "flex",
         "items-center",
         "justify-center",
-        "bg-gradient-to-br"
+        "bg-gradient-to-br",
       );
     });
 
@@ -133,13 +135,19 @@ describe("RegisterPage", () => {
       render(<RegisterPageContent />);
 
       // Logo link
-      expect(screen.getByRole("link", { name: /prosell/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /prosell/i }),
+      ).toBeInTheDocument();
 
       // Terms link
-      expect(screen.getByRole("link", { name: /terms of service/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /terms of service/i }),
+      ).toBeInTheDocument();
 
       // Privacy link
-      expect(screen.getByRole("link", { name: /privacy policy/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /privacy policy/i }),
+      ).toBeInTheDocument();
     });
   });
 });

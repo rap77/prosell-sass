@@ -19,7 +19,7 @@ import type {
   PasswordReset,
   EmailVerification,
   TwoFactorVerification,
-} from '@/domain/auth/types';
+} from "@/domain/auth/types";
 
 // Re-export for convenience
 export type {

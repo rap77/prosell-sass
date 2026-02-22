@@ -18,7 +18,14 @@
  */
 "use client";
 
-import { useState, useRef, useEffect, type ChangeEvent, type ClipboardEvent, type KeyboardEvent } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  type ChangeEvent,
+  type ClipboardEvent,
+  type KeyboardEvent,
+} from "react";
 import { cn } from "@/lib/utils";
 
 // ============================================
@@ -319,11 +326,7 @@ export function TwoFactorInput({
       </label>
 
       {/* 6-digit input grid */}
-      <div
-        role="group"
-        aria-label={label}
-        className="grid grid-cols-6 gap-2"
-      >
+      <div role="group" aria-label={label} className="grid grid-cols-6 gap-2">
         {Array.from({ length: CODE_LENGTH }).map((_, index) => (
           <input
             key={`${name}-${index}`}
@@ -348,7 +351,7 @@ export function TwoFactorInput({
               "disabled:opacity-50 disabled:cursor-not-allowed",
               // Error state
               error && "border-destructive focus:ring-destructive",
-              !error && "border-input"
+              !error && "border-input",
             )}
             aria-label={`Digit ${index + 1} of ${CODE_LENGTH}`}
             aria-required={required}
@@ -367,11 +370,7 @@ export function TwoFactorInput({
 
       {/* Error message */}
       {error && (
-        <p
-          id={errorId}
-          role="alert"
-          className="text-sm text-destructive"
-        >
+        <p id={errorId} role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}

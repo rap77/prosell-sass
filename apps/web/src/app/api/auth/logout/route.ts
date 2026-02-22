@@ -29,9 +29,6 @@ export async function POST(): Promise<NextResponse<{ success: boolean }>> {
     });
   } catch (error) {
     logger.error("Mock logout error", error);
-    return NextResponse.json(
-      { success: false },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false }, { status: 500 });
   }
 }

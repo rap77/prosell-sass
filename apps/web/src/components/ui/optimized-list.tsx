@@ -1,6 +1,6 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { useFeatureFlagStore } from "@/stores/featureFlagStore"
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { useFeatureFlagStore } from "@/stores/featureFlagStore";
 
 /**
  * Check if content-visibility CSS property is supported
@@ -11,17 +11,17 @@ import { useFeatureFlagStore } from "@/stores/featureFlagStore"
  * @returns true if content-visibility is supported
  */
 function supportsContentVisibility(): boolean {
-  if (typeof CSS === 'undefined') {
-    return false
+  if (typeof CSS === "undefined") {
+    return false;
   }
 
   // Try to detect support via CSS.supports
-  if (typeof CSS.supports === 'function') {
-    return CSS.supports('content-visibility', 'auto')
+  if (typeof CSS.supports === "function") {
+    return CSS.supports("content-visibility", "auto");
   }
 
   // Fallback: assume supported for modern browsers
-  return true
+  return true;
 }
 
 /**
@@ -44,19 +44,19 @@ function supportsContentVisibility(): boolean {
  */
 interface OptimizedListProps<T> {
   /** Array of items to render */
-  items: T[]
+  items: T[];
   /** Render function for each item */
-  renderItem: (item: T, index: number) => React.ReactNode
+  renderItem: (item: T, index: number) => React.ReactNode;
   /** Additional className for the container */
-  className?: string
+  className?: string;
   /** Additional className for each item wrapper */
-  itemClassName?: string
+  itemClassName?: string;
   /** Placeholder for virtualized lists */
-  placeholder?: React.ReactNode
+  placeholder?: React.ReactNode;
   /** Estimated height of each item in pixels (for contain-intrinsic-size) */
-  estimatedItemHeight?: number
+  estimatedItemHeight?: number;
   /** Threshold after which to enable virtualization */
-  virtualThreshold?: number
+  virtualThreshold?: number;
 }
 
 export function OptimizedList<T>({
@@ -66,21 +66,21 @@ export function OptimizedList<T>({
   itemClassName,
   placeholder,
   estimatedItemHeight = 64,
-  virtualThreshold = 50
+  virtualThreshold = 50,
 }: OptimizedListProps<T>) {
   // Feature flag for content-visibility optimization
-  const contentVisibilityEnabled = useFeatureFlagStore(
-    (state) => state.get('content-visibility', true)
-  )
+  const contentVisibilityEnabled = useFeatureFlagStore((state) =>
+    state.get("content-visibility", true),
+  );
 
   // Feature detection
-  const isSupported = supportsContentVisibility()
+  const isSupported = supportsContentVisibility();
 
   // Determine if we should use content-visibility
-  const shouldUseContentVisibility = contentVisibilityEnabled && isSupported
+  const shouldUseContentVisibility = contentVisibilityEnabled && isSupported;
 
   // Only use virtualization for large lists
-  const shouldUseVirtualization = items.length > virtualThreshold
+  const shouldUseVirtualization = items.length > virtualThreshold;
 
   if (shouldUseVirtualization && placeholder) {
     return (
@@ -89,19 +89,17 @@ export function OptimizedList<T>({
         style={{ maxHeight: `${items.length * estimatedItemHeight}px` }}
       >
         {/* Placeholder for virtualized list */}
-        <div className="space-y-4">
-          {placeholder}
-        </div>
+        <div className="space-y-4">{placeholder}</div>
       </div>
-    )
+    );
   }
 
   // Calculate intrinsic size based on estimated item height
   const intrinsicSizeClass = cn({
-    'contain-intrinsic-64': estimatedItemHeight === 64,
-    'contain-intrinsic-128': estimatedItemHeight === 128,
-    'contain-intrinsic-256': estimatedItemHeight === 256,
-  })
+    "contain-intrinsic-64": estimatedItemHeight === 64,
+    "contain-intrinsic-128": estimatedItemHeight === 128,
+    "contain-intrinsic-256": estimatedItemHeight === 256,
+  });
 
   return (
     <div
@@ -109,16 +107,14 @@ export function OptimizedList<T>({
         "space-y-4",
         shouldUseContentVisibility && "content-visible-auto",
         intrinsicSizeClass,
-        className
+        className,
       )}
     >
       {items.map((item, index) => (
-        <React.Fragment key={index}>
-          {renderItem(item, index)}
-        </React.Fragment>
+        <React.Fragment key={index}>{renderItem(item, index)}</React.Fragment>
       ))}
     </div>
-  )
+  );
 }
 
 /**
@@ -137,33 +133,34 @@ export function OptimizedList<T>({
  */
 export function MemoizedListItem({
   children,
-  className
+  className,
 }: {
-  children: React.ReactNode
-  className?: string
+  children: React.ReactNode;
+  className?: string;
 }) {
   // Feature flag for content-visibility optimization
-  const contentVisibilityEnabled = useFeatureFlagStore(
-    (state) => state.get('content-visibility', true)
-  )
+  const contentVisibilityEnabled = useFeatureFlagStore((state) =>
+    state.get("content-visibility", true),
+  );
 
   // Feature detection
-  const isSupported = supportsContentVisibility()
+  const isSupported = supportsContentVisibility();
 
   // Determine if we should use content-visibility
-  const shouldUseContentVisibility = contentVisibilityEnabled && isSupported
+  const shouldUseContentVisibility = contentVisibilityEnabled && isSupported;
 
   return (
     <div
       className={cn(
         "transition-all duration-200 ease-in-out",
-        shouldUseContentVisibility && "content-visible-auto contain-intrinsic-64",
-        className
+        shouldUseContentVisibility &&
+          "content-visible-auto contain-intrinsic-64",
+        className,
       )}
     >
       {children}
     </div>
-  )
+  );
 }
 
-MemoizedListItem.displayName = "MemoizedListItem"
+MemoizedListItem.displayName = "MemoizedListItem";

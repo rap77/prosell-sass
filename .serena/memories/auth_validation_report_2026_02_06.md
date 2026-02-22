@@ -1,10 +1,13 @@
 # Auth System Validation Report - 2026-02-06
 
 ## Executive Summary
+
 ✅ **PASS**: El sistema de autenticación cumple con las reglas de Clean Architecture y SOLID del proyecto ProSell SaaS.
 
 ## Validation Framework
+
 Validado contra:
+
 - `code_style_conventions` - Patrones de arquitectura y estilo
 - `tech_stack` - Stack 2026 (Python 3.13, FastAPI, SQLAlchemy 2.0, Pydantic 2.12)
 - `project_overview` - Arquitectura Clean Architecture
@@ -14,15 +17,18 @@ Validado contra:
 ## 1. CLEAN ARCHITECTURE COMPLIANCE ✅
 
 ### Domain Layer (Zero External Dependencies)
+
 **File**: `apps/api/src/prosell/domain/entities/user.py`
 
 ✅ **PASS** - Solo Python puro, sin dependencias externas
+
 - Imports: `dataclasses`, `datetime`, `enum`, `typing`, `uuid` (stdlib only)
 - Entity `User` con lógica de negocio: `is_locked()`, `can_login()`, `record_failed_login()`
 - Factory methods: `create()`, `create_oauth()`
 - Comportamiento rico: `verify_email()`, `enable_2fa()`, `suspend()`, `activate()`
 
 **Evidence**:
+
 ```python
 # No external dependencies - stdlib only
 from dataclasses import dataclass
@@ -33,15 +39,18 @@ from uuid import UUID, uuid4
 ```
 
 ### Repository Pattern (Port/Adapter)
+
 **Port**: `apps/api/src/prosell/domain/repositories/user_repository.py`
 **Adapter**: `apps/api/src/prosell/infrastructure/repositories/user_repository_impl.py`
 
 ✅ **PASS** - Protocol en domain, implementation en infrastructure
+
 - `AbstractUserRepository` es un `Protocol` (Port)
 - `SqlAlchemyUserRepository` implementa el Protocol (Adapter)
 - Infrastructure depende de Domain (Dependency Rule cumplido)
 
 **Evidence**:
+
 ```python
 # domain/repositories/user_repository.py
 class AbstractUserRepository(Protocol):
@@ -55,14 +64,17 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
 ```
 
 ### Use Case Pattern (One Class = One Action)
+
 **File**: `apps/api/src/prosell/application/use_cases/auth/register_user.py`
 
 ✅ **PASS** - Un use case = una acción
+
 - `RegisterUserUseCase` - solo registra usuarios
 - Request/Response DTOs separados
 - Dependency Injection via constructor
 
 **Evidence**:
+
 ```python
 class RegisterUserUseCase:
     def __init__(
@@ -81,21 +93,24 @@ class RegisterUserUseCase:
 ## 2. SOLID PRINCIPLES COMPLIANCE ✅
 
 ### Single Responsibility Principle (SRP)
+
 ✅ **PASS** - Cada clase tiene una responsabilidad única
 
-| Clase | Responsabilidad | ✅ |
-|-------|-----------------|---|
-| `User` | Lógica de negocio de usuario | ✅ |
-| `UserStatus` | Enum de estados | ✅ |
-| `AbstractUserRepository` | Contrato de persistencia | ✅ |
-| `SqlAlchemyUserRepository` | Persistencia con SQLAlchemy | ✅ |
-| `RegisterUserUseCase` | Lógica de registro | ✅ |
-| `JWTService` | Generación/verificación de tokens | ✅ |
+| Clase                      | Responsabilidad                   | ✅  |
+| -------------------------- | --------------------------------- | --- |
+| `User`                     | Lógica de negocio de usuario      | ✅  |
+| `UserStatus`               | Enum de estados                   | ✅  |
+| `AbstractUserRepository`   | Contrato de persistencia          | ✅  |
+| `SqlAlchemyUserRepository` | Persistencia con SQLAlchemy       | ✅  |
+| `RegisterUserUseCase`      | Lógica de registro                | ✅  |
+| `JWTService`               | Generación/verificación de tokens | ✅  |
 
 ### Open/Closed Principle (OCP)
+
 ✅ **PASS** - Abierto para extensión, cerrado para modificación
 
 **Evidence**:
+
 ```python
 # Nuevo provider de OAuth se puede agregar sin modificar código existente
 @router.post("/oauth/{provider}")
@@ -109,6 +124,7 @@ class RoleType(str, Enum):
 ```
 
 ### Liskov Substitution Principle (LSP)
+
 ✅ **PASS** - `SqlAlchemyUserRepository` puede sustituir `AbstractUserRepository`
 
 ```python
@@ -118,6 +134,7 @@ async def test_use_case(repo: AbstractUserRepository):  # Type safety
 ```
 
 ### Interface Segregation Principle (ISP)
+
 ✅ **PASS** - Interfaces específicas, no genéricas
 
 ```python
@@ -128,6 +145,7 @@ async def test_use_case(repo: AbstractUserRepository):  # Type safety
 ```
 
 ### Dependency Inversion Principle (DIP)
+
 ✅ **PASS** - Dependencias apuntan hacia adentro (hacia Domain)
 
 ```
@@ -141,6 +159,7 @@ Infrastructure → Application → Domain
 ## 3. TECH STACK 2026 COMPLIANCE ✅
 
 ### Python 3.13+ Features
+
 ✅ **PASS**
 
 ```python
@@ -158,6 +177,7 @@ class User: ...
 ```
 
 ### SQLAlchemy 2.0 Async
+
 ✅ **PASS**
 
 ```python
@@ -171,6 +191,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 ```
 
 ### Pydantic 2.12+
+
 ✅ **PASS**
 
 ```python
@@ -183,6 +204,7 @@ class Settings(BaseSettings):
 ```
 
 ### FastAPI 0.115+
+
 ✅ **PASS**
 
 ```python
@@ -204,6 +226,7 @@ async def register(
 ### Critical Issues
 
 #### 1. **datetime.utcnow() is deprecated** (WARNING)
+
 **Location**: `apps/api/src/prosell/domain/entities/user.py`
 
 ```python
@@ -220,6 +243,7 @@ created_at=datetime.now(timezone.utc),
 **Fix**: Search and replace `datetime.utcnow()` → `datetime.now(timezone.utc)`
 
 #### 2. **TODO placeholders in production code**
+
 **Location**: `apps/api/src/prosell/infrastructure/repositories/user_repository_impl.py`
 
 ```python
@@ -232,9 +256,11 @@ async def get_by_verification_token(self, token: str) -> Optional[User]:
 **Fix**: Implement token storage in separate table
 
 #### 3. **Missing Alembic migrations**
+
 **Impact**: High - Using `create_all()` directly in production
 
 **Evidence**:
+
 ```python
 # scripts/init-db.py
 async with engine.begin() as conn:
@@ -246,9 +272,11 @@ async with engine.begin() as conn:
 ### Medium Issues
 
 #### 4. **Missing security headers middleware**
+
 **Location**: `apps/api/src/prosell/infrastructure/api/main.py`
 
 **Missing**:
+
 - `SecurityMiddleware` from FastAPI
 - CORS headers verification
 - CSP headers
@@ -256,6 +284,7 @@ async with engine.begin() as conn:
 - X-Frame-Options
 
 #### 5. **Rate limiting not implemented**
+
 **Location**: Config exists but no middleware
 
 ```python
@@ -265,6 +294,7 @@ rate_limit_storage: Literal["redis", "memory"] = Field(default="memory")
 ```
 
 #### 6. **Soft delete uses status instead of deleted_at**
+
 **Location**: `user_repository_impl.py`
 
 ```python
@@ -278,6 +308,7 @@ async def delete(self, user_id: UUID) -> None:
 ### Low Issues
 
 #### 7. **Exception handling in router could be centralized**
+
 **Location**: `auth_router.py`
 
 **Current**: Try/catch in each endpoint
@@ -296,6 +327,7 @@ except EmailAlreadyExistsException as e:
 ## 5. SECURITY ASSESSMENT ✅⚠️
 
 ### What's Good ✅
+
 - **JWT RS256** - Asymmetric encryption (production-ready)
 - **bcrypt** - Password hashing with configurable rounds
 - **TOTP** - Time-based 2FA with backup codes
@@ -304,6 +336,7 @@ except EmailAlreadyExistsException as e:
 - **Password strength** - Complexity requirements
 
 ### What's Missing ⚠️
+
 - Rate limiting middleware (structure exists, no implementation)
 - CSRF protection for OAuth
 - Security headers middleware
@@ -314,15 +347,15 @@ except EmailAlreadyExistsException as e:
 
 ## 6. ARCHITECTURE SCORECARD
 
-| Criterion | Score | Notes |
-|-----------|-------|-------|
-| Clean Architecture | 95% | Domain layer clean, small datetime issues |
-| SOLID Principles | 90% | All principles followed |
-| Tech Stack 2026 | 85% | SQLAlchemy 2.0, Pydantic 2.12+ ✅ |
-| Async-first | 100% | All I/O with `async def` |
-| Type Safety | 95% | Strict type hints, small datetime warning |
-| Security | 75% | Good auth, missing rate limiting |
-| Test Coverage | 0% | ⚠️ No tests yet |
+| Criterion          | Score | Notes                                     |
+| ------------------ | ----- | ----------------------------------------- |
+| Clean Architecture | 95%   | Domain layer clean, small datetime issues |
+| SOLID Principles   | 90%   | All principles followed                   |
+| Tech Stack 2026    | 85%   | SQLAlchemy 2.0, Pydantic 2.12+ ✅         |
+| Async-first        | 100%  | All I/O with `async def`                  |
+| Type Safety        | 95%   | Strict type hints, small datetime warning |
+| Security           | 75%   | Good auth, missing rate limiting          |
+| Test Coverage      | 0%    | ⚠️ No tests yet                           |
 
 **Overall Score: 90/100**
 
@@ -331,18 +364,21 @@ except EmailAlreadyExistsException as e:
 ## 7. RECOMMENDATIONS (Priority Order)
 
 ### 🔴 High Priority
+
 1. **Fix datetime.utcnow() deprecation** - Search/replace across codebase
 2. **Implement rate limiting middleware** - Security critical
 3. **Set up Alembic migrations** - Production prerequisite
 4. **Complete TODO items** - Token storage implementation
 
 ### 🟡 Medium Priority
+
 5. **Security headers middleware** - Add to main.py
 6. **Centralize exception handling** - Create handler middleware
 7. **Proper soft delete** - Add `deleted_at` column
 8. **Write unit tests** - Start with critical use cases
 
 ### 🟢 Low Priority
+
 9. **CSRF protection** - For OAuth flow
 10. **API documentation** - Enhance Swagger docs
 
@@ -351,12 +387,14 @@ except EmailAlreadyExistsException as e:
 ## 8. FILES TO MODIFY
 
 ### Immediate Fixes
+
 1. `apps/api/src/prosell/domain/entities/user.py` - datetime.utcnow() → datetime.now(timezone.utc)
 2. `apps/api/src/prosell/infrastructure/services/jwt_service.py` - Same datetime fix
 3. `apps/api/src/prosell/infrastructure/repositories/user_repository_impl.py` - Implement TODOs
 4. `apps/api/src/prosell/infrastructure/api/main.py` - Add security middleware
 
 ### New Files Needed
+
 1. `apps/api/alembic/` - Migration system
 2. `apps/api/src/prosell/infrastructure/api/middleware/rate_limit_middleware.py`
 3. `apps/api/src/prosell/infrastructure/api/middleware/security_middleware.py`
@@ -367,6 +405,7 @@ except EmailAlreadyExistsException as e:
 ## Conclusion
 
 El sistema de autenticación está **bien diseñado y sigue Clean Architecture correctamente**. Los issues encontrados son principalmente:
+
 1. **Cosméticos** (datetime deprecation)
 2. **Incompletos** (TODOs, rate limiting)
 3. **Mejoras** (security headers, testing)

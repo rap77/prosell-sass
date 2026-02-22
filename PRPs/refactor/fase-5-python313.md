@@ -12,12 +12,14 @@
 Phase 5 applies Python 3.13+ modern syntax patterns across the ENTIRE ProSell SaaS codebase. This migration depends on completion of Phases 1-4, where all entities are now Pydantic-based.
 
 **Key Changes:**
+
 1. **PEP 695 Type Aliases**: Replace `TypeAlias` annotation with new `type` statement syntax
 2. **StrEnum Consistency**: Ensure all string enums use `StrEnum` instead of `class X(str, Enum)`
 3. **Annotated for Constraints**: Leverage `Annotated` types for reusable Pydantic field constraints
 4. **Import Cleanup**: Remove obsolete imports (`from __future__ import`, legacy typing patterns)
 
 **Why This Matters:**
+
 - Python 3.13 introduces cleaner, more maintainable syntax
 - `type` statement is more readable than `TypeAlias` annotation
 - `StrEnum` provides better type safety and IDE support
@@ -32,7 +34,9 @@ Phase 5 applies Python 3.13+ modern syntax patterns across the ENTIRE ProSell Sa
 - [x] **Phase 5**: This phase - Python 3.13 syntax ✅ COMPLETED
 
 ### 1.3.1 Completion Status
+
 **Phase 5 COMPLETED** - 2026-02-14
+
 - **Commit**: `09de105` - "refactor(domain): complete Fase 5 - Python 3.13+ modern syntax"
 - **Tests**: 113/113 passing ✅
 - **Ruff**: PASSING ✅
@@ -64,6 +68,7 @@ Phase 5 applies Python 3.13+ modern syntax patterns across the ENTIRE ProSell Sa
 **So that** my code is more readable and maintainable
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Replace TypeAlias with type statement
   GIVEN a file using TypeAlias annotation
@@ -80,6 +85,7 @@ Scenario: Replace TypeAlias with type statement
 **So that** I get better type safety and IDE support
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Replace str, Enum with StrEnum
   GIVEN a class using "class X(str, Enum)"
@@ -95,6 +101,7 @@ Scenario: Replace str, Enum with StrEnum
 **So that** I don't repeat validation rules across models
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Create Annotated type for common fields
   GIVEN a field repeated across multiple models (e.g., email)
@@ -125,12 +132,12 @@ Scenario: Create Annotated type for common fields
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|------------|---------|-------|
-| Backend | Python | 3.13+ | Free-threading enabled |
-| Backend | Pydantic | 2.12+ | For `Annotated` support |
-| Linter | Ruff | Latest | Python 3.13 patterns |
-| Type Checker | Pyright | Latest | Strict mode |
+| Component    | Technology | Version | Notes                   |
+| ------------ | ---------- | ------- | ----------------------- |
+| Backend      | Python     | 3.13+   | Free-threading enabled  |
+| Backend      | Pydantic   | 2.12+   | For `Annotated` support |
+| Linter       | Ruff       | Latest  | Python 3.13 patterns    |
+| Type Checker | Pyright    | Latest  | Strict mode             |
 
 ### 3.2 Key Libraries
 
@@ -171,12 +178,14 @@ flowchart TD
 #### Step 1: Audit Current Code
 
 **Files to audit**:
+
 - `domain/entities/*.py` - All entity files
 - `domain/value_objects/*.py` - All value object files
 - `domain/ports/*.py` - Service interfaces
 - `application/use_cases/*.py` - Use cases
 
 **Audit commands**:
+
 ```bash
 # Find TypeAlias usage
 rg "TypeAlias" apps/api/src/prosell
@@ -195,12 +204,14 @@ rg "List\[" apps/api/src/prosell
 ```
 
 **Expected findings** (based on preliminary scan):
+
 - `role.py`: Has `TypeAlias` import (line 3)
 - `user.py`: Uses `str, Enum` pattern (line 13)
 - `user_status.py`: Uses `str, Enum` pattern (line 6)
 - Both have `from __future__ import annotations`
 
 **Gotchas**:
+
 - Some files may not need migration
 - Verify ALL enum classes, not just the ones found by grep
 - Type aliases may be in comments or docstrings
@@ -208,9 +219,11 @@ rg "List\[" apps/api/src/prosell
 #### Step 2: Migrate Type Aliases (PEP 695)
 
 **Files to update**:
+
 - `domain/entities/role.py` - Contains `RolePermissions` mapping
 
 **Before (Python 3.12)**:
+
 ```python
 from __future__ import annotations
 from typing import TypeAlias
@@ -220,6 +233,7 @@ RolePermissions: TypeAlias = dict[RoleType, set[Permission]]
 ```
 
 **After (Python 3.13)**:
+
 ```python
 # No import needed for type statement
 
@@ -228,6 +242,7 @@ type RolePermissions = dict[RoleType, set[Permission]]
 ```
 
 **Implementation notes**:
+
 ```python
 # Example from role.py
 type RolePermissions = dict[RoleType, set[Permission]]
@@ -243,12 +258,14 @@ ROLE_PERMISSIONS: RolePermissions = {
 ```
 
 **Gotchas**:
+
 - `type` statement CANNOT be used as class attributes
 - `type` statement CANNOT be used in function annotations inside classes
 - `type` statement is module-level only
 - If you need a type alias in a class, use the old `TypeAlias` annotation
 
 **When to use `type` vs `TypeAlias`**:
+
 ```python
 # ✅ USE type statement (module-level)
 type UserId = UUID
@@ -266,10 +283,12 @@ class User:
 #### Step 3: Migrate to StrEnum
 
 **Files to update**:
+
 - `domain/entities/user.py` - `UserStatus` enum (line 13)
 - `domain/value_objects/user_status.py` - `UserStatus` enum (line 6)
 
 **Before**:
+
 ```python
 from enum import Enum
 
@@ -281,6 +300,7 @@ class UserStatus(str, Enum):
 ```
 
 **After**:
+
 ```python
 from enum import StrEnum
 
@@ -292,6 +312,7 @@ class UserStatus(StrEnum):
 ```
 
 **Implementation notes**:
+
 ```python
 # Verify ALL enum classes use StrEnum
 # role.py already uses StrEnum correctly (line 7)
@@ -305,6 +326,7 @@ class RoleType(StrEnum):
 ```
 
 **Gotchas**:
+
 - `StrEnum` automatically makes members `str` - no need for `(str, Enum)`
 - `StrEnum` members are comparable to strings
 - `StrEnum` prevents mixed-type enum members (good for type safety)
@@ -313,9 +335,11 @@ class RoleType(StrEnum):
 #### Step 4: Create Annotated Types for Common Fields
 
 **Files to create**:
+
 - `domain/types/common.py` - New file for reusable annotated types
 
 **Implementation**:
+
 ```python
 """Common type definitions with Pydantic constraints."""
 
@@ -364,6 +388,7 @@ type TenantId = Annotated[
 ```
 
 **Usage in entities**:
+
 ```python
 # In domain/entities/user.py
 from prosell.domain.types.common import UserEmail, UserPassword, UserName
@@ -377,12 +402,14 @@ class User(BaseModel):
 ```
 
 **Gotchas**:
+
 - `Annotated` types are for Pydantic FIELD definitions, not standalone validation
 - Can only be used where Pydantic validates (model fields, function arguments with validation)
 - Don't overuse - only for TRULY reusable constraints
 - If a constraint is used once, inline it instead
 
 **When to use Annotated types**:
+
 ```python
 # ✅ USE Annotated for reusable constraints
 type Email = Annotated[str, Field(pattern=r"^...$")]
@@ -406,10 +433,12 @@ class User(BaseModel):
 #### Step 5: Clean Up Imports
 
 **Files to update**:
+
 - ALL files with `from __future__ import annotations`
 - ALL files (verify no legacy imports remain)
 
 **Imports to remove**:
+
 ```python
 # ❌ REMOVE (Python 3.13 has this built-in)
 from __future__ import annotations
@@ -428,6 +457,7 @@ from typing import Tuple
 ```
 
 **Imports to keep**:
+
 ```python
 # ✅ KEEP (still needed for TYPE_CHECKING blocks)
 from typing import TYPE_CHECKING
@@ -444,6 +474,7 @@ from typing import Annotated  # Or: from typing import Annotated
 ```
 
 **Gotchas**:
+
 - Don't remove `TYPE_CHECKING` imports - still needed for circular imports
 - Don't remove `TypeAlias` if used for class-level type aliases
 - Verify imports after removal with `ruff check .`
@@ -451,6 +482,7 @@ from typing import Annotated  # Or: from typing import Annotated
 #### Step 6: Verify All Changes
 
 **Validation commands**:
+
 ```bash
 # Linting
 cd apps/api
@@ -468,6 +500,7 @@ uv run pytest --cov=prosell --cov-report=term-missing
 ```
 
 **Expected results**:
+
 - Ruff: 0 errors, 0 warnings
 - Pyright: 0 errors (strict mode)
 - Tests: All passing
@@ -482,6 +515,7 @@ uv run pytest --cov=prosell --cov-report=term-missing
 **Reference**: `domain/entities/role.py`
 
 **Before**:
+
 ```python
 from __future__ import annotations
 from typing import TypeAlias
@@ -491,6 +525,7 @@ RolePermissions: TypeAlias = dict[RoleType, set[Permission]]
 ```
 
 **After**:
+
 ```python
 # No import needed
 # Type statement (new way)
@@ -510,6 +545,7 @@ ROLE_PERMISSIONS: RolePermissions = {
 **Reference**: `domain/entities/user.py`, `domain/value_objects/user_status.py`
 
 **Before**:
+
 ```python
 from enum import Enum
 
@@ -521,6 +557,7 @@ class UserStatus(str, Enum):
 ```
 
 **After**:
+
 ```python
 from enum import StrEnum
 
@@ -569,6 +606,7 @@ class User(BaseModel):
 ### 5.4 Import Cleanup Pattern
 
 **Before**:
+
 ```python
 from __future__ import annotations
 from typing import Optional, List, Dict
@@ -583,6 +621,7 @@ def get_user(user_id: Optional[str]) -> Optional[User]:
 ```
 
 **After**:
+
 ```python
 # No future import needed
 from enum import StrEnum
@@ -664,15 +703,18 @@ rg -E "\b(List|Dict|Tuple)\[" apps/api/src/prosell
 ### 7.1 Unit Tests
 
 **Existing tests** - Ensure all existing tests still pass:
+
 - Entity tests - `tests/unit/domain/entities/test_*.py`
 - Value object tests - `tests/unit/domain/value_objects/test_*.py`
 - Repository tests - `tests/unit/infrastructure/repositories/test_*.py`
 
 **New tests** - Consider adding tests for:
+
 - Annotated type validation (if `common.py` is created)
 - Enum behavior with StrEnum (should be identical)
 
 **Example test for Annotated types**:
+
 ```python
 # tests/unit/domain/types/test_common.py
 """Tests for common type definitions."""
@@ -829,11 +871,13 @@ class AccountStatus(StrEnum):
 If implementation fails or tests break:
 
 1. **Revert all changes**:
+
    ```bash
    git checkout HEAD -- apps/api/src/prosell/
    ```
 
 2. **Identify breaking change**:
+
    ```bash
    # Run tests to see what's broken
    cd apps/api
@@ -876,6 +920,7 @@ If implementation fails or tests break:
 **Reasoning**:
 
 **Positive factors**:
+
 - **Clear pattern**: Mechanical changes with well-defined before/after states
 - **Good documentation**: PEP 695 and StrEnum are well-documented
 - **Easy to verify**: Tests will immediately show if something breaks
@@ -883,6 +928,7 @@ If implementation fails or tests break:
 - **Type safety**: Changes improve type checking, not reduce it
 
 **Risk factors**:
+
 - **`type` statement limitations**: Can't use in class attributes (edge case)
 - **Annotated type complexity**: Easy to overuse, need judgement
 - **Import cleanup risk**: Might remove needed imports accidentally
@@ -890,6 +936,7 @@ If implementation fails or tests break:
 - **Testing**: Need to ensure no behavioral changes in enums or type aliases
 
 **Mitigation**:
+
 - Migrate incrementally (file-by-file)
 - Run tests after each file
 - Commit working changes frequently
@@ -905,18 +952,22 @@ If implementation fails or tests break:
 Based on preliminary scan:
 
 #### Type Aliases (PEP 695)
+
 1. `domain/entities/role.py` - Has `TypeAlias` import and annotation
 
 #### StrEnum Migration
+
 1. `domain/entities/user.py` - Uses `str, Enum` for `UserStatus`
 2. `domain/value_objects/user_status.py` - Uses `str, Enum` for `UserStatus`
 
 #### Import Cleanup
+
 1. `domain/entities/role.py` - Has `from __future__ import annotations`
 2. `domain/entities/user.py` - Has `from __future__ import annotations`
 3. `domain/value_objects/user_status.py` - Has `from __future__ import annotations`
 
 #### Files to Create (Optional)
+
 1. `domain/types/common.py` - Annotated type definitions
 
 ### Files Already Correct
@@ -988,15 +1039,18 @@ rg "StrEnum" apps/api/src/prosell
 ## Appendix C: References
 
 ### Python Documentation
+
 - [PEP 695 – Type Statement](https://peps.python.org/pep-0695/)
 - [enum.StrEnum](https://docs.python.org/3.13/library/enum.html#enum.StrEnum)
 - [typing.Annotated](https://docs.python.org/3.13/library/typing.html#typing.Annotated)
 
 ### Pydantic Documentation
+
 - [Annotated Types](https://docs.pydantic.dev/latest/concepts/fields/#field-definitions)
 - [Field Validation](https://docs.pydantic.dev/latest/concepts/fields/#field-validation)
 
 ### Project Documentation
+
 - [Phase 1 PRP](./fase-1-domain-entities.md) - Domain entities migration
 - [Phase 2 PRP](./fase-2-value-objects.md) - Value objects migration
 - [Phase 3 PRP](./fase-3-repositories.md) - Repository migration
@@ -1018,6 +1072,7 @@ rg "StrEnum" apps/api/src/prosell
 6. **Type Safety Maintained** - Pyright zero errors ✅
 
 ### 📊 Statistics
+
 - **Files modified**: 2 (user.py, role.py)
 - **Lines removed**: 10 (future imports + obsolete TODOs)
 - **Lines added**: 5 (string annotations)
@@ -1028,6 +1083,7 @@ rg "StrEnum" apps/api/src/prosell
 - **GGA**: Approved ✅
 
 ### 🔍 What Was NOT Done (As Expected)
+
 1. ~~TypeAlias → type statement~~ - No TypeAlias found (already migrated)
 2. ~~str, Enum → StrEnum~~ - Already StrEnum in previous phases
 3. ~~Annotated types~~ - No repetitive field patterns to extract
@@ -1040,6 +1096,7 @@ rg "StrEnum" apps/api/src/prosell
 4. **Pydantic Compatibility** - Pydantic 2.12+ works perfectly with Python 3.13+
 
 ### 🚀 Next Steps
+
 Phase 5 is **100% COMPLETE** and ready to move to Phase 6 (Cleanup).
 
 ---

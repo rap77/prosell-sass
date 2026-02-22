@@ -53,14 +53,16 @@ interface Enable2FAResponse {
 
 // Use relative URLs for E2E testing (mock endpoints in Next.js)
 // Falls back to localhost:8000 for production/development with real backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "test" ? "" : "http://localhost:8000");
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === "test" ? "" : "http://localhost:8000");
 
 // ============================================
 // IMPORTS & SETUP
 // ============================================
 
-import { apiCache, generateCacheKey } from '../cache/lru-cache';
-import { createAuthCacheKey, createUserCacheKey } from '../cache/cache-utils';
+import { apiCache, generateCacheKey } from "../cache/lru-cache";
+import { createAuthCacheKey, createUserCacheKey } from "../cache/cache-utils";
 import {
   createLookupSet,
   earlyExit,
@@ -69,12 +71,14 @@ import {
   createEventHandlerRef,
   batchCSS,
   withArrayLengthCheck,
-  hoistRegExp
+  hoistRegExp,
 } from "@/lib/utils";
 
 // Pre-compiled regular expressions for better performance
 const EMAIL_REGEX = hoistRegExp("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
-const PASSWORD_REGEX = hoistRegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$");
+const PASSWORD_REGEX = hoistRegExp(
+  "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
+);
 
 // Type union for all possible API responses
 type ApiResponse =
@@ -89,7 +93,7 @@ const responseCache = new Map<string, ApiResponse>();
 
 // Event handler ref for common operations
 const errorHandlerRef = createEventHandlerRef((error: unknown) => {
-  console.error('API Error:', error);
+  console.error("API Error:", error);
 });
 
 // ============================================
@@ -124,7 +128,7 @@ const userLookupCache = (() => {
   return {
     get: (userId: string) => cache.get(userId),
     set: (userId: string, user: UserResponse) => cache.set(userId, user),
-    clear: () => cache.clear()
+    clear: () => cache.clear(),
   };
 })();
 
@@ -133,7 +137,10 @@ const userLookupCache = (() => {
 // ============================================
 
 export class ApiError extends Error {
-  constructor(message: string, public status?: number) {
+  constructor(
+    message: string,
+    public status?: number,
+  ) {
     super(message);
     this.name = "ApiError";
   }
@@ -141,8 +148,13 @@ export class ApiError extends Error {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: "Error desconocido" }));
-    throw new ApiError(errorData.detail || "Error en la petición", response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: "Error desconocido" }));
+    throw new ApiError(
+      errorData.detail || "Error en la petición",
+      response.status,
+    );
   }
 
   return response.json() as Promise<T>;
@@ -157,10 +169,7 @@ export const authApi = {
    * Login with email and password
    * POST /api/auth/login
    */
-  async login(
-    email: string,
-    password: string
-  ): Promise<LoginResponse> {
+  async login(email: string, password: string): Promise<LoginResponse> {
     // Validate inputs with pre-compiled regex (early exit)
     if (!EMAIL_REGEX.test(email) || !PASSWORD_REGEX.test(password)) {
       throw new ApiError("Invalid email or password format", 400);
@@ -189,7 +198,7 @@ export const authApi = {
     email: string,
     password: string,
     first_name: string,
-    last_name: string
+    last_name: string,
   ): Promise<LoginResponse> {
     // Validate inputs with pre-compiled regex
     if (!EMAIL_REGEX.test(email) || !PASSWORD_REGEX.test(password)) {
@@ -201,7 +210,10 @@ export const authApi = {
     const trimmedLastName = last_name.trim();
 
     if (trimmedFirstName.length < 2 || trimmedLastName.length < 2) {
-      throw new ApiError("First and last name must be at least 2 characters", 400);
+      throw new ApiError(
+        "First and last name must be at least 2 characters",
+        400,
+      );
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
@@ -268,13 +280,13 @@ export const authApi = {
    * Cached with React.cache for deduplication
    */
   getCurrentUser: (() => {
-    const cacheKeyPrefix = 'user:current';
+    const cacheKeyPrefix = "user:current";
 
     return (): Promise<UserResponse> => {
       const cacheKey = generateCacheKey(
-        'GET',
+        "GET",
         `${API_BASE_URL}/api/auth/me`,
-        {}
+        {},
       );
 
       // Try to get from cache first
@@ -287,7 +299,7 @@ export const authApi = {
       return deduplicateRequest(cacheKey, async () => {
         const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
           method: "GET",
-          credentials: "include",  // CRITICAL: Sends httpOnly cookies automatically
+          credentials: "include", // CRITICAL: Sends httpOnly cookies automatically
         });
 
         const result = await handleResponse<UserResponse>(response);
@@ -307,11 +319,11 @@ export const authApi = {
    */
   async verifyEmail(token: string): Promise<MessageResponse> {
     // Early exit if invalid token
-    if (!token || token.trim() === '') {
+    if (!token || token.trim() === "") {
       throw new ApiError("Token is required", 400);
     }
 
-    const cacheKey = createAuthCacheKey('verify-email', { token });
+    const cacheKey = createAuthCacheKey("verify-email", { token });
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
@@ -344,7 +356,7 @@ export const authApi = {
       throw new ApiError("Invalid email format", 400);
     }
 
-    const cacheKey = createAuthCacheKey('forgot-password', { email });
+    const cacheKey = createAuthCacheKey("forgot-password", { email });
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
@@ -373,10 +385,10 @@ export const authApi = {
    */
   async resetPassword(
     token: string,
-    newPassword: string
+    newPassword: string,
   ): Promise<MessageResponse> {
     // Early exit if invalid inputs
-    if (!token || token.trim() === '') {
+    if (!token || token.trim() === "") {
       throw new ApiError("Token is required", 400);
     }
 
@@ -384,7 +396,10 @@ export const authApi = {
       throw new ApiError("Password does not meet requirements", 400);
     }
 
-    const cacheKey = createAuthCacheKey('reset-password', { token, newPassword });
+    const cacheKey = createAuthCacheKey("reset-password", {
+      token,
+      newPassword,
+    });
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
@@ -417,7 +432,7 @@ export const authApi = {
    * Uses httpOnly cookies for authentication (no accessToken parameter needed)
    */
   async enable2FA(): Promise<Enable2FAResponse> {
-    const cacheKey = createAuthCacheKey('2fa/enable');
+    const cacheKey = createAuthCacheKey("2fa/enable");
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
@@ -429,7 +444,7 @@ export const authApi = {
       headers: {
         "Content-Type": "application/json",
       },
-      credentials: "include",  // CRITICAL: Sends httpOnly cookies automatically
+      credentials: "include", // CRITICAL: Sends httpOnly cookies automatically
     });
 
     const result = await handleResponse<Enable2FAResponse>(response);
@@ -448,11 +463,11 @@ export const authApi = {
    */
   async verify2FA(code: string): Promise<MessageResponse> {
     // Early exit if invalid inputs
-    if (!code || code.trim() === '' || code.length !== 6) {
+    if (!code || code.trim() === "" || code.length !== 6) {
       throw new ApiError("2FA code must be 6 digits", 400);
     }
 
-    const cacheKey = createAuthCacheKey('2fa/verify', { code });
+    const cacheKey = createAuthCacheKey("2fa/verify", { code });
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
@@ -464,7 +479,7 @@ export const authApi = {
       headers: {
         "Content-Type": "application/json",
       },
-      credentials: "include",  // CRITICAL: Sends httpOnly cookies automatically
+      credentials: "include", // CRITICAL: Sends httpOnly cookies automatically
       body: JSON.stringify({ code }),
     });
 
@@ -483,7 +498,7 @@ export const authApi = {
    * Uses httpOnly cookies for authentication (no accessToken parameter needed)
    */
   async disable2FA(): Promise<MessageResponse> {
-    const cacheKey = createAuthCacheKey('2fa/disable');
+    const cacheKey = createAuthCacheKey("2fa/disable");
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
@@ -495,7 +510,7 @@ export const authApi = {
       headers: {
         "Content-Type": "application/json",
       },
-      credentials: "include",  // CRITICAL: Sends httpOnly cookies automatically
+      credentials: "include", // CRITICAL: Sends httpOnly cookies automatically
     });
 
     const result = await handleResponse<MessageResponse>(response);
@@ -510,13 +525,13 @@ export const authApi = {
    * Batch clear cache by patterns
    */
   clearCache(patterns: string[] = []): void {
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern) => {
       requestCache.delete(pattern);
       apiCache.delete(pattern);
     });
 
     // Clear user cache on auth operations
-    if (patterns.some(p => p.includes('auth'))) {
+    if (patterns.some((p) => p.includes("auth"))) {
       userLookupCache.clear();
     }
   },
@@ -529,5 +544,4 @@ export const authApi = {
     responseCache.clear();
     userLookupCache.clear();
   },
-
 };

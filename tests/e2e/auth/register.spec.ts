@@ -8,7 +8,11 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { RegisterPage } from "./register-page";
-import { generateTestUser, generateTestPassword, generateUniqueEmail } from "../helpers";
+import {
+  generateTestUser,
+  generateTestPassword,
+  generateUniqueEmail,
+} from "../helpers";
 
 test.describe("Registration", () => {
   let registerPage: RegisterPage;
@@ -19,7 +23,8 @@ test.describe("Registration", () => {
   });
 
   test.describe("Page Layout", () => {
-    test("should display register page elements correctly",
+    test(
+      "should display register page elements correctly",
       { tag: ["@e2e", "@register", "@REGISTER-E2E-001"] },
       async ({ page }) => {
         await expect(registerPage.heading).toBeVisible();
@@ -29,20 +34,24 @@ test.describe("Registration", () => {
         await expect(registerPage.confirmPasswordInput).toBeVisible();
         await expect(registerPage.acceptTermsCheckbox).toBeVisible();
         await expect(registerPage.submitButton).toBeVisible();
-      }
+      },
     );
 
-    test("should pass accessibility checks",
+    test(
+      "should pass accessibility checks",
       { tag: ["@e2e", "@register", "@a11y", "@REGISTER-E2E-002"] },
       async ({ page }) => {
-        const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
+        const accessibilityScanResults = await new AxeBuilder({
+          page,
+        }).analyze();
         expect(accessibilityScanResults.violations).toEqual([]);
-      }
+      },
     );
   });
 
   test.describe("Form Validation", () => {
-    test("should show validation error for empty full name",
+    test(
+      "should show validation error for empty full name",
       { tag: ["@e2e", "@register", "@validation", "@REGISTER-E2E-003"] },
       async ({ page }) => {
         await registerPage.emailInput.fill("test@example.com");
@@ -53,10 +62,11 @@ test.describe("Registration", () => {
 
         const error = page.getByText(/full name is required/i);
         await expect(error).toBeVisible();
-      }
+      },
     );
 
-    test("should show validation error for invalid email",
+    test(
+      "should show validation error for invalid email",
       { tag: ["@e2e", "@register", "@validation", "@REGISTER-E2E-004"] },
       async ({ page }) => {
         await registerPage.fullNameInput.fill("Test User");
@@ -68,10 +78,11 @@ test.describe("Registration", () => {
 
         const error = page.getByText(/invalid email address/i);
         await expect(error).toBeVisible();
-      }
+      },
     );
 
-    test("should show validation error for short password",
+    test(
+      "should show validation error for short password",
       { tag: ["@e2e", "@register", "@validation", "@REGISTER-E2E-005"] },
       async ({ page }) => {
         await registerPage.fullNameInput.fill("Test User");
@@ -83,10 +94,11 @@ test.describe("Registration", () => {
 
         const error = page.getByText(/password must be at least 8 characters/i);
         await expect(error).toBeVisible();
-      }
+      },
     );
 
-    test("should show validation error for mismatched passwords",
+    test(
+      "should show validation error for mismatched passwords",
       { tag: ["@e2e", "@register", "@validation", "@REGISTER-E2E-006"] },
       async ({ page }) => {
         await registerPage.fullNameInput.fill("Test User");
@@ -98,10 +110,11 @@ test.describe("Registration", () => {
 
         const error = page.getByText(/passwords do not match/i);
         await expect(error).toBeVisible();
-      }
+      },
     );
 
-    test("should show validation error when terms not accepted",
+    test(
+      "should show validation error when terms not accepted",
       { tag: ["@e2e", "@register", "@validation", "@REGISTER-E2E-007"] },
       async ({ page }) => {
         await registerPage.fullNameInput.fill("Test User");
@@ -113,12 +126,13 @@ test.describe("Registration", () => {
 
         const error = page.getByText(/must accept the terms/i);
         await expect(error).toBeVisible();
-      }
+      },
     );
   });
 
   test.describe("Registration Flow", () => {
-    test("should register successfully with valid data",
+    test(
+      "should register successfully with valid data",
       { tag: ["@critical", "@e2e", "@register", "@REGISTER-E2E-008"] },
       async ({ page }) => {
         const user = {
@@ -133,10 +147,11 @@ test.describe("Registration", () => {
         // Mock API returns success, no redirect in current implementation
         // Just verify form submits without error
         await page.waitForTimeout(500);
-      }
+      },
     );
 
-    test("should show loading state during registration",
+    test(
+      "should show loading state during registration",
       { tag: ["@e2e", "@register", "@REGISTER-E2E-009"] },
       async ({ page }) => {
         await registerPage.fullNameInput.fill("Test User");
@@ -150,19 +165,20 @@ test.describe("Registration", () => {
         // With mock API (500ms delay), loading state is brief
         // Just verify form submits without error
         await page.waitForTimeout(500);
-      }
+      },
     );
   });
 
   test.describe("Navigation", () => {
-    test("should navigate to login page",
+    test(
+      "should navigate to login page",
       { tag: ["@e2e", "@register", "@REGISTER-E2E-010"] },
       async ({ page }) => {
         await registerPage.clickSignIn();
 
         await page.waitForURL(/\/auth\/login/);
         await expect(page).toHaveURL(/\/auth\/login/);
-      }
+      },
     );
   });
 });

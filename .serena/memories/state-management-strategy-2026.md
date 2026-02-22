@@ -18,31 +18,37 @@
 ### Usar Zustand para:
 
 #### 1. Autenticación
+
 - **Tokens**: access_token, refresh_token
 - **Datos básicos del usuario**: ID, email, nombre, rol
 - **Estado de auth**: isAuthenticated, isLoading
 
 **Por qué:**
+
 - No cambia cada segundo
 - Persistencia en localStorage
 - No necesita revalidación periódica
 
 #### 2. Preferencias de UI
+
 - **Modo oscuro/claro**: theme
 - **Sidebar**: estado abierto/cerrado
 - **Layout**: preferencias de visualización
 
 **Por qué:**
+
 - Es state puramente del cliente
 - No viene del servidor
 - Cambia por interacción directa del usuario
 
 #### 3. Formularios Complejos
+
 - **Estado temporal**: mientras el usuario escribe
 - **Steppers**: paso actual del formulario
 - **Validation state**: errores, touched fields
 
 **Por qué:**
+
 - Estado efímero (no se persiste)
 - Alta frecuencia de updates
 - No necesita cache ni revalidación
@@ -54,6 +60,7 @@
 ### Usar SWR para:
 
 #### 1. Todo lo que venga de Base de Datos
+
 - **Posts/Artículos**: listados, detalles
 - **Productos**: catálogo, precios, stock
 - **Configuraciones del equipo**: settings por tenant
@@ -61,17 +68,20 @@
 - **Analytics**: métricas, estadísticas
 
 **Por qué:**
+
 - Viene del servidor (API)
 - Puede quedar obsoleto (stale)
 - Necesita revalidación periódica
 - Se comparte entre componentes
 
 #### 2. Datos que cambian frecuentemente
+
 - **Real-time data**: precios, stock, notificaciones nuevas
 - **Datos multi-usuario**: lo que un usuario modifica afecta a otros
 - **Listados con filtros**: búsqueda, paginación
 
 **Por qué:**
+
 - SWR maneja cache + revalidation automáticamente
 - Deduplicación de requests (mismo key = 1 request)
 - Background refetch
@@ -140,7 +150,7 @@ function ProductForm({ productId }: { productId: string }) {
 const useProductStore = create((set) => ({
   products: [],
   fetchProducts: async () => {
-    const res = await fetch('/api/products');
+    const res = await fetch("/api/products");
     const data = await res.json();
     set({ products: data }); // Sin cache, sin revalidation
   },
@@ -148,7 +158,7 @@ const useProductStore = create((set) => ({
 
 // ✅ BIEN - Productos con SWR
 function ProductsList() {
-  const { data: products } = useSWR('/api/products', fetcher);
+  const { data: products } = useSWR("/api/products", fetcher);
   // Cache automática, revalidation, deduplicación
 }
 ```
@@ -157,7 +167,7 @@ function ProductsList() {
 
 ```typescript
 // ❌ MAL - Theme en SWR (innecesario)
-const { data: theme } = useSWR('theme', fetcher);
+const { data: theme } = useSWR("theme", fetcher);
 
 // ✅ BIEN - Theme en Zustand
 const { theme, setTheme } = useThemeStore();
@@ -167,13 +177,13 @@ const { theme, setTheme } = useThemeStore();
 
 ## 📊 Resumen de Decisión
 
-| ¿Dónde guardar el dato? | Pregunta clave | Solución |
-|------------------------|----------------|----------|
-| **¿Viene del servidor?** | Sí → ¿Puede quedar obsoleto? | SWR |
-| **¿Es solo del cliente?** | Sí → ¿Persiste entre sesiones? | Zustand + persist |
-| **¿Es efímero/temporal?** | Sí → ¿Alta frecuencia de updates? | Zustand sin persist |
-| **¿Se comparte entre componentes?** | Sí → ¿Es auth/UI preference? | Zustand |
-| **¿Se comparte entre componentes?** | Sí → ¿Viene de BD? | SWR |
+| ¿Dónde guardar el dato?             | Pregunta clave                    | Solución            |
+| ----------------------------------- | --------------------------------- | ------------------- |
+| **¿Viene del servidor?**            | Sí → ¿Puede quedar obsoleto?      | SWR                 |
+| **¿Es solo del cliente?**           | Sí → ¿Persiste entre sesiones?    | Zustand + persist   |
+| **¿Es efímero/temporal?**           | Sí → ¿Alta frecuencia de updates? | Zustand sin persist |
+| **¿Se comparte entre componentes?** | Sí → ¿Es auth/UI preference?      | Zustand             |
+| **¿Se comparte entre componentes?** | Sí → ¿Viene de BD?                | SWR                 |
 
 ---
 

@@ -30,9 +30,9 @@ interface ErrorResponse {
 // ROUTE HANDLER
 // ============================================
 
-export async function POST(request: Request): Promise<
-  NextResponse<MessageResponse | ErrorResponse>
-> {
+export async function POST(
+  request: Request,
+): Promise<NextResponse<MessageResponse | ErrorResponse>> {
   try {
     const body: ForgotPasswordRequest = await request.json();
 
@@ -40,7 +40,7 @@ export async function POST(request: Request): Promise<
     if (!body.email || typeof body.email !== "string") {
       return NextResponse.json(
         { detail: "Email is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -49,20 +49,21 @@ export async function POST(request: Request): Promise<
     if (!emailRegex.test(body.email)) {
       return NextResponse.json(
         { detail: "Invalid email format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Mock forgot password - always return success for E2E testing
     // In production, this would send an email with a reset token
     return NextResponse.json({
-      message: "If an account exists with this email, a password reset link has been sent",
+      message:
+        "If an account exists with this email, a password reset link has been sent",
     });
   } catch (error) {
     logger.error("Mock forgot password error", error);
     return NextResponse.json(
       { detail: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

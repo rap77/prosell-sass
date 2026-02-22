@@ -6,11 +6,14 @@
 ## Completed Tasks (8/17 - ~47%)
 
 ### Task #7: TwoFactorInput Component - TDD Complete ✅
+
 **Files:**
+
 - `apps/web/src/components/auth/TwoFactorInput.tsx`
 - `apps/web/tests/components/auth/TwoFactorInput.test.tsx`
 
 **Implementation:**
+
 - 6-digit input grid for 2FA codes
 - Auto-focus to next input after typing each digit
 - Backspace navigation (clears and moves to previous input)
@@ -24,11 +27,14 @@
 **Tests:** 32/32 passing ✅
 
 ### Task #8: LoginForm Component - TDD Complete ✅ **[NEW]**
+
 **Files:**
+
 - `apps/web/src/components/auth/LoginForm.tsx`
 - `apps/web/tests/components/auth/LoginForm.test.tsx`
 
 **Implementation:**
+
 - React Hook Form + Zod validation
 - Email input with validation
 - PasswordInput component integration
@@ -47,6 +53,7 @@ React Hook Form has conflicts with PasswordInput internal state. The PasswordInp
 **Future Fix:** Use `Controller` component from React Hook Form to wrap PasswordInput, or refactor PasswordInput to be fully controlled by external state.
 
 ### Previous Tasks (Already Complete)
+
 - Task #1: Environment Setup ✅
 - Task #2: authStore (Zustand) ✅ (13/13 tests)
 - Task #3: useAuth Hook ✅ (15/15 tests)
@@ -56,33 +63,34 @@ React Hook Form has conflicts with PasswordInput internal state. The PasswordInp
 
 ## Test Summary
 
-| Component | Tests | Status |
-|-----------|-------|--------|
-| authStore | 13/13 | ✅ |
-| useAuth | 15/15 | ✅ |
-| authApi | 18/18 | ✅ |
-| PasswordInput | 26/26 | ✅ |
-| OAuthButtons | 17/17 | ✅ |
-| TwoFactorInput | 32/32 | ✅ |
-| LoginForm | 20/25 | ⚠️ (80%, known issue) |
+| Component      | Tests | Status                |
+| -------------- | ----- | --------------------- |
+| authStore      | 13/13 | ✅                    |
+| useAuth        | 15/15 | ✅                    |
+| authApi        | 18/18 | ✅                    |
+| PasswordInput  | 26/26 | ✅                    |
+| OAuthButtons   | 17/17 | ✅                    |
+| TwoFactorInput | 32/32 | ✅                    |
+| LoginForm      | 20/25 | ⚠️ (80%, known issue) |
 
 **Total: 141 tests passing** (excludes LoginForm's 5 failing tests)
 
 ## Pending Tasks (9 remaining)
 
-| # | Task | Priority |
-|---|-------|-----------|
-| 9 | RegisterForm component | 🔥 ALTA |
-| 10 | Login page | Media |
-| 11 | Register page | Media |
-| 12 | Verify-email page | Media |
-| 13 | Forgot-password & reset-password pages | Media |
-| 14 | 2FA-setup page | Baja |
-| 15 | Route protection middleware | Alta |
-| 16 | E2E tests (Playwright) | Media |
-| 17 | Final validation >80% coverage | Baja |
+| #   | Task                                   | Priority |
+| --- | -------------------------------------- | -------- |
+| 9   | RegisterForm component                 | 🔥 ALTA  |
+| 10  | Login page                             | Media    |
+| 11  | Register page                          | Media    |
+| 12  | Verify-email page                      | Media    |
+| 13  | Forgot-password & reset-password pages | Media    |
+| 14  | 2FA-setup page                         | Baja     |
+| 15  | Route protection middleware            | Alta     |
+| 16  | E2E tests (Playwright)                 | Media    |
+| 17  | Final validation >80% coverage         | Baja     |
 
 ## Tech Stack
+
 - Next.js 16.1+ (App Router, Turbopack)
 - React 19.2 (Server Components)
 - TypeScript 5.5+ (strict mode)
@@ -103,12 +111,15 @@ ccc5925 feat(web): implement TwoFactorInput component with TDD
 ## Session Notes
 
 ### TDD Methodology
+
 Strict TDD cycle maintained throughout:
+
 1. **RED**: Write tests FIRST
 2. **GREEN**: Implement to make tests pass
 3. **REFACTOR**: Improve while keeping tests green
 
 ### Key Learnings
+
 1. **React Hook Form + Custom Components**: When using RHF with components that have internal state (like PasswordInput), there can be conflicts. Solutions:
    - Use `<Controller>` to wrap the controlled component
    - Make the component fully controlled by RHF

@@ -17,6 +17,7 @@
 **Why First:** Passwords in plaintext as Map keys is an immediate security risk.
 
 **Files:**
+
 - Modify: `apps/web/src/lib/api/authApi.ts:172,220`
 - Modify: `apps/web/src/lib/cache/cache-utils.ts:47-52`
 - Test: `apps/web/tests/lib/api/authApi.test.ts`
@@ -30,31 +31,31 @@
 **File:** `apps/web/tests/lib/api/authApi.test.ts`
 
 ```typescript
-describe('authApi - cache security', () => {
-  it('should NOT include password in cache key', () => {
+describe("authApi - cache security", () => {
+  it("should NOT include password in cache key", () => {
     const credentials = {
-      email: 'test@example.com',
-      password: 'SecretPassword123!'
+      email: "test@example.com",
+      password: "SecretPassword123!",
     };
 
     // Act: Create cache key for login
-    const cacheKey = createAuthCacheKey('login', credentials);
+    const cacheKey = createAuthCacheKey("login", credentials);
 
     // Assert: Password should NOT be in the cache key
-    expect(cacheKey).not.toContain('SecretPassword123!');
-    expect(cacheKey).not.toContain('password');
+    expect(cacheKey).not.toContain("SecretPassword123!");
+    expect(cacheKey).not.toContain("password");
   });
 
-  it('should NOT include newPassword in cache key', () => {
+  it("should NOT include newPassword in cache key", () => {
     const resetData = {
-      token: 'reset-token-123',
-      newPassword: 'NewSecret456!'
+      token: "reset-token-123",
+      newPassword: "NewSecret456!",
     };
 
-    const cacheKey = createAuthCacheKey('reset-password', resetData);
+    const cacheKey = createAuthCacheKey("reset-password", resetData);
 
-    expect(cacheKey).not.toContain('NewSecret456!');
-    expect(cacheKey).not.toContain('newPassword');
+    expect(cacheKey).not.toContain("NewSecret456!");
+    expect(cacheKey).not.toContain("newPassword");
   });
 });
 ```
@@ -75,12 +76,19 @@ cd apps/web && pnpm test authApi.test.ts --cache-security
 
 ```typescript
 // Sensitive field names that should NEVER be in cache keys
-const SENSITIVE_FIELDS = ['password', 'newPassword', 'currentPassword', 'token', 'accessToken', 'refreshToken'];
+const SENSITIVE_FIELDS = [
+  "password",
+  "newPassword",
+  "currentPassword",
+  "token",
+  "accessToken",
+  "refreshToken",
+];
 
 export function createAuthCacheKey(endpoint: string, data?: unknown): string {
   const key = `${CACHE_CONFIG.prefixes.auth}${endpoint}`;
 
-  if (!data || typeof data !== 'object') {
+  if (!data || typeof data !== "object") {
     return key;
   }
 
@@ -93,9 +101,8 @@ export function createAuthCacheKey(endpoint: string, data?: unknown): string {
     }, {});
 
   // If no safe data remains, return just the endpoint
-  const dataStr = Object.keys(safeData).length > 0
-    ? `:${JSON.stringify(safeData)}`
-    : '';
+  const dataStr =
+    Object.keys(safeData).length > 0 ? `:${JSON.stringify(safeData)}` : "";
 
   return `${key}${dataStr}`;
 }
@@ -118,7 +125,10 @@ cd apps/web && pnpm test authApi.test.ts --cache-security
 Add type for the function:
 
 ```typescript
-export function createAuthCacheKey(endpoint: string, data?: Record<string, unknown>): string {
+export function createAuthCacheKey(
+  endpoint: string,
+  data?: Record<string, unknown>,
+): string {
   // ... implementation
 }
 ```
@@ -146,6 +156,7 @@ Phase: 1/11 - Atomic cleanup"
 **Why Second:** Caching mutations (login, register, etc.) returns stale tokens and violates REST semantics.
 
 **Files:**
+
 - Modify: `apps/web/src/lib/api/authApi.ts`
 - Test: `apps/web/tests/lib/api/authApi.test.ts`
 
@@ -158,37 +169,42 @@ Phase: 1/11 - Atomic cleanup"
 **File:** `apps/web/tests/lib/api/authApi.test.ts`
 
 ```typescript
-describe('authApi - mutation caching', () => {
-  it('should NOT cache login response', async () => {
-    const credentials = { email: 'test@test.com', password: 'pass123' };
+describe("authApi - mutation caching", () => {
+  it("should NOT cache login response", async () => {
+    const credentials = { email: "test@test.com", password: "pass123" };
 
     // First call
     await authApi.login(credentials);
 
     // Verify cache is empty for login
-    const cacheKey = createAuthCacheKey('login', { email: 'test@test.com' });
+    const cacheKey = createAuthCacheKey("login", { email: "test@test.com" });
     const cached = requestCache.get(cacheKey);
 
     expect(cached).toBeUndefined();
   });
 
-  it('should NOT cache register response', async () => {
-    const data = { email: 'new@test.com', password: 'pass123', first_name: 'Test', last_name: 'User' };
+  it("should NOT cache register response", async () => {
+    const data = {
+      email: "new@test.com",
+      password: "pass123",
+      first_name: "Test",
+      last_name: "User",
+    };
 
     await authApi.register(data);
 
-    const cacheKey = createAuthCacheKey('register', { email: 'new@test.com' });
+    const cacheKey = createAuthCacheKey("register", { email: "new@test.com" });
     const cached = requestCache.get(cacheKey);
 
     expect(cached).toBeUndefined();
   });
 
-  it('should cache getCurrentUser (GET request)', async () => {
+  it("should cache getCurrentUser (GET request)", async () => {
     // First call
     await authApi.getCurrentUser();
 
     // Verify cache has the data
-    const cacheKey = createAuthCacheKey('current-user');
+    const cacheKey = createAuthCacheKey("current-user");
     const cached = requestCache.get(cacheKey);
 
     expect(cached).toBeDefined();
@@ -211,6 +227,7 @@ cd apps/web && pnpm test authApi.test.ts --mutation-cache
 **File:** `apps/web/src/lib/api/authApi.ts`
 
 Mutations that should NEVER be cached:
+
 - `login`
 - `register`
 - `logout`
@@ -227,7 +244,7 @@ Mutations that should NEVER be cached:
 ```typescript
 // BEFORE (example for login):
 login: async (credentials: LoginCredentials) => {
-  const cacheKey = createAuthCacheKey('login', credentials);
+  const cacheKey = createAuthCacheKey("login", credentials);
   const cached = requestCache.get(cacheKey);
   if (cached) return cached;
 
@@ -235,23 +252,24 @@ login: async (credentials: LoginCredentials) => {
 
   requestCache.set(cacheKey, response, CACHE_CONFIG.auth.login.ttl);
   return response;
-}
+};
 
 // AFTER:
 login: async (credentials: LoginCredentials) => {
-  const response = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(credentials),
   });
 
-  if (!response.ok) throw new AuthError('Login failed');
+  if (!response.ok) throw new AuthError("Login failed");
 
   return response.json();
-}
+};
 ```
 
 **Safe GET requests that CAN be cached:**
+
 - `getCurrentUser` - Cache for 5 minutes
 - `check-auth` - Cache for 2 minutes
 
@@ -263,10 +281,14 @@ login: async (credentials: LoginCredentials) => {
 
 ```typescript
 // DELETE THIS LINE:
-import { apiCache, generateCacheKey, shouldCacheRequest } from '../cache/lru-cache';
+import {
+  apiCache,
+  generateCacheKey,
+  shouldCacheRequest,
+} from "../cache/lru-cache";
 
 // REPLACE WITH:
-import { apiCache, generateCacheKey } from '../cache/lru-cache';
+import { apiCache, generateCacheKey } from "../cache/lru-cache";
 ```
 
 ---
@@ -303,6 +325,7 @@ Phase: 2/11 - Atomic cleanup"
 **Why Third:** Tokens in localStorage is a well-known XSS attack vector. The comment says no localStorage but code does opposite.
 
 **Files:**
+
 - Modify: `apps/web/src/stores/authStore.ts:597-607`
 - Test: `apps/web/tests/stores/authStore.test.ts`
 
@@ -315,18 +338,18 @@ Phase: 2/11 - Atomic cleanup"
 **File:** `apps/web/tests/stores/authStore.test.ts`
 
 ```typescript
-describe('authStore - token security', () => {
-  it('should NOT persist accessToken to localStorage', () => {
+describe("authStore - token security", () => {
+  it("should NOT persist accessToken to localStorage", () => {
     const { localStorage } = window;
 
     // Act: Login to set token
     useAuthStore.getState().login({
-      email: 'test@test.com',
-      password: 'pass123'
+      email: "test@test.com",
+      password: "pass123",
     });
 
     // Get localStorage content
-    const stored = localStorage.getItem('auth-storage');
+    const stored = localStorage.getItem("auth-storage");
     const parsed = JSON.parse(stored!);
 
     // Assert: accessToken should NOT be in localStorage
@@ -334,15 +357,15 @@ describe('authStore - token security', () => {
     expect(parsed.state.refreshTokenValue).toBeUndefined();
   });
 
-  it('should persist user and isAuthenticated for optimistic UI', () => {
+  it("should persist user and isAuthenticated for optimistic UI", () => {
     const { localStorage } = window;
 
     useAuthStore.getState().login({
-      email: 'test@test.com',
-      password: 'pass123'
+      email: "test@test.com",
+      password: "pass123",
     });
 
-    const stored = localStorage.getItem('auth-storage');
+    const stored = localStorage.getItem("auth-storage");
     const parsed = JSON.parse(stored!);
 
     // These SHOULD be persisted
@@ -407,7 +430,7 @@ cd apps/web && pnpm test authStore.test.ts --token-security
 
 ---
 
-### Step 3.5: Run test to verify it passes**
+### Step 3.5: Run test to verify it passes\*\*
 
 ```bash
 cd apps/web && pnpm test authStore.test.ts --token-security
@@ -442,6 +465,7 @@ Note: Future Phase will migrate to Server Actions for complete cookie handling"
 **Why Fourth:** These 3 files have TypeScript errors and are never imported. Removing them fixes ~30 compilation errors.
 
 **Files:**
+
 - Delete: `apps/web/src/hooks/useSWRAuth.ts`
 - Delete: `apps/web/src/lib/api/parallelApi.ts`
 - Delete: `apps/web/src/components/auth/examples/SuspenseExample.tsx`
@@ -506,6 +530,7 @@ Phase: 4/11 - Atomic cleanup"
 **Why Fifth:** Eliminates type duplication and aligns with Clean Architecture. Domain types become single source of truth.
 
 **Files:**
+
 - Create: `apps/web/src/domain/auth/types.ts`
 - Modify: `apps/web/src/stores/authStore.ts` (import from domain)
 - Modify: `apps/web/src/types/auth.ts` (re-export from domain)
@@ -648,7 +673,7 @@ export type {
   PasswordReset,
   EmailVerification,
   TwoFactorVerification,
-} from '@/domain/auth/types';
+} from "@/domain/auth/types";
 ```
 
 ---
@@ -666,10 +691,11 @@ import type {
   LoginCredentials,
   RegisterData,
   AuthError,
-} from '@/domain/auth/types';
+} from "@/domain/auth/types";
 ```
 
 **DELETE the duplicate interfaces:**
+
 - `interface User { ... }`
 - `interface AuthTokens { ... }`
 - `interface LoginCredentials { ... }`
@@ -686,7 +712,7 @@ import type {
 // DELETE the inline UserData type definition
 
 // REPLACE WITH:
-import type { User } from '@/domain/auth/types';
+import type { User } from "@/domain/auth/types";
 
 // Update usage: UserData -> User
 ```
@@ -708,28 +734,29 @@ cd apps/web && grep -r "id:.*email:" tests/ --include="*.ts" --include="*.tsx"
 ```typescript
 // BEFORE:
 const mockUser = {
-  id: '1',
-  email: 'test@test.com',
-  first_name: 'Test',
-  last_name: 'User',
-  role: 'user'
+  id: "1",
+  email: "test@test.com",
+  first_name: "Test",
+  last_name: "User",
+  role: "user",
 };
 
 // AFTER:
-import type { User } from '@/domain/auth/types';
+import type { User } from "@/domain/auth/types";
 
 const mockUser: User = {
-  id: '1',
-  email: 'test@test.com',
-  first_name: 'Test',
-  last_name: 'User',
-  role: 'user',
+  id: "1",
+  email: "test@test.com",
+  first_name: "Test",
+  last_name: "User",
+  role: "user",
   is_email_verified: true,
   is_2fa_enabled: false,
 };
 ```
 
 **Files to update:**
+
 - `apps/web/tests/stores/authStore.test.ts` (18 occurrences)
 - `apps/web/tests/hooks/useAuth.test.ts` (3 occurrences)
 - `apps/web/tests/lib/testStore.ts` (3 occurrences)
@@ -780,6 +807,7 @@ Phase: 5/11 - Atomic cleanup"
 **Why Sixth:** Replace `any` with proper types and fix import ordering issues.
 
 **Files:**
+
 - Modify: `apps/web/src/lib/utils.ts`
 - Modify: `apps/web/src/lib/cache/cache-utils.ts`
 - Modify: `apps/web/src/app/auth/login/page.tsx`
@@ -795,7 +823,7 @@ Phase: 5/11 - Atomic cleanup"
 
 ```typescript
 // BEFORE:
-(CACHE_CONFIG.auth as any).prefixes
+(CACHE_CONFIG.auth as any).prefixes;
 
 // AFTER:
 const authConfig = CACHE_CONFIG.auth as {
@@ -807,7 +835,7 @@ const authConfig = CACHE_CONFIG.auth as {
     [key: string]: number;
   };
 };
-authConfig.prefixes.auth
+authConfig.prefixes.auth;
 ```
 
 ---
@@ -830,10 +858,18 @@ let mappedItem: unknown = item;
 
 ```typescript
 // BEFORE:
-function withArrayLengthCheck<T>(array: any[], minLength: number, operation: () => T): T | undefined
+function withArrayLengthCheck<T>(
+  array: any[],
+  minLength: number,
+  operation: () => T,
+): T | undefined;
 
 // AFTER:
-function withArrayLengthCheck<T>(array: readonly unknown[], minLength: number, operation: () => T): T | undefined
+function withArrayLengthCheck<T>(
+  array: readonly unknown[],
+  minLength: number,
+  operation: () => T,
+): T | undefined;
 ```
 
 **For cache-related `any` - acceptable as generic cache:**
@@ -902,6 +938,7 @@ Phase: 6/11 - Atomic cleanup"
 **Why Seventh:** React 19 Compiler handles optimization automatically. Manual memoization adds unnecessary complexity.
 
 **Files:**
+
 - Modify: `apps/web/src/components/auth/LoginForm.tsx`
 - Modify: `apps/web/src/components/auth/RegisterForm.tsx`
 - Modify: `apps/web/src/components/auth/TwoFactorSetupForm.tsx`
@@ -919,6 +956,7 @@ Phase: 6/11 - Atomic cleanup"
 **File:** `apps/web/src/components/auth/LoginForm.tsx`
 
 **Remove ALL instances of:**
+
 - `useMemo`
 - `useCallback`
 - `memo` wrapper
@@ -929,29 +967,30 @@ Phase: 6/11 - Atomic cleanup"
 // BEFORE:
 const isDisabled = useMemo(
   () => isSubmitting || Object.keys(errors).length > 0,
-  [isSubmitting, errors]
+  [isSubmitting, errors],
 );
 
 const handleInputChange = useCallback(
   (field: string) => (e: ChangeEvent<HTMLInputElement>) => {
     // ...
   },
-  []
+  [],
 );
 
 // AFTER:
 const isDisabled = isSubmitting || Object.keys(errors).length > 0;
 
-const handleInputChange = (field: string) => (e: ChangeEvent<HTMLInputElement>) => {
-  // ...
-};
+const handleInputChange =
+  (field: string) => (e: ChangeEvent<HTMLInputElement>) => {
+    // ...
+  };
 ```
 
 **Remove imports:**
 
 ```typescript
 // DELETE these lines:
-import { useMemo, useCallback, memo } from 'react';
+import { useMemo, useCallback, memo } from "react";
 ```
 
 ---
@@ -1075,6 +1114,7 @@ Phase: 7/11 - Atomic cleanup"
 **Why Eighth:** React 19 supports `ref` as a regular prop. forwardRef is unnecessary.
 
 **Files:**
+
 - Modify: `apps/web/src/components/auth/PasswordInput.tsx`
 - Note: UI components from shadcn/ui will be updated separately
 
@@ -1178,6 +1218,7 @@ Note: shadcn/ui components will be updated in future PR"
 **Why Ninth:** These "optimization" functions add complexity without measurable benefit. Many are dead code.
 
 **Files:**
+
 - Modify: `apps/web/src/lib/utils.ts`
 - Modify: Components that import these functions
 
@@ -1200,6 +1241,7 @@ cd apps/web && grep -r "cacheFunction\|batchCSS\|createLookupMap\|hoistRegExp\|c
 **File:** `apps/web/src/lib/utils.ts`
 
 **DELETE these functions:**
+
 - `cacheFunction` (if unused)
 - `batchCSS` (DOM manipulation - anti-pattern in React)
 - `createLookupMap` (O(1) on 3 items is premature)
@@ -1211,6 +1253,7 @@ cd apps/web && grep -r "cacheFunction\|batchCSS\|createLookupMap\|hoistRegExp\|c
 - `withArrayLengthCheck` (trivial check)
 
 **KEEP:**
+
 - `cn()` - used everywhere for Tailwind class merging
 - `getErrorMessage()` - genuinely useful error handling
 
@@ -1228,8 +1271,8 @@ const handleScroll = () => {
 };
 
 useEffect(() => {
-  window.addEventListener('scroll', handleScroll, { passive: true });
-  return () => window.removeEventListener('scroll', handleScroll);
+  window.addEventListener("scroll", handleScroll, { passive: true });
+  return () => window.removeEventListener("scroll", handleScroll);
 }, []);
 ```
 
@@ -1364,6 +1407,7 @@ Phase: 10/11 - Atomic cleanup"
 **Why Eleventh:** Document what was changed and future work needed.
 
 **Files:**
+
 - Modify: `apps/web/README.md` (or create)
 - Create: `docs/frontend-cleanup-summary.md`
 
@@ -1384,21 +1428,25 @@ Phase: 10/11 - Atomic cleanup"
 ## Issues Fixed
 
 ### Security (CRITICAL)
+
 1. ✅ Passwords removed from cache keys
 2. ✅ Caching disabled for all mutation endpoints
 3. ✅ Tokens removed from localStorage persist
 
 ### TypeScript
+
 4. ✅ Dead code deleted (3 files, ~400 lines)
 5. ✅ Domain types layer created (single source of truth)
 6. ✅ All `any` types replaced with proper types
 7. ✅ Import order fixed
 
 ### React 19 Alignment
+
 8. ✅ All useMemo/useCallback/memo removed (~200 lines)
 9. ✅ forwardRef replaced with ref-as-prop
 
 ### Over-engineering Removal
+
 10. ✅ Premature optimization layer deleted (~300 lines)
 
 ## Final Stats
@@ -1413,16 +1461,19 @@ Phase: 10/11 - Atomic cleanup"
 The auth system still needs migration to Next.js Server Actions:
 
 ### Current State
+
 - Tokens stored in httpOnly cookies by backend (good)
 - Frontend uses fetch() to API routes (works)
 - localStorage persists only non-sensitive data (good)
 
 ### Desired State
+
 - Server Actions for all mutations (login, register, etc.)
 - Direct cookie setting in Server Actions
 - No API routes needed for auth mutations
 
 ### Migration Plan (Future Sprint)
+
 1. Create `app/actions/auth.ts` with Server Actions
 2. Update authStore to use Server Actions instead of fetch()
 3. Remove API route handlers for auth mutations

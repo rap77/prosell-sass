@@ -1352,6 +1352,7 @@ CREATE POLICY commissions_user_policy ON commissions
 ---
 
 **Documentos relacionados:**
+
 - [Arquitectura](./01_ARQUITECTURA_PROSELL_SAAS_V2.md)
 - [Requisitos PRD](./02_REQUISITOS_PRD_PROSELL_SAAS_V2.md)
 - [Roadmap](./04_ROADMAP_PROSELL_SAAS_V2.md)

@@ -17,26 +17,26 @@ Sprint 1-2 de autenticación frontend está **COMPLETADO** con una actualizació
 
 ## Tareas Completadas (18/18 totales)
 
-| # | Tarea | Tests | Status |
-|---|-------|-------|--------|
-| 1 | Environment Setup | 13/13 | ✅ |
-| 2 | authStore (Zustand) | 13/13 | ✅ |
-| 3 | useAuth Hook | 15/15 | ✅ |
-| 4 | authApi Client (mock) | 18/18 | ✅ |
-| 5 | PasswordInput Component | 29/29 | ✅ |
-| 6 | OAuthButtons Component (UI only) | 24/24 | ✅ |
-| 7 | TwoFactorInput Component | 32/32 | ✅ |
-| 8 | LoginForm Component | 25/25 | ✅ |
-| 9 | RegisterForm Component | 34/34 | ✅ |
-| 10 | Login Page | 8/8 | ✅ |
-| 11 | Register Page | 8/8 | ✅ |
-| 12 | Verify-email Page | 13/13 | ✅ |
-| 13 | Forgot-password & Reset-password Pages | 29/29 | ✅ |
-| 14 | 2FA-setup Page | 28/28 | ✅ |
-| 15 | Route Protection Middleware | 12/12 | ✅ |
-| 16 | E2E Tests (Playwright) | 37 | ✅ |
-| 17 | Final Validation | - | ✅ |
-| **18** | **OAuth Real (Backend)** | **0/0** | ⏳ **PENDIENTE** |
+| #      | Tarea                                  | Tests   | Status           |
+| ------ | -------------------------------------- | ------- | ---------------- |
+| 1      | Environment Setup                      | 13/13   | ✅               |
+| 2      | authStore (Zustand)                    | 13/13   | ✅               |
+| 3      | useAuth Hook                           | 15/15   | ✅               |
+| 4      | authApi Client (mock)                  | 18/18   | ✅               |
+| 5      | PasswordInput Component                | 29/29   | ✅               |
+| 6      | OAuthButtons Component (UI only)       | 24/24   | ✅               |
+| 7      | TwoFactorInput Component               | 32/32   | ✅               |
+| 8      | LoginForm Component                    | 25/25   | ✅               |
+| 9      | RegisterForm Component                 | 34/34   | ✅               |
+| 10     | Login Page                             | 8/8     | ✅               |
+| 11     | Register Page                          | 8/8     | ✅               |
+| 12     | Verify-email Page                      | 13/13   | ✅               |
+| 13     | Forgot-password & Reset-password Pages | 29/29   | ✅               |
+| 14     | 2FA-setup Page                         | 28/28   | ✅               |
+| 15     | Route Protection Middleware            | 12/12   | ✅               |
+| 16     | E2E Tests (Playwright)                 | 37      | ✅               |
+| 17     | Final Validation                       | -       | ✅               |
+| **18** | **OAuth Real (Backend)**               | **0/0** | ⏳ **PENDIENTE** |
 
 ---
 
@@ -45,6 +45,7 @@ Sprint 1-2 de autenticación frontend está **COMPLETADO** con una actualizació
 **Descripción:** Implementar OAuth real (Google, Facebook) con integración completa
 
 **Dependencias:**
+
 - Backend FastAPI funcionando
 - NextAuth.js configurado
 - Google OAuth Apps creadas
@@ -52,11 +53,13 @@ Sprint 1-2 de autenticación frontend está **COMPLETADO** con una actualizació
 - Endpoints OAuth en FastAPI (`/api/auth/google`, `/api/auth/callback`)
 
 **Componentes Frontend:**
+
 - ✅ OAuthButtons.tsx - UI ya completa
 - ✅ LoginForm - Integración con backend
 - ✅ RegisterForm - Integración con backend
 
 **Subtareas:**
+
 1. Configurar NextAuth.js en proyecto
 2. Crear OAuth Apps en Google Console
 3. Implementar endpoints OAuth en FastAPI (Sprint backend)
@@ -82,7 +85,9 @@ Sprint 1-2 de autenticación frontend está **COMPLETADO** con una actualizació
 ## Issues Resueltos
 
 ### 1. ✅ Error JSON Parse (RESUELTO)
+
 **Problema:** `SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON`
+
 - **Causa:** Endpoint `/api/auth/state` devolvía 404 (HTML) en lugar de JSON
 - **Solución implementada:**
   - Wrapper `fetchWithFallback()` en `authStore.ts`
@@ -92,7 +97,9 @@ Sprint 1-2 de autenticación frontend está **COMPLETADO** con una actualizació
 - **Estado:** ✅ Funcionando en development
 
 ### 2. ✅ Workaround API Route Bug
+
 **Problema:** Next.js 16.1.6 + Turbopack no servía rutas API correctamente
+
 - **Workaround:** Usar webpack en lugar de Turbopack (flag `--turbo=false`)
 - **Nota:** Es un bug conocido de Next.js 16 con rutas API en App Router
 
@@ -107,6 +114,7 @@ Para **PRODUCCIÓN**, el workaround actual (`NEXT_PUBLIC_DEV_DISABLE_API=true`) 
 3. ✅ NextAuth.js esté configurado
 
 **Comando para eliminar workaround:**
+
 ```bash
 rm apps/web/.env.local
 # O editar el archivo y comentar la línea:
@@ -118,6 +126,7 @@ rm apps/web/.env.local
 ## Archivos Creados/Modificados (Sprint 1-2)
 
 ### Componentes (9 archivos):
+
 ```
 src/components/auth/
 ├── LoginForm.tsx ✅
@@ -132,6 +141,7 @@ src/components/auth/
 ```
 
 ### Páginas (6 archivos):
+
 ```
 src/app/auth/
 ├── login/page.tsx ✅
@@ -143,6 +153,7 @@ src/app/auth/
 ```
 
 ### Infrastructure (5 archivos):
+
 ```
 src/
 ├── hooks/useAuth.ts ✅
@@ -153,6 +164,7 @@ src/
 ```
 
 ### Tests (21 archivos):
+
 ```
 tests/
 ├── unit/hooks/useAuth.test.ts ✅
@@ -171,6 +183,7 @@ tests/
 ```
 
 ### Archivos de Configuración:
+
 ```
 apps/web/.env.local ⚠️ (TEMPORAL - eliminar cuando backend funcione)
 apps/web/src/stores/authStore.ts (con fetchWithFallback)
@@ -193,7 +206,7 @@ apps/web/src/stores/authStore.ts (con fetchWithFallback)
 2. **Inmediato:** Crear archivo `ROADMAP.md` en root del proyecto
 3. **Priorizar Sprint 3 (Dashboard)** sobre todo lo demás
 4. **Planificar Sprint 4 (Backend)** con endpoints OAuth
-5. **Mantener OAuthButtons como está (con callbacks mock) hasta que backend esté listo
+5. \*\*Mantener OAuthButtons como está (con callbacks mock) hasta que backend esté listo
 
 ---
 

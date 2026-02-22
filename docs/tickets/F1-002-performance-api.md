@@ -1,10 +1,10 @@
 # F1-002 - Performance API Marks
 
-**Status**: 🔄 TODO  
-**Priority**: P0 (Critical Path)  
-**Estimation**: 1 hour  
-**Risk**: 🟢 Low (additive only)  
-**Dependencies**: None  
+**Status**: 🔄 TODO
+**Priority**: P0 (Critical Path)
+**Estimation**: 1 hour
+**Risk**: 🟢 Low (additive only)
+**Dependencies**: None
 
 ---
 
@@ -61,21 +61,25 @@ apps/web/src/stores/__tests__/authStore.test.ts  (UPDATE)
 
 ```typescript
 // stores/authStore.ts - add to imports
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 // Feature detection wrapper for Performance API
 const markPerformance = (name: string) => {
-  if (typeof performance !== 'undefined' && performance.mark) {
+  if (typeof performance !== "undefined" && performance.mark) {
     performance.mark(name);
   }
 };
 
-const measurePerformance = (name: string, startMark: string, endMark: string) => {
-  if (typeof performance !== 'undefined' && performance.measure) {
+const measurePerformance = (
+  name: string,
+  startMark: string,
+  endMark: string,
+) => {
+  if (typeof performance !== "undefined" && performance.measure) {
     try {
       performance.measure(name, startMark, endMark);
-      
-      if (process.env.NODE_ENV === 'development') {
+
+      if (process.env.NODE_ENV === "development") {
         const measures = performance.getEntriesByName(name);
         const measure = measures[0];
         if (measure) {
@@ -84,22 +88,26 @@ const measurePerformance = (name: string, startMark: string, endMark: string) =>
       }
     } catch (error) {
       // Ignore errors from performance.measure
-      logger.debug('Performance measure failed', error);
+      logger.debug("Performance measure failed", error);
     }
   }
 };
 
 // In initializeAuth function:
 initializeAuth: async () => {
-  markPerformance('auth-init-start');
-  
+  markPerformance("auth-init-start");
+
   try {
     // ... existing API call logic ...
   } finally {
-    markPerformance('auth-init-end');
-    measurePerformance('auth-init-duration', 'auth-init-start', 'auth-init-end');
+    markPerformance("auth-init-end");
+    measurePerformance(
+      "auth-init-duration",
+      "auth-init-start",
+      "auth-init-end",
+    );
   }
-}
+};
 ```
 
 ---
@@ -109,7 +117,7 @@ initializeAuth: async () => {
 ### Unit Tests
 
 ```typescript
-describe('authStore performance marks', () => {
+describe("authStore performance marks", () => {
   beforeEach(() => {
     // Mock performance API
     global.performance = {
@@ -119,31 +127,31 @@ describe('authStore performance marks', () => {
     } as unknown as Performance;
   });
 
-  it('should create marks when Performance API available', async () => {
+  it("should create marks when Performance API available", async () => {
     const { initializeAuth } = useAuthStore.getState();
     await initializeAuth();
-    
-    expect(performance.mark).toHaveBeenCalledWith('auth-init-start');
-    expect(performance.mark).toHaveBeenCalledWith('auth-init-end');
+
+    expect(performance.mark).toHaveBeenCalledWith("auth-init-start");
+    expect(performance.mark).toHaveBeenCalledWith("auth-init-end");
   });
 
-  it('should measure duration', async () => {
+  it("should measure duration", async () => {
     const { initializeAuth } = useAuthStore.getState();
     await initializeAuth();
-    
+
     expect(performance.measure).toHaveBeenCalledWith(
-      'auth-init-duration',
-      'auth-init-start',
-      'auth-init-end'
+      "auth-init-duration",
+      "auth-init-start",
+      "auth-init-end",
     );
   });
 
-  it('should not throw when Performance API unavailable', async () => {
+  it("should not throw when Performance API unavailable", async () => {
     // @ts-expect-error - testing without performance API
     delete global.performance;
-    
+
     const { initializeAuth } = useAuthStore.getState();
-    
+
     await expect(initializeAuth()).resolves.not.toThrow();
   });
 });
@@ -172,7 +180,7 @@ describe('authStore performance marks', () => {
 
 ## Performance Impact
 
-**Estimated overhead**: <1ms per auth initialization  
+**Estimated overhead**: <1ms per auth initialization
 **Justification**: Marks are lightweight metadata; no measurable impact on user-facing performance
 
 ---
@@ -185,6 +193,6 @@ describe('authStore performance marks', () => {
 
 ---
 
-**Estimated Completion**: Day 1, 12:00  
-**Blocks**: F1-003 (2FA Management Center)  
+**Estimated Completion**: Day 1, 12:00
+**Blocks**: F1-003 (2FA Management Center)
 **Reviewer**: Dev A

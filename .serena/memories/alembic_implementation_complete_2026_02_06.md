@@ -1,11 +1,13 @@
 # Alembic Implementation Complete - 2026-02-06
 
 ## Summary
+
 Alembic migrations fully configured and implemented for ProSell SaaS API.
 
 ## What Was Done
 
 ### 1. Alembic Configuration ✅
+
 - Initialized Alembic with async support
 - Configured `alembic/env.py` for SQLAlchemy async
 - Updated `alembic.ini` with timestamp-based file names
@@ -14,7 +16,9 @@ Alembic migrations fully configured and implemented for ProSell SaaS API.
 ### 2. New Models Created ✅
 
 #### `user_token_model.py`
+
 For email verification and password reset tokens:
+
 - `id` (UUID, primary key)
 - `user_id` (indexed)
 - `token` (unique, indexed, for verification/reset)
@@ -22,7 +26,9 @@ For email verification and password reset tokens:
 - `expires_at`, `created_at`, `used_at`
 
 #### `oauth_account_model.py`
+
 For social login providers (Google, Facebook, etc.):
+
 - `id` (UUID, primary key)
 - `user_id` (foreign key to users, CASCADE delete)
 - `provider` ('google', 'facebook', etc.)
@@ -33,7 +39,9 @@ For social login providers (Google, Facebook, etc.):
 ### 3. Migration Files Created ✅
 
 #### Initial Migration: `20260206_1942-d1823b89fecb`
+
 Creates all tables in correct order:
+
 1. `users` - User accounts
 2. `roles` - System and custom roles
 3. `user_roles` - Junction table (many-to-many)
@@ -42,7 +50,9 @@ Creates all tables in correct order:
 6. `oauth_accounts` - Social login accounts (NEW)
 
 ### 4. Helper Script Created ✅
+
 `scripts/alembic-migrations.sh` - Convenient CLI for migrations:
+
 ```bash
 ./alembic-migrations.sh status    # Show migration status
 ./alembic-migrations.sh upgrade   # Apply pending migrations
@@ -54,16 +64,18 @@ Creates all tables in correct order:
 ## Database Schema
 
 ### Complete Table List
-| Table | Purpose | New? |
-|-------|---------|------|
-| `users` | User accounts | |
-| `roles` | Role definitions | |
-| `user_roles` | User-role junction | |
-| `sessions` | Refresh token storage | |
-| `user_tokens` | Verification/reset tokens | ✅ |
-| `oauth_accounts` | Social login data | ✅ |
+
+| Table            | Purpose                   | New? |
+| ---------------- | ------------------------- | ---- |
+| `users`          | User accounts             |      |
+| `roles`          | Role definitions          |      |
+| `user_roles`     | User-role junction        |      |
+| `sessions`       | Refresh token storage     |      |
+| `user_tokens`    | Verification/reset tokens | ✅   |
+| `oauth_accounts` | Social login data         | ✅   |
 
 ### Indexes Created
+
 - Unique: `users.email`, `roles.role_type`, `sessions.token_hash`, `user_tokens.token`
 - Performance: `users.status`, `users.tenant_id`, `sessions.expires_at`, etc.
 
@@ -101,6 +113,7 @@ apps/api/
    - `user_repository_impl.py` - get_by_oauth()
 
 2. **Create new migrations** when schema changes:
+
    ```bash
    cd apps/api
    ./scripts/alembic-migrations.sh create "Add user preferences"
@@ -136,6 +149,7 @@ apps/api/
 ## Integration with CI/CD
 
 Add to `.github/workflows/ci.yml`:
+
 ```yaml
 - name: Run database migrations
   run: |

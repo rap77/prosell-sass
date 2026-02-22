@@ -129,7 +129,14 @@ describe("Middleware", () => {
         pathname: "/dashboard",
         cookies: [
           { name: "access_token", value: "valid-token" },
-          { name: "user_data", value: JSON.stringify({ id: "1", email: "test@example.com", is_2fa_enabled: false }) },
+          {
+            name: "user_data",
+            value: JSON.stringify({
+              id: "1",
+              email: "test@example.com",
+              is_2fa_enabled: false,
+            }),
+          },
         ],
       });
 
@@ -144,7 +151,14 @@ describe("Middleware", () => {
         pathname: "/profile",
         cookies: [
           { name: "access_token", value: "valid-token" },
-          { name: "user_data", value: JSON.stringify({ id: "1", email: "test@example.com", is_2fa_enabled: false }) },
+          {
+            name: "user_data",
+            value: JSON.stringify({
+              id: "1",
+              email: "test@example.com",
+              is_2fa_enabled: false,
+            }),
+          },
         ],
       });
 
@@ -223,7 +237,14 @@ describe("Middleware", () => {
         pathname: "/auth/login",
         cookies: [
           { name: "access_token", value: "valid-token" },
-          { name: "user_data", value: JSON.stringify({ id: "1", email: "test@example.com", is_2fa_enabled: false }) },
+          {
+            name: "user_data",
+            value: JSON.stringify({
+              id: "1",
+              email: "test@example.com",
+              is_2fa_enabled: false,
+            }),
+          },
         ],
       });
 
@@ -238,7 +259,14 @@ describe("Middleware", () => {
         pathname: "/auth/register",
         cookies: [
           { name: "access_token", value: "valid-token" },
-          { name: "user_data", value: JSON.stringify({ id: "1", email: "test@example.com", is_2fa_enabled: false }) },
+          {
+            name: "user_data",
+            value: JSON.stringify({
+              id: "1",
+              email: "test@example.com",
+              is_2fa_enabled: false,
+            }),
+          },
         ],
       });
 
@@ -267,7 +295,14 @@ describe("Middleware", () => {
         pathname: "/auth/setup-2fa",
         cookies: [
           { name: "access_token", value: "valid-token" },
-          { name: "user_data", value: JSON.stringify({ id: "1", email: "test@example.com", is_2fa_enabled: false }) },
+          {
+            name: "user_data",
+            value: JSON.stringify({
+              id: "1",
+              email: "test@example.com",
+              is_2fa_enabled: false,
+            }),
+          },
         ],
       });
 
@@ -282,7 +317,14 @@ describe("Middleware", () => {
         pathname: "/auth/setup-2fa",
         cookies: [
           { name: "access_token", value: "valid-token" },
-          { name: "user_data", value: JSON.stringify({ id: "1", email: "test@example.com", is_2fa_enabled: true }) },
+          {
+            name: "user_data",
+            value: JSON.stringify({
+              id: "1",
+              email: "test@example.com",
+              is_2fa_enabled: true,
+            }),
+          },
         ],
       });
 

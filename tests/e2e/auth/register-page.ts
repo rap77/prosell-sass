@@ -30,7 +30,9 @@ export class RegisterPage extends BasePage {
     super(page);
 
     // Use .first() because there are 2 "Create your account" headings (one in PageContent, one in form)
-    this.heading = page.getByRole("heading", { name: /create your account/i }).first();
+    this.heading = page
+      .getByRole("heading", { name: /create your account/i })
+      .first();
 
     // Form inputs - Use specific IDs to avoid ambiguity
     this.fullNameInput = page.locator("#fullName");

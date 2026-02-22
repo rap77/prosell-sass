@@ -37,11 +37,15 @@ export class LoginPage extends BasePage {
     this.facebookButton = page.getByRole("button", { name: /facebook/i });
 
     // Links
-    this.forgotPasswordLink = page.getByRole("link", { name: /forgot password/i });
+    this.forgotPasswordLink = page.getByRole("link", {
+      name: /forgot password/i,
+    });
     this.registerLink = page.getByRole("link", { name: /sign up/i });
 
     // Heading
-    this.heading = page.getByRole("heading", { name: /sign in to your account/i });
+    this.heading = page.getByRole("heading", {
+      name: /sign in to your account/i,
+    });
   }
 
   /**

@@ -19,7 +19,12 @@
  */
 "use client";
 
-import { useState, useEffect, forwardRef, type InputHTMLAttributes } from "react";
+import {
+  useState,
+  useEffect,
+  forwardRef,
+  type InputHTMLAttributes,
+} from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,8 +34,10 @@ import { cn } from "@/lib/utils";
 // TYPES
 // ============================================
 
-export interface PasswordInputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "onChange" | "value"> {
+export interface PasswordInputProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "type" | "onChange" | "value"
+> {
   /**
    * Label for the input (accessible via aria-label)
    */
@@ -145,7 +152,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
       className,
       ...props
     },
-    ref
+    ref,
   ) => {
     // Local state for visibility toggle
     const [isVisible, setIsVisible] = useState(false);
@@ -242,7 +249,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             className={cn(
               "pr-10",
               error && "border-destructive focus:ring-destructive",
-              className
+              className,
             )}
           />
 
@@ -257,7 +264,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
               "p-1 rounded transition-colors",
               "text-muted-foreground hover:text-foreground",
               "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-              "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-muted-foreground"
+              "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-muted-foreground",
             )}
           >
             {isVisible ? (
@@ -270,11 +277,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
 
         {/* Error message */}
         {error && (
-          <p
-            id={errorId}
-            role="alert"
-            className="text-sm text-destructive"
-          >
+          <p id={errorId} role="alert" className="text-sm text-destructive">
             {error}
           </p>
         )}
@@ -294,7 +297,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
                   getStrengthColor(strength),
                   strength === "weak" && "w-1/3",
                   strength === "medium" && "w-2/3",
-                  strength === "strong" && "w-full"
+                  strength === "strong" && "w-full",
                 )}
               />
             </div>
@@ -305,7 +308,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
                 "text-xs font-medium uppercase",
                 strength === "weak" && "text-destructive",
                 strength === "medium" && "text-yellow-500",
-                strength === "strong" && "text-green-500"
+                strength === "strong" && "text-green-500",
               )}
             >
               {getStrengthText(strength)}
@@ -314,7 +317,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 PasswordInput.displayName = "PasswordInput";

@@ -10,6 +10,7 @@
 ### 1.1 Summary
 
 Phase 6 eliminates technical debt introduced during previous Pydantic migration phases. This phase cleans up:
+
 1. **Duplicated UserStatus enum** - Defined in both `domain/entities/user.py` and `domain/value_objects/user_status.py`
 2. **Phantom dependency** - `python-jose` listed in `pyproject.toml` but never used (project uses `pyjwt`)
 3. **Re-export cleanup** - Review all `__init__.py` files for circular imports and unused exports
@@ -27,7 +28,9 @@ Phase 6 eliminates technical debt introduced during previous Pydantic migration 
 **This phase COMPLETED after Phases 1-5 were complete.**
 
 ### 1.3.1 Completion Status
+
 **Phase 6 COMPLETED** - 2026-02-14
+
 - **Commit**: `4dc5e65` - "chore: clean up duplicated UserStatus enum re-export"
 - **Tests**: 113/113 passing ✅
 - **GGA**: Approved ✅
@@ -57,6 +60,7 @@ Phase 6 eliminates technical debt introduced during previous Pydantic migration 
 **So that** I don't need to guess which definition to use or maintain duplicates
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Developer imports UserStatus
   GIVEN UserStatus enum is needed in code
@@ -78,6 +82,7 @@ Scenario: Tests pass after cleanup
 **So that** I understand the technology stack and avoid bloat
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Verify python-jose is unused
   GIVEN pyproject.toml lists python-jose
@@ -95,10 +100,11 @@ Scenario: All tests pass after removal
 #### US-CLEAN-003: Clean Re-exports
 
 **As a** developer
-**I want** __init__.py files to be minimal and clear
+**I want** **init**.py files to be minimal and clear
 **So that** I can understand module structure at a glance
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Review all __init__.py files
   GIVEN all __init__.py files in project
@@ -129,19 +135,20 @@ Scenario: Review all __init__.py files
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|------------|---------|-------|
-| Backend | Python | 3.13+ | Free-threading |
-| Build | UV | Latest | Fast dependency resolver |
-| Testing | pytest | 8.0+ | Async support |
-| Linting | Ruff | 0.9+ | Lint + format |
-| Type Checking | Pyright | Latest | NOT mypy |
+| Component     | Technology | Version | Notes                    |
+| ------------- | ---------- | ------- | ------------------------ |
+| Backend       | Python     | 3.13+   | Free-threading           |
+| Build         | UV         | Latest  | Fast dependency resolver |
+| Testing       | pytest     | 8.0+    | Async support            |
+| Linting       | Ruff       | 0.9+    | Lint + format            |
+| Type Checking | Pyright    | Latest  | NOT mypy                 |
 
 ### 3.2 Key Libraries
 
 **No new libraries** - This phase removes code and dependencies.
 
 **Dependency removed:**
+
 ```bash
 # REMOVE this line from apps/api/pyproject.toml
 "python-jose[cryptography]>=3.3.0",
@@ -180,6 +187,7 @@ flowchart TD
 #### Step 1: Verify python-jose is Unused
 
 **Verification command**:
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/apps/api
 rg "from jose|import jose" src/
@@ -201,6 +209,7 @@ rg "from jose|import jose" src/
    - Remove `"UserStatus"` from `__all__` list
 
 **Before**:
+
 ```python
 """Value objects for ProSell SaaS domain."""
 
@@ -214,6 +223,7 @@ __all__ = [
 ```
 
 **After**:
+
 ```python
 """Value objects for ProSell SaaS domain."""
 
@@ -225,6 +235,7 @@ __all__ = [
 ```
 
 **Implementation notes**:
+
 - UserStatus in `domain/entities/user.py` is kept (lines 13-18)
 - This is correct because UserStatus belongs with User entity
 - Methods `is_active()` and `can_login()` exist only in value_objects version
@@ -232,6 +243,7 @@ __all__ = [
   - If needed in future, add to UserStatus in `entities/user.py`
 
 **Gotchas**:
+
 - ⚠️ Test file `tests/unit/domain/test_value_objects.py` imports UserStatus from value_objects
 - ✅ Solution: Change import to `from prosell.domain.entities import User, UserStatus`
 - ⚠️ One test calls `.is_active()` method (line 86-88)
@@ -242,6 +254,7 @@ __all__ = [
 **File to modify**: `apps/api/tests/unit/domain/test_value_objects.py`
 
 **Changes**:
+
 1. Line 9: Change import
    - Before: `from prosell.domain.value_objects import Email, UserStatus`
    - After: `from prosell.domain.entities import User, UserStatus`
@@ -250,6 +263,7 @@ __all__ = [
    - Recommendation: Add method to UserStatus in `entities/user.py`
 
 **If adding is_active() to UserStatus**:
+
 ```python
 # In domain/entities/user.py, after UserStatus enum:
 
@@ -270,25 +284,29 @@ class UserStatus(str, Enum):
 **File to modify**: `apps/api/pyproject.toml`
 
 **Remove line 14**:
+
 ```toml
 # REMOVE THIS LINE
 "python-jose[cryptography]>=3.3.0",
 ```
 
 **Run after removal**:
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/apps/api
 uv sync
 ```
 
 **Gotchas**:
+
 - ⚠️ `uv sync` will fail if jose is actually imported somewhere
 - ✅ Already verified in Step 1 - zero imports found
 - ✅ Project uses `pyjwt` (line 25 in pyproject.toml) for JWT operations
 
-#### Step 5: Review All __init__.py Files
+#### Step 5: Review All **init**.py Files
 
 **Files to review**:
+
 1. `apps/api/src/prosell/domain/__init__.py`
 2. `apps/api/src/prosell/domain/entities/__init__.py`
 3. `apps/api/src/prosell/domain/ports/__init__.py`
@@ -300,6 +318,7 @@ uv sync
 9. `apps/api/src/prosell/infrastructure/services/__init__.py`
 
 **Review checklist**:
+
 - [ ] No circular imports (module A imports B, B imports A)
 - [ ] All exports in `__all__` are actually imported
 - [ ] No unused imports (imported but not in `__all__`)
@@ -388,7 +407,7 @@ from prosell.domain.value_objects import Email
 from prosell.domain.entities import User, UserStatus
 ```
 
-### 5.4 Clean __init__.py Pattern
+### 5.4 Clean **init**.py Pattern
 
 **Reference**: `apps/api/src/prosell/domain/ports/__init__.py`
 
@@ -469,12 +488,14 @@ uv run pytest tests/ -v --cov=src --cov-report=html
 **Test file to modify**: `apps/api/tests/unit/domain/test_value_objects.py`
 
 **Tests affected**:
+
 - `TestUserStatusValueObject.test_user_status_enum_values` - Import change only
 - `TestUserStatusValueObject.test_user_status_is_string_enum` - Import change only
 - `TestUserStatusValueObject.test_user_status_comparison` - Import change only
 - `TestUserStatusValueObject.test_user_status_is_active` - Needs UserStatus.is_active() method OR deletion
 
 **Strategy**:
+
 1. Add `is_active()` method to UserStatus in `domain/entities/user.py`
 2. Change import from `value_objects` to `entities`
 3. Run tests to verify
@@ -482,6 +503,7 @@ uv run pytest tests/ -v --cov=src --cov-report=html
 ### 7.2 Import Verification Tests
 
 **Manual verification**:
+
 ```bash
 # Search for any remaining imports of user_status
 cd /home/rpadron/proy/prosell-sass
@@ -494,6 +516,7 @@ rg "from.*user_status.*import|from.*value_objects.*UserStatus"
 ### 7.3 Dependency Verification Tests
 
 **Manual verification**:
+
 ```bash
 # Verify python-jose not imported
 cd /home/rpadron/proy/prosell-sass/apps/api
@@ -516,6 +539,7 @@ rg "from jose|import jose" src/
 **Problem**: Removing `user_status.py` but tests still import from `value_objects`
 
 **Solution**:
+
 1. Search for all imports BEFORE deleting file: `rg "from.*user_status.*import"`
 2. Update each import to point to `domain.entities`
 3. Verify tests pass BEFORE committing
@@ -525,15 +549,17 @@ rg "from jose|import jose" src/
 **Problem**: Removing dependency before verifying it's unused
 
 **Solution**:
+
 1. ALWAYS run `rg "from jose|import jose"` first
 2. If any results found, migrate to pyjwt first
 3. Only then remove from `pyproject.toml`
 
-### 8.3 Breaking __init__.py Exports
+### 8.3 Breaking **init**.py Exports
 
 **Problem**: Removing UserStatus from `value_objects/__init__.py` but other code imports it
 
 **Solution**:
+
 1. Search for all imports: `rg "from.*value_objects.*import.*UserStatus"`
 2. Update each import
 3. Verify all tests pass
@@ -543,6 +569,7 @@ rg "from jose|import jose" src/
 **Problem**: `user_status.py` has `is_active()` and `can_login()` methods not in entity version
 
 **Solution**:
+
 1. Check if methods are used: `rg "\.is_active\(\)|\.can_login\(\)"`
 2. If used, add methods to UserStatus in `entities/user.py`
 3. If not used, add tests OR skip (this PRP recommends adding `is_active()` for completeness)
@@ -554,22 +581,26 @@ rg "from jose|import jose" src/
 If implementation fails:
 
 1. **Restore user_status.py**:
+
    ```bash
    git checkout HEAD -- apps/api/src/prosell/domain/value_objects/user_status.py
    ```
 
-2. **Restore value_objects/__init__.py**:
+2. **Restore value_objects/**init**.py**:
+
    ```bash
    git checkout HEAD -- apps/api/src/prosell/domain/value_objects/__init__.py
    ```
 
 3. **Restore python-jose dependency**:
+
    ```bash
    git checkout HEAD -- apps/api/pyproject.toml
    uv sync
    ```
 
 4. **Restore test imports**:
+
    ```bash
    git checkout HEAD -- apps/api/tests/unit/domain/test_value_objects.py
    ```
@@ -585,12 +616,12 @@ If implementation fails:
 ## 10. Completion Checklist
 
 - [ ] UserStatus duplicate file deleted
-- [ ] value_objects/__init__.py updated (UserStatus export removed)
+- [ ] value_objects/**init**.py updated (UserStatus export removed)
 - [ ] Test imports updated to use entities.UserStatus
 - [ ] is_active() method added to UserStatus (if needed by tests)
 - [ ] python-jose removed from pyproject.toml
 - [ ] No jose imports found in codebase (verified)
-- [ ] All __init__.py files reviewed
+- [ ] All **init**.py files reviewed
 - [ ] All unit tests passing
 - [ ] All integration tests passing
 - [ ] Linting passes (ruff check + format)
@@ -603,6 +634,7 @@ If implementation fails:
 ## 11. Git Commit
 
 **Commit message**:
+
 ```
 chore: clean up duplicated UserStatus enum and phantom python-jose dependency
 
@@ -617,6 +649,7 @@ Fixes #US-CLEAN-001, #US-CLEAN-002, #US-CLEAN-003
 ```
 
 **Branch naming** (if working on branch):
+
 ```
 refactor/phase-6-cleanup-dups-and-deps
 ```
@@ -630,6 +663,7 @@ refactor/phase-6-cleanup-dups-and-deps
 **Reasoning**:
 
 **Positive factors**:
+
 - ✅ Clear, well-defined scope (code removal only)
 - ✅ Dependencies verified (no jose imports found)
 - ✅ Test impact identified (1 file to update)
@@ -638,6 +672,7 @@ refactor/phase-6-cleanup-dups-and-deps
 - ✅ Rollback plan is simple (git checkout)
 
 **Risk factors**:
+
 - ⚠️ Test file needs is_active() method OR test removal
   - **Mitigation**: Add method to UserStatus in entities/user.py
 - ⚠️ If someone manually imported UserStatus from value_objects
@@ -646,6 +681,7 @@ refactor/phase-6-cleanup-dups-and-deps
   - **Mitigation**: Already verified - zero imports found
 
 **Why not 10/10**:
+
 - Small risk of undiscovered imports in application layer
 - Test modifications required (not pure deletion)
 
@@ -654,6 +690,7 @@ refactor/phase-6-cleanup-dups-and-deps
 ## 13. References
 
 **Files created/modified**:
+
 - ❌ `apps/api/src/prosell/domain/value_objects/user_status.py` (DELETE)
 - ✏️ `apps/api/src/prosell/domain/value_objects/__init__.py` (MODIFY)
 - ✏️ `apps/api/src/prosell/domain/entities/user.py` (MODIFY - add is_active())
@@ -661,11 +698,13 @@ refactor/phase-6-cleanup-dups-and-deps
 - ✏️ `apps/api/tests/unit/domain/test_value_objects.py` (MODIFY - imports)
 
 **Memory references**:
+
 - Session 2026-02-06: Clean Architecture Complete
 - Session 2026-02-07: Frontend Sprint 1-2 Tasks Complete
 - Session 2026-02-11: Frontend Cleanup Complete
 
 **Related PRPs**:
+
 - `PRPs/refactor/fase-1-pydantic-base.md`
 - `PRPs/refactor/fase-2-pydantic-domain.md`
 - `PRPs/refactor/fase-3-pydantic-application.md`
@@ -687,8 +726,9 @@ refactor/phase-6-cleanup-dups-and-deps
 5. **Code Reduced** - Cleaner, more maintainable codebase ✅
 
 ### 📊 Statistics
+
 - **Files deleted**: 1 (user_status.py - duplicate)
-- **Files modified**: 3 (__init__.py files, tests)
+- **Files modified**: 3 (**init**.py files, tests)
 - **Imports cleaned**: All UserStatus imports point to single source ✅
 - **Tests**: 113/113 passing (100%) ✅
 - **GGA**: Approved ✅
@@ -703,14 +743,17 @@ refactor/phase-6-cleanup-dups-and-deps
 ### 📁 Changes Made
 
 **Deleted:**
+
 - `domain/value_objects/user_status.py` - Duplicate removed
 
 **Modified:**
+
 - `domain/value_objects/__init__.py` - Removed UserStatus re-export
 - `tests/unit/domain/test_value_objects.py` - Updated imports
 - All other files that imported UserStatus - Now use single source
 
 ### 🚀 Next Steps
+
 Phase 6 is **100% COMPLETE** and ready to move to Phase 7 (Testing).
 
 ---

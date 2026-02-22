@@ -10,24 +10,25 @@
 
 ## 📊 Status Summary
 
-| Layer | Status | Progress | Notes |
-|-------|--------|----------|-------|
-| **Frontend** | ✅ Complete | 17/17 (100%) | 316 tests, 91.57% coverage |
-| **Backend - Domain** | ✅ Complete | 9/9 (100%) | User, Role, Session entities + VOs + Events |
-| **Backend - Application** | ✅ Complete | 11/11 (100%) | 8 use cases + DTOs + Ports |
-| **Backend - Infrastructure** | ✅ Complete | 10/10 (100%) | 4 repos + 4 services + models + DB |
-| **Backend - API** | ✅ Complete | 8/8 (100%) | auth_router with 9 endpoints |
-| **OAuth - Domain** | ✅ Complete | 2/2 (100%) | OAuthConnection, OAuthState entities |
-| **OAuth - Services** | ✅ Complete | 6/6 (100%) | Google/Facebook OAuth services |
-| **OAuth - Use Cases** | ✅ Complete | 3/3 (100%) | GetOAuthUrl, OAuthCallback, LinkOAuth |
-| **OAuth - API** | ✅ Complete | 5/5 (100%) | OAuth router with endpoints |
-| **OAuth - Frontend** | ✅ Complete | 4/4 (100%) | UI components + callback pages |
-| **OAuth - External** | ⏳ Pending | 0/2 (0%) | Google/Facebook apps creation |
-| **Testing (Frontend)** | ✅ Complete | 37 specs | Playwright E2E |
-| **Testing (OAuth)** | ⏳ Pending | 0/43 tests | Blocked by external OAuth apps |
-| **Testing (Backend)** | ✅ Complete | 139 tests | Unit tests for all layers |
+| Layer                        | Status      | Progress     | Notes                                       |
+| ---------------------------- | ----------- | ------------ | ------------------------------------------- |
+| **Frontend**                 | ✅ Complete | 17/17 (100%) | 316 tests, 91.57% coverage                  |
+| **Backend - Domain**         | ✅ Complete | 9/9 (100%)   | User, Role, Session entities + VOs + Events |
+| **Backend - Application**    | ✅ Complete | 11/11 (100%) | 8 use cases + DTOs + Ports                  |
+| **Backend - Infrastructure** | ✅ Complete | 10/10 (100%) | 4 repos + 4 services + models + DB          |
+| **Backend - API**            | ✅ Complete | 8/8 (100%)   | auth_router with 9 endpoints                |
+| **OAuth - Domain**           | ✅ Complete | 2/2 (100%)   | OAuthConnection, OAuthState entities        |
+| **OAuth - Services**         | ✅ Complete | 6/6 (100%)   | Google/Facebook OAuth services              |
+| **OAuth - Use Cases**        | ✅ Complete | 3/3 (100%)   | GetOAuthUrl, OAuthCallback, LinkOAuth       |
+| **OAuth - API**              | ✅ Complete | 5/5 (100%)   | OAuth router with endpoints                 |
+| **OAuth - Frontend**         | ✅ Complete | 4/4 (100%)   | UI components + callback pages              |
+| **OAuth - External**         | ⏳ Pending  | 0/2 (0%)     | Google/Facebook apps creation               |
+| **Testing (Frontend)**       | ✅ Complete | 37 specs     | Playwright E2E                              |
+| **Testing (OAuth)**          | ⏳ Pending  | 0/43 tests   | Blocked by external OAuth apps              |
+| **Testing (Backend)**        | ✅ Complete | 139 tests    | Unit tests for all layers                   |
 
 **Overall**: 55/69 primary tasks complete (80%)
+
 - **Frontend Sprint**: ✅ DONE (17/17)
 - **Backend Core**: ✅ DONE (38/38)
 - **OAuth Integration**: ⏳ PARTIAL (43/52 - blocked by external app setup)
@@ -37,7 +38,9 @@
 ## 1. Overview
 
 ### 1.1 Summary
+
 Implement a complete authentication and authorization system for ProSell SaaS, including:
+
 - User registration with email verification
 - Login with JWT access/refresh tokens
 - OAuth social login (Google, Facebook)
@@ -49,9 +52,11 @@ Implement a complete authentication and authorization system for ProSell SaaS, i
 This is the foundation for all other features - without proper auth, no other functionality can be built securely.
 
 ### 1.2 Dependencies
+
 - None (first feature to implement)
 
 ### 1.3 Links
+
 - **INITIAL.md**: `/home/rpadron/proy/prosell-sass/INITIAL.md` - Complete feature specification
 - **PRD**: `docs/02_REQUISITOS_PRD_PROSELL_SAAS_V2.md` - User stories US-001 to US-005
 - **Architecture**: `docs/01_ARQUITECTURA_PROSELL_SAAS_V2.md` - Clean Architecture patterns
@@ -67,30 +72,31 @@ This is the foundation for all other features - without proper auth, no other fu
 
 ### Summary
 
-| Component | Tests | Status | Coverage |
-|-----------|-------|--------|----------|
-| Environment Setup | 13/13 | ✅ | 100% |
-| authStore (Zustand) | 13/13 | ✅ | 100% |
-| useAuth Hook | 15/15 | ✅ | 100% |
-| authApi Client (mock) | 18/18 | ✅ | 100% |
-| PasswordInput Component | 29/29 | ✅ | 100% |
-| OAuthButtons Component (UI) | 24/24 | ✅ | 98% |
-| TwoFactorInput Component | 32/32 | ✅ | 100% |
-| LoginForm Component | 25/25 | ✅ | 100% |
-| RegisterForm Component | 34/34 | ✅ | 100% |
-| Login Page | 8/8 | ✅ | 100% |
-| Register Page | 8/8 | ✅ | 100% |
-| Verify-email Page | 13/13 | ✅ | 100% |
-| Forgot-password Pages | 29/29 | ✅ | 100% |
-| Reset-password Pages | 14/14 | ✅ | 100% |
-| 2FA-setup Page | 28/28 | ✅ | 100% |
-| Route Protection Middleware | 12/12 | ✅ | 100% |
-| E2E Tests (Playwright) | 37 specs | ✅ | 100% |
-| **TOTAL** | **316/316** | **✅** | **91.57%** |
+| Component                   | Tests       | Status | Coverage   |
+| --------------------------- | ----------- | ------ | ---------- |
+| Environment Setup           | 13/13       | ✅     | 100%       |
+| authStore (Zustand)         | 13/13       | ✅     | 100%       |
+| useAuth Hook                | 15/15       | ✅     | 100%       |
+| authApi Client (mock)       | 18/18       | ✅     | 100%       |
+| PasswordInput Component     | 29/29       | ✅     | 100%       |
+| OAuthButtons Component (UI) | 24/24       | ✅     | 98%        |
+| TwoFactorInput Component    | 32/32       | ✅     | 100%       |
+| LoginForm Component         | 25/25       | ✅     | 100%       |
+| RegisterForm Component      | 34/34       | ✅     | 100%       |
+| Login Page                  | 8/8         | ✅     | 100%       |
+| Register Page               | 8/8         | ✅     | 100%       |
+| Verify-email Page           | 13/13       | ✅     | 100%       |
+| Forgot-password Pages       | 29/29       | ✅     | 100%       |
+| Reset-password Pages        | 14/14       | ✅     | 100%       |
+| 2FA-setup Page              | 28/28       | ✅     | 100%       |
+| Route Protection Middleware | 12/12       | ✅     | 100%       |
+| E2E Tests (Playwright)      | 37 specs    | ✅     | 100%       |
+| **TOTAL**                   | **316/316** | **✅** | **91.57%** |
 
 ### Completed Components
 
 **Pages Created** (6):
+
 - `apps/web/src/app/auth/login/page.tsx`
 - `apps/web/src/app/auth/register/page.tsx`
 - `apps/web/src/app/auth/verify-email/page.tsx`
@@ -99,11 +105,13 @@ This is the foundation for all other features - without proper auth, no other fu
 - `apps/web/src/app/auth/setup-2fa/page.tsx`
 
 **Components Created** (9):
+
 - `LoginForm.tsx`, `RegisterForm.tsx`, `PasswordInput.tsx`
 - `TwoFactorInput.tsx`, `OAuthButtons.tsx`, `ForgotPasswordForm.tsx`
 - `ResetPasswordForm.tsx`, `VerifyEmailForm.tsx`, `TwoFactorSetupForm.tsx`
 
 **Infrastructure** (5):
+
 - `stores/authStore.ts`, `hooks/useAuth.ts`
 - `lib/auth/cookies.ts`, `middleware.ts`, `types/`
 
@@ -124,6 +132,7 @@ This is the foundation for all other features - without proper auth, no other fu
 **Impact**: `SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON`
 
 **Solution Implemented**:
+
 ```typescript
 // apps/web/src/stores/authStore.ts
 async function fetchWithFallback(url: string, options?: RequestInit) {
@@ -133,8 +142,10 @@ async function fetchWithFallback(url: string, options?: RequestInit) {
     return await response.json();
   } catch (error) {
     // Dev mode: backend not running
-    if (process.env.NEXT_PUBLIC_DEV_DISABLE_API === 'true') {
-      console.warn(`[DEV MODE] API calls disabled, using empty state from localStorage`);
+    if (process.env.NEXT_PUBLIC_DEV_DISABLE_API === "true") {
+      console.warn(
+        `[DEV MODE] API calls disabled, using empty state from localStorage`,
+      );
       return { isAuthenticated: false, user: null, token: null };
     }
     throw error;
@@ -143,12 +154,14 @@ async function fetchWithFallback(url: string, options?: RequestInit) {
 ```
 
 **Configuration**:
+
 ```bash
 # apps/web/.env.local (TEMPORAL - remove when backend is ready)
 NEXT_PUBLIC_DEV_DISABLE_API=true
 ```
 
 **Removal Plan**:
+
 1. ✅ Backend FastAPI endpoint `/api/auth/state` implemented
 2. ✅ Remove `NEXT_PUBLIC_DEV_DISABLE_API` from `.env.local`
 3. ✅ Remove `fetchWithFallback()` wrapper
@@ -170,10 +183,11 @@ NEXT_PUBLIC_DEV_DISABLE_API=true
 
 **Problem**: OAuth requires backend endpoints (not implemented yet)
 **Solution**: Mock callbacks in `OAuthButtons.tsx`
+
 ```typescript
 const handleGoogleClick = () => {
   // TODO: Implement real OAuth flow
-  console.log('[MOCK] Google OAuth clicked');
+  console.log("[MOCK] Google OAuth clicked");
 };
 ```
 
@@ -186,44 +200,54 @@ const handleGoogleClick = () => {
 ### 2.1 User Stories
 
 #### US-001: User Registration
+
 **As a** new user **I want** to register with email/password **So that** I can access the platform
 
 **Acceptance**:
+
 - Email validation (format, uniqueness, disposable domain check)
 - Strong password validation (8+, uppercase, number, special)
 - Email verification with 24h token
 - Rate limiting: 3 registrations/hour per IP
 
 #### US-002: Login
+
 **As a** registered user **I want** to login with credentials **So that** I can access my account
 
 **Acceptance**:
+
 - JWT tokens: access (1h), refresh (7d or 30d with "remember me")
 - Account lock after 5 failed attempts (15min)
 - Session tracking (IP, timestamp)
 - Password recovery with single-use token
 
 #### US-003: OAuth Social Login
+
 **As a** new user **I want** to login with Google/Facebook **So that** I can access quickly
 
 **Acceptance**:
+
 - Create account automatically if email not found
 - Link to existing account if email matches
 - Skip email verification (OAuth email is trusted)
 
 #### US-004: 2FA (Two-Factor Authentication)
+
 **As an** admin user **I want** to enable 2FA **So that** my account is more secure
 
 **Acceptance**:
+
 - Required for: MASTER, MANAGER, ORG_ADMIN
 - TOTP with 30-second codes
 - 10 backup codes
 - QR code for Google Authenticator
 
 #### US-005: RBAC System
+
 **As a** system admin **I want** to control access by roles **So that** users can only access what they're allowed
 
 **Acceptance**:
+
 - 6 predefined roles: MASTER, MANAGER, SELLER_PROSELL, ORG_ADMIN, ORG_SELLER, CLIENT
 - Permission matrix by resource/action
 - Multi-tenant role assignment (tenant_id)
@@ -234,21 +258,21 @@ const handleGoogleClick = () => {
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Critical Notes |
-|-----------|------------|---------|----------------|
-| Backend | Python | 3.13+ | Free-threading enabled |
-| Backend | FastAPI | 0.115+ | Async routes, dependency injection |
-| Validation | Pydantic | 2.12+ | `model_validate()` not `parse_obj()` |
-| ORM | SQLAlchemy | 2.0.36+ | Use `Mapped[]`, `mapped_column()`, `select()` |
-| Database | PostgreSQL | 17 | asyncpg driver for async |
-| Cache | Redis | 7.4+ | Session storage, rate limiting |
-| Auth | JWT | - | RS256 (asymmetric), not HS256 |
-| Password | bcrypt | 4.2.0+ | Cost factor 12, Python 3.13 compatible |
-| 2FA | pyotp | - | TOTP with QR codes |
-| Frontend | Next.js | 16.1+ | Turbopack, App Router |
-| Frontend | React | 19.2 | Server Components by default |
-| State | Zustand | 5.x | New store syntax |
-| Styling | TailwindCSS | 4.0 | New engine, NO `var()` in className |
+| Component  | Technology  | Version | Critical Notes                                |
+| ---------- | ----------- | ------- | --------------------------------------------- |
+| Backend    | Python      | 3.13+   | Free-threading enabled                        |
+| Backend    | FastAPI     | 0.115+  | Async routes, dependency injection            |
+| Validation | Pydantic    | 2.12+   | `model_validate()` not `parse_obj()`          |
+| ORM        | SQLAlchemy  | 2.0.36+ | Use `Mapped[]`, `mapped_column()`, `select()` |
+| Database   | PostgreSQL  | 17      | asyncpg driver for async                      |
+| Cache      | Redis       | 7.4+    | Session storage, rate limiting                |
+| Auth       | JWT         | -       | RS256 (asymmetric), not HS256                 |
+| Password   | bcrypt      | 4.2.0+  | Cost factor 12, Python 3.13 compatible        |
+| 2FA        | pyotp       | -       | TOTP with QR codes                            |
+| Frontend   | Next.js     | 16.1+   | Turbopack, App Router                         |
+| Frontend   | React       | 19.2    | Server Components by default                  |
+| State      | Zustand     | 5.x     | New store syntax                              |
+| Styling    | TailwindCSS | 4.0     | New engine, NO `var()` in className           |
 
 ### 3.2 Key Libraries
 
@@ -285,6 +309,7 @@ alembic = "^1.13.0"  # Migrations
 ### 3.3 External Documentation
 
 **Critical References**:
+
 - FastAPI Security: https://fastapi.tiangolo.com/tutorial/security/
 - FastAPI + SQLAlchemy 2.0 + JWT: https://medium.com/algomart/fastapi-async-sqlalchemy-2-0-jwt-postgresql-boilerplate-setup-19e74d6bad5c
 - SQLAlchemy 2.0 Async: https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html
@@ -351,6 +376,7 @@ flowchart TD
 #### Step 1: Domain Layer (No External Dependencies)
 
 **Files to create**:
+
 ```
 apps/api/src/prosell/domain/
 ├── entities/
@@ -510,6 +536,7 @@ class AbstractUserRepository(Protocol):
 ```
 
 **Gotchas**:
+
 - Domain layer MUST have ZERO external dependencies - only Python standard library
 - Use `dataclass` for entities, not Pydantic models (Pydantic is in application layer)
 - Use `Protocol` for repository interfaces, not `ABC` (more type-friendly)
@@ -520,6 +547,7 @@ class AbstractUserRepository(Protocol):
 #### Step 2: Infrastructure Layer (Database & External Services)
 
 **Files to create**:
+
 ```
 apps/api/src/prosell/infrastructure/
 ├── database/
@@ -782,6 +810,7 @@ class TOTPService:
 ```
 
 **Gotchas**:
+
 - SQLAlchemy 2.0 uses `Mapped[]` and `mapped_column()`, NOT `Column()` from old API
 - Use `select()` instead of `query()` for queries
 - Use `async_sessionmaker` for async sessions
@@ -795,6 +824,7 @@ class TOTPService:
 #### Step 3: Application Layer (Use Cases & DTOs)
 
 **Files to create**:
+
 ```
 apps/api/src/prosell/application/
 ├── use_cases/
@@ -1005,6 +1035,7 @@ class LoginUserUseCase:
 ```
 
 **Gotchas**:
+
 - Use Pydantic for DTOs at the API boundary, NOT in domain
 - Use cases are stateless - create new instance for each request
 - Use dependency injection for repositories and services
@@ -1015,6 +1046,7 @@ class LoginUserUseCase:
 #### Step 4: API Layer (FastAPI Routes & Middleware)
 
 **Files to create**:
+
 ```
 apps/api/src/prosell/infrastructure/api/
 ├── main.py                         # FastAPI app entry point
@@ -1224,6 +1256,7 @@ async def login(
 ```
 
 **Gotchas**:
+
 - Use Pydantic models for request/response at API boundary
 - Use FastAPI dependency injection for use cases
 - Use HTTPBearer for JWT extraction from Authorization header
@@ -1235,6 +1268,7 @@ async def login(
 #### Step 5: Frontend (Next.js 16 + React 19)
 
 **Files to create**:
+
 ```
 apps/web/src/
 ├── app/
@@ -1450,6 +1484,7 @@ export default async function LoginPage() {
 ```
 
 **Gotchas**:
+
 - React 19 Server Components by default - add `'use client'` for interactivity
 - NO `useMemo` or `useCallback` needed with React Compiler
 - Tailwind 4: NO `var()` in className, use theme variables directly
@@ -1567,11 +1602,13 @@ pnpm test
 ### 7.1 Unit Tests
 
 **Backend**:
+
 - Test domain entities (business logic)
 - Test use cases with mocked repositories
 - Test services (JWT, Password, TOTP)
 
 **Frontend**:
+
 - Test components with Testing Library
 - Test stores with mock API
 - Test utilities
@@ -1579,6 +1616,7 @@ pnpm test
 ### 7.2 Integration Tests
 
 **Backend**:
+
 - Test repository implementations with test database
 - Test API endpoints with test client
 
@@ -1593,14 +1631,14 @@ pnpm test
 
 ### 7.4 Coverage Targets
 
-| Type | Target |
-|------|--------|
-| Domain entities | 90%+ |
-| Use cases | 85%+ |
-| Services | 80%+ |
-| API endpoints | 70%+ |
-| Frontend components | 70%+ |
-| E2E critical paths | 100% |
+| Type                | Target |
+| ------------------- | ------ |
+| Domain entities     | 90%+   |
+| Use cases           | 85%+   |
+| Services            | 80%+   |
+| API endpoints       | 70%+   |
+| Frontend components | 70%+   |
+| E2E critical paths  | 100%   |
 
 ---
 
@@ -1641,6 +1679,7 @@ pnpm test
 ## 9. Rollback Plan
 
 If implementation fails:
+
 1. Revert all database migrations (alembic downgrade -1)
 2. Remove created files from git
 3. Clear Redis cache
@@ -1652,6 +1691,7 @@ If implementation fails:
 ## 10. Implementation Checklist
 
 ### Domain Layer
+
 - [ ] User entity with business logic
 - [ ] Role, Permission, UserRole entities
 - [ ] Session, RefreshToken entities
@@ -1661,6 +1701,7 @@ If implementation fails:
 - [ ] Domain events
 
 ### Infrastructure Layer
+
 - [ ] Database session factory (async)
 - [ ] SQLAlchemy models for all entities (2.0 syntax)
 - [ ] Repository implementations (async)
@@ -1673,6 +1714,7 @@ If implementation fails:
 - [ ] Alembic migrations (with indexes)
 
 ### Application Layer
+
 - [ ] RegisterUser use case
 - [ ] VerifyEmail use case
 - [ ] LoginUser use case
@@ -1687,6 +1729,7 @@ If implementation fails:
 - [ ] Email service port (interface)
 
 ### API Layer
+
 - [ ] FastAPI app setup (with CORS)
 - [ ] Auth router with all endpoints
 - [ ] JWT middleware (get_current_user)
@@ -1698,6 +1741,7 @@ If implementation fails:
 - [ ] OpenAPI/Swagger documentation
 
 ### Security (Section 13)
+
 - [ ] OWASP Top 10 mitigations implemented
 - [ ] Rate limiting configured (per endpoint)
 - [ ] Session fixation prevention
@@ -1708,6 +1752,7 @@ If implementation fails:
 - [ ] Secure token storage (httpOnly cookies optional)
 
 ### Monitoring & Observability (Section 14)
+
 - [ ] Prometheus metrics (login attempts, latency, active sessions)
 - [ ] Structured logging (auth events, security events)
 - [ ] Alert rules (failed login rate, lockouts, registration spike)
@@ -1715,6 +1760,7 @@ If implementation fails:
 - [ ] Sentry integration (error tracking)
 
 ### Frontend ✅ **SPRINT 1-2 COMPLETE**
+
 - [x] Login page and form (Server + Client components) - 25 tests
 - [x] Registration page and form - 34 tests
 - [x] Email verification page - 13 tests
@@ -1733,11 +1779,13 @@ If implementation fails:
 ### OAuth Implementation (Tarea #18) - ⏳ Backend Required
 
 #### Domain Layer (OAuth)
+
 - [ ] OAuthConnection entity
 - [ ] OAuthState entity
 - [ ] OAuthConnectionRepository interface (Protocol)
 
 #### Infrastructure Layer (OAuth Services)
+
 - [ ] OAuthStateManager service (generate/verify state tokens)
 - [ ] GoogleOAuthService (authorization URL, token exchange, user info)
 - [ ] FacebookOAuthService (authorization URL, token exchange, user info)
@@ -1747,12 +1795,14 @@ If implementation fails:
 - [ ] Unit tests for OAuth services (25+ tests)
 
 #### Application Layer (OAuth Use Cases)
+
 - [ ] GetOAuthUrlUseCase (generate authorization URL + state)
 - [ ] OAuthCallbackUseCase (handle callback, create/link user, generate JWT)
 - [ ] LinkOAuthToUserUseCase (link OAuth to existing authenticated user)
 - [ ] Unit tests for OAuth use cases (25+ tests)
 
 #### API Layer (OAuth Endpoints)
+
 - [ ] GET /api/auth/oauth/google/url
 - [ ] GET /api/auth/oauth/facebook/url
 - [ ] POST /api/auth/oauth/google/callback
@@ -1761,12 +1811,14 @@ If implementation fails:
 - [ ] Integration tests for OAuth endpoints (10+ tests)
 
 #### Frontend Integration (OAuth)
+
 - [ ] apps/web/src/app/auth/callback/google/page.tsx
 - [ ] apps/web/src/app/auth/callback/facebook/page.tsx
 - [ ] Update OAuthButtons.tsx (remove mock callbacks)
 - [ ] E2E tests for OAuth flow (5+ specs)
 
 #### External Configuration (OAuth)
+
 - [ ] Create Google OAuth app (Google Cloud Console)
 - [ ] Create Facebook OAuth app (Meta for Developers)
 - [ ] Add OAuth environment variables (.env, .env.staging, .env.production)
@@ -1777,6 +1829,7 @@ If implementation fails:
 ---
 
 ### Testing (Frontend ✅ Complete | Backend ⏳ Pending)
+
 - [ ] Unit tests for entities (90%+ coverage) - **Backend Pending**
 - [ ] Unit tests for use cases (85%+ coverage) - **Backend Pending**
 - [ ] Unit tests for services (80%+ coverage) - **Backend Pending**
@@ -1794,6 +1847,7 @@ If implementation fails:
 - [x] Coverage targets met (80%+ overall) - **Frontend: 91.57%**
 
 ### Performance (Section 16)
+
 - [ ] Database indexes configured
 - [ ] Query optimization (no N+1)
 - [ ] Caching strategy (Redis + local)
@@ -1802,6 +1856,7 @@ If implementation fails:
 - [ ] Slow query monitoring
 
 ### Environment & Configuration (Section 15)
+
 - [ ] Environment variables documented (.env.example)
 - [ ] Development environment configured
 - [ ] Staging environment configured
@@ -1813,6 +1868,7 @@ If implementation fails:
 - [ ] Key generation script
 
 ### Documentation
+
 - [ ] API documentation (OpenAPI/Swagger auto)
 - [ ] Component documentation (Storybook optional)
 - [ ] Deployment instructions (docker-compose)
@@ -1865,6 +1921,7 @@ class OAuthState:
 ```
 
 **Tasks**:
+
 - [ ] Create `OAuthConnection` entity
 - [ ] Create `OAuthState` entity
 - [ ] Create `OAuthConnectionRepository` interface (Protocol)
@@ -1899,6 +1956,7 @@ class OAuthStateManager:
 ```
 
 **Tasks**:
+
 - [ ] Create `OAuthStateManager` class
 - [ ] Implement `generate_state()` with Redis storage
 - [ ] Implement `verify_state()` with expiration check
@@ -1968,6 +2026,7 @@ class FacebookOAuthService:
 ```
 
 **Tasks**:
+
 - [ ] Create `GoogleOAuthService` class
 - [ ] Create `FacebookOAuthService` class
 - [ ] Implement token exchange with httpx
@@ -1996,6 +2055,7 @@ class OAuthConnectionModel(Base):
 ```
 
 **Tasks**:
+
 - [ ] Create `OAuthConnectionModel`
 - [ ] Create Alembic migration for `oauth_connections` table
 - [ ] Add indexes on `(user_id, provider)` and `provider_user_id`
@@ -2037,6 +2097,7 @@ class SqlAlchemyOAuthConnectionRepository:
 ```
 
 **Tasks**:
+
 - [ ] Implement `SqlAlchemyOAuthConnectionRepository`
 - [ ] Write integration tests with test database (8+ tests)
 
@@ -2073,6 +2134,7 @@ class GetOAuthUrlUseCase:
 ```
 
 **Tasks**:
+
 - [ ] Create `GetOAuthUrlUseCase` class
 - [ ] Write unit tests (5+ tests)
 
@@ -2116,6 +2178,7 @@ class OAuthCallbackUseCase:
 ```
 
 **Tasks**:
+
 - [ ] Create `OAuthCallbackUseCase` class
 - [ ] Implement user linking logic (email matching)
 - [ ] Implement new user creation from OAuth
@@ -2141,6 +2204,7 @@ class LinkOAuthToUserUseCase:
 ```
 
 **Tasks**:
+
 - [ ] Create `LinkOAuthToUserUseCase` class
 - [ ] Write unit tests (5+ tests)
 
@@ -2197,6 +2261,7 @@ async def link_oauth_account(
 ```
 
 **Tasks**:
+
 - [ ] Create `oauth_router.py` with 5 endpoints
 - [ ] Add OpenAPI documentation for each endpoint
 - [ ] Add error handling for OAuth failures
@@ -2226,6 +2291,7 @@ export default async function GoogleCallbackPage({
 **File**: `apps/web/src/app/auth/callback/facebook/page.tsx` (similar)
 
 **Tasks**:
+
 - [ ] Create `apps/web/src/app/auth/callback/google/page.tsx`
 - [ ] Create `apps/web/src/app/auth/callback/facebook/page.tsx`
 - [ ] Handle OAuth errors (access denied, invalid state)
@@ -2241,7 +2307,7 @@ const handleGoogleClick = async () => {
   // 1. Call GET /api/auth/oauth/google/url
   // 2. Redirect to authorization URL
   const response = await fetch(
-    `/api/auth/oauth/google/url?redirect_uri=${encodeURIComponent(redirectUri)}`
+    `/api/auth/oauth/google/url?redirect_uri=${encodeURIComponent(redirectUri)}`,
   );
   const { authorization_url } = await response.json();
   window.location.href = authorization_url;
@@ -2249,6 +2315,7 @@ const handleGoogleClick = async () => {
 ```
 
 **Tasks**:
+
 - [ ] Update `handleGoogleClick()` to call backend
 - [ ] Update `handleFacebookClick()` to call backend
 - [ ] Remove mock console.log statements
@@ -2275,6 +2342,7 @@ FACEBOOK_OAUTH_REDIRECT_URI=http://localhost:3000/auth/callback/facebook
 ```
 
 **Tasks**:
+
 - [ ] Add OAuth variables to `.env.example`
 - [ ] Add OAuth variables to `.env.staging`
 - [ ] Add OAuth variables to `.env.production`
@@ -2283,6 +2351,7 @@ FACEBOOK_OAUTH_REDIRECT_URI=http://localhost:3000/auth/callback/facebook
 #### 6.2 Create OAuth Apps
 
 **Google Cloud Console**:
+
 1. Go to https://console.cloud.google.com/
 2. Create new project or select existing
 3. Enable Google+ API
@@ -2292,6 +2361,7 @@ FACEBOOK_OAUTH_REDIRECT_URI=http://localhost:3000/auth/callback/facebook
    - `https://prosell.saas/auth/callback/google` (prod)
 
 **Facebook Meta for Developers**:
+
 1. Go to https://developers.facebook.com/
 2. Create new app
 3. Add Facebook Login product
@@ -2300,6 +2370,7 @@ FACEBOOK_OAUTH_REDIRECT_URI=http://localhost:3000/auth/callback/facebook
    - `https://prosell.saas/auth/callback/facebook` (prod)
 
 **Tasks**:
+
 - [ ] Create Google OAuth app
 - [ ] Create Facebook OAuth app
 - [ ] Store credentials securely (environment variables)
@@ -2311,26 +2382,26 @@ FACEBOOK_OAUTH_REDIRECT_URI=http://localhost:3000/auth/callback/facebook
 
 ### Backend Tasks (37 items)
 
-| Layer | Tasks | Files | Tests |
-|-------|-------|-------|-------|
-| Domain | 3 | 2 entities | - |
-| Infrastructure - Services | 10 | 3 services | 25 tests |
-| Infrastructure - Models | 3 | 1 model | - |
-| Infrastructure - Repositories | 5 | 1 repository | 8 tests |
-| Application | 17 | 3 use cases | 25 tests |
-| API | 5 | 1 router | 10 tests |
-| **Total Backend** | **43** | **11 files** | **68 tests** |
+| Layer                         | Tasks  | Files        | Tests        |
+| ----------------------------- | ------ | ------------ | ------------ |
+| Domain                        | 3      | 2 entities   | -            |
+| Infrastructure - Services     | 10     | 3 services   | 25 tests     |
+| Infrastructure - Models       | 3      | 1 model      | -            |
+| Infrastructure - Repositories | 5      | 1 repository | 8 tests      |
+| Application                   | 17     | 3 use cases  | 25 tests     |
+| API                           | 5      | 1 router     | 10 tests     |
+| **Total Backend**             | **43** | **11 files** | **68 tests** |
 
 ### Frontend Tasks (7 items)
 
-| Component | Tasks | Files | Tests |
-|-----------|-------|-------|-------|
-| Pages | 2 | 2 callback pages | - |
-| Components | 2 | Update OAuthButtons | 3 tests |
-| E2E | 2 | OAuth flow specs | 5 specs |
-| Configuration | 1 | Environment | - |
-| External Setup | 2 | Google + Facebook apps | - |
-| **Total Frontend** | **9** | **5 files** | **8 tests** |
+| Component          | Tasks | Files                  | Tests       |
+| ------------------ | ----- | ---------------------- | ----------- |
+| Pages              | 2     | 2 callback pages       | -           |
+| Components         | 2     | Update OAuthButtons    | 3 tests     |
+| E2E                | 2     | OAuth flow specs       | 5 specs     |
+| Configuration      | 1     | Environment            | -           |
+| External Setup     | 2     | Google + Facebook apps | -           |
+| **Total Frontend** | **9** | **5 files**            | **8 tests** |
 
 ### Total OAuth Tasks: **52 items**
 
@@ -2339,6 +2410,7 @@ FACEBOOK_OAUTH_REDIRECT_URI=http://localhost:3000/auth/callback/facebook
 ## 🎯 OAuth Implementation Order
 
 ### Phase 1: Backend Foundation (Week 1)
+
 1. ✅ Domain entities (OAuthConnection, OAuthState)
 2. ✅ SQLAlchemy models + migrations
 3. ✅ OAuthStateManager service
@@ -2346,22 +2418,26 @@ FACEBOOK_OAUTH_REDIRECT_URI=http://localhost:3000/auth/callback/facebook
 5. ✅ OAuth repository implementation
 
 ### Phase 2: Backend Logic (Week 1-2)
+
 6. ✅ GetOAuthUrlUseCase
 7. ✅ OAuthCallbackUseCase
 8. ✅ LinkOAuthToUserUseCase
 9. ✅ Unit tests for all use cases
 
 ### Phase 3: Backend API (Week 2)
+
 10. ✅ OAuth router with 5 endpoints
 11. ✅ Integration tests
 12. ✅ OpenAPI documentation
 
 ### Phase 4: Frontend Integration (Week 2)
+
 13. ✅ OAuth callback pages
 14. ✅ Update OAuthButtons component
 15. ✅ E2E tests for OAuth flow
 
 ### Phase 5: External Setup (Week 3)
+
 16. ✅ Create Google OAuth app
 17. ✅ Create Facebook OAuth app
 18. ✅ Configure environment variables
@@ -2371,14 +2447,14 @@ FACEBOOK_OAUTH_REDIRECT_URI=http://localhost:3000/auth/callback/facebook
 
 ## 📋 Dependencies Blocking OAuth
 
-| Dependency | Status | Action Required |
-|------------|--------|-----------------|
-| FastAPI backend running | ❌ Not started | Complete Backend Sprint |
-| PostgreSQL database | ❌ Not setup | Run migrations |
-| Redis for state tokens | ❌ Not setup | Configure Redis |
-| Google OAuth app | ❌ Not created | Create in Google Console |
-| Facebook OAuth app | ❌ Not created | Create in Meta Developers |
-| Environment variables | ❌ Not configured | Add to `.env` |
+| Dependency              | Status            | Action Required           |
+| ----------------------- | ----------------- | ------------------------- |
+| FastAPI backend running | ❌ Not started    | Complete Backend Sprint   |
+| PostgreSQL database     | ❌ Not setup      | Run migrations            |
+| Redis for state tokens  | ❌ Not setup      | Configure Redis           |
+| Google OAuth app        | ❌ Not created    | Create in Google Console  |
+| Facebook OAuth app      | ❌ Not created    | Create in Meta Developers |
+| Environment variables   | ❌ Not configured | Add to `.env`             |
 
 ---
 
@@ -2390,27 +2466,30 @@ FACEBOOK_OAUTH_REDIRECT_URI=http://localhost:3000/auth/callback/facebook
 - [OAuth 2.0 Security Best Practices](https://datatracker.ietf.org/doc/html/rfc6819)
 
 **UI Components** ✅ Complete:
+
 - `OAuthButtons.tsx` - renders Google/Facebook buttons
 - `LoginForm.tsx` - includes OAuth buttons
 - `RegisterForm.tsx` - includes OAuth buttons
 - Tests: 24/24 passing (UI, accessibility, states)
 
 **Callbacks** ⏳ Mock:
+
 ```typescript
 // Current state (mock)
 const handleGoogleClick = () => {
-  console.log('[MOCK] Google OAuth clicked');
+  console.log("[MOCK] Google OAuth clicked");
 };
 
 // Target state (real)
 const handleGoogleClick = async () => {
-  const result = await signIn('google', { callbackUrl: '/dashboard' });
+  const result = await signIn("google", { callbackUrl: "/dashboard" });
 };
 ```
 
 ### Blocked By
 
 This task is blocked by:
+
 1. **Backend Sprint** - No FastAPI server running yet
 2. **OAuth App Setup** - Requires Google/Meta developer accounts
 3. **NextAuth.js Config** - Needs backend session management
@@ -2428,6 +2507,7 @@ This task is blocked by:
 ## 11. Confidence Score: 9/10
 
 **Positive Factors**:
+
 1. ✅ Complete documentation available (PRD, architecture, tasks)
 2. ✅ Tech stack is well-defined with specific versions
 3. ✅ Clean Architecture patterns are clear
@@ -2450,15 +2530,17 @@ This task is blocked by:
 20. ✅ **Workarounds documented for development**
 
 **Risk Factors**:
+
 1. ⚠️ Backend not yet implemented (Frontend Sprint complete, Backend Sprint pending)
 2. ⚠️ OAuth integration may have provider-specific issues
 3. ⚠️ Email service (SendGrid) needs account setup
 4. ⚠️ RSA key generation needs secure storage solution
 5. ⚠️ Next.js 16 API route bug (workaround active, monitoring for fix)
-5. ⚠️ Redis for session storage may need additional config
-6. ⚠️ Performance targets may need adjustment based on load testing
+6. ⚠️ Redis for session storage may need additional config
+7. ⚠️ Performance targets may need adjustment based on load testing
 
 **Mitigation**:
+
 - Start with basic auth (email/password) before OAuth/2FA
 - Use mock email service for development
 - Document all environment variables clearly
@@ -2777,18 +2859,18 @@ sequenceDiagram
 
 ### 13.1 OWASP Top 10 Coverage
 
-| OWASP Risk | Mitigation | Implementation |
-|------------|------------|----------------|
-| **A01: Broken Access Control** | RBAC + JWT validation | `auth_middleware.py` checks permissions on every request |
-| **A02: Cryptographic Failures** | bcrypt (cost=12), RS256 JWT | `password_service.py`, `jwt_service.py` |
-| **A03: Injection** | SQLAlchemy parameterized queries | NO raw SQL, always use `select().where()` |
-| **A04: Insecure Design** | Multi-tenant by default | All entities include `tenant_id` |
-| **A05: Security Misconfiguration** | Environment-based config | No hardcoded secrets, `.env` files |
-| **A06: Vulnerable Components** | Dependency scanning | `pyproject.toml` with exact versions |
-| **A07: Auth Failures** | Rate limiting, account lockout | 5 attempts → 15min lock |
-| **A08: Data Integrity** | JWT signatures, email verification | RS256 asymmetric, single-use tokens |
-| **A09: Logging Failures** | Structured auth event logging | All login attempts logged |
-| **A10: SSRF** | No user-controlled URLs in outbound | OAuth callbacks validated |
+| OWASP Risk                         | Mitigation                          | Implementation                                           |
+| ---------------------------------- | ----------------------------------- | -------------------------------------------------------- |
+| **A01: Broken Access Control**     | RBAC + JWT validation               | `auth_middleware.py` checks permissions on every request |
+| **A02: Cryptographic Failures**    | bcrypt (cost=12), RS256 JWT         | `password_service.py`, `jwt_service.py`                  |
+| **A03: Injection**                 | SQLAlchemy parameterized queries    | NO raw SQL, always use `select().where()`                |
+| **A04: Insecure Design**           | Multi-tenant by default             | All entities include `tenant_id`                         |
+| **A05: Security Misconfiguration** | Environment-based config            | No hardcoded secrets, `.env` files                       |
+| **A06: Vulnerable Components**     | Dependency scanning                 | `pyproject.toml` with exact versions                     |
+| **A07: Auth Failures**             | Rate limiting, account lockout      | 5 attempts → 15min lock                                  |
+| **A08: Data Integrity**            | JWT signatures, email verification  | RS256 asymmetric, single-use tokens                      |
+| **A09: Logging Failures**          | Structured auth event logging       | All login attempts logged                                |
+| **A10: SSRF**                      | No user-controlled URLs in outbound | OAuth callbacks validated                                |
 
 ### 13.2 Rate Limiting Strategy
 
@@ -3442,23 +3524,23 @@ echo "   JWT_PUBLIC_KEY=$KEYS_DIR/public.pem"
 
 ### 16.1 Latency SLOs (Service Level Objectives)
 
-| Endpoint | p50 | p95 | p99 | Notes |
-|----------|-----|-----|-----|-------|
-| `POST /api/auth/register` | 100ms | 200ms | 500ms | Includes password hashing (bcrypt) |
-| `POST /api/auth/login` | 80ms | 150ms | 300ms | Includes DB query + JWT generation |
-| `POST /api/auth/refresh` | 30ms | 50ms | 100ms | Redis lookup + JWT generation |
-| `POST /api/auth/verify-2fa` | 40ms | 80ms | 150ms | TOTP verification is fast |
-| `POST /api/auth/oauth/google` | 200ms | 400ms | 1s | External API call to Google |
-| `POST /api/auth/logout` | 30ms | 50ms | 100ms | Redis delete |
+| Endpoint                      | p50   | p95   | p99   | Notes                              |
+| ----------------------------- | ----- | ----- | ----- | ---------------------------------- |
+| `POST /api/auth/register`     | 100ms | 200ms | 500ms | Includes password hashing (bcrypt) |
+| `POST /api/auth/login`        | 80ms  | 150ms | 300ms | Includes DB query + JWT generation |
+| `POST /api/auth/refresh`      | 30ms  | 50ms  | 100ms | Redis lookup + JWT generation      |
+| `POST /api/auth/verify-2fa`   | 40ms  | 80ms  | 150ms | TOTP verification is fast          |
+| `POST /api/auth/oauth/google` | 200ms | 400ms | 1s    | External API call to Google        |
+| `POST /api/auth/logout`       | 30ms  | 50ms  | 100ms | Redis delete                       |
 
 ### 16.2 Throughput Targets
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Login requests/second | 1000 rps | Sustained load |
-| Registration requests/second | 100 rps | Burst capacity |
-| Token refreshes/second | 2000 rps | Most frequent operation |
-| Concurrent connections | 10,000 | Active users |
+| Metric                       | Target   | Measurement             |
+| ---------------------------- | -------- | ----------------------- |
+| Login requests/second        | 1000 rps | Sustained load          |
+| Registration requests/second | 100 rps  | Burst capacity          |
+| Token refreshes/second       | 2000 rps | Most frequent operation |
+| Concurrent connections       | 10,000   | Active users            |
 
 ### 16.3 Database Query Optimization
 
@@ -3602,6 +3684,7 @@ LIMIT 20;
 ### ✅ Phase 3: Frontend Implementation - **COMPLETE** (2026-02-11)
 
 **Completed**:
+
 - [x] Auth store (Zustand with persist) - 13 tests
 - [x] Auth pages (login, register, verify email, reset password, 2FA setup) - 6 pages
 - [x] Auth components (forms) - 9 components
@@ -3615,6 +3698,7 @@ LIMIT 20;
 ---
 
 ### ⏳ Phase 1: Infrastructure Setup (Backend Sprint)
+
 1. Create Alembic migration for auth tables (users, roles, sessions, permissions)
 2. Generate RSA keys for JWT (`scripts/generate-jwt-keys.sh`)
 3. Set up Redis for session storage and rate limiting
@@ -3622,6 +3706,7 @@ LIMIT 20;
 5. Set up monitoring (Prometheus, Sentry)
 
 ### ⏳ Phase 2: Backend Implementation (Backend Sprint)
+
 6. Implement domain layer (entities, repositories, value objects, exceptions)
 7. Implement infrastructure layer (SQLAlchemy models, repositories, services)
 8. Implement application layer (use cases, DTOs, ports)
@@ -3632,6 +3717,7 @@ LIMIT 20;
 13. Write integration tests for API endpoints
 
 ### ⏳ Phase 4: OAuth Integration (Tarea #18)
+
 14. Configure NextAuth.js
 15. Create OAuth apps (Google, Facebook)
 16. Implement OAuth endpoints in FastAPI
@@ -3639,6 +3725,7 @@ LIMIT 20;
 18. Test complete OAuth flow
 
 ### ⏳ Phase 5: Security & Performance
+
 19. Implement 2FA backend (TOTP + backup codes)
 20. Add security headers middleware
 21. Add CSRF protection for OAuth
@@ -3646,6 +3733,7 @@ LIMIT 20;
 23. Validate against OWASP Top 10
 
 ### ⏳ Phase 6: Testing & Deployment
+
 24. Run full test suite (unit + integration + E2E)
 25. Validate coverage targets (80%+ overall)
 26. Run pre-commit hooks (linting, type checking)
@@ -3655,6 +3743,7 @@ LIMIT 20;
 30. Security audit (OWASP ZAP or similar)
 
 ### ⏳ Phase 7: Production Deployment
+
 31. Configure production environment variables
 32. Generate production RSA keys (secure storage)
 33. Configure SendGrid for emails
@@ -3667,6 +3756,7 @@ LIMIT 20;
 **Sources**:
 
 ### Core Implementation
+
 - [FastAPI + Async SQLAlchemy 2.0 + JWT Guide](https://medium.com/algomart/fastapi-async-sqlalchemy-2-0-jwt-postgresql-boilerplate-setup-19e74d6bad5c)
 - [FastAPI Best Practices (Auth0)](https://auth0.com/blog/fastapi-best-practices/)
 - [SQLAlchemy Async Sessions](https://levelup.gitconnected.com/sqlalchemy-sessions-in-fastapi-creating-sessions-and-handling-transactions-the-right-way-ad72c38d75fc)
@@ -3674,11 +3764,13 @@ LIMIT 20;
 - [FastAPI JWT Auth GitHub](https://github.com/Evil0ctal/FastAPI-JWT-Auth/blob/main/README.md)
 
 ### 2FA & TOTP
+
 - [Implementing 2FA with Python](https://ramanantechpro.medium.com/implementing-two-factor-authentication-2fa-in-python-7f961cd92f00)
 - [How to Implement 2FA with PyOTP](https://www.freecodecamp.org/news/how-to-implement-two-factor-authentication-in-your-flask-app/)
 - [TOTP Algorithm in Python](https://zhuanlan.zhihu.com/p/659041599)
 
 ### Security
+
 - [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
 - [OWASP Top 10 2021](https://owasp.org/Top10/)
 - [JWT Best Practices (RFC 8725)](https://datatracker.ietf.org/doc/html/rfc8725)
@@ -3686,18 +3778,21 @@ LIMIT 20;
 - [Rate Limiting Best Practices](https://cloud.google.com/architecture/rate-limiting-strategies-techniques)
 
 ### Monitoring & Observability
+
 - [Prometheus Python Client](https://prometheus.github.io/client_python/)
 - [Structlog: Structured Logging for Python](https://www.structlog.org/)
 - [FastAPI Logging Best Practices](https://fastapi.tiangolo.com/tutorial/requests/)
 - [Grafana Alerting Best Practices](https://grafana.com/docs/grafana/latest/alerting/alerting-rules/)
 
 ### Performance
+
 - [PostgreSQL Index Best Practices](https://www.postgresql.org/docs/current/indexes.html)
 - [Redis Caching Strategies](https://redis.io/docs/manual/patterns/caching/)
 - [Locust Load Testing](https://locust.io/)
 - [Database Query Optimization](https://wiki.postgresql.org/wiki/Performance_Optimization)
 
 ### Testing
+
 - [Pytest Async Testing](https://pytest-asyncio.readthedocs.io/)
 - [Playwright E2E Testing](https://playwright.dev/python/)
 - [Test Coverage Best Practices](https://coverage.readthedocs.io/)
@@ -3711,6 +3806,7 @@ LIMIT 20;
 ### ✅ What Was Accomplished
 
 #### 1. **Frontend Sprint (100% Complete)** ✅
+
 - **17/17 tasks completed**
 - **316 tests passing** (91.57% coverage)
 - **6 auth pages**: login, register, verify-email, forgot-password, reset-password, setup-2fa
@@ -3720,9 +3816,11 @@ LIMIT 20;
 - **httpOnly cookie migration** completed (security enhancement)
 
 #### 2. **Backend Core (100% Complete)** ✅
+
 **Commit**: Multiple commits between 2026-02-06 and 2026-02-20
 
 ##### Domain Layer (9/9 tasks) ✅
+
 ```
 apps/api/src/prosell/domain/
 ├── entities/
@@ -3743,6 +3841,7 @@ apps/api/src/prosell/domain/
 ```
 
 ##### Infrastructure Layer (10/10 tasks) ✅
+
 ```
 apps/api/src/prosell/infrastructure/
 ├── database/
@@ -3765,6 +3864,7 @@ apps/api/src/prosell/infrastructure/
 ```
 
 ##### Application Layer (11/11 tasks) ✅
+
 ```
 apps/api/src/prosell/application/use_cases/auth/
 ├── register_user.py (User registration + email verification)
@@ -3783,6 +3883,7 @@ apps/api/src/prosell/application/
 ```
 
 ##### API Layer (8/8 tasks) ✅
+
 ```
 apps/api/src/prosell/infrastructure/api/
 ├── main.py (FastAPI app with CORS)
@@ -3804,18 +3905,22 @@ apps/api/src/prosell/infrastructure/api/
 ```
 
 #### 3. **OAuth Integration (80% Complete)** ⚠️
+
 **Backend**: ✅ Complete (100%)
+
 - Domain entities: OAuthConnection, OAuthState
 - Services: Google/Facebook OAuth services
 - Use cases: GetOAuthUrl, OAuthCallback, LinkOAuthToUser
 - API: OAuth router with 5 endpoints
 
 **Frontend**: ✅ Complete (100%)
+
 - UI components: OAuthButtons with Google/Facebook buttons
 - Callback pages: /auth/callback/google, /auth/callback/facebook
 - Tests: 24/24 passing
 
 **External Setup**: ❌ **BLOCKED** (0%)
+
 - Google OAuth app: Not created
 - Facebook OAuth app: Not created
 - Environment variables: Not configured
@@ -3823,12 +3928,12 @@ apps/api/src/prosell/infrastructure/api/
 
 ### 📊 Statistics
 
-| Metric | Frontend | Backend | Total |
-|--------|----------|---------|-------|
-| **Tasks** | 17/17 (100%) | 38/38 (100%) | 55/69 (80%) |
-| **Tests** | 316 (91.57% cov) | 139 (100%) | 455 total |
-| **Files** | 30+ | 50+ | 80+ |
-| **Lines of Code** | ~8,000 | ~10,000 | ~18,000 |
+| Metric            | Frontend         | Backend      | Total       |
+| ----------------- | ---------------- | ------------ | ----------- |
+| **Tasks**         | 17/17 (100%)     | 38/38 (100%) | 55/69 (80%) |
+| **Tests**         | 316 (91.57% cov) | 139 (100%)   | 455 total   |
+| **Files**         | 30+              | 50+          | 80+         |
+| **Lines of Code** | ~8,000           | ~10,000      | ~18,000     |
 
 ### 🎯 Key Learnings
 
@@ -3843,12 +3948,14 @@ apps/api/src/prosell/infrastructure/api/
 ### 🚀 What's Next (Remaining 20%)
 
 #### 1. **External OAuth Setup** (Required for completion)
+
 - [ ] Create Google OAuth app (Google Cloud Console)
 - [ ] Create Facebook OAuth app (Meta Developers)
 - [ ] Configure environment variables (GOOGLE_CLIENT_ID, FACEBOOK_CLIENT_ID)
 - [ ] Test OAuth flow end-to-end
 
 #### 2. **Production Readiness** (Optional but recommended)
+
 - [ ] SendGrid account setup for email service
 - [ ] Redis configuration for session storage
 - [ ] PostgreSQL database migration (Alembic)
@@ -3857,6 +3964,7 @@ apps/api/src/prosell/infrastructure/api/
 - [ ] Security audit (OWASP ZAP)
 
 #### 3. **Monitoring & Observability** (Production-grade)
+
 - [ ] Prometheus metrics
 - [ ] Structured logging (structlog)
 - [ ] Grafana dashboards

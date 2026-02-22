@@ -11,6 +11,7 @@
 ## Session Log
 
 ## Question 1/10
+
 **Category**: Functional Requirements - Edge Cases
 **Ambiguity Identified**: PRD F2-F3 describe 2FA setup como user-initiated con botón 'Enable 2FA', pero no especifica comportamiento para usuarios que YA tienen 2FA habilitado
 **Question Asked**: ¿Qué debe mostrarse al acceder a /auth/setup-2fa para usuarios con is2FAEnabled=true?
@@ -20,6 +21,7 @@
 ---
 
 ## Question 2/10
+
 **Category**: Edge Cases & Error Handling - Navigation Interruption
 **Ambiguity Identified**: PRD F6 describe estados loading/success/error para 2FA, pero no especifica comportamiento si usuario navega durante operación en curso
 **Question Asked**: ¿Qué pasa si usuario inicia 'Enable 2FA', ve loading, y navega fuera antes de terminar?
@@ -29,6 +31,7 @@
 ---
 
 ## Question 3/10
+
 **Category**: Acceptance Criteria - Performance Metrics
 **Ambiguity Identified**: PRD lista métricas como 'initializeAuth calls per session' y 'Time to interactive' pero no especifica CÓMO medirlas
 **Question Asked**: ¿Cómo se medirán estas métricas en práctica para validar que Phase 1 está completa?
@@ -38,6 +41,7 @@
 ---
 
 ## Question 4/10
+
 **Category**: Technical Constraints - Fallback Behavior
 **Ambiguity Identified**: PRD F4 dice 'If preload fails, silent fallback to on-demand loading' pero no especifica comportamiento en interacciones posteriores
 **Question Asked**: Si el preload falla, ¿qué pasa en la próxima interacción del usuario? ¿Se reintentará el preload o se carga solo al hacer click?
@@ -47,6 +51,7 @@
 ---
 
 ## Question 5/10
+
 **Category**: Technical Constraints - Browser Compatibility
 **Ambiguity Identified**: PRD no menciona estrategia de compatibilidad para APIs modernas (Performance API, dynamic import, etc.)
 **Question Asked**: ¿Cuál es la estrategia de compatibilidad de browsers para optimizaciones que dependen de APIs modernas?
@@ -56,6 +61,7 @@
 ---
 
 ## Question 6/10
+
 **Category**: Testing Requirements - Validation Strategy
 **Ambiguity Identified**: PRD no menciona estrategia de testing para validar optimizaciones funcionan correctamente
 **Question Asked**: ¿Qué tipos de tests se requieren para validar las optimizaciones?
@@ -65,6 +71,7 @@
 ---
 
 ## Question 7/10
+
 **Category**: Risk Management - Rollback Strategy
 **Ambiguity Identified**: PRD no menciona estrategia de rollback si optimizaciones causan problemas en producción
 **Question Asked**: Si las optimizaciones de Phase 1 causan problemas en producción, ¿cuál es la estrategia de rollback?
@@ -74,6 +81,7 @@
 ---
 
 ## Question 8/10
+
 **Category**: Acceptance Criteria - Phase Gates
 **Ambiguity Identified**: PRD lista 3 fases pero no define criterios EXACTOS para transición entre fases
 **Question Asked**: ¿Cuáles son los criterios exactos para determinar que Phase 1 está completa y se puede pasar a Phase 2?
@@ -83,6 +91,7 @@
 ---
 
 ## Question 9/10
+
 **Category**: Scope Boundaries - SVG Optimization
 **Ambiguity Identified**: PRD F5 dice 'animar el wrapper' pero no especifica qué SVGs están en scope
 **Question Asked**: ¿Qué SVGs específicos necesitan optimización de animación?
@@ -92,6 +101,7 @@
 ---
 
 ## Question 10/10
+
 **Category**: Scope Boundaries - Exclusions
 **Ambiguity Identified**: PRD define Non-Goals pero puede haber áreas grises que causen scope creep
 **Question Asked**: ¿Qué está EXPLÍCITAMENTE FUERA del scope de este PRP?
@@ -108,21 +118,21 @@
 
 ### Key Changes Made to PRD
 
-| Section | Original | Updated |
-|---------|----------|---------|
-| Non-Goals | Generic list | Explicit scope boundaries with ❌/✅ |
-| Core Use Case | Simple 2FA setup | 2FA Management Center with conditional behavior |
-| Functional Decisions | 7 functions | 10 functions (added F8-F10) |
-| UX Decisions | Basic states | Added 2FA State A/B, beforeunload, feature detection |
-| NEW Section | - | Security Rules (6 non-negotiable rules) |
-| NEW Section | - | Technical Constraints (browser compatibility, APIs) |
-| NEW Section | - | Testing Strategy (3-layer approach) |
-| NEW Section | - | Rollback Strategy (hybrid approach) |
-| NEW Section | - | Phase Gate Criteria (baseline + metrics) |
-| NEW Section | - | Architecture Decisions (`<AnimatedSvgWrapper>`) |
-| NEW Section | - | Definition of Done |
-| Success Metrics | Table only | Added Performance API verification |
-| Data & Logic | Simple flows | Added feature flag, Performance API |
+| Section              | Original         | Updated                                              |
+| -------------------- | ---------------- | ---------------------------------------------------- |
+| Non-Goals            | Generic list     | Explicit scope boundaries with ❌/✅                 |
+| Core Use Case        | Simple 2FA setup | 2FA Management Center with conditional behavior      |
+| Functional Decisions | 7 functions      | 10 functions (added F8-F10)                          |
+| UX Decisions         | Basic states     | Added 2FA State A/B, beforeunload, feature detection |
+| NEW Section          | -                | Security Rules (6 non-negotiable rules)              |
+| NEW Section          | -                | Technical Constraints (browser compatibility, APIs)  |
+| NEW Section          | -                | Testing Strategy (3-layer approach)                  |
+| NEW Section          | -                | Rollback Strategy (hybrid approach)                  |
+| NEW Section          | -                | Phase Gate Criteria (baseline + metrics)             |
+| NEW Section          | -                | Architecture Decisions (`<AnimatedSvgWrapper>`)      |
+| NEW Section          | -                | Definition of Done                                   |
+| Success Metrics      | Table only       | Added Performance API verification                   |
+| Data & Logic         | Simple flows     | Added feature flag, Performance API                  |
 
 ### Ready for Implementation
 
@@ -137,7 +147,7 @@ The PRD is now **complete and unambiguous**. All critical decisions have been ma
 7. ✅ **Scope**: Auth layer only, explicit exclusions
 
 **Next Steps:**
+
 1. Create implementation tickets from Phase 1 tasks
 2. Establish baseline measurements
 3. Start with `authStore` `initialized` flag (F1)
-

@@ -15,6 +15,7 @@ Verify the existing backend code compiles, services start, and basic endpoints r
 ## Tasks
 
 ### 0.1 - Verify Python Environment
+
 - Ensure `uv venv` is active with all dependencies installed
 - Run `pyright` to check for type errors across all backend code
 - Run `ruff check .` and `ruff format --check .` for linting
@@ -22,6 +23,7 @@ Verify the existing backend code compiles, services start, and basic endpoints r
 - **Files**: `apps/api/pyproject.toml`, `apps/api/src/prosell/**/*.py`
 
 ### 0.2 - Verify Docker Infrastructure
+
 - Start PostgreSQL 17 and Redis 7.4 via Docker Compose
 - Verify database connectivity (asyncpg)
 - Verify Redis connectivity
@@ -29,6 +31,7 @@ Verify the existing backend code compiles, services start, and basic endpoints r
 - **Command**: `docker compose -f docker/docker-compose.yml up -d postgres redis`
 
 ### 0.3 - Run Alembic Migrations
+
 - Apply migration `d1823b89fecb` (initial schema)
 - Verify all 6 tables created: `users`, `roles`, `user_roles`, `sessions`, `user_tokens`, `oauth_accounts`
 - Verify indexes are in place
@@ -36,6 +39,7 @@ Verify the existing backend code compiles, services start, and basic endpoints r
 - **Command**: `cd apps/api && .venv/bin/alembic upgrade head`
 
 ### 0.4 - Start FastAPI Server
+
 - Run the API server and verify health endpoint
 - Verify Swagger docs load at `/docs`
 - Check CORS middleware is configured
@@ -43,6 +47,7 @@ Verify the existing backend code compiles, services start, and basic endpoints r
 - **Command**: `cd apps/api && fastapi dev src/prosell/infrastructure/api/main.py --port 8000`
 
 ### 0.5 - Smoke Test Auth Endpoints
+
 - Test `POST /api/auth/register` with valid data
 - Test `POST /api/auth/login` with registered user
 - Test `GET /api/auth/me` with JWT token

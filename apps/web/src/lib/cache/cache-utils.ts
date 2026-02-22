@@ -6,7 +6,7 @@
  * @see https://vercel.com/docs/rules/server-cache-react.md
  */
 
-import { apiCache, generateCacheKey } from './lru-cache';
+import { apiCache, generateCacheKey } from "./lru-cache";
 
 /**
  * Cache configuration for different API endpoints
@@ -16,13 +16,13 @@ export const CACHE_CONFIG = {
   auth: {
     login: { ttl: 0 }, // Don't cache login
     register: { ttl: 0 }, // Don't cache registration
-    'current-user': { ttl: 2 * 60 * 1000 }, // 2 minutes
-    'verify-email': { ttl: 0 }, // Don't cache verification
-    'forgot-password': { ttl: 0 }, // Don't cache password reset
-    'reset-password': { ttl: 0 }, // Don't cache password reset
-    '2fa/enable': { ttl: 0 }, // Don't cache 2FA operations
-    '2fa/verify': { ttl: 0 }, // Don't cache 2FA verification
-    '2fa/disable': { ttl: 0 }, // Don't cache 2FA operations
+    "current-user": { ttl: 2 * 60 * 1000 }, // 2 minutes
+    "verify-email": { ttl: 0 }, // Don't cache verification
+    "forgot-password": { ttl: 0 }, // Don't cache password reset
+    "reset-password": { ttl: 0 }, // Don't cache password reset
+    "2fa/enable": { ttl: 0 }, // Don't cache 2FA operations
+    "2fa/verify": { ttl: 0 }, // Don't cache 2FA verification
+    "2fa/disable": { ttl: 0 }, // Don't cache 2FA operations
   },
 
   // Default cache time for non-auth endpoints
@@ -30,9 +30,9 @@ export const CACHE_CONFIG = {
 
   // Cache keys prefixes
   prefixes: {
-    user: 'user:',
-    auth: 'auth:',
-    session: 'session:',
+    user: "user:",
+    auth: "auth:",
+    session: "session:",
   },
 } as const;
 
@@ -52,14 +52,14 @@ export function createUserCacheKey(userId: string): string {
  * - Browser devtools (accessible to XSS)
  */
 const SENSITIVE_FIELDS = new Set<string>([
-  'password',
-  'newPassword',
-  'currentPassword',
-  'token',
-  'accessToken',
-  'refreshToken',
-  'refresh_token',
-  'access_token',
+  "password",
+  "newPassword",
+  "currentPassword",
+  "token",
+  "accessToken",
+  "refreshToken",
+  "refresh_token",
+  "access_token",
 ]);
 
 /**
@@ -72,10 +72,13 @@ const SENSITIVE_FIELDS = new Set<string>([
  * @param data - The request data (sensitive fields will be filtered out)
  * @returns A safe cache key without sensitive data
  */
-export function createAuthCacheKey(endpoint: string, data?: Record<string, unknown>): string {
+export function createAuthCacheKey(
+  endpoint: string,
+  data?: Record<string, unknown>,
+): string {
   const key = `${CACHE_CONFIG.prefixes.auth}${endpoint}`;
 
-  if (!data || typeof data !== 'object') {
+  if (!data || typeof data !== "object") {
     return key;
   }
 
@@ -88,9 +91,8 @@ export function createAuthCacheKey(endpoint: string, data?: Record<string, unkno
     }, {});
 
   // If no safe data remains, return just the endpoint
-  const dataStr = Object.keys(safeData).length > 0
-    ? `:${JSON.stringify(safeData)}`
-    : '';
+  const dataStr =
+    Object.keys(safeData).length > 0 ? `:${JSON.stringify(safeData)}` : "";
 
   return `${key}${dataStr}`;
 }
@@ -99,7 +101,7 @@ export function createAuthCacheKey(endpoint: string, data?: Record<string, unkno
  * Invalidate specific cache entries
  */
 export function invalidateCache(patterns: string[]): void {
-  patterns.forEach(pattern => {
+  patterns.forEach((pattern) => {
     const keysToDelete: string[] = [];
 
     // Find all keys matching the pattern
@@ -110,7 +112,7 @@ export function invalidateCache(patterns: string[]): void {
     });
 
     // Delete matching keys
-    keysToDelete.forEach(key => apiCache.delete(key));
+    keysToDelete.forEach((key) => apiCache.delete(key));
   });
 }
 
@@ -132,13 +134,13 @@ export function shouldCacheRequest(method: string, endpoint: string): boolean {
   const methodUpper = method.toUpperCase();
 
   // Only cache GET requests
-  if (methodUpper !== 'GET') {
+  if (methodUpper !== "GET") {
     return false;
   }
 
   // Don't cache auth-related GET requests
-  if (endpoint.includes('/auth/')) {
-    const endpointName = endpoint.split('/').pop() || '';
+  if (endpoint.includes("/auth/")) {
+    const endpointName = endpoint.split("/").pop() || "";
     // Type assertion: CACHE_CONFIG.auth has known endpoints with ttl property
     const authConfig = CACHE_CONFIG.auth as Record<string, { ttl: number }>;
     const config = authConfig[endpointName];

@@ -1,6 +1,7 @@
 # datetime.utcnow() Fix Applied - 2026-02-06
 
 ## Summary
+
 Fixed all deprecated `datetime.utcnow()` calls to `datetime.now(timezone.utc)` across the auth system codebase.
 
 ## Changes Applied

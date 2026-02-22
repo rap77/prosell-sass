@@ -12,6 +12,7 @@
 ### 1.1 Propuesta de Valor
 
 **ProSell SaaS** es una plataforma integral que combina:
+
 - **E-commerce Multiproducto**: Marketplace para organizaciones/dealers
 - **Sistema de Ventas Avanzado**: Citas, comisiones, equipos MLM
 - **Análisis de Mercado**: Scraping + Inteligencia de precios
@@ -20,12 +21,12 @@
 
 ### 1.2 Objetivos Q4 2026
 
-| Métrica | Objetivo |
-|---------|----------|
-| Organizaciones activas | 300 |
-| Productos en catálogo | 100,000 |
-| Usuarios mensuales | 50,000 |
-| Ingresos mensuales | $100,000 |
+| Métrica                | Objetivo |
+| ---------------------- | -------- |
+| Organizaciones activas | 300      |
+| Productos en catálogo  | 100,000  |
+| Usuarios mensuales     | 50,000   |
+| Ingresos mensuales     | $100,000 |
 
 ---
 
@@ -48,19 +49,19 @@ PUBLIC
 
 ### 2.2 Permisos por Rol
 
-| Acción | Master | Manager | Seller PS | Org Admin | Org Seller | Client |
-|--------|--------|---------|-----------|-----------|------------|--------|
-| Crear organización | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Aprobar productos | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Ver todos los productos | ✅ | ✅* | ✅ | ❌ | ❌ | 🌐 |
-| Crear producto | ✅ | ❌ | ❌ | ✅** | ❌ | ❌ |
-| Crear cita | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Registrar venta | ✅ | ✅* | ❌ | ✅** | ❌ | ❌ |
-| Ver comisiones propias | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Editar % comisiones | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Gestionar equipos | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Acción                  | Master | Manager | Seller PS | Org Admin | Org Seller | Client |
+| ----------------------- | ------ | ------- | --------- | --------- | ---------- | ------ |
+| Crear organización      | ✅     | ❌      | ❌        | ❌        | ❌         | ❌     |
+| Aprobar productos       | ✅     | ❌      | ❌        | ❌        | ❌         | ❌     |
+| Ver todos los productos | ✅     | ✅\*    | ✅        | ❌        | ❌         | 🌐     |
+| Crear producto          | ✅     | ❌      | ❌        | ✅\*\*    | ❌         | ❌     |
+| Crear cita              | ✅     | ✅      | ✅        | ✅        | ✅         | ❌     |
+| Registrar venta         | ✅     | ✅\*    | ❌        | ✅\*\*    | ❌         | ❌     |
+| Ver comisiones propias  | ✅     | ✅      | ✅        | ✅        | ✅         | ❌     |
+| Editar % comisiones     | ✅     | ❌      | ❌        | ❌        | ❌         | ❌     |
+| Gestionar equipos       | ✅     | ✅      | ❌        | ❌        | ❌         | ❌     |
 
-*Solo orgs asignadas | **Solo su org | 🌐Solo público
+\*Solo orgs asignadas | \*\*Solo su org | 🌐Solo público
 
 ---
 
@@ -73,6 +74,7 @@ PUBLIC
 **Descripción**: Usuario nuevo se registra con email/contraseña
 
 **Criterios de Aceptación**:
+
 ```gherkin
 Scenario: Registro exitoso con email válido
   GIVEN un usuario no registrado
@@ -114,6 +116,7 @@ Scenario: Captcha fallido
 ```
 
 **Escenarios Negativos**:
+
 - Email con + alias (test+alias@gmail.com) → tratar como único
 - Dominio temporal (tempmail.com) → bloquear con warning
 - IP con múltiples registros → rate limit 3/hora
@@ -126,6 +129,7 @@ Scenario: Captcha fallido
 **Descripción**: Usuario existente inicia sesión
 
 **Criterios de Aceptación**:
+
 ```gherkin
 Scenario: Login exitoso
   GIVEN un usuario verificado
@@ -164,6 +168,7 @@ Scenario: "Recordarme" activado
 ```
 
 **Recuperación de Contraseña**:
+
 ```gherkin
 Scenario: Flujo recuperación exitoso
   GIVEN usuario olvida su contraseña
@@ -183,6 +188,7 @@ Scenario: Flujo recuperación exitoso
 **Descripción**: Login con Google/Facebook
 
 **Criterios de Aceptación**:
+
 ```gherkin
 Scenario: Primer login con Google
   GIVEN usuario sin cuenta en ProSell
@@ -211,6 +217,7 @@ Scenario: Vinculación de cuentas
 ```
 
 **Mapeo de Datos Google**:
+
 ```
 Google Profile → ProSell User
   email         → email (VERIFIED)
@@ -226,6 +233,7 @@ Google Profile → ProSell User
 **Descripción**: Autenticación de dos factores obligatoria para admins
 
 **Criterios de Aceptación**:
+
 ```gherkin
 Scenario: Configuración inicial de 2FA
   GIVEN usuario con rol ADMIN/MANAGER
@@ -277,6 +285,7 @@ Scenario: Uso de código de respaldo
 **Descripción**: Control de acceso basado en roles
 
 **Criterios de Aceptación**:
+
 ```gherkin
 Scenario: Verificación de permisos en endpoint
   GIVEN usuario con rol ORG_ADMIN
@@ -336,22 +345,26 @@ Scenario: Usuario con múltiples roles
 ### 3.2 Sprint 3-4: Organizaciones (Semanas 5-8)
 
 **US-010: CRUD Organizaciones**
+
 - Crear con datos completos
 - Logo y banner
 - Información de contacto
 - Dirección
 
 **US-011: Verificación**
+
 - Estado: PENDING → VERIFIED/REJECTED
 - Documentación requerida
 - Notificación al admin
 
 **US-012: Configuración de Org**
+
 - Auto-publicar Sí/No
 - Límites (productos, usuarios, imágenes)
 - Comisiones personalizadas
 
 **US-013: Equipos ProSell**
+
 - Crear equipo con manager
 - Asignar vendedores (máx 10)
 - Asignar organizaciones
@@ -362,6 +375,7 @@ Scenario: Usuario con múltiples roles
 ### 3.3 Sprint 5-6: Productos (Semanas 9-12)
 
 **US-020: CRUD Productos**
+
 - Formulario dinámico por categoría
 - Campos base + específicos
 - Validaciones
@@ -370,6 +384,7 @@ Scenario: Usuario con múltiples roles
 **US-021: Categorías Dinámicas**
 
 Estructura jerárquica:
+
 ```
 Vehículos
 ├── Autos/Camionetas
@@ -389,6 +404,7 @@ Electrónicos, Maquinaria, Otros...
 ```
 
 **Campos Vehículos:**
+
 ```
 - VIN (con decoder)
 - Año, Marca, Modelo, Trim
@@ -399,6 +415,7 @@ Electrónicos, Maquinaria, Otros...
 ```
 
 **US-022: Galería de Imágenes**
+
 - Hasta 20 imágenes por producto
 - Drag & drop para ordenar
 - Imagen principal
@@ -406,17 +423,20 @@ Electrónicos, Maquinaria, Otros...
 - Almacenamiento en DO Spaces
 
 **US-023: Carga Masiva CSV**
+
 - Plantilla por categoría
 - Validación pre-importación
 - Reporte de errores
 - Procesamiento async
 
 **US-024: VIN Decoder**
+
 - Integración NHTSA API
 - Auto-completar campos
 - Guardar datos raw
 
 **US-025: Aprobación de Publicaciones**
+
 - Cola de pendientes
 - Aprobar/Rechazar con razón
 - Auto-aprobar si configurado
@@ -427,18 +447,21 @@ Electrónicos, Maquinaria, Otros...
 ### 3.4 Sprint 7-8: Catálogo Público (Semanas 13-16)
 
 **US-030: Listado de Productos**
+
 - Vista grid/lista
 - Paginación (20/página)
 - Ordenamiento múltiple
 - Responsive design
 
 **US-031: Búsqueda Avanzada**
+
 - Búsqueda full-text
 - Filtros por categoría
 - Filtros específicos (marca, modelo, año, precio, millas)
 - Filtro por ubicación
 
 **US-032: Detalle de Producto**
+
 - Galería con lightbox
 - Especificaciones completas
 - Análisis precio vs mercado
@@ -447,6 +470,7 @@ Electrónicos, Maquinaria, Otros...
 - Botones de contacto
 
 **US-033: Comparador**
+
 - Hasta 5 productos
 - Tabla comparativa
 - Destacar diferencias
@@ -459,10 +483,12 @@ Electrónicos, Maquinaria, Otros...
 **US-040: Sistema de Citas**
 
 Tipos:
+
 1. Cliente externo (WhatsApp 24/7 → Admin asigna → Vendedor contacta)
 2. Cliente interno (Vendedor crea directamente)
 
 Funcionalidades:
+
 - Crear cita con datos cliente
 - Generar código QR
 - Enviar por canal preferido
@@ -470,6 +496,7 @@ Funcionalidades:
 - Reprogramar/cancelar
 
 **US-041: Registro de Venta**
+
 - Seleccionar producto y vendedor
 - Precio final (editable)
 - Calcular comisiones
@@ -480,11 +507,13 @@ Funcionalidades:
 **US-042: Sistema de Comisiones**
 
 Distribución default:
+
 - Vendedor: 40%
 - Manager: 20%
 - ProSell: 40%
 
 Reglas:
+
 - % editables por Master
 - Manager puede vender (recibe % vendedor)
 - Comisiones PENDING → PAID
@@ -494,49 +523,54 @@ Reglas:
 ### 3.6 Sprint 11-12: Wallet (Semanas 21-24)
 
 **US-050: Billetera Virtual**
+
 - Balance en USD
 - Historial de transacciones
 - Facturación electrónica
 
 **US-051: Recarga**
+
 - Stripe (automático)
 - Zelle (manual)
 - Efectivo (manual)
 
 **US-052: Sistema de Tokens**
 
-| Token | Precio Sugerido |
-|-------|-----------------|
-| PHOTO_UPLOAD | $0.10/foto |
-| VEHICLE_LISTING | $5.00/listing |
-| WHATSAPP_MSG | $0.05/msg |
-| MAINTENANCE_FEE | $10.00/mes |
-| FEATURED_LISTING | $15.00/7días |
-| VIN_DECODE | $0.50/consulta |
+| Token            | Precio Sugerido |
+| ---------------- | --------------- |
+| PHOTO_UPLOAD     | $0.10/foto      |
+| VEHICLE_LISTING  | $5.00/listing   |
+| WHATSAPP_MSG     | $0.05/msg       |
+| MAINTENANCE_FEE  | $10.00/mes      |
+| FEATURED_LISTING | $15.00/7días    |
+| VIN_DECODE       | $0.50/consulta  |
 
 **US-053: Paquetes**
 
-| Paquete | Contenido | Precio |
-|---------|-----------|--------|
-| Starter | 10 listings + 100 fotos | $50 |
-| Professional | 30 listings + 300 fotos | $120 |
-| Enterprise | 100 listings + 1000 fotos | $350 |
+| Paquete      | Contenido                 | Precio |
+| ------------ | ------------------------- | ------ |
+| Starter      | 10 listings + 100 fotos   | $50    |
+| Professional | 30 listings + 300 fotos   | $120   |
+| Enterprise   | 100 listings + 1000 fotos | $350   |
 
 ---
 
 ## 4. REQUISITOS NO FUNCIONALES
 
 ### 4.1 Rendimiento
+
 - Carga inicial: < 3 segundos
 - API Response (p95): < 200ms
 - Usuarios concurrentes: 200
 
 ### 4.2 Disponibilidad
+
 - Uptime: 99.9%
 - RTO: < 1 hora
 - RPO: < 5 minutos
 
 ### 4.3 Seguridad
+
 - HTTPS obligatorio
 - JWT + Refresh tokens
 - Bcrypt para passwords
@@ -544,6 +578,7 @@ Reglas:
 - Rate limiting
 
 ### 4.4 Compatibilidad
+
 - Chrome, Firefox, Safari, Edge (últimas 2 versiones)
 - Responsive: Desktop, Tablet, Mobile
 - PWA: Instalable, offline básico
@@ -552,25 +587,27 @@ Reglas:
 
 ## 5. INTEGRACIONES
 
-| Servicio | Uso |
-|----------|-----|
-| Meta APIs | WhatsApp Business, Messenger |
-| Stripe | Pagos, facturación |
-| NHTSA | Decodificación VIN |
-| DigitalOcean Spaces | Almacenamiento imágenes |
-| Anthropic Claude | Agentes IA |
+| Servicio            | Uso                          |
+| ------------------- | ---------------------------- |
+| Meta APIs           | WhatsApp Business, Messenger |
+| Stripe              | Pagos, facturación           |
+| NHTSA               | Decodificación VIN           |
+| DigitalOcean Spaces | Almacenamiento imágenes      |
+| Anthropic Claude    | Agentes IA                   |
 
 ---
 
 ## 6. KPIs DE ÉXITO
 
 ### 6.1 Técnicos
+
 - Uptime > 99.9%
 - API Latency < 200ms
 - Test Coverage > 90%
 - Error Rate < 0.1%
 
 ### 6.2 Producto
+
 - Organizaciones activas: 300
 - Productos: 100,000
 - MAU: 50,000
@@ -618,12 +655,12 @@ LTV:CAC Ratio:
 
 ## 7. RIESGOS
 
-| Riesgo | Mitigación |
-|--------|------------|
-| Bloqueo scraping | Proxies rotativos, rate limiting |
-| Baja adopción | Piloto gratis, onboarding dedicado |
-| Performance escala | Cache, read replicas, CDN |
-| Seguridad | Auditorías, pentesting, encryption |
+| Riesgo             | Mitigación                         |
+| ------------------ | ---------------------------------- |
+| Bloqueo scraping   | Proxies rotativos, rate limiting   |
+| Baja adopción      | Piloto gratis, onboarding dedicado |
+| Performance escala | Cache, read replicas, CDN          |
+| Seguridad          | Auditorías, pentesting, encryption |
 
 ---
 
@@ -632,6 +669,7 @@ LTV:CAC Ratio:
 ### 8.1 GDPR y Privacidad (Europa)
 
 **Requisitos de Consentimiento**:
+
 ```
 CONSENTIMIENTO OBLIGATORIO:
   - Checkbox "Acepto términos y condiciones" (NO pre-seleccionado)
@@ -641,6 +679,7 @@ CONSENTIMIENTO OBLIGATORIO:
 ```
 
 **Derechos del Usuario (GDPR Art. 15-22)**:
+
 ```gherkin
 Scenario: Derecho de Acceso (Right to Access)
   GIVEN usuario logueado
@@ -682,6 +721,7 @@ Scenario: Retirada de Consentimiento
 ```
 
 **Retención de Datos**:
+
 ```
 TIPO DE DATO                  | RETENCIÓN | JUSTIFICACIÓN
 -----------------------------|-----------|------------------------
@@ -696,6 +736,7 @@ Support tickets              | 3 años    | Mejora servicio
 ### 8.2 CCPA (California Consumer Privacy Act)
 
 **Derechos Adicionales para California**:
+
 ```
 - Do Not Sell My Info (no vendemos datos, pero debe estar visible)
 - Opt-out de venta de datos (implementado como "no vendemos datos")
@@ -734,6 +775,7 @@ FUTURO (Fase 3):
 ```
 
 **Zonas Horarias**:
+
 ```
 ALMACENAMIENTO: Todos los timestamps en UTC
 DISPLAY: Convertido a timezone del usuario
@@ -757,6 +799,7 @@ CONVERSIÓN:
 **Fase 1 (MVP)**: Sin IVA/Impuestos (B2B)
 
 **Fase 2 (Futuro)**:
+
 ```
 IMPUESTOS A CONSIDERAR:
   - Argentina: IVA 21% (para residentes)
@@ -864,16 +907,16 @@ stateDiagram-v2
 
 ### Matriz de Testing
 
-| User Story | Unit Tests | Integration Tests | E2E Tests | Performance | Security |
-|------------|------------|-------------------|-----------|-------------|----------|
-| US-001 Registro | ✅ Email validation<br/>✅ Password strength<br/>✅ User creation | ✅ DB insert<br/>✅ Email send<br/>✅ Duplicate check | ✅ Full flow<br/>✅ Email click | ⚡ Registration < 500ms | 🔒 SQL injection<br/>🔒 Rate limit |
-| US-002 Login | ✅ Password verify<br/>✅ Token generation<br/>✅ Attempt counter | ✅ Auth check<br/>✅ Session create | ✅ Login flow<br/>✅ Blocked user | ⚡ Login < 300ms | 🔒 Brute force<br/>🔒 Token theft |
-| US-003 OAuth | ✅ Token parse<br/>✅ User mapping | ✅ OAuth call<br/>✅ Account link | ✅ Google flow<br/>✅ Link account | ⚡ OAuth < 2s | 🔒 Token storage |
-| US-004 2FA | ✅ TOTP generation<br/>✅ Code validation<br/>✅ Backup codes | ✅ QR generation<br/>✅ 2FA enable/disable | ✅ Setup flow<br/>✅ Login with 2FA | ⚡ Validation < 100ms | 🔒 Code exposure |
-| US-010 Org CRUD | ✅ Slug generation<br/>✅ Status validation | ✅ CRUD operations<br/>✅ Image upload | ✅ Create org<br/>✅ Edit org | ⚡ Save < 500ms | 🔒 Unauthorized edit |
-| US-020 Product CRUD | ✅ Price validation<br/>✅ Status transitions | ✅ Category FK<br/>✅ Image association | ✅ Create product<br/>✅ Edit product | ⚡ Save < 500ms | 🔒 Invalid data |
-| US-040 Citas | ✅ QR generation<br/>✅ Status transitions | ✅ Notification send<br/>✅ Calendar check | ✅ Book appointment<br/>✅ Cancel | ⚡ Create < 300ms | 🔒 Double booking |
-| US-041 Ventas | ✅ Commission calc<br/>✅ Price validation | ✅ Transaction create<br/>✅ Status update | ✅ Register sale<br/>✅ View commission | ⚡ Save < 500ms | 🔒 Invalid amount |
+| User Story          | Unit Tests                                                        | Integration Tests                                     | E2E Tests                               | Performance             | Security                           |
+| ------------------- | ----------------------------------------------------------------- | ----------------------------------------------------- | --------------------------------------- | ----------------------- | ---------------------------------- |
+| US-001 Registro     | ✅ Email validation<br/>✅ Password strength<br/>✅ User creation | ✅ DB insert<br/>✅ Email send<br/>✅ Duplicate check | ✅ Full flow<br/>✅ Email click         | ⚡ Registration < 500ms | 🔒 SQL injection<br/>🔒 Rate limit |
+| US-002 Login        | ✅ Password verify<br/>✅ Token generation<br/>✅ Attempt counter | ✅ Auth check<br/>✅ Session create                   | ✅ Login flow<br/>✅ Blocked user       | ⚡ Login < 300ms        | 🔒 Brute force<br/>🔒 Token theft  |
+| US-003 OAuth        | ✅ Token parse<br/>✅ User mapping                                | ✅ OAuth call<br/>✅ Account link                     | ✅ Google flow<br/>✅ Link account      | ⚡ OAuth < 2s           | 🔒 Token storage                   |
+| US-004 2FA          | ✅ TOTP generation<br/>✅ Code validation<br/>✅ Backup codes     | ✅ QR generation<br/>✅ 2FA enable/disable            | ✅ Setup flow<br/>✅ Login with 2FA     | ⚡ Validation < 100ms   | 🔒 Code exposure                   |
+| US-010 Org CRUD     | ✅ Slug generation<br/>✅ Status validation                       | ✅ CRUD operations<br/>✅ Image upload                | ✅ Create org<br/>✅ Edit org           | ⚡ Save < 500ms         | 🔒 Unauthorized edit               |
+| US-020 Product CRUD | ✅ Price validation<br/>✅ Status transitions                     | ✅ Category FK<br/>✅ Image association               | ✅ Create product<br/>✅ Edit product   | ⚡ Save < 500ms         | 🔒 Invalid data                    |
+| US-040 Citas        | ✅ QR generation<br/>✅ Status transitions                        | ✅ Notification send<br/>✅ Calendar check            | ✅ Book appointment<br/>✅ Cancel       | ⚡ Create < 300ms       | 🔒 Double booking                  |
+| US-041 Ventas       | ✅ Commission calc<br/>✅ Price validation                        | ✅ Transaction create<br/>✅ Status update            | ✅ Register sale<br/>✅ View commission | ⚡ Save < 500ms         | 🔒 Invalid amount                  |
 
 ### Criterios de Pass/Fail
 
@@ -1416,6 +1459,7 @@ Antes de comenzar el Sprint 1, verificar:
 ---
 
 **Documentos relacionados:**
+
 - [Arquitectura del Sistema](./01_ARQUITECTURA_PROSELL_SAAS_V2.md)
 - [Roadmap de Desarrollo](./04_ROADMAP_PROSELL_SAAS_V2.md)
 - [Lista de Tareas](./05_TAREAS_SPRINT_PROSELL_SAAS_V2.md)

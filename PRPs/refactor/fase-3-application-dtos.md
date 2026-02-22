@@ -8,19 +8,24 @@
 ## 1. Overview
 
 ### 1.1 Summary
+
 Migrate ALL application layer DTOs from dataclasses to Pydantic BaseModel with validation. DTOs are currently defined inline in use case files (not in application/dto/). This is Phase 3 of 8-phase Pydantic migration.
 
 ### 1.2 Dependencies
+
 - [x] Phase 2: Domain entities now Pydantic (DomainModel, ValueObject) ✅
 - [x] Existing use case logic works ✅
 
 ### 1.3 Completion Status
+
 **Phase 3 COMPLETED** - 2026-02-14
+
 - **Commit**: `7dbd6f7` - "refactor(application): complete Fase 3 - DTOs separados en archivos propios"
 - **Tests**: 113/113 passing ✅
 - **GGA**: Approved ✅
 
 ### 1.3 Links
+
 - Plan: `docs/plans/2026-02-14-pydantic-stack-refactoring.md#fase-3-application-dtos`
 
 ---
@@ -30,11 +35,13 @@ Migrate ALL application layer DTOs from dataclasses to Pydantic BaseModel with v
 ### 2.1 User Stories
 
 #### US-APP-001: Migrate Request DTOs to Pydantic
+
 **As a** Developer
 **I want** Request DTOs to use Pydantic with validation
 **So that** Input validation is declarative and consistent
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: RegisterUserRequest gets validation
   GIVEN RegisterUserRequest with @dataclass
@@ -46,11 +53,13 @@ Scenario: RegisterUserRequest gets validation
 ```
 
 #### US-APP-002: Migrate Response DTOs to Pydantic
+
 **As a** Developer
 **I want** Response DTOs to use Pydantic
 **So that** Serialization is consistent and type-safe
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: LoginUserResponse serializes correctly
   GIVEN LoginUserResponse with @dataclass
@@ -61,6 +70,7 @@ Scenario: LoginUserResponse serializes correctly
 ```
 
 ### 2.2 Functional Requirements
+
 - [ ] FR-001 Migrate RegisterUserRequest/Response to Pydantic
 - [ ] FR-002 Migrate LoginUserRequest/Response to Pydantic
 - [ ] FR-003 Migrate VerifyEmailRequest/Response to Pydantic
@@ -74,6 +84,7 @@ Scenario: LoginUserResponse serializes correctly
 - [ ] FR-011 Add Field constraints (min_length, max_length)
 
 ### 2.3 Non-Functional Requirements
+
 - **Performance**: Pydantic validation adds ~1-2ms overhead (acceptable)
 - **Security**: EmailStr and Field constraints prevent invalid input
 - **Scalability**: DTOs are lightweight and reusable
@@ -84,11 +95,11 @@ Scenario: LoginUserResponse serializes correctly
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|------------|---------|-------|
-| Python | 3.13+ | Modern type hints |
-| Pydantic | 2.12.0+ | BaseModel, EmailStr, Field, field_validator |
-| FastAPI | 0.115+ | Auto-serializes Pydantic models |
+| Component | Technology | Version                                     | Notes |
+| --------- | ---------- | ------------------------------------------- | ----- |
+| Python    | 3.13+      | Modern type hints                           |
+| Pydantic  | 2.12.0+    | BaseModel, EmailStr, Field, field_validator |
+| FastAPI   | 0.115+     | Auto-serializes Pydantic models             |
 
 ### 3.2 Key Libraries
 
@@ -102,6 +113,7 @@ from uuid import UUID
 ```
 
 ### 3.3 External Documentation
+
 - **Pydantic EmailStr**: https://docs.pydantic.dev/2.12/api/networks/#pydantic.networks.EmailStr
 - **Pydantic Field**: https://docs.pydantic.dev/2.12/api/fields/
 - **Pydantic field_validator**: https://docs.pydantic.dev/2.12/concepts/validators/
@@ -126,12 +138,15 @@ flowchart TD
 ### 4.2 Implementation Steps
 
 #### Step 1: Auth Use Cases (Register, Login, Refresh)
+
 **Files to modify**:
+
 - `apps/api/src/prosell/application/use_cases/auth/register_user.py`
 - `apps/api/src/prosell/application/use_cases/auth/login_user.py`
 - `apps/api/src/prosell/application/use_cases/auth/refresh_token.py`
 
 **register_user.py - Before**:
+
 ```python
 from dataclasses import dataclass
 
@@ -151,6 +166,7 @@ class RegisterUserResponse:
 ```
 
 **register_user.py - After**:
+
 ```python
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -175,6 +191,7 @@ class RegisterUserResponse(BaseModel):
 ```
 
 **login_user.py - Before**:
+
 ```python
 @dataclass
 class LoginUserRequest:
@@ -193,6 +210,7 @@ class LoginUserResponse:
 ```
 
 **login_user.py - After**:
+
 ```python
 from pydantic import BaseModel, EmailStr, Field
 
@@ -216,16 +234,20 @@ class LoginUserResponse(BaseModel):
 ```
 
 **Gotchas**:
+
 - EmailStr validates format automatically
 - Field() adds constraints (min_length, max_length)
 - `user: dict` → `user: UserInfo` for type safety
 - Use case logic doesn't change
 
 #### Step 2: Email Verification
+
 **Files to modify**:
+
 - `apps/api/src/prosell/application/use_cases/auth/verify_email.py`
 
 **Before**:
+
 ```python
 @dataclass
 class VerifyEmailRequest:
@@ -237,6 +259,7 @@ class VerifyEmailResponse:
 ```
 
 **After**:
+
 ```python
 class VerifyEmailRequest(BaseModel):
     token: str = Field(min_length=1)
@@ -246,11 +269,14 @@ class VerifyEmailResponse(BaseModel):
 ```
 
 #### Step 3: 2FA Use Cases
+
 **Files to modify**:
+
 - `apps/api/src/prosell/application/use_cases/auth/enable_2fa.py`
 - `apps/api/src/prosell/application/use_cases/auth/verify_2fa.py`
 
 **enable_2fa.py - DTOs**:
+
 ```python
 class Enable2FARequest(BaseModel):
     pass  # Empty body, just triggers 2FA setup
@@ -267,6 +293,7 @@ class Disable2FAResponse(BaseModel):
 ```
 
 **verify_2fa.py - DTOs**:
+
 ```python
 class Verify2FARequest(BaseModel):
     code: str = Field(min_length=6, max_length=6)
@@ -278,11 +305,14 @@ class Verify2FAResponse(BaseModel):
 ```
 
 #### Step 4: OAuth & Reset Password
+
 **Files to modify**:
+
 - `apps/api/src/prosell/application/use_cases/auth/oauth_login.py`
 - `apps/api/src/prosell/application/use_cases/auth/reset_password.py`
 
 **oauth_login.py - DTOs**:
+
 ```python
 class OAuthLoginRequest(BaseModel):
     provider: str
@@ -296,6 +326,7 @@ class OAuthLoginResponse(BaseModel):
 ```
 
 **reset_password.py - DTOs**:
+
 ```python
 class RequestPasswordResetRequest(BaseModel):
     email: EmailStr
@@ -398,13 +429,16 @@ cd apps/api && uv run pytest tests/unit/application/ -v
 ## 7. Testing Strategy
 
 ### 7.1 Unit Tests
+
 - **Existing tests**: None (application layer not tested yet)
 - **New tests**: Create in Phase 7
 
 ### 7.2 Integration Tests
+
 - Test via FastAPI endpoints
 
 ### 7.3 Coverage Targets
+
 - Application DTOs: 0% (no logic, just validation)
 
 ---
@@ -412,14 +446,17 @@ cd apps/api && uv run pytest tests/unit/application/ -v
 ## 8. Common Pitfalls
 
 ### 8.1 Forgetting EmailStr
+
 **Problem**: Using `str` instead of `EmailStr`
 **Solution**: Always use `EmailStr` for email fields
 
 ### 8.2 Untyped Dict in Response
+
 **Problem**: `user: dict` loses type information
 **Solution**: Create nested model (UserInfo)
 
 ### 8.3 Missing Field Constraints
+
 **Problem**: No min_length on passwords
 **Solution**: Add `Field(min_length=8)` to all password fields
 
@@ -428,6 +465,7 @@ cd apps/api && uv run pytest tests/unit/application/ -v
 ## 9. Rollback Plan
 
 If implementation fails:
+
 1. `git checkout apps/api/src/prosell/application/use_cases/`
 2. Migrate one use case at a time
 3. Test each before moving to next
@@ -459,6 +497,7 @@ If implementation fails:
 **Score**: 8/10
 
 **Reasoning**:
+
 - **Positive factors**:
   - Clear pattern (dataclass → BaseModel)
   - Pydantic validation is declarative
@@ -494,6 +533,7 @@ If implementation fails:
 8. **Clean Architecture** - DTOs properly layered ✅
 
 ### 📊 Statistics
+
 - **New DTOs created**: 9 files (register, login, oauth, two_factor, password, email, token, common)
 - **Use cases updated**: 17 files
 - **Lines added**: ~305 (new DTOs)
@@ -503,6 +543,7 @@ If implementation fails:
 - **GGA**: Approved ✅
 
 ### 📁 Files Created (application/dto/auth/)
+
 - `common.py` - UserInfo, TokenInfo
 - `register.py` - RegisterUserRequest/Response
 - `login.py` - LoginUserRequest/Response
@@ -522,6 +563,7 @@ If implementation fails:
 5. **Clean Architecture** - Proper layering (domain → application → infrastructure)
 
 ### 🚀 Next Steps
+
 Phase 3 is **100% COMPLETE** and ready to move to Phase 4 (Infrastructure Schemas).
 
 ---
@@ -531,6 +573,7 @@ Phase 3 is **100% COMPLETE** and ready to move to Phase 4 (Infrastructure Schema
 **Score**: 10/10 ✅ **PHASE COMPLETED SUCCESSFULLY**
 
 **Reasoning**:
+
 - **All DTOs migrated successfully**: 9 DTO files created ✅
 - **Tests passing**: 113/113 (100%) ✅
 - **Code organization**: Much better with dedicated files ✅

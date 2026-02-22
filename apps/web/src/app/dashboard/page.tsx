@@ -24,7 +24,8 @@ export default function DashboardPage() {
           </p>
 
           <p className="text-sm text-slate-500 dark:text-slate-500">
-            This is a protected route. If you can see this, authentication is working correctly.
+            This is a protected route. If you can see this, authentication is
+            working correctly.
           </p>
 
           {/* TODO: Add dashboard widgets */}
@@ -33,21 +34,27 @@ export default function DashboardPage() {
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
                 Analytics
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Coming soon...</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Coming soon...
+              </p>
             </div>
 
             <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
                 Products
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Coming soon...</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Coming soon...
+              </p>
             </div>
 
             <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
                 Appointments
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Coming soon...</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Coming soon...
+              </p>
             </div>
           </div>
         </div>

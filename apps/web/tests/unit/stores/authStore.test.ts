@@ -18,7 +18,10 @@ vi.mock("@/lib/api/authApi", () => ({
     me: vi.fn(),
   },
   ApiError: class MockApiError extends Error {
-    constructor(message: string, public status: number) {
+    constructor(
+      message: string,
+      public status: number,
+    ) {
       super(message);
       this.name = "ApiError";
     }
@@ -35,197 +38,198 @@ const createTestAuthStore = () =>
   create<AuthState>()(
     persist(
       (set, get) => ({
-    // Initial state
-    user: null,
-    accessToken: null,
-    refreshTokenValue: null,
-    isAuthenticated: false,
-    isLoading: false,
-    error: null,
-
-    login: async (credentials: { email: string; password: string }) => {
-      set({ isLoading: true, error: null });
-
-      try {
-        const response = await authApi.login(
-          credentials.email,
-          credentials.password
-        );
-
-        if (!response.tokens) {
-          set({
-            isLoading: false,
-            error: { message: "No tokens received from server" },
-          });
-          return;
-        }
-
-        set({
-          user: response.user,
-          accessToken: response.tokens.access_token,
-          refreshTokenValue: response.tokens.refresh_token,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        });
-      } catch (unknownError) {
-        const message =
-          unknownError instanceof ApiError
-            ? unknownError.message
-            : unknownError instanceof Error
-              ? unknownError.message
-              : "Error al iniciar sesión";
-
-        set({
-          isLoading: false,
-          error: { message },
-        });
-      }
-    },
-
-    register: async (data: {
-      email: string;
-      password: string;
-      first_name: string;
-      last_name: string;
-    }) => {
-      set({ isLoading: true, error: null });
-
-      try {
-        const response = await authApi.register(
-          data.email,
-          data.password,
-          data.first_name,
-          data.last_name
-        );
-
-        if (!response.tokens) {
-          set({
-            isLoading: false,
-            error: { message: "No tokens received from server" },
-          });
-          return;
-        }
-
-        set({
-          user: response.user,
-          accessToken: response.tokens.access_token,
-          refreshTokenValue: response.tokens.refresh_token,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        });
-      } catch (unknownError) {
-        const message =
-          unknownError instanceof ApiError
-            ? unknownError.message
-            : unknownError instanceof Error
-              ? unknownError.message
-              : "Error al registrarse";
-
-        set({
-          isLoading: false,
-          error: { message },
-        });
-      }
-    },
-
-    logout: async () => {
-      try {
-        set({ isLoading: true });
-
-        await authApi.logout();
-
-        set({
-          user: null,
-          accessToken: null,
-          refreshTokenValue: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        });
-      } catch {
-        // Logout locally even if API fails
-        set({
-          user: null,
-          accessToken: null,
-          refreshTokenValue: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        });
-      }
-    },
-
-    refreshToken: async () => {
-      const { refreshTokenValue: currentRefreshToken } = get();
-
-      if (!currentRefreshToken) {
-        set({
-          user: null,
-          accessToken: null,
-          refreshTokenValue: null,
-          isAuthenticated: false,
-        });
-        return;
-      }
-
-      try {
-        const tokens = await authApi.refreshToken(currentRefreshToken);
-
-        set({
-          accessToken: tokens.access_token,
-          refreshTokenValue: tokens.refresh_token,
-        });
-      } catch {
-        set({
-          user: null,
-          accessToken: null,
-          refreshTokenValue: null,
-          isAuthenticated: false,
-          error: {
-            message: "Sesión expirada",
-          },
-        });
-      }
-    },
-
-    updateUser: (updates: any) => {
-      const { user } = get();
-
-      if (!user) {
-        return;
-      }
-
-      set({
-        user: { ...user, ...updates },
-      });
-    },
-
-    clearError: () => {
-      set({ error: null });
-    },
-
-    setLoading: (loading: boolean) => {
-      set({ isLoading: loading });
-    },
-
-    reset: () => {
-      set({
+        // Initial state
         user: null,
         accessToken: null,
         refreshTokenValue: null,
         isAuthenticated: false,
         isLoading: false,
         error: null,
-      });
-    },
-  }),
-  {
-    name: "auth-storage",
-    skipHydration: true, // Key: prevents async hydration on mount, eliminating act() warnings
-  }
-));
+
+        login: async (credentials: { email: string; password: string }) => {
+          set({ isLoading: true, error: null });
+
+          try {
+            const response = await authApi.login(
+              credentials.email,
+              credentials.password,
+            );
+
+            if (!response.tokens) {
+              set({
+                isLoading: false,
+                error: { message: "No tokens received from server" },
+              });
+              return;
+            }
+
+            set({
+              user: response.user,
+              accessToken: response.tokens.access_token,
+              refreshTokenValue: response.tokens.refresh_token,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+            });
+          } catch (unknownError) {
+            const message =
+              unknownError instanceof ApiError
+                ? unknownError.message
+                : unknownError instanceof Error
+                  ? unknownError.message
+                  : "Error al iniciar sesión";
+
+            set({
+              isLoading: false,
+              error: { message },
+            });
+          }
+        },
+
+        register: async (data: {
+          email: string;
+          password: string;
+          first_name: string;
+          last_name: string;
+        }) => {
+          set({ isLoading: true, error: null });
+
+          try {
+            const response = await authApi.register(
+              data.email,
+              data.password,
+              data.first_name,
+              data.last_name,
+            );
+
+            if (!response.tokens) {
+              set({
+                isLoading: false,
+                error: { message: "No tokens received from server" },
+              });
+              return;
+            }
+
+            set({
+              user: response.user,
+              accessToken: response.tokens.access_token,
+              refreshTokenValue: response.tokens.refresh_token,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+            });
+          } catch (unknownError) {
+            const message =
+              unknownError instanceof ApiError
+                ? unknownError.message
+                : unknownError instanceof Error
+                  ? unknownError.message
+                  : "Error al registrarse";
+
+            set({
+              isLoading: false,
+              error: { message },
+            });
+          }
+        },
+
+        logout: async () => {
+          try {
+            set({ isLoading: true });
+
+            await authApi.logout();
+
+            set({
+              user: null,
+              accessToken: null,
+              refreshTokenValue: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error: null,
+            });
+          } catch {
+            // Logout locally even if API fails
+            set({
+              user: null,
+              accessToken: null,
+              refreshTokenValue: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error: null,
+            });
+          }
+        },
+
+        refreshToken: async () => {
+          const { refreshTokenValue: currentRefreshToken } = get();
+
+          if (!currentRefreshToken) {
+            set({
+              user: null,
+              accessToken: null,
+              refreshTokenValue: null,
+              isAuthenticated: false,
+            });
+            return;
+          }
+
+          try {
+            const tokens = await authApi.refreshToken(currentRefreshToken);
+
+            set({
+              accessToken: tokens.access_token,
+              refreshTokenValue: tokens.refresh_token,
+            });
+          } catch {
+            set({
+              user: null,
+              accessToken: null,
+              refreshTokenValue: null,
+              isAuthenticated: false,
+              error: {
+                message: "Sesión expirada",
+              },
+            });
+          }
+        },
+
+        updateUser: (updates: any) => {
+          const { user } = get();
+
+          if (!user) {
+            return;
+          }
+
+          set({
+            user: { ...user, ...updates },
+          });
+        },
+
+        clearError: () => {
+          set({ error: null });
+        },
+
+        setLoading: (loading: boolean) => {
+          set({ isLoading: loading });
+        },
+
+        reset: () => {
+          set({
+            user: null,
+            accessToken: null,
+            refreshTokenValue: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+          });
+        },
+      }),
+      {
+        name: "auth-storage",
+        skipHydration: true, // Key: prevents async hydration on mount, eliminating act() warnings
+      },
+    ),
+  );
 
 // Use test store instead of real store
 const useAuthStore = createTestAuthStore();
@@ -296,7 +300,7 @@ describe("authStore - Login Action", () => {
   it("should set error on failed login", async () => {
     // Mock authApi.login error
     vi.mocked(authApi.login).mockRejectedValue(
-      new ApiError("Invalid credentials", 401)
+      new ApiError("Invalid credentials", 401),
     );
 
     await useAuthStore.getState().login({
@@ -325,15 +329,15 @@ describe("authStore - Login Action", () => {
                 first_name: "Test",
                 last_name: "User",
                 role: "$1",
-        is_email_verified: true,
-      },
+                is_email_verified: true,
+              },
               tokens: {
                 access_token: "mock-access-token",
                 refresh_token: "mock-refresh-token",
               },
             });
           }, 100);
-        })
+        }),
     );
 
     // Start login without awaiting
@@ -384,7 +388,7 @@ describe("authStore - Register Action", () => {
   it("should set error on registration failure (email exists)", async () => {
     // Mock authApi.register error with "ya existe" message
     vi.mocked(authApi.register).mockRejectedValue(
-      new ApiError("El email ya existe", 400)
+      new ApiError("El email ya existe", 400),
     );
 
     await useAuthStore.getState().register({
@@ -485,7 +489,7 @@ describe("authStore - Clear Error Action", () => {
   it("should clear error state", async () => {
     // Mock authApi.login error
     vi.mocked(authApi.login).mockRejectedValue(
-      new ApiError("Invalid credentials", 401)
+      new ApiError("Invalid credentials", 401),
     );
 
     // Setup: trigger error
@@ -550,8 +554,8 @@ describe("authStore - Persist Middleware", () => {
           first_name: "Hydrated",
           last_name: "User",
           role: "$1",
-        is_email_verified: true,
-      },
+          is_email_verified: true,
+        },
         accessToken: "stored-access-token",
         refreshTokenValue: "stored-refresh-token",
         isAuthenticated: true,
@@ -594,7 +598,7 @@ describe("authStore - Performance API Marks", () => {
 
   beforeEach(() => {
     // Setup performance mock
-    Object.defineProperty(global, 'performance', {
+    Object.defineProperty(global, "performance", {
       value: mockPerformance,
       writable: true,
     });
@@ -607,17 +611,17 @@ describe("authStore - Performance API Marks", () => {
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ isAuthenticated: false }),
-      } as Response)
+      } as Response),
     );
 
     // Import the actual authStore (not the test store)
-    const { useAuthStore: realAuthStore } = await import('@/stores/authStore');
+    const { useAuthStore: realAuthStore } = await import("@/stores/authStore");
     const { initializeAuth } = realAuthStore.getState();
 
     await initializeAuth();
 
-    expect(mockPerformance.mark).toHaveBeenCalledWith('auth-init-start');
-    expect(mockPerformance.mark).toHaveBeenCalledWith('auth-init-end');
+    expect(mockPerformance.mark).toHaveBeenCalledWith("auth-init-start");
+    expect(mockPerformance.mark).toHaveBeenCalledWith("auth-init-end");
   });
 
   it("should measure duration between marks", async () => {
@@ -626,18 +630,18 @@ describe("authStore - Performance API Marks", () => {
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ isAuthenticated: false }),
-      } as Response)
+      } as Response),
     );
 
-    const { useAuthStore: realAuthStore } = await import('@/stores/authStore');
+    const { useAuthStore: realAuthStore } = await import("@/stores/authStore");
     const { initializeAuth } = realAuthStore.getState();
 
     await initializeAuth();
 
     expect(mockPerformance.measure).toHaveBeenCalledWith(
-      'auth-init-duration',
-      'auth-init-start',
-      'auth-init-end'
+      "auth-init-duration",
+      "auth-init-start",
+      "auth-init-end",
     );
   });
 
@@ -651,10 +655,10 @@ describe("authStore - Performance API Marks", () => {
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ isAuthenticated: false }),
-      } as Response)
+      } as Response),
     );
 
-    const { useAuthStore: realAuthStore } = await import('@/stores/authStore');
+    const { useAuthStore: realAuthStore } = await import("@/stores/authStore");
     const { initializeAuth } = realAuthStore.getState();
 
     // Should not throw
@@ -664,23 +668,25 @@ describe("authStore - Performance API Marks", () => {
   it("should log duration in development mode", async () => {
     // Set NODE_ENV to development
     const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = 'development';
+    process.env.NODE_ENV = "development";
 
     // Mock successful fetch
     global.fetch = vi.fn(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ isAuthenticated: false }),
-      } as Response)
+      } as Response),
     );
 
-    const { useAuthStore: realAuthStore } = await import('@/stores/authStore');
+    const { useAuthStore: realAuthStore } = await import("@/stores/authStore");
     const { initializeAuth } = realAuthStore.getState();
 
     await initializeAuth();
 
     // Verify getEntriesByName was called (for logging duration)
-    expect(mockPerformance.getEntriesByName).toHaveBeenCalledWith('auth-init-duration');
+    expect(mockPerformance.getEntriesByName).toHaveBeenCalledWith(
+      "auth-init-duration",
+    );
 
     // Restore NODE_ENV
     process.env.NODE_ENV = originalEnv;
@@ -690,7 +696,7 @@ describe("authStore - Performance API Marks", () => {
 describe("authStore - initialized Flag", () => {
   beforeEach(async () => {
     // Mock performance API
-    Object.defineProperty(global, 'performance', {
+    Object.defineProperty(global, "performance", {
       value: {
         mark: vi.fn(),
         measure: vi.fn(),
@@ -702,12 +708,12 @@ describe("authStore - initialized Flag", () => {
     localStorage.clear();
 
     // Reset store state between tests
-    const { useAuthStore } = await import('@/stores/authStore');
+    const { useAuthStore } = await import("@/stores/authStore");
     useAuthStore.getState().reset();
   });
 
   it("should initialize with initialized=false", async () => {
-    const { useAuthStore } = await import('@/stores/authStore');
+    const { useAuthStore } = await import("@/stores/authStore");
     const { initialized } = useAuthStore.getState();
     expect(initialized).toBe(false);
   });
@@ -716,14 +722,21 @@ describe("authStore - initialized Flag", () => {
     global.fetch = vi.fn(() =>
       Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({
-          isAuthenticated: true,
-          user: { id: '123', email: 'test@test.com', first_name: 'Test', last_name: 'User', role: 'user' },
-        }),
-      } as Response)
+        json: () =>
+          Promise.resolve({
+            isAuthenticated: true,
+            user: {
+              id: "123",
+              email: "test@test.com",
+              first_name: "Test",
+              last_name: "User",
+              role: "user",
+            },
+          }),
+      } as Response),
     );
 
-    const { useAuthStore } = await import('@/stores/authStore');
+    const { useAuthStore } = await import("@/stores/authStore");
     const { initializeAuth } = useAuthStore.getState();
     await initializeAuth();
 
@@ -736,10 +749,10 @@ describe("authStore - initialized Flag", () => {
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ isAuthenticated: false }),
-      } as Response)
+      } as Response),
     );
 
-    const { useAuthStore } = await import('@/stores/authStore');
+    const { useAuthStore } = await import("@/stores/authStore");
     const { initializeAuth } = useAuthStore.getState();
     await initializeAuth();
 
@@ -751,14 +764,21 @@ describe("authStore - initialized Flag", () => {
     global.fetch = vi.fn(() =>
       Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({
-          isAuthenticated: true,
-          user: { id: '123', email: 'test@test.com', first_name: 'Test', last_name: 'User', role: 'user' },
-        }),
-      } as Response)
+        json: () =>
+          Promise.resolve({
+            isAuthenticated: true,
+            user: {
+              id: "123",
+              email: "test@test.com",
+              first_name: "Test",
+              last_name: "User",
+              role: "user",
+            },
+          }),
+      } as Response),
     );
 
-    const { useAuthStore } = await import('@/stores/authStore');
+    const { useAuthStore } = await import("@/stores/authStore");
 
     // First call - should initialize
     await useAuthStore.getState().initializeAuth();
@@ -777,7 +797,7 @@ describe("authStore - initialized Flag", () => {
     // Mock logout API
     vi.mocked(authApi.logout).mockResolvedValue(undefined);
 
-    const { useAuthStore } = await import('@/stores/authStore');
+    const { useAuthStore } = await import("@/stores/authStore");
 
     // Set initialized to true
     useAuthStore.setState({ initialized: true });
@@ -792,18 +812,25 @@ describe("authStore - initialized Flag", () => {
     global.fetch = vi.fn(() =>
       Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({
-          isAuthenticated: true,
-          user: { id: '123', email: 'test@test.com', first_name: 'Test', last_name: 'User', role: 'user' },
-        }),
-      } as Response)
+        json: () =>
+          Promise.resolve({
+            isAuthenticated: true,
+            user: {
+              id: "123",
+              email: "test@test.com",
+              first_name: "Test",
+              last_name: "User",
+              role: "user",
+            },
+          }),
+      } as Response),
     );
 
-    const { useAuthStore } = await import('@/stores/authStore');
+    const { useAuthStore } = await import("@/stores/authStore");
     await useAuthStore.getState().initializeAuth();
 
     // Check localStorage was updated
-    const stored = localStorage.getItem('auth-storage');
+    const stored = localStorage.getItem("auth-storage");
     expect(stored).toContain('"initialized":true');
   });
 });

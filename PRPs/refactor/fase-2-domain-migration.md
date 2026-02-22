@@ -8,19 +8,24 @@
 ## 1. Overview
 
 ### 1.1 Summary
+
 Migrate ALL domain layer from dataclasses to Pydantic BaseModel: entities, value objects, events, and service ports (ABC → Protocol). This is Phase 2 of 8-phase Pydantic migration.
 
 ### 1.2 Dependencies
+
 - [x] Phase 1: Base models created in `domain/base.py` ✅
 - [x] Existing tests pass ✅
 
 ### 1.3 Completion Status
+
 **Phase 2 COMPLETED** - 2026-02-14
+
 - **Commit**: `763e5d3` - "refactor(domain): migrate entities to Pydantic BaseModel"
 - **Tests**: 113/113 passing ✅
 - **GGA**: Approved ✅
 
 ### 1.3 Links
+
 - Plan: `docs/plans/2026-02-14-pydantic-stack-refactoring.md#fase-2-domain-layer`
 - Base Models: `apps/api/src/prosell/domain/base.py`
 
@@ -31,11 +36,13 @@ Migrate ALL domain layer from dataclasses to Pydantic BaseModel: entities, value
 ### 2.1 User Stories
 
 #### US-DOM-001: Migrate Entities to Pydantic
+
 **As a** Developer
 **I want** All domain entities to use Pydantic BaseModel
 **So that** Entities get validation, serialization, and from_attributes support
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: User entity migrates to DomainModel
   GIVEN User entity with @dataclass
@@ -53,11 +60,13 @@ Scenario: Role entity migrates to DomainModel
 ```
 
 #### US-DOM-002: Migrate Value Objects to Pydantic
+
 **As a** Developer
 **I want** Value objects to inherit from ValueObject base
 **So that** They're immutable and validated
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Email value object migrates
   GIVEN Email with @dataclass(frozen=True)
@@ -68,11 +77,13 @@ Scenario: Email value object migrates
 ```
 
 #### US-DOM-003: Convert Service Ports to Protocol
+
 **As a** Developer
 **I want** Service interfaces to use Protocol not ABC
 **So that** Duck typing is consistent across codebase
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: IJWTService converts to Protocol
   GIVEN IJWTService(ABC) with @abstractmethod
@@ -83,6 +94,7 @@ Scenario: IJWTService converts to Protocol
 ```
 
 ### 2.2 Functional Requirements
+
 - [x] FR-001 Migrate User entity (211 lines) to DomainModel ✅
 - [x] FR-002 Migrate Role entity (179 lines) to DomainModel ✅
 - [x] FR-003 Migrate Session entity (54 lines) to DomainModel ✅
@@ -95,6 +107,7 @@ Scenario: IJWTService converts to Protocol
 - [x] FR-010 Update StrEnum usage for UserStatus ✅
 
 ### 2.3 Non-Functional Requirements
+
 - **Performance**: Pydantic validation adds minimal overhead (<5%)
 - **Security**: Field validation prevents invalid states
 - **Scalability**: Base models are reusable across all domain
@@ -105,11 +118,11 @@ Scenario: IJWTService converts to Protocol
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|------------|---------|-------|
-| Python | 3.13+ | PEP 695 type aliases, StrEnum |
-| Pydantic | 2.12.0+ | BaseModel, ConfigDict, Field, field_validator |
-| SQLAlchemy | 2.0.36+ | Used in repositories (Phase 4) |
+| Component  | Technology | Version                                       | Notes |
+| ---------- | ---------- | --------------------------------------------- | ----- |
+| Python     | 3.13+      | PEP 695 type aliases, StrEnum                 |
+| Pydantic   | 2.12.0+    | BaseModel, ConfigDict, Field, field_validator |
+| SQLAlchemy | 2.0.36+    | Used in repositories (Phase 4)                |
 
 ### 3.2 Key Libraries
 
@@ -128,6 +141,7 @@ from uuid import UUID
 ```
 
 ### 3.3 External Documentation
+
 - **Pydantic Models**: https://docs.pydantic.dev/2.12/concepts/models/
 - **Pydantic Validators**: https://docs.pydantic.dev/2.12/concepts/validators/
 - **Python Protocol**: https://docs.python.org/3.13/library/typing.html#typing.Protocol
@@ -155,11 +169,14 @@ flowchart TD
 ### 4.2 Implementation Steps
 
 #### Step 1: Value Objects Migration
+
 **Files to modify**:
+
 - `apps/api/src/prosell/domain/value_objects/email.py` (56 lines)
 - `apps/api/src/prosell/domain/value_objects/user_status.py` (DELETE - 22 lines)
 
 **email.py - Before**:
+
 ```python
 from dataclasses import dataclass
 
@@ -176,6 +193,7 @@ class Email:
 ```
 
 **email.py - After**:
+
 ```python
 from pydantic import EmailStr, field_validator
 from prosell.domain.base import ValueObject
@@ -204,20 +222,25 @@ class Email(ValueObject):
 ```
 
 **user_status.py - DELETE ENTIRE FILE**:
+
 - UserStatus is already in `domain/entities/user.py`
 - Duplicate causes confusion
 
 **Gotchas**:
+
 - Pydantic EmailStr validates format automatically
 - Use `@field_validator` for custom validation (disposable domains)
 - `frozen=True` from ValueObject makes it immutable
 - Properties work same as before
 
 #### Step 2: Entity Migration - User
+
 **Files to modify**:
+
 - `apps/api/src/prosell/domain/entities/user.py` (211 lines)
 
 **Before**:
+
 ```python
 from dataclasses import dataclass
 from enum import Enum
@@ -249,6 +272,7 @@ class User:
 ```
 
 **After**:
+
 ```python
 from enum import StrEnum
 from pydantic import Field
@@ -289,16 +313,20 @@ class User(DomainModel):
 ```
 
 **Gotchas**:
+
 - `str, Enum` → `StrEnum`
 - Fields without defaults MUST come before fields with defaults
 - `validate_assignment=True` validates on every field assignment
 - All business logic methods work identically
 
 #### Step 3: Entity Migration - Role
+
 **Files to modify**:
+
 - `apps/api/src/prosell/domain/entities/role.py` (179 lines)
 
 **Before**:
+
 ```python
 from dataclasses import dataclass
 from enum import StrEnum
@@ -312,6 +340,7 @@ class Role:
 ```
 
 **After**:
+
 ```python
 from prosell.domain.base import DomainModel
 from pydantic import Field
@@ -328,15 +357,19 @@ class Role(DomainModel):
 ```
 
 **Gotchas**:
+
 - `RoleType` and `Permission` already use `StrEnum` - no changes needed
 - `ROLE_PERMISSIONS` dict stays same
 - Factory methods work identically
 
 #### Step 4: Entity Migration - Session
+
 **Files to modify**:
+
 - `apps/api/src/prosell/domain/entities/session.py` (54 lines)
 
 **Before**:
+
 ```python
 from dataclasses import dataclass
 
@@ -349,6 +382,7 @@ class Session:
 ```
 
 **After**:
+
 ```python
 from prosell.domain.base import DomainModel
 
@@ -364,14 +398,18 @@ class Session(DomainModel):
 ```
 
 **Gotchas**:
+
 - Remove `from datetime import timedelta` from methods
 - Import at module level: `from datetime import timedelta`
 
 #### Step 5: Domain Events Migration
+
 **Files to modify**:
+
 - `apps/api/src/prosell/domain/events/user_events.py` (109 lines)
 
 **Before**:
+
 ```python
 from dataclasses import dataclass
 
@@ -388,6 +426,7 @@ class UserRegisteredEvent:
 ```
 
 **After**:
+
 ```python
 from prosell.domain.base import DomainEvent
 
@@ -404,17 +443,21 @@ class UserLoggedInEvent(DomainEvent):
 ```
 
 **Gotchas**:
+
 - `frozen=True` from DomainEvent base
 - No need for `__post_init__` - `default_factory` handles it
 - All 8 event classes updated
 
 #### Step 6: Service Ports ABC → Protocol
+
 **Files to modify**:
+
 - `apps/api/src/prosell/domain/ports/i_jwt_service.py` (74 lines)
 - `apps/api/src/prosell/domain/ports/i_password_service.py` (53 lines)
 - `apps/api/src/prosell/domain/ports/i_totp_service.py` (64 lines)
 
 **Before**:
+
 ```python
 from abc import ABC, abstractmethod
 
@@ -426,6 +469,7 @@ class IJWTService(ABC):
 ```
 
 **After**:
+
 ```python
 from typing import Protocol
 
@@ -445,6 +489,7 @@ class IJWTService(Protocol):
 ```
 
 **Gotchas**:
+
 - Remove all `@abstractmethod` decorators
 - Replace method bodies with `...` (Ellipsis)
 - Infrastructure implementations don't need changes (duck typing)
@@ -538,13 +583,16 @@ cd apps/api && python -c "from prosell.domain.entities.user import User; print('
 ## 7. Testing Strategy
 
 ### 7.1 Unit Tests
+
 - **Existing tests**: Most work without changes (factory methods shield tests)
 - **Test updates needed**: Tests directly instantiating classes may need adjustment
 
 ### 7.2 Integration Tests
+
 - None for this phase
 
 ### 7.3 Coverage Targets
+
 - Unit tests: >80% (maintain current)
 
 ---
@@ -552,14 +600,17 @@ cd apps/api && python -c "from prosell.domain.entities.user import User; print('
 ## 8. Common Pitfalls
 
 ### 8.1 Field Ordering in Pydantic
+
 **Problem**: Fields with defaults must come AFTER required fields
 **Solution**: Reorder fields in definition
 
 ### 8.2 Forward Ref for Roles
+
 **Problem**: `roles: list["Role"] | None = None` looks like circular ref
 **Solution**: Pydantic handles this correctly with `model_rebuild()`
 
 ### 8.3 Using ABC on Protocol
+
 **Problem**: Still using `@abstractmethod` on Protocol methods
 **Solution**: Use `...` (Ellipsis) as method body
 
@@ -568,6 +619,7 @@ cd apps/api && python -c "from prosell.domain.entities.user import User; print('
 ## 9. Rollback Plan
 
 If implementation fails:
+
 1. `git checkout apps/api/src/prosell/domain/`
 2. Verify tests pass
 3. Migrate incrementally (one entity at a time)
@@ -610,6 +662,7 @@ If implementation fails:
 8. **StrEnum** - UserStatus using StrEnum pattern ✅
 
 ### 📊 Statistics
+
 - **Files modified**: 8
 - **Lines changed**: ~600 lines (entities, events, ports)
 - **Tests**: 113/113 passing (100%) ✅
@@ -626,6 +679,7 @@ If implementation fails:
 5. **String Annotations** - Needed for forward refs with Pydantic
 
 ### 🚀 Next Steps
+
 Phase 2 is **100% COMPLETE** and ready to move to Phase 3 (Application DTOs).
 
 ---
@@ -635,6 +689,7 @@ Phase 2 is **100% COMPLETE** and ready to move to Phase 3 (Application DTOs).
 **Score**: 10/10 ✅ **PHASE COMPLETED SUCCESSFULLY**
 
 **Reasoning**:
+
 - **All requirements met**: Domain entities successfully migrated to Pydantic ✅
 - **Tests passing**: 113/113 (100%) with zero test changes ✅
 - **Code quality**: Ruff and Pyright both passing ✅

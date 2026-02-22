@@ -77,6 +77,7 @@ git status
 ```
 
 **Lo que hace esta fase**:
+
 - Crea `apps/api/src/prosell/domain/base.py` (DomainModel, ValueObject, DomainEvent)
 - Elimina `python-jose[cryptography]` de `pyproject.toml`
 - Configura Pydantic 2.12+ correctamente
@@ -106,6 +107,7 @@ git branch -d feature/fase-2-domain
 ```
 
 **Lo que hace esta fase**:
+
 - Migra entities (User, Role, Session) a DomainModel
 - Migra value objects (Email) a ValueObject
 - Migra events a DomainEvent
@@ -136,6 +138,7 @@ git branch -d feature/fase-3-application
 ```
 
 **Lo que hace esta fase**:
+
 - Migra TODOS los DTOs de application a BaseModel
 - Agrega validación Pydantic (EmailStr, Field, field_validator)
 
@@ -164,6 +167,7 @@ git branch -d feature/fase-4-infrastructure
 ```
 
 **Lo que hace esta fase**:
+
 - Extraer schemas de API a módulo separado
 - Actualizar repos para usar `model_validate()`
 - Eliminar ABC de services
@@ -193,6 +197,7 @@ git branch -d feature/fase-5-python313
 ```
 
 **Lo que hace esta fase**:
+
 - Aplicar sintaxis Python 3.13+ (type aliases, StrEnum, Annotated)
 - Modernizar todo el código
 
@@ -221,6 +226,7 @@ git branch -d feature/fase-6-cleanup
 ```
 
 **Lo que hace esta fase**:
+
 - Eliminar UserStatus duplicado
 - Verificar que no queden dependencias sin usar
 
@@ -249,6 +255,7 @@ git branch -d feature/fase-7-testing
 ```
 
 **Lo que hace esta fase**:
+
 - Actualizar tests existentes para Pydantic
 - Agregar tests de validación Pydantic
 
@@ -277,6 +284,7 @@ git branch -d feature/fase-8-validation
 ```
 
 **Lo que hace esta fase**:
+
 - Validación final completa
 - Verificar API funcionando
 - Validar cobertura de tests
@@ -306,6 +314,7 @@ git checkout -b feature/fase-4-infrastructure
 ```
 
 Cuando cada una esté completa:
+
 ```bash
 # Desde cada terminal
 git checkout refactor/pydantic-stack-2026
@@ -328,6 +337,7 @@ git log --oneline --graph --all
 ```
 
 **Checklist**:
+
 - [ ] **Fase 1**: `apps/api/src/prosell/domain/base.py` existe
 - [ ] **Fase 2**: Entities/VOs/Events heredan de DomainModel/ValueObject/DomainEvent
 - [ ] **Fase 2**: Ports usan Protocol (no ABC)
@@ -457,6 +467,7 @@ git push origin main
 ## 📊 Archivos Referenciados
 
 ### PRPs (8 archivos)
+
 - `PRPs/refactor/fase-1-foundation.md` (339 líneas)
 - `PRPs/refactor/fase-2-domain-migration.md` (613 líneas)
 - `PRPs/refactor/fase-3-application-dtos.md` (471 líneas)
@@ -467,9 +478,11 @@ git push origin main
 - `PRPs/refactor/fase-8-validation.md` (935 líneas)
 
 ### Plan Original
+
 - `docs/planes/2026-02-14-pydantic-stack-refactoring.md` (plan maestro de 8 fases)
 
 ### Plan de Ejecución (este archivo)
+
 - `docs/planes/2026-02-14-pydantic-stack-ejecucion.md` (este documento)
 
 ---

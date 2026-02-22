@@ -19,7 +19,8 @@ import { RegisterPageContent } from "./RegisterPageContent";
 
 export const metadata = {
   title: "Sign Up | ProSell SaaS",
-  description: "Create your ProSell account to start analyzing vehicle markets and getting real-time insights.",
+  description:
+    "Create your ProSell account to start analyzing vehicle markets and getting real-time insights.",
   robots: {
     index: false, // Don't index authentication pages
     follow: false,

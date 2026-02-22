@@ -24,7 +24,9 @@ Phase 8 is the **FINAL validation phase** of the 8-phase Pydantic 2.12+ and Pyth
 - [x] **Phase 7**: Test coverage (new validation tests added) ✅
 
 ### 1.3.1 Completion Status
+
 **Phase 8 COMPLETED** - 2026-02-14
+
 - **Commit**: `183efbb` - "refactor: complete Fase 8 - Final validation Pydantic 2.12+ migration"
 - **Tests**: 149/149 passing (113 domain + 36 new validation) ✅
 - **Ruff**: PASSING (zero errors) ✅
@@ -58,6 +60,7 @@ Phase 8 is the **FINAL validation phase** of the 8-phase Pydantic 2.12+ and Pyth
 **So that** I can be confident the migration didn't break existing functionality
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Complete test suite execution
   GIVEN all 7 previous phases are complete
@@ -74,6 +77,7 @@ Scenario: Complete test suite execution
 **So that** code quality standards are maintained
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Ruff linter passes
   GIVEN all code is migrated to Pydantic
@@ -98,6 +102,7 @@ Scenario: Pyright type checker passes
 **So that** the application is production-ready
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: API server starts without errors
   GIVEN all dependencies are installed
@@ -120,6 +125,7 @@ Scenario: OpenAPI documentation generates
 **So that** the application uses the correct versions
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Pydantic dependencies are correct
   GIVEN pyproject.toml exists
@@ -154,16 +160,16 @@ Scenario: Pydantic dependencies are correct
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|------------|---------|-------|
-| **Python** | CPython | 3.13+ | Free-threading enabled |
-| **Validation** | Pydantic | 2.12.0+ | Core validation library |
-| **Settings** | pydantic-settings | 2.7.0+ | Configuration management |
-| **JWT** | pyjwt | 2.9.0+ | Token generation (NOT python-jose) |
-| **Linter** | Ruff | 0.8.0+ | Fast Python linter |
-| **Type Checker** | Pyright | 1.1.390+ | Strict type checking |
-| **Testing** | pytest | 8.3.0+ | Async test support |
-| **Coverage** | pytest-cov | 6.0.0+ | Coverage reporting |
+| Component        | Technology        | Version  | Notes                              |
+| ---------------- | ----------------- | -------- | ---------------------------------- |
+| **Python**       | CPython           | 3.13+    | Free-threading enabled             |
+| **Validation**   | Pydantic          | 2.12.0+  | Core validation library            |
+| **Settings**     | pydantic-settings | 2.7.0+   | Configuration management           |
+| **JWT**          | pyjwt             | 2.9.0+   | Token generation (NOT python-jose) |
+| **Linter**       | Ruff              | 0.8.0+   | Fast Python linter                 |
+| **Type Checker** | Pyright           | 1.1.390+ | Strict type checking               |
+| **Testing**      | pytest            | 8.3.0+   | Async test support                 |
+| **Coverage**     | pytest-cov        | 6.0.0+   | Coverage reporting                 |
 
 ### 3.2 Key Libraries
 
@@ -223,6 +229,7 @@ flowchart TD
 #### Step 1: Run Complete Test Suite
 
 **Files to validate**:
+
 - `tests/unit/domain/test_user_entity.py` - 45 tests
 - `tests/unit/domain/test_role_entity.py` - 32 tests
 - `tests/unit/domain/test_value_objects.py` - 24 tests
@@ -230,6 +237,7 @@ flowchart TD
 - **Total**: 113+ tests
 
 **Commands**:
+
 ```bash
 # Change to API directory
 cd apps/api
@@ -245,6 +253,7 @@ uv run pytest tests/unit/domain/ -v
 ```
 
 **Expected Output**:
+
 ```
 ======= test session starts ========
 collected 113 items
@@ -268,6 +277,7 @@ TOTAL                                               450      90    80%
 ```
 
 **Gotchas**:
+
 - **Test path warning**: Pytest shows warning about testpaths in pyproject.toml - this is OK, ignore it
 - **Coverage threshold**: 80% is minimum, aim for > 85%
 - **Speed**: First run may be slower due to compilation cache
@@ -275,10 +285,12 @@ TOTAL                                               450      90    80%
 #### Step 2: Run Linters
 
 **Files to validate**:
+
 - All Python files in `src/prosell/`
 - All test files in `tests/`
 
 **Commands**:
+
 ```bash
 # Ruff linter (check code quality)
 uv run ruff check .
@@ -291,6 +303,7 @@ uv run pyright
 ```
 
 **Expected Output**:
+
 ```
 # ruff check .
 (all files pass, no output)
@@ -303,6 +316,7 @@ uv run pyright
 ```
 
 **Gotchas**:
+
 - **Per-file ignores**: Some files have intentional ignores (see pyproject.toml)
 - **B008 warning**: Intentionally ignored for dependencies.py (FastAPI pattern)
 - **ARG002**: TODO for reset_password.py and verify_email.py (known issues)
@@ -311,11 +325,13 @@ uv run pyright
 #### Step 3: Verify API Functionality
 
 **Files to validate**:
+
 - `src/prosell/infrastructure/api/main.py` - FastAPI application
 - `src/prosell/infrastructure/api/routes/` - API routes
 - `src/prosell/infrastructure/api/schemas/` - Pydantic schemas
 
 **Commands**:
+
 ```bash
 # Start API server (development mode)
 fastapi dev src/prosell/infrastructure/api/main.py
@@ -325,6 +341,7 @@ uv run fastapi dev src/prosell/infrastructure/api/main.py
 ```
 
 **Manual Testing Checklist**:
+
 ```bash
 # 1. Verify server starts
 # Expected output:
@@ -356,6 +373,7 @@ curl -X POST http://localhost:8000/api/auth/register \
 ```
 
 **Gotchas**:
+
 - **Port 8000**: Ensure port is not already in use
 - **Database**: API may fail to start if database is not running (OK for this phase)
 - **CORS**: May see CORS warnings in browser console (expected for local dev)
@@ -363,9 +381,11 @@ curl -X POST http://localhost:8000/api/auth/register \
 #### Step 4: Verify Dependencies
 
 **Files to validate**:
+
 - `pyproject.toml` - Project dependencies
 
 **Commands**:
+
 ```bash
 # Check pyproject.toml
 cat apps/api/pyproject.toml | grep -A 30 "\[project\]"
@@ -377,6 +397,7 @@ grep "requires-python" pyproject.toml
 ```
 
 **Expected Output**:
+
 ```toml
 [project]
 name = "prosell-api"
@@ -393,6 +414,7 @@ dependencies = [
 ```
 
 **Gotchas**:
+
 - **python-jose**: If present, must be removed (pyjwt replaces it)
 - **Version pinning**: Use minimum versions (>=) not exact (==)
 - **Python 3.14**: Project supports 3.13+ (3.14 is OK)
@@ -400,9 +422,11 @@ dependencies = [
 #### Step 5: Pre-commit Validation
 
 **Files to validate**:
+
 - `.pre-commit-config.yaml` - Pre-commit hooks configuration
 
 **Commands**:
+
 ```bash
 # Run all pre-commit hooks manually
 pre-commit run --all-files
@@ -414,6 +438,7 @@ pre-commit run pyright --all-files
 ```
 
 **Expected Output**:
+
 ```
 ruff............................................................Passed
 ruff-format...................................................Passed
@@ -421,6 +446,7 @@ pyright.....................................................Passed
 ```
 
 **Gotchas**:
+
 - **GGA**: AI code review runs automatically (if enabled)
 - **Cache**: First run is slower, subsequent runs use cache
 
@@ -580,6 +606,7 @@ echo "ALL VALIDATIONS PASSED ✅"
 ```
 
 **Success Criteria**:
+
 - ✅ All tests pass (113+)
 - ✅ Coverage > 80%
 - ✅ Zero ruff errors
@@ -593,24 +620,26 @@ echo "ALL VALIDATIONS PASSED ✅"
 ### 7.1 Test Categories
 
 #### Domain Tests (113 tests)
+
 - **Entity tests** - Test business logic in isolation (User, Role)
 - **Value object tests** - Test immutable values (Email, UserStatus)
 - **Event tests** - Test domain events
 - **Exception tests** - Test business rule violations
 
 #### Validation Tests (from Phase 7)
+
 - **Pydantic schema tests** - Test request/response validation
 - **Type conversion tests** - Test string → UUID, etc.
 - **Error message tests** - Test validation error messages
 
 ### 7.2 Coverage Targets
 
-| Layer | Target | Current | Status |
-|-------|--------|---------|--------|
-| Domain | > 85% | TBD | [ ] |
-| Application | > 80% | TBD | [ ] |
-| Infrastructure | > 75% | TBD | [ ] |
-| **Overall** | **> 80%** | **TBD** | [ ] |
+| Layer          | Target    | Current | Status |
+| -------------- | --------- | ------- | ------ |
+| Domain         | > 85%     | TBD     | [ ]    |
+| Application    | > 80%     | TBD     | [ ]    |
+| Infrastructure | > 75%     | TBD     | [ ]    |
+| **Overall**    | **> 80%** | **TBD** | [ ]    |
 
 ### 7.3 Test Execution
 
@@ -638,6 +667,7 @@ uv run pytest tests/unit/domain/test_user_entity.py::TestUserFactoryMethods::tes
 ### 8.1 Test Path Warning
 
 **Problem**: Pytest shows warning about testpaths configuration
+
 ```
 PytestConfigWarning: No files were found in testpaths; consider removing or adjusting the testpaths configuration.
 ```
@@ -649,6 +679,7 @@ PytestConfigWarning: No files were found in testpaths; consider removing or adju
 **Problem**: Coverage drops below 80% threshold
 
 **Solution**:
+
 1. Check which files have low coverage: `uv run pytest --cov=src/prosell --cov-report=term-missing`
 2. Return to Phase 7 (tests) to add missing tests
 3. Focus on domain layer (highest priority)
@@ -658,6 +689,7 @@ PytestConfigWarning: No files were found in testpaths; consider removing or adju
 **Problem**: Ruff reports new errors
 
 **Solution**:
+
 1. Check error type: `uv run ruff check .`
 2. If error is in domain layer → Return to Phase 2
 3. If error is in API schemas → Return to Phase 4
@@ -669,6 +701,7 @@ PytestConfigWarning: No files were found in testpaths; consider removing or adju
 **Problem**: Pyright reports type errors
 
 **Solution**:
+
 1. Check error details: `uv run pyright`
 2. Add missing type hints
 3. Fix `Any` types (use proper types or `Unknown`)
@@ -679,6 +712,7 @@ PytestConfigWarning: No files were found in testpaths; consider removing or adju
 **Problem**: API server fails to start
 
 **Solution**:
+
 1. Check error message carefully
 2. If import error → Check Phase 4 (router schemas)
 3. If type error → Check Phase 2 (entities) or Phase 3 (value objects)
@@ -689,6 +723,7 @@ PytestConfigWarning: No files were found in testpaths; consider removing or adju
 **Problem**: Swagger UI doesn't show Pydantic schemas
 
 **Solution**:
+
 1. Check that schemas inherit from `BaseModel`
 2. Check that routes use `Annotated[Schema, Body()]` pattern
 3. Return to Phase 4 (API schemas) to fix
@@ -700,6 +735,7 @@ PytestConfigWarning: No files were found in testpaths; consider removing or adju
 If validation fails catastrophically:
 
 ### Step 1: Document Failure
+
 ```bash
 # Create failure report
 cat > validation-failure.md << EOF
@@ -726,6 +762,7 @@ EOF
 ```
 
 ### Step 2: Checkout Main Branch
+
 ```bash
 # Stash changes (if any)
 git stash
@@ -738,6 +775,7 @@ git pull origin main
 ```
 
 ### Step 3: Create Issue
+
 ```bash
 # Create GitHub issue
 gh issue create \
@@ -746,6 +784,7 @@ gh issue create \
 ```
 
 ### Step 4: Plan Fix
+
 1. Identify which phase (1-7) caused the failure
 2. Review that phase's PRP
 3. Re-run that phase's validation
@@ -757,28 +796,33 @@ gh issue create \
 ## 10. Completion Checklist
 
 ### Pre-Validation
+
 - [ ] All 7 previous phases (1-7) are complete
 - [ ] All previous phases have their own completion checked off
 - [ ] No uncommitted changes in working directory
 
 ### Tests
+
 - [ ] All 113+ domain tests pass
 - [ ] All Pydantic validation tests pass (from Phase 7)
 - [ ] Coverage > 80% (overall)
 - [ ] No test warnings (except testpaths warning, which is OK)
 
 ### Linters
+
 - [ ] Zero Ruff errors
 - [ ] Zero Ruff formatting differences
 - [ ] Zero Pyright type errors
 
 ### API
+
 - [ ] API server starts without errors
 - [ ] OpenAPI docs generate correctly
 - [ ] Swagger UI displays at /docs
 - [ ] Request/Response models show Pydantic schemas
 
 ### Dependencies
+
 - [ ] pydantic>=2.12.0 in pyproject.toml
 - [ ] pydantic-settings>=2.7.0 in pyproject.toml
 - [ ] pyjwt>=2.9.0 in pyproject.toml
@@ -786,11 +830,13 @@ gh issue create \
 - [ ] NO python-jose in dependencies
 
 ### Pre-commit
+
 - [ ] All pre-commit hooks pass
 - [ ] GGA code review passes (if enabled)
 - [ ] No sensitive data in code
 
 ### Git
+
 - [ ] All changes committed
 - [ ] Commit message follows conventional commits
 - [ ] Ready to push to remote
@@ -832,6 +878,7 @@ git push origin <your-branch-name>
 **Reasoning**:
 
 **Positive Factors**:
+
 - **No new code**: Phase 8 is validation only, no implementation risk
 - **Previous phases complete**: All 7 previous phases have their own PRPs and validation
 - **Clear success criteria**: Pass/fail is binary (tests pass or they don't)
@@ -840,11 +887,13 @@ git push origin <your-branch-name>
 - **Well-documented**: Clear commands for each validation step
 
 **Risk Factors**:
+
 - **Integration issues**: Small risk that phases don't work well together
 - **Environment differences**: Local environment may differ from CI/CD
 - **Test flakiness**: Some tests may be flaky (unlikely with pytest-asyncio)
 
 **Mitigation**:
+
 - Run validations in order (tests → linters → API)
 - Document any failures immediately
 - Keep changes in branch until all validations pass
@@ -905,16 +954,16 @@ curl http://localhost:8000/openapi.json | jq .
 
 ## Appendix B: Success Criteria Summary
 
-| Criterion | Command | Threshold | Status |
-|-----------|---------|-----------|--------|
-| **Tests Pass** | `uv run pytest -v` | 100% (113/113) | [x] ✅ |
-| **Coverage** | `uv run pytest --cov` | > 80% | [x] ✅ |
-| **Ruff Errors** | `uv run ruff check .` | 0 errors | [x] ✅ |
-| **Ruff Format** | `uv run ruff format --check .` | 0 diffs | [x] ✅ |
-| **Pyright** | `uv run pyright` | 0 errors | [x] ✅ |
-| **API Starts** | `fastapi dev ...` | Yes | [x] ✅ |
-| **OpenAPI Docs** | `curl /docs` | Yes | [x] ✅ |
-| **Dependencies** | `grep pyproject.toml` | All present | [x] ✅ |
+| Criterion        | Command                        | Threshold      | Status |
+| ---------------- | ------------------------------ | -------------- | ------ |
+| **Tests Pass**   | `uv run pytest -v`             | 100% (113/113) | [x] ✅ |
+| **Coverage**     | `uv run pytest --cov`          | > 80%          | [x] ✅ |
+| **Ruff Errors**  | `uv run ruff check .`          | 0 errors       | [x] ✅ |
+| **Ruff Format**  | `uv run ruff format --check .` | 0 diffs        | [x] ✅ |
+| **Pyright**      | `uv run pyright`               | 0 errors       | [x] ✅ |
+| **API Starts**   | `fastapi dev ...`              | Yes            | [x] ✅ |
+| **OpenAPI Docs** | `curl /docs`                   | Yes            | [x] ✅ |
+| **Dependencies** | `grep pyproject.toml`          | All present    | [x] ✅ |
 
 ---
 
@@ -943,6 +992,7 @@ flowchart TD
 **Document Status**: Draft
 **Last Updated**: 2026-02-14
 **Next Review**: After Phase 7 completion
+
 ---
 
 ## 13. Phase 8 Completion Summary (2026-02-14) ✅
@@ -962,35 +1012,37 @@ flowchart TD
 
 ### 📊 Final Statistics
 
-| Metric | Result | Target | Status |
-|--------|--------|--------|--------|
-| **Domain Tests** | 129/129 | 100% | ✅ PASSING |
-| **Validation Tests** | 20/20 | 100% | ✅ PASSING |
-| **Total Tests** | 149/149 | 100% | ✅ PASSING |
-| **Coverage** | 96% | >80% | ✅ PASSING |
-| **Ruff Errors** | 0 | 0 | ✅ PASSING |
-| **Ruff Format** | 0 diffs | 0 | ✅ PASSING |
-| **Pyright Errors** | 0 | 0 | ✅ PASSING |
-| **API Start** | Success | Yes | ✅ PASSING |
-| **OpenAPI Docs** | Generated | Yes | ✅ PASSING |
-| **Dependencies** | Correct | All | ✅ VERIFIED |
+| Metric               | Result    | Target | Status      |
+| -------------------- | --------- | ------ | ----------- |
+| **Domain Tests**     | 129/129   | 100%   | ✅ PASSING  |
+| **Validation Tests** | 20/20     | 100%   | ✅ PASSING  |
+| **Total Tests**      | 149/149   | 100%   | ✅ PASSING  |
+| **Coverage**         | 96%       | >80%   | ✅ PASSING  |
+| **Ruff Errors**      | 0         | 0      | ✅ PASSING  |
+| **Ruff Format**      | 0 diffs   | 0      | ✅ PASSING  |
+| **Pyright Errors**   | 0         | 0      | ✅ PASSING  |
+| **API Start**        | Success   | Yes    | ✅ PASSING  |
+| **OpenAPI Docs**     | Generated | Yes    | ✅ PASSING  |
+| **Dependencies**     | Correct   | All    | ✅ VERIFIED |
 
 ### 🎯 All 8 Phases Complete
 
-| Phase | Status | Commit | Date |
-|-------|--------|--------|------|
-| Phase 1: Foundation | ✅ Complete | `db374f0` | 2026-02-14 |
-| Phase 2: Domain Migration | ✅ Complete | `763e5d3` | 2026-02-14 |
-| Phase 3: Application DTOs | ✅ Complete | `7dbd6f7` | 2026-02-14 |
-| Phase 4: Infrastructure | ✅ Complete | `e4b8775` | 2026-02-14 |
-| Phase 5: Python 3.13+ | ✅ Complete | `09de105` | 2026-02-14 |
-| Phase 6: Cleanup | ✅ Complete | `4dc5e65` | 2026-02-14 |
-| Phase 7: Testing | ✅ Complete | `40b1b39` | 2026-02-14 |
-| Phase 8: Validation | ✅ Complete | `183efbb` | 2026-02-14 |
-| **Merge to main** | ✅ **COMPLETE** | **`1369fa8`** | **2026-02-14** |
+| Phase                     | Status          | Commit        | Date           |
+| ------------------------- | --------------- | ------------- | -------------- |
+| Phase 1: Foundation       | ✅ Complete     | `db374f0`     | 2026-02-14     |
+| Phase 2: Domain Migration | ✅ Complete     | `763e5d3`     | 2026-02-14     |
+| Phase 3: Application DTOs | ✅ Complete     | `7dbd6f7`     | 2026-02-14     |
+| Phase 4: Infrastructure   | ✅ Complete     | `e4b8775`     | 2026-02-14     |
+| Phase 5: Python 3.13+     | ✅ Complete     | `09de105`     | 2026-02-14     |
+| Phase 6: Cleanup          | ✅ Complete     | `4dc5e65`     | 2026-02-14     |
+| Phase 7: Testing          | ✅ Complete     | `40b1b39`     | 2026-02-14     |
+| Phase 8: Validation       | ✅ Complete     | `183efbb`     | 2026-02-14     |
+| **Merge to main**         | ✅ **COMPLETE** | **`1369fa8`** | **2026-02-14** |
 
 ### 🏆 Achievement Unlocked
+
 **PYDANTIC REFACTOR 100% COMPLETADO** ✨
+
 - **8/8 phases** completed successfully
 - **149 tests** passing (100%)
 - **0 errors** in all validators (Ruff, Pyright, GGA)
@@ -999,7 +1051,9 @@ flowchart TD
 - **Modern Python** syntax (3.13+) applied
 
 ### 🚀 Next Steps
+
 The Pydantic refactor is **100% COMPLETE** and all phases are merged to main. Ready for:
+
 - Next feature development
 - Additional domain entities (if needed)
 - Integration tests with real database

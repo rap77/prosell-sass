@@ -23,7 +23,9 @@ Phase 7 updates all existing tests to work with Pydantic entities after the migr
 - [x] **Phase 6**: Value objects migration (Email, UserStatus) ✅
 
 ### 1.3.1 Completion Status
+
 **Phase 7 COMPLETED** - 2026-02-14
+
 - **Commit**: `40b1b39` - "test(domain): complete Fase 7 - Pydantic validation tests"
 - **Tests**: 113/113 passing + new Pydantic validation tests ✅
 - **Coverage**: Maintained >80% ✅
@@ -45,11 +47,13 @@ Phase 7 updates all existing tests to work with Pydantic entities after the migr
 ### 2.1 User Stories
 
 #### US-TEST-001: Existing Tests Pass Without Changes
+
 **As a** Developer
 **I want** existing domain tests to pass without modification
 **So that** the Pydantic migration doesn't break existing test coverage
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Existing domain entity tests pass
   GIVEN all domain tests use factory methods (User.create, Role.create_system_role)
@@ -61,11 +65,13 @@ Scenario: Existing domain entity tests pass
 ```
 
 #### US-TEST-002: Pydantic Validation Tests Added
+
 **As a** Developer
 **I want** new tests for Pydantic validation behaviors
 **So that** we verify Pydantic validators work correctly
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Pydantic rejects invalid data
   GIVEN User entity with Pydantic validators
@@ -81,11 +87,13 @@ Scenario: Email rejects disposable domains
 ```
 
 #### US-TEST-003: Test Coverage Maintained
+
 **As a** Developer
 **I want** test coverage to stay above 80%
 **So that** we maintain code quality standards
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Coverage report meets threshold
   GIVEN all domain tests passing
@@ -114,13 +122,13 @@ Scenario: Coverage report meets threshold
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|------------|---------|-------|
-| Testing Framework | pytest | 8.3+ | Async support via pytest-asyncio |
-| Assertions | pytest | Built-in | No external assertion libs |
-| Coverage | pytest-cov | 6.0+ | Coverage reporting |
-| Type Checking | Pyright | 1.1+ | Validate test types too |
-| Linting | Ruff | 0.8+ | Fast Rust-based linter |
+| Component         | Technology | Version  | Notes                            |
+| ----------------- | ---------- | -------- | -------------------------------- |
+| Testing Framework | pytest     | 8.3+     | Async support via pytest-asyncio |
+| Assertions        | pytest     | Built-in | No external assertion libs       |
+| Coverage          | pytest-cov | 6.0+     | Coverage reporting               |
+| Type Checking     | Pyright    | 1.1+     | Validate test types too          |
+| Linting           | Ruff       | 0.8+     | Fast Rust-based linter           |
 
 ### 3.2 Key Libraries
 
@@ -164,12 +172,14 @@ flowchart TD
 #### Step 1: Review Existing Tests (No Changes Expected)
 
 **Files to review**:
+
 - `apps/api/tests/unit/domain/test_user_entity.py` - 45 tests
 - `apps/api/tests/unit/domain/test_role_entity.py` - 39 tests
 - `apps/api/tests/unit/domain/test_events_exceptions.py` - 40 tests
 - `apps/api/tests/unit/domain/test_value_objects.py` - 5 tests
 
 **Implementation notes**:
+
 ```python
 # EXISTING TEST PATTERN - Works with dataclass OR Pydantic
 def test_create_user_factory(self) -> None:
@@ -190,15 +200,18 @@ def test_create_user_factory(self) -> None:
 ```
 
 **Gotchas**:
+
 - Tests that directly manipulate `__dict__` may break (but we don't have any)
 - Tests that check `dataclasses.fields()` will need update to `model_fields`
 
 #### Step 2: Add Pydantic Validation Tests
 
 **File to create**:
+
 - `apps/api/tests/unit/domain/test_pydantic_validation.py` - NEW FILE
 
 **Implementation notes**:
+
 ```python
 # NEW TESTS - Pydantic-specific validation
 import pytest
@@ -268,6 +281,7 @@ class TestEmailPydanticValidation:
 ```
 
 **Gotchas**:
+
 - Pydantic raises `ValidationError`, NOT `ValueError`
 - Use `pytest.raises(ValidationError, match="pattern")` for error message checks
 - Test edge cases: empty strings, None where not allowed, wrong types
@@ -275,9 +289,11 @@ class TestEmailPydanticValidation:
 #### Step 3: Verify Domain Event Tests
 
 **Files to review**:
+
 - `apps/api/tests/unit/domain/test_events_exceptions.py` - 40 tests
 
 **Implementation notes**:
+
 ```python
 # EXISTING EVENT TEST PATTERN - Should work unchanged
 def test_create_user_registered_event(self):
@@ -297,12 +313,14 @@ def test_create_user_registered_event(self):
 ```
 
 **Gotchas**:
+
 - Frozen behavior tests: Pydantic `frozen=True` raises `ValidationError` on mutation
 - Update test expectations if needed: `pytest.raises((TypeError, ValidationError))`
 
 #### Step 4: Run Full Test Suite
 
 **Implementation notes**:
+
 ```bash
 # Run all domain tests
 cd apps/api
@@ -317,6 +335,7 @@ uv run pytest tests/unit/domain/test_pydantic_validation.py -v
 ```
 
 **Gotchas**:
+
 - If tests fail, check if error is `ValidationError` vs old `ValueError`
 - Check for `field_required` errors in Pydantic validation
 
@@ -347,6 +366,7 @@ class TestUserFactoryMethods:
 ```
 
 **Why this works**:
+
 - Factory methods encapsulate object creation
 - Tests don't care about implementation (dataclass vs Pydantic)
 - Business logic is identical
@@ -499,12 +519,14 @@ cd apps/api && uv run pytest tests/unit/domain/ --cov=src/prosell/domain --cov-r
 ### 7.1 Unit Tests
 
 **Entity tests** (129 existing tests - unchanged):
+
 - `test_user_entity.py` - 45 tests for User entity business logic
 - `test_role_entity.py` - 39 tests for Role entity business logic
 - `test_events_exceptions.py` - 40 tests for domain events and exceptions
 - `test_value_objects.py` - 5 tests for Email and UserStatus value objects
 
 **New validation tests** (~20 new tests):
+
 - `test_pydantic_validation.py` - NEW FILE for Pydantic-specific validation
 
 ### 7.2 Integration Tests
@@ -530,6 +552,7 @@ None needed for this phase. E2E tests verify user-facing behavior, which is unch
 **Problem**: Old code raises `ValueError`, Pydantic raises `ValidationError`.
 
 **Solution**:
+
 ```python
 # WRONG - Uses ValueError (old dataclass pattern)
 with pytest.raises(ValueError):
@@ -546,6 +569,7 @@ with pytest.raises(ValidationError):
 **Problem**: Assuming factory methods validate (they might not catch everything).
 
 **Solution**:
+
 ```python
 # Test that Pydantic validators work
 def test_user_rejects_invalid_email(self) -> None:
@@ -559,6 +583,7 @@ def test_user_rejects_invalid_email(self) -> None:
 **Problem**: Pydantic `frozen=True` raises `ValidationError`, not `TypeError`.
 
 **Solution**:
+
 ```python
 # BEFORE (dataclass)
 with pytest.raises(TypeError):
@@ -574,6 +599,7 @@ with pytest.raises(ValidationError):  # Changed!
 **Problem**: Only running new tests, missing regressions in old tests.
 
 **Solution**:
+
 ```bash
 # Run ALL domain tests, not just new file
 uv run pytest tests/unit/domain/ -v  # All 149+ tests
@@ -615,17 +641,20 @@ If implementation fails:
 **Reasoning**:
 
 **Positive factors**:
+
 - Factory methods shield 95% of tests from implementation changes
 - Existing test suite is comprehensive (129 tests)
 - Pydantic validation is well-tested upstream
 - Only ~20 new tests needed
 
 **Risk factors**:
+
 - Frozen behavior tests may need update (ValidationError vs TypeError)
 - Some edge cases in validation may need custom validators
 - Coverage calculation may change slightly with Pydantic
 
 **Mitigation**:
+
 - Start with existing tests (should all pass)
 - Add validation tests incrementally
 - Run full suite after each change
@@ -635,14 +664,14 @@ If implementation fails:
 
 ## Appendix A: Test File Summary
 
-| Test File | Tests | Changes Needed | Reason |
-|-----------|-------|----------------|---------|
-| `test_user_entity.py` | 45 | None | Factory methods shield implementation |
-| `test_role_entity.py` | 39 | None | Factory methods shield implementation |
-| `test_events_exceptions.py` | 40 | Minor | Update frozen behavior tests (TypeError → ValidationError) |
-| `test_value_objects.py` | 5 | None | Construction works identically |
-| `test_pydantic_validation.py` | ~20 | CREATE | New file for Pydantic validation |
-| **TOTAL** | **149+** | **~20 new, ~5 updated** | |
+| Test File                     | Tests    | Changes Needed          | Reason                                                     |
+| ----------------------------- | -------- | ----------------------- | ---------------------------------------------------------- |
+| `test_user_entity.py`         | 45       | None                    | Factory methods shield implementation                      |
+| `test_role_entity.py`         | 39       | None                    | Factory methods shield implementation                      |
+| `test_events_exceptions.py`   | 40       | Minor                   | Update frozen behavior tests (TypeError → ValidationError) |
+| `test_value_objects.py`       | 5        | None                    | Construction works identically                             |
+| `test_pydantic_validation.py` | ~20      | CREATE                  | New file for Pydantic validation                           |
+| **TOTAL**                     | **149+** | **~20 new, ~5 updated** |                                                            |
 
 ---
 
@@ -760,6 +789,7 @@ test_pydantic_validation.py::TestFrozenBehavior::test_frozen_error_message_clear
 6. **All Tests Passing** - 149/149 (100%) ✅
 
 ### 📊 Statistics
+
 - **New test file**: `test_pydantic_validation.py` (~20 tests)
 - **Updated tests**: Frozen behavior tests in `test_events_exceptions.py`
 - **Total tests**: 149 (129 existing + 20 new)
@@ -769,6 +799,7 @@ test_pydantic_validation.py::TestFrozenBehavior::test_frozen_error_message_clear
 - **GGA**: Approved ✅
 
 ### 📁 New Test File
+
 - `tests/unit/domain/test_pydantic_validation.py` - Pydantic-specific validation tests
   - User validation (invalid email, short/empty full_name, None for required)
   - Email validation (disposable domains, invalid format, empty string)
@@ -784,6 +815,7 @@ test_pydantic_validation.py::TestFrozenBehavior::test_frozen_error_message_clear
 5. **Test Organization** - Separate validation tests from business logic tests
 
 ### 🚀 Next Steps
+
 Phase 7 is **100% COMPLETE** and ready to move to Phase 8 (Final Validation).
 
 ---
@@ -793,6 +825,7 @@ Phase 7 is **100% COMPLETE** and ready to move to Phase 8 (Final Validation).
 **Score**: 10/10 ✅ **PHASE COMPLETED SUCCESSFULLY**
 
 **Reasoning**:
+
 - **All tests passing**: 149/149 (100%) ✅
 - **New validation tests**: Comprehensive Pydantic coverage ✅
 - **Coverage maintained**: >96% ✅

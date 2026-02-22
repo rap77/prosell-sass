@@ -1,6 +1,7 @@
 # Plan: Configuración Monorepo ProSell SaaS 2026
 
 ## Objetivo
+
 Configurar monorepo con Clean Architecture, SOLID principles, y stack 2026 (Python 3.13, Next.js 16, PostgreSQL 17).
 
 ## Estructura Final del Monorepo
@@ -77,27 +78,28 @@ prosell-sass/
 
 ## Stack de Versiones 2026
 
-| Tech | Versión | Notas |
-|------|---------|-------|
-| Python | 3.13+ | Free-threading habilitado |
-| FastAPI | 0.115+ | Soporte Python 3.14 |
-| Pydantic | 2.12+ | 5-50x más rápido que v1 |
-| SQLAlchemy | 2.0.36+ | Async nativo |
-| PostgreSQL | 17 | JSON_TABLE, incremental backup |
-| Redis | 7.4+ | Redis Stack |
-| Node | 22 LTS | |
-| Next.js | 16.1+ | Turbopack default, Cache Components |
-| React | 19.2 | Server Components, Compiler |
-| TypeScript | 5.5+ | Strict mode |
-| TailwindCSS | 4.0 | Nueva engine |
-| Zustand | 5.x | State management |
-| TanStack Query | v5 | Data fetching |
-| Ruff | 0.8+ | Linting Rust-based |
-| Pyright | 1.1+ | Type checking |
+| Tech           | Versión | Notas                               |
+| -------------- | ------- | ----------------------------------- |
+| Python         | 3.13+   | Free-threading habilitado           |
+| FastAPI        | 0.115+  | Soporte Python 3.14                 |
+| Pydantic       | 2.12+   | 5-50x más rápido que v1             |
+| SQLAlchemy     | 2.0.36+ | Async nativo                        |
+| PostgreSQL     | 17      | JSON_TABLE, incremental backup      |
+| Redis          | 7.4+    | Redis Stack                         |
+| Node           | 22 LTS  |                                     |
+| Next.js        | 16.1+   | Turbopack default, Cache Components |
+| React          | 19.2    | Server Components, Compiler         |
+| TypeScript     | 5.5+    | Strict mode                         |
+| TailwindCSS    | 4.0     | Nueva engine                        |
+| Zustand        | 5.x     | State management                    |
+| TanStack Query | v5      | Data fetching                       |
+| Ruff           | 0.8+    | Linting Rust-based                  |
+| Pyright        | 1.1+    | Type checking                       |
 
 ## Principios Arquitectónicos
 
 ### SOLID (Aplicado estrictamente)
+
 - **S**: Cada clase/módulo tiene UNA sola razón para cambiar
 - **O**: Abierto para extensión, cerrado para modificación
 - **L**: Las clases derivadas pueden sustituir a las clases base
@@ -105,14 +107,17 @@ prosell-sass/
 - **D**: Depender de abstracciones, no de implementaciones concretas
 
 ### Clean Architecture (Capas bien definidas)
+
 ```
 INFRASTRUCTURE → APPLICATION → DOMAIN
 ```
+
 **Regla de Dependencia**: Las dependencias SOLO apuntan hacia adentro (Domain).
 
 ## Configuración de Archivos
 
 ### apps/api/pyproject.toml
+
 ```toml
 [project]
 name = "prosell-api"
@@ -169,6 +174,7 @@ addopts = "-v --tb=short"
 ```
 
 ### apps/web/package.json
+
 ```json
 {
   "name": "@prosell/web",
@@ -218,6 +224,7 @@ addopts = "-v --tb=short"
 ```
 
 ### turbo.json
+
 ```json
 {
   "$schema": "https://turbo.build/schema.json",
@@ -253,6 +260,7 @@ addopts = "-v --tb=short"
 ```
 
 ### pnpm-workspace.yaml
+
 ```yaml
 packages:
   - "apps/*"
@@ -261,6 +269,7 @@ packages:
 ```
 
 ### docker/docker-compose.yml
+
 ```yaml
 services:
   db:
@@ -331,6 +340,7 @@ volumes:
 ```
 
 ### pyproject.toml (root)
+
 ```toml
 [project]
 name = "prosell-sass"
@@ -357,6 +367,7 @@ typeCheckingMode = "strict"
 ## Comandos de Desarrollo
 
 ### Setup inicial
+
 ```bash
 # Backend
 cd apps/api && uv venv && source .venv/bin/activate && uv pip install -e ".[dev]"
@@ -366,6 +377,7 @@ pnpm install
 ```
 
 ### Desarrollo
+
 ```bash
 # Todo el monorepo
 pnpm dev
@@ -381,6 +393,7 @@ docker compose -f docker/docker-compose.yml up
 ```
 
 ### Testing
+
 ```bash
 # Todos los tests
 pnpm test
@@ -399,6 +412,7 @@ pnpm test:coverage
 ```
 
 ### Linting
+
 ```bash
 # Todo
 pnpm lint
@@ -445,6 +459,7 @@ repos:
 ## Clean Architecture: Estructura Detallada
 
 ### Domain Layer (CERO dependencias externas)
+
 ```
 domain/
 ├── entities/          # Objetos de negocio con comportamiento
@@ -470,6 +485,7 @@ domain/
 ```
 
 ### Application Layer (Depende SOLO de Domain)
+
 ```
 application/
 ├── use_cases/        # Un caso de uso = una acción
@@ -495,6 +511,7 @@ application/
 ```
 
 ### Infrastructure Layer (Implementa interfaces)
+
 ```
 infrastructure/
 ├── api/              # FastAPI (Primary Adapters)

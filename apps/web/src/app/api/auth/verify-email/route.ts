@@ -30,9 +30,9 @@ interface ErrorResponse {
 // ROUTE HANDLER
 // ============================================
 
-export async function POST(request: Request): Promise<
-  NextResponse<MessageResponse | ErrorResponse>
-> {
+export async function POST(
+  request: Request,
+): Promise<NextResponse<MessageResponse | ErrorResponse>> {
   try {
     const body: VerifyEmailRequest = await request.json();
 
@@ -40,24 +40,21 @@ export async function POST(request: Request): Promise<
     if (!body.token || typeof body.token !== "string") {
       return NextResponse.json(
         { detail: "Token is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Mock verification logic
     // Accept any non-empty token for E2E testing
     if (body.token.trim().length === 0) {
-      return NextResponse.json(
-        { detail: "Invalid token" },
-        { status: 400 }
-      );
+      return NextResponse.json({ detail: "Invalid token" }, { status: 400 });
     }
 
     // Specific test tokens that should fail
     if (body.token === "invalid" || body.token === "expired") {
       return NextResponse.json(
         { detail: "Invalid or expired token" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -68,7 +65,7 @@ export async function POST(request: Request): Promise<
     logger.error("Mock verify email error", error);
     return NextResponse.json(
       { detail: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

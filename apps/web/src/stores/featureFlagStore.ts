@@ -12,8 +12,8 @@
  * ```
  */
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 // ============================================
 // TYPES
@@ -37,10 +37,10 @@ export interface FeatureFlagState {
  * if issues arise in production.
  */
 export const DEFAULT_FLAGS: Record<string, boolean> = {
-  'auth-init-fix': true,        // F1-001: Prevent duplicate initializeAuth calls
-  'oauth-preload': true,        // F1-001: Preload OAuth providers on hover
-  'svg-wrapper': true,          // F1-001: Use AnimatedSvgWrapper for SVGs
-  'content-visibility': true,   // F3: Use content-visibility for long lists
+  "auth-init-fix": true, // F1-001: Prevent duplicate initializeAuth calls
+  "oauth-preload": true, // F1-001: Preload OAuth providers on hover
+  "svg-wrapper": true, // F1-001: Use AnimatedSvgWrapper for SVGs
+  "content-visibility": true, // F3: Use content-visibility for long lists
 };
 
 // ============================================
@@ -115,10 +115,10 @@ export const useFeatureFlagStore = create<FeatureFlagState>()(
       },
     }),
     {
-      name: 'feature-flags',
+      name: "feature-flags",
       storage: createJSONStorage(() => safeStorage as Storage),
       // Only persist flags, not methods
       partialize: (state) => ({ flags: state.flags }),
-    }
-  )
+    },
+  ),
 );
