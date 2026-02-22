@@ -25,9 +25,21 @@
 - **8/8 fases**: 100% completado y mergeado
 - **139/139 tests**: Backend passing
 
-### Backend Sprint: ⏳ PENDING
-- **0/38 tasks**: Domain, Application, Infrastructure, API layers
-- **Tech**: FastAPI, SQLAlchemy 2.0, PostgreSQL, Redis, Pydantic 2.12+
+### Auth Backend (Sprint 1-2): ✅ 100% COMPLETADO
+- **Domain**: User, Role, Session, Email, Password entities
+- **Application**: 8 use cases (Register, Login, 2FA, etc.)
+- **Infrastructure**: SQLAlchemy models, Repos, JWT service
+- **API**: auth_router with 9 endpoints
+- **Tests**: 139/139 passing ✅
+
+### Organizations Backend (Sprint 3-4): ⏳ EN PROGRESO
+- **Rama**: `sprint-3-4-organizations`
+- **PRP**: `PRPs/sprint-3-4-organizations.md`
+- **Domain**: Organization, Team, Wallet entities (0/6)
+- **Application**: Use cases + DTOs (0/8)
+- **Infrastructure**: Models + Repos + DO Spaces (0/6)
+- **API**: org_router, team_router, wallet_router (0/3)
+- **Tech**: FastAPI, SQLAlchemy 2.0, PostgreSQL, DO Spaces, Stripe
 
 ## Session 2026-02-22 - Phase 3 Content Visibility ✅
 

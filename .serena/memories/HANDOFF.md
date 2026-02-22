@@ -64,9 +64,12 @@ Persiste en localStorage con fallback a memoria (safeStorage).
 | Área | Estado | Tests |
 |------|--------|-------|
 | **Pydantic Refactor** | ✅ 8/8 fases | 139/139 |
-| **Domain Layer** | ⏳ Pendiente | - |
-| **Application Layer** | ⏳ Pendiente | - |
-| **Infrastructure** | ⏳ Pendiente | - |
+| **Auth Backend** | ✅ 100% COMPLETE | 139/139 |
+| **Organizations Backend** | ⏳ Sprint 3-4 | 0/0 |
+
+**ACLARACIÓN**: Hay DOS backend layers distintos:
+- **Auth Backend** (Sprint 1-2): User, Role, Session, Login, Register, 2FA ✅
+- **Organizations Backend** (Sprint 3-4): Organization, Team, Wallet ⏳
 
 ---
 
@@ -120,15 +123,20 @@ d3fe47d fix(ci): use relative paths for Python lint tools
 
 ## 🚀 PRÓXIMOS PASOS
 
-### Prioridades Sugeridas
+### Sprint 3-4: Organizations, Teams & Wallet (EN PROGRESO) 🚀
 
-1. **Backend Sprint** (🚀 RECOMENDADO)
-   - Domain Layer → Entities, Value Objects, Repository interfaces
-   - Infrastructure → SQLAlchemy models, FastAPI routers
-   - Application → Use cases, DTOs
-   - Read PRPs/auth-system.md para especificaciones
+- **Rama actual**: `sprint-3-4-organizations`
+- **PRP**: `PRPs/sprint-3-4-organizations.md`
+- **Fase actual**: Phase 1 - Domain Layer
 
-2. **OAuth External Setup** (⚡ 30 min - Deuda técnica)
+**Tareas pendientes**:
+- [ ] Organization entity + OrganizationStatus enum
+- [ ] Team, TeamMember entities (MLM hierarchy)
+- [ ] Wallet, WalletTransaction entities
+- [ ] Repository interfaces (AbstractOrgRepository, etc.)
+- [ ] Unit tests for entities
+
+### OAuth External Setup (⚡ Deuda técnica - NO bloquea Sprint 3-4)
    - Domain Layer → Entities, Value Objects, Repository interfaces
    - Infrastructure → SQLAlchemy models, FastAPI routers
    - Application → Use cases, DTOs
@@ -157,6 +165,38 @@ git checkout -b feature/nueva-fase
 
 ---
 
-**VERCEL PERFORMANCE - ALL PHASES 100% COMPLETADAS** ✅🚀
+**SPRINT 3-4: ORGANIZATIONS EN PROGRESO** 🚀
 
-_Última actualización_: 2026-02-22 - PRP vercel-performance-fixes.md marcado como COMPLETE
+_Última actualización_: 2026-02-22 - Rama `sprint-3-4-organizations` creada
+
+---
+
+## 🎯 LO QUE ESTAMOS HACIENDO
+
+### Sprint 3-4: Organizations, Teams & Wallet
+- **Rama**: `sprint-3-4-organizations`
+- **PRP**: `PRPs/sprint-3-4-organizations.md` (Confidence: 9/10)
+- **Estimación**: 20 días
+- **Tareas**: 28 tareas organizadas
+
+### Fases del Sprint
+| Fase | Duración | Estado |
+|------|----------|--------|
+| Phase 1: Foundation (Domain) | 3 días | ⏳ Iniciando |
+| Phase 2: Backend (Infra + API) | 5 días | ⏳ Pendiente |
+| Phase 3: Teams & Wallet | 5 días | ⏳ Pendiente |
+| Phase 4: Frontend | 4 días | ⏳ Pendiente |
+| Phase 5: Integration & Polish | 3 días | ⏳ Pendiente |
+
+### Comandos Útiles
+```bash
+# Continuar Sprint 3-4
+git checkout sprint-3-4-organizations
+git pull origin main  # si hay actualizaciones
+
+# Ver PRP
+cat PRPs/sprint-3-4-organizations.md
+
+# Tests
+cd apps/api && uv run pytest tests/
+```
