@@ -1,193 +1,187 @@
-# Handoff: Vercel Performance Phase 1 - 100% COMPLETADO ✅
+# Handoff: Vercel Performance Phase 2 - 100% COMPLETADA ✅
 
 **Fecha**: 2026-02-21
-**Sesión**: Phase 1 completa (F1-001, F1-002, F1-003, F1-004)
-**Estado**: ✅ **TODOS LOS TICKETS COMPLETADOS Y MERGEADOS**
-**Tests**: 330/330 PASSING
-**Branch**: main (242c739)
+**Sesión**: Phase 2 completada
+**Estado**: ✅ Phase 1 100% | ✅ Phase 2 100%
 
 ---
 
-## 🎉 LO QUE SE LOGRÓ ESTA SESIÓN
+## 🎉 Phase 1: COMPLETADA
 
-### ✅ F1-001: authStore initialized Flag
-**Rama**: `ticket/F1-001-auth-store-flag`
-**Commit**: `028e92a` - feat(auth): complete initialized flag implementation (F1-001) ✅
+### Resumen
+| Ticket | Commit | Tests |
+|--------|--------|-------|
+| F1-001 | 028e92a | 21/21 |
+| F1-002 | 5ddaf07 | 15/15 |
+| F1-003 | 242c739 | 28/28 |
+| F1-004 | 83363d7 | 12/12 |
 
-**Implementación**:
-- `initialized: boolean` property added to AuthState
-- Early exit if initialized=true AND feature flag enabled
-- Set initialized=true after successful init
-- Reset initialized=false on logout/reset/error
-- Persisted to localStorage
-- Dev logging with logger.info
+**Total**: 330/330 tests passing ✅
 
-**Tests**: 21/21 passing (authStore tests)
-
-### ✅ F1-002: Performance API Marks
-**Rama**: `ticket/F1-002-performance-marks`
-**Commit**: `5ddaf07` - feat(perf): Performance API marks implementation (F1-002) ✅
-
-**Implementación**:
-- `markPerformance()` wrapper (feature detection)
-- `measurePerformance()` wrapper (dev-only logging)
-- Marks en `initializeAuth()`: `auth-init-start`, `auth-init-end`, `auth-init-duration`
-- 4 nuevos tests para Performance API
-- Script de baseline: `apps/web/scripts/baseline-performance.mjs`
-- Baseline capturado: Performance Score 47/100
-
-**Tests**: 15/15 passing
-
-### ✅ F1-004: Feature Flag System
-**Rama**: `ticket/F1-004-feature-flags`
-**Commit**: `83363d7` - feat(flags): implement Feature Flag System (F1-004) ✅
-
-**Implementación**:
-- `featureFlagStore` Zustand store
-- `get(key, default)` method
-- Dev panel at `/__debug/flags` (optional)
-- localStorage persistence
-- Type-safe TypeScript
-
-**Tests**: 12/12 passing
-
-### ✅ F1-003: 2FA Management Center
-**Rama**: `ticket/F1-003-2fa-management-center`
-**Commit**: `242c739` - feat(auth): 2FA Management Center implementation (F1-003) ✅
-
-**Implementación**:
-- **State A** (`!is_2fa_enabled`): "Enable 2FA" button → QR flow (NO auto-mount)
-- **State B** (`is_2fa_enabled`): Protected view + backup codes + disable button
-- `beforeunload` warning durante operaciones (loading, verifying, disabling)
-- **Seguridad**: NO secrets en localStorage (ephemeral component state only)
-- Feature flag: `auth-2fa-management`
-
-**Cambios de código**:
-- `TwoFactorSetupForm.tsx`: +163/-98 líneas (refactor completo)
-- `TwoFactorSetupForm.test.tsx`: +295 líneas (tests actualizados)
-
-**Tests**: 28/28 passing
-
----
-
-## 📊 ESTADO FINAL DEL PROYECTO
-
-| Ticket | Estado | Commit | Tests |
-|--------|--------|--------|-------|
-| **F1-002** | ✅ COMPLETADO | 5ddaf07 | 15/15 |
-| **F1-004** | ✅ COMPLETADO | 83363d7 | 12/12 |
-| **F1-001** | ✅ COMPLETADO | 028e92a | 21/21 |
-| **F1-003** | ✅ **COMPLETADO** | 242c739 | 28/28 |
-
-**Progreso**: **100%** (4/4 tickets) 🚀
-
----
-
-## 🧪 Tests Totales
-
+**Commits**:
 ```
-Frontend: 330/330 passing ✅
-Backend:  139/139 passing ✅ (de sesiones anteriores)
-Total:    469/469 passing ✅
+af39683 docs(handoff): Phase 1 100% COMPLETADA
+242c739 feat(auth): 2FA Management Center (F1-003)
+028e92a feat(auth): initialized flag (F1-001)
+83363d7 feat(flags): Feature Flag System (F1-004)
+5ddaf07 feat(perf): Performance API Marks (F1-002)
 ```
 
 ---
 
-## 📝 Commits en main
+## 🎉 Phase 2: COMPLETADA ✅
 
+### Resumen
+| Ticket | Commit | Tests |
+|--------|--------|-------|
+| F5: AnimatedSvgWrapper | 65274d5 | 333/333 |
+| F4: OAuth Preload | 82fda65 | 333/333 |
+
+**Total**: 333/333 tests passing ✅
+
+**Branch**: `phase-2-oauth-svg-optimizations`
+
+**Commits**:
 ```
-242c739 feat(auth): 2FA Management Center implementation (F1-003) ✅
-028e92a feat(auth): complete initialized flag implementation (F1-001) ✅
-83363d7 feat(flags): implement Feature Flag System (F1-004) ✅
-44b1d2b merge: F1-002 into main (conflict resolved)
-05e7be6 docs(handoff): update Phase 1 progress - F1-004 completed
-5ddaf07 feat(perf): Performance API marks implementation (F1-002) ✅
+82fda65 feat(auth): Intent-based OAuth Preload (F4) ✅
+65274d5 perf(ui): AnimatedSvgWrapper component (F5)
 ```
+
+### F5: `<AnimatedSvgWrapper>` Component ✅
+**Estimación**: 2h
+**Prioridad**: Primero (más simple)
+
+**Qué hacer**:
+1. Crear `apps/web/src/components/ui/AnimatedSvgWrapper.tsx`
+2. Implementar con CSS transforms (hardware-accelerated)
+3. Animaciones: fadeIn, slideUp, scaleIn
+4. Aplicar a auth SVGs (login, register, 2FA forms)
+5. Feature flag: `svg-wrapper`
+6. Tests: Unit + E2E
+
+**Especificaciones**:
+```typescript
+interface AnimatedSvgWrapperProps {
+  children: React.ReactNode;
+  animation?: 'fadeIn' | 'slideUp' | 'scaleIn';
+  duration?: number; // ms
+  delay?: number; // ms
+}
+```
+
+### F4: Intent-based OAuth Preload ✅
+**Estado**: COMPLETADO
+**Commit**: 82fda65
+
+**Lo que se hizo**:
+1. ✅ Creado `apps/web/src/hooks/useOAuthPreload.ts`
+2. ✅ Implementado initial preload en mount
+3. ✅ Implementado onMouseEnter retry
+4. ✅ Fallback: load on-click
+5. ✅ Feature flag: `oauth-preload`
+6. ✅ Tests: 3 nuevos tests en OAuthButtons.test.tsx
 
 ---
 
-## 🎯 Archivos Modificados
+## 🎯 Plan de Ejecución
 
-### Frontend (Phase 1)
+### Paso 1: F5 - AnimatedSvgWrapper (2h)
+- [ ] Crear componente AnimatedSvgWrapper
+- [ ] Implementar animaciones CSS (fadeIn, slideUp, scaleIn)
+- [ ] Agregar feature flag `svg-wrapper`
+- [ ] Aplicar a auth forms
+- [ ] Unit tests
+- [ ] E2E tests
+- [ ] Commit
+
+### Paso 2: F4 - OAuth Preload (2h)
+- [ ] Modificar OAuthButtons
+- [ ] Implementar initial preload
+- [ ] Implementar onMouseEnter retry
+- [ ] Agregar feature flag `oauth-preload`
+- [ ] Unit tests (spy dynamic import)
+- [ ] E2E tests (Network tab)
+- [ ] Commit
+
+### Paso 3: Integration
+- [ ] Verificar todos los tests passing
+- [ ] Verificar feature flags funcionan
+- [ ] Merge a main
+- [ ] Push
+
+---
+
+## 📁 Archivos a Modificar/Crear
 
 ```
 apps/web/src/
+├── components/ui/
+│   └── AnimatedSvgWrapper.tsx      [NEW - F5]
 ├── components/auth/
-│   └── TwoFactorSetupForm.tsx     (+163/-98) - F1-003
-├── stores/
-│   ├── authStore.ts                (+96) - F1-001
-│   ├── featureFlagStore.ts         (+123) - F1-004
-│   └── index.ts                     (+3) - F1-004
-├── lib/
-│   └── logger.ts                    (+27) - F1-002
-├── lib/admin/
-│   └── featureFlagPanel.tsx        (+70) - F1-004
-└── scripts/
-    └── baseline-performance.mjs   (+138) - F1-002
+│   ├── OAuthButtons.tsx              [MODIFY - F4]
+│   ├── LoginForm.tsx                 [MODIFY - F5]
+│   ├── RegisterForm.tsx              [MODIFY - F5]
+│   └── TwoFactorSetupForm.tsx        [MODIFY - F5]
+└── hooks/
+    └── useOAuthPreload.ts            [NEW - F4]
 
 apps/web/tests/
-├── unit/stores/
-│   ├── authStore.test.ts          (+226) - F1-001
-│   └── featureFlagStore.test.ts   (+202) - F1-004
+├── components/ui/
+│   └── AnimatedSvgWrapper.test.tsx   [NEW - F5]
 └── components/auth/
-    └── TwoFactorSetupForm.test.tsx (+295) - F1-003
-
-docs/tickets/
-├── README.md                        (+101)
-├── phase-1-implementation-plan.md  (+542)
-├── sprint-summary.md               (+364)
-├── phase-1-tickets.csv              (+35)
-├── F1-001-auth-store-flag.md        (+362)
-├── F1-002-performance-api.md        (+348)
-├── F1-003-2fa-management-center.md (+525)
-└── F1-004-feature-flags.md          (+426)
-
-docs/prp/
-└── vercel-performance-fixes.md       (+642)
-
-.serena/memories/
-└── vercel-performance-phase1-tickets-created.md (+138)
+    └── OAuthButtons.test.tsx         [MODIFY - F4]
 ```
 
 ---
 
-## 🚀 Próximos Pasos Sugeridos
+## 🧪 Tests a Crear
 
-1. **Deploy a staging**: Verificar que todo funciona en producción
-2. **Monitoreo**: Medir performance con los nuevos marks
-3. **Phase 2**: Si se necesitan más optimizaciones de Vercel
+### F5 Tests
+```typescript
+describe('AnimatedSvgWrapper', () => {
+  it('should apply CSS transform for GPU acceleration');
+  it('should support fadeIn animation');
+  it('should support slideUp animation');
+  it('should support scaleIn animation');
+  it('should respect duration and delay props');
+  it('should handle feature flag off (no animation)');
+});
+```
 
----
-
-## 📚 Referencias Útiles
-
-### PRPs Completados
-- `docs/tickets/F1-001-auth-store-flag.md` - ✅ COMPLETADO
-- `docs/tickets/F1-002-performance-api.md` - ✅ COMPLETADO
-- `docs/tickets/F1-003-2fa-management-center.md` - ✅ COMPLETADO
-- `docs/tickets/F1-004-feature-flags.md` - ✅ COMPLETADO
-
-### Documentación
-- `docs/prp/vercel-performance-fixes.md` - PRP completo
-- `docs/tickets/phase-1-implementation-plan.md` - Plan maestro
-- `docs/tickets/sprint-summary.md` - Resumen ejecutivo
-
-### Baseline Performance
-- `docs/tickets/baseline-results.json` - Baseline capturado
-- `apps/web/scripts/baseline-performance.mjs` - Script de medición
-
----
-
-## 🏆 Logros Técnicos
-
-1. **Feature Flag System**: Sistema completo con store, panel y tests
-2. **Performance API**: Integración con marks y measures
-3. **2FA UX**: Refactor completo con estados claros
-4. **Auth Optimization**: Early exit para evitar llamadas redundantes
-5. **Security**: NO secrets en localStorage (verificado en tests)
+### F4 Tests
+```typescript
+describe('OAuth Preload', () => {
+  it('should attempt initial preload on mount');
+  it('should retry preload on mouse enter');
+  it('should fall back to on-click load if preload fails');
+  it('should not preload if feature flag off');
+  it('should not retry if already loaded');
+});
+```
 
 ---
 
-**PHASE 1: 100% COMPLETADA** ✅🎉
+## 🚀 Siguientes Pasos
 
-*Última actualización*: 2026-02-21 - Todos los tickets completados y mergeados
+### Opción 1: Merge a Main
+```bash
+# Push branch to origin
+git push origin phase-2-oauth-svg-optimizations
+
+# Create PR y merge a main
+# O rebase directo si estás trabajando solo
+git rebase main
+git push origin phase-2-oauth-svg-optimizations
+```
+
+### Opción 2: Continuar con Phase 3
+Si el PRP tiene Phase 3 (content-visibility u otros), crear nueva rama:
+```bash
+git checkout main
+git pull
+git checkout -b phase-3-content-visibility
+```
+
+---
+
+**PHASE 2: 100% COMPLETADA** ✅🎯
