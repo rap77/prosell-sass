@@ -1,9 +1,10 @@
 # Handoff: Sprint 3-4 Organizations - Phases 1-3 COMPLETADAS ✅
 
-**Fecha**: 2026-02-22
+**Fecha**: 2026-02-23
 **Rama**: `sprint-3-4-organizations`
-**Estado**: Phases 1-3 COMPLETADAS, Phase 4 (Frontend) PENDIENTE
+**Estado**: Phases 1-3 COMPLETADAS, Phase 4 (Frontend) ~30% completada
 **Tests Backend**: 281/281 passing ✅
+**Tests Frontend**: 353/353 passing ✅
 
 ---
 
@@ -137,7 +138,28 @@ Total:                           281 passing ✅
 | **Phase 1**: Domain | ✅ COMPLETA | 82 | entities/team.py/wallet.py |
 | **Phase 2**: Org API | ✅ COMPLETA | 33 | org_router.py + use cases |
 | **Phase 3**: Teams/Wallet | ✅ COMPLETA | 25 | team_router.py + wallet_router.py |
-| **Phase 4**: Frontend | ⏳ PENDIENTE | - | Zustand stores + forms |
+| **Phase 4**: Frontend | 🔄 ~30% | 353 | orgApi.ts + organizationStore.ts + pages |
+| **Phase 5**: Integration | ⏳ PENDIENTE | - | E2E + Stripe webhook |
+
+### ✅ Phase 4: Frontend (En progreso ~30%)
+
+**Completado**:
+- `lib/api/orgApi.ts` - API client para organizaciones (9 métodos)
+- `stores/organizationStore.ts` - Zustand store con CRUD completo
+- `components/forms/OrganizationForm.tsx` - Formulario create/edit con RHF + Zod
+- `app/dashboard/org/page.tsx` - Lista de organizaciones con paginación
+- `app/dashboard/org/new/page.tsx` - Crear nueva organización
+- `app/dashboard/org/[id]/page.tsx` - Detalle de organización
+
+**Pendiente**:
+- `teamStore.ts` - Manage teams/members
+- `walletStore.ts` - Balance + transactions
+- `TeamForm.tsx` - Create/edit team
+- `MemberForm.tsx` - Add vendor/manager
+- `LogoUpload.tsx` - DO Spaces upload con Uppy
+- `app/dashboard/org/[id]/wallet/page.tsx` - Wallet balance + recharge
+- `WalletCard.tsx` - Balance display
+- Tests para componentes nuevos
 | **Phase 5**: Integration | ⏳ PENDIENTE | - | E2E + Stripe webhook |
 
 ---
