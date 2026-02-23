@@ -16,7 +16,7 @@ from prosell.infrastructure.api.middleware.exception_handlers import (
     generic_exception_handler,
     integrity_error_handler,
 )
-from prosell.infrastructure.api.routers import auth_router
+from prosell.infrastructure.api.routers import auth_router, org_router, team_router, wallet_router
 
 app = FastAPI(
     title="ProSell SaaS API",
@@ -129,6 +129,24 @@ app.include_router(
     auth_router,
     prefix="/api/auth",
     tags=["Authentication"],
+)
+
+app.include_router(
+    org_router,
+    prefix="/api/v1/org",
+    tags=["Organizations"],
+)
+
+app.include_router(
+    team_router,
+    prefix="/api/v1/teams",
+    tags=["Teams"],
+)
+
+app.include_router(
+    wallet_router,
+    prefix="/api/v1/wallet",
+    tags=["Wallets"],
 )
 
 

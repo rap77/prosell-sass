@@ -19,8 +19,31 @@ from prosell.domain.exceptions.auth_exceptions import (
     # Password exceptions
     WeakPasswordException,
 )
+from prosell.domain.exceptions.org_exceptions import (
+    InsufficientFundsException,
+    OrganizationAlreadyExistsException,
+    OrganizationNotActiveException,
+    OrganizationNotFoundException,
+    OrganizationVerificationException,
+    OrgDomainException,
+    TeamAlreadyExistsException,
+    TeamMemberNotFoundException,
+    TeamNotFoundException,
+    WalletNotFoundException,
+)
 
 __all__ = [
+    # Org exceptions
+    "OrgDomainException",
+    "OrganizationNotFoundException",
+    "OrganizationAlreadyExistsException",
+    "OrganizationNotActiveException",
+    "OrganizationVerificationException",
+    "TeamNotFoundException",
+    "TeamAlreadyExistsException",
+    "TeamMemberNotFoundException",
+    "WalletNotFoundException",
+    "InsufficientFundsException",
     # User exceptions
     "EmailAlreadyExistsException",
     "UserNotFoundException",

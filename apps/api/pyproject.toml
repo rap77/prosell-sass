@@ -73,7 +73,8 @@ select = [
 known-first-party = ["prosell"]
 
 [tool.ruff.lint.per-file-ignores]
-# Factory functions use Depends() correctly - not endpoints
+# FastAPI routers use Depends() in defaults - correct pattern
+"src/prosell/infrastructure/api/**/*.py" = ["B008"]
 "src/prosell/infrastructure/api/dependencies.py" = ["B008"]
 "src/prosell/infrastructure/api/middleware/auth_middleware.py" = ["B008"]
 
@@ -92,7 +93,7 @@ venvPath = "."
 venv = ".venv"
 
 [tool.pytest.ini_options]
-testpaths = ["../../tests/api"]
+testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "-v --tb=short"

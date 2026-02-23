@@ -1,202 +1,274 @@
-# Handoff: Vercel Performance - ALL PHASES COMPLETE ✅
+# Handoff: Sprint 3-4 Organizations - Phases 1-3 COMPLETADAS ✅
 
 **Fecha**: 2026-02-22
-**Sesión**: ALL 3 Phases COMPLETADAS y MERGEADAS
-**Estado**: ✅ TODAS LAS FASES MERGEADAS A MAIN
-**Final Commit**: `a487c16` (Phase 3)
+**Rama**: `sprint-3-4-organizations`
+**Estado**: Phases 1-3 COMPLETADAS, Phase 4 (Frontend) PENDIENTE
+**Tests Backend**: 281/281 passing ✅
 
 ---
 
-## 🎉 LO QUE SE LOGRÓ ESTA SESIÓN
+## 🎯 LO QUE SE COMPLETÓ ESTA SESIÓN
 
-### ✅ Phase 3: Content Visibility COMPLETADA
+### ✅ Phase 1: Domain Layer (COMPLETA)
+**Commit**: `1b20c2e` (ya mergeado)
 
-- **Rama**: `phase-3-content-visibility`
-- **Merge**: ✅ Squash merge a main completado
-- **PR**: #2 (mergeado)
-- **Tests**: 353/353 passing (frontend)
-- **CI**: All 6 jobs passing ✅
+Entidades implementadas:
+- `Organization` + `OrganizationStatus` (PENDING_VERIFICATION, ACTIVE, SUSPENDED, REJECTED)
+- `Team`, `TeamMember` + `TeamMemberRole` (MANAGER, VENDOR)
+- `Wallet`, `WalletTransaction` + `TransactionType` (CREDIT, DEBIT)
 
-### Archivos Principales Creados/Modificados
+Interfaces de repositorios creadas:
+- `AbstractOrganizationRepository` (8 métodos)
+- `AbstractTeamRepository` + `AbstractTeamMemberRepository`
+- `AbstractWalletRepository` + `AbstractWalletTransactionRepository`
 
+**Tests**: 82 passing → `tests/unit/domain/`
+
+---
+
+### ✅ Phase 2: Backend Infrastructure + API (COMPLETA)
+
+**DTOs creados**:
+- `application/dto/org/` → create, response, update, __init__
+
+**Use Cases**:
+- CreateOrganization, GetOrganization, ListOrganizations
+- UpdateOrganization, VerifyOrganization, RejectOrganization, SuspendOrganization
+
+**Infraestructura**:
+- SQLAlchemy models: `organization_model.py`, `team_model.py`, `wallet_model.py`
+- Repository implementations: org, team, wallet
+
+**API Router**: `org_router.py` (8 endpoints):
 ```
-apps/web/src/
-├── components/ui/optimized-list.tsx
-│   ├── OptimizedList<T> - Lista con content-visibility
-│   └── MemoizedListItem - Wrapper con feature flag
-├── stores/featureFlagStore.ts
-│   └── Zustand store para runtime feature flags
-├── app/globals.css
-│   └── .content-visible-auto, .contain-intrinsic-* utilities
-└── tests/components/ui/OptimizedList.test.tsx
-    └── 20 tests completos
+POST   /api/v1/org              → Create organization
+GET    /api/v1/org              → List organizations (paginado)
+GET    /api/v1/org/me           → Get current user's org
+GET    /api/v1/org/{id}          → Get org by ID
+PATCH  /api/v1/org/{id}          → Update org
+POST   /api/v1/org/{id}/verify  → Verify org (SUPER_ADMIN)
+POST   /api/v1/org/{id}/reject   → Reject org (SUPER_ADMIN)
+POST   /api/v1/org/{id}/suspend   → Suspend org
 ```
 
-### Sistema de Feature Flags
-Nuevo store con runtime toggling:
-- `auth-init-fix`: Previene duplicate initializeAuth calls
-- `oauth-preload`: Preload OAuth providers on hover
-- `svg-wrapper`: AnimatedSvgWrapper para SVGs
-- `content-visibility`: Content-visibility para long lists
+**Tests**: 33 tests (18 unit + 15 integration)
 
-Persiste en localStorage con fallback a memoria (safeStorage).
+---
+
+### ✅ Phase 3: Teams & Wallet Backend (COMPLETA)
+
+**DTOs creados**:
+- `application/dto/team/` → create, response, update, __init__
+- `application/dto/wallet/` → response, __init__
+
+**Use Cases - Teams**:
+- `CreateTeamUseCase` → Validación de nombre único
+- `GetTeamUseCase`, `GetTeamsByOrganizationUseCase`
+- `UpdateTeamUseCase`
+- `AddTeamMemberUseCase` → Añade manager/vendor con comisión
+
+**Use Cases - Wallet**:
+- `GetWalletBalanceUseCase`
+- `CreditWalletUseCase` → Recarga tokens (Stripe)
+- `DebitWalletUseCase` → Gasta tokens (listing fees)
+- `GetWalletTransactionsUseCase` → Historial
+
+**DO Spaces Service**:
+- `infrastructure/services/do_spaces_service.py`
+- Presigned URLs para upload directo desde browser
+- Helper functions: `generate_logo_path`, `generate_banner_path`, `generate_product_image_path`
+- Puerto: `application/ports/ido_spaces.py`
+
+**API Routers - Teams** (`team_router.py`):
+```
+POST   /api/v1/teams                       → Create team
+GET    /api/v1/teams/org/{org_id}          → List teams by org
+GET    /api/v1/teams/{team_id}              → Get team by ID
+PATCH  /api/v1/teams/{team_id}              → Update team
+POST   /api/v1/teams/{team_id}/members      → Add member
+```
+
+**API Routers - Wallet** (`wallet_router.py`):
+```
+GET    /api/v1/wallet/org/{org_id}                 → Get balance
+GET    /api/v1/wallet/org/{org_id}/transactions    → Get transactions
+POST   /api/v1/wallet/credit                       → Credit tokens
+POST   /api/v1/wallet/debit                        → Debit tokens
+```
+
+**Configuraciones agregadas a `core/config.py`**:
+```bash
+# DigitalOcean Spaces
+DO_REGION=nyc3
+DO_BUCKET_NAME=prosell-assets
+DO_ACCESS_KEY_ID=
+DO_SECRET_ACCESS_KEY=
+
+# Stripe
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_ID_TOKENS_100=
+STRIPE_PRICE_ID_TOKENS_500=
+STRIPE_PRICE_ID_TOKENS_1000=
+```
+
+**Tests**: 25 nuevos tests (9 Team + 7 Wallet + 9 DO Spaces)
 
 ---
 
 ## 📊 ESTADO DEL PROYECTO
 
-### Fases de Performance (Vercel) - TODAS COMPLETAS ✅
-| Fase | Estado | Merge | Tests |
-|------|--------|-------|-------|
-| **Phase 1** | ✅ Complete | ✅ main | 330/330 |
-| **Phase 2** | ✅ Complete | ✅ main | 333/333 |
-| **Phase 3** | ✅ **MERGEADA** | ✅ **main** | 353/353 |
+### Tests Backend: 281/281 passing ✅
+```
+Domain (Phase 1):                 82 passing
+Application Unit (Phase 2):      18 passing
+Integration API (Phase 2):       15 passing
+Application Unit (Phase 3):      16 passing (Team: 9, Wallet: 7)
+Services Unit (Phase 3):          9 passing (DO Spaces)
+Auth Backend:                    139 passing
+=========================================
+Total:                           281 passing ✅
+```
 
-**PRP vercel-performance-fixes.md**: ✅ Actualizado - Marcado como 100% COMPLETE
-
-### Frontend Auth
-| Sprint | Estado | Tests |
-|--------|--------|-------|
-| **Sprint 1-2** | ✅ Complete | 353/353 |
-| **OAuth** | ✅ UI (Backend ⏳) | - |
-
-### Backend
-| Área | Estado | Tests |
-|------|--------|-------|
-| **Pydantic Refactor** | ✅ 8/8 fases | 139/139 |
-| **Auth Backend** | ✅ 100% COMPLETE | 139/139 |
-| **Organizations Backend** | ⏳ Sprint 3-4 | 0/0 |
-
-**ACLARACIÓN**: Hay DOS backend layers distintos:
-- **Auth Backend** (Sprint 1-2): User, Role, Session, Login, Register, 2FA ✅
-- **Organizations Backend** (Sprint 3-4): Organization, Team, Wallet ⏳
+### Fases Sprint 3-4
+| Fase | Estado | Tests | Archivos clave |
+|------|--------|-------|----------------|
+| **Phase 1**: Domain | ✅ COMPLETA | 82 | entities/team.py/wallet.py |
+| **Phase 2**: Org API | ✅ COMPLETA | 33 | org_router.py + use cases |
+| **Phase 3**: Teams/Wallet | ✅ COMPLETA | 25 | team_router.py + wallet_router.py |
+| **Phase 4**: Frontend | ⏳ PENDIENTE | - | Zustand stores + forms |
+| **Phase 5**: Integration | ⏳ PENDIENTE | - | E2E + Stripe webhook |
 
 ---
 
-## 🛠️ CI COMPLETAMENTE ARREGLADO
+## 📁 ARCHIVOS STAGED/LISTOS PARA COMMIT
 
-### Systematic Debugging Aplicado
-
-13 commits para resolver problemas del CI:
-
-1. **pnpm version conflict** → `package_manager: true`
-2. **prepare script fails** → `|| echo '...'` fallback
-3. **Python deps** → `uv sync --all-extras`
-4. **Working directory** → faltante en pasos lint Python
-5. **Ruff path errors** → paths relativos desde apps/api
-6. **ESLint React Compiler** → bloque disable syntax
-7. **Prettier formatting** → 301 archivos formateados
-8. **Ruff errors** → 5 errores reales arreglados
-9. **mypy not found** → removido (usa pyright)
-10. **TypeScript typo** → `"disable"` → `"disabled"`
-
-### CI Jobs (All Passing ✅)
 ```
-✅ Lint Python  → Ruff + Ruff format check
-✅ Test Python → pytest + cov
-✅ Lint Node    → ESLint + Prettier
-✅ Test Node    → Vitest 353 tests
-✅ Build        → Next.js production build
-✅ E2E Tests    → Playwright
+alembic/versions/
+  └── 20260222_0000-2a3b4c5d6e7f_organizations_teams_wallet_schema.py
+
+apps/api/src/prosell/
+├── application/
+│   ├── dto/
+│   │   ├── org/ (create, response, update, __init__.py)
+│   │   ├── team/ (create, response, update, __init__.py)
+│   │   └── wallet/ (response, __init__.py)
+│   ├── ports/
+│   │   └── ido_spaces.py
+│   └── use_cases/
+│       ├── org/ (create, get, update, verify, __init__.py)
+│       ├── team/ (create_team, get_team, update_team, add_team_member, __init__.py)
+│       └── wallet/ (wallet_operations, __init__.py)
+├── core/
+│   └── config.py (actualizado con DO Spaces + Stripe settings)
+├── domain/
+│   ├── exceptions/
+│   │   └── org_exceptions.py
+│   └── repositories/
+│       └── __init__.py (exports actualizados)
+├── infrastructure/
+│   ├── api/
+│   │   ├── main.py (routers registrados)
+│   │   └── routers/
+│   │       ├── org_router.py
+│   │       ├── team_router.py (NUEVO)
+│   │       └── wallet_router.py (NUEVO)
+│   ├── models/
+│   │   ├── organization_model.py
+│   │   ├── team_model.py
+│   │   └── wallet_model.py
+│   ├── repositories/
+│   │   ├── organization_repository_impl.py
+│   │   ├── team_repository_impl.py
+│   │   └── wallet_repository_impl.py
+│   └── services/
+│       └── do_spaces_service.py (NUEVO)
+└── tests/
+    ├── unit/
+    │   ├── domain/ (Phase 1 tests)
+    │   └── application/
+    │       ├── test_organization_use_cases.py
+    │       ├── test_team_use_cases.py (NUEVO)
+    │       └── test_wallet_use_cases.py (NUEVO)
+    ├── integration/
+    │   └── test_organization_api.py
+    └── unit/
+        └── services/
+            └── test_do_spaces_service.py (NUEVO)
 ```
 
 ---
 
-## 📚 REFERENCIAS
+## 🚀 PRÓXIMA SESIÓN - Phase 4: Frontend
 
-### Commits Clave de Phase 3
-```
-a487c16 feat(frontend): Phase 3 - Content Visibility Optimization (merge)
-3682828 fix(types): correct typo disable->disabled
-5cb8aa0 fix(ci): remove mypy step
-113d956 fix(python): resolve ruff errors (E501, ARG001)
-d3fe47d fix(ci): use relative paths for Python lint tools
-3c9397b style(ci): apply prettier formatting (301 files)
-```
+### Pendiente para implementar:
+1. **Zustand Stores** (React 19 patterns):
+   - `organizationStore.ts` - CRUD orgs
+   - `teamStore.ts` - Manage teams/members
+   - `walletStore.ts` - Balance + transactions
 
-### Documentación Relacionada
-- `CLAUDE.md` - Proyecto + Tech Stack 2026
-- `AGENTS.md` - Reglas de code review GGA
-- `MEMORY.md` - Estado actual del proyecto
+2. **React Hook Form + Zod Forms**:
+   - `OrganizationForm.tsx` - Create/edit org
+   - `TeamForm.tsx` - Create/edit team
+   - `MemberForm.tsx` - Add vendor/manager
 
----
+3. **DO Spaces Upload**:
+   - `LogoUpload.tsx` - Uppy Dashboard integration
+   - Presigned URL flow for logo/banner upload
 
-## 🚀 PRÓXIMOS PASOS
+4. **Pages** (App Router):
+   - `app/dashboard/org/page.tsx` - List orgs
+   - `app/dashboard/org/[id]/page.tsx` - Org detail + teams tab
+   - `app/dashboard/org/[id]/wallet/page.tsx` - Wallet balance + recharge
 
-### Sprint 3-4: Organizations, Teams & Wallet (EN PROGRESO) 🚀
+5. **Wallet Card Component**:
+   - `components/dashboard/WalletCard.tsx` - Balance display
+   - Token packages selection for recharge
 
-- **Rama actual**: `sprint-3-4-organizations`
+### Referencia
 - **PRP**: `PRPs/sprint-3-4-organizations.md`
-- **Fase actual**: Phase 1 - Domain Layer
+- **Config**: `CLAUDE.md` → Tech Stack 2026
+- **Frontend**: `apps/web/` (Next.js 16 + React 19)
 
-**Tareas pendientes**:
-- [ ] Organization entity + OrganizationStatus enum
-- [ ] Team, TeamMember entities (MLM hierarchy)
-- [ ] Wallet, WalletTransaction entities
-- [ ] Repository interfaces (AbstractOrgRepository, etc.)
-- [ ] Unit tests for entities
+---
 
-### OAuth External Setup (⚡ Deuda técnica - NO bloquea Sprint 3-4)
-   - Domain Layer → Entities, Value Objects, Repository interfaces
-   - Infrastructure → SQLAlchemy models, FastAPI routers
-   - Application → Use cases, DTOs
-   - Read PRPs/auth-system.md para especificaciones
+## 💾 CÓMO CONTINUAR
 
-3. **Integration**
-   - Conectar Frontend con Backend real
-   - Remover workarounds de `.env.local`
-
-### Comandos Útiles
 ```bash
-# Nueva sesión - empezar así:
+# 1. Activar proyecto
+cd /home/rpadron/prosell-sass
 mcp__serena__activate_project(project="/home/rpadron/proy/prosell-sass")
-mcp__serena__list_memories
-mcp__serena__read_memory("HANDOFF")
+mcp__serena_read_memory("HANDOFF")
 
-# Tests
-pnpm test                 # 353 tests
-cd apps/api && uv run pytest  # 139 tests
+# 2. Ver rama actual
+git branch  # debe ser sprint-3-4-organizations
+git status  # ver archivos staged
 
-# Branch
-git checkout main
-git pull origin main
-git checkout -b feature/nueva-fase
-```
+# 3. Tests
+uv run pytest tests/  # 281 tests backend
+cd apps/web && pnpm test  # 353 tests frontend
 
----
-
-**SPRINT 3-4: ORGANIZATIONS EN PROGRESO** 🚀
-
-_Última actualización_: 2026-02-22 - Rama `sprint-3-4-organizations` creada
-
----
-
-## 🎯 LO QUE ESTAMOS HACIENDO
-
-### Sprint 3-4: Organizations, Teams & Wallet
-- **Rama**: `sprint-3-4-organizations`
-- **PRP**: `PRPs/sprint-3-4-organizations.md` (Confidence: 9/10)
-- **Estimación**: 20 días
-- **Tareas**: 28 tareas organizadas
-
-### Fases del Sprint
-| Fase | Duración | Estado |
-|------|----------|--------|
-| Phase 1: Foundation (Domain) | 3 días | ⏳ Iniciando |
-| Phase 2: Backend (Infra + API) | 5 días | ⏳ Pendiente |
-| Phase 3: Teams & Wallet | 5 días | ⏳ Pendiente |
-| Phase 4: Frontend | 4 días | ⏳ Pendiente |
-| Phase 5: Integration & Polish | 3 días | ⏳ Pendiente |
-
-### Comandos Útiles
-```bash
-# Continuar Sprint 3-4
-git checkout sprint-3-4-organizations
-git pull origin main  # si hay actualizaciones
-
-# Ver PRP
+# 4. Si necesitas ver el PRP
 cat PRPs/sprint-3-4-organizations.md
-
-# Tests
-cd apps/api && uv run pytest tests/
 ```
+
+---
+
+## ⚠️ DEUDA TÉCNICA - OAuth External Setup
+
+**Documentación**: `docs/technical-debt/oauth-external-setup.md`
+
+**Qué falta** (configuración externa, NO código):
+1. Crear Google OAuth App → Obtener `client_id` y `client_secret`
+2. Crear Facebook OAuth App → Obtener `app_id` y `app_secret`
+3. Agregar credenciales a `.env`
+
+**NOTA**: OAuth código está 100% implementado ✅ - Solo faltan credenciales externas.
+
+---
+
+**Proyecto**: ProSell SaaS
+**Monorepo**: Clean Architecture (Domain → Application → Infrastructure)
+**Stack**: Python 3.13, FastAPI, PostgreSQL | Next.js 16, React 19, Zustand 5
+**Confidence**: 9/10

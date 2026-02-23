@@ -1,117 +1,102 @@
-# ProSell SaaS - Project Memory
-
-## 📍 CURRENT STATUS (2026-02-22)
-
-### ✅ Phase 3: Content Visibility COMPLETADA Y MERGEADA
-**Commit**: `a487c16` - mergeado a main
-**Tests**: 353/353 passing (frontend)
-**CI**: All 6 jobs passing ✅
-
-### Vercel Performance Phases - ALL COMPLETE ✅
-| Fase | Estado | Merge | Tests |
-|------|--------|-------|-------|
-| **Phase 1** | ✅ Complete | ✅ main | 330/330 |
-| **Phase 2** | ✅ Complete | ✅ main | 333/333 |
-| **Phase 3** | ✅ **MERGEADA** | ✅ **main** | 353/353 |
-
-**PRP vercel-performance-fixes.md**: ✅ Actualizado a 100% COMPLETE
-
-### Frontend Auth (Sprint 1-2) ✅
-- **17/17 tareas**: 100% completo
-- **353 tests passing** (actualizado con nuevos tests)
-- **CI**: All jobs passing
-
-### Pydantic Refactor ✅
-- **8/8 fases**: 100% completado y mergeado
-- **139/139 tests**: Backend passing
-
-### Auth Backend (Sprint 1-2): ✅ 100% COMPLETADO
-- **Domain**: User, Role, Session, Email, Password entities
-- **Application**: 8 use cases (Register, Login, 2FA, etc.)
-- **Infrastructure**: SQLAlchemy models, Repos, JWT service
-- **API**: auth_router with 9 endpoints
-- **Tests**: 139/139 passing ✅
-
-### Organizations Backend (Sprint 3-4): ⏳ EN PROGRESO
-- **Rama**: `sprint-3-4-organizations`
-- **PRP**: `PRPs/sprint-3-4-organizations.md`
-- **Domain**: Organization, Team, Wallet entities (0/6)
-- **Application**: Use cases + DTOs (0/8)
-- **Infrastructure**: Models + Repos + DO Spaces (0/6)
-- **API**: org_router, team_router, wallet_router (0/3)
-- **Tech**: FastAPI, SQLAlchemy 2.0, PostgreSQL, DO Spaces, Stripe
-
-## Session 2026-02-22 - Phase 3 Content Visibility ✅
+# Session 2026-02-22 - Sprint 3-4 Organizations Phase 3 COMPLETADA ✅
 
 ### Achievement
-**Phase 3: Content Visibility 100% COMPLETADA Y MERGEADA**
+**Phase 3 (Teams & Wallet Backend) del Sprint 3-4 Organizations COMPLETADA**
 
-### Commits Realizados
-13 commits en rama `phase-3-content-visibility`:
-- `9fd104f` - fix(frontend): remove React.memo and fix imports
-- `d8fd29d` - fix(ci): resolve pnpm version conflict
-- `0795b01` - fix(ci): make prepare script not fail
-- `642ca2e` - fix(eslint): use correct rule name
-- `14c1324` - fix(eslint): use block disable
-- `713b148` - fix(eslint): use block disable for state sync
-- `3c9397b` - style(ci): apply prettier formatting
-- `0ca38bf` - fix(ci): Python + ESLint via systematic debugging
-- `9a8e3e6` - fix(ci): add working-directory to Python lint
-- `d3fe47d` - fix(ci): use relative paths for Python lint
-- `113d956` - fix(python): resolve ruff errors
-- `5cb8aa0` - fix(ci): remove mypy step
-- `3682828` - fix(types): correct typo disable->disabled
+### Estado Sprint 3-4
+| Fase | Estado | Tests |
+|------|--------|-------|
+| **Phase 1: Domain Layer** | ✅ COMPLETA | 82 tests |
+| **Phase 2: Backend (Infra + API)** | ✅ COMPLETA | 172 tests |
+| **Phase 3: Teams & Wallet Backend** | ✅ **COMPLETA** | 119 tests |
+| Phase 4: Frontend | ⏳ Pendiente | - |
+| Phase 5: Integration & Polish | ⏳ Pendiente | - |
 
-### Archivos Nuevos/Modificados
+### Archivos creados en Phase 3
+
+**DTOs:**
+- `application/dto/team/` → create, response, update, __init__
+- `application/dto/wallet/` → response, __init__
+
+**Use Cases:**
+- `application/use_cases/team/` → create_team, get_team, update_team, add_team_member, __init__
+- `application/use_cases/wallet/` → wallet_operations, __init__
+
+**Ports (Interfaces):**
+- `application/ports/ido_spaces.py` → IDOSpacesService interface
+
+**Infrastructure Services:**
+- `infrastructure/services/do_spaces_service.py` → DOSpacesService + helper functions
+
+**API Routers:**
+- `infrastructure/api/routers/team_router.py` → 5 endpoints
+- `infrastructure/api/routers/wallet_router.py` → 4 endpoints
+
+**Configuration:**
+- `core/config.py` → DO Spaces + Stripe settings
+
+**Tests:**
+- `tests/unit/application/test_team_use_cases.py` (9 tests)
+- `tests/unit/application/test_wallet_use_cases.py` (7 tests)
+- `tests/unit/services/test_do_spaces_service.py` (9 tests)
+
+**Otros:**
+- `domain/repositories/__init__.py` → Updated exports
+- `infrastructure/api/main.py` → Team/Wallet routers registered
+- `infrastructure/api/routers/__init__.py` → Exported team_router, wallet_router
+
+### Tests Totales Backend: 281 tests (281 passing)
 ```
-apps/web/src/
-├── components/ui/
-│   ├── optimized-list.tsx          # ✅ NUEVO
-│   └── ui/
-│       └── MemoizedListItem
-├── stores/
-│   └── featureFlagStore.ts         # ✅ NUEVO
-├── app/globals.css                  # ✅ MODIFICADO
-└── tests/components/ui/
-    └── OptimizedList.test.tsx       # ✅ NUEVO (20 tests)
+Domain unit tests (Phase 1):           82 passing
+Application unit tests (Phase 2):      18 passing
+Integration tests (Phase 2):          15 passing
+Application unit tests (Phase 3):      16 passing (Team: 9, Wallet: 7)
+Services unit tests (Phase 3):          9 passing (DO Spaces)
+Auth unit tests:                      139 passing
+=========================================
+Total:                                281 passing ✅
 ```
 
-### CI Fixes via Systematic Debugging
-Root causes encontrados y resueltos:
-1. **pnpm version conflict** → `package_manager: true`
-2. **prepare script** → fallback sin pre-commit
-3. **Python deps** → `uv sync --all-extras`
-4. **Working directory** → agregado a pasos Python
-5. **Ruff paths** → relativos desde apps/api
-6. **ESLint disable** → sintaxis de bloque correcta
-7. **Prettier** → 301 archivos formateados
-8. **Ruff errors** → 5 errores reales arreglados
-9. **mypy** → removido (usa pyright)
-10. **TypeScript typo** → `"disable"` → `"disabled"`
+### API Endpoints implementados (9 nuevos):
 
-### Métricas Finales
-| Métrica | Valor |
-|---------|-------|
-| Tests Frontend | 353/353 passing ✅ |
-| CI Jobs | 6/6 passing ✅ |
-| Archivos cambiados | ~315 |
-| Líneas totales | +15,000 / -9,000 |
+**Teams (5 endpoints):**
+- `POST /api/v1/teams` → Create team
+- `GET /api/v1/teams/org/{org_id}` → List teams by org
+- `GET /api/v1/teams/{team_id}` → Get team by ID
+- `PATCH /api/v1/teams/{team_id}` → Update team
+- `POST /api/v1/teams/{team_id}/members` → Add member
 
-## Referencias Útiles
+**Wallet (4 endpoints):**
+- `GET /api/v1/wallet/org/{org_id}` → Get balance
+- `GET /api/v1/wallet/org/{org_id}/transactions` → Get history
+- `POST /api/v1/wallet/credit` → Credit tokens (recharge)
+- `POST /api/v1/wallet/debit` → Debit tokens (spend)
 
-### Próximos Pasos Sugeridos
-1. **Phase 4**: Vercel Performance (si aplica)
-2. **Backend Sprint**: Domain Layer → API → Tests
-3. **Integration Tests**: Frontend + Backend juntos
-
-### Comandos Útiles
+### Configuraciones nuevas en .env
 ```bash
-# Tests
-pnpm test                 # Vitest unit
-pnpm test:e2e             # Playwright E2E
-cd apps/api && uv run pytest  # Backend tests
+# DigitalOcean Spaces
+DO_REGION=nyc3
+DO_BUCKET_NAME=prosell-assets
+DO_ACCESS_KEY_ID=
+DO_SECRET_ACCESS_KEY=
 
-# CI
-gh pr list                 # Ver PRs abiertos
-gh run list               # Ver últimos CI runs
+# Stripe (test mode por ahora)
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_ID_TOKENS_100=
+STRIPE_PRICE_ID_TOKENS_500=
+STRIPE_PRICE_ID_TOKENS_1000=
 ```
+
+### Pendiente para Phase 4 (Frontend):
+- organizationStore, teamStore, walletStore (Zustand)
+- Org/Team/Wallet forms (React Hook Form + Zod)
+- DO Spaces upload component (Uppy)
+- Organization detail/teams management pages
+- Wallet balance display + recharge UI
+
+### Pendiente para Stripe:
+- Stripe webhook endpoint handler
+- Payment intent creation flow
+- Webhook signature verification

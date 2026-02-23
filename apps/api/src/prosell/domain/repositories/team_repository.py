@@ -60,6 +60,11 @@ class AbstractTeamRepository(ABC):
         """Count total teams."""
         pass
 
+    @abstractmethod
+    async def count_by_org(self, org_id: UUID, tenant_id: UUID) -> int:
+        """Count teams for an organization."""
+        pass
+
 
 class AbstractTeamMemberRepository(ABC):
     """Repository interface for TeamMember entities."""

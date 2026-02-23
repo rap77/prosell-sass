@@ -130,6 +130,58 @@ class Settings(BaseSettings):
     )
 
     # =============================================================================
+    # DIGITALOCEAN SPACES (File Storage)
+    # =============================================================================
+    do_region: str = Field(
+        default="nyc3",
+        description="DigitalOcean Spaces region (e.g., nyc3, sfo2, ams3)",
+    )
+    do_bucket_name: str = Field(
+        default="prosell-assets",
+        description="DigitalOcean Spaces bucket name",
+    )
+    do_access_key_id: str = Field(
+        default="",
+        description="DigitalOcean Spaces access key ID",
+    )
+    do_secret_access_key: str = Field(
+        default="",
+        description="DigitalOcean Spaces secret access key",
+    )
+    do_cdn_endpoint: str | None = Field(
+        default=None,
+        description="Optional CDN endpoint for Spaces assets",
+    )
+
+    # =============================================================================
+    # STRIPE (Payments)
+    # =============================================================================
+    stripe_secret_key: str = Field(
+        default="sk_test_...",
+        description="Stripe secret key (test or live)",
+    )
+    stripe_publishable_key: str = Field(
+        default="pk_test_...",
+        description="Stripe publishable key (test or live)",
+    )
+    stripe_webhook_secret: str | None = Field(
+        default=None,
+        description="Stripe webhook secret for signature verification",
+    )
+    stripe_price_id_tokens_100: str | None = Field(
+        default=None,
+        description="Stripe Price ID for 100 token package",
+    )
+    stripe_price_id_tokens_500: str | None = Field(
+        default=None,
+        description="Stripe Price ID for 500 token package",
+    )
+    stripe_price_id_tokens_1000: str | None = Field(
+        default=None,
+        description="Stripe Price ID for 1000 token package",
+    )
+
+    # =============================================================================
     # EMAIL (SendGrid)
     # =============================================================================
     sendgrid_api_key: str | None = Field(
