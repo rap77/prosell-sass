@@ -1,102 +1,76 @@
-# Session 2026-02-22 - Sprint 3-4 Organizations Phase 3 COMPLETADA ✅
+# Sprint 3-4 Organizations - Session 2026-02-23
 
-### Achievement
-**Phase 3 (Teams & Wallet Backend) del Sprint 3-4 Organizations COMPLETADA**
+## Estado Actual
 
-### Estado Sprint 3-4
-| Fase | Estado | Tests |
-|------|--------|-------|
-| **Phase 1: Domain Layer** | ✅ COMPLETA | 82 tests |
-| **Phase 2: Backend (Infra + API)** | ✅ COMPLETA | 172 tests |
-| **Phase 3: Teams & Wallet Backend** | ✅ **COMPLETA** | 119 tests |
-| Phase 4: Frontend | ⏳ Pendiente | - |
-| Phase 5: Integration & Polish | ⏳ Pendiente | - |
+| Fase | Estado | Tests | Commits |
+|------|--------|-------|---------|
+| **Phase 1: Domain Layer** | ✅ COMPLETA | 82 | `1b20c2e` |
+| **Phase 2: Org API Backend** | ✅ COMPLETA | 33 | `cf3de3d` |
+| **Phase 3: Teams/Wallet Backend** | ✅ COMPLETA | 25 | `cf3de3d` |
+| **Phase 4: Frontend** | 🔄 **~30%** | 353 | `18e3b06` |
+| **Phase 5: Integration** | ⏳ Pendiente | - | - |
 
-### Archivos creados en Phase 3
+## Tests Totales
+- Backend: 281/281 passing ✅
+- Frontend: 353/353 passing ✅
+- Total: 634/634 passing ✅
 
-**DTOs:**
-- `application/dto/team/` → create, response, update, __init__
-- `application/dto/wallet/` → response, __init__
-
-**Use Cases:**
-- `application/use_cases/team/` → create_team, get_team, update_team, add_team_member, __init__
-- `application/use_cases/wallet/` → wallet_operations, __init__
-
-**Ports (Interfaces):**
-- `application/ports/ido_spaces.py` → IDOSpacesService interface
-
-**Infrastructure Services:**
-- `infrastructure/services/do_spaces_service.py` → DOSpacesService + helper functions
-
-**API Routers:**
-- `infrastructure/api/routers/team_router.py` → 5 endpoints
-- `infrastructure/api/routers/wallet_router.py` → 4 endpoints
-
-**Configuration:**
-- `core/config.py` → DO Spaces + Stripe settings
-
-**Tests:**
-- `tests/unit/application/test_team_use_cases.py` (9 tests)
-- `tests/unit/application/test_wallet_use_cases.py` (7 tests)
-- `tests/unit/services/test_do_spaces_service.py` (9 tests)
-
-**Otros:**
-- `domain/repositories/__init__.py` → Updated exports
-- `infrastructure/api/main.py` → Team/Wallet routers registered
-- `infrastructure/api/routers/__init__.py` → Exported team_router, wallet_router
-
-### Tests Totales Backend: 281 tests (281 passing)
+## Commits Recientes
 ```
-Domain unit tests (Phase 1):           82 passing
-Application unit tests (Phase 2):      18 passing
-Integration tests (Phase 2):          15 passing
-Application unit tests (Phase 3):      16 passing (Team: 9, Wallet: 7)
-Services unit tests (Phase 3):          9 passing (DO Spaces)
-Auth unit tests:                      139 passing
-=========================================
-Total:                                281 passing ✅
+18e3b06 feat(sprint3-4): Phase 4 frontend (~30%)
+cf3de3d feat(sprint3-4): Phase 2-3 backend - Org, Team, Wallet APIs
+1b20c2e feat(domain): add Organization, Team, Wallet entities
 ```
 
-### API Endpoints implementados (9 nuevos):
+## Phase 4: Frontend - Completado (30%)
 
-**Teams (5 endpoints):**
-- `POST /api/v1/teams` → Create team
-- `GET /api/v1/teams/org/{org_id}` → List teams by org
-- `GET /api/v1/teams/{team_id}` → Get team by ID
-- `PATCH /api/v1/teams/{team_id}` → Update team
-- `POST /api/v1/teams/{team_id}/members` → Add member
+### Organization CRUD ✅
+- `lib/api/orgApi.ts` - API client con 9 métodos
+- `stores/organizationStore.ts` - Zustand store con persist
+- `components/forms/OrganizationForm.tsx` - RHF + Zod
+- `app/dashboard/org/page.tsx` - Lista con paginación
+- `app/dashboard/org/new/page.tsx` - Crear org
+- `app/dashboard/org/[id]/page.tsx` - Detalle org
 
-**Wallet (4 endpoints):**
-- `GET /api/v1/wallet/org/{org_id}` → Get balance
-- `GET /api/v1/wallet/org/{org_id}/transactions` → Get history
-- `POST /api/v1/wallet/credit` → Credit tokens (recharge)
-- `POST /api/v1/wallet/debit` → Debit tokens (spend)
+## Phase 4: Frontend - Pendiente (70%)
 
-### Configuraciones nuevas en .env
+### Teams Frontend ❌
+- `lib/api/teamApi.ts` - API client (5 endpoints)
+- `stores/teamStore.ts` - Zustand store
+- `TeamForm.tsx` - Formulario create/edit
+- `MemberForm.tsx` - Añadir member
+- Pages: teams list, team detail
+
+### Wallet Frontend ❌
+- `lib/api/walletApi.ts` - API client (4 endpoints)
+- `stores/walletStore.ts` - Zustand store
+- `app/dashboard/org/[id]/wallet/page.tsx` - Wallet page
+- `WalletCard.tsx` - Balance display + recarga
+
+### DO Spaces Upload (Opcional) ❌
+- `LogoUpload.tsx` - Uppy Dashboard
+
+## Cómo continuar en nueva ventana
+
 ```bash
-# DigitalOcean Spaces
-DO_REGION=nyc3
-DO_BUCKET_NAME=prosell-assets
-DO_ACCESS_KEY_ID=
-DO_SECRET_ACCESS_KEY=
+# 1. Activar proyecto
+cd /home/rpadron/proy/prosell-sass
+mcp__serena__activate_project(project="/home/rpadron/proy/prosell-sass")
 
-# Stripe (test mode por ahora)
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_WEBHOOK_SECRET=
-STRIPE_PRICE_ID_TOKENS_100=
-STRIPE_PRICE_ID_TOKENS_500=
-STRIPE_PRICE_ID_TOKENS_1000=
+# 2. Leer handoff y memoria
+mcp__serena__read_memory("HANDOFF")
+mcp__serena__read_memory("MEMORY.md")
+
+# 3. Ver rama y status
+git branch  # debe ser sprint-3-4-organizations
+git status
+
+# 4. Continuar con Teams o Wallet Frontend
+# - Crear teamApi.ts siguiendo patrón de orgApi.ts
+# - Crear teamStore.ts siguiendo patrón de organizationStore.ts
+# - Crear TeamForm.tsx siguiendo patrón de OrganizationForm.tsx
 ```
 
-### Pendiente para Phase 4 (Frontend):
-- organizationStore, teamStore, walletStore (Zustand)
-- Org/Team/Wallet forms (React Hook Form + Zod)
-- DO Spaces upload component (Uppy)
-- Organization detail/teams management pages
-- Wallet balance display + recharge UI
-
-### Pendiente para Stripe:
-- Stripe webhook endpoint handler
-- Payment intent creation flow
-- Webhook signature verification
+## Deuda Técnica
+- OAuth External Setup (Google + Facebook apps) - NO es código, es configuración externa
+- Ver docs/technical-debt/oauth-external-setup.md

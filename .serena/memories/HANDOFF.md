@@ -1,4 +1,4 @@
-# Handoff: Sprint 3-4 Organizations - Phases 1-3 COMPLETADAS ✅
+# Handoff: Sprint 3-4 Organizations - Phases 1-4 ~65% COMPLETADAS
 
 **Fecha**: 2026-02-23
 **Rama**: `sprint-3-4-organizations`
@@ -224,29 +224,31 @@ apps/api/src/prosell/
 
 ## 🚀 PRÓXIMA SESIÓN - Phase 4: Frontend
 
-### Pendiente para implementar:
-1. **Zustand Stores** (React 19 patterns):
-   - `organizationStore.ts` - CRUD orgs
-   - `teamStore.ts` - Manage teams/members
-   - `walletStore.ts` - Balance + transactions
+### ✅ COMPLETADO - Phase 4 (Organizations):
+- `lib/api/orgApi.ts` - API client con 9 métodos (create, list, get, update, verify, reject, suspend)
+- `stores/organizationStore.ts` - Zustand store con CRUD completo + persist
+- `components/forms/OrganizationForm.tsx` - RHF + Zod validation form
+- `app/dashboard/org/page.tsx` - Lista organizaciones con paginación
+- `app/dashboard/org/new/page.tsx` - Crear nueva organización
+- `app/dashboard/org/[id]/page.tsx` - Detalle de organización
 
-2. **React Hook Form + Zod Forms**:
-   - `OrganizationForm.tsx` - Create/edit org
-   - `TeamForm.tsx` - Create/edit team
-   - `MemberForm.tsx` - Add vendor/manager
+### ⏳ PENDIENTE - Phase 4 (Teams/Wallet):
 
-3. **DO Spaces Upload**:
-   - `LogoUpload.tsx` - Uppy Dashboard integration
-   - Presigned URL flow for logo/banner upload
+**Teams Frontend:**
+- `lib/api/teamApi.ts` - API client (5 métodos: create, list, get, update, add_member)
+- `stores/teamStore.ts` - Zustand store para teams
+- `TeamForm.tsx` - Formulario create/edit team
+- `MemberForm.tsx` - Formulario añadir vendor/manager
+- `app/dashboard/org/[id]/teams/page.tsx` - Página teams de la org
 
-4. **Pages** (App Router):
-   - `app/dashboard/org/page.tsx` - List orgs
-   - `app/dashboard/org/[id]/page.tsx` - Org detail + teams tab
-   - `app/dashboard/org/[id]/wallet/page.tsx` - Wallet balance + recharge
+**Wallet Frontend:**
+- `lib/api/walletApi.ts` - API client (4 métodos: balance, transactions, credit, debit)
+- `stores/walletStore.ts` - Zustand store para wallet
+- `app/dashboard/org/[id]/wallet/page.tsx` - Página wallet
+- `WalletCard.tsx` - Componente balance display + recarga
 
-5. **Wallet Card Component**:
-   - `components/dashboard/WalletCard.tsx` - Balance display
-   - Token packages selection for recharge
+**DO Spaces Upload (Opcional):**
+- `LogoUpload.tsx` - Uppy Dashboard para logo/banner
 
 ### Referencia
 - **PRP**: `PRPs/sprint-3-4-organizations.md`
@@ -255,42 +257,32 @@ apps/api/src/prosell/
 
 ---
 
-## 💾 CÓMO CONTINUAR
+## 💾 CÓMO CONTINUAR EN NUEVA VENTANA
 
 ```bash
 # 1. Activar proyecto
-cd /home/rpadron/prosell-sass
+cd /home/rpadron/proy/prosell-sass
 mcp__serena__activate_project(project="/home/rpadron/proy/prosell-sass")
-mcp__serena_read_memory("HANDOFF")
+mcp__serena__read_memory("HANDOFF")
+mcp__serena__read_memory("MEMORY.md")
 
-# 2. Ver rama actual
+# 2. Verificar estado
 git branch  # debe ser sprint-3-4-organizations
-git status  # ver archivos staged
+git log --oneline -5
 
 # 3. Tests
-uv run pytest tests/  # 281 tests backend
-cd apps/web && pnpm test  # 353 tests frontend
+uv run pytest tests/ -q  # 281 tests backend
+cd apps/web && pnpm test --run  # 353 tests frontend
 
-# 4. Si necesitas ver el PRP
-cat PRPs/sprint-3-4-organizations.md
+# 4. PRÓXIMO PASO - Phase 4 Teams Frontend
+# Copiar patrón de orgApi.ts → teamApi.ts
+# Copiar patrón de organizationStore.ts → teamStore.ts
+# Copiar patrón de OrganizationForm.tsx → TeamForm.tsx
 ```
-
----
-
-## ⚠️ DEUDA TÉCNICA - OAuth External Setup
-
-**Documentación**: `docs/technical-debt/oauth-external-setup.md`
-
-**Qué falta** (configuración externa, NO código):
-1. Crear Google OAuth App → Obtener `client_id` y `client_secret`
-2. Crear Facebook OAuth App → Obtener `app_id` y `app_secret`
-3. Agregar credenciales a `.env`
-
-**NOTA**: OAuth código está 100% implementado ✅ - Solo faltan credenciales externas.
 
 ---
 
 **Proyecto**: ProSell SaaS
 **Monorepo**: Clean Architecture (Domain → Application → Infrastructure)
 **Stack**: Python 3.13, FastAPI, PostgreSQL | Next.js 16, React 19, Zustand 5
-**Confidence**: 9/10
+**Confidence**: 9/10**: 9/10
