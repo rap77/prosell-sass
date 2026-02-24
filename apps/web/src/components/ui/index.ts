@@ -5,3 +5,4 @@ export {
   AnimatedSvgWrapper,
   type AnimatedSvgWrapperProps,
 } from "./AnimatedSvgWrapper";
+export { WalletCard, type WalletCardProps } from "./WalletCard";
