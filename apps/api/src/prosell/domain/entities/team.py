@@ -102,9 +102,8 @@ class Team(DomainModel):
         Raises:
             ValueError: If commission_rate is invalid
         """
-        if commission_rate is not None:
-            if not (0 <= commission_rate <= 100):
-                raise ValueError("Commission rate must be between 0 and 100")
+        if commission_rate is not None and not (0 <= commission_rate <= 100):
+            raise ValueError("Commission rate must be between 0 and 100")
 
         member = TeamMember(
             id=uuid4(),

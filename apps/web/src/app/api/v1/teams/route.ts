@@ -47,11 +47,13 @@ export async function POST(request: NextRequest) {
 
     const team = {
       id: teamId,
-      organization_id: body.organization_id,
       name: body.name,
-      description: body.description || null,
+      tenant_id: body.tenant_id || "test-user-123",
+      organization_id: body.organization_id,
       created_at: now,
       updated_at: now,
+      members: [],
+      member_count: 0,
     };
 
     (global as any).__mockTeams = (global as any).__mockTeams || {};

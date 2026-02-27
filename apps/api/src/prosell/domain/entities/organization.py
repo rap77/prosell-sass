@@ -49,7 +49,7 @@ class Organization(DomainModel):
         cls,
         name: str,
         tenant_id: UUID,
-        creator_id: UUID | None = None,
+        _creator_id: UUID | None = None,  # Reserved for audit trail (unused)
     ) -> "Organization":
         """
         Factory method for new organization creation.
