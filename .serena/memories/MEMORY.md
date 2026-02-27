@@ -1,76 +1,61 @@
-# Sprint 3-4 Organizations - Session 2026-02-23
+# ProSell SaaS - Project Memory
 
-## Estado Actual
+## Session 2026-02-26 (Tarde) - Sprint 3-4 Fase 5: E2E Tests ⏳ ~70% COMPLETA
 
-| Fase | Estado | Tests | Commits |
-|------|--------|-------|---------|
-| **Phase 1: Domain Layer** | ✅ COMPLETA | 82 | `1b20c2e` |
-| **Phase 2: Org API Backend** | ✅ COMPLETA | 33 | `cf3de3d` |
-| **Phase 3: Teams/Wallet Backend** | ✅ COMPLETA | 25 | `cf3de3d` |
-| **Phase 4: Frontend** | 🔄 **~30%** | 353 | `18e3b06` |
-| **Phase 5: Integration** | ⏳ Pendiente | - | - |
+### Achievement
+**E2E Tests funcionando - 15-17/23 passing (65-74%)**
 
-## Tests Totales
-- Backend: 281/281 passing ✅
-- Frontend: 353/353 passing ✅
-- Total: 634/634 passing ✅
+### Estado Sprint 3-4
+| Fase | Estado | Tests |
+|------|--------|-------|
+| **Phase 1**: Domain Layer | ✅ COMPLETA | 82 |
+| **Phase 2**: Org API Backend | ✅ COMPLETA | 33 |
+| **Phase 3**: Teams/Wallet Backend | ✅ COMPLETA | 25 |
+| **Phase 4**: Frontend | ✅ COMPLETA | 353 |
+| **Phase 5**: E2E Tests | ⏳ ~70% | 15-17/23 |
 
-## Commits Recientes
+### Tests Totales: ~701 tests
 ```
-18e3b06 feat(sprint3-4): Phase 4 frontend (~30%)
-cf3de3d feat(sprint3-4): Phase 2-3 backend - Org, Team, Wallet APIs
-1b20c2e feat(domain): add Organization, Team, Wallet entities
+Backend:                        281 passing ✅
+Frontend:                       353 passing ✅
+E2E (Org):                      15-17/23 passing ⚠️
+E2E (Teams/Wallet):             sin probar
+========================================
+Total:                          ~650 passing
 ```
 
-## Phase 4: Frontend - Completado (30%)
+### Commit de Hoy
+- **`2761545`** - feat(sprint3-4): phase 5 E2E tests setup and initial fixes
 
-### Organization CRUD ✅
-- `lib/api/orgApi.ts` - API client con 9 métodos
-- `stores/organizationStore.ts` - Zustand store con persist
-- `components/forms/OrganizationForm.tsx` - RHF + Zod
-- `app/dashboard/org/page.tsx` - Lista con paginación
-- `app/dashboard/org/new/page.tsx` - Crear org
-- `app/dashboard/org/[id]/page.tsx` - Detalle org
+### Problemas Resueltos Hoy
+1. ✅ ECONNREFUSED → webServer auto-start configurado
+2. ✅ Next.js 16 params → await params en API routes
+3. ✅ Accesibilidad → <main> landmarks agregados
+4. ✅ role="alert" vacíos → .trim() check
+5. ✅ Back button → router.push() en lugar de router.back()
 
-## Phase 4: Frontend - Pendiente (70%)
+### Problemas Pendientes
+1. ⚠️ Tests flaky - timing issues en navegación
+2. ⚠️ Loading state test - API muy rápida
+3. ❌ Teams/Wallet tests - sin probar
 
-### Teams Frontend ❌
-- `lib/api/teamApi.ts` - API client (5 endpoints)
-- `stores/teamStore.ts` - Zustand store
-- `TeamForm.tsx` - Formulario create/edit
-- `MemberForm.tsx` - Añadir member
-- Pages: teams list, team detail
-
-### Wallet Frontend ❌
-- `lib/api/walletApi.ts` - API client (4 endpoints)
-- `stores/walletStore.ts` - Zustand store
-- `app/dashboard/org/[id]/wallet/page.tsx` - Wallet page
-- `WalletCard.tsx` - Balance display + recarga
-
-### DO Spaces Upload (Opcional) ❌
-- `LogoUpload.tsx` - Uppy Dashboard
-
-## Cómo continuar en nueva ventana
-
+### Para Continuar
 ```bash
-# 1. Activar proyecto
-cd /home/rpadron/proy/prosell-sass
-mcp__serena__activate_project(project="/home/rpadron/proy/prosell-sass")
-
-# 2. Leer handoff y memoria
-mcp__serena__read_memory("HANDOFF")
-mcp__serena__read_memory("MEMORY.md")
-
-# 3. Ver rama y status
-git branch  # debe ser sprint-3-4-organizations
-git status
-
-# 4. Continuar con Teams o Wallet Frontend
-# - Crear teamApi.ts siguiendo patrón de orgApi.ts
-# - Crear teamStore.ts siguiendo patrón de organizationStore.ts
-# - Crear TeamForm.tsx siguiendo patrón de OrganizationForm.tsx
+cd tests/e2e
+npx playwright test dashboard/org/organizations.spec.ts --reporter=line
 ```
 
-## Deuda Técnica
-- OAuth External Setup (Google + Facebook apps) - NO es código, es configuración externa
-- Ver docs/technical-debt/oauth-external-setup.md
+### Archivos Clave
+- `tests/e2e/playwright.config.ts` - webServer configurado
+- `tests/e2e/global-setup.ts` - autenticación pre-test
+- `apps/web/src/app/api/v1/org/[id]/route.ts` - await params fix
+- `apps/web/src/app/dashboard/org/[id]/edit/page.tsx` - página creada
+
+### Próximos Pasos
+1. Arreglar tests flaky de navegación
+2. Probar Teams tests
+3. Probar Wallet tests
+4. Merge a main cuando esté estable
+
+### HANDOFF.md Actualizado
+Ver HANDOFF.md para estado completo y detalles de debugging.
