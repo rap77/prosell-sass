@@ -120,6 +120,7 @@ async def get_wallet_transactions(
 )
 async def credit_wallet(
     request: CreditWalletRequest,
+    _current_user: User = Depends(get_current_auth_user),  # TODO: verify tenant_id matches
     wallet_repo: SqlAlchemyWalletRepository = Depends(get_wallet_repository),
     wallet_txn_repo: SqlAlchemyWalletTransactionRepository = Depends(
         get_wallet_transaction_repository,
@@ -152,6 +153,7 @@ async def credit_wallet(
 )
 async def debit_wallet(
     request: DebitWalletRequest,
+    _current_user: User = Depends(get_current_auth_user),  # TODO: verify tenant_id matches
     wallet_repo: SqlAlchemyWalletRepository = Depends(get_wallet_repository),
     wallet_txn_repo: SqlAlchemyWalletTransactionRepository = Depends(
         get_wallet_transaction_repository,

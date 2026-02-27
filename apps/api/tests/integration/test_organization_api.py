@@ -8,6 +8,7 @@ from fastapi import status
 from httpx import ASGITransport, AsyncClient, Response
 
 from prosell.domain.entities.organization import Organization
+from prosell.domain.entities.user import User
 from prosell.domain.entities.wallet import Wallet
 from prosell.domain.value_objects.organization_status import OrganizationStatus
 from prosell.infrastructure.api.main import app
@@ -15,6 +16,19 @@ from prosell.infrastructure.api.main import app
 # =============================================================================
 # FIXTURES
 # =============================================================================
+
+
+@pytest.fixture(autouse=True)
+def auto_mock_auth(mock_auth_user):
+    """Automatically mock auth for all tests."""
+    from prosell.infrastructure.api.dependencies import get_current_auth_user
+
+    app.dependency_overrides[get_current_auth_user] = lambda: mock_auth_user
+
+    yield
+
+    # Clean up after each test
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
@@ -55,6 +69,19 @@ def sample_org():
 def sample_wallet(sample_org):
     """Sample wallet for tests."""
     return Wallet.create(org_id=sample_org.id, tenant_id=sample_org.tenant_id)
+
+
+@pytest.fixture
+def mock_auth_user():
+    """Mock authenticated user for tests."""
+    return User(
+        id=uuid4(),
+        email="test@example.com",
+        full_name="Test User",
+        tenant_id=uuid4(),
+        is_active=True,
+        email_verified=True,
+    )
 
 
 # =============================================================================
@@ -104,6 +131,7 @@ class TestCreateOrganization:
         mock_wallet_repo,
         sample_org,
         sample_wallet,
+        mock_auth_user,
     ):
         """Creates org with 201 status."""
         # Setup mocks
@@ -116,6 +144,7 @@ class TestCreateOrganization:
         mock_org_repo.update.return_value = linked_org
 
         # Override dependencies
+        from prosell.infrastructure.api.dependencies import get_current_auth_user
         from prosell.infrastructure.api.routers.org_router import (
             get_org_repository,
             get_wallet_repository,
@@ -123,25 +152,21 @@ class TestCreateOrganization:
 
         app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
         app.dependency_overrides[get_wallet_repository] = lambda: mock_wallet_repo
+        app.dependency_overrides[get_current_auth_user] = lambda: mock_auth_user
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            creator_id = uuid4()
             payload = {
                 "name": sample_org.name,
                 "tenant_id": str(sample_org.tenant_id),
             }
-            response = await client.post(
-                f"/api/v1/org?creator_id={creator_id}",
-                json=payload,
-            )
+            response = await client.post("/api/v1/org", json=payload)
 
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
         assert data["name"] == sample_org.name
         assert data["status"] == OrganizationStatus.PENDING_VERIFICATION.value
 
-        # Clean up
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
     async def test_create_conflict_when_name_exists(
         self,
@@ -169,7 +194,7 @@ class TestCreateOrganization:
         assert response.status_code == status.HTTP_409_CONFLICT
         assert "already exists" in response.json()["detail"].lower()
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
 
 # =============================================================================
@@ -195,7 +220,7 @@ class TestListOrganizations:
         assert data["organizations"] == []
         assert data["total"] == 0
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
     async def test_list_with_results(self, mock_org_repo, sample_org):
         """Returns list of organizations."""
@@ -215,7 +240,7 @@ class TestListOrganizations:
         assert len(data["organizations"]) == 1
         assert data["organizations"][0]["name"] == sample_org.name
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
     async def test_list_with_pagination(self, mock_org_repo, sample_org):
         """Applies skip and limit parameters."""
@@ -242,7 +267,7 @@ class TestListOrganizations:
             limit=5,
         )
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
 
 # =============================================================================
@@ -266,7 +291,7 @@ class TestGetMyOrganization:
         data = response.json()
         assert data["tenant_id"] == str(sample_org.tenant_id)
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
     async def test_get_my_org_not_found(self, mock_org_repo):
         """Returns 404 when tenant has no org."""
@@ -282,7 +307,7 @@ class TestGetMyOrganization:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "not found" in response.json()["detail"].lower()
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
 
 # =============================================================================
@@ -308,7 +333,7 @@ class TestGetOrganizationById:
         data = response.json()
         assert data["id"] == str(sample_org.id)
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
     async def test_get_by_id_not_found(self, mock_org_repo):
         """Returns 404 when org doesn't exist."""
@@ -323,7 +348,7 @@ class TestGetOrganizationById:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
 
 # =============================================================================
@@ -355,7 +380,7 @@ class TestUpdateOrganization:
         data = response.json()
         assert data["name"] == "Updated Name"
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
     async def test_update_partial_fields(self, mock_org_repo, sample_org):
         """Updates only provided fields."""
@@ -382,7 +407,7 @@ class TestUpdateOrganization:
         # Name should remain unchanged
         assert data["name"] == sample_org.name
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
 
 # =============================================================================
@@ -415,7 +440,7 @@ class TestVerifyOrganization:
         assert data["status"] == OrganizationStatus.ACTIVE.value
         assert data["verified_at"] is not None
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
     async def test_verify_already_active_fails(self, mock_org_repo, sample_org):
         """Returns 422 when verifying already ACTIVE org."""
@@ -434,7 +459,7 @@ class TestVerifyOrganization:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         assert "verification failed" in response.json()["detail"].lower()
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
 
 # =============================================================================
@@ -466,7 +491,7 @@ class TestRejectOrganization:
         data = response.json()
         assert data["status"] == OrganizationStatus.REJECTED.value
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
 
 
 # =============================================================================
@@ -497,4 +522,4 @@ class TestSuspendOrganization:
         data = response.json()
         assert data["status"] == OrganizationStatus.SUSPENDED.value
 
-        app.dependency_overrides.clear()
+        # Clean up handled by autouse fixture
