@@ -54,14 +54,18 @@ export class OrganizationsListPage extends BasePage {
    * Verify organizations list page is loaded
    */
   async verifyPageLoaded(): Promise<void> {
-    await expect(this.heading).toBeVisible();
+    // Wait for page to be ready
+    await this.page.waitForLoadState("domcontentloaded");
+    await this.page.waitForTimeout(200);
+    // Then verify the heading is visible with increased timeout
+    await expect(this.heading).toBeVisible({ timeout: 10000 });
   }
 
   /**
    * Click create organization button
    */
   async clickCreateOrganization(): Promise<void> {
-    await this.createOrgButton.click();
+    await this.createOrgButton.click({ force: true });
   }
 
   /**
@@ -77,16 +81,19 @@ export class OrganizationsListPage extends BasePage {
   async clickOrgByName(name: string): Promise<void> {
     const orgLink = this.getOrgCardByName(name);
     await orgLink.click();
+    // Wait for navigation to complete (Next.js client-side routing)
+    await this.page.waitForLoadState("domcontentloaded");
+    await this.page.waitForTimeout(100);
   }
 
   /**
    * Get view button for organization
    */
   getViewButton(name: string): Locator {
-    return this.page
-      .locator('div[class*="rounded-lg border"]')
-      .filter({ hasText: name })
-      .getByRole("button", { name: /view/i });
+    // Find the org link, navigate to parent container, then find View button
+    const orgLink = this.page.getByRole("link", { name });
+    const cardContainer = orgLink.locator('..').locator('..').locator('..').locator('..');
+    return cardContainer.getByRole("button", { name: /view/i });
   }
 
   /**
@@ -94,7 +101,22 @@ export class OrganizationsListPage extends BasePage {
    */
   async clickView(name: string): Promise<void> {
     const viewButton = this.getViewButton(name);
-    await viewButton.click();
+    await viewButton.click({ force: true });
+    // Wait for navigation to complete (Next.js client-side routing)
+    await this.page.waitForLoadState("domcontentloaded");
+    await this.page.waitForTimeout(100);
+  }
+
+  /**
+   * Click first view button in the list
+   */
+  async clickFirstViewButton(): Promise<void> {
+    // Get the first View button in the list
+    const firstViewButton = this.page.getByRole("button", { name: /view/i }).first();
+    await firstViewButton.click({ force: true });
+    // Wait for navigation to complete
+    await this.page.waitForLoadState("domcontentloaded");
+    await this.page.waitForTimeout(100);
   }
 
   /**

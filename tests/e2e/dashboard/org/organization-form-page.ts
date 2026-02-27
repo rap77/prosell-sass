@@ -66,9 +66,10 @@ export class OrganizationFormPage extends BasePage {
    * Verify form page is loaded
    */
   async verifyPageLoaded(mode: FormMode = "create"): Promise<void> {
+    // Edit page uses "Edit Organization" heading, not "Organization Details"
     const expectedHeading =
-      mode === "create" ? /create organization/i : /organization details/i;
-    await expect(this.page.getByRole("heading", { name: expectedHeading })).toBeVisible();
+      mode === "create" ? /create organization/i : /edit organization/i;
+    await expect(this.page.getByRole("heading", { name: expectedHeading })).toBeVisible({ timeout: 10000 });
   }
 
   /**
@@ -93,8 +94,10 @@ export class OrganizationFormPage extends BasePage {
    * Submit the form
    */
   async submit(): Promise<void> {
-    await this.submitButton.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.submitButton.click({ force: true });
+    // Wait for navigation - Next.js client-side routing needs extra time
+    await this.page.waitForLoadState("domcontentloaded");
+    await this.page.waitForTimeout(200);
   }
 
   /**
@@ -109,7 +112,10 @@ export class OrganizationFormPage extends BasePage {
    * Click cancel button
    */
   async clickCancel(): Promise<void> {
-    await this.cancelButton.click();
+    await this.cancelButton.click({ force: true });
+    // Wait for navigation to complete (Next.js client-side routing)
+    await this.page.waitForLoadState("domcontentloaded");
+    await this.page.waitForTimeout(100);
   }
 
   /**

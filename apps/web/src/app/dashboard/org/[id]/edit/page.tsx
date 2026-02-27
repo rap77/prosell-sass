@@ -5,6 +5,8 @@
  * Uses the OrganizationForm component in "edit" mode.
  */
 
+"use client";
+
 import { useParams } from "next/navigation";
 import { OrganizationForm } from "@/components/forms";
 import { useOrganizationStore } from "@/stores";

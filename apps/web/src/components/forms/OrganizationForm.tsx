@@ -155,8 +155,12 @@ export function OrganizationForm({
           phone: data.phone || undefined,
         });
 
+        // Navigate to organization detail or call onSuccess
         if (onSuccess) {
           onSuccess();
+        } else {
+          // Navigate back to detail page after successful update
+          router.push(`/dashboard/org/${organizationId}`);
         }
       }
     } catch (err) {
@@ -199,7 +203,7 @@ export function OrganizationForm({
               "border-destructive focus-visible:ring-destructive",
           )}
         />
-        {errors.name && (
+        {errors.name && errors.name.message && (
           <p role="alert" className="text-sm text-destructive">
             {errors.name.message}
           </p>
@@ -222,7 +226,7 @@ export function OrganizationForm({
               "border-destructive focus-visible:ring-destructive",
           )}
         />
-        {errors.description && (
+        {errors.description && errors.description.message && (
           <p role="alert" className="text-sm text-destructive">
             {errors.description.message}
           </p>
@@ -245,7 +249,7 @@ export function OrganizationForm({
               "border-destructive focus-visible:ring-destructive",
           )}
         />
-        {errors.website && (
+        {errors.website && errors.website.message && (
           <p role="alert" className="text-sm text-destructive">
             {errors.website.message}
           </p>
@@ -268,7 +272,7 @@ export function OrganizationForm({
               "border-destructive focus-visible:ring-destructive",
           )}
         />
-        {errors.phone && (
+        {errors.phone && errors.phone.message && (
           <p role="alert" className="text-sm text-destructive">
             {errors.phone.message}
           </p>
@@ -276,7 +280,7 @@ export function OrganizationForm({
       </div>
 
       {/* Store Error */}
-      {error && !hasFormErrors && (
+      {error && error.message && error.message.trim() && !hasFormErrors && (
         <div
           role="alert"
           className="p-3 rounded-lg bg-destructive/10 border border-destructive/20"

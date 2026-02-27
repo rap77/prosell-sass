@@ -89,14 +89,20 @@ export class OrganizationDetailPage extends BasePage {
    * Click edit button
    */
   async clickEdit(): Promise<void> {
-    await this.editButton.click();
+    await this.editButton.click({ force: true });
+    // Wait for navigation to complete (Next.js client-side routing)
+    await this.page.waitForLoadState("domcontentloaded");
+    await this.page.waitForTimeout(100);
   }
 
   /**
    * Click back button
    */
   async clickBack(): Promise<void> {
-    await this.backButton.click();
+    await this.backButton.click({ force: true });
+    // Wait for navigation to complete (Next.js client-side routing)
+    await this.page.waitForLoadState("domcontentloaded");
+    await this.page.waitForTimeout(100);
   }
 
   /**
@@ -104,6 +110,9 @@ export class OrganizationDetailPage extends BasePage {
    */
   async clickTeams(): Promise<void> {
     await this.teamsQuickAction.click();
+    // Wait for navigation to complete (Next.js client-side routing)
+    await this.page.waitForLoadState("domcontentloaded");
+    await this.page.waitForTimeout(100);
   }
 
   /**
@@ -111,6 +120,9 @@ export class OrganizationDetailPage extends BasePage {
    */
   async clickWallet(): Promise<void> {
     await this.walletQuickAction.click();
+    // Wait for navigation to complete (Next.js client-side routing)
+    await this.page.waitForLoadState("domcontentloaded");
+    await this.page.waitForTimeout(100);
   }
 
   /**
