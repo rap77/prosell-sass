@@ -18,7 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useTeamStore } from "@/stores";
-import { useTransition } from "react";
+import { useTransition, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -112,6 +112,12 @@ export function TeamForm({
   const isDisabled = isLoading || isSubmitting || isPending;
   const hasFormErrors = Object.keys(errors).length > 0;
 
+  // Clear any residual errors from previous operations
+  useEffect(() => {
+    clearError();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Clear store error when user types
   const handleInputChange = () => {
     if (error) {
@@ -135,16 +141,19 @@ export function TeamForm({
           organization_id: organizationId,
         });
 
-        // Navigate to team detail or call onSuccess
+        // Navigate back to teams list after successful creation
+        router.push(`/dashboard/org/${organizationId}/teams`);
+
         if (onSuccess) {
           onSuccess();
-        } else {
-          router.push(`/dashboard/org/${organizationId}/teams/${team.id}`);
         }
       } else if (mode === "edit" && teamId) {
         await updateTeam(teamId, {
           name: data.name,
         });
+
+        // Navigate back to teams list after successful update
+        router.push(`/dashboard/org/${organizationId}/teams`);
 
         if (onSuccess) {
           onSuccess();

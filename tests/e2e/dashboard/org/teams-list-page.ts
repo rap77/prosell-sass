@@ -25,7 +25,7 @@ export class TeamsListPage extends BasePage {
 
     // Header
     this.heading = page.getByRole("heading", { name: /teams/i });
-    this.backButton = page.getByRole("button", { name: "" }).filter({ hasText: /←|back/i });
+    this.backButton = page.getByRole("button", { name: /go back/i });
 
     // Buttons
     this.createTeamButton = page.getByRole("button", { name: /create team/i });

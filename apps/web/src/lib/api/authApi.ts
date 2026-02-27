@@ -170,9 +170,9 @@ export const authApi = {
    * POST /api/auth/login
    */
   async login(email: string, password: string): Promise<LoginResponse> {
-    // Validate inputs with pre-compiled regex (early exit)
-    if (!EMAIL_REGEX.test(email) || !PASSWORD_REGEX.test(password)) {
-      throw new ApiError("Invalid email or password format", 400);
+    // Validate email format only - let server handle password validation
+    if (!EMAIL_REGEX.test(email)) {
+      throw new ApiError("Invalid email format", 400);
     }
 
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {

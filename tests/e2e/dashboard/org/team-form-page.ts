@@ -66,6 +66,7 @@ export class TeamFormPage extends BasePage {
   async fillForm(data: TeamFormData): Promise<void> {
     if (data.name) {
       await this.nameInput.fill(data.name);
+      await this.nameInput.blur(); // Trigger validation
     }
   }
 

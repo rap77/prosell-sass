@@ -41,7 +41,7 @@ export default function OrganizationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -204,6 +204,6 @@ export default function OrganizationsPage() {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

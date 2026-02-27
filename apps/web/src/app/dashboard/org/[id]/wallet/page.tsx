@@ -74,7 +74,7 @@ export default function WalletPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -83,6 +83,7 @@ export default function WalletPage() {
               variant="ghost"
               size="icon"
               onClick={() => router.push(`/dashboard/org/${orgId}`)}
+              aria-label="Go back to organization"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -98,8 +99,11 @@ export default function WalletPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Wallet Card */}
-          <div className="lg:col-span-1">
-            <WalletCard organizationId={orgId} />
+          <div className="lg:col-span-1 space-y-4">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+              Token Balance
+            </h2>
+            <WalletCard organizationId={orgId} showTitle={false} />
           </div>
 
           {/* Transactions */}
@@ -232,6 +236,6 @@ export default function WalletPage() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

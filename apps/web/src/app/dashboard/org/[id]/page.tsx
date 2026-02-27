@@ -47,7 +47,7 @@ export default function OrganizationDetailPage() {
   // Server-side fallback
   if (!isClient) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8">
             <div className="animate-pulse space-y-4">
@@ -57,19 +57,19 @@ export default function OrganizationDetailPage() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.back()}
+            onClick={() => router.push("/dashboard/org")}
           >
             ← Back
           </Button>
@@ -282,6 +282,6 @@ export default function OrganizationDetailPage() {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

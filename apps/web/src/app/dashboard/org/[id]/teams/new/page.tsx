@@ -18,7 +18,7 @@ export default function NewTeamPage() {
   const orgId = (params.id as string) || "";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -27,6 +27,7 @@ export default function NewTeamPage() {
               variant="ghost"
               size="icon"
               onClick={() => router.push(`/dashboard/org/${orgId}/teams`)}
+              aria-label="Go back to teams"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -49,6 +50,6 @@ export default function NewTeamPage() {
           />
         </div>
       </div>
-    </div>
+    </main>
   );
 }

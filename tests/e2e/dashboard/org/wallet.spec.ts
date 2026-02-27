@@ -14,16 +14,19 @@ import AxeBuilder from "@axe-core/playwright";
 import { WalletPage } from "./wallet-page";
 import { OrganizationsListPage } from "./organizations-list-page";
 import { OrganizationFormPage } from "./organization-form-page";
+import { OrganizationDetailPage } from "./organization-detail-page";
 import { loginUser } from "../../helpers";
 
 test.describe("Wallet", () => {
   let orgListPage: OrganizationsListPage;
   let orgFormPage: OrganizationFormPage;
+  let orgDetailPage: OrganizationDetailPage;
   let walletPage: WalletPage;
 
   test.beforeEach(async ({ page }) => {
     orgListPage = new OrganizationsListPage(page);
     orgFormPage = new OrganizationFormPage(page);
+    orgDetailPage = new OrganizationDetailPage(page);
     walletPage = new WalletPage(page);
 
     // Tests are pre-authenticated via storageState
@@ -366,8 +369,8 @@ test.describe("Wallet", () => {
 
         await walletPage.clickBack();
 
-        // Should navigate back to organization detail
-        await page.waitForURL(/\/dashboard\/org\/${orgId}$/);
+        // Verify navigation back to organization detail
+        await orgDetailPage.verifyPageLoaded();
       },
     );
 
@@ -381,7 +384,7 @@ test.describe("Wallet", () => {
         await page.goto(`/dashboard/org/${orgId}`);
         await page.getByRole("button", { name: /wallet/i }).click();
 
-        await page.waitForURL(/\/dashboard\/org\/${orgId}\/wallet$/);
+        // Verify wallet page loaded
         await walletPage.verifyPageLoaded();
       },
     );

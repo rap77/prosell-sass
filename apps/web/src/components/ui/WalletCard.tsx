@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 export interface WalletCardProps {
   organizationId: string;
   showRefreshButton?: boolean;
+  showTitle?: boolean;
   className?: string;
 }
 
@@ -54,6 +55,7 @@ const TOKEN_PACKAGES = [
 export function WalletCard({
   organizationId,
   showRefreshButton = true,
+  showTitle = true,
   className,
 }: WalletCardProps) {
   const [showRechargeDialog, setShowRechargeDialog] = useState(false);
@@ -104,15 +106,20 @@ export function WalletCard({
 
   return (
     <Card className={cn("", className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div>
-          <CardTitle className="text-sm font-medium">
-            Token Balance
-          </CardTitle>
-          <CardDescription>
-            Available tokens for listings
-          </CardDescription>
-        </div>
+      <CardHeader className={cn(
+        "flex flex-row items-center justify-between space-y-0 pb-2",
+        !showTitle && "justify-end"
+      )}>
+        {showTitle && (
+          <div>
+            <CardTitle className="text-sm font-medium">
+              Token Balance
+            </CardTitle>
+            <CardDescription>
+              Available tokens for listings
+            </CardDescription>
+          </div>
+        )}
         {showRefreshButton && (
           <Button
             variant="ghost"
@@ -120,6 +127,7 @@ export function WalletCard({
             onClick={handleRefresh}
             disabled={isLoading}
             className="h-8 w-8"
+            aria-label="Refresh balance"
           >
             <RefreshCw
               className={cn(

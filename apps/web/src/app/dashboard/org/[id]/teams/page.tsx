@@ -53,7 +53,7 @@ export default function TeamsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -63,6 +63,7 @@ export default function TeamsPage() {
                 variant="ghost"
                 size="icon"
                 onClick={() => router.back()}
+                aria-label="Go back to organization"
               >
                 <Users className="h-5 w-5" />
               </Button>
@@ -194,6 +195,6 @@ export default function TeamsPage() {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

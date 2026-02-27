@@ -35,14 +35,14 @@ export class WalletPage extends BasePage {
 
     // Header
     this.heading = page.getByRole("heading", { name: /wallet/i });
-    this.backButton = page.getByRole("button", { name: /←|back/i }).filter({ hasText: /arrow/i });
+    this.backButton = page.getByRole("button", { name: /go back/i });
 
     // Wallet Card
     this.tokenBalanceTitle = page.getByText(/token balance/i);
     this.tokenBalanceValue = page.locator('.text-2xl.font-bold');
-    this.tokenBalanceLabel = page.getByText(/tokens/i);
+    this.tokenBalanceLabel = page.locator('.text-xs.text-muted-foreground').getByText(/tokens/i);
     this.rechargeButton = page.getByRole("button", { name: /recharge/i });
-    this.refreshButton = page.getByRole("button").filter({ hasText: /refresh/i });
+    this.refreshButton = page.getByRole("button", { name: /refresh balance/i });
 
     // Transaction History
     this.transactionHistoryHeading = page.getByRole("heading", { name: /transaction history/i });
