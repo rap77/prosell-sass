@@ -7,8 +7,30 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function getMockOrganizations(): Record<string, any> {
-  return (global as any).__mockOrganizations || {};
+type MockOrganization = {
+  id: string;
+  name: string;
+  tenant_id: string;
+  status: string;
+  description: string | null;
+  website: string | null;
+  phone: string | null;
+  logo_url: string | null;
+  banner_url: string | null;
+  wallet_id: string | null;
+  created_at: string;
+  updated_at: string;
+  verified_at: string | null;
+  verified_by: string | null;
+};
+
+type MockOrganizations = Record<string, MockOrganization>;
+
+function getMockOrganizations(): MockOrganizations {
+  const globalWithMocks = global as typeof global & {
+    __mockOrganizations?: MockOrganizations;
+  };
+  return globalWithMocks.__mockOrganizations || {};
 }
 
 export async function GET(request: NextRequest) {
@@ -16,7 +38,7 @@ export async function GET(request: NextRequest) {
   const tenantId = url.searchParams.get("tenant_id") || "test-user-123";
 
   const orgs = getMockOrganizations();
-  const orgList = Object.values(orgs).filter((o: any) => o.tenant_id === tenantId);
+  const orgList = Object.values(orgs).filter((o) => o.tenant_id === tenantId);
 
   if (orgList.length === 0) {
     return NextResponse.json(

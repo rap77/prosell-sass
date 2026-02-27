@@ -5,12 +5,41 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function getMockWallets(): Record<string, any> {
-  return (global as any).__mockWallets || {};
+type MockWallet = {
+  id: string;
+  organization_id: string;
+  tenant_id: string;
+  balance_cents: number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type MockWallets = Record<string, MockWallet>;
+
+type MockTransaction = {
+  id: string;
+  wallet_id: string;
+  transaction_type: string;
+  amount_cents: number;
+  description: string;
+  created_at: string;
+};
+
+type MockTransactions = Record<string, MockTransaction>;
+
+function getMockWallets(): MockWallets {
+  const globalWithMocks = global as typeof global & {
+    __mockWallets?: MockWallets;
+  };
+  return globalWithMocks.__mockWallets || {};
 }
 
-function getMockTransactions(): Record<string, any> {
-  return (global as any).__mockWalletTransactions || {};
+function getMockTransactions(): MockTransactions {
+  const globalWithMocks = global as typeof global & {
+    __mockWalletTransactions?: MockTransactions;
+  };
+  return globalWithMocks.__mockWalletTransactions || {};
 }
 
 export async function GET(
@@ -28,8 +57,8 @@ export async function GET(
   // Get transactions
   const transactions = getMockTransactions();
   const walletTransactions = Object.values(transactions)
-    .filter((t: any) => t.wallet_id === id)
-    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    .filter((t) => t.wallet_id === id)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return NextResponse.json({
     ...wallet,

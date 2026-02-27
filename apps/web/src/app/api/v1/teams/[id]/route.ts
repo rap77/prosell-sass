@@ -5,8 +5,25 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function getMockTeams(): Record<string, any> {
-  return (global as any).__mockTeams || {};
+type MockTeam = {
+  id: string;
+  name: string;
+  tenant_id: string;
+  organization_id: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+  members: unknown[];
+  member_count: number;
+};
+
+type MockTeams = Record<string, MockTeam>;
+
+function getMockTeams(): MockTeams {
+  const globalWithMocks = global as typeof global & {
+    __mockTeams?: MockTeams;
+  };
+  return globalWithMocks.__mockTeams || {};
 }
 
 export async function GET(

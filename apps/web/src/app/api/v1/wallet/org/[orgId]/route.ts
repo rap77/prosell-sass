@@ -7,8 +7,23 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function getMockWallets(): Record<string, any> {
-  return (global as any).__mockWallets || {};
+type MockWallet = {
+  id: string;
+  organization_id: string;
+  tenant_id: string;
+  balance_cents: number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type MockWallets = Record<string, MockWallet>;
+
+function getMockWallets(): MockWallets {
+  const globalWithMocks = global as typeof global & {
+    __mockWallets?: MockWallets;
+  };
+  return globalWithMocks.__mockWallets || {};
 }
 
 export async function GET(
@@ -18,20 +33,25 @@ export async function GET(
   const { orgId } = await params;
 
   const wallets = getMockWallets();
-  const wallet = Object.values(wallets).find((w: any) => w.organization_id === orgId);
+  const walletArray = Object.values(wallets);
+  const wallet = walletArray.find((w) => w.organization_id === orgId);
 
   if (!wallet) {
     // Create a new wallet for this org
-    const newWallet = {
+    const newWallet: MockWallet = {
       id: crypto.randomUUID(),
       organization_id: orgId,
-      balance: 0,
+      tenant_id: "test-user-123",
+      balance_cents: 0,
       currency: "USD",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    (global as any).__mockWallets = (global as any).__mockWallets || {};
-    (global as any).__mockWallets[newWallet.id] = newWallet;
+    const globalWithMocks = global as typeof global & {
+      __mockWallets?: MockWallets;
+    };
+    globalWithMocks.__mockWallets = globalWithMocks.__mockWallets || {};
+    globalWithMocks.__mockWallets[newWallet.id] = newWallet;
     return NextResponse.json(newWallet);
   }
 

@@ -7,8 +7,23 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function getMockWallets(): Record<string, any> {
-  return (global as any).__mockWallets || {};
+type MockWallet = {
+  id: string;
+  organization_id: string;
+  tenant_id: string;
+  balance_cents: number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type MockWallets = Record<string, MockWallet>;
+
+function getMockWallets(): MockWallets {
+  const globalWithMocks = global as typeof global & {
+    __mockWallets?: MockWallets;
+  };
+  return globalWithMocks.__mockWallets || {};
 }
 
 export async function GET(request: NextRequest) {
@@ -16,7 +31,8 @@ export async function GET(request: NextRequest) {
   const orgId = url.searchParams.get("organization_id");
 
   const wallets = getMockWallets();
-  let wallet = Object.values(wallets).find((w: any) => w.organization_id === orgId);
+  const walletArray = Object.values(wallets);
+  let wallet = walletArray.find((w) => w.organization_id === orgId);
 
   if (!wallet) {
     return NextResponse.json({ detail: "Wallet not found" }, { status: 404 });

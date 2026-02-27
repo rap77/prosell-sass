@@ -7,8 +7,25 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function getMockTeams(): Record<string, any> {
-  return (global as any).__mockTeams || {};
+type MockTeam = {
+  id: string;
+  name: string;
+  tenant_id: string;
+  organization_id: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+  members: unknown[];
+  member_count: number;
+};
+
+type MockTeams = Record<string, MockTeam>;
+
+function getMockTeams(): MockTeams {
+  const globalWithMocks = global as typeof global & {
+    __mockTeams?: MockTeams;
+  };
+  return globalWithMocks.__mockTeams || {};
 }
 
 export async function GET(
@@ -19,7 +36,7 @@ export async function GET(
   const url = new URL(request.url);
 
   const teams = getMockTeams();
-  const teamList = Object.values(teams).filter((t: any) => t.organization_id === orgId);
+  const teamList = Object.values(teams).filter((t) => t.organization_id === orgId);
 
   const skip = parseInt(url.searchParams.get("skip") || "0");
   const limit = parseInt(url.searchParams.get("limit") || "20");

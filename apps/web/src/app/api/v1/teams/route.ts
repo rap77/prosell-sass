@@ -8,8 +8,25 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function getMockTeams(): Record<string, any> {
-  return (global as any).__mockTeams || {};
+type MockTeam = {
+  id: string;
+  name: string;
+  tenant_id: string;
+  organization_id: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+  members: unknown[];
+  member_count: number;
+};
+
+type MockTeams = Record<string, MockTeam>;
+
+function getMockTeams(): MockTeams {
+  const globalWithMocks = global as typeof global & {
+    __mockTeams?: MockTeams;
+  };
+  return globalWithMocks.__mockTeams || {};
 }
 
 export async function GET(request: NextRequest) {
@@ -20,7 +37,7 @@ export async function GET(request: NextRequest) {
   let teamList = Object.values(teams);
 
   if (orgId) {
-    teamList = teamList.filter((t: any) => t.organization_id === orgId);
+    teamList = teamList.filter((t) => t.organization_id === orgId);
   }
 
   return NextResponse.json({
@@ -45,19 +62,23 @@ export async function POST(request: NextRequest) {
     const teamId = crypto.randomUUID();
     const now = new Date().toISOString();
 
-    const team = {
+    const team: MockTeam = {
       id: teamId,
       name: body.name,
       tenant_id: body.tenant_id || "test-user-123",
       organization_id: body.organization_id,
+      description: body.description || null,
       created_at: now,
       updated_at: now,
       members: [],
       member_count: 0,
     };
 
-    (global as any).__mockTeams = (global as any).__mockTeams || {};
-    (global as any).__mockTeams[teamId] = team;
+    const globalWithMocks = global as typeof global & {
+      __mockTeams?: MockTeams;
+    };
+    globalWithMocks.__mockTeams = globalWithMocks.__mockTeams || {};
+    globalWithMocks.__mockTeams[teamId] = team;
 
     return NextResponse.json(team, { status: 201 });
   } catch (error) {

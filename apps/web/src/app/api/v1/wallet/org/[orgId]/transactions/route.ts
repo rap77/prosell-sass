@@ -7,8 +7,23 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function getMockTransactions(): Record<string, any> {
-  return (global as any).__mockTransactions || {};
+type MockTransaction = {
+  id: string;
+  wallet_id: string;
+  organization_id: string;
+  transaction_type: string;
+  amount_cents: number;
+  description: string;
+  created_at: string;
+};
+
+type MockTransactions = Record<string, MockTransaction>;
+
+function getMockTransactions(): MockTransactions {
+  const globalWithMocks = global as typeof global & {
+    __mockWalletTransactions?: MockTransactions;
+  };
+  return globalWithMocks.__mockWalletTransactions || {};
 }
 
 export async function GET(
@@ -21,7 +36,7 @@ export async function GET(
   const skip = parseInt(url.searchParams.get("skip") || "0");
   const limit = parseInt(url.searchParams.get("limit") || "20");
 
-  const transactions = Object.values(getMockTransactions()).filter((t: any) => t.organization_id === orgId);
+  const transactions = Object.values(getMockTransactions()).filter((t) => t.organization_id === orgId);
   const paginatedList = transactions.slice(skip, skip + limit);
 
   return NextResponse.json({
