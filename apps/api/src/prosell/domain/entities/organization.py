@@ -89,7 +89,7 @@ class Organization(DomainModel):
         """
         if self.status != OrganizationStatus.PENDING_VERIFICATION:
             raise ValueError(
-                f"Only pending organizations can be verified. " f"Current status: {self.status}"
+                f"Only pending organizations can be verified. Current status: {self.status}"
             )
 
         self.status = OrganizationStatus.ACTIVE
@@ -109,7 +109,7 @@ class Organization(DomainModel):
         """
         if self.status != OrganizationStatus.PENDING_VERIFICATION:
             raise ValueError(
-                f"Only pending organizations can be rejected. " f"Current status: {self.status}"
+                f"Only pending organizations can be rejected. Current status: {self.status}"
             )
 
         self.status = OrganizationStatus.REJECTED
@@ -138,7 +138,7 @@ class Organization(DomainModel):
         """
         if self.status == OrganizationStatus.REJECTED:
             raise ValueError(
-                "Rejected organizations cannot be activated. " "Please create a new organization."
+                "Rejected organizations cannot be activated. Please create a new organization."
             )
 
         if self.status == OrganizationStatus.ACTIVE:

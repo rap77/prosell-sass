@@ -18,11 +18,13 @@ from prosell.application.use_cases.team import (
     GetTeamUseCase,
     UpdateTeamUseCase,
 )
+from prosell.domain.entities.user import User
 from prosell.domain.exceptions.org_exceptions import (
     OrgDomainException,
     TeamAlreadyExistsException,
     TeamNotFoundException,
 )
+from prosell.infrastructure.api.dependencies import get_current_auth_user
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.team_repository_impl import (
     SqlAlchemyTeamMemberRepository,
@@ -83,14 +85,25 @@ async def create_team(
 )
 async def list_teams_by_org(
     org_id: UUID,
-    tenant_id: UUID,  # TODO: from get_current_user
+    current_user: User = Depends(get_current_auth_user),
     skip: int = 0,
     limit: int = 100,
     team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
 ) -> TeamListResponse:
     """List all teams for an organization."""
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
     use_case = GetTeamsByOrganizationUseCase(team_repository=team_repo)
-    return await use_case.execute(org_id=org_id, tenant_id=tenant_id, skip=skip, limit=limit)
+    return await use_case.execute(
+        org_id=org_id,
+        tenant_id=current_user.tenant_id,
+        skip=skip,
+        limit=limit,
+    )
 
 
 @router.get(
@@ -100,13 +113,19 @@ async def list_teams_by_org(
 )
 async def get_team(
     team_id: UUID,
-    tenant_id: UUID,  # TODO: from get_current_user
+    current_user: User = Depends(get_current_auth_user),
     team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
 ) -> TeamResponse:
     """Get team by ID (with tenant isolation)."""
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
     use_case = GetTeamUseCase(team_repository=team_repo)
     try:
-        return await use_case.execute(team_id=team_id, tenant_id=tenant_id)
+        return await use_case.execute(team_id=team_id, tenant_id=current_user.tenant_id)
     except TeamNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
 
@@ -119,13 +138,23 @@ async def get_team(
 async def update_team(
     team_id: UUID,
     request: UpdateTeamRequest,
-    tenant_id: UUID,  # TODO: from get_current_user
+    current_user: User = Depends(get_current_auth_user),
     team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
 ) -> TeamResponse:
     """Update team basic info."""
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
     use_case = UpdateTeamUseCase(team_repository=team_repo)
     try:
-        return await use_case.execute(team_id=team_id, tenant_id=tenant_id, request=request)
+        return await use_case.execute(
+            team_id=team_id,
+            tenant_id=current_user.tenant_id,
+            request=request,
+        )
     except TeamNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
 
@@ -143,11 +172,18 @@ async def update_team(
 )
 async def add_team_member(
     team_id: UUID,
-    request: dict,  # TODO: replace with AddTeamMemberRequest
+    request: dict,
+    current_user: User = Depends(get_current_auth_user),
     team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
     team_member_repo: SqlAlchemyTeamMemberRepository = Depends(get_team_member_repository),
 ) -> TeamMemberResponse:
     """Add a user as a member to a team."""
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
     use_case = AddTeamMemberUseCase(
         team_repository=team_repo,
         team_member_repository=team_member_repo,
@@ -156,7 +192,7 @@ async def add_team_member(
         return await use_case.execute(
             team_id=request.get("team_id", team_id),
             user_id=request.get("user_id"),
-            tenant_id=request.get("tenant_id"),
+            tenant_id=current_user.tenant_id,
             role=request.get("role", "vendor"),
             commission_rate=request.get("commission_rate"),
         )

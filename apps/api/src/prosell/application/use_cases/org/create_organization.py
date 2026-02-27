@@ -1,7 +1,5 @@
 """Create organization use case."""
 
-from uuid import UUID
-
 from prosell.application.dto.org import CreateOrganizationRequest, OrganizationResponse
 from prosell.domain.entities.organization import Organization
 from prosell.domain.entities.wallet import Wallet
@@ -24,7 +22,6 @@ class CreateOrganizationUseCase:
     async def execute(
         self,
         request: CreateOrganizationRequest,
-        creator_id: UUID,
     ) -> OrganizationResponse:
         """
         Execute organization creation.
@@ -33,7 +30,6 @@ class CreateOrganizationUseCase:
 
         Args:
             request: CreateOrganizationRequest DTO
-            creator_id: User ID creating the organization
 
         Returns:
             OrganizationResponse DTO
@@ -50,7 +46,6 @@ class CreateOrganizationUseCase:
         org = Organization.create(
             name=request.name,
             tenant_id=request.tenant_id,
-            creator_id=creator_id,
         )
 
         # Apply optional fields

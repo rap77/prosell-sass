@@ -1,10 +1,14 @@
 """Dependency injection container for FastAPI."""
 
+from typing import Annotated
+
 from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.ports.email_service import AbstractEmailService
 from prosell.core.config import settings
+from prosell.domain.entities.user import User
 from prosell.domain.ports import (
     IJWTService,
     IPasswordService,
@@ -91,6 +95,57 @@ def get_email_service() -> AbstractEmailService:
 def get_token_hasher() -> ITokenHasher:
     """Get token hasher service instance (singleton)."""
     return TokenHasher()
+
+
+# =============================================================================
+# AUTH DEPENDENCIES
+# =============================================================================
+
+
+async def get_current_auth_user(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())],
+    jwt_service: Annotated[IJWTService, Depends(get_jwt_service)],
+    user_repository: Annotated[SqlAlchemyUserRepository, Depends(get_user_repository)],
+) -> User:
+    """
+    Get authenticated user from JWT token with full entity.
+
+    This dependency:
+    1. Verifies JWT and extracts user_id from token
+    2. Fetches full User entity from database
+    3. Returns User with tenant_id for multi-tenant operations
+
+    Use this in protected endpoints that need tenant_id.
+
+    Returns:
+        User entity with id, tenant_id, and roles
+
+    Raises:
+        HTTPException: If token invalid or user not found
+    """
+    from uuid import UUID
+
+    from fastapi import HTTPException, status
+
+    # Verify token type
+    payload = jwt_service.verify_token(credentials.credentials)
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
+        )
+
+    # Get user from database
+    user_id = UUID(payload["sub"])
+    user = await user_repository.get_by_id(user_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+
+    return user
 
 
 # =============================================================================

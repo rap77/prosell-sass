@@ -21,12 +21,14 @@ from prosell.application.use_cases.org import (
     UpdateOrganizationUseCase,
     VerifyOrganizationUseCase,
 )
+from prosell.domain.entities.user import User
 from prosell.domain.exceptions.org_exceptions import (
     OrganizationAlreadyExistsException,
     OrganizationNotFoundException,
     OrganizationVerificationException,
     OrgDomainException,
 )
+from prosell.infrastructure.api.dependencies import get_current_auth_user
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.organization_repository_impl import (
     SqlAlchemyOrganizationRepository,
@@ -70,7 +72,7 @@ def get_wallet_repository(
 )
 async def create_organization(
     request: CreateOrganizationRequest,
-    creator_id: UUID,  # TODO: replace with get_current_user dependency
+    _current_user: User = Depends(get_current_auth_user),  # TODO: check SUPER_ADMIN permission
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
     wallet_repo: SqlAlchemyWalletRepository = Depends(get_wallet_repository),
 ) -> OrganizationResponse:
@@ -84,7 +86,7 @@ async def create_organization(
         wallet_repository=wallet_repo,
     )
     try:
-        return await use_case.execute(request, creator_id=creator_id)
+        return await use_case.execute(request)
     except OrganizationAlreadyExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=e.message) from e
     except OrgDomainException as e:
@@ -118,13 +120,19 @@ async def list_organizations(
     summary="Get current user's organization",
 )
 async def get_my_organization(
-    tenant_id: UUID,  # TODO: from get_current_user
+    current_user: User = Depends(get_current_auth_user),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationResponse:
     """Get the organization associated with the authenticated user's tenant."""
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
     use_case = GetOrganizationByTenantUseCase(org_repository=org_repo)
     try:
-        return await use_case.execute(tenant_id=tenant_id)
+        return await use_case.execute(tenant_id=current_user.tenant_id)
     except OrganizationNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
 
@@ -136,13 +144,19 @@ async def get_my_organization(
 )
 async def get_organization(
     org_id: UUID,
-    tenant_id: UUID,  # TODO: from get_current_user
+    current_user: User = Depends(get_current_auth_user),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationResponse:
     """Get organization by ID (with tenant isolation)."""
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
     use_case = GetOrganizationUseCase(org_repository=org_repo)
     try:
-        return await use_case.execute(org_id=org_id, tenant_id=tenant_id)
+        return await use_case.execute(org_id=org_id, tenant_id=current_user.tenant_id)
     except OrganizationNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
 
@@ -155,13 +169,21 @@ async def get_organization(
 async def update_organization(
     org_id: UUID,
     request: UpdateOrganizationRequest,
-    tenant_id: UUID,  # TODO: from get_current_user
+    current_user: User = Depends(get_current_auth_user),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationResponse:
     """Update organization basic info, logo, banner, or settings."""
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
     use_case = UpdateOrganizationUseCase(org_repository=org_repo)
     try:
-        return await use_case.execute(org_id=org_id, tenant_id=tenant_id, request=request)
+        return await use_case.execute(
+            org_id=org_id, tenant_id=current_user.tenant_id, request=request
+        )
     except OrganizationNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
     except OrgDomainException as e:
@@ -180,14 +202,17 @@ async def update_organization(
 )
 async def verify_organization(
     org_id: UUID,
-    verifier_id: UUID,  # TODO: from get_current_user
-    tenant_id: UUID | None = None,  # None = SUPER_ADMIN can verify any org
+    current_user: User = Depends(get_current_auth_user),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationResponse:
     """Approve organization verification (SUPER_ADMIN only)."""
     use_case = VerifyOrganizationUseCase(org_repository=org_repo)
     try:
-        return await use_case.execute(org_id=org_id, verifier_id=verifier_id, tenant_id=tenant_id)
+        return await use_case.execute(
+            org_id=org_id,
+            verifier_id=current_user.id,
+            tenant_id=current_user.tenant_id,
+        )
     except OrganizationNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
     except OrganizationVerificationException as e:
@@ -203,14 +228,17 @@ async def verify_organization(
 )
 async def reject_organization(
     org_id: UUID,
-    verifier_id: UUID,  # TODO: from get_current_user
-    tenant_id: UUID | None = None,  # None = SUPER_ADMIN can reject any org
+    current_user: User = Depends(get_current_auth_user),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationResponse:
     """Reject organization verification (SUPER_ADMIN only)."""
     use_case = RejectOrganizationUseCase(org_repository=org_repo)
     try:
-        return await use_case.execute(org_id=org_id, verifier_id=verifier_id, tenant_id=tenant_id)
+        return await use_case.execute(
+            org_id=org_id,
+            verifier_id=current_user.id,
+            tenant_id=current_user.tenant_id,
+        )
     except OrganizationNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
     except OrganizationVerificationException as e:
@@ -226,12 +254,18 @@ async def reject_organization(
 )
 async def suspend_organization(
     org_id: UUID,
-    tenant_id: UUID,  # TODO: from get_current_user
+    current_user: User = Depends(get_current_auth_user),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationResponse:
     """Suspend organization (SUPER_ADMIN only)."""
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
     use_case = SuspendOrganizationUseCase(org_repository=org_repo)
     try:
-        return await use_case.execute(org_id=org_id, tenant_id=tenant_id)
+        return await use_case.execute(org_id=org_id, tenant_id=current_user.tenant_id)
     except OrganizationNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e

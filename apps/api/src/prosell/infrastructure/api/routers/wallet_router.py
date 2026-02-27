@@ -17,11 +17,13 @@ from prosell.application.use_cases.wallet import (
     GetWalletBalanceUseCase,
     GetWalletTransactionsUseCase,
 )
+from prosell.domain.entities.user import User
 from prosell.domain.exceptions.org_exceptions import (
     InsufficientFundsException,
     OrgDomainException,
     WalletNotFoundException,
 )
+from prosell.infrastructure.api.dependencies import get_current_auth_user
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.wallet_repository_impl import (
     SqlAlchemyWalletRepository,
@@ -62,13 +64,19 @@ def get_wallet_transaction_repository(
 )
 async def get_wallet_balance(
     org_id: UUID,
-    tenant_id: UUID,  # TODO: from get_current_user
+    current_user: User = Depends(get_current_auth_user),
     wallet_repo: SqlAlchemyWalletRepository = Depends(get_wallet_repository),
 ) -> WalletResponse:
     """Get wallet by organization ID."""
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
     use_case = GetWalletBalanceUseCase(wallet_repository=wallet_repo)
     try:
-        return await use_case.execute(org_id=org_id, tenant_id=tenant_id)
+        return await use_case.execute(org_id=org_id, tenant_id=current_user.tenant_id)
     except WalletNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
 
@@ -80,7 +88,7 @@ async def get_wallet_balance(
 )
 async def get_wallet_transactions(
     org_id: UUID,
-    tenant_id: UUID,  # TODO: from get_current_user
+    current_user: User = Depends(get_current_auth_user),
     skip: int = 0,
     limit: int = 100,
     wallet_txn_repo: SqlAlchemyWalletTransactionRepository = Depends(
@@ -88,10 +96,21 @@ async def get_wallet_transactions(
     ),
 ) -> WalletTransactionsResponse:
     """Get transaction history for an organization's wallet."""
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
     use_case = GetWalletTransactionsUseCase(
         wallet_transaction_repository=wallet_txn_repo,
     )
-    return await use_case.execute(org_id=org_id, tenant_id=tenant_id, skip=skip, limit=limit)
+    return await use_case.execute(
+        org_id=org_id,
+        tenant_id=current_user.tenant_id,
+        skip=skip,
+        limit=limit,
+    )
 
 
 @router.post(
