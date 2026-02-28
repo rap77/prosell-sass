@@ -1,6 +1,11 @@
 /**
  * TDD: useAuth Hook Tests
  * Tests del hook de autenticación
+ *
+ * Updated to match current authStore structure:
+ * - NO accessToken/refreshTokenValue (tokens handled by httpOnly cookies)
+ * - Added initialized flag
+ * - Added is_email_verified field to User type
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
@@ -12,7 +17,6 @@ vi.mock("@/lib/api/authApi", () => ({
   authApi: {
     login: vi.fn(),
     register: vi.fn(),
-    // refreshToken removed - tokens handled by httpOnly cookies
     logout: vi.fn(),
     me: vi.fn(),
   },
@@ -27,17 +31,55 @@ vi.mock("@/lib/api/authApi", () => ({
   },
 }));
 
+// Type for our test store
+interface TestAuthState {
+  user: {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    role: string;
+    is_email_verified: boolean;
+    is_2fa_enabled?: boolean;
+    organization_id?: string | null;
+  } | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: { message: string } | null;
+  initialized: boolean;
+
+  login: (credentials: { email: string; password: string }) => Promise<void>;
+  register: (data: {
+    email: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+  }) => Promise<void>;
+  logout: () => Promise<void>;
+  updateUser: (updates: Partial<{
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    role: string;
+    is_email_verified: boolean;
+    is_2fa_enabled?: boolean;
+    organization_id?: string | null;
+  }>) => void;
+  clearError: () => void;
+  setLoading: (loading: boolean) => void;
+  reset: () => void;
+}
+
 // Create a test store without persist middleware to avoid act() warnings
-// The persist middleware does async hydration from localStorage which causes warnings
 const createTestAuthStore = () =>
-  create((set, get) => ({
+  create<TestAuthState>((set, get) => ({
     // Initial state
     user: null,
-    accessToken: null,
-    refreshTokenValue: null,
     isAuthenticated: false,
     isLoading: false,
     error: null,
+    initialized: false,
 
     login: async (credentials: { email: string; password: string }) => {
       set({ isLoading: true, error: null });
@@ -48,12 +90,12 @@ const createTestAuthStore = () =>
           credentials.password,
         );
 
+        // Tokens are handled by httpOnly cookies - only set user and auth state
         set({
           user: response.user,
-          accessToken: response.tokens.access_token,
-          refreshTokenValue: response.tokens.refresh_token,
           isAuthenticated: true,
           isLoading: false,
+          initialized: true,
           error: null,
         });
       } catch (unknownError) {
@@ -87,12 +129,12 @@ const createTestAuthStore = () =>
           data.last_name,
         );
 
+        // Tokens are handled by httpOnly cookies
         set({
           user: response.user,
-          accessToken: response.tokens.access_token,
-          refreshTokenValue: response.tokens.refresh_token,
           isAuthenticated: true,
           isLoading: false,
+          initialized: true,
           error: null,
         });
       } catch (unknownError) {
@@ -112,65 +154,30 @@ const createTestAuthStore = () =>
 
     logout: async () => {
       try {
-        set({ isLoading: true });
+        set({ isLoading: true, initialized: false });
 
         await authApi.logout();
 
         set({
           user: null,
-          accessToken: null,
-          refreshTokenValue: null,
           isAuthenticated: false,
           isLoading: false,
+          initialized: false,
           error: null,
         });
       } catch {
         // Logout locally even if API fails
         set({
           user: null,
-          accessToken: null,
-          refreshTokenValue: null,
           isAuthenticated: false,
           isLoading: false,
+          initialized: false,
           error: null,
         });
       }
     },
 
-    refreshToken: async () => {
-      const { refreshTokenValue: currentRefreshToken } = get();
-
-      if (!currentRefreshToken) {
-        set({
-          user: null,
-          accessToken: null,
-          refreshTokenValue: null,
-          isAuthenticated: false,
-        });
-        return;
-      }
-
-      try {
-        const tokens = await authApi.refreshToken(currentRefreshToken);
-
-        set({
-          accessToken: tokens.access_token,
-          refreshTokenValue: tokens.refresh_token,
-        });
-      } catch {
-        set({
-          user: null,
-          accessToken: null,
-          refreshTokenValue: null,
-          isAuthenticated: false,
-          error: {
-            message: "Sesión expirada",
-          },
-        });
-      }
-    },
-
-    updateUser: (updates: any) => {
+    updateUser: (updates) => {
       const { user } = get();
 
       if (!user) {
@@ -193,10 +200,9 @@ const createTestAuthStore = () =>
     reset: () => {
       set({
         user: null,
-        accessToken: null,
-        refreshTokenValue: null,
         isAuthenticated: false,
         isLoading: false,
+        initialized: false,
         error: null,
       });
     },
@@ -204,6 +210,19 @@ const createTestAuthStore = () =>
 
 // Use test store instead of real store
 const useAuthStore = createTestAuthStore();
+
+// Helper to create a mock user response
+const createMockUserResponse = (overrides = {}) => ({
+  user: {
+    id: "1",
+    email: "test@example.com",
+    first_name: "Test",
+    last_name: "User",
+    role: "sales_agent",
+    is_email_verified: true,
+    ...overrides,
+  },
+});
 
 describe("useAuth Hook - Authentication Helpers", () => {
   beforeEach(() => {
@@ -222,23 +241,12 @@ describe("useAuth Hook - Authentication Helpers", () => {
 
     expect(state.isAuthenticated).toBe(false);
     expect(state.user).toBeNull();
+    expect(state.initialized).toBe(false);
   });
 
   it("should provide login action", async () => {
     // Mock authApi.login
-    vi.mocked(authApi.login).mockResolvedValue({
-      user: {
-        id: "1",
-        email: "test@example.com",
-        first_name: "Test",
-        last_name: "User",
-        role: "sales_agent",
-      },
-      tokens: {
-        access_token: "mock-access-token",
-        refresh_token: "mock-refresh-token",
-      },
-    });
+    vi.mocked(authApi.login).mockResolvedValue(createMockUserResponse());
 
     await useAuthStore
       .getState()
@@ -248,23 +256,12 @@ describe("useAuth Hook - Authentication Helpers", () => {
     expect(state.isAuthenticated).toBe(true);
     expect(state.user?.email).toBe("test@example.com");
     expect(state.user?.id).toBe("1");
+    expect(state.initialized).toBe(true);
   });
 
   it("should provide logout action", async () => {
     // Mock authApi.login
-    vi.mocked(authApi.login).mockResolvedValue({
-      user: {
-        id: "1",
-        email: "test@example.com",
-        first_name: "Test",
-        last_name: "User",
-        role: "sales_agent",
-      },
-      tokens: {
-        access_token: "mock-access-token",
-        refresh_token: "mock-refresh-token",
-      },
-    });
+    vi.mocked(authApi.login).mockResolvedValue(createMockUserResponse());
 
     // Mock authApi.logout
     vi.mocked(authApi.logout).mockResolvedValue(undefined);
@@ -282,23 +279,19 @@ describe("useAuth Hook - Authentication Helpers", () => {
     const state = useAuthStore.getState();
     expect(state.isAuthenticated).toBe(false);
     expect(state.user).toBeNull();
+    expect(state.initialized).toBe(false);
   });
 
   it("should provide register action", async () => {
     // Mock authApi.register
-    vi.mocked(authApi.register).mockResolvedValue({
-      user: {
+    vi.mocked(authApi.register).mockResolvedValue(
+      createMockUserResponse({
         id: "2",
         email: "new@example.com",
         first_name: "New",
         last_name: "User",
-        role: "sales_agent",
-      },
-      tokens: {
-        access_token: "mock-access-token",
-        refresh_token: "mock-refresh-token",
-      },
-    });
+      }),
+    );
 
     await useAuthStore.getState().register({
       email: "new@example.com",
@@ -310,6 +303,7 @@ describe("useAuth Hook - Authentication Helpers", () => {
     const state = useAuthStore.getState();
     expect(state.isAuthenticated).toBe(true);
     expect(state.user?.email).toBe("new@example.com");
+    expect(state.initialized).toBe(true);
   });
 
   it("should expose error state", async () => {
@@ -333,19 +327,7 @@ describe("useAuth Hook - Authentication Helpers", () => {
       () =>
         new Promise((resolve) => {
           setTimeout(() => {
-            resolve({
-              user: {
-                id: "1",
-                email: "test@example.com",
-                first_name: "Test",
-                last_name: "User",
-                role: "sales_agent",
-              },
-              tokens: {
-                access_token: "mock-access-token",
-                refresh_token: "mock-refresh-token",
-              },
-            });
+            resolve(createMockUserResponse());
           }, 100);
         }),
     );
@@ -360,6 +342,8 @@ describe("useAuth Hook - Authentication Helpers", () => {
 
     // Wait for completion
     await loginPromise;
+
+    expect(useAuthStore.getState().isLoading).toBe(false);
   });
 
   it("should provide clear error action", async () => {
@@ -383,19 +367,7 @@ describe("useAuth Hook - Authentication Helpers", () => {
 
   it("should provide update user action", async () => {
     // Mock authApi.login
-    vi.mocked(authApi.login).mockResolvedValue({
-      user: {
-        id: "1",
-        email: "test@example.com",
-        first_name: "Test",
-        last_name: "User",
-        role: "sales_agent",
-      },
-      tokens: {
-        access_token: "mock-access-token",
-        refresh_token: "mock-refresh-token",
-      },
-    });
+    vi.mocked(authApi.login).mockResolvedValue(createMockUserResponse());
 
     await useAuthStore
       .getState()
@@ -424,20 +396,7 @@ describe("useAuth Hook - Convenience Getters", () => {
   });
 
   it("should expose user ID when authenticated", async () => {
-    // Mock authApi.login
-    vi.mocked(authApi.login).mockResolvedValue({
-      user: {
-        id: "1",
-        email: "test@example.com",
-        first_name: "Test",
-        last_name: "User",
-        role: "sales_agent",
-      },
-      tokens: {
-        access_token: "mock-access-token",
-        refresh_token: "mock-refresh-token",
-      },
-    });
+    vi.mocked(authApi.login).mockResolvedValue(createMockUserResponse());
 
     await useAuthStore
       .getState()
@@ -448,20 +407,7 @@ describe("useAuth Hook - Convenience Getters", () => {
   });
 
   it("should expose user email", async () => {
-    // Mock authApi.login
-    vi.mocked(authApi.login).mockResolvedValue({
-      user: {
-        id: "1",
-        email: "test@example.com",
-        first_name: "Test",
-        last_name: "User",
-        role: "sales_agent",
-      },
-      tokens: {
-        access_token: "mock-access-token",
-        refresh_token: "mock-refresh-token",
-      },
-    });
+    vi.mocked(authApi.login).mockResolvedValue(createMockUserResponse());
 
     await useAuthStore
       .getState()
@@ -472,20 +418,7 @@ describe("useAuth Hook - Convenience Getters", () => {
   });
 
   it("should expose user full name", async () => {
-    // Mock authApi.login
-    vi.mocked(authApi.login).mockResolvedValue({
-      user: {
-        id: "1",
-        email: "test@example.com",
-        first_name: "Test",
-        last_name: "User",
-        role: "sales_agent",
-      },
-      tokens: {
-        access_token: "mock-access-token",
-        refresh_token: "mock-refresh-token",
-      },
-    });
+    vi.mocked(authApi.login).mockResolvedValue(createMockUserResponse());
 
     await useAuthStore
       .getState()
@@ -498,83 +431,52 @@ describe("useAuth Hook - Convenience Getters", () => {
   });
 
   it("should expose user role", async () => {
-    // Mock authApi.login
-    vi.mocked(authApi.login).mockResolvedValue({
-      user: {
-        id: "1",
-        email: "test@example.com",
-        first_name: "Test",
-        last_name: "User",
-        role: "sales_agent",
-      },
-      tokens: {
-        access_token: "mock-access-token",
-        refresh_token: "mock-refresh-token",
-      },
-    });
+    vi.mocked(authApi.login).mockResolvedValue(createMockUserResponse());
 
     await useAuthStore
       .getState()
       .login({ email: "test@example.com", password: "password123" });
 
-    const state = useAuthStore.getState() as {
-      user?: { role?: string } | null;
-    };
+    const state = useAuthStore.getState();
     expect(state.user?.role).toBe("sales_agent");
   });
 
   it("should expose email verification status", async () => {
-    // Mock authApi.login
-    vi.mocked(authApi.login).mockResolvedValue({
-      user: {
-        id: "1",
-        email: "test@example.com",
-        first_name: "Test",
-        last_name: "User",
-        role: "sales_agent",
-        is_email_verified: true,
-      },
-      tokens: {
-        access_token: "mock-access-token",
-        refresh_token: "mock-refresh-token",
-      },
-    });
+    vi.mocked(authApi.login).mockResolvedValue(
+      createMockUserResponse({ is_email_verified: true }),
+    );
 
     await useAuthStore
       .getState()
       .login({ email: "test@example.com", password: "password123" });
 
-    const state = useAuthStore.getState() as {
-      user?: { is_email_verified?: boolean } | null;
-    };
+    const state = useAuthStore.getState();
     expect(state.user?.is_email_verified).toBe(true);
   });
 
   it("should expose 2FA status", async () => {
-    // Mock authApi.login
-    vi.mocked(authApi.login).mockResolvedValue({
-      user: {
-        id: "1",
-        email: "test@example.com",
-        first_name: "Test",
-        last_name: "User",
-        role: "sales_agent",
-        is_email_verified: true,
-        is_2fa_enabled: false,
-      },
-      tokens: {
-        access_token: "mock-access-token",
-        refresh_token: "mock-refresh-token",
-      },
-    });
+    vi.mocked(authApi.login).mockResolvedValue(
+      createMockUserResponse({ is_2fa_enabled: false }),
+    );
 
     await useAuthStore
       .getState()
       .login({ email: "test@example.com", password: "password123" });
 
-    const state = useAuthStore.getState() as {
-      user?: { is_2fa_enabled?: boolean } | null;
-    };
+    const state = useAuthStore.getState();
     expect(state.user?.is_2fa_enabled).toBe(false);
+  });
+
+  it("should expose organization ID when set", async () => {
+    vi.mocked(authApi.login).mockResolvedValue(
+      createMockUserResponse({ organization_id: "org-123" }),
+    );
+
+    await useAuthStore
+      .getState()
+      .login({ email: "test@example.com", password: "password123" });
+
+    const state = useAuthStore.getState();
+    expect(state.user?.organization_id).toBe("org-123");
   });
 });

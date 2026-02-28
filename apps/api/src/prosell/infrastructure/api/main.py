@@ -92,16 +92,17 @@ async def security_headers_middleware(
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
     # Content Security Policy (basic - enhance as needed)
-    # NOTE: 'unsafe-inline' is used for development convenience.
-    # For production, migrate to nonce/hash-based CSP:
+    # SECURITY: 'unsafe-inline' allows inline scripts/styles which is vulnerable to XSS.
+    # For production, MUST migrate to nonce/hash-based CSP:
     # - Generate nonce per request: nonce = base64.b64encode(os.urandom(16)).decode()
     # - Pass to templates: return templates.TemplateResponse(..., context={"nonce": nonce})
     # - Use in CSP: f"script-src 'self' 'nonce-{nonce}';"
     # - Use in templates: <script nonce="{{ nonce }}">
+    # Track: https://github.com/rap77/prosell-sass/issues/SECURITY-001
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline'; "  # TODO: migrate to nonce-based
-        "style-src 'self' 'unsafe-inline'; "  # TODO: migrate to nonce-based or sha256
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data: https:; "
         "font-src 'self'; "
         "connect-src 'self'; "

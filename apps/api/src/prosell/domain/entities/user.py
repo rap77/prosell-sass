@@ -1,5 +1,6 @@
 """User entity - Pure domain logic with no external dependencies."""
 
+import json
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from uuid import UUID, uuid4
@@ -72,12 +73,13 @@ class User(DomainModel):
 
         When loading from SQLAlchemy ORM, backup_codes comes as JSON string.
         This validator converts it to list[str] automatically.
+
+        NOTE: JSON parsing is done here for convenience.
+        Ideally, this should be in the infrastructure layer (repository/mapper).
         """
         if v is None:
             return None
         if isinstance(v, str):
-            import json
-
             return json.loads(v)
         return v
 

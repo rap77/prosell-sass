@@ -23,7 +23,7 @@ vi.mock("@/stores", () => ({
     const state = {
       flags: {
         "content-visibility": true,
-      },
+      } as Record<string, boolean>,
       get: vi.fn((flag: string, defaultValue = false) => {
         return state.flags[flag] ?? defaultValue;
       }),

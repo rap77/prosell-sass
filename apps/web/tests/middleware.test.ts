@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { NextRequest } from "next/server";
 import middleware from "@/middleware";
 
 // ============================================
@@ -38,7 +39,7 @@ function createMockRequest({
 }: {
   pathname?: string;
   cookies?: Array<{ name: string; value: string }>;
-} = {}) {
+} = {}): NextRequest {
   const cookieStore = {
     get: vi.fn((name: string) => {
       const found = cookies.find((c) => c.name === name);
@@ -58,7 +59,7 @@ function createMockRequest({
       }),
     },
     cookies: cookieStore,
-  } as unknown as Request;
+  } as unknown as NextRequest;
 }
 
 // ============================================
