@@ -120,7 +120,7 @@ async def get_wallet_transactions(
 )
 async def credit_wallet(
     request: CreditWalletRequest,
-    _current_user: User = Depends(get_current_auth_user),  # TODO: verify tenant_id matches
+    current_user: User = Depends(get_current_auth_user),
     wallet_repo: SqlAlchemyWalletRepository = Depends(get_wallet_repository),
     wallet_txn_repo: SqlAlchemyWalletTransactionRepository = Depends(
         get_wallet_transaction_repository,
@@ -131,6 +131,21 @@ async def credit_wallet(
 
     Normally called after successful Stripe payment.
     """
+    # SECURITY: Verify tenant_id matches authenticated user
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+    if request.tenant_id != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant ID mismatch - access denied",
+        )
+
+    # Override with user's tenant_id to prevent spoofing
+    request.tenant_id = current_user.tenant_id
+
     use_case = CreditWalletUseCase(
         wallet_repository=wallet_repo,
         wallet_transaction_repository=wallet_txn_repo,
@@ -153,7 +168,7 @@ async def credit_wallet(
 )
 async def debit_wallet(
     request: DebitWalletRequest,
-    _current_user: User = Depends(get_current_auth_user),  # TODO: verify tenant_id matches
+    current_user: User = Depends(get_current_auth_user),
     wallet_repo: SqlAlchemyWalletRepository = Depends(get_wallet_repository),
     wallet_txn_repo: SqlAlchemyWalletTransactionRepository = Depends(
         get_wallet_transaction_repository,
@@ -164,6 +179,21 @@ async def debit_wallet(
 
     Used for operations like listing fees, feature purchases, etc.
     """
+    # SECURITY: Verify tenant_id matches authenticated user
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+    if request.tenant_id != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant ID mismatch - access denied",
+        )
+
+    # Override with user's tenant_id to prevent spoofing
+    request.tenant_id = current_user.tenant_id
+
     use_case = DebitWalletUseCase(
         wallet_repository=wallet_repo,
         wallet_transaction_repository=wallet_txn_repo,

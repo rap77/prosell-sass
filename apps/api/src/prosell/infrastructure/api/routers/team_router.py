@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.team import (
+    AddTeamMemberRequest,
+    CreateTeamRequest,
     TeamListResponse,
     TeamMemberResponse,
     TeamResponse,
@@ -65,10 +67,26 @@ def get_team_member_repository(
     summary="Create a new team",
 )
 async def create_team(
-    request: dict,  # TODO: replace with CreateTeamRequest Pydantic model
+    request: CreateTeamRequest,
+    current_user: User = Depends(get_current_auth_user),
     team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
 ) -> TeamResponse:
     """Create a new team (ORG_ADMIN only)."""
+    # SECURITY: Verify tenant_id matches authenticated user
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+    if request.tenant_id != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant ID mismatch - access denied",
+        )
+
+    # Override with user's tenant_id to prevent spoofing
+    request.tenant_id = current_user.tenant_id
+
     use_case = CreateTeamUseCase(team_repository=team_repo)
     try:
         return await use_case.execute(request)
@@ -172,17 +190,26 @@ async def update_team(
 )
 async def add_team_member(
     team_id: UUID,
-    request: dict,
+    request: AddTeamMemberRequest,
     current_user: User = Depends(get_current_auth_user),
     team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
     team_member_repo: SqlAlchemyTeamMemberRepository = Depends(get_team_member_repository),
 ) -> TeamMemberResponse:
     """Add a user as a member to a team."""
+    # SECURITY: Verify tenant_id matches authenticated user
     if not current_user.tenant_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User does not have an associated organization",
         )
+    if request.tenant_id != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant ID mismatch - access denied",
+        )
+
+    # Override with user's tenant_id to prevent spoofing
+    request.tenant_id = current_user.tenant_id
 
     use_case = AddTeamMemberUseCase(
         team_repository=team_repo,
@@ -190,11 +217,11 @@ async def add_team_member(
     )
     try:
         return await use_case.execute(
-            team_id=request.get("team_id", team_id),
-            user_id=request.get("user_id"),
-            tenant_id=current_user.tenant_id,
-            role=request.get("role", "vendor"),
-            commission_rate=request.get("commission_rate"),
+            team_id=team_id,
+            user_id=request.user_id,
+            tenant_id=request.tenant_id,
+            role=request.role,
+            commission_rate=request.commission_rate,
         )
     except TeamNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
