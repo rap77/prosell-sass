@@ -36,7 +36,8 @@ export type {
 };
 
 // Legacy types - maintained for backward compatibility
-// TODO: Migrate consumers to use domain types directly
+// NOTE: These are deprecated. Migrate consumers to use domain types directly.
+// See docs/technical-debt/auth-types-migration.md for migration guide
 
 /**
  * Authentication state interface

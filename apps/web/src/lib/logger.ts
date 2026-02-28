@@ -32,7 +32,9 @@ export const logger = {
   /**
    * Log error messages
    * Logs in all environments (errors should always be visible)
-   * TODO: In production, integrate with Sentry/Axiom
+   *
+   * NOTE: In production, integrate with error tracking service (Sentry, Axiom, etc.)
+   * See docs/technical-debt/error-tracking-setup.md for configuration
    */
   error(message: string, error?: any): void {
     console.error(`[ERROR] ${message}`, error);

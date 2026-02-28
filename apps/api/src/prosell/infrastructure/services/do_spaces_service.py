@@ -38,7 +38,7 @@ class DOSpacesService(IDOSpacesService):
         self,
         file_path: str,
         content_type: str,
-        _max_size_bytes: int = 2_000_000,  # TODO: implement size validation
+        max_size_bytes: int = 2_000_000,
     ) -> dict[str, str]:
         """
         Generate presigned URL for direct upload from browser.
@@ -49,8 +49,19 @@ class DOSpacesService(IDOSpacesService):
             max_size_bytes: Maximum file size (default 2MB)
 
         Returns:
-            Dict with upload_url, public_url, and key
+            Dict with upload_url, public_url, key, and max_size_bytes
+
+        Raises:
+            ValueError: If max_size_bytes exceeds configured maximum
         """
+        # Validate file size limit (max 10MB)
+        max_allowed_size = 10_000_000  # 10MB hard limit
+        if max_size_bytes > max_allowed_size:
+            raise ValueError(
+                f"Requested file size {max_size_bytes} bytes exceeds "
+                f"maximum allowed size of {max_allowed_size} bytes"
+            )
+
         key = file_path
 
         # Generate presigned URL for PUT operation
@@ -71,6 +82,7 @@ class DOSpacesService(IDOSpacesService):
             "upload_url": url,
             "public_url": public_url,
             "key": key,
+            "max_size_bytes": max_size_bytes,
         }
 
     async def delete_file(self, key: str) -> bool:

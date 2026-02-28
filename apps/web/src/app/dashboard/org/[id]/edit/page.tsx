@@ -10,21 +10,23 @@
 import { useParams } from "next/navigation";
 import { OrganizationForm } from "@/components/forms";
 import { useOrganizationStore } from "@/stores";
+import { useAuthStore } from "@/stores";
 import { useEffect, useState } from "react";
 
 export default function EditOrganizationPage() {
   const params = useParams();
   const orgId = params.id as string;
   const { currentOrg, fetchOrganizationById, isLoading } = useOrganizationStore();
+  const { user } = useAuthStore();
   const [isClient, setIsClient] = useState(false);
 
   // Fetch organization on mount
   useEffect(() => {
     setIsClient(true);
-    if (orgId) {
-      fetchOrganizationById(orgId, "test-user-123"); // TODO: get from auth
+    if (orgId && user?.id) {
+      fetchOrganizationById(orgId, user.id);
     }
-  }, [orgId, fetchOrganizationById]);
+  }, [orgId, user?.id, fetchOrganizationById]);
 
   // Server-side fallback
   if (!isClient) {

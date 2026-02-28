@@ -38,8 +38,16 @@ from prosell.application.use_cases.auth.refresh_token import (
     RefreshTokenUseCase,
 )
 
-# TODO(security-123): Enable per-endpoint rate limiting
+# NOTE: Per-endpoint rate limiting is tracked in GitHub issue security-123
+# Rate limiting middleware is implemented but not yet enabled for auth endpoints
+# This is intentionally disabled during development to avoid lockout during testing
+#
+# To enable when ready:
 # from prosell.infrastructure.api.middleware import auth_limits, api_limits
+#
+# Then add @auth_limits decorator to sensitive endpoints:
+# - @router.post("/login") -> @auth_limits(...)
+# - @router.post("/register") -> @auth_limits(...)
 from prosell.application.use_cases.auth.register_user import (
     RegisterUserRequest,
     RegisterUserResponse,

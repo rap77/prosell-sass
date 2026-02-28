@@ -21,6 +21,7 @@ from prosell.application.use_cases.org import (
     UpdateOrganizationUseCase,
     VerifyOrganizationUseCase,
 )
+from prosell.domain.entities.role import Permission, RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.org_exceptions import (
     OrganizationAlreadyExistsException,
@@ -28,7 +29,11 @@ from prosell.domain.exceptions.org_exceptions import (
     OrganizationVerificationException,
     OrgDomainException,
 )
-from prosell.infrastructure.api.dependencies import get_current_auth_user
+from prosell.infrastructure.api.dependencies import (
+    get_current_auth_user,
+    require_permission,
+    require_role,
+)
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.organization_repository_impl import (
     SqlAlchemyOrganizationRepository,
@@ -72,7 +77,7 @@ def get_wallet_repository(
 )
 async def create_organization(
     request: CreateOrganizationRequest,
-    _current_user: User = Depends(get_current_auth_user),  # TODO: check SUPER_ADMIN permission
+    _current_user: User = Depends(require_permission(Permission.ORG_CREATE)),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
     wallet_repo: SqlAlchemyWalletRepository = Depends(get_wallet_repository),
 ) -> OrganizationResponse:
@@ -202,7 +207,7 @@ async def update_organization(
 )
 async def verify_organization(
     org_id: UUID,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(require_role(RoleType.SUPER_ADMIN)),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationResponse:
     """Approve organization verification (SUPER_ADMIN only)."""
@@ -228,7 +233,7 @@ async def verify_organization(
 )
 async def reject_organization(
     org_id: UUID,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(require_role(RoleType.SUPER_ADMIN)),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationResponse:
     """Reject organization verification (SUPER_ADMIN only)."""
@@ -254,7 +259,7 @@ async def reject_organization(
 )
 async def suspend_organization(
     org_id: UUID,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(require_role(RoleType.SUPER_ADMIN)),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationResponse:
     """Suspend organization (SUPER_ADMIN only)."""

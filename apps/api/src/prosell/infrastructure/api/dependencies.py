@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.ports.email_service import AbstractEmailService
 from prosell.core.config import settings
+from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission, RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.ports import (
     IJWTService,
@@ -146,6 +147,84 @@ async def get_current_auth_user(
         )
 
     return user
+
+
+def require_permission(permission: Permission):
+    """
+    Dependency factory for permission-based authorization.
+
+    Usage in FastAPI routes:
+        current_user: User = Depends(require_permission(Permission.ORG_CREATE))
+
+    Args:
+        permission: Required permission for the endpoint
+
+    Returns:
+        Dependency function that FastAPI can call
+    """
+
+    async def _check(
+        current_user: User = Depends(get_current_auth_user),
+        role_repository: SqlAlchemyRoleRepository = Depends(get_role_repository),
+    ) -> User:
+        """Check if user has required permission."""
+        from fastapi import HTTPException, status
+
+        # Fetch user roles with permissions
+        user_roles = await role_repository.get_user_roles(current_user.id)
+
+        # Check if any role has the required permission
+        has_permission = any(
+            permission in ROLE_PERMISSIONS.get(role.role_type, set()) for role in user_roles
+        )
+
+        if not has_permission:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission '{permission.value}' required",
+            )
+
+        return current_user
+
+    return _check
+
+
+def require_role(role_type: RoleType):
+    """
+    Dependency factory for role-based authorization.
+
+    Usage in FastAPI routes:
+        current_user: User = Depends(require_role(RoleType.SUPER_ADMIN))
+
+    Args:
+        role_type: Required role for the endpoint
+
+    Returns:
+        Dependency function that FastAPI can call
+    """
+
+    async def _check(
+        current_user: User = Depends(get_current_auth_user),
+        role_repository: SqlAlchemyRoleRepository = Depends(get_role_repository),
+    ) -> User:
+        """Check if user has required role."""
+        from fastapi import HTTPException, status
+
+        # Fetch user roles
+        user_roles = await role_repository.get_user_roles(current_user.id)
+
+        # Check if user has the required role
+        has_role = any(role.role_type == role_type for role in user_roles)
+
+        if not has_role:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Role '{role_type.value}' required",
+            )
+
+        return current_user
+
+    return _check
 
 
 # =============================================================================
