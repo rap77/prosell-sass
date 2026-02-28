@@ -11,8 +11,7 @@ type MockWallet = {
   id: string;
   organization_id: string;
   tenant_id: string;
-  balance_cents: number;
-  currency: string;
+  balance: number;
   created_at: string;
   updated_at: string;
 };
@@ -42,8 +41,7 @@ export async function GET(
       id: crypto.randomUUID(),
       organization_id: orgId,
       tenant_id: "test-user-123",
-      balance_cents: 0,
-      currency: "USD",
+      balance: 1000, // Start with 1000 tokens for testing
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

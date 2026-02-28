@@ -10,10 +10,12 @@ import type { NextRequest } from "next/server";
 type MockTransaction = {
   id: string;
   wallet_id: string;
-  organization_id: string;
+  tenant_id: string;
   transaction_type: string;
-  amount_cents: number;
+  amount: number;
+  balance_after: number;
   description: string;
+  metadata: Record<string, unknown> | null;
   created_at: string;
 };
 
@@ -35,8 +37,50 @@ export async function GET(
 
   const skip = parseInt(url.searchParams.get("skip") || "0");
   const limit = parseInt(url.searchParams.get("limit") || "20");
+  const createMock = url.searchParams.get("create_mock") === "true";
 
-  const transactions = Object.values(getMockTransactions()).filter((t) => t.organization_id === orgId);
+  let transactions = Object.values(getMockTransactions()).filter((t) => t.wallet_id === orgId);
+
+  // Create mock transactions if requested and none exist
+  if (createMock && transactions.length === 0) {
+    const globalWithMocks = global as typeof global & {
+      __mockWalletTransactions?: MockTransactions;
+    };
+    globalWithMocks.__mockWalletTransactions = globalWithMocks.__mockWalletTransactions || {};
+
+    // Create sample transactions
+    const sampleTransactions: MockTransaction[] = [
+      {
+        id: crypto.randomUUID(),
+        wallet_id: orgId,
+        tenant_id: "test-user-123",
+        transaction_type: "credit",
+        amount: 1000,
+        balance_after: 1000,
+        description: "Initial purchase",
+        metadata: null,
+        created_at: new Date(Date.now() - 86400000).toISOString(),
+      },
+      {
+        id: crypto.randomUUID(),
+        wallet_id: orgId,
+        tenant_id: "test-user-123",
+        transaction_type: "debit",
+        amount: 100,
+        balance_after: 900,
+        description: "Listing fee",
+        metadata: null,
+        created_at: new Date(Date.now() - 43200000).toISOString(),
+      },
+    ];
+
+    for (const txn of sampleTransactions) {
+      globalWithMocks.__mockWalletTransactions[txn.id] = txn;
+    }
+
+    transactions = sampleTransactions;
+  }
+
   const paginatedList = transactions.slice(skip, skip + limit);
 
   return NextResponse.json({
