@@ -150,7 +150,6 @@ export default async function middleware(req: NextRequest) {
   // 2. Check for auth cookies
   const accessToken = req.cookies.get("access_token")?.value;
   const userDataCookie = req.cookies.get("user_data")?.value;
-  const isAuthenticated = !!accessToken && !!userDataCookie;
 
   // 3. Parse user data from cookie with memoization
   type UserData = {
@@ -182,6 +181,8 @@ export default async function middleware(req: NextRequest) {
   );
 
   // 5. Redirect unauthenticated users from protected routes
+  // NOTE: Check userData (parsed) not userDataCookie (raw string) to validate JSON
+  const isAuthenticated = !!accessToken && !!userData;
   if (isProtectedRoute && !isAuthenticated) {
     const url = req.nextUrl.clone();
     url.pathname = "/auth/login";
