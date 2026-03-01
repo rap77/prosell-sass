@@ -242,9 +242,31 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
 
     def _to_entity(self, model: UserModel) -> User:
         """
-        Convert ORM model to domain entity using Pydantic model_validate.
+        Convert ORM model to domain entity.
 
-        This leverages Pydantic's from_attributes=True for automatic conversion.
-        The backup_codes field has a custom validator to handle JSON string → list[str].
+        NOTE: We manually construct the User instead of using model_validate
+        with from_attributes=True because the latter would trigger lazy-loaded
+        relationships (roles, sessions) which cause MissingGreenlet errors in
+        async SQLAlchemy.
         """
-        return User.model_validate(model, from_attributes=True)
+        return User(
+            id=model.id,
+            email=model.email,
+            password_hash=model.password_hash,
+            full_name=model.full_name,
+            avatar_url=model.avatar_url,
+            status=model.status,
+            email_verified=model.email_verified,
+            email_verified_at=model.email_verified_at,
+            is_2fa_enabled=model.is_2fa_enabled,
+            totp_secret=model.totp_secret,
+            backup_codes=model.backup_codes,  # Will be parsed by validator
+            last_login_at=model.last_login_at,
+            last_login_ip=model.last_login_ip,
+            failed_login_attempts=model.failed_login_attempts,
+            locked_until=model.locked_until,
+            tenant_id=model.tenant_id,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+            roles=None,  # Don't trigger lazy load
+        )
