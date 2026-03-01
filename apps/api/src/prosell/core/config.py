@@ -115,7 +115,7 @@ class Settings(BaseSettings):
     )
     # Backend callback URI (where Google redirects after authentication)
     google_oauth_redirect_uri: str = Field(
-        default="http://localhost:8000/api/v1/auth/oauth/google/callback",
+        default="http://localhost:8000/api/auth/oauth/google/callback",
         description="Google OAuth backend callback URI",
     )
 
@@ -131,7 +131,7 @@ class Settings(BaseSettings):
     )
     # Backend callback URI (where Facebook redirects after authentication)
     facebook_oauth_redirect_uri: str = Field(
-        default="http://localhost:8000/api/v1/auth/oauth/facebook/callback",
+        default="http://localhost:8000/api/auth/oauth/facebook/callback",
         description="Facebook OAuth backend callback URI",
     )
 

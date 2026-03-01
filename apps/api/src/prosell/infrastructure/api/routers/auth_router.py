@@ -261,8 +261,7 @@ async def oauth_authorize(
     )
 
     logger.info(
-        f"OAuth authorization initiated for provider={provider}, "
-        f"state={result.state_token[:8]}..."
+        f"OAuth authorization initiated for provider={provider}, state={result.state_token[:8]}..."
     )
 
     # Redirect user to OAuth provider authorization page
@@ -274,8 +273,8 @@ async def oauth_callback(
     provider: str,
     oauth_service: Annotated[IOAuthService, Depends(get_oauth_service)],
     oauth_use_case: Annotated[OAuthLoginUseCase, Depends(get_oauth_login_use_case)],
-    code: str = Query(..., description="Authorization code from OAuth provider"),
-    state: str = Query(..., description="State token for CSRF protection"),
+    code: str | None = Query(None, description="Authorization code from OAuth provider"),
+    state: str | None = Query(None, description="State token for CSRF protection"),
     error: str | None = Query(None, description="Error from OAuth provider (if auth failed)"),
 ) -> RedirectResponse:
     """
@@ -314,6 +313,14 @@ async def oauth_callback(
     if error:
         logger.warning(f"OAuth callback error for provider={provider}: {error}")
         error_url = f"{settings.oauth_frontend_failure_url}{error}"
+        return RedirectResponse(url=error_url, status_code=302)
+
+    # Validate required parameters for successful OAuth flow
+    if not code or not state:
+        logger.error(
+            f"OAuth callback missing required parameters: code={bool(code)}, state={bool(state)}"
+        )
+        error_url = f"{settings.oauth_frontend_failure_url}invalid_request"
         return RedirectResponse(url=error_url, status_code=302)
 
     try:
