@@ -5,14 +5,15 @@
  * Features loading states, disabled state, and full accessibility.
  * Uses chadcn/ui Button component.
  *
+ * OAuth Flow:
+ * 1. User clicks button → Redirects to /api/v1/auth/oauth/{provider}/authorize
+ * 2. Backend generates state token → Redirects to Google/Facebook
+ * 3. User authenticates at provider → Provider redirects to backend callback
+ * 4. Backend exchanges code for tokens → Sets httpOnly cookies → Redirects to dashboard
+ *
  * @example
  * ```tsx
- * <OAuthButtons
- *   onGoogleClick={() => signIn('google')}
- *   onFacebookClick={() => signIn('facebook')}
- *   googleLoading={isGoogleLoading}
- *   facebookLoading={isFacebookLoading}
- * />
+ * <OAuthButtons />
  * ```
  */
 "use client";
@@ -29,26 +30,6 @@ import { cn } from "@/lib/utils";
 // ============================================
 
 export interface OAuthButtonsProps {
-  /**
-   * Callback when Google button is clicked
-   */
-  onGoogleClick?: () => void;
-
-  /**
-   * Callback when Facebook button is clicked
-   */
-  onFacebookClick?: () => void;
-
-  /**
-   * Show loading state on Google button
-   */
-  googleLoading?: boolean;
-
-  /**
-   * Show loading state on Facebook button
-   */
-  facebookLoading?: boolean;
-
   /**
    * Disable both buttons
    */
@@ -95,7 +76,10 @@ interface OAuthButtonProps extends Omit<
 // ============================================
 
 /**
- * Individual OAuth button with loading state
+ * Individual OAuth button with loading state.
+ *
+ * Redirects to backend OAuth authorize endpoint on click.
+ * Backend handles full OAuth flow and redirects back with cookies.
  */
 function OAuthButton({
   label,
@@ -103,17 +87,28 @@ function OAuthButton({
   icon,
   variant,
   disabled,
-  onClick,
   className,
   ...props
 }: OAuthButtonProps) {
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  /**
+   * Handle OAuth button click.
+   *
+   * Redirects browser to backend OAuth authorize endpoint.
+   * Backend will:
+   * 1. Generate state token (CSRF protection)
+   * 2. Redirect to Google/Facebook
+   * 3. Process callback
+   * 4. Set httpOnly cookies
+   * 5. Redirect back to frontend dashboard
+   */
+  const handleClick = () => {
     if (isLoading || disabled) {
       return;
     }
 
-    // Call onClick callback (handles its own errors)
-    onClick?.(e);
+    // Redirect to backend OAuth authorize endpoint
+    // Provider is determined by variant ("google" or "facebook")
+    window.location.href = `/api/v1/auth/oauth/${variant}/authorize`;
   };
 
   // chadcn/ui variants for OAuth buttons
@@ -158,17 +153,19 @@ function OAuthButton({
  *
  * Features:
  * - Google and Facebook OAuth buttons
- * - Individual loading states per provider
+ * - Redirects to backend OAuth authorize endpoint
  * - Full keyboard navigation
  * - Accessible ARIA attributes
  * - Prevents double-clicks during loading
  * - chadcn/ui Button components
+ *
+ * OAuth Flow:
+ * 1. User clicks button → Redirects to /api/v1/auth/oauth/{provider}/authorize
+ * 2. Backend generates state token → Redirects to Google/Facebook
+ * 3. User authenticates → Provider redirects to backend callback
+ * 4. Backend sets httpOnly cookies → Redirects to frontend dashboard
  */
 export function OAuthButtons({
-  onGoogleClick,
-  onFacebookClick,
-  googleLoading = false,
-  facebookLoading = false,
   disabled = false,
   onMouseEnter,
 }: OAuthButtonsProps) {
@@ -182,9 +179,8 @@ export function OAuthButtons({
       <OAuthButton
         label="Continue with Google"
         variant="google"
-        isLoading={googleLoading}
+        isLoading={false}
         disabled={disabled}
-        onClick={onGoogleClick}
         icon={
           <AnimatedSvgWrapper animation="fadeIn" duration={300}>
             <GoogleIcon />
@@ -197,9 +193,8 @@ export function OAuthButtons({
       <OAuthButton
         label="Continue with Facebook"
         variant="facebook"
-        isLoading={facebookLoading}
+        isLoading={false}
         disabled={disabled}
-        onClick={onFacebookClick}
         icon={
           <AnimatedSvgWrapper animation="fadeIn" duration={300}>
             <FacebookIcon />

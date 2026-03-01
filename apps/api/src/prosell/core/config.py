@@ -101,8 +101,10 @@ class Settings(BaseSettings):
     )
 
     # =============================================================================
-    # OAUTH
+    # OAUTH (Backend Callback Flow)
     # =============================================================================
+    # Google OAuth 2.0 Credentials
+    # Get credentials from: https://console.cloud.google.com/apis/credentials
     google_oauth_client_id: str | None = Field(
         default=None,
         description="Google OAuth client ID",
@@ -111,11 +113,14 @@ class Settings(BaseSettings):
         default=None,
         description="Google OAuth client secret",
     )
+    # Backend callback URI (where Google redirects after authentication)
     google_oauth_redirect_uri: str = Field(
-        default="http://localhost:3000/auth/callback/google",
-        description="Google OAuth redirect URI",
+        default="http://localhost:8000/api/v1/auth/oauth/google/callback",
+        description="Google OAuth backend callback URI",
     )
 
+    # Facebook OAuth 2.0 Credentials
+    # Get credentials from: https://developers.facebook.com/apps
     facebook_oauth_app_id: str | None = Field(
         default=None,
         description="Facebook OAuth app ID",
@@ -124,9 +129,28 @@ class Settings(BaseSettings):
         default=None,
         description="Facebook OAuth app secret",
     )
+    # Backend callback URI (where Facebook redirects after authentication)
     facebook_oauth_redirect_uri: str = Field(
-        default="http://localhost:3000/auth/callback/facebook",
-        description="Facebook OAuth redirect URI",
+        default="http://localhost:8000/api/v1/auth/oauth/facebook/callback",
+        description="Facebook OAuth backend callback URI",
+    )
+
+    # Frontend URLs for redirect after OAuth login
+    oauth_frontend_success_url: str = Field(
+        default="http://localhost:3000/dashboard",
+        description="Frontend URL to redirect after successful OAuth login",
+    )
+    oauth_frontend_failure_url: str = Field(
+        default="http://localhost:3000/auth/login?error=",
+        description="Frontend URL to redirect after OAuth failure (error appended)",
+    )
+
+    # OAuth Security Settings
+    oauth_state_token_expire_minutes: int = Field(
+        default=10,
+        ge=1,
+        le=60,
+        description="OAuth state token expiration in minutes",
     )
 
     # =============================================================================
@@ -347,6 +371,73 @@ def get_settings() -> Settings:
     Uses lru_cache to ensure settings are loaded only once.
     """
     return Settings()
+
+
+class OAuthSettings(BaseSettings):
+    """
+    OAuth-specific settings for dependency injection.
+
+    This class extracts OAuth-related settings from the main Settings
+    for use in OAuth service dependency injection.
+    """
+
+    google_client_id: str | None = Field(
+        default=None,
+        description="Google OAuth client ID",
+    )
+    google_client_secret: str | None = Field(
+        default=None,
+        description="Google OAuth client secret",
+    )
+    google_redirect_uri: str = Field(
+        default="http://localhost:8000/api/v1/auth/oauth/google/callback",
+        description="Google OAuth backend callback URI",
+    )
+
+    facebook_app_id: str | None = Field(
+        default=None,
+        description="Facebook OAuth app ID",
+    )
+    facebook_app_secret: str | None = Field(
+        default=None,
+        description="Facebook OAuth app secret",
+    )
+    facebook_redirect_uri: str = Field(
+        default="http://localhost:8000/api/v1/auth/oauth/facebook/callback",
+        description="Facebook OAuth backend callback URI",
+    )
+
+    frontend_success_url: str = Field(
+        default="http://localhost:3000/dashboard",
+        description="Frontend URL after successful login",
+    )
+    frontend_failure_url: str = Field(
+        default="http://localhost:3000/auth/login?error=",
+        description="Frontend URL after login failure",
+    )
+
+    state_token_expire_minutes: int = Field(
+        default=10,
+        description="State token expiration in minutes",
+    )
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_ignore_empty=True,
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+
+@lru_cache
+def get_oauth_settings() -> OAuthSettings:
+    """
+    Get cached OAuth settings instance.
+
+    Uses lru_cache to ensure settings are loaded only once.
+    """
+    return OAuthSettings()
 
 
 # Global settings instance

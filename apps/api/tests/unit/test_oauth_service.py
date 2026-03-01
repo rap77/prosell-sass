@@ -264,14 +264,13 @@ class TestOAuthServiceConfiguration:
         """Test that state token expiration defaults to 10 minutes."""
         assert oauth_settings.state_token_expire_minutes == 10
 
-    def test_google_credentials_required_for_authorization(self, oauth_settings):
+    async def test_google_credentials_required_for_authorization(self, oauth_settings):
         """Test that Google credentials are required for authorization."""
         # Remove client ID
         oauth_settings.google_client_id = None
         service = OAuthServiceImpl(settings=oauth_settings)
 
         # Should raise HTTPException when trying to initiate
-        import pytest
         from fastapi import HTTPException
 
         with pytest.raises(HTTPException) as exc_info:

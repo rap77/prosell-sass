@@ -1,10 +1,11 @@
 """Authentication router for ProSell SaaS API."""
 
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from prosell.application.use_cases.auth.enable_2fa import (
     Disable2FARequest as Disable2FAUCRequest,
@@ -60,11 +61,14 @@ from prosell.application.use_cases.auth.verify_2fa import (
     Verify2FAResponse,
     Verify2FAUseCase,
 )
+from prosell.core.config import settings
+from prosell.domain.ports import IOAuthService
 from prosell.infrastructure.api.dependencies import (
     get_disable_2fa_use_case,
     get_enable_2fa_use_case,
     get_login_user_use_case,
     get_oauth_login_use_case,
+    get_oauth_service,
     get_refresh_token_use_case,
     get_register_user_use_case,
     get_verify_2fa_use_case,
@@ -85,6 +89,7 @@ from prosell.infrastructure.api.schemas import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -196,7 +201,10 @@ async def oauth_login(
     use_case: Annotated[OAuthLoginUseCase, Depends(get_oauth_login_use_case)],
 ) -> OAuthLoginResponse:
     """
-    OAuth social login.
+    OAuth social login (direct).
+
+    This endpoint is for testing and direct OAuth login with pre-fetched user data.
+    For browser-based OAuth flow, use /oauth/{provider}/authorize instead.
 
     Supports Google and Facebook OAuth.
     """
@@ -208,6 +216,198 @@ async def oauth_login(
         avatar_url=request.avatar_url,
     )
     return await use_case.execute(uc_request)
+
+
+@router.get("/oauth/{provider}/authorize")
+async def oauth_authorize(
+    provider: str,
+    oauth_service: Annotated[IOAuthService, Depends(get_oauth_service)],
+) -> RedirectResponse:
+    """
+    Initiate OAuth authorization flow.
+
+    Redirects user to OAuth provider (Google/Facebook) for authentication.
+
+    **OAuth 2.0 Authorization Code Flow:**
+
+    1. User clicks "Login with Google/Facebook"
+    2. Frontend redirects to this endpoint
+    3. Backend generates state_token (CSRF protection)
+    4. Backend redirects user to OAuth provider
+    5. User authenticates at provider
+    6. Provider redirects to /oauth/{provider}/callback
+
+    **Path Parameters:**
+        provider: "google" or "facebook"
+
+    **Returns:**
+        302 Redirect to OAuth provider authorization page
+
+    **Example:**
+        GET /api/v1/auth/oauth/google/authorize
+        → Redirects to: https://accounts.google.com/o/oauth2/v2/auth?...
+    """
+    # Use per-provider redirect URI from settings (pre-configured, includes protocol)
+    provider_redirect_uris: dict[str, str] = {
+        "google": settings.google_oauth_redirect_uri,
+        "facebook": settings.facebook_oauth_redirect_uri,
+    }
+    redirect_uri = provider_redirect_uris.get(provider, "")
+
+    # Initiate OAuth flow: get authorization URL and state token
+    result = await oauth_service.initiate_authorization(
+        provider=provider,
+        redirect_uri=redirect_uri,
+    )
+
+    logger.info(
+        f"OAuth authorization initiated for provider={provider}, "
+        f"state={result.state_token[:8]}..."
+    )
+
+    # Redirect user to OAuth provider authorization page
+    return RedirectResponse(url=result.authorization_url, status_code=302)
+
+
+@router.get("/oauth/{provider}/callback")
+async def oauth_callback(
+    provider: str,
+    oauth_service: Annotated[IOAuthService, Depends(get_oauth_service)],
+    oauth_use_case: Annotated[OAuthLoginUseCase, Depends(get_oauth_login_use_case)],
+    code: str = Query(..., description="Authorization code from OAuth provider"),
+    state: str = Query(..., description="State token for CSRF protection"),
+    error: str | None = Query(None, description="Error from OAuth provider (if auth failed)"),
+) -> RedirectResponse:
+    """
+    OAuth callback endpoint.
+
+    Called by OAuth provider after user authentication.
+
+    **OAuth 2.0 Callback Flow:**
+
+    1. User authenticates at Google/Facebook
+    2. Provider redirects to this endpoint with authorization code
+    3. Backend validates state token (CSRF protection)
+    4. Backend exchanges code for access token
+    5. Backend fetches user info from provider
+    6. Backend creates/updates user and generates JWT tokens
+    7. Backend sets httpOnly cookies
+    8. Backend redirects to frontend with user logged in
+
+    **Path Parameters:**
+        provider: "google" or "facebook"
+
+    **Query Parameters:**
+        code: Authorization code (if successful)
+        state: State token for CSRF validation
+        error: Error description (if user denied access)
+
+    **Returns:**
+        302 Redirect to frontend with auth cookies (success) or error page (failure)
+
+    **Example:**
+        GET /api/v1/auth/oauth/google/callback?code=abc123&state=xyz789
+        → Sets cookies
+        → Redirects to: http://localhost:3000/dashboard
+    """
+    # Handle OAuth error from provider (user denied access)
+    if error:
+        logger.warning(f"OAuth callback error for provider={provider}: {error}")
+        error_url = f"{settings.oauth_frontend_failure_url}{error}"
+        return RedirectResponse(url=error_url, status_code=302)
+
+    try:
+        # Use per-provider redirect URI from settings (must match authorize)
+        provider_redirect_uris: dict[str, str] = {
+            "google": settings.google_oauth_redirect_uri,
+            "facebook": settings.facebook_oauth_redirect_uri,
+        }
+        redirect_uri = provider_redirect_uris.get(provider, "")
+
+        # Process callback: exchange code for user info
+        callback_result = await oauth_service.process_callback(
+            provider=provider,
+            code=code,
+            state=state,
+            redirect_uri=redirect_uri,
+        )
+
+        logger.info(
+            f"OAuth callback successful for provider={provider}, "
+            f"user={callback_result.user_info.email}"
+        )
+
+        # Login using OAuthLoginUseCase (create/update user, generate JWT)
+        oauth_uc_request = OAuthLoginUCRequest(
+            provider=callback_result.provider,
+            provider_user_id=callback_result.user_info.provider_user_id,
+            email=callback_result.user_info.email,
+            full_name=callback_result.user_info.full_name,
+            avatar_url=callback_result.user_info.avatar_url,
+            access_token=callback_result.user_info.access_token,
+            refresh_token=callback_result.user_info.refresh_token,
+            expires_at=callback_result.user_info.expires_at,
+        )
+
+        login_result = await oauth_use_case.execute(oauth_uc_request)
+
+        # Set httpOnly cookies directly on the RedirectResponse.
+        # CRITICAL: Cookies MUST be set on the response object being returned.
+        # Setting them on a FastAPI-injected Response parameter is ignored when
+        # the endpoint returns a different Response object (RedirectResponse).
+        access_token_expiry = datetime.now(UTC) + timedelta(
+            minutes=settings.jwt_access_token_expire_minutes
+        )
+        refresh_token_expiry = datetime.now(UTC) + timedelta(
+            days=settings.jwt_refresh_token_expire_days
+        )
+
+        redirect = RedirectResponse(url=settings.oauth_frontend_success_url, status_code=302)
+
+        redirect.set_cookie(
+            key="access_token",
+            value=login_result.access_token,
+            expires=access_token_expiry,
+            httponly=True,  # CRITICAL: Prevents JavaScript access (XSS protection)
+            secure=True,  # HTTPS only
+            samesite="strict",  # CSRF protection
+        )
+
+        redirect.set_cookie(
+            key="refresh_token",
+            value=login_result.refresh_token,
+            expires=refresh_token_expiry,
+            httponly=True,
+            secure=True,
+            samesite="strict",
+        )
+
+        redirect.set_cookie(
+            key="user_data",
+            value=login_result.user.model_dump_json(),
+            expires=refresh_token_expiry,
+            httponly=True,
+            secure=True,
+            samesite="strict",
+        )
+
+        logger.info(
+            f"User logged in via OAuth: {login_result.user.email}, redirecting to dashboard"
+        )
+
+        return redirect
+
+    except HTTPException as e:
+        # OAuth flow failed (invalid state, expired code, etc.)
+        logger.error(f"OAuth callback HTTP exception for provider={provider}: {e.detail}")
+        error_url = f"{settings.oauth_frontend_failure_url}{e.detail}"
+        return RedirectResponse(url=error_url, status_code=302)
+
+    except Exception as e:
+        # Unexpected error
+        logger.exception(f"Unexpected OAuth callback error for provider={provider}: {e}")
+        error_url = f"{settings.oauth_frontend_failure_url}internal_error"
+        return RedirectResponse(url=error_url, status_code=302)
 
 
 @router.post("/2fa/enable")

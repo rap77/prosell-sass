@@ -7,11 +7,12 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.ports.email_service import AbstractEmailService
-from prosell.core.config import settings
+from prosell.core.config import get_oauth_settings, settings
 from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission, RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.ports import (
     IJWTService,
+    IOAuthService,
     IPasswordService,
     ITokenHasher,
     ITOTPService,
@@ -26,6 +27,7 @@ from prosell.infrastructure.services.email_service import (
     MockEmailService,
     SendGridEmailService,
 )
+from prosell.infrastructure.services.oauth_service_impl import OAuthServiceImpl
 from prosell.infrastructure.services.password_service import PasswordService
 from prosell.infrastructure.services.totp_service import TOTPService
 
@@ -96,6 +98,12 @@ def get_email_service() -> AbstractEmailService:
 def get_token_hasher() -> ITokenHasher:
     """Get token hasher service instance (singleton)."""
     return TokenHasher()
+
+
+def get_oauth_service() -> IOAuthService:
+    """Get OAuth service instance (singleton)."""
+    oauth_settings = get_oauth_settings()
+    return OAuthServiceImpl(settings=oauth_settings)
 
 
 # =============================================================================
