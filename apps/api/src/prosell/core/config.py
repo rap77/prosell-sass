@@ -10,7 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 def get_root_dir() -> Path:
     """Get project root directory."""
-    return Path(__file__).parent.parent.parent.parent.parent
+    return Path(__file__).parent.parent.parent.parent.parent.parent
 
 
 class Settings(BaseSettings):
@@ -43,10 +43,18 @@ class Settings(BaseSettings):
         default=8000,
         description="API port to bind to",
     )
-    allowed_origins: list[str] = Field(
-        default=["http://localhost:3000", "http://localhost:8000"],
-        description="CORS allowed origins",
+    allowed_origins_raw: str | None = Field(
+        default=None,
+        description="CORS allowed origins (raw comma-separated string)",
+        exclude=True,
     )
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        """Get parsed allowed_origins list."""
+        if self.allowed_origins_raw:
+            return [o.strip() for o in self.allowed_origins_raw.split(",") if o.strip()]
+        return ["http://localhost:3000", "http://localhost:8000"]
 
     # =============================================================================
     # DATABASE
@@ -381,17 +389,29 @@ class OAuthSettings(BaseSettings):
     for use in OAuth service dependency injection.
     """
 
-    google_client_id: str | None = Field(
+    google_oauth_client_id: str | None = Field(
         default=None,
         description="Google OAuth client ID",
     )
-    google_client_secret: str | None = Field(
+    google_oauth_client_secret: str | None = Field(
         default=None,
         description="Google OAuth client secret",
     )
-    google_redirect_uri: str = Field(
-        default="http://localhost:8000/api/v1/auth/oauth/google/callback",
+    google_oauth_redirect_uri: str = Field(
+        default="http://localhost:8000/api/auth/oauth/google/callback",
         description="Google OAuth backend callback URI",
+    )
+    facebook_oauth_app_id: str | None = Field(
+        default=None,
+        description="Facebook OAuth app ID",
+    )
+    facebook_oauth_app_secret: str | None = Field(
+        default=None,
+        description="Facebook OAuth app secret",
+    )
+    facebook_oauth_redirect_uri: str = Field(
+        default="http://localhost:8000/api/auth/oauth/facebook/callback",
+        description="Facebook OAuth backend callback URI",
     )
 
     facebook_app_id: str | None = Field(

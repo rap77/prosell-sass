@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * LoginForm Component
  *
@@ -17,7 +19,7 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordInput } from "./PasswordInput";
 import dynamic from "next/dynamic";
-import { useEffect, useTransition } from "react";
+import { useTransition } from "react";
 
 // Static heading component
 const LoginHeading = () => (
@@ -186,7 +188,16 @@ export function LoginForm() {
       <LoginHeading />
 
       {/* OAuth Buttons */}
-      <OAuthButtons />
+      <OAuthButtons
+        onGoogleClick={() => {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+          window.location.href = `${apiUrl}/api/auth/oauth/google/authorize`;
+        }}
+        onFacebookClick={() => {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+          window.location.href = `${apiUrl}/api/auth/oauth/facebook/authorize`;
+        }}
+      />
 
       {/* Static Divider */}
       <LoginDivider />

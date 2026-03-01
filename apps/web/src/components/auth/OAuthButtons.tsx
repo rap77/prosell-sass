@@ -6,7 +6,7 @@
  * Uses chadcn/ui Button component.
  *
  * OAuth Flow:
- * 1. User clicks button → Redirects to /api/v1/auth/oauth/{provider}/authorize
+ * 1. User clicks button → Redirects to /api/auth/oauth/{provider}/authorize
  * 2. Backend generates state token → Redirects to Google/Facebook
  * 3. User authenticates at provider → Provider redirects to backend callback
  * 4. Backend exchanges code for tokens → Sets httpOnly cookies → Redirects to dashboard
@@ -108,7 +108,8 @@ function OAuthButton({
 
     // Redirect to backend OAuth authorize endpoint
     // Provider is determined by variant ("google" or "facebook")
-    window.location.href = `/api/v1/auth/oauth/${variant}/authorize`;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+    window.location.href = `${apiUrl}/api/auth/oauth/${variant}/authorize`;
   };
 
   // chadcn/ui variants for OAuth buttons
@@ -160,7 +161,7 @@ function OAuthButton({
  * - chadcn/ui Button components
  *
  * OAuth Flow:
- * 1. User clicks button → Redirects to /api/v1/auth/oauth/{provider}/authorize
+ * 1. User clicks button → Redirects to /api/auth/oauth/{provider}/authorize
  * 2. Backend generates state token → Redirects to Google/Facebook
  * 3. User authenticates → Provider redirects to backend callback
  * 4. Backend sets httpOnly cookies → Redirects to frontend dashboard

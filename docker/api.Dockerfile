@@ -34,13 +34,4 @@ ENV PYTHONPATH=/app/src
 
 EXPOSE 8000
 
-# Create entrypoint script
-RUN echo '#!/bin/sh\n\
-set -e\n\
-# Run database initialization if tables dont exist\n\
-python /app/scripts/init-db.py || echo "DB init may have failed or already initialized"\n\
-# Start the application\n\
-exec "$@"\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
-
-ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["uvicorn", "prosell.infrastructure.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["sh", "-c", "python /app/scripts/init-db.py || echo 'DB init skipped' && uvicorn prosell.infrastructure.api.main:app --host 0.0.0.0 --port 8000"]

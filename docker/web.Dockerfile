@@ -33,7 +33,8 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Copy built application
 COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
+# Create public directory (Next.js 15 App Router doesn't require it)
+RUN mkdir -p ./apps/web/public && chown -R nextjs:nodejs ./apps/web/public
 
 USER nextjs
 

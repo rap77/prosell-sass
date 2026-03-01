@@ -67,8 +67,16 @@ services:
       # FEATURES
       - FEATURE_2FA_ENABLED=true
       - FEATURE_OAUTH_GOOGLE=true
+      - FEATURE_OAUTH_FACEBOOK=false
       - FEATURE_REGISTRATION_ENABLED=true
       - FEATURE_PASSWORD_RESET=true
+      # OAUTH - Google
+      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_OAUTH_REDIRECT_URI=${GOOGLE_OAUTH_REDIRECT_URI:-http://localhost:8000/api/auth/oauth/google/callback}
+      # OAUTH - Facebook (opcional)
+      - FACEBOOK_OAUTH_APP_ID=${FACEBOOK_OAUTH_APP_ID:-}
+      - FACEBOOK_OAUTH_APP_SECRET=${FACEBOOK_OAUTH_APP_SECRET:-}
       # EMAIL (Mock)
       - USE_MOCK_EMAIL=true
     depends_on:
@@ -77,9 +85,11 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ../apps/api:/app
-      - ./keys:/app/keys:ro
-    command: uvicorn prosell.infrastructure.api.main:app --host 0.0.0.0 --port 8000 --reload
+      # Mount source code for hot-reload (dev only)
+      - ../apps/api/src:/app/src:ro
+      - ../apps/api/scripts:/app/scripts:ro
+      - ../apps/api/keys:/app/keys:ro
+    command: sh -c "python /app/scripts/init-db.py || echo 'DB init skipped' && uvicorn prosell.infrastructure.api.main:app --host 0.0.0.0 --port 8000 --reload"
 
   # =============================================================================
   # NEXT.JS FRONTEND (future)
@@ -95,11 +105,8 @@ services:
       - API_URL=http://api:8000
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
-      - api
-    volumes:
-      - ../apps/web:/app
-      - /app/node_modules
-      - /app/.next
+      api:
+        condition: service_started
 
 volumes:
   postgres_data:

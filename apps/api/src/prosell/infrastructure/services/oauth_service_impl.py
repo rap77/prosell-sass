@@ -7,7 +7,7 @@ Architecture:
 - This is an Adapter in Clean Architecture terminology
 - Implements the IOAuthService Port defined in domain layer
 - Uses httpx.AsyncClient for non-blocking HTTP requests
-- State tokens stored in-memory (for MVP) - should use Redis in production
+- State tokens stored in Redis for distributed state management
 
 OAuth 2.0 Flow:
 1. initiate_authorization(): Generate state token, build authorization URL
@@ -18,12 +18,14 @@ OAuth 2.0 Flow:
 
 import logging
 from datetime import UTC, datetime, timedelta
+from urllib.parse import urlencode
 from uuid import uuid4
 
 import httpx
+import redis.asyncio as redis
 from fastapi import HTTPException, status
 
-from prosell.core.config import OAuthSettings
+from prosell.core.config import OAuthSettings, settings
 from prosell.domain.ports.i_oauth_service import (
     IOAuthService,
     OAuthAuthorizeResult,
@@ -42,7 +44,7 @@ class OAuthServiceImpl(IOAuthService):
 
     Attributes:
         settings: OAuth configuration settings
-        _state_tokens: In-memory storage for state tokens (MVP - use Redis in prod)
+        _redis: Redis client for distributed state token storage
 
     Security Notes:
         - State tokens expire after configured minutes (default: 10)
@@ -65,9 +67,34 @@ class OAuthServiceImpl(IOAuthService):
             settings: OAuth configuration settings
         """
         self.settings = settings
-        # State tokens storage: {state_token: expiry_datetime}
-        # In production, use Redis for distributed state
-        self._state_tokens: dict[str, datetime] = {}
+        # Redis client for distributed state token storage
+        self._redis: redis.Redis | None = None
+
+    async def _get_redis(self) -> redis.Redis:
+        """Get or create Redis client."""
+        if self._redis is None:
+            self._redis = await redis.from_url(
+                settings.redis_url,
+                encoding="utf-8",
+                decode_responses=True,
+            )
+        return self._redis
+
+    async def _save_state_token(self, state: str, expiry: datetime) -> None:
+        """Save state token to Redis with expiration."""
+        redis_client = await self._get_redis()
+        ttl_seconds = int((expiry - datetime.now(UTC)).total_seconds())
+        await redis_client.setex(f"oauth:state:{state}", ttl_seconds, "1")
+
+    async def _validate_state_token(self, state: str) -> bool:
+        """Validate state token in Redis."""
+        redis_client = await self._get_redis()
+        return await redis_client.exists(f"oauth:state:{state}") > 0
+
+    async def _consume_state_token(self, state: str) -> None:
+        """Consume (delete) state token from Redis."""
+        redis_client = await self._get_redis()
+        await redis_client.delete(f"oauth:state:{state}")
 
     async def initiate_authorization(
         self,
@@ -121,7 +148,7 @@ class OAuthServiceImpl(IOAuthService):
         Raises:
             HTTPException(500): If Google OAuth credentials are not configured
         """
-        if not self.settings.google_client_id:
+        if not self.settings.google_oauth_client_id:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Google OAuth is not configured. Missing client ID.",
@@ -132,12 +159,12 @@ class OAuthServiceImpl(IOAuthService):
 
         # Store state token with expiration
         expiry = datetime.now(UTC) + timedelta(minutes=self.settings.state_token_expire_minutes)
-        self._state_tokens[state] = expiry
+        await self._save_state_token(state, expiry)
 
         # Build authorization URL parameters
         # https://accounts.google.com/o/oauth2/v2/auth
         params = {
-            "client_id": self.settings.google_client_id,
+            "client_id": self.settings.google_oauth_client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
             "scope": "openid email profile",
@@ -148,8 +175,7 @@ class OAuthServiceImpl(IOAuthService):
 
         # Build authorization URL
         base_url = "https://accounts.google.com/o/oauth2/v2/auth"
-        query_string = "&".join(f"{key}={value}" for key, value in params.items())
-        authorization_url = f"{base_url}?{query_string}"
+        authorization_url = f"{base_url}?{urlencode(params)}"
 
         logger.info(f"Initiated Google OAuth authorization for state={state[:8]}...")
 
@@ -188,7 +214,7 @@ class OAuthServiceImpl(IOAuthService):
 
         # Store state token with expiration
         expiry = datetime.now(UTC) + timedelta(minutes=self.settings.state_token_expire_minutes)
-        self._state_tokens[state] = expiry
+        await self._save_state_token(state, expiry)
 
         # Build authorization URL parameters
         # https://www.facebook.com/v18.0/dialog/oauth
@@ -202,8 +228,7 @@ class OAuthServiceImpl(IOAuthService):
 
         # Build authorization URL
         base_url = "https://www.facebook.com/v18.0/dialog/oauth"
-        query_string = "&".join(f"{key}={value}" for key, value in params.items())
-        authorization_url = f"{base_url}?{query_string}"
+        authorization_url = f"{base_url}?{urlencode(params)}"
 
         logger.info(f"Initiated Facebook OAuth authorization for state={state[:8]}...")
 
@@ -282,7 +307,7 @@ class OAuthServiceImpl(IOAuthService):
         Raises:
             HTTPException(500): If token exchange or user info fetch fails
         """
-        if not self.settings.google_client_secret:
+        if not self.settings.google_oauth_client_secret:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Google OAuth is not configured. Missing client secret.",
@@ -296,8 +321,8 @@ class OAuthServiceImpl(IOAuthService):
                     "https://oauth2.googleapis.com/token",
                     data={
                         "code": code,
-                        "client_id": self.settings.google_client_id,
-                        "client_secret": self.settings.google_client_secret,
+                        "client_id": self.settings.google_oauth_client_id,
+                        "client_secret": self.settings.google_oauth_client_secret,
                         "redirect_uri": redirect_uri,
                         "grant_type": "authorization_code",
                     },
@@ -512,17 +537,7 @@ class OAuthServiceImpl(IOAuthService):
             True if state token is valid and not expired
             False if state token is invalid, expired, or not found
         """
-        if state not in self._state_tokens:
-            return False
-
-        # Check if expired
-        expiry = self._state_tokens[state]
-        if datetime.now(UTC) > expiry:
-            # Clean up expired token
-            self._state_tokens.pop(state, None)
-            return False
-
-        return True
+        return await self._validate_state_token(state)
 
     async def consume_state(self, state: str) -> None:
         """
@@ -533,4 +548,4 @@ class OAuthServiceImpl(IOAuthService):
         Args:
             state: State token to consume
         """
-        self._state_tokens.pop(state, None)
+        await self._consume_state_token(state)
