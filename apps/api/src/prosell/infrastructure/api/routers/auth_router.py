@@ -368,13 +368,18 @@ async def oauth_callback(
 
         redirect = RedirectResponse(url=settings.oauth_frontend_success_url, status_code=302)
 
+        # NOTE: SameSite=Lax (not Strict) is required for OAuth callbacks.
+        # OAuth flow navigates through a cross-site provider (Google/Facebook), so
+        # SameSite=Strict would block the cookies from being sent after the redirect.
+        # Lax allows cookies in top-level GET navigations (safe for OAuth) while
+        # still blocking cross-site fetch/XHR (sufficient CSRF protection).
         redirect.set_cookie(
             key="access_token",
             value=login_result.access_token,
             expires=access_token_expiry,
             httponly=True,  # CRITICAL: Prevents JavaScript access (XSS protection)
             secure=True,  # HTTPS only
-            samesite="strict",  # CSRF protection
+            samesite="lax",  # Lax required: OAuth redirect chain crosses google.com
         )
 
         redirect.set_cookie(
@@ -383,7 +388,7 @@ async def oauth_callback(
             expires=refresh_token_expiry,
             httponly=True,
             secure=True,
-            samesite="strict",
+            samesite="lax",
         )
 
         redirect.set_cookie(
@@ -392,7 +397,7 @@ async def oauth_callback(
             expires=refresh_token_expiry,
             httponly=True,
             secure=True,
-            samesite="strict",
+            samesite="lax",
         )
 
         logger.info(
