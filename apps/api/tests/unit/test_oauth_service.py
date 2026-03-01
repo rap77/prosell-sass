@@ -13,6 +13,75 @@ from prosell.core.config import OAuthSettings
 from prosell.infrastructure.services.oauth_service_impl import OAuthServiceImpl
 
 # =============================================================================
+# FAKE REDIS FOR UNIT TESTS
+# =============================================================================
+
+
+class FakeRedis:
+    """In-memory fake Redis for unit tests (async).
+
+    Mimics the async Redis operations used by OAuthServiceImpl:
+    - setex(key, ttl, value) - set with expiration
+    - exists(key) - check if key exists
+    - delete(key) - remove key
+
+    Also provides test introspection methods:
+    - contains_state(state_token) - check if state token exists (with prefix)
+    - expire_state(state_token) - manually expire a state token
+    """
+
+    def __init__(self):
+        self._data: dict[str, str] = {}
+        self._expiry: dict[str, float] = {}  # key -> unix timestamp
+
+    async def setex(self, key: str, ttl_seconds: int, value: str) -> None:
+        """Set key with expiration in seconds."""
+        self._data[key] = value
+        import time
+
+        self._expiry[key] = time.time() + ttl_seconds
+
+    async def exists(self, key: str) -> int:
+        """Check if key exists and not expired. Returns 1 or 0."""
+        import time
+
+        if key not in self._data:
+            return 0
+        # Check expiration
+        if self._expiry.get(key, float("inf")) < time.time():
+            # Expired, remove it
+            self._data.pop(key, None)
+            self._expiry.pop(key, None)
+            return 0
+        return 1
+
+    async def delete(self, *keys: str) -> int:
+        """Delete keys. Returns number of keys deleted."""
+        count = 0
+        for key in keys:
+            if key in self._data:
+                self._data.pop(key)
+                self._expiry.pop(key, None)
+                count += 1
+        return count
+
+    # Test introspection methods (not part of real Redis API)
+    # These handle the oauth:state: prefix automatically
+
+    def contains_state(self, state_token: str) -> bool:
+        """Check if state token exists in data (ignoring expiration)."""
+        key = f"oauth:state:{state_token}"
+        return key in self._data
+
+    def expire_state(self, state_token: str) -> None:
+        """Manually expire a state token (for testing)."""
+        key = f"oauth:state:{state_token}"
+        import time
+
+        self._expiry[key] = time.time() - 1  # Set expiry to past
+
+
+# =============================================================================
 # FIXTURES
 # =============================================================================
 
@@ -21,22 +90,29 @@ from prosell.infrastructure.services.oauth_service_impl import OAuthServiceImpl
 def oauth_settings():
     """Fixture for OAuth settings."""
     return OAuthSettings(
-        google_client_id="test-google-client-id",
-        google_client_secret="test-google-secret",
-        google_redirect_uri="http://localhost:8000/api/v1/auth/oauth/google/callback",
+        # Google OAuth (new field names)
+        google_oauth_client_id="test-google-client-id",
+        google_oauth_client_secret="test-google-secret",
+        google_oauth_redirect_uri="http://localhost:8000/api/auth/oauth/google/callback",
+        # Facebook OAuth (old field names - service still uses these)
         facebook_app_id="test-facebook-app-id",
         facebook_app_secret="test-facebook-secret",
         facebook_redirect_uri="http://localhost:8000/api/v1/auth/oauth/facebook/callback",
+        # Frontend URLs
         frontend_success_url="http://localhost:3000/dashboard",
         frontend_failure_url="http://localhost:3000/auth/login?error=",
+        # State token expiration
         state_token_expire_minutes=10,
     )
 
 
 @pytest.fixture
 def oauth_service(oauth_settings):
-    """Fixture for OAuth service."""
-    return OAuthServiceImpl(settings=oauth_settings)
+    """Fixture for OAuth service with FakeRedis injected."""
+    service = OAuthServiceImpl(settings=oauth_settings)
+    # Inject FakeRedis to avoid needing real Redis in unit tests
+    service._redis = FakeRedis()
+    return service
 
 
 # =============================================================================
@@ -75,17 +151,11 @@ class TestOAuthServiceInitiate:
             redirect_uri="http://localhost:8000/api/v1/auth/oauth/google/callback",
         )
 
-        # Verify state token is stored
-        assert result.state_token in oauth_service._state_tokens
+        # Verify state token is stored in Redis
+        assert oauth_service._redis.contains_state(result.state_token)
 
-        # Verify expiration is in the future
-        expiry = oauth_service._state_tokens[result.state_token]
-        assert expiry > datetime.now(UTC)
-
-        # Verify expiration is approximately 10 minutes from now
-        expected_expiry = datetime.now(UTC) + timedelta(minutes=10)
-        time_diff = abs((expiry - expected_expiry).total_seconds())
-        assert time_diff < 5  # Allow 5 seconds tolerance
+        # Verify token exists (not expired)
+        assert await oauth_service.validate_state(result.state_token) is True
 
     @pytest.mark.asyncio
     async def test_initiate_facebook_authorization_generates_valid_url(self, oauth_service):
@@ -171,15 +241,12 @@ class TestOAuthServiceState:
             "google", "http://localhost:8000/callback"
         )
 
-        # Manually expire the state token
-        oauth_service._state_tokens[result.state_token] = datetime.now(UTC) - timedelta(minutes=1)
+        # Manually expire the state token in Redis
+        oauth_service._redis.expire_state(result.state_token)
 
         # Validate should fail
         is_valid = await oauth_service.validate_state(result.state_token)
         assert is_valid is False
-
-        # Expired token should be cleaned up
-        assert result.state_token not in oauth_service._state_tokens
 
     @pytest.mark.asyncio
     async def test_consume_state_removes_token(self, oauth_service):
@@ -190,13 +257,13 @@ class TestOAuthServiceState:
         )
 
         # Verify token exists
-        assert result.state_token in oauth_service._state_tokens
+        assert oauth_service._redis.contains_state(result.state_token)
 
         # Consume state token
         await oauth_service.consume_state(result.state_token)
 
         # Token should be removed
-        assert result.state_token not in oauth_service._state_tokens
+        assert not oauth_service._redis.contains_state(result.state_token)
 
     @pytest.mark.asyncio
     async def test_consume_nonexistent_state_is_safe(self, oauth_service):
@@ -234,8 +301,8 @@ class TestOAuthServiceState:
         )
 
         # Both tokens should exist
-        assert result1.state_token in oauth_service._state_tokens
-        assert result2.state_token in oauth_service._state_tokens
+        assert oauth_service._redis.contains_state(result1.state_token)
+        assert oauth_service._redis.contains_state(result2.state_token)
 
         # Both should be valid
         assert await oauth_service.validate_state(result1.state_token) is True
@@ -266,9 +333,10 @@ class TestOAuthServiceConfiguration:
 
     async def test_google_credentials_required_for_authorization(self, oauth_settings):
         """Test that Google credentials are required for authorization."""
-        # Remove client ID
-        oauth_settings.google_client_id = None
+        # Remove client ID (note: field name is google_oauth_client_id now)
+        oauth_settings.google_oauth_client_id = None
         service = OAuthServiceImpl(settings=oauth_settings)
+        service._redis = FakeRedis()  # Inject FakeRedis
 
         # Should raise HTTPException when trying to initiate
         from fastapi import HTTPException

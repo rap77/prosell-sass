@@ -30,7 +30,7 @@ def mock_oauth_service():
 
 
 @pytest.fixture
-def oauth_with_rate_limit_enabled(mock_oauth_service):
+def _oauth_with_rate_limit_enabled(mock_oauth_service):
     """Set up OAuth dependencies WITH rate limiting enabled."""
     from prosell.infrastructure.api.dependencies import get_oauth_service
     from prosell.infrastructure.api.middleware.rate_limit_middleware import limiter
