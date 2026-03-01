@@ -14,7 +14,41 @@
 - ✅ Backend OAuth code: 100% complete
 - ✅ Frontend OAuth UI: 100% complete
 - ✅ OAuth flow logic: 100% complete
+- ✅ Rate limiting: 100% complete (Phase 7)
 - ❌ External OAuth apps: NOT CREATED (blocking production use)
+
+**OAuth 2.0 Flow Architecture (Backend Callback Pattern)**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     OAuth 2.0 Authorization Code Flow                       │
+│                     (Backend Callback - Implemented ✅)                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. User clicks "Login with Google/Facebook"                               │
+│     Frontend → GET /api/auth/oauth/{provider}/authorize                     │
+│                                                                             │
+│  2. Backend generates state_token and redirects to provider                │
+│     Backend → 302 Redirect to https://accounts.google.com/o/oauth2/auth    │
+│                                                                             │
+│  3. User authenticates at Google/Facebook                                   │
+│                                                                             │
+│  4. Provider redirects BACK TO BACKEND with authorization code             │
+│     Google → GET /api/auth/oauth/{provider}/callback?code=xxx&state=yyy    │
+│                                                                             │
+│  5. Backend exchanges code for tokens, fetches user info                   │
+│     Backend → GET https://www.googleapis.com/oauth2/v2/userinfo            │
+│                                                                             │
+│  6. Backend creates/updates user, generates JWT tokens                     │
+│                                                                             │
+│  7. Backend sets httpOnly cookies and redirects to frontend                │
+│     Backend → 302 Redirect to http://localhost:3000/dashboard              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Difference**: OAuth providers redirect to the **BACKEND**, not the frontend.
+This is more secure and follows OAuth 2.0 best practices.
 
 **What's Missing**:
 
@@ -162,15 +196,16 @@ However, OAuth 2.0 protocol requires **external configuration**:
    ```
 
 5. **Configure authorized redirect URIs**
+   > **IMPORTANT**: With the new Backend Callback Flow, redirect URIs point to the BACKEND
 
    ```
    For DEVELOPMENT:
-   - http://localhost:3000/auth/callback/google
-   - http://127.0.0.1:3000/auth/callback/google
+   - http://localhost:8000/api/auth/oauth/google/callback
+   - http://127.0.0.1:8000/api/auth/oauth/google/callback
 
    For PRODUCTION (add later):
-   - https://your-domain.com/auth/callback/google
-   - https://www.your-domain.com/auth/callback/google
+   - https://api.your-domain.com/api/auth/oauth/google/callback
+   - https://your-backend.com/api/auth/oauth/google/callback
    ```
 
 6. **Create and save credentials**
@@ -204,10 +239,11 @@ GOOGLE_OAUTH_CLIENT_ID="123456789-abcdefg.apps.googleusercontent.com"
 GOOGLE_OAUTH_CLIENT_SECRET="GOCSPX-xxxxxxxxxxxxxxxxxxxx"
 
 # Google OAuth Redirect URI (must match Google Console exactly)
-GOOGLE_OAUTH_REDIRECT_URI="http://localhost:3000/auth/callback/google"
+# Points to BACKEND callback endpoint
+GOOGLE_OAUTH_REDIRECT_URI="http://localhost:8000/api/auth/oauth/google/callback"
 
 # For production, change to:
-# GOOGLE_OAUTH_REDIRECT_URI="https://your-domain.com/auth/callback/google"
+# GOOGLE_OAUTH_REDIRECT_URI="https://api.your-domain.com/api/auth/oauth/google/callback"
 ```
 
 ### Step 5: Test OAuth Flow
@@ -347,12 +383,12 @@ GOOGLE_OAUTH_REDIRECT_URI="http://localhost:3000/auth/callback/google"
 
    Valid OAuth Redirect URIs:
    For DEVELOPMENT:
-   - http://localhost:3000/auth/callback/facebook
-   - http://127.0.0.1:3000/auth/callback/facebook
+   - http://localhost:8000/api/auth/oauth/facebook/callback
+   - http://127.0.0.1:8000/api/auth/oauth/facebook/callback
 
    For PRODUCTION (add later):
-   - https://your-domain.com/auth/callback/facebook
-   - https://www.your-domain.com/auth/callback/facebook
+   - https://api.your-domain.com/api/auth/oauth/facebook/callback
+   - https://your-backend.com/api/auth/oauth/facebook/callback
 
    Click "Save Changes"
    ```
@@ -382,10 +418,11 @@ FACEBOOK_OAUTH_APP_ID="1234567890123456"
 FACEBOOK_OAUTH_APP_SECRET="xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # Facebook OAuth Redirect URI (must match Facebook app settings)
-FACEBOOK_OAUTH_REDIRECT_URI="http://localhost:3000/auth/callback/facebook"
+# Points to BACKEND callback endpoint
+FACEBOOK_OAUTH_REDIRECT_URI="http://localhost:8000/api/auth/oauth/facebook/callback"
 
 # For production, change to:
-# FACEBOOK_OAUTH_REDIRECT_URI="https://your-domain.com/auth/callback/facebook"
+# FACEBOOK_OAUTH_REDIRECT_URI="https://api.your-domain.com/api/auth/oauth/facebook/callback"
 ```
 
 ### Step 4: Test Facebook OAuth Flow
@@ -418,8 +455,8 @@ Same process as Google (Option A or B above), using "Login with Facebook" button
    - https://www.your-domain.com
 
    Authorized redirect URIs:
-   - https://your-domain.com/auth/callback/google
-   - https://www.your-domain.com/auth/callback/google
+   - https://api.your-domain.com/api/auth/oauth/google/callback
+   - https://your-backend.com/api/auth/oauth/google/callback
    ```
 
 4. **Save changes**
@@ -439,7 +476,7 @@ Same process as Google (Option A or B above), using "Login with Facebook" button
 
    ```
    Valid OAuth Redirect URIs:
-   - https://your-domain.com/auth/callback/facebook
+   - https://api.your-domain.com/api/auth/oauth/facebook/callback
    ```
 
 4. **Save changes**
@@ -449,9 +486,9 @@ Same process as Google (Option A or B above), using "Login with Facebook" button
 **Production** `.env`:
 
 ```bash
-# Production URIs
-GOOGLE_OAUTH_REDIRECT_URI="https://your-domain.com/auth/callback/google"
-FACEBOOK_OAUTH_REDIRECT_URI="https://your-domain.com/auth/callback/facebook"
+# Production URIs (point to API backend, not frontend)
+GOOGLE_OAUTH_REDIRECT_URI="https://api.your-domain.com/api/auth/oauth/google/callback"
+FACEBOOK_OAUTH_REDIRECT_URI="https://api.your-domain.com/api/auth/oauth/facebook/callback"
 ```
 
 #### 4. Deploy
@@ -620,11 +657,11 @@ DEBUG:prosell.infrastructure.repositories.oauth_repository:Getting user by OAuth
 - **Risk**: Low (can be done independently, no deployment required)
 - **Dependencies**: None (can be done anytime)
 
-**Status**: ⏳ **PENDING** - Ready to implement when needed
+**Status**: ⏳ **PENDING** - Documentation updated for Backend Callback Flow (2026-03-01)
 **Next Step**: Complete Google OAuth setup (Part 1, Steps 1-5)
 
 ---
 
-**Last Updated**: 2026-02-20
+**Last Updated**: 2026-03-01
 **Document**: `docs/technical-debt/oauth-external-setup.md`
-**Related PRP**: `PRPs/auth-system.md` (Section 10 - OAuth Integration)
+**Related PRP**: `PRPs/oauth-backend-callbacks.md` (OAuth Backend Callbacks - Phase 5 & 7)
