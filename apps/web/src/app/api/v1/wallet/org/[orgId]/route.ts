@@ -2,16 +2,38 @@
  * Mock API Route: Wallet by Organization (v1)
  *
  * GET /api/v1/wallet/org/{orgId} - Get wallet for an organization
+ *
+ * ============================================================
+ * MOCK API - For E2E Testing Only
+ * ============================================================
+ *
+ * Type Contract:
+ * - balance: number (token count, NOT cents)
+ *
+ * Backend Domain Model Difference:
+ * - Backend stores: balance_cents (int) for precision
+ * - Backend computes: balance = Decimal(balance_cents) / 100
+ * - API DTO returns: balance (already converted to tokens/dollars)
+ *
+ * This mock matches the expected API contract, not the internal storage.
+ *
+ * TODO: Verify FastAPI WalletResponseDTO returns balance (not balance_cents)
+ *
+ * Security: No auth/tenant checks - this is TEST code only.
  */
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// Constants for test data consistency
+const TEST_TENANT_ID = "test-user-123";
+const INITIAL_TOKEN_BALANCE = 1000; // Start with meaningful test data
+
 type MockWallet = {
   id: string;
   organization_id: string;
   tenant_id: string;
-  balance: number;
+  balance: number; // Token count (API returns converted value, not cents)
   created_at: string;
   updated_at: string;
 };
@@ -36,12 +58,12 @@ export async function GET(
   const wallet = walletArray.find((w) => w.organization_id === orgId);
 
   if (!wallet) {
-    // Create a new wallet for this org
+    // Create a new wallet for this org with initial balance
     const newWallet: MockWallet = {
       id: crypto.randomUUID(),
       organization_id: orgId,
-      tenant_id: "test-user-123",
-      balance: 1000, // Start with 1000 tokens for testing
+      tenant_id: TEST_TENANT_ID,
+      balance: INITIAL_TOKEN_BALANCE,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

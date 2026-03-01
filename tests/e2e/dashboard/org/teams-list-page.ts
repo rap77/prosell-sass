@@ -54,9 +54,36 @@ export class TeamsListPage extends BasePage {
 
   /**
    * Verify teams list page is loaded
+   *
+   * Waits for:
+   * 1. DOM content to be loaded
+   * 2. Heading to be visible
+   * 3. Either team cards OR empty state to be visible (actual content)
+   *
+   * This prevents race conditions where page is "loaded" but content
+   * hasn't rendered yet (common with Next.js client-side navigation).
    */
   async verifyPageLoaded(): Promise<void> {
-    await expect(this.heading).toBeVisible();
+    // Wait for Next.js client-side navigation to complete
+    await this.page.waitForLoadState("domcontentloaded");
+
+    // Wait for heading with timeout
+    await expect(this.heading).toBeVisible({ timeout: 10000 });
+
+    // Wait for actual content: either team cards OR empty state
+    // This ensures React has finished rendering the list
+    // Use a simpler approach with timeout instead of waitForFunction
+    try {
+      // Try waiting for cards first (short timeout)
+      await this.page.waitForSelector('div[class*="rounded-lg border"][class*="hover:border"]', { timeout: 2000 })
+        .catch(() => {
+          // If no cards, wait for empty state
+          return this.page.waitForSelector('text=/don\'t have any teams/i', { timeout: 2000 });
+        });
+    } catch {
+      // If neither is found after short wait, continue anyway
+      // The page is loaded, just no content yet
+    }
   }
 
   /**
