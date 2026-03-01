@@ -78,15 +78,8 @@ class OAuthLoginUseCase:
                 )
 
         # 2. Get user roles (default to VIEWER for new OAuth users)
-        # NOTE: get_user_roles may fail due to schema mismatch (user_id is VARCHAR instead of UUID)
-        # This is a known issue that will be fixed in a future migration.
-        # For now, default to "viewer" if the query fails.
-        try:
-            user_roles = await self.user_repository.get_user_roles(user.id)
-            if not user_roles:
-                user_roles = ["viewer"]
-        except Exception:
-            # Schema bug: user_roles.user_id is VARCHAR but should be UUID
+        user_roles = await self.user_repository.get_user_roles(user.id)
+        if not user_roles:
             user_roles = ["viewer"]
 
         # 3. Generate tokens
