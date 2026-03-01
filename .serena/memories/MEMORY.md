@@ -1,9 +1,9 @@
 # ProSell SaaS - Project Memory
 
-## Session 2026-02-28 (Final) - Sprint 3-4 Fase 5: E2E Tests + Code Review ✅ 100% COMPLETADO
+## Session 2026-02-28 (Final) - Sprint 3-4 Fase 5: E2E Tests ✅ 100% COMPLETADO
 
 ### Achievement
-**E2E Tests 67/67 passing (100%) + Code Review Addressed + Flaky Test Fixed** ✅
+**E2E Tests 67/67 passing (100%) + Code Review Addressed + Flaky Test Fixed + Pushed to Origin** ✅
 
 ### Estado Sprint 3-4
 | Fase | Estado | Tests |
@@ -23,16 +23,19 @@ E2E (Org + Teams + Wallet):     67/67 passing ✅
 Total:                          ~701 passing
 ```
 
-### Commits de Hoy
-- **`7d8809d`** - fix(e2e): code review fixes + flaky test resolution
-- **`030ab22`** - fix(e2e): wallet API mock type fixes - 67/67 tests passing (100%)
+### Commits Pusheados a Origin/Main
+```
+88a5198 - fix(e2e): type consistency across wallet API endpoints
+7d8809d - fix(e2e): code review fixes + flaky test resolution
+030ab22 - fix(e2e): wallet API mock type fixes - 67/67 tests passing (100%)
+```
 
-### Código Review: Issues Resueltos
+### Código Review: Issues Resueltos (7/7)
 
 #### Important (Should Fix) - RESUELTOS ✅
 
 1. **Balance Representation Semantic Mismatch** ✅
-   - **Fix**: Agregado comentario detallado explicando conversión
+   - **Fix**: Agregado comentario detallado en 4 archivos
    - `balance: number` = token count (API ya devuelve convertido, no cents)
    - Documentado que backend DTO debe devolver balance, no balance_cents
 
@@ -44,13 +47,25 @@ Total:                          ~701 passing
    - **Fix**: Cambiado `description: string` → `description: string | null`
    - Ahora matchea frontend type exactamente
 
+4. **Type Inconsistency Across Wallet APIs** ✅
+   - **Fix**: Todos los 4 endpoints de wallet ahora usan tipos consistentes
+   - route.ts, [id]/route.ts actualizados para matchear org/[orgId]/route.ts
+
 #### Minor (Nice to Have) - RESUELTOS ✅
 
 1. **Hardcoded Tenant ID** ✅
    - **Fix**: Extraído a constante `TEST_TENANT_ID = "test-user-123"`
+   - Usado consistentemente en 4 archivos
 
 2. **Magic Numbers** ✅
-   - **Fix**: Extraído a constantes `ONE_DAY_MS`, `ONE_HALF_DAY_MS`, `INITIAL_TOKEN_BALANCE`
+   - **Fix**: Extraídos a constantes con nombres descriptivos
+   - `INITIAL_TOKEN_BALANCE = 1000`
+   - `ONE_DAY_MS = 24 * 60 * 60 * 1000`
+   - `ONE_HALF_DAY_MS = 12 * 60 * 60 * 1000`
+
+3. **Flaky Test** ✅
+   - **Fix**: Race condition arreglado con proper waiting
+   - **Verification**: 5/5 ejecuciones consecutivas pasaron
 
 ### Flaky Test Fix - Systematic Debugging ✅
 
@@ -89,17 +104,43 @@ async verifyPageLoaded(): Promise<void> {
 | **Wallet** | 22/22 (100%) | ✅ COMPLETO |
 | **Total** | **67/67 (100%)** | ✅ COMPLETO |
 
-### Para Continuar
+### Type Consistency Verified
+
+Todos los 4 endpoints de wallet ahora devuelven tipos consistentes:
+
+| Endpoint | balance | amount | description | currency |
+|----------|---------|--------|-------------|----------|
+| `GET /api/v1/wallet/org/{orgId}` | ✅ number | - | - | ✅ optional |
+| `GET /api/v1/wallet` | ✅ number | - | - | ✅ optional |
+| `GET /api/v1/wallet/{id}` | ✅ number | - | - | ✅ optional |
+| `GET /api/v1/wallet/org/{orgId}/transactions` | - | ✅ number | ✅ string \| null | - |
+| `GET /api/v1/wallet/{id}/transactions` | - | ✅ number | ✅ string \| null | - |
+
+### Archivos Clave Modificados
+
+**Backend API Mocks (Type Consistency)**:
+- `apps/web/src/app/api/v1/wallet/route.ts`
+- `apps/web/src/app/api/v1/wallet/[id]/route.ts`
+- `apps/web/src/app/api/v1/wallet/org/[orgId]/route.ts`
+- `apps/web/src/app/api/v1/wallet/org/[orgId]/transactions/route.ts`
+
+**E2E Tests (Flaky Fix)**:
+- `tests/e2e/dashboard/org/teams-list-page.ts`
+
+### Próximos Pasos Sugeridos
+
 1. ✅ E2E tests 100% completado
 2. ✅ Code review issues addressed
 3. ✅ Flaky test fixed and verified
-4. Push a origin/main
-5. Continuar con siguientes features del roadmap
+4. ✅ Pushed to origin/main
+5. ⏳ Continuar con siguientes features del roadmap
 
-### Archivos Clave Modificados
-- `apps/web/src/app/api/v1/wallet/org/[orgId]/route.ts` - Documentación + constantes
-- `apps/web/src/app/api/v1/wallet/org/[orgId]/transactions/route.ts` - Type fix + constantes + docs
-- `tests/e2e/dashboard/org/teams-list-page.ts` - Flaky test fix
+### Deuda Técnica Documentada
+
+1. **CSP nonce-based migration** (SECURITY-001)
+2. **SendGrid implementation** - Usando MockEmailService durante dev
+3. **Rate limiting** - Intencionalmente disabled en dev
+4. **TODO**: Verificar FastAPI DTOs devuelvan balance (no balance_cents) cuando se integre backend real
 
 ---
 

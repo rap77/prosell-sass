@@ -4,7 +4,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from prosell.application.use_cases.auth.enable_2fa import (
@@ -38,17 +38,6 @@ from prosell.application.use_cases.auth.refresh_token import (
     RefreshTokenResponse,
     RefreshTokenUseCase,
 )
-
-# NOTE: Per-endpoint rate limiting is tracked in GitHub issue security-123
-# Rate limiting middleware is implemented but not yet enabled for auth endpoints
-# This is intentionally disabled during development to avoid lockout during testing
-#
-# To enable when ready:
-# from prosell.infrastructure.api.middleware import auth_limits, api_limits
-#
-# Then add @auth_limits decorator to sensitive endpoints:
-# - @router.post("/login") -> @auth_limits(...)
-# - @router.post("/register") -> @auth_limits(...)
 from prosell.application.use_cases.auth.register_user import (
     RegisterUserRequest,
     RegisterUserResponse,
@@ -73,6 +62,10 @@ from prosell.infrastructure.api.dependencies import (
     get_register_user_use_case,
     get_verify_2fa_use_case,
 )
+
+# Rate limiting for OAuth endpoints
+# OAuth authorize/initiate endpoints are rate limited to prevent abuse
+from prosell.infrastructure.api.middleware import AUTH_LIMIT, rate_limit
 from prosell.infrastructure.api.middleware.auth_middleware import (
     get_current_user,
     get_optional_user,
@@ -219,8 +212,10 @@ async def oauth_login(
 
 
 @router.get("/oauth/{provider}/authorize")
+@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
 async def oauth_authorize(
     provider: str,
+    request: Request,  # noqa: ARG001 - Used by rate_limit decorator
     oauth_service: Annotated[IOAuthService, Depends(get_oauth_service)],
 ) -> RedirectResponse:
     """
@@ -269,8 +264,10 @@ async def oauth_authorize(
 
 
 @router.get("/oauth/{provider}/callback")
+@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
 async def oauth_callback(
     provider: str,
+    request: Request,  # noqa: ARG001 - Used by rate_limit decorator
     oauth_service: Annotated[IOAuthService, Depends(get_oauth_service)],
     oauth_use_case: Annotated[OAuthLoginUseCase, Depends(get_oauth_login_use_case)],
     code: str | None = Query(None, description="Authorization code from OAuth provider"),
