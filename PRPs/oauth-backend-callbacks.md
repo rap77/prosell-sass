@@ -1,6 +1,6 @@
 # OAuth Backend Callbacks - PRP
 
-**Status**: ⏳ IN PROGRESS
+**Status**: ⏳ IN PROGRESS (Backend Core Complete)
 **Sprint**: Sprint 1-2 Completion
 **Branch**: `feature/oauth-backend-callbacks`
 **Created**: 2026-02-28
@@ -10,14 +10,22 @@
 
 Completar el sistema OAuth 2.0 backend agregando los endpoints de autorización y callback para Google y Facebook. Actualmente existe el `OAuthLoginUseCase` pero faltan los endpoints que implementan el flujo OAuth 2.0 completo (Authorization Code Flow).
 
-**Estado Actual**: 80% completado
+**Estado Actual**: ~90% completado (Backend API listo, falta testing + credenciales externas)
 - ✅ OAuthLoginUseCase implementado
 - ✅ OAuthRepository (domain + infrastructure) implementado
 - ✅ OAuthAccount model implementado
 - ✅ Endpoint `/auth/oauth/{provider}` (recibe datos ya procesados)
-- ❌ **FALTAN**: Endpoints de authorize y callback para Google
-- ❌ **FALTAN**: Endpoints de authorize y callback para Facebook
-- ❌ **FALTAN**: Integración con `requests-oauthlib` para OAuth handshake
+- ✅ Endpoints de authorize y callback para Google
+- ✅ Endpoints de authorize y callback para Facebook
+- ✅ Integración con `httpx` para OAuth handshake
+- ✅ OAuthSettings en config.py
+- ✅ `OAuthButtons` redirige al backend
+- ✅ Unit tests (22/22 passing)
+- ⏳ Integration tests (pendiente)
+- ⏳ E2E tests (pendiente)
+- ❌ **FALTA**: Configurar credenciales reales de Google OAuth
+- ❌ **FALTA**: Configurar credenciales reales de Facebook OAuth
+- ❌ **FALTA**: Rate limiting en `/authorize` endpoint
 
 ## Referencias
 
@@ -639,50 +647,50 @@ export function OAuthLoginButton({ provider, icon, label }: OAuthLoginButtonProp
 ## Checklist de Implementación
 
 ### Phase 1: Domain Layer
-- [ ] Crear `domain/ports/i_oauth_service.py` - Interface IOAuthService
-- [ ] Agregar OAuthSettings a `core/config.py`
-- [ ] Crear DTOs OAuthAuthorizeResult, OAuthCallbackResult, OAuthUserInfo
+- [x] Crear `domain/ports/i_oauth_service.py` - Interface IOAuthService
+- [x] Agregar OAuthSettings a `core/config.py`
+- [x] Crear DTOs OAuthAuthorizeResult, OAuthCallbackResult, OAuthUserInfo
 
 ### Phase 2: Infrastructure Layer
-- [ ] Crear `infrastructure/services/oauth_service_impl.py` - Implementación IOAuthService
-- [ ] Implementar `_initiate_google_authorization()` - Generar URL de Google OAuth
-- [ ] Implementar `_initiate_facebook_authorization()` - Generar URL de Facebook OAuth
-- [ ] Implementar `_process_google_callback()` - Exchange code + fetch user info
-- [ ] Implementar `_process_facebook_callback()` - Exchange code + fetch user info
-- [ ] Implementar `validate_state()` - Validar state token (CSRF protection)
+- [x] Crear `infrastructure/services/oauth_service_impl.py` - Implementación IOAuthService
+- [x] Implementar `_initiate_google_authorization()` - Generar URL de Google OAuth
+- [x] Implementar `_initiate_facebook_authorization()` - Generar URL de Facebook OAuth
+- [x] Implementar `_process_google_callback()` - Exchange code + fetch user info
+- [x] Implementar `_process_facebook_callback()` - Exchange code + fetch user info
+- [x] Implementar `validate_state()` - Validar state token (CSRF protection)
 
 ### Phase 3: API Layer
-- [ ] Agregar `get_oauth_service()` a `infrastructure/api/dependencies.py`
-- [ ] Agregar `GET /auth/oauth/{provider}/authorize` endpoint
-- [ ] Agregar `GET /auth/oauth/{provider}/callback` endpoint
-- [ ] Implementar redirect con cookies httpOnly
-- [ ] Manejo de errores con redirect a frontend
+- [x] Agregar `get_oauth_service()` a `infrastructure/api/dependencies.py`
+- [x] Agregar `GET /auth/oauth/{provider}/authorize` endpoint
+- [x] Agregar `GET /auth/oauth/{provider}/callback` endpoint
+- [x] Implementar redirect con cookies httpOnly (FIX: cookies en RedirectResponse)
+- [x] Manejo de errores con redirect a frontend
 
 ### Phase 4: Frontend Integration
-- [ ] Crear `OAuthLoginButton` component
-- [ ] Integrar botones en `/auth/login` page
-- [ ] Agregar handling de redirect exitoso
-- [ ] Agregar handling de redirect con error
+- [x] `OAuthButtons` refactorizado para redirect al backend
+- [ ] Verificar integración en `/auth/login` page
+- [x] Redirect exitoso configurado en settings
+- [x] Redirect con error configurado en settings
 
 ### Phase 5: Configuration
-- [ ] Agregar OAuthSettings a `.env.example`
+- [x] Agregar OAuthSettings a `.env.oauth.example`
 - [ ] Documentar cómo obtener credenciales de Google OAuth
 - [ ] Documentar cómo obtener credenciales de Facebook OAuth
 - [ ] Actualizar `docs/technical-debt/oauth-external-setup.md`
 
 ### Phase 6: Testing
-- [ ] Unit tests para `OAuthServiceImpl`
+- [x] Unit tests para `OAuthServiceImpl` (22/22 passing)
 - [ ] Integration tests para endpoints authorize/callback
 - [ ] E2E tests con mock OAuth provider
 - [ ] Manual testing con Google OAuth playground
 - [ ] Manual testing con Facebook OAuth playground
 
 ### Phase 7: Security & Polish
-- [ ] Validar state token para CSRF protection
-- [ ] Implementar expiración de state tokens (10 min)
+- [x] Validar state token para CSRF protection
+- [x] Implementar expiración de state tokens (10 min)
 - [ ] Rate limiting en `/authorize` endpoint
-- [ ] Logging de OAuth flows (sin sensitive data)
-- [ ] Error handling robusto con mensajes claros
+- [x] Logging de OAuth flows (sin sensitive data)
+- [x] Error handling robusto con mensajes claros
 
 ## Tests
 
