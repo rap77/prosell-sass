@@ -60,19 +60,6 @@ app.add_middleware(SlowAPIMiddleware)
 
 
 # =============================================================================
-# CORS MIDDLEWARE
-# =============================================================================
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-# =============================================================================
 # SECURITY HEADERS MIDDLEWARE (Enhanced)
 # =============================================================================
 
@@ -120,6 +107,23 @@ async def security_headers_middleware(
         del response.headers["Server"]
 
     return response
+
+
+# =============================================================================
+# CORS MIDDLEWARE
+# NOTE: Must be added AFTER @app.middleware("http") decorators so that
+# CORSMiddleware becomes the OUTERMOST middleware (added last = outermost in
+# Starlette's LIFO add_middleware stack). This ensures CORSMiddleware
+# intercepts OPTIONS preflights before any other middleware processes them.
+# =============================================================================
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # =============================================================================

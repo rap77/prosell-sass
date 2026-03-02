@@ -14,12 +14,8 @@ class UserTokenModel(Base):
 
     __tablename__ = "user_tokens"
 
-    id: Mapped[UUID] = mapped_column(
-        String(36),
-        primary_key=True,
-        default=lambda: str(uuid4()),
-    )
-    user_id: Mapped[UUID] = mapped_column(String(36), index=True, nullable=False)
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(index=True, nullable=False)
     token: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     token_type: Mapped[str] = mapped_column(
         String(50),

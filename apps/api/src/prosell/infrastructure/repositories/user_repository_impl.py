@@ -214,7 +214,7 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
         expires_at = datetime.now(UTC) + timedelta(minutes=expires_in_minutes)
 
         token_model = UserTokenModel(
-            user_id=str(user_id),
+            user_id=user_id,
             token=token,
             token_type=token_type,
             expires_at=expires_at,
