@@ -36,3 +36,29 @@ class LogoutResponse(BaseModel):
     """Logout response model."""
 
     message: str
+
+
+class AuthStateUserResponse(BaseModel):
+    """User data within auth state response."""
+
+    id: str
+    email: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    role: str | None = None
+    is_email_verified: bool = False
+    is_2fa_enabled: bool = False
+
+
+class AuthStateResponse(BaseModel):
+    """Auth state response model."""
+
+    isAuthenticated: bool  # noqa: N815 - camelCase required for frontend API contract
+    user: AuthStateUserResponse | None = None
+
+
+class MeResponse(BaseModel):
+    """Current user info from JWT token."""
+
+    id: str
+    roles: list[str] = []

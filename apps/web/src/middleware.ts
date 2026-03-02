@@ -25,14 +25,8 @@ const cache = {
   // Cache for route matching patterns
   routeMatcher: new Map<string, boolean>(),
 
-  // Cache for parsed user data
-  userDataCache: new Map<string, any>(),
-
-  // Cache for route configuration lookups
-  routeConfig: new Map<string, boolean>(),
-
   // Cache for JSON parsing results
-  jsonParseCache: new Map<string, any>(),
+  jsonParseCache: new Map<string, unknown>(),
 };
 
 /**
@@ -71,7 +65,7 @@ const matchRoute = (() => {
 const memoizedJsonParse = (() => {
   const MAX_CACHE_SIZE = 50;
 
-  return (jsonString: string, fallback?: any) => {
+  return (jsonString: string, fallback?: unknown) => {
     // Check cache first
     if (cache.jsonParseCache.has(jsonString)) {
       return cache.jsonParseCache.get(jsonString);
@@ -164,9 +158,14 @@ export default async function middleware(req: NextRequest) {
 
   let userData: UserData | null = null;
   try {
-    userData = userDataCookie
-      ? (memoizedJsonParse(userDataCookie) as UserData | null)
-      : null;
+    let raw = userDataCookie ?? "";
+    // Strip outer double-quotes that Python's SimpleCookie adds when encoding cookie values.
+    // The Edge Runtime URL-decodes the content but preserves the surrounding quotes.
+    if (raw.startsWith('"') && raw.endsWith('"') && raw.length > 2) {
+      raw = raw.slice(1, -1);
+    }
+    const decoded = raw ? decodeURIComponent(raw) : null;
+    userData = decoded ? (memoizedJsonParse(decoded) as UserData | null) : null;
   } catch {
     userData = null;
   }

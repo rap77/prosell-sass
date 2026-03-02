@@ -2,10 +2,11 @@
 
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, Any
+from typing import Annotated, Any  # Any: JWT payload is dynamically typed by python-jose
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 
 from prosell.application.use_cases.auth.enable_2fa import (
     Disable2FARequest as Disable2FAUCRequest,
@@ -71,15 +72,18 @@ from prosell.infrastructure.api.middleware.auth_middleware import (
     get_optional_user,
 )
 from prosell.infrastructure.api.schemas import (
+    AuthStateResponse,
     Disable2FARequest,
     Enable2FARequest,
     LoginRequest,
     LogoutResponse,
+    MeResponse,
     OAuthLoginRequest,
     RefreshTokenRequest,
     RegisterRequest,
     Verify2FARequest,
 )
+from prosell.infrastructure.api.schemas.responses import AuthStateUserResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -161,9 +165,10 @@ async def login(
     )
 
     # Also set user_data cookie for server components
+    # NOTE: URL-encode to avoid Python SimpleCookie octal-encoding JSON special chars
     response.set_cookie(
         key="user_data",
-        value=result.user.model_dump_json(),
+        value=quote(result.user.model_dump_json()),
         expires=refresh_token_expiry,
         httponly=True,
         secure=True,
@@ -393,7 +398,7 @@ async def oauth_callback(
 
         redirect.set_cookie(
             key="user_data",
-            value=login_result.user.model_dump_json(),
+            value=quote(login_result.user.model_dump_json()),
             expires=refresh_token_expiry,
             httponly=True,
             secure=True,
@@ -487,7 +492,7 @@ async def disable_2fa(
 @router.get("/state")
 async def get_auth_state(
     current_user: Annotated[dict[str, Any] | None, Depends(get_optional_user)] = None,
-) -> JSONResponse:
+) -> AuthStateResponse:
     """
     Get current authentication state from httpOnly cookies.
 
@@ -497,43 +502,35 @@ async def get_auth_state(
     Returns user data and authentication status based on cookies.
     """
     if not current_user:
-        return JSONResponse(
-            {
-                "isAuthenticated": False,
-                "user": None,
-            }
-        )
+        return AuthStateResponse(isAuthenticated=False, user=None)
 
-    # User is authenticated, return user data
-    return JSONResponse(
-        {
-            "isAuthenticated": True,
-            "user": {
-                "id": current_user["sub"],
-                "email": current_user.get("email"),
-                "first_name": current_user.get("first_name"),
-                "last_name": current_user.get("last_name"),
-                "role": current_user.get("role"),
-                "is_email_verified": current_user.get("is_email_verified", False),
-                "is_2fa_enabled": current_user.get("is_2fa_enabled", False),
-            },
-        }
+    return AuthStateResponse(
+        isAuthenticated=True,
+        user=AuthStateUserResponse(
+            id=current_user["sub"],
+            email=current_user.get("email"),
+            first_name=current_user.get("first_name"),
+            last_name=current_user.get("last_name"),
+            role=current_user.get("role"),
+            is_email_verified=current_user.get("is_email_verified", False),
+            is_2fa_enabled=current_user.get("is_2fa_enabled", False),
+        ),
     )
 
 
 @router.get("/me")
 async def get_me(
     current_user: Annotated[dict[str, Any], Depends(get_current_user)],
-) -> dict[str, Any]:
+) -> MeResponse:
     """
     Get current user info from JWT token.
 
     Returns basic user information from the access token.
     """
-    return {
-        "id": current_user["sub"],
-        "roles": current_user.get("roles", []),
-    }
+    return MeResponse(
+        id=current_user["sub"],
+        roles=current_user.get("roles", []),
+    )
 
 
 @router.post("/logout")

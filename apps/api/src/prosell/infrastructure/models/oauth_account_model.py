@@ -15,12 +15,10 @@ class OAuthAccountModel(Base):
     __tablename__ = "oauth_accounts"
 
     id: Mapped[UUID] = mapped_column(
-        String(36),
         primary_key=True,
-        default=lambda: str(uuid4()),
+        default=uuid4,
     )
     user_id: Mapped[UUID] = mapped_column(
-        String(36),
         ForeignKey("users.id", ondelete="CASCADE"),
         index=True,
         nullable=False,

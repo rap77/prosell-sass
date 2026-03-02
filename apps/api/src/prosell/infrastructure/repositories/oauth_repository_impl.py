@@ -1,7 +1,7 @@
 """SQLAlchemy implementation of OAuth repository."""
 
 from datetime import datetime
-from typing import Any
+from typing import TypedDict
 from uuid import UUID
 
 from sqlalchemy import select
@@ -9,6 +9,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.repositories.oauth_repository import AbstractOAuthRepository
 from prosell.infrastructure.models.oauth_account_model import OAuthAccountModel
+
+
+class OAuthProviderInfo(TypedDict):
+    """Known shape of an OAuth provider record."""
+
+    provider: str
+    provider_user_id: str
+    provider_email: str | None
+    created_at: datetime
 
 
 class SqlAlchemyOAuthRepository(AbstractOAuthRepository):
@@ -29,7 +38,7 @@ class SqlAlchemyOAuthRepository(AbstractOAuthRepository):
     ) -> None:
         """Link an OAuth account to a user."""
         oauth_account = OAuthAccountModel(
-            user_id=str(user_id),
+            user_id=user_id,
             provider=provider,
             provider_user_id=provider_user_id,
             provider_email=provider_email,
@@ -47,7 +56,7 @@ class SqlAlchemyOAuthRepository(AbstractOAuthRepository):
     ) -> bool:
         """Unlink an OAuth account from a user."""
         stmt = select(OAuthAccountModel).where(
-            OAuthAccountModel.user_id == str(user_id),
+            OAuthAccountModel.user_id == user_id,
             OAuthAccountModel.provider == provider,
         )
         result = await self.session.execute(stmt)
@@ -60,10 +69,10 @@ class SqlAlchemyOAuthRepository(AbstractOAuthRepository):
         await self.session.flush()
         return True
 
-    async def get_user_oauth_providers(self, user_id: UUID) -> list[dict[str, Any]]:
+    async def get_user_oauth_providers(self, user_id: UUID) -> list[OAuthProviderInfo]:
         """Get all OAuth providers linked to a user."""
         stmt = select(OAuthAccountModel).where(
-            OAuthAccountModel.user_id == str(user_id),
+            OAuthAccountModel.user_id == user_id,
         )
         result = await self.session.execute(stmt)
         models = result.scalars().all()
