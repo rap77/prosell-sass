@@ -14,13 +14,29 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/stores/authStore";
 import { PasswordInput } from "./PasswordInput";
 import dynamic from "next/dynamic";
-import { useEffect, useTransition } from "react";
+import { useEffect } from "react";
 
 // Module-level cache for validation results
 const validationCache = new Map<string, boolean>();
+
+// Module-level cache for name splitting — persists across renders
+const nameSplitCache = new Map<string, { firstName: string; lastName: string }>();
+
+function splitName(fullName: string): { firstName: string; lastName: string } {
+  const cached = nameSplitCache.get(fullName);
+  if (cached) return cached;
+
+  const trimmed = fullName.trim();
+  const parts = trimmed.split(" ");
+  const result = { firstName: parts[0] ?? "", lastName: parts.slice(1).join(" ") };
+  nameSplitCache.set(fullName, result);
+  return result;
+}
 
 // Error messages for form validation
 const ERROR_MESSAGES = {
@@ -157,63 +173,20 @@ export type RegisterFormValues = z.infer<typeof registerSchema>;
  * - Navigation to login page
  * - Full accessibility support
  * - chadcn/ui components
- *
- * Performance optimizations:
- * - Module-level caching
- * - Pre-compiled regex
- * - Early exit patterns
- * - Batch CSS updates
- * - Event handler refs
- * - Memoized components
- * - O(1) lookups
  */
 export function RegisterForm() {
+  const router = useRouter();
   const { register: registerUser, isLoading, error, clearError } = useAuth();
 
-  // Array for error validation
-  const errorFields = [
-    "fullName",
-    "email",
-    "password",
-    "confirmPassword",
-    "acceptTerms",
-  ];
-
-  // Cache for name splitting operations
-  const nameSplitCache = (() => {
-    const cache = new Map<string, { firstName: string; lastName: string }>();
-
-    return {
-      get: (fullName: string) => {
-        // Early exit if cached result exists
-        const cached = cache.get(fullName);
-        if (cached) {
-          return cached;
-        }
-
-        const trimmedName = fullName.trim();
-        const nameParts = trimmedName.split(" ");
-        const firstName = nameParts[0] || "";
-        const lastName = nameParts.slice(1).join(" ") || "";
-
-        const result = { firstName, lastName };
-        cache.set(fullName, result);
-        return result;
-      },
-      clear: () => cache.clear(),
-    };
-  })();
-
-  // React Hook Form setup with optimized defaults
+  // React Hook Form setup
   const {
     control,
     handleSubmit,
-    trigger,
     register: registerInput,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    mode: "all",
+    mode: "onTouched",
     defaultValues: {
       fullName: "",
       email: "",
@@ -248,18 +221,13 @@ export function RegisterForm() {
    * Note: Zod schema already validates all fields, no need for duplicate validation
    */
   const onSubmit = async (data: RegisterFormValues) => {
-    // Early exit if form is disabled
-    if (isDisabled) {
-      return;
-    }
-
-    // Use cached name splitting function
-    const { firstName, lastName } = nameSplitCache.get(data.fullName);
-
+    if (isDisabled) return;
+    const { firstName, lastName } = splitName(data.fullName);
     await registerUser(data.email.trim(), data.password, firstName, lastName);
+    if (!useAuthStore.getState().error) {
+      router.push("/auth/verify-email");
+    }
   };
-
-  // Error styling handled by Tailwind classes
 
   // Clear validation cache when component unmounts
   useEffect(() => {

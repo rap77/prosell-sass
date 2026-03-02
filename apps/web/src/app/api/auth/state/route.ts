@@ -2,11 +2,11 @@
  * API Route: Authentication State
  *
  * This route handler provides the current authentication state
- * from server-side cookies, solving the hydration mismatch issue.
+ * by forwarding cookies to the backend for JWT verification.
  *
  * Server-Side Performance: Uses after() for non-blocking error logging
  *
- * GET /api/auth/state - Returns current auth state
+ * GET /api/auth/state - Returns current auth state (verifies JWT via backend)
  * DELETE /api/auth/state - Clears auth state (logout)
  */
 
@@ -39,42 +39,37 @@ interface AuthStateResponse {
 export async function GET(): Promise<NextResponse<AuthStateResponse>> {
   try {
     const cookieStore = await cookies();
-
     const accessToken = cookieStore.get("access_token")?.value;
-    const refreshToken = cookieStore.get("refresh_token")?.value;
-    const userDataStr = cookieStore.get("user_data")?.value;
 
-    if (!accessToken || !refreshToken || !userDataStr) {
-      return NextResponse.json({
-        isAuthenticated: false,
-      });
+    // Fast path: no access_token cookie → not authenticated
+    if (!accessToken) {
+      return NextResponse.json({ isAuthenticated: false });
     }
 
-    let user;
-    try {
-      user = JSON.parse(userDataStr);
-    } catch (error) {
-      // Non-blocking error logging with after() - doesn't delay response
-      after(() => {
-        logger.error("Failed to parse user data", error);
-      });
-      return NextResponse.json({
-        isAuthenticated: false,
-      });
-    }
+    // Forward all cookies to backend for JWT verification
+    const cookieHeader = cookieStore
+      .getAll()
+      .map((c) => `${c.name}=${c.value}`)
+      .join("; ");
 
-    return NextResponse.json({
-      isAuthenticated: true,
-      user,
+    const apiUrl = process.env.API_URL ?? "http://localhost:8000";
+    const response = await fetch(`${apiUrl}/api/auth/state`, {
+      headers: { Cookie: cookieHeader },
+      cache: "no-store",
     });
+
+    if (!response.ok) {
+      return NextResponse.json({ isAuthenticated: false });
+    }
+
+    const authState = (await response.json()) as AuthStateResponse;
+    return NextResponse.json(authState);
   } catch (error) {
     // Non-blocking error logging with after() - doesn't delay response
     after(() => {
       logger.error("Error getting auth state", error);
     });
-    return NextResponse.json({
-      isAuthenticated: false,
-    });
+    return NextResponse.json({ isAuthenticated: false });
   }
 }
 

@@ -181,8 +181,13 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             isAuthenticated: false,
             isLoading: false,
-            initialized: false, // Reset on error
-            error: null,
+            initialized: true, // Prevent infinite retry loop
+            error: {
+              message:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to check authentication status",
+            },
           });
         } finally {
           markPerformance("auth-init-end");
@@ -252,21 +257,23 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await authApi.register(
+          await authApi.register(
             data.email,
             data.password,
             data.first_name,
             data.last_name,
           );
 
-          // Update state - tokens are handled by httpOnly cookies
+          // Registration does NOT authenticate the user — email verification required
           set({
-            user: response.user,
-            isAuthenticated: true,
+            user: null,
+            isAuthenticated: false,
             isLoading: false,
-            initialized: true, // Auth is initialized after login/register
+            initialized: false, // Not initialized — user must verify email then login
             error: null,
           });
+
+          // Navigation to /auth/verify-email is handled by the RegisterForm component
         } catch (unknownError) {
           const message =
             unknownError instanceof ApiError

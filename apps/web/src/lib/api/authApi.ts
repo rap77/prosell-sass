@@ -24,6 +24,13 @@ interface LoginResponse {
   };
 }
 
+interface RegisterResponse {
+  user_id: string;
+  email: string;
+  status: string;
+  message: string;
+}
+
 // RefreshTokenResponse removed - tokens handled by httpOnly cookies
 // Refresh logic is handled server-side, not client-side
 
@@ -151,10 +158,19 @@ async function handleResponse<T>(response: Response): Promise<T> {
     const errorData = await response
       .json()
       .catch(() => ({ detail: "Error desconocido" }));
-    throw new ApiError(
-      errorData.detail || "Error en la petición",
-      response.status,
-    );
+
+    // FastAPI validation errors: detail is an array of {msg, loc, type}
+    // Other errors: detail is a string, or message is a string
+    let message: string;
+    if (Array.isArray(errorData.detail)) {
+      message = errorData.detail.map((e: { msg: string }) => e.msg).join(", ");
+    } else if (typeof errorData.detail === "string") {
+      message = errorData.detail;
+    } else {
+      message = errorData.message || "Error en la petición";
+    }
+
+    throw new ApiError(message, response.status);
   }
 
   return response.json() as Promise<T>;
@@ -199,7 +215,7 @@ export const authApi = {
     password: string,
     first_name: string,
     last_name: string,
-  ): Promise<LoginResponse> {
+  ): Promise<RegisterResponse> {
     // Validate inputs with pre-compiled regex
     if (!EMAIL_REGEX.test(email) || !PASSWORD_REGEX.test(password)) {
       throw new ApiError("Invalid email or password format", 400);
@@ -224,19 +240,13 @@ export const authApi = {
       body: JSON.stringify({
         email,
         password,
-        first_name: trimmedFirstName,
-        last_name: trimmedLastName,
+        full_name: `${trimmedFirstName} ${trimmedLastName}`.trim(),
       }),
-      credentials: "include", // Important for cookies to be sent and received
+      credentials: "include",
     });
 
-    const result = await handleResponse<LoginResponse>(response);
-
     // Mutations should NOT be cached - each call hits the API
-    // But we do cache the user object for O(1) lookups
-    userLookupCache.set(result.user.id, result.user);
-
-    return result;
+    return handleResponse<RegisterResponse>(response);
   },
 
   /**
@@ -323,13 +333,7 @@ export const authApi = {
       throw new ApiError("Token is required", 400);
     }
 
-    const cacheKey = createAuthCacheKey("verify-email", { token });
-    const cached = requestCache.get(cacheKey);
-
-    if (cached) {
-      return cached as unknown as MessageResponse;
-    }
-
+    // Mutations must NOT be cached — token is consumed server-side on first use
     const response = await fetch(`${API_BASE_URL}/api/auth/verify-email`, {
       method: "POST",
       headers: {
@@ -338,12 +342,7 @@ export const authApi = {
       body: JSON.stringify({ token }),
     });
 
-    const result = await handleResponse<MessageResponse>(response);
-
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
-    return result;
+    return handleResponse<MessageResponse>(response);
   },
 
   /**
@@ -356,13 +355,7 @@ export const authApi = {
       throw new ApiError("Invalid email format", 400);
     }
 
-    const cacheKey = createAuthCacheKey("forgot-password", { email });
-    const cached = requestCache.get(cacheKey);
-
-    if (cached) {
-      return cached as unknown as MessageResponse;
-    }
-
+    // Mutations must NOT be cached — triggers email send on every call
     const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
       method: "POST",
       headers: {
@@ -371,12 +364,7 @@ export const authApi = {
       body: JSON.stringify({ email }),
     });
 
-    const result = await handleResponse<MessageResponse>(response);
-
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
-    return result;
+    return handleResponse<MessageResponse>(response);
   },
 
   /**
@@ -396,16 +384,7 @@ export const authApi = {
       throw new ApiError("Password does not meet requirements", 400);
     }
 
-    const cacheKey = createAuthCacheKey("reset-password", {
-      token,
-      newPassword,
-    });
-    const cached = requestCache.get(cacheKey);
-
-    if (cached) {
-      return cached as unknown as MessageResponse;
-    }
-
+    // Mutations must NOT be cached — token is consumed server-side on first use
     const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
       method: "POST",
       headers: {
@@ -417,12 +396,7 @@ export const authApi = {
       }),
     });
 
-    const result = await handleResponse<MessageResponse>(response);
-
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
-    return result;
+    return handleResponse<MessageResponse>(response);
   },
 
   /**
@@ -432,13 +406,7 @@ export const authApi = {
    * Uses httpOnly cookies for authentication (no accessToken parameter needed)
    */
   async enable2FA(): Promise<Enable2FAResponse> {
-    const cacheKey = createAuthCacheKey("2fa/enable");
-    const cached = requestCache.get(cacheKey);
-
-    if (cached) {
-      return cached as unknown as Enable2FAResponse;
-    }
-
+    // Mutations must NOT be cached — generates a new QR code / TOTP secret each call
     const response = await fetch(`${API_BASE_URL}/api/auth/2fa/enable`, {
       method: "POST",
       headers: {
@@ -447,12 +415,7 @@ export const authApi = {
       credentials: "include", // CRITICAL: Sends httpOnly cookies automatically
     });
 
-    const result = await handleResponse<Enable2FAResponse>(response);
-
-    // Cache the result
-    requestCache.set(cacheKey, result);
-
-    return result;
+    return handleResponse<Enable2FAResponse>(response);
   },
 
   /**
@@ -498,13 +461,7 @@ export const authApi = {
    * Uses httpOnly cookies for authentication (no accessToken parameter needed)
    */
   async disable2FA(): Promise<MessageResponse> {
-    const cacheKey = createAuthCacheKey("2fa/disable");
-    const cached = requestCache.get(cacheKey);
-
-    if (cached) {
-      return cached as unknown as MessageResponse;
-    }
-
+    // Mutations must NOT be cached — revokes TOTP secret server-side
     const response = await fetch(`${API_BASE_URL}/api/auth/2fa/disable`, {
       method: "POST",
       headers: {
@@ -513,12 +470,7 @@ export const authApi = {
       credentials: "include", // CRITICAL: Sends httpOnly cookies automatically
     });
 
-    const result = await handleResponse<MessageResponse>(response);
-
-    // Clear 2FA cache after successful disable
-    requestCache.delete(cacheKey);
-
-    return result;
+    return handleResponse<MessageResponse>(response);
   },
 
   /**
