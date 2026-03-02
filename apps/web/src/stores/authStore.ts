@@ -161,7 +161,7 @@ export const useAuthStore = create<AuthState>()(
               user: null,
               isAuthenticated: false,
               isLoading: false,
-              initialized: false, // Not initialized if not authenticated
+              initialized: true, // Mark as initialized to prevent retry loop
               error: null,
             });
             return;

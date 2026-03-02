@@ -6,6 +6,10 @@ WORKDIR /app
 # Enable corepack for pnpm
 RUN corepack enable pnpm
 
+# Build argument for API URL (must be passed at build time)
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Copy workspace files
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* ./
 COPY apps/web/package.json ./apps/web/
@@ -16,7 +20,7 @@ RUN pnpm install --frozen-lockfile
 # Copy source
 COPY apps/web ./apps/web
 
-# Build
+# Build (NEXT_PUBLIC_API_URL is now embedded in the bundle)
 RUN pnpm --filter @prosell/web build
 
 # Runtime stage
