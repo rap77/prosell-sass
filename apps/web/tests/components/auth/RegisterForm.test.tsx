@@ -8,6 +8,12 @@ import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
+// Mock next/navigation (required by useRouter in RegisterForm)
+const mockPush = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(() => ({ push: mockPush })),
+}));
+
 // Mock useAuth hook
 const mockRegister = vi.fn();
 const mockClearError = vi.fn();
@@ -50,6 +56,7 @@ describe("RegisterForm Component", () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    mockPush.mockClear();
   });
 
   // Reset mocks before each test
@@ -152,7 +159,12 @@ describe("RegisterForm Component", () => {
       const nameInput = screen.getByLabelText(/^Full Name$/);
       await user.type(nameInput, "J"); // Only 1 character
 
-      // With mode: "all", error should appear immediately after typing
+      // Submit the form to trigger validation (mode: "onTouched" validates on submit)
+      const submitButton = screen.getByRole("button", {
+        name: /create account/i,
+      });
+      await user.click(submitButton);
+
       expect(
         await screen.findByText("Full name must be at least 2 characters"),
       ).toBeInTheDocument();
@@ -337,6 +349,31 @@ describe("RegisterForm Component", () => {
       await waitFor(
         () => {
           expect(mockRegister).toHaveBeenCalled();
+        },
+        { timeout: 5000 },
+      );
+    });
+
+    it("should redirect to /auth/verify-email after successful registration", async () => {
+      const user = userEvent.setup();
+      render(<RegisterForm />);
+
+      await user.type(screen.getByLabelText(/^Full Name$/), "John Doe");
+      await user.type(screen.getByLabelText(/^Email$/), "user@example.com");
+      await user.type(
+        screen.getByPlaceholderText(/^enter your password$/i),
+        "Password123!",
+      );
+      await user.type(
+        screen.getByPlaceholderText(/^confirm your password$/i),
+        "Password123!",
+      );
+      await user.click(screen.getByRole("checkbox"));
+      await user.click(screen.getByText("Create account"));
+
+      await waitFor(
+        () => {
+          expect(mockPush).toHaveBeenCalledWith("/auth/verify-email");
         },
         { timeout: 5000 },
       );

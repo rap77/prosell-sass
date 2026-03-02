@@ -85,16 +85,17 @@ export const useTestAuthStore = create<TestAuthState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const response = await authApi.register(
+      await authApi.register(
         data.email,
         data.password,
         data.first_name,
         data.last_name,
       );
 
+      // Registration does NOT authenticate — email verification required
       set({
-        user: response.user,
-        isAuthenticated: true,
+        user: null,
+        isAuthenticated: false,
         isLoading: false,
         error: null,
       });

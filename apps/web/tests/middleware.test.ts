@@ -349,22 +349,21 @@ describe("Middleware", () => {
       expect(mockNext).not.toHaveBeenCalled();
     });
 
-    it("should allow access with invalid JSON in user_data (current behavior)", async () => {
-      // Note: Current middleware implementation checks if cookie exists,
-      // not if JSON is valid. This test documents current behavior.
+    it("should redirect when user_data contains invalid JSON", async () => {
+      // Middleware validates JSON via memoizedJsonParse — invalid JSON returns null,
+      // which means isAuthenticated=false → redirect to login.
       const req = createMockRequest({
         pathname: "/dashboard",
         cookies: [
           { name: "access_token", value: "valid-token" },
-          { name: "user_data", value: "invalid-json" }, // Invalid JSON but cookie exists
+          { name: "user_data", value: "invalid-json" }, // Invalid JSON
         ],
       });
 
       await middleware(req);
 
-      // Current behavior: allows access because cookie exists
-      expect(mockNext).toHaveBeenCalled();
-      expect(mockRedirect).not.toHaveBeenCalled();
+      expect(mockRedirect).toHaveBeenCalled();
+      expect(mockNext).not.toHaveBeenCalled();
     });
 
     it("should handle missing user_data cookie gracefully", async () => {

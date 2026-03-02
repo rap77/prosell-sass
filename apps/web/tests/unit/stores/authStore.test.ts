@@ -148,19 +148,19 @@ const createTestAuthStore = () =>
           set({ isLoading: true, error: null });
 
           try {
-            const response = await authApi.register(
+            await authApi.register(
               data.email,
               data.password,
               data.first_name,
               data.last_name,
             );
 
-            // Tokens are handled by httpOnly cookies
+            // Registration does NOT authenticate — email verification required
             set({
-              user: response.user,
-              isAuthenticated: true,
+              user: null,
+              isAuthenticated: false,
               isLoading: false,
-              initialized: true,
+              initialized: false,
               error: null,
             });
           } catch (unknownError) {
@@ -332,16 +332,14 @@ describe("authStore - Login Action", () => {
 });
 
 describe("authStore - Register Action", () => {
-  it("should create user and login on successful registration", async () => {
-    // Mock authApi.register success response
-    vi.mocked(authApi.register).mockResolvedValue(
-      createMockUserResponse({
-        id: "2",
-        email: "new@example.com",
-        first_name: "New",
-        last_name: "User",
-      }),
-    );
+  it("should NOT authenticate user on successful registration (email verification required)", async () => {
+    // Mock authApi.register — returns RegisterResponse (no user object, no tokens)
+    vi.mocked(authApi.register).mockResolvedValue({
+      user_id: "2",
+      email: "new@example.com",
+      status: "pending_verification",
+      message: "Check your email to verify your account",
+    });
 
     const mockRegisterData = {
       email: "new@example.com",
@@ -352,11 +350,12 @@ describe("authStore - Register Action", () => {
 
     await useAuthStore.getState().register(mockRegisterData);
 
+    // Registration does NOT set user or authenticate — user must verify email first
     const state = useAuthStore.getState();
-    expect(state.user).not.toBeNull();
-    expect(state.user?.email).toBe(mockRegisterData.email);
-    expect(state.isAuthenticated).toBe(true);
-    expect(state.initialized).toBe(true);
+    expect(state.user).toBeNull();
+    expect(state.isAuthenticated).toBe(false);
+    expect(state.initialized).toBe(false);
+    expect(state.isLoading).toBe(false);
     expect(state.error).toBeNull();
   });
 

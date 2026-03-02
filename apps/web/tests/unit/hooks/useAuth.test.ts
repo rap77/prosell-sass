@@ -122,19 +122,19 @@ const createTestAuthStore = () =>
       set({ isLoading: true, error: null });
 
       try {
-        const response = await authApi.register(
+        await authApi.register(
           data.email,
           data.password,
           data.first_name,
           data.last_name,
         );
 
-        // Tokens are handled by httpOnly cookies
+        // Registration does NOT authenticate — email verification required
         set({
-          user: response.user,
-          isAuthenticated: true,
+          user: null,
+          isAuthenticated: false,
           isLoading: false,
-          initialized: true,
+          initialized: false,
           error: null,
         });
       } catch (unknownError) {
@@ -283,15 +283,13 @@ describe("useAuth Hook - Authentication Helpers", () => {
   });
 
   it("should provide register action", async () => {
-    // Mock authApi.register
-    vi.mocked(authApi.register).mockResolvedValue(
-      createMockUserResponse({
-        id: "2",
-        email: "new@example.com",
-        first_name: "New",
-        last_name: "User",
-      }),
-    );
+    // Mock authApi.register — returns RegisterResponse (no user object, no tokens)
+    vi.mocked(authApi.register).mockResolvedValue({
+      user_id: "2",
+      email: "new@example.com",
+      status: "pending_verification",
+      message: "Check your email to verify your account",
+    });
 
     await useAuthStore.getState().register({
       email: "new@example.com",
@@ -300,10 +298,12 @@ describe("useAuth Hook - Authentication Helpers", () => {
       last_name: "User",
     });
 
+    // Registration does NOT authenticate — user must verify email first
     const state = useAuthStore.getState();
-    expect(state.isAuthenticated).toBe(true);
-    expect(state.user?.email).toBe("new@example.com");
-    expect(state.initialized).toBe(true);
+    expect(state.isAuthenticated).toBe(false);
+    expect(state.user).toBeNull();
+    expect(state.initialized).toBe(false);
+    expect(state.error).toBeNull();
   });
 
   it("should expose error state", async () => {

@@ -91,7 +91,7 @@ describe("OAuthButtons Component", () => {
       await user.click(googleButton);
 
       // Verify redirect to backend OAuth authorize endpoint
-      expect(window.location.href).toBe("/api/v1/auth/oauth/google/authorize");
+      expect(window.location.href).toBe("http://localhost:8000/api/auth/oauth/google/authorize");
     });
 
     it("should redirect to Facebook OAuth authorize endpoint when Facebook button clicked", async () => {
@@ -105,7 +105,7 @@ describe("OAuthButtons Component", () => {
       await user.click(facebookButton);
 
       // Verify redirect to backend OAuth authorize endpoint
-      expect(window.location.href).toBe("/api/v1/auth/oauth/facebook/authorize");
+      expect(window.location.href).toBe("http://localhost:8000/api/auth/oauth/facebook/authorize");
     });
   });
 
@@ -169,7 +169,7 @@ describe("OAuthButtons Component", () => {
 
       // Enter should trigger redirect
       await user.keyboard("{Enter}");
-      expect(window.location.href).toBe("/api/v1/auth/oauth/google/authorize");
+      expect(window.location.href).toBe("http://localhost:8000/api/auth/oauth/google/authorize");
     });
   });
 });
