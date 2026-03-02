@@ -1,355 +1,88 @@
-# ProSell SaaS - Project Memory
+# ProSell SaaS - Project Memory (Index)
 
-## Session 2026-02-28 (Final) - Sprint 3-4 Fase 5: E2E Tests ✅ 100% COMPLETADO
+> Este archivo es el índice. Leer los handoffs específicos para detalles de cada sesión.
 
-### Achievement
-**E2E Tests 67/67 passing (100%) + Code Review Addressed + Flaky Test Fixed + Pushed to Origin** ✅
+## Estado Actual del Proyecto (2026-03-02)
 
-### Estado Sprint 3-4
-| Fase | Estado | Tests |
-|------|--------|-------|
-| **Phase 1**: Domain Layer | ✅ COMPLETA | 82 |
-| **Phase 2**: Org API Backend | ✅ COMPLETA | 33 |
-| **Phase 3**: Teams/Wallet Backend | ✅ COMPLETA | 25 |
-| **Phase 4**: Frontend | ✅ COMPLETA | 353 |
-| **Phase 5**: E2E Tests | ✅ 100% | 67/67 |
-
-### Tests Totales: ~748 tests
-```
-Backend:                        281 passing ✅
-Frontend:                       353 passing ✅
-E2E (Org + Teams + Wallet):     67/67 passing ✅
-========================================
-Total:                          ~701 passing
-```
-
-### Commits Pusheados a Origin/Main
-```
-88a5198 - fix(e2e): type consistency across wallet API endpoints
-7d8809d - fix(e2e): code review fixes + flaky test resolution
-030ab22 - fix(e2e): wallet API mock type fixes - 67/67 tests passing (100%)
-```
-
-### Código Review: Issues Resueltos (7/7)
-
-#### Important (Should Fix) - RESUELTOS ✅
-
-1. **Balance Representation Semantic Mismatch** ✅
-   - **Fix**: Agregado comentario detallado en 4 archivos
-   - `balance: number` = token count (API ya devuelve convertido, no cents)
-   - Documentado que backend DTO debe devolver balance, no balance_cents
-
-2. **Missing organization_id in MockTransaction** ✅
-   - **Fix**: Agregado comentario explicando simplificación wallet_id == orgId
-   - Documentado que en API real se haría lookup primero
-
-3. **Description Type Mismatch** ✅
-   - **Fix**: Cambiado `description: string` → `description: string | null`
-   - Ahora matchea frontend type exactamente
-
-4. **Type Inconsistency Across Wallet APIs** ✅
-   - **Fix**: Todos los 4 endpoints de wallet ahora usan tipos consistentes
-   - route.ts, [id]/route.ts actualizados para matchear org/[orgId]/route.ts
-
-#### Minor (Nice to Have) - RESUELTOS ✅
-
-1. **Hardcoded Tenant ID** ✅
-   - **Fix**: Extraído a constante `TEST_TENANT_ID = "test-user-123"`
-   - Usado consistentemente en 4 archivos
-
-2. **Magic Numbers** ✅
-   - **Fix**: Extraídos a constantes con nombres descriptivos
-   - `INITIAL_TOKEN_BALANCE = 1000`
-   - `ONE_DAY_MS = 24 * 60 * 60 * 1000`
-   - `ONE_HALF_DAY_MS = 12 * 60 * 60 * 1000`
-
-3. **Flaky Test** ✅
-   - **Fix**: Race condition arreglado con proper waiting
-   - **Verification**: 5/5 ejecuciones consecutivas pasaron
-
-### Flaky Test Fix - Systematic Debugging ✅
-
-**Test**: "should display multiple teams" (TEAMS-E2E-011)
-**Issue**: Test fallaba intermitentemente (count = 0 cuando esperaba >= 2)
-
-**Root Cause** (Phase 1 Investigation):
-- `verifyPageLoaded()` solo esperaba el heading
-- No esperaba que los teamCards estuvieran renderizados
-- Race condition: Next.js navigation + React render vs Playwright queries
-
-**Solution Applied**:
-```typescript
-async verifyPageLoaded(): Promise<void> {
-  await this.page.waitForLoadState("domcontentloaded");
-  await expect(this.heading).toBeVisible({ timeout: 10000 });
-
-  // Wait for actual content: cards OR empty state
-  try {
-    await this.page.waitForSelector('div[class*="rounded-lg border"][class*="hover:border"]', { timeout: 2000 })
-      .catch(() => this.page.waitForSelector('text=/don\'t have any teams/i', { timeout: 2000 }));
-  } catch {
-    // Continue if timeout - page is loaded, just no content yet
-  }
-}
-```
-
-**Verification**: 5/5 ejecuciones consecutivas pasaron ✅
-
-### Estado Final de Tests E2E
-
-| Suite | Resultado | Status |
-|-------|-----------|--------|
-| **Organizations** | 23/23 (100%) | ✅ COMPLETO |
-| **Teams** | 22/22 (100%) | ✅ COMPLETO (flaky fix verified) |
-| **Wallet** | 22/22 (100%) | ✅ COMPLETO |
-| **Total** | **67/67 (100%)** | ✅ COMPLETO |
-
-### Type Consistency Verified
-
-Todos los 4 endpoints de wallet ahora devuelven tipos consistentes:
-
-| Endpoint | balance | amount | description | currency |
-|----------|---------|--------|-------------|----------|
-| `GET /api/v1/wallet/org/{orgId}` | ✅ number | - | - | ✅ optional |
-| `GET /api/v1/wallet` | ✅ number | - | - | ✅ optional |
-| `GET /api/v1/wallet/{id}` | ✅ number | - | - | ✅ optional |
-| `GET /api/v1/wallet/org/{orgId}/transactions` | - | ✅ number | ✅ string \| null | - |
-| `GET /api/v1/wallet/{id}/transactions` | - | ✅ number | ✅ string \| null | - |
-
-### Archivos Clave Modificados
-
-**Backend API Mocks (Type Consistency)**:
-- `apps/web/src/app/api/v1/wallet/route.ts`
-- `apps/web/src/app/api/v1/wallet/[id]/route.ts`
-- `apps/web/src/app/api/v1/wallet/org/[orgId]/route.ts`
-- `apps/web/src/app/api/v1/wallet/org/[orgId]/transactions/route.ts`
-
-**E2E Tests (Flaky Fix)**:
-- `tests/e2e/dashboard/org/teams-list-page.ts`
-
-### Próximos Pasos Sugeridos
-
-1. ✅ E2E tests 100% completado
-2. ✅ Code review issues addressed
-3. ✅ Flaky test fixed and verified
-4. ✅ Pushed to origin/main
-5. ⏳ Continuar con siguientes features del roadmap
-
-### Deuda Técnica Documentada
-
-1. **CSP nonce-based migration** (SECURITY-001)
-2. **SendGrid implementation** - Usando MockEmailService durante dev
-3. **Rate limiting** - Intencionalmente disabled en dev
-4. **TODO**: Verificar FastAPI DTOs devuelvan balance (no balance_cents) cuando se integre backend real
-
----
-
-## Session 2026-02-28 - Sprint 3-4 Fase 5: E2E Tests ✅ 100% COMPLETADO
-
-### Achievement
-**E2E Tests funcionando - 67/67 passing (100%)** ✅
-
-### Estado Sprint 3-4
-| Fase | Estado | Tests |
-|------|--------|-------|
-| **Phase 1**: Domain Layer | ✅ COMPLETA | 82 |
-| **Phase 2**: Org API Backend | ✅ COMPLETA | 33 |
-| **Phase 3**: Teams/Wallet Backend | ✅ COMPLETA | 25 |
-| **Phase 4**: Frontend | ✅ COMPLETA | 353 |
-| **Phase 5**: E2E Tests | ✅ 100% | 67/67 |
-
-### Tests Totales: ~748 tests
-```
-Backend:                        281 passing ✅
-Frontend:                       353 passing ✅
-E2E (Org + Teams + Wallet):     67/67 passing ✅
-========================================
-Total:                          ~701 passing
-```
-
-### Commit de Hoy
-- **`f7e3c1a`** - fix(e2e): wallet API mock type fixes (balance_cents → balance)
-
-### Problemas Resueltos Hoy
-
-#### 1. Wallet API Mock Type Mismatch
-**Problema**: La API mock devolvía `balance_cents` pero el frontend esperaba `balance`
-**Solución**: Actualicé el tipo MockWallet para usar `balance` en lugar de `balance_cents`
-
-**Archivos modificados**:
-- `apps/web/src/app/api/v1/wallet/org/[orgId]/route.ts`
-  - Cambiado `balance_cents: number` → `balance: number`
-  - Inicializado con 1000 tokens para testing
-
-#### 2. Transactions API Mock Fields
-**Problema**: Los campos no coincidían con el tipo WalletTransaction
-**Solución**: Actualicé MockTransaction con los campos correctos:
-- `amount_cents` → `amount`
-- Agregado `tenant_id`
-- Agregado `balance_after`
-- Agregado `metadata: Record<string, unknown> | null`
-
-**Archivos modificados**:
-- `apps/web/src/app/api/v1/wallet/org/[orgId]/transactions/route.ts`
-  - Actualizado tipo MockTransaction
-  - Agregado parámetro `create_mock` para control de tests
-
-### Estado Final de Tests E2E
-
-| Suite | Resultado | Status |
-|-------|-----------|--------|
-| **Organizations** | 23/23 (100%) | ✅ COMPLETO |
-| **Teams** | 22/22 (100%) | ✅ COMPLETO |
-| **Wallet** | 22/22 (100%) | ✅ COMPLETO |
-| **Total** | **67/67 (100%)** | ✅ COMPLETO |
-
-### Para Continuar
-1. ✅ E2E tests 100% completado
-2. Merge a main cuando esté estable
-3. Continuar con siguientes features del roadmap
-
-### Archivos Clave Modificados
-- `apps/web/src/app/api/v1/wallet/org/[orgId]/route.ts` - balance_cents → balance
-- `apps/web/src/app/api/v1/wallet/org/[orgId]/transactions/route.ts` - Transaction type fixes
-
----
-
-## Session 2026-02-26 (Tarde) - Sprint 3-4 Fase 5: E2E Tests ⏳ ~70% COMPLETA
-
-### Achievement
-**E2E Tests funcionando - 15-17/23 passing (65-74%)**
-
-### Estado Sprint 3-4
-| Fase | Estado | Tests |
-|------|--------|-------|
-| **Phase 1**: Domain Layer | ✅ COMPLETA | 82 |
-| **Phase 2**: Org API Backend | ✅ COMPLETA | 33 |
-| **Phase 3**: Teams/Wallet Backend | ✅ COMPLETA | 25 |
-| **Phase 4**: Frontend | ✅ COMPLETA | 353 |
-| **Phase 5**: E2E Tests | ⏳ ~70% | 15-17/23 |
-
-### Tests Totales: ~701 tests
-```
-Backend:                        281 passing ✅
-Frontend:                       353 passing ✅
-E2E (Org):                      15-17/23 passing ⚠️
-E2E (Teams/Wallet):             sin probar
-========================================
-Total:                          ~650 passing
-```
-
-### Commit de Hoy
-- **`2761545`** - feat(sprint3-4): phase 5 E2E tests setup and initial fixes
-
-### Problemas Resueltos Hoy
-1. ✅ ECONNREFUSED → webServer auto-start configurado
-2. ✅ Next.js 16 params → await params en API routes
-3. ✅ Accesibilidad → <main> landmarks agregados
-4. ✅ role="alert" vacíos → .trim() check
-5. ✅ Back button → router.push() en lugar de router.back()
-
-### Problemas Pendientes
-1. ⚠️ Tests flaky - timing issues en navegación
-2. ⚠️ Loading state test - API muy rápida
-3. ❌ Teams/Wallet tests - sin probar
-
-### Para Continuar
-```bash
-cd tests/e2e
-npx playwright test dashboard/org/organizations.spec.ts --reporter=line
-```
-
-### Archivos Clave
-- `tests/e2e/playwright.config.ts` - webServer configurado
-- `tests/e2e/global-setup.ts` - autenticación pre-test
-- `apps/web/src/app/api/v1/org/[id]/route.ts` - await params fix
-- `apps/web/src/app/dashboard/org/[id]/edit/page.tsx` - página creada
+### Branch Activa: `feature/oauth-backend-callbacks`
+- ✅ PRP Sprint 1-2: 10/10 fixes implementados, 331/331 tests ✅
+- ✅ Bugs extra corregidos: `handleResponse` array detail + `authApi.register()` body format
+- ⚠️ NO commiteado aún (cambios de esta sesión sin commit)
+- ⚠️ CORS preflight 405 en `/api/auth/register` — investigar ordering de middleware en main.py
+- ⚠️ `user_tokens` UUID bug pre-existente bloquea el registro completo
 
 ### Próximos Pasos
-1. Arreglar tests flaky de navegación
-2. Probar Teams tests
-3. Probar Wallet tests
-4. Merge a main cuando esté estable
-
-### HANDOFF.md Actualizado
-Ver HANDOFF.md para estado completo y detalles de debugging.
+1. ~~PRP fixes~~ ✅
+2. Investigar CORS 405 en register (`auth_middleware.py` ordering en `main.py`)
+3. Fix pre-existente `user_tokens` UUID type mismatch
+4. Commit + merge `feature/oauth-backend-callbacks` → `main`
+5. Sprint siguiente (marketplace/SaaS features)
 
 ---
 
-## Session 2026-02-22 - Sprint 3-4 Phase 1: Domain Layer COMPLETADA ✅
+## Sesiones Recientes
 
-### Achievement
-**Phase 1 (Domain Layer) del Sprint 3-4 Organizations verificada y confirmada completa**
+### 2026-03-02 — OAuth Complete + Code Review + PRP
+Ver: `HANDOFF` (memory) para detalles completos
 
-### Estado Sprint 3-4
-| Fase | Estado | Tests |
-|------|--------|-------|
-| **Phase 1: Domain Layer** | ✅ COMPLETA | 82/82 |
-| Phase 2: Backend (Infra + API) | ⏳ Iniciando | - |
-| Phase 3: Teams & Wallet | ⏳ Pendiente | - |
-| Phase 4: Frontend | ⏳ Pendiente | - |
-| Phase 5: Integration & Polish | ⏳ Pendiente | - |
+**Logros**:
+- OAuth flow confirmado funcional
+- Fixes commiteados (fff0c24): UUID type, cookie encoding, Pydantic models, TypedDict
+- Bug descubierto: `.gga` y `AGENTS.md` faltaban en feature branch
+- Code review Sprint 1-2: 5 críticos + 5 importantes identificados
+- PRP generado: `PRPs/code-review-fixes-sprint1-2.md`
 
-### Entities Implementadas (commit `1b20c2e`)
-- **Organization** + OrganizationStatus (PENDING_VERIFICATION, ACTIVE, SUSPENDED, REJECTED)
-- **Team** + TeamMember + TeamMemberRole (MANAGER, VENDOR)
-- **Wallet** + WalletTransaction + TransactionType (CREDIT, DEBIT)
+**Fix crítico más urgente**: `auth_middleware.py` lee JWT del `Authorization` header
+en vez del cookie `access_token` → todos los endpoints protegidos están rotos
 
-### Repository Interfaces Implementadas
-- AbstractOrganizationRepository (8 métodos)
-- AbstractTeamRepository + AbstractTeamMemberRepository
-- AbstractWalletRepository + AbstractWalletTransactionRepository
+### 2026-03-01 — SameSite Fix + Unit Tests
+- SameSite=Strict → Lax (commit f726795)
+- Tests OAuth: 23/23 unit ✅, 11/11 integration ✅
 
-### Tests Totales Backend: 221 tests
-```
-Domain unit tests (nuevos): 82 passing
-Auth unit tests:            139 passing
-Total:                      221 passing ✅
-```
+### 2026-02-26 — Sprint 3-4 E2E Tests 100%
+- 67/67 E2E tests passing
+- Organizations, Teams, Wallet completos
 
 ---
 
-## Session 2026-02-20 - Auth System PRP Actualizado + OAuth Technical Debt ✅
+## Convenciones Establecidas
 
-### Achievement
-**TODOS los PRPs actualizados con estado REAL del proyecto**
+### Cookie Pattern (Backend → Frontend)
+- Backend: `quote(model_dump_json())` — URL-encode el JSON
+- Frontend middleware: strip outer `"` + `decodeURIComponent()` antes de `JSON.parse()`
+- Razón: Python SimpleCookie wrappea URLs en comillas dobles RFC 6265
 
-### Estado Final de PRPs
-| PRP | Estado | Documentación | Realidad | Acción |
-|-----|--------|---------------|----------|--------|
-| **fase-1-foundation.md** | ✅ COMPLETED | ✅ | ✅ | Ya actualizado |
-| **fase-2-domain-migration.md** | ✅ COMPLETED | ✅ | ✅ | Actualizado hoy |
-| **fase-3-application-dtos.md** | ✅ COMPLETED | ✅ | ✅ | Actualizado hoy |
-| **fase-4-infrastructure.md** | ✅ COMPLETED | ✅ | ✅ | Actualizado hoy |
-| **fase-5-python313.md** | ✅ COMPLETED | ✅ | ✅ | Actualizado hoy |
-| **fase-6-cleanup.md** | ✅ COMPLETED | ✅ | ✅ | Actualizado hoy |
-| **fase-7-testing.md** | ✅ COMPLETED | ✅ | ✅ | Actualizado hoy |
-| **fase-8-validation.md** | ✅ COMPLETED | ✅ | ✅ | Actualizado hoy |
-| **auth-httpOnly-migration.md** | ✅ COMPLETED | ✅ | ✅ | Ya completado |
-| **auth-system.md** | ✅ 100% COMPLETE | Frontend ✅ / Backend ⏳ | Backend ✅ 100% | **ACTUALIZADO HOY** |
+### GGA en Feature Branches
+Si GGA falla con "No provider configured":
+```bash
+git show main:.gga > .gga && git show main:AGENTS.md > AGENTS.md
+```
+Estos archivos NO se commitean (son config local).
 
-### Commits de Hoy
-- `a928e7d` - docs(prp): actualiza todos los PRPs - Fases 2-8 marcadas como COMPLETADAS
-- **`7ffcab7`** - docs(prp): actualiza auth-system.md con estado REAL - Backend 100% COMPLETADO
+### ESLint en pre-commit
+Comentado en `.pre-commit-config.yaml`. Errores pre-existentes en Sprint 3-4
+(teams/page.tsx, org/page.tsx, MemberForm.tsx). Fix pendiente.
 
-### Pydantic Refactor: 100% COMPLETADO ✅
-Todas las 8 fases completadas y mergeadas a main (commit `1369fa8`)
+---
 
-### Auth System: 100% COMPLETADO (Core) ✅
-- **Frontend**: 17/17 tasks (100%) - 316 tests
-- **Backend**: 38/38 tasks (100%) - 139 tests
-- **OAuth Backend**: 16/16 tasks (100%) ✅
-- **OAuth Frontend**: 4/4 tasks (100%) ✅
-- **OAuth External**: 0/2 (BLOCKED) ⚠️
+## Archivos Clave
 
-### Deuda Técnica: OAuth External Setup
+| Archivo | Propósito |
+|---------|-----------|
+| `apps/api/src/prosell/infrastructure/api/middleware/auth_middleware.py` | JWT verify — **ROTO: lee header no cookie** |
+| `apps/api/src/prosell/infrastructure/api/routers/auth_router.py` | Auth endpoints completos |
+| `apps/web/src/middleware.ts` | Route protection Edge Runtime |
+| `apps/web/src/stores/authStore.ts` | Zustand auth state |
+| `apps/web/src/lib/api/authApi.ts` | API client |
+| `PRPs/code-review-fixes-sprint1-2.md` | PRP con 10 fixes pendientes |
 
-**Documentación creada**: `docs/technical-debt/oauth-external-setup.md`
+---
 
-**Qué falta** (NO es código, es configuración externa):
-1. **Crear Google OAuth App** (15 min)
-   - Ir a Google Cloud Console
-   - Crear proyecto + OAuth client ID
-   - Configurar redirect URIs (localhost:3000)
-   - Obtener `client_id` y `client_secret`
-   - Agregar variables a `.env`
+## Test Status General
+
+| Suite | Estado |
+|-------|--------|
+| Backend total | 309/315 (6 org failures pre-existentes) |
+| OAuth unit | 23/23 ✅ |
+| OAuth integration | 11/11 ✅ |
+| E2E (Sprint 3-4) | 67/67 ✅ |
