@@ -25,6 +25,16 @@ export default defineConfig({
           : "./.auth/storage-state.json",
       },
     },
+    // Project for authentication tests (NO storageState)
+    {
+      name: "auth-tests",
+      testMatch: /.*\.spec\.ts/,
+      testIgnore: /home\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: undefined, // No saved auth state - start fresh
+      },
+    },
     // Firefox and WebKit disabled - not installed in current environment
     // {
     //   name: "firefox",
