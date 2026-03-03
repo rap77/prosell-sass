@@ -18,7 +18,7 @@
  */
 "use client";
 
-import { type ButtonHTMLAttributes } from "react";
+import { type ButtonHTMLAttributes, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatedSvgWrapper } from "@/components/ui";
@@ -69,6 +69,11 @@ interface OAuthButtonProps extends Omit<
    * Button variant for chadcn/ui
    */
   variant: "google" | "facebook";
+
+  /**
+   * Callback called before navigation (for parent to set loading state)
+   */
+  onNavigate?: () => void;
 }
 
 // ============================================
@@ -87,6 +92,7 @@ function OAuthButton({
   icon,
   variant,
   disabled,
+  onNavigate,
   className,
   ...props
 }: OAuthButtonProps) {
@@ -106,9 +112,13 @@ function OAuthButton({
       return;
     }
 
+    // Notify parent to set loading state
+    onNavigate?.();
+
     // Redirect to backend OAuth authorize endpoint
     // Provider is determined by variant ("google" or "facebook")
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+    // OAuth always needs full URL (not relative), even in test mode
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
     window.location.href = `${apiUrl}/api/auth/oauth/${variant}/authorize`;
   };
 
@@ -170,6 +180,8 @@ export function OAuthButtons({
   disabled = false,
   onMouseEnter,
 }: OAuthButtonsProps) {
+  const [loadingProvider, setLoadingProvider] = useState<"google" | "facebook" | null>(null);
+
   return (
     <div
       data-testid="oauth-buttons-wrapper"
@@ -180,8 +192,9 @@ export function OAuthButtons({
       <OAuthButton
         label="Continue with Google"
         variant="google"
-        isLoading={false}
+        isLoading={loadingProvider === "google"}
         disabled={disabled}
+        onNavigate={() => setLoadingProvider("google")}
         icon={
           <AnimatedSvgWrapper animation="fadeIn" duration={300}>
             <GoogleIcon />
@@ -194,8 +207,9 @@ export function OAuthButtons({
       <OAuthButton
         label="Continue with Facebook"
         variant="facebook"
-        isLoading={false}
+        isLoading={loadingProvider === "facebook"}
         disabled={disabled}
+        onNavigate={() => setLoadingProvider("facebook")}
         icon={
           <AnimatedSvgWrapper animation="fadeIn" duration={300}>
             <FacebookIcon />

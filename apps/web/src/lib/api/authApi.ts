@@ -60,7 +60,7 @@ interface Enable2FAResponse {
 
 // Use relative URLs for E2E testing (mock endpoints in Next.js)
 // Falls back to localhost:8000 for production/development with real backend
-const API_BASE_URL =
+export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === "test" ? "" : "http://localhost:8000");
 

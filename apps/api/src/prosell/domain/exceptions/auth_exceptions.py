@@ -155,3 +155,40 @@ class OAuthEmailMismatchException(AuthDomainException):
             message=f"OAuth email ({oauth_email}) doesn't match expected email ({expected_email})",
             details={"oauth_email": oauth_email, "expected_email": expected_email},
         )
+
+
+class OAuthProviderNotSupportedError(AuthDomainException):
+    """Raised when an unsupported OAuth provider is requested."""
+
+    def __init__(self, provider: str) -> None:
+        super().__init__(
+            message=f"Unsupported OAuth provider: {provider}",
+            details={"provider": provider, "supported": ["google", "facebook"]},
+        )
+
+
+class OAuthStateInvalidError(AuthDomainException):
+    """Raised when OAuth state token is invalid or expired."""
+
+    def __init__(self) -> None:
+        super().__init__(message="Invalid or expired OAuth state token")
+
+
+class OAuthConfigurationError(AuthDomainException):
+    """Raised when OAuth provider is not configured (missing credentials)."""
+
+    def __init__(self, provider: str, missing: str) -> None:
+        super().__init__(
+            message=f"{provider} OAuth is not configured",
+            details={"provider": provider, "missing": missing},
+        )
+
+
+class OAuthCallbackError(AuthDomainException):
+    """Raised when OAuth provider callback fails (token exchange, user info)."""
+
+    def __init__(self, provider: str, reason: str = "unknown") -> None:
+        super().__init__(
+            message=f"OAuth callback failed for {provider}",
+            details={"provider": provider, "reason": reason},
+        )

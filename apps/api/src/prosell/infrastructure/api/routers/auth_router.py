@@ -52,6 +52,12 @@ from prosell.application.use_cases.auth.verify_2fa import (
     Verify2FAUseCase,
 )
 from prosell.core.config import settings
+from prosell.domain.exceptions.auth_exceptions import (
+    OAuthCallbackError,
+    OAuthConfigurationError,
+    OAuthProviderNotSupportedError,
+    OAuthStateInvalidError,
+)
 from prosell.domain.ports import IOAuthService
 from prosell.infrastructure.api.dependencies import (
     get_disable_2fa_use_case,
@@ -87,6 +93,29 @@ from prosell.infrastructure.api.schemas.responses import AuthStateUserResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# OAUTH HELPER FUNCTIONS
+# =============================================================================
+
+
+def _get_provider_redirect_uris() -> dict[str, str]:
+    """
+    Get OAuth provider redirect URIs from settings.
+
+    Module-level helper to avoid duplication between authorize and callback endpoints.
+    Maps provider names to their configured backend callback URIs.
+    """
+    return {
+        "google": settings.google_oauth_redirect_uri,
+        "facebook": settings.facebook_oauth_redirect_uri,
+    }
+
+
+# =============================================================================
+# ENDPOINTS
+# =============================================================================
 
 
 # =============================================================================
@@ -247,25 +276,37 @@ async def oauth_authorize(
         GET /api/v1/auth/oauth/google/authorize
         → Redirects to: https://accounts.google.com/o/oauth2/v2/auth?...
     """
-    # Use per-provider redirect URI from settings (pre-configured, includes protocol)
-    provider_redirect_uris: dict[str, str] = {
-        "google": settings.google_oauth_redirect_uri,
-        "facebook": settings.facebook_oauth_redirect_uri,
-    }
-    redirect_uri = provider_redirect_uris.get(provider, "")
+    try:
+        # Get provider redirect URI from settings
+        provider_redirect_uris = _get_provider_redirect_uris()
+        redirect_uri = provider_redirect_uris.get(provider, "")
 
-    # Initiate OAuth flow: get authorization URL and state token
-    result = await oauth_service.initiate_authorization(
-        provider=provider,
-        redirect_uri=redirect_uri,
-    )
+        # Initiate OAuth flow: get authorization URL and state token
+        result = await oauth_service.initiate_authorization(
+            provider=provider,
+            redirect_uri=redirect_uri,
+        )
 
-    logger.info(
-        f"OAuth authorization initiated for provider={provider}, state={result.state_token[:8]}..."
-    )
+        logger.info(
+            f"OAuth authorization initiated for provider={provider}, "
+            f"state={result.state_token[:8]}..."
+        )
 
-    # Redirect user to OAuth provider authorization page
-    return RedirectResponse(url=result.authorization_url, status_code=302)
+        # Redirect user to OAuth provider authorization page
+        return RedirectResponse(url=result.authorization_url, status_code=302)
+
+    except OAuthProviderNotSupportedError:
+        logger.warning(f"Unsupported OAuth provider: {provider}")
+        return RedirectResponse(
+            url=f"{settings.oauth_frontend_failure_url}unsupported_provider",
+            status_code=302,
+        )
+    except OAuthConfigurationError as e:
+        logger.error(f"OAuth configuration error for {provider}: {e.message}")
+        return RedirectResponse(
+            url=f"{settings.oauth_frontend_failure_url}oauth_failed",
+            status_code=302,
+        )
 
 
 @router.get("/oauth/{provider}/callback")
@@ -314,7 +355,10 @@ async def oauth_callback(
     # Handle OAuth error from provider (user denied access)
     if error:
         logger.warning(f"OAuth callback error for provider={provider}: {error}")
-        error_url = f"{settings.oauth_frontend_failure_url}{error}"
+        # Sanitize provider error to allowed values only
+        allowed_oauth_errors = {"access_denied", "server_error", "temporarily_unavailable"}
+        safe_error = error if error in allowed_oauth_errors else "oauth_error"
+        error_url = f"{settings.oauth_frontend_failure_url}{safe_error}"
         return RedirectResponse(url=error_url, status_code=302)
 
     # Validate required parameters for successful OAuth flow
@@ -326,11 +370,8 @@ async def oauth_callback(
         return RedirectResponse(url=error_url, status_code=302)
 
     try:
-        # Use per-provider redirect URI from settings (must match authorize)
-        provider_redirect_uris: dict[str, str] = {
-            "google": settings.google_oauth_redirect_uri,
-            "facebook": settings.facebook_oauth_redirect_uri,
-        }
+        # Get provider redirect URI from settings (must match authorize)
+        provider_redirect_uris = _get_provider_redirect_uris()
         redirect_uri = provider_redirect_uris.get(provider, "")
 
         # Process callback: exchange code for user info
@@ -411,10 +452,19 @@ async def oauth_callback(
 
         return redirect
 
-    except HTTPException as e:
-        # OAuth flow failed (invalid state, expired code, etc.)
-        logger.error(f"OAuth callback HTTP exception for provider={provider}: {e.detail}")
-        error_url = f"{settings.oauth_frontend_failure_url}{e.detail}"
+    except OAuthStateInvalidError:
+        logger.warning(f"Invalid OAuth state token for provider={provider}")
+        error_url = f"{settings.oauth_frontend_failure_url}invalid_state"
+        return RedirectResponse(url=error_url, status_code=302)
+
+    except OAuthProviderNotSupportedError:
+        logger.warning(f"Unsupported OAuth provider requested: {provider}")
+        error_url = f"{settings.oauth_frontend_failure_url}unsupported_provider"
+        return RedirectResponse(url=error_url, status_code=302)
+
+    except (OAuthConfigurationError, OAuthCallbackError) as e:
+        logger.error(f"OAuth error for provider={provider}: {e.message}")
+        error_url = f"{settings.oauth_frontend_failure_url}oauth_failed"
         return RedirectResponse(url=error_url, status_code=302)
 
     except Exception as e:

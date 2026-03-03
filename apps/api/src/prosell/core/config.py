@@ -414,17 +414,10 @@ class OAuthSettings(BaseSettings):
         description="Facebook OAuth backend callback URI",
     )
 
-    facebook_app_id: str | None = Field(
-        default=None,
-        description="Facebook OAuth app ID",
-    )
-    facebook_app_secret: str | None = Field(
-        default=None,
-        description="Facebook OAuth app secret",
-    )
-    facebook_redirect_uri: str = Field(
-        default="http://localhost:8000/api/v1/auth/oauth/facebook/callback",
-        description="Facebook OAuth backend callback URI",
+    # Redis URL for OAuth state token storage
+    redis_url: str = Field(
+        default="redis://localhost:6379/0",
+        description="Redis URL for OAuth state token storage",
     )
 
     frontend_success_url: str = Field(

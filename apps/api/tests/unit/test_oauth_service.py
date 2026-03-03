@@ -90,14 +90,16 @@ class FakeRedis:
 def oauth_settings():
     """Fixture for OAuth settings."""
     return OAuthSettings(
-        # Google OAuth (new field names)
+        # Google OAuth
         google_oauth_client_id="test-google-client-id",
         google_oauth_client_secret="test-google-secret",
         google_oauth_redirect_uri="http://localhost:8000/api/auth/oauth/google/callback",
-        # Facebook OAuth (old field names - service still uses these)
-        facebook_app_id="test-facebook-app-id",
-        facebook_app_secret="test-facebook-secret",
-        facebook_redirect_uri="http://localhost:8000/api/v1/auth/oauth/facebook/callback",
+        # Facebook OAuth (corrected field names)
+        facebook_oauth_app_id="test-facebook-app-id",
+        facebook_oauth_app_secret="test-facebook-secret",
+        facebook_oauth_redirect_uri="http://localhost:8000/api/auth/oauth/facebook/callback",
+        # Redis URL for state token storage
+        redis_url="redis://localhost:6379/0",
         # Frontend URLs
         frontend_success_url="http://localhost:3000/dashboard",
         frontend_failure_url="http://localhost:3000/auth/login?error=",
@@ -178,17 +180,17 @@ class TestOAuthServiceInitiate:
 
     @pytest.mark.asyncio
     async def test_initiate_authorization_unsupported_provider_raises_error(self, oauth_service):
-        """Test that unsupported provider raises HTTPException."""
-        from fastapi import HTTPException
+        """Test that unsupported provider raises OAuthProviderNotSupportedError."""
+        from prosell.domain.exceptions.auth_exceptions import OAuthProviderNotSupportedError
 
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(OAuthProviderNotSupportedError) as exc_info:
             await oauth_service.initiate_authorization(
                 provider="unsupported",
                 redirect_uri="http://localhost:8000/callback",
             )
 
-        assert exc_info.value.status_code == 400
-        assert "Unsupported OAuth provider" in exc_info.value.detail
+        assert "unsupported" in exc_info.value.message.lower()
+        assert exc_info.value.details["provider"] == "unsupported"
 
     @pytest.mark.asyncio
     async def test_initiate_authorization_case_insensitive_provider(self, oauth_service):
@@ -333,18 +335,18 @@ class TestOAuthServiceConfiguration:
 
     async def test_google_credentials_required_for_authorization(self, oauth_settings):
         """Test that Google credentials are required for authorization."""
-        # Remove client ID (note: field name is google_oauth_client_id now)
+        # Remove client ID
         oauth_settings.google_oauth_client_id = None
         service = OAuthServiceImpl(settings=oauth_settings)
         service._redis = FakeRedis()  # Inject FakeRedis
 
-        # Should raise HTTPException when trying to initiate
-        from fastapi import HTTPException
+        # Should raise OAuthConfigurationError when trying to initiate
+        from prosell.domain.exceptions.auth_exceptions import OAuthConfigurationError
 
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(OAuthConfigurationError) as exc_info:
             await service.initiate_authorization("google", "http://localhost:8000/callback")
 
-        assert "not configured" in exc_info.value.detail
+        assert exc_info.value.details["provider"] == "Google"
 
 
 # =============================================================================

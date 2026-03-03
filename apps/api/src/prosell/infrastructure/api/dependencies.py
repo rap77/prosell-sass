@@ -1,5 +1,6 @@
 """Dependency injection container for FastAPI."""
 
+from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends
@@ -100,8 +101,9 @@ def get_token_hasher() -> ITokenHasher:
     return TokenHasher()
 
 
+@lru_cache
 def get_oauth_service() -> IOAuthService:
-    """Get OAuth service instance (singleton)."""
+    """Get OAuth service instance (singleton via lru_cache)."""
     oauth_settings = get_oauth_settings()
     return OAuthServiceImpl(settings=oauth_settings)
 

@@ -23,9 +23,14 @@ from uuid import uuid4
 
 import httpx
 import redis.asyncio as redis
-from fastapi import HTTPException, status
 
-from prosell.core.config import OAuthSettings, settings
+from prosell.core.config import OAuthSettings
+from prosell.domain.exceptions.auth_exceptions import (
+    OAuthCallbackError,
+    OAuthConfigurationError,
+    OAuthProviderNotSupportedError,
+    OAuthStateInvalidError,
+)
 from prosell.domain.ports.i_oauth_service import (
     IOAuthService,
     OAuthAuthorizeResult,
@@ -74,7 +79,7 @@ class OAuthServiceImpl(IOAuthService):
         """Get or create Redis client."""
         if self._redis is None:
             self._redis = await redis.from_url(
-                settings.redis_url,
+                self.settings.redis_url,
                 encoding="utf-8",
                 decode_responses=True,
             )
@@ -114,8 +119,8 @@ class OAuthServiceImpl(IOAuthService):
             OAuthAuthorizeResult with authorization URL and state token
 
         Raises:
-            HTTPException(400): If provider is not supported
-            HTTPException(500): If required credentials are missing
+            OAuthProviderNotSupportedError: If provider is not supported
+            OAuthConfigurationError: If required credentials are missing
         """
         provider = provider.lower()
 
@@ -124,10 +129,7 @@ class OAuthServiceImpl(IOAuthService):
         elif provider == "facebook":
             return await self._initiate_facebook_authorization(redirect_uri)
         else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unsupported OAuth provider: {provider}. Supported: google, facebook",
-            )
+            raise OAuthProviderNotSupportedError(provider)
 
     async def _initiate_google_authorization(
         self,
@@ -146,13 +148,10 @@ class OAuthServiceImpl(IOAuthService):
             OAuthAuthorizeResult with Google authorization URL
 
         Raises:
-            HTTPException(500): If Google OAuth credentials are not configured
+            OAuthConfigurationError: If Google OAuth credentials are not configured
         """
         if not self.settings.google_oauth_client_id:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Google OAuth is not configured. Missing client ID.",
-            )
+            raise OAuthConfigurationError("Google", "client_id")
 
         # Generate unique state token for CSRF protection
         state = str(uuid4())
@@ -201,13 +200,10 @@ class OAuthServiceImpl(IOAuthService):
             OAuthAuthorizeResult with Facebook authorization URL
 
         Raises:
-            HTTPException(500): If Facebook OAuth credentials are not configured
+            OAuthConfigurationError: If Facebook OAuth credentials are not configured
         """
-        if not self.settings.facebook_app_id:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Facebook OAuth is not configured. Missing app ID.",
-            )
+        if not self.settings.facebook_oauth_app_id:
+            raise OAuthConfigurationError("Facebook", "app_id")
 
         # Generate unique state token for CSRF protection
         state = str(uuid4())
@@ -219,7 +215,7 @@ class OAuthServiceImpl(IOAuthService):
         # Build authorization URL parameters
         # https://www.facebook.com/v18.0/dialog/oauth
         params = {
-            "client_id": self.settings.facebook_app_id,
+            "client_id": self.settings.facebook_oauth_app_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
             "scope": "email,public_profile",
@@ -260,17 +256,13 @@ class OAuthServiceImpl(IOAuthService):
             OAuthCallbackResult with user information from provider
 
         Raises:
-            HTTPException(400): If state token is invalid or expired
-            HTTPException(401): If access token is invalid
-            HTTPException(500): If fetching user info fails
+            OAuthStateInvalidError: If state token is invalid or expired
+            OAuthCallbackError: If token exchange or user info fetch fails
         """
         # Validate state token first (CSRF protection)
         if not await self.validate_state(state):
             logger.warning(f"Invalid or expired state token: {state[:8]}...")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid or expired state token. Please try again.",
-            )
+            raise OAuthStateInvalidError()
 
         # Consume state token (single-use)
         await self.consume_state(state)
@@ -282,10 +274,7 @@ class OAuthServiceImpl(IOAuthService):
         elif provider == "facebook":
             return await self._process_facebook_callback(code, redirect_uri)
         else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unsupported OAuth provider: {provider}",
-            )
+            raise OAuthProviderNotSupportedError(provider)
 
     async def _process_google_callback(
         self,
@@ -305,13 +294,11 @@ class OAuthServiceImpl(IOAuthService):
             OAuthCallbackResult with user info from Google
 
         Raises:
-            HTTPException(500): If token exchange or user info fetch fails
+            OAuthConfigurationError: If Google OAuth credentials are not configured
+            OAuthCallbackError: If token exchange or user info fetch fails
         """
         if not self.settings.google_oauth_client_secret:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Google OAuth is not configured. Missing client secret.",
-            )
+            raise OAuthConfigurationError("Google", "client_secret")
 
         # Exchange authorization code for access token
         # POST https://oauth2.googleapis.com/token
@@ -338,10 +325,7 @@ class OAuthServiceImpl(IOAuthService):
                 expires_in = token_data.get("expires_in", 3600)
 
                 if not access_token:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Failed to obtain access token from Google",
-                    )
+                    raise OAuthCallbackError("google", "no_access_token")
 
                 logger.info("Successfully exchanged Google authorization code for access token")
 
@@ -349,16 +333,10 @@ class OAuthServiceImpl(IOAuthService):
             logger.error(
                 f"Google token exchange failed: {e.response.status_code} - {e.response.text}"
             )
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Failed to exchange authorization code with Google",
-            ) from e
+            raise OAuthCallbackError("google", "token_exchange_failed") from e
         except Exception as e:
             logger.error(f"Unexpected error during Google token exchange: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to complete Google OAuth flow",
-            ) from e
+            raise OAuthCallbackError("google", "unexpected_error") from e
 
         # Fetch user information from Google
         # GET https://www.googleapis.com/oauth2/v2/userinfo
@@ -379,16 +357,10 @@ class OAuthServiceImpl(IOAuthService):
 
         except httpx.HTTPStatusError as e:
             logger.error(f"Google user info fetch failed: {e.response.status_code}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Failed to fetch user information from Google",
-            ) from e
+            raise OAuthCallbackError("google", "user_info_fetch_failed") from e
         except Exception as e:
             logger.error(f"Unexpected error fetching Google user info: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to fetch user information",
-            ) from e
+            raise OAuthCallbackError("google", "unexpected_error") from e
 
         # Build OAuthUserInfo
         expires_at = datetime.now(UTC) + timedelta(seconds=int(expires_in))
@@ -426,13 +398,11 @@ class OAuthServiceImpl(IOAuthService):
             OAuthCallbackResult with user info from Facebook
 
         Raises:
-            HTTPException(500): If token exchange or user info fetch fails
+            OAuthConfigurationError: If Facebook OAuth credentials are not configured
+            OAuthCallbackError: If token exchange or user info fetch fails
         """
-        if not self.settings.facebook_app_secret:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Facebook OAuth is not configured. Missing app secret.",
-            )
+        if not self.settings.facebook_oauth_app_secret:
+            raise OAuthConfigurationError("Facebook", "app_secret")
 
         # Exchange authorization code for access token
         # GET https://graph.facebook.com/v18.0/oauth/access_token
@@ -442,8 +412,8 @@ class OAuthServiceImpl(IOAuthService):
                     "https://graph.facebook.com/v18.0/oauth/access_token",
                     params={
                         "code": code,
-                        "client_id": self.settings.facebook_app_id,
-                        "client_secret": self.settings.facebook_app_secret,
+                        "client_id": self.settings.facebook_oauth_app_id,
+                        "client_secret": self.settings.facebook_oauth_app_secret,
                         "redirect_uri": redirect_uri,
                     },
                 )
@@ -453,10 +423,7 @@ class OAuthServiceImpl(IOAuthService):
                 access_token = token_data.get("access_token")
 
                 if not access_token:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Failed to obtain access token from Facebook",
-                    )
+                    raise OAuthCallbackError("facebook", "no_access_token")
 
                 logger.info("Successfully exchanged Facebook authorization code for access token")
 
@@ -464,16 +431,10 @@ class OAuthServiceImpl(IOAuthService):
             logger.error(
                 f"Facebook token exchange failed: {e.response.status_code} - {e.response.text}"
             )
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Failed to exchange authorization code with Facebook",
-            ) from e
+            raise OAuthCallbackError("facebook", "token_exchange_failed") from e
         except Exception as e:
             logger.error(f"Unexpected error during Facebook token exchange: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to complete Facebook OAuth flow",
-            ) from e
+            raise OAuthCallbackError("facebook", "unexpected_error") from e
 
         # Fetch user information from Facebook
         # GET https://graph.facebook.com/me?fields=...
@@ -495,16 +456,10 @@ class OAuthServiceImpl(IOAuthService):
 
         except httpx.HTTPStatusError as e:
             logger.error(f"Facebook user info fetch failed: {e.response.status_code}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Failed to fetch user information from Facebook",
-            ) from e
+            raise OAuthCallbackError("facebook", "user_info_fetch_failed") from e
         except Exception as e:
             logger.error(f"Unexpected error fetching Facebook user info: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to fetch user information",
-            ) from e
+            raise OAuthCallbackError("facebook", "unexpected_error") from e
 
         # Build OAuthUserInfo
         avatar_url = None

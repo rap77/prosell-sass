@@ -14,7 +14,11 @@ from prosell.domain.exceptions.auth_exceptions import (
     InvalidPasswordResetTokenException,
     # OAuth exceptions
     OAuthAccountExistsException,
+    OAuthCallbackError,
+    OAuthConfigurationError,
     OAuthEmailMismatchException,
+    OAuthProviderNotSupportedError,
+    OAuthStateInvalidError,
     UserNotFoundException,
     # Password exceptions
     WeakPasswordException,
@@ -60,5 +64,9 @@ __all__ = [
     "BackupCodesExhaustedException",
     # OAuth exceptions
     "OAuthAccountExistsException",
+    "OAuthCallbackError",
+    "OAuthConfigurationError",
     "OAuthEmailMismatchException",
+    "OAuthProviderNotSupportedError",
+    "OAuthStateInvalidError",
 ]
