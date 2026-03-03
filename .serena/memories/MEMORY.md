@@ -1,26 +1,44 @@
 # ProSell SaaS - Memory Index
 
-## Estado (2026-03-03): feature/oauth-backend-callbacks → FIXES COMMITEADOS ✅
+## Estado (2026-03-03): main — UP TO DATE ✅
 
-### PRP code-review-fixes-oauth-security: COMPLETADO
-**Commit**: `f821e8b` - Todos los fixes aplicados y aprobados por GGA
+### Latest Commits
+- `faae5c9` docs(prp): mark oauth-security-fixes as completed ✅
+- `f42208b` fix(types): resolve all 82 Pyright type errors ✅
+- `b5e1d25` test(e2e): add OAuth integration tests ✅
 
-Commits de esta sesión:
-- `f821e8b` fix(auth): implement code review fixes from Sprint 1-2 (10 fixes)
-- Previos: `a77eca8`, `0466e4d`, `a527cec`, `c37a958`, `4e0c7bd`
+### OAuth Status: READY FOR TESTING ✅
 
-Tests: 297/297 backend ✅ | 332/332 frontend ✅ | GGA: PASSED ✅
+**Credentials**: Configured in `.env.local`
+- Google Client ID & Secret: ✅ Configured
+- Facebook App ID & Secret: ✅ Configured (placeholders)
+- Redirect URI: `http://localhost:8000/api/auth/oauth/google/callback`
 
-### Próximo paso: Merge a main
-```bash
-git checkout main
-git merge feature/oauth-backend-callbacks
-```
+**Docker Containers**: Created (currently stopped)
+- `prosell-api`, `prosell-web`, `prosell-db`, `prosell-redis`
+
+### Test Results
+| Suite | Result |
+|-------|--------|
+| Backend | 297/297 ✅ |
+| Frontend | 332/332 ✅ |
+| Pyright | 0 errors, 0 warnings ✅ |
+
+### Next Steps
+1. Start containers: `docker compose -f docker/docker-compose.yml up -d`
+2. Test OAuth flow in browser
+3. Continue with Sprint 4 (marketplace/scraping features)
 
 ---
 
 ## Memorias Detalladas
 
+### Latest (2026-03-03)
+- **oauth-credentials-configured-2026-03-03**: ✅ OAuth credentials ready in `.env.local`, Docker containers created
+- **oauth-prp-completed-2026-03-03**: OAuth PRP completed (all 10 fixes)
+- **pyright-zero-errors-2026-03-03**: All 82 Pyright errors fixed
+
+### Important References
 - **gga-troubleshooting-2026-03-03**: ⚠️ **CRÍTICO** - Configuración GGA, NO CAMBIAR RULES_FILE path
 - **gga-workflow-regla-de-oro**: Reglas del pre-commit GGA
 - **HANDOFF**: Estado actual, próximos pasos, comandos para continuar
