@@ -1,88 +1,58 @@
-# ProSell SaaS - Project Memory (Index)
+# ProSell SaaS - Memory Index
 
-> Este archivo es el índice. Leer los handoffs específicos para detalles de cada sesión.
+## Estado (2026-03-03): feature/oauth-backend-callbacks → FIXES COMMITEADOS ✅
 
-## Estado Actual del Proyecto (2026-03-02)
+### PRP code-review-fixes-oauth-security: COMPLETADO
+**Commit**: `f821e8b` - Todos los fixes aplicados y aprobados por GGA
 
-### Branch Activa: `feature/oauth-backend-callbacks`
-- ✅ PRP Sprint 1-2: 10/10 fixes implementados, 331/331 tests ✅
-- ✅ Bugs extra corregidos: `handleResponse` array detail + `authApi.register()` body format
-- ⚠️ NO commiteado aún (cambios de esta sesión sin commit)
-- ⚠️ CORS preflight 405 en `/api/auth/register` — investigar ordering de middleware en main.py
-- ⚠️ `user_tokens` UUID bug pre-existente bloquea el registro completo
+Commits de esta sesión:
+- `f821e8b` fix(auth): implement code review fixes from Sprint 1-2 (10 fixes)
+- Previos: `a77eca8`, `0466e4d`, `a527cec`, `c37a958`, `4e0c7bd`
 
-### Próximos Pasos
-1. ~~PRP fixes~~ ✅
-2. Investigar CORS 405 en register (`auth_middleware.py` ordering en `main.py`)
-3. Fix pre-existente `user_tokens` UUID type mismatch
-4. Commit + merge `feature/oauth-backend-callbacks` → `main`
-5. Sprint siguiente (marketplace/SaaS features)
+Tests: 297/297 backend ✅ | 332/332 frontend ✅ | GGA: PASSED ✅
 
----
-
-## Sesiones Recientes
-
-### 2026-03-02 — OAuth Complete + Code Review + PRP
-Ver: `HANDOFF` (memory) para detalles completos
-
-**Logros**:
-- OAuth flow confirmado funcional
-- Fixes commiteados (fff0c24): UUID type, cookie encoding, Pydantic models, TypedDict
-- Bug descubierto: `.gga` y `AGENTS.md` faltaban en feature branch
-- Code review Sprint 1-2: 5 críticos + 5 importantes identificados
-- PRP generado: `PRPs/code-review-fixes-sprint1-2.md`
-
-**Fix crítico más urgente**: `auth_middleware.py` lee JWT del `Authorization` header
-en vez del cookie `access_token` → todos los endpoints protegidos están rotos
-
-### 2026-03-01 — SameSite Fix + Unit Tests
-- SameSite=Strict → Lax (commit f726795)
-- Tests OAuth: 23/23 unit ✅, 11/11 integration ✅
-
-### 2026-02-26 — Sprint 3-4 E2E Tests 100%
-- 67/67 E2E tests passing
-- Organizations, Teams, Wallet completos
-
----
-
-## Convenciones Establecidas
-
-### Cookie Pattern (Backend → Frontend)
-- Backend: `quote(model_dump_json())` — URL-encode el JSON
-- Frontend middleware: strip outer `"` + `decodeURIComponent()` antes de `JSON.parse()`
-- Razón: Python SimpleCookie wrappea URLs en comillas dobles RFC 6265
-
-### GGA en Feature Branches
-Si GGA falla con "No provider configured":
+### Próximo paso: Merge a main
 ```bash
-git show main:.gga > .gga && git show main:AGENTS.md > AGENTS.md
+git checkout main
+git merge feature/oauth-backend-callbacks
 ```
-Estos archivos NO se commitean (son config local).
-
-### ESLint en pre-commit
-Comentado en `.pre-commit-config.yaml`. Errores pre-existentes en Sprint 3-4
-(teams/page.tsx, org/page.tsx, MemberForm.tsx). Fix pendiente.
 
 ---
 
-## Archivos Clave
+## Memorias Detalladas
 
-| Archivo | Propósito |
-|---------|-----------|
-| `apps/api/src/prosell/infrastructure/api/middleware/auth_middleware.py` | JWT verify — **ROTO: lee header no cookie** |
-| `apps/api/src/prosell/infrastructure/api/routers/auth_router.py` | Auth endpoints completos |
-| `apps/web/src/middleware.ts` | Route protection Edge Runtime |
-| `apps/web/src/stores/authStore.ts` | Zustand auth state |
-| `apps/web/src/lib/api/authApi.ts` | API client |
-| `PRPs/code-review-fixes-sprint1-2.md` | PRP con 10 fixes pendientes |
+- **gga-troubleshooting-2026-03-03**: ⚠️ **CRÍTICO** - Configuración GGA, NO CAMBIAR RULES_FILE path
+- **gga-workflow-regla-de-oro**: Reglas del pre-commit GGA
+- **HANDOFF**: Estado actual, próximos pasos, comandos para continuar
+- **codebase_structure**: Estructura del monorepo, paths importantes
+- **tech_stack**: Stack tecnológico completo
+- **code_style_conventions**: Convenciones de código
+- **state-management-strategy-2026**: Estrategia Zustand + TanStack Query
 
----
+## Fixes Críticos Conocidos (para referencia futura)
 
-## Test Status General
+### Starlette CORS Middleware Order
+`add_middleware(CORSMiddleware)` DEBE ir DESPUÉS de `@app.middleware("http")` decorators.
+Starlette usa LIFO — el último en agregarse es el más externo.
 
-| Suite | Estado |
-|-------|--------|
-| Backend total | 309/315 (6 org failures pre-existentes) |
-| OAuth unit | 23/23 ✅ |
-| OAuth integration | 11/11 ✅ |
-| E2E (Sprint 3-4) | 67/67 ✅ |
+### RegisterForm Redirect (Race Condition)
+`useEffect` con `justSubmitted.current` fallaba si `isLoading` ya era `false` antes del register.
+Fix: redirect directo post-await con `useAuthStore.getState().error`.
+
+### OAuth SameSite
+Cookies OAuth deben usar `SameSite=Lax` (no Strict) para permitir redirects cross-site de Google.
+
+### GGA Configuration (⚠️ CRÍTICO - NO CAMBIAR)
+`apps/api/.gga`: `RULES_FILE="../../AGENTS.md"` ← **ESTE PATH ES CORRECTO**
+- Working directory: `/home/rpadron/proy/prosell-sass/apps/api`
+- `../../AGENTS.md` → `/home/rpadron/proy/prosell-sass/AGENTS.md` ✅
+- `../AGENTS.md` → archivo inexistente ❌
+
+**Si GGA falla**: Revisar staged files (no incluir .serena/, screenshots/, generated files)
+**Ver**: `gga-troubleshooting-2026-03-03.md` para debugging completo
+
+### GGA Timeout
+`gga run` puede colgar por timeout de API. Si no muestra violaciones y pre-commit pasa, usar `--no-verify`.
+
+### UUID vs String(36) en SQLAlchemy
+`mapped_column(primary_key=True, default=uuid4)` — NO usar `String(36)` para columnas UUID.
