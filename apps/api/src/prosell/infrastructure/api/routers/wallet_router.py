@@ -154,6 +154,8 @@ async def credit_wallet(
         await use_case.execute(request)
         # Return updated wallet
         wallet = await wallet_repo.get_by_org(request.org_id, request.tenant_id)
+        if wallet is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Wallet not found")
         return WalletResponse.from_entity(wallet)
     except WalletNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
@@ -202,6 +204,8 @@ async def debit_wallet(
         await use_case.execute(request)
         # Return updated wallet
         wallet = await wallet_repo.get_by_org(request.org_id, request.tenant_id)
+        if wallet is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Wallet not found")
         return WalletResponse.from_entity(wallet)
     except WalletNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e

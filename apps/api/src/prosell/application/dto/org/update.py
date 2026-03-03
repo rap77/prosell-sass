@@ -12,4 +12,4 @@ class UpdateOrganizationRequest(BaseModel):
     phone: str | None = None
     logo_url: str | None = None
     banner_url: str | None = None
-    settings: dict | None = None
+    settings: dict[str, object] | None = None

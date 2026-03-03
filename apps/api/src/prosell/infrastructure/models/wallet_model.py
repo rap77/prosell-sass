@@ -71,7 +71,7 @@ class WalletTransactionModel(Base):
     balance_after_cents: Mapped[int] = mapped_column(Integer, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     tenant_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
-    metadata_: Mapped[dict] = mapped_column(
+    metadata_: Mapped[dict[str, object]] = mapped_column(
         "metadata",
         JSON,
         default=dict,

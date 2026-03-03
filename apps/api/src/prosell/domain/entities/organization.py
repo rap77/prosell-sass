@@ -38,7 +38,7 @@ class Organization(DomainModel):
     wallet_id: UUID | None = None
 
     # Metadata
-    settings: dict = Field(default_factory=dict)
+    settings: dict[str, object] = Field(default_factory=dict)
 
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -167,7 +167,7 @@ class Organization(DomainModel):
         self.banner_url = banner_url
         self.updated_at = datetime.now(UTC)
 
-    def update_settings(self, settings: dict) -> None:
+    def update_settings(self, settings: dict[str, object]) -> None:
         """
         Update organization settings.
 

@@ -78,7 +78,7 @@ class OAuthServiceImpl(IOAuthService):
     async def _get_redis(self) -> redis.Redis:
         """Get or create Redis client."""
         if self._redis is None:
-            self._redis = await redis.from_url(
+            self._redis = await redis.from_url(  # type: ignore[call-arg]
                 self.settings.redis_url,
                 encoding="utf-8",
                 decode_responses=True,

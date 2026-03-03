@@ -40,8 +40,8 @@ class RBACMiddleware:
         ) -> Callable[P, Any]:  # type: ignore[misc]
             @wraps(func)
             async def wrapper(
-                *args: P.args,
                 current_user: dict[str, Any],
+                *args: P.args,
                 **kwargs: P.kwargs,
             ) -> Any:  # type: ignore[misc]
                 user_roles: list[str] = current_user.get("roles", [])  # type: ignore[assignment]
@@ -81,8 +81,8 @@ class RBACMiddleware:
         ) -> Callable[P, Any]:  # type: ignore[misc]
             @wraps(func)
             async def wrapper(
-                *args: P.args,
                 current_user: dict[str, Any],
+                *args: P.args,
                 **kwargs: P.kwargs,
             ) -> Any:  # type: ignore[misc]
                 user_roles: list[str] = current_user.get("roles", [])  # type: ignore[assignment]

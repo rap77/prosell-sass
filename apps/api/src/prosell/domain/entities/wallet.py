@@ -92,7 +92,7 @@ class Wallet(DomainModel):
         self,
         amount_cents: int,
         description: str,
-        metadata: dict | None = None,
+        metadata: dict[str, object] | None = None,
     ) -> "WalletTransaction":
         """
         Add tokens to wallet (credit transaction).
@@ -134,7 +134,7 @@ class Wallet(DomainModel):
         self,
         amount_cents: int,
         description: str,
-        metadata: dict | None = None,
+        metadata: dict[str, object] | None = None,
     ) -> "WalletTransaction":
         """
         Spend tokens from wallet (debit transaction).
@@ -224,14 +224,14 @@ class WalletTransaction(DomainModel):
     tenant_id: UUID  # For multi-tenant isolation
 
     # Optional metadata
-    metadata: dict = Field(default_factory=dict)
+    metadata: dict[str, object] = Field(default_factory=dict)
 
     # Timestamp
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @field_validator("metadata", mode="before")
     @classmethod
-    def parse_metadata(cls, v: dict | str | None) -> dict:
+    def parse_metadata(cls, v: dict[str, object] | str | None) -> dict[str, object]:  # type: ignore[valid-type]
         """
         Parse metadata from JSON string or dict.
 
@@ -243,8 +243,8 @@ class WalletTransaction(DomainModel):
         if isinstance(v, str):
             import json
 
-            return json.loads(v)
-        return v
+            return json.loads(v)  # type: ignore[return-value]
+        return v  # type: ignore[return-value]
 
     @classmethod
     def create(
@@ -255,7 +255,7 @@ class WalletTransaction(DomainModel):
         balance_after_cents: int,
         description: str,
         tenant_id: UUID,
-        metadata: dict | None = None,
+        metadata: dict[str, object] | None = None,
     ) -> "WalletTransaction":
         """
         Factory method for new transaction.

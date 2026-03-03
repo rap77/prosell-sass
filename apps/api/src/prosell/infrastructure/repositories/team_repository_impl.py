@@ -134,6 +134,15 @@ class SqlAlchemyTeamRepository(AbstractTeamRepository):
         result = await self.session.execute(stmt)
         return result.scalar() or 0  # type: ignore[return-value]
 
+    async def count_by_org(self, org_id: UUID, tenant_id: UUID) -> int:
+        """Count teams for an organization."""
+        stmt = select(func.count(TeamModel.id)).where(
+            TeamModel.org_id == org_id,
+            TeamModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar() or 0  # type: ignore[return-value]
+
     def _to_entity(self, model: TeamModel) -> Team:
         """Convert ORM model to domain entity."""
         return Team.model_validate(model, from_attributes=True)

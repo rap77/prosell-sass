@@ -20,7 +20,7 @@ class WalletTransactionResponse(BaseModel):
     balance_after: Decimal = Field(default=Decimal("0"))
     description: str
     tenant_id: UUID
-    metadata: dict = {}
+    metadata: dict[str, object] = {}
     created_at: str
 
     @classmethod
@@ -77,7 +77,7 @@ class CreditWalletRequest(BaseModel):
     tenant_id: UUID
     amount_cents: int = Field(..., gt=0)
     description: str = Field(..., min_length=1, max_length=500)
-    metadata: dict | None = None
+    metadata: dict[str, object] | None = None
 
 
 class DebitWalletRequest(BaseModel):
@@ -87,7 +87,7 @@ class DebitWalletRequest(BaseModel):
     tenant_id: UUID
     amount_cents: int = Field(..., gt=0)
     description: str = Field(..., min_length=1, max_length=500)
-    metadata: dict | None = None
+    metadata: dict[str, object] | None = None
 
 
 class WalletTransactionsResponse(BaseModel):

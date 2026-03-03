@@ -1,7 +1,6 @@
 """SQLAlchemy implementation of OAuth repository."""
 
 from datetime import datetime
-from typing import TypedDict
 from uuid import UUID
 
 from sqlalchemy import select
@@ -9,15 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.repositories.oauth_repository import AbstractOAuthRepository
 from prosell.infrastructure.models.oauth_account_model import OAuthAccountModel
-
-
-class OAuthProviderInfo(TypedDict):
-    """Known shape of an OAuth provider record."""
-
-    provider: str
-    provider_user_id: str
-    provider_email: str | None
-    created_at: datetime
 
 
 class SqlAlchemyOAuthRepository(AbstractOAuthRepository):
@@ -69,7 +59,7 @@ class SqlAlchemyOAuthRepository(AbstractOAuthRepository):
         await self.session.flush()
         return True
 
-    async def get_user_oauth_providers(self, user_id: UUID) -> list[OAuthProviderInfo]:
+    async def get_user_oauth_providers(self, user_id: UUID) -> list[dict[str, object]]:
         """Get all OAuth providers linked to a user."""
         stmt = select(OAuthAccountModel).where(
             OAuthAccountModel.user_id == user_id,

@@ -112,7 +112,7 @@ class Team(DomainModel):
             role=role,
             commission_rate=commission_rate,
             tenant_id=self.tenant_id,
-            created_at=datetime.now(UTC),
+            joined_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
 

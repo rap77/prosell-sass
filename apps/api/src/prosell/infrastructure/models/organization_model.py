@@ -45,7 +45,7 @@ class OrganizationModel(Base):
     wallet_id: Mapped[UUID | None] = mapped_column(nullable=True)
 
     # Settings
-    settings: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    settings: Mapped[dict[str, object]] = mapped_column(JSON, default=dict, nullable=False)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(

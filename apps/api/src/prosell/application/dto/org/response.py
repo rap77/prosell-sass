@@ -22,7 +22,7 @@ class OrganizationResponse(BaseModel):
     phone: str | None = None
     verified_at: datetime | None = None
     wallet_id: UUID | None = None
-    settings: dict = {}
+    settings: dict[str, object] = {}
     created_at: datetime
     updated_at: datetime
 
