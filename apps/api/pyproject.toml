@@ -78,6 +78,10 @@ known-first-party = ["prosell"]
 "src/prosell/infrastructure/api/dependencies.py" = ["B008"]
 "src/prosell/infrastructure/api/middleware/auth_middleware.py" = ["B008"]
 
+# Pytest fixtures injected for side effects only (e.g. dependency_overrides) are not "used"
+# in the traditional sense — ARG002 is a false positive for this pattern.
+"tests/integration/test_organization_api.py" = ["ARG002"]
+
 # TODO: Fix these pre-existing issues (not part of current GGA fixes)
 "src/prosell/application/use_cases/auth/reset_password.py" = ["ARG002"]
 "src/prosell/application/use_cases/auth/verify_email.py" = ["ARG002"]

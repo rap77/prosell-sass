@@ -45,16 +45,12 @@ def mock_role_repo_super_admin():
 
 
 @pytest.fixture
-def mock_role_repo_with_org_create():
-    """Mock role repo with SUPER_ADMIN (has ORG_CREATE permission)."""
-    from unittest.mock import AsyncMock, MagicMock
+def with_super_admin_role(mock_role_repo_super_admin):
+    """Override get_role_repository with SUPER_ADMIN for RBAC-gated endpoints."""
+    from prosell.infrastructure.api.dependencies import get_role_repository
 
-    from prosell.domain.entities.role import Role, RoleType
-
-    role = Role.create_system_role(RoleType.SUPER_ADMIN)
-    repo = MagicMock()
-    repo.get_user_roles = AsyncMock(return_value=[role])
-    return repo
+    app.dependency_overrides[get_role_repository] = lambda: mock_role_repo_super_admin
+    # cleanup handled by autouse auto_mock_auth fixture
 
 
 @pytest.fixture
@@ -158,7 +154,7 @@ class TestCreateOrganization:
         sample_org,
         sample_wallet,
         mock_auth_user,
-        mock_role_repo_with_org_create,
+        with_super_admin_role,
     ):
         """Creates org with 201 status."""
         # Setup mocks
@@ -170,11 +166,6 @@ class TestCreateOrganization:
         linked_org.wallet_id = sample_wallet.id
         mock_org_repo.update.return_value = linked_org
 
-        # Override dependencies
-        from prosell.infrastructure.api.dependencies import (
-            get_current_auth_user,
-            get_role_repository,
-        )
         from prosell.infrastructure.api.routers.org_router import (
             get_org_repository,
             get_wallet_repository,
@@ -182,8 +173,6 @@ class TestCreateOrganization:
 
         app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
         app.dependency_overrides[get_wallet_repository] = lambda: mock_wallet_repo
-        app.dependency_overrides[get_current_auth_user] = lambda: mock_auth_user
-        app.dependency_overrides[get_role_repository] = lambda: mock_role_repo_with_org_create
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             payload = {
@@ -203,12 +192,11 @@ class TestCreateOrganization:
         self,
         mock_org_repo,
         mock_wallet_repo,
-        mock_role_repo_with_org_create,
+        with_super_admin_role,
     ):
         """Returns 409 when org name already exists."""
         mock_org_repo.exists_by_name.return_value = True
 
-        from prosell.infrastructure.api.dependencies import get_role_repository
         from prosell.infrastructure.api.routers.org_router import (
             get_org_repository,
             get_wallet_repository,
@@ -216,7 +204,6 @@ class TestCreateOrganization:
 
         app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
         app.dependency_overrides[get_wallet_repository] = lambda: mock_wallet_repo
-        app.dependency_overrides[get_role_repository] = lambda: mock_role_repo_with_org_create
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             payload = {"name": "Existing", "tenant_id": str(uuid4())}
@@ -450,7 +437,7 @@ class TestUpdateOrganization:
 
 
 class TestVerifyOrganization:
-    async def test_verify_success(self, mock_org_repo, sample_org, mock_role_repo_super_admin):
+    async def test_verify_success(self, mock_org_repo, sample_org, with_super_admin_role):
         """Verifies pending org and transitions to ACTIVE."""
         sample_org.status = OrganizationStatus.PENDING_VERIFICATION
         mock_org_repo.get_by_id.return_value = sample_org
@@ -460,11 +447,9 @@ class TestVerifyOrganization:
         verified_org.verify(verifier_id)
         mock_org_repo.update.return_value = verified_org
 
-        from prosell.infrastructure.api.dependencies import get_role_repository
         from prosell.infrastructure.api.routers.org_router import get_org_repository
 
         app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
-        app.dependency_overrides[get_role_repository] = lambda: mock_role_repo_super_admin
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
@@ -482,17 +467,15 @@ class TestVerifyOrganization:
         self,
         mock_org_repo,
         sample_org,
-        mock_role_repo_super_admin,
+        with_super_admin_role,
     ):
         """Returns 422 when verifying already ACTIVE org."""
         sample_org.status = OrganizationStatus.ACTIVE
         mock_org_repo.get_by_id.return_value = sample_org
 
-        from prosell.infrastructure.api.dependencies import get_role_repository
         from prosell.infrastructure.api.routers.org_router import get_org_repository
 
         app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
-        app.dependency_overrides[get_role_repository] = lambda: mock_role_repo_super_admin
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
@@ -511,7 +494,7 @@ class TestVerifyOrganization:
 
 
 class TestRejectOrganization:
-    async def test_reject_success(self, mock_org_repo, sample_org, mock_role_repo_super_admin):
+    async def test_reject_success(self, mock_org_repo, sample_org, with_super_admin_role):
         """Rejects pending org."""
         sample_org.status = OrganizationStatus.PENDING_VERIFICATION
         mock_org_repo.get_by_id.return_value = sample_org
@@ -521,11 +504,9 @@ class TestRejectOrganization:
         rejected_org.reject(verifier_id)
         mock_org_repo.update.return_value = rejected_org
 
-        from prosell.infrastructure.api.dependencies import get_role_repository
         from prosell.infrastructure.api.routers.org_router import get_org_repository
 
         app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
-        app.dependency_overrides[get_role_repository] = lambda: mock_role_repo_super_admin
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
@@ -545,7 +526,7 @@ class TestRejectOrganization:
 
 
 class TestSuspendOrganization:
-    async def test_suspend_success(self, mock_org_repo, sample_org, mock_role_repo_super_admin):
+    async def test_suspend_success(self, mock_org_repo, sample_org, with_super_admin_role):
         """Suspends active org."""
         sample_org.status = OrganizationStatus.ACTIVE
         mock_org_repo.get_by_id.return_value = sample_org
@@ -554,11 +535,9 @@ class TestSuspendOrganization:
         suspended_org.suspend()
         mock_org_repo.update.return_value = suspended_org
 
-        from prosell.infrastructure.api.dependencies import get_role_repository
         from prosell.infrastructure.api.routers.org_router import get_org_repository
 
         app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
-        app.dependency_overrides[get_role_repository] = lambda: mock_role_repo_super_admin
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
