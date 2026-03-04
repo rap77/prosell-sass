@@ -1,0 +1,398 @@
+"""SQLAlchemy implementation of Product repository."""
+
+from uuid import UUID
+
+from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from prosell.domain.entities.product import Product
+from prosell.domain.repositories.product_repository import AbstractProductRepository
+from prosell.domain.value_objects.product_condition import ProductCondition
+from prosell.domain.value_objects.product_status import ProductStatus
+from prosell.infrastructure.models.product_model import ProductModel
+
+
+class SqlAlchemyProductRepository(AbstractProductRepository):
+    """SQLAlchemy implementation of ProductRepository."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def create(self, product: Product) -> Product:
+        """Create a new product."""
+        model = ProductModel(
+            id=product.id,
+            tenant_id=product.tenant_id,
+            organization_id=product.organization_id,
+            category_id=product.category_id,
+            title=product.title,
+            slug=product.slug,
+            description=product.description,
+            price_cents=product.price_cents,
+            currency=product.currency,
+            condition=product.condition.value,
+            status=product.status.value,
+            attributes=product.attributes,
+            location_city=product.location_city,
+            location_state=product.location_state,
+            location_zip=product.location_zip,
+            is_featured=product.is_featured,
+            view_count=product.view_count,
+            favorite_count=product.favorite_count,
+            submitted_for_approval_at=product.submitted_for_approval_at,
+            submitted_by=product.submitted_by,
+            approved_at=product.approved_at,
+            approved_by=product.approved_by,
+            rejection_reason=product.rejection_reason,
+            published_at=product.published_at,
+            sold_at=product.sold_at,
+            archived_at=product.archived_at,
+            created_at=product.created_at,
+            updated_at=product.updated_at,
+        )
+        self.session.add(model)
+        await self.session.flush()
+        return self._to_entity(model)
+
+    async def get_by_id(self, product_id: UUID, tenant_id: UUID) -> Product | None:
+        """Get product by ID with tenant isolation."""
+        stmt = select(ProductModel).where(
+            ProductModel.id == product_id,
+            ProductModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
+    async def get_by_slug(self, slug: str, tenant_id: UUID) -> Product | None:
+        """Get product by slug."""
+        stmt = select(ProductModel).where(
+            ProductModel.slug == slug,
+            ProductModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
+    async def get_all(
+        self,
+        tenant_id: UUID,
+        organization_id: UUID | None = None,
+        category_id: UUID | None = None,
+        status: ProductStatus | None = None,
+        condition: ProductCondition | None = None,
+        is_featured: bool | None = None,
+        search_query: str | None = None,
+        min_price_cents: int | None = None,
+        max_price_cents: int | None = None,
+        skip: int = 0,
+        limit: int = 100,
+        order_by: str = "created_at",
+        order_desc: bool = True,
+    ) -> list[Product]:
+        """Get products with optional filters."""
+        stmt = select(ProductModel).where(ProductModel.tenant_id == tenant_id)
+
+        # Apply filters
+        if organization_id is not None:
+            stmt = stmt.where(ProductModel.organization_id == organization_id)
+
+        if category_id is not None:
+            stmt = stmt.where(ProductModel.category_id == category_id)
+
+        if status is not None:
+            stmt = stmt.where(ProductModel.status == status.value)
+
+        if condition is not None:
+            stmt = stmt.where(ProductModel.condition == condition.value)
+
+        if is_featured is not None:
+            stmt = stmt.where(ProductModel.is_featured == is_featured)
+
+        # Text search
+        if search_query:
+            search_term = f"%{search_query}%"
+            stmt = stmt.where(
+                or_(
+                    ProductModel.title.ilike(search_term),
+                    ProductModel.description.ilike(search_term),
+                )
+            )
+
+        # Price range
+        if min_price_cents is not None:
+            stmt = stmt.where(ProductModel.price_cents >= min_price_cents)
+
+        if max_price_cents is not None:
+            stmt = stmt.where(ProductModel.price_cents <= max_price_cents)
+
+        # Ordering
+        order_column = getattr(ProductModel, order_by, ProductModel.created_at)
+        if order_desc:
+            stmt = stmt.order_by(order_column.desc())
+        else:
+            stmt = stmt.order_by(order_column.asc())
+
+        stmt = stmt.offset(skip).limit(limit)
+
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
+    async def get_by_organization(
+        self,
+        organization_id: UUID,
+        tenant_id: UUID,
+        status: ProductStatus | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[Product]:
+        """Get products by organization."""
+        stmt = select(ProductModel).where(
+            ProductModel.organization_id == organization_id,
+            ProductModel.tenant_id == tenant_id,
+        )
+
+        if status is not None:
+            stmt = stmt.where(ProductModel.status == status.value)
+
+        stmt = stmt.order_by(ProductModel.created_at.desc())
+        stmt = stmt.offset(skip).limit(limit)
+
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
+    async def get_by_category(
+        self,
+        category_id: UUID,
+        tenant_id: UUID,
+        status: ProductStatus | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[Product]:
+        """Get products by category."""
+        stmt = select(ProductModel).where(
+            ProductModel.category_id == category_id,
+            ProductModel.tenant_id == tenant_id,
+        )
+
+        if status is not None:
+            stmt = stmt.where(ProductModel.status == status.value)
+
+        stmt = stmt.order_by(ProductModel.created_at.desc())
+        stmt = stmt.offset(skip).limit(limit)
+
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
+    async def get_pending_approval(
+        self,
+        tenant_id: UUID,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[Product]:
+        """Get products pending approval."""
+        stmt = (
+            select(ProductModel)
+            .where(
+                ProductModel.tenant_id == tenant_id,
+                ProductModel.status == ProductStatus.PENDING.value,
+            )
+            .order_by(ProductModel.submitted_for_approval_at.asc())
+        )
+
+        stmt = stmt.offset(skip).limit(limit)
+
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
+    async def update(self, product: Product) -> Product:
+        """Update an existing product."""
+        stmt = select(ProductModel).where(ProductModel.id == product.id)
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+
+        if not model:
+            raise ValueError(f"Product not found: {product.id}")
+
+        model.title = product.title
+        model.slug = product.slug
+        model.description = product.description
+        model.price_cents = product.price_cents
+        model.currency = product.currency
+        model.condition = product.condition.value
+        model.status = product.status.value
+        model.attributes = product.attributes
+        model.location_city = product.location_city
+        model.location_state = product.location_state
+        model.location_zip = product.location_zip
+        model.is_featured = product.is_featured
+        model.view_count = product.view_count
+        model.favorite_count = product.favorite_count
+        model.submitted_for_approval_at = product.submitted_for_approval_at
+        model.submitted_by = product.submitted_by
+        model.approved_at = product.approved_at
+        model.approved_by = product.approved_by
+        model.rejection_reason = product.rejection_reason
+        model.published_at = product.published_at
+        model.sold_at = product.sold_at
+        model.archived_at = product.archived_at
+
+        await self.session.flush()
+        return self._to_entity(model)
+
+    async def delete(self, product_id: UUID, tenant_id: UUID) -> bool:
+        """Delete a product (soft delete via archive)."""
+        stmt = select(ProductModel).where(
+            ProductModel.id == product_id,
+            ProductModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+
+        if not model:
+            return False
+
+        await self.session.delete(model)
+        await self.session.flush()
+        return True
+
+    async def count(
+        self,
+        tenant_id: UUID,
+        organization_id: UUID | None = None,
+        status: ProductStatus | None = None,
+    ) -> int:
+        """Count products."""
+        stmt = select(func.count(ProductModel.id)).where(
+            ProductModel.tenant_id == tenant_id,
+        )
+
+        if organization_id is not None:
+            stmt = stmt.where(ProductModel.organization_id == organization_id)
+
+        if status is not None:
+            stmt = stmt.where(ProductModel.status == status.value)
+
+        result = await self.session.execute(stmt)
+        return result.scalar() or 0  # type: ignore[return-value]
+
+    async def increment_view_count(self, product_id: UUID, tenant_id: UUID) -> None:
+        """Increment product view count."""
+        stmt = select(ProductModel).where(
+            ProductModel.id == product_id,
+            ProductModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+
+        if model:
+            model.view_count += 1
+            await self.session.flush()
+
+    async def increment_favorite_count(self, product_id: UUID, tenant_id: UUID) -> None:
+        """Increment product favorite count."""
+        stmt = select(ProductModel).where(
+            ProductModel.id == product_id,
+            ProductModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+
+        if model:
+            model.favorite_count += 1
+            await self.session.flush()
+
+    async def decrement_favorite_count(self, product_id: UUID, tenant_id: UUID) -> None:
+        """Decrement product favorite count."""
+        stmt = select(ProductModel).where(
+            ProductModel.id == product_id,
+            ProductModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+
+        if model:
+            model.favorite_count = max(0, model.favorite_count - 1)
+            await self.session.flush()
+
+    async def get_featured(
+        self,
+        tenant_id: UUID,
+        limit: int = 10,
+    ) -> list[Product]:
+        """Get featured products."""
+        stmt = (
+            select(ProductModel)
+            .where(
+                ProductModel.tenant_id == tenant_id,
+                ProductModel.is_featured,
+                ProductModel.status == ProductStatus.PUBLISHED.value,
+            )
+            .order_by(ProductModel.created_at.desc())
+            .limit(limit)
+        )
+
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
+    async def search(
+        self,
+        tenant_id: UUID,
+        query: str,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[Product]:
+        """Full-text search products."""
+        search_term = f"%{query}%"
+        stmt = (
+            select(ProductModel)
+            .where(
+                ProductModel.tenant_id == tenant_id,
+                ProductModel.status == ProductStatus.PUBLISHED.value,
+                or_(
+                    ProductModel.title.ilike(search_term),
+                    ProductModel.description.ilike(search_term),
+                ),
+            )
+            .order_by(ProductModel.created_at.desc())
+        )
+
+        stmt = stmt.offset(skip).limit(limit)
+
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
+    async def get_recently_viewed(
+        self,
+        tenant_id: UUID,
+        product_ids: list[UUID],
+        limit: int = 10,
+    ) -> list[Product]:
+        """Get recently viewed products."""
+        if not product_ids:
+            return []
+
+        stmt = (
+            select(ProductModel)
+            .where(
+                ProductModel.tenant_id == tenant_id,
+                ProductModel.id.in_(product_ids),
+                ProductModel.status == ProductStatus.PUBLISHED.value,
+            )
+            .order_by(ProductModel.created_at.desc())
+            .limit(limit)
+        )
+
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
+    def _to_entity(self, model: ProductModel) -> Product:
+        """Convert ORM model to domain entity."""
+        return Product.model_validate(model, from_attributes=True)

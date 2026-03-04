@@ -1,14 +1,22 @@
 """Domain entities for ProSell SaaS."""
 
+from prosell.domain.entities.category import Category
+from prosell.domain.entities.product import Product
+from prosell.domain.entities.product_image import ProductImage
 from prosell.domain.entities.role import Permission, Role, RoleType
 from prosell.domain.entities.session import Session
 from prosell.domain.entities.user import User, UserStatus
+from prosell.domain.entities.vehicle import Vehicle
 
 __all__ = [
+    "Category",
     "Permission",
+    "Product",
+    "ProductImage",
     "Role",
     "RoleType",
     "Session",
     "User",
     "UserStatus",
+    "Vehicle",
 ]
