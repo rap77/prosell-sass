@@ -1,8 +1,10 @@
 """Organization router for ProSell SaaS API."""
 
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.org import (
@@ -11,6 +13,7 @@ from prosell.application.dto.org import (
     OrganizationResponse,
     UpdateOrganizationRequest,
 )
+from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.use_cases.org import (
     CreateOrganizationUseCase,
     GetOrganizationByTenantUseCase,
@@ -31,6 +34,7 @@ from prosell.domain.exceptions.org_exceptions import (
 )
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user,
+    get_spaces_service,
     require_permission,
     require_role,
 )
@@ -41,6 +45,27 @@ from prosell.infrastructure.repositories.organization_repository_impl import (
 from prosell.infrastructure.repositories.wallet_repository_impl import (
     SqlAlchemyWalletRepository,
 )
+from prosell.infrastructure.services.do_spaces_service import (
+    generate_banner_path,
+    generate_logo_path,
+)
+
+# =============================================================================
+# REQUEST / RESPONSE SCHEMAS
+# =============================================================================
+
+
+class UploadUrlRequest(BaseModel):
+    file_type: Literal["logo", "banner"]
+    content_type: str = "image/jpeg"
+
+
+class UploadUrlResponse(BaseModel):
+    upload_url: str
+    public_url: str
+    key: str
+    max_size_bytes: int
+
 
 router = APIRouter()
 
@@ -193,6 +218,42 @@ async def update_organization(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
     except OrgDomainException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.message) from e
+
+
+# =============================================================================
+# UPLOAD ENDPOINTS
+# =============================================================================
+
+
+@router.post(
+    "/{org_id}/upload-url",
+    response_model=UploadUrlResponse,
+    summary="Generate presigned URL for logo/banner upload",
+)
+async def get_upload_url(
+    org_id: UUID,
+    request: UploadUrlRequest,
+    _current_user: User = Depends(get_current_auth_user),
+    spaces: IDOSpacesService = Depends(get_spaces_service),
+) -> UploadUrlResponse:
+    """
+    Generate a presigned PUT URL for uploading org logo or banner directly to DO Spaces.
+
+    Flow:
+    1. Frontend calls this endpoint to get a presigned URL
+    2. Frontend PUTs the file directly to upload_url
+    3. Frontend PATCHes the org with logo_url=public_url or banner_url=public_url
+    """
+    if request.file_type == "logo":
+        file_path = generate_logo_path(str(org_id))
+    else:
+        file_path = generate_banner_path(str(org_id))
+
+    result = await spaces.generate_presigned_url(
+        file_path=file_path,
+        content_type=request.content_type,
+    )
+    return UploadUrlResponse.model_validate(result)
 
 
 # =============================================================================

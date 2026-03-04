@@ -8,6 +8,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.ports.email_service import AbstractEmailService
+from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.core.config import get_oauth_settings, settings
 from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission, RoleType
 from prosell.domain.entities.user import User
@@ -325,3 +326,10 @@ async def get_verify_2fa_use_case(
         jwt_service,
         token_hasher,
     )
+
+
+def get_spaces_service() -> IDOSpacesService:
+    """Get DO Spaces service instance."""
+    from prosell.infrastructure.services.do_spaces_service import DOSpacesService
+
+    return DOSpacesService()
