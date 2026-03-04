@@ -32,18 +32,6 @@ def mock_role_repo():
     return repo
 
 
-@pytest.fixture(autouse=True)
-def setup_auth(mock_auth_user, mock_role_repo, mock_spaces):
-    from prosell.infrastructure.api.dependencies import get_current_auth_user, get_role_repository
-    from prosell.infrastructure.api.routers.org_router import get_spaces_service
-
-    app.dependency_overrides[get_current_auth_user] = lambda: mock_auth_user
-    app.dependency_overrides[get_role_repository] = lambda: mock_role_repo
-    app.dependency_overrides[get_spaces_service] = lambda: mock_spaces
-    yield
-    app.dependency_overrides.clear()
-
-
 @pytest.fixture
 def mock_spaces():
     spaces = MagicMock()
@@ -58,14 +46,37 @@ def mock_spaces():
     return spaces
 
 
+@pytest.fixture
+def mock_org_repo():
+    from prosell.domain.entities.organization import Organization
+
+    org = Organization.create(name="Test Org", tenant_id=uuid4())
+    repo = MagicMock()
+    repo.get_by_id = AsyncMock(return_value=org)
+    return repo
+
+
+@pytest.fixture(autouse=True)
+def setup_auth(mock_auth_user, mock_role_repo, mock_spaces, mock_org_repo):
+    from prosell.infrastructure.api.dependencies import (
+        get_current_auth_user,
+        get_role_repository,
+        get_spaces_service,
+    )
+    from prosell.infrastructure.api.routers.org_router import get_org_repository
+
+    app.dependency_overrides[get_current_auth_user] = lambda: mock_auth_user
+    app.dependency_overrides[get_role_repository] = lambda: mock_role_repo
+    app.dependency_overrides[get_spaces_service] = lambda: mock_spaces
+    app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
+    yield
+    app.dependency_overrides.clear()
+
+
 class TestOrgUploadUrl:
-    async def test_generate_logo_upload_url(self, mock_spaces):
+    async def test_generate_logo_upload_url(self):
         """Returns presigned URL for logo upload."""
         org_id = uuid4()
-
-        from prosell.infrastructure.api.routers.org_router import get_spaces_service
-
-        app.dependency_overrides[get_spaces_service] = lambda: mock_spaces
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
@@ -80,13 +91,9 @@ class TestOrgUploadUrl:
         assert "key" in data
         assert "max_size_bytes" in data
 
-    async def test_generate_banner_upload_url(self, mock_spaces):
+    async def test_generate_banner_upload_url(self):
         """Returns presigned URL for banner upload."""
         org_id = uuid4()
-
-        from prosell.infrastructure.api.routers.org_router import get_spaces_service
-
-        app.dependency_overrides[get_spaces_service] = lambda: mock_spaces
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
@@ -102,10 +109,6 @@ class TestOrgUploadUrl:
         """Calls generate_presigned_url with logo path when file_type=logo."""
         org_id = uuid4()
 
-        from prosell.infrastructure.api.routers.org_router import get_spaces_service
-
-        app.dependency_overrides[get_spaces_service] = lambda: mock_spaces
-
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             await client.post(
                 f"/api/v1/org/{org_id}/upload-url",
@@ -118,10 +121,6 @@ class TestOrgUploadUrl:
     async def test_banner_generates_banner_path(self, mock_spaces):
         """Calls generate_presigned_url with banner path when file_type=banner."""
         org_id = uuid4()
-
-        from prosell.infrastructure.api.routers.org_router import get_spaces_service
-
-        app.dependency_overrides[get_spaces_service] = lambda: mock_spaces
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             await client.post(
@@ -141,3 +140,19 @@ class TestOrgUploadUrl:
                 json={"file_type": "invalid", "content_type": "image/jpeg"},
             )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    async def test_unauthorized_org_returns_404(self, mock_org_repo):
+        """Returns 404 when org doesn't belong to authenticated user's tenant."""
+        from prosell.infrastructure.api.routers.org_router import get_org_repository
+
+        mock_org_repo.get_by_id = AsyncMock(return_value=None)
+        app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
+
+        org_id = uuid4()
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                f"/api/v1/org/{org_id}/upload-url",
+                json={"file_type": "logo", "content_type": "image/jpeg"},
+            )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND

@@ -328,8 +328,9 @@ async def get_verify_2fa_use_case(
     )
 
 
+@lru_cache
 def get_spaces_service() -> IDOSpacesService:
-    """Get DO Spaces service instance."""
+    """Get DO Spaces service instance (singleton via lru_cache)."""
     from prosell.infrastructure.services.do_spaces_service import DOSpacesService
 
     return DOSpacesService()

@@ -1,10 +1,8 @@
 """Organization router for ProSell SaaS API."""
 
-from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.org import (
@@ -12,6 +10,8 @@ from prosell.application.dto.org import (
     OrganizationListResponse,
     OrganizationResponse,
     UpdateOrganizationRequest,
+    UploadUrlRequest,
+    UploadUrlResponse,
 )
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.use_cases.org import (
@@ -49,23 +49,6 @@ from prosell.infrastructure.services.do_spaces_service import (
     generate_banner_path,
     generate_logo_path,
 )
-
-# =============================================================================
-# REQUEST / RESPONSE SCHEMAS
-# =============================================================================
-
-
-class UploadUrlRequest(BaseModel):
-    file_type: Literal["logo", "banner"]
-    content_type: str = "image/jpeg"
-
-
-class UploadUrlResponse(BaseModel):
-    upload_url: str
-    public_url: str
-    key: str
-    max_size_bytes: int
-
 
 router = APIRouter()
 
@@ -233,7 +216,8 @@ async def update_organization(
 async def get_upload_url(
     org_id: UUID,
     request: UploadUrlRequest,
-    _current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user),
+    org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
     spaces: IDOSpacesService = Depends(get_spaces_service),
 ) -> UploadUrlResponse:
     """
@@ -244,6 +228,18 @@ async def get_upload_url(
     2. Frontend PUTs the file directly to upload_url
     3. Frontend PATCHes the org with logo_url=public_url or banner_url=public_url
     """
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
+    use_case = GetOrganizationUseCase(org_repository=org_repo)
+    try:
+        await use_case.execute(org_id=org_id, tenant_id=current_user.tenant_id)
+    except OrganizationNotFoundException as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
+
     if request.file_type == "logo":
         file_path = generate_logo_path(str(org_id))
     else:

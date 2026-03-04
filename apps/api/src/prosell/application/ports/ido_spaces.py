@@ -12,7 +12,7 @@ class IDOSpacesService(ABC):
         file_path: str,
         content_type: str,
         max_size_bytes: int = 2_000_000,
-    ) -> dict[str, str]:
+    ) -> dict[str, str | int]:
         """
         Generate a presigned URL for direct upload from browser.
 
@@ -23,9 +23,10 @@ class IDOSpacesService(ABC):
 
         Returns:
             Dict with keys:
-                - upload_url: Presigned URL for PUT request
-                - public_url: Public URL after upload
-                - key: Storage key
+                - upload_url: Presigned URL for PUT request (str)
+                - public_url: Public URL after upload (str)
+                - key: Storage key (str)
+                - max_size_bytes: Maximum allowed file size in bytes (int)
         """
         pass
 
