@@ -5,7 +5,7 @@ configuration per category (e.g., vehicles have year, make, model;
 electronics have specs, compatibility).
 """
 
-from pydantic import Field, field_validator
+from pydantic import Field, ValidationInfo, field_validator
 
 from prosell.domain.base import ValueObject
 from prosell.domain.value_objects.field_type import FieldType
@@ -46,7 +46,9 @@ class CategoryField(ValueObject):
 
     @field_validator("options")
     @classmethod
-    def validate_options(cls, options: list[dict[str, str]], info: dict) -> list[dict[str, str]]:
+    def validate_options(
+        cls, options: list[dict[str, str]], info: ValidationInfo
+    ) -> list[dict[str, str]]:
         """Validate options exist for SELECT/MULTISELECT types."""
         field_type = info.data.get("field_type")
         if field_type in (FieldType.SELECT, FieldType.MULTISELECT) and not options:
@@ -55,7 +57,9 @@ class CategoryField(ValueObject):
 
     @field_validator("validation_rules")
     @classmethod
-    def validate_validation_rules(cls, rules: dict[str, object], info: dict) -> dict[str, object]:
+    def validate_validation_rules(
+        cls, rules: dict[str, object], info: ValidationInfo
+    ) -> dict[str, object]:
         """Validate validation rules based on field type."""
         field_type = info.data.get("field_type")
 
