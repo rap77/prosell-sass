@@ -299,3 +299,21 @@ class AbstractProductRepository(ABC):
             List of products
         """
         pass
+
+    @abstractmethod
+    async def set_primary_image(self, product_id: UUID, image_id: UUID, tenant_id: UUID) -> bool:
+        """
+        Set an image as primary for a product.
+
+        This method ensures the invariant "only one primary image per product"
+        by unsetting is_primary on all other images before setting the new one.
+
+        Args:
+            product_id: Product UUID
+            image_id: Image UUID to set as primary
+            tenant_id: Tenant UUID for isolation
+
+        Returns:
+            True if successful, False if product/image not found
+        """
+        pass

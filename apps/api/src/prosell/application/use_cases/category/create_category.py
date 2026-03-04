@@ -40,13 +40,29 @@ class CreateCategoryUseCase:
         if slug_exists:
             raise ValueError(f"Category with slug '{request.slug}' already exists")
 
-        # 3. Determine level
+        # 3. Determine level and validate circular reference
         level = 0
         if request.parent_id:
-            # TODO: Could fetch parent to determine level, but for now we'll calculate it
             parent = await self.category_repository.get_by_id(request.parent_id, request.tenant_id)
             if parent:
                 level = parent.level + 1
+
+                # Get ancestors for circular reference validation
+                ancestor_ids = await self.category_repository.get_ancestor_ids(
+                    request.parent_id, request.tenant_id
+                )
+                # Include parent's ancestors plus parent itself
+                all_ancestor_ids = [request.parent_id] + ancestor_ids
+
+                # Create a temporary category object to validate
+                temp_category = Category.create(
+                    name=request.name,
+                    slug=request.slug,
+                    tenant_id=request.tenant_id,
+                    parent_id=request.parent_id,
+                    level=level,
+                )
+                temp_category.validate_no_circular_reference(request.parent_id, all_ancestor_ids)
             else:
                 raise ValueError(f"Parent category not found: {request.parent_id}")
 

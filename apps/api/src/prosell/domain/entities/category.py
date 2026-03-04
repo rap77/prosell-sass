@@ -90,7 +90,9 @@ class Category(DomainModel):
             **kwargs,
         )
 
-    def validate_no_circular_reference(self, parent_id: UUID) -> None:
+    def validate_no_circular_reference(
+        self, parent_id: UUID, ancestor_ids: list[UUID] | None = None
+    ) -> None:
         """
         Prevent circular references in category hierarchy.
 
@@ -99,6 +101,7 @@ class Category(DomainModel):
 
         Args:
             parent_id: ID of potential parent category
+            ancestor_ids: List of ancestor category IDs (fetched from repository)
 
         Raises:
             ValueError: If circular reference detected
@@ -106,9 +109,9 @@ class Category(DomainModel):
         if parent_id == self.id:
             raise ValueError("Category cannot be its own parent")
 
-        # In a real implementation, we'd need a repository here to check ancestors
-        # For now, this is a placeholder that would be called from a use case
-        # that has access to the category repository
+        # Check if parent_id is in our ancestors (would create a cycle)
+        if ancestor_ids and parent_id in ancestor_ids:
+            raise ValueError(f"Circular reference: {parent_id} is an ancestor of this category")
 
     def add_field(self, field_config: dict[str, object]) -> None:
         """
@@ -237,13 +240,6 @@ class Category(DomainModel):
             raise ValueError("sort_order must be >= 0")
         self.sort_order = sort_order
         self.updated_at = datetime.now(UTC)
-
-    @property
-    def has_children(self) -> bool:
-        """Check if category has child categories."""
-        # In a real implementation, this would query the repository
-        # For now, this is a property that would be set by a use case
-        return False
 
     @property
     def depth(self) -> int:

@@ -100,6 +100,27 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
+    async def get_ancestor_ids(self, category_id: UUID, tenant_id: UUID) -> list[UUID]:
+        """Get all ancestor category IDs (up the tree to root)."""
+        ancestor_ids: list[UUID] = []
+        current_id: UUID | None = category_id
+
+        while current_id is not None:
+            stmt = select(CategoryModel.parent_id).where(
+                CategoryModel.id == current_id,
+                CategoryModel.tenant_id == tenant_id,
+            )
+            result = await self.session.execute(stmt)
+            parent_id = result.scalar_one_or_none()
+
+            if parent_id is None:
+                break
+
+            ancestor_ids.append(parent_id)
+            current_id = parent_id
+
+        return ancestor_ids
+
     async def get_tree(self, tenant_id: UUID) -> list[Category]:
         """Get all categories for tenant."""
         stmt = (

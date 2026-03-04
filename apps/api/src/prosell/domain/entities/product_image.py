@@ -79,14 +79,23 @@ class ProductImage(DomainModel):
         """
         Mark this image as primary.
 
-        Note: In a use case, this would also unset is_primary on other
-        images of the same product. This method only sets this image's flag.
+        IMPORTANT: This method only sets the flag on this image. To maintain
+        the invariant "only one primary image per product", you MUST also
+        unset is_primary on all other images of the same product.
+
+        Use ProductRepository.set_primary_image() or handle this in a
+        transaction to ensure data consistency.
         """
         self.is_primary = True
         self.updated_at = datetime.now(UTC)
 
     def unset_primary(self) -> None:
-        """Unset primary flag."""
+        """
+        Unset primary flag.
+
+        Call this on all other images of a product before marking a new one
+        as primary.
+        """
         if self.is_primary:
             self.is_primary = False
             self.updated_at = datetime.now(UTC)

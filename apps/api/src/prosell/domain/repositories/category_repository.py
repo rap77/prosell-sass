@@ -89,6 +89,22 @@ class AbstractCategoryRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_ancestor_ids(self, category_id: UUID, tenant_id: UUID) -> list[UUID]:
+        """
+        Get all ancestor category IDs (up the tree to root).
+
+        Used for circular reference validation.
+
+        Args:
+            category_id: Category UUID
+            tenant_id: Tenant UUID
+
+        Returns:
+            List of ancestor category IDs (empty if root)
+        """
+        pass
+
+    @abstractmethod
     async def get_tree(self, tenant_id: UUID) -> list[Category]:
         """
         Get all categories as a flat list (tree can be built in application layer).

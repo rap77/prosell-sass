@@ -17,12 +17,12 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
         )
 
         assert vehicle.id is not None
         assert vehicle.product_id == product_id
-        assert vehicle.vin == "1HGCM82633A123456"
+        assert vehicle.vin == "1HGCM826712345678"
         assert vehicle.mileage_unit == "mi"
 
     def test_vin_validation_length(self) -> None:
@@ -53,10 +53,10 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1hgcm82633a123456",
+            vin="1hgcm826712345678",
         )
 
-        assert vehicle.vin == "1HGCM82633A123456"
+        assert vehicle.vin == "1HGCM826712345678"
 
     def test_update_from_vin_decode(self) -> None:
         """Test updating vehicle from VIN decode data."""
@@ -64,7 +64,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
         )
 
         decoded_data = {
@@ -90,7 +90,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
         )
 
         vehicle.set_mileage(50000, "mi")
@@ -104,7 +104,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
         )
 
         with pytest.raises(ValueError, match="mileage must be >= 0"):
@@ -116,7 +116,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
         )
 
         with pytest.raises(ValueError, match='mileage_unit must be "mi" or "km"'):
@@ -128,7 +128,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
         )
 
         vehicle.update_colors(
@@ -145,7 +145,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
         )
 
         vehicle.update_specifications(
@@ -164,7 +164,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
         )
 
         vehicle.update_mpg(city=25, highway=35, combined=30)
@@ -179,7 +179,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
         )
 
         with pytest.raises(ValueError, match="mpg_city must be >= 0"):
@@ -191,7 +191,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
         )
 
         vehicle.update_features(
@@ -210,7 +210,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
         )
 
         assert vehicle.vin_verified is False
@@ -224,7 +224,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
         )
 
         vehicle.set_stock_number("ABC123")
@@ -237,7 +237,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
         )
 
         assert vehicle.is_vin_decoded is False
@@ -251,7 +251,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
             year=2020,
             make="Honda",
             model="Civic",
@@ -270,7 +270,7 @@ class TestVehicle:
 
         vehicle = Vehicle.create(
             product_id=product_id,
-            vin="1HGCM82633A123456",
+            vin="1HGCM826712345678",
             year=2020,
             make="Honda",
             model="Civic",

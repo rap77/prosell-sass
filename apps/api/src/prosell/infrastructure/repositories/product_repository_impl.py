@@ -9,6 +9,7 @@ from prosell.domain.entities.product import Product
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
+from prosell.infrastructure.models.product_image_model import ProductImageModel
 from prosell.infrastructure.models.product_model import ProductModel
 
 
@@ -392,6 +393,44 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         result = await self.session.execute(stmt)
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
+
+    async def set_primary_image(self, product_id: UUID, image_id: UUID, tenant_id: UUID) -> bool:
+        """
+        Set an image as primary for a product.
+
+        Unsets is_primary on all other images before setting the new one.
+        """
+        # First, verify the image belongs to the product
+        verify_stmt = select(ProductImageModel).where(
+            ProductImageModel.id == image_id,
+            ProductImageModel.product_id == product_id,
+        )
+        verify_result = await self.session.execute(verify_stmt)
+        if not verify_result.scalar_one_or_none():
+            return False  # Image not found or doesn't belong to product
+
+        # Unset is_primary on all images of this product
+        unset_stmt = select(ProductImageModel).where(
+            ProductImageModel.product_id == product_id,
+            ProductImageModel.is_primary == True,
+        )
+        unset_result = await self.session.execute(unset_stmt)
+        images_to_unset = unset_result.scalars().all()
+
+        for img in images_to_unset:
+            img.is_primary = False
+
+        # Set is_primary on the target image
+        set_stmt = select(ProductImageModel).where(ProductImageModel.id == image_id)
+        set_result = await self.session.execute(set_stmt)
+        target_image = set_result.scalar_one_or_none()
+
+        if target_image:
+            target_image.is_primary = True
+            await self.session.flush()
+            return True
+
+        return False
 
     def _to_entity(self, model: ProductModel) -> Product:
         """Convert ORM model to domain entity."""

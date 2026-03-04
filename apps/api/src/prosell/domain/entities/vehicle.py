@@ -80,7 +80,7 @@ class Vehicle(DomainModel):
         VIN must be:
         - Exactly 17 characters
         - Alphanumeric (no I, O, Q)
-        - Valid checksum (not implemented here - would use library)
+        - Valid checksum (ISO 3779)
 
         Args:
             vin: VIN to validate
@@ -91,19 +91,86 @@ class Vehicle(DomainModel):
         Raises:
             ValueError: If VIN is invalid
         """
-        if len(vin) != 17:
+        vin_upper = vin.upper()
+
+        if len(vin_upper) != 17:
             raise ValueError("VIN must be exactly 17 characters")
 
         # Check for invalid characters (I, O, Q)
         invalid_chars = {"I", "O", "Q"}
-        if any(char in invalid_chars for char in vin.upper()):
+        if any(char in invalid_chars for char in vin_upper):
             raise ValueError("VIN cannot contain I, O, or Q")
 
         # Check alphanumeric
-        if not vin.isalnum():
+        if not vin_upper.isalnum():
             raise ValueError("VIN must be alphanumeric")
 
-        return vin.upper()
+        # Validate checksum (position 9 is the check digit)
+        if not cls._validate_vin_checksum(vin_upper):
+            raise ValueError("VIN checksum is invalid")
+
+        return vin_upper
+
+    @staticmethod
+    def _validate_vin_checksum(vin: str) -> bool:
+        """
+        Validate VIN checksum using ISO 3779 algorithm.
+
+        Args:
+            vin: Uppercase VIN (17 characters)
+
+        Returns:
+            True if checksum is valid
+        """
+        # Transliteration values for A-Z (I, O, Q excluded)
+        transliteration = {
+            "A": 1,
+            "B": 2,
+            "C": 3,
+            "D": 4,
+            "E": 5,
+            "F": 6,
+            "G": 7,
+            "H": 8,
+            "J": 1,
+            "K": 2,
+            "L": 3,
+            "M": 4,
+            "N": 5,
+            "P": 7,
+            "R": 9,
+            "S": 2,
+            "T": 3,
+            "U": 4,
+            "V": 5,
+            "W": 6,
+            "X": 7,
+            "Y": 8,
+            "Z": 9,
+        }
+
+        # Position weights for 17-character VIN
+        weights = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2]
+
+        # Calculate weighted sum
+        total = 0
+        for i, char in enumerate(vin):
+            if i == 8:  # Position 9 is the check digit itself, skip
+                continue
+
+            # Get transliteration value
+            if char.isdigit():
+                value = int(char)
+            else:
+                value = transliteration.get(char, 0)
+
+            total += value * weights[i]
+
+        # Calculate check digit
+        remainder = total % 11
+        check_digit = "X" if remainder == 10 else str(remainder)
+
+        return vin[8] == check_digit
 
     @classmethod
     def create(
