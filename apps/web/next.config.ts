@@ -15,8 +15,20 @@ const nextConfig: NextConfig = {
     ],
   },
   env: {
-    // For E2E testing, use mock APIs hosted by Next.js itself
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
+    // Backend API URL - must be http://localhost:8000 for OAuth to work
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
+  },
+
+  // Proxy API requests to backend during development
+  async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${apiUrl}/api/:path*`,
+      },
+    ];
   },
 };
 
