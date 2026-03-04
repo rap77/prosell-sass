@@ -27,9 +27,9 @@ def upgrade() -> None:
     # ========================================================================
     op.create_table(
         "organizations",
-        sa.Column("id", sa.String(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("name", sa.String(length=255), nullable=False),
-        sa.Column("tenant_id", sa.String(), nullable=False),
+        sa.Column("tenant_id", sa.Uuid(), nullable=False),
         # Branding
         sa.Column("logo_url", sa.String(length=500), nullable=True),
         sa.Column("banner_url", sa.String(length=500), nullable=True),
@@ -44,9 +44,9 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("verified_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("verified_by", sa.String(), nullable=True),
+        sa.Column("verified_by", sa.Uuid(), nullable=True),
         # Wallet ref (plain UUID - no FK to avoid circular dependency)
-        sa.Column("wallet_id", sa.String(), nullable=True),
+        sa.Column("wallet_id", sa.Uuid(), nullable=True),
         # Settings
         sa.Column("settings", sa.JSON(), server_default=sa.text("'{}'::jsonb"), nullable=False),
         # Timestamps
@@ -75,9 +75,9 @@ def upgrade() -> None:
     # ========================================================================
     op.create_table(
         "wallets",
-        sa.Column("id", sa.String(), nullable=False),
-        sa.Column("org_id", sa.String(), nullable=False),
-        sa.Column("tenant_id", sa.String(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("org_id", sa.Uuid(), nullable=False),
+        sa.Column("tenant_id", sa.Uuid(), nullable=False),
         sa.Column("balance_cents", sa.Integer(), server_default=sa.text("0"), nullable=False),
         sa.Column("currency", sa.String(length=3), server_default="USD", nullable=False),
         sa.Column("is_active", sa.Boolean(), server_default=sa.text("true"), nullable=False),
@@ -105,13 +105,13 @@ def upgrade() -> None:
     # ========================================================================
     op.create_table(
         "wallet_transactions",
-        sa.Column("id", sa.String(), nullable=False),
-        sa.Column("wallet_id", sa.String(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("wallet_id", sa.Uuid(), nullable=False),
         sa.Column("transaction_type", sa.String(length=20), nullable=False),
         sa.Column("amount_cents", sa.Integer(), nullable=False),
         sa.Column("balance_after_cents", sa.Integer(), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
-        sa.Column("tenant_id", sa.String(), nullable=False),
+        sa.Column("tenant_id", sa.Uuid(), nullable=False),
         sa.Column(
             "metadata",
             sa.JSON(),
@@ -123,7 +123,6 @@ def upgrade() -> None:
             sa.DateTime(timezone=True),
             server_default=sa.text("now()"),
             nullable=False,
-            index=True,
         ),
         sa.ForeignKeyConstraint(["wallet_id"], ["wallets.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
@@ -153,12 +152,12 @@ def upgrade() -> None:
     # ========================================================================
     op.create_table(
         "teams",
-        sa.Column("id", sa.String(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("name", sa.String(length=255), nullable=False),
-        sa.Column("tenant_id", sa.String(), nullable=False),
-        sa.Column("org_id", sa.String(), nullable=False),
+        sa.Column("tenant_id", sa.Uuid(), nullable=False),
+        sa.Column("org_id", sa.Uuid(), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
-        sa.Column("parent_team_id", sa.String(), nullable=True),
+        sa.Column("parent_team_id", sa.Uuid(), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -185,11 +184,11 @@ def upgrade() -> None:
     # ========================================================================
     op.create_table(
         "team_members",
-        sa.Column("id", sa.String(), nullable=False),
-        sa.Column("team_id", sa.String(), nullable=False),
-        sa.Column("user_id", sa.String(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("team_id", sa.Uuid(), nullable=False),
+        sa.Column("user_id", sa.Uuid(), nullable=False),
         sa.Column("role", sa.String(length=50), server_default="vendor", nullable=False),
-        sa.Column("tenant_id", sa.String(), nullable=False),
+        sa.Column("tenant_id", sa.Uuid(), nullable=False),
         sa.Column("commission_rate", sa.Float(), nullable=True),
         sa.Column(
             "joined_at",
