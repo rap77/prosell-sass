@@ -8,8 +8,8 @@ import { BasePage } from "../base-page";
 export class ProductsPage extends BasePage {
   // Locators
   readonly newProductButton = this.page.getByRole("button", { name: /new product|crear producto/i });
-  readonly productTitleInput = this.page.getByLabel(/title|título/i });
-  readonly productDescriptionInput = this.page.getByLabel(/description|descripción/i });
+  readonly productTitleInput = this.page.getByLabel(/title|título/i);
+  readonly productDescriptionInput = this.page.getByLabel(/description|descripción/i);
   readonly productPriceInput = this.page.getByLabel(/price|precio/i);
   readonly productConditionSelect = this.page.getByLabel(/condition|condición/i);
   readonly productCategorySelect = this.page.getByLabel(/category|categoría/i);
@@ -24,7 +24,7 @@ export class ProductsPage extends BasePage {
    * Navigate to products page
    */
   async goto(): Promise<void> {
-    await this.goto("/products");
+    await super.goto("/products");
   }
 
   /**

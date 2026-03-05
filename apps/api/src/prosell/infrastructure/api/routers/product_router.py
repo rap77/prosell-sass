@@ -18,7 +18,7 @@ from prosell.domain.repositories.product_repository import AbstractProductReposi
 from prosell.infrastructure.api.dependencies import get_async_session, get_current_auth_user
 from prosell.infrastructure.repositories.product_repository_impl import SqlAlchemyProductRepository
 
-router = APIRouter(prefix="/products", tags=["products"])
+router = APIRouter()
 
 
 async def get_product_repository(session: AsyncSession) -> AbstractProductRepository:

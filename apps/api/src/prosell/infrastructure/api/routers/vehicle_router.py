@@ -20,7 +20,7 @@ from prosell.infrastructure.repositories.product_repository_impl import SqlAlche
 from prosell.infrastructure.repositories.vehicle_repository_impl import SqlAlchemyVehicleRepository
 from prosell.infrastructure.services.nhtsa_vin_service import NHTSAVinService
 
-router = APIRouter(prefix="/vehicles", tags=["vehicles"])
+router = APIRouter()
 
 
 async def get_vehicle_repository(session: AsyncSession) -> AbstractVehicleRepository:
@@ -42,7 +42,6 @@ async def get_vin_service() -> IVINDecoderService:
 async def decode_vin(
     request: DecodeVinRequest,
     vin_service: IVINDecoderService = Depends(get_vin_service),
-    _current_user=Depends(get_current_auth_user),
     db: AsyncSession = Depends(get_async_session),
 ) -> DecodeVinResponse:
     """
@@ -51,10 +50,13 @@ async def decode_vin(
     Returns vehicle information including make, model, year, trim, etc.
     Results are cached for 24 hours.
     """
-    vehicle_repo = SqlAlchemyVehicleRepository(db)
-    use_case = DecodeVinUseCase(vin_service, vehicle_repo)
+    try:
+        vehicle_repo = SqlAlchemyVehicleRepository(db)
+        use_case = DecodeVinUseCase(vin_service, vehicle_repo)
 
-    return await use_case.execute(request)
+        return await use_case.execute(request)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from None
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

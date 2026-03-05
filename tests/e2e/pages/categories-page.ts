@@ -22,7 +22,7 @@ export class CategoriesPage extends BasePage {
    * Navigate to categories page
    */
   async goto(): Promise<void> {
-    await this.goto("/categories");
+    await super.goto("/categories");
   }
 
   /**

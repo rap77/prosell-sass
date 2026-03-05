@@ -394,7 +394,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
-    async def set_primary_image(self, product_id: UUID, image_id: UUID, tenant_id: UUID) -> bool:
+    async def set_primary_image(self, product_id: UUID, image_id: UUID, _tenant_id: UUID) -> bool:
         """
         Set an image as primary for a product.
 
@@ -412,7 +412,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         # Unset is_primary on all images of this product
         unset_stmt = select(ProductImageModel).where(
             ProductImageModel.product_id == product_id,
-            ProductImageModel.is_primary == True,
+            ProductImageModel.is_primary.is_(True),
         )
         unset_result = await self.session.execute(unset_stmt)
         images_to_unset = unset_result.scalars().all()

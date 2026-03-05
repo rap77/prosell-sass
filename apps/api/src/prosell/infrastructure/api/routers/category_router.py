@@ -18,7 +18,7 @@ from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
 )
 
-router = APIRouter(prefix="/categories", tags=["categories"])
+router = APIRouter()
 
 
 async def get_category_repository(session: AsyncSession) -> AbstractCategoryRepository:
