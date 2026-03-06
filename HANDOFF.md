@@ -1,209 +1,238 @@
-# Handoff: Vercel Performance - Phase 1 & 2 MERGEADAS ✅
-
-**Fecha**: 2026-02-21
-**Sesión**: Phase 2 completada y mergeada a main
-**Estado**: ✅ Phase 1 100% | ✅ Phase 2 100% | ✅ MERGED TO MAIN
-**PR**: https://github.com/rap77/prosell-sass/pull/1 (merged)
-**Commit**: `281df63`
+# HANDOFF - ProSell SaaS - Sprint 5-6 Planning
+**Fecha:** 2026-03-04
+**Sesión:** Planificación Sprint 5-6 con MasterMind Framework
+**Estado:** 🔄 PLANEANDO - Fase de Diseño UI/UX completada
 
 ---
 
-## 🎉 Phase 1 + 2: COMPLETADAS Y MERGEADAS
+## � OBJETIVO DE LA SESIÓN
 
-### Resumen General
-
-| Phase   | Tickets                        | Status | Tests   | Lines  |
-| ------- | ------------------------------ | ------ | ------- | ------ |
-| Phase 1 | F1-001, F1-002, F1-003, F1-004 | ✅     | 330/330 | -      |
-| Phase 2 | F4, F5                         | ✅     | 333/333 | +4,072 |
-
-**Branch actual**: `main`
-**Working tree**: clean ✅
-**Origin**: up to date ✅
+Planificar el **Sprint 5-6: Carga de Inventarios + Publicación Facebook** usando los 7 cerebros del MasterMind Framework para diseño y arquitectura.
 
 ---
 
-## 📋 Commits en Main (post-merge)
+## 📊 ESTADO DEL PROYECTO
 
-```
-281df63 Merge pull request #1 from rap77/phase-2-oauth-svg-optimizations
-├── 63cd548 docs: update skills, tickets and Phase 1-2 documentation
-├── 7615ce1 docs(handoff): Phase 2 100% COMPLETADA ✅
-├── 82fda65 feat(auth): Intent-based OAuth Preload (F4) ✅
-└── 65274d5 perf(ui): AnimatedSvgWrapper component (F5)
-```
+### Validación de Negocio ✅ CONFIRMADA
 
-### Phase 1 Commits (previos al merge)
+| Aspecto | Estado | Detalle |
+|---------|--------|---------|
+| **Product-Market Fit** | ✅ Confirmado | 5 dealers activos pagando |
+| **Meses operando** | ✅ 6 meses | Validación real con dinero |
+| **Unidad Economics** | ✅ Funciona | $100-$500 por auto vendido |
+| **Modelo B2C/B2B** | ✅ Validado | B2C gratis, B2B paga comisión |
+| **Veredicto Framework** | ✅ APPROVE | Cambió de CONDITIONAL |
 
-```
-af39683 docs(handoff): Phase 1 100% COMPLETADA
-242c739 feat(auth): 2FA Management Center (F1-003)
-028e92a feat(auth): initialized flag (F1-001)
-83363d7 feat(flags): Feature Flag System (F1-004)
-5ddaf07 feat(perf): Performance API Marks (F1-002)
+### Situación Operativa 🔴 CRÍTICA
+
+| Problema | Detalle | Severidad |
+|----------|---------|-----------|
+| **Empleado renunció** | Fundador SOLO publicando manualmente | 🔴 Crítico |
+| **20-40 autos/día** | Volumen alto, manual imposible | 🔴 Crítico |
+| **Script Python insuficiente** | Solo publica, NO elimina posts >7d | 🟠 Alto |
+| **Facebook 7 días** | Posts vencen, necesitan re-publicación | 🔴 Crítico |
+| **Múltiples grupos** | Manual uno por uno | 🔴 Crítico |
+
+**Conclusión:** Muerte por éxito acelerada. Necesita automatización URGENTE.
+
+---
+
+## 🏗️ STACK TÉCNICO CONFIRMADO
+
+```yaml
+Frontend:
+  - Next.js: 16.1+ (Turbopack)
+  - React: 19.2+
+  - TailwindCSS: 4
+  - Forms: React Hook Form + Zod
+  - State: Zustand 5
+  - Query: TanStack Query (React Query)
+  - UI: shadcn/ui + Magic UI
+
+Backend:
+  - Python: 3.13+ (free-threading)
+  - Framework: FastAPI 0.115+
+  - ORM: SQLAlchemy 2.0 async
+  - Validation: Pydantic 2.12+
+  - DB: PostgreSQL 17
+
+Tests:
+  - Frontend: Vitest + Testing Library
+  - Backend: pytest-asyncio
+  - Total actual: 629/629 passing
 ```
 
 ---
 
-## ✅ Phase 1: Auth System Core
+## ✅ FASE 1: PLANIFICACIÓN (COMPLETADA 2026-03-04)
 
-| Ticket | Commit  | Descripción           |
-| ------ | ------- | --------------------- |
-| F1-001 | 028e92a | Auth initialized flag |
-| F1-002 | 5ddaf07 | Performance API Marks |
-| F1-003 | 242c739 | 2FA Management Center |
-| F1-004 | 83363d7 | Feature Flag System   |
+### Cerebros Consultados
 
----
+| Cerebro | Output | Archivo |
+|---------|--------|---------|
+| **#3 UI Design** | Sistema de diseño completo | `docs/design/BRAIN-03-UI-DESIGN-SPRINT-5-6.md` |
+| **#4 Frontend** | Patrones Next.js 16, estructura carpetas | `docs/design/BRAIN-04-FRONTEND-PATTERNS-SPRINT-5-6.md` |
+| **Magic UI** | Componentes listos para usar | `docs/design/MAGIC-UI-COMPONENTS-SPRINT-5-6.md` |
 
-## ✅ Phase 2: OAuth + SVG Optimizations
+### Diseño Definido
 
-### F5: AnimatedSvgWrapper Component ✅
+**Sistema de Colores:**
+- Primario: `#6366f1` (Índigo profesional)
+- Dark mode: `#121212` fondo (evita smearing OLED)
+- Semánticos: verde (vendido), rojo (error), ámbar (borrador)
 
-**Commit**: `65274d5`
+**Tipografía:**
+- Fuente: Inter o Geist
+- Base: 16px móvil, 14px etiquetas
 
-**Implementado:**
-
-- ✅ `apps/web/src/components/ui/AnimatedSvgWrapper.tsx`
-- ✅ CSS transforms (hardware-accelerated): `translateZ(0)`, `willChange`
-- ✅ Animaciones: `fadeIn`, `slideUp`, `scaleIn` en `globals.css`
-- ✅ Aplicado a OAuth button icons (Google/Facebook)
-- ✅ Feature flag: `svg-wrapper` (enabled by default)
-
-**Performance:**
-
-- GPU layer creation via `translateZ(0)`
-- Browser optimization hints via `willChange`
-- CSS-only animations (no JS frame loops)
-- transform y opacity only (paint-free)
-
-### F4: Intent-based OAuth Preload ✅
-
-**Commit**: `82fda65`
-
-**Implementado:**
-
-- ✅ `apps/web/src/hooks/useOAuthPreload.ts`
-- ✅ Initial preload en mount
-- ✅ onMouseEnter retry si initial falló
-- ✅ Click fallback (comportamiento normal)
-- ✅ Feature flag: `oauth-preload` (enabled by default)
-- ✅ 3 nuevos tests en `OAuthButtons.test.tsx`
-- ✅ `onMouseEnter` prop en `OAuthButtons`
-
-**Strategy:**
-
-1. Initial preload → 2. Hover retry → 3. Click fallback
+**Componentes Clave:**
+1. **MultiPhotoUpload** - 20 fotos con drag & drop, progreso, preview
+2. **ProductForm** - VIN decoder auto-fill, validación inline
+3. **DataTable** - Sort, filter, search, pagination
+4. **SocialPreview** - Vista previa Facebook en tiempo real
 
 ---
 
-## 📁 Archivos Nuevos/Creados
+## 🔄 FASE 2: PENDIENTE (Próxima Sesión)
 
-### Componentes (3 archivos)
+### Backend Architecture (Cerebro #5)
+
+Pendiente consultar sobre:
+1. Domain Entities (Product, Vehicle) con tenant_id
+2. Repository Pattern SQLAlchemy 2.0 async
+3. VIN Decoder (NHTSA API integration)
+4. **Facebook Graph API integration:**
+   - Publicación Marketplace
+   - Eliminación posts >7 días
+   - Re-publicación automática
+5. Domain Events para publicación/eliminación
+
+---
+
+## 📁 ARCHIVOS CREADOS EN ESTA SESIÓN
 
 ```
-apps/web/src/components/ui/AnimatedSvgWrapper.tsx
-apps/web/src/components/ui/index.ts
-apps/web/src/hooks/useOAuthPreload.ts
+docs/
+├── REEVALUACION-PRODUCT-MARKET-FIT-2026-03-04.md     # PMF confirmado
+└── design/
+    ├── BRAIN-03-UI-DESIGN-SPRINT-5-6.md              # Diseño UI completo
+    ├── BRAIN-04-FRONTEND-PATTERNS-SPRINT-5-6.md       # Patrones Frontend
+    └── MAGIC-UI-COMPONENTS-SPRINT-5-6.md             # Componentes listos
+
+docs/design/ (creados en sesión anterior):
+└── 📊 MARKET RESEARCH – ProSell SaaS.md
+├── 📊 RESULTADOS SIMULADOS – 50 ENTREVISTAS...
+└── 📊 RESULTADOS SIMULADOS – 20 Conversaciones...
 ```
 
-### Documentación (17 archivos)
+---
+
+## 🎯 PRÓXIMA SESIÓN: BACKEND + FACEBOOK INTEGRATION
+
+### Objetivos:
+1. Consultar Cerebro #5 (Backend) - Arquitectura técnica
+2. Consultar Cerebro #6 (QA/DevOps) - Testing strategy
+3. Crear PRP detallado de implementación Sprint 5-6 + FB
+4. Definir timeline realista (5-7 semanas estimado)
+
+### Preguntas para Backend:
+- ¿Cómo estructurar Facebook Graph API client?
+- ¿Domain Events para publicación/eliminación automática?
+- ¿Idempotencia para evitar publicar dos veces?
+- ¿Cron job para posts >7 días?
+
+### Preguntas para QA:
+- ¿Cómo testear Facebook integration sin spamming?
+- ¿Estrategia de E2E tests?
+- ¿CI/CD considerations?
+
+---
+
+## 📋 MEMORIAS SERENA ACTUALIZADAS
 
 ```
 .serena/memories/
-├── vercel-performance-phase1-complete.md
-├── vercel-performance-phase1-tickets-created.md
-└── vercel-performance-phase2-planning.md
-
-docs/prp/
-├── vercel-performance-fixes.md
-└── vercel-performance-fixes-clarification-session.md
-
-docs/tickets/
-├── README.md
-├── phase-1-implementation-plan.md
-├── phase-1-tickets.csv
-├── sprint-summary.md
-├── F1-001-auth-store-flag.md
-├── F1-002-performance-api.md
-├── F1-003-2fa-management-center.md
-└── F1-004-feature-flags.md
-```
-
-### Skills (4 archivos)
-
-```
-.agents/skills/
-├── vercel-composition-patterns/README.md
-├── vercel-react-best-practices/README.md
-├── vercel-react-native-skills/README.md
-└── find-skills/SKILL.md
+├── REEVALUACION-PMF-CONFIRMADO-2026-03-04
+├── sprint-5-6-productos-init-2026-03-04
+└── HANDOFF-2026-03-04-SPRINT-5-6-PLANNING.md (este archivo)
 ```
 
 ---
 
-## 📊 Métricas Finales
+## 🚀 COMANDOS ÚTILES
 
-| Métrica              | Valor                              |
-| -------------------- | ---------------------------------- |
-| Tests passing        | 333/333 ✅                         |
-| Archivos modificados | 43                                 |
-| Líneas añadidas      | +4,072                             |
-| Líneas eliminadas    | -297                               |
-| Net change           | +3,775                             |
-| Feature flags        | 2 (`svg-wrapper`, `oauth-preload`) |
-| Nuevos componentes   | 2                                  |
-| Nuevos hooks         | 1                                  |
-
----
-
-## 🚀 Para la Próxima Sesión
-
-### Opción 1: Continuar con Phase 3 (si existe en PRP)
-
+### Ver estado actual:
 ```bash
-# Verificar si hay Phase 3 en el PRP
-cat docs/prp/vercel-performance-fixes.md
-
-# Si hay, crear nueva rama
-git checkout main
-git pull
-git checkout -b phase-3-<nombre>
+cd ~/proy/prosell-sass
+git status
+git log --oneline -5
 ```
 
-### Opción 2: Trabajar en otro ticket/feature
-
+### Ver tests:
 ```bash
-git checkout main
-git pull
-git checkout -b feature-<nombre>
-```
+cd apps/api
+uv run pytest tests/ -q --tb=no
 
-### Opción 3: Revisión/Testing del código mergeado
-
-```bash
-# Ejecutar tests
+cd apps/web
 pnpm test
+```
 
-# Verificar feature flags
-# Testear en desarrollo
-pnpm dev
+### Ver diseño creado:
+```bash
+ls -la docs/design/
+cat docs/design/BRAIN-03-UI-DESIGN-SPRINT-5-6.md
 ```
 
 ---
 
-## 🔧 Feature Flags Activadas
+## 💬 NOTAS IMPORTANTES
 
-| Flag            | Estado          | Descripción                   |
-| --------------- | --------------- | ----------------------------- |
-| `svg-wrapper`   | ✅ ON (default) | AnimatedSvgWrapper animations |
-| `oauth-preload` | ✅ ON (default) | Intent-based OAuth preload    |
-| `auth-init-fix` | ✅ ON (default) | AuthStore initialized flag    |
+### Multi-Tenant + Multi-Producto ✅
+El proyecto NO es solo para vehículos. Es una plataforma MULTI-NICHO:
 
-**Para desactivar**: `useFeatureFlagStore.setState({ flags: { "svg-wrapper": false } })`
+- Automóviles (hoy)
+- Inmuebles (futuro)
+- Perfumes (futuro)
+- Cualquier categoría (escalable)
+
+**Arquitectura YA contempla esto:**
+- Todas las entities tienen `tenant_id`
+- Categorías dinámicas con campos configurables
+- Atributos JSONB para flexibilidad
+
+### "Del apuro solo queda el cansancio" ✅
+**Decisión del fundador:** Priorizar CALIDAD sobre velocidad.
+
+**Aprobado:** Timeline de 5-7 semanas con desarrollo serio, bien hecho.
+
+**Enfoque:** Pair programming con:
+- Fundador (visión, decisiones, testing)
+- Técnico (implementación)
+- Claude Code (arquitectura, code review, aceleración)
 
 ---
 
-**✅ PHASE 1 & 2: 100% COMPLETADAS Y MERGEADAS** 🎯
+## ✅ CHECKLIST PARA PRÓXIMA SESIÓN
 
-**Siguiente**: Verificar PRP para Phase 3 o trabajar en nuevos tickets.
+- [ ] Consultar Cerebro #5 (Backend) - Facebook integration architecture
+- [ ] Consultar Cerebro #6 (QA/DevOps) - Testing strategy
+- [ ] Crear PRP Sprint 5-6 + FB con timeline detallado
+- [ ] Actualizar tareas con fechas estimadas
+- [ ] Definir milestones semanales
+
+---
+
+## 🔗 REFERENCIAS EXTERNAS
+
+- **MasterMind Framework:** `~/proy/mastermind/` (122/122 fuentes, 7 cerebros)
+- **PRP Sprint 5-6:** `~/proy/prosell-sass/PRPs/sprint-5-6-productos.md`
+- **Re-evaluación:** `docs/REEVALUACION-PRODUCT-MARKET-FIT-2026-03-04.md`
+
+---
+
+**Estado:** 🔄 PLANEANDO - Fase 1 (Diseño) COMPLETADA
+**Siguiente:** Fase 2 (Backend Architecture)
+
+---
+
+*Generado para continuidad de sesión - 2026-03-04*
