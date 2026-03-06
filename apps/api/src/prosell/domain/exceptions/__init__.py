@@ -23,6 +23,12 @@ from prosell.domain.exceptions.auth_exceptions import (
     # Password exceptions
     WeakPasswordException,
 )
+from prosell.domain.exceptions.category_exceptions import (
+    CategoryAlreadyExistsError,
+    CategoryCircularReferenceError,
+    CategoryError,
+    CategoryNotFoundError,
+)
 from prosell.domain.exceptions.org_exceptions import (
     InsufficientFundsException,
     OrganizationAlreadyExistsException,
@@ -34,6 +40,15 @@ from prosell.domain.exceptions.org_exceptions import (
     TeamMemberNotFoundException,
     TeamNotFoundException,
     WalletNotFoundException,
+)
+from prosell.domain.exceptions.product_exceptions import (
+    InvalidVINError,
+    ProductAlreadyExistsError,
+    ProductError,
+    ProductInvalidStatusTransitionError,
+    ProductNotEditableError,
+    ProductNotFoundError,
+    VehicleAlreadyExistsError,
 )
 
 __all__ = [
@@ -48,6 +63,19 @@ __all__ = [
     "TeamMemberNotFoundException",
     "WalletNotFoundException",
     "InsufficientFundsException",
+    # Category exceptions
+    "CategoryAlreadyExistsError",
+    "CategoryCircularReferenceError",
+    "CategoryError",
+    "CategoryNotFoundError",
+    # Product exceptions
+    "ProductError",
+    "ProductNotFoundError",
+    "ProductAlreadyExistsError",
+    "ProductInvalidStatusTransitionError",
+    "ProductNotEditableError",
+    "VehicleAlreadyExistsError",
+    "InvalidVINError",
     # User exceptions
     "EmailAlreadyExistsException",
     "UserNotFoundException",
