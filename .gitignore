@@ -97,3 +97,20 @@ apps/web/tsconfig.tsbuildinfo
 # Claude Code (local configuration, not shared)
 .agent/
 .claude/
+
+# AI Tools (local)
+.mastermind-active
+.mastermind/
+.playwright-mcp/
+
+# Serena (handoffs are temporary)
+.serena/handoffs/
+
+# E2E Test Screenshots (temporary)
+screenshots/
+
+# Windows Zone.Identifier files
+*:Zone.Identifier
+
+# Next.js generated files
+apps/web/next-env.d.ts
