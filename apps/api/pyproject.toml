@@ -26,6 +26,8 @@ dependencies = [
     "sendgrid>=6.11.0",
     # Rate limiting
     "slowapi>=0.1.9",
+    "taskiq[redis]>=0.12.1",
+    "taskiq-redis>=1.2.2",
 ]
 
 [project.optional-dependencies]

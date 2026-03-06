@@ -1,0 +1,54 @@
+{
+  "categories": {
+    "vehicles": {
+      "name": "Vehicles",
+      "description": "Motor vehicles and accessories"
+    },
+    "real_estate": {
+      "name": "Real Estate",
+      "description": "Properties and real estate"
+    },
+    "electronics": {
+      "name": "Electronics",
+      "description": "Electronic devices and accessories"
+    }
+  },
+  "fields": {
+    "make": "Make",
+    "model": "Model",
+    "year": "Year",
+    "mileage": "Mileage",
+    "price": "Price",
+    "condition": "Condition",
+    "location": "Location",
+    "description": "Description",
+    "title": "Title",
+    "category": "Category",
+    "status": "Status"
+  },
+  "validation": {
+    "required": "This field is required",
+    "min_value": "Minimum value is {min}",
+    "max_value": "Maximum value is {max}",
+    "min_length": "Minimum {min} characters",
+    "max_length": "Maximum {max} characters",
+    "invalid_email": "Invalid email",
+    "invalid_url": "Invalid URL",
+    "invalid_phone": "Invalid phone number"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "search": "Search",
+    "filter": "Filter",
+    "loading": "Loading...",
+    "no_results": "No results found",
+    "success": "Operation successful",
+    "error": "Error",
+    "confirm": "Confirm"
+  }
+}

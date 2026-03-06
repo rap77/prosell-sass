@@ -1,0 +1,54 @@
+{
+  "categories": {
+    "vehicles": {
+      "name": "Vehículos",
+      "description": "Vehículos de motor y accesorios"
+    },
+    "real_estate": {
+      "name": "Bienes Raíces",
+      "description": "Propiedades e inmuebles"
+    },
+    "electronics": {
+      "name": "Electrónica",
+      "description": "Dispositivos electrónicos y accesorios"
+    }
+  },
+  "fields": {
+    "make": "Marca",
+    "model": "Modelo",
+    "year": "Año",
+    "mileage": "Kilometraje",
+    "price": "Precio",
+    "condition": "Condición",
+    "location": "Ubicación",
+    "description": "Descripción",
+    "title": "Título",
+    "category": "Categoría",
+    "status": "Estado"
+  },
+  "validation": {
+    "required": "Este campo es requerido",
+    "min_value": "El valor mínimo es {min}",
+    "max_value": "El valor máximo es {max}",
+    "min_length": "Mínimo {min} caracteres",
+    "max_length": "Máximo {max} caracteres",
+    "invalid_email": "Email inválido",
+    "invalid_url": "URL inválida",
+    "invalid_phone": "Teléfono inválido"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "update": "Actualizar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "loading": "Cargando...",
+    "no_results": "No se encontraron resultados",
+    "success": "Operación exitosa",
+    "error": "Error",
+    "confirm": "Confirmar"
+  }
+}

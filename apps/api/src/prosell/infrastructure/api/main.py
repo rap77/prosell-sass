@@ -19,6 +19,7 @@ from prosell.infrastructure.api.middleware.exception_handlers import (
 from prosell.infrastructure.api.routers import (
     auth_router,
     category_router,
+    health_router,
     org_router,
     product_router,
     team_router,
@@ -178,6 +179,12 @@ app.include_router(
     vehicle_router,
     prefix="/api/v1/vehicles",
     tags=["Vehicles"],
+)
+
+app.include_router(
+    health_router,
+    prefix="/api/v1",
+    tags=["Health"],
 )
 
 
