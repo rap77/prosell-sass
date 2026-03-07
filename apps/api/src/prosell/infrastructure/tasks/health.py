@@ -36,12 +36,12 @@ async def get_task_queue_health() -> TaskQueueHealth:
         try:
             import redis.asyncio as redis
 
-            client = redis.from_url(
+            client: redis.Redis[str] = redis.from_url(  # type: ignore[call-arg]
                 settings.redis_url,
                 password=settings.redis_password,
                 decode_responses=True,
             )
-            await client.ping()
+            await client.ping()  # type: ignore[call-arg]
             await client.close()
             broker_connected = True
             message = f"Redis broker at {settings.redis_url}"
@@ -50,10 +50,7 @@ async def get_task_queue_health() -> TaskQueueHealth:
             message = f"Redis connection failed: {e}"
 
     # Determine overall status
-    if broker_connected:
-        status = "healthy"
-    else:
-        status = "unhealthy"
+    status = "healthy" if broker_connected else "unhealthy"
 
     return TaskQueueHealth(
         status=status,

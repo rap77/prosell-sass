@@ -4,10 +4,11 @@ Prevents cascade failures by failing fast when external service
 is experiencing issues.
 """
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from enum import Enum
 from time import time
+from typing import Any
 
 
 class CircuitState(Enum):
@@ -43,7 +44,7 @@ class CircuitBreaker:
     HALF_OPEN → OPEN: On any failure
     """
 
-    def __init__(self, config: CircuitBreakerConfig | None = None):
+    def __init__(self, config: CircuitBreakerConfig | None = None) -> None:
         """Initialize circuit breaker.
 
         Args:
@@ -55,7 +56,7 @@ class CircuitBreaker:
         self.last_failure_time = 0.0
         self.half_open_calls = 0
 
-    async def call(self, func: Callable, *args, **kwargs):
+    async def call(self, func: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any) -> Any:
         """Execute function with circuit breaker protection.
 
         Args:
@@ -115,10 +116,7 @@ class CircuitBreaker:
         self.failures += 1
         self.last_failure_time = time()
 
-        if (
-            self.state == CircuitState.CLOSED
-            and self.failures >= self.config.threshold
-        ):
+        if self.state == CircuitState.CLOSED and self.failures >= self.config.threshold:
             self.state = CircuitState.OPEN
         elif self.state == CircuitState.HALF_OPEN:
             self.state = CircuitState.OPEN
@@ -141,8 +139,8 @@ class CircuitBreaker:
 
 
 __all__ = [
-    "CircuitState",
-    "CircuitBreakerOpenError",
-    "CircuitBreakerConfig",
     "CircuitBreaker",
+    "CircuitBreakerConfig",
+    "CircuitBreakerOpenError",
+    "CircuitState",
 ]

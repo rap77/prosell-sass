@@ -11,18 +11,15 @@ from prosell.core.config import settings
 from prosell.infrastructure.tasks.broker import broker
 
 
-async def main():
+async def main() -> None:
     """Start taskiq worker."""
-    receiver = Receiver(
-        broker=broker,
-        max_workers=settings.task_queue_max_workers,
-    )
+    receiver = Receiver(broker=broker)
 
     # Import tasks to register them with broker
     # Tasks are defined in separate modules and imported here
     # Example: from prosell.infrastructure.tasks import tasks
 
-    print(f"Starting Taskiq worker with {settings.task_queue_max_workers} workers...")
+    print("Starting Taskiq worker...")
     print(f"Broker: {settings.task_queue_broker_url or settings.redis_url}")
 
     await receiver.start()

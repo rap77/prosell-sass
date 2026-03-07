@@ -4,10 +4,9 @@ Loads translations from JSON files and provides a simple API
 for getting translated strings with key paths.
 """
 
-from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ValidationError
 
@@ -19,10 +18,10 @@ class Translations(BaseModel):
     Nested categories for organization.
     """
 
-    categories: dict = {}
-    fields: dict = {}
-    validation: dict = {}
-    common: dict = {}
+    categories: dict[str, Any] = {}
+    fields: dict[str, Any] = {}
+    validation: dict[str, Any] = {}
+    common: dict[str, Any] = {}
     # Add more categories as needed
 
 
@@ -70,9 +69,7 @@ class Translator:
         except ValidationError as e:
             raise ValueError(f"Invalid translation file {lang}.json: {e}") from e
 
-    def t(
-        self, key: str, lang: Literal["es", "en"] = "es", **kwargs
-    ) -> str:
+    def t(self, key: str, lang: Literal["es", "en"] = "es", **kwargs: Any) -> str:
         """Get translated string with key path.
 
         Supports nested keys (e.g., "fields.make").
@@ -95,8 +92,8 @@ class Translator:
         translations_dict = translations.model_dump()
 
         # Navigate nested keys (e.g., "fields.make")
-        keys = key.split(".")
-        value = translations_dict
+        keys: list[str] = key.split(".")
+        value: dict[str, Any] | str | Any = translations_dict
 
         for k in keys:
             if isinstance(value, dict) and k in value:
@@ -109,7 +106,7 @@ class Translator:
 
         return key  # Fallback to key if translation not found
 
-    @lru_cache(maxsize=128)
+    @lru_cache(maxsize=128)  # noqa: B019 - Cache is per-instance, acceptable use case
     def get_cached(self, key: str, lang: Literal["es", "en"] = "es") -> str:
         """Get translated string with LRU caching.
 
