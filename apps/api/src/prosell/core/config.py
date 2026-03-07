@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     # =============================================================================
     # ENVIRONMENT
     # =============================================================================
-    environment: Literal["development", "staging", "production"] = Field(
+    environment: Literal["development", "staging", "production", "testing"] = Field(
         default="development",
         description="Application environment",
     )
@@ -86,6 +86,26 @@ class Settings(BaseSettings):
     redis_max_connections: int = Field(
         default=50,
         description="Maximum Redis connections",
+    )
+
+    # =============================================================================
+    # TASK QUEUE
+    # =============================================================================
+    task_queue_broker_url: str | None = Field(
+        default=None,
+        description="Task queue broker URL (defaults to redis_url if None)",
+    )
+    task_queue_max_workers: int = Field(
+        default=4,
+        description="Maximum number of worker processes",
+    )
+    task_queue_task_timeout: int = Field(
+        default=300,  # 5 minutes
+        description="Task execution timeout in seconds",
+    )
+    task_queue_max_retries: int = Field(
+        default=3,
+        description="Maximum retry attempts for failed tasks",
     )
 
     # =============================================================================

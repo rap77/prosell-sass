@@ -8,7 +8,7 @@ PROVIDER="claude"
 FILE_PATTERNS="*.py,*.ts,*.tsx,*.js,*.jsx"
 
 # File patterns to exclude from review (comma-separated)
-EXCLUDE_PATTERNS="*.test.ts,*.spec.ts,*.test.tsx,*.spec.tsx,*.test.py,*_test.py,*.d.ts,__pycache__/*,node_modules/*,.next/*,dist/*,build/*,coverage/*,*.lock,*.json,*.md,*.yaml,*.yml,*.toml,*.css"
+EXCLUDE_PATTERNS="*.test.ts,*.spec.ts,*.test.tsx,*.spec.tsx,*.test.py,*_test.py,test_*.py,*.d.ts,__pycache__/*,node_modules/*,.next/*,dist/*,build/*,coverage/*,*.lock,*.json,*.md,*.yaml,*.yml,*.toml,*.css"
 
 # File containing code review rules (relative to project root)
 RULES_FILE="../../AGENTS.md"
