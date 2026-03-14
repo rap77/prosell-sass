@@ -316,29 +316,68 @@ class TestListAccountsUseCase:
 class TestFetchPagesUseCase:
     """Tests for FetchPagesUseCase."""
 
-    async def test_fetch_pages_success(self, facebook_page: FacebookPage) -> None:
-        """Successfully fetch pages for account."""
+    async def test_fetch_pages_success(self, facebook_account: FacebookAccount) -> None:
+        """Successfully fetch pages for account owned by user."""
+        account_repo = make_facebook_account_repo()
+        account_repo.get_by_id.return_value = facebook_account
+
         page_repo = make_facebook_page_repo()
-        page_repo.get_by_facebook_account_id.return_value = [facebook_page]
+        page = FacebookPage(
+            id=str(uuid4()),
+            facebook_account_id=facebook_account.id,
+            page_id="987654321",
+            page_name="Test Dealership",
+            page_access_token_encrypted="encrypted_page_token",
+            category="Automotive Dealer",
+            is_default=False,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+        page_repo.get_by_facebook_account_id.return_value = [page]
 
-        use_case = FetchPagesUseCase(page_repo)
+        use_case = FetchPagesUseCase(page_repo, account_repo)
 
-        pages = await use_case.execute(facebook_page.facebook_account_id)
+        pages = await use_case.execute(facebook_account.id, facebook_account.seller_user_id)
 
         assert len(pages) == 1
         assert pages[0].page_id == "987654321"
         assert pages[0].page_name == "Test Dealership"
 
-    async def test_fetch_pages_empty(self) -> None:
+    async def test_fetch_pages_empty(self, facebook_account: FacebookAccount) -> None:
         """Returns empty list when account has no pages."""
+        account_repo = make_facebook_account_repo()
+        account_repo.get_by_id.return_value = facebook_account
+
         page_repo = make_facebook_page_repo()
         page_repo.get_by_facebook_account_id.return_value = []
 
-        use_case = FetchPagesUseCase(page_repo)
+        use_case = FetchPagesUseCase(page_repo, account_repo)
 
-        pages = await use_case.execute(str(uuid4()))
+        pages = await use_case.execute(facebook_account.id, facebook_account.seller_user_id)
 
         assert len(pages) == 0
+
+    async def test_fetch_pages_wrong_owner_raises(self, facebook_account: FacebookAccount) -> None:
+        """Raises not found when user does not own the account."""
+        account_repo = make_facebook_account_repo()
+        account_repo.get_by_id.return_value = facebook_account
+
+        page_repo = make_facebook_page_repo()
+        use_case = FetchPagesUseCase(page_repo, account_repo)
+
+        with pytest.raises(FacebookAccountNotFoundException):
+            await use_case.execute(facebook_account.id, str(uuid4()))
+
+    async def test_fetch_pages_account_not_found_raises(self) -> None:
+        """Raises not found when account does not exist."""
+        account_repo = make_facebook_account_repo()
+        account_repo.get_by_id.return_value = None
+
+        page_repo = make_facebook_page_repo()
+        use_case = FetchPagesUseCase(page_repo, account_repo)
+
+        with pytest.raises(FacebookAccountNotFoundException):
+            await use_case.execute(str(uuid4()), str(uuid4()))
 
 
 # =============================================================================

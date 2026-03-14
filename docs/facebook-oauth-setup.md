@@ -51,7 +51,7 @@ Agregar al archivo `.env` de `apps/api/` (NUNCA commitear):
 
 ```bash
 # Facebook OAuth
-FACEBOOK_OAUTH_APP_ID=926649056406716
+FACEBOOK_OAUTH_APP_ID=<app_id_aqui>
 FACEBOOK_OAUTH_APP_SECRET=<app_secret_aqui>
 FACEBOOK_OAUTH_REDIRECT_URI=http://localhost:8000/api/v1/facebook/callback
 
@@ -86,7 +86,7 @@ curl -s http://localhost:4040/api/tunnels | python3 -m json.tool | grep public_u
 
 Actualizar `FACEBOOK_OAUTH_REDIRECT_URI` con la URL ngrok:
 ```bash
-FACEBOOK_OAUTH_REDIRECT_URI=https://roscoe-unfrothed-alluringly.ngrok-free.dev/api/v1/facebook/callback
+FACEBOOK_OAUTH_REDIRECT_URI=https://<tu-subdominio>.ngrok-free.app/api/v1/facebook/callback
 ```
 
 Y agregar esa URL en Facebook Developers → Facebook Login → Valid OAuth Redirect URIs.
@@ -173,7 +173,7 @@ curl -X POST "http://localhost:8000/api/v1/facebook/admin/refresh-tokens?hours_b
 
 - **State token**: UUID v4 almacenado en Redis con TTL de 10 minutos (CSRF protection)
 - **Access tokens**: Encriptados con AES-256 (`FACEBOOK_ENCRYPTION_KEY`) antes de guardar en DB
-- **`FACEBOOK_APP_SECRET`** y **`FACEBOOK_ENCRYPTION_KEY`**: Usar secrets manager en producción (AWS Secrets Manager, Vault, etc.)
+- **`FACEBOOK_OAUTH_APP_SECRET`** y **`FACEBOOK_ENCRYPTION_KEY`**: Usar secrets manager en producción (AWS Secrets Manager, Vault, etc.)
 - Nunca loguear access tokens (SQLAlchemy echo deshabilitado en producción)
 
 ---

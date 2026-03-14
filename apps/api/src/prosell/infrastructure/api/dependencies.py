@@ -509,11 +509,14 @@ async def get_facebook_fetch_pages_use_case(
     facebook_page_repository: Annotated[
         IFacebookPageRepository, Depends(get_facebook_page_repository)
     ],
+    facebook_account_repository: Annotated[
+        IFacebookAccountRepository, Depends(get_facebook_account_repository)
+    ],
 ) -> FetchPagesUseCase:
     """Get FetchPages use case instance."""
     from prosell.application.use_cases.facebook.fetch_pages import FetchPagesUseCase
 
-    return FetchPagesUseCase(facebook_page_repository)
+    return FetchPagesUseCase(facebook_page_repository, facebook_account_repository)
 
 
 async def get_facebook_set_default_use_case(

@@ -196,15 +196,16 @@ async def list_facebook_accounts(
 @router.get("/accounts/{account_id}/pages", response_model=ListFacebookPagesResponse)
 async def list_facebook_pages(
     account_id: UUID,
-    _current_user: Annotated[User, Depends(get_current_auth_user)],
+    current_user: Annotated[User, Depends(get_current_auth_user)],
     use_case: Annotated[FetchPagesUseCase, Depends(get_facebook_fetch_pages_use_case)],
 ) -> ListFacebookPagesResponse:
     """
     List Facebook pages for an account.
 
     Returns all Facebook pages discovered for the specified account.
+    Only the owner of the account can list its pages.
     """
-    pages = await use_case.execute(account_id)
+    pages = await use_case.execute(account_id, current_user.id)
     return ListFacebookPagesResponse(pages=pages)
 
 
