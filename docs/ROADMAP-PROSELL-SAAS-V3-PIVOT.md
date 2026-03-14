@@ -192,6 +192,7 @@ gantt
 
 | Entregable | Prioridad | Estimación |
 | ---------- | --------- | ---------- |
+| Asignar tenant_id en OAuth users | P1 | 1 día |
 | Rutas dinámicas por tenant | P0 | 3 días |
 | Shared layouts anidados | P0 | 2 días |
 | Edge caching (ISR/SWR) | P0 | 2 días |
@@ -201,6 +202,9 @@ gantt
 | Paginación optimizada | P0 | 2 días |
 | Imagen optimizada (next/image) | P0 | 2 días |
 | Tests E2E | P0 | 2 días |
+
+**Deuda técnica incluida:**
+- `tenant_id=None` en usuarios creados via OAuth → requiere Organizaciones implementadas
 
 **Criterios de éxito:**
 - [ ] Catálogo público funcional
