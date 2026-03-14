@@ -24,4 +24,4 @@ else:
 #     return f"Processed: {param}"
 
 
-__all__ = ["broker", "TaskiqDepends"]
+__all__ = ["TaskiqDepends", "broker"]

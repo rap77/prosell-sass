@@ -1,7 +1,43 @@
 """Dependency injection container for FastAPI."""
 
+from __future__ import annotations
+
+from collections.abc import Awaitable, Callable
 from functools import lru_cache
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
+
+if TYPE_CHECKING:
+    from prosell.application.use_cases.auth.enable_2fa import Disable2FAUseCase, Enable2FAUseCase
+    from prosell.application.use_cases.auth.login_user import LoginUserUseCase
+    from prosell.application.use_cases.auth.oauth_login import OAuthLoginUseCase
+    from prosell.application.use_cases.auth.refresh_token import (
+        RefreshTokenUseCase as AuthRefreshTokenUseCase,
+    )
+    from prosell.application.use_cases.auth.register_user import RegisterUserUseCase
+    from prosell.application.use_cases.auth.verify_2fa import Verify2FAUseCase
+    from prosell.application.use_cases.facebook.authorize_account import (
+        AuthorizeFacebookAccountUseCase,
+    )
+    from prosell.application.use_cases.facebook.disconnect_account import (
+        DisconnectFacebookAccountUseCase,
+    )
+    from prosell.application.use_cases.facebook.fetch_pages import FetchPagesUseCase
+    from prosell.application.use_cases.facebook.list_accounts import ListAccountsUseCase
+    from prosell.application.use_cases.facebook.oauth_callback import OAuthCallbackUseCase
+    from prosell.application.use_cases.facebook.refresh_token import RefreshTokenUseCase
+    from prosell.application.use_cases.facebook.set_default_page import SetDefaultPageUseCase
+    from prosell.infrastructure.repositories.facebook_account_repository_impl import (
+        SqlAlchemyFacebookAccountRepository,
+    )
+    from prosell.infrastructure.repositories.facebook_page_repository_impl import (
+        SqlAlchemyFacebookPageRepository,
+    )
+
+# NOTE: from __future__ import annotations makes all annotations lazy strings,
+# which means FastAPI's Depends() resolution still works since it uses
+# get_type_hints() which resolves string annotations at runtime using the
+# module's global namespace. The domain interface types are imported at module
+# level to ensure they are available for resolution.
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -9,16 +45,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.ports.email_service import AbstractEmailService
 from prosell.application.ports.ido_spaces import IDOSpacesService
-from prosell.core.config import get_oauth_settings, settings
+from prosell.core.config import get_oauth_settings, get_settings, settings
 from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission, RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.ports import (
+    IEncryptionService,
     IJWTService,
     IOAuthService,
     IPasswordService,
     ITokenHasher,
     ITOTPService,
 )
+from prosell.domain.ports.i_facebook_marketplace_service import (
+    IFacebookMarketplaceOAuthService,
+)
+from prosell.domain.repositories.facebook_account_repository import IFacebookAccountRepository
+from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.oauth_repository_impl import SqlAlchemyOAuthRepository
 from prosell.infrastructure.repositories.role_repository_impl import SqlAlchemyRoleRepository
@@ -31,6 +73,7 @@ from prosell.infrastructure.services.email_service import (
 )
 from prosell.infrastructure.services.oauth_service_impl import OAuthServiceImpl
 from prosell.infrastructure.services.password_service import PasswordService
+from prosell.infrastructure.services.redis_service import RedisService
 from prosell.infrastructure.services.totp_service import TOTPService
 
 # =============================================================================
@@ -39,28 +82,28 @@ from prosell.infrastructure.services.totp_service import TOTPService
 
 
 async def get_user_repository(
-    session: AsyncSession = Depends(get_async_session),
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> SqlAlchemyUserRepository:
     """Get user repository instance."""
     return SqlAlchemyUserRepository(session)
 
 
 async def get_role_repository(
-    session: AsyncSession = Depends(get_async_session),
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> SqlAlchemyRoleRepository:
     """Get role repository instance."""
     return SqlAlchemyRoleRepository(session)
 
 
 async def get_session_repository(
-    session: AsyncSession = Depends(get_async_session),
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> SqlAlchemySessionRepository:
     """Get session repository instance."""
     return SqlAlchemySessionRepository(session)
 
 
 async def get_oauth_repository(
-    session: AsyncSession = Depends(get_async_session),
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> SqlAlchemyOAuthRepository:
     """Get OAuth repository instance."""
     return SqlAlchemyOAuthRepository(session)
@@ -160,7 +203,7 @@ async def get_current_auth_user(
     return user
 
 
-def require_permission(permission: Permission):
+def require_permission(permission: Permission) -> Callable[..., Awaitable[User]]:
     """
     Dependency factory for permission-based authorization.
 
@@ -175,8 +218,8 @@ def require_permission(permission: Permission):
     """
 
     async def _check(
-        current_user: User = Depends(get_current_auth_user),
-        role_repository: SqlAlchemyRoleRepository = Depends(get_role_repository),
+        current_user: Annotated[User, Depends(get_current_auth_user)],
+        role_repository: Annotated[SqlAlchemyRoleRepository, Depends(get_role_repository)],
     ) -> User:
         """Check if user has required permission."""
         from fastapi import HTTPException, status
@@ -200,7 +243,7 @@ def require_permission(permission: Permission):
     return _check
 
 
-def require_role(role_type: RoleType):
+def require_role(role_type: RoleType) -> Callable[..., Awaitable[User]]:
     """
     Dependency factory for role-based authorization.
 
@@ -215,8 +258,8 @@ def require_role(role_type: RoleType):
     """
 
     async def _check(
-        current_user: User = Depends(get_current_auth_user),
-        role_repository: SqlAlchemyRoleRepository = Depends(get_role_repository),
+        current_user: Annotated[User, Depends(get_current_auth_user)],
+        role_repository: Annotated[SqlAlchemyRoleRepository, Depends(get_role_repository)],
     ) -> User:
         """Check if user has required role."""
         from fastapi import HTTPException, status
@@ -244,10 +287,10 @@ def require_role(role_type: RoleType):
 
 
 async def get_register_user_use_case(
-    user_repository: SqlAlchemyUserRepository = Depends(get_user_repository),
-    password_service: IPasswordService = Depends(get_password_service),
-    email_service: AbstractEmailService = Depends(get_email_service),
-):
+    user_repository: Annotated[SqlAlchemyUserRepository, Depends(get_user_repository)],
+    password_service: Annotated[IPasswordService, Depends(get_password_service)],
+    email_service: Annotated[AbstractEmailService, Depends(get_email_service)],
+) -> RegisterUserUseCase:
     """Get RegisterUser use case instance."""
     from prosell.application.use_cases.auth.register_user import RegisterUserUseCase
 
@@ -255,10 +298,10 @@ async def get_register_user_use_case(
 
 
 async def get_login_user_use_case(
-    user_repository: SqlAlchemyUserRepository = Depends(get_user_repository),
-    password_service: IPasswordService = Depends(get_password_service),
-    jwt_service: IJWTService = Depends(get_jwt_service),
-):
+    user_repository: Annotated[SqlAlchemyUserRepository, Depends(get_user_repository)],
+    password_service: Annotated[IPasswordService, Depends(get_password_service)],
+    jwt_service: Annotated[IJWTService, Depends(get_jwt_service)],
+) -> LoginUserUseCase:
     """Get LoginUser use case instance."""
     from prosell.application.use_cases.auth.login_user import LoginUserUseCase
 
@@ -266,11 +309,11 @@ async def get_login_user_use_case(
 
 
 async def get_refresh_token_use_case(
-    user_repository: SqlAlchemyUserRepository = Depends(get_user_repository),
-    session_repository: SqlAlchemySessionRepository = Depends(get_session_repository),
-    jwt_service: IJWTService = Depends(get_jwt_service),
-    token_hasher: ITokenHasher = Depends(get_token_hasher),
-):
+    user_repository: Annotated[SqlAlchemyUserRepository, Depends(get_user_repository)],
+    session_repository: Annotated[SqlAlchemySessionRepository, Depends(get_session_repository)],
+    jwt_service: Annotated[IJWTService, Depends(get_jwt_service)],
+    token_hasher: Annotated[ITokenHasher, Depends(get_token_hasher)],
+) -> AuthRefreshTokenUseCase:
     """Get RefreshToken use case instance."""
     from prosell.application.use_cases.auth.refresh_token import RefreshTokenUseCase
 
@@ -278,10 +321,10 @@ async def get_refresh_token_use_case(
 
 
 async def get_oauth_login_use_case(
-    user_repository: SqlAlchemyUserRepository = Depends(get_user_repository),
-    oauth_repository: SqlAlchemyOAuthRepository = Depends(get_oauth_repository),
-    jwt_service: IJWTService = Depends(get_jwt_service),
-):
+    user_repository: Annotated[SqlAlchemyUserRepository, Depends(get_user_repository)],
+    oauth_repository: Annotated[SqlAlchemyOAuthRepository, Depends(get_oauth_repository)],
+    jwt_service: Annotated[IJWTService, Depends(get_jwt_service)],
+) -> OAuthLoginUseCase:
     """Get OAuthLogin use case instance."""
     from prosell.application.use_cases.auth.oauth_login import OAuthLoginUseCase
 
@@ -289,10 +332,10 @@ async def get_oauth_login_use_case(
 
 
 async def get_enable_2fa_use_case(
-    user_repository: SqlAlchemyUserRepository = Depends(get_user_repository),
-    totp_service: ITOTPService = Depends(get_totp_service),
-    email_service: AbstractEmailService = Depends(get_email_service),
-):
+    user_repository: Annotated[SqlAlchemyUserRepository, Depends(get_user_repository)],
+    totp_service: Annotated[ITOTPService, Depends(get_totp_service)],
+    email_service: Annotated[AbstractEmailService, Depends(get_email_service)],
+) -> Enable2FAUseCase:
     """Get Enable2FA use case instance."""
     from prosell.application.use_cases.auth.enable_2fa import Enable2FAUseCase
 
@@ -300,9 +343,9 @@ async def get_enable_2fa_use_case(
 
 
 async def get_disable_2fa_use_case(
-    user_repository: SqlAlchemyUserRepository = Depends(get_user_repository),
-    totp_service: ITOTPService = Depends(get_totp_service),
-):
+    user_repository: Annotated[SqlAlchemyUserRepository, Depends(get_user_repository)],
+    totp_service: Annotated[ITOTPService, Depends(get_totp_service)],
+) -> Disable2FAUseCase:
     """Get Disable2FA use case instance."""
     from prosell.application.use_cases.auth.enable_2fa import Disable2FAUseCase
 
@@ -310,12 +353,12 @@ async def get_disable_2fa_use_case(
 
 
 async def get_verify_2fa_use_case(
-    user_repository: SqlAlchemyUserRepository = Depends(get_user_repository),
-    session_repository: SqlAlchemySessionRepository = Depends(get_session_repository),
-    totp_service: ITOTPService = Depends(get_totp_service),
-    jwt_service: IJWTService = Depends(get_jwt_service),
-    token_hasher: ITokenHasher = Depends(get_token_hasher),
-):
+    user_repository: Annotated[SqlAlchemyUserRepository, Depends(get_user_repository)],
+    session_repository: Annotated[SqlAlchemySessionRepository, Depends(get_session_repository)],
+    totp_service: Annotated[ITOTPService, Depends(get_totp_service)],
+    jwt_service: Annotated[IJWTService, Depends(get_jwt_service)],
+    token_hasher: Annotated[ITokenHasher, Depends(get_token_hasher)],
+) -> Verify2FAUseCase:
     """Get Verify2FA use case instance."""
     from prosell.application.use_cases.auth.verify_2fa import Verify2FAUseCase
 
@@ -334,3 +377,177 @@ def get_spaces_service() -> IDOSpacesService:
     from prosell.infrastructure.services.do_spaces_service import DOSpacesService
 
     return DOSpacesService()
+
+
+# =============================================================================
+# FACEBOOK MARKETPLACE DEPENDENCIES
+# =============================================================================
+
+
+async def get_facebook_account_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> SqlAlchemyFacebookAccountRepository:
+    """Get Facebook Account repository instance."""
+    from prosell.infrastructure.repositories.facebook_account_repository_impl import (
+        SqlAlchemyFacebookAccountRepository,
+    )
+
+    return SqlAlchemyFacebookAccountRepository(session)
+
+
+async def get_facebook_page_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> SqlAlchemyFacebookPageRepository:
+    """Get Facebook Page repository instance."""
+    from prosell.infrastructure.repositories.facebook_page_repository_impl import (
+        SqlAlchemyFacebookPageRepository,
+    )
+
+    return SqlAlchemyFacebookPageRepository(session)
+
+
+def get_facebook_encryption_service() -> IEncryptionService:
+    """Get token encryption service instance (singleton)."""
+    import hashlib
+
+    from prosell.infrastructure.services.token_encryption_service import (
+        TokenEncryptionService,
+    )
+
+    settings = get_settings()
+    # Derive 32-byte key from config string using SHA256
+    key_bytes = hashlib.sha256(settings.facebook_encryption_key.encode()).digest()
+
+    return TokenEncryptionService(key_bytes)
+
+
+def get_facebook_oauth_service() -> IFacebookMarketplaceOAuthService:
+    """Get Facebook OAuth service instance (singleton)."""
+    from prosell.infrastructure.services.facebook_marketplace_oauth_service import (
+        FacebookMarketplaceOAuthServiceImpl,
+    )
+
+    return FacebookMarketplaceOAuthServiceImpl()
+
+
+def get_redis_service() -> RedisService:
+    """Get Redis service instance."""
+    from prosell.infrastructure.services.redis_service import RedisService
+
+    return RedisService()
+
+
+async def get_facebook_authorize_use_case(
+    oauth_service: Annotated[IFacebookMarketplaceOAuthService, Depends(get_facebook_oauth_service)],
+    redis_service: Annotated[RedisService, Depends(get_redis_service)],
+) -> AuthorizeFacebookAccountUseCase:
+    """Get AuthorizeFacebookAccount use case instance."""
+    from prosell.application.use_cases.facebook.authorize_account import (
+        AuthorizeFacebookAccountUseCase,
+    )
+
+    return AuthorizeFacebookAccountUseCase(
+        oauth_service,
+        redis_service,
+    )
+
+
+async def get_facebook_callback_use_case(
+    oauth_service: Annotated[IFacebookMarketplaceOAuthService, Depends(get_facebook_oauth_service)],
+    facebook_account_repository: Annotated[
+        IFacebookAccountRepository, Depends(get_facebook_account_repository)
+    ],
+    facebook_page_repository: Annotated[
+        IFacebookPageRepository, Depends(get_facebook_page_repository)
+    ],
+    encryption_service: Annotated[IEncryptionService, Depends(get_facebook_encryption_service)],
+    redis_service: Annotated[RedisService, Depends(get_redis_service)],
+) -> OAuthCallbackUseCase:
+    """Get OAuthCallback use case instance."""
+    from prosell.application.use_cases.facebook.oauth_callback import OAuthCallbackUseCase
+
+    return OAuthCallbackUseCase(
+        oauth_service,
+        facebook_account_repository,
+        facebook_page_repository,
+        encryption_service,
+        redis_service,
+    )
+
+
+async def get_facebook_disconnect_use_case(
+    facebook_account_repository: Annotated[
+        IFacebookAccountRepository, Depends(get_facebook_account_repository)
+    ],
+    facebook_page_repository: Annotated[
+        IFacebookPageRepository, Depends(get_facebook_page_repository)
+    ],
+) -> DisconnectFacebookAccountUseCase:
+    """Get DisconnectFacebookAccount use case instance."""
+    from prosell.application.use_cases.facebook.disconnect_account import (
+        DisconnectFacebookAccountUseCase,
+    )
+
+    return DisconnectFacebookAccountUseCase(
+        facebook_account_repository,
+        facebook_page_repository,
+    )
+
+
+async def get_facebook_list_accounts_use_case(
+    facebook_account_repository: Annotated[
+        IFacebookAccountRepository, Depends(get_facebook_account_repository)
+    ],
+) -> ListAccountsUseCase:
+    """Get ListAccounts use case instance."""
+    from prosell.application.use_cases.facebook.list_accounts import ListAccountsUseCase
+
+    return ListAccountsUseCase(facebook_account_repository)
+
+
+async def get_facebook_fetch_pages_use_case(
+    facebook_page_repository: Annotated[
+        IFacebookPageRepository, Depends(get_facebook_page_repository)
+    ],
+    facebook_account_repository: Annotated[
+        IFacebookAccountRepository, Depends(get_facebook_account_repository)
+    ],
+) -> FetchPagesUseCase:
+    """Get FetchPages use case instance."""
+    from prosell.application.use_cases.facebook.fetch_pages import FetchPagesUseCase
+
+    return FetchPagesUseCase(facebook_page_repository, facebook_account_repository)
+
+
+async def get_facebook_set_default_use_case(
+    facebook_page_repository: Annotated[
+        IFacebookPageRepository, Depends(get_facebook_page_repository)
+    ],
+    facebook_account_repository: Annotated[
+        IFacebookAccountRepository, Depends(get_facebook_account_repository)
+    ],
+) -> SetDefaultPageUseCase:
+    """Get SetDefaultPage use case instance."""
+    from prosell.application.use_cases.facebook.set_default_page import SetDefaultPageUseCase
+
+    return SetDefaultPageUseCase(
+        facebook_page_repository,
+        facebook_account_repository,
+    )
+
+
+async def get_facebook_refresh_use_case(
+    facebook_account_repository: Annotated[
+        IFacebookAccountRepository, Depends(get_facebook_account_repository)
+    ],
+    oauth_service: Annotated[IFacebookMarketplaceOAuthService, Depends(get_facebook_oauth_service)],
+    encryption_service: Annotated[IEncryptionService, Depends(get_facebook_encryption_service)],
+) -> RefreshTokenUseCase:
+    """Get RefreshToken use case instance."""
+    from prosell.application.use_cases.facebook.refresh_token import RefreshTokenUseCase
+
+    return RefreshTokenUseCase(
+        facebook_account_repository,
+        oauth_service,
+        encryption_service,
+    )

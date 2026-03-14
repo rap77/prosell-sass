@@ -7,11 +7,6 @@ Detects user language from HTTP request with priority:
 4. Default: Spanish (es)
 """
 
-from collections.abc import Mapping
-from typing import Literal
-
-from fastapi import Request
-
 from prosell.application.dto.i18n import LanguageDetectionResponse
 
 
@@ -26,28 +21,31 @@ class DetectLanguageUseCase:
 
     Example:
         use_case = DetectLanguageUseCase()
-        response = await use_case.execute(request)
+        response = await use_case.execute(query_lang="es", accept_language="")
         print(response.language)  # "es" or "en"
     """
 
-    SUPPORTED_LANGUAGES: Literal["es", "en"] = "es"
+    SUPPORTED_LANGUAGES: frozenset[str] = frozenset({"es", "en"})
 
-    async def execute(self, request: Request) -> LanguageDetectionResponse:
-        """Detect user language from request.
+    async def execute(
+        self,
+        query_lang: str | None,
+        accept_language: str,
+    ) -> LanguageDetectionResponse:
+        """Detect user language from extracted request data.
 
         Args:
-            request: FastAPI request
+            query_lang: Language from query parameter (e.g. "es", "en")
+            accept_language: Value of Accept-Language header
 
         Returns:
             LanguageDetectionResponse with detected language
         """
         # 1. Check query parameter
-        lang = request.query_params.get("lang")
-        if lang in ("es", "en"):
-            return LanguageDetectionResponse(language=lang)
+        if query_lang in ("es", "en"):
+            return LanguageDetectionResponse(language=query_lang)
 
         # 2. Check Accept-Language header
-        accept_language = request.headers.get("accept-language", "")
         language = self._parse_accept_language(accept_language)
         if language:
             return LanguageDetectionResponse(language=language)

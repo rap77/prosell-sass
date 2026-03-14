@@ -19,6 +19,7 @@ from prosell.infrastructure.api.middleware.exception_handlers import (
 from prosell.infrastructure.api.routers import (
     auth_router,
     category_router,
+    facebook_router,
     health_router,
     org_router,
     product_router,
@@ -47,7 +48,7 @@ app.add_exception_handler(Exception, generic_exception_handler)  # type: ignore[
 
 # Rate limit exception handler
 @app.exception_handler(RateLimitExceeded)
-async def rate_limit_exceeded_handler(_request: Request, exc: RateLimitExceeded):
+async def rate_limit_exceeded_handler(_request: Request, exc: RateLimitExceeded) -> JSONResponse:
     """Custom handler for rate limit exceeded."""
     return JSONResponse(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -187,6 +188,12 @@ app.include_router(
     tags=["Health"],
 )
 
+app.include_router(
+    facebook_router,
+    prefix="/api/v1",
+    tags=["Facebook Marketplace"],
+)
+
 
 # =============================================================================
 # HEALTH CHECK (no rate limiting)
@@ -194,7 +201,7 @@ app.include_router(
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict[str, str]:
     """Health check endpoint (not rate limited)."""
     return {
         "status": "healthy",
@@ -203,7 +210,7 @@ async def health_check():
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, str]:
     """Root endpoint (not rate limited)."""
     return {
         "message": "ProSell SaaS API",

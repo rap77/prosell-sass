@@ -162,6 +162,12 @@ class Settings(BaseSettings):
         default="http://localhost:8000/api/auth/oauth/facebook/callback",
         description="Facebook OAuth backend callback URI",
     )
+    # Encryption key for Facebook access tokens (32 bytes)
+    # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+    facebook_encryption_key: str = Field(
+        default="",
+        description="Encryption key for Facebook access tokens (must be 32 bytes)",
+    )
 
     # Frontend URLs for redirect after OAuth login
     oauth_frontend_success_url: str = Field(

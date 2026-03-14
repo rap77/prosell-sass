@@ -1,0 +1,11 @@
+# Ngrok configuration for ProSell SaaS development
+# Tunnels the API service for OAuth callback testing
+
+version: "2"
+
+tunnels:
+  api:
+    proto: http
+    addr: api:8000
+    schemes:
+      - https
