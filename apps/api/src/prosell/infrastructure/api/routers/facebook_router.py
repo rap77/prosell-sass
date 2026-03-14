@@ -26,12 +26,12 @@ from prosell.application.use_cases.facebook.authorize_account import (
 )
 from prosell.application.use_cases.facebook.disconnect_account import (
     DisconnectFacebookAccountUseCase,
-    FetchPagesUseCase,
-    ListAccountsUseCase,
-    SetDefaultPageUseCase,
 )
+from prosell.application.use_cases.facebook.fetch_pages import FetchPagesUseCase
+from prosell.application.use_cases.facebook.list_accounts import ListAccountsUseCase
 from prosell.application.use_cases.facebook.oauth_callback import OAuthCallbackUseCase
 from prosell.application.use_cases.facebook.refresh_token import RefreshTokenUseCase
+from prosell.application.use_cases.facebook.set_default_page import SetDefaultPageUseCase
 from prosell.core.config import settings
 from prosell.domain.entities.role import RoleType
 from prosell.domain.entities.user import User

@@ -20,12 +20,12 @@ if TYPE_CHECKING:
     )
     from prosell.application.use_cases.facebook.disconnect_account import (
         DisconnectFacebookAccountUseCase,
-        FetchPagesUseCase,
-        ListAccountsUseCase,
-        SetDefaultPageUseCase,
     )
+    from prosell.application.use_cases.facebook.fetch_pages import FetchPagesUseCase
+    from prosell.application.use_cases.facebook.list_accounts import ListAccountsUseCase
     from prosell.application.use_cases.facebook.oauth_callback import OAuthCallbackUseCase
     from prosell.application.use_cases.facebook.refresh_token import RefreshTokenUseCase
+    from prosell.application.use_cases.facebook.set_default_page import SetDefaultPageUseCase
     from prosell.infrastructure.repositories.facebook_account_repository_impl import (
         SqlAlchemyFacebookAccountRepository,
     )
@@ -500,9 +500,7 @@ async def get_facebook_list_accounts_use_case(
     ],
 ) -> ListAccountsUseCase:
     """Get ListAccounts use case instance."""
-    from prosell.application.use_cases.facebook.disconnect_account import (
-        ListAccountsUseCase,
-    )
+    from prosell.application.use_cases.facebook.list_accounts import ListAccountsUseCase
 
     return ListAccountsUseCase(facebook_account_repository)
 
@@ -513,7 +511,7 @@ async def get_facebook_fetch_pages_use_case(
     ],
 ) -> FetchPagesUseCase:
     """Get FetchPages use case instance."""
-    from prosell.application.use_cases.facebook.disconnect_account import FetchPagesUseCase
+    from prosell.application.use_cases.facebook.fetch_pages import FetchPagesUseCase
 
     return FetchPagesUseCase(facebook_page_repository)
 
@@ -527,9 +525,7 @@ async def get_facebook_set_default_use_case(
     ],
 ) -> SetDefaultPageUseCase:
     """Get SetDefaultPage use case instance."""
-    from prosell.application.use_cases.facebook.disconnect_account import (
-        SetDefaultPageUseCase,
-    )
+    from prosell.application.use_cases.facebook.set_default_page import SetDefaultPageUseCase
 
     return SetDefaultPageUseCase(
         facebook_page_repository,

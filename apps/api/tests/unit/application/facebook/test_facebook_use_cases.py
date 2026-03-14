@@ -16,12 +16,12 @@ from prosell.application.use_cases.facebook.authorize_account import (
 )
 from prosell.application.use_cases.facebook.disconnect_account import (
     DisconnectFacebookAccountUseCase,
-    FetchPagesUseCase,
-    ListAccountsUseCase,
-    SetDefaultPageUseCase,
 )
+from prosell.application.use_cases.facebook.fetch_pages import FetchPagesUseCase
+from prosell.application.use_cases.facebook.list_accounts import ListAccountsUseCase
 from prosell.application.use_cases.facebook.oauth_callback import OAuthCallbackUseCase
 from prosell.application.use_cases.facebook.refresh_token import RefreshTokenUseCase
+from prosell.application.use_cases.facebook.set_default_page import SetDefaultPageUseCase
 from prosell.domain.entities.facebook_account import (
     FacebookAccount,
     FacebookAccountStatus,
@@ -477,7 +477,8 @@ class TestRefreshTokenUseCase:
         # Simple object without MagicMock wrapper
         class SimpleRepo:
             async def get_accounts_expiring_before(
-                self, _threshold: object
+                self,
+                threshold: object,  # noqa: ARG002
             ) -> list[FacebookAccount]:
                 return []
 

@@ -12,7 +12,7 @@ from prosell.core.config import settings
 
 engine = create_async_engine(
     str(settings.database_url),
-    echo=settings.debug,
+    echo=settings.debug and settings.environment == "development",
     pool_pre_ping=True,
     pool_size=settings.database_pool_size,
     max_overflow=settings.database_max_overflow,
