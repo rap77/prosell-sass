@@ -101,7 +101,7 @@ test.describe("Facebook OAuth - Configuration Validation", () => {
       expect(paths["/api/v1/facebook/accounts"]).toBeDefined();
       expect(paths["/api/v1/facebook/accounts/{account_id}"]).toBeDefined();
       expect(paths["/api/v1/facebook/accounts/{account_id}/pages"]).toBeDefined();
-      expect(paths["/api/v1/facebook/pages/{page_id}/set-default"]).toBeDefined();
+      expect(paths["/api/v1/facebook/accounts/{account_id}/pages/{page_id}/set-default"]).toBeDefined();
       expect(paths["/api/v1/facebook/admin/refresh-tokens"]).toBeDefined();
     }
   });
@@ -244,7 +244,7 @@ test.describe("Facebook OAuth - Request/Response Validation", () => {
   test("should validate UUID format for page_id", async ({ request }) => {
     // Invalid UUID format in path
     const response = await request.post(
-      "http://localhost:8000/api/v1/facebook/pages/not-a-uuid/set-default"
+      "http://localhost:8000/api/v1/facebook/accounts/00000000-0000-0000-0000-000000000001/pages/not-a-uuid/set-default"
     );
 
     // Should return 422 for invalid UUID
@@ -259,7 +259,7 @@ test.describe("Facebook OAuth - Security Validation", () => {
       { method: "GET", url: "/api/v1/facebook/accounts" },
       { method: "GET", url: "/api/v1/facebook/accounts/00000000-0000-0000-0000-000000000001/pages" },
       { method: "DELETE", url: "/api/v1/facebook/accounts/00000000-0000-0000-0000-000000000001" },
-      { method: "POST", url: "/api/v1/facebook/pages/00000000-0000-0000-0000-000000000001/set-default" },
+      { method: "POST", url: "/api/v1/facebook/accounts/00000000-0000-0000-0000-000000000001/pages/00000000-0000-0000-0000-000000000002/set-default" },
     ];
 
     for (const endpoint of protectedEndpoints) {
