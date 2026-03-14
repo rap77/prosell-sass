@@ -92,6 +92,25 @@ services:
     command: sh -c "python /app/scripts/init-db.py || echo 'DB init skipped' && uvicorn prosell.infrastructure.api.main:app --host 0.0.0.0 --port 8000 --reload"
 
   # =============================================================================
+  # NGROK TUNNEL (HTTPS tunnel for OAuth development)
+  # =============================================================================
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: prosell-ngrok
+    # Expose ngrok web UI and API
+    ports:
+      - "4040:4040"
+    env_file:
+      - .env
+    volumes:
+      # Mount ngrok config
+      - ./ngrok.yml:/etc/ngrok.yml:ro
+    command: start --all --config /etc/ngrok.yml
+    depends_on:
+      api:
+        condition: service_started
+
+  # =============================================================================
   # NEXT.JS FRONTEND (future)
   # =============================================================================
   web:

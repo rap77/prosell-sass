@@ -52,7 +52,7 @@ class CreateCategoryUseCase:
                     request.parent_id, request.tenant_id
                 )
                 # Include parent's ancestors plus parent itself
-                all_ancestor_ids = [request.parent_id] + ancestor_ids
+                all_ancestor_ids = [request.parent_id, *ancestor_ids]
 
                 # Create a temporary category object to validate
                 temp_category = Category.create(

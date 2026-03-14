@@ -1,11 +1,11 @@
 """Vehicle entity - Extension of Product for vehicles."""
 
+import contextlib
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import Field, field_validator
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field, field_validator
 
 
 class Vehicle(DomainModel):
@@ -159,10 +159,7 @@ class Vehicle(DomainModel):
                 continue
 
             # Get transliteration value
-            if char.isdigit():
-                value = int(char)
-            else:
-                value = transliteration.get(char, 0)
+            value = int(char) if char.isdigit() else transliteration.get(char, 0)
 
             total += value * weights[i]
 
@@ -177,7 +174,7 @@ class Vehicle(DomainModel):
         cls,
         product_id: UUID,
         vin: str,
-        **kwargs,
+        **kwargs: Any,  # 20+ optional fields; replicating all would duplicate entity schema
     ) -> "Vehicle":
         """
         Factory method for new vehicle creation.
@@ -225,8 +222,6 @@ class Vehicle(DomainModel):
             value = decoded_data.get(nhtsa_field)
             if value:
                 if our_field == "year":
-                    import contextlib
-
                     with contextlib.suppress(ValueError, TypeError):
                         setattr(self, our_field, int(value))
                 else:
