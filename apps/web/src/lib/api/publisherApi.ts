@@ -59,6 +59,20 @@ export interface PublishVehicleRequest {
   zip_code: string;
   image_urls: string[];
   hero_shot_index: number;
+  // Vehicle-specific fields (required by Facebook Marketplace)
+  vehicle_type: string;
+  year: number;
+  make: string;
+  model: string;
+  mileage: number;
+  body_style?: string;
+  exterior_color?: string;
+  interior_color?: string;
+  vehicle_condition?: string;
+  fuel_type?: string;
+  transmission?: string;
+  clean_title: boolean;
+  vin?: string;
 }
 
 export interface UpdateListingRequest {
