@@ -2,6 +2,18 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+
+  // Allow next/image to load images from external domains used in the catalog.
+  // Unsplash is used for mock data; real vehicle images come from self-hosted storage.
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+    ],
+  },
+
   // TODO: Re-enable reactCompiler after installing babel-plugin-react-compiler
   // reactCompiler: true,
 
