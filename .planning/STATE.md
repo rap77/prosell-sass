@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-stopped_at: "01-01-publication-entity complete"
-last_updated: "2026-03-15T12:30:16Z"
-last_activity: 2026-03-15 — Plan 01-01 complete (Publication entity, ports, ORM, migration)
+status: executing
+stopped_at: Completed 01-00-wave0-infra-PLAN.md
+last_updated: "2026-03-15T14:45:00Z"
+last_activity: 2026-03-15 — Plan 01-00 complete (broker migration, feature flags, 14 xfail stubs)
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 8
-  completed_plans: 1
-  percent: 12
+  completed_plans: 3
+  percent: 38
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 ## Current Position
 
 Phase: 1 of 7 (Hybrid Publisher)
-Plan: 1 of 8 in current phase
+Plan: 3 of 8 in current phase (01-00, 01-01, 01-02 complete)
 Status: In progress
-Last activity: 2026-03-15 — Plan 01-01 complete (Publication entity + ORM + migration, 10 tests GREEN)
+Last activity: 2026-03-15 — Plan 01-00 complete (ListQueueBroker migration, publisher feature flags, 14 xfail stubs for 9 requirements)
 
-Progress: [█░░░░░░░░░] 12%
+Progress: [████░░░░░░] 38%
 
 ## Performance Metrics
 
@@ -65,6 +65,8 @@ Progress: [█░░░░░░░░░] 12%
 - [01-01] mark_published() sets expires_at = published_at + 7 days — FB Marketplace auto-expires listings in 7 days.
 - [01-01] Error Category B (blocking) sets blocked_until_confirmed=True — captcha/policy violations need human review before retry.
 - [01-01] expires_at column indexed — scheduler query performance critical at scale.
+- [01-00] ListQueueBroker replaces PubSubBroker — PubSubBroker silently ignores .with_labels(delay=...) making exponential backoff impossible.
+- [01-00] publisher_engine defaults to 'auto' with graph_api_approved=False — Playwright is primary until FB App Review completes.
 
 ### Pending Todos
 
@@ -79,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-15T12:30:16Z
-Stopped at: Completed 01-01-publication-entity-PLAN.md
-Resume file: .planning/phases/01-hybrid-publisher/01-02-publish-use-case-PLAN.md
+Last session: 2026-03-15T14:45:00Z
+Stopped at: Completed 01-00-wave0-infra-PLAN.md
+Resume file: .planning/phases/01-hybrid-publisher/01-03-playwright-strategy-PLAN.md

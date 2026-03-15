@@ -117,7 +117,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Hybrid Publisher | 1/8 | In Progress|  |
+| 1. Hybrid Publisher | 3/8 | In Progress|  |
 | 2. Catalog & Roles | 0/? | Not started | - |
 | 3. Scraping | 0/? | Not started | - |
 | 4. Leads & Appointments | 0/? | Not started | - |

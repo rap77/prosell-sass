@@ -25,16 +25,16 @@ Los 46 requirements v1 se ejecutan en **dos fases inmediatas**:
 
 > **Nota crítica:** Playwright es el publisher **primario** (inmediato). Graph API es el secundario (post App Review de Facebook). Los posts de FB Marketplace expiran en 7 días.
 
-- [ ] **PUBLISH-01**: Sistema publica un vehículo en FB Marketplace via Playwright con anti-detection (typing realista, delays, viewport estándar, User-Agent humano)
-- [ ] **PUBLISH-02**: Sistema publica via Graph API cuando los permisos de FB App están aprobados (fallback → primario)
-- [ ] **PUBLISH-03**: Sistema detecta cuál estrategia usar (Playwright vs Graph API) según disponibilidad/aprobación
-- [ ] **PUBLISH-04**: Vendedor puede actualizar precio, descripción o fotos de un listing activo desde la app
-- [ ] **PUBLISH-05**: Vendedor puede marcar un vehículo como vendido y el listing se elimina de FB automáticamente
-- [ ] **PUBLISH-06**: Sistema re-publica automáticamente listings que van a vencer (scheduler, posts expiran a 7 días)
+- [x] **PUBLISH-01**: Sistema publica un vehículo en FB Marketplace via Playwright con anti-detection (typing realista, delays, viewport estándar, User-Agent humano)
+- [x] **PUBLISH-02**: Sistema publica via Graph API cuando los permisos de FB App están aprobados (fallback → primario)
+- [x] **PUBLISH-03**: Sistema detecta cuál estrategia usar (Playwright vs Graph API) según disponibilidad/aprobación
+- [x] **PUBLISH-04**: Vendedor puede actualizar precio, descripción o fotos de un listing activo desde la app
+- [x] **PUBLISH-05**: Vendedor puede marcar un vehículo como vendido y el listing se elimina de FB automáticamente
+- [x] **PUBLISH-06**: Sistema re-publica automáticamente listings que van a vencer (scheduler, posts expiran a 7 días)
 - [x] **PUBLISH-07**: Entidad Publication con estado máquina: pending / published / failed / expired / sold
 - [ ] **PUBLISH-08**: Sistema genera títulos y descripciones optimizados para CTR con IA (GPT-4/Claude)
-- [ ] **PUBLISH-09**: Sistema aplica rate limiting (token bucket) para no exceder cuotas de Graph API y evitar baneos
-- [ ] **PUBLISH-10**: Sistema optimiza imágenes antes de upload (compresión, resolución FB-compatible)
+- [x] **PUBLISH-09**: Sistema aplica rate limiting (token bucket) para no exceder cuotas de Graph API y evitar baneos
+- [x] **PUBLISH-10**: Sistema optimiza imágenes antes de upload (compresión, resolución FB-compatible)
 
 ### Scraping — Inventory Sync
 
@@ -155,16 +155,16 @@ Los 46 requirements v1 se ejecutan en **dos fases inmediatas**:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PUBLISH-01 | Phase 1 — Hybrid Publisher | Pending |
-| PUBLISH-02 | Phase 1 — Hybrid Publisher | Pending |
-| PUBLISH-03 | Phase 1 — Hybrid Publisher | Pending |
-| PUBLISH-04 | Phase 1 — Hybrid Publisher | Pending |
-| PUBLISH-05 | Phase 1 — Hybrid Publisher | Pending |
-| PUBLISH-06 | Phase 1 — Hybrid Publisher | Pending |
+| PUBLISH-01 | Phase 1 — Hybrid Publisher | Complete |
+| PUBLISH-02 | Phase 1 — Hybrid Publisher | Complete |
+| PUBLISH-03 | Phase 1 — Hybrid Publisher | Complete |
+| PUBLISH-04 | Phase 1 — Hybrid Publisher | Complete |
+| PUBLISH-05 | Phase 1 — Hybrid Publisher | Complete |
+| PUBLISH-06 | Phase 1 — Hybrid Publisher | Complete |
 | PUBLISH-07 | Phase 1 — Hybrid Publisher | Complete |
 | PUBLISH-08 | Phase 7 — Visibility | Pending |
-| PUBLISH-09 | Phase 1 — Hybrid Publisher | Pending |
-| PUBLISH-10 | Phase 1 — Hybrid Publisher | Pending |
+| PUBLISH-09 | Phase 1 — Hybrid Publisher | Complete |
+| PUBLISH-10 | Phase 1 — Hybrid Publisher | Complete |
 | SCRAPE-01 | Phase 3 — Scraping | Pending |
 | SCRAPE-02 | Phase 3 — Scraping | Pending |
 | SCRAPE-03 | Phase 3 — Scraping | Pending |
