@@ -31,7 +31,17 @@ ProSell SaaS automates the complete vehicle sales cycle for dealerships: publish
   3. Vendedor can update price or description of an active listing and the change reflects on Facebook
   4. Vendedor marks a vehicle as sold and the Facebook listing is removed automatically
   5. Scheduler republishes any listing approaching 7-day expiry without manual action
-**Plans**: TBD
+**Plans**: 8 plans (Wave 0 + Waves 1-4)
+
+Plans:
+- [ ] 01-00-wave0-infra-PLAN.md — Test stubs, broker migration (PubSub→ListQueue), publisher settings in config
+- [ ] 01-01-publication-entity-PLAN.md — Publication entity + state machine + SQLAlchemy model + Alembic migration
+- [ ] 01-02-image-pipeline-PLAN.md — ImagePipelineService (Pillow: compress/resize/JPG/strip-EXIF)
+- [ ] 01-03-playwright-strategy-PLAN.md — PlaywrightPublisherService + PublisherStrategySelector + PublishVehicleUseCase
+- [ ] 01-04-update-delete-PLAN.md — UpdateListingUseCase + DeleteListingUseCase + Taskiq tasks
+- [ ] 01-05-auto-republish-PLAN.md — AutoRepublishUseCase + scheduled Taskiq task (every 6h)
+- [ ] 01-06-graph-api-router-PLAN.md — GraphAPIPublisherService stub + publisher REST router + rate limiting
+- [ ] 01-07-frontend-modal-PLAN.md — PublishModal + HeroShotSelector + PublicationStatus + catalog integration
 
 ### Phase 2: Catalog & Roles
 **Goal**: Every role sees exactly the inventory they own, at the right scope, with real-time publication status per vehicle
@@ -107,7 +117,7 @@ ProSell SaaS automates the complete vehicle sales cycle for dealerships: publish
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Hybrid Publisher | 0/? | Not started | - |
+| 1. Hybrid Publisher | 0/8 | In planning | - |
 | 2. Catalog & Roles | 0/? | Not started | - |
 | 3. Scraping | 0/? | Not started | - |
 | 4. Leads & Appointments | 0/? | Not started | - |
