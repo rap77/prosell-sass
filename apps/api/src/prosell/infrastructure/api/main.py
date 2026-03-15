@@ -23,6 +23,7 @@ from prosell.infrastructure.api.routers import (
     health_router,
     org_router,
     product_router,
+    publisher_router,
     team_router,
     vehicle_router,
     wallet_router,
@@ -192,6 +193,12 @@ app.include_router(
     facebook_router,
     prefix="/api/v1",
     tags=["Facebook Marketplace"],
+)
+
+app.include_router(
+    publisher_router,
+    prefix="/api/v1",
+    tags=["Publisher"],
 )
 
 

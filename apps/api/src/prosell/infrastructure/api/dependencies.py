@@ -26,11 +26,15 @@ if TYPE_CHECKING:
     from prosell.application.use_cases.facebook.oauth_callback import OAuthCallbackUseCase
     from prosell.application.use_cases.facebook.refresh_token import RefreshTokenUseCase
     from prosell.application.use_cases.facebook.set_default_page import SetDefaultPageUseCase
+    from prosell.application.use_cases.publisher.publish_vehicle import PublishVehicleUseCase
     from prosell.infrastructure.repositories.facebook_account_repository_impl import (
         SqlAlchemyFacebookAccountRepository,
     )
     from prosell.infrastructure.repositories.facebook_page_repository_impl import (
         SqlAlchemyFacebookPageRepository,
+    )
+    from prosell.infrastructure.repositories.publication_repository_impl import (
+        SqlAlchemyPublicationRepository,
     )
 
 # NOTE: from __future__ import annotations makes all annotations lazy strings,
@@ -550,4 +554,39 @@ async def get_facebook_refresh_use_case(
         facebook_account_repository,
         oauth_service,
         encryption_service,
+    )
+
+
+# =============================================================================
+# PUBLISHER DEPENDENCIES
+# =============================================================================
+
+
+async def get_publication_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> SqlAlchemyPublicationRepository:
+    """Get Publication repository instance."""
+    from prosell.infrastructure.repositories.publication_repository_impl import (
+        SqlAlchemyPublicationRepository,
+    )
+
+    return SqlAlchemyPublicationRepository(session)
+
+
+async def get_publish_vehicle_use_case(
+    publication_repo: Annotated[
+        SqlAlchemyPublicationRepository, Depends(get_publication_repository)
+    ],
+    current_user: Annotated[User, Depends(get_current_auth_user)],
+) -> PublishVehicleUseCase:
+    """Get PublishVehicle use case instance.
+
+    Note: image processing happens inside the Taskiq task (Plan 03) — do NOT inject
+    ImagePipelineService here.
+    """
+    from prosell.application.use_cases.publisher.publish_vehicle import PublishVehicleUseCase
+
+    return PublishVehicleUseCase(
+        publication_repo=publication_repo,
+        seller_user_id=current_user.id,
     )
