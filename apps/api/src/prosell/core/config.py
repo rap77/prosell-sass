@@ -314,6 +314,19 @@ class Settings(BaseSettings):
     )
 
     # =============================================================================
+    # PUBLISHER ENGINE
+    # =============================================================================
+    publisher_engine: Literal["playwright", "graph_api", "auto"] = Field(
+        default="auto",
+        description="Publisher engine: playwright | graph_api | auto",
+    )
+    graph_api_approved: bool = Field(
+        default=False,
+        description="Whether Facebook Graph API app review is approved. "
+        "When True in auto mode, Graph API becomes primary.",
+    )
+
+    # =============================================================================
     # FEATURE FLAGS
     # =============================================================================
     feature_2fa_enabled: bool = Field(
