@@ -1,0 +1,43 @@
+"""DeleteListingUseCase — mark vehicle sold and remove FB Marketplace listing."""
+
+from uuid import UUID
+
+from prosell.application.dto.publisher.publish import PublicationResponse
+from prosell.domain.repositories.publication_repository import IPublicationRepository
+
+
+class DeleteListingUseCase:
+    """Mark a publication as SOLD and dispatch FB listing removal.
+
+    DB is marked SOLD before dispatching the task (source of truth).
+    FB delete is best-effort — if it fails, ProSell still shows the vehicle as sold,
+    which prevents double-selling. A stale listing on FB for a sold vehicle is
+    less harmful than ProSell showing an active listing for a sold vehicle.
+    """
+
+    def __init__(self, publication_repo: IPublicationRepository) -> None:
+        self._repo = publication_repo
+
+    async def execute(self, publication_id: UUID) -> PublicationResponse:
+        publication = await self._repo.get_by_id(publication_id)
+        if not publication:
+            raise ValueError(f"Publication {publication_id} not found")
+
+        # Mark SOLD in DB immediately (before FB delete — FB delete is best-effort)
+        publication.mark_sold()
+        await self._repo.update(publication)
+
+        # Lazy import: application layer must not import infrastructure at module level.
+        from prosell.infrastructure.tasks.use_cases.delete_listing_task import (
+            delete_listing_task,
+        )
+
+        # Dispatch task to remove from Facebook
+        await delete_listing_task.kiq(publication_id=str(publication_id))
+
+        return PublicationResponse(
+            id=publication.id,
+            product_id=publication.product_id,
+            status=publication.status.value,
+            fb_listing_id=publication.fb_listing_id,
+        )
