@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-00-wave0-infra-PLAN.md
-last_updated: "2026-03-15T14:45:00Z"
-last_activity: 2026-03-15 — Plan 01-00 complete (broker migration, feature flags, 14 xfail stubs)
+stopped_at: Completed 01-07-frontend-modal-PLAN.md
+last_updated: "2026-03-15T18:30:00Z"
+last_activity: 2026-03-15 — Plan 01-07 complete (PublishModal + PublishForm + catalog/page integration)
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 8
-  completed_plans: 3
-  percent: 38
+  completed_plans: 7
+  percent: 88
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 ## Current Position
 
 Phase: 1 of 7 (Hybrid Publisher)
-Plan: 3 of 8 in current phase (01-00, 01-01, 01-02 complete)
+Plan: 8 of 8 in current phase (01-00 through 01-07 complete — final plan 01-08 pending or phase complete)
 Status: In progress
-Last activity: 2026-03-15 — Plan 01-00 complete (ListQueueBroker migration, publisher feature flags, 14 xfail stubs for 9 requirements)
+Last activity: 2026-03-15 — Plan 01-07 complete (PublishModal, PublishForm, catalog/page, HeroShotSelector, PublicationStatus, publisherApi, publisherStore)
 
-Progress: [████░░░░░░] 38%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
@@ -67,6 +67,10 @@ Progress: [████░░░░░░] 38%
 - [01-01] expires_at column indexed — scheduler query performance critical at scale.
 - [01-00] ListQueueBroker replaces PubSubBroker — PubSubBroker silently ignores .with_labels(delay=...) making exponential backoff impossible.
 - [01-00] publisher_engine defaults to 'auto' with graph_api_approved=False — Playwright is primary until FB App Review completes.
+- [01-07] Modal at page level (not row level) — prevents row re-renders from closing modal mid-form.
+- [01-07] HeroShotSelector: simple click = move image to index 0, NOT drag & drop.
+- [01-07] FB price diff in update mode deferred — API does not return current FB listing price yet.
+- [01-07] catalog/page.tsx uses mock data; real data fetching via useQuery(['catalog']) is next iteration.
 
 ### Pending Todos
 
@@ -81,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-15T14:45:00Z
-Stopped at: Completed 01-00-wave0-infra-PLAN.md
-Resume file: .planning/phases/01-hybrid-publisher/01-03-playwright-strategy-PLAN.md
+Last session: 2026-03-15T18:30:00Z
+Stopped at: Completed 01-07-frontend-modal-PLAN.md
+Resume file: .planning/phases/01-hybrid-publisher/ (Phase 1 Wave 4 complete — check ROADMAP for next phase)

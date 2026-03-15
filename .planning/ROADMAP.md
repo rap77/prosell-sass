@@ -11,7 +11,7 @@ ProSell SaaS automates the complete vehicle sales cycle for dealerships: publish
 
 ## Phases
 
-- [ ] **Phase 1: Hybrid Publisher** - Publish, update, delete, and auto-republish vehicle listings on FB Marketplace via Playwright (primary) and Graph API (secondary)
+- [x] **Phase 1: Hybrid Publisher** - Publish, update, delete, and auto-republish vehicle listings on FB Marketplace via Playwright (primary) and Graph API (secondary) (completed 2026-03-15)
 - [ ] **Phase 2: Catalog & Roles** - Role-based internal catalog showing inventory per dealer with publishing state; dealer without user account; seller-to-dealer assignment
 - [ ] **Phase 3: Scraping** - Automated dealer website sync and CarGurus market price extraction with deduplication and anti-detection
 - [ ] **Phase 4: Leads & Appointments** - Capture FB leads via webhook + polling, manual entry, lead lifecycle, and appointment creation with dealer notifications
@@ -117,7 +117,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Hybrid Publisher | 3/8 | In Progress|  |
+| 1. Hybrid Publisher | 8/8 | Complete   | 2026-03-15 |
 | 2. Catalog & Roles | 0/? | Not started | - |
 | 3. Scraping | 0/? | Not started | - |
 | 4. Leads & Appointments | 0/? | Not started | - |
