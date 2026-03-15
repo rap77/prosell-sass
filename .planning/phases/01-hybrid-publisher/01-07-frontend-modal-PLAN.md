@@ -32,7 +32,7 @@ must_haves:
     - path: "apps/web/src/components/publisher/PublishModal.tsx"
       provides: "Radix Dialog modal with Publish and Update modes"
     - path: "apps/web/src/components/publisher/PublishForm.tsx"
-      provides: "RHF+Zod form with all modal fields"
+      provides: "RHF+Zod form with all modal fields including image_urls validation"
     - path: "apps/web/src/components/publisher/HeroShotSelector.tsx"
       provides: "Image grid with click-to-hero functionality and PORTADA badge"
     - path: "apps/web/src/components/publisher/PublicationStatus.tsx"
@@ -98,6 +98,7 @@ From CONTEXT.md (locked):
 - "Eliminar/Finalizar" is a secondary button inside the "Actualizar" modal
 - Category B: red badge + "Facebook solicita validación de seguridad. Abrí tu cuenta..."
 - Category B recovery: checkbox "Ya validé mi cuenta de Facebook" → calls unlock endpoint
+- Validation (locked, from CONTEXT.md): precio > 0, al menos una foto, Facebook Page seleccionada
 </interfaces>
 </context>
 
@@ -303,7 +304,7 @@ export function PublicationStatus({ status, errorCategory, blockedUntilConfirmed
 </task>
 
 <task id="07-03" name="Task 3: PublishModal + PublishForm + catalog integration">
-  <objective>Build PublishModal (Radix Dialog, dual publish/update mode), PublishForm (RHF+Zod), and integrate into catalog page with publish/update buttons per row.</objective>
+  <objective>Build PublishModal (Radix Dialog, dual publish/update mode), PublishForm (RHF+Zod with image_urls validation), and integrate into catalog page with publish/update buttons per row.</objective>
   <files>
     <create>apps/web/src/components/publisher/PublishModal.tsx</create>
     <create>apps/web/src/components/publisher/PublishForm.tsx</create>
@@ -314,7 +315,7 @@ Read the existing `catalog/page.tsx` to understand the current data structure an
 
 **PublishForm.tsx** — RHF + Zod form (inside modal):
 
-Zod schema (per CONTEXT.md locked validation):
+Zod schema (per CONTEXT.md locked validation — precio > 0, al menos una foto, Facebook Page seleccionada):
 ```typescript
 const publishSchema = z.object({
   title: z.string().min(5, "Título mínimo 5 caracteres").max(500),
@@ -323,10 +324,73 @@ const publishSchema = z.object({
   facebook_page_id: z.string().uuid("Seleccioná una página de Facebook"),
   hero_shot_index: z.number().int().min(0),
   zip_code: z.string().min(5).max(10),
+  // LOCKED: CONTEXT.md requires "al menos una foto" — must have min 1 image URL
+  image_urls: z.array(z.string().url()).min(1, "Necesitás al menos una foto"),
 });
 ```
 
-Form includes: title input, description textarea, price input (in USD, converted to cents on submit), Facebook Page dropdown, HeroShotSelector, ZIP code input.
+`image_urls` in the form is managed as controlled state (not a native input) — initialize from `vehicleData.image_urls`, allow vendedor to reorder via HeroShotSelector. Connect to RHF via `setValue("image_urls", updatedUrls)` when hero changes. The Zod validation will catch the empty array case before submit.
+
+Form includes: title input, description textarea, price input (in USD, converted to cents on submit), Facebook Page dropdown, HeroShotSelector (controlled, fires `setValue("image_urls", ...)`), ZIP code input.
+
+```typescript
+// PublishForm.tsx structure:
+"use client";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { HeroShotSelector } from "./HeroShotSelector";
+
+const publishSchema = z.object({
+  title: z.string().min(5, "Título mínimo 5 caracteres").max(500),
+  description: z.string().min(10, "Descripción mínima 10 caracteres").max(5000).optional(),
+  price_cents: z.number().int().positive("Precio debe ser mayor a 0"),
+  facebook_page_id: z.string().uuid("Seleccioná una página de Facebook"),
+  hero_shot_index: z.number().int().min(0),
+  zip_code: z.string().min(5).max(10),
+  image_urls: z.array(z.string().url()).min(1, "Necesitás al menos una foto"),
+});
+
+type PublishFormValues = z.infer<typeof publishSchema>;
+
+interface PublishFormProps {
+  mode: "publish" | "update";
+  vehicleData?: { title: string; description?: string; price_cents: number; zip_code: string; image_urls: string[] };
+  currentPublication?: PublicationResponse | null;
+  onSubmit: (data: PublishVehicleRequest) => void;
+  onDelete?: () => void;
+  isSubmitting: boolean;
+}
+
+export function PublishForm({ mode, vehicleData, currentPublication, onSubmit, onDelete, isSubmitting }: PublishFormProps) {
+  const form = useForm<PublishFormValues>({
+    resolver: zodResolver(publishSchema),
+    defaultValues: {
+      title: vehicleData?.title ?? "",
+      description: vehicleData?.description ?? "",
+      price_cents: vehicleData?.price_cents ?? 0,
+      zip_code: vehicleData?.zip_code ?? "",
+      hero_shot_index: 0,
+      image_urls: vehicleData?.image_urls ?? [],
+      facebook_page_id: "",
+    },
+  });
+
+  // Wire HeroShotSelector to RHF: when hero changes, update both hero_shot_index and image_urls order
+  const imageUrls = form.watch("image_urls");
+  const heroIndex = form.watch("hero_shot_index");
+
+  const handleHeroChange = (newIndex: number) => {
+    const reordered = [...imageUrls];
+    const hero = reordered.splice(newIndex, 1)[0];
+    reordered.unshift(hero);
+    form.setValue("image_urls", reordered);
+    form.setValue("hero_shot_index", 0);  // after reorder, hero is always index 0
+  };
+
+  // ... render form fields + HeroShotSelector + submit/delete buttons
+}
+```
 
 **PublishModal.tsx** — Radix Dialog at page level (per CONTEXT.md pitfall warning):
 
@@ -458,6 +522,7 @@ const { selectedVehicleId, modalMode, openModal, closeModal } = usePublisherStor
 ```
   </implementation>
   <verify>
+    <automated>cd /home/rpadron/proy/prosell-sass/apps/web && pnpm typecheck 2>&1 | grep -c "error TS"</automated>
     <manual>
 1. Start `cd apps/web && pnpm dev`
 2. Log in as vendedor
@@ -465,10 +530,11 @@ const { selectedVehicleId, modalMode, openModal, closeModal } = usePublisherStor
 4. Click "Preparar Publicación" on a vehicle row — modal should open without losing list scroll position
 5. Verify modal pre-fills title, description, price, ZIP from vehicle data
 6. Click on an image to set as hero shot — "PORTADA" badge appears on selected image
-7. Fill remaining required fields, click Submit
-8. Modal should close; row should show "Pendiente" badge
-9. If vehicle already has active publication: button shows "Actualizar", modal shows price diff
-10. Inside update modal: "Eliminar/Finalizar" button visible as secondary action
+7. Try submitting with zero images removed — should show "Necesitás al menos una foto" error
+8. Fill remaining required fields, click Submit
+9. Modal should close; row should show "Pendiente" badge
+10. If vehicle already has active publication: button shows "Actualizar", modal shows price diff
+11. Inside update modal: "Eliminar/Finalizar" button visible as secondary action
     </manual>
   </verify>
 </task>
@@ -483,13 +549,13 @@ Checkpoint: human verification of the complete publishing flow.
 - [ ] Modal opens from catalog row without page navigation (overlay)
 - [ ] Modal pre-fills all fields from vehicle data
 - [ ] Click-to-hero works: image moves to index 0, PORTADA badge visible
-- [ ] Zod validation blocks submit when price=0, no page selected, or no images
+- [ ] Zod validation blocks submit when price=0, no page selected, or no images (image_urls.min(1) enforced)
 - [ ] After submit: modal closes, row shows "Pendiente" badge
 - [ ] Published vehicles show "Actualizar" button (not "Publicar")
 - [ ] Update modal shows current FB price vs ProSell price
 - [ ] Eliminar/Finalizar button visible inside update modal
 - [ ] Category B error shows Spanish message and confirmation checkbox
-- [ ] TypeScript compiles without errors (`pnpm typecheck`)
+- [ ] TypeScript compiles without errors (`pnpm typecheck` returns 0)
 </success_criteria>
 
 <output>

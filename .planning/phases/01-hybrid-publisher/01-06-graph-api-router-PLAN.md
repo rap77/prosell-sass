@@ -87,6 +87,8 @@ class PublicationResponse(BaseModel):
     error_category: str | None = None
     blocked_until_confirmed: bool = False
 ```
+
+Note from Plan 03 changes: `PublishVehicleUseCase.__init__` now takes `(publication_repo, seller_user_id)` only — `image_pipeline` was removed (image processing moved to the task). Update `get_publish_vehicle_use_case` in `dependencies.py` accordingly — do NOT inject `image_pipeline` there.
 </interfaces>
 </context>
 
@@ -195,11 +197,6 @@ First read `dependencies.py` to understand the current DI structure. Then add pu
 # ---- Publisher ----
 from functools import lru_cache
 
-@lru_cache
-def get_image_pipeline() -> "ImagePipelineService":
-    from prosell.infrastructure.services.image_pipeline import ImagePipelineService
-    return ImagePipelineService()
-
 def get_playwright_publisher() -> "IPublisherService":
     from prosell.infrastructure.services.playwright_publisher import PlaywrightPublisherService
     return PlaywrightPublisherService()
@@ -224,13 +221,12 @@ async def get_publication_repository(
 
 async def get_publish_vehicle_use_case(
     publication_repo: Annotated["IPublicationRepository", Depends(get_publication_repository)],
-    image_pipeline: Annotated["ImagePipelineService", Depends(get_image_pipeline)],
     current_user: Annotated[User, Depends(get_current_user)],  # existing auth dep
 ) -> "PublishVehicleUseCase":
+    # Note: NO image_pipeline here — image processing happens inside the Taskiq task (Plan 03)
     from prosell.application.use_cases.publisher.publish_vehicle import PublishVehicleUseCase
     return PublishVehicleUseCase(
         publication_repo=publication_repo,
-        image_pipeline=image_pipeline,
         seller_user_id=current_user.id,
     )
 ```
@@ -329,45 +325,55 @@ First read the existing rate limiting setup in `main.py` or middleware files. Th
 
 Check what rate limiting mechanism exists:
 ```bash
-grep -r "rate_limit\|slowapi\|limiter" apps/api/src/ --include="*.py" -l
+rg "rate_limit|slowapi|limiter" apps/api/src/ --include="*.py" -l
 ```
 
 If `slowapi` is already configured, extend it for publisher endpoints. If not, add `slowapi` dependency and configure it.
 
 Rate limit for publish: **10 requests per minute per user** (protects against abuse, allows normal publishing cadence).
 
-Update `test_rate_limiting.py` — replace xfail stubs:
+Update `test_rate_limiting.py` — replace xfail stubs with structural assertions that actually verify the configuration:
 
 ```python
 """Tests for publisher rate limiting — PUBLISH-09."""
 import pytest
-from unittest.mock import MagicMock, AsyncMock
 
 
 async def test_rate_limiter_allows_first_request():
-    """First request passes through rate limiter without error."""
-    # This is a basic structural test — rate limiter module imports correctly
-    # Full integration rate limit testing requires a real Redis connection
+    """Publisher router exposes a /publish route — structural check."""
     from prosell.infrastructure.api.routers.publisher_router import router
-    # Verify publish route exists and has rate limit decoration applied
+    publish_route = next(
+        (r for r in router.routes if "/publish" in str(r.path)),
+        None
+    )
+    assert publish_route is not None, "publish route must be registered on publisher router"
+
+
+async def test_rate_limiter_configured_on_publish_route():
+    """Rate limit dependency or decorator is attached to the publish route.
+
+    Checks that the publish route's dependencies include a rate limiter.
+    Full enforcement requires a live Redis — this test verifies configuration only.
+    If slowapi is used: the route's dependencies will include the limiter callable.
+    If a custom middleware is used: verify the route has the expected middleware tag.
+    """
+    from prosell.infrastructure.api.routers.publisher_router import router
+
     publish_route = next(
         (r for r in router.routes if "/publish" in str(r.path)),
         None
     )
     assert publish_route is not None
 
-
-async def test_rate_limiter_blocks_after_quota_exceeded():
-    """Rate limit configuration exists for publisher endpoint."""
-    # Structural test: verify rate limit is configured (not a full integration test)
-    from prosell.infrastructure.api.routers.publisher_router import router
-    assert router.prefix == "/publisher"
-    # Note: Full rate limit integration test requires slowapi + real Redis.
-    # This test confirms the configuration exists without testing enforcement.
-    assert True  # Structural check passes
+    # Verify rate limiting is wired: the route must have at least one dependency
+    # (auth dependency is mandatory for publish — absence means neither auth nor rate limit is present)
+    assert len(publish_route.dependencies) > 0, (
+        "publish route has no dependencies — expected at least auth + rate limiter. "
+        "Add rate limiting via slowapi @limiter.limit() decorator or Depends(rate_limit_publish)."
+    )
 ```
 
-Note: Rate limiting unit tests are inherently structural — the real enforcement test requires a live Redis. The tests confirm the configuration exists. Mark this clearly in the test docstring. PUBLISH-09 full verification is in the integration/manual test tier.
+Note: Rate limiting unit tests are inherently structural — real enforcement requires a live Redis. These tests confirm the route exists and has dependencies wired (auth at minimum, rate limiter expected). PUBLISH-09 full verification is in the integration/manual test tier.
 
 If `slowapi` is available, add to publisher_router.py:
 ```python
@@ -401,6 +407,7 @@ After all tasks:
 - [ ] All endpoints in publisher_router require authentication via get_current_user
 - [ ] Router registered in main.py under /api/v1/publisher prefix
 - [ ] 4 tests GREEN (2 graph_api + 2 rate_limiting)
+- [ ] Rate limiting test verifies route has dependencies (not `assert True`)
 </success_criteria>
 
 <output>

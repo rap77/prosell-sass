@@ -21,8 +21,9 @@ must_haves:
   truths:
     - "PublisherStrategySelector returns PlaywrightPublisherService when PUBLISHER_ENGINE=playwright"
     - "PublisherStrategySelector returns PlaywrightPublisherService when PUBLISHER_ENGINE=auto and graph_api_approved=False"
-    - "PublishVehicleUseCase creates a Publication record with status PENDING, processes images, then dispatches publish_vehicle_task"
+    - "PublishVehicleUseCase creates a Publication record with status PENDING, validates image URLs, then dispatches publish_vehicle_task"
     - "publish_vehicle_task marks publication PUBLISHING before calling the publisher service"
+    - "publish_vehicle_task downloads and processes images itself (ImagePipeline runs in task context, not in use case)"
     - "Strategy tests (3 tests) are GREEN"
     - "Publish use case tests (2 tests) are GREEN"
   artifacts:
@@ -36,7 +37,7 @@ must_haves:
       provides: "PublishVehicleUseCase — creates Publication + dispatches task"
       exports: ["PublishVehicleUseCase"]
     - path: "apps/api/src/prosell/infrastructure/tasks/use_cases/publish_vehicle_task.py"
-      provides: "Taskiq task that runs the actual Playwright session"
+      provides: "Taskiq task that downloads+processes images and runs the actual Playwright session"
       exports: ["publish_vehicle_task"]
   key_links:
     - from: "apps/api/src/prosell/application/use_cases/publisher/publish_vehicle.py"
@@ -47,12 +48,16 @@ must_haves:
       to: "apps/api/src/prosell/infrastructure/services/publisher_strategy.py"
       via: "strategy_selector.select() inside task"
       pattern: "strategy_selector\\.select"
+    - from: "apps/api/src/prosell/infrastructure/tasks/use_cases/publish_vehicle_task.py"
+      to: "apps/api/src/prosell/infrastructure/services/image_pipeline.py"
+      via: "ImagePipelineService().process() called per URL in publication.image_urls"
+      pattern: "image_pipeline\\.process|ImagePipelineService"
 ---
 
 <objective>
 Build the Playwright publisher service, strategy selector, and PublishVehicleUseCase — the core publish flow from API call to browser automation.
 
-Purpose: This is the P0 feature of the entire phase. When a vendedor clicks "Publicar", this chain executes: use case creates Publication record → dispatches Taskiq task → task runs Playwright → listing goes live on Facebook.
+Purpose: This is the P0 feature of the entire phase. When a vendedor clicks "Publicar", this chain executes: use case creates Publication record → dispatches Taskiq task → task downloads+processes images → task runs Playwright → listing goes live on Facebook.
 Output: PlaywrightPublisherService with anti-detection, PublisherStrategySelector, PublishVehicleUseCase, publish_vehicle_task, DTOs, and passing unit tests.
 </objective>
 
@@ -109,6 +114,12 @@ From apps/api/src/prosell/infrastructure/tasks/broker.py:
 from taskiq_redis import ListQueueBroker
 broker = ListQueueBroker(url=settings.redis_url)  # supports .with_labels(delay=timedelta(...))
 ```
+
+Image lifecycle note:
+- `publication.image_urls` stores the SOURCE URLs (scraper URLs or manually uploaded URLs)
+- The use case ONLY validates these URLs are reachable (no byte processing at use case time)
+- The Taskiq task downloads each URL, processes bytes through ImagePipeline (compress, resize, JPG, strip EXIF), and passes the processed bytes directly to `service.publish()`
+- This keeps the task self-contained (no bytes serialized into Taskiq payload, no DO Spaces dependency in Phase 1)
 </interfaces>
 </context>
 
@@ -131,27 +142,6 @@ from prosell.infrastructure.services.publisher_strategy import PublisherStrategy
 from prosell.domain.ports.i_publisher_service import IPublisherService
 
 
-def make_selector(engine: str, graph_api_approved: bool = False) -> PublisherStrategySelector:
-    playwright_svc = MagicMock(spec=IPublisherService)
-    graph_api_svc = MagicMock(spec=IPublisherService)
-    from unittest.mock import patch
-    # Patch settings inline
-    with patch("prosell.infrastructure.services.publisher_strategy.settings") as mock_settings:
-        mock_settings.publisher_engine = engine
-        mock_settings.graph_api_approved = graph_api_approved
-        selector = PublisherStrategySelector(playwright_svc, graph_api_svc)
-    return selector, playwright_svc, graph_api_svc
-
-
-def test_strategy_selector_returns_playwright_when_flag_is_playwright():
-    playwright_svc = MagicMock(spec=IPublisherService)
-    graph_api_svc = MagicMock(spec=IPublisherService)
-    # ... test with mocked settings ...
-```
-
-Actually, write the tests by patching `settings` at the module level. Simpler approach: test the `select()` method logic by mocking the settings object passed as dependency:
-
-```python
 def test_strategy_selector_returns_playwright_when_flag_is_playwright():
     playwright_svc = MagicMock(spec=IPublisherService)
     graph_api_svc = MagicMock(spec=IPublisherService)
@@ -328,7 +318,7 @@ class PublicationResponse(BaseModel):
 </task>
 
 <task id="03-03" name="Task 3: PublishVehicleUseCase, Taskiq task, and use case tests">
-  <objective>Implement PublishVehicleUseCase (creates Publication + dispatches task) and publish_vehicle_task (runs the publisher service). Make 2 publish use case tests GREEN.</objective>
+  <objective>Implement PublishVehicleUseCase (creates Publication + dispatches task) and publish_vehicle_task (downloads+processes images, then runs the publisher service). Make 2 publish use case tests GREEN.</objective>
   <files>
     <create>apps/api/src/prosell/application/use_cases/publisher/__init__.py</create>
     <create>apps/api/src/prosell/application/use_cases/publisher/publish_vehicle.py</create>
@@ -336,6 +326,28 @@ class PublicationResponse(BaseModel):
     <modify>apps/api/tests/unit/application/publisher/test_publish_use_cases.py</modify>
   </files>
   <implementation>
+**Image lifecycle design decision** (documented here so executor doesn't repeat the bytes-discard bug):
+
+The use case does NOT process images — it only validates they exist and stores source URLs. The Taskiq task downloads and processes images in its own execution context:
+
+```
+API call → PublishVehicleUseCase.execute()
+              └─ validates image_urls are present (Pydantic min_length=1)
+              └─ creates Publication(image_urls=ordered_source_urls)  ← stores SOURCE URLs
+              └─ await publish_vehicle_task.kiq(publication_id=...)
+                      └─ task runs (worker context):
+                            └─ loads publication from DB (gets source image_urls)
+                            └─ downloads each URL with httpx
+                            └─ processes each with ImagePipelineService (compress, resize, JPG, strip EXIF)
+                            └─ passes processed bytes list to service.publish(publication, token, image_bytes_list)
+```
+
+This design:
+- Keeps the use case fast (no image downloads in request/response cycle)
+- Keeps the task self-contained (no external storage dependency in Phase 1)
+- Avoids serializing image bytes into Taskiq payload (too large, not supported)
+- Matches the `IPublisherService.publish(image_bytes_list)` contract correctly
+
 First update `test_publish_use_cases.py` with real tests (replace xfail stubs):
 
 ```python
@@ -365,20 +377,12 @@ def mock_publication_repo():
     return repo
 
 
-@pytest.fixture
-def mock_image_pipeline():
-    pipeline = AsyncMock()
-    pipeline.process.return_value = b"fake_processed_image"
-    return pipeline
-
-
-async def test_publish_vehicle_creates_publication_record(mock_publication_repo, mock_image_pipeline):
+async def test_publish_vehicle_creates_publication_record(mock_publication_repo):
     """PublishVehicleUseCase creates Publication in PENDING state before dispatching task."""
     with patch("prosell.application.use_cases.publisher.publish_vehicle.publish_vehicle_task") as mock_task:
         mock_task.kiq = AsyncMock()
         use_case = PublishVehicleUseCase(
             publication_repo=mock_publication_repo,
-            image_pipeline=mock_image_pipeline,
             seller_user_id=uuid4(),
         )
         request = PublishVehicleRequest(
@@ -393,16 +397,17 @@ async def test_publish_vehicle_creates_publication_record(mock_publication_repo,
         result = await use_case.execute(request)
 
     mock_publication_repo.create.assert_called_once()
+    mock_task.kiq.assert_called_once()
     assert result.status == "pending"
 
 
-async def test_publish_vehicle_processes_images_before_dispatch(mock_publication_repo, mock_image_pipeline):
-    """ImagePipeline.process() is called once per image before task dispatch."""
+async def test_publish_vehicle_dispatches_task_with_publication_id(mock_publication_repo):
+    """publish_vehicle_task.kiq() is called with the correct publication_id after create."""
+    created_pub = mock_publication_repo.create.return_value
     with patch("prosell.application.use_cases.publisher.publish_vehicle.publish_vehicle_task") as mock_task:
         mock_task.kiq = AsyncMock()
         use_case = PublishVehicleUseCase(
             publication_repo=mock_publication_repo,
-            image_pipeline=mock_image_pipeline,
             seller_user_id=uuid4(),
         )
         request = PublishVehicleRequest(
@@ -416,47 +421,37 @@ async def test_publish_vehicle_processes_images_before_dispatch(mock_publication
         )
         await use_case.execute(request)
 
-    # Image pipeline should be called for each URL — but wait, pipeline processes bytes not URLs.
-    # The use case downloads images then processes. In unit test, the pipeline mock is called
-    # once per image (we don't download in tests — mock the http fetch too).
-    # Simplification: verify pipeline.process was called at least once
-    assert mock_image_pipeline.process.called
+    mock_task.kiq.assert_called_once_with(publication_id=str(created_pub.id))
 ```
 
-Then implement `publish_vehicle.py`:
+Then implement `publish_vehicle.py` (no image processing — use case is intentionally thin):
 
 ```python
 """PublishVehicleUseCase — creates Publication and dispatches Taskiq task."""
 from uuid import UUID
 from prosell.domain.entities.publication import Publication
 from prosell.domain.repositories.publication_repository import IPublicationRepository
-from prosell.domain.ports.i_image_pipeline import IImagePipeline
 from prosell.application.dto.publisher.publish import PublishVehicleRequest, PublicationResponse
-import httpx
 
 
 class PublishVehicleUseCase:
     def __init__(
         self,
         publication_repo: IPublicationRepository,
-        image_pipeline: IImagePipeline,
         seller_user_id: UUID,
     ) -> None:
         self._repo = publication_repo
-        self._pipeline = image_pipeline
         self._seller_user_id = seller_user_id
 
     async def execute(self, request: PublishVehicleRequest) -> PublicationResponse:
-        # 1. Download and process images
-        processed_images = await self._process_images(request.image_urls, request.hero_shot_index)
-
-        # 2. Reorder image_urls so hero shot is at index 0
+        # 1. Reorder image_urls so hero shot is at index 0
         ordered_urls = list(request.image_urls)
         if request.hero_shot_index > 0 and request.hero_shot_index < len(ordered_urls):
             hero = ordered_urls.pop(request.hero_shot_index)
             ordered_urls.insert(0, hero)
 
-        # 3. Create Publication record in PENDING state
+        # 2. Create Publication record in PENDING state (stores SOURCE URLs — not processed bytes)
+        #    The Taskiq task handles image downloading + processing in its own context.
         publication = Publication(
             product_id=request.product_id,
             tenant_id=request.tenant_id,
@@ -471,7 +466,7 @@ class PublishVehicleUseCase:
         )
         publication = await self._repo.create(publication)
 
-        # 4. Dispatch Taskiq task with publication_id only (never pass tokens)
+        # 3. Dispatch Taskiq task with publication_id only (never pass tokens or bytes)
         from prosell.infrastructure.tasks.use_cases.publish_vehicle_task import publish_vehicle_task
         await publish_vehicle_task.kiq(publication_id=str(publication.id))
 
@@ -480,20 +475,9 @@ class PublishVehicleUseCase:
             product_id=publication.product_id,
             status=publication.status.value,
         )
-
-    async def _process_images(self, image_urls: list[str], hero_index: int) -> list[bytes]:
-        """Download images and run through pipeline. Returns processed bytes list."""
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            processed = []
-            for url in image_urls:
-                resp = await client.get(url)
-                resp.raise_for_status()
-                processed_bytes = await self._pipeline.process(resp.content)
-                processed.append(processed_bytes)
-        return processed
 ```
 
-Then implement `publish_vehicle_task.py`:
+Then implement `publish_vehicle_task.py` (downloads and processes images before calling the publisher):
 
 ```python
 """Taskiq task for publishing vehicle listings via Playwright."""
@@ -504,12 +488,14 @@ from prosell.infrastructure.tasks.broker import broker
 async def publish_vehicle_task(publication_id: str) -> dict:
     """Execute publication via selected publisher strategy.
 
-    Pattern from RESEARCH.md:
-    - Receives only publication_id (never tokens in task payload)
-    - Instantiates its own service dependencies (not FastAPI DI)
-    - Marks publication PUBLISHING before starting, PUBLISHED on success
-    - On Category A failure: schedules retry with exponential backoff
-    - On Category B failure: sets blocked_until_confirmed=True
+    Image lifecycle:
+    1. Load publication from DB (contains source image_urls stored by use case)
+    2. Download each URL with httpx
+    3. Process each with ImagePipelineService (compress < 1MB, resize 1080px, JPG, strip EXIF)
+    4. Pass processed bytes list to service.publish(publication, access_token, image_bytes_list)
+
+    This ensures images are always freshly processed at task execution time.
+    No intermediate storage (DO Spaces) required in Phase 1.
     """
     from uuid import UUID
     from prosell.infrastructure.database.session import async_session_factory
@@ -519,7 +505,9 @@ async def publish_vehicle_task(publication_id: str) -> dict:
     from prosell.infrastructure.services.playwright_publisher import PlaywrightPublisherService
     from prosell.infrastructure.services.graph_api_publisher import GraphAPIPublisherService
     from prosell.infrastructure.services.publisher_strategy import PublisherStrategySelector
+    from prosell.infrastructure.services.image_pipeline import ImagePipelineService
     from prosell.domain.entities.publication import PublicationStatus, PublicationErrorCategory
+    import httpx
 
     pub_id = UUID(publication_id)
 
@@ -547,16 +535,26 @@ async def publish_vehicle_task(publication_id: str) -> dict:
                 raise ValueError(f"FacebookPage {publication.facebook_page_id} not found")
             access_token = encryption.decrypt(page.page_access_token_encrypted)
 
+            # Download and process images (source URLs are stored in publication.image_urls)
+            image_pipeline = ImagePipelineService()
+            image_bytes_list: list[bytes] = []
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                for url in publication.image_urls:
+                    resp = await client.get(url)
+                    resp.raise_for_status()
+                    processed = await image_pipeline.process(resp.content)
+                    image_bytes_list.append(processed)
+
             # Select strategy
             playwright_svc = PlaywrightPublisherService()
             graph_api_svc = GraphAPIPublisherService(encryption)
             selector = PublisherStrategySelector(playwright_svc, graph_api_svc)
             service, engine_name = selector.select()
 
-            # Execute publish (passes empty image_bytes — images already uploaded to DO Spaces)
-            import playwright
-            engine_version = f"{engine_name}_v{playwright.__version__}" if engine_name == "playwright" else engine_name
-            fb_listing_id = await service.publish(publication, access_token, [])
+            # Execute publish with processed image bytes
+            import playwright as pw_module
+            engine_version = f"{engine_name}_v{pw_module.__version__}" if engine_name == "playwright" else engine_name
+            fb_listing_id = await service.publish(publication, access_token, image_bytes_list)
 
             # Mark PUBLISHED
             publication.mark_published(fb_listing_id, engine_name, engine_version)
@@ -590,6 +588,8 @@ async def publish_vehicle_task(publication_id: str) -> dict:
 ```
 
 Note: `async_session_factory` must exist in `infrastructure/database/session.py`. Check the existing session module to confirm the name — adapt if different.
+
+Note on `PublishVehicleUseCase` changes: the use case no longer takes `image_pipeline` as a constructor argument (image processing moved to the task). Update `get_publish_vehicle_use_case` in `dependencies.py` (Plan 06) accordingly — remove the `image_pipeline` dependency injection there.
   </implementation>
   <verify>
     <automated>cd /home/rpadron/proy/prosell-sass/apps/api && uv run pytest tests/unit/application/publisher/test_publish_use_cases.py tests/unit/infrastructure/test_publisher_strategy.py -v --tb=short</automated>
@@ -608,7 +608,8 @@ After all tasks complete:
 
 <success_criteria>
 - [ ] PublisherStrategySelector.select() returns correct service based on settings.publisher_engine
-- [ ] PublishVehicleUseCase creates Publication in PENDING state and dispatches publish_vehicle_task
+- [ ] PublishVehicleUseCase creates Publication in PENDING state and dispatches publish_vehicle_task (no image processing in use case)
+- [ ] publish_vehicle_task downloads source URLs, processes with ImagePipelineService, passes bytes to service.publish()
 - [ ] publish_vehicle_task marks PUBLISHING before calling service, handles Category A/B errors differently
 - [ ] PlaywrightPublisherService exists, implements IPublisherService, anti-detection patterns present
 - [ ] DTOs PublishVehicleRequest and PublicationResponse defined with Pydantic
