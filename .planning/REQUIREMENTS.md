@@ -8,11 +8,11 @@
 
 ## Execution Strategy
 
-Los 43 requirements v1 se ejecutan en **dos fases inmediatas**:
+Los 46 requirements v1 se ejecutan en **dos fases inmediatas**:
 
 | Fase | Scope | Objetivo |
 |------|-------|----------|
-| **A — Core MVP** | PUBLISH, SCRAPE, LEADS, APPT, CATALOG, DASH | Salir a producción con los 5 dealers, validar flujo de dinero, scraper acumulando datos |
+| **A — Core MVP** | PUBLISH (excl. 08), SCRAPE, CATALOG, DASH, LEAD, APPT | Salir a producción con los 5 dealers, validar flujo de dinero, scraper acumulando datos |
 | **B — Visibility** | LAND, CAT-PUBLIC, PUBLISH-08 (AI titles), MKTL | Post-estabilización: catálogo público, landing, inteligencia de mercado con datos reales |
 
 **Ganancia:** Dealers pagando mientras se pule el frontend público. Datos reales de CarGurus acumulándose en Fase A para que el market intelligence de Fase B sea con datos reales, no simulados.
@@ -153,25 +153,60 @@ Los 43 requirements v1 se ejecutan en **dos fases inmediatas**:
 
 ## Traceability
 
-Pendiente — se llena durante la creación del roadmap.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PUBLISH-01..10 | — | Pending |
-| SCRAPE-01..07 | — | Pending |
-| CATALOG-01..07 | — | Pending |
-| DASH-01..04 | — | Pending |
-| LEAD-01..05 | — | Pending |
-| APPT-01..04 | — | Pending |
-| MKTL-01..03 | — | Pending |
-| LAND-01..02 | — | Pending |
-| CAT-PUBLIC-01..04 | — | Pending |
+| PUBLISH-01 | Phase 1 — Hybrid Publisher | Pending |
+| PUBLISH-02 | Phase 1 — Hybrid Publisher | Pending |
+| PUBLISH-03 | Phase 1 — Hybrid Publisher | Pending |
+| PUBLISH-04 | Phase 1 — Hybrid Publisher | Pending |
+| PUBLISH-05 | Phase 1 — Hybrid Publisher | Pending |
+| PUBLISH-06 | Phase 1 — Hybrid Publisher | Pending |
+| PUBLISH-07 | Phase 1 — Hybrid Publisher | Pending |
+| PUBLISH-08 | Phase 7 — Visibility | Pending |
+| PUBLISH-09 | Phase 1 — Hybrid Publisher | Pending |
+| PUBLISH-10 | Phase 1 — Hybrid Publisher | Pending |
+| SCRAPE-01 | Phase 3 — Scraping | Pending |
+| SCRAPE-02 | Phase 3 — Scraping | Pending |
+| SCRAPE-03 | Phase 3 — Scraping | Pending |
+| SCRAPE-04 | Phase 3 — Scraping | Pending |
+| SCRAPE-05 | Phase 3 — Scraping | Pending |
+| SCRAPE-06 | Phase 3 — Scraping | Pending |
+| SCRAPE-07 | Phase 3 — Scraping | Pending |
+| CATALOG-01 | Phase 2 — Catalog & Roles | Pending |
+| CATALOG-02 | Phase 2 — Catalog & Roles | Pending |
+| CATALOG-03 | Phase 2 — Catalog & Roles | Pending |
+| CATALOG-04 | Phase 2 — Catalog & Roles | Pending |
+| CATALOG-05 | Phase 2 — Catalog & Roles | Pending |
+| CATALOG-06 | Phase 2 — Catalog & Roles | Pending |
+| CATALOG-07 | Phase 2 — Catalog & Roles | Pending |
+| DASH-01 | Phase 5 — Dashboards | Pending |
+| DASH-02 | Phase 5 — Dashboards | Pending |
+| DASH-03 | Phase 5 — Dashboards | Pending |
+| DASH-04 | Phase 5 — Dashboards | Pending |
+| LEAD-01 | Phase 4 — Leads & Appointments | Pending |
+| LEAD-02 | Phase 4 — Leads & Appointments | Pending |
+| LEAD-03 | Phase 4 — Leads & Appointments | Pending |
+| LEAD-04 | Phase 4 — Leads & Appointments | Pending |
+| LEAD-05 | Phase 4 — Leads & Appointments | Pending |
+| APPT-01 | Phase 4 — Leads & Appointments | Pending |
+| APPT-02 | Phase 4 — Leads & Appointments | Pending |
+| APPT-03 | Phase 4 — Leads & Appointments | Pending |
+| APPT-04 | Phase 4 — Leads & Appointments | Pending |
+| MKTL-01 | Phase 6 — Market Intelligence | Pending |
+| MKTL-02 | Phase 6 — Market Intelligence | Pending |
+| MKTL-03 | Phase 6 — Market Intelligence | Pending |
+| LAND-01 | Phase 7 — Visibility | Pending |
+| LAND-02 | Phase 7 — Visibility | Pending |
+| CAT-PUBLIC-01 | Phase 7 — Visibility | Pending |
+| CAT-PUBLIC-02 | Phase 7 — Visibility | Pending |
+| CAT-PUBLIC-03 | Phase 7 — Visibility | Pending |
+| CAT-PUBLIC-04 | Phase 7 — Visibility | Pending |
 
 **Coverage:**
-- v1 requirements: 43 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 43 ⚠️
+- v1 requirements: 46 total (note: source said 43, actual count from file is 46)
+- Mapped to phases: 46/46 ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-15*
-*Last updated: 2026-03-15 after reviewing docs/ PRDs, roadmap v3, and Sprint 7 PRPs*
+*Last updated: 2026-03-15 — traceability populated after roadmap creation*
