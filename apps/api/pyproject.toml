@@ -28,6 +28,9 @@ dependencies = [
     "slowapi>=0.1.9",
     "taskiq[redis]>=0.12.1",
     "taskiq-redis>=1.2.2",
+    "playwright>=1.42.0",
+    "Pillow>=12.0.0",
+    "facebook-sdk>=3.1.0",
 ]
 
 [project.optional-dependencies]

@@ -5,6 +5,7 @@ from prosell.infrastructure.models.oauth_account_model import OAuthAccountModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.product_image_model import ProductImageModel
 from prosell.infrastructure.models.product_model import ProductModel
+from prosell.infrastructure.models.publication_model import PublicationModel
 from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
 from prosell.infrastructure.models.session_model import SessionModel
 from prosell.infrastructure.models.team_model import TeamMemberModel, TeamModel
@@ -19,6 +20,7 @@ __all__ = [
     "OrganizationModel",
     "ProductImageModel",
     "ProductModel",
+    "PublicationModel",
     "RoleModel",
     "SessionModel",
     "TeamMemberModel",

@@ -5,7 +5,7 @@ Uses Redis for production, InMemoryBroker for testing.
 """
 
 from taskiq import InMemoryBroker, TaskiqDepends
-from taskiq_redis import PubSubBroker
+from taskiq_redis import ListQueueBroker
 
 from prosell.core.config import settings
 
@@ -13,7 +13,7 @@ from prosell.core.config import settings
 if settings.environment == "testing":
     broker = InMemoryBroker()
 else:
-    broker = PubSubBroker(
+    broker = ListQueueBroker(
         url=settings.redis_url,
     )
 
