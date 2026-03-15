@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready_to_execute
-stopped_at: Phase 1 planned — ready to execute
-last_updated: "2026-03-15T08:00:00.000Z"
-last_activity: 2026-03-15 — Phase 1 planned (8 plans, 5 waves, verification passed)
+status: in_progress
+stopped_at: "01-01-publication-entity complete"
+last_updated: "2026-03-15T12:30:16Z"
+last_activity: 2026-03-15 — Plan 01-01 complete (Publication entity, ports, ORM, migration)
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 8
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 12
 ---
 
 # Project State
@@ -26,28 +26,28 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 ## Current Position
 
 Phase: 1 of 7 (Hybrid Publisher)
-Plan: 0 of 8 in current phase
-Status: Ready to execute
-Last activity: 2026-03-15 — Phase 1 planned (8 plans, 5 waves, verification passed)
+Plan: 1 of 8 in current phase
+Status: In progress
+Last activity: 2026-03-15 — Plan 01-01 complete (Publication entity + ORM + migration, 10 tests GREEN)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 12%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 23 min
+- Total execution time: 0.4 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-hybrid-publisher | 1/8 | 23min | 23min |
 
 **Recent Trend:**
-- Last 5 plans: -
-- Trend: -
+- Last 5 plans: 01-01 (23min)
+- Trend: baseline
 
 *Updated after each plan completion*
 
@@ -62,6 +62,9 @@ Progress: [░░░░░░░░░░] 0%
 - PUBLISH-08 (AI titles) deferred to Phase 7 (needs CarGurus data volume first).
 - Phase 4 (Leads) depends on Phase 1 (requires active listings to capture leads against).
 - Phase 6 (Market Intelligence) depends on Phase 3 (needs scraped CarGurus data).
+- [01-01] mark_published() sets expires_at = published_at + 7 days — FB Marketplace auto-expires listings in 7 days.
+- [01-01] Error Category B (blocking) sets blocked_until_confirmed=True — captcha/policy violations need human review before retry.
+- [01-01] expires_at column indexed — scheduler query performance critical at scale.
 
 ### Pending Todos
 
@@ -76,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-15T08:00:00.000Z
-Stopped at: Phase 1 planned — ready to execute
-Resume file: .planning/phases/01-hybrid-publisher/
+Last session: 2026-03-15T12:30:16Z
+Stopped at: Completed 01-01-publication-entity-PLAN.md
+Resume file: .planning/phases/01-hybrid-publisher/01-02-publish-use-case-PLAN.md

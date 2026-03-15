@@ -31,7 +31,7 @@ Los 46 requirements v1 se ejecutan en **dos fases inmediatas**:
 - [ ] **PUBLISH-04**: Vendedor puede actualizar precio, descripción o fotos de un listing activo desde la app
 - [ ] **PUBLISH-05**: Vendedor puede marcar un vehículo como vendido y el listing se elimina de FB automáticamente
 - [ ] **PUBLISH-06**: Sistema re-publica automáticamente listings que van a vencer (scheduler, posts expiran a 7 días)
-- [ ] **PUBLISH-07**: Entidad Publication con estado máquina: pending / published / failed / expired / sold
+- [x] **PUBLISH-07**: Entidad Publication con estado máquina: pending / published / failed / expired / sold
 - [ ] **PUBLISH-08**: Sistema genera títulos y descripciones optimizados para CTR con IA (GPT-4/Claude)
 - [ ] **PUBLISH-09**: Sistema aplica rate limiting (token bucket) para no exceder cuotas de Graph API y evitar baneos
 - [ ] **PUBLISH-10**: Sistema optimiza imágenes antes de upload (compresión, resolución FB-compatible)
@@ -161,7 +161,7 @@ Los 46 requirements v1 se ejecutan en **dos fases inmediatas**:
 | PUBLISH-04 | Phase 1 — Hybrid Publisher | Pending |
 | PUBLISH-05 | Phase 1 — Hybrid Publisher | Pending |
 | PUBLISH-06 | Phase 1 — Hybrid Publisher | Pending |
-| PUBLISH-07 | Phase 1 — Hybrid Publisher | Pending |
+| PUBLISH-07 | Phase 1 — Hybrid Publisher | Complete |
 | PUBLISH-08 | Phase 7 — Visibility | Pending |
 | PUBLISH-09 | Phase 1 — Hybrid Publisher | Pending |
 | PUBLISH-10 | Phase 1 — Hybrid Publisher | Pending |
