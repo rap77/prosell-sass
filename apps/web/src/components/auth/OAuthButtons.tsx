@@ -118,7 +118,7 @@ function OAuthButton({
 
     // Redirect to backend OAuth authorize endpoint
     // Provider is determined by variant ("google" or "facebook")
-    // OAuth always needs full URL (not relative), even in test mode
+    // OAuth uses /api/auth prefix (no version) to match Google Cloud Console config
     const apiUrl = API_BASE_URL || "http://localhost:8000";
     window.location.href = `${apiUrl}/api/auth/oauth/${variant}/authorize`;
   };

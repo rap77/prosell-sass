@@ -183,7 +183,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export const authApi = {
   /**
    * Login with email and password
-   * POST /api/auth/login
+   * POST /api/v1/auth/login
    */
   async login(email: string, password: string): Promise<LoginResponse> {
     // Validate email format only - let server handle password validation
@@ -191,7 +191,7 @@ export const authApi = {
       throw new ApiError("Invalid email format", 400);
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -208,7 +208,7 @@ export const authApi = {
 
   /**
    * Register a new user
-   * POST /api/auth/register
+   * POST /api/v1/auth/register
    */
   async register(
     email: string,
@@ -232,7 +232,7 @@ export const authApi = {
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -256,11 +256,11 @@ export const authApi = {
 
   /**
    * Logout current user
-   * POST /api/auth/logout
+   * POST /api/v1/auth/logout
    */
   async logout(): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -284,7 +284,7 @@ export const authApi = {
 
   /**
    * Get current authenticated user
-   * GET /api/auth/me
+   * GET /api/v1/auth/me
    *
    * Uses httpOnly cookies for authentication (no accessToken parameter needed)
    * Cached with React.cache for deduplication
@@ -295,7 +295,7 @@ export const authApi = {
     return (): Promise<UserResponse> => {
       const cacheKey = generateCacheKey(
         "GET",
-        `${API_BASE_URL}/api/auth/me`,
+        `${API_BASE_URL}/api/v1/auth/me`,
         {},
       );
 
@@ -307,7 +307,7 @@ export const authApi = {
 
       // Use deduplication for concurrent requests
       return deduplicateRequest(cacheKey, async () => {
-        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
           method: "GET",
           credentials: "include", // CRITICAL: Sends httpOnly cookies automatically
         });
@@ -325,7 +325,7 @@ export const authApi = {
 
   /**
    * Verify email with token
-   * POST /api/auth/verify-email
+   * POST /api/v1/auth/verify-email
    */
   async verifyEmail(token: string): Promise<MessageResponse> {
     // Early exit if invalid token
@@ -334,7 +334,7 @@ export const authApi = {
     }
 
     // Mutations must NOT be cached — token is consumed server-side on first use
-    const response = await fetch(`${API_BASE_URL}/api/auth/verify-email`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/verify-email`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -347,7 +347,7 @@ export const authApi = {
 
   /**
    * Request password reset
-   * POST /api/auth/forgot-password
+   * POST /api/v1/auth/forgot-password
    */
   async forgotPassword(email: string): Promise<MessageResponse> {
     // Early exit if invalid email
@@ -356,7 +356,7 @@ export const authApi = {
     }
 
     // Mutations must NOT be cached — triggers email send on every call
-    const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/forgot-password`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -369,7 +369,7 @@ export const authApi = {
 
   /**
    * Reset password with token
-   * POST /api/auth/reset-password
+   * POST /api/v1/auth/reset-password
    */
   async resetPassword(
     token: string,
@@ -385,7 +385,7 @@ export const authApi = {
     }
 
     // Mutations must NOT be cached — token is consumed server-side on first use
-    const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/reset-password`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -401,13 +401,13 @@ export const authApi = {
 
   /**
    * Enable 2FA for current user
-   * POST /api/auth/2fa/enable
+   * POST /api/v1/auth/2fa/enable
    *
    * Uses httpOnly cookies for authentication (no accessToken parameter needed)
    */
   async enable2FA(): Promise<Enable2FAResponse> {
     // Mutations must NOT be cached — generates a new QR code / TOTP secret each call
-    const response = await fetch(`${API_BASE_URL}/api/auth/2fa/enable`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/2fa/enable`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -420,7 +420,7 @@ export const authApi = {
 
   /**
    * Verify 2FA code
-   * POST /api/auth/2fa/verify
+   * POST /api/v1/auth/2fa/verify
    *
    * Uses httpOnly cookies for authentication (no accessToken parameter needed)
    */
@@ -437,7 +437,7 @@ export const authApi = {
       return cached as unknown as MessageResponse;
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/auth/2fa/verify`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/2fa/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -456,13 +456,13 @@ export const authApi = {
 
   /**
    * Disable 2FA for current user
-   * POST /api/auth/2fa/disable
+   * POST /api/v1/auth/2fa/disable
    *
    * Uses httpOnly cookies for authentication (no accessToken parameter needed)
    */
   async disable2FA(): Promise<MessageResponse> {
     // Mutations must NOT be cached — revokes TOTP secret server-side
-    const response = await fetch(`${API_BASE_URL}/api/auth/2fa/disable`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/2fa/disable`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

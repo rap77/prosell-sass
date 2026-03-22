@@ -128,9 +128,11 @@ class User(DomainModel):
         Factory method for OAuth user registration.
 
         OAuth users have no password and are auto-verified.
+        Each OAuth user gets their own tenant_id (equal to their user.id).
         """
+        user_id = uuid4()
         return cls(
-            id=uuid4(),
+            id=user_id,
             email=email,
             password_hash=None,
             full_name=full_name,
@@ -145,7 +147,7 @@ class User(DomainModel):
             last_login_ip=None,
             failed_login_attempts=0,
             locked_until=None,
-            tenant_id=None,
+            tenant_id=user_id,  # OAuth users are their own tenant
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
             roles=None,

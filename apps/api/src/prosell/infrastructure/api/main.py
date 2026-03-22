@@ -97,15 +97,18 @@ async def security_headers_middleware(
     # - Use in CSP: f"script-src 'self' 'nonce-{nonce}';"
     # - Use in templates: <script nonce="{{ nonce }}">
     # Track: https://github.com/rap77/prosell-sass/issues/SECURITY-001
-    response.headers["Content-Security-Policy"] = (
+    # Allow Swagger UI CDN for API docs (development only)
+    # In production, consider bundling Swagger UI assets locally
+    csp_base = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-        "style-src 'self' 'unsafe-inline'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
         "img-src 'self' data: https:; "
-        "font-src 'self'; "
-        "connect-src 'self'; "
+        "font-src 'self' https://cdn.jsdelivr.net; "
+        "connect-src 'self' https://cdn.jsdelivr.net; "
         "frame-ancestors 'none';"
     )
+    response.headers["Content-Security-Policy"] = csp_base
 
     # Referrer Policy
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
@@ -141,9 +144,16 @@ app.add_middleware(
 # INCLUDE ROUTERS
 # =============================================================================
 
+# Auth router with BOTH prefixes for Google OAuth compatibility
+# Google Console has /api/auth registered, but we use /api/v1/ for consistency
 app.include_router(
     auth_router,
     prefix="/api/auth",
+    tags=["Authentication"],
+)
+app.include_router(
+    auth_router,
+    prefix="/api/v1/auth",
     tags=["Authentication"],
 )
 
