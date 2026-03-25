@@ -1,5 +1,6 @@
 """DTOs for the publisher flow — PUBLISH-01."""
 
+import typing
 from uuid import UUID
 
 from pydantic import Field
@@ -14,6 +15,10 @@ class PublishVehicleRequest(DomainModel):
     Image URLs are stored as source URLs — downloading/processing happens
     in the Taskiq task context (not in the use case).
     """
+
+    model_config: typing.ClassVar[dict[str, str]] = {
+        "extra": "ignore"
+    }  # Ignore extra fields from frontend
 
     product_id: UUID
     tenant_id: UUID

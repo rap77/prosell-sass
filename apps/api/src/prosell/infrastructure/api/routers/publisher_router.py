@@ -16,6 +16,7 @@ from prosell.domain.entities.user import User
 from prosell.domain.repositories.publication_repository import IPublicationRepository
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user,
+    get_current_auth_user_from_cookie,
     get_publication_repository,
     get_publish_vehicle_use_case,
 )
@@ -28,13 +29,13 @@ router = APIRouter(prefix="/publisher", tags=["Publisher"])
     "/{product_id}/publish",
     response_model=PublicationResponse,
     status_code=status.HTTP_202_ACCEPTED,
-    dependencies=[Depends(get_current_auth_user)],
 )
 @limiter.limit(API_LIMIT)
 async def publish_vehicle(
     request: Request,  # noqa: ARG001 — required by slowapi @limiter.limit()
     product_id: UUID,
     body: PublishVehicleRequest,
+    _current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     use_case: Annotated[PublishVehicleUseCase, Depends(get_publish_vehicle_use_case)],
 ) -> PublicationResponse:
     """Publish vehicle to Facebook Marketplace. Returns 202 (task dispatched, async)."""

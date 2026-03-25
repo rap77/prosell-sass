@@ -1,12 +1,24 @@
 # ProSell SaaS - Memory Index
 
-## Estado (2026-03-13): Sprint 7 Phase 2 — GGA PASSED, COMMIT PENDING 🟡
+## Estado (2026-03-24): OAuth Cookie Path Fix ✅ — Publisher 401 Blocked
 
-### Current Branch: feature/sprint-7-phase2-facebook-oauth
+### Current Branch: main
+### Latest Commit: `4bf6961` - wip: 01-hybrid-publisher blocked - OAuth cookie auth issue (publisher 401)
 
-### Latest Commits
-- `8675a32` - feat(sprint-7): merge Phase 1 - Task Queue and i18n infrastructure ✅
-- **PENDING COMMIT** - GGA violations fixed, ready to commit
+### Sprint 7 Status
+| Phase | Descripción | Estado |
+|-------|-------------|--------|
+| Phase 1 | Task Queue + i18n | ✅ 100% |
+| Phase 2 | Facebook OAuth | ✅ 100% |
+| Phase 3 | GraphAPI Integration | ✅ 100% |
+| Phase 4 | Scraping Framework | ⏳ 0% |
+| Phase 5 | Dashboards | ⏳ 0% |
+| Phase 6 | IA Assistant | ⏳ 0% |
+| Phase 7 | E2E Testing | ⏳ 0% |
+
+### Phase 1 Status (Hybrid Publisher)
+- 01-00 to 01-07: ✅ COMPLETE (todos con SUMMARY.md)
+- **UAT Round 2**: Tests 1-7 ✅ | Test 8-10 🚧 (blocked by 401 Unauthorized)
 
 ### Sprint 7 Status
 | Phase | Descripción | Estado |
@@ -23,10 +35,13 @@
 
 | Memory | Descripción |
 |--------|-------------|
-| `handoff-sprint-7-phase2-gga-fixed-2026-03-13` | **START HERE** - GGA passed, commit pending |
+| `.planning/phases/01-hybrid-publisher/.continue-here.md` | **START HERE** - Publisher 401 blocked (2026-03-24) |
+| `session-2026-03-24-oauth-cookie-path-fix-publisher-401-blocked` | OAuth cookie path fix + 401 investigation |
+| `oauth-cookie-path-fix-2026-03-24` | OAuth cookies must use path=/ - lesson learned |
+| `oauth-architecture-decision-2026-03-22` | OAuth callbacks `/api/auth/` (sin versión) vs API `/api/v1/auth/` |
+| `database-migration-uuid-issue-2026-03-22` | Migraciones con orden incorrecto - UUID después de organizations |
+| `handoff-sprint-7-phase2-gga-fixed-2026-03-13` | GGA passed, commit pending |
 | `handoff-sprint7-phase2-gga-fixes-2026-03-13` | Previous session GGA issues (now resolved) |
-| `handoff-sprint-7-phase2-next-session-2026-03-12` | Unit + Integration tests context |
-| `sprint-7-phase2-testing-summary-2026-03-12` | Technical test summary |
 
 ## Test Status (2026-03-13)
 - **444 passed, 1 skipped** ✅

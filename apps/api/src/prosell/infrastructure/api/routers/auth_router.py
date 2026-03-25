@@ -423,26 +423,19 @@ async def oauth_callback(
             key="access_token",
             value=login_result.access_token,
             expires=access_token_expiry,
+            path="/",  # CRITICAL: Make cookie available to all paths
             httponly=True,  # CRITICAL: Prevents JavaScript access (XSS protection)
-            secure=True,  # HTTPS only
+            secure=settings.environment != "development",  # HTTPS only (disabled in dev)
             samesite="lax",  # Lax required: OAuth redirect chain crosses google.com
-        )
-
-        redirect.set_cookie(
-            key="refresh_token",
-            value=login_result.refresh_token,
-            expires=refresh_token_expiry,
-            httponly=True,
-            secure=True,
-            samesite="lax",
         )
 
         redirect.set_cookie(
             key="user_data",
             value=quote(login_result.user.model_dump_json()),
             expires=refresh_token_expiry,
+            path="/",  # CRITICAL: Make cookie available to all paths
             httponly=True,
-            secure=True,
+            secure=settings.environment != "development",
             samesite="lax",
         )
 

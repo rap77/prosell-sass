@@ -10,7 +10,6 @@ All tables use UUID primary keys from the start.
 
 from collections.abc import Sequence
 
-import sqlalchemy as sa
 from alembic import op
 
 revision: str = "001"

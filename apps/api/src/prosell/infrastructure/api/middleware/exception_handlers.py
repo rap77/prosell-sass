@@ -88,22 +88,39 @@ async def integrity_error_handler(_request: Request, exc: IntegrityError) -> JSO
     )
 
 
-async def generic_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
+async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """
     Handle all unhandled exceptions.
 
     Provides a generic error response for unexpected errors.
+    Always adds CORS headers to prevent browser rejection.
     """
-    # Log the error for debugging (in production, use proper logging)
     import logging
 
     logger = logging.getLogger(__name__)
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
 
-    return JSONResponse(
+    # Get origin from request for CORS
+    origin = request.headers.get("origin")
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000",
+    ]
+
+    response = JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "InternalServerError",
             "message": "An unexpected error occurred. Please try again later.",
+            "detail": str(exc) if logger.isEnabledFor(logging.DEBUG) else None,
         },
     )
+
+    # Add CORS headers for error responses
+    if origin in allowed_origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+
+    return response

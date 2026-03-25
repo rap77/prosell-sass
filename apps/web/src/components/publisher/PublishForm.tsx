@@ -64,6 +64,7 @@ type PublishFormValues = z.infer<typeof publishSchema>;
 // ============================================
 
 export interface VehicleData {
+  id: string;  // Vehicle UUID for publish API
   title: string;
   description?: string;
   price_cents: number;
@@ -232,8 +233,10 @@ export function PublishForm({
   const handleFormSubmit = (values: PublishFormValues) => {
     if (!vehicleData) return;
 
+    const productId = vehicleData.id || vehicleData.tenant_id;
+
     const payload: PublishVehicleRequest = {
-      product_id: vehicleData.tenant_id,
+      product_id: productId,
       tenant_id: vehicleData.tenant_id,
       facebook_page_id: values.facebook_page_id,
       title: values.title,

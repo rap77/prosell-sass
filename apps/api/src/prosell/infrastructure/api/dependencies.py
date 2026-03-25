@@ -33,9 +33,6 @@ if TYPE_CHECKING:
     from prosell.infrastructure.repositories.facebook_page_repository_impl import (
         SqlAlchemyFacebookPageRepository,
     )
-    from prosell.infrastructure.repositories.publication_repository_impl import (
-        SqlAlchemyPublicationRepository,
-    )
 
 # NOTE: from __future__ import annotations makes all annotations lazy strings,
 # which means FastAPI's Depends() resolution still works since it uses
@@ -43,7 +40,7 @@ if TYPE_CHECKING:
 # module's global namespace. The domain interface types are imported at module
 # level to ensure they are available for resolution.
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -65,6 +62,7 @@ from prosell.domain.ports.i_facebook_marketplace_service import (
 )
 from prosell.domain.repositories.facebook_account_repository import IFacebookAccountRepository
 from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
+from prosell.domain.repositories.publication_repository import IPublicationRepository
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.oauth_repository_impl import SqlAlchemyOAuthRepository
 from prosell.infrastructure.repositories.role_repository_impl import SqlAlchemyRoleRepository
@@ -188,6 +186,69 @@ async def get_current_auth_user(
 
     # Verify token type
     payload = jwt_service.verify_token(credentials.credentials)
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
+        )
+
+    # Get user from database
+    user_id = UUID(payload["sub"])
+    user = await user_repository.get_by_id(user_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+
+    return user
+
+
+async def get_current_auth_user_from_cookie(
+    request: Request,
+    jwt_service: Annotated[IJWTService, Depends(get_jwt_service)],
+    user_repository: Annotated[SqlAlchemyUserRepository, Depends(get_user_repository)],
+) -> User:
+    """
+    Get authenticated user from httpOnly cookie (OAuth flow).
+
+    This dependency:
+    1. Reads access_token from httpOnly cookie
+    2. Verifies JWT and extracts user_id from token
+    3. Fetches full User entity from database
+    4. Returns User with tenant_id for multi-tenant operations
+
+    Use this in protected endpoints that support OAuth cookie authentication.
+
+    Returns:
+        User entity with id, tenant_id, and roles
+
+    Raises:
+        HTTPException: If token invalid or user not found
+    """
+    from uuid import UUID
+
+    from fastapi import HTTPException, status
+
+    # Get token from cookie
+    access_token = request.cookies.get("access_token")
+
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated - no access token cookie",
+        )
+
+    # Verify token type
+    try:
+        payload = jwt_service.verify_token(access_token)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Token verification failed: {e!s}",
+        ) from None
+
     if payload.get("type") != "access":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -564,7 +625,7 @@ async def get_facebook_refresh_use_case(
 
 async def get_publication_repository(
     session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> SqlAlchemyPublicationRepository:
+) -> IPublicationRepository:
     """Get Publication repository instance."""
     from prosell.infrastructure.repositories.publication_repository_impl import (
         SqlAlchemyPublicationRepository,
@@ -574,10 +635,8 @@ async def get_publication_repository(
 
 
 async def get_publish_vehicle_use_case(
-    publication_repo: Annotated[
-        SqlAlchemyPublicationRepository, Depends(get_publication_repository)
-    ],
-    current_user: Annotated[User, Depends(get_current_auth_user)],
+    publication_repo: Annotated[IPublicationRepository, Depends(get_publication_repository)],
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
 ) -> PublishVehicleUseCase:
     """Get PublishVehicle use case instance.
 

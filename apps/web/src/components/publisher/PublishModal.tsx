@@ -20,6 +20,7 @@ import { PublishForm } from "./PublishForm";
 // ============================================
 
 interface VehicleData {
+  id: string;  // Vehicle UUID for publish API
   title: string;
   description?: string;
   price_cents: number;
@@ -98,18 +99,6 @@ function CategoryBErrorBanner({
 // PUBLISH MODAL
 // ============================================
 
-/**
- * PublishModal — Radix Dialog rendered at page level (not row level).
- *
- * UX decision (CONTEXT.md pitfall): the modal MUST be rendered at page level
- * (not inside the catalog row component) to prevent row re-renders from closing it.
- *
- * Dual mode:
- * - "publish": new listing → POST /publisher/{product_id}/publish
- * - "update": edit existing → PATCH /publisher/{publication_id}
- *
- * Secondary: "Eliminar / Finalizar" button in update mode → DELETE.
- */
 export function PublishModal({
   vehicleId,
   mode,
@@ -172,10 +161,10 @@ export function PublishModal({
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-xl shadow-xl p-6 z-50 max-h-[90vh] overflow-y-auto data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+        <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-xl shadow-xl z-50 max-h-[85vh] flex flex-col overflow-hidden p-0">
           {/* Header */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0">
             <Dialog.Title className="text-lg font-semibold text-slate-900">
               {mode === "publish"
                 ? "Preparar Publicación"
@@ -200,34 +189,37 @@ export function PublishModal({
             </Dialog.Close>
           </div>
 
-          {/* Category B blocking error banner */}
-          {currentPublication?.blocked_until_confirmed && (
-            <CategoryBErrorBanner
-              publicationId={currentPublication.id}
-              onUnlocked={() =>
-                queryClient.invalidateQueries({ queryKey: ["catalog"] })
-              }
+          {/* Content - overflow-y-auto */}
+          <div className="overflow-y-auto px-6 py-4 flex-1 min-h-0">
+            {currentPublication?.blocked_until_confirmed && (
+              <CategoryBErrorBanner
+                publicationId={currentPublication.id}
+                onUnlocked={() =>
+                  queryClient.invalidateQueries({ queryKey: ["catalog"] })
+                }
+              />
+            )}
+
+            {submitError && (
+              <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-700">{submitError}</p>
+              </div>
+            )}
+
+            <PublishForm
+              mode={mode!}
+              vehicleData={vehicleData}
+              currentPublication={currentPublication}
+              facebookPages={facebookPages}
+              onSubmit={handleSubmit}
+              onDelete={mode === "update" ? handleDelete : undefined}
+              isSubmitting={isSubmitting}
+              isDeleting={deleteMutation.isPending}
             />
-          )}
+          </div>
 
-          {/* Submit error */}
-          {submitError && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-700">{submitError}</p>
-            </div>
-          )}
-
-          {/* Form */}
-          <PublishForm
-            mode={mode!}
-            vehicleData={vehicleData}
-            currentPublication={currentPublication}
-            facebookPages={facebookPages}
-            onSubmit={handleSubmit}
-            onDelete={mode === "update" ? handleDelete : undefined}
-            isSubmitting={isSubmitting}
-            isDeleting={deleteMutation.isPending}
-          />
+          {/* Footer - spacer to maintain rounded bottom corners */}
+          <div className="flex-shrink-0 h-6" />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

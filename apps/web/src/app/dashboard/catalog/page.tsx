@@ -28,7 +28,7 @@ import type { PublicationResponse } from "@/lib/api/publisherApi";
 interface CatalogVehicle {
   id: string;
   year: number;
-  make: string;
+  make: string; // Display name for table (e.g., "Toyota")
   model: string;
   price_cents: number;
   zip_code: string;
@@ -36,13 +36,31 @@ interface CatalogVehicle {
   image_urls: string[];
   tenant_id: string;
   publication?: PublicationResponse | null;
+  // Vehicle fields for form pre-filling (FB keys)
+  make_key?: string; // FB key for form (e.g., "toyota")
+  vehicle_type?: string;
+  mileage?: number;
+  body_style?: string;
+  exterior_color?: string;
+  interior_color?: string;
+  vehicle_condition?: string;
+  fuel_type?: string;
+  transmission?: string;
+  clean_title?: boolean;
+  vin?: string;
 }
+
+// Mock Facebook pages for the dropdown
+const MOCK_FACEBOOK_PAGES = [
+  { id: "aaaaaaaa-aaaa-aaaa-aaaa-000000000001", name: "ProSell Autos - Main" },
+  { id: "aaaaaaaa-aaaa-aaaa-aaaa-000000000002", name: "ProSell Autos - NY" },
+];
 
 const MOCK_VEHICLES: CatalogVehicle[] = [
   {
-    id: "veh-001",
+    id: "01234567-89ab-cdef-0123-456789abcdef",  // UUID for Toyota Corolla
     year: 2020,
-    make: "Toyota",
+    make: "Toyota", // Display name for table
     model: "Corolla",
     price_cents: 1800000,
     zip_code: "10001",
@@ -51,13 +69,25 @@ const MOCK_VEHICLES: CatalogVehicle[] = [
       "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400",
       "https://images.unsplash.com/photo-1590362891991-f776e747a588?w=400",
     ],
-    tenant_id: "tenant-001",
+    tenant_id: "e1871fb7-cf0e-4374-a4ff-89809adffc4e",  // Current user's tenant_id
     publication: null,
+    // Required vehicle fields for the form (using FB keys)
+    make_key: "toyota", // FB key for form dropdown
+    vehicle_type: "car_truck",
+    mileage: 45000,
+    body_style: "sedan",
+    exterior_color: "white",
+    interior_color: "black",
+    vehicle_condition: "excellent",
+    fuel_type: "gasoline",
+    transmission: "automatic",
+    clean_title: true,
+    vin: "1HGBH41JXMN109186",
   },
   {
-    id: "veh-002",
+    id: "12345678-9abc-def0-1234-56789abcdef0",  // UUID for Honda Civic
     year: 2019,
-    make: "Honda",
+    make: "Honda", // Display name for table
     model: "Civic",
     price_cents: 1650000,
     zip_code: "10001",
@@ -65,19 +95,29 @@ const MOCK_VEHICLES: CatalogVehicle[] = [
     image_urls: [
       "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=400",
     ],
-    tenant_id: "tenant-001",
+    tenant_id: "e1871fb7-cf0e-4374-a4ff-89809adffc4e",  // Current user's tenant_id
     publication: {
-      id: "pub-002",
-      product_id: "veh-002",
+      id: "23456789-abcd-ef01-2345-6789abcdef01",  // UUID for publication
+      product_id: "12345678-9abc-def0-1234-56789abcdef0",
       status: "published",
       fb_listing_id: "fb-123456",
       blocked_until_confirmed: false,
     },
+    make_key: "honda", // FB key for form dropdown
+    vehicle_type: "car_truck",
+    mileage: 52000,
+    body_style: "sedan",
+    exterior_color: "gray",
+    interior_color: "gray",
+    vehicle_condition: "very_good",
+    fuel_type: "gasoline",
+    transmission: "automatic",
+    clean_title: true,
   },
   {
-    id: "veh-003",
+    id: "34567890-bcde-f012-3456-789abcdef012",  // UUID for Ford Focus
     year: 2021,
-    make: "Ford",
+    make: "Ford", // Display name for table
     model: "Focus",
     price_cents: 1950000,
     zip_code: "10002",
@@ -86,15 +126,25 @@ const MOCK_VEHICLES: CatalogVehicle[] = [
       "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=400",
       "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=400",
     ],
-    tenant_id: "tenant-001",
+    tenant_id: "e1871fb7-cf0e-4374-a4ff-89809adffc4e",  // Current user's tenant_id
     publication: {
-      id: "pub-003",
-      product_id: "veh-003",
+      id: "45678901-cdef-0123-4567-89abcdef0123",  // UUID for publication
+      product_id: "34567890-bcde-f012-3456-789abcdef012",
       status: "failed",
       error_message: "Security challenge required",
       error_category: "blocking",
       blocked_until_confirmed: true,
     },
+    make_key: "ford", // FB key for form dropdown
+    vehicle_type: "car_truck",
+    mileage: 38000,
+    body_style: "hatchback",
+    exterior_color: "blue",
+    interior_color: "black",
+    vehicle_condition: "good",
+    fuel_type: "gasoline",
+    transmission: "manual",
+    clean_title: true,
   },
 ];
 
@@ -135,12 +185,27 @@ export default function CatalogPage() {
   // Catalog vehicles store year/make/model separately — we derive title here.
   const selectedVehicle = selectedVehicleRaw
     ? {
+        id: selectedVehicleRaw.id,  // Include vehicle UUID for publish API
         title: `${selectedVehicleRaw.year} ${selectedVehicleRaw.make} ${selectedVehicleRaw.model}`,
         description: selectedVehicleRaw.description,
         price_cents: selectedVehicleRaw.price_cents,
         zip_code: selectedVehicleRaw.zip_code,
         image_urls: selectedVehicleRaw.image_urls,
         tenant_id: selectedVehicleRaw.tenant_id,
+        // Vehicle fields for pre-filling the form
+        year: selectedVehicleRaw.year,
+        make: selectedVehicleRaw.make_key || selectedVehicleRaw.make, // Use FB key if available
+        model: selectedVehicleRaw.model,
+        vehicle_type: selectedVehicleRaw.vehicle_type,
+        mileage: selectedVehicleRaw.mileage,
+        body_style: selectedVehicleRaw.body_style,
+        exterior_color: selectedVehicleRaw.exterior_color,
+        interior_color: selectedVehicleRaw.interior_color,
+        vehicle_condition: selectedVehicleRaw.vehicle_condition,
+        fuel_type: selectedVehicleRaw.fuel_type,
+        transmission: selectedVehicleRaw.transmission,
+        clean_title: selectedVehicleRaw.clean_title,
+        vin: selectedVehicleRaw.vin,
       }
     : undefined;
 
@@ -264,6 +329,7 @@ export default function CatalogPage() {
         mode={modalMode}
         vehicleData={selectedVehicle}
         currentPublication={selectedVehicleRaw?.publication}
+        facebookPages={MOCK_FACEBOOK_PAGES}
         onClose={closeModal}
       />
     </div>

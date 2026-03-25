@@ -191,11 +191,11 @@ export function LoginForm() {
       <OAuthButtons
         onGoogleClick={() => {
           const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
-          window.location.href = `${apiUrl}/api/auth/oauth/google/authorize`;
+          window.location.href = `${apiUrl}/api/v1/auth/oauth/google/authorize`;
         }}
         onFacebookClick={() => {
           const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
-          window.location.href = `${apiUrl}/api/auth/oauth/facebook/authorize`;
+          window.location.href = `${apiUrl}/api/v1/auth/oauth/facebook/authorize`;
         }}
       />
 

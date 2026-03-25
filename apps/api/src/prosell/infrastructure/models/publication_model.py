@@ -50,9 +50,8 @@ class PublicationModel(Base):
         nullable=True,
     )
 
-    # Facebook page used for publishing
+    # Facebook page used for publishing (UUID without FK until table is created)
     facebook_page_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("facebook_pages.id", ondelete="SET NULL"),
         index=True,
         nullable=True,
     )
