@@ -35,14 +35,14 @@ ProSell SaaS automates the complete vehicle sales cycle for dealerships: publish
 **Plans**: 8 plans (Wave 0 + Waves 1-4)
 
 Plans:
-- [ ] 01-00-wave0-infra-PLAN.md — Test stubs, broker migration (PubSub→ListQueue), publisher settings in config
-- [ ] 01-01-publication-entity-PLAN.md — Publication entity + state machine + SQLAlchemy model + Alembic migration
-- [ ] 01-02-image-pipeline-PLAN.md — ImagePipelineService (Pillow: compress/resize/JPG/strip-EXIF)
-- [ ] 01-03-playwright-strategy-PLAN.md — PlaywrightPublisherService + PublisherStrategySelector + PublishVehicleUseCase
-- [ ] 01-04-update-delete-PLAN.md — UpdateListingUseCase + DeleteListingUseCase + Taskiq tasks
-- [ ] 01-05-auto-republish-PLAN.md — AutoRepublishUseCase + scheduled Taskiq task (every 6h)
-- [ ] 01-06-graph-api-router-PLAN.md — GraphAPIPublisherService stub + publisher REST router + rate limiting
-- [ ] 01-07-frontend-modal-PLAN.md — PublishModal + HeroShotSelector + PublicationStatus + catalog integration
+- [x] 01-00-wave0-infra-PLAN.md — Test stubs, broker migration (PubSub→ListQueue), publisher settings in config (completed 2026-03-15)
+- [x] 01-01-publication-entity-PLAN.md — Publication entity + state machine + SQLAlchemy model + Alembic migration (completed 2026-03-15)
+- [x] 01-02-image-pipeline-PLAN.md — ImagePipelineService (Pillow: compress/resize/JPG/strip-EXIF) (completed 2026-03-15)
+- [x] 01-03-playwright-strategy-PLAN.md — PlaywrightPublisherService + PublisherStrategySelector + PublishVehicleUseCase (completed 2026-03-15)
+- [x] 01-04-update-delete-PLAN.md — UpdateListingUseCase + DeleteListingUseCase + Taskiq tasks (completed 2026-03-15)
+- [x] 01-05-auto-republish-PLAN.md — AutoRepublishUseCase + scheduled Taskiq task (every 6h) (completed 2026-03-15)
+- [x] 01-06-graph-api-router-PLAN.md — GraphAPIPublisherService stub + publisher REST router + rate limiting (completed 2026-03-15)
+- [x] 01-07-frontend-modal-PLAN.md — PublishModal + HeroShotSelector + PublicationStatus + catalog integration (completed 2026-03-15)
 
 ### Phase 2: Catalog & Roles
 **Goal**: Every role sees exactly the inventory they own, at the right scope, with real-time publication status per vehicle
@@ -165,13 +165,14 @@ Plans:
   6. Middleware blocks seller from accessing /admin routes (redirects to /dashboard)
   7. Mobile user sees bottom navigation with 4 icons (Catálogo, Publicar, Leads, Más)
 
-**Plans**: 4 plans (Wave 1: Layout + DataGrid | Wave 2: Search + Image Upload)
+**Plans**: 5 plans (Wave 0: Test infrastructure | Wave 1: Layout shell | Wave 2: DataGrid + Search + Image Upload)
 
 Plans:
+- [x] 08-00-PLAN.md — Test infrastructure: 16 test stubs (13 component, 2 hook, 1 E2E) ✅ (2026-03-27)
 - [x] 08-01-PLAN.md — Layout shell with route groups, sidebar (corrected terminology), header, mobile nav, middleware guards ✅ (2026-03-27)
 - [x] 08-02-PLAN.md — DataGrid with TanStack Virtual, sorting, checkbox selection, StatusBadge (7 states), mobile cards ✅ (2026-03-27)
-- [ ] 08-03-PLAN.md — Hybrid search (client instant + server deep), Cmd+K CommandPalette, collapsible FilterSidebar, filter pills
-- [x] 08-04-PLAN.md — Image upload with drag-drop, presigned URLs, Zustand progress store, sortable gallery, cover photo control ✅
+- [x] 08-03-PLAN.md — Hybrid search (client instant + server deep), Cmd+K CommandPalette, collapsible FilterSidebar, filter pills ✅ (2026-03-27)
+- [x] 08-04-PLAN.md — Image upload with drag-drop, presigned URLs, Zustand progress store, sortable gallery, cover photo control ✅ (2026-03-27)
 
 **Implementation Waves:**
 - **Wave 1** (Plans 08-01, 08-02): MVP foundation — Layout shell + basic DataGrid for single vehicle upload
@@ -185,4 +186,4 @@ Plans:
 - Plans: Ready for execution with locked decisions from CONTEXT.md
 
 ---
-*Last updated: 2026-03-27 — Phase 8 Plans 08-01 and 08-02 complete*
+*Last updated: 2026-03-27 — Phase 8 complete (all 5 plans executed successfully)*
