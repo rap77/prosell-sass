@@ -1,0 +1,177 @@
+'use client'
+
+import { useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Search, User, Settings, LogOut, Building2, ChevronRight } from 'lucide-react'
+
+/**
+ * Header component with global search, breadcrumbs, user menu, and org switcher.
+ *
+ * Features:
+ * - Global search input (placeholder for Cmd+K CommandPalette in later plan)
+ * - Breadcrumb navigation using Next.js usePathname
+ * - User menu dropdown with visible role badge
+ * - Org switcher placeholder (multi-dealership in Phase 5)
+ */
+export function Header() {
+  const pathname = usePathname()
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Generate breadcrumbs from pathname
+  const breadcrumbs = pathname
+    .split('/')
+    .filter(Boolean)
+    .map((segment, index, array) => {
+      const href = '/' + array.slice(0, index + 1).join('/')
+      const label = segment.charAt(0).toUpperCase() + segment.slice(1)
+      return { label, href }
+    })
+
+  return (
+    <header className="sticky top-0 z-30 h-16 border-b bg-background">
+      <div className="flex h-full items-center px-6 gap-4">
+        {/* Sidebar collapse toggle - mobile only */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          aria-label="Toggle sidebar"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="3" x2="21" y1="6" y2="6" />
+            <line x1="3" x2="21" y1="12" y2="12" />
+            <line x1="3" x2="21" y1="18" y2="18" />
+          </svg>
+        </Button>
+
+        {/* Breadcrumbs */}
+        <nav className="flex items-center gap-2 text-sm">
+          <a
+            href="/dashboard"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Home
+          </a>
+          {breadcrumbs.map((crumb, index) => (
+            <div key={crumb.href} className="flex items-center gap-2">
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              {index === breadcrumbs.length - 1 ? (
+                <span className="font-medium text-foreground">{crumb.label}</span>
+              ) : (
+                <a
+                  href={crumb.href}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {crumb.label}
+                </a>
+              )}
+            </div>
+          ))}
+        </nav>
+
+        <div className="flex-1" />
+
+        {/* Global search (placeholder for Cmd+K) */}
+        <div className="hidden md:flex items-center gap-2 flex-1 max-w-md">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search... (Cmd+K)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+            <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </div>
+        </div>
+
+        {/* Org switcher placeholder */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="gap-2">
+              <Building2 className="h-4 w-4" />
+              <span className="hidden md:inline">ProSell Dealership</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <Building2 className="mr-2 h-4 w-4" />
+              <span>ProSell Dealership</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled>
+              <span className="text-xs text-muted-foreground">
+                Multi-dealership coming in Phase 5
+              </span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* User menu with role badge */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <span className="text-sm font-medium">JD</span>
+              </div>
+              <div className="hidden md:block text-left">
+                <p className="text-sm font-medium">John Doe</p>
+                <p className="text-xs text-muted-foreground">Seller</p>
+              </div>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              <div className="flex flex-col">
+                <span>John Doe</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  john.doe@example.com
+                </span>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <User className="mr-2 h-4 w-4" />
+              <span>Profile</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Logout</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </header>
+  )
+}
