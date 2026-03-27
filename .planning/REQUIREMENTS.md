@@ -50,9 +50,9 @@ Los 46 requirements v1 se ejecutan en **dos fases inmediatas**:
 
 ### Catalog & Roles
 
-- [ ] **CATALOG-01**: Vendedor ve catálogo interno de todos los vehículos de sus dealers asignados con estado de publicación
-- [ ] **CATALOG-02**: Admin ProSell ve catálogo global de todas las organizaciones
-- [ ] **CATALOG-03**: Dealer ve y modifica solo su propio inventario
+- [x] **CATALOG-01**: Vendedor ve catálogo interno de todos los vehículos de sus dealers asignados con estado de publicación
+- [x] **CATALOG-02**: Admin ProSell ve catálogo global de todas las organizaciones
+- [x] **CATALOG-03**: Dealer ve y modifica solo su propio inventario
 - [ ] **CATALOG-04**: Cada vehículo muestra precio propio vs precio promedio de mercado (delta %) desde datos de CarGurus
 - [ ] **CATALOG-05**: Admin puede crear un dealer sin cuenta de usuario (solo tenant_id como identificador)
 - [ ] **CATALOG-06**: Vendedor usa su propia cuenta de Facebook para publicar (no la cuenta del dealer)
@@ -62,8 +62,8 @@ Los 46 requirements v1 se ejecutan en **dos fases inmediatas**:
 
 - [ ] **DASH-01**: Dashboard Admin: publicaciones/día, leads globales, performance por vendedor, estado de API
 - [ ] **DASH-02**: Dashboard Manager: métricas de su equipo, dealers asignados, publicaciones pendientes
-- [ ] **DASH-03**: Dashboard Vendedor: mis publicaciones activas, leads asignados, citas de hoy, métricas personales
-- [ ] **DASH-04**: Dashboard Dealer: inventario propio, publicaciones activas en FB, sin acceso a leads
+- [x] **DASH-03**: Dashboard Vendedor: mis publicaciones activas, leads asignados, citas de hoy, métricas personales
+- [x] **DASH-04**: Dashboard Dealer: inventario propio, publicaciones activas en FB, sin acceso a leads
 
 ### Leads
 
@@ -172,17 +172,17 @@ Los 46 requirements v1 se ejecutan en **dos fases inmediatas**:
 | SCRAPE-05 | Phase 3 — Scraping | Pending |
 | SCRAPE-06 | Phase 3 — Scraping | Pending |
 | SCRAPE-07 | Phase 3 — Scraping | Pending |
-| CATALOG-01 | Phase 2 — Catalog & Roles | Pending |
-| CATALOG-02 | Phase 2 — Catalog & Roles | Pending |
-| CATALOG-03 | Phase 2 — Catalog & Roles | Pending |
+| CATALOG-01 | Phase 2 — Catalog & Roles | Complete |
+| CATALOG-02 | Phase 2 — Catalog & Roles | Complete |
+| CATALOG-03 | Phase 2 — Catalog & Roles | Complete |
 | CATALOG-04 | Phase 2 — Catalog & Roles | Pending |
 | CATALOG-05 | Phase 2 — Catalog & Roles | Pending |
 | CATALOG-06 | Phase 2 — Catalog & Roles | Pending |
 | CATALOG-07 | Phase 2 — Catalog & Roles | Pending |
 | DASH-01 | Phase 5 — Dashboards | Pending |
 | DASH-02 | Phase 5 — Dashboards | Pending |
-| DASH-03 | Phase 5 — Dashboards | Pending |
-| DASH-04 | Phase 5 — Dashboards | Pending |
+| DASH-03 | Phase 5 — Dashboards | Complete |
+| DASH-04 | Phase 5 — Dashboards | Complete |
 | LEAD-01 | Phase 4 — Leads & Appointments | Pending |
 | LEAD-02 | Phase 4 — Leads & Appointments | Pending |
 | LEAD-03 | Phase 4 — Leads & Appointments | Pending |

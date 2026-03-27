@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed Phase 08 Plan 00 - Wave 0 test stubs created
-last_updated: "2026-03-27T11:18:54.711Z"
-last_activity: 2026-03-15 — Plan 01-07 complete (PublishModal, PublishForm, catalog/page, HeroShotSelector, PublicationStatus, publisherApi, publisherStore)
+stopped_at: Completed Phase 08 Plan 01 - Layout shell with role-based route groups, collapsible sidebar, header, mobile nav, and middleware guards.
+last_updated: "2026-03-27T11:24:50.644Z"
+last_activity: 2026-03-27 — Plan 08-01 complete (Sidebar, Header, MobileNav, 4 route group layouts, middleware guards)
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 1
-  total_plans: 8
-  completed_plans: 8
-  percent: 88
+  total_plans: 13
+  completed_plans: 10
+  percent: 69
 ---
 
 # Project State
@@ -21,36 +21,38 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** El vendedor de ProSell puede publicar cualquier vehículo en Facebook Marketplace desde la app, capturar el lead interesado, y confirmar la cita con el dealer — todo sin salir del panel interno.
-**Current focus:** Phase 1 — Hybrid Publisher
+**Current focus:** Phase 8 — Layout Shell + Vehicle Management
 
 ## Current Position
 
-Phase: 1 of 7 (Hybrid Publisher)
-Plan: 8 of 8 in current phase (01-00 through 01-07 complete — final plan 01-08 pending or phase complete)
+Phase: 8 of 8 (Layout Shell + Vehicle Management)
+Plan: 2 of 5 in current phase (08-00 and 08-01 complete)
 Status: In progress
-Last activity: 2026-03-15 — Plan 01-07 complete (PublishModal, PublishForm, catalog/page, HeroShotSelector, PublicationStatus, publisherApi, publisherStore)
+Last activity: 2026-03-27 — Plan 08-01 complete (Sidebar, Header, MobileNav, 4 route group layouts, middleware guards)
 
-Progress: [█████████░] 88%
+Progress: [████████░░] 69%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 23 min
-- Total execution time: 0.4 hours
+- Total plans completed: 9
+- Average duration: 18 min
+- Total execution time: 2.7 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-hybrid-publisher | 1/8 | 23min | 23min |
+| 01-hybrid-publisher | 8/8 | 23min | 23min |
+| 08-layout-shell | 1/5 | 9min | 9min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (23min)
-- Trend: baseline
+- Last 5 plans: 08-01 (9min)
+- Trend: accelerating
 
 *Updated after each plan completion*
 | Phase 08 P00 | 5min | 7 tasks | 17 files |
+| Phase 08 P01 | 9min | 7 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -72,6 +74,18 @@ Progress: [█████████░] 88%
 - [01-07] HeroShotSelector: simple click = move image to index 0, NOT drag & drop.
 - [01-07] FB price diff in update mode deferred — API does not return current FB listing price yet.
 - [01-07] catalog/page.tsx uses mock data; real data fetching via useQuery(['catalog']) is next iteration.
+- [08-01] Sidebar terminology: Use Inventario/Ventas/Configuración (user language) NOT Operations/Growth/System (designer model).
+- [08-01] Middleware role guards: Validate at edge before Server Components render (Zero Trust).
+- [08-01] Zustand for sidebar state: Persist only preferences, NOT auth tokens (SC-01 anti-pattern).
+- [08-01] Route groups: Organizational structure for layouts, not URL-based routing.
+- [08-01] Smart redirects: /dashboard redirects to role-specific home page.
+- [08-01] Server Components: All layouts are Server Components by default (minimize client JS).
+- [08-01] Mobile nav: 4 critical icons following Thumb Zone pattern (44x44px touch targets).
+- [Phase 08]: Sidebar terminology: Use Inventario/Ventas/Configuración (user language) NOT Operations/Growth/System
+- [Phase 08]: Middleware role guards: Validate at edge before Server Components render (Zero Trust)
+- [Phase 08]: Zustand for sidebar state: Persist only preferences, NOT auth tokens (SC-01 anti-pattern)
+- [Phase 08]: Route groups: Organizational structure for layouts, not URL-based routing
+- [Phase 08]: Smart redirects: /dashboard redirects to role-specific home page
 
 ### Roadmap Evolution
 
@@ -90,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T11:18:54.709Z
-Stopped at: Completed Phase 08 Plan 00 - Wave 0 test stubs created
-Resume file: None
+Last session: 2026-03-27T11:23:00.000Z
+Stopped at: Completed Phase 08 Plan 01 - Layout shell with role-based route groups, collapsible sidebar, header, mobile nav, and middleware guards.
+Resume file: .planning/phases/08-layout-shell-vehicle-management-sidebar-header-navigation-crud-vehicles-bulk-upload-csv-drag-and-drop-image-upload-multi-publish-search-filter-sort-using-premium-ui-components-magicui-shadcn-ui-radix-ui/.continue-here.md

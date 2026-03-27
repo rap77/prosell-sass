@@ -73,7 +73,7 @@ Plans:
 **Requirements**: LEAD-01, LEAD-02, LEAD-03, LEAD-04, LEAD-05, APPT-01, APPT-02, APPT-03, APPT-04
 **Success Criteria** (what must be TRUE):
   1. When a buyer messages a Facebook listing, a Lead record is created automatically within 5 minutes (webhook or polling fallback)
-  2. Vendedor can manually register a lead with name, contact, vehicle, and source
+  2. Vendedor can manually register a lead with name, contact, vehicle, source
   3. Lead state advances through new → contacted → qualified → appointment_set → lost with visible tracking
   4. Vendedor creates an appointment linking Lead + Vehicle + Dealer with date/time in one action
   5. Dealer receives an email notification when a cita is confirmed, including buyer contact info and vehicle details
@@ -124,3 +124,44 @@ Plans:
 | 5. Dashboards | 0/? | Not started | - |
 | 6. Market Intelligence | 0/? | Not started | - |
 | 7. Visibility | 0/? | Not started | - |
+
+### Phase 8: Layout Shell + Vehicle Management
+
+**Goal**: Create a professional dashboard shell with vehicle management CRUD, bulk upload, image handling, and search/filter capabilities using premium UI components (Shadcn UI, MagicUI, Radix UI).
+
+**Purpose**: Transform the current basic catalog into a professional vehicle management dashboard that establishes the UX foundation for all future features. The layout shell provides role-based navigation, the DataGrid enables efficient inventory management, search/filtering provides quick discovery, and image upload supports quality vehicle listings.
+
+**Depends on**: Phase 1 (Hybrid Publisher) — uses existing AuthProvider and ReactQueryProvider
+
+**Requirements**: CATALOG-01, CATALOG-02, CATALOG-03, PUBLISH-10
+
+**Success Criteria** (what must be TRUE):
+  1. Seller logs in and sees sidebar with Inventario/Ventas groups (NOT Operations/Growth/System — corrected terminology from UX validation)
+  2. DataGrid renders 1000+ vehicles at 60fps with only ~40 rows in DOM (virtualization working)
+  3. Seller types "Toyota" in search → DataGrid filters instantly (0ms client-side latency)
+  4. Seller presses Cmd+K → Command Palette appears with vehicle search + actions
+  5. Seller drags 5 images onto dropzone → All upload in parallel with progress bars (0-100% per file)
+  6. Middleware blocks seller from accessing /admin routes (redirects to /dashboard)
+  7. Mobile user sees bottom navigation with 4 icons (Catálogo, Publicar, Leads, Más)
+
+**Plans**: 4 plans (Wave 1: Layout + DataGrid | Wave 2: Search + Image Upload)
+
+Plans:
+- [ ] 08-01-PLAN.md — Layout shell with route groups, sidebar (corrected terminology), header, mobile nav, middleware guards
+- [ ] 08-02-PLAN.md — DataGrid with TanStack Virtual, sorting, checkbox selection, StatusBadge (6 states), mobile cards
+- [ ] 08-03-PLAN.md — Hybrid search (client instant + server deep), Cmd+K CommandPalette, collapsible FilterSidebar, filter pills
+- [ ] 08-04-PLAN.md — Image upload with drag-drop, presigned URLs, Zustand progress store, sortable gallery, cover photo control
+
+**Implementation Waves:**
+- **Wave 1** (Plans 08-01, 08-02): MVP foundation — Layout shell + basic DataGrid for single vehicle upload
+- **Wave 2** (Plans 08-03, 08-04): Enhanced UX — Search filters + image upload for UAT observation
+- **Wave 3** (Future): Premium features — Advanced roles (Manager vs Dealer), bulk CSV upload
+
+**Traceability**:
+- Origin: UAT Phase 1 feedback (2026-03-15) — Request for advanced search, bulk actions, professional UI
+- CONTEXT.md: 7-brain validation complete (UX, UI, Frontend, QA, Product, Growth, Backend)
+- RESEARCH.md: Technical patterns validated (TanStack Virtual, Zustand, hybrid search, presigned URLs)
+- Plans: Ready for execution with locked decisions from CONTEXT.md
+
+---
+*Last updated: 2026-03-27 — Phase 8 planning complete*
