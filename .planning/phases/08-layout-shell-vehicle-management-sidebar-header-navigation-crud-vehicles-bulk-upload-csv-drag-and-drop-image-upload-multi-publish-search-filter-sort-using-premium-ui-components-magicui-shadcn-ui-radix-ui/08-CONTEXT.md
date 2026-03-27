@@ -45,6 +45,30 @@ Create a professional dashboard shell with vehicle management CRUD, bulk upload,
 
 ---
 
+## Requirements Origin — UAT Phase 1 Feedback
+
+**Source**: `.planning/todos/pending/catalog-enhancements.md` (2026-03-15)
+
+The following features were explicitly requested during UAT Phase 1 and are now incorporated into Phase 8:
+
+| UAT Request | Phase 8 Implementation | Status |
+|-------------|----------------------|--------|
+| **Buscador avanzado** — Filtrar por marca, modelo, año, precio, estado | Section 6: Search Filters (Hybrid Client + Server) | ✅ Planned |
+| **Ordenamiento por columnas** — Click header ASC/DESC, multi-columna | Section 2: DataGrid Pattern (TanStack Table native sorting) | ✅ Planned |
+| **Selección múltiple** — Checkboxes + bulk publish | Section 2: DataGrid Pattern (Checkboxes + Shift-click + Floating Action Bar) | ✅ Planned |
+
+**User Context**: "El catálogo actual solo muestra tabla plana sin filtros ni bulk actions."
+
+**Traceability**:
+- **Origin**: UAT Phase 1 (2026-03-15)
+- **Todo**: `catalog-enhancements.md` — Status: Pending (moves to done/ when Phase 8 completes)
+- **Planning**: Phase 8 Discuss-phase (2026-03-27)
+- **Execution**: Pending (next: `/gsd:plan-phase 8`)
+
+This ensures complete traceability from user feedback → planning → execution → completion.
+
+---
+
 ## [IMPLEMENTED REALITY] — Current Codebase
 
 ### ✅ Already Exists
