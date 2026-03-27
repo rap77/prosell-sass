@@ -1,4 +1,4 @@
-'use client'
+'use client' // Required for useState and usePathname hooks
 
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
@@ -16,6 +16,24 @@ import {
 import { Search, User, Settings, LogOut, Building2, ChevronRight } from 'lucide-react'
 
 /**
+ * Props for Header component.
+ * TODO: Integrate auth context for user/org data (currently placeholder)
+ */
+interface HeaderProps {
+  /** User data from auth context - placeholder for now */
+  user?: {
+    name?: string
+    email?: string
+    role?: string
+    initials?: string
+  }
+  /** Organization data - placeholder for Phase 5 multi-dealership */
+  organization?: {
+    name?: string
+  }
+}
+
+/**
  * Header component with global search, breadcrumbs, user menu, and org switcher.
  *
  * Features:
@@ -23,10 +41,25 @@ import { Search, User, Settings, LogOut, Building2, ChevronRight } from 'lucide-
  * - Breadcrumb navigation using Next.js usePathname
  * - User menu dropdown with visible role badge
  * - Org switcher placeholder (multi-dealership in Phase 5)
+ *
+ * TODO: Replace hardcoded user/org data with auth context integration
  */
-export function Header() {
+export function Header({ user, organization }: HeaderProps) {
   const pathname = usePathname()
   const [searchQuery, setSearchQuery] = useState('')
+
+  // TODO: Replace with real user data from auth context
+  const userData = user || {
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    role: 'Seller',
+    initials: 'JD',
+  }
+
+  // TODO: Replace with real org data from user context
+  const orgData = organization || {
+    name: 'ProSell Dealership',
+  }
 
   // Generate breadcrumbs from pathname
   const breadcrumbs = pathname
@@ -114,7 +147,7 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="gap-2">
               <Building2 className="h-4 w-4" />
-              <span className="hidden md:inline">ProSell Dealership</span>
+              <span className="hidden md:inline">{orgData.name}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -122,7 +155,7 @@ export function Header() {
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <Building2 className="mr-2 h-4 w-4" />
-              <span>ProSell Dealership</span>
+              <span>{orgData.name}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem disabled>
@@ -138,20 +171,20 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <span className="text-sm font-medium">JD</span>
+                <span className="text-sm font-medium">{userData.initials}</span>
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium">John Doe</p>
-                <p className="text-xs text-muted-foreground">Seller</p>
+                <p className="text-sm font-medium">{userData.name}</p>
+                <p className="text-xs text-muted-foreground">{userData.role}</p>
               </div>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col">
-                <span>John Doe</span>
+                <span>{userData.name}</span>
                 <span className="text-xs font-normal text-muted-foreground">
-                  john.doe@example.com
+                  {userData.email}
                 </span>
               </div>
             </DropdownMenuLabel>
