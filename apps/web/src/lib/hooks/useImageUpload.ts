@@ -1,13 +1,12 @@
 'use client'
 
-import { useCallback } from 'react'
 import { useUploadStore } from '@/lib/stores/uploadStore'
 import { generateUploadUrl, uploadToCloud, pollProcessingStatus } from '@/lib/api/images'
 
 export function useImageUpload() {
   const { setUploading, updateFileStatus } = useUploadStore()
 
-  const uploadImage = useCallback(async (file: File): Promise<string> => {
+  async function uploadImage(file: File): Promise<string> {
     const fileId = crypto.randomUUID()
 
     try {
@@ -32,9 +31,9 @@ export function useImageUpload() {
       updateFileStatus(fileId, 'error')
       throw error
     }
-  }, [setUploading, updateFileStatus])
+  }
 
-  const uploadImages = useCallback(async (files: File[]): Promise<string[]> => {
+  async function uploadImages(files: File[]): Promise<string[]> {
     // Upload 3-4 images in parallel (browser limit)
     const chunkSize = 3
     const chunks: File[][] = []
@@ -53,7 +52,7 @@ export function useImageUpload() {
     }
 
     return results
-  }, [uploadImage])
+  }
 
   return {
     uploadImage,
