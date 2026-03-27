@@ -17,6 +17,9 @@ export function ImageGallery() {
           className="relative group aspect-square rounded-lg overflow-hidden border"
         >
           {/* Preview image */}
+          {/* Note: Using regular <img> instead of next/image because preview is a blob URL from URL.createObjectURL */}
+          {/* Blob URLs are memory-only and don't benefit from next/image optimization */}
+          {/* Final cloud URLs will use next/image in vehicle listing pages */}
           <img
             src={file.preview}
             alt={`Upload ${index + 1}`}
