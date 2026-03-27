@@ -147,8 +147,8 @@ Plans:
 **Plans**: 4 plans (Wave 1: Layout + DataGrid | Wave 2: Search + Image Upload)
 
 Plans:
-- [ ] 08-01-PLAN.md — Layout shell with route groups, sidebar (corrected terminology), header, mobile nav, middleware guards
-- [ ] 08-02-PLAN.md — DataGrid with TanStack Virtual, sorting, checkbox selection, StatusBadge (6 states), mobile cards
+- [x] 08-01-PLAN.md — Layout shell with route groups, sidebar (corrected terminology), header, mobile nav, middleware guards ✅ (2026-03-27)
+- [x] 08-02-PLAN.md — DataGrid with TanStack Virtual, sorting, checkbox selection, StatusBadge (7 states), mobile cards ✅ (2026-03-27)
 - [ ] 08-03-PLAN.md — Hybrid search (client instant + server deep), Cmd+K CommandPalette, collapsible FilterSidebar, filter pills
 - [ ] 08-04-PLAN.md — Image upload with drag-drop, presigned URLs, Zustand progress store, sortable gallery, cover photo control
 
@@ -164,4 +164,4 @@ Plans:
 - Plans: Ready for execution with locked decisions from CONTEXT.md
 
 ---
-*Last updated: 2026-03-27 — Phase 8 planning complete*
+*Last updated: 2026-03-27 — Phase 8 Plans 08-01 and 08-02 complete*
