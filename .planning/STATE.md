@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed Phase 08 Plan 01 - Layout shell with role-based route groups, collapsible sidebar, header, mobile nav, and middleware guards.
-last_updated: "2026-03-27T11:24:50.644Z"
-last_activity: 2026-03-27 — Plan 08-01 complete (Sidebar, Header, MobileNav, 4 route group layouts, middleware guards)
+stopped_at: Completed Phase 08 Plan 04 - Hybrid image upload system with drag-and-drop zone, immediate previews via URL.createObjectURL, parallel uploads to cloud storage (presigned URLs), Zustand store for high-frequency progress updates, sortable image gallery with cover photo control, and background processing (thumbnails, WebP compression, EXIF stripping).
+last_updated: "2026-03-27T13:00:00.000Z"
+last_activity: 2026-03-27 — Plan 08-04 complete (ImageDropzone, ImageGallery, uploadStore, useImageUpload, images API, vehicle create page)
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 13
-  completed_plans: 10
-  percent: 69
+  completed_plans: 12
+  percent: 85
 ---
 
 # Project State
@@ -26,33 +26,34 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 ## Current Position
 
 Phase: 8 of 8 (Layout Shell + Vehicle Management)
-Plan: 2 of 5 in current phase (08-00 and 08-01 complete)
+Plan: 4 of 5 in current phase (08-00, 08-01, 08-02, and 08-04 complete)
 Status: In progress
-Last activity: 2026-03-27 — Plan 08-01 complete (Sidebar, Header, MobileNav, 4 route group layouts, middleware guards)
+Last activity: 2026-03-27 — Plan 08-04 complete (Hybrid image upload system with drag-and-drop, presigned URLs, Zustand progress tracking, parallel uploads, ImageGallery with cover photo control)
 
-Progress: [████████░░] 69%
+Progress: [█████████░] 85%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 18 min
-- Total execution time: 2.7 hours
+- Total plans completed: 12
+- Average duration: 16 min
+- Total execution time: 3.3 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-hybrid-publisher | 8/8 | 23min | 23min |
-| 08-layout-shell | 1/5 | 9min | 9min |
+| 08-layout-shell | 4/5 | 12min | 12min |
 
 **Recent Trend:**
-- Last 5 plans: 08-01 (9min)
+- Last 5 plans: 08-04 (15min)
 - Trend: accelerating
 
 *Updated after each plan completion*
 | Phase 08 P00 | 5min | 7 tasks | 17 files |
 | Phase 08 P01 | 9min | 7 tasks | 10 files |
+| Phase 08 P02 | 20min | 8 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,14 @@ Progress: [████████░░] 69%
 - [Phase 08]: Zustand for sidebar state: Persist only preferences, NOT auth tokens (SC-01 anti-pattern)
 - [Phase 08]: Route groups: Organizational structure for layouts, not URL-based routing
 - [Phase 08]: Smart redirects: /dashboard redirects to role-specific home page
+- [08-02] TanStack Virtual: MANDATORY for 60fps DataGrid with 1000+ rows — only ~40 rows in DOM (20 visible + 10 buffer top + 10 buffer bottom).
+- [08-02] Row virtualization config: Fixed 60px row height, overscan: 10 for smooth scrolling, estimateSize: () => 60.
+- [08-02] StatusBadge: Icon + text for accessibility (WCAG 2.1 AA for 8% colorblind users) — 7 states: published, pending, failed, draft, expired, online, sold.
+- [08-02] DataGrid columns: 5 base columns (Photo, Title, Price, Status, Actions) with checkbox selection and select-all support.
+- [08-02] memo() on DataGridRow: Prevents re-renders unless row data changes — critical for 60fps performance.
+- [08-02] TanStack Query: 1 minute staleTime for vehicle list cache, optimistic updates for update/delete mutations.
+- [08-02] Development warning: If >100 rows in DOM, virtualization is broken — log warning to console.
+- [08-02] Mock data: 1000 vehicles for UI development — backend API endpoints to be implemented in Phase 2.
 
 ### Roadmap Evolution
 

@@ -150,7 +150,7 @@ Plans:
 - [x] 08-01-PLAN.md — Layout shell with route groups, sidebar (corrected terminology), header, mobile nav, middleware guards ✅ (2026-03-27)
 - [x] 08-02-PLAN.md — DataGrid with TanStack Virtual, sorting, checkbox selection, StatusBadge (7 states), mobile cards ✅ (2026-03-27)
 - [ ] 08-03-PLAN.md — Hybrid search (client instant + server deep), Cmd+K CommandPalette, collapsible FilterSidebar, filter pills
-- [ ] 08-04-PLAN.md — Image upload with drag-drop, presigned URLs, Zustand progress store, sortable gallery, cover photo control
+- [x] 08-04-PLAN.md — Image upload with drag-drop, presigned URLs, Zustand progress store, sortable gallery, cover photo control ✅
 
 **Implementation Waves:**
 - **Wave 1** (Plans 08-01, 08-02): MVP foundation — Layout shell + basic DataGrid for single vehicle upload
