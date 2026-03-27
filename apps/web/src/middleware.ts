@@ -104,6 +104,13 @@ const PROTECTED_ROUTES = [
   "/profile",
   "/settings",
   "/auth/setup-2fa",
+  "/catalog",
+  "/publications",
+  "/leads",
+  "/appointments",
+  "/admin",
+  "/dealer",
+  "/manager",
 ];
 
 /**
@@ -216,7 +223,51 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  // 8. Proceed to the requested route
+  // 8. Role-based route protection (Zero Trust on Edge)
+  if (isAuthenticated && userData) {
+    // Admin routes - only admin role can access
+    if (pathname.startsWith("/admin") && userData.role !== "admin") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    // Dealer routes - only dealer role can access
+    if (pathname.startsWith("/dealer") && userData.role !== "dealer") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    // Manager routes - only manager role can access
+    if (pathname.startsWith("/manager") && userData.role !== "manager") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    // Seller routes - only seller role can access
+    // Note: Sellers access /catalog, /leads directly (not under /seller route group)
+    // Route groups are organizational, not URL-based
+  }
+
+  // 9. Smart redirect for /dashboard based on user role
+  if (isAuthenticated && userData && pathname === "/dashboard") {
+    const url = req.nextUrl.clone();
+
+    // Redirect to role-specific home page
+    const roleHome: Record<string, string> = {
+      admin: "/admin/dashboard",
+      seller: "/catalog",
+      dealer: "/dealer/reports",
+      manager: "/manager/team",
+    }[userData.role] || "/catalog"; // Default fallback
+
+    url.pathname = roleHome;
+    return NextResponse.redirect(url);
+  }
+
+  // 10. Proceed to the requested route
   return NextResponse.next();
 }
 
