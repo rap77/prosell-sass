@@ -18,6 +18,7 @@ ProSell SaaS automates the complete vehicle sales cycle for dealerships: publish
 - [ ] **Phase 5: Dashboards** - Role-based dashboards for Admin, Manager, Vendedor, and Dealer with metrics
 - [ ] **Phase 6: Market Intelligence** - Price benchmarking (own vs. market), segmented price history, and market position indicators
 - [ ] **Phase 7: Visibility** - Temporal landing page, public vehicle catalog with SEO, and AI-generated listing titles
+- [x] **Phase 8: Layout Shell + Vehicle Management** - Professional dashboard shell with role-based navigation, high-performance DataGrid, bulk CSV upload, image handling, and search/filter capabilities (completed 2026-03-27)
 
 ## Phase Details
 
@@ -89,6 +90,26 @@ Plans:
   3. Vendedor dashboard shows their active listings, assigned leads, today's appointments, and personal conversion rate
   4. Dealer dashboard shows their inventory and active FB listings without any access to lead data
 **Plans**: TBD
+
+### Phase 8: Layout Shell + Vehicle Management
+**Goal**: Professional dashboard shell with vehicle management CRUD, bulk upload, image handling, and search/filter capabilities using premium UI components (Shadcn UI, MagicUI, Radix UI)
+**Depends on**: Phase 1 (for publication status display)
+**Requirements**: CATALOG-01, DASH-03, DASH-04
+**Success Criteria** (what must be TRUE):
+  1. Sidebar navigation uses user language (Inventario/Ventas/Configuración) not designer model (Operations/Growth/System)
+  2. DataGrid renders 1000+ rows at 60fps using TanStack Virtual row virtualization
+  3. User can search vehicles instantly (0ms client-side) and apply deep filters (price, status, brand) with URL state sync
+  4. User can upload CSV with 100+ vehicles and see real-time progress with ETA
+  5. User can drag-and-drop vehicle images with immediate previews and sortable cover photo selection
+  6. Cmd+K Command Palette opens for power user search and actions
+**Plans**: 5 plans (08-00, 08-01, 08-02, 08-03, 08-04)
+
+Plans:
+- [x] 08-00-PLAN.md — Premium UI components setup (Shadcn UI, MagicUI, Radix UI)
+- [x] 08-01-PLAN.md — Layout shell with sidebar, header, mobile nav, route groups, middleware guards
+- [x] 08-02-PLAN.md — DataGrid with TanStack Table + Virtual, checkboxes, status badges
+- [x] 08-03-PLAN.md — Search filters with hybrid client/server strategy, Command Palette, FilterSidebar, FilterPills
+- [x] 08-04-PLAN.md — Image upload with drag-and-drop, presigned URLs, Zustand progress tracking, ImageGallery
 
 ### Phase 6: Market Intelligence
 **Goal**: Every vehicle in the catalog displays its price position relative to the market so vendedores and admins can act on pricing without leaving the panel
