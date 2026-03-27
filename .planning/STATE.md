@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-07-frontend-modal-PLAN.md
-last_updated: "2026-03-15T18:30:00Z"
-last_activity: 2026-03-15 — Plan 01-07 complete (PublishModal + PublishForm + catalog/page integration)
+stopped_at: Phase 8 discuss-phase en progreso — 4 áreas completas, pendiente Image UX + Search filters. Handoff creado con todas las decisiones.
+last_updated: "2026-03-27T02:15:59.022Z"
+last_activity: 2026-03-15 — Plan 01-07 complete (PublishModal, PublishForm, catalog/page, HeroShotSelector, PublicationStatus, publisherApi, publisherStore)
 progress:
-  total_phases: 7
-  completed_phases: 0
+  total_phases: 8
+  completed_phases: 1
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
   percent: 88
 ---
 
@@ -72,6 +72,10 @@ Progress: [█████████░] 88%
 - [01-07] FB price diff in update mode deferred — API does not return current FB listing price yet.
 - [01-07] catalog/page.tsx uses mock data; real data fetching via useQuery(['catalog']) is next iteration.
 
+### Roadmap Evolution
+
+- Phase 8 added: Layout Shell + Vehicle Management (2026-03-25) — User requested complete UX overhaul with premium UI components (MagicUI, shadcn/ui, Radix) before continuing UAT.
+
 ### Pending Todos
 
 None yet.
@@ -85,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-15T18:30:00Z
-Stopped at: Completed 01-07-frontend-modal-PLAN.md
-Resume file: .planning/phases/01-hybrid-publisher/ (Phase 1 Wave 4 complete — check ROADMAP for next phase)
+Last session: 2026-03-27T02:15:59.019Z
+Stopped at: Phase 8 discuss-phase en progreso — 4 áreas completas, pendiente Image UX + Search filters. Handoff creado con todas las decisiones.
+Resume file: .planning/phases/08-layout-shell-vehicle-management-sidebar-header-navigation-crud-vehicles-bulk-upload-csv-drag-and-drop-image-upload-multi-publish-search-filter-sort-using-premium-ui-components-magicui-shadcn-ui-radix-ui/.continue-here.md
