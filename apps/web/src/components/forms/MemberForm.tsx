@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
 import { Controller } from "react-hook-form";
+import { toast } from "sonner";
 
 // ============================================
 // SCHEMA
@@ -138,7 +139,7 @@ export function MemberForm({
       }
     } catch (err) {
       // Error is handled by store
-      console.error("Failed to submit member form", err);
+      toast.error("Failed to submit member form");
     }
   };
 

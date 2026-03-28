@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
+import { toast } from "sonner";
 
 // ============================================
 // TYPES
@@ -165,7 +166,7 @@ export function OrganizationForm({
       }
     } catch (err) {
       // Error is handled by store
-      console.error("Failed to submit organization form", err);
+      toast.error("Failed to submit organization form");
     }
   };
 
