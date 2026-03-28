@@ -54,10 +54,10 @@ describe('Sidebar', () => {
   it('uses corrected Spanish terminology (not Operations/Growth)', () => {
     const { container } = render(<Sidebar groups={['inventario', 'ventas', 'configuración']} />)
 
-    // Verify correct terms are present
-    expect(screen.getByText('Inventario')).toBeInTheDocument()
-    expect(screen.getByText('Ventas')).toBeInTheDocument()
-    expect(screen.getByText('Configuración')).toBeInTheDocument()
+    // Verify correct terms are present (Configuración appears twice: as group header and as nav item)
+    expect(screen.getAllByText('Inventario').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Ventas').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Configuración').length).toBeGreaterThan(0)
 
     // Verify incorrect terms are NOT present
     expect(screen.queryByText('Operations')).not.toBeInTheDocument()
