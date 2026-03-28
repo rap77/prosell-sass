@@ -15,26 +15,23 @@ vi.mock('next/navigation', () => ({
 
 // Mock cmdk library to avoid rendering issues
 vi.mock('cmdk', () => ({
-  Command: {
-    Dialog: ({ children, open }: any) => (
-      <div data-open={open} data-testid="cmdk-dialog">
-        {children}
-      </div>
-    ),
-    Input: (props: any) => <input {...props} data-testid="cmdk-input" />,
-    Content: ({ children }: any) => <div data-testid="cmdk-content">{children}</div>,
-    List: ({ children }: any) => <div data-testid="cmdk-list">{children}</div>,
-    Empty: ({ children }: any) => <div data-testid="cmdk-empty">{children}</div>,
-    Group: ({ children, heading }: any) => (
-      <div data-testid="cmdk-group">
-        {heading && <div>{heading}</div>}
-        {children}
-      </div>
-    ),
-    Item: ({ children, onSelect }: any) => (
-      <div onClick={onSelect} data-testid="cmdk-item">{children}</div>
-    ),
-  },
+  CommandDialog: ({ children, open, onOpenChange }: any) => (
+    <div data-open={open} data-testid="cmdk-dialog" onClick={() => onOpenChange?.(!open)}>
+      {children}
+    </div>
+  ),
+  CommandInput: (props: any) => <input {...props} data-testid="cmdk-input" />,
+  CommandList: ({ children }: any) => <div data-testid="cmdk-list">{children}</div>,
+  CommandEmpty: ({ children }: any) => <div data-testid="cmdk-empty">{children}</div>,
+  CommandGroup: ({ children, heading }: any) => (
+    <div data-testid="cmdk-group">
+      {heading && <div>{heading}</div>}
+      {children}
+    </div>
+  ),
+  CommandItem: ({ children, onSelect }: any) => (
+    <div onClick={onSelect} data-testid="cmdk-item">{children}</div>
+  ),
 }))
 
 describe('CommandPalette', () => {

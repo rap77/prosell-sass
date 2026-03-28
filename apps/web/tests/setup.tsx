@@ -14,19 +14,19 @@ afterEach(() => {
 // Mock Radix UI DropdownMenu components globally
 vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-menu">{children}</div>,
-  DropdownMenuTrigger: ({ children, asChild, ...props }: any) => {
+  DropdownMenuTrigger: ({ children, asChild, ...props }: unknown) => {
     // When asChild=true, Radix merges the trigger element with the child (no wrapper)
     // When asChild=false, it wraps children in a button
     if (asChild) {
       // Clone child and add data-testid for testing
       return React.cloneElement(children as React.ReactElement, {
         'data-testid': 'dropdown-trigger',
-      } as any)
+      } as unknown)
     }
     return <button data-testid="dropdown-trigger" {...props}>{children}</button>
   },
   DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-content" role="menu">{children}</div>,
-  DropdownMenuItem: ({ children, onClick, className }: any) => (
+  DropdownMenuItem: ({ children, onClick, className }: unknown) => (
     <button
       data-testid="dropdown-item"
       className={className}
@@ -38,6 +38,40 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   ),
   DropdownMenuLabel: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-label">{children}</div>,
   DropdownMenuSeparator: () => <hr data-testid="dropdown-separator" />,
+}))
+
+// Mock cmdk (Command Palette) components globally
+vi.mock('cmdk', () => ({
+  CommandDialog: ({ children, open, onOpenChange }: unknown) => (
+    <div data-testid="command-dialog" data-open={open} onClick={() => onOpenChange?.(!open)}>
+      {children}
+    </div>
+  ),
+  CommandInput: ({ value, onValueChange, ...props }: unknown) => (
+    <input
+      data-testid="command-input"
+      value={value}
+      onChange={(e) => onValueChange?.(e.target.value)}
+      {...props}
+    />
+  ),
+  CommandList: ({ children }: { children: React.ReactNode }) => <div data-testid="command-list">{children}</div>,
+  CommandEmpty: ({ children }: { children: React.ReactNode }) => <div data-testid="command-empty">{children}</div>,
+  CommandGroup: ({ children, heading }: unknown) => (
+    <div data-testid="command-group">
+      {heading && <div data-testid="command-group-heading">{heading}</div>}
+      {children}
+    </div>
+  ),
+  CommandItem: ({ children, onSelect, ...props }: unknown) => (
+    <div
+      data-testid="command-item"
+      onClick={onSelect}
+      {...props}
+    >
+      {children}
+    </div>
+  ),
 }))
 
 // Mock IntersectionObserver

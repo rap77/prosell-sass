@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { DataGridRow } from '@/components/datagrid/DataGridRow'
+import { MemoizedDataGridRow } from '@/components/datagrid/DataGridRow'
 
 describe('DataGridRow', () => {
   const mockRow = {
@@ -32,7 +32,7 @@ describe('DataGridRow', () => {
   })
 
   it('renders row with correct styling', () => {
-    const { container } = render(<DataGridRow row={mockRow} />)
+    const { container } = render(<MemoizedDataGridRow row={mockRow} />)
 
     const row = container.querySelector('tr')
     expect(row).toBeInTheDocument()
@@ -40,7 +40,7 @@ describe('DataGridRow', () => {
   })
 
   it('displays all cells from row.getVisibleCells()', () => {
-    const { container } = render(<DataGridRow row={mockRow} />)
+    const { container } = render(<MemoizedDataGridRow row={mockRow} />)
 
     const cells = container.querySelectorAll('td')
     expect(cells).toHaveLength(2)
@@ -48,7 +48,7 @@ describe('DataGridRow', () => {
   })
 
   it('applies correct cell styling (padding, text size)', () => {
-    const { container } = render(<DataGridRow row={mockRow} />)
+    const { container } = render(<MemoizedDataGridRow row={mockRow} />)
 
     const cells = container.querySelectorAll('td')
     cells.forEach((cell) => {
@@ -57,12 +57,12 @@ describe('DataGridRow', () => {
   })
 
   it('is memoized to prevent unnecessary re-renders', () => {
-    const { rerender } = render(<DataGridRow row={mockRow} />)
+    const { rerender } = render(<MemoizedDataGridRow row={mockRow} />)
 
     const initialRow = screen.getByRole('row')
 
     // Re-render with same props
-    rerender(<DataGridRow row={mockRow} />)
+    rerender(<MemoizedDataGridRow row={mockRow} />)
 
     const rerenderedRow = screen.getByRole('row')
 
@@ -71,6 +71,6 @@ describe('DataGridRow', () => {
   })
 
   it('has displayName for debugging', () => {
-    expect(DataGridRow.displayName).toBe('DataGridRow')
+    expect(MemoizedDataGridRow.displayName).toBe('DataGridRow')
   })
 })
