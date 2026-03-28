@@ -1,19 +1,235 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { CommandPalette } from '@/components/layout/CommandPalette'
+import type { Vehicle } from '@/components/datagrid/DataGrid'
+
+// Mock Next.js router
+const mockPush = vi.fn()
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockPush,
+  }),
+}))
+
+// Mock cmdk library to avoid rendering issues
+vi.mock('cmdk', () => ({
+  Command: {
+    Dialog: ({ children, open, onOpenChange }: any) => (
+      <div data-open={open} data-testid="cmdk-dialog">
+        {open && children}
+      </div>
+    ),
+    Input: (props: any) => <input {...props} />,
+    Content: ({ children }: any) => <div>{children}</div>,
+    List: ({ children }: any) => <div>{children}</div>,
+    Empty: ({ children }: any) => <div>{children}</div>,
+    Group: ({ children, heading }: any) => (
+      <div>
+        {heading && <div>{heading}</div>}
+        {children}
+      </div>
+    ),
+    Item: ({ children, onSelect }: any) => (
+      <div onClick={onSelect}>{children}</div>
+    ),
+  },
+}))
 
 describe('CommandPalette', () => {
-  it('opens on Cmd+K keyboard shortcut', () => {
-    // TODO: Test keyboard event listener
+  const mockVehicles: Vehicle[] = [
+    {
+      id: '1',
+      title: '2020 Toyota Camry',
+      price: 25000,
+      status: 'published',
+      vin: 'ABC123',
+    },
+    {
+      id: '2',
+      title: '2021 Honda Accord',
+      price: 28000,
+      status: 'pending',
+      vin: 'DEF456',
+    },
+  ]
+
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
-  it('searches vehicles by VIN', () => {
-    // TODO: Test search functionality
+  it('opens on Cmd+K keyboard shortcut', async () => {
+    const user = userEvent.setup()
+    render(<CommandPalette vehicles={mockVehicles} />)
+
+    // Simulate Cmd+K
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/search vehicles/i)).toBeInTheDocument()
+    })
   })
 
-  it('executes actions (publish, edit, delete)', () => {
-    // TODO: Test action selection
+  it('opens on Ctrl+K keyboard shortcut', async () => {
+    const user = userEvent.setup()
+    render(<CommandPalette vehicles={mockVehicles} />)
+
+    // Simulate Ctrl+K
+    fireEvent.keyDown(document, { key: 'k', ctrlKey: true })
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/search vehicles/i)).toBeInTheDocument()
+    })
   })
 
-  it('closes on Escape key', () => {
-    // TODO: Test keyboard dismissal
+  it('closes on Escape key', async () => {
+    const user = userEvent.setup()
+    render(<CommandPalette vehicles={mockVehicles} />)
+
+    // Open with Cmd+K
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/search vehicles/i)).toBeInTheDocument()
+    })
+
+    // Close with Escape
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    await waitFor(() => {
+      expect(screen.queryByPlaceholderText(/search vehicles/i)).not.toBeInTheDocument()
+    })
+  })
+
+  it('searches vehicles by title', async () => {
+    render(<CommandPalette vehicles={mockVehicles} />)
+
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    await waitFor(() => {
+      const input = screen.getByPlaceholderText(/search vehicles/i)
+      expect(input).toBeInTheDocument()
+
+      fireEvent.change(input, { target: { value: 'Toyota' } })
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('2020 Toyota Camry')).toBeInTheDocument()
+      expect(screen.queryByText('2021 Honda Accord')).not.toBeInTheDocument()
+    })
+  })
+
+  it('searches vehicles by VIN', async () => {
+    render(<CommandPalette vehicles={mockVehicles} />)
+
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    await waitFor(() => {
+      const input = screen.getByPlaceholderText(/search vehicles/i)
+      fireEvent.change(input, { target: { value: 'ABC123' } })
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('2020 Toyota Camry')).toBeInTheDocument()
+    })
+  })
+
+  it('searches vehicles by ID', async () => {
+    render(<CommandPalette vehicles={mockVehicles} />)
+
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    await waitFor(() => {
+      const input = screen.getByPlaceholderText(/search vehicles/i)
+      fireEvent.change(input, { target: { value: '1' } })
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('2020 Toyota Camry')).toBeInTheDocument()
+    })
+  })
+
+  it('shows empty state when no vehicles match', async () => {
+    render(<CommandPalette vehicles={mockVehicles} />)
+
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    await waitFor(() => {
+      const input = screen.getByPlaceholderText(/search vehicles/i)
+      fireEvent.change(input, { target: { value: 'NonExistent' } })
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('No vehicles found')).toBeInTheDocument()
+    })
+  })
+
+  it('navigates to vehicle detail on selection', async () => {
+    render(<CommandPalette vehicles={mockVehicles} />)
+
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    await waitFor(() => {
+      const vehicleItem = screen.getByText('2020 Toyota Camry')
+      fireEvent.click(vehicleItem)
+    })
+
+    expect(mockPush).toHaveBeenCalledWith('/catalog/1')
+  })
+
+  it('executes Publish vehicle action', async () => {
+    render(<CommandPalette vehicles={mockVehicles} />)
+
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    await waitFor(() => {
+      const publishAction = screen.getByText('Publish vehicle...')
+      fireEvent.click(publishAction)
+    })
+
+    expect(mockPush).toHaveBeenCalledWith('/catalog/new?publish=true')
+  })
+
+  it('executes Create new vehicle action', async () => {
+    render(<CommandPalette vehicles={mockVehicles} />)
+
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    await waitFor(() => {
+      const createAction = screen.getByText('Create new vehicle')
+      fireEvent.click(createAction)
+    })
+
+    expect(mockPush).toHaveBeenCalledWith('/catalog/new')
+  })
+
+  it('shows keyboard hints in footer', async () => {
+    render(<CommandPalette vehicles={mockVehicles} />)
+
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    await waitFor(() => {
+      expect(screen.getByText(/navigate/i)).toBeInTheDocument()
+      expect(screen.getByText(/select/i)).toBeInTheDocument()
+      expect(screen.getByText(/close/i)).toBeInTheDocument()
+    })
+  })
+
+  it('shows recent vehicles (max 5) when search is empty', async () => {
+    const manyVehicles: Vehicle[] = Array.from({ length: 10 }, (_, i) => ({
+      id: String(i + 1),
+      title: `Vehicle ${i + 1}`,
+      price: 10000 + i * 1000,
+      status: 'published',
+    }))
+
+    render(<CommandPalette vehicles={manyVehicles} />)
+
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    await waitFor(() => {
+      const items = screen.getAllByText(/Vehicle \d+/)
+      expect(items).toHaveLength(5)
+    })
   })
 })
