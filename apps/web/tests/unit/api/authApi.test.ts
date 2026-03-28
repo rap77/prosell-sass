@@ -50,7 +50,7 @@ describe("authApi Client - Login", () => {
     const result = await authApi.login("test@example.com", "Password123!");
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/auth/login"),
+      expect.stringContaining("/api/v1/auth/login"),
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
@@ -125,7 +125,7 @@ describe("authApi Client - Register", () => {
     );
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/auth/register"),
+      expect.stringContaining("/api/v1/auth/register"),
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
@@ -173,7 +173,7 @@ describe("authApi Client - Logout", () => {
     await authApi.logout();
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/auth/logout"),
+      expect.stringContaining("/api/v1/auth/logout"),
       expect.objectContaining({
         method: "POST",
       }),
@@ -222,7 +222,7 @@ describe("authApi Client - Get Current User", () => {
     const result = await authApi.getCurrentUser();
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/auth/me"),
+      expect.stringContaining("/api/v1/auth/me"),
       expect.objectContaining({
         method: "GET",
         credentials: "include",
@@ -261,7 +261,7 @@ describe("authApi Client - Verify Email", () => {
     const result = await authApi.verifyEmail("verification-token");
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/auth/verify-email"),
+      expect.stringContaining("/api/v1/auth/verify-email"),
       expect.objectContaining({
         method: "POST",
         body: expect.stringContaining("verification-token"),
@@ -291,7 +291,7 @@ describe("authApi Client - Forgot Password", () => {
     const result = await authApi.forgotPassword("test@example.com");
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/auth/forgot-password"),
+      expect.stringContaining("/api/v1/auth/forgot-password"),
       expect.objectContaining({
         method: "POST",
         body: expect.stringContaining("test@example.com"),
@@ -326,7 +326,7 @@ describe("authApi Client - Reset Password", () => {
     );
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/auth/reset-password"),
+      expect.stringContaining("/api/v1/auth/reset-password"),
       expect.objectContaining({
         method: "POST",
         body: expect.stringContaining("reset-token"),
@@ -495,7 +495,7 @@ describe("authApi Client - 2FA Operations", () => {
     const result = await authApi.enable2FA();
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/auth/2fa/enable"),
+      expect.stringContaining("/api/v1/auth/2fa/enable"),
       expect.objectContaining({
         method: "POST",
         credentials: "include",
@@ -523,7 +523,7 @@ describe("authApi Client - 2FA Operations", () => {
     const result = await authApi.verify2FA("123456");
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/auth/2fa/verify"),
+      expect.stringContaining("/api/v1/auth/2fa/verify"),
       expect.objectContaining({
         method: "POST",
         credentials: "include",
@@ -552,7 +552,7 @@ describe("authApi Client - 2FA Operations", () => {
     const result = await authApi.disable2FA();
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/auth/2fa/disable"),
+      expect.stringContaining("/api/v1/auth/2fa/disable"),
       expect.objectContaining({
         method: "POST",
         credentials: "include",

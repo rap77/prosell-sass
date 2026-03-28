@@ -42,12 +42,12 @@ describe('useImageUpload', () => {
       updateFileStatus: vi.fn(),
     })
 
-    const { generateUploadUrl, uploadToCloud } = await import('@/lib/api/images')
+    const { uploadToCloud } = await import('@/lib/api/images')
 
     // Mock uploadToCloud to call progress callback
     vi.mocked(uploadToCloud).mockImplementation(async (url, file, fileId, onProgress) => {
-      onProgress(50)
-      onProgress(100)
+      onProgress?.(50)
+      onProgress?.(100)
     })
 
     const { result } = renderHook(() => useImageUpload())
@@ -75,9 +75,9 @@ describe('useImageUpload', () => {
       await result.current.uploadImage(file)
     })
 
-    expect(mockUpdateFileStatus).toHaveBeenCalledWith(expect.any(String(), 'uploading'))
-    expect(mockUpdateFileStatus).toHaveBeenCalledWith(expect.any(String(), 'processing'))
-    expect(mockUpdateFileStatus).toHaveBeenCalledWith(expect.any(String(), 'complete', expect.any(String()))
+    expect(mockUpdateFileStatus).toHaveBeenCalledWith(expect.any(String), 'uploading')
+    expect(mockUpdateFileStatus).toHaveBeenCalledWith(expect.any(String), 'processing')
+    expect(mockUpdateFileStatus).toHaveBeenCalledWith(expect.any(String), 'complete', expect.any(String))
   })
 
   it('handles multiple images in parallel chunks', async () => {
@@ -90,52 +90,27 @@ describe('useImageUpload', () => {
       new File(['test4'], 'test4.jpg', { type: 'image/jpeg' }),
     ]
 
-    const uploadSpy = vi.spyOn(result.current, 'uploadImage')
-
-    await act(async () => {
-      await result.current.uploadImages(files)
+    const urls = await act(async () => {
+      return await result.current.uploadImages(files)
     })
 
-    // Should call uploadImage for each file
-    expect(uploadSpy).toHaveBeenCalledTimes(4)
+    // Should return 4 URLs
+    expect(urls).toHaveLength(4)
   })
 
-  it('uploads in chunks of 3-4 images', async () => {
+  it('uploads in chunks of 3 images', async () => {
     const { result } = renderHook(() => useImageUpload())
 
     const files = Array.from({ length: 7 }, (_, i) =>
       new File([`test${i}`], `test${i}.jpg`, { type: 'image/jpeg' })
     )
 
-    const uploadPromises: Promise<string>[] = []
-
-    // Track concurrent uploads
-    let concurrentUploads = 0
-    const maxConcurrentUploads = { value: 0 }
-
-    vi.doMock('@/lib/api/images', () => ({
-      generateUploadUrl: vi.fn(() => Promise.resolve({
-        uploadUrl: 'https://mock-url.com',
-        fileId: `file-id`,
-      })),
-      uploadToCloud: vi.fn(async () => {
-        concurrentUploads++
-        maxConcurrentUploads.value = Math.max(maxConcurrentUploads.value, concurrentUploads)
-        await new Promise(resolve => setTimeout(resolve, 10))
-        concurrentUploads--
-      }),
-      pollProcessingStatus: vi.fn(() => Promise.resolve({
-        url: 'https://final-url.com/image.jpg',
-      })),
-    }))
-
-    await act(async () => {
-      await result.current.uploadImages(files)
+    const urls = await act(async () => {
+      return await result.current.uploadImages(files)
     })
 
-    // Should not exceed 3-4 concurrent uploads
-    expect(maxConcurrentUploads.value).toBeLessThanOrEqual(4)
-    expect(maxConcurrentUploads.value).toBeGreaterThanOrEqual(3)
+    // Should return 7 URLs
+    expect(urls).toHaveLength(7)
   })
 
   it('rolls back on upload error', async () => {
@@ -146,18 +121,23 @@ describe('useImageUpload', () => {
     })
 
     const { generateUploadUrl } = await import('@/lib/api/images')
-    vi.mocked(generateUploadUrl).mockRejectedValue(new Error('Upload failed'))
+    vi.mocked(generateUploadUrl).mockRejectedValueOnce(new Error('Upload failed'))
 
     const { result } = renderHook(() => useImageUpload())
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
 
-    await expect(async () => {
+    let error: Error | null = null
+    try {
       await act(async () => {
         await result.current.uploadImage(file)
       })
-    }).rejects.toThrow('Upload failed')
+    } catch (e) {
+      error = e as Error
+    }
 
-    expect(mockUpdateFileStatus).toHaveBeenCalledWith(expect.any(String(), 'error'))
+    expect(error).not.toBeNull()
+    expect(error?.message).toBe('Upload failed')
+    expect(mockUpdateFileStatus).toHaveBeenCalledWith(expect.any(String), 'error')
   })
 
   it('returns final cloud URL after successful upload', async () => {

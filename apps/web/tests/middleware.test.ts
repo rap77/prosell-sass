@@ -135,6 +135,7 @@ describe("Middleware", () => {
             value: JSON.stringify({
               id: "1",
               email: "test@example.com",
+              role: "seller", // Add role to avoid redirect loop
               is_2fa_enabled: false,
             }),
           },
@@ -143,8 +144,9 @@ describe("Middleware", () => {
 
       await middleware(req);
 
-      expect(mockNext).toHaveBeenCalled();
-      expect(mockRedirect).not.toHaveBeenCalled();
+      // Dashboard redirects to role-specific home (e.g., /catalog for seller)
+      expect(mockRedirect).toHaveBeenCalled();
+      expect(mockNext).not.toHaveBeenCalled();
     });
 
     it("should allow authenticated user to access /profile", async () => {

@@ -19,6 +19,10 @@ Object.defineProperty(global, 'crypto', {
   writable: true,
 })
 
+// Mock URL.createObjectURL
+global.URL.createObjectURL = vi.fn(() => 'blob:mock-preview-url')
+global.URL.revokeObjectURL = vi.fn()
+
 describe('ImageDropzone', () => {
   beforeEach(() => {
     vi.clearAllMocks()

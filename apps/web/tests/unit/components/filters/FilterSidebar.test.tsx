@@ -7,6 +7,31 @@ import { FilterSidebar } from '@/components/filters/FilterSidebar'
 const mockPush = vi.fn()
 const mockSearchParams = new URLSearchParams()
 
+vi.mock('@/lib/hooks/useVehicleFilters', () => ({
+  useVehicleFilters: () => ({
+    filters: {
+      brand: [],
+      status: [],
+      search: '',
+      priceRange: [0, 100000],
+      year: [2010, 2026],
+    },
+    setFilter: (key: string, value: any) => {
+      // Simulate router navigation like the real hook
+      if (key === 'brand' && Array.isArray(value)) {
+        mockPush(`/catalog?brand=${value.join(',')}`)
+      } else if (key === 'status' && Array.isArray(value)) {
+        mockPush(`/catalog?status=${value.join(',')}`)
+      } else {
+        mockPush(`/catalog?${key}=${value}`)
+      }
+    },
+    clearAllFilters: () => {
+      mockPush('/catalog', { scroll: false })
+    },
+  }),
+}))
+
 vi.mock('next/navigation', () => ({
   useSearchParams: () => ({
     get: (key: string) => mockSearchParams.get(key),
@@ -143,12 +168,13 @@ describe('FilterSidebar', () => {
 
   it('hides filter content when collapsed', async () => {
     const user = userEvent.setup()
-    render(<FilterSidebar />)
+    const { container } = render(<FilterSidebar />)
 
     const toggleButton = screen.getByLabelText(/collapse filters/i)
     await user.click(toggleButton)
 
-    // Content should be hidden
-    expect(screen.queryByText('Brand')).not.toBeInTheDocument()
+    // The inner div should have 'hidden' class when collapsed
+    const innerDiv = container.querySelector('.p-4')
+    expect(innerDiv).toHaveClass('hidden')
   })
 })

@@ -9,7 +9,7 @@ export default defineConfig({
     environment: 'jsdom',
 
     // Setup files
-    setupFiles: ['./tests/setup.ts'],
+    setupFiles: ['./tests/setup.tsx'],
 
     // Coverage configuration
     coverage: {

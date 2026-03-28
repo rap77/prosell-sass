@@ -34,14 +34,14 @@ describe('MobileNav', () => {
   it('highlights active route', () => {
     render(<MobileNav />)
 
-    const catalogButton = screen.getByText('Catálogo').closest('button')
+    const catalogButton = screen.getByLabelText('Catálogo')
     expect(catalogButton).toHaveClass('bg-primary', 'text-primary-foreground')
   })
 
   it('does not highlight inactive routes', () => {
     render(<MobileNav />)
 
-    const publishButton = screen.getByText('Publicar').closest('button')
+    const publishButton = screen.getByLabelText('Publicar')
     expect(publishButton).toHaveClass('text-muted-foreground')
   })
 
@@ -83,7 +83,7 @@ describe('MobileNav', () => {
   it('has aria-current="page" on active route', () => {
     render(<MobileNav />)
 
-    const catalogButton = screen.getByText('Catálogo').closest('button')
+    const catalogButton = screen.getByLabelText('Catálogo')
     expect(catalogButton).toHaveAttribute('aria-current', 'page')
   })
 

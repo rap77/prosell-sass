@@ -55,7 +55,8 @@ describe('FilterPills', () => {
   it('shows count of active filters', () => {
     render(<FilterPills />)
 
-    expect(screen.getByText(/Active filters \(\d+\)/)).toBeInTheDocument()
+    // The component shows 6 filters: Toyota, Honda, published, camry, price range, year range
+    expect(screen.getByText(/Active filters \(6\)/)).toBeInTheDocument()
   })
 
   it('renders "Clear all" button when filters are active', () => {
@@ -85,10 +86,10 @@ describe('FilterPills', () => {
   })
 
   it('has remove icon (X) on each pill', () => {
-    render(<FilterPills />)
+    const { container } = render(<FilterPills />)
 
-    // Check for SVG icons (X from lucide-react)
-    const icons = screen.getAllByTestId('lucide-x')
+    // Check for SVG icons (X from lucide-react) by querying the DOM
+    const icons = container.querySelectorAll('svg')
     expect(icons.length).toBeGreaterThan(0)
   })
 

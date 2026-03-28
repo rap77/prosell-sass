@@ -23,9 +23,9 @@ describe('Sidebar', () => {
   it('renders navigation groups (Inventario, Ventas, Configuración)', () => {
     render(<Sidebar groups={['inventario', 'ventas', 'configuración']} />)
 
-    expect(screen.getByText('Inventario')).toBeInTheDocument()
-    expect(screen.getByText('Ventas')).toBeInTheDocument()
-    expect(screen.getByText('Configuración')).toBeInTheDocument()
+    expect(screen.getAllByText('Inventario').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Ventas').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Configuración').length).toBeGreaterThan(0)
   })
 
   it('filters navigation by user role (seller excludes Configuración)', () => {
