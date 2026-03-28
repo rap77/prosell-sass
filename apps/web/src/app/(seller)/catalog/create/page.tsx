@@ -7,11 +7,10 @@ import { ImageGallery } from '@/components/upload/ImageGallery'
 import { useImageUpload } from '@/lib/hooks/useImageUpload'
 import { useUploadStore } from '@/lib/stores/uploadStore'
 import { Button } from '@/components/ui/button'
-import { useToast } from '@/components/ui/use-toast'
+import { toast } from 'sonner'
 
 export default function CreateVehiclePage() {
   const router = useRouter()
-  const { toast } = useToast()
   const [isUploading, setIsUploading] = useState(false)
   const { uploadImages } = useImageUpload()
   const { uploadedFiles, clearAll } = useUploadStore()
@@ -45,8 +44,7 @@ export default function CreateVehiclePage() {
       clearAll()
 
       // Show success toast
-      toast({
-        title: 'Vehicle created',
+      toast.success('Vehicle created', {
         description: 'Your vehicle has been successfully added to the catalog.',
       })
 
@@ -55,9 +53,7 @@ export default function CreateVehiclePage() {
       router.refresh()
     } catch (error) {
       // Show error toast
-      toast({
-        variant: 'destructive',
-        title: 'Failed to create vehicle',
+      toast.error('Failed to create vehicle', {
         description: error instanceof Error ? error.message : 'An unknown error occurred',
       })
     } finally {

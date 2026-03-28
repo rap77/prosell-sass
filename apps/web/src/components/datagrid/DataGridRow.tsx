@@ -1,22 +1,11 @@
 import { memo } from "react";
-import { flexRender } from "@tanstack/react-table";
+import { flexRender, type Row } from "@tanstack/react-table";
 
-interface DataGridRowProps {
-  row: {
-    id: string;
-    getVisibleCells: () => Array<{
-      id: string;
-      column: {
-        columnDef: {
-          cell: unknown;
-        };
-      };
-      getContext: () => unknown;
-    }>;
-  };
+interface DataGridRowProps<T> {
+  row: Row<T>;
 }
 
-export const DataGridRow = memo(({ row }: DataGridRowProps) => {
+export function DataGridRow<T>({ row }: DataGridRowProps<T>) {
   return (
     <tr className="border-b border-border hover:bg-muted/50 transition-colors">
       {row.getVisibleCells().map((cell) => (
@@ -29,6 +18,8 @@ export const DataGridRow = memo(({ row }: DataGridRowProps) => {
       ))}
     </tr>
   );
-});
+}
 
-DataGridRow.displayName = "DataGridRow";
+const MemoizedDataGridRowInner = memo(DataGridRow) as <T>(props: DataGridRowProps<T>) => React.ReactElement;
+(MemoizedDataGridRowInner as any).displayName = "DataGridRow";
+export const MemoizedDataGridRow = MemoizedDataGridRowInner;

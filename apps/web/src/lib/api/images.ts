@@ -38,7 +38,7 @@ export async function uploadToCloud(
   fileId: string,
   onProgress: (percent: number) => void
 ): Promise<void> {
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest()
 
     // Upload progress tracking
@@ -51,7 +51,7 @@ export async function uploadToCloud(
 
     xhr.addEventListener('load', () => {
       if (xhr.status === 200) {
-        resolve(xhr.responseText)
+        resolve()
       } else {
         reject(new Error('Upload failed'))
       }

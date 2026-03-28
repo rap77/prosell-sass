@@ -2,9 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Command } from 'cmdk'
+import {
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from 'cmdk'
 import Image from 'next/image'
-import { Car, Upload, Plus, Search } from 'lucide-react'
+import { Car, Upload, Plus } from 'lucide-react'
 import type { Vehicle } from '@/components/datagrid/DataGrid'
 
 interface CommandPaletteProps {
@@ -37,30 +44,31 @@ export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {
         return (
           v.title.toLowerCase().includes(searchLower) ||
           v.id.toLowerCase().includes(searchLower) ||
-          v.vin?.toLowerCase().includes(searchLower)
+          v.make?.toLowerCase().includes(searchLower) ||
+          v.model?.toLowerCase().includes(searchLower)
         )
       }).slice(0, 10) // Show 10 results max
 
   return (
-    <Command.Dialog open={open} onOpenChange={setOpen}>
-      <Command.Content className="bg-background border shadow-lg rounded-lg max-w-md mx-auto mt-[20vh]">
-        <Command.Input
-          placeholder="Search vehicles by VIN, make, model..."
+    <CommandDialog open={open} onOpenChange={setOpen}>
+      <div className="bg-background border shadow-lg rounded-lg max-w-md mx-auto mt-[20vh]">
+        <CommandInput
+          placeholder="Search vehicles by make, model..."
           value={search}
           onValueChange={setSearch}
           className="px-4 py-3 border-b focus:outline-none"
         />
 
-        <Command.List className="max-h-[400px] overflow-y-auto p-2">
+        <CommandList className="max-h-[400px] overflow-y-auto p-2">
           {filteredVehicles.length === 0 ? (
-            <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
+            <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
               No vehicles found.
-            </Command.Empty>
+            </CommandEmpty>
           ) : (
             <>
-              <Command.Group heading="Vehicles" className="px-2 py-1 text-xs font-semibold text-muted-foreground">
+              <CommandGroup heading="Vehicles" className="px-2 py-1 text-xs font-semibold text-muted-foreground">
                 {filteredVehicles.map(vehicle => (
-                  <Command.Item
+                  <CommandItem
                     key={vehicle.id}
                     onSelect={() => {
                       router.push(`/catalog/${vehicle.id}`)
@@ -90,16 +98,16 @@ export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {
                     <span className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground capitalize">
                       {vehicle.status}
                     </span>
-                  </Command.Item>
+                  </CommandItem>
                 ))}
-              </Command.Group>
+              </CommandGroup>
 
               {/* Actions section */}
-              <Command.Group
+              <CommandGroup
                 heading="Actions"
                 className="px-2 py-1 text-xs font-semibold text-muted-foreground mt-2"
               >
-                <Command.Item
+                <CommandItem
                   onSelect={() => {
                     router.push('/catalog/new?publish=true')
                     setOpen(false)
@@ -108,8 +116,8 @@ export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {
                 >
                   <Upload className="w-4 h-4" />
                   <span>Publish vehicle...</span>
-                </Command.Item>
-                <Command.Item
+                </CommandItem>
+                <CommandItem
                   onSelect={() => {
                     router.push('/catalog/new')
                     setOpen(false)
@@ -118,11 +126,11 @@ export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {
                 >
                   <Plus className="w-4 h-4" />
                   <span>Create new vehicle</span>
-                </Command.Item>
-              </Command.Group>
+                </CommandItem>
+              </CommandGroup>
             </>
           )}
-        </Command.List>
+        </CommandList>
 
         {/* Footer with keyboard hints */}
         <div className="border-t px-3 py-2 text-xs text-muted-foreground flex items-center justify-between">
@@ -138,7 +146,7 @@ export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {
             <kbd className="px-1.5 py-0.5 rounded bg-muted text-xs">esc</kbd> close
           </span>
         </div>
-      </Command.Content>
-    </Command.Dialog>
+      </div>
+    </CommandDialog>
   )
 }

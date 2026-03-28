@@ -23,10 +23,12 @@ export default defineConfig({
         '**/types/**',
       ],
       // 80% coverage target for Phase 8 Vehicle CRUD
-      lines: 80,
-      functions: 80,
-      branches: 80,
-      statements: 80,
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 80,
+        statements: 80,
+      },
     },
 
     // Include files
@@ -42,12 +44,6 @@ export default defineConfig({
 
     // Timeout for tests (ms)
     testTimeout: 10000,
-
-    // Threads for parallel execution
-    threads: true,
-
-    // Watch mode (enabled by default in dev)
-    watch: true,
 
     // Globals (optional, for jest-like globals)
     globals: true,

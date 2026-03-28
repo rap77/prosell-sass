@@ -256,12 +256,13 @@ export default async function middleware(req: NextRequest) {
     const url = req.nextUrl.clone();
 
     // Redirect to role-specific home page
-    const roleHome: Record<string, string> = {
+    const roleHomes: Record<string, string> = {
       admin: "/admin/dashboard",
       seller: "/catalog",
       dealer: "/dealer/reports",
       manager: "/manager/team",
-    }[userData.role] || "/catalog"; // Default fallback
+    };
+    const roleHome = roleHomes[userData.role] || "/catalog"; // Default fallback
 
     url.pathname = roleHome;
     return NextResponse.redirect(url);

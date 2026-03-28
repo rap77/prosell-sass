@@ -14,8 +14,8 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // TODO: Re-enable reactCompiler after installing babel-plugin-react-compiler
-  // reactCompiler: true,
+  // React Compiler enabled - automatically optimizes components
+  reactCompiler: true,
 
   // Bundle size optimization: Optimize imports from packages with barrel files
   // This prevents the bundler from loading the entire barrel file when importing specific exports

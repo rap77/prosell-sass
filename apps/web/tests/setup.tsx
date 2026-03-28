@@ -21,7 +21,7 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
       // Clone child and add data-testid for testing
       return React.cloneElement(children as React.ReactElement, {
         'data-testid': 'dropdown-trigger',
-      })
+      } as any)
     }
     return <button data-testid="dropdown-trigger" {...props}>{children}</button>
   },
