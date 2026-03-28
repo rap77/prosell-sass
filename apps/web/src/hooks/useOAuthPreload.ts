@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * useOAuthPreload Hook
  *
@@ -24,9 +26,8 @@
  * </div>
  * ```
  */
-"use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { useFeatureFlagStore } from "@/stores/featureFlagStore";
 import { logger } from "@/lib/logger";
 
@@ -111,7 +112,7 @@ export function useOAuthPreload(
    * Mouse enter retry handler
    * Retries preload if initial attempt failed
    */
-  const handleMouseEnter = useCallback(() => {
+  const handleMouseEnter = () => {
     if (!usePreload || isPreloadedRef.current) {
       return;
     }
@@ -126,7 +127,7 @@ export function useOAuthPreload(
         // Silent failure - will load on click
         logger.warn("[OAuth Preload] Hover retry failed (will load on click)");
       });
-  }, [importPath, usePreload]);
+  };
 
   return {
     isPreloaded: isPreloadedRef.current,

@@ -1,3 +1,5 @@
+'use client'
+
 /**
  * LocalStorage Schema Versioning Hook
  *
@@ -6,7 +8,8 @@
  *
  * @see https://vercel.com/docs/rules/client-local-storage-schema-versioning.md
  */
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 interface SchemaVersion<T = unknown> {
   version: string;
@@ -68,7 +71,7 @@ export class LocalStorageSchemaManager {
       return schema.version !== this.CURRENT_VERSION;
     } catch (error) {
       // Client-side storage error: log for debugging but continue with migration
-      console.warn("Failed to check schema version:", error);
+      logger.warn("Failed to check schema version:", error);
       return true;
     }
   }
@@ -121,7 +124,7 @@ export class LocalStorageSchemaManager {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(migratedSchema));
     } catch (error) {
       // Client-side storage error: log for debugging before throwing
-      console.error("Failed to migrate storage:", error);
+      logger.error("Failed to migrate storage:", error);
       throw error;
     }
   }
@@ -199,28 +202,25 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
       // Client-side storage error: log for debugging but return initial value
-      console.warn(`Error reading localStorage key "${key}":`, error);
+      logger.warn(`Error reading localStorage key "${key}":`, error);
       return initialValue;
     }
   });
 
-  const setValue = useCallback(
-    (value: T | ((val: T) => T)) => {
-      try {
-        const valueToStore =
-          value instanceof Function ? value(storedValue) : value;
-        setStoredValue(valueToStore);
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
 
-        if (typeof window !== "undefined") {
-          localStorage.setItem(key, JSON.stringify(valueToStore));
-        }
-      } catch (error) {
-        // Client-side storage error: log for debugging but don't fail
-        console.warn(`Error setting localStorage key "${key}":`, error);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(key, JSON.stringify(valueToStore));
       }
-    },
-    [key, storedValue],
-  );
+    } catch (error) {
+      // Client-side storage error: log for debugging but don't fail
+      logger.warn(`Error setting localStorage key "${key}":`, error);
+    }
+  };
 
   return [storedValue, setValue] as const;
 }

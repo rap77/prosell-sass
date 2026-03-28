@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useMemo, useCallback } from 'react'
+import { useMemo } from 'react'
 
 export interface VehicleFilters {
   search: string
@@ -31,7 +31,7 @@ export function useVehicleFilters() {
   }), [searchParams])
 
   // Update URL
-  const setFilter = useCallback((key: string, value: string | string[]) => {
+  const setFilter = (key: string, value: string | string[]) => {
     const params = new URLSearchParams(searchParams)
 
     if (Array.isArray(value)) {
@@ -47,11 +47,11 @@ export function useVehicleFilters() {
     }
 
     router.push(`?${params.toString()}`, { scroll: false })
-  }, [searchParams, router])
+  }
 
-  const clearAllFilters = useCallback(() => {
+  const clearAllFilters = () => {
     router.push('/catalog', { scroll: false })
-  }, [router])
+  }
 
   return {
     filters,
