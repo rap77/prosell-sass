@@ -101,7 +101,10 @@ def test_bulk_assign_request_validation_empty_lists() -> None:
 
 
 @pytest.mark.asyncio
-async def test_assign_user_dealer_usecase(mock_user_dealer_repo, mock_dealer_repo) -> None:
+async def test_assign_user_dealer_usecase(
+    mock_user_dealer_repo,
+    mock_dealer_repo,
+) -> None:
     """Test AssignUserDealerUseCase assigns dealer to user via repository."""
     # Arrange
     user_id = uuid4()
@@ -131,7 +134,10 @@ async def test_assign_user_dealer_usecase(mock_user_dealer_repo, mock_dealer_rep
 
 
 @pytest.mark.asyncio
-async def test_assign_user_dealer_audit_fields(mock_user_dealer_repo, mock_dealer_repo) -> None:
+async def test_assign_user_dealer_audit_fields(
+    mock_user_dealer_repo,
+    mock_dealer_repo,
+) -> None:
     """Test AssignUserDealerUseCase populates audit fields."""
     # Arrange
     user_id = uuid4()
@@ -160,7 +166,10 @@ async def test_assign_user_dealer_audit_fields(mock_user_dealer_repo, mock_deale
 
 
 @pytest.mark.asyncio
-async def test_assign_user_dealer_duplicate(mock_user_dealer_repo, mock_dealer_repo) -> None:
+async def test_assign_user_dealer_duplicate(
+    mock_user_dealer_repo,
+    mock_dealer_repo,
+) -> None:
     """Test AssignUserDealerUseCase raises error for duplicate assignment."""
     # Arrange
     user_id = uuid4()
@@ -190,7 +199,10 @@ async def test_assign_user_dealer_duplicate(mock_user_dealer_repo, mock_dealer_r
 
 
 @pytest.mark.asyncio
-async def test_assign_user_dealer_response(mock_user_dealer_repo, mock_dealer_repo) -> None:
+async def test_assign_user_dealer_response(
+    mock_user_dealer_repo,
+    mock_dealer_repo,
+) -> None:
     """Test AssignUserDealerUseCase returns UserDealerResponse."""
     # Arrange
     user_id = uuid4()
@@ -275,7 +287,9 @@ async def test_bulk_assign_usecase(mock_user_dealer_repo) -> None:
 
 
 @pytest.mark.asyncio
-async def test_bulk_assign_usecase_skips_duplicates(mock_user_dealer_repo) -> None:
+async def test_bulk_assign_usecase_skips_duplicates(
+    mock_user_dealer_repo,
+) -> None:
     """Test BulkAssignUseCase skips duplicate assignments."""
     # Arrange
     user_ids = [uuid4()]
@@ -323,7 +337,9 @@ async def test_remove_user_dealer_usecase(mock_user_dealer_repo) -> None:
 
 
 @pytest.mark.asyncio
-async def test_remove_user_dealer_usecase_idempotent(mock_user_dealer_repo) -> None:
+async def test_remove_user_dealer_usecase_idempotent(
+    mock_user_dealer_repo,
+) -> None:
     """Test RemoveUserDealerUseCase is idempotent (no error if already removed)."""
     # Arrange
     user_id = uuid4()
@@ -347,38 +363,38 @@ async def test_remove_user_dealer_usecase_idempotent(mock_user_dealer_repo) -> N
 
 
 # =============================================================================
-# ROUTER ENDPOINT TESTS (stubs - will be implemented in Task 4)
+# ROUTER ENDPOINT TESTS
 # =============================================================================
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 4")
+@pytest.mark.xfail(reason="Not implemented yet — Task 5 (wire router)")
 def test_assign_seller_to_dealer() -> None:
     """POST /api/users/{id}/dealers assigns dealer (201)."""
-    pytest.fail("stub - Task 4")
+    pytest.fail("stub - Task 5")
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 4")
+@pytest.mark.xfail(reason="Not implemented yet — Task 5 (wire router)")
 def test_bulk_assign_sellers() -> None:
     """POST /api/users/bulk-assign assigns multiple (200)."""
-    pytest.fail("stub - Task 4")
+    pytest.fail("stub - Task 5")
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 4")
+@pytest.mark.xfail(reason="Not implemented yet — Task 5 (wire router)")
 def test_remove_seller_from_dealer() -> None:
     """DELETE /api/users/{id}/dealers/{dealer_id} removes (204)."""
-    pytest.fail("stub - Task 4")
+    pytest.fail("stub - Task 5")
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 4")
+@pytest.mark.xfail(reason="Not implemented yet — Task 5 (wire router)")
 def test_list_user_dealers() -> None:
     """GET /api/users/{id}/dealers lists assignments (200)."""
-    pytest.fail("stub - Task 4")
+    pytest.fail("stub - Task 5")
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 4")
+@pytest.mark.xfail(reason="Not implemented yet — Task 5 (wire router)")
 def test_admin_manager_only_access() -> None:
     """Admin/Manager-only access enforced (403 for sellers)."""
-    pytest.fail("stub - Task 4")
+    pytest.fail("stub - Task 5")
 
 
 # =============================================================================
@@ -399,10 +415,10 @@ def mock_user_dealer_repo():
                 assigned_by=assigned_by,
             )
 
-        async def exists(self, user_id, dealer_id, tenant_id):  # noqa: ARG002
+        async def exists(self, user_id, dealer_id, tenant_id):
             return False
 
-        async def remove(self, user_id, dealer_id, tenant_id):  # noqa: ARG002
+        async def remove(self, user_id, dealer_id, tenant_id):
             return True
 
     return MockUserDealerRepo()

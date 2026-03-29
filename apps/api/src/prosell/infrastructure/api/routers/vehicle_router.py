@@ -1,7 +1,6 @@
 """Vehicle router."""
 
 from typing import Annotated
-
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -173,7 +172,7 @@ async def get_vehicle_by_product(
 async def get_vehicle_catalog(
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     cursor: str | None = None,
-    current_user: Annotated[User, Depends(get_current_auth_user)] = None,  # type: ignore[assignment]  # noqa: E501
+    current_user: Annotated[User, Depends(get_current_auth_user)] = None,  # type: ignore[assignment]
     use_case: GetVehicleCatalogUseCase = Depends(get_vehicle_catalog_use_case),
 ) -> CatalogResponseDTO:
     """

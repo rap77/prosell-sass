@@ -27,6 +27,13 @@ if TYPE_CHECKING:
     from prosell.application.use_cases.facebook.refresh_token import RefreshTokenUseCase
     from prosell.application.use_cases.facebook.set_default_page import SetDefaultPageUseCase
     from prosell.application.use_cases.publisher.publish_vehicle import PublishVehicleUseCase
+    from prosell.application.use_cases.user_dealer.assign_user_dealer import (
+        AssignUserDealerUseCase,
+    )
+    from prosell.application.use_cases.user_dealer.bulk_assign import BulkAssignUseCase
+    from prosell.application.use_cases.user_dealer.remove_user_dealer import (
+        RemoveUserDealerUseCase,
+    )
     from prosell.infrastructure.repositories.facebook_account_repository_impl import (
         SqlAlchemyFacebookAccountRepository,
     )
@@ -60,9 +67,13 @@ from prosell.domain.ports import (
 from prosell.domain.ports.i_facebook_marketplace_service import (
     IFacebookMarketplaceOAuthService,
 )
+from prosell.domain.repositories.dealer_repository import AbstractDealerRepository
 from prosell.domain.repositories.facebook_account_repository import IFacebookAccountRepository
 from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
 from prosell.domain.repositories.publication_repository import IPublicationRepository
+from prosell.domain.repositories.user_dealer_repository import (
+    AbstractUserDealerRepository,
+)
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.oauth_repository_impl import SqlAlchemyOAuthRepository
 from prosell.infrastructure.repositories.role_repository_impl import SqlAlchemyRoleRepository
@@ -649,3 +660,71 @@ async def get_publish_vehicle_use_case(
         publication_repo=publication_repo,
         seller_user_id=current_user.id,
     )
+
+
+# =============================================================================
+# USER-DEALER DEPENDENCIES
+# =============================================================================
+
+
+async def get_user_dealer_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> AbstractUserDealerRepository:
+    """Get UserDealer repository instance."""
+    from prosell.infrastructure.repositories.user_dealer_repository_impl import (
+        SqlAlchemyUserDealerRepository,
+    )
+
+    return SqlAlchemyUserDealerRepository(session)
+
+
+async def get_assign_user_dealer_use_case(
+    user_dealer_repository: Annotated[
+        AbstractUserDealerRepository, Depends(get_user_dealer_repository)
+    ],
+    dealer_repository: Annotated[AbstractDealerRepository, Depends(get_dealer_repository)],
+) -> AssignUserDealerUseCase:
+    """Get AssignUserDealer use case instance."""
+    from prosell.application.use_cases.user_dealer.assign_user_dealer import (
+        AssignUserDealerUseCase,
+    )
+
+    return AssignUserDealerUseCase(
+        user_dealer_repository=user_dealer_repository,
+        dealer_repository=dealer_repository,
+    )
+
+
+async def get_bulk_assign_use_case(
+    user_dealer_repository: Annotated[
+        AbstractUserDealerRepository, Depends(get_user_dealer_repository)
+    ],
+) -> BulkAssignUseCase:
+    """Get BulkAssign use case instance."""
+    from prosell.application.use_cases.user_dealer.bulk_assign import BulkAssignUseCase
+
+    return BulkAssignUseCase(user_dealer_repository=user_dealer_repository)
+
+
+async def get_remove_user_dealer_use_case(
+    user_dealer_repository: Annotated[
+        AbstractUserDealerRepository, Depends(get_user_dealer_repository)
+    ],
+) -> RemoveUserDealerUseCase:
+    """Get RemoveUserDealer use case instance."""
+    from prosell.application.use_cases.user_dealer.remove_user_dealer import (
+        RemoveUserDealerUseCase,
+    )
+
+    return RemoveUserDealerUseCase(user_dealer_repository=user_dealer_repository)
+
+
+async def get_dealer_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> AbstractDealerRepository:
+    """Get Dealer repository instance."""
+    from prosell.infrastructure.repositories.dealer_repository_impl import (
+        SqlAlchemyDealerRepository,
+    )
+
+    return SqlAlchemyDealerRepository(session)
