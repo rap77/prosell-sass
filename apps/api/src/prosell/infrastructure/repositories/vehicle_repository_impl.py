@@ -1,12 +1,18 @@
 """SQLAlchemy implementation of Vehicle repository."""
 
+import base64
+import json
 from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from prosell.domain.entities.user import User
 from prosell.domain.entities.vehicle import Vehicle
+from prosell.domain.exceptions.auth_exceptions import Unauthorized
 from prosell.domain.repositories.vehicle_repository import AbstractVehicleRepository
+from prosell.infrastructure.models.product_model import ProductModel
+from prosell.infrastructure.models.user_dealer_model import UserDealerModel
 from prosell.infrastructure.models.vehicle_model import VehicleModel
 
 
@@ -168,6 +174,118 @@ class SqlAlchemyVehicleRepository(AbstractVehicleRepository):
         result = await self.session.execute(stmt)
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
+
+    async def get_catalog_for_user(
+        self,
+        user: User,
+        limit: int = 50,
+        cursor: str | None = None,
+    ) -> tuple[list[Vehicle], str | None, bool]:
+        """
+        Get vehicles for user based on role with cursor pagination.
+
+        Role-based filtering:
+        - Admin: sees all vehicles in tenant (no dealer filter)
+        - Dealer: sees only vehicles from their organization (dealer_id == user.dealer_id)
+        - Seller/Manager: sees vehicles from assigned dealers (IN subquery)
+
+        Args:
+            user: User entity with roles and tenant_id
+            limit: Max vehicles to return (default 50)
+            cursor: Pagination cursor (encoded vehicle ID + timestamp)
+
+        Returns:
+            Tuple of (vehicles list, next_cursor or None, has_more flag)
+
+        Raises:
+            Unauthorized: If seller/manager has no dealer assignments
+        """
+        # Base query with tenant isolation
+        stmt = (
+            select(VehicleModel)
+            .join(ProductModel, VehicleModel.product_id == ProductModel.id)
+            .where(ProductModel.tenant_id == user.tenant_id)
+        )
+
+        # Role-based filtering
+        if user.has_role("admin"):
+            # Admin sees all vehicles - no dealer filter
+            pass
+        elif user.has_role("dealer"):
+            # Dealer sees only their organization's vehicles
+            if not user.tenant_id:
+                raise Unauthorized("Dealer has no organization assigned")
+            stmt = stmt.where(ProductModel.organization_id == user.tenant_id)
+        else:
+            # Seller/Manager: get assigned dealer IDs via subquery
+            dealer_ids = await self._get_user_dealer_ids(user.id, user.tenant_id)
+            if not dealer_ids:
+                raise Unauthorized("No dealers assigned to user")
+            stmt = stmt.where(ProductModel.organization_id.in_(dealer_ids))
+
+        # Cursor pagination
+        if cursor:
+            cursor_data = self._decode_cursor(cursor)
+            if cursor_data:
+                stmt = stmt.where(VehicleModel.id > cursor_data["id"])
+
+        # Order by ID for consistent pagination
+        stmt = stmt.order_by(VehicleModel.id)
+
+        # Fetch one extra to determine if there are more results
+        stmt = stmt.limit(limit + 1)
+
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+
+        # Determine if there are more results
+        has_more = len(models) > limit
+        if has_more:
+            models = models[:limit]  # Remove the extra item
+            last_vehicle = models[-1]
+            next_cursor = self._encode_cursor(last_vehicle.id, last_vehicle.created_at)
+        else:
+            next_cursor = None
+
+        vehicles = [self._to_entity(m) for m in models]
+        return (vehicles, next_cursor, has_more)
+
+    async def _get_user_dealer_ids(self, user_id: UUID, tenant_id: UUID) -> list[UUID]:
+        """
+        Get dealer IDs assigned to user via M:N relationship.
+
+        Args:
+            user_id: User UUID
+            tenant_id: Tenant UUID for isolation
+
+        Returns:
+            List of dealer IDs (empty if none assigned)
+        """
+        stmt = select(UserDealerModel.dealer_id).where(
+            UserDealerModel.user_id == user_id,
+            UserDealerModel.tenant_id == tenant_id,
+        )
+
+        result = await self.session.execute(stmt)
+        dealer_ids = result.scalars().all()
+        return list(dealer_ids)
+
+    def _encode_cursor(self, vehicle_id: UUID, created_at) -> str:
+        """Encode cursor from vehicle ID and timestamp."""
+        cursor_data = {
+            "id": str(vehicle_id),
+            "created_at": created_at.isoformat(),
+        }
+        json_str = json.dumps(cursor_data)
+        return base64.urlsafe_b64encode(json_str.encode()).decode()
+
+    def _decode_cursor(self, cursor: str) -> dict | None:
+        """Decode cursor to vehicle ID and timestamp."""
+        try:
+            json_str = base64.urlsafe_b64decode(cursor.encode()).decode()
+            return json.loads(json_str)
+        except Exception:
+            return None
 
     def _to_entity(self, model: VehicleModel) -> Vehicle:
         """Convert ORM model to domain entity."""

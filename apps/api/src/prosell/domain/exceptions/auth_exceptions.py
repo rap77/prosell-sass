@@ -192,3 +192,10 @@ class OAuthCallbackError(AuthDomainException):
             message=f"OAuth callback failed for {provider}",
             details={"provider": provider, "reason": reason},
         )
+
+
+class Unauthorized(AuthDomainException):
+    """Raised when user lacks permission to access a resource."""
+
+    def __init__(self, message: str = "Unauthorized access") -> None:
+        super().__init__(message=message)

@@ -1,9 +1,13 @@
 """Vehicle repository interface."""
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from prosell.domain.entities.vehicle import Vehicle
+
+if TYPE_CHECKING:
+    from prosell.domain.entities.user import User
 
 
 class AbstractVehicleRepository(ABC):
@@ -121,5 +125,33 @@ class AbstractVehicleRepository(ABC):
 
         Returns:
             List of vehicles
+        """
+        pass
+
+    @abstractmethod
+    async def get_catalog_for_user(
+        self,
+        user: "User",
+        limit: int = 50,
+        cursor: str | None = None,
+    ) -> tuple[list[Vehicle], str | None, bool]:
+        """
+        Get vehicles for user based on role with cursor pagination.
+
+        Role-based filtering:
+        - Admin: sees all vehicles in tenant (no dealer filter)
+        - Dealer: sees only vehicles from their organization (dealer_id == user.dealer_id)
+        - Seller/Manager: sees vehicles from assigned dealers (IN subquery)
+
+        Args:
+            user: User entity with roles and tenant_id
+            limit: Max vehicles to return (default 50)
+            cursor: Pagination cursor (encoded vehicle ID + timestamp)
+
+        Returns:
+            Tuple of (vehicles list, next_cursor or None, has_more flag)
+
+        Raises:
+            Unauthorized: If seller/manager has no dealer assignments
         """
         pass
