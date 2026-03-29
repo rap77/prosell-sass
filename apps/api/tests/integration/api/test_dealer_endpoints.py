@@ -15,9 +15,9 @@ from prosell.infrastructure.api.main import app
 
 
 @pytest.fixture
-def admin_user():
+def admin_user(admin_role):
     """Create admin user fixture."""
-    return User(
+    user = User(
         id=uuid4(),
         email="admin@example.com",
         full_name="Admin User",
@@ -25,12 +25,29 @@ def admin_user():
         is_active=True,
         email_verified=True,
     )
+    user.roles = [admin_role]
+    return user
 
 
 @pytest.fixture
 def admin_role():
     """Create admin role fixture."""
     return Role.create_system_role(RoleType.ADMIN)
+
+
+@pytest.fixture
+def admin_user_with_role(admin_role):
+    """Create admin user with role - separate fixture for dependency injection."""
+    user = User(
+        id=uuid4(),
+        email="admin@example.com",
+        full_name="Admin User",
+        tenant_id=uuid4(),
+        is_active=True,
+        email_verified=True,
+    )
+    user.roles = [admin_role]
+    return user
 
 
 @pytest.fixture
@@ -52,16 +69,35 @@ def mock_dealer_repo():
 
 
 @pytest.fixture
-def mock_create_dealer_use_case(admin_user):
+def mock_create_dealer_use_case():  # noqa: ARG001
     """Mock CreateDealerUseCase."""
+    from datetime import UTC, datetime
+
+    from prosell.application.dto.dealer import DealerResponse
+
     use_case = AsyncMock()
 
     async def mock_execute(request, tenant_id):
-        return Dealer(
-            id=uuid4(),
-            tenant_id=tenant_id,
+        return DealerResponse(
+            id=str(uuid4()),
+            tenant_id=str(tenant_id),
             name=request.name,
-            slug=request.name.lower().replace(" ", "-"),
+            slug=request.slug or request.name.lower().replace(" ", "-"),
+            logo_url=request.logo_url,
+            address=request.address,
+            city=request.city,
+            state=request.state,
+            country=request.country,
+            postal_code=request.postal_code,
+            phone=request.phone,
+            email=request.email,
+            website=request.website,
+            timezone=request.timezone,
+            settings=request.settings,
+            latitude=None,
+            longitude=None,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
     use_case.execute = mock_execute
@@ -71,14 +107,33 @@ def mock_create_dealer_use_case(admin_user):
 @pytest.fixture
 def mock_get_dealer_use_case():
     """Mock GetDealerUseCase."""
+    from datetime import UTC, datetime
+
+    from prosell.application.dto.dealer import DealerResponse
+
     use_case = AsyncMock()
 
     async def mock_execute(dealer_id, tenant_id):
-        return Dealer(
-            id=dealer_id,
-            tenant_id=tenant_id,
+        return DealerResponse(
+            id=str(dealer_id),
+            tenant_id=str(tenant_id),
             name="Test Dealer",
             slug="test-dealer",
+            logo_url=None,
+            address=None,
+            city=None,
+            state=None,
+            country=None,
+            postal_code=None,
+            phone=None,
+            email=None,
+            website=None,
+            timezone="America/Montevideo",
+            settings={},
+            latitude=None,
+            longitude=None,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
     use_case.execute = mock_execute
@@ -88,7 +143,8 @@ def mock_get_dealer_use_case():
 @pytest.fixture
 def mock_list_dealers_use_case():
     """Mock ListDealersUseCase."""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
+
     from prosell.application.dto.dealer import DealerListResponse, DealerResponse
 
     use_case = AsyncMock()
@@ -130,13 +186,14 @@ def mock_list_dealers_use_case():
 @pytest.fixture(autouse=True)
 def setup_dependencies(
     admin_user,
-    admin_role,
-    mock_dealer_repo,
+    mock_dealer_repo,  # noqa: ARG001
     mock_create_dealer_use_case,
     mock_get_dealer_use_case,
     mock_list_dealers_use_case,
 ):
     """Set up dependency overrides for all tests."""
+    from unittest.mock import Mock
+
     from prosell.infrastructure.api.dependencies import get_current_auth_user
     from prosell.infrastructure.api.di import (
         get_create_dealer_use_case,
@@ -144,11 +201,18 @@ def setup_dependencies(
         get_list_dealers_use_case,
     )
 
-    # Mock auth user with admin role
+    # Mock auth user with admin role - use Mock to avoid _roles attribute issue
     async def get_mock_user():
-        # Attach role to user
-        admin_user._roles = [admin_role]
-        return admin_user
+        mock_user = Mock(spec=User)
+        mock_user.id = admin_user.id
+        mock_user.email = admin_user.email
+        mock_user.full_name = admin_user.full_name
+        mock_user.tenant_id = admin_user.tenant_id
+        mock_user.is_active = True
+        mock_user.email_verified = True
+        mock_user.roles = []  # For debug code in router
+        mock_user.has_role = Mock(return_value=True)  # Always True for admin tests
+        return mock_user
 
     app.dependency_overrides[get_current_auth_user] = get_mock_user
     app.dependency_overrides[get_create_dealer_use_case] = lambda: mock_create_dealer_use_case
@@ -183,9 +247,10 @@ class TestDealerEndpoints:
 
     async def test_create_dealer_slug_unique(self, mock_create_dealer_use_case):
         """POST /api/dealers validates slug uniqueness."""
+
         # Mock use case to raise SlugNotUniqueError
-        async def mock_execute_with_error(request, tenant_id):
-            raise SlugNotUniqueError("test-dealer")
+        async def mock_execute_with_error(_request, tenant_id):  # noqa: ARG001
+            raise SlugNotUniqueError("test-dealer", tenant_id)
 
         mock_create_dealer_use_case.execute = mock_execute_with_error
 

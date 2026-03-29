@@ -8,15 +8,12 @@ Tests cover role-based vehicle catalog filtering:
 - Unauthorized sellers get empty result
 """
 
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
 
-from prosell.domain.entities.dealer import Dealer
 from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.entities.user import User
 from prosell.infrastructure.api.main import app
@@ -67,7 +64,7 @@ def mock_vehicle_catalog_use_case():
 
     use_case = pytest.AsyncMock()
 
-    async def mock_execute(user, limit=50, cursor=None, filters=None):
+    async def mock_execute(user, limit=50, cursor=None, filters=None):  # noqa: ARG001
         # Return different results based on user role
         if any(r.role_type == RoleType.ADMIN for r in user._roles):
             # Admin sees all vehicles
@@ -108,10 +105,10 @@ def setup_dependencies(
     mock_vehicle_catalog_use_case,
 ):
     """Set up dependency overrides for all tests."""
-    from prosell.infrastructure.api.dependencies import get_current_auth_user
     from prosell.application.use_cases.vehicle.get_vehicle_catalog import (
         GetVehicleCatalogUseCase,
     )
+    from prosell.infrastructure.api.dependencies import get_current_auth_user
 
     def get_mock_admin_user():
         admin_user._roles = [admin_role]
@@ -146,9 +143,9 @@ class TestVehicleFiltering:
     async def test_seller_with_no_assignments(self):
         """GET /api/vehicles returns empty for seller with no dealer assignments."""
         # Override to seller user
-        from prosell.infrastructure.api.dependencies import get_current_auth_user
         from prosell.domain.entities.role import Role, RoleType
         from prosell.domain.entities.user import User
+        from prosell.infrastructure.api.dependencies import get_current_auth_user
 
         seller = User(
             id=uuid4(),
@@ -177,9 +174,9 @@ class TestVehicleFiltering:
         """Returns 401 when user has no dealer assignments (seller role)."""
         # Same test as above - seller with no assignments gets empty result, not 401
         # The 401 case would be for unauthenticated users
-        from prosell.infrastructure.api.dependencies import get_current_auth_user
         from prosell.domain.entities.role import Role, RoleType
         from prosell.domain.entities.user import User
+        from prosell.infrastructure.api.dependencies import get_current_auth_user
 
         seller = User(
             id=uuid4(),

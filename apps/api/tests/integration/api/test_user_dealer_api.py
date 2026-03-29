@@ -372,6 +372,7 @@ async def test_remove_user_dealer_usecase_idempotent(
 async def test_assign_seller_to_dealer() -> None:
     """POST /api/users/{id}/dealers assigns dealer (201)."""
     from unittest.mock import AsyncMock
+
     from fastapi import status
     from httpx import ASGITransport, AsyncClient
 
@@ -395,7 +396,7 @@ async def test_assign_seller_to_dealer() -> None:
         email_verified=True,
     )
     admin_role = Role.create_system_role(RoleType.ADMIN)
-    admin_user._roles = [admin_role]
+    admin_user.roles = [admin_role]
 
     mock_dealer = Dealer(
         id=dealer_id,
@@ -419,16 +420,24 @@ async def test_assign_seller_to_dealer() -> None:
     mock_dealer_repo.get_by_id = AsyncMock(return_value=mock_dealer)
 
     # Set up dependencies
-    from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+    from prosell.infrastructure.api.dependencies import (
+        get_current_auth_user_from_cookie,
+        get_jwt_service,
+        get_user_repository,
+    )
     from prosell.infrastructure.api.di import (
         get_assign_user_dealer_use_case,
-        get_bulk_assign_use_case,
-        get_remove_user_dealer_use_case,
         get_user_dealer_repository,
     )
 
-    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
+    async def mock_auth():
+        return admin_user
+
+    app.dependency_overrides[get_current_auth_user_from_cookie] = mock_auth
     app.dependency_overrides[get_user_dealer_repository] = lambda: mock_user_dealer_repo
+    # Mock internal dependencies to avoid DB connection
+    app.dependency_overrides[get_jwt_service] = lambda: AsyncMock()
+    app.dependency_overrides[get_user_repository] = lambda: AsyncMock()
 
     # Mock use case
     mock_use_case = AsyncMock()
@@ -465,6 +474,7 @@ async def test_assign_seller_to_dealer() -> None:
 async def test_bulk_assign_sellers() -> None:
     """POST /api/users/bulk-assign assigns multiple (200)."""
     from unittest.mock import AsyncMock
+
     from fastapi import status
     from httpx import ASGITransport, AsyncClient
 
@@ -486,13 +496,25 @@ async def test_bulk_assign_sellers() -> None:
         email_verified=True,
     )
     admin_role = Role.create_system_role(RoleType.ADMIN)
-    admin_user._roles = [admin_role]
+    admin_user.roles = [admin_role]
 
     # Set up dependencies
-    from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
-    from prosell.infrastructure.api.di import get_bulk_assign_use_case
+    from prosell.infrastructure.api.dependencies import (
+        get_current_auth_user_from_cookie,
+        get_jwt_service,
+        get_user_repository,
+    )
+    from prosell.infrastructure.api.di import (
+        get_bulk_assign_use_case,
+    )
 
-    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
+    async def mock_auth():
+        return admin_user
+
+    app.dependency_overrides[get_current_auth_user_from_cookie] = mock_auth
+    # Mock internal dependencies to avoid DB connection
+    app.dependency_overrides[get_jwt_service] = lambda: AsyncMock()
+    app.dependency_overrides[get_user_repository] = lambda: AsyncMock()
 
     # Mock use case
     mock_use_case = AsyncMock()
@@ -522,6 +544,7 @@ async def test_bulk_assign_sellers() -> None:
 async def test_remove_seller_from_dealer() -> None:
     """DELETE /api/users/{id}/dealers/{dealer_id} removes (204)."""
     from unittest.mock import AsyncMock
+
     from fastapi import status
     from httpx import ASGITransport, AsyncClient
 
@@ -542,13 +565,25 @@ async def test_remove_seller_from_dealer() -> None:
         email_verified=True,
     )
     admin_role = Role.create_system_role(RoleType.ADMIN)
-    admin_user._roles = [admin_role]
+    admin_user.roles = [admin_role]
 
     # Set up dependencies
-    from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
-    from prosell.infrastructure.api.di import get_remove_user_dealer_use_case
+    from prosell.infrastructure.api.dependencies import (
+        get_current_auth_user_from_cookie,
+        get_jwt_service,
+        get_user_repository,
+    )
+    from prosell.infrastructure.api.di import (
+        get_remove_user_dealer_use_case,
+    )
 
-    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
+    async def mock_auth():
+        return admin_user
+
+    app.dependency_overrides[get_current_auth_user_from_cookie] = mock_auth
+    # Mock internal dependencies to avoid DB connection
+    app.dependency_overrides[get_jwt_service] = lambda: AsyncMock()
+    app.dependency_overrides[get_user_repository] = lambda: AsyncMock()
 
     # Mock use case
     mock_use_case = AsyncMock()
@@ -572,6 +607,7 @@ async def test_remove_seller_from_dealer() -> None:
 async def test_list_user_dealers() -> None:
     """GET /api/users/{id}/dealers lists assignments (200)."""
     from unittest.mock import AsyncMock
+
     from fastapi import status
     from httpx import ASGITransport, AsyncClient
 
@@ -592,13 +628,25 @@ async def test_list_user_dealers() -> None:
         email_verified=True,
     )
     admin_role = Role.create_system_role(RoleType.ADMIN)
-    admin_user._roles = [admin_role]
+    admin_user.roles = [admin_role]
 
     # Set up dependencies
-    from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
-    from prosell.infrastructure.api.di import get_user_dealer_repository
+    from prosell.infrastructure.api.dependencies import (
+        get_current_auth_user_from_cookie,
+        get_jwt_service,
+        get_user_repository,
+    )
+    from prosell.infrastructure.api.di import (
+        get_user_dealer_repository,
+    )
 
-    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
+    async def mock_auth():
+        return admin_user
+
+    app.dependency_overrides[get_current_auth_user_from_cookie] = mock_auth
+    # Mock internal dependencies to avoid DB connection
+    app.dependency_overrides[get_jwt_service] = lambda: AsyncMock()
+    app.dependency_overrides[get_user_repository] = lambda: AsyncMock()
 
     # Mock repository
     mock_repo = AsyncMock()
@@ -632,6 +680,7 @@ async def test_list_user_dealers() -> None:
 async def test_admin_manager_only_access() -> None:
     """Admin/Manager-only access enforced (403 for sellers)."""
     from unittest.mock import AsyncMock
+
     from fastapi import status
     from httpx import ASGITransport, AsyncClient
 
@@ -652,14 +701,26 @@ async def test_admin_manager_only_access() -> None:
         is_active=True,
         email_verified=True,
     )
-    seller_role = Role.create_system_role(RoleType.SELLER)
-    seller_user._roles = [seller_role]
+    seller_role = Role.create_system_role(RoleType.SALES_AGENT)
+    seller_user.roles = [seller_role]
 
     # Set up dependencies
-    from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
-    from prosell.infrastructure.api.di import get_assign_user_dealer_use_case
+    from prosell.infrastructure.api.dependencies import (
+        get_current_auth_user_from_cookie,
+        get_jwt_service,
+        get_user_repository,
+    )
+    from prosell.infrastructure.api.di import (
+        get_assign_user_dealer_use_case,
+    )
 
-    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: seller_user
+    async def mock_auth():
+        return seller_user
+
+    app.dependency_overrides[get_current_auth_user_from_cookie] = mock_auth
+    # Mock internal dependencies to avoid DB connection
+    app.dependency_overrides[get_jwt_service] = lambda: AsyncMock()
+    app.dependency_overrides[get_user_repository] = lambda: AsyncMock()
 
     # Mock use case
     mock_use_case = AsyncMock()
@@ -698,10 +759,10 @@ def mock_user_dealer_repo():
                 assigned_by=assigned_by,
             )
 
-        async def exists(self, user_id, dealer_id, tenant_id):
+        async def exists(self, user_id, dealer_id, tenant_id):  # noqa: ARG002
             return False
 
-        async def remove(self, user_id, dealer_id, tenant_id):
+        async def remove(self, user_id, dealer_id, tenant_id):  # noqa: ARG002
             return True
 
     return MockUserDealerRepo()
@@ -723,3 +784,26 @@ def mock_dealer_repo():
             )
 
     return MockDealerRepo()
+
+
+@pytest.fixture
+def admin_role():
+    """Create admin role fixture."""
+    from prosell.domain.entities.role import Role, RoleType
+
+    return Role.create_system_role(RoleType.ADMIN)
+
+
+@pytest.fixture
+def admin_user(admin_role):
+    """Create admin user fixture."""
+    user = User(
+        id=uuid4(),
+        email="admin@example.com",
+        full_name="Admin User",
+        tenant_id=uuid4(),
+        is_active=True,
+        email_verified=True,
+    )
+    user.roles = [admin_role]
+    return user

@@ -234,11 +234,24 @@ class User(DomainModel):
             return True
         return False
 
-    def has_role(self, role_type: str) -> bool:
-        """Check if user has a specific role."""
+    def has_role(self, role_type: str | list[str]) -> bool:
+        """Check if user has a specific role or any of multiple roles.
+
+        Args:
+            role_type: Role type as string (e.g., "admin") or list of strings
+                       (e.g., ["admin", "manager"])
+
+        Returns:
+            True if user has any of the specified roles
+        """
         if not self.roles:
             return False
-        return any(role.role_type == role_type for role in self.roles)
+
+        # Normalize to list for unified handling
+        roles_to_check = [role_type] if isinstance(role_type, str) else role_type
+
+        # Compare with role_type.value since role_type is a StrEnum
+        return any(any(role.role_type.value == r for r in roles_to_check) for role in self.roles)
 
     def suspend(self) -> None:
         """Suspend user account."""
