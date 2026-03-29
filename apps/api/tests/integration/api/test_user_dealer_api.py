@@ -27,6 +27,7 @@ from prosell.application.use_cases.user_dealer.bulk_assign import BulkAssignUseC
 from prosell.application.use_cases.user_dealer.remove_user_dealer import (
     RemoveUserDealerUseCase,
 )
+from prosell.domain.entities.user import User
 from prosell.domain.entities.user_dealer import UserDealer
 from prosell.domain.exceptions.dealer_exceptions import DealerNotFoundError
 from prosell.domain.exceptions.user_dealer_exceptions import (
@@ -367,34 +368,316 @@ async def test_remove_user_dealer_usecase_idempotent(
 # =============================================================================
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 5 (wire router)")
-def test_assign_seller_to_dealer() -> None:
+@pytest.mark.asyncio
+async def test_assign_seller_to_dealer() -> None:
     """POST /api/users/{id}/dealers assigns dealer (201)."""
-    pytest.fail("stub - Task 5")
+    from unittest.mock import AsyncMock
+    from fastapi import status
+    from httpx import ASGITransport, AsyncClient
+
+    from prosell.domain.entities.dealer import Dealer
+    from prosell.domain.entities.role import Role, RoleType
+    from prosell.domain.entities.user_dealer import UserDealer
+    from prosell.infrastructure.api.main import app
+
+    # Arrange
+    user_id = uuid4()
+    dealer_id = uuid4()
+    tenant_id = uuid4()
+    assigned_by = uuid4()
+
+    admin_user = User(
+        id=assigned_by,
+        email="admin@example.com",
+        full_name="Admin User",
+        tenant_id=tenant_id,
+        is_active=True,
+        email_verified=True,
+    )
+    admin_role = Role.create_system_role(RoleType.ADMIN)
+    admin_user._roles = [admin_role]
+
+    mock_dealer = Dealer(
+        id=dealer_id,
+        tenant_id=tenant_id,
+        name="Test Dealer",
+        slug="test-dealer",
+    )
+
+    mock_user_dealer_repo = AsyncMock()
+    mock_user_dealer_repo.exists = AsyncMock(return_value=False)
+    mock_user_dealer_repo.assign = AsyncMock(
+        return_value=UserDealer.assign(
+            user_id=user_id,
+            dealer_id=dealer_id,
+            tenant_id=tenant_id,
+            assigned_by=assigned_by,
+        )
+    )
+
+    mock_dealer_repo = AsyncMock()
+    mock_dealer_repo.get_by_id = AsyncMock(return_value=mock_dealer)
+
+    # Set up dependencies
+    from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+    from prosell.infrastructure.api.di import (
+        get_assign_user_dealer_use_case,
+        get_bulk_assign_use_case,
+        get_remove_user_dealer_use_case,
+        get_user_dealer_repository,
+    )
+
+    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
+    app.dependency_overrides[get_user_dealer_repository] = lambda: mock_user_dealer_repo
+
+    # Mock use case
+    mock_use_case = AsyncMock()
+    mock_use_case.execute = AsyncMock(
+        return_value=UserDealerResponse(
+            id=uuid4(),
+            user_id=user_id,
+            dealer_id=dealer_id,
+            tenant_id=tenant_id,
+            assigned_at=datetime.now(UTC),
+            assigned_by=assigned_by,
+        )
+    )
+    app.dependency_overrides[get_assign_user_dealer_use_case] = lambda: mock_use_case
+
+    try:
+        # Act
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                f"/api/users/{user_id}/dealers",
+                json={"dealer_id": str(dealer_id)},
+            )
+
+        # Assert
+        assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()
+        assert data["user_id"] == str(user_id)
+        assert data["dealer_id"] == str(dealer_id)
+    finally:
+        app.dependency_overrides.clear()
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 5 (wire router)")
-def test_bulk_assign_sellers() -> None:
+@pytest.mark.asyncio
+async def test_bulk_assign_sellers() -> None:
     """POST /api/users/bulk-assign assigns multiple (200)."""
-    pytest.fail("stub - Task 5")
+    from unittest.mock import AsyncMock
+    from fastapi import status
+    from httpx import ASGITransport, AsyncClient
+
+    from prosell.domain.entities.role import Role, RoleType
+    from prosell.infrastructure.api.main import app
+
+    # Arrange
+    tenant_id = uuid4()
+    assigned_by = uuid4()
+    user_ids = [uuid4(), uuid4()]
+    dealer_ids = [uuid4(), uuid4()]
+
+    admin_user = User(
+        id=assigned_by,
+        email="admin@example.com",
+        full_name="Admin User",
+        tenant_id=tenant_id,
+        is_active=True,
+        email_verified=True,
+    )
+    admin_role = Role.create_system_role(RoleType.ADMIN)
+    admin_user._roles = [admin_role]
+
+    # Set up dependencies
+    from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+    from prosell.infrastructure.api.di import get_bulk_assign_use_case
+
+    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
+
+    # Mock use case
+    mock_use_case = AsyncMock()
+    mock_use_case.execute = AsyncMock(return_value={"assigned_count": 4})
+    app.dependency_overrides[get_bulk_assign_use_case] = lambda: mock_use_case
+
+    try:
+        # Act
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/users/bulk-assign",
+                json={
+                    "user_ids": [str(uid) for uid in user_ids],
+                    "dealer_ids": [str(did) for did in dealer_ids],
+                },
+            )
+
+        # Assert
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["assigned_count"] == 4
+    finally:
+        app.dependency_overrides.clear()
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 5 (wire router)")
-def test_remove_seller_from_dealer() -> None:
+@pytest.mark.asyncio
+async def test_remove_seller_from_dealer() -> None:
     """DELETE /api/users/{id}/dealers/{dealer_id} removes (204)."""
-    pytest.fail("stub - Task 5")
+    from unittest.mock import AsyncMock
+    from fastapi import status
+    from httpx import ASGITransport, AsyncClient
+
+    from prosell.domain.entities.role import Role, RoleType
+    from prosell.infrastructure.api.main import app
+
+    # Arrange
+    user_id = uuid4()
+    dealer_id = uuid4()
+    tenant_id = uuid4()
+
+    admin_user = User(
+        id=uuid4(),
+        email="admin@example.com",
+        full_name="Admin User",
+        tenant_id=tenant_id,
+        is_active=True,
+        email_verified=True,
+    )
+    admin_role = Role.create_system_role(RoleType.ADMIN)
+    admin_user._roles = [admin_role]
+
+    # Set up dependencies
+    from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+    from prosell.infrastructure.api.di import get_remove_user_dealer_use_case
+
+    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
+
+    # Mock use case
+    mock_use_case = AsyncMock()
+    mock_use_case.execute = AsyncMock(return_value=None)
+    app.dependency_overrides[get_remove_user_dealer_use_case] = lambda: mock_use_case
+
+    try:
+        # Act
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.delete(
+                f"/api/users/{user_id}/dealers/{dealer_id}",
+            )
+
+        # Assert
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+    finally:
+        app.dependency_overrides.clear()
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 5 (wire router)")
-def test_list_user_dealers() -> None:
+@pytest.mark.asyncio
+async def test_list_user_dealers() -> None:
     """GET /api/users/{id}/dealers lists assignments (200)."""
-    pytest.fail("stub - Task 5")
+    from unittest.mock import AsyncMock
+    from fastapi import status
+    from httpx import ASGITransport, AsyncClient
+
+    from prosell.domain.entities.role import Role, RoleType
+    from prosell.infrastructure.api.main import app
+
+    # Arrange
+    user_id = uuid4()
+    dealer_id = uuid4()
+    tenant_id = uuid4()
+
+    admin_user = User(
+        id=uuid4(),
+        email="admin@example.com",
+        full_name="Admin User",
+        tenant_id=tenant_id,
+        is_active=True,
+        email_verified=True,
+    )
+    admin_role = Role.create_system_role(RoleType.ADMIN)
+    admin_user._roles = [admin_role]
+
+    # Set up dependencies
+    from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+    from prosell.infrastructure.api.di import get_user_dealer_repository
+
+    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
+
+    # Mock repository
+    mock_repo = AsyncMock()
+    mock_repo.get_user_dealer_ids = AsyncMock(return_value=[dealer_id])
+    mock_repo.get_assignment = AsyncMock(
+        return_value=UserDealer.assign(
+            user_id=user_id,
+            dealer_id=dealer_id,
+            tenant_id=tenant_id,
+            assigned_by=admin_user.id,
+        )
+    )
+    app.dependency_overrides[get_user_dealer_repository] = lambda: mock_repo
+
+    try:
+        # Act
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(f"/api/users/{user_id}/dealers")
+
+        # Assert
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "items" in data
+        assert "total" in data
+        assert data["total"] == 1
+    finally:
+        app.dependency_overrides.clear()
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 5 (wire router)")
-def test_admin_manager_only_access() -> None:
+@pytest.mark.asyncio
+async def test_admin_manager_only_access() -> None:
     """Admin/Manager-only access enforced (403 for sellers)."""
-    pytest.fail("stub - Task 5")
+    from unittest.mock import AsyncMock
+    from fastapi import status
+    from httpx import ASGITransport, AsyncClient
+
+    from prosell.domain.entities.role import Role, RoleType
+    from prosell.infrastructure.api.main import app
+
+    # Arrange
+    user_id = uuid4()
+    dealer_id = uuid4()
+    tenant_id = uuid4()
+
+    # Create seller user (not admin/manager)
+    seller_user = User(
+        id=uuid4(),
+        email="seller@example.com",
+        full_name="Seller User",
+        tenant_id=tenant_id,
+        is_active=True,
+        email_verified=True,
+    )
+    seller_role = Role.create_system_role(RoleType.SELLER)
+    seller_user._roles = [seller_role]
+
+    # Set up dependencies
+    from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+    from prosell.infrastructure.api.di import get_assign_user_dealer_use_case
+
+    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: seller_user
+
+    # Mock use case
+    mock_use_case = AsyncMock()
+    app.dependency_overrides[get_assign_user_dealer_use_case] = lambda: mock_use_case
+
+    try:
+        # Act
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                f"/api/users/{user_id}/dealers",
+                json={"dealer_id": str(dealer_id)},
+            )
+
+        # Assert
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert "admin or manager" in response.json()["detail"].lower()
+    finally:
+        app.dependency_overrides.clear()
 
 
 # =============================================================================
