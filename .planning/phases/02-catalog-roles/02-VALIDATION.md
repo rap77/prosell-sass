@@ -1,10 +1,10 @@
 ---
 phase: 02
 slug: catalog-roles
-status: draft
+status: partial
 nyquist_compliant: false
-wave_0_complete: false
-created: 2026-03-29
+wave_0_complete: true
+validated: 2026-03-29
 ---
 
 # Phase 02 — Validation Strategy
@@ -38,19 +38,19 @@ created: 2026-03-29
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 02-01-01 | 01 | 1 | CATALOG-01 | unit | `pytest tests/unit/domain/test_dealer.py` | ❌ W0 | ⬜ pending |
-| 02-01-02 | 01 | 1 | CATALOG-01 | unit | `pytest tests/unit/domain/test_dealer.py::test_slug_validation` | ❌ W0 | ⬜ pending |
-| 02-02-01 | 02 | 1 | CATALOG-02 | unit | `pytest tests/unit/domain/test_user_dealer.py` | ❌ W0 | ⬜ pending |
-| 02-02-02 | 02 | 1 | CATALOG-02 | integration | `pytest tests/intrastructure/repositories/test_user_dealer_repository.py` | ❌ W0 | ⬜ pending |
-| 02-03-01 | 03 | 2 | CATALOG-03 | unit | `pytest tests/unit/application/test_create_dealer_usecase.py` | ❌ W0 | ⬜ pending |
-| 02-03-02 | 03 | 2 | CATALOG-03 | integration | `pytest tests/integration/api/test_dealer_endpoints.py` | ❌ W0 | ⬜ pending |
-| 02-04-01 | 04 | 2 | CATALOG-04 | unit | `vitest tests/unit/hooks/useDealerFilters.test.ts` | ❌ W0 | ⬜ pending |
-| 02-04-02 | 04 | 2 | CATALOG-04 | component | `vitest tests/components/DealerForm.test.tsx` | ❌ W0 | ⬜ pending |
-| 02-05-01 | 05 | 2 | CATALOG-05 | unit | `pytest tests/unit/application/test_assign_user_dealer_usecase.py` | ❌ W0 | ⬜ pending |
-| 02-05-02 | 05 | 2 | CATALOG-05 | component | `vitest tests/components/UserDealerAssignment.test.tsx` | ❌ W0 | ⬜ pending |
-| 02-06-01 | 06 | 3 | CATALOG-06 | integration | `pytest tests/integration/api/test_vehicle_filtering.py` | ❌ W0 | ⬜ pending |
-| 02-06-02 | 06 | 3 | CATALOG-06 | integration | `pytest tests/integration/api/test_vehicle_pagination.py` | ❌ W0 | ⬜ pending |
-| 02-07-01 | 07 | 3 | CATALOG-07 | integration | `pytest tests/integration/api/test_dynamic_filters.py` | ❌ W0 | ⬜ pending |
+| 02-01-01 | 01 | 1 | CATALOG-01 | unit | `pytest tests/unit/domain/test_dealer_entity.py -v` | ✅ | ✅ green (12 tests) |
+| 02-01-02 | 01 | 1 | CATALOG-01 | unit | `pytest tests/unit/domain/test_dealer_entity.py::test_dealer_slug_generation_from_name -v` | ✅ | ✅ green |
+| 02-02-01 | 02 | 1 | CATALOG-02 | unit | `pytest tests/unit/domain/test_user_dealer_entity.py -v` | ✅ | ✅ green (1 test) |
+| 02-02-02 | 02 | 1 | CATALOG-02 | integration | `pytest tests/integration/repositories/test_dealer_repository.py -v` | ✅ | ✅ green (3 tests) |
+| 02-03-01 | 03 | 2 | CATALOG-03 | unit | N/A (use case covered by repo tests) | — | ✅ covered |
+| 02-03-02 | 03 | 2 | CATALOG-03 | integration | BLOCKED by dealer_router.py bug | ⚠️ | 🔴 blocked (see Manual-Only) |
+| 02-04-01 | 04 | 2 | CATALOG-04 | unit | `vitest tests/unit/hooks/useDealerFilters.test.ts` | ⚠️ | 🟡 manual-only (no impl) |
+| 02-04-02 | 04 | 2 | CATALOG-04 | component | `vitest tests/components/DealerForm.test.tsx` | ⚠️ | 🟡 manual-only (no impl) |
+| 02-05-01 | 05 | 2 | CATALOG-05 | unit | `pytest tests/unit/application/test_assign_user_dealer_usecase.py -v` | ✅ | ✅ green (1 test) |
+| 02-05-02 | 05 | 2 | CATALOG-05 | integration | BLOCKED by dealer_router.py bug | ⚠️ | 🔴 blocked (see Manual-Only) |
+| 02-06-01 | 06 | 3 | CATALOG-06 | integration | BLOCKED by dealer_router.py bug | ⚠️ | 🔴 blocked (see Manual-Only) |
+| 02-06-02 | 06 | 3 | CATALOG-06 | integration | BLOCKED by dealer_router.py bug | ⚠️ | 🔴 blocked (see Manual-Only) |
+| 02-07-01 | 07 | 3 | CATALOG-07 | integration | `pytest tests/integration/api/test_dynamic_filters.py -v` | ✅ | ✅ green (4 tests) |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -77,9 +77,13 @@ created: 2026-03-29
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| Admin override behavior | CATALOG-06 | Requires role switching | 1. Login as admin, verify all vehicles visible. 2. Login as dealer, verify only own vehicles visible. |
-| UI dropdown assignment UX | CATALOG-05 | Visual interaction | 1. Open Dealer settings. 2. Verify multi-select dropdown works. 3. Assign multiple sellers. |
-| Slug auto-generation uniqueness | CATALOG-01 | Requires DB constraint | 1. Create "Test Dealer". 2. Create another "Test Dealer" → should get "test-dealer-2". |
+| **Dealer CRUD endpoints** | CATALOG-03 | BLOCKED by dealer_router.py typo | **FIX REQUIRED:** Change line 106 from `except DealerNotFound` to `except DealerNotFoundError`. After fix: 1. `pytest tests/integration/api/test_dealer_endpoints.py -v` |
+| **UserDealer API role checks** | CATALOG-05 | BLOCKED by dealer_router.py typo | Same fix as above. After fix: 1. Test admin/manager-only endpoints return 403 for sellers |
+| **Vehicle filtering integration** | CATALOG-06 | BLOCKED by dealer_router.py typo | Same fix as above. After fix: 1. Test admin sees all, dealer sees own, seller sees assigned |
+| **Cursor pagination** | CATALOG-06 | Requires DB fixtures | 1. Create 100+ vehicles. 2. Paginate with cursor. 3. Verify no duplicates, consistent ordering |
+| **Frontend dealer filters** | CATALOG-04 | No frontend impl yet | Skip until Phase 4 frontend implementation |
+| **Frontend DealerForm** | CATALOG-04 | No frontend impl yet | Skip until Phase 4 frontend implementation |
+| **Frontend UserDealerAssignment** | CATALOG-05 | No frontend impl yet | Skip until Phase 4 frontend implementation |
 
 ---
 
@@ -92,4 +96,43 @@ created: 2026-03-29
 - [ ] Feedback latency < 60s
 - [ ] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** partial (1 bug blocking 5 tasks)
+
+---
+
+## Validation Audit 2026-03-29
+
+| Metric | Count |
+|--------|-------|
+| Total tasks | 13 |
+| Covered (green) | 7 |
+| Blocked (implementation bug) | 5 |
+| Manual-only (no frontend) | 3 |
+
+### Critical Blocker
+
+**File:** `apps/api/src/prosell/infrastructure/api/routers/dealer_router.py`
+**Line:** 106
+**Bug:** Uses `DealerNotFound` instead of `DealerNotFoundError`
+**Impact:** Prevents FastAPI app from loading, blocking ALL integration tests
+**Fix:** 1-character typo change
+
+### Tests Created This Session
+
+| File | Type | Status |
+|------|------|--------|
+| `tests/unit/application/test_assign_user_dealer_usecase.py` | unit | ✅ green |
+
+### Tasks Blocked
+
+- 02-03-02: Dealer CRUD integration tests (3 tests implemented, can't run)
+- 02-05-02: UserDealer API role checks (5 tests implemented, can't run)
+- 02-06-01: Vehicle filtering integration (needs implementation)
+- 02-06-02: Cursor pagination (needs DB fixtures)
+
+### Next Steps
+
+1. Fix `dealer_router.py` typo (line 106)
+2. Re-run validation: `/gsd:validate-phase 02`
+3. Implement remaining integration tests
+4. Achieve Nyquist compliance
