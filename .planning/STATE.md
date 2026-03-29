@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Completed Phase 02 Plan 02 - UserDealer M:N Entity
-last_updated: "2026-03-29T12:29:07.000Z"
-last_activity: 2026-03-29 — Phase 02-02 complete with UserDealer entity, repository, and migration
+stopped_at: Completed Phase 02 Plan 05 - Role-Based Vehicle Filtering
+last_updated: "2026-03-29T13:00:00.000Z"
+last_activity: 2026-03-29 — Phase 02-05 complete with role-based catalog filtering
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 21
-  completed_plans: 15
-  percent: 71
+  completed_plans: 18
+  percent: 86
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** El vendedor de ProSell puede publicar cualquier vehículo en Facebook Marketplace desde la app, capturar el lead interesado, y confirmar la cita con el dealer — todo sin salir del panel interno.
-**Current focus:** Phase 2 (Catalog & Roles) execution - User-dealer M:N relationships
+**Current focus:** Phase 2 (Catalog & Roles) execution - Wave 2 completion
 
 ## Current Position
 
 Phase: 02 of 8 (Catalog & Roles) - IN PROGRESS
-Plan: 02-02 complete (3/8)
-Status: UserDealer M:N entity complete with repository and migration. Next: API endpoints (02-03).
-Last activity: 2026-03-29 — Phase 02-02 complete with UserDealer entity, repository, and migration
+Plan: 02-05 complete (5/8)
+Status: Role-based vehicle filtering complete. Next: Cursor pagination (02-06).
+Last activity: 2026-03-29 — Phase 02-05 complete with repository, use case, and API endpoint
 
-Progress: [████████░░] 71% (Phases 1, 8, 9 complete; Phase 2 in progress)
+Progress: [█████████░] 86% (Phases 1, 8, 9 complete; Phase 2 in progress - Wave 2 done)
 
 ## Performance Metrics
 
