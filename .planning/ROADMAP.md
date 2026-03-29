@@ -12,7 +12,7 @@ ProSell SaaS automates the complete vehicle sales cycle for dealerships: publish
 ## Phases
 
 - [x] **Phase 1: Hybrid Publisher** - Publish, update, delete, and auto-republish vehicle listings on FB Marketplace via Playwright (primary) and Graph API (secondary) (completed 2026-03-15)
-- [ ] **Phase 2: Catalog & Roles** - Role-based internal catalog showing inventory per dealer with publishing state; dealer without user account; seller-to-dealer assignment
+- [📋] **Phase 2: Catalog & Roles** - Role-based internal catalog showing inventory per dealer with publishing state; dealer without user account; seller-to-dealer assignment (discuss-phase complete 2026-03-29)
 - [ ] **Phase 3: Scraping** - Automated dealer website sync and CarGurus market price extraction with deduplication and anti-detection
 - [ ] **Phase 4: Leads & Appointments** - Capture FB leads via webhook + polling, manual entry, lead lifecycle, and appointment creation with dealer notifications
 - [ ] **Phase 5: Dashboards** - Role-based dashboards for Admin, Manager, Vendedor, and Dealer with metrics
@@ -54,7 +54,7 @@ Plans:
   3. Dealer logs in and can view and edit only their own inventory
   4. Admin creates a dealer tenant with no user account (tenant_id only) and it appears in catalog management
   5. Admin assigns a vendedor to a dealer; Manager can do the same for their team members
-**Plans**: TBD
+**Plans**: TBD (discuss-phase complete 2026-03-29, see `.planning/phases/02-catalog-roles/02-CONTEXT.md`)
 
 ### Phase 3: Scraping
 **Goal**: ProSell's inventory stays synchronized with dealer websites automatically, and CarGurus price data is continuously collected for market benchmarking
