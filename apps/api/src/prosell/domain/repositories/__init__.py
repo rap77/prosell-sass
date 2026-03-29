@@ -9,6 +9,7 @@ from prosell.domain.repositories.team_repository import (
     AbstractTeamMemberRepository,
     AbstractTeamRepository,
 )
+from prosell.domain.repositories.user_dealer_repository import AbstractUserDealerRepository
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 from prosell.domain.repositories.vehicle_repository import AbstractVehicleRepository
 from prosell.domain.repositories.wallet_repository import (
@@ -24,6 +25,7 @@ __all__ = [
     "AbstractSessionRepository",
     "AbstractTeamMemberRepository",
     "AbstractTeamRepository",
+    "AbstractUserDealerRepository",
     "AbstractUserRepository",
     "AbstractVehicleRepository",
     "AbstractWalletRepository",
