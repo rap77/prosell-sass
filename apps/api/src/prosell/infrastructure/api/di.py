@@ -10,12 +10,12 @@ from prosell.application.use_cases.dealer.create_dealer import CreateDealerUseCa
 from prosell.application.use_cases.dealer.get_dealer import GetDealerUseCase
 from prosell.application.use_cases.dealer.list_dealers import ListDealersUseCase
 from prosell.domain.repositories.dealer_repository import AbstractDealerRepository
-from prosell.infrastructure.api.dependencies.database import get_db_session
+from prosell.infrastructure.api.dependencies import get_async_session
 from prosell.infrastructure.repositories.dealer_repository_impl import SqlAlchemyDealerRepository
 
 
 async def get_dealer_repository(
-    session=Depends(get_db_session),
+    session=Depends(get_async_session),
 ) -> AbstractDealerRepository:
     """Provide Dealer repository instance."""
     return SqlAlchemyDealerRepository(session)

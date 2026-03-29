@@ -103,7 +103,7 @@ async def get_dealer(
 
     try:
         return await use_case.execute(dealer_uuid, current_user.tenant_id)
-    except DealerNotFound as e:
+    except DealerNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),

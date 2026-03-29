@@ -39,12 +39,12 @@ from prosell.infrastructure.services.nhtsa_vin_service import NHTSAVinService
 router = APIRouter()
 
 
-async def get_vehicle_repository(session: AsyncSession) -> AbstractVehicleRepository:
+async def get_vehicle_repository(session=Depends(get_async_session)) -> AbstractVehicleRepository:
     """Get vehicle repository instance."""
     return SqlAlchemyVehicleRepository(session)
 
 
-async def get_product_repository(session: AsyncSession) -> AbstractProductRepository:
+async def get_product_repository(session=Depends(get_async_session)) -> AbstractProductRepository:
     """Get product repository instance."""
     return SqlAlchemyProductRepository(session)
 
@@ -54,7 +54,7 @@ async def get_vin_service() -> IVINDecoderService:
     return NHTSAVinService()
 
 
-async def get_publication_repository(session: AsyncSession) -> IPublicationRepository:
+async def get_publication_repository(session=Depends(get_async_session)) -> IPublicationRepository:
     """Get publication repository instance."""
     return SqlAlchemyPublicationRepository(session)
 
