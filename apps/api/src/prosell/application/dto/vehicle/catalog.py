@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 if TYPE_CHECKING:
     from prosell.domain.entities.publication import Publication
@@ -88,3 +88,34 @@ class CatalogResponseDTO(BaseModel):
     items: list[VehicleCatalogItemDTO]
     next_cursor: str | None = None
     has_more: bool = False
+
+
+class FilterParams(BaseModel):
+    """Dynamic filter parameters for vehicle catalog."""
+
+    # String equality filters
+    make: str | None = None
+    model: str | None = None
+
+    # Numeric range filters
+    year_min: int | None = None
+    year_max: int | None = None
+
+    # Full-text search
+    search: str | None = None
+
+    @field_validator("year_min", "year_max")
+    @classmethod
+    def validate_positive(cls, v: int | None) -> int | None:
+        """Validate numeric values are positive."""
+        if v is not None and v < 0:
+            raise ValueError("Value must be positive")
+        return v
+
+    @field_validator("year_max")
+    @classmethod
+    def validate_year_range(cls, v: int | None, info) -> int | None:
+        """Validate year_min <= year_max."""
+        if v is not None and info.data.get("year_min") is not None and v < info.data["year_min"]:
+            raise ValueError("year_max must be >= year_min")
+        return v

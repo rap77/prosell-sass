@@ -12,6 +12,7 @@ from prosell.application.dto.vehicle import (
     DecodeVinRequest,
     DecodeVinResponse,
 )
+from prosell.application.dto.vehicle.catalog import FilterParams
 from prosell.application.ports.ivin_decoder_service import IVINDecoderService
 from prosell.application.use_cases.vehicle.create_vehicle import CreateVehicleUseCase
 from prosell.application.use_cases.vehicle.decode_vin import DecodeVinUseCase
@@ -172,11 +173,16 @@ async def get_vehicle_by_product(
 async def get_vehicle_catalog(
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     cursor: str | None = None,
+    make: str | None = Query(None),
+    model: str | None = Query(None),
+    year_min: int | None = Query(None, ge=1900, le=2030),
+    year_max: int | None = Query(None, ge=1900, le=2030),
+    search: str | None = Query(None),
     current_user: Annotated[User, Depends(get_current_auth_user)] = None,  # type: ignore[assignment]
     use_case: GetVehicleCatalogUseCase = Depends(get_vehicle_catalog_use_case),
 ) -> CatalogResponseDTO:
     """
-    Get vehicle catalog with role-based filtering.
+    Get vehicle catalog with role-based filtering and dynamic filters.
 
     Role-based access:
     - Admin: sees all vehicles in tenant
@@ -187,6 +193,12 @@ async def get_vehicle_catalog(
     - limit: number of vehicles to return (1-100, default 50)
     - cursor: pagination token from previous response
     - Response includes next_cursor and has_more flag
+
+    Dynamic filters:
+    - make: Filter by vehicle make (e.g., "Toyota")
+    - model: Filter by vehicle model (e.g., "Corolla")
+    - year_min/year_max: Filter by year range
+    - search: Full-text search in make, model, VIN
     """
     if current_user is None:
         raise HTTPException(
@@ -194,8 +206,18 @@ async def get_vehicle_catalog(
             detail="Authentication required",
         )
 
+    # Build filter params from query params
+    filters = FilterParams(
+        make=make,
+        model=model,
+        year_min=year_min,
+        year_max=year_max,
+        search=search,
+    )
+
     return await use_case.execute(
         user=current_user,
         limit=limit,
         cursor=cursor,
+        filters=filters,
     )

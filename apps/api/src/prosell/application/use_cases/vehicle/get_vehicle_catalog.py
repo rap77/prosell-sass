@@ -1,12 +1,18 @@
 """Get vehicle catalog use case."""
 
+from typing import TYPE_CHECKING
+
 from prosell.application.dto.vehicle.catalog import (
     CatalogResponseDTO,
+    FilterParams,
     VehicleCatalogItemDTO,
 )
 from prosell.domain.entities.user import User
 from prosell.domain.repositories.publication_repository import IPublicationRepository
 from prosell.domain.repositories.vehicle_repository import AbstractVehicleRepository
+
+if TYPE_CHECKING:
+    from prosell.application.dto.vehicle.catalog import FilterParams
 
 
 class GetVehicleCatalogUseCase:
@@ -39,6 +45,7 @@ class GetVehicleCatalogUseCase:
         user: User,
         limit: int = 50,
         cursor: str | None = None,
+        filters: FilterParams | None = None,
     ) -> CatalogResponseDTO:
         """
         Execute the use case.
@@ -47,6 +54,7 @@ class GetVehicleCatalogUseCase:
             user: Current user with roles and tenant_id
             limit: Max vehicles to return (default 50)
             cursor: Pagination cursor from previous request
+            filters: Dynamic filter parameters (make, model, year, price, etc.)
 
         Returns:
             CatalogResponseDTO with items, next_cursor, and has_more flag
@@ -54,11 +62,12 @@ class GetVehicleCatalogUseCase:
         Raises:
             Unauthorized: If user has no dealer assignments (seller/manager)
         """
-        # Get vehicles with role-based filtering
+        # Get vehicles with role-based filtering and dynamic filters
         vehicles, next_cursor, has_more = await self.vehicle_repository.get_catalog_for_user(
             user=user,
             limit=limit,
             cursor=cursor,
+            filters=filters,
         )
 
         # Build catalog items with publication state

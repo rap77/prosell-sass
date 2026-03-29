@@ -4,9 +4,10 @@ import base64
 import json
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from prosell.application.dto.vehicle.catalog import FilterParams
 from prosell.domain.entities.user import User
 from prosell.domain.entities.vehicle import Vehicle
 from prosell.domain.exceptions.auth_exceptions import Unauthorized
@@ -180,9 +181,10 @@ class SqlAlchemyVehicleRepository(AbstractVehicleRepository):
         user: User,
         limit: int = 50,
         cursor: str | None = None,
+        filters: FilterParams | None = None,
     ) -> tuple[list[Vehicle], str | None, bool]:
         """
-        Get vehicles for user based on role with cursor pagination.
+        Get vehicles for user based on role with cursor pagination and dynamic filters.
 
         Role-based filtering:
         - Admin: sees all vehicles in tenant (no dealer filter)
@@ -193,6 +195,7 @@ class SqlAlchemyVehicleRepository(AbstractVehicleRepository):
             user: User entity with roles and tenant_id
             limit: Max vehicles to return (default 50)
             cursor: Pagination cursor (encoded vehicle ID + timestamp)
+            filters: Dynamic filter parameters (make, model, year range, price range, etc.)
 
         Returns:
             Tuple of (vehicles list, next_cursor or None, has_more flag)
@@ -222,6 +225,10 @@ class SqlAlchemyVehicleRepository(AbstractVehicleRepository):
             if not dealer_ids:
                 raise Unauthorized("No dealers assigned to user")
             stmt = stmt.where(ProductModel.organization_id.in_(dealer_ids))
+
+        # Dynamic filters (applied after role-based filtering)
+        if filters:
+            stmt = self._apply_filters(stmt, filters)
 
         # Cursor pagination
         if cursor:
@@ -286,6 +293,53 @@ class SqlAlchemyVehicleRepository(AbstractVehicleRepository):
             return json.loads(json_str)
         except Exception:
             return None
+
+    def _apply_filters(
+        self,
+        stmt: Select[VehicleModel],
+        filters: FilterParams,
+    ) -> Select[VehicleModel]:
+        """
+        Apply dynamic filters to the query statement.
+
+        Args:
+            stmt: SQLAlchemy Select statement
+            filters: FilterParams with filter criteria
+
+        Returns:
+            Modified Select statement with filters applied
+        """
+
+        # String equality filters
+        if filters.make:
+            stmt = stmt.where(VehicleModel.make == filters.make)
+        if filters.model:
+            stmt = stmt.where(VehicleModel.model == filters.model)
+        if filters.condition:
+            stmt = stmt.where(VehicleModel.condition == filters.condition)
+
+        # Numeric range filters
+        if filters.year_min:
+            stmt = stmt.where(VehicleModel.year >= filters.year_min)
+        if filters.year_max:
+            stmt = stmt.where(VehicleModel.year <= filters.year_max)
+        if filters.price_min:
+            # Convert to cents
+            stmt = stmt.where(VehicleModel.price_cents >= filters.price_min * 100)
+        if filters.price_max:
+            # Convert to cents
+            stmt = stmt.where(VehicleModel.price_cents <= filters.price_max * 100)
+
+        # Full-text search (search in make, model, vin)
+        if filters.search:
+            search_term = f"%{filters.search}%"
+            stmt = stmt.where(
+                (VehicleModel.make.ilike(search_term))
+                | (VehicleModel.model.ilike(search_term))
+                | (VehicleModel.vin.ilike(search_term))
+            )
+
+        return stmt
 
     def _to_entity(self, model: VehicleModel) -> Vehicle:
         """Convert ORM model to domain entity."""
