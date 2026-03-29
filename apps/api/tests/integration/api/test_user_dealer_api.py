@@ -20,6 +20,14 @@ from prosell.application.dto.user_dealer import (
     UserDealerListResponse,
     UserDealerResponse,
 )
+from prosell.application.use_cases.user_dealer.assign_user_dealer import (
+    AssignUserDealerUseCase,
+)
+from prosell.domain.entities.user_dealer import UserDealer
+from prosell.domain.exceptions.dealer_exceptions import DealerNotFoundError
+from prosell.domain.exceptions.user_dealer_exceptions import (
+    UserDealerAlreadyAssignedError,
+)
 
 # =============================================================================
 # DTO TESTS
@@ -84,32 +92,159 @@ def test_bulk_assign_request_validation_empty_lists() -> None:
 
 
 # =============================================================================
-# USE CASE TESTS (stubs - will be implemented in Task 2-3)
+# USE CASE TESTS
 # =============================================================================
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 2")
-def test_assign_user_dealer_usecase() -> None:
+@pytest.mark.asyncio
+async def test_assign_user_dealer_usecase(mock_user_dealer_repo, mock_dealer_repo) -> None:
     """Test AssignUserDealerUseCase assigns dealer to user via repository."""
-    pytest.fail("stub - Task 2")
+    # Arrange
+    user_id = uuid4()
+    dealer_id = uuid4()
+    tenant_id = uuid4()
+    assigned_by = uuid4()
+    request = AssignDealerRequest(dealer_id=dealer_id)
+
+    # Act
+    use_case = AssignUserDealerUseCase(
+        user_dealer_repository=mock_user_dealer_repo,
+        dealer_repository=mock_dealer_repo,
+    )
+    response = await use_case.execute(
+        user_id=user_id,
+        request=request,
+        tenant_id=tenant_id,
+        assigned_by=assigned_by,
+    )
+
+    # Assert
+    assert response.user_id == user_id
+    assert response.dealer_id == dealer_id
+    assert response.tenant_id == tenant_id
+    assert response.assigned_by == assigned_by
+    assert isinstance(response.assigned_at, datetime)
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 2")
-def test_assign_user_dealer_audit_fields() -> None:
+@pytest.mark.asyncio
+async def test_assign_user_dealer_audit_fields(mock_user_dealer_repo, mock_dealer_repo) -> None:
     """Test AssignUserDealerUseCase populates audit fields."""
-    pytest.fail("stub - Task 2")
+    # Arrange
+    user_id = uuid4()
+    dealer_id = uuid4()
+    tenant_id = uuid4()
+    assigned_by = uuid4()
+    request = AssignDealerRequest(dealer_id=dealer_id)
+
+    # Act
+    use_case = AssignUserDealerUseCase(
+        user_dealer_repository=mock_user_dealer_repo,
+        dealer_repository=mock_dealer_repo,
+    )
+    before = datetime.now(UTC)
+    response = await use_case.execute(
+        user_id=user_id,
+        request=request,
+        tenant_id=tenant_id,
+        assigned_by=assigned_by,
+    )
+    after = datetime.now(UTC)
+
+    # Assert
+    assert response.assigned_by == assigned_by
+    assert before <= response.assigned_at <= after
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 2")
-def test_assign_user_dealer_duplicate() -> None:
+@pytest.mark.asyncio
+async def test_assign_user_dealer_duplicate(mock_user_dealer_repo, mock_dealer_repo) -> None:
     """Test AssignUserDealerUseCase raises error for duplicate assignment."""
-    pytest.fail("stub - Task 2")
+    # Arrange
+    user_id = uuid4()
+    dealer_id = uuid4()
+    tenant_id = uuid4()
+    assigned_by = uuid4()
+    request = AssignDealerRequest(dealer_id=dealer_id)
+
+    # Make repo return True for exists
+    async def mock_exists(*args):  # noqa: ARG001
+        return True
+
+    mock_user_dealer_repo.exists = mock_exists
+
+    # Act & Assert
+    use_case = AssignUserDealerUseCase(
+        user_dealer_repository=mock_user_dealer_repo,
+        dealer_repository=mock_dealer_repo,
+    )
+    with pytest.raises(UserDealerAlreadyAssignedError):
+        await use_case.execute(
+            user_id=user_id,
+            request=request,
+            tenant_id=tenant_id,
+            assigned_by=assigned_by,
+        )
 
 
-@pytest.mark.xfail(reason="Not implemented yet — Task 2")
-def test_assign_user_dealer_response() -> None:
+@pytest.mark.asyncio
+async def test_assign_user_dealer_response(mock_user_dealer_repo, mock_dealer_repo) -> None:
     """Test AssignUserDealerUseCase returns UserDealerResponse."""
-    pytest.fail("stub - Task 2")
+    # Arrange
+    user_id = uuid4()
+    dealer_id = uuid4()
+    tenant_id = uuid4()
+    assigned_by = uuid4()
+    request = AssignDealerRequest(dealer_id=dealer_id)
+
+    # Act
+    use_case = AssignUserDealerUseCase(
+        user_dealer_repository=mock_user_dealer_repo,
+        dealer_repository=mock_dealer_repo,
+    )
+    response = await use_case.execute(
+        user_id=user_id,
+        request=request,
+        tenant_id=tenant_id,
+        assigned_by=assigned_by,
+    )
+
+    # Assert
+    assert isinstance(response, UserDealerResponse)
+    assert response.id is not None
+    assert response.user_id == user_id
+    assert response.dealer_id == dealer_id
+
+
+@pytest.mark.asyncio
+async def test_assign_user_dealer_dealer_not_found(
+    mock_user_dealer_repo,
+    mock_dealer_repo,
+) -> None:
+    """Test AssignUserDealerUseCase raises error when dealer not found."""
+    # Arrange
+    user_id = uuid4()
+    dealer_id = uuid4()
+    tenant_id = uuid4()
+    assigned_by = uuid4()
+    request = AssignDealerRequest(dealer_id=dealer_id)
+
+    # Make repo return None for dealer
+    async def mock_get_by_id(*args):  # noqa: ARG001
+        return None
+
+    mock_dealer_repo.get_by_id = mock_get_by_id
+
+    # Act & Assert
+    use_case = AssignUserDealerUseCase(
+        user_dealer_repository=mock_user_dealer_repo,
+        dealer_repository=mock_dealer_repo,
+    )
+    with pytest.raises(DealerNotFoundError):
+        await use_case.execute(
+            user_id=user_id,
+            request=request,
+            tenant_id=tenant_id,
+            assigned_by=assigned_by,
+        )
 
 
 # =============================================================================
@@ -145,3 +280,45 @@ def test_list_user_dealers() -> None:
 def test_admin_manager_only_access() -> None:
     """Admin/Manager-only access enforced (403 for sellers)."""
     pytest.fail("stub - Task 4")
+
+
+# =============================================================================
+# FIXTURES
+# =============================================================================
+
+
+@pytest.fixture
+def mock_user_dealer_repo():
+    """Mock UserDealerRepository."""
+
+    class MockUserDealerRepo:
+        async def assign(self, user_id, dealer_id, tenant_id, assigned_by=None):
+            return UserDealer.assign(
+                user_id=user_id,
+                dealer_id=dealer_id,
+                tenant_id=tenant_id,
+                assigned_by=assigned_by,
+            )
+
+        async def exists(self, *args):  # noqa: ARG002
+            return False
+
+    return MockUserDealerRepo()
+
+
+@pytest.fixture
+def mock_dealer_repo():
+    """Mock DealerRepository."""
+
+    class MockDealerRepo:
+        async def get_by_id(self, dealer_id, tenant_id):
+            from prosell.domain.entities.dealer import Dealer
+
+            return Dealer(
+                id=dealer_id,
+                tenant_id=tenant_id,
+                name="Test Dealer",
+                slug="test-dealer",
+            )
+
+    return MockDealerRepo()
