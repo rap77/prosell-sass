@@ -25,7 +25,7 @@ from prosell.domain.repositories.user_dealer_repository import (
 from prosell.infrastructure.api.dependencies import (
     get_assign_user_dealer_use_case,
     get_bulk_assign_use_case,
-    get_current_auth_user_from_cookie,
+    get_current_auth_user,
     get_remove_user_dealer_use_case,
     get_user_dealer_repository,
 )
@@ -39,7 +39,7 @@ router = APIRouter(prefix="/api/users", tags=["user-dealers"])
 async def assign_dealer(
     id: UUID,
     request: AssignDealerRequest,
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(get_current_auth_user)],
     use_case: Annotated[AssignUserDealerUseCase, Depends(get_assign_user_dealer_use_case)],
 ) -> UserDealerResponse:
     """
@@ -76,7 +76,7 @@ async def assign_dealer(
 @router.post("/bulk-assign", response_model=dict[str, int])
 async def bulk_assign_dealers(
     request: BulkAssignRequest,
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(get_current_auth_user)],
     use_case: Annotated[BulkAssignUseCase, Depends(get_bulk_assign_use_case)],
 ) -> dict[str, int]:
     """
@@ -111,7 +111,7 @@ async def bulk_assign_dealers(
 async def remove_dealer_assignment(
     id: UUID,
     dealer_id: UUID,
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(get_current_auth_user)],
     use_case: Annotated[RemoveUserDealerUseCase, Depends(get_remove_user_dealer_use_case)],
 ) -> None:
     """
@@ -146,7 +146,7 @@ async def remove_dealer_assignment(
 @router.get("/{id}/dealers", response_model=UserDealerListResponse)
 async def list_user_dealers(
     id: UUID,
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    current_user: Annotated[User, Depends(get_current_auth_user)],
     user_dealer_repository: Annotated[
         AbstractUserDealerRepository, Depends(get_user_dealer_repository)
     ],
