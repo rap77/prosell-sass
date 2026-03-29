@@ -23,6 +23,10 @@ from prosell.application.dto.user_dealer import (
 from prosell.application.use_cases.user_dealer.assign_user_dealer import (
     AssignUserDealerUseCase,
 )
+from prosell.application.use_cases.user_dealer.bulk_assign import BulkAssignUseCase
+from prosell.application.use_cases.user_dealer.remove_user_dealer import (
+    RemoveUserDealerUseCase,
+)
 from prosell.domain.entities.user_dealer import UserDealer
 from prosell.domain.exceptions.dealer_exceptions import DealerNotFoundError
 from prosell.domain.exceptions.user_dealer_exceptions import (
@@ -166,7 +170,7 @@ async def test_assign_user_dealer_duplicate(mock_user_dealer_repo, mock_dealer_r
     request = AssignDealerRequest(dealer_id=dealer_id)
 
     # Make repo return True for exists
-    async def mock_exists(*args):  # noqa: ARG001
+    async def mock_exists(user_id, dealer_id, tenant_id):  # noqa: ARG001
         return True
 
     mock_user_dealer_repo.exists = mock_exists
@@ -228,7 +232,7 @@ async def test_assign_user_dealer_dealer_not_found(
     request = AssignDealerRequest(dealer_id=dealer_id)
 
     # Make repo return None for dealer
-    async def mock_get_by_id(*args):  # noqa: ARG001
+    async def mock_get_by_id(dealer_id, tenant_id):  # noqa: ARG001
         return None
 
     mock_dealer_repo.get_by_id = mock_get_by_id
@@ -245,6 +249,101 @@ async def test_assign_user_dealer_dealer_not_found(
             tenant_id=tenant_id,
             assigned_by=assigned_by,
         )
+
+
+@pytest.mark.asyncio
+async def test_bulk_assign_usecase(mock_user_dealer_repo) -> None:
+    """Test BulkAssignUseCase assigns multiple users to multiple dealers."""
+    # Arrange
+    user_ids = [uuid4(), uuid4()]
+    dealer_ids = [uuid4(), uuid4()]
+    tenant_id = uuid4()
+    assigned_by = uuid4()
+    request = BulkAssignRequest(user_ids=user_ids, dealer_ids=dealer_ids)
+
+    # Act
+    use_case = BulkAssignUseCase(user_dealer_repository=mock_user_dealer_repo)
+    result = await use_case.execute(
+        request=request,
+        tenant_id=tenant_id,
+        assigned_by=assigned_by,
+    )
+
+    # Assert
+    assert "assigned_count" in result
+    assert result["assigned_count"] == 4  # 2 users x 2 dealers
+
+
+@pytest.mark.asyncio
+async def test_bulk_assign_usecase_skips_duplicates(mock_user_dealer_repo) -> None:
+    """Test BulkAssignUseCase skips duplicate assignments."""
+    # Arrange
+    user_ids = [uuid4()]
+    dealer_ids = [uuid4()]
+    tenant_id = uuid4()
+    assigned_by = uuid4()
+    request = BulkAssignRequest(user_ids=user_ids, dealer_ids=dealer_ids)
+
+    # Make repo return True for exists (already assigned)
+    async def mock_exists(user_id, dealer_id, tenant_id):  # noqa: ARG001
+        return True
+
+    mock_user_dealer_repo.exists = mock_exists
+
+    # Act
+    use_case = BulkAssignUseCase(user_dealer_repository=mock_user_dealer_repo)
+    result = await use_case.execute(
+        request=request,
+        tenant_id=tenant_id,
+        assigned_by=assigned_by,
+    )
+
+    # Assert
+    assert result["assigned_count"] == 0  # All skipped
+
+
+@pytest.mark.asyncio
+async def test_remove_user_dealer_usecase(mock_user_dealer_repo) -> None:
+    """Test RemoveUserDealerUseCase deletes assignment."""
+    # Arrange
+    user_id = uuid4()
+    dealer_id = uuid4()
+    tenant_id = uuid4()
+
+    # Act
+    use_case = RemoveUserDealerUseCase(user_dealer_repository=mock_user_dealer_repo)
+    await use_case.execute(
+        user_id=user_id,
+        dealer_id=dealer_id,
+        tenant_id=tenant_id,
+    )
+
+    # Assert - no exception raised
+    assert True
+
+
+@pytest.mark.asyncio
+async def test_remove_user_dealer_usecase_idempotent(mock_user_dealer_repo) -> None:
+    """Test RemoveUserDealerUseCase is idempotent (no error if already removed)."""
+    # Arrange
+    user_id = uuid4()
+    dealer_id = uuid4()
+    tenant_id = uuid4()
+
+    # Make repo return False (already removed)
+    async def mock_remove(user_id, dealer_id, tenant_id):  # noqa: ARG001
+        return False
+
+    mock_user_dealer_repo.remove = mock_remove
+
+    # Act & Assert - no exception raised
+    use_case = RemoveUserDealerUseCase(user_dealer_repository=mock_user_dealer_repo)
+    await use_case.execute(
+        user_id=user_id,
+        dealer_id=dealer_id,
+        tenant_id=tenant_id,
+    )
+    assert True
 
 
 # =============================================================================
@@ -300,8 +399,11 @@ def mock_user_dealer_repo():
                 assigned_by=assigned_by,
             )
 
-        async def exists(self, *args):  # noqa: ARG002
+        async def exists(self, user_id, dealer_id, tenant_id):  # noqa: ARG002
             return False
+
+        async def remove(self, user_id, dealer_id, tenant_id):  # noqa: ARG002
+            return True
 
     return MockUserDealerRepo()
 
