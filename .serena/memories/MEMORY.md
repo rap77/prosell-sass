@@ -1,9 +1,15 @@
 # ProSell SaaS - Memory Index
 
-## Estado (2026-03-24): OAuth Cookie Path Fix ✅ — Publisher 401 Blocked
+## Estado (2026-03-28): Phase 8 Complete ✅ — BRAIN-FEED Created — Phase 09 Planned
 
 ### Current Branch: main
-### Latest Commit: `4bf6961` - wip: 01-hybrid-publisher blocked - OAuth cookie auth issue (publisher 401)
+### Latest Commit: `a149682` - wip: phase-09 anti-patterns fix - plan created
+
+### START HERE para próxima sesión:
+- Memory: `session-2026-03-28-phase8-complete-validation-brainfeed-created-09-plan-created` (ACTUAL)
+- Handoff: `.planning/phases/09-anti-patterns-fix/.continue-here.md`
+- **Estado**: Phase 8 completa (476/476 tests), Phase 09 plan lista (6 tareas ~25min)
+- **Next action**: `/clear → /gsd:execute-phase 9`
 
 ### Sprint 7 Status
 | Phase | Descripción | Estado |
