@@ -1,6 +1,7 @@
 """SQLAlchemy ORM models for ProSell SaaS."""
 
 from prosell.infrastructure.models.category_model import CategoryModel
+from prosell.infrastructure.models.dealer_model import DealerModel
 from prosell.infrastructure.models.oauth_account_model import OAuthAccountModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.product_image_model import ProductImageModel
@@ -9,6 +10,7 @@ from prosell.infrastructure.models.publication_model import PublicationModel
 from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
 from prosell.infrastructure.models.session_model import SessionModel
 from prosell.infrastructure.models.team_model import TeamMemberModel, TeamModel
+from prosell.infrastructure.models.user_dealer_model import UserDealerModel
 from prosell.infrastructure.models.user_model import UserModel
 from prosell.infrastructure.models.user_token_model import UserTokenModel
 from prosell.infrastructure.models.vehicle_model import VehicleModel
@@ -16,6 +18,7 @@ from prosell.infrastructure.models.wallet_model import WalletModel, WalletTransa
 
 __all__ = [
     "CategoryModel",
+    "DealerModel",
     "OAuthAccountModel",
     "OrganizationModel",
     "ProductImageModel",
@@ -25,6 +28,7 @@ __all__ = [
     "SessionModel",
     "TeamMemberModel",
     "TeamModel",
+    "UserDealerModel",
     "UserModel",
     "UserRoleModel",
     "UserTokenModel",
