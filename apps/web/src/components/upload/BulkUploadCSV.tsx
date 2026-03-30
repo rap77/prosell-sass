@@ -1,13 +1,13 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useState } from "react"
 import { useDropzone } from "react-dropzone"
+import { parse } from "csv-parse/sync"
 import { toast } from "sonner"
 import { Upload, FileText, X, CheckCircle2, AlertCircle, Download } from "lucide-react"
 
-interface ParsedRow extends Record<string, string | undefined> {
-  rowNumber: number
-  vin: string
+interface CSVRecord {
+  vin?: string
   year?: string
   make?: string
   model?: string
@@ -24,6 +24,12 @@ interface ParsedRow extends Record<string, string | undefined> {
   engine?: string
   cylinders?: string
   description?: string
+  [key: string]: string | number | undefined
+}
+
+interface ParsedRow extends CSVRecord {
+  rowNumber: number
+  vin: string
   error?: string
 }
 
@@ -67,39 +73,47 @@ export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVPr
     const reader = new FileReader()
     reader.onload = (e) => {
       const text = e.target?.result as string
-      const lines = text.split("\n").filter((line) => line.trim())
+      try {
+        const records = parse(text, {
+          columns: true,
+          skip_empty_lines: true,
+          trim: true,
+          relax_column_count: true, // Allow missing columns
+        }) as CSVRecord[]
 
-      if (lines.length < 2) {
-        toast.error("CSV must have at least a header and one data row")
-        return
-      }
+        const rows: ParsedRow[] = records.map((row, index: number) => ({
+          rowNumber: index + 2, // +2 for header (row 1) and 0-based index
+          vin: row.vin || "",
+          year: row.year,
+          make: row.make,
+          model: row.model,
+          trim: row.trim,
+          mileage: row.mileage,
+          price: row.price,
+          condition: row.condition,
+          exterior_color: row.exterior_color,
+          interior_color: row.interior_color,
+          transmission: row.transmission,
+          fuel_type: row.fuel_type,
+          body_style: row.body_style,
+          drivetrain: row.drivetrain,
+          engine: row.engine,
+          cylinders: row.cylinders,
+          description: row.description,
+        }))
 
-      const headers = lines[0].split(",").map((h) => h.trim())
-      const rows: ParsedRow[] = []
-
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(",")
-        const row: ParsedRow = {
-          rowNumber: i + 1,
-          vin: values[0] || "",
-        }
-
-        headers.forEach((header, index) => {
-          if (index > 0 && values[index]) {
-            row[header] = values[index]?.trim()
+        // Basic validation
+        rows.forEach((row) => {
+          if (!row.vin || row.vin.length !== 17) {
+            row.error = "VIN must be exactly 17 characters"
           }
         })
 
-        // Basic validation
-        if (!row.vin || row.vin.length !== 17) {
-          row.error = "VIN must be exactly 17 characters"
-        }
-
-        rows.push(row)
+        setParsedRows(rows)
+        setPreviewRows(rows.slice(0, 5)) // Show first 5 rows
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to parse CSV")
       }
-
-      setParsedRows(rows)
-      setPreviewRows(rows.slice(0, 5)) // Show first 5 rows
     }
     reader.readAsText(file)
   }
