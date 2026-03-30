@@ -36,11 +36,14 @@ const memberSchema = z.object({
   role: z.enum(["manager", "vendor"] as const, {
     message: "Role is required",
   }),
-  commission_rate: z
-    .number()
-    .min(0, "Commission must be 0 or greater")
-    .max(100, "Commission cannot exceed 100%")
-    .optional(),
+  commission_rate: z.preprocess(
+    (val) => (Number.isNaN(val) ? undefined : val),
+    z
+      .number()
+      .min(0, "Commission must be 0 or greater")
+      .max(100, "Commission cannot exceed 100%")
+      .optional()
+  ),
 });
 
 export type MemberFormValues = z.infer<typeof memberSchema>;

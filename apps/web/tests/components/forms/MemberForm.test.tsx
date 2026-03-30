@@ -23,12 +23,12 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, back: mockBack }),
 }));
 
-const mockAddTeamMember = vi.fn();
+const mockAddMember = vi.fn();
 const mockClearError = vi.fn();
 
 vi.mock("@/stores", () => ({
   useTeamStore: vi.fn(() => ({
-    addTeamMember: mockAddTeamMember,
+    addMember: mockAddMember,
     isLoading: false,
     error: null,
     clearError: mockClearError,
@@ -43,9 +43,9 @@ import { toast } from "sonner";
 
 describe("MemberForm", () => {
   beforeEach(() => {
-    mockAddTeamMember.mockResolvedValue({ id: "member-123", user_id: "user-456" });
+    mockAddMember.mockResolvedValue({ id: "member-123", user_id: "user-456" });
     (useTeamStore as any).mockReturnValue({
-      addTeamMember: mockAddTeamMember,
+      addMember: mockAddMember,
       isLoading: false,
       error: null,
       clearError: mockClearError,
@@ -82,7 +82,7 @@ describe("MemberForm", () => {
     await user.click(screen.getByRole("button", { name: /add member/i }));
 
     await waitFor(() => {
-      expect(mockAddTeamMember).toHaveBeenCalledWith(
+      expect(mockAddMember).toHaveBeenCalledWith(
         "team-123",
         expect.objectContaining({ user_id: "user-456", role: "vendor" })
       );
@@ -91,7 +91,7 @@ describe("MemberForm", () => {
 
   it("calls toast.error when addTeamMember throws", async () => {
     const user = userEvent.setup();
-    mockAddTeamMember.mockRejectedValue(new Error("Failed to add member"));
+    mockAddMember.mockRejectedValue(new Error("Failed to add member"));
 
     render(<MemberForm teamId="team-123" />);
     await user.type(screen.getByLabelText(/user id/i), "user-456");
@@ -105,7 +105,7 @@ describe("MemberForm", () => {
 
   it("disables form while loading", () => {
     (useTeamStore as any).mockReturnValue({
-      addTeamMember: mockAddTeamMember,
+      addMember: mockAddMember,
       isLoading: true,
       error: null,
       clearError: mockClearError,
