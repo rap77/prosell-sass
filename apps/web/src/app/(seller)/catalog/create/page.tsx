@@ -1,61 +1,69 @@
 'use client'
 
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { ImageDropzone } from '@/components/upload/ImageDropzone'
 import { ImageGallery } from '@/components/upload/ImageGallery'
+import { VehicleForm, type VehicleFormValues } from '@/components/forms/VehicleForm'
 import { useImageUpload } from '@/lib/hooks/useImageUpload'
 import { useUploadStore } from '@/lib/stores/uploadStore'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 
+/**
+ * Create Vehicle Page
+ *
+ * Full vehicle creation form with image upload support.
+ * Images are uploaded first, then vehicle data is submitted.
+ */
 export default function CreateVehiclePage() {
   const router = useRouter()
-  const [isUploading, setIsUploading] = useState(false)
   const { uploadImages } = useImageUpload()
   const { uploadedFiles, clearAll } = useUploadStore()
 
-  async function handleSubmit() {
+  const [isUploading, setIsUploading] = useState(false)
+
+  // Custom submit handler that uploads images first
+  const handleSubmit = async (data: VehicleFormValues, _imageUrls: string[]) => {
     setIsUploading(true)
 
     try {
-      // Upload all images
-      const imageUrls = await uploadImages(
-        uploadedFiles.map(f => f.file)
-      )
+      // Upload all images first
+      const uploadedUrls = uploadedFiles.length > 0
+        ? await uploadImages(uploadedFiles.map(f => f.file))
+        : []
 
-      // Create vehicle with image URLs
-      // NOTE: Hardcoded data for MVP - full form coming in Phase 2
+      // Then create vehicle with uploaded image URLs
       const response = await fetch('/api/v1/vehicles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: '2021 Toyota Camry',
-          price: 25000,
-          images: imageUrls,
+          ...data,
+          images: uploadedUrls,
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create vehicle')
+        const error = await response.json().catch(() => ({ message: 'Failed to create vehicle' }))
+        throw new Error(error.message || 'Failed to create vehicle')
       }
 
       // Clear uploaded files
       clearAll()
 
-      // Show success toast
       toast.success('Vehicle created', {
         description: 'Your vehicle has been successfully added to the catalog.',
       })
 
-      // Redirect to catalog using Next.js router
+      // Redirect to catalog
       router.push('/catalog')
       router.refresh()
     } catch (error) {
-      // Show error toast
       toast.error('Failed to create vehicle', {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : 'Unknown error',
       })
+      throw error
     } finally {
       setIsUploading(false)
     }
@@ -63,7 +71,12 @@ export default function CreateVehiclePage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Create Vehicle</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Create Vehicle</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Add a new vehicle to your catalog
+        </p>
+      </div>
 
       {/* Image upload section */}
       <section className="mb-8">
@@ -72,24 +85,23 @@ export default function CreateVehiclePage() {
         <ImageGallery />
       </section>
 
-      {/* Vehicle details form */}
-      <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-4">Vehicle Details</h2>
-        {/* NOTE: Simplified form for MVP - full form (title, price, VIN, mileage, condition, description) coming in Phase 2 */}
-        <p className="text-sm text-muted-foreground">
-          Full vehicle form will be added in Phase 2 (Catalog & Roles)
-        </p>
-      </section>
+      {/* Vehicle form with custom submit handler */}
+      <VehicleForm
+        mode="create"
+        onSubmit={handleSubmit}
+      />
 
-      {/* Submit button */}
-      <Button
-        onClick={handleSubmit}
-        disabled={isUploading || uploadedFiles.length === 0}
-        size="lg"
-        className="w-full"
-      >
-        {isUploading ? 'Uploading...' : 'Create Vehicle'}
-      </Button>
+      {/* Loading overlay */}
+      {isUploading && (
+        <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50">
+          <div className="text-center">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="mt-2 text-sm text-muted-foreground">
+              Uploading images and creating vehicle...
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
