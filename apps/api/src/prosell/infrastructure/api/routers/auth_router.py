@@ -430,6 +430,16 @@ async def oauth_callback(
         )
 
         redirect.set_cookie(
+            key="refresh_token",
+            value=login_result.refresh_token,
+            expires=refresh_token_expiry,
+            path="/",  # CRITICAL: Make cookie available to all paths
+            httponly=True,
+            secure=settings.environment != "development",
+            samesite="lax",
+        )
+
+        redirect.set_cookie(
             key="user_data",
             value=quote(login_result.user.model_dump_json()),
             expires=refresh_token_expiry,

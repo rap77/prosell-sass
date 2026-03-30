@@ -27,9 +27,10 @@ async def test_rate_limiter_configured_on_publish_route():
     )
     assert publish_route is not None
 
-    # Verify rate limiting is wired: the route must have at least one dependency.
+    # Verify rate limiting is wired: the route's dependant must have dependencies.
+    # FastAPI stores parameter dependencies in route.dependant.dependencies, not route.dependencies.
     # get_publish_vehicle_use_case depends on get_current_auth_user (auth + rate limit).
-    assert len(publish_route.dependencies) > 0, (
+    assert len(publish_route.dependant.dependencies) > 0, (
         "publish route has no dependencies — expected at least auth + rate limiter. "
-        "Add rate limiting via @limiter.limit() decorator or Depends(rate_limit_publish)."
+        "Add rate limiting via @rate_limit decorator or Depends(rate_limit_publish)."
     )

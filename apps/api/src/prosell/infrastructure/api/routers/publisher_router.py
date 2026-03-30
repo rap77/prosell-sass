@@ -20,7 +20,7 @@ from prosell.infrastructure.api.dependencies import (
     get_publication_repository,
     get_publish_vehicle_use_case,
 )
-from prosell.infrastructure.api.middleware import API_LIMIT, limiter
+from prosell.infrastructure.api.middleware import API_LIMIT, rate_limit
 
 router = APIRouter(prefix="/publisher", tags=["Publisher"])
 
@@ -30,7 +30,7 @@ router = APIRouter(prefix="/publisher", tags=["Publisher"])
     response_model=PublicationResponse,
     status_code=status.HTTP_202_ACCEPTED,
 )
-@limiter.limit(API_LIMIT)
+@rate_limit(API_LIMIT)
 async def publish_vehicle(
     request: Request,  # noqa: ARG001 — required by slowapi @limiter.limit()
     product_id: UUID,
