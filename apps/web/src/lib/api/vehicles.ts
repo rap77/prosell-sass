@@ -129,7 +129,7 @@ export function useInfiniteVehicles(filters?: VehicleFilters, limit: number = 50
         has_more: data.has_more,
       };
     },
-    initialPageParam: null as string | null,
+    initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
     staleTime: 60 * 1000, // 1 minute
   });
@@ -287,6 +287,50 @@ export function useCreateVehicle() {
 
     onError: (err) => {
       toast.error(err.message || "Failed to create vehicle");
+    },
+  });
+}
+
+export function useBulkUploadVehicles() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("csv_file", file);
+
+      const res = await fetch("/api/v1/vehicles/bulk-upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: "Failed to bulk upload vehicles" }));
+        throw new Error(error.message || "Failed to bulk upload vehicles");
+      }
+
+      return res.json() as Promise<{
+        total_rows: number;
+        created_count: number;
+        failed_count: number;
+        errors: Array<{ row_number: number; vin: string; error: string }>;
+      }>;
+    },
+
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+
+      if (result.errors.length === 0) {
+        toast.success(`Successfully uploaded ${result.created_count} vehicles`);
+      } else {
+        toast.error(
+          `Uploaded ${result.created_count} vehicles, ${result.failed_count} failed. Check errors below.`,
+        );
+      }
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Failed to bulk upload vehicles");
     },
   });
 }

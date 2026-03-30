@@ -1,25 +1,29 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Upload } from "lucide-react"
 import { DataGrid, type Vehicle } from "@/components/datagrid/DataGrid";
 import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { FilterPills } from "@/components/filters/FilterPills";
 import { CommandPalette } from "@/components/layout/CommandPalette";
+import { BulkUploadCSV } from "@/components/upload/BulkUploadCSV";
 import { useVehicleFilters } from "@/lib/hooks/useVehicleFilters";
-import { useInfiniteVehicles, useDeleteVehicle, type Vehicle as ApiVehicle } from "@/lib/api/vehicles";
+import { useInfiniteVehicles, useDeleteVehicle, useBulkUploadVehicles, type Vehicle as ApiVehicle } from "@/lib/api/vehicles";
 
 export default function CatalogPage() {
   const router = useRouter();
   const { filters } = useVehicleFilters();
   const deleteVehicle = useDeleteVehicle();
+  const bulkUpload = useBulkUploadVehicles();
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
 
   // Transform filters to match API format
-  const apiFilters = useMemo(() => ({
+  const apiFilters = {
     search: filters.search || undefined,
     status: filters.status[0] as ApiVehicle["status"] | undefined, // Take first status for now
-  }), [filters]);
+  }
 
   const {
     data,
@@ -31,9 +35,7 @@ export default function CatalogPage() {
   } = useInfiniteVehicles(apiFilters, 50);
 
   // Flatten infinite query pages into single array
-  const vehicles = useMemo(() => {
-    return data?.pages.flatMap((page) => page.items) ?? [];
-  }, [data]);
+  const vehicles = data?.pages.flatMap((page) => page.items) ?? [];
 
   const handlePublish = (vehicleId: string) => {
     toast.info("Publish feature coming soon!", {
@@ -88,10 +90,31 @@ export default function CatalogPage() {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="p-6">
-          <h1 className="text-2xl font-bold mb-2">Catálogo</h1>
-          <p className="text-sm text-muted-foreground">
-            {vehicles.length} vehicles found
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1 className="text-2xl font-bold">Catálogo</h1>
+              <p className="text-sm text-muted-foreground">
+                {vehicles.length} vehicles found
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowBulkUpload(true)}
+                className="flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm hover:bg-accent"
+              >
+                <Upload className="h-4 w-4" />
+                Bulk Upload
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/catalog/create")}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Add Vehicle
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Active filter pills */}
@@ -169,6 +192,36 @@ export default function CatalogPage() {
 
       {/* Command palette (hidden by default, opened with Cmd+K) */}
       <CommandPalette vehicles={vehicles} />
+
+      {/* Bulk Upload Modal */}
+      {showBulkUpload && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-4xl rounded-lg bg-background p-6 shadow-lg">
+            <BulkUploadCSV
+              onUpload={async (file) => {
+                const formData = new FormData()
+                formData.append("csv_file", file)
+
+                const res = await fetch("/api/v1/vehicles/bulk-upload", {
+                  method: "POST",
+                  body: formData,
+                })
+
+                if (!res.ok) {
+                  const error = await res.json().catch(() => ({ message: "Failed to upload" }))
+                  throw new Error(error.message || "Failed to upload")
+                }
+
+                return res.json()
+              }}
+              onSuccess={(count) => {
+                setShowBulkUpload(false)
+              }}
+              onCancel={() => setShowBulkUpload(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
