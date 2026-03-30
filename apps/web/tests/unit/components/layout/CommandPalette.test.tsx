@@ -41,14 +41,12 @@ describe('CommandPalette', () => {
       title: '2020 Toyota Camry',
       price: 25000,
       status: 'published',
-      vin: 'ABC123',
     },
     {
       id: '2',
       title: '2021 Honda Accord',
       price: 28000,
       status: 'pending',
-      vin: 'DEF456',
     },
   ]
 
@@ -102,14 +100,14 @@ describe('CommandPalette', () => {
     expect(input).toBeInTheDocument()
   })
 
-  it('searches vehicles by VIN', async () => {
+  it('searches vehicles by title', async () => {
     render(<CommandPalette vehicles={mockVehicles} />)
 
     fireEvent.keyDown(document, { key: 'k', metaKey: true })
 
     await waitFor(() => {
       const input = screen.getByPlaceholderText(/search vehicles/i)
-      fireEvent.change(input, { target: { value: 'ABC123' } })
+      fireEvent.change(input, { target: { value: 'Camry' } })
     })
 
     await waitFor(() => {

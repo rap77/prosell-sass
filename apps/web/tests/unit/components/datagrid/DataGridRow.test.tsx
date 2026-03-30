@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoizedDataGridRow } from '@/components/datagrid/DataGridRow'
+import type { Row } from '@tanstack/react-table'
 
 describe('DataGridRow', () => {
   const mockRow = {
@@ -25,7 +26,7 @@ describe('DataGridRow', () => {
         getContext: vi.fn(() => ({})),
       },
     ]),
-  }
+  } as unknown as Row<unknown>
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -71,6 +72,6 @@ describe('DataGridRow', () => {
   })
 
   it('has displayName for debugging', () => {
-    expect(MemoizedDataGridRow.displayName).toBe('DataGridRow')
+    expect((MemoizedDataGridRow as any).displayName).toBe('DataGridRow')
   })
 })

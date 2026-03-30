@@ -58,7 +58,7 @@ describe("MemberForm", () => {
   });
 
   it("renders form with user_id and role fields", () => {
-    render(<MemberForm teamId="team-123" organizationId="org-123" />);
+    render(<MemberForm teamId="team-123" />);
     expect(screen.getByLabelText(/user id/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/role/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /add member/i })).toBeInTheDocument();
@@ -66,7 +66,7 @@ describe("MemberForm", () => {
 
   it("shows validation error when user_id is empty", async () => {
     const user = userEvent.setup();
-    render(<MemberForm teamId="team-123" organizationId="org-123" />);
+    render(<MemberForm teamId="team-123" />);
     await user.click(screen.getByRole("button", { name: /add member/i }));
     await waitFor(() => {
       expect(screen.getByText(/user id is required/i)).toBeInTheDocument();
@@ -75,7 +75,7 @@ describe("MemberForm", () => {
 
   it("calls addTeamMember with form data on submit", async () => {
     const user = userEvent.setup();
-    render(<MemberForm teamId="team-123" organizationId="org-123" />);
+    render(<MemberForm teamId="team-123" />);
 
     await user.type(screen.getByLabelText(/user id/i), "user-456");
     await user.selectOptions(screen.getByLabelText(/role/i), "vendor");
@@ -93,7 +93,7 @@ describe("MemberForm", () => {
     const user = userEvent.setup();
     mockAddTeamMember.mockRejectedValue(new Error("Failed to add member"));
 
-    render(<MemberForm teamId="team-123" organizationId="org-123" />);
+    render(<MemberForm teamId="team-123" />);
     await user.type(screen.getByLabelText(/user id/i), "user-456");
     await user.selectOptions(screen.getByLabelText(/role/i), "vendor");
     await user.click(screen.getByRole("button", { name: /add member/i }));
@@ -110,7 +110,7 @@ describe("MemberForm", () => {
       error: null,
       clearError: mockClearError,
     });
-    render(<MemberForm teamId="team-123" organizationId="org-123" />);
+    render(<MemberForm teamId="team-123" />);
     expect(screen.getByLabelText(/user id/i)).toBeDisabled();
   });
 });
