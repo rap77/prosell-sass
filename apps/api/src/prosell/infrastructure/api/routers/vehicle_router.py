@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.vehicle import (
@@ -12,8 +12,10 @@ from prosell.application.dto.vehicle import (
     DecodeVinRequest,
     DecodeVinResponse,
 )
+from prosell.application.dto.vehicle.bulk_upload import BulkUploadResponse
 from prosell.application.dto.vehicle.catalog import FilterParams
 from prosell.application.ports.ivin_decoder_service import IVINDecoderService
+from prosell.application.use_cases.vehicle.bulk_upload_vehicles import BulkUploadVehiclesUseCase
 from prosell.application.use_cases.vehicle.create_vehicle import CreateVehicleUseCase
 from prosell.application.use_cases.vehicle.decode_vin import DecodeVinUseCase
 from prosell.application.use_cases.vehicle.get_vehicle_catalog import GetVehicleCatalogUseCase
@@ -220,4 +222,67 @@ async def get_vehicle_catalog(
         limit=limit,
         cursor=cursor,
         filters=filters,
+    )
+
+
+@router.post("/bulk-upload", response_model=BulkUploadResponse)
+async def bulk_upload_vehicles(
+    csv_file: UploadFile,
+    current_user: Annotated[User, Depends(get_current_auth_user)] = None,  # type: ignore[assignment]
+    db: AsyncSession = Depends(get_async_session),
+) -> BulkUploadResponse:
+    """
+    Bulk upload vehicles from CSV file.
+
+    CSV format (required columns marked with *):
+    vin*,year,make,model,trim,mileage,price,condition,exterior_color,interior_color,
+    transmission,fuel_type,body_style,drivetrain,engine,cylinders,description
+
+    Example:
+    ```csv
+    vin,year,make,model,trim,mileage,price,condition,color,transmission,fuel_type
+    1HGCM82633A123456,2020,Honda,Civic,EX,35000,18500,excellent,Black,Automatic,Gas
+    ```
+
+    Returns:
+        BulkUploadResponse with created count and errors
+
+    Raises:
+        HTTPException: If user not authenticated or CSV format invalid
+    """
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+
+    # Validate file type
+    if not csv_file.filename or not csv_file.filename.endswith(".csv"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only CSV files are allowed",
+        )
+
+    # Read CSV content
+    csv_content = (await csv_file.read()).decode("utf-8")
+
+    # Get tenant_id and default organization_id from user
+    tenant_id = current_user.tenant_id
+    default_organization_id = current_user.organization_id
+
+    if not default_organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User must belong to an organization to bulk upload vehicles",
+        )
+
+    # Execute use case
+    vehicle_repo = SqlAlchemyVehicleRepository(db)
+    product_repo = SqlAlchemyProductRepository(db)
+    use_case = BulkUploadVehiclesUseCase(vehicle_repo, product_repo)
+
+    return await use_case.execute(
+        csv_content=csv_content,
+        tenant_id=tenant_id,
+        default_organization_id=default_organization_id,
     )

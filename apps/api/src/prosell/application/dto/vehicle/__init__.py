@@ -1,5 +1,10 @@
 """Vehicle DTOs."""
 
+from prosell.application.dto.vehicle.bulk_upload import (
+    BulkUploadError,
+    BulkUploadResponse,
+    VehicleCSVRow,
+)
 from prosell.application.dto.vehicle.catalog import (
     CatalogResponseDTO,
     PublicationDTO,
@@ -13,11 +18,14 @@ from prosell.application.dto.vehicle.create import (
 )
 
 __all__ = [
+    "BulkUploadError",
+    "BulkUploadResponse",
     "CatalogResponseDTO",
     "CreateVehicleRequest",
     "DecodeVinRequest",
     "DecodeVinResponse",
     "PublicationDTO",
+    "VehicleCSVRow",
     "VehicleCatalogItemDTO",
     "VehicleData",
 ]
