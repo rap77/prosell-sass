@@ -14,6 +14,28 @@ from prosell.domain.entities.vehicle import Vehicle
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.repositories.vehicle_repository import AbstractVehicleRepository
 
+# Constants for bulk upload limits
+MAX_CSV_ROWS = 1000
+
+
+def _sanitize_for_csv(value: str) -> str:
+    """
+    Prevent CSV injection by prefixing dangerous characters.
+
+    CSV injection attacks use formulas, commands, or hyperlinks
+    that start with = + - @ characters to execute code when the CSV
+    is opened in Excel/Sheets.
+
+    Args:
+        value: The value to sanitize
+
+    Returns:
+        Sanitized value with leading ' if it starts with dangerous char
+    """
+    if value and value[0] in "=+-@":
+        return "'" + value
+    return value
+
 
 class BulkUploadVehiclesUseCase:
     """
@@ -72,6 +94,15 @@ class BulkUploadVehiclesUseCase:
         # Parse CSV
         rows = self._parse_csv(csv_content)
 
+        # Validate row count
+        if len(rows) > MAX_CSV_ROWS:
+            raise ValueError(f"Too many rows ({len(rows)}). Maximum: {MAX_CSV_ROWS}")
+
+        # Batch fetch all existing VINs to prevent N+1 queries
+        all_vins = [row_dict.get("vin", "").upper() for _, row_dict in rows]
+        existing_vins = await self.vehicle_repo.get_vins_batch(all_vins, tenant_id)
+        existing_set = set(existing_vins)
+
         # Validate all rows first (fail fast)
         validated_vehicles: list[tuple[VehicleCSVRow, dict]] = []
         errors: list[BulkUploadError] = []
@@ -86,20 +117,19 @@ class BulkUploadVehiclesUseCase:
                     errors.append(
                         BulkUploadError(
                             row_number=row_number,
-                            vin=csv_row.vin,
+                            vin=_sanitize_for_csv(csv_row.vin),
                             error="Duplicate VIN in CSV",
                             field="vin",
                         )
                     )
                     continue
 
-                # Check if VIN already exists in database
-                existing_vehicle = await self.vehicle_repo.get_by_vin(csv_row.vin)
-                if existing_vehicle:
+                # Check if VIN already exists in database (using batch result)
+                if csv_row.vin.upper() in existing_set:
                     errors.append(
                         BulkUploadError(
                             row_number=row_number,
-                            vin=csv_row.vin,
+                            vin=_sanitize_for_csv(csv_row.vin),
                             error="VIN already exists in database",
                             field="vin",
                         )
@@ -116,7 +146,7 @@ class BulkUploadVehiclesUseCase:
                     errors.append(
                         BulkUploadError(
                             row_number=row_number,
-                            vin=csv_row.vin,
+                            vin=_sanitize_for_csv(csv_row.vin),
                             error=str(e),
                             field="vin",
                         )
@@ -138,8 +168,8 @@ class BulkUploadVehiclesUseCase:
                 elif "price" in error_msg.lower():
                     field = "price"
 
-                # Get VIN from row for error reporting
-                vin = row_dict.get("vin", "UNKNOWN")
+                # Get VIN from row for error reporting and sanitize it
+                vin = _sanitize_for_csv(row_dict.get("vin", "UNKNOWN"))
 
                 errors.append(
                     BulkUploadError(
@@ -159,45 +189,47 @@ class BulkUploadVehiclesUseCase:
                 errors=errors,
             )
 
-        # All rows validated - create products and vehicles
+        # All rows validated - create products and vehicles in transaction
         created_vehicles: list[Vehicle] = []
 
-        for csv_row, _row_dict in validated_vehicles:
-            # Create product
-            product = Product.create(
-                tenant_id=tenant_id,
-                organization_id=default_organization_id,
-                title=f"{csv_row.year or ''} {csv_row.make or ''} {csv_row.model or ''}".strip()
-                or "Vehicle",
-                description=csv_row.description or "",
-            )
+        # Wrap in transaction to prevent orphaned data
+        async with self.vehicle_repo.session.begin():
+            for csv_row, _row_dict in validated_vehicles:
+                # Create product
+                product = Product.create(
+                    tenant_id=tenant_id,
+                    organization_id=default_organization_id,
+                    title=f"{csv_row.year or ''} {csv_row.make or ''} {csv_row.model or ''}".strip()
+                    or "Vehicle",
+                    description=csv_row.description or "",
+                )
 
-            created_product = await self.product_repo.create(product)
+                created_product = await self.product_repo.create(product)
 
-            # Create vehicle
-            vehicle_data = {
-                "vin": csv_row.vin,
-                "year": csv_row.year,
-                "make": csv_row.make,
-                "model": csv_row.model,
-                "trim": csv_row.trim,
-                "mileage": csv_row.mileage,
-                "exterior_color": csv_row.exterior_color,
-                "interior_color": csv_row.interior_color,
-                "transmission": csv_row.transmission,
-                "fuel_type": csv_row.fuel_type,
-                "body_type": csv_row.body_style,
-                "drivetrain": csv_row.drivetrain,
-                "engine": csv_row.engine,
-            }
+                # Create vehicle
+                vehicle_data = {
+                    "vin": csv_row.vin,
+                    "year": csv_row.year,
+                    "make": csv_row.make,
+                    "model": csv_row.model,
+                    "trim": csv_row.trim,
+                    "mileage": csv_row.mileage,
+                    "exterior_color": csv_row.exterior_color,
+                    "interior_color": csv_row.interior_color,
+                    "transmission": csv_row.transmission,
+                    "fuel_type": csv_row.fuel_type,
+                    "body_type": csv_row.body_style,
+                    "drivetrain": csv_row.drivetrain,
+                    "engine": csv_row.engine,
+                }
 
-            vehicle = Vehicle.create(
-                product_id=created_product.id,
-                **vehicle_data,
-            )
+                vehicle = Vehicle.create(
+                    product_id=created_product.id,
+                    **vehicle_data,
+                )
 
-            created_vehicle = await self.vehicle_repo.create(vehicle)
-            created_vehicles.append(created_vehicle)
+                created_vehicle = await self.vehicle_repo.create(vehicle)
+                created_vehicles.append(created_vehicle)
 
         return BulkUploadResponse(
             total_rows=len(rows),

@@ -149,6 +149,26 @@ class SqlAlchemyVehicleRepository(AbstractVehicleRepository):
         count: int = result.scalar() or 0  # type: ignore[assignment]
         return count > 0
 
+    async def get_vins_batch(self, vins: list[str], tenant_id: UUID) -> list[str]:
+        """
+        Get all existing VINs in a single query (N+1 optimization).
+
+        Args:
+            vins: List of VINs to check
+            tenant_id: Tenant UUID for isolation
+
+        Returns:
+            List of VINs that already exist in database
+        """
+        stmt = (
+            select(VehicleModel.vin)
+            .join(ProductModel, VehicleModel.product_id == ProductModel.id)
+            .where(ProductModel.tenant_id == tenant_id)
+            .where(VehicleModel.vin.in_(vins))
+        )
+        result = await self.session.execute(stmt)
+        return [row[0] for row in result.fetchall()]
+
     async def search_by_make_model(
         self,
         make: str | None = None,

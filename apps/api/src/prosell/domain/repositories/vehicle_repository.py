@@ -105,6 +105,20 @@ class AbstractVehicleRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_vins_batch(self, vins: list[str], tenant_id: UUID) -> list[str]:
+        """
+        Get all existing VINs in a single query (N+1 optimization).
+
+        Args:
+            vins: List of VINs to check
+            tenant_id: Tenant UUID for isolation
+
+        Returns:
+            List of VINs that already exist in database
+        """
+        pass
+
+    @abstractmethod
     async def search_by_make_model(
         self,
         make: str | None = None,
