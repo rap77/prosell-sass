@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { DataGrid, type Vehicle } from "@/components/datagrid/DataGrid";
 import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { FilterPills } from "@/components/filters/FilterPills";
@@ -34,26 +35,28 @@ export default function CatalogPage() {
     return data?.pages.flatMap((page) => page.items) ?? [];
   }, [data]);
 
-  const handlePublish = useCallback((vehicleId: string) => {
-    // TODO: Implement publish functionality
-  }, []);
+  const handlePublish = (vehicleId: string) => {
+    toast.info("Publish feature coming soon!", {
+      description: "Multi-marketplace publishing will be available in Phase 4."
+    });
+  };
 
-  const handleEdit = useCallback((vehicleId: string) => {
+  const handleEdit = (vehicleId: string) => {
     router.push(`/catalog/${vehicleId}/edit`);
-  }, [router]);
+  };
 
-  const handleDelete = useCallback((vehicleId: string) => {
+  const handleDelete = (vehicleId: string) => {
     deleteVehicle.mutate(vehicleId);
-  }, [deleteVehicle]);
+  };
 
   // Setup infinite scroll observer
   const observerTarget = useRef<HTMLDivElement>(null);
 
-  const loadMore = useCallback(() => {
+  const loadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
