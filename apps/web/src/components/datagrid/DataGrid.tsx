@@ -118,8 +118,7 @@ export function DataGrid({
           />
         ),
       },
-    ]
-  );
+    ];
 
   const table = useReactTable({
     data,
