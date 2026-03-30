@@ -9,7 +9,7 @@ import { describe, it, expect } from "vitest";
 describe("Next.js Configuration", () => {
   it("should have React Compiler enabled", async () => {
     // Import the config to verify it's valid TypeScript
-    const config = await import("../../../../next.config");
+    const config = await import("../../../../next.config.ts");
 
     // Verify reactCompiler is enabled
     expect(config.default).toBeDefined();
@@ -17,13 +17,13 @@ describe("Next.js Configuration", () => {
   });
 
   it("should have standalone output mode", async () => {
-    const config = await import("../../../../next.config");
+    const config = await import("../../../../next.config.ts");
 
     expect(config.default.output).toBe("standalone");
   });
 
   it("should have optimizePackageImports configured", async () => {
-    const config = await import("../../../../next.config");
+    const config = await import("../../../../next.config.ts");
 
     expect(config.default.experimental).toBeDefined();
     expect(config.default.experimental.optimizePackageImports).toContain(

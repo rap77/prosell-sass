@@ -87,7 +87,7 @@ describe('ImageDropzone', () => {
     const user = userEvent.setup()
     const { container } = render(<ImageDropzone />)
 
-    const input = container.querySelector('input[type="file"]')!
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
 
     await user.upload(input, file)
@@ -101,7 +101,7 @@ describe('ImageDropzone', () => {
     const user = userEvent.setup()
     const { container } = render(<ImageDropzone />)
 
-    const input = container.querySelector('input[type="file"]')!
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
 
     await user.upload(input, file)
@@ -117,7 +117,7 @@ describe('ImageDropzone', () => {
   it('accepts multiple files', () => {
     const { container } = render(<ImageDropzone />)
 
-    const input = container.querySelector('input[type="file"]')!
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
 
     expect(input).toHaveAttribute('multiple')
   })
@@ -125,7 +125,7 @@ describe('ImageDropzone', () => {
   it('accepts only image files', () => {
     const { container } = render(<ImageDropzone />)
 
-    const input = container.querySelector('input[type="file"]')!
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
 
     // react-dropzone accepts both image/* and specific extensions
     expect(input.getAttribute('accept')).toContain('image')
@@ -155,7 +155,7 @@ describe('ImageDropzone', () => {
     const user = userEvent.setup()
     const { container } = render(<ImageDropzone />)
 
-    const input = container.querySelector('input[type="file"]')!
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
 
     await user.upload(input, file)
