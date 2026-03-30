@@ -28,14 +28,21 @@ export interface Vehicle {
 
 interface DataGridProps {
   data: Vehicle[];
+  onPublish?: (vehicleId: string) => void;
+  onEdit?: (vehicleId: string) => void;
+  onDelete?: (vehicleId: string) => void;
 }
 
-export function DataGrid({ data = [] }: DataGridProps) {
+export function DataGrid({
+  data = [],
+  onPublish = () => {},
+  onEdit = () => {},
+  onDelete = () => {},
+}: DataGridProps) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // Stable columns definition (prevent re-renders)
-  const columns = useMemo<ColumnDef<Vehicle>[]>(
-    () => [
+  const columns: ColumnDef<Vehicle>[] = [
       {
         id: "select",
         header: ({ table }) => (
@@ -104,14 +111,14 @@ export function DataGrid({ data = [] }: DataGridProps) {
         cell: ({ row }) => (
           <ActionMenu
             vehicleId={row.original.id}
-            onPublish={() => console.log("Publish", row.original.id)}
-            onEdit={() => console.log("Edit", row.original.id)}
-            onDelete={() => console.log("Delete", row.original.id)}
+            vehicleTitle={row.original.title}
+            onPublish={() => onPublish(row.original.id)}
+            onEdit={() => onEdit(row.original.id)}
+            onDelete={() => onDelete(row.original.id)}
           />
         ),
       },
-    ],
-    []
+    ]
   );
 
   const table = useReactTable({

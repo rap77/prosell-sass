@@ -2,7 +2,6 @@
 
 import pytest
 
-from prosell.core.config import settings
 from prosell.infrastructure.tasks.broker import broker
 
 

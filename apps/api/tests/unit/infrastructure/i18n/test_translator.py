@@ -1,7 +1,5 @@
 """Unit tests for Translator service."""
 
-import pytest
-
 from prosell.infrastructure.i18n import Translator
 
 

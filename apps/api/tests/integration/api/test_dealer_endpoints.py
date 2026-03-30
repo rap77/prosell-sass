@@ -69,7 +69,7 @@ def mock_dealer_repo():
 
 
 @pytest.fixture
-def mock_create_dealer_use_case():  # noqa: ARG001
+def mock_create_dealer_use_case():
     """Mock CreateDealerUseCase."""
     from datetime import UTC, datetime
 
@@ -249,7 +249,7 @@ class TestDealerEndpoints:
         """POST /api/dealers validates slug uniqueness."""
 
         # Mock use case to raise SlugNotUniqueError
-        async def mock_execute_with_error(_request, tenant_id):  # noqa: ARG001
+        async def mock_execute_with_error(_request, tenant_id):
             raise SlugNotUniqueError("test-dealer", tenant_id)
 
         mock_create_dealer_use_case.execute = mock_execute_with_error

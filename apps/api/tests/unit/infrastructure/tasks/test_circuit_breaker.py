@@ -121,6 +121,6 @@ class TestCircuitBreaker:
 
 
 __all__ = [
-    "TestCircuitBreakerConfig",
     "TestCircuitBreaker",
+    "TestCircuitBreakerConfig",
 ]

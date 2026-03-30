@@ -1,6 +1,7 @@
 """Integration tests for circuit breaker."""
 
 import asyncio
+
 import pytest
 
 from prosell.infrastructure.tasks.circuit_breaker import (
@@ -59,7 +60,6 @@ class TestCircuitBreakerIntegration:
     @pytest.mark.asyncio
     async def test_circuit_resets_after_timeout(self):
         """Test that circuit resets after timeout."""
-        import time
 
         breaker = CircuitBreaker(CircuitBreakerConfig(threshold=2, timeout=1))
 

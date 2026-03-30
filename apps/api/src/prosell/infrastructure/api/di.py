@@ -16,7 +16,9 @@ from prosell.domain.repositories.dealer_repository import AbstractDealerReposito
 from prosell.domain.repositories.user_dealer_repository import AbstractUserDealerRepository
 from prosell.infrastructure.api.dependencies import get_async_session
 from prosell.infrastructure.repositories.dealer_repository_impl import SqlAlchemyDealerRepository
-from prosell.infrastructure.repositories.user_dealer_repository_impl import SqlAlchemyUserDealerRepository
+from prosell.infrastructure.repositories.user_dealer_repository_impl import (
+    SqlAlchemyUserDealerRepository,
+)
 
 
 async def get_dealer_repository(
