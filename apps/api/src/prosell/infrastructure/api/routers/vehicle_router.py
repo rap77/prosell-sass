@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.vehicle import (
@@ -27,6 +27,7 @@ from prosell.infrastructure.api.dependencies import (
     get_async_session,
     get_current_auth_user,
 )
+from prosell.infrastructure.api.main import limiter
 from prosell.infrastructure.repositories.product_repository_impl import (
     SqlAlchemyProductRepository,
 )
@@ -39,6 +40,10 @@ from prosell.infrastructure.repositories.vehicle_repository_impl import (
 from prosell.infrastructure.services.nhtsa_vin_service import NHTSAVinService
 
 router = APIRouter()
+
+# Constants for bulk upload limits
+MAX_CSV_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_CSV_ROWS = 1000
 
 
 async def get_vehicle_repository(session=Depends(get_async_session)) -> AbstractVehicleRepository:
@@ -226,8 +231,10 @@ async def get_vehicle_catalog(
 
 
 @router.post("/bulk-upload", response_model=BulkUploadResponse)
+@limiter.limit("10/minute")  # 10 uploads per minute per user
 async def bulk_upload_vehicles(
     csv_file: UploadFile,
+    request: Request,  # noqa: ARG001 - Required by rate limiter
     current_user: Annotated[User, Depends(get_current_auth_user)] = None,  # type: ignore[assignment]
     db: AsyncSession = Depends(get_async_session),
 ) -> BulkUploadResponse:
@@ -263,8 +270,15 @@ async def bulk_upload_vehicles(
             detail="Only CSV files are allowed",
         )
 
-    # Read CSV content
-    csv_content = (await csv_file.read()).decode("utf-8")
+    # Read and validate file size
+    content = await csv_file.read()
+    if len(content) > MAX_CSV_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum size: {MAX_CSV_SIZE / 1024 / 1024}MB",
+        )
+
+    csv_content = content.decode("utf-8")
 
     # Get tenant_id and default organization_id from user
     tenant_id = current_user.tenant_id
