@@ -11,6 +11,7 @@ import { FilterPills } from "@/components/filters/FilterPills";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { BulkUploadCSV } from "@/components/upload/BulkUploadCSV";
 import { BulkDealerAssign } from "@/components/dealers/BulkDealerAssign";
+import { CatalogErrorBoundary } from "@/components/catalog/CatalogErrorBoundary";
 import { useVehicleFilters } from "@/lib/hooks/useVehicleFilters";
 import { useInfiniteVehicles, useDeleteVehicle, useBulkUploadVehicles, type Vehicle as ApiVehicle } from "@/lib/api/vehicles";
 
@@ -92,9 +93,10 @@ export default function CatalogPage() {
   }, [loadMore]);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      {/* Collapsible filter sidebar */}
-      <FilterSidebar />
+    <CatalogErrorBoundary>
+      <div className="flex h-[calc(100vh-4rem)]">
+        {/* Collapsible filter sidebar */}
+        <FilterSidebar />
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -267,6 +269,7 @@ export default function CatalogPage() {
         vehicleIds={selectedVehicleIds}
         vehicleCount={selectedVehicleIds.length}
       />
-    </div>
+      </div>
+    </CatalogErrorBoundary>
   );
 }
