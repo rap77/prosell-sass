@@ -65,7 +65,7 @@ class BulkAssignDealerUseCase:
                 f"Dealer (organization) not found: {request.dealer_id}",
             )
 
-        errors = []
+        errors: list[str] = []
         assigned_count = 0
 
         for vehicle_id in request.vehicle_ids:
