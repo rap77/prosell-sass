@@ -12,6 +12,7 @@ from prosell.domain.entities.user import User
 from prosell.domain.entities.vehicle import Vehicle
 from prosell.domain.exceptions.auth_exceptions import Unauthorized
 from prosell.domain.repositories.vehicle_repository import AbstractVehicleRepository
+from prosell.domain.value_objects.vehicle_with_dealer import VehicleWithDealerInfo
 from prosell.infrastructure.models.product_model import ProductModel
 from prosell.infrastructure.models.user_dealer_model import UserDealerModel
 from prosell.infrastructure.models.vehicle_model import VehicleModel
@@ -202,7 +203,7 @@ class SqlAlchemyVehicleRepository(AbstractVehicleRepository):
         limit: int = 50,
         cursor: str | None = None,
         filters: FilterParams | None = None,
-    ) -> tuple[list[Vehicle], str | None, bool]:
+    ) -> tuple[list[VehicleWithDealerInfo], str | None, bool]:
         """
         Get vehicles for user based on role with cursor pagination and dynamic filters.
 
@@ -273,15 +274,18 @@ class SqlAlchemyVehicleRepository(AbstractVehicleRepository):
         if has_more:
             rows = rows[:limit]  # Remove the extra item
 
-        # Extract dealer info and attach to vehicles as dynamic attributes
+        # Extract dealer info and create VehicleWithDealerInfo objects
         vehicles = []
         for row in rows:
             vehicle_model, org_id, org_name = row
             vehicle = self._to_entity(vehicle_model)
-            # Attach dealer info as dynamic attributes (not part of Vehicle entity)
-            vehicle.dealer_id = org_id  # type: ignore
-            vehicle.dealer_name = org_name  # type: ignore
-            vehicles.append(vehicle)
+            # Create type-safe wrapper with dealer info
+            vehicle_with_dealer = VehicleWithDealerInfo(
+                vehicle=vehicle,
+                dealer_id=org_id,
+                dealer_name=org_name,
+            )
+            vehicles.append(vehicle_with_dealer)
 
         # Generate next cursor
         if vehicles and has_more:

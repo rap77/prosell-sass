@@ -5,8 +5,10 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from prosell.domain.entities.vehicle import Vehicle
+from prosell.domain.value_objects.vehicle_with_dealer import VehicleWithDealerInfo
 
 if TYPE_CHECKING:
+    from prosell.application.dto.vehicle.catalog import FilterParams
     from prosell.domain.entities.user import User
 
 
@@ -148,7 +150,8 @@ class AbstractVehicleRepository(ABC):
         user: "User",
         limit: int = 50,
         cursor: str | None = None,
-    ) -> tuple[list[Vehicle], str | None, bool]:
+        filters: FilterParams | None = None,
+    ) -> tuple[list[VehicleWithDealerInfo], str | None, bool]:
         """
         Get vehicles for user based on role with cursor pagination.
 

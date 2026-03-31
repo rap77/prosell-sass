@@ -1,7 +1,5 @@
 """Get vehicle catalog use case."""
 
-from typing import TYPE_CHECKING
-
 from prosell.application.dto.vehicle.catalog import (
     CatalogResponseDTO,
     FilterParams,
@@ -10,9 +8,6 @@ from prosell.application.dto.vehicle.catalog import (
 from prosell.domain.entities.user import User
 from prosell.domain.repositories.publication_repository import IPublicationRepository
 from prosell.domain.repositories.vehicle_repository import AbstractVehicleRepository
-
-if TYPE_CHECKING:
-    from prosell.application.dto.vehicle.catalog import FilterParams
 
 
 class GetVehicleCatalogUseCase:
@@ -72,13 +67,16 @@ class GetVehicleCatalogUseCase:
 
         # Build catalog items with publication state and dealer info
         items = []
-        for vehicle in vehicles:
-            # Fetch publications for this vehicle's product
-            publications = await self.publication_repository.get_by_product_id(vehicle.product_id)
+        for vehicle_with_dealer in vehicles:
+            # Extract vehicle and dealer info from wrapper
+            vehicle = vehicle_with_dealer.vehicle
+            dealer_id = vehicle_with_dealer.dealer_id
+            dealer_name = vehicle_with_dealer.dealer_name
 
-            # Extract dealer info from dynamic attributes
-            dealer_id = getattr(vehicle, "dealer_id", None)
-            dealer_name = getattr(vehicle, "dealer_name", None)
+            # Fetch publications for this vehicle's product
+            publications = await self.publication_repository.get_by_product_id(
+                vehicle.product_id,
+            )
 
             # Create DTO with publications and dealer info
             item = VehicleCatalogItemDTO.from_entities(
