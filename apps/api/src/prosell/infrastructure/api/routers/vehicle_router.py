@@ -14,17 +14,23 @@ from prosell.application.dto.vehicle import (
     DecodeVinRequest,
     DecodeVinResponse,
 )
+from prosell.application.dto.vehicle.bulk_assign_dealer import (
+    BulkAssignDealerRequest,
+    BulkAssignDealerResponse,
+)
 from prosell.application.dto.vehicle.bulk_upload import BulkUploadResponse
 from prosell.application.dto.vehicle.catalog import FilterParams
 from prosell.application.ports.ivin_decoder_service import IVINDecoderService
 from prosell.application.use_cases.vehicle.assign_vehicle_to_dealer import (
     AssignVehicleToDealerUseCase,
 )
+from prosell.application.use_cases.vehicle.bulk_assign_dealer import BulkAssignDealerUseCase
 from prosell.application.use_cases.vehicle.bulk_upload_vehicles import BulkUploadVehiclesUseCase
 from prosell.application.use_cases.vehicle.create_vehicle import CreateVehicleUseCase
 from prosell.application.use_cases.vehicle.decode_vin import DecodeVinUseCase
 from prosell.application.use_cases.vehicle.get_vehicle_catalog import GetVehicleCatalogUseCase
 from prosell.domain.entities.user import User
+from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.repositories.publication_repository import IPublicationRepository
 from prosell.domain.repositories.vehicle_repository import AbstractVehicleRepository
@@ -33,6 +39,9 @@ from prosell.infrastructure.api.dependencies import (
     get_current_auth_user,
 )
 from prosell.infrastructure.api.main import limiter
+from prosell.infrastructure.repositories.organization_repository_impl import (
+    SqlAlchemyOrganizationRepository,
+)
 from prosell.infrastructure.repositories.product_repository_impl import (
     SqlAlchemyProductRepository,
 )
@@ -69,6 +78,15 @@ async def get_vin_service() -> IVINDecoderService:
 async def get_publication_repository(session=Depends(get_async_session)) -> IPublicationRepository:
     """Get publication repository instance."""
     return SqlAlchemyPublicationRepository(session)
+
+
+async def get_organization_repository(
+    session=Depends(get_async_session),
+) -> AbstractOrganizationRepository:
+    """Get organization repository instance."""
+    return SqlAlchemyOrganizationRepository(
+        session,
+    )
 
 
 async def get_vehicle_catalog_use_case(
@@ -274,6 +292,47 @@ async def assign_vehicle_to_dealer(
     return await use_case.execute(
         vehicle_id=vehicle_id,
         dealer_id=request.dealer_id,
+        tenant_id=current_user.tenant_id,
+    )
+
+
+@router.patch("/bulk-assign-dealer", response_model=BulkAssignDealerResponse)
+async def bulk_assign_dealer(
+    request: BulkAssignDealerRequest,
+    current_user: Annotated[User, Depends(get_current_auth_user)] = None,  # type: ignore[assignment]
+    vehicle_repo: AbstractVehicleRepository = Depends(get_vehicle_repository),
+    product_repo: AbstractProductRepository = Depends(get_product_repository),
+    organization_repo: AbstractOrganizationRepository = Depends(get_organization_repository),
+) -> BulkAssignDealerResponse:
+    """
+    Bulk assign multiple vehicles to a dealer (organization).
+
+    Updates the products' organization_id for all specified vehicles.
+
+    Args:
+        request: BulkAssignDealerRequest with vehicle_ids and dealer_id
+        current_user: Authenticated user (from JWT)
+        vehicle_repo: Vehicle repository
+        product_repo: Product repository
+        organization_repo: Organization repository
+
+    Returns:
+        BulkAssignDealerResponse with assigned_count, failed_count, and errors
+
+    Raises:
+        HTTPException 401: If user not authenticated
+        HTTPException 404: If dealer not found
+    """
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+
+    use_case = BulkAssignDealerUseCase(vehicle_repo, product_repo, organization_repo)
+
+    return await use_case.execute(
+        request=request,
         tenant_id=current_user.tenant_id,
     )
 
