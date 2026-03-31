@@ -1,5 +1,9 @@
 """Vehicle DTOs."""
 
+from prosell.application.dto.vehicle.assign_dealer import (
+    AssignDealerRequest,
+    AssignDealerResponse,
+)
 from prosell.application.dto.vehicle.bulk_upload import (
     BulkUploadError,
     BulkUploadResponse,
@@ -18,6 +22,8 @@ from prosell.application.dto.vehicle.create import (
 )
 
 __all__ = [
+    "AssignDealerRequest",
+    "AssignDealerResponse",
     "BulkUploadError",
     "BulkUploadResponse",
     "CatalogResponseDTO",

@@ -1,5 +1,6 @@
 """Catalog DTOs for vehicle listing with pagination."""
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -8,6 +9,15 @@ from pydantic import BaseModel, field_validator
 if TYPE_CHECKING:
     from prosell.domain.entities.publication import Publication
     from prosell.domain.entities.vehicle import Vehicle
+
+
+@dataclass
+class VehicleWithDealer:
+    """Vehicle entity with dealer information."""
+
+    vehicle: "Vehicle"
+    dealer_id: UUID | None
+    dealer_name: str | None
 
 
 class PublicationDTO(BaseModel):
@@ -49,6 +59,8 @@ class VehicleCatalogItemDTO(BaseModel):
     exterior_color: str | None = None
     interior_color: str | None = None
     price_cents: int | None = None
+    dealer_id: UUID | None = None
+    dealer_name: str | None = None
     created_at: str
     publications: list[PublicationDTO] = []
 
@@ -57,6 +69,8 @@ class VehicleCatalogItemDTO(BaseModel):
         cls,
         vehicle: "Vehicle",
         publications: list["Publication"] | None = None,
+        dealer_id: UUID | None = None,
+        dealer_name: str | None = None,
     ) -> "VehicleCatalogItemDTO":
         """Create DTO from Vehicle entity and optional publications."""
 
@@ -77,6 +91,8 @@ class VehicleCatalogItemDTO(BaseModel):
             exterior_color=vehicle.exterior_color,
             interior_color=vehicle.interior_color,
             price_cents=None,  # Will be populated from Product if needed
+            dealer_id=dealer_id,
+            dealer_name=dealer_name,
             created_at=vehicle.created_at.isoformat(),
             publications=publication_dtos,
         )

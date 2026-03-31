@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useMemo, useEffect, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -11,7 +11,9 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { Building2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./StatusBadge";
 import { ActionMenu } from "./ActionMenu";
 
@@ -24,6 +26,8 @@ export interface Vehicle {
   year?: number;
   make?: string;
   model?: string;
+  dealer_id?: string;
+  dealer_name?: string;
 }
 
 interface DataGridProps {
@@ -31,6 +35,7 @@ interface DataGridProps {
   onPublish?: (vehicleId: string) => void;
   onEdit?: (vehicleId: string) => void;
   onDelete?: (vehicleId: string) => void;
+  onBulkAssignDealer?: (vehicleIds: string[]) => void;
 }
 
 export function DataGrid({
@@ -38,8 +43,10 @@ export function DataGrid({
   onPublish = () => {},
   onEdit = () => {},
   onDelete = () => {},
+  onBulkAssignDealer,
 }: DataGridProps) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   // Stable columns definition (prevent re-renders)
   const columns: ColumnDef<Vehicle>[] = [
@@ -106,6 +113,18 @@ export function DataGrid({
         cell: (info) => <StatusBadge status={info.getValue() as Vehicle["status"]} />,
       },
       {
+        accessorKey: "dealer_name",
+        header: "Dealer",
+        cell: (info) => {
+          const dealerName = info.getValue() as string | undefined;
+          return dealerName ? (
+            <span className="text-sm">{dealerName}</span>
+          ) : (
+            <span className="text-sm text-muted-foreground">Unassigned</span>
+          );
+        },
+      },
+      {
         id: "actions",
         header: "Actions",
         cell: ({ row }) => (
@@ -125,7 +144,27 @@ export function DataGrid({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    state: {
+      rowSelection,
+    },
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
   });
+
+  // Get selected vehicle IDs
+  const selectedVehicleIds = useMemo(
+    () => Object.keys(rowSelection).map((rowIndex) => {
+      const index = parseInt(rowIndex, 10);
+      return data[index]?.id;
+    }).filter(Boolean),
+    [rowSelection, data]
+  );
+
+  const handleBulkAssign = () => {
+    if (onBulkAssignDealer && selectedVehicleIds.length > 0) {
+      onBulkAssignDealer(selectedVehicleIds);
+    }
+  };
 
   // Row virtualization for 60fps performance
   const rowVirtualizer = useVirtualizer({
@@ -151,6 +190,39 @@ export function DataGrid({
 
   return (
     <div className="w-full border border-border rounded-lg overflow-hidden">
+      {/* Bulk actions toolbar */}
+      {selectedVehicleIds.length > 0 && (
+        <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-b border-border">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">
+              {selectedVehicleIds.length} vehicle{selectedVehicleIds.length !== 1 ? "s" : ""} selected
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {onBulkAssignDealer && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleBulkAssign}
+                className="flex items-center gap-2"
+              >
+                <Building2 className="h-4 w-4" />
+                Assign to Dealer
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setRowSelection({})}
+            >
+              Clear selection
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div
         ref={tableContainerRef}
         className="h-[600px] overflow-auto"

@@ -223,10 +223,13 @@ class SqlAlchemyVehicleRepository(AbstractVehicleRepository):
         Raises:
             Unauthorized: If seller/manager has no dealer assignments
         """
-        # Base query with tenant isolation
+        from prosell.infrastructure.models.organization_model import OrganizationModel
+
+        # Base query with tenant isolation - JOIN with Organization to get dealer info
         stmt = (
-            select(VehicleModel)
+            select(VehicleModel, ProductModel.organization_id, OrganizationModel.name)
             .join(ProductModel, VehicleModel.product_id == ProductModel.id)
+            .outerjoin(OrganizationModel, ProductModel.organization_id == OrganizationModel.id)
             .where(ProductModel.tenant_id == user.tenant_id)
         )
 
@@ -263,18 +266,30 @@ class SqlAlchemyVehicleRepository(AbstractVehicleRepository):
         stmt = stmt.limit(limit + 1)
 
         result = await self.session.execute(stmt)
-        models = result.scalars().all()
+        rows = result.all()
 
         # Determine if there are more results
-        has_more = len(models) > limit
+        has_more = len(rows) > limit
         if has_more:
-            models = models[:limit]  # Remove the extra item
-            last_vehicle = models[-1]
+            rows = rows[:limit]  # Remove the extra item
+
+        # Extract dealer info and attach to vehicles as dynamic attributes
+        vehicles = []
+        for row in rows:
+            vehicle_model, org_id, org_name = row
+            vehicle = self._to_entity(vehicle_model)
+            # Attach dealer info as dynamic attributes (not part of Vehicle entity)
+            vehicle.dealer_id = org_id  # type: ignore
+            vehicle.dealer_name = org_name  # type: ignore
+            vehicles.append(vehicle)
+
+        # Generate next cursor
+        if vehicles and has_more:
+            last_vehicle = vehicles[-1]
             next_cursor = self._encode_cursor(last_vehicle.id, last_vehicle.created_at)
         else:
             next_cursor = None
 
-        vehicles = [self._to_entity(m) for m in models]
         return (vehicles, next_cursor, has_more)
 
     async def _get_user_dealer_ids(self, user_id: UUID, tenant_id: UUID) -> list[UUID]:
@@ -335,20 +350,12 @@ class SqlAlchemyVehicleRepository(AbstractVehicleRepository):
             stmt = stmt.where(VehicleModel.make == filters.make)
         if filters.model:
             stmt = stmt.where(VehicleModel.model == filters.model)
-        if filters.condition:
-            stmt = stmt.where(VehicleModel.condition == filters.condition)
 
         # Numeric range filters
         if filters.year_min:
             stmt = stmt.where(VehicleModel.year >= filters.year_min)
         if filters.year_max:
             stmt = stmt.where(VehicleModel.year <= filters.year_max)
-        if filters.price_min:
-            # Convert to cents
-            stmt = stmt.where(VehicleModel.price_cents >= filters.price_min * 100)
-        if filters.price_max:
-            # Convert to cents
-            stmt = stmt.where(VehicleModel.price_cents <= filters.price_max * 100)
 
         # Full-text search (search in make, model, vin)
         if filters.search:

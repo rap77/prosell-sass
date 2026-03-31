@@ -70,14 +70,23 @@ class GetVehicleCatalogUseCase:
             filters=filters,
         )
 
-        # Build catalog items with publication state
+        # Build catalog items with publication state and dealer info
         items = []
         for vehicle in vehicles:
             # Fetch publications for this vehicle's product
             publications = await self.publication_repository.get_by_product_id(vehicle.product_id)
 
-            # Create DTO with publications
-            item = VehicleCatalogItemDTO.from_entities(vehicle, publications)
+            # Extract dealer info from dynamic attributes
+            dealer_id = getattr(vehicle, "dealer_id", None)
+            dealer_name = getattr(vehicle, "dealer_name", None)
+
+            # Create DTO with publications and dealer info
+            item = VehicleCatalogItemDTO.from_entities(
+                vehicle,
+                publications,
+                dealer_id=dealer_id,
+                dealer_name=dealer_name,
+            )
             items.append(item)
 
         return CatalogResponseDTO(

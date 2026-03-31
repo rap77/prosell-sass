@@ -10,6 +10,8 @@ export interface Vehicle {
   year?: number;
   make?: string;
   model?: string;
+  dealer_id?: string;
+  dealer_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +43,8 @@ interface BackendVehicleItem {
   exterior_color?: string;
   interior_color?: string;
   price_cents?: number;
+  dealer_id?: string;
+  dealer_name?: string;
   created_at: string;
   publications: Array<{
     id: string;
@@ -70,6 +74,8 @@ function transformVehicle(item: BackendVehicleItem): Vehicle {
     year: item.year,
     make: item.make,
     model: item.model,
+    dealer_id: item.dealer_id,
+    dealer_name: item.dealer_name,
     created_at: item.created_at,
     updated_at: item.created_at,
   };

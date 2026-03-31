@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFil
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.vehicle import (
+    AssignDealerRequest,
+    AssignDealerResponse,
     CatalogResponseDTO,
     CreateVehicleRequest,
     DecodeVinRequest,
@@ -15,6 +17,9 @@ from prosell.application.dto.vehicle import (
 from prosell.application.dto.vehicle.bulk_upload import BulkUploadResponse
 from prosell.application.dto.vehicle.catalog import FilterParams
 from prosell.application.ports.ivin_decoder_service import IVINDecoderService
+from prosell.application.use_cases.vehicle.assign_vehicle_to_dealer import (
+    AssignVehicleToDealerUseCase,
+)
 from prosell.application.use_cases.vehicle.bulk_upload_vehicles import BulkUploadVehiclesUseCase
 from prosell.application.use_cases.vehicle.create_vehicle import CreateVehicleUseCase
 from prosell.application.use_cases.vehicle.decode_vin import DecodeVinUseCase
@@ -227,6 +232,49 @@ async def get_vehicle_catalog(
         limit=limit,
         cursor=cursor,
         filters=filters,
+    )
+
+
+@router.patch("/{vehicle_id}/dealer", response_model=AssignDealerResponse)
+async def assign_vehicle_to_dealer(
+    vehicle_id: UUID,
+    request: AssignDealerRequest,
+    current_user: Annotated[User, Depends(get_current_auth_user)] = None,  # type: ignore[assignment]
+    db: AsyncSession = Depends(get_async_session),
+) -> AssignDealerResponse:
+    """
+    Assign a vehicle to a dealer (organization).
+
+    Updates the product's organization_id to the specified dealer.
+
+    Args:
+        vehicle_id: Vehicle UUID to assign
+        request: AssignDealerRequest with dealer_id
+        current_user: Authenticated user (from JWT)
+        db: Database session
+
+    Returns:
+        AssignDealerResponse with updated vehicle info
+
+    Raises:
+        HTTPException 401: If user not authenticated
+        HTTPException 404: If vehicle or dealer not found
+        HTTPException 400: If vehicle not in user's tenant
+    """
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+
+    vehicle_repo = SqlAlchemyVehicleRepository(db)
+    product_repo = SqlAlchemyProductRepository(db)
+    use_case = AssignVehicleToDealerUseCase(vehicle_repo, product_repo, db)
+
+    return await use_case.execute(
+        vehicle_id=vehicle_id,
+        dealer_id=request.dealer_id,
+        tenant_id=current_user.tenant_id,
     )
 
 
