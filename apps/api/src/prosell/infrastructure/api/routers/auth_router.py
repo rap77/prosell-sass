@@ -180,8 +180,9 @@ async def login(
         value=result.access_token,
         expires=access_token_expiry,
         httponly=True,  # CRITICAL: Prevents JavaScript access (XSS protection)
-        secure=True,  # HTTPS only
-        samesite="strict",  # CSRF protection
+        secure=settings.environment != "development",  # HTTPS only (disabled in dev)
+        samesite="lax",  # Lax for OAuth compatibility
+        domain="localhost",  # Share across all localhost ports
     )
 
     response.set_cookie(
@@ -189,8 +190,9 @@ async def login(
         value=result.refresh_token,
         expires=refresh_token_expiry,
         httponly=True,
-        secure=True,
-        samesite="strict",
+        secure=settings.environment != "development",
+        samesite="lax",
+        domain="localhost",
     )
 
     # Also set user_data cookie for server components
@@ -200,8 +202,9 @@ async def login(
         value=quote(result.user.model_dump_json()),
         expires=refresh_token_expiry,
         httponly=True,
-        secure=True,
-        samesite="strict",
+        secure=settings.environment != "development",
+        samesite="lax",
+        domain="localhost",
     )
 
     return result
@@ -427,6 +430,7 @@ async def oauth_callback(
             httponly=True,  # CRITICAL: Prevents JavaScript access (XSS protection)
             secure=settings.environment != "development",  # HTTPS only (disabled in dev)
             samesite="lax",  # Lax required: OAuth redirect chain crosses google.com
+            domain="localhost",  # Share across all localhost ports
         )
 
         redirect.set_cookie(
@@ -437,6 +441,7 @@ async def oauth_callback(
             httponly=True,
             secure=settings.environment != "development",
             samesite="lax",
+            domain="localhost",
         )
 
         redirect.set_cookie(
@@ -447,6 +452,7 @@ async def oauth_callback(
             httponly=True,
             secure=settings.environment != "development",
             samesite="lax",
+            domain="localhost",
         )
 
         logger.info(
@@ -594,8 +600,27 @@ async def logout(response: Response) -> LogoutResponse:
     Clears httpOnly cookies by setting them with expiration in the past.
     """
     # Clear cookies by setting them with expired date
-    response.delete_cookie(key="access_token", httponly=True, secure=True, samesite="strict")
-    response.delete_cookie(key="refresh_token", httponly=True, secure=True, samesite="strict")
-    response.delete_cookie(key="user_data", httponly=True, secure=True, samesite="strict")
+    # CRITICAL: Must match cookie parameters from login (domain, path, samesite)
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=settings.environment != "development",
+        samesite="lax",
+        domain="localhost",
+    )
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=settings.environment != "development",
+        samesite="lax",
+        domain="localhost",
+    )
+    response.delete_cookie(
+        key="user_data",
+        httponly=True,
+        secure=settings.environment != "development",
+        samesite="lax",
+        domain="localhost",
+    )
 
     return LogoutResponse(message="Logout successful")
