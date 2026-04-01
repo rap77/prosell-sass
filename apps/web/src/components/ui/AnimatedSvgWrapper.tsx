@@ -24,7 +24,7 @@ import { useFeatureFlagStore } from "@/stores/featureFlagStore";
 
 export type AnimationType = "fadeIn" | "slideUp" | "scaleIn";
 
-export interface AnimatedSvgWrapperProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface AnimatedSvgWrapperProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'ref'> {
   /** Animation type to apply */
   animation?: AnimationType;
   /** Animation duration in milliseconds */
@@ -61,48 +61,39 @@ const createAnimationStyle = (
 // MAIN COMPONENT
 // ============================================
 
-export const AnimatedSvgWrapper = React.forwardRef<
-  HTMLDivElement,
-  AnimatedSvgWrapperProps
->(
-  (
-    {
-      animation = "fadeIn",
-      duration = 300,
-      delay = 0,
-      children,
-      className,
-      ...props
-    },
-    ref,
-  ) => {
-    // Feature flag check
-    const useSvgWrapper = useFeatureFlagStore((state) =>
-      state.get("svg-wrapper", true),
-    );
+export const AnimatedSvgWrapper = ({
+  animation = "fadeIn",
+  duration = 300,
+  delay = 0,
+  children,
+  className,
+  ref,
+  ...props
+}: AnimatedSvgWrapperProps & { ref?: React.Ref<HTMLDivElement> }) => {
+  // Feature flag check
+  const useSvgWrapper = useFeatureFlagStore((state) =>
+    state.get("svg-wrapper", true),
+  );
 
-    // If feature flag is disabled, render without animation
-    if (!useSvgWrapper) {
-      return (
-        <div ref={ref} className={className} {...props}>
-          {children}
-        </div>
-      );
-    }
-
-    const style = createAnimationStyle(animation, duration, delay);
-
+  // If feature flag is disabled, render without animation
+  if (!useSvgWrapper) {
     return (
-      <div
-        ref={ref}
-        className={cn("inline-block", className)}
-        style={style}
-        {...props}
-      >
+      <div ref={ref} className={className} {...props}>
         {children}
       </div>
     );
-  },
-);
+  }
 
-AnimatedSvgWrapper.displayName = "AnimatedSvgWrapper";
+  const style = createAnimationStyle(animation, duration, delay);
+
+  return (
+    <div
+      ref={ref}
+      className={cn("inline-block", className)}
+      style={style}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};
