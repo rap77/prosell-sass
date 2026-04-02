@@ -96,6 +96,24 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
+# HEALTH CHECK ENDPOINT
+# =============================================================================
+
+@router.get("/health")
+async def health_check() -> dict[str, Any]:
+    """
+    Health check endpoint.
+    Returns the current status of the API.
+    Does not require authentication.
+    """
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(UTC).isoformat(),
+        "service": "prosell-api",
+    }
+
+
+# =============================================================================
 # OAUTH HELPER FUNCTIONS
 # =============================================================================
 

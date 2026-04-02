@@ -23,7 +23,10 @@ from prosell.domain.exceptions.org_exceptions import (
     OrgDomainException,
     WalletNotFoundException,
 )
-from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie, get_async_session
+from prosell.infrastructure.api.dependencies import (
+    get_async_session,
+    get_current_auth_user_from_cookie,
+)
 from prosell.infrastructure.repositories.wallet_repository_impl import (
     SqlAlchemyWalletRepository,
     SqlAlchemyWalletTransactionRepository,

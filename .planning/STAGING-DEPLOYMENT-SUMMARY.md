@@ -1,7 +1,7 @@
 # ProSell SaaS - Staging Deployment Summary
 
-**Date**: 2026-04-01  
-**Branch**: `main`  
+**Date**: 2026-04-01
+**Branch**: `main`
 **Status**: ✅ Preparation Complete - Ready for Deployment
 
 ---
@@ -298,19 +298,19 @@ See full checklist: `.planning/staging-deployment-checklist.md`
 
 ### Common Issues
 
-**Issue**: Database connection failed  
+**Issue**: Database connection failed
 **Fix**: Check `DATABASE_URL` in `.env.staging`, verify DB is running
 
-**Issue**: OAuth redirect mismatch  
+**Issue**: OAuth redirect mismatch
 **Fix**: Verify redirect URIs in OAuth console match `https://staging.prosell.com/api/auth/oauth/*/callback`
 
-**Issue**: Emails not sending  
+**Issue**: Emails not sending
 **Fix**: Verify SendGrid API key, check sender email is verified
 
-**Issue**: JWT keys not found  
+**Issue**: JWT keys not found
 **Fix**: Run `./scripts/generate-jwt-keys.sh`
 
-**Issue**: Port already in use  
+**Issue**: Port already in use
 **Fix**: Stop conflicting services or change ports in `docker-compose.staging.yml`
 
 ### Logs
@@ -366,6 +366,6 @@ docker-compose -f docker-compose.staging.yml down
 
 ---
 
-*Prepared by: Claude Code*  
-*Date: 2026-04-01*  
+*Prepared by: Claude Code*
+*Date: 2026-04-01*
 *Version: 1.0*

@@ -3,6 +3,7 @@
 from prosell.application.dto.vehicle import DecodeVinRequest, DecodeVinResponse, VehicleData
 from prosell.application.ports.ivin_decoder_service import IVINDecoderService
 from prosell.domain.repositories.vehicle_repository import AbstractVehicleRepository
+from prosell.infrastructure.services.nhtsa_normalizer import normalize_nhtsa_value
 
 
 class DecodeVinUseCase:
@@ -61,27 +62,36 @@ class DecodeVinUseCase:
 
         # Debug: log available fields
         import logging
+
         logger = logging.getLogger(__name__)
         logger.info(f"Available NHTSA fields: {list(decoded_data.keys())}")
 
         # 3. Build vehicle data from response
         # NHTSA field names can vary, so we try multiple possible names
-        def get_field(data: dict, *possible_names: str) -> str | None:
+        def get_field(data: dict[str, str], *possible_names: str) -> str | None:
             for name in possible_names:
-                if name in data and data[name]:
-                    return data[name]
+                if value := data.get(name):
+                    return value
             return None
 
         vehicle_data = VehicleData(
             year=_parse_int(get_field(decoded_data, "Model Year")),
-            make=get_field(decoded_data, "Make", "Manufacturer"),
+            make=normalize_nhtsa_value(get_field(decoded_data, "Make", "Manufacturer"), "make"),
             model=get_field(decoded_data, "Model"),
             trim=get_field(decoded_data, "Trim"),
-            body_type=get_field(decoded_data, "Body Class", "Body Style"),
-            drivetrain=get_field(decoded_data, "Drive Type", "Drivetrain"),
-            transmission=get_field(decoded_data, "Transmission", "Transmission Style"),
+            body_type=normalize_nhtsa_value(
+                get_field(decoded_data, "Body Class", "Body Style"), "body_type"
+            ),
+            drivetrain=normalize_nhtsa_value(
+                get_field(decoded_data, "Drive Type", "Drivetrain"), "drivetrain"
+            ),
+            transmission=normalize_nhtsa_value(
+                get_field(decoded_data, "Transmission", "Transmission Style"), "transmission"
+            ),
             engine=get_field(decoded_data, "Engine", "Engine Model"),
-            fuel_type=get_field(decoded_data, "Fuel Type", "Fuel Type - Primary"),
+            fuel_type=normalize_nhtsa_value(
+                get_field(decoded_data, "Fuel Type", "Fuel Type - Primary"), "fuel_type"
+            ),
         )
 
         return DecodeVinResponse(

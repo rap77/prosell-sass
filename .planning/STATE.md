@@ -115,7 +115,7 @@ Progress: [█████████] 100% (Phases 1, 2, 8, 9 complete; Phase 
 
 ### Pending Todos
 
-- catalog-enhancements.md: Backend API endpoints for vehicle catalog, real data fetching (currently mock data).
+None. Last todo (catalog-enhancements.md) marked obsolete — all requested features implemented in Phase 8.
 
 ### Blockers/Concerns
 

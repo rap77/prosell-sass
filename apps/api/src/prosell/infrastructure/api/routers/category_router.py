@@ -13,7 +13,10 @@ from prosell.application.dto.category import (
 from prosell.application.use_cases.category.create_category import CreateCategoryUseCase
 from prosell.application.use_cases.category.list_categories import ListCategoriesUseCase
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
-from prosell.infrastructure.api.dependencies import get_async_session, get_current_auth_user_from_cookie
+from prosell.infrastructure.api.dependencies import (
+    get_async_session,
+    get_current_auth_user_from_cookie,
+)
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
 )

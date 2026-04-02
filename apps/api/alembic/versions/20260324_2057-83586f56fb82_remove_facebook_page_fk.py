@@ -31,11 +31,12 @@ def upgrade() -> None:
             # Check if constraint exists
             constraints = inspector.get_foreign_keys("publications")
             constraint_exists = any(
-                c.get("name") == "publications_facebook_page_id_fkey"
-                for c in constraints
+                c.get("name") == "publications_facebook_page_id_fkey" for c in constraints
             )
             if constraint_exists:
-                op.drop_constraint("publications_facebook_page_id_fkey", "publications", type_="foreignkey")
+                op.drop_constraint(
+                    "publications_facebook_page_id_fkey", "publications", type_="foreignkey"
+                )
     except Exception:
         # If table or constraint doesn't exist, skip silently
         pass

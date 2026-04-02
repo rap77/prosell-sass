@@ -39,6 +39,7 @@ class NHTSAVinService(IVINDecoderService):
             httpx.HTTPStatusError: If API request fails
         """
         import logging
+
         logger = logging.getLogger(__name__)
 
         # Validate VIN format first

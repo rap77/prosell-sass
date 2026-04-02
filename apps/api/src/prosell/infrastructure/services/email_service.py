@@ -147,7 +147,7 @@ class SendGridEmailService:
             from_email=self.from_email,
             to_emails=email,
             subject="Two-factor authentication enabled",
-            html_content=f"""
+            html_content="""
             <html>
             <body>
                 <h2>2FA Enabled Successfully</h2>

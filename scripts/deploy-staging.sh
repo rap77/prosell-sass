@@ -84,7 +84,7 @@ check_file_exists() {
 check_env_var() {
   local var_name=$1
   local var_value=${!var_name}
-  
+
   if [[ -z "$var_value" ]] || [[ "$var_value" == "CHANGE_ME_"* ]]; then
     log_warning "Environment variable $var_name is not set or still has placeholder value"
     return 1
@@ -153,9 +153,9 @@ fi
 
 if [[ "$SKIP_BUILD" == false ]]; then
   log_info "Building Docker images..."
-  
+
   cd "$PROJECT_ROOT"
-  
+
   # Build API image
   log_info "Building API image..."
   docker build -f docker/api.Dockerfile -t prosell-api:staging . || {
@@ -163,7 +163,7 @@ if [[ "$SKIP_BUILD" == false ]]; then
     exit 1
   }
   log_success "API image built successfully"
-  
+
   # Build Web image
   log_info "Building Web image..."
   docker build \
@@ -200,12 +200,12 @@ for i in {1..30}; do
     log_success "Database is ready"
     break
   fi
-  
+
   if [[ $i -eq 30 ]]; then
     log_error "Database failed to start after 30 seconds"
     exit 1
   fi
-  
+
   sleep 1
 done
 
@@ -216,12 +216,12 @@ for i in {1..30}; do
     log_success "Redis is ready"
     break
   fi
-  
+
   if [[ $i -eq 30 ]]; then
     log_error "Redis failed to start after 30 seconds"
     exit 1
   fi
-  
+
   sleep 1
 done
 
@@ -231,10 +231,10 @@ done
 
 if [[ "$SKIP_MIGRATIONS" == false ]]; then
   log_info "Running database migrations..."
-  
+
   # Get DB password from env
   DB_PASSWORD=$(grep "POSTGRES_PASSWORD=" "$ENV_FILE" | cut -d '=' -f2)
-  
+
   # Run migrations in a temporary container
   docker run --rm \
     --network host \
@@ -247,9 +247,9 @@ if [[ "$SKIP_MIGRATIONS" == false ]]; then
     log_info "  docker run --rm --network host -e DATABASE_URL=... prosell-api:staging alembic upgrade head"
     exit 1
   }
-  
+
   log_success "Database migrations completed"
-  
+
   # Show current migration version
   log_info "Current migration version:"
   docker run --rm \
@@ -281,13 +281,13 @@ for i in {1..60}; do
     log_success "API is healthy"
     break
   fi
-  
+
   if [[ $i -eq 60 ]]; then
     log_error "API failed to become healthy after 60 seconds"
     log_info "Check logs with: docker logs prosell-staging-api"
     exit 1
   fi
-  
+
   sleep 1
 done
 
@@ -297,13 +297,13 @@ for i in {1..60}; do
     log_success "Web app is healthy"
     break
   fi
-  
+
   if [[ $i -eq 60 ]]; then
     log_error "Web app failed to become healthy after 60 seconds"
     log_info "Check logs with: docker logs prosell-staging-web"
     exit 1
   fi
-  
+
   sleep 1
 done
 

@@ -25,7 +25,6 @@ from prosell.domain.repositories.user_dealer_repository import (
 from prosell.infrastructure.api.dependencies import (
     get_assign_user_dealer_use_case,
     get_bulk_assign_use_case,
-    get_current_auth_user,
     get_current_auth_user_from_cookie,
     get_remove_user_dealer_use_case,
     get_user_dealer_repository,

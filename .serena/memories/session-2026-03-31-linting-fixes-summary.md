@@ -12,7 +12,7 @@
 
 ### 1. Fixed `no-unescaped-entities` (4 errors)
 - `org/page.tsx`: don't → don&apos;t
-- `teams/page.tsx`: don't → don&apos;t  
+- `teams/page.tsx`: don't → don&apos;t
 - `ActionMenu.tsx`: escaped quotes around vehicleTitle
 
 ### 2. Fixed `set-state-in-effect` (3 errors) - Root Cause Analysis
@@ -29,7 +29,7 @@
 - `org/[id]/edit/page.tsx` - Removed `isClient` state, use `isLoading` from store
 - `org/[id]/teams/[teamId]/page.tsx` - Removed `isClient` state, use `isLoading` from store
 
-**Reference:** 
+**Reference:**
 - React.dev: [set-state-in-effect](https://react.dev/learn/you-might-not-need-an-effect)
 - Next.js 16: Use loading state from data fetching layer
 

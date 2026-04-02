@@ -1,8 +1,7 @@
 """FastAPI application entry point for ProSell SaaS."""
 
-from pydantic import BaseModel
-
 from fastapi import FastAPI, Request, Response, status
+from pydantic import BaseModel
 
 
 # Response Models
@@ -19,6 +18,8 @@ class RootResponse(BaseModel):
     message: str
     version: str
     docs: str
+
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
@@ -249,6 +250,7 @@ app.include_router(
 async def health_check():
     """Health check endpoint (not rate limited)."""
     from fastapi.responses import JSONResponse
+
     return JSONResponse(
         content={
             "status": "healthy",
