@@ -32,15 +32,21 @@ const nextConfig: NextConfig = {
   },
 
   // Proxy API requests to backend during development
+  // Using 'fallback' type ensures rewrites are processed AFTER Next.js API routes
+  // This allows /api/v1/vehicles/* to use Next.js API routes (for cookie forwarding)
   async rewrites() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${apiUrl}/api/:path*`,
-      },
-    ];
+    return {
+      // Process rewrites AFTER Next.js API routes
+      // This allows our custom API routes (like /api/v1/vehicles) to handle requests first
+      fallback: [
+        {
+          source: "/api/:path*",
+          destination: `${apiUrl}/api/:path*`,
+        },
+      ],
+    };
   },
 };
 

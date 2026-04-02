@@ -15,6 +15,9 @@ RUN uv venv && uv sync --frozen --no-dev
 # Runtime stage
 FROM python:3.13-slim
 
+# Install curl for health checks
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy virtual environment from builder
@@ -22,6 +25,10 @@ COPY --from=builder /app/.venv /app/.venv
 
 # Copy source code
 COPY apps/api/src ./src
+
+# Copy Alembic configuration
+COPY apps/api/alembic.ini ./alembic.ini
+COPY apps/api/alembic ./alembic
 
 # Copy scripts and keys
 COPY scripts ./scripts
