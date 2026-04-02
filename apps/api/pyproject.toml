@@ -4,10 +4,10 @@ version = "0.1.0"
 description = "ProSell SaaS - Vehicle Market Analysis API"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi[standard]==0.115.13",
+    "fastapi[standard]==0.128.0",
     "sqlalchemy[asyncio]>=2.0.36",
     "asyncpg>=0.30.0",
-    "pydantic==2.11.2",
+    "pydantic==2.12.5",
     "pydantic-settings>=2.7.0",
     "alembic>=1.14.0",
     "redis>=5.2.0",
