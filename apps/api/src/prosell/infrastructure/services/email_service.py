@@ -58,8 +58,40 @@ class SendGridEmailService:
         token: str,
     ) -> None:
         """Send email verification email."""
-        # TODO: Implement SendGrid API call
-        pass
+        import sendgrid  # type: ignore[import]
+        from sendgrid.helpers.mail import Mail  # type: ignore[import]
+
+        # Create verification URL (use oauth_frontend_success_url as base)
+        base_url = settings.oauth_frontend_success_url.split("/auth")[0]
+        verification_url = f"{base_url}/auth/verify?token={token}"
+
+        # Create email message
+        message = Mail(
+            from_email=self.from_email,
+            to_emails=email,
+            subject="Verify your ProSell account",
+            html_content=f"""
+            <html>
+            <body>
+                <h2>Welcome to ProSell!</h2>
+                <p>Please verify your email address by clicking the button below:</p>
+                <p><a href="{verification_url}" style="background-color:#4CAF50;color:white;padding:10px 20px;text-decoration:none;display:inline-block;">Verify Email</a></p>
+                <p>Or copy and paste this link into your browser:</p>
+                <p>{verification_url}</p>
+                <p>This link expires in 24 hours.</p>
+                <p>If you didn't create an account, please ignore this email.</p>
+            </body>
+            </html>
+            """,
+        )
+
+        # Send email
+        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
+        response = await sg.send(message)  # type: ignore[attr-defined]
+
+        # Log response for debugging
+        if response.status_code not in (200, 202):  # type: ignore[attr-defined]
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
     async def send_password_reset(
         self,
@@ -67,16 +99,73 @@ class SendGridEmailService:
         token: str,
     ) -> None:
         """Send password reset email."""
-        # TODO: Implement SendGrid API call
-        pass
+        import sendgrid  # type: ignore[import]
+        from sendgrid.helpers.mail import Mail  # type: ignore[import]
+
+        # Create reset URL
+        base_url = settings.oauth_frontend_success_url.split("/auth")[0]
+        reset_url = f"{base_url}/auth/reset-password?token={token}"
+
+        # Create email message
+        message = Mail(
+            from_email=self.from_email,
+            to_emails=email,
+            subject="Reset your ProSell password",
+            html_content=f"""
+            <html>
+            <body>
+                <h2>Password Reset Request</h2>
+                <p>We received a request to reset your password. Click the button below:</p>
+                <p><a href="{reset_url}" style="background-color:#4CAF50;color:white;padding:10px 20px;text-decoration:none;display:inline-block;">Reset Password</a></p>
+                <p>Or copy and paste this link into your browser:</p>
+                <p>{reset_url}</p>
+                <p>This link expires in 1 hour.</p>
+                <p>If you didn't request a password reset, please ignore this email.</p>
+            </body>
+            </html>
+            """,
+        )
+
+        # Send email
+        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
+        response = await sg.send(message)  # type: ignore[attr-defined]
+
+        # Log response for debugging
+        if response.status_code not in (200, 202):  # type: ignore[attr-defined]
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
     async def send_2fa_enabled(
         self,
         email: str,
     ) -> None:
         """Send 2FA enabled notification."""
-        # TODO: Implement SendGrid API call
-        pass
+        import sendgrid  # type: ignore[import]
+        from sendgrid.helpers.mail import Mail  # type: ignore[import]
+
+        # Create email message
+        message = Mail(
+            from_email=self.from_email,
+            to_emails=email,
+            subject="Two-factor authentication enabled",
+            html_content=f"""
+            <html>
+            <body>
+                <h2>2FA Enabled Successfully</h2>
+                <p>Two-factor authentication has been enabled on your ProSell account.</p>
+                <p>Your account is now more secure.</p>
+                <p>If you didn't make this change, please contact support immediately.</p>
+            </body>
+            </html>
+            """,
+        )
+
+        # Send email
+        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
+        response = await sg.send(message)  # type: ignore[attr-defined]
+
+        # Log response for debugging
+        if response.status_code not in (200, 202):  # type: ignore[attr-defined]
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
 
 class MockEmailService:

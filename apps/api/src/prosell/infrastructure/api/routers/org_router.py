@@ -33,7 +33,7 @@ from prosell.domain.exceptions.org_exceptions import (
     OrgDomainException,
 )
 from prosell.infrastructure.api.dependencies import (
-    get_current_auth_user,
+    get_current_auth_user_from_cookie,
     get_spaces_service,
     require_permission,
     require_role,
@@ -133,7 +133,7 @@ async def list_organizations(
     summary="Get current user's organization",
 )
 async def get_my_organization(
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationResponse:
     """Get the organization associated with the authenticated user's tenant."""
@@ -157,7 +157,7 @@ async def get_my_organization(
 )
 async def get_organization(
     org_id: UUID,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationResponse:
     """Get organization by ID (with tenant isolation)."""
@@ -182,7 +182,7 @@ async def get_organization(
 async def update_organization(
     org_id: UUID,
     request: UpdateOrganizationRequest,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationResponse:
     """Update organization basic info, logo, banner, or settings."""
@@ -216,7 +216,7 @@ async def update_organization(
 async def get_upload_url(
     org_id: UUID,
     request: UploadUrlRequest,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
     spaces: IDOSpacesService = Depends(get_spaces_service),
 ) -> UploadUrlResponse:

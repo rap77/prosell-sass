@@ -13,7 +13,7 @@ from prosell.application.dto.category import (
 from prosell.application.use_cases.category.create_category import CreateCategoryUseCase
 from prosell.application.use_cases.category.list_categories import ListCategoriesUseCase
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
-from prosell.infrastructure.api.dependencies import get_async_session, get_current_auth_user
+from prosell.infrastructure.api.dependencies import get_async_session, get_current_auth_user_from_cookie
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
 )
@@ -32,7 +32,7 @@ async def list_categories(
     is_active: bool | None = None,
     skip: int = 0,
     limit: int = 100,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> CategoryListResponse:
     """
@@ -60,7 +60,7 @@ async def list_categories(
 @router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
     request: CreateCategoryRequest,
-    _current_user=Depends(get_current_auth_user),
+    _current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> CategoryResponse:
     """
@@ -77,7 +77,7 @@ async def create_category(
 @router.get("/{category_id}", response_model=CategoryResponse)
 async def get_category(
     category_id: UUID,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> CategoryResponse:
     """Get a category by ID."""
@@ -97,7 +97,7 @@ async def get_category(
 @router.get("/{category_id}/fields", response_model=dict)
 async def get_category_fields(
     category_id: UUID,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> dict:
     """Get field configuration for a category."""

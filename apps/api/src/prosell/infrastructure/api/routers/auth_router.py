@@ -124,8 +124,10 @@ def _get_provider_redirect_uris() -> dict[str, str]:
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
+@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
 async def register(
-    request: RegisterRequest,
+    request: Request,  # noqa: ARG001 - Used by rate_limit decorator
+    register_request: RegisterRequest,
     use_case: Annotated[RegisterUserUseCase, Depends(get_register_user_use_case)],
 ) -> RegisterUserResponse:
     """
@@ -139,10 +141,10 @@ async def register(
     Sets httpOnly cookies for authentication tokens.
     """
     uc_request = RegisterUserRequest(
-        email=request.email,
-        password=request.password,
-        full_name=request.full_name,
-        accept_terms=request.accept_terms,
+        email=register_request.email,
+        password=register_request.password,
+        full_name=register_request.full_name,
+        accept_terms=register_request.accept_terms,
     )
     result = await use_case.execute(uc_request)
 
@@ -153,7 +155,9 @@ async def register(
 
 
 @router.post("/login")
+@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
 async def login(
+    fastapi_request: Request,  # noqa: ARG001 - Used by rate_limit decorator
     request: LoginRequest,
     response: Response,
     use_case: Annotated[LoginUserUseCase, Depends(get_login_user_use_case)],
@@ -211,7 +215,9 @@ async def login(
 
 
 @router.post("/refresh")
+@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
 async def refresh_token(
+    fastapi_request: Request,  # noqa: ARG001 - Used by rate_limit decorator
     request: RefreshTokenRequest,
     use_case: Annotated[RefreshTokenUseCase, Depends(get_refresh_token_use_case)],
 ) -> RefreshTokenResponse:
@@ -225,8 +231,10 @@ async def refresh_token(
 
 
 @router.post("/oauth/{provider}")
+@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
 async def oauth_login(
     provider: str,
+    fastapi_request: Request,  # noqa: ARG001 - Used by rate_limit decorator
     request: OAuthLoginRequest,
     use_case: Annotated[OAuthLoginUseCase, Depends(get_oauth_login_use_case)],
 ) -> OAuthLoginResponse:
@@ -484,7 +492,9 @@ async def oauth_callback(
 
 
 @router.post("/2fa/enable")
+@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
 async def enable_2fa(
+    fastapi_request: Request,  # noqa: ARG001 - Used by rate_limit decorator
     request: Enable2FARequest,
     current_user: Annotated[dict[str, Any], Depends(get_current_user)],
     use_case: Annotated[Enable2FAUseCase, Depends(get_enable_2fa_use_case)],
@@ -507,7 +517,9 @@ async def enable_2fa(
 
 
 @router.post("/2fa/verify")
+@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
 async def verify_2fa(
+    fastapi_request: Request,  # noqa: ARG001 - Used by rate_limit decorator
     request: Verify2FARequest,
     use_case: Annotated[Verify2FAUseCase, Depends(get_verify_2fa_use_case)],
 ) -> Verify2FAResponse:
@@ -524,7 +536,9 @@ async def verify_2fa(
 
 
 @router.post("/2fa/disable")
+@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
 async def disable_2fa(
+    fastapi_request: Request,  # noqa: ARG001 - Used by rate_limit decorator
     request: Disable2FARequest,
     current_user: Annotated[dict[str, Any], Depends(get_current_user)],
     use_case: Annotated[Disable2FAUseCase, Depends(get_disable_2fa_use_case)],

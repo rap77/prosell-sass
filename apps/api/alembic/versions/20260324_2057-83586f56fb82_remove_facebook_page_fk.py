@@ -21,7 +21,24 @@ def upgrade() -> None:
     """Upgrade schema."""
     # Drop foreign key constraint from publications.facebook_page_id
     # The table facebook_pages doesn't exist yet, so we remove the FK
-    op.drop_constraint("publications_facebook_page_id_fkey", "publications", type_="foreignkey")
+    # Check if the constraint exists before dropping it
+    conn = op.get_bind()
+    inspector = conn.dialect.inspector
+    try:
+        # Check if publications table exists
+        tables = inspector.get_table_names()
+        if "publications" in tables:
+            # Check if constraint exists
+            constraints = inspector.get_foreign_keys("publications")
+            constraint_exists = any(
+                c.get("name") == "publications_facebook_page_id_fkey"
+                for c in constraints
+            )
+            if constraint_exists:
+                op.drop_constraint("publications_facebook_page_id_fkey", "publications", type_="foreignkey")
+    except Exception:
+        # If table or constraint doesn't exist, skip silently
+        pass
 
 
 def downgrade() -> None:

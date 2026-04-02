@@ -110,7 +110,7 @@ export default function TeamsPage() {
             <div className="text-center py-12">
               <Users className="h-16 w-16 mx-auto text-slate-400 mb-4" />
               <p className="text-slate-600 dark:text-slate-400 mb-6">
-                You don't have any teams yet.
+                You don&apos;t have any teams yet.
               </p>
               <Button onClick={() => router.push(`/dashboard/org/${orgId}/teams/new`)}>
                 <Plus className="h-4 w-4 mr-2" />

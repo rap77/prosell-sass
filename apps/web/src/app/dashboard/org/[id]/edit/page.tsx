@@ -11,25 +11,23 @@ import { useParams } from "next/navigation";
 import { OrganizationForm } from "@/components/forms";
 import { useOrganizationStore } from "@/stores";
 import { useAuthStore } from "@/stores";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 export default function EditOrganizationPage() {
   const params = useParams();
   const orgId = params.id as string;
   const { currentOrg, fetchOrganizationById, isLoading } = useOrganizationStore();
   const { user } = useAuthStore();
-  const [isClient, setIsClient] = useState(false);
 
   // Fetch organization on mount
   useEffect(() => {
-    setIsClient(true);
     if (orgId && user?.id) {
       fetchOrganizationById(orgId, user.id);
     }
   }, [orgId, user?.id, fetchOrganizationById]);
 
-  // Server-side fallback
-  if (!isClient) {
+  // Loading state
+  if (isLoading) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
         <div className="max-w-2xl mx-auto">

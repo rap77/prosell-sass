@@ -36,7 +36,7 @@ from prosell.domain.repositories.publication_repository import IPublicationRepos
 from prosell.domain.repositories.vehicle_repository import AbstractVehicleRepository
 from prosell.infrastructure.api.dependencies import (
     get_async_session,
-    get_current_auth_user,
+    get_current_auth_user_from_cookie,
 )
 from prosell.infrastructure.api.main import limiter
 from prosell.infrastructure.repositories.organization_repository_impl import (
@@ -121,7 +121,7 @@ async def decode_vin(
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_vehicle(
     request: CreateVehicleRequest,
-    _current_user=Depends(get_current_auth_user),
+    _current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> dict:
     """
@@ -148,7 +148,7 @@ async def create_vehicle(
 @router.get("/vin/{vin}", response_model=dict)
 async def get_vehicle_by_vin(
     vin: str,
-    _current_user=Depends(get_current_auth_user),
+    _current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> dict:
     """Get vehicle information by VIN."""
@@ -175,7 +175,7 @@ async def get_vehicle_by_vin(
 @router.get("/product/{product_id}", response_model=dict)
 async def get_vehicle_by_product(
     product_id: UUID,
-    _current_user=Depends(get_current_auth_user),
+    _current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> dict:
     """Get vehicle information by product ID."""
@@ -201,6 +201,8 @@ async def get_vehicle_by_product(
 
 @router.get("", response_model=CatalogResponseDTO)
 async def get_vehicle_catalog(
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    use_case: GetVehicleCatalogUseCase = Depends(get_vehicle_catalog_use_case),
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     cursor: str | None = None,
     make: str | None = Query(None),
@@ -208,8 +210,6 @@ async def get_vehicle_catalog(
     year_min: int | None = Query(None, ge=1900, le=2030),
     year_max: int | None = Query(None, ge=1900, le=2030),
     search: str | None = Query(None),
-    current_user: Annotated[User, Depends(get_current_auth_user)] = None,  # type: ignore[assignment]
-    use_case: GetVehicleCatalogUseCase = Depends(get_vehicle_catalog_use_case),
 ) -> CatalogResponseDTO:
     """
     Get vehicle catalog with role-based filtering and dynamic filters.
@@ -230,12 +230,6 @@ async def get_vehicle_catalog(
     - year_min/year_max: Filter by year range
     - search: Full-text search in make, model, VIN
     """
-    if current_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-        )
-
     # Build filter params from query params
     filters = FilterParams(
         make=make,
@@ -257,7 +251,7 @@ async def get_vehicle_catalog(
 async def assign_vehicle_to_dealer(
     vehicle_id: UUID,
     request: AssignDealerRequest,
-    current_user: Annotated[User, Depends(get_current_auth_user)] = None,  # type: ignore[assignment]
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     db: AsyncSession = Depends(get_async_session),
 ) -> AssignDealerResponse:
     """
@@ -279,12 +273,6 @@ async def assign_vehicle_to_dealer(
         HTTPException 404: If vehicle or dealer not found
         HTTPException 400: If vehicle not in user's tenant
     """
-    if current_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-        )
-
     vehicle_repo = SqlAlchemyVehicleRepository(db)
     product_repo = SqlAlchemyProductRepository(db)
     use_case = AssignVehicleToDealerUseCase(vehicle_repo, product_repo, db)
@@ -299,7 +287,7 @@ async def assign_vehicle_to_dealer(
 @router.patch("/bulk-assign-dealer", response_model=BulkAssignDealerResponse)
 async def bulk_assign_dealer(
     request: BulkAssignDealerRequest,
-    current_user: Annotated[User, Depends(get_current_auth_user)] = None,  # type: ignore[assignment]
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     vehicle_repo: AbstractVehicleRepository = Depends(get_vehicle_repository),
     product_repo: AbstractProductRepository = Depends(get_product_repository),
     organization_repo: AbstractOrganizationRepository = Depends(get_organization_repository),
@@ -320,15 +308,8 @@ async def bulk_assign_dealer(
         BulkAssignDealerResponse with assigned_count, failed_count, and errors
 
     Raises:
-        HTTPException 401: If user not authenticated
         HTTPException 404: If dealer not found
     """
-    if current_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-        )
-
     use_case = BulkAssignDealerUseCase(vehicle_repo, product_repo, organization_repo)
 
     return await use_case.execute(
@@ -342,7 +323,7 @@ async def bulk_assign_dealer(
 async def bulk_upload_vehicles(
     csv_file: UploadFile,
     request: Request,  # noqa: ARG001 - Required by rate limiter
-    current_user: Annotated[User, Depends(get_current_auth_user)] = None,  # type: ignore[assignment]
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     db: AsyncSession = Depends(get_async_session),
 ) -> BulkUploadResponse:
     """
@@ -362,14 +343,8 @@ async def bulk_upload_vehicles(
         BulkUploadResponse with created count and errors
 
     Raises:
-        HTTPException: If user not authenticated or CSV format invalid
+        HTTPException: If CSV format invalid
     """
-    if current_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-        )
-
     # Validate file type
     if not csv_file.filename or not csv_file.filename.endswith(".csv"):
         raise HTTPException(

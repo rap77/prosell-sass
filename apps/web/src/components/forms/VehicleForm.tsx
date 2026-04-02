@@ -321,12 +321,25 @@ export function VehicleForm({
 
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        startTransition(() => {
-          handleSubmit(onSubmit)(e);
+      onSubmit={handleSubmit(async (data) => {
+        // Submit with React transition for concurrent rendering
+        startTransition(async () => {
+          try {
+            await onSubmit(data);
+          } catch (err) {
+            // Error already handled in onSubmit with toast
+            console.error('Submit error:', err);
+          }
         });
-      }}
+      }, (errors) => {
+        // Show toast when validation fails
+        const errorFields = Object.keys(errors);
+        if (errorFields.length > 0) {
+          toast.error('Validation errors', {
+            description: `Please fix the ${errorFields.length} error(s) before submitting`,
+          });
+        }
+      })}
       className="flex flex-col gap-8"
       noValidate
     >

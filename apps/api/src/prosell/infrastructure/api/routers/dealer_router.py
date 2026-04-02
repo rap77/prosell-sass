@@ -15,7 +15,7 @@ from prosell.application.use_cases.dealer.get_dealer import GetDealerUseCase
 from prosell.application.use_cases.dealer.list_dealers import ListDealersUseCase
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.dealer_exceptions import DealerNotFoundError, SlugNotUniqueError
-from prosell.infrastructure.api.dependencies import get_current_auth_user
+from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
 from prosell.infrastructure.api.di import (
     get_create_dealer_use_case,
     get_get_dealer_use_case,
@@ -34,7 +34,7 @@ router = APIRouter(tags=["dealers"])
 )
 async def create_dealer(
     request: CreateDealerRequest,
-    current_user: Annotated[User, Depends(get_current_auth_user)],
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     use_case: Annotated[CreateDealerUseCase, Depends(get_create_dealer_use_case)],
 ) -> DealerResponse:
     """
@@ -76,7 +76,7 @@ async def create_dealer(
 )
 async def get_dealer(
     dealer_id: str,
-    current_user: Annotated[User, Depends(get_current_auth_user)],
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     use_case: Annotated[GetDealerUseCase, Depends(get_get_dealer_use_case)],
 ) -> DealerResponse:
     """
@@ -117,7 +117,7 @@ async def get_dealer(
     description="Retrieves paginated list of dealers for the current tenant.",
 )
 async def list_dealers(
-    current_user: Annotated[User, Depends(get_current_auth_user)],
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     use_case: Annotated[ListDealersUseCase, Depends(get_list_dealers_use_case)],
     limit: int = 50,
     offset: int = 0,

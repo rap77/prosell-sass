@@ -23,8 +23,7 @@ from prosell.domain.exceptions.org_exceptions import (
     OrgDomainException,
     WalletNotFoundException,
 )
-from prosell.infrastructure.api.dependencies import get_current_auth_user
-from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie, get_async_session
 from prosell.infrastructure.repositories.wallet_repository_impl import (
     SqlAlchemyWalletRepository,
     SqlAlchemyWalletTransactionRepository,
@@ -64,7 +63,7 @@ def get_wallet_transaction_repository(
 )
 async def get_wallet_balance(
     org_id: UUID,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     wallet_repo: SqlAlchemyWalletRepository = Depends(get_wallet_repository),
 ) -> WalletResponse:
     """Get wallet by organization ID."""
@@ -88,7 +87,7 @@ async def get_wallet_balance(
 )
 async def get_wallet_transactions(
     org_id: UUID,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     skip: int = 0,
     limit: int = 100,
     wallet_txn_repo: SqlAlchemyWalletTransactionRepository = Depends(
@@ -120,7 +119,7 @@ async def get_wallet_transactions(
 )
 async def credit_wallet(
     request: CreditWalletRequest,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     wallet_repo: SqlAlchemyWalletRepository = Depends(get_wallet_repository),
     wallet_txn_repo: SqlAlchemyWalletTransactionRepository = Depends(
         get_wallet_transaction_repository,
@@ -170,7 +169,7 @@ async def credit_wallet(
 )
 async def debit_wallet(
     request: DebitWalletRequest,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     wallet_repo: SqlAlchemyWalletRepository = Depends(get_wallet_repository),
     wallet_txn_repo: SqlAlchemyWalletTransactionRepository = Depends(
         get_wallet_transaction_repository,

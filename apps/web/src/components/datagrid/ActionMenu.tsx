@@ -75,7 +75,7 @@ export function ActionMenu({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Vehicle</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{vehicleTitle}"? This action cannot be undone.
+              Are you sure you want to delete {`"{vehicleTitle}"`}? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

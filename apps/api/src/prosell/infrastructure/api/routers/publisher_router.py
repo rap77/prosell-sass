@@ -15,7 +15,6 @@ from prosell.application.use_cases.publisher.update_listing import (
 from prosell.domain.entities.user import User
 from prosell.domain.repositories.publication_repository import IPublicationRepository
 from prosell.infrastructure.api.dependencies import (
-    get_current_auth_user,
     get_current_auth_user_from_cookie,
     get_publication_repository,
     get_publish_vehicle_use_case,
@@ -48,7 +47,7 @@ async def update_listing(
     publication_id: UUID,
     body: UpdateListingRequest,
     publication_repo: Annotated[IPublicationRepository, Depends(get_publication_repository)],
-    _current_user: Annotated[User, Depends(get_current_auth_user)],
+    _current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
 ) -> PublicationResponse:
     """Update price/description/photos on an active FB listing."""
     use_case = UpdateListingUseCase(publication_repo=publication_repo)
@@ -60,7 +59,7 @@ async def update_listing(
 async def delete_listing(
     publication_id: UUID,
     publication_repo: Annotated[IPublicationRepository, Depends(get_publication_repository)],
-    _current_user: Annotated[User, Depends(get_current_auth_user)],
+    _current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
 ) -> PublicationResponse:
     """Mark vehicle as sold and remove FB listing."""
     use_case = DeleteListingUseCase(publication_repo=publication_repo)
@@ -71,7 +70,7 @@ async def delete_listing(
 async def unlock_category_b(
     publication_id: UUID,
     publication_repo: Annotated[IPublicationRepository, Depends(get_publication_repository)],
-    _current_user: Annotated[User, Depends(get_current_auth_user)],
+    _current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
 ) -> PublicationResponse:
     """Vendedor confirms Facebook security challenge resolved (Category B error recovery)."""
     pub = await publication_repo.get_by_id(publication_id)

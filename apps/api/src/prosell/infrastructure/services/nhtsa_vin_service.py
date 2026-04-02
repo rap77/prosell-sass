@@ -38,6 +38,9 @@ class NHTSAVinService(IVINDecoderService):
             ValueError: If VIN is invalid
             httpx.HTTPStatusError: If API request fails
         """
+        import logging
+        logger = logging.getLogger(__name__)
+
         # Validate VIN format first
         if not await self.is_valid_vin(vin):
             raise ValueError(f"Invalid VIN format: {vin}")
@@ -55,7 +58,13 @@ class NHTSAVinService(IVINDecoderService):
             # Format: [{"Variable": "Make", "Value": "Toyota"}, ...]
             results = data.get("Results", [])
 
-            return {item["Variable"]: item["Value"] for item in results if "Value" in item}
+            # Filter out None values and empty strings
+            raw_data = {item["Variable"]: item["Value"] for item in results if item.get("Value")}
+
+            logger.info(f"NHTSA VIN decode for {vin}: Found {len(raw_data)} fields")
+            logger.debug(f"NHTSA raw data: {raw_data}")
+
+            return raw_data
 
     async def is_valid_vin(self, vin: str) -> bool:
         """

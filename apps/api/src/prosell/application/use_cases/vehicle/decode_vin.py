@@ -59,17 +59,29 @@ class DecodeVinUseCase:
         # 2. Decode VIN via API
         decoded_data = await self.vin_service.decode_vin(vin)
 
+        # Debug: log available fields
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Available NHTSA fields: {list(decoded_data.keys())}")
+
         # 3. Build vehicle data from response
+        # NHTSA field names can vary, so we try multiple possible names
+        def get_field(data: dict, *possible_names: str) -> str | None:
+            for name in possible_names:
+                if name in data and data[name]:
+                    return data[name]
+            return None
+
         vehicle_data = VehicleData(
-            year=_parse_int(decoded_data.get("Model Year")),
-            make=decoded_data.get("Make"),
-            model=decoded_data.get("Model"),
-            trim=decoded_data.get("Trim"),
-            body_type=decoded_data.get("Body Class"),
-            drivetrain=decoded_data.get("Drive Type"),
-            transmission=decoded_data.get("Transmission"),
-            engine=decoded_data.get("Engine"),
-            fuel_type=decoded_data.get("Fuel Type"),
+            year=_parse_int(get_field(decoded_data, "Model Year")),
+            make=get_field(decoded_data, "Make", "Manufacturer"),
+            model=get_field(decoded_data, "Model"),
+            trim=get_field(decoded_data, "Trim"),
+            body_type=get_field(decoded_data, "Body Class", "Body Style"),
+            drivetrain=get_field(decoded_data, "Drive Type", "Drivetrain"),
+            transmission=get_field(decoded_data, "Transmission", "Transmission Style"),
+            engine=get_field(decoded_data, "Engine", "Engine Model"),
+            fuel_type=get_field(decoded_data, "Fuel Type", "Fuel Type - Primary"),
         )
 
         return DecodeVinResponse(

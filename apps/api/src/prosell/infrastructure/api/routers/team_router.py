@@ -26,7 +26,7 @@ from prosell.domain.exceptions.org_exceptions import (
     TeamAlreadyExistsException,
     TeamNotFoundException,
 )
-from prosell.infrastructure.api.dependencies import get_current_auth_user
+from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.team_repository_impl import (
     SqlAlchemyTeamMemberRepository,
@@ -68,7 +68,7 @@ def get_team_member_repository(
 )
 async def create_team(
     request: CreateTeamRequest,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
 ) -> TeamResponse:
     """Create a new team (ORG_ADMIN only)."""
@@ -103,7 +103,7 @@ async def create_team(
 )
 async def list_teams_by_org(
     org_id: UUID,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     skip: int = 0,
     limit: int = 100,
     team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
@@ -131,7 +131,7 @@ async def list_teams_by_org(
 )
 async def get_team(
     team_id: UUID,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
 ) -> TeamResponse:
     """Get team by ID (with tenant isolation)."""
@@ -156,7 +156,7 @@ async def get_team(
 async def update_team(
     team_id: UUID,
     request: UpdateTeamRequest,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
 ) -> TeamResponse:
     """Update team basic info."""
@@ -191,7 +191,7 @@ async def update_team(
 async def add_team_member(
     team_id: UUID,
     request: AddTeamMemberRequest,
-    current_user: User = Depends(get_current_auth_user),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     team_repo: SqlAlchemyTeamRepository = Depends(get_team_repository),
     team_member_repo: SqlAlchemyTeamMemberRepository = Depends(get_team_member_repository),
 ) -> TeamMemberResponse:

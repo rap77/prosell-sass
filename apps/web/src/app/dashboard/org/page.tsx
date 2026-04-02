@@ -86,7 +86,7 @@ export default function OrganizationsPage() {
           {!isLoading && !error && organizations.length === 0 && (
             <div className="text-center py-12">
               <p className="text-slate-600 dark:text-slate-400 mb-6">
-                You don't have any organizations yet.
+                You don&apos;t have any organizations yet.
               </p>
               <Button onClick={() => router.push("/dashboard/org/new")}>
                 Create Your First Organization

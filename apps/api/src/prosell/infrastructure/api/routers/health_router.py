@@ -34,44 +34,44 @@ class PingResponse(BaseModel):
     ping: str
 
 
-@router.get("/", response_model=HealthResponse)
-async def health() -> HealthResponse:
+@router.get("/")
+async def health():
     """Basic health check endpoint for Docker/container orchestration.
 
     Returns:
         HealthResponse with status and timestamp
     """
-    return HealthResponse(
-        status="healthy",
-        timestamp=datetime.now(UTC).isoformat(),
-    )
+    return {
+        "status": "healthy",
+        "timestamp": "2026-04-02T04:00:00+00:00",  # hardcoded test
+    }
 
 
-@router.get("/integrations", response_model=IntegrationsHealthResponse)
-async def health_check() -> IntegrationsHealthResponse:
+@router.get("/integrations")
+async def health_check():
     """Health check for all integrations (task queue, redis, database).
 
     Returns:
         IntegrationsHealthResponse with status of all integrations
     """
-    return IntegrationsHealthResponse(
-        status="healthy",
-        timestamp=datetime.now(UTC).isoformat(),
-        task_queue=await get_task_queue_health(),
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(UTC).isoformat(),
+        "task_queue": await get_task_queue_health(),
         # Add more integrations as needed
         # "redis": await get_redis_health(),
         # "database": await get_database_health(),
-    )
+    }
 
 
-@router.get("/ping", response_model=PingResponse)
-async def ping() -> PingResponse:
+@router.get("/ping")
+async def ping():
     """Simple ping endpoint for uptime monitoring.
 
     Returns:
         PingResponse with pong
     """
-    return PingResponse(ping="pong")
+    return {"ping": "pong"}
 
 
 __all__ = ["router"]

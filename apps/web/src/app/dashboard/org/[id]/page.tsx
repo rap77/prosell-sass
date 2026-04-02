@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useOrganizationStore, useAuthStore } from "@/stores";
 import { Button } from "@/components/ui/button";
@@ -29,11 +29,8 @@ export default function OrganizationDetailPage() {
     clearError,
   } = useOrganizationStore();
 
-  const [isClient, setIsClient] = useState(false);
-
-  // Fetch organization on mount (client-side only)
+  // Fetch organization on mount
   useEffect(() => {
-    setIsClient(true);
     if (orgId && tenantId) {
       fetchOrganizationById(orgId, tenantId);
     }
@@ -44,8 +41,8 @@ export default function OrganizationDetailPage() {
     fetchOrganizationById(orgId, tenantId);
   };
 
-  // Server-side fallback
-  if (!isClient) {
+  // Loading state
+  if (isLoading) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-8">
         <div className="max-w-4xl mx-auto">

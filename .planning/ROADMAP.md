@@ -12,7 +12,7 @@ ProSell SaaS automates the complete vehicle sales cycle for dealerships: publish
 ## Phases
 
 - [x] **Phase 1: Hybrid Publisher** - Publish, update, delete, and auto-republish vehicle listings on FB Marketplace via Playwright (primary) and Graph API (secondary) (completed 2026-03-15)
-- [📋] **Phase 2: Catalog & Roles** - Role-based internal catalog showing inventory per dealer with publishing state; dealer without user account; seller-to-dealer assignment (5/8 plans complete 2026-03-29)
+- [x] **Phase 2: Catalog & Roles** - Role-based internal catalog showing inventory per dealer with publishing state; dealer without user account; seller-to-dealer assignment (completed 2026-03-30)
 - [ ] **Phase 3: Scraping** - Automated dealer website sync and CarGurus market price extraction with deduplication and anti-detection
 - [ ] **Phase 4: Leads & Appointments** - Capture FB leads via webhook + polling, manual entry, lead lifecycle, and appointment creation with dealer notifications
 - [ ] **Phase 5: Dashboards** - Role-based dashboards for Admin, Manager, Vendedor, and Dealer with metrics
@@ -139,12 +139,14 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Hybrid Publisher | 8/8 | Complete   | 2026-03-15 |
-| 2. Catalog & Roles | 0/? | Not started | - |
+| 2. Catalog & Roles | 8/8 | Complete   | 2026-03-30 |
 | 3. Scraping | 0/? | Not started | - |
 | 4. Leads & Appointments | 0/? | Not started | - |
 | 5. Dashboards | 0/? | Not started | - |
 | 6. Market Intelligence | 0/? | Not started | - |
 | 7. Visibility | 0/? | Not started | - |
+| 8. Layout Shell + Vehicle Management | 5/5 | Complete | 2026-03-27 |
+| 9. Anti-patterns Fix | 1/1 (7 tasks) | Complete | 2026-03-29 |
 
 ### Phase 8: Layout Shell + Vehicle Management
 
@@ -186,4 +188,4 @@ Plans:
 - Plans: Ready for execution with locked decisions from CONTEXT.md
 
 ---
-*Last updated: 2026-03-27 — Phase 8 complete (all 5 plans executed successfully)*
+*Last updated: 2026-03-31 — Roadmap updated: Phases 1, 2, 8, 9 complete (50% progress)*

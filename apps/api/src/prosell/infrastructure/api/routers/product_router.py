@@ -15,7 +15,8 @@ from prosell.application.use_cases.product.approve_product import ApproveProduct
 from prosell.application.use_cases.product.create_product import CreateProductUseCase
 from prosell.application.use_cases.product.list_products import ListProductsUseCase
 from prosell.domain.repositories.product_repository import AbstractProductRepository
-from prosell.infrastructure.api.dependencies import get_async_session, get_current_auth_user
+from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.product_repository_impl import SqlAlchemyProductRepository
 
 router = APIRouter()
@@ -29,7 +30,7 @@ async def get_product_repository(session: AsyncSession) -> AbstractProductReposi
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     request: CreateProductRequest,
-    _current_user=Depends(get_current_auth_user),
+    _current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -54,7 +55,7 @@ async def list_products(
     max_price: int | None = None,
     skip: int = 0,
     limit: int = 100,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductListResponse:
     """
@@ -92,7 +93,7 @@ async def list_products(
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """Get a product by ID."""
@@ -114,7 +115,7 @@ async def get_product(
 async def update_product(
     product_id: UUID,
     request: UpdateProductRequest,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -156,7 +157,7 @@ async def update_product(
 @router.post("/{product_id}/submit", response_model=ProductResponse)
 async def submit_product_for_approval(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -181,7 +182,7 @@ async def submit_product_for_approval(
 @router.post("/{product_id}/approve", response_model=ProductResponse)
 async def approve_product(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -202,7 +203,7 @@ async def approve_product(
 async def reject_product(
     product_id: UUID,
     reason: str,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -228,7 +229,7 @@ async def reject_product(
 @router.post("/{product_id}/publish", response_model=ProductResponse)
 async def publish_product(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -254,7 +255,7 @@ async def publish_product(
 @router.post("/{product_id}/pause", response_model=ProductResponse)
 async def pause_product(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -279,7 +280,7 @@ async def pause_product(
 @router.post("/{product_id}/resume", response_model=ProductResponse)
 async def resume_product(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -304,7 +305,7 @@ async def resume_product(
 @router.post("/{product_id}/mark-sold", response_model=ProductResponse)
 async def mark_product_sold(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -329,7 +330,7 @@ async def mark_product_sold(
 @router.post("/{product_id}/archive", response_model=ProductResponse)
 async def archive_product(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -354,7 +355,7 @@ async def archive_product(
 @router.get("/featured", response_model=list[ProductResponse])
 async def get_featured_products(
     limit: int = 10,
-    current_user=Depends(get_current_auth_user),
+    current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> list[ProductResponse]:
     """Get featured products."""

@@ -40,7 +40,7 @@ from prosell.domain.exceptions.facebook_exceptions import (
     FacebookStateException,
 )
 from prosell.infrastructure.api.dependencies import (
-    get_current_auth_user,
+    get_current_auth_user_from_cookie,
     get_facebook_authorize_use_case,
     get_facebook_callback_use_case,
     get_facebook_disconnect_use_case,
@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 async def authorize_facebook(
     request: AuthorizeFacebookAccountRequest,
     use_case: Annotated[AuthorizeFacebookAccountUseCase, Depends(get_facebook_authorize_use_case)],
-    current_user: Annotated[User, Depends(get_current_auth_user)],
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
 ) -> AuthorizeFacebookAccountResponse:
     """
     Start Facebook OAuth flow for Marketplace publishing.
@@ -180,7 +180,7 @@ async def facebook_callback(
 
 @router.get("/accounts", response_model=ListFacebookAccountsResponse)
 async def list_facebook_accounts(
-    current_user: Annotated[User, Depends(get_current_auth_user)],
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     use_case: Annotated[ListAccountsUseCase, Depends(get_facebook_list_accounts_use_case)],
 ) -> ListFacebookAccountsResponse:
     """
@@ -196,7 +196,7 @@ async def list_facebook_accounts(
 @router.get("/accounts/{account_id}/pages", response_model=ListFacebookPagesResponse)
 async def list_facebook_pages(
     account_id: UUID,
-    current_user: Annotated[User, Depends(get_current_auth_user)],
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     use_case: Annotated[FetchPagesUseCase, Depends(get_facebook_fetch_pages_use_case)],
 ) -> ListFacebookPagesResponse:
     """
@@ -216,7 +216,7 @@ async def list_facebook_pages(
 )
 async def disconnect_facebook_account(
     account_id: UUID,
-    current_user: Annotated[User, Depends(get_current_auth_user)],
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     use_case: Annotated[
         DisconnectFacebookAccountUseCase, Depends(get_facebook_disconnect_use_case)
     ],
@@ -243,7 +243,7 @@ async def disconnect_facebook_account(
 async def set_default_facebook_page(
     account_id: UUID,
     page_id: UUID,
-    current_user: Annotated[User, Depends(get_current_auth_user)],
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     use_case: Annotated[SetDefaultPageUseCase, Depends(get_facebook_set_default_use_case)],
 ) -> None:
     """

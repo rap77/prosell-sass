@@ -8,8 +8,9 @@ from prosell.domain.entities.vehicle import Vehicle
 from prosell.domain.value_objects.vehicle_with_dealer import VehicleWithDealerInfo
 
 if TYPE_CHECKING:
-    from prosell.application.dto.vehicle.catalog import FilterParams
     from prosell.domain.entities.user import User
+
+from prosell.application.dto.vehicle.catalog import FilterParams
 
 
 class AbstractVehicleRepository(ABC):

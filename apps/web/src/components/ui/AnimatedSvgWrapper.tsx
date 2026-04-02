@@ -61,15 +61,20 @@ const createAnimationStyle = (
 // MAIN COMPONENT
 // ============================================
 
-export const AnimatedSvgWrapper = ({
-  animation = "fadeIn",
-  duration = 300,
-  delay = 0,
-  children,
-  className,
-  ref,
-  ...props
-}: AnimatedSvgWrapperProps & { ref?: React.Ref<HTMLDivElement> }) => {
+interface AnimatedSvgWrapperWithRefProps extends AnimatedSvgWrapperProps {
+  ref?: React.Ref<HTMLDivElement>;
+}
+
+/**
+ * AnimatedSvgWrapper component with proper ref forwarding.
+ *
+ * React 19 + React Compiler: No manual memoization needed.
+ * Uses forwardRef to properly forward refs to the underlying div element.
+ */
+export const AnimatedSvgWrapper = React.forwardRef<
+  HTMLDivElement,
+  AnimatedSvgWrapperProps
+>(({ animation = "fadeIn", duration = 300, delay = 0, children, className, ...props }, forwardedRef) => {
   // Feature flag check
   const useSvgWrapper = useFeatureFlagStore((state) =>
     state.get("svg-wrapper", true),
@@ -78,7 +83,7 @@ export const AnimatedSvgWrapper = ({
   // If feature flag is disabled, render without animation
   if (!useSvgWrapper) {
     return (
-      <div ref={ref} className={className} {...props}>
+      <div ref={forwardedRef} className={className} {...props}>
         {children}
       </div>
     );
@@ -88,7 +93,7 @@ export const AnimatedSvgWrapper = ({
 
   return (
     <div
-      ref={ref}
+      ref={forwardedRef}
       className={cn("inline-block", className)}
       style={style}
       {...props}
@@ -96,4 +101,7 @@ export const AnimatedSvgWrapper = ({
       {children}
     </div>
   );
-};
+});
+
+// Display name for debugging
+AnimatedSvgWrapper.displayName = "AnimatedSvgWrapper";
