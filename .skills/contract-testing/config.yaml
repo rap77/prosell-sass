@@ -1,0 +1,36 @@
+# Contract Testing Skill Configuration
+
+exclusions:
+  - /health
+  - /metrics
+  - /docs
+
+thresholds:
+  schema_matching_fields: 10
+
+  external_api_keywords:
+    - httpx
+    - requests
+    - aiohttp
+    - nhtsa
+    - facebook
+    - google
+
+  normalization_keywords:
+    - normalize
+    - transform
+    - map
+    - convert
+
+layer_selection:
+  priority:
+    - integration
+    - schema
+    - openapi
+
+test_data:
+  vin_decode:
+    valid_vins:
+      - "2GNALBEK8H1615946"  # 2017 Buick Enclave
+      - "1HGCM82633A004351"  # 2023 Honda Accord
+      - "1F1F1500000010001"  # Invalid checksum
