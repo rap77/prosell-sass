@@ -205,6 +205,16 @@ Configuration files:
 - **Vitest**: Testing Library for component tests
 - **Strict TypeScript**: No `any`, explicit types
 
+## Skills (Auto-load based on context)
+
+When you detect any of these contexts, IMMEDIATELY read the corresponding skill file BEFORE writing any code.
+
+| Context | Read this file |
+| ------- | -------------- |
+| API contract bugs, testing backend-frontend integration | `.skills/contract-testing/SKILL.md` |
+
+Read skills BEFORE writing code. Apply ALL patterns. Multiple skills can apply simultaneously.
+
 ## SOLID & Clean Architecture
 
 ### Domain Layer (No dependencies)
