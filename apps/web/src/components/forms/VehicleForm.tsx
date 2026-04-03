@@ -216,8 +216,7 @@ export function VehicleForm({
 
       const data = await response.json();
 
-      console.log("[VIN DECODE] API Response:", data);
-      console.log("[VIN DECODE] Vehicle data:", data.vehicle);
+
 
       // Auto-populate fields from decoded data
       if (data.vehicle) {
@@ -228,54 +227,63 @@ export function VehicleForm({
           setValue("year", data.vehicle.year, {
             shouldValidate: true,
             shouldDirty: true,
+            shouldTouch: true,
           });
         }
         if (data.vehicle.make) {
           setValue("make", data.vehicle.make, {
             shouldValidate: true,
             shouldDirty: true,
+            shouldTouch: true,
           });
         }
         if (data.vehicle.model) {
           setValue("model", data.vehicle.model, {
             shouldValidate: true,
             shouldDirty: true,
+            shouldTouch: true,
           });
         }
         if (data.vehicle.trim) {
           setValue("trim", data.vehicle.trim, {
             shouldValidate: true,
             shouldDirty: true,
+            shouldTouch: true,
           });
         }
         if (data.vehicle.body_type) {
           setValue("body_type", data.vehicle.body_type, {
             shouldValidate: true,
             shouldDirty: true,
+            shouldTouch: true,
           });
         }
         if (data.vehicle.drivetrain) {
           setValue("drivetrain", data.vehicle.drivetrain, {
             shouldValidate: true,
             shouldDirty: true,
+            shouldTouch: true,
           });
         }
         if (data.vehicle.transmission) {
           setValue("transmission", data.vehicle.transmission, {
             shouldValidate: true,
             shouldDirty: true,
+            shouldTouch: true,
           });
         }
         if (data.vehicle.engine) {
           setValue("engine", data.vehicle.engine, {
             shouldValidate: true,
             shouldDirty: true,
+            shouldTouch: true,
           });
         }
         if (data.vehicle.fuel_type) {
           setValue("fuel_type", data.vehicle.fuel_type, {
             shouldValidate: true,
             shouldDirty: true,
+            shouldTouch: true,
           });
         }
       }
@@ -380,7 +388,6 @@ export function VehicleForm({
             await onSubmit(data);
           } catch (err) {
             // Error already handled in onSubmit with toast
-            console.error('Submit error:', err);
           }
         });
       }, (errors) => {
@@ -460,7 +467,7 @@ export function VehicleForm({
               name="year"
               render={({ field }) => (
                 <Select
-                  value={field.value?.toString() ?? undefined}
+                  value={field.value?.toString() ?? ""}
                   onValueChange={(val) => field.onChange(val ? parseInt(val) : undefined)}
                   disabled={isDisabled}
                 >
@@ -489,7 +496,7 @@ export function VehicleForm({
               name="make"
               render={({ field }) => (
                 <Select
-                  value={field.value}
+                  value={field.value ?? ""}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -555,7 +562,7 @@ export function VehicleForm({
               name="body_type"
               render={({ field }) => (
                 <Select
-                  value={field.value}
+                  value={field.value ?? ""}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -592,7 +599,7 @@ export function VehicleForm({
               name="drivetrain"
               render={({ field }) => (
                 <Select
-                  value={field.value}
+                  value={field.value ?? ""}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -617,7 +624,7 @@ export function VehicleForm({
               name="transmission"
               render={({ field }) => (
                 <Select
-                  value={field.value}
+                  value={field.value ?? ""}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -656,7 +663,7 @@ export function VehicleForm({
               name="fuel_type"
               render={({ field }) => (
                 <Select
-                  value={field.value}
+                  value={field.value ?? ""}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -751,7 +758,7 @@ export function VehicleForm({
               name="mileage_unit"
               render={({ field }) => (
                 <Select
-                  value={field.value}
+                  value={field.value ?? ""}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -783,7 +790,7 @@ export function VehicleForm({
               name="exterior_color"
               render={({ field }) => (
                 <Select
-                  value={field.value}
+                  value={field.value ?? ""}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -809,7 +816,7 @@ export function VehicleForm({
               name="interior_color"
               render={({ field }) => (
                 <Select
-                  value={field.value}
+                  value={field.value ?? ""}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -953,7 +960,7 @@ export function VehicleForm({
             name="seat_material"
             render={({ field }) => (
               <Select
-                value={field.value}
+                value={field.value ?? ""}
                 onValueChange={field.onChange}
                 disabled={isDisabled}
               >
