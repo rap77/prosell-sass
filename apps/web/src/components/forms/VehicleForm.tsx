@@ -18,6 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -216,7 +217,11 @@ export function VehicleForm({
 
       const data = await response.json();
 
-
+      // DEBUG: Log response to verify values match SelectItem keys
+      logger.info("🔍 VIN Decode Response:", data.vehicle);
+      logger.info("🔍 make value:", data.vehicle.make, "type:", typeof data.vehicle.make);
+      logger.info("🔍 body_type value:", data.vehicle.body_type, "type:", typeof data.vehicle.body_type);
+      logger.info("🔍 drivetrain value:", data.vehicle.drivetrain, "type:", typeof data.vehicle.drivetrain);
 
       // Auto-populate fields from decoded data
       if (data.vehicle) {
@@ -224,6 +229,7 @@ export function VehicleForm({
         // Only update fields that have actual values from VIN decode
         // Use != null to catch both null and undefined for numeric fields
         if (data.vehicle.year != null) {
+          logger.info("✅ Setting year:", data.vehicle.year);
           setValue("year", data.vehicle.year, {
             shouldValidate: true,
             shouldDirty: true,
@@ -231,6 +237,7 @@ export function VehicleForm({
           });
         }
         if (data.vehicle.make) {
+          logger.info("✅ Setting make:", data.vehicle.make);
           setValue("make", data.vehicle.make, {
             shouldValidate: true,
             shouldDirty: true,
@@ -238,6 +245,7 @@ export function VehicleForm({
           });
         }
         if (data.vehicle.model) {
+          logger.info("✅ Setting model:", data.vehicle.model);
           setValue("model", data.vehicle.model, {
             shouldValidate: true,
             shouldDirty: true,
@@ -245,6 +253,7 @@ export function VehicleForm({
           });
         }
         if (data.vehicle.trim) {
+          logger.info("✅ Setting trim:", data.vehicle.trim);
           setValue("trim", data.vehicle.trim, {
             shouldValidate: true,
             shouldDirty: true,
@@ -252,6 +261,7 @@ export function VehicleForm({
           });
         }
         if (data.vehicle.body_type) {
+          logger.info("✅ Setting body_type:", data.vehicle.body_type);
           setValue("body_type", data.vehicle.body_type, {
             shouldValidate: true,
             shouldDirty: true,
@@ -259,6 +269,7 @@ export function VehicleForm({
           });
         }
         if (data.vehicle.drivetrain) {
+          logger.info("✅ Setting drivetrain:", data.vehicle.drivetrain);
           setValue("drivetrain", data.vehicle.drivetrain, {
             shouldValidate: true,
             shouldDirty: true,
@@ -266,6 +277,7 @@ export function VehicleForm({
           });
         }
         if (data.vehicle.transmission) {
+          logger.info("✅ Setting transmission:", data.vehicle.transmission);
           setValue("transmission", data.vehicle.transmission, {
             shouldValidate: true,
             shouldDirty: true,
@@ -273,6 +285,7 @@ export function VehicleForm({
           });
         }
         if (data.vehicle.engine) {
+          logger.info("✅ Setting engine:", data.vehicle.engine);
           setValue("engine", data.vehicle.engine, {
             shouldValidate: true,
             shouldDirty: true,
@@ -280,12 +293,24 @@ export function VehicleForm({
           });
         }
         if (data.vehicle.fuel_type) {
+          logger.info("✅ Setting fuel_type:", data.vehicle.fuel_type);
           setValue("fuel_type", data.vehicle.fuel_type, {
             shouldValidate: true,
             shouldDirty: true,
             shouldTouch: true,
           });
         }
+
+        // DEBUG: Log form state after updates
+        setTimeout(() => {
+          logger.info("🔍 Form state after VIN decode:", {
+            make: watch("make"),
+            body_type: watch("body_type"),
+            drivetrain: watch("drivetrain"),
+            transmission: watch("transmission"),
+            fuel_type: watch("fuel_type"),
+          });
+        }, 100);
       }
 
       toast.success("VIN decoded successfully", {
