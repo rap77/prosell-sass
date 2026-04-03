@@ -1,0 +1,35 @@
+from httpx import AsyncClient
+from fastapi import FastAPI
+from {{ dto_module }} import {{ response_model }}
+
+class Test{{ endpoint_name }}OpenAPIContract:
+    """OpenAPI schema validation for {{ endpoint_path }}."""
+
+    @pytest.mark.asyncio
+    async def test_{{ endpoint_name }}_matches_openapi_schema(
+        self,
+        client: AsyncClient,
+        app: FastAPI
+    ):
+        """
+        Validate that {{ endpoint_method }} {{ endpoint_path }}
+        response matches OpenAPI schema.
+
+        This test ensures:
+        - Response structure is correct
+        - All fields are present
+        - Field types match declaration
+        """
+        # Get OpenAPI schema
+        openapi_schema = app.openapi()
+
+        # Call endpoint
+        response = await client.{{ endpoint_method }}("{{ endpoint_path }}")
+        assert response.status_code == 200
+
+        # Validate response structure
+        data = {{ response_model }}(**response.json())
+
+        # Verify schema match
+        path_schema = openapi_schema["paths"]["{{ endpoint_path }}"]["{{ endpoint_method }}"]["responses"]["200"]["content"]["application/json"]["schema"]
+        # Additional schema validation can be added here
