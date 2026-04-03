@@ -1,0 +1,97 @@
+"""
+Integration + Contract Test for {{ endpoint_path }}
+
+This test validates:
+1. Pydantic structure validation (response model)
+2. Contract validation (field formats, business rules)
+3. Multiple test scenarios (valid, edge cases)
+"""
+
+import pytest
+from {{ dto_module }} import {{ response_dto_name }}
+from prosell.main import app
+from httpx import AsyncClient, ASGITransport
+
+
+class Test{{ response_dto_name }}Contract:
+    """Contract validation tests for {{ endpoint_path }}."""
+
+    @pytest.mark.asyncio
+    async def test_response_structure_valid(self):
+        """
+        Layer 1: Validate response matches Pydantic model.
+
+        This ensures the API returns valid structure.
+        """
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            {% if endpoint_method == "get" %}
+            response = await client.{{ endpoint_method }}("{{ endpoint_path }}")
+            {% else %}
+            response = await client.{{ endpoint_method }}("{{ endpoint_path }}", json={{ test_cases[0].input }})
+            {% endif %}
+
+            # Validate structure
+            assert response.status_code == 200
+            data = response.json()
+            validated = {{ response_dto_name }}.model_validate(data)
+            assert validated is not None
+
+    {% for test_case in test_cases %}
+    @pytest.mark.asyncio
+    async def test_{{ test_case.name }}(self):
+        """
+        {{ test_case.description }}
+
+        Validates:
+        {% for field in contract_fields %}
+        - {{ field.field }}: {{ field.format }}
+        {% endfor %}
+        """
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            {% if endpoint_method == "get" %}
+            response = await client.{{ endpoint_method }}("{{ endpoint_path }}")
+            {% else %}
+            response = await client.{{ endpoint_method }}("{{ endpoint_path }}", json={{ test_case.input }})
+            {% endif %}
+
+            # Validate structure
+            assert response.status_code == 200
+            data = response.json()
+            validated = {{ response_dto_name }}.model_validate(data)
+
+            # Validate contract
+            {% if test_case.expected_output %}
+            expected = {{ test_case.expected_output }}
+
+            {% for field in contract_fields %}
+            {% if field.format == "lowercase" %}
+            # {{ field.field }} must be lowercase
+            assert validated.{{ field.field }} == expected.{{ field.field }}, f"{{ field.field }} mismatch: {validated.{{ field.field }}} != {expected.{{ field.field }}}}"
+            assert validated.{{ field.field }}.islower() if validated.{{ field.field }} else True, f"{{ field.field }} must be lowercase: {validated.{{ field.field }}}"
+
+            {% elif field.format == "uppercase" %}
+            # {{ field.field }} must be UPPERCASE
+            assert validated.{{ field.field }} == expected.{{ field.field }}, f"{{ field.field }} mismatch: {validated.{{ field.field }}} != {expected.{{ field.field }}}}"
+            assert validated.{{ field.field }}.isupper() if validated.{{ field.field }} else True, f"{{ field.field }} must be UPPERCASE: {validated.{{ field.field }}}"
+
+            {% elif field.format == "email" %}
+            # {{ field.field }} must be valid email
+            assert validated.{{ field.field }} == expected.{{ field.field }}, f"{{ field.field }} mismatch: {validated.{{ field.field }}} != {expected.{{ field.field }}}}"
+            assert "@" in validated.{{ field.field }}, f"{{ field.field }} must contain @: {validated.{{ field.field }}}"
+
+            {% elif field.format == "non_empty" %}
+            # {{ field.field }} must not be empty
+            assert validated.{{ field.field }} == expected.{{ field.field }}, f"{{ field.field }} mismatch: {validated.{{ field.field }}} != {expected.{{ field.field }}}}"
+            assert validated.{{ field.field }}, f"{{ field.field }} must not be empty"
+
+            {% else %}
+            # {{ field.field }}: {{ field.description }}
+            assert validated.{{ field.field }} == expected.{{ field.field }}, f"{{ field.field }} mismatch: {validated.{{ field.field }}} != {expected.{{ field.field }}}"
+
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+
+    {% endfor %}
