@@ -12,13 +12,23 @@
  * ```
  */
 
-type LogLevel = "info" | "error" | "warn";
+type LogLevel = "info" | "error" | "warn" | "debug";
 
 interface LogContext {
   [key: string]: any;
 }
 
 export const logger = {
+  /**
+   * Log debug messages
+   * Only logs in development
+   */
+  debug(message: string, ...args: any[]): void {
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[DEBUG] ${message}`, ...args);
+    }
+  },
+
   /**
    * Log informational messages
    * Only logs in development to avoid noise in production
