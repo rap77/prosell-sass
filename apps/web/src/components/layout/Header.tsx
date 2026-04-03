@@ -1,7 +1,7 @@
 'use client' // Required for useState and usePathname hooks
 
 import { useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,13 +14,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Search, User, Settings, LogOut, Building2, ChevronRight } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
 
 /**
  * Props for Header component.
- * TODO: Integrate auth context for user/org data (currently placeholder)
  */
 interface HeaderProps {
-  /** User data from auth context - placeholder for now */
+  /** User data from auth context */
   user?: {
     name?: string
     email?: string
@@ -41,24 +41,36 @@ interface HeaderProps {
  * - Breadcrumb navigation using Next.js usePathname
  * - User menu dropdown with visible role badge
  * - Org switcher placeholder (multi-dealership in Phase 5)
- *
- * TODO: Replace hardcoded user/org data with auth context integration
+ * - Logout functionality
  */
 export function Header({ user, organization }: HeaderProps) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { logout, user: authUser } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
 
-  // TODO: Replace with real user data from auth context
-  const userData = user || {
+  // Use real user data from auth context, fallback to placeholder
+  const userData = user || (authUser ? {
+    name: `${authUser.first_name} ${authUser.last_name}`,
+    email: authUser.email,
+    role: authUser.role || 'Seller',
+    initials: `${authUser.first_name?.[0] || ''}${authUser.last_name?.[0] || ''}`.toUpperCase(),
+  } : {
     name: 'John Doe',
     email: 'john.doe@example.com',
     role: 'Seller',
     initials: 'JD',
-  }
+  })
 
   // TODO: Replace with real org data from user context
   const orgData = organization || {
     name: 'ProSell Dealership',
+  }
+
+  // Handle logout
+  const handleLogout = async () => {
+    await logout()
+    router.push('/auth/login')
   }
 
   // Generate breadcrumbs from pathname
@@ -198,7 +210,7 @@ export function Header({ user, organization }: HeaderProps) {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Logout</span>
             </DropdownMenuItem>

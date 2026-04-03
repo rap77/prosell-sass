@@ -16,10 +16,12 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordInput } from "./PasswordInput";
 import dynamic from "next/dynamic";
 import { useTransition } from "react";
+import { logger } from "@/lib/logger";
 
 // Static heading component
 const LoginHeading = () => (
@@ -122,7 +124,8 @@ export type LoginFormValues = z.infer<typeof loginSchema>;
  * - Early exit patterns
  */
 export function LoginForm() {
-  const { login, isLoading, error, clearError } = useAuth();
+  const { login, isLoading, error, clearError, isAuthenticated } = useAuth();
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   // React Hook Form setup with deduplication
@@ -172,7 +175,16 @@ export function LoginForm() {
 
     // Use transition for non-urgent state updates
     startTransition(async () => {
-      await login(data.email, data.password);
+      try {
+        await login(data.email, data.password);
+
+        // Redirect to dashboard after successful login
+        // The login function updates the auth store, so we can redirect immediately
+        router.push('/dashboard');
+      } catch (error) {
+        // Error is already set in auth store by login function
+        logger.error('Login failed', error);
+      }
     });
   };
 

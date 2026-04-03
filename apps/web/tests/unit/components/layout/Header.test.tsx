@@ -2,9 +2,20 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { Header } from '@/components/layout/Header'
 
-// Mock Next.js usePathname
+// Mock Next.js navigation
 vi.mock('next/navigation', () => ({
   usePathname: () => '/catalog/vehicles',
+  useRouter: () => ({
+    push: vi.fn(),
+  }),
+}))
+
+// Mock useAuth hook
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
+    logout: vi.fn(),
+    user: null,
+  }),
 }))
 
 describe('Header', () => {

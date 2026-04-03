@@ -8,6 +8,23 @@ import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LoginForm } from "@/components/auth/LoginForm";
 
+// Mock Next.js router
+const mockPush = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(() => ({
+    push: mockPush,
+  })),
+}));
+
+// Mock logger
+vi.mock("@/lib/logger", () => ({
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
+
 // Mock useAuth hook
 const mockLogin = vi.fn();
 const mockClearError = vi.fn();
@@ -18,6 +35,7 @@ vi.mock("@/hooks/useAuth", () => ({
     isLoading: false,
     error: null,
     clearError: mockClearError,
+    isAuthenticated: false,
   })),
 }));
 
@@ -57,11 +75,13 @@ describe("LoginForm Component", () => {
     mockLogin.mockResolvedValue(undefined);
     mockLogin.mockClear();
     mockClearError.mockClear();
+    mockPush.mockClear();
     (useAuth as any).mockReturnValue({
       login: mockLogin,
       isLoading: false,
       error: null,
       clearError: mockClearError,
+      isAuthenticated: false,
     });
   });
 
