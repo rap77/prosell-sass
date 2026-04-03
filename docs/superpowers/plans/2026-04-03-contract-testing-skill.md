@@ -247,13 +247,13 @@ def test_analyzer_recommends_layer2_for_vin_decode():
             ...
         )
     """
-    
+
     result = analyze_endpoint(
         "vehicle_router.py",
         source_code,
         {"thresholds": {"external_api_keywords": ["nhtsa"], "normalization_keywords": ["normalize"], "schema_matching_fields": 10}}
     )
-    
+
     assert result.layer == 2
     assert "external API" in result.reason.lower()
     assert result.confidence == "high"
@@ -265,13 +265,13 @@ def test_analyzer_recommends_layer1_for_simple_crud():
     async def list_organizations():
         return {"items": [...]}
     """
-    
+
     result = analyze_endpoint(
         "organization_router.py",
         source_code,
         {"thresholds": {"external_api_keywords": [], "normalization_keywords": [], "schema_matching_fields": 10}}
     )
-    
+
     assert result.layer == 1
     assert "openapi" in result.reason.lower()
 ```
@@ -351,14 +351,14 @@ class Test{{ endpoint_name }}OpenAPIContract:
         """
         # Get OpenAPI schema
         openapi_schema = app.openapi()
-        
+
         # Call endpoint
         response = await client.{{ endpoint_method }}("{{ endpoint_path }}")
         assert response.status_code == 200
-        
+
         # Validate response structure
         data = {{ response_model }}(**response.json())
-        
+
         # Verify schema match
         path_schema = openapi_schema["paths"]["{{ endpoint_path }}"]["{{ endpoint_method }}"]["responses"]["200"]["content"]["application/json"]["schema"]
         # Additional schema validation can be added here
@@ -383,10 +383,10 @@ class TestOrganizationsOpenAPIContract:
     ):
         """Validate GET /api/v1/organizations response matches OpenAPI schema."""
         openapi_schema = app.openapi()
-        
+
         response = await client.get("/api/v1/organizations")
         assert response.status_code == 200
-        
+
         data = OrganizationListResponse(**response.json())
         assert hasattr(data, "items")
 ```

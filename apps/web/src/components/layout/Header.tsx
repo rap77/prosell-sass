@@ -49,12 +49,25 @@ export function Header({ user, organization }: HeaderProps) {
   const { logout, user: authUser } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Helper function to get user initials from name
+  const getInitials = (firstName?: string, lastName?: string): string => {
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase()
+    }
+    if (firstName) {
+      return firstName.substring(0, 2).toUpperCase()
+    }
+    return '??'
+  }
+
   // Use real user data from auth context, fallback to placeholder
   const userData = user || (authUser ? {
-    name: `${authUser.first_name} ${authUser.last_name}`,
+    name: authUser.first_name && authUser.last_name
+      ? `${authUser.first_name} ${authUser.last_name}`
+      : authUser.email?.split('@')[0] || 'User',
     email: authUser.email,
     role: authUser.role || 'Seller',
-    initials: `${authUser.first_name?.[0] || ''}${authUser.last_name?.[0] || ''}`.toUpperCase(),
+    initials: getInitials(authUser.first_name, authUser.last_name),
   } : {
     name: 'John Doe',
     email: 'john.doe@example.com',

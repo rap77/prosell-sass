@@ -28,6 +28,9 @@ class JWTService(IJWTService):
         self,
         user_id: UUID,
         roles: list[str],
+        email: str | None = None,
+        first_name: str | None = None,
+        last_name: str | None = None,
     ) -> str:
         """
         Generate JWT access token.
@@ -35,6 +38,9 @@ class JWTService(IJWTService):
         Args:
             user_id: User UUID
             roles: List of role names
+            email: User email (optional, for convenience)
+            first_name: User first name (optional, for convenience)
+            last_name: User last name (optional, for convenience)
 
         Returns:
             Encoded JWT access token
@@ -46,6 +52,15 @@ class JWTService(IJWTService):
             "exp": datetime.now(UTC) + timedelta(minutes=self.access_expire_minutes),
             "iat": datetime.now(UTC),
         }
+
+        # Add user data to token if provided (for convenience in frontend)
+        if email:
+            payload["email"] = email
+        if first_name:
+            payload["first_name"] = first_name
+        if last_name:
+            payload["last_name"] = last_name
+
         return jwt.encode(payload, self.private_key, algorithm=self.algorithm)
 
     def generate_refresh_token(self, user_id: UUID) -> str:

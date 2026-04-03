@@ -61,8 +61,19 @@ class RefreshTokenUseCase:
 
         user_roles = await self.user_repository.get_user_roles(user.id)
 
-        # 4. Generate new tokens
-        access_token = self.jwt_service.generate_access_token(user.id, user_roles)
+        # 4. Generate new tokens (include user data in access token for frontend convenience)
+        # Parse full_name into first_name and last_name
+        name_parts = user.full_name.split(" ", 1) if user.full_name else ["", ""]
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+        access_token = self.jwt_service.generate_access_token(
+            user.id,
+            user_roles,
+            email=user.email,
+            first_name=first_name,
+            last_name=last_name,
+        )
         refresh_token = self.jwt_service.generate_refresh_token(user.id)
 
         # 5. Update session with new token hash

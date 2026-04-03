@@ -99,6 +99,7 @@ logger = logging.getLogger(__name__)
 # HEALTH CHECK ENDPOINT
 # =============================================================================
 
+
 @router.get("/health")
 async def health_check() -> dict[str, Any]:
     """
@@ -202,7 +203,7 @@ async def login(
         value=result.access_token,
         expires=access_token_expiry,
         httponly=True,  # CRITICAL: Prevents JavaScript access (XSS protection)
-        secure=settings.environment != "development",  # HTTPS only (disabled in dev)
+        secure=settings.environment == "production",  # HTTPS only (only in production)
         samesite="lax",  # Lax for OAuth compatibility
         domain="localhost",  # Share across all localhost ports
     )
@@ -454,7 +455,7 @@ async def oauth_callback(
             expires=access_token_expiry,
             path="/",  # CRITICAL: Make cookie available to all paths
             httponly=True,  # CRITICAL: Prevents JavaScript access (XSS protection)
-            secure=settings.environment != "development",  # HTTPS only (disabled in dev)
+            secure=settings.environment == "production",  # HTTPS only (only in production)
             samesite="lax",  # Lax required: OAuth redirect chain crosses google.com
             domain="localhost",  # Share across all localhost ports
         )

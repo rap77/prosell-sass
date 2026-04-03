@@ -2,7 +2,6 @@
 Tests para normalizador de NHTSA a Facebook Marketplace.
 """
 
-import pytest
 from prosell.infrastructure.services.nhtsa_normalizer import normalize_nhtsa_value
 
 
@@ -30,14 +29,18 @@ class TestNHTSANormalizer:
 
     def test_normalize_body_type_suv(self):
         """Normalización de SUV (varias variantes)."""
-        assert normalize_nhtsa_value(
-            "Sport Utility Vehicle (SUV)/Multi-Purpose Vehicle (MPV)",
-            "body_type"
-        ) == "suv"
-        assert normalize_nhtsa_value(
-            "Sport Utility Vehicle (SUV)/Multi-Purpose Vehicle (MPV) (MPV)",
-            "body_type"
-        ) == "suv"
+        assert (
+            normalize_nhtsa_value(
+                "Sport Utility Vehicle (SUV)/Multi-Purpose Vehicle (MPV)", "body_type"
+            )
+            == "suv"
+        )
+        assert (
+            normalize_nhtsa_value(
+                "Sport Utility Vehicle (SUV)/Multi-Purpose Vehicle (MPV) (MPV)", "body_type"
+            )
+            == "suv"
+        )
 
     def test_normalize_body_type_basic(self):
         """Normalización de tipos básicos."""
@@ -127,13 +130,49 @@ class TestNHTSANormalizer:
 
         # Marcas que deberían estar (del archivo fbVehicleOptions.ts)
         expected_brands = [
-            "acura", "alfa_romeo", "aston_martin", "audi", "bmw", "bentley",
-            "buick", "cadillac", "chevrolet", "chrysler", "dodge", "ferrari",
-            "fiat", "ford", "gmc", "genesis", "honda", "hummer", "hyundai",
-            "infiniti", "jaguar", "jeep", "kia", "land_rover", "lexus",
-            "lincoln", "lucid", "mini", "maserati", "mazda", "mercedes",
-            "mitsubishi", "nissan", "polestar", "pontiac", "porsche", "ram",
-            "rivian", "rolls_royce", "subaru", "tesla", "toyota", "volkswagen",
+            "acura",
+            "alfa_romeo",
+            "aston_martin",
+            "audi",
+            "bmw",
+            "bentley",
+            "buick",
+            "cadillac",
+            "chevrolet",
+            "chrysler",
+            "dodge",
+            "ferrari",
+            "fiat",
+            "ford",
+            "gmc",
+            "genesis",
+            "honda",
+            "hummer",
+            "hyundai",
+            "infiniti",
+            "jaguar",
+            "jeep",
+            "kia",
+            "land_rover",
+            "lexus",
+            "lincoln",
+            "lucid",
+            "mini",
+            "maserati",
+            "mazda",
+            "mercedes",
+            "mitsubishi",
+            "nissan",
+            "polestar",
+            "pontiac",
+            "porsche",
+            "ram",
+            "rivian",
+            "rolls_royce",
+            "subaru",
+            "tesla",
+            "toyota",
+            "volkswagen",
             "volvo",
         ]
 

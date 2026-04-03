@@ -6,10 +6,10 @@
 
 ## Admin User Credentials
 
-**Email**: admin@prosell-demo.com  
-**Password**: Admin123!  
-**User ID**: 68a2323a-0254-48a4-a2c1-9ff0e29269d9  
-**Role**: super_admin  
+**Email**: admin@prosell-demo.com
+**Password**: Admin123!
+**User ID**: 68a2323a-0254-48a4-a2c1-9ff0e29269d9
+**Role**: super_admin
 **Status**: active (email verified)
 
 ---

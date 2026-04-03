@@ -8,7 +8,7 @@ Run this script inside the API container or locally with DATABASE_URL set.
 
 import asyncio
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Add the src directory to the path
@@ -20,7 +20,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from prosell.core.database import get_async_session
 from prosell.domain.entities.vehicle import Vehicle
 from prosell.domain.value_objects.money import Money
-
 
 # Sample vehicle data
 TEST_VEHICLES = [
@@ -128,9 +127,7 @@ async def create_vehicles(session: AsyncSession, tenant_id: str) -> int:
 
     for vehicle_data in TEST_VEHICLES:
         # Check if vehicle already exists
-        result = await session.execute(
-            select(Vehicle).where(Vehicle.vin == vehicle_data["vin"])
-        )
+        result = await session.execute(select(Vehicle).where(Vehicle.vin == vehicle_data["vin"]))
         existing = result.scalar_one_or_none()
 
         if existing:
@@ -163,13 +160,15 @@ async def create_vehicles(session: AsyncSession, tenant_id: str) -> int:
             vehicle_condition=vehicle_data["condition"],
             description=vehicle_data.get("description"),
             is_deleted=False,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
         session.add(vehicle)
         created_count += 1
-        print(f"✓ Created vehicle: {vehicle_data['year']} {vehicle_data['make']} {vehicle_data['model']}")
+        print(
+            f"✓ Created vehicle: {vehicle_data['year']} {vehicle_data['make']} {vehicle_data['model']}"
+        )
 
     await session.commit()
     return created_count

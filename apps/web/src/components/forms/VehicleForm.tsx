@@ -150,37 +150,38 @@ export function VehicleForm({
     formState: { errors, isSubmitting },
     setValue,
     watch,
+    reset,
   } = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
     mode: "all",
     defaultValues: {
-      vin: initialData?.vin || "",
-      year: initialData?.year || undefined,
-      make: initialData?.make || undefined,
-      model: initialData?.model || undefined,
-      trim: initialData?.trim || undefined,
-      body_type: initialData?.body_type || undefined,
-      body_style: initialData?.body_style || undefined,
-      drivetrain: initialData?.drivetrain || undefined,
-      transmission: initialData?.transmission || undefined,
-      engine: initialData?.engine || undefined,
-      fuel_type: initialData?.fuel_type || undefined,
-      mpg_city: initialData?.mpg_city || undefined,
-      mpg_highway: initialData?.mpg_highway || undefined,
-      mpg_combined: initialData?.mpg_combined || undefined,
-      mileage: initialData?.mileage || undefined,
-      mileage_unit: initialData?.mileage_unit || "mi",
-      exterior_color: initialData?.exterior_color || undefined,
-      interior_color: initialData?.interior_color || undefined,
-      has_sunroof: initialData?.has_sunroof || false,
-      has_navigation: initialData?.has_navigation || false,
-      has_leather: initialData?.has_leather || false,
-      has_backup_camera: initialData?.has_backup_camera || false,
-      has_bluetooth: initialData?.has_bluetooth || false,
-      has_remote_start: initialData?.has_remote_start || false,
-      seat_material: initialData?.seat_material || undefined,
-      stock_number: initialData?.stock_number || "",
-      description: initialData?.description || "",
+      vin: initialData?.vin ?? "",
+      year: initialData?.year ?? undefined,
+      make: initialData?.make ?? undefined,
+      model: initialData?.model ?? undefined,
+      trim: initialData?.trim ?? undefined,
+      body_type: initialData?.body_type ?? undefined,
+      body_style: initialData?.body_style ?? undefined,
+      drivetrain: initialData?.drivetrain ?? undefined,
+      transmission: initialData?.transmission ?? undefined,
+      engine: initialData?.engine ?? undefined,
+      fuel_type: initialData?.fuel_type ?? undefined,
+      mpg_city: initialData?.mpg_city ?? undefined,
+      mpg_highway: initialData?.mpg_highway ?? undefined,
+      mpg_combined: initialData?.mpg_combined ?? undefined,
+      mileage: initialData?.mileage ?? undefined,
+      mileage_unit: initialData?.mileage_unit ?? "mi",
+      exterior_color: initialData?.exterior_color ?? undefined,
+      interior_color: initialData?.interior_color ?? undefined,
+      has_sunroof: initialData?.has_sunroof ?? false,
+      has_navigation: initialData?.has_navigation ?? false,
+      has_leather: initialData?.has_leather ?? false,
+      has_backup_camera: initialData?.has_backup_camera ?? false,
+      has_bluetooth: initialData?.has_bluetooth ?? false,
+      has_remote_start: initialData?.has_remote_start ?? false,
+      seat_material: initialData?.seat_material ?? undefined,
+      stock_number: initialData?.stock_number ?? "",
+      description: initialData?.description ?? "",
     },
   });
 
@@ -215,17 +216,68 @@ export function VehicleForm({
 
       const data = await response.json();
 
+      console.log("[VIN DECODE] API Response:", data);
+      console.log("[VIN DECODE] Vehicle data:", data.vehicle);
+
       // Auto-populate fields from decoded data
       if (data.vehicle) {
-        if (data.vehicle.year) setValue("year", data.vehicle.year);
-        if (data.vehicle.make) setValue("make", data.vehicle.make);
-        if (data.vehicle.model) setValue("model", data.vehicle.model);
-        if (data.vehicle.trim) setValue("trim", data.vehicle.trim);
-        if (data.vehicle.body_type) setValue("body_type", data.vehicle.body_type);
-        if (data.vehicle.drivetrain) setValue("drivetrain", data.vehicle.drivetrain);
-        if (data.vehicle.transmission) setValue("transmission", data.vehicle.transmission);
-        if (data.vehicle.engine) setValue("engine", data.vehicle.engine);
-        if (data.vehicle.fuel_type) setValue("fuel_type", data.vehicle.fuel_type);
+        // Update each field individually to preserve existing values
+        // Only update fields that have actual values from VIN decode
+        // Use != null to catch both null and undefined for numeric fields
+        if (data.vehicle.year != null) {
+          setValue("year", data.vehicle.year, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+        if (data.vehicle.make) {
+          setValue("make", data.vehicle.make, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+        if (data.vehicle.model) {
+          setValue("model", data.vehicle.model, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+        if (data.vehicle.trim) {
+          setValue("trim", data.vehicle.trim, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+        if (data.vehicle.body_type) {
+          setValue("body_type", data.vehicle.body_type, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+        if (data.vehicle.drivetrain) {
+          setValue("drivetrain", data.vehicle.drivetrain, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+        if (data.vehicle.transmission) {
+          setValue("transmission", data.vehicle.transmission, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+        if (data.vehicle.engine) {
+          setValue("engine", data.vehicle.engine, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
+        if (data.vehicle.fuel_type) {
+          setValue("fuel_type", data.vehicle.fuel_type, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        }
       }
 
       toast.success("VIN decoded successfully", {
@@ -408,7 +460,7 @@ export function VehicleForm({
               name="year"
               render={({ field }) => (
                 <Select
-                  value={field.value?.toString()}
+                  value={field.value?.toString() ?? undefined}
                   onValueChange={(val) => field.onChange(val ? parseInt(val) : undefined)}
                   disabled={isDisabled}
                 >

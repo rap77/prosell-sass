@@ -276,6 +276,24 @@ async def get_current_auth_user_from_cookie(
             detail="User not found",
         )
 
+    # Load user roles (needed for role-based access control)
+    from uuid import uuid4
+
+    from prosell.domain.entities.role import Role, RoleType
+
+    user_role_strings = await user_repository.get_user_roles(user_id)
+    # Convert role strings to Role objects
+    user_roles = [
+        Role(
+            id=uuid4(),  # ID doesn't matter for has_role check, only role_type matters
+            role_type=RoleType(role_str),
+            name=role_str.replace("_", " ").title(),
+        )
+        for role_str in user_role_strings
+    ]
+    # Manually set roles on user entity
+    object.__setattr__(user, "roles", user_roles)
+
     return user
 
 

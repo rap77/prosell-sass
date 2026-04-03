@@ -7,6 +7,21 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/catalog',
 }))
 
+// Mock useAuth hook
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: vi.fn(() => ({
+    user: {
+      id: '1',
+      email: 'john@example.com',
+      first_name: 'John',
+      last_name: 'Doe',
+      role: 'Seller',
+    },
+    isAuthenticated: false,
+    isLoading: false,
+  })),
+}))
+
 // Mock Zustand store
 vi.mock('@/lib/stores/layoutStore', () => ({
   useLayoutStore: vi.fn(() => ({

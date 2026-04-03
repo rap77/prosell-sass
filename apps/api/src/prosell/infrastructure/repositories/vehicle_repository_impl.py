@@ -235,8 +235,8 @@ class SqlAlchemyVehicleRepository(AbstractVehicleRepository):
         )
 
         # Role-based filtering
-        if user.has_role("admin"):
-            # Admin sees all vehicles - no dealer filter
+        if user.has_role("admin") or user.has_role("super_admin"):
+            # Admin and super_admin see all vehicles - no dealer filter
             pass
         elif user.has_role("dealer"):
             # Dealer sees only their organization's vehicles

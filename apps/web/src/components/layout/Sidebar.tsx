@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { useLayoutStore } from '@/lib/stores/layoutStore'
+import { useAuth } from '@/hooks/useAuth'
 import { usePathname } from 'next/navigation'
 import { LucideIcon } from 'lucide-react'
 import {
@@ -216,6 +217,25 @@ Sidebar.Nav = function SidebarNav({
  * Sidebar footer with user info and logout.
  */
 Sidebar.Footer = function SidebarFooter({ collapsed }: { collapsed: boolean }) {
+  const { user } = useAuth()
+
+  // Helper function to get user initials
+  const getInitials = (firstName?: string, lastName?: string): string => {
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase()
+    }
+    if (firstName) {
+      return firstName.substring(0, 2).toUpperCase()
+    }
+    return '??'
+  }
+
+  const initials = getInitials(user?.first_name, user?.last_name)
+  const displayName = user?.first_name && user?.last_name
+    ? `${user.first_name} ${user.last_name}`
+    : user?.email?.split('@')[0] || 'User'
+  const role = user?.role || 'Seller'
+
   return (
     <div className="border-t p-4">
       <div
@@ -225,12 +245,12 @@ Sidebar.Footer = function SidebarFooter({ collapsed }: { collapsed: boolean }) {
         )}
       >
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <span className="text-sm font-medium">JD</span>
+          <span className="text-sm font-medium">{initials}</span>
         </div>
         {!collapsed && (
           <div className="flex-1 overflow-hidden">
-            <p className="truncate text-sm font-medium">John Doe</p>
-            <p className="truncate text-xs text-muted-foreground">Seller</p>
+            <p className="truncate text-sm font-medium">{displayName}</p>
+            <p className="truncate text-xs text-muted-foreground">{role}</p>
           </div>
         )}
       </div>

@@ -2,10 +2,11 @@
 """Create admin user for staging environment."""
 
 import asyncio
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "apps" / "api" / "src"))
@@ -14,26 +15,26 @@ import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-async def create_admin_user():
+
+async def create_admin_user() -> None:
     """Create admin user with super_admin role."""
 
-    # Direct database URL for staging
-    database_url = "postgresql+asyncpg://postgres:yQZMINddwF+ZzTRhTQJ/B1R9fXstcfUU5VcFDbNCdm0=@db:5432/prosell_staging"
+    # Read database URL from environment or use default for staging
+    db_password = os.getenv("POSTGRES_PASSWORD", "yQZMINddwF+ZzTRhTQJ/B1R9fXstcfUU5VcFDbNCdm0=")
+    database_url = f"postgresql+asyncpg://postgres:{db_password}@db:5432/prosell_staging"
     engine = create_async_engine(database_url, echo=False)
 
     # Create session
-    async_session = sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as session:
         # Get super_admin role
-        from sqlalchemy import select, text
+        from sqlalchemy import text
 
         # Check if user already exists
         result = await session.execute(
             text("SELECT id, email FROM users WHERE email = :email"),
-            {"email": "admin@prosell-demo.com"}
+            {"email": "admin@prosell-demo.com"},
         )
         existing_user = result.fetchone()
 
@@ -43,10 +44,9 @@ async def create_admin_user():
 
         # Hash password
         password = "Admin123!"
-        password_hash = bcrypt.hashpw(
-            password.encode('utf-8'),
-            bcrypt.gensalt(rounds=12)
-        ).decode('utf-8')
+        password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=12)).decode(
+            "utf-8"
+        )
 
         # Get super_admin role ID
         result = await session.execute(
@@ -99,8 +99,8 @@ async def create_admin_user():
                 "last_login_ip": None,
                 "locked_until": None,
                 "created_at": now,
-                "updated_at": now
-            }
+                "updated_at": now,
+            },
         )
 
         # Assign super_admin role
@@ -113,18 +113,18 @@ async def create_admin_user():
                 "id": str(uuid4()),
                 "user_id": str(user_id),
                 "role_id": super_admin_role_id,
-                "assigned_at": now
-            }
+                "assigned_at": now,
+            },
         )
 
         await session.commit()
 
-        print(f"✅ Admin user created successfully!")
-        print(f"   Email: admin@prosell-demo.com")
-        print(f"   Password: Admin123!")
+        print("✅ Admin user created successfully!")
+        print("   Email: admin@prosell-demo.com")
+        print("   Password: Admin123!")
         print(f"   User ID: {user_id}")
-        print(f"   Role: super_admin")
-        print(f"   Status: active (email verified)")
+        print("   Role: super_admin")
+        print("   Status: active (email verified)")
 
     await engine.dispose()
 

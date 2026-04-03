@@ -1,8 +1,8 @@
 # Session 2026-04-02: FastAPI Upgrade + Staging Debugging
 
-**Date**: 2026-04-02  
-**Branch**: main  
-**Duration**: ~2 hours  
+**Date**: 2026-04-02
+**Branch**: main
+**Duration**: ~2 hours
 **Status**: PAUSED (smoke tests pending)
 
 ---
