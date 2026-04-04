@@ -217,7 +217,7 @@ export function VehicleForm({
 
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error("❌ VIN decode failed:", response.status, errorText);
+        logger.error(`❌ VIN decode failed: ${response.status} - ${errorText}`);
         throw new Error("Failed to decode VIN");
       }
 
