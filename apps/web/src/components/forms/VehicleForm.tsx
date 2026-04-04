@@ -502,7 +502,7 @@ export function VehicleForm({
               name="year"
               render={({ field }) => (
                 <Select
-                  value={field.value?.toString() ?? ""}
+                  value={field.value?.toString()}
                   onValueChange={(val) => field.onChange(val ? parseInt(val) : undefined)}
                   disabled={isDisabled}
                 >
@@ -531,7 +531,7 @@ export function VehicleForm({
               name="make"
               render={({ field }) => (
                 <Select
-                  value={field.value ?? ""}
+                  value={field.value}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -597,7 +597,7 @@ export function VehicleForm({
               name="body_type"
               render={({ field }) => (
                 <Select
-                  value={field.value ?? ""}
+                  value={field.value}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -634,7 +634,7 @@ export function VehicleForm({
               name="drivetrain"
               render={({ field }) => (
                 <Select
-                  value={field.value ?? ""}
+                  value={field.value}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -659,7 +659,7 @@ export function VehicleForm({
               name="transmission"
               render={({ field }) => (
                 <Select
-                  value={field.value ?? ""}
+                  value={field.value}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -698,7 +698,7 @@ export function VehicleForm({
               name="fuel_type"
               render={({ field }) => (
                 <Select
-                  value={field.value ?? ""}
+                  value={field.value}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -793,7 +793,7 @@ export function VehicleForm({
               name="mileage_unit"
               render={({ field }) => (
                 <Select
-                  value={field.value ?? ""}
+                  value={field.value}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -825,7 +825,7 @@ export function VehicleForm({
               name="exterior_color"
               render={({ field }) => (
                 <Select
-                  value={field.value ?? ""}
+                  value={field.value}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -851,7 +851,7 @@ export function VehicleForm({
               name="interior_color"
               render={({ field }) => (
                 <Select
-                  value={field.value ?? ""}
+                  value={field.value}
                   onValueChange={field.onChange}
                   disabled={isDisabled}
                 >
@@ -995,7 +995,7 @@ export function VehicleForm({
             name="seat_material"
             render={({ field }) => (
               <Select
-                value={field.value ?? ""}
+                value={field.value}
                 onValueChange={field.onChange}
                 disabled={isDisabled}
               >
