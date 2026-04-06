@@ -6,24 +6,29 @@ import { generateUploadUrl, uploadToCloud, pollProcessingStatus } from '@/lib/ap
 export function useImageUpload() {
   const { setUploading, updateFileStatus } = useUploadStore()
 
-  async function uploadImage(file: File): Promise<string> {
-    const fileId = crypto.randomUUID()
-
+  /**
+   * Upload a single image using pre-signed URL flow.
+   * @param file The file to upload
+   * @param fileId Existing UUID from upload store (NOT a new one)
+   */
+  async function uploadImage(file: File, fileId: string): Promise<string> {
     try {
-      // 1. Generate presigned URL
+      // 1. Mark as uploading in store
       updateFileStatus(fileId, 'uploading')
+
+      // 2. Get pre-signed upload URL
       const { uploadUrl, fileId: backendFileId } = await generateUploadUrl(file.type)
 
-      // 2. Upload to cloud with progress tracking
+      // 3. Upload to cloud with progress tracking
       await uploadToCloud(uploadUrl, file, fileId, (percent) => {
         setUploading(fileId, percent)
       })
 
-      // 3. Poll for processing status
+      // 4. Processing phase
       updateFileStatus(fileId, 'processing')
       const { url } = await pollProcessingStatus(backendFileId)
 
-      // 4. Mark complete
+      // 5. Mark complete
       updateFileStatus(fileId, 'complete', url)
 
       return url
@@ -33,10 +38,13 @@ export function useImageUpload() {
     }
   }
 
-  async function uploadImages(files: File[]): Promise<string[]> {
-    // Upload 3-4 images in parallel (browser limit)
+  /**
+   * Upload multiple images in parallel chunks (browser limit 3-4).
+   * Pass files with their UUIDs from the upload store.
+   */
+  async function uploadImages(files: Array<{ id: string; file: File }>): Promise<string[]> {
     const chunkSize = 3
-    const chunks: File[][] = []
+    const chunks: Array<Array<{ id: string; file: File }>> = []
 
     for (let i = 0; i < files.length; i += chunkSize) {
       chunks.push(files.slice(i, i + chunkSize))
@@ -46,7 +54,7 @@ export function useImageUpload() {
 
     for (const chunk of chunks) {
       const chunkResults = await Promise.all(
-        chunk.map(file => uploadImage(file))
+        chunk.map(({ id: fileId, file }) => uploadImage(file, fileId))
       )
       results.push(...chunkResults)
     }
@@ -54,8 +62,5 @@ export function useImageUpload() {
     return results
   }
 
-  return {
-    uploadImage,
-    uploadImages,
-  }
+  return { uploadImage, uploadImages }
 }

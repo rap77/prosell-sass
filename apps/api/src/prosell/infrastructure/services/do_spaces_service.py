@@ -19,10 +19,10 @@ class DOSpacesService(IDOSpacesService):
         access_key: str | None = None,
         secret_key: str | None = None,
     ) -> None:
-        self.region = region or settings.DO_REGION  # type: ignore[attr-defined]
-        self.bucket = bucket_name or settings.DO_BUCKET_NAME  # type: ignore[attr-defined]
-        access_key_id = access_key or settings.DO_ACCESS_KEY_ID  # type: ignore[attr-defined]
-        secret_access_key = secret_key or settings.DO_SECRET_ACCESS_KEY  # type: ignore[attr-defined]
+        self.region = region or settings.do_region  # type: ignore[attr-defined]
+        self.bucket = bucket_name or settings.do_bucket_name  # type: ignore[attr-defined]
+        access_key_id = access_key or settings.do_access_key_id  # type: ignore[attr-defined]
+        secret_access_key = secret_key or settings.do_secret_access_key  # type: ignore[attr-defined]
 
         self.endpoint = f"https://{self.region}.digitaloceanspaces.com"  # type: ignore[call-arg]
 

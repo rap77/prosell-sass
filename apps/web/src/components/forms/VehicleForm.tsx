@@ -24,13 +24,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select } from "@/components/ui/select";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectControlled,
+  useFbOptions,
+} from "@/components/ui/select-controlled";
 import { toast } from "sonner";
 import {
   FB_BRANDS,
@@ -74,10 +72,10 @@ const vehicleSchema = z.object({
   engine: z.string().optional(),
   fuel_type: z.string().optional(),
 
-  // Performance
-  mpg_city: z.number().min(0).optional(),
-  mpg_highway: z.number().min(0).optional(),
-  mpg_combined: z.number().min(0).optional(),
+  // Performance (not required — Facebook doesn't use these)
+  mpg_city: z.coerce.number().min(0).optional().nullable(),
+  mpg_highway: z.coerce.number().min(0).optional().nullable(),
+  mpg_combined: z.coerce.number().min(0).optional().nullable(),
 
   // Mileage
   mileage: z.number().min(0).optional(),
@@ -154,33 +152,33 @@ export function VehicleForm({
     reset,
   } = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
-    mode: "all",
+    mode: "onSubmit",
     defaultValues: {
       vin: initialData?.vin ?? "",
-      year: initialData?.year ?? undefined,
+      year: initialData?.year != null ? Number(initialData.year) : undefined,
       make: initialData?.make ?? undefined,
-      model: initialData?.model ?? undefined,
-      trim: initialData?.trim ?? undefined,
+      model: initialData?.model ?? "",
+      trim: initialData?.trim ?? "",
       body_type: initialData?.body_type ?? undefined,
-      body_style: initialData?.body_style ?? undefined,
+      body_style: initialData?.body_style ?? "",
       drivetrain: initialData?.drivetrain ?? undefined,
       transmission: initialData?.transmission ?? undefined,
-      engine: initialData?.engine ?? undefined,
+      engine: initialData?.engine ?? "",
       fuel_type: initialData?.fuel_type ?? undefined,
-      mpg_city: initialData?.mpg_city ?? undefined,
-      mpg_highway: initialData?.mpg_highway ?? undefined,
-      mpg_combined: initialData?.mpg_combined ?? undefined,
-      mileage: initialData?.mileage ?? undefined,
+      mpg_city: initialData?.mpg_city != null ? Number(initialData.mpg_city) : undefined,
+      mpg_highway: initialData?.mpg_highway != null ? Number(initialData.mpg_highway) : undefined,
+      mpg_combined: initialData?.mpg_combined != null ? Number(initialData.mpg_combined) : undefined,
+      mileage: initialData?.mileage != null ? Number(initialData.mileage) : undefined,
       mileage_unit: initialData?.mileage_unit ?? "mi",
-      exterior_color: initialData?.exterior_color ?? undefined,
-      interior_color: initialData?.interior_color ?? undefined,
+      exterior_color: initialData?.exterior_color ?? "",
+      interior_color: initialData?.interior_color ?? "",
       has_sunroof: initialData?.has_sunroof ?? false,
       has_navigation: initialData?.has_navigation ?? false,
       has_leather: initialData?.has_leather ?? false,
       has_backup_camera: initialData?.has_backup_camera ?? false,
       has_bluetooth: initialData?.has_bluetooth ?? false,
       has_remote_start: initialData?.has_remote_start ?? false,
-      seat_material: initialData?.seat_material ?? undefined,
+      seat_material: initialData?.seat_material ?? "",
       stock_number: initialData?.stock_number ?? "",
       description: initialData?.description ?? "",
     },
@@ -188,6 +186,18 @@ export function VehicleForm({
 
   // Derived state
   const isDisabled = isSubmitting || isPending;
+
+  // Convert FB options to SelectOption format for SelectControlled
+  const brandOptions = useFbOptions(FB_BRANDS);
+  const bodyTypeOptions = useFbOptions(FB_BODY_STYLES);
+  const transmissionOptions = useFbOptions(FB_TRANSMISSIONS);
+  const fuelTypeOptions = useFbOptions(FB_FUEL_TYPES);
+  const exteriorColorOptions = useFbOptions(FB_EXTERIOR_COLORS);
+  const interiorColorOptions = useFbOptions(FB_INTERIOR_COLORS);
+  const yearOptions = FB_YEARS.slice(0, 30).map((year) => ({
+    value: String(year),
+    label: String(year),
+  }));
 
   /**
    * Decode VIN and auto-populate fields
@@ -426,11 +436,33 @@ export function VehicleForm({
           }
         });
       }, (errors) => {
-        // Show toast when validation fails
+        // Show toast with specific field names
+        const fieldLabels: Record<string, string> = {
+          vin: "VIN",
+          year: "Año",
+          make: "Marca",
+          model: "Modelo",
+          trim: "Trim",
+          body_type: "Tipo de Carrocería",
+          body_style: "Estilo",
+          drivetrain: "Tracción",
+          transmission: "Transmisión",
+          engine: "Motor",
+          fuel_type: "Combustible",
+          mileage: "Odómetro",
+          mileage_unit: "Unidad de Millaje",
+          exterior_color: "Color Exterior",
+          interior_color: "Color Interior",
+          stock_number: "Stock Number",
+          description: "Descripción",
+        };
         const errorFields = Object.keys(errors);
         if (errorFields.length > 0) {
-          toast.error('Validation errors', {
-            description: `Please fix the ${errorFields.length} error(s) before submitting`,
+          const fieldNames = errorFields
+            .map((f) => fieldLabels[f] || f)
+            .join(", ");
+          toast.error("Campos incompletos", {
+            description: `Completá: ${fieldNames}`,
           });
         }
       })}
@@ -501,22 +533,14 @@ export function VehicleForm({
               control={control}
               name="year"
               render={({ field }) => (
-                <Select
-                  value={field.value?.toString()}
-                  onValueChange={(val) => field.onChange(val ? parseInt(val) : undefined)}
+                <SelectControlled
+                  value={field.value != null ? String(field.value) : ""}
+                  onChange={(val) => field.onChange(val !== "" ? Number(val) : undefined)}
+                  options={yearOptions}
+                  placeholder="Select year"
+                  id="year"
                   disabled={isDisabled}
-                >
-                  <SelectTrigger id="year">
-                    <SelectValue placeholder="Select year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FB_YEARS.slice(0, 30).map((year) => (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               )}
             />
             {errors.year && (
@@ -530,22 +554,14 @@ export function VehicleForm({
               control={control}
               name="make"
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
+                <SelectControlled
+                  value={field.value || ""}
+                  onChange={(val) => field.onChange(val || undefined)}
+                  options={brandOptions}
+                  placeholder="Select make"
+                  id="make"
                   disabled={isDisabled}
-                >
-                  <SelectTrigger id="make">
-                    <SelectValue placeholder="Select make" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FB_BRANDS.map((brand) => (
-                      <SelectItem key={brand.key} value={brand.key}>
-                        {brand.es}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               )}
             />
             {errors.make && (
@@ -596,22 +612,14 @@ export function VehicleForm({
               control={control}
               name="body_type"
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
+                <SelectControlled
+                  value={field.value || ""}
+                  onChange={(val) => field.onChange(val || undefined)}
+                  options={bodyTypeOptions}
+                  placeholder="Select type"
+                  id="body_type"
                   disabled={isDisabled}
-                >
-                  <SelectTrigger id="body_type">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FB_BODY_STYLES.map((style) => (
-                      <SelectItem key={style.key} value={style.key}>
-                        {style.es}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               )}
             />
           </div>
@@ -632,23 +640,24 @@ export function VehicleForm({
             <Controller
               control={control}
               name="drivetrain"
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  disabled={isDisabled}
-                >
-                  <SelectTrigger id="drivetrain">
-                    <SelectValue placeholder="Select drivetrain" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="FWD">FWD (Delantera)</SelectItem>
-                    <SelectItem value="RWD">RWD (Trasera)</SelectItem>
-                    <SelectItem value="AWD">AWD (4x4)</SelectItem>
-                    <SelectItem value="4WD">4WD (4x4)</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+              render={({ field }) => {
+                const drivetrainOptions = [
+                  { value: "FWD", label: "FWD (Delantera)" },
+                  { value: "RWD", label: "RWD (Trasera)" },
+                  { value: "AWD", label: "AWD (4x4)" },
+                  { value: "4WD", label: "4WD (4x4)" },
+                ];
+                return (
+                  <SelectControlled
+                    value={field.value || ""}
+                    onChange={(val) => field.onChange(val || undefined)}
+                    options={drivetrainOptions}
+                    placeholder="Select drivetrain"
+                    id="drivetrain"
+                    disabled={isDisabled}
+                  />
+                );
+              }}
             />
           </div>
 
@@ -658,22 +667,14 @@ export function VehicleForm({
               control={control}
               name="transmission"
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
+                <SelectControlled
+                  value={field.value || ""}
+                  onChange={(val) => field.onChange(val || undefined)}
+                  options={transmissionOptions}
+                  placeholder="Select transmission"
+                  id="transmission"
                   disabled={isDisabled}
-                >
-                  <SelectTrigger id="transmission">
-                    <SelectValue placeholder="Select transmission" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FB_TRANSMISSIONS.map((trans) => (
-                      <SelectItem key={trans.key} value={trans.key}>
-                        {trans.es}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               )}
             />
           </div>
@@ -697,22 +698,14 @@ export function VehicleForm({
               control={control}
               name="fuel_type"
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
+                <SelectControlled
+                  value={field.value || ""}
+                  onChange={(val) => field.onChange(val || undefined)}
+                  options={fuelTypeOptions}
+                  placeholder="Select fuel type"
+                  id="fuel_type"
                   disabled={isDisabled}
-                >
-                  <SelectTrigger id="fuel_type">
-                    <SelectValue placeholder="Select fuel type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FB_FUEL_TYPES.map((fuel) => (
-                      <SelectItem key={fuel.key} value={fuel.key}>
-                        {fuel.es}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               )}
             />
           </div>
@@ -729,7 +722,12 @@ export function VehicleForm({
           <div className="flex flex-col gap-2">
             <Label htmlFor="mpg_city">MPG Ciudad</Label>
             <Input
-              {...register("mpg_city", { valueAsNumber: true })}
+              {...register("mpg_city", {
+                setValueAs: (v) => {
+                  const n = Number(v);
+                  return v === "" || isNaN(n) ? undefined : n;
+                },
+              })}
               id="mpg_city"
               type="number"
               placeholder="25"
@@ -741,7 +739,12 @@ export function VehicleForm({
           <div className="flex flex-col gap-2">
             <Label htmlFor="mpg_highway">MPG Carretera</Label>
             <Input
-              {...register("mpg_highway", { valueAsNumber: true })}
+              {...register("mpg_highway", {
+                setValueAs: (v) => {
+                  const n = Number(v);
+                  return v === "" || isNaN(n) ? undefined : n;
+                },
+              })}
               id="mpg_highway"
               type="number"
               placeholder="32"
@@ -753,7 +756,12 @@ export function VehicleForm({
           <div className="flex flex-col gap-2">
             <Label htmlFor="mpg_combined">MPG Combinado</Label>
             <Input
-              {...register("mpg_combined", { valueAsNumber: true })}
+              {...register("mpg_combined", {
+                setValueAs: (v) => {
+                  const n = Number(v);
+                  return v === "" || isNaN(n) ? undefined : n;
+                },
+              })}
               id="mpg_combined"
               type="number"
               placeholder="28"
@@ -792,19 +800,17 @@ export function VehicleForm({
               control={control}
               name="mileage_unit"
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
+                <SelectControlled
+                  value={field.value || ""}
+                  onChange={(val) => field.onChange(val || undefined)}
+                  options={[
+                    { value: "mi", label: "Millas (mi)" },
+                    { value: "km", label: "Kilómetros (km)" },
+                  ]}
+                  placeholder="Select unit"
+                  id="mileage_unit"
                   disabled={isDisabled}
-                >
-                  <SelectTrigger id="mileage_unit">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mi">Millas (mi)</SelectItem>
-                    <SelectItem value="km">Kilómetros (km)</SelectItem>
-                  </SelectContent>
-                </Select>
+                />
               )}
             />
           </div>
@@ -824,22 +830,14 @@ export function VehicleForm({
               control={control}
               name="exterior_color"
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
+                <SelectControlled
+                  value={field.value || ""}
+                  onChange={(val) => field.onChange(val || undefined)}
+                  options={exteriorColorOptions}
+                  placeholder="Select color"
+                  id="exterior_color"
                   disabled={isDisabled}
-                >
-                  <SelectTrigger id="exterior_color">
-                    <SelectValue placeholder="Select color" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FB_EXTERIOR_COLORS.map((color) => (
-                      <SelectItem key={color.key} value={color.key}>
-                        {color.es}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               )}
             />
           </div>
@@ -850,22 +848,14 @@ export function VehicleForm({
               control={control}
               name="interior_color"
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
+                <SelectControlled
+                  value={field.value || ""}
+                  onChange={(val) => field.onChange(val || undefined)}
+                  options={interiorColorOptions}
+                  placeholder="Select color"
+                  id="interior_color"
                   disabled={isDisabled}
-                >
-                  <SelectTrigger id="interior_color">
-                    <SelectValue placeholder="Select color" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FB_INTERIOR_COLORS.map((color) => (
-                      <SelectItem key={color.key} value={color.key}>
-                        {color.es}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               )}
             />
           </div>
@@ -994,21 +984,19 @@ export function VehicleForm({
             control={control}
             name="seat_material"
             render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
+              <SelectControlled
+                value={field.value || ""}
+                onChange={(val) => field.onChange(val || undefined)}
+                options={[
+                  { value: "cloth", label: "Tela" },
+                  { value: "leather", label: "Cuero" },
+                  { value: "vinyl", label: "Vinyl" },
+                  { value: "synthetic", label: "Sintético" },
+                ]}
+                placeholder="Select material"
+                id="seat_material"
                 disabled={isDisabled}
-              >
-                <SelectTrigger id="seat_material">
-                  <SelectValue placeholder="Select material" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cloth">Tela</SelectItem>
-                  <SelectItem value="leather">Cuero</SelectItem>
-                  <SelectItem value="vinyl">Vinyl</SelectItem>
-                  <SelectItem value="synthetic">Sintético</SelectItem>
-                </SelectContent>
-              </Select>
+              />
             )}
           />
         </div>

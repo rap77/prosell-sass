@@ -41,6 +41,7 @@ from prosell.infrastructure.api.routers import (
     dealer_router,
     facebook_router,
     health_router,
+    image_router,
     org_router,
     product_router,
     publisher_router,
@@ -220,6 +221,12 @@ app.include_router(
     vehicle_router,
     prefix="/api/v1/vehicles",
     tags=["Vehicles"],
+)
+
+app.include_router(
+    image_router,
+    prefix="/api/v1",
+    tags=["Images"],
 )
 
 app.include_router(

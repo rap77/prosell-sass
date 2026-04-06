@@ -5,6 +5,7 @@ from prosell.infrastructure.api.routers.category_router import router as categor
 from prosell.infrastructure.api.routers.dealer_router import router as dealer_router
 from prosell.infrastructure.api.routers.facebook_router import router as facebook_router
 from prosell.infrastructure.api.routers.health_router import router as health_router
+from prosell.infrastructure.api.routers.image_router import router as image_router
 from prosell.infrastructure.api.routers.org_router import router as org_router
 from prosell.infrastructure.api.routers.product_router import router as product_router
 from prosell.infrastructure.api.routers.publisher_router import router as publisher_router
@@ -19,6 +20,7 @@ __all__ = [
     "dealer_router",
     "facebook_router",
     "health_router",
+    "image_router",
     "org_router",
     "product_router",
     "publisher_router",

@@ -144,7 +144,11 @@ const registerSchema = z
     password: z
       .string()
       .min(1, "Password is required")
-      .min(8, "Password must be at least 8 characters"),
+      .min(8, "Password must be at least 8 characters")
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+        "Password must contain uppercase, lowercase, number, and special character (@$!%*?&)"
+      ),
     confirmPassword: z.string().min(1, "Confirm password is required"),
     acceptTerms: z.boolean().refine((val) => val === true, {
       message: "You must accept the terms and conditions",

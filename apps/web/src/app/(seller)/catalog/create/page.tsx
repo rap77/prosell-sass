@@ -31,7 +31,7 @@ export default function CreateVehiclePage() {
     try {
       // Upload all images first
       const uploadedUrls = uploadedFiles.length > 0
-        ? await uploadImages(uploadedFiles.map(f => f.file))
+        ? await uploadImages(uploadedFiles.map(f => ({ id: f.id, file: f.file })))
         : []
 
       // Then create vehicle with uploaded image URLs

@@ -17,7 +17,7 @@ export async function generateUploadUrl(fileType: string): Promise<UploadUrlResp
   const res = await fetch('/api/v1/images/upload-url', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fileType }),
+    body: JSON.stringify({ content_type: fileType }),
   })
 
   if (!res.ok) throw new Error('Failed to generate upload URL')

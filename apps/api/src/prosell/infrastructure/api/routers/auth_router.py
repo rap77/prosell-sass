@@ -176,8 +176,8 @@ async def register(
 @router.post("/login")
 @rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
 async def login(
-    fastapi_request: Request,  # noqa: ARG001 - Used by rate_limit decorator
-    request: LoginRequest,
+    request: Request,  # Required by rate_limit decorator
+    login_data: LoginRequest,
     response: Response,
     use_case: Annotated[LoginUserUseCase, Depends(get_login_user_use_case)],
 ) -> LoginUserResponse:
@@ -188,9 +188,9 @@ async def login(
     If 2FA is enabled, requires_2fa will be True.
     """
     uc_request = LoginUserRequest(
-        email=request.email,
-        password=request.password,
-        remember_me=request.remember_me,
+        email=login_data.email,
+        password=login_data.password,
+        remember_me=login_data.remember_me,
     )
     result = await use_case.execute(uc_request)
 

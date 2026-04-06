@@ -14,13 +14,17 @@ export function generateUniqueEmail(): string {
 }
 
 /**
- * Generate a test password that meets basic requirements
+ * Generate a test password that meets backend requirements
  *
- * For E2E testing, using a simpler password without special characters
- * to avoid JSON escaping issues in different environments.
+ * Password must contain:
+ * - At least 8 characters
+ * - At least one lowercase letter
+ * - At least one uppercase letter
+ * - At least one number
+ * - At least one special character: @$!%*?&
  */
 export function generateTestPassword(): string {
-  return "TestPassword123";
+  return "Test!Password123";
 }
 
 /**
@@ -46,7 +50,7 @@ export function generateTestUser() {
  */
 export function getExistingUser() {
   const email = process.env.TEST_USER_EMAIL || "test@example.com";
-  const password = process.env.TEST_USER_PASSWORD || "TestPassword123";
+  const password = process.env.TEST_USER_PASSWORD || "Test!Password123";
 
   return { email, password };
 }

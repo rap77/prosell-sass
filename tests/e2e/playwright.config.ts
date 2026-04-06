@@ -17,6 +17,8 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      testMatch: ["/tests/e2e/specs/**/*.spec.ts", "/tests/e2e/dashboard/**/*.spec.ts"],
+      testIgnore: ["/tests/e2e/auth/**/*.spec.ts"],
       use: {
         ...devices["Desktop Chrome"],
         // Use storageState for dashboard tests (protected routes)
@@ -28,8 +30,7 @@ export default defineConfig({
     // Project for authentication tests (NO storageState)
     {
       name: "auth-tests",
-      testMatch: /.*\.spec\.ts/,
-      testIgnore: /home\.spec\.ts/,
+      testMatch: "/tests/e2e/auth/**/*.spec.ts",
       use: {
         ...devices["Desktop Chrome"],
         storageState: undefined, // No saved auth state - start fresh
