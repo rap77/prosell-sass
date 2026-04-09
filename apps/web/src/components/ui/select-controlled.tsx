@@ -58,8 +58,32 @@ export function SelectControlled({
   const selectedOption = options.find((opt) => opt.value === value);
   const displayValue = selectedOption?.label ?? (value ? value : "");
 
+  /**
+   * Guard against spurious empty-value resets from Radix BubbleInput.
+   *
+   * In environments where the @radix-ui/react-select patch is not applied
+   * (e.g. Docker containers with unpatched node_modules), the hidden
+   * BubbleInput fires onValueChange("") immediately after mounting because
+   * the native <select> doesn't yet have options registered. Without the
+   * patch condition `(isFormControl && nativeOptionsSet.size > 0)`, this
+   * reset fires and clears a programmatically-set value (e.g. after VIN
+   * decode via setValue()).
+   *
+   * Fix: ignore onValueChange("") calls when we currently have a value.
+   * This is safe because SelectControlled has no "clear" option in the
+   * trigger — intentional clearing only happens via onChange("") from
+   * parent code, not from user interaction through the Radix trigger.
+   */
+  const handleChange = React.useCallback(
+    (val: string) => {
+      if (val === "" && value !== "") return;
+      onChange(val);
+    },
+    [onChange, value],
+  );
+
   return (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
+    <Select value={value} onValueChange={handleChange} disabled={disabled}>
       <SelectTrigger id={id} className={className}>
         {/*
           Passing display value as children ensures it renders when set

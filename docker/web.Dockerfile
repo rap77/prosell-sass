@@ -13,6 +13,8 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 # Copy workspace files
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* ./
 COPY apps/web/package.json ./apps/web/
+# Copy patches so pnpm can apply patchedDependencies (root package.json references ./patches/)
+COPY patches ./patches
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile

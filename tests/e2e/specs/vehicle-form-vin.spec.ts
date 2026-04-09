@@ -72,10 +72,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await page.waitForLoadState("load");
       await page.waitForTimeout(1000);
 
-      // Verify trim field is populated
+      // Verify trim field is populated (use expect with retry to handle API latency)
       const trimInput = page.getByLabel(/versión|trim/i);
-      const trimValue = await trimInput.inputValue();
-      expect(trimValue.length).toBeGreaterThan(0);
+      await expect(trimInput).not.toHaveValue("");
     });
 
     test("should preserve input field values across multiple page interactions", async ({ page }) => {
@@ -83,10 +82,11 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
       await vehiclesPage.decodeVinButton.click();
       await page.waitForLoadState("load");
-      await page.waitForTimeout(1000);
 
-      // Get the initial values
+      // Wait for the VIN decode to complete by asserting model has a value (retries internally)
       const modelInput = page.getByLabel(/model/i);
+      await expect(modelInput).toHaveValue(/equinox/i);
+
       const initialModel = await modelInput.inputValue();
 
       // Interact with another field
@@ -234,7 +234,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await page.waitForTimeout(1000);
 
       // Get the make select trigger text
-      const makeTrigger = page.locator('[id="make"] button, [id="make"] > div[role="button"]').first();
+      // Note: SelectControlled renders SelectTrigger with the id directly on the button element,
+      // so we use button[id="make"] (not [id="make"] button which looks for a child button)
+      const makeTrigger = page.locator('button[id="make"]');
       const triggerText = await makeTrigger.textContent();
 
       // Should NOT show placeholder, should show actual value
@@ -253,7 +255,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await page.waitForTimeout(1000);
 
       // Get the body_type select trigger text
-      const bodyTypeTrigger = page.locator('[id="body_type"] button, [id="body_type"] > div[role="button"]').first();
+      const bodyTypeTrigger = page.locator('button[id="body_type"]');
       const triggerText = await bodyTypeTrigger.textContent();
 
       // Should have a value, not a placeholder
@@ -271,7 +273,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await page.waitForTimeout(1000);
 
       // Get the drivetrain select trigger text
-      const drivetrainTrigger = page.locator('[id="drivetrain"] button, [id="drivetrain"] > div[role="button"]').first();
+      const drivetrainTrigger = page.locator('button[id="drivetrain"]');
       const triggerText = await drivetrainTrigger.textContent();
 
       // Should have a value
@@ -288,7 +290,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await page.waitForTimeout(1000);
 
       // Get the transmission select trigger text
-      const transmissionTrigger = page.locator('[id="transmission"] button, [id="transmission"] > div[role="button"]').first();
+      const transmissionTrigger = page.locator('button[id="transmission"]');
       const triggerText = await transmissionTrigger.textContent();
 
       // Should have a value
@@ -306,7 +308,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await page.waitForTimeout(1000);
 
       // Get the fuel_type select trigger text
-      const fuelTypeTrigger = page.locator('[id="fuel_type"] button, [id="fuel_type"] > div[role="button"]').first();
+      const fuelTypeTrigger = page.locator('button[id="fuel_type"]');
       const triggerText = await fuelTypeTrigger.textContent();
 
       // Should have a value
@@ -465,12 +467,14 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
       await page.waitForLoadState("load");
-      await page.waitForTimeout(1000);
 
-      // Verify all fields are populated
+      // Wait for decode to complete using expect with retry, then read values
       const modelInput = page.getByLabel(/model/i);
       const engineInput = page.getByLabel(/motor|engine/i);
       const trimInput = page.getByLabel(/versión|trim/i);
+
+      // Use expect with retry to wait for VIN decode before reading raw values
+      await expect(modelInput).toHaveValue(/equinox/i);
 
       const modelValue = await modelInput.inputValue();
       const engineValue = await engineInput.inputValue();
@@ -481,8 +485,8 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(trimValue.length).toBeGreaterThan(0);
 
       // Now check select fields
-      const makeSelect = page.locator('[id="make"]');
-      const makeTrigger = makeSelect.locator('button, > div[role="button"]').first();
+      // The id is on the button element itself (SelectTrigger renders as button)
+      const makeTrigger = page.locator('button[id="make"]');
       const makeText = await makeTrigger.textContent();
 
       expect(makeText).toMatch(/chevrolet|chevy/i);
@@ -526,9 +530,11 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       const selectedOption = page.locator('[role="option"][data-state="checked"]');
       await expect(selectedOption).toBeVisible();
 
-      // Get the selected value
-      const selectedValue = await selectedOption.getAttribute("value");
-      expect(selectedValue).toMatch(/FWD|RWD|AWD|4WD/);
+      // Get the selected value via textContent — Radix SelectItem does not expose
+      // a "value" HTML attribute on the role="option" element; the value is internal.
+      // The visible text matches the label of the selected option.
+      const selectedText = await selectedOption.textContent();
+      expect(selectedText).toMatch(/FWD|RWD|AWD|4WD/);
     });
 
     test("should handle rapid VIN decode operations without losing field values", async ({ page }) => {
