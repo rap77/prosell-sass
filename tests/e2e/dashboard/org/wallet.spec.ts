@@ -16,6 +16,75 @@ import { OrganizationsListPage } from "./organizations-list-page";
 import { OrganizationFormPage } from "./organization-form-page";
 import { OrganizationDetailPage } from "./organization-detail-page";
 import { loginUser } from "../../helpers";
+import type { Page } from "@playwright/test";
+
+function makeMockId(): string {
+  const hex = () => Math.floor(Math.random() * 0xffffffff).toString(16).padStart(8, "0");
+  return `${hex().slice(0,8)}-${hex().slice(0,4)}-${hex().slice(0,4)}-${hex().slice(0,4)}-${hex()}${hex().slice(0,4)}`;
+}
+
+async function setupWalletApiMocks(page: Page) {
+  const orgStore: Record<string, any> = {};
+
+  // Mock org API - single handler for all /api/v1/org* URLs
+  await page.route("**/api/v1/org**", async (route) => {
+    const method = route.request().method();
+    const url = route.request().url();
+    const pathMatch = url.match(/\/api\/v1\/org\/([^/?]+)/);
+    const orgId = pathMatch ? pathMatch[1] : null;
+
+    if (orgId) {
+      if (method === "GET") {
+        const org = orgStore[orgId];
+        await route.fulfill({ status: org ? 200 : 404, contentType: "application/json", body: JSON.stringify(org ?? { detail: "Not found" }) });
+      } else {
+        await route.continue();
+      }
+    } else if (method === "POST") {
+      const body = await route.request().postDataJSON();
+      const id = makeMockId();
+      const now = new Date().toISOString();
+      const org = {
+        id, name: body.name, tenant_id: "test-user-123", status: "pending_verification",
+        description: body.description ?? null, website: body.website ?? null, phone: body.phone ?? null,
+        logo_url: null, banner_url: null, wallet_id: null,
+        created_at: now, updated_at: now, verified_at: null, verified_by: null,
+      };
+      orgStore[id] = org;
+      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(org) });
+    } else {
+      const orgs = Object.values(orgStore);
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ organizations: orgs, total: orgs.length, page: 1, page_size: 100 }) });
+    }
+  });
+
+  // Mock wallet API - single handler for all /api/v1/wallet* URLs
+  await page.route("**/api/v1/wallet**", async (route) => {
+    const url = route.request().url();
+    const now = new Date().toISOString();
+
+    if (url.match(/\/api\/v1\/wallet\/org\/[^/?]+\/transactions/)) {
+      // GET /api/v1/wallet/org/{orgId}/transactions
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ transactions: [], total: 0, skip: 0, limit: 20 }),
+      });
+    } else if (url.match(/\/api\/v1\/wallet\/org\/([^/?]+)/)) {
+      // GET /api/v1/wallet/org/{orgId}
+      const pathMatch = url.match(/\/api\/v1\/wallet\/org\/([^/?]+)/);
+      const orgId = pathMatch ? pathMatch[1] : "unknown";
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({
+          id: `wallet-${orgId}`, organization_id: orgId, tenant_id: "test-user-123",
+          balance: 0, created_at: now, updated_at: now,
+        }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+}
 
 test.describe("Wallet", () => {
   let orgListPage: OrganizationsListPage;
@@ -28,6 +97,9 @@ test.describe("Wallet", () => {
     orgFormPage = new OrganizationFormPage(page);
     orgDetailPage = new OrganizationDetailPage(page);
     walletPage = new WalletPage(page);
+
+    // Mock backend API calls (real backend at localhost:8000)
+    await setupWalletApiMocks(page);
 
     // Tests are pre-authenticated via storageState
   });

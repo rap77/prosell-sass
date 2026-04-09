@@ -13,7 +13,7 @@ async function validateAuthUI() {
     // 1. Login
     console.log("📸 Login...");
     await page.goto(`${BASE_URL}/auth/login`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
     await page.screenshot({
       path: `${SCREENSHOT_DIR}/01-login.png`,
       fullPage: true,
@@ -22,7 +22,7 @@ async function validateAuthUI() {
     // 2. Register
     console.log("📸 Register...");
     await page.goto(`${BASE_URL}/auth/register`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
     await page.screenshot({
       path: `${SCREENSHOT_DIR}/02-register.png`,
       fullPage: true,
@@ -31,7 +31,7 @@ async function validateAuthUI() {
     // 3. Forgot Password
     console.log("📸 Forgot Password...");
     await page.goto(`${BASE_URL}/auth/forgot-password`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
     await page.screenshot({
       path: `${SCREENSHOT_DIR}/03-forgot-password.png`,
       fullPage: true,
@@ -40,7 +40,7 @@ async function validateAuthUI() {
     // 4. Reset Password
     console.log("📸 Reset Password...");
     await page.goto(`${BASE_URL}/auth/reset-password?token=test`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
     await page.screenshot({
       path: `${SCREENSHOT_DIR}/04-reset-password.png`,
       fullPage: true,
@@ -49,7 +49,7 @@ async function validateAuthUI() {
     // 5. Verify Email
     console.log("📸 Verify Email...");
     await page.goto(`${BASE_URL}/auth/verify-email?token=test`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
     await page.screenshot({
       path: `${SCREENSHOT_DIR}/05-verify-email.png`,
       fullPage: true,
@@ -58,7 +58,7 @@ async function validateAuthUI() {
     // 6. Setup 2FA
     console.log("📸 Setup 2FA...");
     await page.goto(`${BASE_URL}/auth/setup-2fa`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
     await page.screenshot({
       path: `${SCREENSHOT_DIR}/06-setup-2fa.png`,
       fullPage: true,

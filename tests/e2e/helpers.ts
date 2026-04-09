@@ -88,7 +88,7 @@ export async function loginUser(
 
   // Navigate to login page
   await page.goto("/auth/login");
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("load");
 
   // Fill login form
   await page.locator("#email").fill(loginEmail);
@@ -103,7 +103,7 @@ export async function loginUser(
 
   // Wait for network to settle after login
   // Cookies are set now, but we may still be on login page (no auto-redirect)
-  await page.waitForLoadState("networkidle", { timeout: 10000 });
+  await page.waitForLoadState("load");
 
   console.log("[LOGIN USER] Login complete");
 }
@@ -132,5 +132,5 @@ export async function createAndLoginUser(page: any): Promise<void> {
   await page.getByRole("button", { name: /sign up/i }).click();
 
   // Wait for navigation
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("load");
 }

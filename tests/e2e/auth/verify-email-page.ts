@@ -85,6 +85,6 @@ export class VerifyEmailPage extends BasePage {
    */
   async waitForVerification(): Promise<void> {
     // Wait for loading state to finish
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("load");
   }
 }

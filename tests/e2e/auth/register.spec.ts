@@ -57,7 +57,7 @@ test.describe("Registration", () => {
         await registerPage.emailInput.fill("test@example.com");
         await registerPage.passwordInput.fill("password123");
         await registerPage.confirmPasswordInput.fill("password123");
-        await registerPage.acceptTermsCheckbox.check();
+        await registerPage.acceptTermsCheckbox.click();
         await registerPage.submitButton.click();
 
         const error = page.getByText(/full name is required/i);
@@ -73,7 +73,7 @@ test.describe("Registration", () => {
         await registerPage.emailInput.fill("invalid-email");
         await registerPage.passwordInput.fill("password123");
         await registerPage.confirmPasswordInput.fill("password123");
-        await registerPage.acceptTermsCheckbox.check();
+        await registerPage.acceptTermsCheckbox.click();
         await registerPage.submitButton.click();
 
         const error = page.getByText(/invalid email address/i);
@@ -89,7 +89,7 @@ test.describe("Registration", () => {
         await registerPage.emailInput.fill("test@example.com");
         await registerPage.passwordInput.fill("short");
         await registerPage.confirmPasswordInput.fill("short");
-        await registerPage.acceptTermsCheckbox.check();
+        await registerPage.acceptTermsCheckbox.click();
         await registerPage.submitButton.click();
 
         const error = page.getByText(/password must be at least 8 characters/i);
@@ -103,9 +103,10 @@ test.describe("Registration", () => {
       async ({ page }) => {
         await registerPage.fullNameInput.fill("Test User");
         await registerPage.emailInput.fill("test@example.com");
-        await registerPage.passwordInput.fill("password123");
-        await registerPage.confirmPasswordInput.fill("password456");
-        await registerPage.acceptTermsCheckbox.check();
+        // Use valid passwords (pass regex) but different values → triggers mismatch error
+        await registerPage.passwordInput.fill("Password1!");
+        await registerPage.confirmPasswordInput.fill("Password2!");
+        await registerPage.acceptTermsCheckbox.click();
         await registerPage.submitButton.click();
 
         const error = page.getByText(/passwords do not match/i);
@@ -158,7 +159,7 @@ test.describe("Registration", () => {
         await registerPage.emailInput.fill(generateUniqueEmail());
         await registerPage.passwordInput.fill(generateTestPassword());
         await registerPage.confirmPasswordInput.fill(generateTestPassword());
-        await registerPage.acceptTermsCheckbox.check();
+        await registerPage.acceptTermsCheckbox.click();
 
         await registerPage.submitButton.click();
 

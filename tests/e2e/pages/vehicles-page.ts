@@ -21,7 +21,7 @@ export class VehiclesPage extends BasePage {
   async decodeVin(vin: string): Promise<void> {
     await this.vinInput.fill(vin);
     await this.decodeVinButton.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("load");
   }
 
   /**

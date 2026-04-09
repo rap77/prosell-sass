@@ -75,7 +75,7 @@ export class TeamFormPage extends BasePage {
    */
   async submit(): Promise<void> {
     await this.submitButton.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("load");
   }
 
   /**

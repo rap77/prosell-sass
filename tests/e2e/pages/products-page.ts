@@ -64,7 +64,7 @@ export class ProductsPage extends BasePage {
    */
   async submit(): Promise<void> {
     await this.saveButton.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("load");
   }
 
   /**
@@ -102,6 +102,6 @@ export class ProductsPage extends BasePage {
   async submitForApproval(title: string): Promise<void> {
     const productCard = this.findProductByTitle(title);
     await productCard.getByRole("button", { name: /submit/i }).click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("load");
   }
 }

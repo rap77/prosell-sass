@@ -28,10 +28,11 @@ export class OrganizationsListPage extends BasePage {
     // Buttons
     this.createOrgButton = page.getByRole("button", { name: /create organization/i });
 
-    // Organization cards
-    this.orgCards = page.locator(
-      'div[class*="rounded-lg border"][class*="hover:border"]'
-    );
+    // Organization cards - use links that point to org detail pages
+    // Matches the pattern /dashboard/org/{uuid} without sub-paths like /edit, /wallet
+    this.orgCards = page.locator('a[href^="/dashboard/org/"]').filter({
+      hasNot: page.locator('[href$="/edit"], [href$="/wallet"], [href$="/members"], [href$="/teams"]'),
+    });
 
     // States
     this.emptyStateMessage = page.getByText(/you don't have any organizations yet/i);
@@ -56,9 +57,12 @@ export class OrganizationsListPage extends BasePage {
   async verifyPageLoaded(): Promise<void> {
     // Wait for page to be ready
     await this.page.waitForLoadState("domcontentloaded");
-    await this.page.waitForTimeout(200);
-    // Then verify the heading is visible with increased timeout
+    // Verify the heading is visible with increased timeout
     await expect(this.heading).toBeVisible({ timeout: 10000 });
+    // Wait for loading spinner to disappear (indicates data fetch completed)
+    await this.page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 5000 }).catch(() => {});
+    // Brief pause to ensure re-render completes
+    await this.page.waitForTimeout(100);
   }
 
   /**
@@ -145,7 +149,7 @@ export class OrganizationsListPage extends BasePage {
    */
   async clickNext(): Promise<void> {
     await this.nextButton.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("load");
   }
 
   /**
@@ -153,6 +157,6 @@ export class OrganizationsListPage extends BasePage {
    */
   async clickPrevious(): Promise<void> {
     await this.previousButton.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("load");
   }
 }

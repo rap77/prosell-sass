@@ -54,7 +54,7 @@ export class CategoriesPage extends BasePage {
    */
   async submit(): Promise<void> {
     await this.saveButton.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("load");
   }
 
   /**

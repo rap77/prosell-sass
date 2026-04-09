@@ -59,7 +59,7 @@ export class RegisterPage extends BasePage {
     await this.emailInput.fill(data.email);
     await this.passwordInput.fill(data.password);
     await this.confirmPasswordInput.fill(data.confirmPassword);
-    await this.acceptTermsCheckbox.check();
+    await this.acceptTermsCheckbox.click();
     await this.submitButton.click();
   }
 

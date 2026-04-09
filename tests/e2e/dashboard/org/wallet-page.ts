@@ -107,7 +107,7 @@ export class WalletPage extends BasePage {
    */
   async clickRefresh(): Promise<void> {
     await this.refreshButton.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("load");
   }
 
   /**
@@ -200,7 +200,7 @@ export class WalletPage extends BasePage {
    */
   async clickNext(): Promise<void> {
     await this.nextButton.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("load");
   }
 
   /**
@@ -208,6 +208,6 @@ export class WalletPage extends BasePage {
    */
   async clickPrevious(): Promise<void> {
     await this.previousButton.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("load");
   }
 }

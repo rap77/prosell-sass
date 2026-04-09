@@ -6,7 +6,7 @@ test.describe("UI/UX Validation", () => {
   test("should capture all auth pages for visual review", async ({ page }) => {
     // Login
     await page.goto("/auth/login");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
     await page.screenshot({
       path: "screenshots/auth/01-login.png",
       fullPage: true,
@@ -14,7 +14,7 @@ test.describe("UI/UX Validation", () => {
 
     // Register
     await page.goto("/auth/register");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
     await page.screenshot({
       path: "screenshots/auth/02-register.png",
       fullPage: true,
@@ -22,7 +22,7 @@ test.describe("UI/UX Validation", () => {
 
     // Forgot Password
     await page.goto("/auth/forgot-password");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
     await page.screenshot({
       path: "screenshots/auth/03-forgot-password.png",
       fullPage: true,
@@ -30,7 +30,7 @@ test.describe("UI/UX Validation", () => {
 
     // Reset Password
     await page.goto("/auth/reset-password?token=test");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
     await page.screenshot({
       path: "screenshots/auth/04-reset-password.png",
       fullPage: true,
@@ -38,7 +38,7 @@ test.describe("UI/UX Validation", () => {
 
     // Verify Email
     await page.goto("/auth/verify-email?token=test");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
     await page.screenshot({
       path: "screenshots/auth/05-verify-email.png",
       fullPage: true,
@@ -46,7 +46,7 @@ test.describe("UI/UX Validation", () => {
 
     // Setup 2FA
     await page.goto("/auth/setup-2fa");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
     await page.screenshot({
       path: "screenshots/auth/06-setup-2fa.png",
       fullPage: true,

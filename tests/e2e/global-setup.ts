@@ -120,7 +120,7 @@ async function globalSetup(config: FullConfig) {
   // Verify by navigating to a protected route
   const page = await context.newPage();
   console.log('[GLOBAL SETUP] Testing navigation to protected route...');
-  await page.goto("http://localhost:3000/dashboard/org", { waitUntil: "networkidle" });
+  await page.goto("http://localhost:3000/dashboard/org", { waitUntil: "load" });
   console.log('[GLOBAL SETUP] Current URL after navigation:', page.url());
 
   // Save storage state
