@@ -123,10 +123,7 @@ test.describe("Vehicles", () => {
     expect(accessibilityScanResults.violations).toEqual([]);
   });
 
-  // SKIP: Requires NHTSA external API access (unavailable in Docker environment).
-  // The backend calls api.nhtsa.us which times out (httpx.ReadTimeout → 500 error).
-  // Enable when NHTSA access is available or a mock/stub is implemented.
-  test.skip("should populate Select fields after VIN decode - bug fix verification", async ({ page }) => {
+  test("should populate Select fields after VIN decode - bug fix verification", async ({ page }) => {
     // This test verifies the fix for commit 3252454
     // Previously: Select fields remained empty after VIN decode
     // Fix: Removed ?? "" fallback from Select value props

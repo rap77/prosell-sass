@@ -181,10 +181,7 @@ test.describe("API: Products", () => {
 });
 
 test.describe("API: Vehicles", () => {
-  // SKIP: VIN decode calls NHTSA external API (api.nhtsa.us) which times out in the
-  // Docker container environment (httpx.ReadTimeout). Skip until external access is
-  // available or a NHTSA mock/stub is implemented.
-  test.skip("POST /api/v1/vehicles/decode-vin - should decode valid VIN", async ({ request }) => {
+  test("POST /api/v1/vehicles/decode-vin - should decode valid VIN", async ({ request }) => {
     const response = await request.post(`${API_BASE}/api/v1/vehicles/decode-vin`, {
       headers: {
         "Content-Type": "application/json",

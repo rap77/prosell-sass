@@ -13,12 +13,9 @@
  * - Select field placeholders appear when no value is selected
  * - No console warnings about controlled/uncontrolled components
  *
- * SKIP NOTE for VIN decode tests:
- * The backend calls NHTSA external API (api.nhtsa.us) for VIN decoding.
- * In the Docker container environment, this causes httpx.ReadTimeout (500 error).
- * Tests that depend on successful VIN decode are skipped until:
- * - NHTSA access is available from the container, OR
- * - A NHTSA mock/stub is implemented in the backend
+ * NOTE: The backend uses vpic.nhtsa.dot.gov (not api.nhtsa.us) for VIN decoding,
+ * which IS accessible from the Docker container environment.
+ * All VIN decode tests are enabled.
  */
 
 import { expect, test } from "@playwright/test";
@@ -35,10 +32,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
   // ============================================
   // GROUP 1: Input Field Updates (model, engine, trim)
-  // SKIP: Requires NHTSA external API access (unavailable in Docker environment)
   // ============================================
 
-  test.describe.skip("Input Fields Update After VIN Decode", () => {
+  test.describe("Input Fields Update After VIN Decode", () => {
     test("should update model field after VIN decode", async ({ page }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("1G1BE5SM42J117838"); // Chevrolet Equinox 2022
@@ -106,10 +102,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
   // ============================================
   // GROUP 2: Select Field Updates
-  // SKIP: Requires NHTSA external API access (unavailable in Docker environment)
   // ============================================
 
-  test.describe.skip("Select Fields Update After VIN Decode", () => {
+  test.describe("Select Fields Update After VIN Decode", () => {
     test("should update make select field after VIN decode", async ({ page }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
@@ -226,10 +221,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
   // ============================================
   // GROUP 3: Select Field - Correct Value Display
-  // SKIP: Requires NHTSA external API access (unavailable in Docker environment)
   // ============================================
 
-  test.describe.skip("Select Fields Display Correct Selected Values", () => {
+  test.describe("Select Fields Display Correct Selected Values", () => {
     test("should display selected make value in trigger without placeholder", async ({ page }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
@@ -461,10 +455,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
   // ============================================
   // GROUP 6: Integration Tests
-  // SKIP: Requires NHTSA external API access (unavailable in Docker environment)
   // ============================================
 
-  test.describe.skip("Integration Tests", () => {
+  test.describe("Integration Tests", () => {
     test("should decode all fields simultaneously and maintain consistency", async ({ page }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
