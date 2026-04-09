@@ -136,8 +136,8 @@ test.describe("Vehicles", () => {
     // Take screenshot BEFORE
     await page.screenshot({ path: "test-results/before-decode.png" });
 
-    // Valid VIN for Chevrolet Equinox 2022
-    const testVin = "1G1BE5SM42J117838";
+    // Valid VIN for Chevrolet Equinox 2017
+    const testVin = "2GNALCEK1H1615946";
 
     // Fill VIN and decode
     const vinInput = page.getByLabel(/vin/i);
@@ -189,7 +189,7 @@ test.describe("Vehicles", () => {
 
     const engineInput = page.getByLabel(/motor|engine/i);
     await expect(engineInput).toBeVisible();
-    await expect(engineInput).toHaveValue(/2\.4L/i);
+    await expect(engineInput).toHaveValue(/LEA|SIDI|Direct Injection/i);
 
     const trimInput = page.getByLabel(/versión|trim/i);
     await expect(trimInput).toBeVisible();

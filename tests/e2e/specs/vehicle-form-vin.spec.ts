@@ -37,7 +37,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   test.describe("Input Fields Update After VIN Decode", () => {
     test("should update model field after VIN decode", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838"); // Chevrolet Equinox 2022
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946"); // Chevrolet Equinox 2017
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -51,7 +51,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should update engine field after VIN decode", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -65,7 +65,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should update trim field after VIN decode", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -80,7 +80,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should preserve input field values across multiple page interactions", async ({ page }) => {
       // Fill VIN and decode
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
       await vehiclesPage.decodeVinButton.click();
       await page.waitForLoadState("load");
       await page.waitForTimeout(1000);
@@ -107,7 +107,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   test.describe("Select Fields Update After VIN Decode", () => {
     test("should update make select field after VIN decode", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -129,7 +129,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should update body_type select field after VIN decode", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -152,7 +152,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should update drivetrain select field after VIN decode", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -174,7 +174,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should update transmission select field after VIN decode", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -197,7 +197,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should update fuel_type select field after VIN decode", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -226,7 +226,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   test.describe("Select Fields Display Correct Selected Values", () => {
     test("should display selected make value in trigger without placeholder", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -245,7 +245,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should display selected body_type value in trigger without placeholder", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -263,7 +263,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should display selected drivetrain value in trigger without placeholder", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -280,7 +280,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should display selected transmission value in trigger without placeholder", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -298,7 +298,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should display selected fuel_type value in trigger without placeholder", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -385,7 +385,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       });
 
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -411,7 +411,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       });
 
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -436,7 +436,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       });
 
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -460,7 +460,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   test.describe("Integration Tests", () => {
     test("should decode all fields simultaneously and maintain consistency", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -490,7 +490,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should allow manual override of auto-populated fields", async ({ page }) => {
       // Fill VIN and decode
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
       await vehiclesPage.decodeVinButton.click();
       await page.waitForLoadState("load");
       await page.waitForTimeout(1000);
@@ -511,7 +511,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should populate select field with proper values that match SelectItem values", async ({ page }) => {
       // Fill VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -533,7 +533,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
     test("should handle rapid VIN decode operations without losing field values", async ({ page }) => {
       // First VIN
-      await vehiclesPage.vinInput.fill("1G1BE5SM42J117838");
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
       await vehiclesPage.decodeVinButton.click();
       await page.waitForLoadState("load");
       await page.waitForTimeout(500);
