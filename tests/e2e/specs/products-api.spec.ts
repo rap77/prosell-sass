@@ -2,11 +2,11 @@
  * API Tests for Categories, Products, Vehicles
  * Tests the backend endpoints directly without UI
  *
- * SKIP NOTES:
- * - API: Categories / Products: These tests require a real authenticated user in the database.
- *   The test setup uses mock cookies (mock_access_token_*) which are not valid for the
- *   FastAPI backend. To run these tests, configure TEST_USER_EMAIL and TEST_USER_PASSWORD
- *   to a real user in the database, and ensure the Next.js auth proxy is not involved.
+ * AUTH NOTES:
+ * - API: Categories / Products: FastAPI reads auth from httpOnly Cookie (access_token=JWT).
+ *   Authorization: Bearer is NOT supported. We login directly to FastAPI and pass the token
+ *   as a Cookie header in subsequent requests.
+ *   Real users: test@example.com / Test!Password123, admin@prosell-demo.com / Admin123!
  *
  * - API: Vehicles / VIN decode: These tests call the NHTSA external API for VIN decoding.
  *   The backend container does not have reliable internet access to NHTSA, causing
@@ -19,9 +19,11 @@ const API_BASE = process.env.API_BASE_URL || "http://localhost:8000";
 
 test.describe("API: Categories", () => {
   let authToken: string;
+  let tenantId: string;
 
   test.beforeAll(async ({ request }) => {
-    // Login to get auth token
+    // Login directly to FastAPI to get a real JWT cookie.
+    // FastAPI validates auth via httpOnly Cookie (not Bearer header).
     const loginResponse = await request.post(`${API_BASE}/api/v1/auth/login`, {
       data: {
         email: process.env.TEST_USER_EMAIL || "test@example.com",
@@ -34,14 +36,27 @@ test.describe("API: Categories", () => {
       const match = cookies.match(/access_token=([^;]+)/);
       authToken = match ? match[1] : "";
     }
+
+    if (!authToken) return;
+
+    // Get tenant_id from existing categories (the list response includes tenant_id per item).
+    const categoriesResponse = await request.get(`${API_BASE}/api/v1/categories`, {
+      headers: { Cookie: `access_token=${authToken}` },
+    });
+    if (categoriesResponse.ok()) {
+      const categoriesData = await categoriesResponse.json();
+      const firstCategory = categoriesData.categories?.[0];
+      if (firstCategory?.tenant_id) {
+        tenantId = firstCategory.tenant_id;
+      }
+    }
   });
 
-  // SKIP: Requires real user in DB - mock auth tokens (mock_access_token_*) are rejected by FastAPI.
-  // To enable: set TEST_USER_EMAIL and TEST_USER_PASSWORD to a seeded real user.
-  test.skip("GET /api/v1/categories - should list categories", async ({ request }) => {
+  test("GET /api/v1/categories - should list categories", async ({ request }) => {
+    // Pass JWT as Cookie header (FastAPI requires Cookie, not Bearer)
     const response = await request.get(`${API_BASE}/api/v1/categories`, {
       headers: {
-        Authorization: `Bearer ${authToken}`,
+        Cookie: `access_token=${authToken}`,
       },
     });
 
@@ -51,17 +66,18 @@ test.describe("API: Categories", () => {
     expect(Array.isArray(data.categories)).toBeTruthy();
   });
 
-  // SKIP: Requires real user in DB - mock auth tokens (mock_access_token_*) are rejected by FastAPI.
-  test.skip("POST /api/v1/categories - should create category", async ({ request }) => {
+  test("POST /api/v1/categories - should create category", async ({ request }) => {
+    // tenant_id is required by CreateCategoryRequest
     const response = await request.post(`${API_BASE}/api/v1/categories`, {
       headers: {
-        Authorization: `Bearer ${authToken}`,
+        Cookie: `access_token=${authToken}`,
         "Content-Type": "application/json",
       },
       data: {
         name: `API Test Category ${Date.now()}`,
         slug: `api-test-${Date.now()}`,
         description: "Created via API e2e test",
+        tenant_id: tenantId,
       },
     });
 
@@ -71,16 +87,16 @@ test.describe("API: Categories", () => {
     expect(data).toHaveProperty("name");
   });
 
-  // SKIP: Requires real user in DB - mock auth tokens (mock_access_token_*) are rejected by FastAPI.
-  test.skip("POST /api/v1/categories - should validate slug format", async ({ request }) => {
+  test("POST /api/v1/categories - should validate slug format", async ({ request }) => {
     const response = await request.post(`${API_BASE}/api/v1/categories`, {
       headers: {
-        Authorization: `Bearer ${authToken}`,
+        Cookie: `access_token=${authToken}`,
         "Content-Type": "application/json",
       },
       data: {
         name: "Test Category",
         slug: "invalid slug with spaces",
+        tenant_id: tenantId,
       },
     });
 
@@ -92,13 +108,17 @@ test.describe("API: Categories", () => {
 test.describe("API: Products", () => {
   let authToken: string;
   let categoryId: string;
+  let tenantId: string;
+  let organizationId: string;
 
   test.beforeAll(async ({ request }) => {
-    // Login and create a category
+    // Login directly to FastAPI to get a real JWT cookie.
+    // Using admin user to avoid rate limit conflicts with the Categories describe block
+    // (which also logs in as test@example.com — same user, same 5/minute bucket).
     const loginResponse = await request.post(`${API_BASE}/api/v1/auth/login`, {
       data: {
-        email: process.env.TEST_USER_EMAIL || "test@example.com",
-        password: process.env.TEST_USER_PASSWORD || "Test!Password123",
+        email: process.env.TEST_ADMIN_EMAIL || "admin@prosell-demo.com",
+        password: process.env.TEST_ADMIN_PASSWORD || "Admin123!",
       },
     });
 
@@ -108,15 +128,33 @@ test.describe("API: Products", () => {
       authToken = match ? match[1] : "";
     }
 
-    // Create a test category
+    if (!authToken) return;
+
+    // Get tenant_id from existing categories list (the response includes tenant_id per item).
+    // tenant_id == organization_id (single org per user in this project).
+    const categoriesResponse = await request.get(`${API_BASE}/api/v1/categories`, {
+      headers: { Cookie: `access_token=${authToken}` },
+    });
+    if (categoriesResponse.ok()) {
+      const categoriesData = await categoriesResponse.json();
+      const firstCategory = categoriesData.categories?.[0];
+      if (firstCategory?.tenant_id) {
+        tenantId = firstCategory.tenant_id;
+        organizationId = tenantId;
+      }
+    }
+
+    // Create a test category (pass JWT as Cookie, not Bearer).
+    // tenant_id is required by CreateCategoryRequest.
     const categoryResponse = await request.post(`${API_BASE}/api/v1/categories`, {
       headers: {
-        Authorization: `Bearer ${authToken}`,
+        Cookie: `access_token=${authToken}`,
         "Content-Type": "application/json",
       },
       data: {
-        name: "Test Category",
+        name: `Test Category ${Date.now()}`,
         slug: `test-${Date.now()}`,
+        tenant_id: tenantId,
       },
     });
 
@@ -126,11 +164,10 @@ test.describe("API: Products", () => {
     }
   });
 
-  // SKIP: Requires real user in DB - mock auth tokens (mock_access_token_*) are rejected by FastAPI.
-  test.skip("GET /api/v1/products - should list products", async ({ request }) => {
+  test("GET /api/v1/products - should list products", async ({ request }) => {
     const response = await request.get(`${API_BASE}/api/v1/products`, {
       headers: {
-        Authorization: `Bearer ${authToken}`,
+        Cookie: `access_token=${authToken}`,
       },
     });
 
@@ -140,11 +177,10 @@ test.describe("API: Products", () => {
     expect(Array.isArray(data.products)).toBeTruthy();
   });
 
-  // SKIP: Requires real user in DB - mock auth tokens (mock_access_token_*) are rejected by FastAPI.
-  test.skip("POST /api/v1/products - should create product", async ({ request }) => {
+  test("POST /api/v1/products - should create product", async ({ request }) => {
     const response = await request.post(`${API_BASE}/api/v1/products`, {
       headers: {
-        Authorization: `Bearer ${authToken}`,
+        Cookie: `access_token=${authToken}`,
         "Content-Type": "application/json",
       },
       data: {
@@ -153,6 +189,8 @@ test.describe("API: Products", () => {
         price_cents: 10000,
         condition: "new",
         category_id: categoryId,
+        tenant_id: tenantId,
+        organization_id: organizationId,
       },
     });
 
@@ -162,16 +200,19 @@ test.describe("API: Products", () => {
     expect(data.status).toBe("draft");
   });
 
-  // SKIP: Requires real user in DB - mock auth tokens (mock_access_token_*) are rejected by FastAPI.
-  test.skip("POST /api/v1/products - should validate title is required", async ({ request }) => {
+  test("POST /api/v1/products - should validate title is required", async ({ request }) => {
+    // Auth required: FastAPI returns 401 before running validation if cookie is missing.
+    // Pass cookie so FastAPI can reach the body validation step (which returns 422).
     const response = await request.post(`${API_BASE}/api/v1/products`, {
       headers: {
-        Authorization: `Bearer ${authToken}`,
+        Cookie: `access_token=${authToken}`,
         "Content-Type": "application/json",
       },
       data: {
         description: "No title provided",
         price_cents: 10000,
+        tenant_id: tenantId,
+        organization_id: organizationId,
       },
     });
 

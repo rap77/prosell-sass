@@ -59,6 +59,7 @@ def rate_limit(limit_string: str) -> Callable[[Any], Any]:
 
 
 # Pre-configured limit strings
-AUTH_LIMIT = "5/minute"  # Auth endpoints: 5 requests per minute
+_auth_rpm = getattr(settings, "rate_limit_auth_requests_per_minute", 5)
+AUTH_LIMIT = f"{_auth_rpm}/minute"  # Auth endpoints (configurable via RATE_LIMIT_AUTH_REQUESTS_PER_MINUTE)
 API_LIMIT = f"{settings.rate_limit_requests_per_minute}/minute"  # Standard API
 PUBLIC_LIMIT = "100/minute"  # Public/read-only endpoints

@@ -24,6 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from starlette.middleware.base import RequestResponseEndpoint
 
@@ -34,6 +35,7 @@ from prosell.infrastructure.api.middleware.exception_handlers import (
     auth_domain_exception_handler,
     generic_exception_handler,
     integrity_error_handler,
+    pydantic_validation_error_handler,
 )
 from prosell.infrastructure.api.routers import (
     auth_router,
@@ -65,6 +67,7 @@ app = FastAPI(
 # =============================================================================
 
 app.add_exception_handler(AuthDomainException, auth_domain_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(ValidationError, pydantic_validation_error_handler)  # type: ignore[arg-type]
 app.add_exception_handler(IntegrityError, integrity_error_handler)  # type: ignore[arg-type]
 app.add_exception_handler(Exception, generic_exception_handler)  # type: ignore[arg-type]
 

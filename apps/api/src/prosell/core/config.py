@@ -312,6 +312,11 @@ class Settings(BaseSettings):
         default=True,
         description="Trust X-Forwarded-For header for IP detection",
     )
+    rate_limit_auth_requests_per_minute: int = Field(
+        default=5,
+        ge=1,
+        description="Auth endpoint rate limit (requests per minute). Raise for dev/test environments.",
+    )
 
     # =============================================================================
     # PUBLISHER ENGINE

@@ -2,6 +2,7 @@
 
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from prosell.domain.exceptions.auth_exceptions import (
@@ -46,6 +47,33 @@ async def auth_domain_exception_handler(
             "error": exc.__class__.__name__,
             "message": exc.message,
             "details": exc.details,
+        },
+    )
+
+
+async def pydantic_validation_error_handler(
+    _request: Request, exc: ValidationError
+) -> JSONResponse:
+    """
+    Handle Pydantic ValidationError raised from domain entities.
+
+    Domain entities validate business rules in their constructors (e.g. slug format).
+    Without this handler, those errors would propagate as 500 instead of 422.
+    """
+    # Convert errors to JSON-serializable format (some ctx values like ValueError aren't serializable)
+    errors = []
+    for error in exc.errors(include_url=False):
+        clean_error = {
+            "type": error.get("type"),
+            "loc": list(error.get("loc", [])),
+            "msg": error.get("msg"),
+        }
+        errors.append(clean_error)
+
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "detail": errors,
         },
     )
 
