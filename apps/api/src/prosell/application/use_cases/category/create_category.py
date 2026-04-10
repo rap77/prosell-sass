@@ -78,6 +78,7 @@ class CreateCategoryUseCase:
             image_url=request.image_url,
             sort_order=request.sort_order,
             is_active=request.is_active,
+            attribute_schema=request.attribute_schema,
         )
 
         # Add field config if provided

@@ -30,6 +30,7 @@ class ListCategoriesUseCase:
         is_active: bool | None = None,
         skip: int = 0,
         limit: int = 100,
+        is_admin: bool = False,
     ) -> CategoryListResponse:
         """
         Execute category listing.
@@ -40,10 +41,15 @@ class ListCategoriesUseCase:
             is_active: Filter by active status
             skip: Pagination offset
             limit: Max records to return
+            is_admin: If False, forces is_active=True (non-admins never see inactive categories)
 
         Returns:
             CategoryListResponse DTO
         """
+        # Role-based filtering: non-admin users can only see active categories
+        if not is_admin:
+            is_active = True
+
         # Get categories
         categories = await self.category_repository.get_all(
             tenant_id=tenant_id,
