@@ -300,8 +300,8 @@ Los 46 requirements v1 se ejecutan en **dos fases inmediatas**:
 
 **Coverage (v1.1):**
 - Milestone v1.1 requirements: 25 total
-- Mapped to phases: 0/25 (pending roadmap creation)
-- Unmapped: 25 (roadmapper will fill this in)
+- Mapped to phases: 25/25 ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-15*

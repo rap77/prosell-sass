@@ -6,7 +6,9 @@ ProSell SaaS automates the complete vehicle sales cycle for dealerships: publish
 
 ## Milestones
 
-- 🚧 **Phase A — Core MVP** - Phases 1-5 (in progress)
+- ✅ **Milestone v1.0** - Phases 1, 2, 8, 9, 10 (complete)
+- 🚧 **Milestone v1.1 — Generic Catalog** - Phases 11-14 (in progress)
+- 📋 **Phase A — Core MVP** - Phases 3-5 (planned — depends on v1.1)
 - 📋 **Phase B — Visibility** - Phases 6-7 (planned)
 
 ## Phases
@@ -132,9 +134,63 @@ Plans:
   4. System generates AI-optimized titles and descriptions for listings automatically before publishing to Facebook
 **Plans**: TBD
 
+### Phase 11: DB Migration — C3 Schema
+**Goal**: Migrate existing DB to C3 schema without data loss — `categories(attribute_schema JSONB)`, `products(attributes JSONB)`, `vehicles(product_id FK → products ON DELETE CASCADE)`
+**Depends on**: Phases 1, 2, 8 (existing schema, clean DB state)
+**Requirements**: CAT-01, CAT-02, CAT-03
+**Success Criteria** (what must be TRUE):
+  1. Alembic migration runs `alembic upgrade head` with zero errors on existing DB
+  2. All existing categories rows are preserved after migration
+  3. All existing products rows are preserved after migration with `attributes={}` default
+  4. `vehicles` table has `product_id FK → products(id) ON DELETE CASCADE` column
+  5. `categories` table has `attribute_schema JSONB NOT NULL DEFAULT '{}'` column
+**Plans**: TBD
+
+### Phase 12: Backend API — Categories, Products, Vehicles
+**Goal**: Full CRUD endpoints for categories, products, and vehicles using Clean Architecture (domain → application → infrastructure)
+**Depends on**: Phase 11 (C3 schema must exist)
+**Requirements**: CTGY-01, CTGY-02, CTGY-03, CTGY-04, PROD-01, PROD-02, PROD-03, PROD-04, PROD-05, VEH-01, VEH-02, VEH-03, VEH-04, API-01, API-02, API-03, API-04, API-05
+**Success Criteria** (what must be TRUE):
+  1. `POST /api/v1/categories` creates a category with name, slug, attribute_schema; returns 201 with category data
+  2. `GET /api/v1/categories` returns paginated list; admin sees all, user sees org-scoped
+  3. `POST /api/v1/products` creates a product linked to a category; `attributes` JSONB stored correctly
+  4. `GET /api/v1/products?category_id=X&status=Y&organization_id=Z` returns filtered results
+  5. `POST /api/v1/vehicles` creates vehicle linked to product_id; VIN decode auto-populates typed fields
+  6. `DELETE /api/v1/products/{id}` cascades to delete vehicle record (ON DELETE CASCADE verified)
+  7. All endpoints covered by pytest unit + integration tests (≥ 80% coverage on new code)
+**Plans**: TBD
+
+### Phase 13: Frontend — Vehicle Form, DataGrid, CSV Upload
+**Goal**: Update all frontend components to use the new products+vehicles schema — VehicleForm, DataGrid, bulk CSV upload
+**Depends on**: Phase 12 (API endpoints must be live)
+**Requirements**: FE-01, FE-02, FE-03, FE-04
+**Success Criteria** (what must be TRUE):
+  1. VehicleForm submits `POST /api/v1/products` + `POST /api/v1/vehicles` (two-step creation) instead of old `/vehicles` endpoint
+  2. Category dropdown in VehicleForm loads from `GET /api/v1/categories` with no hardcoded options
+  3. DataGrid renders vehicles from `GET /api/v1/vehicles` join query (includes product name, price, status)
+  4. Bulk CSV upload maps CSV columns to new products+vehicles schema and creates both records per row
+  5. VIN decode flow still works end-to-end in VehicleForm (fields populated from NHTSA)
+  6. All existing Vitest component tests pass; new tests added for changed components
+**Plans**: TBD
+
+### Phase 14: E2E Verification — Generic Catalog
+**Goal**: Verify end-to-end user flows work correctly with the new C3 schema — no regressions, full coverage of new flows
+**Depends on**: Phase 13 (frontend complete)
+**Requirements**: All milestone v1.1 requirements (CAT, CTGY, PROD, VEH, FE, API)
+**Success Criteria** (what must be TRUE):
+  1. E2E test: Admin creates category → creates product under category → creates vehicle linked to product — full flow passes
+  2. E2E test: User views DataGrid and sees vehicles from products+vehicles join (no broken UI)
+  3. E2E test: VIN decode in VehicleForm populates all typed vehicle fields correctly
+  4. E2E test: Bulk CSV upload creates products+vehicles records and they appear in DataGrid
+  5. All 207 previously passing E2E tests still pass (no regressions)
+  6. New E2E tests added for: category CRUD, product CRUD, vehicle CRUD via new form
+**Plans**: TBD
+
+---
+
 ## Progress
 
-**Execution Order:** Phase A: 1 → 2 → 3 → 4 → 5 | Phase B: 6 → 7
+**Execution Order:** Phase A: 1 → 2 → 3 → 4 → 5 | Phase B: 6 → 7 | Milestone v1.1: 11 → 12 → 13 → 14
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -147,6 +203,10 @@ Plans:
 | 7. Visibility | 0/? | Not started | - |
 | 8. Layout Shell + Vehicle Management | 5/5 | Complete | 2026-03-27 |
 | 9. Anti-patterns Fix | 1/1 (7 tasks) | Complete | 2026-03-29 |
+| 11. DB Migration — C3 Schema | 0/? | Not started | - |
+| 12. Backend API — Categories/Products/Vehicles | 0/? | Not started | - |
+| 13. Frontend — Vehicle Form, DataGrid, CSV | 0/? | Not started | - |
+| 14. E2E Verification — Generic Catalog | 0/? | Not started | - |
 
 ### Phase 8: Layout Shell + Vehicle Management
 
@@ -188,4 +248,4 @@ Plans:
 - Plans: Ready for execution with locked decisions from CONTEXT.md
 
 ---
-*Last updated: 2026-03-31 — Roadmap updated: Phases 1, 2, 8, 9 complete (50% progress)*
+*Last updated: 2026-04-09 — Milestone v1.1 Generic Catalog phases 11-14 added*

@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Generic Catalog — Categories & Products
 status: in_progress
-stopped_at: Milestone v1.1 started — Generic Catalog — defining requirements
+stopped_at: Phase 11 — DB Migration C3 Schema (not started — ready to plan)
 last_updated: "2026-04-09T00:00:00.000Z"
 last_activity: 2026-04-09 — Milestone v1.1 initialized. Architecture decision locked (C3 model). Requirements defined (22 requirements across 6 categories). Roadmap phases 11-14 being created.
 progress:
