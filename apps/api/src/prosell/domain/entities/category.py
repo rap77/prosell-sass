@@ -247,6 +247,50 @@ class Category(DomainModel):
         self.sort_order = sort_order
         self.updated_at = datetime.now(UTC)
 
+    def validate_attributes(self, attributes: dict[str, Any]) -> None:
+        """
+        Validate product attributes against this category's attribute_schema.
+
+        Pure domain method — no I/O, no external dependencies.
+
+        Args:
+            attributes: Product attribute dict to validate
+
+        Raises:
+            ValueError: If required field missing, type mismatch, or options constraint violated
+
+        Note:
+            If attribute_schema is empty, all attributes are valid (backward compatible).
+        """
+        if not self.attribute_schema:
+            return  # Empty schema = no constraints
+
+        for field_name, field_def in self.attribute_schema.items():
+            required = field_def.get("required", False)
+            field_type = field_def.get("type", "string")
+            value = attributes.get(field_name)
+
+            if required and value is None:
+                raise ValueError(f"Required attribute '{field_name}' is missing")
+
+            if value is not None:
+                type_map: dict[str, type | tuple[type, ...]] = {
+                    "string": str,
+                    "number": (int, float),
+                    "boolean": bool,
+                }
+                expected = type_map.get(field_type)
+                if expected and not isinstance(value, expected):
+                    raise ValueError(
+                        f"Attribute '{field_name}' must be of type {field_type}, "
+                        f"got {type(value).__name__}"
+                    )
+                options = field_def.get("options")
+                if options and value not in options:
+                    raise ValueError(
+                        f"Attribute '{field_name}' must be one of {options}, got '{value}'"
+                    )
+
     @property
     def depth(self) -> int:
         """Get category depth in hierarchy."""
