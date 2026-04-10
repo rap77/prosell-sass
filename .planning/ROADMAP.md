@@ -207,7 +207,7 @@ Plans:
 | 7. Visibility | 0/? | Not started | - |
 | 8. Layout Shell + Vehicle Management | 5/5 | Complete | 2026-03-27 |
 | 9. Anti-patterns Fix | 1/1 (7 tasks) | Complete | 2026-03-29 |
-| 11. DB Migration — C3 Schema | 0/? | Not started | - |
+| 11. DB Migration — C3 Schema | 0/? | Complete    | 2026-04-10 |
 | 12. Backend API — Categories/Products/Vehicles | 0/? | Not started | - |
 | 13. Frontend — Vehicle Form, DataGrid, CSV | 0/? | Not started | - |
 | 14. E2E Verification — Generic Catalog | 0/? | Not started | - |
