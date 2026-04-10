@@ -144,7 +144,11 @@ Plans:
   3. All existing products rows are preserved after migration with `attributes={}` default
   4. `vehicles` table has `product_id FK → products(id) ON DELETE CASCADE` column
   5. `categories` table has `attribute_schema JSONB NOT NULL DEFAULT '{}'` column
-**Plans**: TBD
+**Plans**: 2 plans (Wave 1: domain models | Wave 2: migration + tests)
+
+Plans:
+- [ ] 11-00-domain-models-PLAN.md — Category domain entity + CategoryModel + ProductModel JSONB types
+- [ ] 11-01-migration-tests-PLAN.md — Alembic migration (attribute_schema + JSONB upgrades) + integration tests
 
 ### Phase 12: Backend API — Categories, Products, Vehicles
 **Goal**: Full CRUD endpoints for categories, products, and vehicles using Clean Architecture (domain → application → infrastructure)

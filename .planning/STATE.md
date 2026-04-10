@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Generic Catalog — Categories & Products
 status: in_progress
-stopped_at: Phase 11 — DB Migration C3 Schema (not started — ready to plan)
-last_updated: "2026-04-09T00:00:00.000Z"
-last_activity: 2026-04-09 — Milestone v1.1 initialized. Architecture decision locked (C3 model). Requirements defined (22 requirements across 6 categories). Roadmap phases 11-14 being created.
+stopped_at: Phase 11 — Plan 11-00 (planned, ready to execute)
+last_updated: "2026-04-10T00:00:00.000Z"
+last_activity: 2026-04-10 — Phase 11 planned. 2 plans created (11-00 domain models, 11-01 migration+tests). Brain consultation complete (#5 Backend, #6 QA, #7 Systems). Key finding: C3 schema already 90% implemented — migration is surgical (add 1 column, upgrade 2 types).
 progress:
   total_phases: 14
   completed_phases: 5
-  total_plans: 29
+  total_plans: 31
   completed_plans: 29
   percent: 36
 ---
