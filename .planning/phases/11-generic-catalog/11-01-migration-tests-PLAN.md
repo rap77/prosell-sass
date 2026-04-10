@@ -23,13 +23,14 @@ must_haves:
     - "Integration test verifies existing rows preserved (CAT-02)"
     - "Integration test verifies vehicle cascade delete on product delete"
     - "Integration test verifies JSONB @> operator works on attribute_schema"
+    - "Integration test verifies no duplicate JSON keys in products.attributes before migration (pre-flight)"
   artifacts:
     - path: "apps/api/alembic/versions/20260410_0000-c3_schema_jsonb_upgrade.py"
       provides: "Alembic migration: add attribute_schema, upgrade JSON→JSONB"
       exports: ["upgrade", "downgrade"]
     - path: "apps/api/tests/integration/test_migration_c3.py"
       provides: "Migration verification tests (schema + data + cascade)"
-      contains: "test_attribute_schema_column_exists, test_products_attributes_is_jsonb, test_existing_rows_preserved, test_vehicle_cascade_delete, test_jsonb_containment_operator"
+      contains: "test_preflight_no_duplicate_json_keys_in_products_attributes, test_attribute_schema_column_exists, test_products_attributes_is_jsonb, test_existing_rows_preserved, test_vehicle_cascade_delete, test_jsonb_containment_operator"
   key_links:
     - from: "apps/api/alembic/versions/20260410_0000-c3_schema_jsonb_upgrade.py"
       to: "apps/api/alembic/versions/20260407_0235-abc123def456_final_missing_tables.py"
@@ -133,7 +134,8 @@ MIGRATION NOTES:
 - This migration upgrades JSON columns to JSONB for JSONB operator support (@>, ?, #>>)
 - JSON → JSONB cast is lossless for all valid JSON data
 - Exception: JSONB silently deduplicates JSON keys with same name (JSON allows duplicates)
-  Pre-flight: verify no duplicate keys in products.attributes before running
+  Pre-flight: run pytest tests/integration/test_migration_c3.py::test_preflight_no_duplicate_json_keys_in_products_attributes
+  This test verifies no duplicate JSON keys exist before migration (JSONB deduplicates them silently)
 - GIN indexes use plain CREATE INDEX (not CONCURRENTLY) — runs inside transaction
 """
 from typing import Sequence, Union
@@ -231,6 +233,7 @@ The new migration should appear as the HEAD.
     - Test 5: vehicle cascade delete — DELETE products row deletes vehicle row (SC-4)
     - Test 6: JSONB @> containment operator works on attribute_schema (proves JSONB not JSON)
     - Test 7: attribute_schema defaults to {} (empty object) for new rows (SC-5)
+    - Pre-flight test: verifies no products.attributes rows contain duplicate JSON keys before migration (JSONB silently deduplicates them — last value wins — causing silent data corruption)
   </behavior>
   <implementation>
 First check `apps/api/tests/conftest.py` for existing async engine/session fixtures. Use them if available. If not, create minimal fixtures inline.
@@ -466,6 +469,37 @@ async def test_jsonb_containment_operator_on_products_attributes(db_session):
     """))
     count = result.scalar()
     assert count >= 0  # no exception = JSONB operators work on products.attributes
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Pre-flight Test (Brain #7 condition — must pass BEFORE C3 migration)
+# ─────────────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_preflight_no_duplicate_json_keys_in_products_attributes(db_session):
+    """PREFLIGHT: Verify no products.attributes rows contain duplicate JSON keys.
+
+    JSONB deduplicates duplicate keys (last value wins). Running the JSON→JSONB
+    migration on rows with duplicate keys causes silent data corruption.
+
+    This test must pass BEFORE running the c3_schema_jsonb_upgrade migration.
+    If this fails, manually inspect and fix the offending rows first.
+    """
+    # PostgreSQL can detect duplicate keys using json_object_keys with DISTINCT comparison
+    result = await db_session.execute(text("""
+        SELECT id, attributes::text
+        FROM products
+        WHERE (
+            SELECT COUNT(*) FROM json_object_keys(attributes)
+        ) != (
+            SELECT COUNT(DISTINCT key) FROM json_object_keys(attributes) AS key
+        )
+    """))
+    duplicates = result.fetchall()
+    assert len(duplicates) == 0, (
+        f"Found {len(duplicates)} product(s) with duplicate JSON keys in attributes. "
+        f"Fix these before running the C3 migration. Row IDs: {[str(r.id) for r in duplicates]}"
+    )
 ```
 
 **IMPORTANT**: Before writing this file, check if `apps/api/tests/conftest.py` has a `db_session` async fixture. If it does, use that fixture name. If it uses a different name (e.g., `async_session`, `session`), adapt accordingly. If no async fixture exists, add one:
@@ -501,9 +535,10 @@ async def db_session():
 - [ ] `upgrade()` contains ALTER TABLE for categories.field_config JSONB cast
 - [ ] GIN indexes use plain `CREATE INDEX` (not CONCURRENTLY)
 - [ ] `downgrade()` reverses all changes in correct order
-- [ ] `apps/api/tests/integration/test_migration_c3.py` exists with all 7 test functions
+- [ ] `apps/api/tests/integration/test_migration_c3.py` exists with all 8 test functions (7 post-migration + 1 pre-flight)
 - [ ] Test file uses the existing conftest fixture pattern (not a new incompatible fixture)
-- [ ] All test function names match: test_attribute_schema_column_exists, test_products_attributes_is_jsonb, test_categories_field_config_is_jsonb, test_vehicles_product_id_fk_exists, test_existing_categories_rows_preserved, test_attribute_schema_default_is_empty_object, test_product_delete_cascades_to_vehicle, test_jsonb_containment_operator_on_attribute_schema
+- [ ] Pre-flight test `test_preflight_no_duplicate_json_keys_in_products_attributes` present and runs BEFORE migration
+- [ ] All test function names match: test_preflight_no_duplicate_json_keys_in_products_attributes, test_attribute_schema_column_exists, test_products_attributes_is_jsonb, test_categories_field_config_is_jsonb, test_vehicles_product_id_fk_exists, test_existing_categories_rows_preserved, test_attribute_schema_default_is_empty_object, test_product_delete_cascades_to_vehicle, test_jsonb_containment_operator_on_attribute_schema
 - [ ] `cd apps/api && uv run alembic history | head -3` shows c3schema001 as HEAD
 - [ ] `cd apps/api && uv run ruff check apps/api/alembic/versions/20260410_0000-c3_schema_jsonb_upgrade.py` → 0 errors
 </verification>
