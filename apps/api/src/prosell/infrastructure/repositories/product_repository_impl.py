@@ -246,7 +246,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         return self._to_entity(model)
 
     async def delete(self, product_id: UUID, tenant_id: UUID) -> bool:
-        """Delete a product (soft delete via archive)."""
+        """Hard-delete a product. ON DELETE CASCADE handles vehicle deletion automatically."""
         stmt = select(ProductModel).where(
             ProductModel.id == product_id,
             ProductModel.tenant_id == tenant_id,

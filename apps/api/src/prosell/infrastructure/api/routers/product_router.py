@@ -13,6 +13,7 @@ from prosell.application.dto.product import (
 )
 from prosell.application.use_cases.product.approve_product import ApproveProductUseCase
 from prosell.application.use_cases.product.create_product import CreateProductUseCase
+from prosell.application.use_cases.product.delete_product import DeleteProductUseCase
 from prosell.application.use_cases.product.list_products import ListProductsUseCase
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
@@ -330,6 +331,31 @@ async def mark_product_sold(
     product = await repo.update(product)
 
     return ProductResponse.from_entity(product)
+
+
+@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_product(
+    product_id: UUID,
+    current_user=Depends(get_current_auth_user_from_cookie),
+    db: AsyncSession = Depends(get_async_session),
+) -> None:
+    """
+    Hard-delete a product and cascade to vehicle.
+
+    ON DELETE CASCADE on vehicles.product_id ensures vehicle record is
+    automatically deleted. This is a permanent, irreversible operation.
+
+    Requires: product must belong to user's tenant.
+    """
+    tenant_id = current_user.tenant_id  # type: ignore
+
+    repo = SqlAlchemyProductRepository(db)
+    use_case = DeleteProductUseCase(repo)
+
+    try:
+        await use_case.execute(product_id, tenant_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @router.post("/{product_id}/archive", response_model=ProductResponse)
