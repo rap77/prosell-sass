@@ -208,5 +208,101 @@ Los 46 requirements v1 se ejecutan en **dos fases inmediatas**:
 - Unmapped: 0 ✓
 
 ---
+
+## Milestone v1.1 — Generic Catalog: Categories & Products
+
+**Defined:** 2026-04-09
+**Architecture Decision:** C3 model — `categories` + `products` + `vehicles(FK → products)`
+**Milestone Goal:** Migrate from monolithic vehicles table to generic categories+products+vehicles(FK) architecture
+
+### CAT — DB Migration
+
+- [ ] **CAT-01**: Admin can migrate existing DB to C3 schema (categories with attribute_schema JSONB, products with attributes JSONB, vehicles as FK to products with ON DELETE CASCADE)
+- [ ] **CAT-02**: Existing data is preserved during migration (categories, products)
+- [ ] **CAT-03**: Alembic migration runs clean with no conflicts
+
+### CTGY — Categories
+
+- [ ] **CTGY-01**: Admin can create a category with name, slug, and attribute_schema JSONB
+- [ ] **CTGY-02**: Admin can list all categories with pagination
+- [ ] **CTGY-03**: Admin can update a category's name and attribute_schema
+- [ ] **CTGY-04**: Admin can delete a category (soft delete, prevents deletion if products exist)
+
+### PROD — Products
+
+- [ ] **PROD-01**: User can create a product linked to a category with required fields (name, price, status, organization_id, tenant_id)
+- [ ] **PROD-02**: Products store category-specific attributes in JSONB `attributes` field
+- [ ] **PROD-03**: User can list products with filtering by category, status, organization
+- [ ] **PROD-04**: User can update a product's fields including attributes
+- [ ] **PROD-05**: User can delete a product (cascade deletes vehicle record if exists)
+
+### VEH — Vehicles
+
+- [ ] **VEH-01**: User can create a vehicle record linked to a product (vin, make, model, year, trim, body_type, fuel_type, drivetrain, transmission, engine, mileage_km)
+- [ ] **VEH-02**: VIN decode populates vehicle fields automatically from NHTSA API
+- [ ] **VEH-03**: User can list vehicles with filtering
+- [ ] **VEH-04**: Deleting a product cascades to delete its vehicle record
+
+### FE — Frontend
+
+- [ ] **FE-01**: Vehicle form uses the new products+vehicles schema (no more standalone vehicles table)
+- [ ] **FE-02**: Categories are loaded from API and displayed in vehicle form
+- [ ] **FE-03**: Bulk CSV upload works with the new products+vehicles schema
+- [ ] **FE-04**: DataGrid displays vehicles from the new products+vehicles join query
+
+### API — API Endpoints
+
+- [ ] **API-01**: GET /api/v1/categories returns paginated categories list
+- [ ] **API-02**: POST /api/v1/products creates a product
+- [ ] **API-03**: GET /api/v1/products returns filtered products list (supports category_id, status, organization_id filters)
+- [ ] **API-04**: POST /api/v1/vehicles creates vehicle record linked to existing product
+- [ ] **API-05**: GET /api/v1/vehicles returns vehicles with product join data
+
+### Out of Scope (Milestone v1.1)
+
+| Feature | Reason |
+|---------|--------|
+| Facebook Marketplace publishing (Phase 3) | Separate phase, depends on stable catalog |
+| Scraping (Phase 3) | Depends on stable catalog schema |
+| Leads & Appointments (Phase 4) | Depends on Phase 3 |
+| Dashboards with market intelligence (Phase 5-6) | Depends on real data |
+| Multi-niche beyond vehicles | Future milestone — same pattern, different category |
+
+### Traceability (Milestone v1.1)
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| CAT-01 | Phase 11 — DB Migration | Pending |
+| CAT-02 | Phase 11 — DB Migration | Pending |
+| CAT-03 | Phase 11 — DB Migration | Pending |
+| CTGY-01 | Phase 12 — Backend API | Pending |
+| CTGY-02 | Phase 12 — Backend API | Pending |
+| CTGY-03 | Phase 12 — Backend API | Pending |
+| CTGY-04 | Phase 12 — Backend API | Pending |
+| PROD-01 | Phase 12 — Backend API | Pending |
+| PROD-02 | Phase 12 — Backend API | Pending |
+| PROD-03 | Phase 12 — Backend API | Pending |
+| PROD-04 | Phase 12 — Backend API | Pending |
+| PROD-05 | Phase 12 — Backend API | Pending |
+| VEH-01 | Phase 12 — Backend API | Pending |
+| VEH-02 | Phase 12 — Backend API | Pending |
+| VEH-03 | Phase 12 — Backend API | Pending |
+| VEH-04 | Phase 12 — Backend API | Pending |
+| FE-01 | Phase 13 — Frontend | Pending |
+| FE-02 | Phase 13 — Frontend | Pending |
+| FE-03 | Phase 13 — Frontend | Pending |
+| FE-04 | Phase 13 — Frontend | Pending |
+| API-01 | Phase 12 — Backend API | Pending |
+| API-02 | Phase 12 — Backend API | Pending |
+| API-03 | Phase 12 — Backend API | Pending |
+| API-04 | Phase 12 — Backend API | Pending |
+| API-05 | Phase 12 — Backend API | Pending |
+
+**Coverage (v1.1):**
+- Milestone v1.1 requirements: 25 total
+- Mapped to phases: 0/25 (pending roadmap creation)
+- Unmapped: 25 (roadmapper will fill this in)
+
+---
 *Requirements defined: 2026-03-15*
-*Last updated: 2026-03-15 — traceability populated after roadmap creation*
+*Last updated: 2026-04-09 — Milestone v1.1 requirements added (25 requirements, 6 categories)*
