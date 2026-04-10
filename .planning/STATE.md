@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
+milestone: v1.1
+milestone_name: Generic Catalog — Categories & Products
 status: in_progress
-stopped_at: E2E verification COMPLETE - All critical fixes verified, database functional, ready for next phase
-last_updated: "2026-04-07T03:00:00.000Z"
-last_activity: 2026-04-06 — E2E verification successful: 104 tests passed, database fully functional (16 tables), VIN Select bug fixed, image upload endpoints verified, MPG fields correctly optional. All core functionality operational.
+stopped_at: Milestone v1.1 started — Generic Catalog — defining requirements
+last_updated: "2026-04-09T00:00:00.000Z"
+last_activity: 2026-04-09 — Milestone v1.1 initialized. Architecture decision locked (C3 model). Requirements defined (22 requirements across 6 categories). Roadmap phases 11-14 being created.
 progress:
-  total_phases: 10
+  total_phases: 14
   completed_phases: 5
   total_plans: 29
   completed_plans: 29
-  percent: 100
+  percent: 36
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-Phase: 10 of 10 (Contract Testing Skill) - COMPLETE ✅
-Plan: All plans executed for completed phases
-Status: Database reconstruction + E2E verification COMPLETE - All critical fixes verified (VIN Select, image upload, MPG optional). Ready for next development phase.
-Last activity: 2026-04-06 — E2E verification: 104 tests passed, database functional (16 tables), VIN Select bug fixed, image upload endpoints working, MPG fields correctly optional. All core infrastructure operational.
+Phase: Not started (defining requirements for milestone v1.1)
+Plan: N/A — milestone just initialized
+Status: Defining requirements for milestone v1.1 — Generic Catalog. Architecture decision locked (C3 model). Requirements defined (22 requirements, 6 categories). Roadmap phases 11-14 pending creation.
+Last activity: 2026-04-09 — Milestone v1.1 started. C3 architecture locked. Requirements scoped.
 
-Progress: [██████████] 100% (Phases 1, 2, 8, 9, 10 complete; Ready for Phase 3)
+Progress: [████████░░] 36% (Phases 1, 2, 8, 9, 10 complete; Phases 11-14 not yet started)
 
 ## Performance Metrics
 
@@ -128,27 +128,17 @@ None. Last todo (catalog-enhancements.md) marked obsolete — all requested feat
 
 ## Session Continuity
 
-Last session: 2026-04-07T03:00:00.000Z
-Stopped at: Database reconstruction + E2E verification COMPLETE — All critical fixes verified (VIN Select, image upload, MPG optional). Working tree clean, commits documented. Ready for next development phase.
-Resume file: Phase 3 (GraphAPI) or Phase 4 (Scraping) ready to plan/execute
+Last session: 2026-04-09T00:00:00.000Z
+Stopped at: Milestone v1.1 initialized — Requirements defined, roadmap phases 11-14 created. Ready to start Phase 11 (DB Migration).
+Resume file: Phase 11 (DB Migration) ready to plan/execute via `/gsd:discuss-phase 11` or `/gsd:plan-phase 11`
 
 ## Next Steps Options
 
-**Option A: Start Phase 3 (GraphAPI Integration)**
-- Implement Facebook GraphAPI publishing
-- Requires FB App Review approval
-- Playwright fallback available
+**Option A: Start Phase 11 (DB Migration)**
+- Alembic migration to C3 schema
+- Preserve existing categories and products data
+- Clean migration with no conflicts
 
-**Option B: Start Phase 4 (Scraping Framework)**
-- Playwright scraper for Facebook Marketplace
-- Playwright scraper for CarGurus
-- Listing normalization and storage
-
-**Option C: Start Phase 5 (Dashboards)**
-- Frontend UI for vehicle catalog
-- Dealer assignment interface
-- Analytics dashboard
-
-**Option D: Production Deployment**
-- Phases 1, 2, 8, 9 are production-ready
-- Deploy to staging/production environment
+**Option B: Discuss Phase 11 first**
+- Run `/gsd:discuss-phase 11` to review scope and assumptions
+- Confirm migration strategy before execution

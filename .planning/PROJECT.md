@@ -8,6 +8,34 @@ ProSell SaaS es una plataforma de servicios de ventas y gestión de clientes par
 
 El vendedor de ProSell puede publicar cualquier vehículo en Facebook Marketplace desde la app, capturar el lead interesado, y confirmar la cita con el dealer — todo sin salir del panel interno.
 
+## Current Milestone
+
+**Version**: v1.1
+**Name**: Generic Catalog — Categories & Products
+**Goal**: Migrate from monolithic vehicles table to generic categories+products+vehicles(FK) architecture, enabling multi-niche catalog management with type-safe vehicle fields, efficient queries, and clean extensibility.
+
+**Target Features**:
+- DB migration to C3 schema: `categories(attribute_schema JSONB)`, `products(attributes JSONB)`, `vehicles(product_id FK → products ON DELETE CASCADE)`
+- Backend API for categories CRUD (with attribute_schema)
+- Backend API for products CRUD (linked to categories, with attributes JSONB)
+- Backend API for vehicles CRUD (linked to products via FK, typed fields for VIN/make/model/year/etc.)
+- Frontend VehicleForm updated to new products+vehicles schema
+- Bulk CSV upload updated to new schema
+- DataGrid updated to join products+vehicles
+- E2E tests updated and passing for new schema
+
+**Architecture Decision (C3 model)**:
+```sql
+categories(id, name, slug, attribute_schema JSONB, tenant_id)
+products(id, name, price, status, category_id, organization_id, tenant_id, attributes JSONB)
+vehicles(id, product_id FK → products ON DELETE CASCADE,
+         vin, make, model, year, trim, body_type,
+         fuel_type, drivetrain, transmission, engine, mileage_km)
+```
+*Rationale*: Type safety on vehicle fields, efficient queries without JSON parsing, scalable to new niches without touching existing tables.
+
+---
+
 ## Requirements
 
 ### Validated
@@ -29,7 +57,25 @@ El vendedor de ProSell puede publicar cualquier vehículo en Facebook Marketplac
 - ✓ Task queue infrastructure (Taskiq + Redis) — Sprint 7 Phase 1
 - ✓ i18n infrastructure (es/en) — Sprint 7 Phase 1
 
-### Active
+### Active (Milestone v1.1 — Generic Catalog)
+
+<!-- Migración a arquitectura C3: categories+products+vehicles(FK) -->
+
+- [ ] DB migration to C3 schema (categories with attribute_schema JSONB, products with attributes JSONB, vehicles as FK to products)
+- [ ] Existing data preserved during migration (categories, products)
+- [ ] Alembic migration runs clean with no conflicts
+- [ ] Admin can create/list/update/delete categories with attribute_schema JSONB
+- [ ] User can create/list/update/delete products linked to categories
+- [ ] Products store category-specific attributes in JSONB field
+- [ ] User can create/list vehicle records linked to products (typed fields: VIN, make, model, year, trim, body_type, fuel_type, drivetrain, transmission, engine, mileage_km)
+- [ ] VIN decode populates vehicle fields automatically from NHTSA API
+- [ ] Deleting a product cascades to delete its vehicle record
+- [ ] Frontend VehicleForm uses new products+vehicles schema
+- [ ] Bulk CSV upload works with new products+vehicles schema
+- [ ] DataGrid displays vehicles from new products+vehicles join query
+- [ ] API endpoints: GET/POST /api/v1/categories, GET/POST /api/v1/products, GET/POST /api/v1/vehicles
+
+### Backlog (Post-Milestone v1.1)
 
 <!-- MVP lanzable: cerrar el ciclo completo publicación → lead → cita -->
 
@@ -90,4 +136,4 @@ El vendedor de ProSell puede publicar cualquier vehículo en Facebook Marketplac
 | tenant_id en OAuth users | Asignar organization cuando se aprueba OAuth flow; pendiente Sprint 9 (requiere Organizations completo) | ⚠️ Revisit |
 
 ---
-*Last updated: 2026-03-15 after project initialization*
+*Last updated: 2026-04-09 — Milestone v1.1 Generic Catalog started*
