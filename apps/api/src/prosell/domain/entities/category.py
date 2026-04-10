@@ -1,6 +1,7 @@
 """Category entity - Pure domain logic for category hierarchy."""
 
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import Field, field_validator
@@ -37,12 +38,12 @@ class Category(DomainModel):
 
     # Metadata (for dynamic fields config)
     # Format: {"fields": [{"field_name": "year", "field_type": "NUMBER", ...}]}
-    field_config: list[dict[str, object]] = Field(default_factory=list)
+    field_config: list[dict[str, Any]] = Field(default_factory=lambda: [])
 
     # C3 schema: API validation schema for product attributes in this category
     # Format: {"field_name": {"type": "string|number|boolean", "required": bool, "options": [...]}}
     # Different from field_config (UI renderer) — this drives data validation
-    attribute_schema: dict[str, object] = Field(default_factory=dict)
+    attribute_schema: dict[str, Any] = Field(default_factory=dict)
 
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -67,7 +68,7 @@ class Category(DomainModel):
         tenant_id: UUID,
         parent_id: UUID | None = None,
         level: int = 0,
-        **kwargs,
+        **kwargs: Any,
     ) -> "Category":
         """
         Factory method for new category creation.
