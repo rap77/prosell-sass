@@ -3,7 +3,8 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from prosell.infrastructure.database.base import Base
@@ -41,10 +42,19 @@ class CategoryModel(Base):
     sort_order: Mapped[int] = mapped_column(default=0, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
 
-    # Dynamic fields configuration
-    field_config: Mapped[dict[str, object]] = mapped_column(
-        JSON,
+    # Dynamic fields configuration (UI field renderer — array of field descriptors)
+    field_config: Mapped[list[dict[str, object]]] = mapped_column(
+        JSONB,
         default=list,
+        nullable=False,
+    )
+
+    # C3 schema: API validation schema for product attributes in this category
+    # Format: {"field_name": {"type": "string|number|boolean", "required": bool, "options": [...]}}
+    # Different from field_config (UI renderer) — this drives data validation
+    attribute_schema: Mapped[dict[str, object]] = mapped_column(
+        JSONB,
+        server_default="{}",
         nullable=False,
     )
 

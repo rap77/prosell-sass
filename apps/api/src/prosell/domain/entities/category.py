@@ -39,6 +39,11 @@ class Category(DomainModel):
     # Format: {"fields": [{"field_name": "year", "field_type": "NUMBER", ...}]}
     field_config: list[dict[str, object]] = Field(default_factory=list)
 
+    # C3 schema: API validation schema for product attributes in this category
+    # Format: {"field_name": {"type": "string|number|boolean", "required": bool, "options": [...]}}
+    # Different from field_config (UI renderer) — this drives data validation
+    attribute_schema: dict[str, object] = Field(default_factory=dict)
+
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

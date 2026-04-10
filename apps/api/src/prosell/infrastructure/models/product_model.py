@@ -3,7 +3,8 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from prosell.infrastructure.database.base import Base
@@ -45,9 +46,9 @@ class ProductModel(Base):
     condition: Mapped[str] = mapped_column(String(50), default="used", nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(50), default="draft", nullable=False, index=True)
 
-    # Flexible attributes (category-specific)
+    # Flexible attributes (category-specific) — JSONB for @> operator support
     attributes: Mapped[dict[str, object]] = mapped_column(
-        JSON,
+        JSONB,
         default=dict,
         nullable=False,
     )
