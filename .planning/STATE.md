@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: Defining requirements for milestone v1.1 — Generic Catalog. Architecture decision locked (C3 model). Requirements defined (22 requirements, 6 categories). Roadmap phases 11-14 pending creation.
-stopped_at: Milestone v1.1 initialized — Requirements defined, roadmap phases 11-14 created. Ready to start Phase 11 (DB Migration).
-last_updated: "2026-04-10T11:15:45.922Z"
-last_activity: 2026-04-09 — Milestone v1.1 started. C3 architecture locked. Requirements scoped.
+milestone: v1.1
+milestone_name: Generic Catalog
+status: in_progress
+stopped_at: Phase 11 COMPLETE — C3 schema migration applied, 10/10 integration tests passing. Ready for Phase 12 (Backend API).
+last_updated: "2026-04-10T12:00:00.000Z"
+last_activity: 2026-04-10 — Phase 11 complete. Alembic migration c3schema001 applied. attribute_schema JSONB added to categories, JSON→JSONB upgrade on field_config + attributes, GIN indexes created, CASCADE FK verified.
 progress:
-  total_phases: 12
-  completed_phases: 4
-  total_plans: 23
-  completed_plans: 23
-  percent: 36
+  total_phases: 14
+  completed_phases: 6
+  total_plans: 31
+  completed_plans: 31
+  percent: 43
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-Phase: Not started (defining requirements for milestone v1.1)
-Plan: N/A — milestone just initialized
-Status: Defining requirements for milestone v1.1 — Generic Catalog. Architecture decision locked (C3 model). Requirements defined (22 requirements, 6 categories). Roadmap phases 11-14 pending creation.
-Last activity: 2026-04-09 — Milestone v1.1 started. C3 architecture locked. Requirements scoped.
+Phase: 12 of 14 — Backend API (categories/products/vehicles endpoints)
+Plan: 12-00 (not started)
+Status: Phase 11 COMPLETE. C3 schema live in DB. Ready for Phase 12.
+Last activity: 2026-04-10 — Phase 11 complete. Migration c3schema001 applied. Category entity + models updated (attribute_schema, JSONB upgrade). 10 integration tests passing. pyright: 0 errors.
 
-Progress: [████████░░] 36% (Phases 1, 2, 8, 9, 10 complete; Phases 11-14 not yet started)
+Progress: [██████░░░░] 43% (Phases 1, 2, 8, 9, 10, 11 complete; Phases 12-14 pending)
 
 ## Performance Metrics
 
@@ -128,17 +128,16 @@ None. Last todo (catalog-enhancements.md) marked obsolete — all requested feat
 
 ## Session Continuity
 
-Last session: 2026-04-09T00:00:00.000Z
-Stopped at: Milestone v1.1 initialized — Requirements defined, roadmap phases 11-14 created. Ready to start Phase 11 (DB Migration).
-Resume file: Phase 11 (DB Migration) ready to plan/execute via `/gsd:discuss-phase 11` or `/gsd:plan-phase 11`
+Last session: 2026-04-10T12:00:00.000Z
+Stopped at: Phase 11 COMPLETE — C3 schema migration live. Pyright fix applied (Any type + typed kwargs in Category entity). State updated.
+Resume file: Phase 12 (Backend API) ready via `/mm:plan-phase 12`
 
 ## Next Steps Options
 
-**Option A: Start Phase 11 (DB Migration)**
-- Alembic migration to C3 schema
-- Preserve existing categories and products data
-- Clean migration with no conflicts
+**Option A: Plan Phase 12 (Backend API)**
+- Categories/Products/Vehicles CRUD endpoints
+- Clean Architecture: domain → application → infrastructure
+- Run `/mm:plan-phase 12`
 
-**Option B: Discuss Phase 11 first**
-- Run `/gsd:discuss-phase 11` to review scope and assumptions
-- Confirm migration strategy before execution
+**Option B: Discuss Phase 12 first**
+- Run `/gsd:discuss-phase 12` to review scope
