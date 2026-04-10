@@ -1,5 +1,6 @@
 """Category creation DTO."""
 
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -18,3 +19,4 @@ class CreateCategoryRequest(BaseModel):
     sort_order: int = Field(default=0, ge=0)
     is_active: bool = Field(default=True)
     field_config: list[dict[str, object]] = Field(default_factory=list)
+    attribute_schema: dict[str, Any] = Field(default_factory=dict)
