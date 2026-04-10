@@ -17,6 +17,7 @@ from prosell.application.use_cases.product.list_products import ListProductsUseC
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.repositories.category_repository_impl import SqlAlchemyCategoryRepository
 from prosell.infrastructure.repositories.product_repository_impl import SqlAlchemyProductRepository
 
 router = APIRouter()
@@ -38,14 +39,16 @@ async def create_product(
 
     Product is created in DRAFT status by default.
     """
-    repo = SqlAlchemyProductRepository(db)
-    use_case = CreateProductUseCase(repo)
+    product_repo = SqlAlchemyProductRepository(db)
+    category_repo = SqlAlchemyCategoryRepository(db)
+    use_case = CreateProductUseCase(product_repo, category_repo)
 
     return await use_case.execute(request)
 
 
 @router.get("", response_model=ProductListResponse)
 async def list_products(
+    organization_id: UUID | None = None,
     category_id: UUID | None = None,
     status: str | None = None,
     condition: str | None = None,
@@ -61,6 +64,7 @@ async def list_products(
     """
     List products with optional filters.
 
+    - **organization_id**: Filter by organization
     - **category_id**: Filter by category
     - **status**: Filter by status (draft, pending, published, etc.)
     - **condition**: Filter by condition (new, used, etc.)
@@ -78,6 +82,7 @@ async def list_products(
 
     return await use_case.execute(
         tenant_id=tenant_id,
+        organization_id=organization_id,
         category_id=category_id,
         status=status,
         condition=condition,
