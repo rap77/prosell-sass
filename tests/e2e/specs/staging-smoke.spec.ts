@@ -39,10 +39,10 @@ test.describe("Staging Smoke Tests", () => {
       await page.screenshot({ path: "test-results/login-page.png" });
     });
 
-    // SKIP: The Next.js auth proxy (/api/auth/login) returns mock user data and does NOT
-    // set real httpOnly auth cookies (access_token, refresh_token). This is the expected
-    // behavior with the mock auth setup. Real login with cookie verification requires
-    // the backend to be accessible and the proxy to forward real tokens.
+    // SKIP: Login form submits to the real FastAPI backend (/api/v1/auth/login), not the mock
+    // Next.js route. The admin@prosell-demo.com credentials are not seeded in the local dev DB,
+    // and the backend JWT cookies cannot be verified without a real auth session.
+    // To enable: seed admin user in dev DB and run with a live backend + valid credentials.
     test.skip("should login as admin successfully", async ({ page }) => {
       await page.goto("/auth/login");
 

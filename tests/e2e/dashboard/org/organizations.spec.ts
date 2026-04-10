@@ -45,9 +45,30 @@ function makeMockOrg(name: string, description?: string, website?: string, phone
   };
 }
 
+const MOCK_TEST_USER = {
+  id: "test-user-123",
+  email: "test@example.com",
+  first_name: "Test",
+  last_name: "User",
+  role: "user",
+  is_email_verified: true,
+  is_2fa_enabled: false,
+};
+
 async function setupOrgApiMocks(page: Page): Promise<Record<string, any>> {
   // Per-test org store - shared via closure so route handlers can mutate it
   const store: Record<string, any> = {};
+
+  // Mock /api/auth/state so the Zustand auth store hydrates with a real user.
+  // Without this, user.id is null → fetchOrganizations is never called → list is empty.
+  // The real backend rejects mock tokens from global-setup, so we intercept here.
+  await page.route("**/api/auth/state", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ isAuthenticated: true, user: MOCK_TEST_USER }),
+    });
+  });
 
   // Single catch-all handler for all /api/v1/org* URLs
   await page.route("**/api/v1/org**", async (route) => {
@@ -404,11 +425,9 @@ test.describe("Organizations", () => {
   });
 
   test.describe("List Organizations", () => {
-    // SKIP: The org list relies on the Zustand auth store having a real user (user: null in localStorage
-    // with mock auth). The orgs are created via API but the list component returns empty because
-    // isAuthenticated=false in the client store. Fix requires a real seeded user in global-setup.
-    test.skip(
+    test(
       "should display multiple organizations",
+      { tag: ["@e2e", "@organizations", "@ORG-E2E-017"] },
       async ({ page }) => {
         // Create first organization
         await orgListPage.clickCreateOrganization();
@@ -453,11 +472,9 @@ test.describe("Organizations", () => {
       },
     );
 
-    // SKIP: The org list is empty after creation due to Zustand auth store having user: null
-    // with mock auth cookies. The org list component shows empty state when not authenticated
-    // in the client store. Fix requires a real seeded user in global-setup.
-    test.skip(
+    test(
       "should click view button on organization card",
+      { tag: ["@e2e", "@organizations", "@ORG-E2E-019"] },
       async ({ page }) => {
         // Create organization
         const testData = generateTestOrg();
