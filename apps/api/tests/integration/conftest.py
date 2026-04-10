@@ -1,6 +1,25 @@
 """Pytest configuration for integration tests."""
 
+import os
+
 import pytest
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+
+
+@pytest_asyncio.fixture
+async def db_session() -> AsyncSession:
+    """Async DB session for integration tests. Rolls back after each test."""
+    db_url = os.environ.get(
+        "DATABASE_URL",
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/prosell_dev",
+    )
+    engine = create_async_engine(db_url)
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with async_session() as session, session.begin():
+        yield session
+        await session.rollback()
 
 
 @pytest.fixture(autouse=True)
