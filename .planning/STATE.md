@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Generic Catalog
 status: in_progress
-stopped_at: Phase 11 COMPLETE — C3 schema migration applied, 10/10 integration tests passing. Ready for Phase 12 (Backend API).
-last_updated: "2026-04-10T12:00:00.000Z"
-last_activity: 2026-04-10 — Phase 11 complete. Alembic migration c3schema001 applied. attribute_schema JSONB added to categories, JSON→JSONB upgrade on field_config + attributes, GIN indexes created, CASCADE FK verified.
+stopped_at: Phase 12 COMPLETE — Backend API for categories/products/vehicles. 5/5 plans, 41 new tests.
+last_updated: "2026-04-10T18:00:00.000Z"
+last_activity: 2026-04-10 — Phase 12 complete. Category CRUD API + C3 validation + VehicleResponse DTO + DELETE cascade + 41 tests (20 unit, 21 integration).
 progress:
   total_phases: 14
   completed_phases: 6
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-Phase: 12 of 14 — Backend API (categories/products/vehicles endpoints)
-Plan: 12-00 (not started)
-Status: Phase 11 COMPLETE. C3 schema live in DB. Ready for Phase 12.
-Last activity: 2026-04-10 — Phase 11 complete. Migration c3schema001 applied. Category entity + models updated (attribute_schema, JSONB upgrade). 10 integration tests passing. pyright: 0 errors.
+Phase: 12 of 14 — Backend API (categories/products/vehicles endpoints) — COMPLETE
+Plan: 12-05 (complete)
+Status: Phase 12 COMPLETE. All 5 plans executed, 41 new tests added. Ready for Phase 13.
+Last activity: 2026-04-10 — Phase 12 complete. Category CRUD API (attribute_schema, role-based filtering), C3 product validation, VehicleResponse DTO, DELETE cascade, 20 unit + 21 integration tests.
 
 Progress: [██████░░░░] 43% (Phases 1, 2, 8, 9, 10, 11 complete; Phases 12-14 pending)
 
