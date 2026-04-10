@@ -14,6 +14,7 @@ from prosell.application.dto.vehicle import (
     DecodeVinRequest,
     DecodeVinResponse,
 )
+from prosell.application.dto.vehicle.response import VehicleResponse
 from prosell.application.dto.vehicle.bulk_assign_dealer import (
     BulkAssignDealerRequest,
     BulkAssignDealerResponse,
@@ -118,12 +119,12 @@ async def decode_vin(
         raise HTTPException(status_code=422, detail=str(e)) from None
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=VehicleResponse, status_code=status.HTTP_201_CREATED)
 async def create_vehicle(
     request: CreateVehicleRequest,
     _current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
-) -> dict:
+) -> VehicleResponse:
     """
     Create a vehicle for a product.
 
@@ -135,22 +136,15 @@ async def create_vehicle(
 
     vehicle = await use_case.execute(request)
 
-    return {
-        "id": vehicle.id,
-        "product_id": vehicle.product_id,
-        "vin": vehicle.vin,
-        "year": vehicle.year,
-        "make": vehicle.make,
-        "model": vehicle.model,
-    }
+    return VehicleResponse.from_entity(vehicle)
 
 
-@router.get("/vin/{vin}", response_model=dict)
+@router.get("/vin/{vin}", response_model=VehicleResponse)
 async def get_vehicle_by_vin(
     vin: str,
     _current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
-) -> dict:
+) -> VehicleResponse:
     """Get vehicle information by VIN."""
     vehicle_repo = SqlAlchemyVehicleRepository(db)
     vehicle = await vehicle_repo.get_by_vin(vin.upper())
@@ -158,26 +152,15 @@ async def get_vehicle_by_vin(
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found")
 
-    return {
-        "id": vehicle.id,
-        "product_id": vehicle.product_id,
-        "vin": vehicle.vin,
-        "year": vehicle.year,
-        "make": vehicle.make,
-        "model": vehicle.model,
-        "trim": vehicle.trim,
-        "body_type": vehicle.body_type,
-        "drivetrain": vehicle.drivetrain,
-        "transmission": vehicle.transmission,
-    }
+    return VehicleResponse.from_entity(vehicle)
 
 
-@router.get("/product/{product_id}", response_model=dict)
+@router.get("/product/{product_id}", response_model=VehicleResponse)
 async def get_vehicle_by_product(
     product_id: UUID,
     _current_user=Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
-) -> dict:
+) -> VehicleResponse:
     """Get vehicle information by product ID."""
     vehicle_repo = SqlAlchemyVehicleRepository(db)
     vehicle = await vehicle_repo.get_by_product_id(product_id)
@@ -185,18 +168,7 @@ async def get_vehicle_by_product(
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found")
 
-    return {
-        "id": vehicle.id,
-        "product_id": vehicle.product_id,
-        "vin": vehicle.vin,
-        "year": vehicle.year,
-        "make": vehicle.make,
-        "model": vehicle.model,
-        "trim": vehicle.trim,
-        "mileage": vehicle.mileage,
-        "exterior_color": vehicle.exterior_color,
-        "interior_color": vehicle.interior_color,
-    }
+    return VehicleResponse.from_entity(vehicle)
 
 
 @router.get("", response_model=CatalogResponseDTO)
@@ -245,6 +217,22 @@ async def get_vehicle_catalog(
         cursor=cursor,
         filters=filters,
     )
+
+
+@router.get("/{vehicle_id}", response_model=VehicleResponse)
+async def get_vehicle(
+    vehicle_id: UUID,
+    _current_user=Depends(get_current_auth_user_from_cookie),
+    db: AsyncSession = Depends(get_async_session),
+) -> VehicleResponse:
+    """Get vehicle by UUID."""
+    vehicle_repo = SqlAlchemyVehicleRepository(db)
+    vehicle = await vehicle_repo.get_by_id(vehicle_id)
+
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+
+    return VehicleResponse.from_entity(vehicle)
 
 
 @router.patch("/{vehicle_id}/dealer", response_model=AssignDealerResponse)
