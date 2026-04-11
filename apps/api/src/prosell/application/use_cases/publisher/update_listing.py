@@ -49,10 +49,10 @@ class UpdateListingUseCase:
 
         # Lazy import: application layer must not import infrastructure at module level.
         from prosell.infrastructure.tasks.use_cases.update_listing_task import (
-            update_listing_task,
+            update_listing_task,  # type: ignore[attr-defined]
         )
 
-        await update_listing_task.kiq(publication_id=str(publication.id))
+        await update_listing_task.kiq(publication_id=str(publication.id))  # type: ignore[union-attr]
 
         return PublicationResponse(
             id=publication.id,

@@ -43,11 +43,12 @@ class ListDealersUseCase:
             offset = 0
 
         # Fetch dealers
-        dealers, total = await self._dealer_repository.list_by_tenant(
+        dealers_list, total = await self._dealer_repository.list_by_tenant(
             tenant_id=tenant_id,
             limit=limit,
             offset=offset,
         )
+        dealers = dealers_list
 
         # Map to DTOs
         items = [DealerResponse.from_entity(dealer) for dealer in dealers]

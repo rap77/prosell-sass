@@ -685,6 +685,17 @@ async def get_publish_vehicle_use_case(
 # =============================================================================
 
 
+async def get_dealer_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> AbstractDealerRepository:
+    """Get Dealer repository instance."""
+    from prosell.infrastructure.repositories.dealer_repository_impl import (
+        SqlAlchemyDealerRepository,
+    )
+
+    return SqlAlchemyDealerRepository(session)
+
+
 async def get_user_dealer_repository(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> AbstractUserDealerRepository:
@@ -735,14 +746,3 @@ async def get_remove_user_dealer_use_case(
     )
 
     return RemoveUserDealerUseCase(user_dealer_repository=user_dealer_repository)
-
-
-async def get_dealer_repository(
-    session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> AbstractDealerRepository:
-    """Get Dealer repository instance."""
-    from prosell.infrastructure.repositories.dealer_repository_impl import (
-        SqlAlchemyDealerRepository,
-    )
-
-    return SqlAlchemyDealerRepository(session)

@@ -3,6 +3,8 @@
 from datetime import datetime
 from uuid import UUID
 
+from typing import cast
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -45,5 +47,8 @@ class UserDealerResponse(BaseModel):
 class UserDealerListResponse(BaseModel):
     """Response DTO for listing user-dealer assignments."""
 
-    items: list[UserDealerResponse] = Field(default_factory=list, description="List of assignments")
+    items: list[UserDealerResponse] = Field(
+        default_factory=lambda: cast(list[UserDealerResponse], []),
+        description="List of assignments",
+    )
     total: int = Field(..., description="Total count of assignments")

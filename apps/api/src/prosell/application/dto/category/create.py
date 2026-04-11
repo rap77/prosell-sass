@@ -1,6 +1,6 @@
 """Category creation DTO."""
 
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -18,5 +18,7 @@ class CreateCategoryRequest(BaseModel):
     image_url: str | None = None
     sort_order: int = Field(default=0, ge=0)
     is_active: bool = Field(default=True)
-    field_config: list[dict[str, object]] = Field(default_factory=list)
+    field_config: list[dict[str, Any]] = Field(
+        default_factory=lambda: cast(list[dict[str, Any]], [])
+    )
     attribute_schema: dict[str, Any] = Field(default_factory=dict)

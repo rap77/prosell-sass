@@ -30,7 +30,7 @@ class DecodeVinResponse(BaseModel):
 
     vin: str
     vehicle: VehicleData
-    raw_data: dict[str, str | None]  # Full NHTSA response
+    raw_data: dict[str, str]  # Full NHTSA response
     cached: bool = False  # Whether data was from cache
 
 

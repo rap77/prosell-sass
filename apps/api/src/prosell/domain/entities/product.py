@@ -1,6 +1,7 @@
 """Product entity - Pure domain logic for products."""
 
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import Field
@@ -76,7 +77,7 @@ class Product(DomainModel):
         organization_id: UUID,
         category_id: UUID,
         condition: ProductCondition = ProductCondition.USED,
-        **kwargs,
+        **kwargs: Any,
     ) -> "Product":
         """
         Factory method for new product creation.

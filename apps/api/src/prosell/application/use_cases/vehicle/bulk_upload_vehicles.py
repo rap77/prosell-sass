@@ -2,6 +2,7 @@
 
 import csv
 import io
+from typing import Any
 from uuid import UUID
 
 from prosell.application.dto.vehicle.bulk_upload import (
@@ -99,12 +100,12 @@ class BulkUploadVehiclesUseCase:
             raise ValueError(f"Too many rows ({len(rows)}). Maximum: {MAX_CSV_ROWS}")
 
         # Batch fetch all existing VINs to prevent N+1 queries
-        all_vins = [row_dict.get("vin", "").upper() for _, row_dict in rows]
+        all_vins = [str(row_dict.get("vin", "")).upper() for _, row_dict in rows]
         existing_vins = await self.vehicle_repo.get_vins_batch(all_vins, tenant_id)
         existing_set = set(existing_vins)
 
         # Validate all rows first (fail fast)
-        validated_vehicles: list[tuple[VehicleCSVRow, dict]] = []
+        validated_vehicles: list[tuple[VehicleCSVRow, dict[str, Any]]] = []
         errors: list[BulkUploadError] = []
 
         for row_number, row_dict in rows:
@@ -169,7 +170,7 @@ class BulkUploadVehiclesUseCase:
                     field = "price"
 
                 # Get VIN from row for error reporting and sanitize it
-                vin = _sanitize_for_csv(row_dict.get("vin", "UNKNOWN"))
+                vin = _sanitize_for_csv(str(row_dict.get("vin", "UNKNOWN")))
 
                 errors.append(
                     BulkUploadError(
@@ -192,44 +193,46 @@ class BulkUploadVehiclesUseCase:
         # All rows validated - create products and vehicles in transaction
         created_vehicles: list[Vehicle] = []
 
-        # Wrap in transaction to prevent orphaned data
-        async with self.vehicle_repo.session.begin():
-            for csv_row, _row_dict in validated_vehicles:
-                # Create product
-                product = Product.create(
-                    tenant_id=tenant_id,
-                    organization_id=default_organization_id,
-                    title=f"{csv_row.year or ''} {csv_row.make or ''} {csv_row.model or ''}".strip()
-                    or "Vehicle",
-                    description=csv_row.description or "",
-                )
+        # Default category_id — vehicles use a placeholder UUID until categories are assigned
+        from uuid import UUID as _UUID
 
-                created_product = await self.product_repo.create(product)
+        _VEHICLE_CATEGORY_ID = _UUID("00000000-0000-0000-0000-000000000001")
 
-                # Create vehicle
-                vehicle_data = {
-                    "vin": csv_row.vin,
-                    "year": csv_row.year,
-                    "make": csv_row.make,
-                    "model": csv_row.model,
-                    "trim": csv_row.trim,
-                    "mileage": csv_row.mileage,
-                    "exterior_color": csv_row.exterior_color,
-                    "interior_color": csv_row.interior_color,
-                    "transmission": csv_row.transmission,
-                    "fuel_type": csv_row.fuel_type,
-                    "body_type": csv_row.body_style,
-                    "drivetrain": csv_row.drivetrain,
-                    "engine": csv_row.engine,
-                }
+        for csv_row, _row_dict in validated_vehicles:
+            # Create product
+            price_cents = csv_row.price_cents if csv_row.price_cents is not None else 0
+            product = Product.create(
+                tenant_id=tenant_id,
+                organization_id=default_organization_id,
+                category_id=_VEHICLE_CATEGORY_ID,
+                price_cents=price_cents,
+                title=f"{csv_row.year or ''} {csv_row.make or ''} {csv_row.model or ''}".strip()
+                or "Vehicle",
+                description=csv_row.description or "",
+            )
 
-                vehicle = Vehicle.create(
-                    product_id=created_product.id,
-                    **vehicle_data,
-                )
+            created_product = await self.product_repo.create(product)
 
-                created_vehicle = await self.vehicle_repo.create(vehicle)
-                created_vehicles.append(created_vehicle)
+            # Create vehicle
+            vehicle = Vehicle.create(
+                product_id=created_product.id,
+                vin=csv_row.vin,
+                year=csv_row.year,
+                make=csv_row.make,
+                model=csv_row.model,
+                trim=csv_row.trim,
+                mileage=csv_row.mileage,
+                exterior_color=csv_row.exterior_color,
+                interior_color=csv_row.interior_color,
+                transmission=csv_row.transmission,
+                fuel_type=csv_row.fuel_type,
+                body_type=csv_row.body_style,
+                drivetrain=csv_row.drivetrain,
+                engine=csv_row.engine,
+            )
+
+            created_vehicle = await self.vehicle_repo.create(vehicle)
+            created_vehicles.append(created_vehicle)
 
         return BulkUploadResponse(
             total_rows=len(rows),
@@ -238,7 +241,7 @@ class BulkUploadVehiclesUseCase:
             errors=[],
         )
 
-    def _parse_csv(self, csv_content: str) -> list[tuple[int, dict]]:
+    def _parse_csv(self, csv_content: str) -> list[tuple[int, dict[str, Any]]]:
         """
         Parse CSV content into list of (row_number, row_dict).
 
@@ -266,7 +269,7 @@ class BulkUploadVehiclesUseCase:
                 raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
 
             # Parse rows
-            rows: list[tuple[int, dict]] = []
+            rows: list[tuple[int, dict[str, Any]]] = []
             for row_number, row_dict in enumerate(reader, start=2):  # Start at 2 (header is row 1)
                 if row_dict:  # Skip empty rows
                     rows.append((row_number, row_dict))

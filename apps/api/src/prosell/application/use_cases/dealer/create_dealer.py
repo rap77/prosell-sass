@@ -39,22 +39,17 @@ class CreateDealerUseCase:
         # Validate slug uniqueness
         exists = await self._dealer_repository.exists_by_slug(slug, tenant_id)
         if exists:
-            raise SlugNotUniqueError(f"Dealer with slug '{slug}' already exists in this tenant")
+            raise SlugNotUniqueError(slug=slug, tenant_id=tenant_id)
 
-        # Create dealer entity
+        # Create dealer entity (map request fields to entity fields)
         dealer = Dealer.create(
             tenant_id=tenant_id,
             name=request.name,
             slug=slug,
-            logo_url=request.logo_url,
-            address=request.address,
-            city=request.city,
-            state=request.state,
-            country=request.country,
-            postal_code=request.postal_code,
-            phone=request.phone,
-            email=request.email,
-            website=request.website,
+            location_address=request.address,
+            location_city=request.city,
+            location_state=request.state,
+            location_zip=request.postal_code,
             timezone=request.timezone,
             settings=request.settings,
         )

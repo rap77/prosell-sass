@@ -4,7 +4,10 @@ Dependency Injection for Dealer and User-Dealer Use Cases.
 Provides factory functions for dealer-related use cases with proper DI.
 """
 
+from typing import Annotated
+
 from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.use_cases.dealer.create_dealer import CreateDealerUseCase
 from prosell.application.use_cases.dealer.get_dealer import GetDealerUseCase
@@ -22,14 +25,14 @@ from prosell.infrastructure.repositories.user_dealer_repository_impl import (
 
 
 async def get_dealer_repository(
-    session=Depends(get_async_session),
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> AbstractDealerRepository:
     """Provide Dealer repository instance."""
     return SqlAlchemyDealerRepository(session)
 
 
 async def get_user_dealer_repository(
-    session=Depends(get_async_session),
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> AbstractUserDealerRepository:
     """Provide UserDealer repository instance."""
     return SqlAlchemyUserDealerRepository(session)

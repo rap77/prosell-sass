@@ -29,11 +29,11 @@ class DeleteListingUseCase:
 
         # Lazy import: application layer must not import infrastructure at module level.
         from prosell.infrastructure.tasks.use_cases.delete_listing_task import (
-            delete_listing_task,
+            delete_listing_task,  # type: ignore[attr-defined]
         )
 
         # Dispatch task to remove from Facebook
-        await delete_listing_task.kiq(publication_id=str(publication_id))
+        await delete_listing_task.kiq(publication_id=str(publication_id))  # type: ignore[union-attr]
 
         return PublicationResponse(
             id=publication.id,

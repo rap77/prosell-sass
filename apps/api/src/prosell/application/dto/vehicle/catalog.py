@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ValidationInfo, field_validator
 
 if TYPE_CHECKING:
     from prosell.domain.entities.publication import Publication
@@ -37,7 +37,7 @@ class PublicationDTO(BaseModel):
         return cls(
             id=publication.id,
             status=publication.status.value,
-            platform=publication.platform,
+            platform="facebook_marketplace",  # Publication entity targets FB Marketplace only
             fb_listing_id=publication.fb_listing_id,
             published_at=publication.published_at.isoformat() if publication.published_at else None,
             expires_at=publication.expires_at.isoformat() if publication.expires_at else None,
@@ -51,9 +51,9 @@ class VehicleCatalogItemDTO(BaseModel):
     id: UUID
     product_id: UUID
     vin: str
-    year: int
-    make: str
-    model: str
+    year: int | None = None
+    make: str | None = None
+    model: str | None = None
     trim: str | None = None
     mileage: int | None = None
     exterior_color: str | None = None
@@ -130,8 +130,9 @@ class FilterParams(BaseModel):
 
     @field_validator("year_max")
     @classmethod
-    def validate_year_range(cls, v: int | None, info) -> int | None:
+    def validate_year_range(cls, v: int | None, info: ValidationInfo) -> int | None:
         """Validate year_min <= year_max."""
-        if v is not None and info.data.get("year_min") is not None and v < info.data["year_min"]:
+        year_min = info.data.get("year_min")
+        if v is not None and year_min is not None and isinstance(year_min, int) and v < year_min:
             raise ValueError("year_max must be >= year_min")
         return v

@@ -401,7 +401,7 @@ class Vehicle(DomainModel):
     @property
     def full_name(self) -> str:
         """Get full vehicle name (Year Make Model Trim)."""
-        parts = []
+        parts: list[str] = []
         if self.year:
             parts.append(str(self.year))
         if self.make:
@@ -415,7 +415,7 @@ class Vehicle(DomainModel):
     @property
     def short_name(self) -> str:
         """Get short vehicle name (Year Make Model)."""
-        parts = []
+        parts: list[str] = []
         if self.year:
             parts.append(str(self.year))
         if self.make:

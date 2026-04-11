@@ -5,6 +5,8 @@ configuration per category (e.g., vehicles have year, make, model;
 electronics have specs, compatibility).
 """
 
+from typing import cast
+
 from pydantic import Field, ValidationInfo, field_validator
 
 from prosell.domain.base import ValueObject
@@ -29,7 +31,9 @@ class CategoryField(ValueObject):
 
     # Options for SELECT/MULTISELECT
     # Format: [{"value": "red", "label": "Red"}, ...]
-    options: list[dict[str, str]] = Field(default_factory=list)
+    options: list[dict[str, str]] = Field(
+        default_factory=lambda: cast(list[dict[str, str]], [])
+    )
 
     # Organization
     field_group: str | None = None  # e.g., "specs", "dimensions", "media"

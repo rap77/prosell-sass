@@ -72,10 +72,10 @@ class PublishVehicleUseCase:
         # Lazy import preserves Clean Architecture: application layer must not
         # import from infrastructure at module level.
         from prosell.infrastructure.tasks.use_cases.publish_vehicle_task import (
-            publish_vehicle_task,
+            publish_vehicle_task,  # type: ignore[attr-defined]
         )
 
-        await publish_vehicle_task.kiq(publication_id=str(publication.id))
+        await publish_vehicle_task.kiq(publication_id=str(publication.id))  # type: ignore[union-attr]
 
         return PublicationResponse(
             id=publication.id,

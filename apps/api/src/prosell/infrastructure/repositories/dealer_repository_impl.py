@@ -1,5 +1,6 @@
 """SqlAlchemyDealerRepository implementation."""
 
+import json
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -23,12 +24,12 @@ class SqlAlchemyDealerRepository(AbstractDealerRepository):
         await self.session.flush()
         return self._to_entity(model)
 
-    async def get_by_id(self, dealer_id: UUID, tenant_id: UUID) -> Dealer | None:
-        """Get dealer by ID with tenant isolation."""
-        stmt = select(DealerModel).where(
-            DealerModel.id == dealer_id,
-            DealerModel.tenant_id == tenant_id,
-        )
+    async def get_by_id(self, dealer_id: UUID, tenant_id: UUID | None = None) -> Dealer | None:
+        """Get dealer by ID with optional tenant isolation."""
+        conditions = [DealerModel.id == dealer_id]
+        if tenant_id is not None:
+            conditions.append(DealerModel.tenant_id == tenant_id)
+        stmt = select(DealerModel).where(*conditions)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
@@ -77,7 +78,7 @@ class SqlAlchemyDealerRepository(AbstractDealerRepository):
         model.location_lat = dealer.location_lat
         model.location_lng = dealer.location_lng
         model.timezone = dealer.timezone
-        model.settings = dealer.settings
+        model.settings = json.dumps(dealer.settings) if dealer.settings else None  # type: ignore[assignment]
         model.updated_at = dealer.updated_at
 
         await self.session.flush()
@@ -99,17 +100,39 @@ class SqlAlchemyDealerRepository(AbstractDealerRepository):
 
         await self.session.delete(model)
 
-    async def list_by_tenant(self, tenant_id: UUID) -> list[Dealer]:
-        """List all dealers for a tenant."""
-        stmt = select(DealerModel).where(
-            DealerModel.tenant_id == tenant_id,
+    async def list_by_tenant(
+        self,
+        tenant_id: UUID,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[Dealer], int]:
+        """List dealers for a tenant with pagination. Returns (dealers, total)."""
+        from sqlalchemy import func
+
+        count_stmt = select(func.count(DealerModel.id)).where(DealerModel.tenant_id == tenant_id)
+        count_result = await self.session.execute(count_stmt)
+        total: int = count_result.scalar() or 0
+
+        stmt = (
+            select(DealerModel)
+            .where(DealerModel.tenant_id == tenant_id)
+            .limit(limit)
+            .offset(offset)
         )
         result = await self.session.execute(stmt)
         models = result.scalars().all()
-        return [self._to_entity(m) for m in models]
+        return [self._to_entity(m) for m in models], total
 
     def _to_entity(self, model: DealerModel) -> Dealer:
         """Convert ORM model to domain entity."""
+        settings: dict[str, object] = {}
+        if model.settings:
+            try:
+                parsed = json.loads(model.settings)
+                if isinstance(parsed, dict):
+                    settings = parsed
+            except (json.JSONDecodeError, TypeError):
+                pass
         return Dealer(
             id=model.id,
             tenant_id=model.tenant_id,
@@ -122,7 +145,7 @@ class SqlAlchemyDealerRepository(AbstractDealerRepository):
             location_lat=model.location_lat,
             location_lng=model.location_lng,
             timezone=model.timezone,
-            settings=model.settings,
+            settings=settings,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
@@ -141,7 +164,7 @@ class SqlAlchemyDealerRepository(AbstractDealerRepository):
             location_lat=dealer.location_lat,
             location_lng=dealer.location_lng,
             timezone=dealer.timezone,
-            settings=dealer.settings,
+            settings=json.dumps(dealer.settings) if dealer.settings else None,  # type: ignore[arg-type]
             created_at=dealer.created_at,
             updated_at=dealer.updated_at,
         )

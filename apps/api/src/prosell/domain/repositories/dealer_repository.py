@@ -15,8 +15,8 @@ class AbstractDealerRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_id(self, dealer_id: UUID, tenant_id: UUID) -> Dealer | None:
-        """Get dealer by ID with tenant isolation."""
+    async def get_by_id(self, dealer_id: UUID, tenant_id: UUID | None = None) -> Dealer | None:
+        """Get dealer by ID with optional tenant isolation."""
         pass
 
     @abstractmethod
@@ -40,6 +40,11 @@ class AbstractDealerRepository(ABC):
         pass
 
     @abstractmethod
-    async def list_by_tenant(self, tenant_id: UUID) -> list[Dealer]:
-        """List all dealers for a tenant."""
+    async def list_by_tenant(
+        self,
+        tenant_id: UUID,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[Dealer], int]:
+        """List dealers for a tenant with pagination. Returns (dealers, total)."""
         pass

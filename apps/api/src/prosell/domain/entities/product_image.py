@@ -1,6 +1,7 @@
 """Product image entity."""
 
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import Field
@@ -49,7 +50,7 @@ class ProductImage(DomainModel):
         url: str,
         storage_key: str | None = None,
         sort_order: int = 0,
-        **kwargs,
+        **kwargs: Any,
     ) -> "ProductImage":
         """
         Factory method for new product image creation.

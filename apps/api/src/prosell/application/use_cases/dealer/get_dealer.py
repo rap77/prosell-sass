@@ -32,9 +32,9 @@ class GetDealerUseCase:
         Raises:
             DealerNotFound: If dealer doesn't exist or belongs to different tenant
         """
-        dealer = await self._dealer_repository.get_by_id(dealer_id)
+        dealer = await self._dealer_repository.get_by_id(dealer_id, tenant_id)
 
-        if dealer is None or dealer.tenant_id != tenant_id:
-            raise DealerNotFoundError(f"Dealer with ID {dealer_id} not found")
+        if dealer is None:
+            raise DealerNotFoundError(dealer_id=dealer_id)
 
         return DealerResponse.from_entity(dealer)

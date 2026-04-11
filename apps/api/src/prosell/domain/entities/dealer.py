@@ -2,6 +2,7 @@
 
 import re
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from prosell.domain.base import DomainModel
@@ -43,7 +44,7 @@ class Dealer(DomainModel):
         name: str,
         tenant_id: UUID,
         slug: str | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> "Dealer":
         """
         Factory method for new dealer creation.

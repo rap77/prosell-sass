@@ -59,6 +59,8 @@ async def create_dealer(
             detail="Only administrators can create dealers",
         )
 
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     try:
         return await use_case.execute(request, current_user.tenant_id)
     except SlugNotUniqueError as e:
@@ -101,6 +103,8 @@ async def get_dealer(
             detail="Invalid dealer ID format",
         ) from e
 
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     try:
         return await use_case.execute(dealer_uuid, current_user.tenant_id)
     except DealerNotFoundError as e:
@@ -134,4 +138,6 @@ async def list_dealers(
     Returns:
         Paginated dealer list
     """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     return await use_case.execute(current_user.tenant_id, limit, offset)

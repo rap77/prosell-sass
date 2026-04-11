@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator  # noqa: F401
+from pydantic import BaseModel, ConfigDict, Field, field_validator  # noqa: F401  # type: ignore[attr-defined]
 
 
 class DomainModel(BaseModel):
