@@ -24,10 +24,11 @@ test.describe("API: Categories", () => {
   test.beforeAll(async ({ request }) => {
     // Login directly to FastAPI to get a real JWT cookie.
     // FastAPI validates auth via httpOnly Cookie (not Bearer header).
+    // Using admin user since test@example.com may not exist in the seeded DB.
     const loginResponse = await request.post(`${API_BASE}/api/v1/auth/login`, {
       data: {
-        email: process.env.TEST_USER_EMAIL || "test@example.com",
-        password: process.env.TEST_USER_PASSWORD || "Test!Password123",
+        email: process.env.TEST_ADMIN_EMAIL || "admin@prosell-demo.com",
+        password: process.env.TEST_ADMIN_PASSWORD || "Admin123!",
       },
     });
 

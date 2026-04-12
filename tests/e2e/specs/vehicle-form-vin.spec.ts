@@ -26,6 +26,38 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
   test.beforeEach(async ({ page }) => {
     vehiclesPage = new VehiclesPage(page);
+
+    // Mock VIN decode to avoid NHTSA external dependency and ensure
+    // predictable values for all Select fields (body_type, transmission, fuel_type).
+    // Returns different data per VIN so tests can verify multi-decode scenarios.
+    await page.route("**/api/v1/vehicles/decode-vin", async (route) => {
+      let requestedVin = "2GNALCEK1H1615946";
+      try {
+        const body = route.request().postDataJSON();
+        if (body?.vin) requestedVin = body.vin;
+      } catch {}
+
+      const VIN_DATA: Record<string, object> = {
+        "2GNALCEK1H1615946": {
+          vin: "2GNALCEK1H1615946",
+          vehicle: { make: "chevrolet", model: "Equinox", year: 2017, body_type: "suv", drivetrain: "FWD", transmission: "automatic", fuel_type: "gasoline", engine: "2.4L L4", trim: "LT" },
+          raw_data: {}, cached: false,
+        },
+        "1HGCM82633A123456": {
+          vin: "1HGCM82633A123456",
+          vehicle: { make: "honda", model: "Accord", year: 2003, body_type: "sedan", drivetrain: "FWD", transmission: "automatic", fuel_type: "gasoline", engine: "2.4L L4", trim: "EX" },
+          raw_data: {}, cached: false,
+        },
+      };
+
+      const response = VIN_DATA[requestedVin.toUpperCase()] ?? VIN_DATA["2GNALCEK1H1615946"];
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(response),
+      });
+    });
+
     await page.goto("/catalog/create");
     await page.waitForLoadState("load");
   });
