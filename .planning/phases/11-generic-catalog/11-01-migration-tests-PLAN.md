@@ -217,6 +217,18 @@ IMPORTANT: After creating the file, verify the revision chain is correct:
 cd apps/api && uv run alembic history | head -5
 ```
 The new migration should appear as the HEAD.
+
+PREREQUISITE FOR T2: Apply migration to test DB before writing/running tests:
+```bash
+cd apps/api && uv run alembic upgrade head
+```
+This is MANDATORY — if the test DB does not have the migration applied, ALL schema
+verification tests in T2 will fail with "column attribute_schema does not exist".
+If DATABASE_URL is not set, export it first:
+```bash
+export DATABASE_URL="postgresql+asyncpg://prosell:prosell@localhost:5432/prosell_dev"
+cd apps/api && uv run alembic upgrade head
+```
   </implementation>
 </task>
 
@@ -502,7 +514,9 @@ async def test_preflight_no_duplicate_json_keys_in_products_attributes(db_sessio
     )
 ```
 
-**IMPORTANT**: Before writing this file, check if `apps/api/tests/conftest.py` has a `db_session` async fixture. If it does, use that fixture name. If it uses a different name (e.g., `async_session`, `session`), adapt accordingly. If no async fixture exists, add one:
+**IMPORTANT**: The `db_session` fixture does NOT exist in `apps/api/tests/integration/conftest.py` (confirmed — only `disable_rate_limiting` is present). Add the fixture to `apps/api/tests/integration/conftest.py` BEFORE creating the test file, so it is shared and reusable by future integration tests (e.g., test_vehicle_pagination.py already has xfail tests waiting for it).
+
+Add to `apps/api/tests/integration/conftest.py`:
 
 ```python
 # At top of test file or in conftest.py:
@@ -540,5 +554,5 @@ async def db_session():
 - [ ] Pre-flight test `test_preflight_no_duplicate_json_keys_in_products_attributes` present and runs BEFORE migration
 - [ ] All test function names match: test_preflight_no_duplicate_json_keys_in_products_attributes, test_attribute_schema_column_exists, test_products_attributes_is_jsonb, test_categories_field_config_is_jsonb, test_vehicles_product_id_fk_exists, test_existing_categories_rows_preserved, test_attribute_schema_default_is_empty_object, test_product_delete_cascades_to_vehicle, test_jsonb_containment_operator_on_attribute_schema
 - [ ] `cd apps/api && uv run alembic history | head -3` shows c3schema001 as HEAD
-- [ ] `cd apps/api && uv run ruff check apps/api/alembic/versions/20260410_0000-c3_schema_jsonb_upgrade.py` → 0 errors
+- [ ] `cd apps/api && uv run ruff check alembic/versions/20260410_0000-c3_schema_jsonb_upgrade.py` → 0 errors
 </verification>

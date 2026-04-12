@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Generic Catalog
-status: in_progress
-stopped_at: Phase 12 COMPLETE — Backend API for categories/products/vehicles. 5/5 plans, 41 new tests.
-last_updated: "2026-04-10T18:00:00.000Z"
-last_activity: 2026-04-10 — Phase 12 complete. Category CRUD API + C3 validation + VehicleResponse DTO + DELETE cascade + 41 tests (20 unit, 21 integration).
+milestone: v1.0
+milestone_name: milestone
+status: completed
+stopped_at: Phase 11 COMPLETE — C3 schema migration live. Pyright fix applied (Any type + typed kwargs in Category entity). State updated.
+last_updated: "2026-04-10T22:01:19.371Z"
+last_activity: 2026-04-10 — Phase 12 complete. Category CRUD API (attribute_schema, role-based filtering), C3 product validation, VehicleResponse DTO, DELETE cascade, 20 unit + 21 integration tests.
 progress:
-  total_phases: 14
-  completed_phases: 6
-  total_plans: 31
-  completed_plans: 31
+  total_phases: 12
+  completed_phases: 5
+  total_plans: 28
+  completed_plans: 28
   percent: 43
 ---
 
@@ -128,9 +128,9 @@ None. Last todo (catalog-enhancements.md) marked obsolete — all requested feat
 
 ## Session Continuity
 
-Last session: 2026-04-10T12:00:00.000Z
-Stopped at: Phase 11 COMPLETE — C3 schema migration live. Pyright fix applied (Any type + typed kwargs in Category entity). State updated.
-Resume file: Phase 12 (Backend API) ready via `/mm:plan-phase 12`
+Last session: 2026-04-11T15:25:00Z
+Stopped at: Phase 12 (Backend API) e2e-verification in_progress. See .planning/phases/12-backend-api/.continue-here.md
+Resume file: Phase 12 (Backend API) e2e-verification via task continuation
 
 ## Next Steps Options
 
