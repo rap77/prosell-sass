@@ -21,6 +21,12 @@ ProSell SaaS automates the complete vehicle sales cycle for dealerships: publish
 - [ ] **Phase 6: Market Intelligence** - Price benchmarking (own vs. market), segmented price history, and market position indicators
 - [ ] **Phase 7: Visibility** - Temporal landing page, public vehicle catalog with SEO, and AI-generated listing titles
 - [x] **Phase 8: Layout Shell + Vehicle Management** - Professional dashboard shell with role-based navigation, high-performance DataGrid, bulk CSV upload, image handling, and search/filter capabilities (completed 2026-03-27)
+- [x] **Phase 9: Anti-patterns Fix** - Fix controlled components, FormField label placement, and toast notification issues (completed 2026-03-29)
+- [x] **Phase 10: Contract Testing Skill** - Create skill for multi-layer contract testing (OpenAPI → Integration → E2E) (completed 2026-03-31)
+- [x] **Phase 11: DB Migration — C3 Schema** - Migrate to categories+products+vehicles(C3) schema with proper foreign keys (completed 2026-04-10)
+- [x] **Phase 12: Backend API — Categories/Products/Vehicles** - CRUD endpoints for categories, products, and vehicles with C3 validation (completed 2026-04-10)
+- [ ] **Phase 13: Frontend — Vehicle Form, DataGrid, CSV Upload** - Update frontend components to use new C3 schema (in progress)
+- [ ] **Phase 14: E2E Verification — Generic Catalog** - Verify end-to-end user flows work with C3 schema (planned)
 
 ## Phase Details
 
@@ -93,23 +99,46 @@ Plans:
   4. Dealer dashboard shows their inventory and active FB listings without any access to lead data
 **Plans**: TBD
 
+### Phase 6: Market Intelligence
+**Goal**: Vendedores can price vehicles competitively using real market data from CarGurus and see how their inventory compares to similar vehicles
+**Depends on**: Phase 3 (CarGurus scraping)
+**Requirements**: MI-01, MI-02, MI-03, MI-04, MI-05
+**Success Criteria** (what must be TRUE):
+  1. Vendedor views a vehicle and sees price range for comparable vehicles (±10% mileage, ±2 years)
+  2. Vendedor sees market position indicator (overpriced/competitively priced/underpriced) with color coding
+  3. Admin sees price trends over time for makes/models in their region
+  4. System flags vehicles with outlier prices (>20% above/below market) for review
+**Plans**: TBD
+
+### Phase 7: Visibility
+**Goal**: Public can discover ProSell inventory via search engines and social sharing, and AI helps optimize listing titles for visibility
+**Depends on**: Phase 2 (catalog exists)
+**Requirements**: VIS-01, VIS-02, VIS-03, VIS-04
+**Success Criteria** (what must be TRUE):
+  1. Public catalog page shows active vehicles with SEO-friendly URLs (/catalog/2020-honda-civic-abc123)
+  2. Landing page ranks for "buy cars [city]" search terms with meta tags and structured data
+  3. System generates optimized titles for FB listings (e.g., "2020 Honda Civic LX - Low Miles - Clean CarFax")
+  4. Public vehicle page includes social sharing buttons (FB, WhatsApp, Email)
+**Plans**: TBD
+
 ### Phase 8: Layout Shell + Vehicle Management
 **Goal**: Professional dashboard shell with vehicle management CRUD, bulk upload, image handling, and search/filter capabilities using premium UI components (Shadcn UI, MagicUI, Radix UI)
 **Depends on**: Phase 1 (for publication status display)
 **Requirements**: CATALOG-01, DASH-03, DASH-04
 **Success Criteria** (what must be TRUE):
-  1. Sidebar navigation uses user language (Inventario/Ventas/Configuración) not designer model (Operations/Growth/System)
-  2. DataGrid renders 1000+ rows at 60fps using TanStack Virtual row virtualization
-  3. User can search vehicles instantly (0ms client-side) and apply deep filters (price, status, brand) with URL state sync
-  4. User can upload CSV with 100+ vehicles and see real-time progress with ETA
-  5. User can drag-and-drop vehicle images with immediate previews and sortable cover photo selection
-  6. Cmd+K Command Palette opens for power user search and actions
-**Plans**: 5 plans (08-00, 08-01, 08-02, 08-03, 08-04)
+  1. Seller logs in and sees sidebar with Inventario/Ventas groups (NOT Operations/Growth/System — corrected terminology from UX validation)
+  2. DataGrid renders 1000+ vehicles at 60fps with only ~40 rows in DOM (virtualization working)
+  3. Seller types "Toyota" in search → DataGrid filters instantly (0ms client-side latency)
+  4. Seller presses Cmd+K → Command Palette appears with vehicle search + actions
+  5. Seller drags 5 images onto dropzone → All upload in parallel with progress bars (0-100% per file)
+  6. Middleware blocks seller from accessing /admin routes (redirects to /dashboard)
+  7. Mobile user sees bottom navigation with 4 icons (Catálogo, Publicar, Leads, Más)
+**Plans**: 5 plans (Wave 0: Test infrastructure | Wave 1: Layout shell | Wave 2: DataGrid + Search + Image Upload)
 
 Plans:
 - [x] 08-00-PLAN.md — Test infrastructure: 16 test stubs (13 component, 2 hook, 1 E2E) ✅ (2026-03-27)
 - [x] 08-01-PLAN.md — Layout shell with route groups, sidebar (corrected terminology), header, mobile nav, middleware guards ✅ (2026-03-27)
-- [x] 08-02-PLAN.md — DataGrid with TanStack Table + Virtual, sorting, checkbox selection, StatusBadge (7 states), mobile cards ✅ (2026-03-27)
+- [x] 08-02-PLAN.md — DataGrid with TanStack Virtual, sorting, checkbox selection, StatusBadge (7 states), mobile cards ✅ (2026-03-27)
 - [x] 08-03-PLAN.md — Hybrid search (client instant + server deep), Cmd+K CommandPalette, collapsible FilterSidebar, filter pills ✅ (2026-03-27)
 - [x] 08-04-PLAN.md — Image upload with drag-drop, presigned URLs, Zustand progress store, sortable gallery, cover photo control ✅ (2026-03-27)
 
@@ -118,65 +147,70 @@ Plans:
 - **Wave 2** (Plans 08-03, 08-04): Enhanced UX — Search filters + image upload for UAT observation
 - **Wave 3** (Future): Premium features — Advanced roles (Manager vs Dealer), bulk CSV upload
 
-**Traceability**:
+**Traceability:**
 - Origin: UAT Phase 1 feedback (2026-03-15) — Request for advanced search, bulk actions, professional UI
 - CONTEXT.md: 7-brain validation complete (UX, UI, Frontend, QA, Product, Growth, Backend)
 - RESEARCH.md: Technical patterns validated (TanStack Virtual, Zustand, hybrid search, presigned URLs)
 - Plans: Ready for execution with locked decisions from CONTEXT.md
 
-### Phase 6: Market Intelligence
-**Goal**: Every vehicle in the catalog displays its price position relative to the market so vendedores and admins can act on pricing without leaving the panel
-**Depends on**: Phase 3
-**Requirements**: MKTL-01, MKTL-02, MKTL-03
+### Phase 9: Anti-patterns Fix
+**Goal**: Fix controlled component anti-patterns, FormField label placement issues, and toast notification problems identified during Phase 8 development
+**Depends on**: Phase 8 (issues discovered during implementation)
+**Requirements**: DASH-04 (UI polish)
 **Success Criteria** (what must be TRUE):
-  1. Each vehicle in the catalog shows a BAJO / EN RANGO / ALTO badge compared to market average from CarGurus data
-  2. Market average is calculated per year/make/model/mileage/condition segment (not a global average)
-  3. Admin can see a price history chart for any segment over the last N weeks
-**Plans**: TBD
-
-### Phase 7: Visibility
-**Goal**: ProSell has a public presence — a landing page that demonstrates the service value and a public vehicle catalog discoverable by buyers
-**Depends on**: Phase 5, Phase 6
-**Requirements**: LAND-01, LAND-02, CAT-PUBLIC-01, CAT-PUBLIC-02, CAT-PUBLIC-03, CAT-PUBLIC-04, PUBLISH-08
-**Success Criteria** (what must be TRUE):
-  1. Public landing page shows a live list of available vehicles and real-time service metrics (publications/day, time-to-publish)
-  2. Public catalog is accessible by URL, filterable by make/model/year/price/condition, with a page per dealer/organization
-  3. Each vehicle page has unique SEO metadata (title, description, OG tags) and loads with LCP under 2.5s
-  4. System generates AI-optimized titles and descriptions for listings automatically before publishing to Facebook
-**Plans**: TBD
-
-### Phase 11: DB Migration — C3 Schema
-**Goal**: Migrate existing DB to C3 schema without data loss — `categories(attribute_schema JSONB)`, `products(attributes JSONB)`, `vehicles(product_id FK → products ON DELETE CASCADE)`
-**Depends on**: Phases 1, 2, 8 (existing schema, clean DB state)
-**Requirements**: CAT-01, CAT-02, CAT-03
-**Success Criteria** (what must be TRUE):
-  1. Alembic migration runs `alembic upgrade head` with zero errors on existing DB
-  2. All existing categories rows are preserved after migration
-  3. All existing products rows are preserved after migration with `attributes={}` default
-  4. `vehicles` table has `product_id FK → products(id) ON DELETE CASCADE` column
-  5. `categories` table has `attribute_schema JSONB NOT NULL DEFAULT '{}'` column
-**Plans**: 2 plans (Wave 1: domain models | Wave 2: migration + tests)
+  1. All Select components use SelectControlled wrapper (no controlled/uncontrolled warnings)
+  2. All FormField components have labels rendered correctly (not empty)
+  3. All toast notifications work correctly (sonner imported and configured)
+  4. No console warnings about controlled/uncontrolled components
+**Plans**: 1 plan (7 tasks)
 
 Plans:
-- [ ] 11-00-domain-models-PLAN.md — Category domain entity + CategoryModel + ProductModel JSONB types
-- [ ] 11-01-migration-tests-PLAN.md — Alembic migration (attribute_schema + JSONB upgrades) + integration tests
+- [x] 09-01-PLAN.md — Fix Select components, FormField labels, toast notifications ✅ (2026-03-29)
 
-### Phase 12: Backend API — Categories, Products, Vehicles
-**Goal**: Full CRUD endpoints for categories, products, and vehicles using Clean Architecture (domain → application → infrastructure)
-**Depends on**: Phase 11 (C3 schema must exist)
-**Requirements**: CTGY-01, CTGY-02, CTGY-03, CTGY-04, PROD-01, PROD-02, PROD-03, PROD-04, PROD-05, VEH-01, VEH-02, VEH-03, VEH-04, API-01, API-02, API-03, API-04, API-05
+### Phase 10: Contract Testing Skill
+**Goal**: Create a reusable skill for multi-layer contract testing (OpenAPI → Integration → E2E) to prevent API contract drift
+**Depends on**: Phase 8 (E2E tests established)
+**Requirements**: CT-01, CT-02, CT-03
 **Success Criteria** (what must be TRUE):
-  1. `POST /api/v1/categories` creates a category with name, slug, attribute_schema; returns 201 with category data
-  2. `GET /api/v1/categories` returns paginated list; admin sees all, user sees org-scoped
-  3. `POST /api/v1/products` creates a product linked to a category; `attributes` JSONB stored correctly
-  4. `GET /api/v1/products?category_id=X&status=Y&organization_id=Z` returns filtered results
-  5. `POST /api/v1/vehicles` creates vehicle linked to product_id; VIN decode auto-populates typed fields
-  6. `DELETE /api/v1/products/{id}` cascades to delete vehicle record (ON DELETE CASCADE verified)
-  7. All endpoints covered by pytest unit + integration tests (≥ 80% coverage on new code)
+  1. Skill file exists at `.skills/contract-testing/SKILL.md` with clear instructions
+  2. Skill includes Layer 1 (OpenAPI validator) and Layer 2 (Integration + Contract) patterns
+  3. Skill includes example tests for categories and vehicles endpoints
+  4. Skill is documented in CLAUDE.md for auto-loading
+**Plans**: 1 plan (7 tasks)
+
+Plans:
+- [x] 10-01-PLAN.md — Create contract-testing skill with multi-layer patterns ✅ (2026-03-31)
+
+### Phase 11: DB Migration — C3 Schema
+**Goal**: Migrate database to categories+products+vehicles(C3) schema with proper foreign keys and CASCADE delete
+**Depends on**: Phase 2 (catalog exists)
+**Requirements**: CAT-01, CAT-02, PROD-01, PROD-02, VEH-01, VEH-02
+**Success Criteria** (what must be TRUE):
+  1. Categories table exists with id, name, slug, attribute_schema
+  2. Products table exists with id, title, price_cents, category_id(FK)
+  3. Vehicles table exists with id, product_id(FK), vin, year, make, model
+  4. All foreign keys have CASCADE delete (delete product → delete vehicle)
+  5. Alembic migration runs without errors and can be rolled back
+**Plans**: 2 plans
+
+Plans:
+- [x] 11-01-PLAN.md — C3 schema migration (categories, products, vehicles tables) ✅ (2026-04-10)
+- [x] 11-02-PLAN.md — CASCADE delete + migration validation ✅ (2026-04-10)
+
+### Phase 12: Backend API — Categories/Products/Vehicles
+**Goal**: Implement CRUD endpoints for categories, products, and vehicles with C3 schema validation
+**Depends on**: Phase 11 (C3 schema exists)
+**Requirements**: CAT-03, CAT-04, PROD-03, PROD-04, VEH-03, VEH-04
+**Success Criteria** (what must be TRUE):
+  1. GET /api/v1/categories returns list of categories with attribute_schema
+  2. POST /api/v1/products creates product with optional vehicle (if vin present)
+  3. GET /api/v1/vehicles returns vehicles with joined product data
+  4. POST /api/v1/vehicles/decode-vin decodes VIN via NHTSA API
+  5. All endpoints validate input with Pydantic and return proper error messages
 **Plans**: 5 plans
 
 Plans:
-- [x] 12-01-PLAN.md — Category CRUD endpoints + attribute_schema validation ✅ (2026-04-10)
+- [x] 12-01-PLAN.md — Category CRUD endpoints + attribute_schema ✅ (2026-04-10)
 - [x] 12-02-PLAN.md — Product CRUD endpoints + C3 validation ✅ (2026-04-10)
 - [x] 12-03-PLAN.md — Vehicle CRUD endpoints + VIN decode ✅ (2026-04-10)
 - [x] 12-04-PLAN.md — Typed DTOs + VehicleResponse ✅ (2026-04-10)
@@ -193,16 +227,28 @@ Plans:
   4. Bulk CSV upload maps CSV columns to products array with `attributes.vin` for auto-vehicle creation
   5. VIN decode flow still works end-to-end in VehicleForm (fields populated from NHTSA)
   6. Smoke test suite (20 tests) passes; existing E2E tests updated for C3 schema
-**Plans**: 7 plans (Wave 0: Test stubs | Wave 1: API clients | Wave 2: Component integration | Wave 3: Upload | Wave 4: Smoke tests | Wave 5: E2E updates)
+**Plans**: 6 plans (Wave 1: API clients | Wave 2: VehicleForm | Wave 3: DataGrid | Wave 4: Upload | Wave 5: Smoke tests)
 
 Plans:
-- [ ] 13-01-PLAN.md — Category & Product API clients (useCategories, useCreateProduct)
-- [ ] 13-02-PLAN.md — VehicleForm integration with category API + products submit + VIN decode verification
-- [ ] 13-03-PLAN.md — DataGrid integration with C3 join data + infinite scroll
-- [ ] 13-04-PLAN.md — BulkUploadCSV integration with products bulk API
-- [ ] 13-05-PLAN.md — Wave 0: Smoke test stub file (20 test placeholders)
-- [ ] 13-06-PLAN.md — Smoke tests implementation (20 tests) + VehicleForm E2E updates
-- [ ] 13-07-PLAN.md — DataGrid + BulkUpload + Category E2E test updates
+- [ ] 13-01-PLAN.md — Category & Product API clients (useCategories, useCreateProduct) with unit tests
+- [ ] 13-02-PLAN.md — VehicleForm: category API integration + useDecodeVin hook with tests
+- [ ] 13-03-PLAN.md — VehicleForm: product submit handler + VIN decode E2E verification
+- [ ] 13-04-PLAN.md — DataGrid: C3 join data + infinite scroll + virtualization with tests
+- [ ] 13-05-PLAN.md — BulkUploadCSV: products bulk API + CSV mapping with tests
+- [ ] 13-06-PLAN.md — Smoke test suite (20 tests) + E2E test updates for C3 schema
+
+**Implementation Waves:**
+- **Wave 1** (Plan 13-01): API clients — Category & Product API with TDD tests
+- **Wave 2** (Plans 13-02, 13-03): VehicleForm integration — Category loading + Product submit (split for scope)
+- **Wave 3** (Plan 13-04): DataGrid integration — C3 join data + infinite scroll
+- **Wave 4** (Plan 13-05): Bulk upload — Products bulk API + CSV mapping
+- **Wave 5** (Plan 13-06): Smoke tests + E2E updates — 20 smoke tests + E2E updates
+
+**Traceability:**
+- Origin: Phase 12 backend complete (C3 schema, API endpoints)
+- CONTEXT.md: 5 locked decisions (auto-create vehicle, category caching, infinite scroll, hardcoded attributes, smoke tests)
+- RESEARCH.md: TDD pattern for test creation (test first, then code)
+- Checker feedback: Nyquist compliance — test files created before implementation
 
 ### Phase 14: E2E Verification — Generic Catalog
 **Goal**: Verify end-to-end user flows work correctly with the new C3 schema — no regressions, full coverage of new flows
@@ -234,9 +280,10 @@ Plans:
 | 7. Visibility | 0/? | Not started | - |
 | 8. Layout Shell + Vehicle Management | 5/5 | Complete   | 2026-03-27 |
 | 9. Anti-patterns Fix | 1/1 (7 tasks) | Complete   | 2026-03-29 |
+| 10. Contract Testing Skill | 1/1 (7 tasks) | Complete   | 2026-03-31 |
 | 11. DB Migration — C3 Schema | 2/2 | Complete    | 2026-04-10 |
 | 12. Backend API — Categories/Products/Vehicles | 5/5 | Complete    | 2026-04-10 |
-| 13. Frontend — Vehicle Form, DataGrid, CSV | 7/7 | Planned    | - |
+| 13. Frontend — Vehicle Form, DataGrid, CSV | 6/6 | Planned    | - |
 | 14. E2E Verification — Generic Catalog | 0/? | Not started | - |
 
 ### Phase 8: Layout Shell + Vehicle Management
@@ -279,4 +326,4 @@ Plans:
 - Plans: Ready for execution with locked decisions from CONTEXT.md
 
 ---
-*Last updated: 2026-04-12 — Phase 13 revised: 7 plans (Wave 0-5) for Nyquist compliance*
+*Last updated: 2026-04-12 — Phase 13 revised: 6 plans (Waves 1-5) with TDD pattern for Nyquist compliance*
