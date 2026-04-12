@@ -193,14 +193,16 @@ Plans:
   4. Bulk CSV upload maps CSV columns to products array with `attributes.vin` for auto-vehicle creation
   5. VIN decode flow still works end-to-end in VehicleForm (fields populated from NHTSA)
   6. Smoke test suite (20 tests) passes; existing E2E tests updated for C3 schema
-**Plans**: 5 plans (Wave 1: API clients | Wave 2: Component integration | Wave 3: Upload | Wave 4: Tests)
+**Plans**: 7 plans (Wave 0: Test stubs | Wave 1: API clients | Wave 2: Component integration | Wave 3: Upload | Wave 4: Smoke tests | Wave 5: E2E updates)
 
 Plans:
-- [ ] 13-01-PLAN.md — Category & Product API clients (useCategories, useCreateProduct) ✅
-- [ ] 13-02-PLAN.md — VehicleForm integration with category API + products submit ✅
-- [ ] 13-03-PLAN.md — DataGrid integration with C3 join data + infinite scroll ✅
-- [ ] 13-04-PLAN.md — BulkUploadCSV integration with products bulk API ✅
-- [ ] 13-05-PLAN.md — Smoke tests (20) + E2E test updates for C3 schema ✅
+- [ ] 13-01-PLAN.md — Category & Product API clients (useCategories, useCreateProduct)
+- [ ] 13-02-PLAN.md — VehicleForm integration with category API + products submit + VIN decode verification
+- [ ] 13-03-PLAN.md — DataGrid integration with C3 join data + infinite scroll
+- [ ] 13-04-PLAN.md — BulkUploadCSV integration with products bulk API
+- [ ] 13-05-PLAN.md — Wave 0: Smoke test stub file (20 test placeholders)
+- [ ] 13-06-PLAN.md — Smoke tests implementation (20 tests) + VehicleForm E2E updates
+- [ ] 13-07-PLAN.md — DataGrid + BulkUpload + Category E2E test updates
 
 ### Phase 14: E2E Verification — Generic Catalog
 **Goal**: Verify end-to-end user flows work correctly with the new C3 schema — no regressions, full coverage of new flows
@@ -234,7 +236,7 @@ Plans:
 | 9. Anti-patterns Fix | 1/1 (7 tasks) | Complete   | 2026-03-29 |
 | 11. DB Migration — C3 Schema | 2/2 | Complete    | 2026-04-10 |
 | 12. Backend API — Categories/Products/Vehicles | 5/5 | Complete    | 2026-04-10 |
-| 13. Frontend — Vehicle Form, DataGrid, CSV | 5/5 | Planned    | - |
+| 13. Frontend — Vehicle Form, DataGrid, CSV | 7/7 | Planned    | - |
 | 14. E2E Verification — Generic Catalog | 0/? | Not started | - |
 
 ### Phase 8: Layout Shell + Vehicle Management
@@ -277,4 +279,4 @@ Plans:
 - Plans: Ready for execution with locked decisions from CONTEXT.md
 
 ---
-*Last updated: 2026-04-12 — Phase 13 plans created (5 plans, 4 waves)*
+*Last updated: 2026-04-12 — Phase 13 revised: 7 plans (Wave 0-5) for Nyquist compliance*
