@@ -96,7 +96,7 @@ known-first-party = ["prosell"]
 "src/prosell/domain/value_objects/email.py" = ["RUF012"]
 
 [tool.pyright]
-pythonVersion = "3.13"
+pythonVersion = "3.14"
 typeCheckingMode = "strict"
 venvPath = "."
 venv = ".venv"
