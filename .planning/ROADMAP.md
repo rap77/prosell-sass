@@ -107,11 +107,22 @@ Plans:
 **Plans**: 5 plans (08-00, 08-01, 08-02, 08-03, 08-04)
 
 Plans:
-- [x] 08-00-PLAN.md — Premium UI components setup (Shadcn UI, MagicUI, Radix UI)
-- [x] 08-01-PLAN.md — Layout shell with sidebar, header, mobile nav, route groups, middleware guards
-- [x] 08-02-PLAN.md — DataGrid with TanStack Table + Virtual, checkboxes, status badges
-- [x] 08-03-PLAN.md — Search filters with hybrid client/server strategy, Command Palette, FilterSidebar, FilterPills
-- [x] 08-04-PLAN.md — Image upload with drag-and-drop, presigned URLs, Zustand progress tracking, ImageGallery
+- [x] 08-00-PLAN.md — Test infrastructure: 16 test stubs (13 component, 2 hook, 1 E2E) ✅ (2026-03-27)
+- [x] 08-01-PLAN.md — Layout shell with route groups, sidebar (corrected terminology), header, mobile nav, middleware guards ✅ (2026-03-27)
+- [x] 08-02-PLAN.md — DataGrid with TanStack Table + Virtual, sorting, checkbox selection, StatusBadge (7 states), mobile cards ✅ (2026-03-27)
+- [x] 08-03-PLAN.md — Hybrid search (client instant + server deep), Cmd+K CommandPalette, collapsible FilterSidebar, filter pills ✅ (2026-03-27)
+- [x] 08-04-PLAN.md — Image upload with drag-drop, presigned URLs, Zustand progress store, sortable gallery, cover photo control ✅ (2026-03-27)
+
+**Implementation Waves:**
+- **Wave 1** (Plans 08-01, 08-02): MVP foundation — Layout shell + basic DataGrid for single vehicle upload
+- **Wave 2** (Plans 08-03, 08-04): Enhanced UX — Search filters + image upload for UAT observation
+- **Wave 3** (Future): Premium features — Advanced roles (Manager vs Dealer), bulk CSV upload
+
+**Traceability**:
+- Origin: UAT Phase 1 feedback (2026-03-15) — Request for advanced search, bulk actions, professional UI
+- CONTEXT.md: 7-brain validation complete (UX, UI, Frontend, QA, Product, Growth, Backend)
+- RESEARCH.md: Technical patterns validated (TanStack Virtual, Zustand, hybrid search, presigned URLs)
+- Plans: Ready for execution with locked decisions from CONTEXT.md
 
 ### Phase 6: Market Intelligence
 **Goal**: Every vehicle in the catalog displays its price position relative to the market so vendedores and admins can act on pricing without leaving the panel
@@ -162,20 +173,34 @@ Plans:
   5. `POST /api/v1/vehicles` creates vehicle linked to product_id; VIN decode auto-populates typed fields
   6. `DELETE /api/v1/products/{id}` cascades to delete vehicle record (ON DELETE CASCADE verified)
   7. All endpoints covered by pytest unit + integration tests (≥ 80% coverage on new code)
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [x] 12-01-PLAN.md — Category CRUD endpoints + attribute_schema validation ✅ (2026-04-10)
+- [x] 12-02-PLAN.md — Product CRUD endpoints + C3 validation ✅ (2026-04-10)
+- [x] 12-03-PLAN.md — Vehicle CRUD endpoints + VIN decode ✅ (2026-04-10)
+- [x] 12-04-PLAN.md — Typed DTOs + VehicleResponse ✅ (2026-04-10)
+- [x] 12-05-PLAN.md — Integration tests + CASCADE delete ✅ (2026-04-10)
 
 ### Phase 13: Frontend — Vehicle Form, DataGrid, CSV Upload
 **Goal**: Update all frontend components to use the new products+vehicles schema — VehicleForm, DataGrid, bulk CSV upload
 **Depends on**: Phase 12 (API endpoints must be live)
 **Requirements**: FE-01, FE-02, FE-03, FE-04
 **Success Criteria** (what must be TRUE):
-  1. VehicleForm submits `POST /api/v1/products` + `POST /api/v1/vehicles` (two-step creation) instead of old `/vehicles` endpoint
-  2. Category dropdown in VehicleForm loads from `GET /api/v1/categories` with no hardcoded options
-  3. DataGrid renders vehicles from `GET /api/v1/vehicles` join query (includes product name, price, status)
-  4. Bulk CSV upload maps CSV columns to new products+vehicles schema and creates both records per row
+  1. VehicleForm submits `POST /api/v1/products` with `attributes.vin` for auto-vehicle creation (single-call pattern)
+  2. Category dropdown in VehicleForm loads from `GET /api/v1/categories` with 5-minute client-side cache
+  3. DataGrid renders vehicles from `GET /api/v1/vehicles` join query (includes product title, price, status)
+  4. Bulk CSV upload maps CSV columns to products array with `attributes.vin` for auto-vehicle creation
   5. VIN decode flow still works end-to-end in VehicleForm (fields populated from NHTSA)
-  6. All existing Vitest component tests pass; new tests added for changed components
-**Plans**: TBD
+  6. Smoke test suite (20 tests) passes; existing E2E tests updated for C3 schema
+**Plans**: 5 plans (Wave 1: API clients | Wave 2: Component integration | Wave 3: Upload | Wave 4: Tests)
+
+Plans:
+- [ ] 13-01-PLAN.md — Category & Product API clients (useCategories, useCreateProduct) ✅
+- [ ] 13-02-PLAN.md — VehicleForm integration with category API + products submit ✅
+- [ ] 13-03-PLAN.md — DataGrid integration with C3 join data + infinite scroll ✅
+- [ ] 13-04-PLAN.md — BulkUploadCSV integration with products bulk API ✅
+- [ ] 13-05-PLAN.md — Smoke tests (20) + E2E test updates for C3 schema ✅
 
 ### Phase 14: E2E Verification — Generic Catalog
 **Goal**: Verify end-to-end user flows work correctly with the new C3 schema — no regressions, full coverage of new flows
@@ -205,11 +230,11 @@ Plans:
 | 5. Dashboards | 0/? | Not started | - |
 | 6. Market Intelligence | 0/? | Not started | - |
 | 7. Visibility | 0/? | Not started | - |
-| 8. Layout Shell + Vehicle Management | 5/5 | Complete | 2026-03-27 |
-| 9. Anti-patterns Fix | 1/1 (7 tasks) | Complete | 2026-03-29 |
-| 11. DB Migration — C3 Schema | 0/? | Complete    | 2026-04-10 |
-| 12. Backend API — Categories/Products/Vehicles | 0/? | Not started | - |
-| 13. Frontend — Vehicle Form, DataGrid, CSV | 0/? | Not started | - |
+| 8. Layout Shell + Vehicle Management | 5/5 | Complete   | 2026-03-27 |
+| 9. Anti-patterns Fix | 1/1 (7 tasks) | Complete   | 2026-03-29 |
+| 11. DB Migration — C3 Schema | 2/2 | Complete    | 2026-04-10 |
+| 12. Backend API — Categories/Products/Vehicles | 5/5 | Complete    | 2026-04-10 |
+| 13. Frontend — Vehicle Form, DataGrid, CSV | 5/5 | Planned    | - |
 | 14. E2E Verification — Generic Catalog | 0/? | Not started | - |
 
 ### Phase 8: Layout Shell + Vehicle Management
@@ -252,4 +277,4 @@ Plans:
 - Plans: Ready for execution with locked decisions from CONTEXT.md
 
 ---
-*Last updated: 2026-04-09 — Milestone v1.1 Generic Catalog phases 11-14 added*
+*Last updated: 2026-04-12 — Phase 13 plans created (5 plans, 4 waves)*
