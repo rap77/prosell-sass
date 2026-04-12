@@ -7,14 +7,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.product import (
     CreateProductRequest,
-    ProductListResponse,
     ProductResponse,
     UpdateProductRequest,
 )
+from prosell.application.use_cases.product.list_products import ProductListResponse
 from prosell.application.use_cases.product.approve_product import ApproveProductUseCase
 from prosell.application.use_cases.product.create_product import CreateProductUseCase
 from prosell.application.use_cases.product.delete_product import DeleteProductUseCase
 from prosell.application.use_cases.product.list_products import ListProductsUseCase
+from prosell.domain.entities.user import User
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
 from prosell.infrastructure.database.session import get_async_session
@@ -32,7 +33,7 @@ async def get_product_repository(session: AsyncSession) -> AbstractProductReposi
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     request: CreateProductRequest,
-    _current_user=Depends(get_current_auth_user_from_cookie),
+    _current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -59,7 +60,7 @@ async def list_products(
     max_price: int | None = None,
     skip: int = 0,
     limit: int = 100,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductListResponse:
     """
@@ -76,7 +77,9 @@ async def list_products(
     - **skip**: Pagination offset
     - **limit**: Max records per page
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     use_case = ListProductsUseCase(repo)
@@ -99,11 +102,13 @@ async def list_products(
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """Get a product by ID."""
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, tenant_id)
@@ -121,7 +126,7 @@ async def get_product(
 async def update_product(
     product_id: UUID,
     request: UpdateProductRequest,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -129,7 +134,9 @@ async def update_product(
 
     Only DRAFT, REJECTED, and PAUSED products can be edited.
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, tenant_id)
@@ -163,7 +170,7 @@ async def update_product(
 @router.post("/{product_id}/submit", response_model=ProductResponse)
 async def submit_product_for_approval(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -171,7 +178,9 @@ async def submit_product_for_approval(
 
     Transitions product from DRAFT/REJECTED → PENDING.
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, tenant_id)
@@ -188,7 +197,7 @@ async def submit_product_for_approval(
 @router.post("/{product_id}/approve", response_model=ProductResponse)
 async def approve_product(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -197,7 +206,9 @@ async def approve_product(
     Transitions product from PENDING → PUBLISHED.
     Requires MASTER or VERIFIER role.
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     use_case = ApproveProductUseCase(repo)
@@ -209,7 +220,7 @@ async def approve_product(
 async def reject_product(
     product_id: UUID,
     reason: str,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -218,7 +229,9 @@ async def reject_product(
     Transitions product from PENDING → REJECTED.
     Requires MASTER or VERIFIER role.
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, tenant_id)
@@ -235,7 +248,7 @@ async def reject_product(
 @router.post("/{product_id}/publish", response_model=ProductResponse)
 async def publish_product(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -244,7 +257,9 @@ async def publish_product(
     Transitions product from PENDING → PUBLISHED.
     Admin only - skips approval workflow.
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, tenant_id)
@@ -261,7 +276,7 @@ async def publish_product(
 @router.post("/{product_id}/pause", response_model=ProductResponse)
 async def pause_product(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -269,7 +284,9 @@ async def pause_product(
 
     Transitions product from PUBLISHED → PAUSED.
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, tenant_id)
@@ -286,7 +303,7 @@ async def pause_product(
 @router.post("/{product_id}/resume", response_model=ProductResponse)
 async def resume_product(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -294,7 +311,9 @@ async def resume_product(
 
     Transitions product from PAUSED → PUBLISHED.
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, tenant_id)
@@ -311,7 +330,7 @@ async def resume_product(
 @router.post("/{product_id}/mark-sold", response_model=ProductResponse)
 async def mark_product_sold(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -319,7 +338,9 @@ async def mark_product_sold(
 
     Transitions product from PUBLISHED/RESERVED → SOLD.
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, tenant_id)
@@ -336,7 +357,7 @@ async def mark_product_sold(
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> None:
     """
@@ -347,7 +368,9 @@ async def delete_product(
 
     Requires: product must belong to user's tenant.
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     use_case = DeleteProductUseCase(repo)
@@ -361,7 +384,7 @@ async def delete_product(
 @router.post("/{product_id}/archive", response_model=ProductResponse)
 async def archive_product(
     product_id: UUID,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
@@ -369,7 +392,9 @@ async def archive_product(
 
     Transitions any status → ARCHIVED.
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, tenant_id)
@@ -386,11 +411,13 @@ async def archive_product(
 @router.get("/featured", response_model=list[ProductResponse])
 async def get_featured_products(
     limit: int = 10,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> list[ProductResponse]:
     """Get featured products."""
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
     products = await repo.get_featured(tenant_id, limit)

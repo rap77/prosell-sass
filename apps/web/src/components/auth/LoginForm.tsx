@@ -262,6 +262,7 @@ export function LoginForm() {
               disabled={isDisabled}
               required
               onClearError={handleInputChange}
+              data-testid="login-password"
             />
           )}
         />

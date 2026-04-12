@@ -1,21 +1,23 @@
 """Category router."""
 
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.category import (
-    CategoryListResponse,
     CategoryResponse,
     CreateCategoryRequest,
 )
+from prosell.application.use_cases.category.list_categories import CategoryListResponse
 from prosell.application.dto.category.update import UpdateAttributeSchemaRequest, UpdateCategoryRequest
 from prosell.application.use_cases.category.create_category import CreateCategoryUseCase
 from prosell.application.use_cases.category.delete_category import DeleteCategoryUseCase
 from prosell.application.use_cases.category.list_categories import ListCategoriesUseCase
 from prosell.application.use_cases.category.update_attribute_schema import UpdateCategoryAttributeSchemaUseCase
 from prosell.application.use_cases.category.update_category import UpdateCategoryUseCase
+from prosell.domain.entities.user import User
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.infrastructure.api.dependencies import (
     get_async_session,
@@ -39,7 +41,7 @@ async def list_categories(
     is_active: bool | None = None,
     skip: int = 0,
     limit: int = 100,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> CategoryListResponse:
     """
@@ -52,7 +54,9 @@ async def list_categories(
 
     Non-admin users only see active categories.
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     # Role-based check: User entity has no .role attr — use has_role() which checks role.role_type.value
     is_admin = current_user.has_role(["super_admin", "admin"])
@@ -73,7 +77,7 @@ async def list_categories(
 @router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
     request: CreateCategoryRequest,
-    _current_user=Depends(get_current_auth_user_from_cookie),
+    _current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> CategoryResponse:
     """
@@ -84,17 +88,22 @@ async def create_category(
     repo = SqlAlchemyCategoryRepository(db)
     use_case = CreateCategoryUseCase(repo)
 
-    return await use_case.execute(request)
+    try:
+        return await use_case.execute(request)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
 
 @router.get("/{category_id}", response_model=CategoryResponse)
 async def get_category(
     category_id: UUID,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> CategoryResponse:
     """Get a category by ID."""
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
     category = await repo.get_by_id(category_id, tenant_id)
@@ -109,11 +118,13 @@ async def get_category(
 async def update_category(
     category_id: UUID,
     request: UpdateCategoryRequest,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> CategoryResponse:
     """Update category basic information."""
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
     use_case = UpdateCategoryUseCase(repo)
@@ -124,7 +135,7 @@ async def update_category(
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(
     category_id: UUID,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> None:
     """
@@ -132,7 +143,9 @@ async def delete_category(
 
     The category remains in the database but is hidden from non-admin users.
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
     use_case = DeleteCategoryUseCase(repo)
@@ -144,7 +157,7 @@ async def delete_category(
 async def update_category_attribute_schema(
     category_id: UUID,
     request: UpdateAttributeSchemaRequest,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> CategoryResponse:
     """
@@ -154,7 +167,9 @@ async def update_category_attribute_schema(
     Warning: existing products may have attributes that no longer conform
     to the new schema after this operation.
     """
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
     use_case = UpdateCategoryAttributeSchemaUseCase(repo)
@@ -162,14 +177,16 @@ async def update_category_attribute_schema(
     return await use_case.execute(category_id, tenant_id, request.attribute_schema)
 
 
-@router.get("/{category_id}/fields", response_model=dict)
+@router.get("/{category_id}/fields", response_model=dict)  # type: ignore[type-arg]
 async def get_category_fields(
     category_id: UUID,
-    current_user=Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
-) -> dict:
+) -> dict[str, Any]:
     """Get field configuration for a category."""
-    tenant_id = current_user.tenant_id  # type: ignore
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
     category = await repo.get_by_id(category_id, tenant_id)
