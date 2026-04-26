@@ -2,9 +2,9 @@
 
 import { useState } from "react"
 import { useDropzone } from "react-dropzone"
-import { parse } from "csv-parse/sync"
 import { toast } from "sonner"
 import { Upload, FileText, X, CheckCircle2, AlertCircle, Download } from "lucide-react"
+import { useBulkUploadProducts } from "@/lib/api/vehicles"
 
 interface CSVRecord {
   vin?: string
@@ -50,6 +50,9 @@ export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVPr
   const [isUploading, setIsUploading] = useState(false)
   const [previewRows, setPreviewRows] = useState<ParsedRow[]>([])
 
+  // Use the new products bulk upload hook
+  const bulkUpload = useBulkUploadProducts()
+
   const onDrop = (acceptedFiles: File[]) => {
     const selectedFile = acceptedFiles[0]
     if (!selectedFile) return
@@ -74,33 +77,22 @@ export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVPr
     reader.onload = (e) => {
       const text = e.target?.result as string
       try {
-        const records = parse(text, {
-          columns: true,
-          skip_empty_lines: true,
-          trim: true,
-          relax_column_count: true, // Allow missing columns
-        }) as CSVRecord[]
+        // Simple CSV parser for preview
+        const lines = text.split("\n").filter((line) => line.trim())
+        const headers = lines[0].split(",").map((h) => h.trim())
 
-        const rows: ParsedRow[] = records.map((row, index: number) => ({
-          rowNumber: index + 2, // +2 for header (row 1) and 0-based index
-          vin: row.vin || "",
-          year: row.year,
-          make: row.make,
-          model: row.model,
-          trim: row.trim,
-          mileage: row.mileage,
-          price: row.price,
-          condition: row.condition,
-          exterior_color: row.exterior_color,
-          interior_color: row.interior_color,
-          transmission: row.transmission,
-          fuel_type: row.fuel_type,
-          body_style: row.body_style,
-          drivetrain: row.drivetrain,
-          engine: row.engine,
-          cylinders: row.cylinders,
-          description: row.description,
-        }))
+        const rows: ParsedRow[] = lines.slice(1).map((line, index) => {
+          const values = line.split(",").map((v) => v.trim())
+          const row: any = {
+            rowNumber: index + 2, // +2 for header (row 1) and 0-based index
+          }
+
+          headers.forEach((header, i) => {
+            row[header] = values[i] || ""
+          })
+
+          return row as ParsedRow
+        })
 
         // Basic validation
         rows.forEach((row) => {
@@ -123,10 +115,10 @@ export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVPr
 
     setIsUploading(true)
     try {
-      const result = await onUpload(file)
+      // Use the new products bulk upload hook
+      const result = await bulkUpload.mutateAsync(file)
 
       if (result.errors.length > 0) {
-        toast.error(`Failed to upload ${result.failed_count} vehicles`)
         // Mark rows with errors
         const rowsWithErrors = parsedRows.map((row) => {
           const error = result.errors.find((e) => e.row_number === row.rowNumber)
@@ -149,8 +141,9 @@ export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVPr
   }
 
   const downloadTemplate = () => {
-    const template = `vin,year,make,model,trim,mileage,price,condition,exterior_color,interior_color,transmission,fuel_type,body_style,drivetrain,engine,cylinders,description
-1HGCM82633A123456,2020,Honda,Civic,EX,35000,18500,excellent,Black,Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Well maintained
+    const template = `vin,year,make,model,trim,mileage,price,exterior_color,interior_color,transmission,fuel_type,body_type,drivetrain,engine,cylinders,description
+1HGCM82633A123456,2020,Honda,Civic,EX,35000,18500,Black,Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Well maintained
+2T1BURHE0FC123456,2015,Toyota,Camry,SE,80000,12000,White,Grey,Automatic,Gas,Sedan,FWD,2.5L 4-Cylinder,4,Clean title
 `
 
     const blob = new Blob([template], { type: "text/csv" })
