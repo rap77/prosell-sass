@@ -45,12 +45,16 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await page.waitForLoadState("load");
       await page.waitForTimeout(1000);
 
-      // Verify model field is populated
+      // Verify model field is populated with SPECIFIC value (Condition #9)
       const modelInput = page.getByLabel(/model/i);
       await expect(modelInput).toHaveValue(/equinox/i);
+
+      // Additional specific assertion
+      const modelValue = await modelInput.inputValue();
+      expect(modelValue.toLowerCase()).toBe("equinox");
     });
 
-    test("should update engine field after VIN decode", async ({ page }) => {
+    test("@smoke should update engine field after VIN decode", async ({ page }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
@@ -124,8 +128,8 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       const selectedItem = page.locator('[role="option"][data-state="checked"]');
       const selectedText = await selectedItem.textContent();
 
-      // Chevrolet should be selected
-      expect(selectedText).toMatch(/chevrolet|chevy/i);
+      // SPECIFIC assertion: Chevrolet should be selected (Condition #9)
+      expect(selectedText?.toLowerCase()).toBe("chevrolet");
     });
 
     test.fixme("should update body_type select field after VIN decode", async ({ page }) => {
@@ -154,7 +158,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(selectedText?.length).toBeGreaterThan(0);
     });
 
-    test("should update drivetrain select field after VIN decode", async ({ page }) => {
+    test("@smoke should update drivetrain select field after VIN decode", async ({ page }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
@@ -479,6 +483,72 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   // ============================================
 
   test.describe("Integration Tests", () => {
+    test("@smoke should submit form and create product via POST /api/v1/products", async ({ page }) => {
+      // Mock the products API to verify correct request format
+      let createProductRequestBody: any = null;
+
+      await page.route("**/api/v1/products", async (route) => {
+        const request = route.request();
+        createProductRequestBody = await request.postDataJSON();
+
+        // Verify the request structure matches CreateProductRequest
+        expect(createProductRequestBody).toHaveProperty("title");
+        expect(createProductRequestBody).toHaveProperty("price_cents");
+        expect(createProductRequestBody).toHaveProperty("category_id");
+        expect(createProductRequestBody).toHaveProperty("attributes");
+
+        // Verify attributes.vin is present (triggers auto-vehicle creation)
+        expect(createProductRequestBody.attributes).toHaveProperty("vin");
+        expect(createProductRequestBody.attributes.vin).toBe("2GNALCEK1H1615946");
+
+        // Verify decoded vehicle attributes are in attributes object
+        expect(createProductRequestBody.attributes).toHaveProperty("year");
+        expect(createProductRequestBody.attributes).toHaveProperty("make");
+        expect(createProductRequestBody.attributes).toHaveProperty("model");
+
+        // Respond with success
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: "prod-123",
+            title: "2017 Chevrolet Equinox",
+            price_cents: 1850000,
+            category_id: "cat-123",
+            status: "draft",
+            attributes: createProductRequestBody.attributes,
+            created_at: new Date().toISOString(),
+          }),
+        });
+      });
+
+      // Fill VIN and decode
+      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
+      await vehiclesPage.decodeVinButton.click();
+      await page.waitForLoadState("load");
+      await page.waitForTimeout(1000);
+
+      // Fill required fields
+      const priceInput = page.getByLabel(/price|precio/i);
+      await priceInput.fill("18500");
+
+      // Select category (open dropdown, click first option)
+      const categorySelect = page.locator('button[id="category_id"]');
+      await categorySelect.click();
+      await page.waitForTimeout(500);
+      const firstOption = page.locator('[role="option"]').first();
+      await firstOption.click();
+
+      // Submit form
+      const submitButton = page.getByRole("button", { name: /create|submit|save/i });
+      await submitButton.click();
+      await page.waitForLoadState("load");
+
+      // Verify the API was called with correct structure
+      expect(createProductRequestBody).not.toBeNull();
+      expect(createProductRequestBody.title).toMatch(/chevrolet|equinox/i);
+    });
+
     test("@smoke should decode all fields simultaneously and maintain consistency", async ({ page }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");

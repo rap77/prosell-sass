@@ -197,8 +197,12 @@ test.describe("API: Products", () => {
 
     expect(response.ok()).toBeTruthy();
     const data = await response.json();
+
+    // SPECIFIC assertions (Condition #9)
     expect(data).toHaveProperty("id");
     expect(data.status).toBe("draft");
+    expect(data.price_cents).toBe(10000);
+    expect(data.title).toMatch(/API Test Product/);
   });
 
   test("POST /api/v1/products - should validate title is required", async ({ request }) => {
