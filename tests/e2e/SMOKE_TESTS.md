@@ -26,32 +26,40 @@ pnpm test --grep @smoke --ui
 
 ## Smoke Test Coverage (20 tests)
 
-### Auth Flow (3 tests)
+### Auth Flow (5 tests)
 1. `@smoke should display login page elements correctly` - Verifies login form loads
-2. `@smoke should login successfully with valid credentials` - Verifies auth works
-3. `@smoke should show validation error for empty email` - Verifies form validation
+2. `@smoke should pass accessibility checks` - Login page WCAG compliance
+3. `@smoke should show validation error for empty email` - Form validation
+4. `@smoke should show validation error for invalid email format` - Email format validation
+5. `@smoke should login successfully with valid credentials` - Auth flow works
 
-### Vehicle Form (5 tests)
-4. `@smoke should update model field after VIN decode` - VIN decode populates fields
-5. `@smoke should update make select field after VIN decode` - Select fields update correctly
-6. `@smoke should display selected make value in trigger without placeholder` - Selected values display
-7. `@smoke should decode all fields simultaneously and maintain consistency` - All fields populate together
-8. `@smoke should update engine field after VIN decode` - Engine field populates
+### Vehicle Form (7 tests)
+6. `@smoke should update model field after VIN decode` - VIN decode: model = "equinox"
+7. `@smoke should update engine field after VIN decode` - Engine field populates
+8. `@smoke should update make select field after VIN decode` - Select: make = "chevrolet"
+9. `@smoke should update drivetrain select field after VIN decode` - Drivetrain populates
+10. `@smoke should display selected make value in trigger without placeholder` - Selected values display
+11. `@smoke should decode all fields simultaneously and maintain consistency` - All fields populate together
+12. `@smoke should submit form and create product via POST /api/v1/products` - Form creates product+vehicle
 
-### DataGrid (4 tests)
-9-12. [TODO] DataGrid smoke tests to be added
+### Middleware (1 test)
+13. `@smoke should redirect to login when accessing /dashboard` - Protected routes work
 
-### CSV Upload (3 tests)
-13-15. [TODO] CSV upload smoke tests to be added
+### UI Components (2 tests)
+14. `@smoke should display the main heading` - Home page loads
+15. `@smoke should display Google OAuth button` - OAuth button visible
 
-### Categories (2 tests)
-16. `@smoke GET /api/v1/categories - should list categories` - Categories API works
-17. [TODO] Category dropdown loads options
+### Dashboard (1 test)
+16. `@smoke should display organizations list page elements correctly` - Org list loads
 
-### API Contracts (3 tests)
-18. `@smoke GET /api/v1/categories - should list categories` - Categories API
-19. [TODO] POST /api/v1/products creates product+vehicle
-20. [TODO] GET /api/v1/vehicles returns paginated results
+### API Contracts (5 tests)
+17. `@smoke GET /api/v1/categories - should list categories` - Categories API
+18. `@smoke POST /api/v1/categories - should create category` - Create category works
+19. `@smoke GET /api/v1/products - should list products` - Products API
+20. `@smoke POST /api/v1/products - should create product` - Create product works
+21. `@smoke POST /api/v1/vehicles/decode-vin - should decode valid VIN` - VIN decode API
+
+Note: We have 21 tests marked (added form submission test). Target was 20.
 
 ## Adding New Smoke Tests
 
