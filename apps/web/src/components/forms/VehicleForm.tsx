@@ -65,6 +65,7 @@ const vehicleSchema = z.object({
     .regex(/^[A-HJ-NPR-Z0-9]+$/, "Invalid VIN format"),
 
   // Basic Info
+  price: z.number().min(0, "Price must be positive").optional(),
   year: z.number().min(1900).max(2030).optional(),
   make: z.string().optional(),
   model: z.string().optional(),
@@ -162,6 +163,7 @@ export function VehicleForm({
     defaultValues: {
       category_id: initialData?.category_id ?? "",
       vin: initialData?.vin ?? "",
+      price: initialData?.price != null ? Number(initialData.price) : undefined,
       year: initialData?.year != null ? Number(initialData.year) : undefined,
       make: initialData?.make ?? undefined,
       model: initialData?.model ?? "",
@@ -372,7 +374,7 @@ export function VehicleForm({
         // Backend auto-creates vehicle record when attributes.vin is present
         const product = await createProduct.mutateAsync({
           title: `${data.year ?? ""} ${data.make ?? ""} ${data.model ?? ""}`.trim(),
-          price_cents: 0, // TODO: Add price field to form
+          price_cents: Math.round((data.price ?? 0) * 100), // Convert dollars to cents
           category_id: data.category_id ?? "",
           attributes: {
             vin: data.vin, // REQUIRED - triggers auto-vehicle creation
@@ -544,6 +546,24 @@ export function VehicleForm({
         <h2 className="text-lg font-semibold">Información Básica</h2>
 
         <div className="grid grid-cols-4 gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="price">
+              Precio <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              {...register("price", { valueAsNumber: true })}
+              id="price"
+              type="number"
+              placeholder="18500"
+              disabled={isDisabled}
+              min={0}
+              step={0.01}
+            />
+            {errors.price && (
+              <p className="text-sm text-destructive">{errors.price.message}</p>
+            )}
+          </div>
+
           <div className="flex flex-col gap-2">
             <Label htmlFor="year">Año</Label>
             <Controller
