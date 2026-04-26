@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Phase 13 Plan 01 COMPLETE — Category & Product API clients with TDD tests (20 passing). httpOnly auth support verified.
-last_updated: "2026-04-26T01:42:00.000Z"
-last_activity: 2026-04-26 — Phase 13 Plan 01 complete. Category API client (5min cache), Product API client (VIN auto-creation), TypeScript types, 20 TDD tests passing.
+stopped_at: Phase 13 Plan 02 COMPLETE — VehicleForm API integration with useDecodeVin hook and Category API. 8 TDD tests passing. Brain #7 Condition #6 satisfied.
+last_updated: "2026-04-26T01:47:00.000Z"
+last_activity: 2026-04-26 — Phase 13 Plan 02 complete. useDecodeVin hook in vehicles API, VehicleForm category integration with useCategories/useCategoryOptions, category dropdown, VIN decode waits for categories loading, 8 TDD tests passing.
 progress:
   total_phases: 14
   completed_phases: 5
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 ## Current Position
 
 Phase: 13 of 14 — Frontend Infrastructure (API clients, VehicleForm, UI components)
-Plan: 13-01 (complete)
-Status: Phase 13 Plan 01 COMPLETE. Category & Product API clients created with full TDD test coverage (20/20 passing). httpOnly auth cookie support verified via credentials: 'include'. Ready for Plan 13-02 (VehicleForm integration).
-Last activity: 2026-04-26 — Plan 13-01 complete. API clients for categories (useCategories with 5min cache, useCategoryOptions transformer) and products (createProductWithVehicle with VIN auto-creation, useCreateProduct mutation). TypeScript types matching backend DTOs. Brain #7 Condition #8 satisfied.
+Plan: 13-02 (complete)
+Status: Phase 13 Plan 02 COMPLETE. VehicleForm integrated with Category API (useCategories, useCategoryOptions) and useDecodeVin hook. Category dropdown shows names (not UUIDs). VIN decode waits for categories to load (Brain #7 Condition #6). 8 TDD tests passing (4 useDecodeVin + 4 VehicleForm).
+Last activity: 2026-04-26 — Plan 13-02 complete. useDecodeVin hook in vehicles API, VehicleForm category dropdown with loading states, Brain #7 Condition #6 satisfied (categoriesLoading guard).
 
 Progress: [██████░░░░] 43% (Phases 1, 2, 8, 9, 10, 11 complete; Phases 12 complete; Phase 13 in progress)
 
