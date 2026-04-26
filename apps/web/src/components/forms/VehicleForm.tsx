@@ -39,6 +39,8 @@ import {
   FB_TRANSMISSIONS,
   FB_YEARS,
 } from "@/lib/constants/fbVehicleOptions";
+import { useCategories, useCategoryOptions } from "@/lib/api/categories";
+import { useDecodeVin } from "@/lib/api/vehicles";
 
 // ============================================
 // TYPES
@@ -51,6 +53,9 @@ export type VehicleFormMode = "create" | "edit";
 // ============================================
 
 const vehicleSchema = z.object({
+  // Category
+  category_id: z.string().optional(),
+
   // VIN Section
   vin: z
     .string()
@@ -154,6 +159,7 @@ export function VehicleForm({
     resolver: zodResolver(vehicleSchema),
     mode: "onSubmit",
     defaultValues: {
+      category_id: initialData?.category_id ?? "",
       vin: initialData?.vin ?? "",
       year: initialData?.year != null ? Number(initialData.year) : undefined,
       make: initialData?.make ?? undefined,
@@ -184,6 +190,14 @@ export function VehicleForm({
     },
   });
 
+  // Category API integration
+  const { data: categories, isLoading: categoriesLoading } = useCategories();
+  const { data: categoryOptions } = useCategoryOptions();
+  const selectedCategoryId = watch("category_id");
+
+  // VIN decode hook
+  const decodeVinMutation = useDecodeVin();
+
   // Derived state
   const isDisabled = isSubmitting || isPending;
 
@@ -201,6 +215,7 @@ export function VehicleForm({
 
   /**
    * Decode VIN and auto-populate fields
+   * Brain #7 Condition #6: Wait for categories to load before auto-selecting
    */
   const handleDecodeVin = async () => {
     const vin = watch("vin");
@@ -212,106 +227,96 @@ export function VehicleForm({
       return;
     }
 
+    // Brain #7 Condition #6: Wait for categories to load before decoding
+    if (categoriesLoading) {
+      toast.error("Please wait", {
+        description: "Categories are still loading...",
+      });
+      return;
+    }
+
     setIsDecodingVin(true);
 
     try {
       logger.debug("🚀 Starting VIN decode for:", vin);
 
-      const response = await fetch("/api/v1/vehicles/decode-vin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vin }),
-      });
+      // Use useDecodeVin mutation
+      const decodedVehicle = await decodeVinMutation.mutateAsync(vin);
 
-      logger.debug("📡 Fetch response status:", response.status, response.ok);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        logger.error(`❌ VIN decode failed: ${response.status} - ${errorText}`);
-        throw new Error("Failed to decode VIN");
-      }
-
-      const data = await response.json();
-      logger.debug("📦 Raw API response:", data);
-
-      // DEBUG: Log response to verify values match SelectItem keys
-      logger.debug("🔍 VIN Decode Response:", data.vehicle);
-      logger.debug("🔍 make value:", data.vehicle.make, "type:", typeof data.vehicle.make);
-      logger.debug("🔍 body_type value:", data.vehicle.body_type, "type:", typeof data.vehicle.body_type);
-      logger.debug("🔍 drivetrain value:", data.vehicle.drivetrain, "type:", typeof data.vehicle.drivetrain);
+      logger.debug("📦 Decoded vehicle data:", decodedVehicle);
 
       // Auto-populate fields from decoded data
-      if (data.vehicle) {
+      if (decodedVehicle) {
         // Update each field individually to preserve existing values
         // Only update fields that have actual values from VIN decode
         // Use != null to catch both null and undefined for numeric fields
-        if (data.vehicle.year != null) {
-          logger.debug("✅ Setting year:", data.vehicle.year);
-          setValue("year", data.vehicle.year, {
+        if (decodedVehicle.year != null) {
+          logger.debug("✅ Setting year:", decodedVehicle.year);
+          setValue("year", decodedVehicle.year, {
             shouldValidate: true,
             shouldDirty: true,
             shouldTouch: true,
           });
         }
-        if (data.vehicle.make) {
-          logger.debug("✅ Setting make:", data.vehicle.make);
-          setValue("make", data.vehicle.make, {
+        if (decodedVehicle.make) {
+          logger.debug("✅ Setting make:", decodedVehicle.make);
+          setValue("make", decodedVehicle.make, {
             shouldValidate: true,
             shouldDirty: true,
             shouldTouch: true,
           });
         }
-        if (data.vehicle.model) {
-          logger.debug("✅ Setting model:", data.vehicle.model);
-          setValue("model", data.vehicle.model, {
+        if (decodedVehicle.model) {
+          logger.debug("✅ Setting model:", decodedVehicle.model);
+          setValue("model", decodedVehicle.model, {
             shouldValidate: true,
             shouldDirty: true,
             shouldTouch: true,
           });
         }
-        if (data.vehicle.trim) {
-          logger.debug("✅ Setting trim:", data.vehicle.trim);
-          setValue("trim", data.vehicle.trim, {
+        if (decodedVehicle.trim) {
+          logger.debug("✅ Setting trim:", decodedVehicle.trim);
+          setValue("trim", decodedVehicle.trim, {
             shouldValidate: true,
             shouldDirty: true,
             shouldTouch: true,
           });
         }
-        if (data.vehicle.body_type) {
-          logger.debug("✅ Setting body_type:", data.vehicle.body_type);
-          setValue("body_type", data.vehicle.body_type, {
+        if (decodedVehicle.body_type) {
+          logger.debug("✅ Setting body_type:", decodedVehicle.body_type);
+          setValue("body_type", decodedVehicle.body_type, {
             shouldValidate: true,
             shouldDirty: true,
             shouldTouch: true,
           });
         }
-        if (data.vehicle.drivetrain) {
-          logger.debug("✅ Setting drivetrain:", data.vehicle.drivetrain);
-          setValue("drivetrain", data.vehicle.drivetrain, {
+        if (decodedVehicle.drivetrain) {
+          logger.debug("✅ Setting drivetrain:", decodedVehicle.drivetrain);
+          setValue("drivetrain", decodedVehicle.drivetrain, {
             shouldValidate: true,
             shouldDirty: true,
             shouldTouch: true,
           });
         }
-        if (data.vehicle.transmission) {
-          logger.debug("✅ Setting transmission:", data.vehicle.transmission);
-          setValue("transmission", data.vehicle.transmission, {
+        if (decodedVehicle.transmission) {
+          logger.debug("✅ Setting transmission:", decodedVehicle.transmission);
+          setValue("transmission", decodedVehicle.transmission, {
             shouldValidate: true,
             shouldDirty: true,
             shouldTouch: true,
           });
         }
-        if (data.vehicle.engine) {
-          logger.debug("✅ Setting engine:", data.vehicle.engine);
-          setValue("engine", data.vehicle.engine, {
+        if (decodedVehicle.engine) {
+          logger.debug("✅ Setting engine:", decodedVehicle.engine);
+          setValue("engine", decodedVehicle.engine, {
             shouldValidate: true,
             shouldDirty: true,
             shouldTouch: true,
           });
         }
-        if (data.vehicle.fuel_type) {
-          logger.debug("✅ Setting fuel_type:", data.vehicle.fuel_type);
-          setValue("fuel_type", data.vehicle.fuel_type, {
+        if (decodedVehicle.fuel_type) {
+          logger.debug("✅ Setting fuel_type:", decodedVehicle.fuel_type);
+          setValue("fuel_type", decodedVehicle.fuel_type, {
             shouldValidate: true,
             shouldDirty: true,
             shouldTouch: true,
@@ -329,10 +334,6 @@ export function VehicleForm({
           });
         }, 100);
       }
-
-      toast.success("VIN decoded successfully", {
-        description: data.cached ? "Loaded from cache" : "Loaded from NHTSA",
-      });
 
       logger.debug("✅ VIN decode completed successfully");
     } catch (error) {
@@ -517,6 +518,20 @@ export function VehicleForm({
               disabled={isDisabled}
             />
           </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="category_id">Categoría</Label>
+          <SelectControlled
+            name="category_id"
+            control={control}
+            options={categoryOptions ?? []}
+            placeholder="Selecciona una categoría"
+            disabled={isDisabled || categoriesLoading}
+          />
+          {errors.category_id && (
+            <p className="text-sm text-destructive">{errors.category_id.message}</p>
+          )}
         </div>
       </section>
 
