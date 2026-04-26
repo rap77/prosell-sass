@@ -22,6 +22,18 @@ vi.mock("sonner", () => ({
 // Mock fetch globally
 global.fetch = vi.fn();
 
+// Mock File.text() method for jsdom environment
+Object.defineProperty(File.prototype, 'text', {
+  writable: true,
+  value: function(this: File) {
+    return new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsText(this);
+    });
+  },
+});
+
 // Mock csv-parse/sync
 vi.mock("csv-parse/sync", () => ({
   parse: vi.fn((text: string, options: any) => {
@@ -382,9 +394,7 @@ describe("useBulkUploadProducts", () => {
 2T1BURHE0FC123456,2015,Toyota,Camry,12000`;
     const file = new File([csvContent], "test.csv", { type: "text/csv" });
 
-    await act(async () => {
-      result.current.mutate(file);
-    });
+    result.current.mutate(file);
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -421,9 +431,7 @@ describe("useBulkUploadProducts", () => {
 1HGCM82633A123456,2020,Honda,Civic,LX,50000,Black,Black`;
     const file = new File([csvContent], "test.csv", { type: "text/csv" });
 
-    await act(async () => {
-      result.current.mutate(file);
-    });
+    result.current.mutate(file);
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -463,9 +471,7 @@ describe("useBulkUploadProducts", () => {
 1HGCM82633A123456,2020,Honda,Civic,18500`;
     const file = new File([csvContent], "test.csv", { type: "text/csv" });
 
-    await act(async () => {
-      result.current.mutate(file);
-    });
+    result.current.mutate(file);
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -496,9 +502,7 @@ describe("useBulkUploadProducts", () => {
 1HGCM82633A123456,2020,Honda,Civic,18500`;
     const file = new File([csvContent], "test.csv", { type: "text/csv" });
 
-    await act(async () => {
-      result.current.mutate(file);
-    });
+    result.current.mutate(file);
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -529,9 +533,7 @@ describe("useBulkUploadProducts", () => {
 1HGCM82633A123456,2020,Honda,Civic,18500`;
     const file = new File([csvContent], "test.csv", { type: "text/csv" });
 
-    await act(async () => {
-      result.current.mutate(file);
-    });
+    result.current.mutate(file);
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery, type UseQueryResult, type UseInfiniteQueryResult } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { parse } from "csv-parse/sync";
 
 export interface Vehicle {
   id: string;
@@ -360,7 +361,6 @@ export function useBulkUploadProducts() {
     mutationFn: async (file: File) => {
       // Parse CSV file
       const text = await file.text();
-      const { parse } = await import("csv-parse/sync");
       const records = parse(text, {
         columns: true,
         skip_empty_lines: true,
