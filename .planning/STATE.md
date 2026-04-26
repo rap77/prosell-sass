@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Phase 11 COMPLETE — C3 schema migration live. Pyright fix applied (Any type + typed kwargs in Category entity). State updated.
-last_updated: "2026-04-10T22:01:19.371Z"
-last_activity: 2026-04-10 — Phase 12 complete. Category CRUD API (attribute_schema, role-based filtering), C3 product validation, VehicleResponse DTO, DELETE cascade, 20 unit + 21 integration tests.
+status: in_progress
+stopped_at: Phase 13 Plan 01 COMPLETE — Category & Product API clients with TDD tests (20 passing). httpOnly auth support verified.
+last_updated: "2026-04-26T01:42:00.000Z"
+last_activity: 2026-04-26 — Phase 13 Plan 01 complete. Category API client (5min cache), Product API client (VIN auto-creation), TypeScript types, 20 TDD tests passing.
 progress:
-  total_phases: 12
+  total_phases: 14
   completed_phases: 5
-  total_plans: 28
-  completed_plans: 28
+  total_plans: 29
+  completed_plans: 29
   percent: 43
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** El vendedor de ProSell puede publicar cualquier vehículo en Facebook Marketplace desde la app, capturar el lead interesado, y confirmar la cita con el dealer — todo sin salir del panel interno.
-**Current focus:** Phase 2 (Catalog & Roles) COMPLETE - Ready for next phase
+**Current focus:** Phase 13 (Frontend Infrastructure) - Plan 01 COMPLETE, continuing with remaining plans
 
 ## Current Position
 
-Phase: 12 of 14 — Backend API (categories/products/vehicles endpoints) — COMPLETE
-Plan: 12-05 (complete)
-Status: Phase 12 COMPLETE. All 5 plans executed, 41 new tests added. Ready for Phase 13.
-Last activity: 2026-04-10 — Phase 12 complete. Category CRUD API (attribute_schema, role-based filtering), C3 product validation, VehicleResponse DTO, DELETE cascade, 20 unit + 21 integration tests.
+Phase: 13 of 14 — Frontend Infrastructure (API clients, VehicleForm, UI components)
+Plan: 13-01 (complete)
+Status: Phase 13 Plan 01 COMPLETE. Category & Product API clients created with full TDD test coverage (20/20 passing). httpOnly auth cookie support verified via credentials: 'include'. Ready for Plan 13-02 (VehicleForm integration).
+Last activity: 2026-04-26 — Plan 13-01 complete. API clients for categories (useCategories with 5min cache, useCategoryOptions transformer) and products (createProductWithVehicle with VIN auto-creation, useCreateProduct mutation). TypeScript types matching backend DTOs. Brain #7 Condition #8 satisfied.
 
-Progress: [██████░░░░] 43% (Phases 1, 2, 8, 9, 10, 11 complete; Phases 12-14 pending)
+Progress: [██████░░░░] 43% (Phases 1, 2, 8, 9, 10, 11 complete; Phases 12 complete; Phase 13 in progress)
 
 ## Performance Metrics
 

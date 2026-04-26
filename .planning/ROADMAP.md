@@ -230,7 +230,7 @@ Plans:
 **Plans**: 6 plans (Wave 1: API clients | Wave 2: VehicleForm | Wave 3: DataGrid | Wave 4: Upload | Wave 5: Smoke tests)
 
 Plans:
-- [ ] 13-01-PLAN.md — Category & Product API clients (useCategories, useCreateProduct) with unit tests
+- [x] 13-01-PLAN.md — Category & Product API clients (useCategories, useCreateProduct) with unit tests ✅ (2026-04-26)
 - [ ] 13-02-PLAN.md — VehicleForm: category API integration + useDecodeVin hook with tests
 - [ ] 13-03-PLAN.md — VehicleForm: product submit handler + VIN decode E2E verification
 - [ ] 13-04-PLAN.md — DataGrid: C3 join data + infinite scroll + virtualization with tests
@@ -283,7 +283,7 @@ Plans:
 | 10. Contract Testing Skill | 1/1 (7 tasks) | Complete   | 2026-03-31 |
 | 11. DB Migration — C3 Schema | 2/2 | Complete    | 2026-04-10 |
 | 12. Backend API — Categories/Products/Vehicles | 5/5 | Complete    | 2026-04-10 |
-| 13. Frontend — Vehicle Form, DataGrid, CSV | 6/6 | Planned    | - |
+| 13. Frontend — Vehicle Form, DataGrid, CSV | 1/6 | In Progress | 2026-04-26 |
 | 14. E2E Verification — Generic Catalog | 0/? | Not started | - |
 
 ### Phase 8: Layout Shell + Vehicle Management
