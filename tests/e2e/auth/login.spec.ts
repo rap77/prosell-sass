@@ -20,7 +20,7 @@ test.describe("Login", () => {
 
   test.describe("Page Layout", () => {
     test(
-      "should display login page elements correctly",
+      "@smoke should display login page elements correctly",
       { tag: ["@e2e", "@login", "@LOGIN-E2E-001"] },
       async ({ page }) => {
         await expect(loginPage.heading).toBeVisible();
@@ -98,7 +98,7 @@ test.describe("Login", () => {
 
   test.describe("Authentication Flow", () => {
     test(
-      "should login successfully with valid credentials",
+      "@smoke should login successfully with valid credentials",
       { tag: ["@critical", "@e2e", "@login", "@LOGIN-E2E-007"] },
       async ({ page }) => {
         const user = getExistingUser();

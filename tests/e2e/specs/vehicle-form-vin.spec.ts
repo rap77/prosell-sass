@@ -36,7 +36,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   // ============================================
 
   test.describe("Input Fields Update After VIN Decode", () => {
-    test("should update model field after VIN decode", async ({ page }) => {
+    test("@smoke should update model field after VIN decode", async ({ page }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946"); // Chevrolet Equinox 2017
 
@@ -106,7 +106,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   // ============================================
 
   test.describe("Select Fields Update After VIN Decode", () => {
-    test("should update make select field after VIN decode", async ({ page }) => {
+    test("@smoke should update make select field after VIN decode", async ({ page }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
@@ -234,7 +234,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   // ============================================
 
   test.describe("Select Fields Display Correct Selected Values", () => {
-    test("should display selected make value in trigger without placeholder", async ({ page }) => {
+    test("@smoke should display selected make value in trigger without placeholder", async ({ page }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
@@ -479,7 +479,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   // ============================================
 
   test.describe("Integration Tests", () => {
-    test("should decode all fields simultaneously and maintain consistency", async ({ page }) => {
+    test("@smoke should decode all fields simultaneously and maintain consistency", async ({ page }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 

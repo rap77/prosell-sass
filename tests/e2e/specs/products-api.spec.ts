@@ -53,7 +53,7 @@ test.describe("API: Categories", () => {
     }
   });
 
-  test("GET /api/v1/categories - should list categories", async ({ request }) => {
+  test("@smoke GET /api/v1/categories - should list categories", async ({ request }) => {
     // Pass JWT as Cookie header (FastAPI requires Cookie, not Bearer)
     const response = await request.get(`${API_BASE}/api/v1/categories`, {
       headers: {
