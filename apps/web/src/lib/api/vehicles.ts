@@ -349,6 +349,91 @@ export function useBulkUploadVehicles() {
   });
 }
 
+/**
+ * Bulk upload products via CSV file
+ * Maps CSV rows to products with attributes.vin for auto-vehicle creation
+ */
+export function useBulkUploadProducts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      // Parse CSV file
+      const text = await file.text();
+      const { parse } = await import("csv-parse/sync");
+      const records = parse(text, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        relax_column_count: true,
+      }) as Array<Record<string, string>>;
+
+      // Map CSV records to products array
+      const products = records.map((row) => ({
+        title: row.title || `${row.year} ${row.make} ${row.model}`.trim(),
+        price_cents: Math.round(Number(row.price) * 100),
+        category_id: row.category_id || "default-category-id", // TODO: Make configurable
+        attributes: {
+          vin: row.vin, // REQUIRED - triggers vehicle auto-creation
+          year: Number(row.year),
+          make: row.make,
+          model: row.model,
+          trim: row.trim,
+          body_type: row.body_type || row.body_style,
+          mileage: Number(row.mileage),
+          exterior_color: row.exterior_color,
+          interior_color: row.interior_color,
+          transmission: row.transmission,
+          fuel_type: row.fuel_type,
+          drivetrain: row.drivetrain,
+          engine: row.engine,
+          cylinders: row.cylinders ? Number(row.cylinders) : undefined,
+          description: row.description,
+        },
+      }));
+
+      // Send to products bulk endpoint
+      const res = await fetch("/api/v1/products/bulk", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ products }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: "Failed to upload products" }));
+        throw new Error(error.message || "Failed to upload products");
+      }
+
+      return res.json() as Promise<{
+        total_rows: number;
+        created_count: number;
+        failed_count: number;
+        errors: Array<{ row_number: number; vin: string; error: string }>;
+      }>;
+    },
+
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      if (result.errors.length === 0) {
+        toast.success(`Successfully uploaded ${result.created_count} vehicles`);
+      } else {
+        toast.error(
+          `Uploaded ${result.created_count} vehicles, ${result.failed_count} failed. Check errors below.`,
+        );
+      }
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Failed to upload vehicles");
+    },
+  });
+}
+
 export interface DecodedVehicle {
   vin: string;
   year?: number;
