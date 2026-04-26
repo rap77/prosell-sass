@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 
 ## Current Position
 
-Phase: 13 of 14 — Frontend Infrastructure (API clients, VehicleForm, UI components)
-Plan: 13-06 (complete)
-Status: Phase 13 Plan 06 COMPLETE. Tag-based smoke test suite with 21 critical path tests using @smoke tag. Brain #7 Condition #5 applied (tag-based, not separate file). Condition #8 verified (all API clients use credentials: 'include'). Condition #9 applied (specific value assertions). VehicleForm E2E tests updated for products API contract verification. SMOKE_TESTS.md documentation created.
-Last activity: 2026-04-26 — Plan 13-05 complete. CSV bulk upload with products API integration, 26 tests passing.
+Phase: 14 of 14 — E2E Verification — Generic Catalog
+Plan: 14-01 (pending)
+Status: Phase 13 COMPLETE ✅. All 6 plans executed successfully. 21/21 smoke tests passing. Frontend migrated to C3 (Categories+Products+Vehicles) schema with zero regressions. All FE requirements (FE-01, FE-02, FE-03, FE-04) verified complete. Ready for Phase 14 E2E verification.
+Last activity: 2026-04-26 — Phase 13 COMPLETE. Smoke test suite verified (21/21 passing). All frontend components migrated to products API.
 
-Progress: [██████░░░░] 43% (Phases 1, 2, 8, 9, 10, 11 complete; Phases 12 complete; Phase 13 in progress)
+Progress: [███████░░░] 50% (Phases 1, 2, 8, 9, 10, 11, 12, 13 complete; Phase 14 pending)
 
 ## Performance Metrics
 
@@ -113,6 +113,11 @@ Progress: [██████░░░░] 43% (Phases 1, 2, 8, 9, 10, 11 comple
 - [13-06] 21 critical path smoke tests covering auth, vehicle form, API contracts, UI components (~2 min execution)
 - [13-06] Specific value assertions prevent false positives — Use `toBe("equinox")` not `toMatch(/equinox/i)`
 - [13-06] All API clients verified for credentials: 'include' — categories.ts, products.ts, vehicles.ts compliant
+- [Phase 13] Single-call product creation — VehicleForm submits POST /api/v1/products with attributes.vin for auto-vehicle creation
+- [Phase 13] Client-side category caching — 5-minute staleTime reduces API load
+- [Phase 13] Infinite scroll with cursor pagination — Better performance than offset at scale
+- [Phase 13] Hardcoded vehicle attributes — Simplified MVP, dynamic form generation deferred
+- [Phase 13] Tag-based smoke tests — 21 critical path tests, ~2 min execution, zero regressions
 
 ### Roadmap Evolution
 
