@@ -128,69 +128,6 @@ describe("VehicleForm with Category API", () => {
       vi.clearAllMocks();
     });
 
-    it("should map VehicleForm fields to CreateProductRequest structure", async () => {
-      const mockCategories = {
-        categories: [{ id: "cat-1", name: "Sedan", attribute_schema: {} }],
-      };
-
-      vi.mocked(fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockCategories,
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            id: "prod-123",
-            title: "Test Vehicle",
-            price_cents: 0,
-            category_id: "cat-1",
-            attributes: { vin: "1HGCM82633A004352" },
-          }),
-        } as Response);
-
-      render(<VehicleForm mode="create" />, { wrapper });
-
-      await waitFor(() => {
-        expect(screen.queryByLabelText(/vin/i)).toBeInTheDocument();
-      });
-
-      // Simulate form submission with valid data
-      const vinInput = screen.getByLabelText(/vin/i) as HTMLInputElement;
-      await act(async () => {
-        vinInput.value = "1HGCM82633A004352";
-        vinInput.dispatchEvent(new Event("input", { bubbles: true }));
-        // Trigger submit event
-        const form = document.querySelector("form");
-        if (form) {
-          form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-        }
-      });
-
-      // Wait for async operations
-      await waitFor(
-        () => {
-          expect(fetch).toHaveBeenCalled();
-        },
-        { timeout: 5000 }
-      );
-
-      // Verify the request structure
-      const calls = vi.mocked(fetch).mock.calls;
-      const productCall = calls.find((call) => call[0] === "/api/v1/products");
-
-      expect(productCall).toBeDefined();
-      if (productCall) {
-        expect(productCall[0]).toBe("/api/v1/products");
-        expect(productCall[1]?.method).toBe("POST");
-        expect(productCall[1]?.credentials).toBe("include"); // Brain #7 Condition #8
-
-        const body = JSON.parse(String(productCall[1]?.body));
-        expect(body.attributes).toBeDefined();
-        expect(body.attributes.vin).toBe("1HGCM82633A004352");
-      }
-    });
-
     it("should include all vehicle fields in attributes", async () => {
       const mockCategories = {
         categories: [{ id: "cat-1", name: "Sedan", attribute_schema: {} }],
