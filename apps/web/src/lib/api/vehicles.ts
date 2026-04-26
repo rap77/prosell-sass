@@ -87,7 +87,9 @@ export function useVehicles(filters?: VehicleFilters): UseQueryResult<Vehicle[],
   return useQuery({
     queryKey: ["vehicles", filters],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/vehicles?${queryParams.toString()}`);
+      const res = await fetch(`/api/v1/vehicles?${queryParams.toString()}`, {
+        credentials: "include",
+      });
 
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: "Failed to fetch vehicles" }));
@@ -119,7 +121,9 @@ export function useInfiniteVehicles(filters?: VehicleFilters, limit: number = 50
         params.append("cursor", pageParam);
       }
 
-      const res = await fetch(`/api/v1/vehicles?${params.toString()}`);
+      const res = await fetch(`/api/v1/vehicles?${params.toString()}`, {
+        credentials: "include",
+      });
 
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: "Failed to fetch vehicles" }));
@@ -143,7 +147,9 @@ export function useVehicle(id: string): UseQueryResult<Vehicle, Error> {
   return useQuery({
     queryKey: ["vehicle", id],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/vehicles/${id}`);
+      const res = await fetch(`/api/v1/vehicles/${id}`, {
+        credentials: "include",
+      });
 
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: "Failed to fetch vehicle" }));
@@ -163,6 +169,7 @@ export function useUpdateVehicle() {
     mutationFn: async ({ id, ...data }: Omit<Vehicle, "created_at" | "updated_at"> & { id: string }) => {
       const res = await fetch(`/api/v1/vehicles/${id}`, {
         method: "PATCH",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -226,6 +233,7 @@ export function useDeleteVehicle() {
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/v1/vehicles/${id}`, {
         method: "DELETE",
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -269,6 +277,7 @@ export function useCreateVehicle() {
     mutationFn: async (data: Omit<Vehicle, "id" | "created_at" | "updated_at">) => {
       const res = await fetch("/api/v1/vehicles", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -305,6 +314,7 @@ export function useBulkUploadVehicles() {
 
       const res = await fetch("/api/v1/vehicles/bulk-upload", {
         method: "POST",
+        credentials: "include",
         body: formData,
       });
 

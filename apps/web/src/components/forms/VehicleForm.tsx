@@ -41,6 +41,7 @@ import {
 } from "@/lib/constants/fbVehicleOptions";
 import { useCategories, useCategoryOptions } from "@/lib/api/categories";
 import { useDecodeVin } from "@/lib/api/vehicles";
+import { useCreateProduct } from "@/lib/api/products";
 
 // ============================================
 // TYPES
@@ -198,6 +199,9 @@ export function VehicleForm({
   // VIN decode hook
   const decodeVinMutation = useDecodeVin();
 
+  // Product creation hook (Plan 13-03)
+  const createProduct = useCreateProduct();
+
   // Derived state
   const isDisabled = isSubmitting || isPending;
 
@@ -348,6 +352,8 @@ export function VehicleForm({
 
   /**
    * Handle form submission
+   * Plan 13-03: Use product creation with auto-vehicle creation
+   * Brain #7 Condition #3: Field mapping table documented in PLAN.md
    */
   const onSubmit = async (data: VehicleFormValues) => {
     if (isDisabled) {
@@ -361,30 +367,45 @@ export function VehicleForm({
         return;
       }
 
-      // Build request payload
-      const payload = {
-        ...data,
-        images: imageUrls,
-      };
-
       if (mode === "create") {
-        const response = await fetch("/api/v1/vehicles", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+        // Plan 13-03: Create product with vehicle attributes
+        // Backend auto-creates vehicle record when attributes.vin is present
+        const product = await createProduct.mutateAsync({
+          title: `${data.year ?? ""} ${data.make ?? ""} ${data.model ?? ""}`.trim(),
+          price_cents: 0, // TODO: Add price field to form
+          category_id: data.category_id ?? "",
+          attributes: {
+            vin: data.vin, // REQUIRED - triggers auto-vehicle creation
+            year: data.year,
+            make: data.make,
+            model: data.model,
+            trim: data.trim,
+            body_type: data.body_type,
+            body_style: data.body_style,
+            drivetrain: data.drivetrain,
+            transmission: data.transmission,
+            engine: data.engine,
+            fuel_type: data.fuel_type,
+            mpg_city: data.mpg_city,
+            mpg_highway: data.mpg_highway,
+            mpg_combined: data.mpg_combined,
+            mileage: data.mileage,
+            mileage_unit: data.mileage_unit,
+            exterior_color: data.exterior_color,
+            interior_color: data.interior_color,
+            has_sunroof: data.has_sunroof,
+            has_navigation: data.has_navigation,
+            has_leather: data.has_leather,
+            has_backup_camera: data.has_backup_camera,
+            has_bluetooth: data.has_bluetooth,
+            has_remote_start: data.has_remote_start,
+            seat_material: data.seat_material,
+            stock_number: data.stock_number,
+            description: data.description,
+          },
         });
 
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({ message: "Failed to create vehicle" }));
-          throw new Error(error.message || "Failed to create vehicle");
-        }
-
-        const result = await response.json();
-
-        toast.success("Vehicle created", {
-          description: "Your vehicle has been successfully added to the catalog.",
-        });
-
+        // Success toast shown by useCreateProduct hook
         if (onSuccess) {
           onSuccess();
         } else {
@@ -392,32 +413,13 @@ export function VehicleForm({
           router.refresh();
         }
       } else if (mode === "edit" && vehicleId) {
-        const response = await fetch(`/api/v1/vehicles/${vehicleId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+        // TODO: Implement edit mode with product update
+        toast.error("Edit mode not yet implemented", {
+          description: "Please use the old vehicle form for editing",
         });
-
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({ message: "Failed to update vehicle" }));
-          throw new Error(error.message || "Failed to update vehicle");
-        }
-
-        toast.success("Vehicle updated", {
-          description: "Your vehicle has been successfully updated.",
-        });
-
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          router.push("/catalog");
-          router.refresh();
-        }
       }
     } catch (err) {
-      toast.error("Failed to submit vehicle form", {
-        description: err instanceof Error ? err.message : "Unknown error",
-      });
+      // Error toast shown by useCreateProduct hook
     }
   };
 
