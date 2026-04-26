@@ -62,7 +62,7 @@ export function useCategories(): UseQueryResult<Category[], Error> {
  * </Select>
  * ```
  */
-export function useCategoryOptions(): UseQueryResult<CategoryOption[], Error> {
+export function useCategoryOptions() {
   const categoriesQuery = useCategories();
 
   const transformedData = useMemo(() => {
@@ -77,5 +77,5 @@ export function useCategoryOptions(): UseQueryResult<CategoryOption[], Error> {
   return {
     ...categoriesQuery,
     data: transformedData,
-  } as UseQueryResult<CategoryOption[], Error>;
+  };
 }
