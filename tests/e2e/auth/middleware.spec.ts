@@ -10,7 +10,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Route Protection Middleware", () => {
   test.describe("Protected Routes - Unauthenticated User", () => {
     test(
-      "should redirect to login when accessing /dashboard",
+      "@smoke should redirect to login when accessing /dashboard",
       { tag: ["@critical", "@e2e", "@middleware", "@MIDDLEWARE-E2E-001"] },
       async ({ page }) => {
         await page.goto("/dashboard");

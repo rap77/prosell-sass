@@ -67,7 +67,7 @@ test.describe("API: Categories", () => {
     expect(Array.isArray(data.categories)).toBeTruthy();
   });
 
-  test("POST /api/v1/categories - should create category", async ({ request }) => {
+  test("@smoke POST /api/v1/categories - should create category", async ({ request }) => {
     // tenant_id is required by CreateCategoryRequest
     const response = await request.post(`${API_BASE}/api/v1/categories`, {
       headers: {
@@ -165,7 +165,7 @@ test.describe("API: Products", () => {
     }
   });
 
-  test("GET /api/v1/products - should list products", async ({ request }) => {
+  test("@smoke GET /api/v1/products - should list products", async ({ request }) => {
     const response = await request.get(`${API_BASE}/api/v1/products`, {
       headers: {
         Cookie: `access_token=${authToken}`,
@@ -178,7 +178,7 @@ test.describe("API: Products", () => {
     expect(Array.isArray(data.products)).toBeTruthy();
   });
 
-  test("POST /api/v1/products - should create product", async ({ request }) => {
+  test("@smoke POST /api/v1/products - should create product", async ({ request }) => {
     const response = await request.post(`${API_BASE}/api/v1/products`, {
       headers: {
         Cookie: `access_token=${authToken}`,
@@ -223,7 +223,7 @@ test.describe("API: Products", () => {
 });
 
 test.describe("API: Vehicles", () => {
-  test("POST /api/v1/vehicles/decode-vin - should decode valid VIN", async ({ request }) => {
+  test("@smoke POST /api/v1/vehicles/decode-vin - should decode valid VIN", async ({ request }) => {
     const response = await request.post(`${API_BASE}/api/v1/vehicles/decode-vin`, {
       headers: {
         "Content-Type": "application/json",

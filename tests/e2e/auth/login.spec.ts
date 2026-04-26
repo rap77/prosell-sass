@@ -33,7 +33,7 @@ test.describe("Login", () => {
     );
 
     test(
-      "should pass accessibility checks",
+      "@smoke should pass accessibility checks",
       { tag: ["@e2e", "@login", "@a11y", "@LOGIN-E2E-002"] },
       async ({ page }) => {
         const accessibilityScanResults = await new AxeBuilder({
@@ -55,7 +55,7 @@ test.describe("Login", () => {
 
   test.describe("Form Validation", () => {
     test(
-      "should show validation error for empty email",
+      "@smoke should show validation error for empty email",
       { tag: ["@e2e", "@login", "@validation", "@LOGIN-E2E-004"] },
       async ({ page }) => {
         await loginPage.fillPassword("password123");
@@ -68,7 +68,7 @@ test.describe("Login", () => {
     );
 
     test(
-      "should show validation error for invalid email format",
+      "@smoke should show validation error for invalid email format",
       { tag: ["@e2e", "@login", "@validation", "@LOGIN-E2E-005"] },
       async ({ page }) => {
         await loginPage.fillEmail("invalid-email");

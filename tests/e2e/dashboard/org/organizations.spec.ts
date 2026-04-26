@@ -155,7 +155,7 @@ test.describe("Organizations", () => {
 
   test.describe("Page Layout", () => {
     test(
-      "should display organizations list page elements correctly",
+      "@smoke should display organizations list page elements correctly",
       { tag: ["@e2e", "@organizations", "@ORG-E2E-001"] },
       async ({ page }) => {
         await expect(orgListPage.heading).toBeVisible();

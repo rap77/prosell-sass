@@ -21,7 +21,7 @@ test.describe("Google OAuth Integration", () => {
     await page.goto("/auth/login");
   });
 
-  test("should display Google OAuth button", async ({ page }) => {
+  test("@smoke should display Google OAuth button", async ({ page }) => {
     // Verify OAuth button exists and is visible
     const googleButton = page.getByTestId("google-oauth-button");
     await expect(googleButton).toBeVisible();
