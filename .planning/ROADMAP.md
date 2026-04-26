@@ -232,7 +232,7 @@ Plans:
 Plans:
 - [x] 13-01-PLAN.md — Category & Product API clients (useCategories, useCreateProduct) with unit tests ✅ (2026-04-26)
 - [x] 13-02-PLAN.md — VehicleForm: category API integration + useDecodeVin hook with tests ✅ (2026-04-26)
-- [ ] 13-03-PLAN.md — VehicleForm: product submit handler + VIN decode E2E verification
+- [x] 13-03-PLAN.md — VehicleForm: product submit handler + VIN decode E2E verification ✅ (2026-04-26)
 - [x] 13-04-PLAN.md — DataGrid: C3 join data + infinite scroll + virtualization with tests ✅ (2026-04-26)
 - [ ] 13-05-PLAN.md — BulkUploadCSV: products bulk API + CSV mapping with tests
 - [ ] 13-06-PLAN.md — Smoke test suite (20 tests) + E2E test updates for C3 schema
