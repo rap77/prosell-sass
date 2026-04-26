@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed Phase 13 Plan 05 — CSV bulk upload with products API integration, 26 tests passing
-last_updated: "2026-04-26T13:12:29.345Z"
-last_activity: 2026-04-26 — Plan 13-05 complete. CSV bulk upload with products API integration, 26 tests passing.
+stopped_at: Completed Phase 13 Plan 06 — Smoke test suite with 21 @smoke tests, Brain #7 conditions applied
+last_updated: "2026-04-26T13:39:00.000Z"
+last_activity: 2026-04-26 — Plan 13-06 complete. Tag-based smoke test suite with 21 critical path tests. Specific assertions per Brain #7 Condition #9. All API clients verified for credentials: 'include'.
 progress:
   total_phases: 14
   completed_phases: 6
-  total_plans: 35
-  completed_plans: 35
-  percent: 43
+  total_plans: 36
+  completed_plans: 36
+  percent: 44
 ---
 
 # Project State
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 ## Current Position
 
 Phase: 13 of 14 — Frontend Infrastructure (API clients, VehicleForm, UI components)
-Plan: 13-05 (complete)
-Status: Phase 13 Plan 05 COMPLETE. BulkUploadCSV updated to use POST /api/v1/products/bulk with CSV rows mapping to products array. attributes.vin triggers auto-vehicle creation. Unit tests (16) verify CSV parsing, column mapping, price conversion, error handling. Component tests (10) verify dropzone, preview, upload, validation. File.text() and URL.createObjectURL mocked for jsdom compatibility. credentials: 'include' verified.
+Plan: 13-06 (complete)
+Status: Phase 13 Plan 06 COMPLETE. Tag-based smoke test suite with 21 critical path tests using @smoke tag. Brain #7 Condition #5 applied (tag-based, not separate file). Condition #8 verified (all API clients use credentials: 'include'). Condition #9 applied (specific value assertions). VehicleForm E2E tests updated for products API contract verification. SMOKE_TESTS.md documentation created.
 Last activity: 2026-04-26 — Plan 13-05 complete. CSV bulk upload with products API integration, 26 tests passing.
 
 Progress: [██████░░░░] 43% (Phases 1, 2, 8, 9, 10, 11 complete; Phases 12 complete; Phase 13 in progress)
@@ -109,6 +109,10 @@ Progress: [██████░░░░] 43% (Phases 1, 2, 8, 9, 10, 11 comple
 - [08-04] Blob URL previews: URL.createObjectURL for 0ms delay.
 - [08-04] React 19 patterns: No useCallback (Compiler handles optimization).
 - [08-04] Presigned URLs: Speed (parallel uploads) + quality (thumbnails, WebP, EXIF stripping).
+- [13-06] Smoke tests use tag-based @smoke approach (not separate file) — Run via `pnpm test --grep @smoke`
+- [13-06] 21 critical path smoke tests covering auth, vehicle form, API contracts, UI components (~2 min execution)
+- [13-06] Specific value assertions prevent false positives — Use `toBe("equinox")` not `toMatch(/equinox/i)`
+- [13-06] All API clients verified for credentials: 'include' — categories.ts, products.ts, vehicles.ts compliant
 
 ### Roadmap Evolution
 

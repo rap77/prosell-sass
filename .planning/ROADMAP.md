@@ -235,7 +235,7 @@ Plans:
 - [x] 13-03-PLAN.md — VehicleForm: product submit handler + VIN decode E2E verification ✅ (2026-04-26)
 - [x] 13-04-PLAN.md — DataGrid: C3 join data + infinite scroll + virtualization with tests ✅ (2026-04-26)
 - [x] 13-05-PLAN.md — BulkUploadCSV: products bulk API + CSV mapping with tests ✅ (2026-04-26)
-- [ ] 13-06-PLAN.md — Smoke test suite (20 tests) + E2E test updates for C3 schema
+- [x] 13-06-PLAN.md — Smoke test suite (21 tests) + E2E test updates for C3 schema ✅ (2026-04-26)
 
 **Implementation Waves:**
 - **Wave 1** (Plan 13-01): API clients — Category & Product API with TDD tests
