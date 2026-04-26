@@ -42,15 +42,17 @@ interface BackendVehicleItem {
   mileage?: number;
   exterior_color?: string;
   interior_color?: string;
-  price_cents?: number;
   dealer_id?: string;
   dealer_name?: string;
   created_at: string;
-  publications: Array<{
+  product: {
     id: string;
+    title: string;
+    price_cents: number;
     status: string;
-    platform: string;
-  }>;
+    category_id: string;
+    created_at: string;
+  };
 }
 
 interface BackendCatalogResponse {
@@ -59,18 +61,14 @@ interface BackendCatalogResponse {
   has_more: boolean;
 }
 
-// Transform backend vehicle to frontend vehicle
-function transformVehicle(item: BackendVehicleItem): Vehicle {
-  // Get the most recent publication status
-  const latestPublication = item.publications[0];
-  const status = (latestPublication?.status || "draft") as Vehicle["status"];
-
+// Transform backend vehicle to frontend vehicle (C3 schema with product join)
+export function transformVehicleWithProduct(item: BackendVehicleItem): Vehicle {
   return {
     id: item.id,
-    title: `${item.year} ${item.make} ${item.model} ${item.trim || ""}`.trim(),
-    price: item.price_cents ? item.price_cents / 100 : 0,
-    status,
-    photo_url: undefined, // Will be added from product images
+    title: item.product.title, // From product, not constructed
+    price: item.product.price_cents / 100, // From product
+    status: item.product.status as Vehicle["status"], // From product
+    photo_url: undefined, // TODO: Add from product_images table
     year: item.year,
     make: item.make,
     model: item.model,
@@ -97,7 +95,7 @@ export function useVehicles(filters?: VehicleFilters): UseQueryResult<Vehicle[],
       }
 
       const data = await res.json() as BackendCatalogResponse;
-      return data.items.map(transformVehicle);
+      return data.items.map(transformVehicleWithProduct);
     },
     staleTime: 60 * 1000, // 1 minute
   });
@@ -130,7 +128,7 @@ export function useInfiniteVehicles(filters?: VehicleFilters, limit: number = 50
 
       const data = await res.json() as BackendCatalogResponse;
       return {
-        items: data.items.map(transformVehicle),
+        items: data.items.map(transformVehicleWithProduct),
         next_cursor: data.next_cursor,
         has_more: data.has_more,
       };
