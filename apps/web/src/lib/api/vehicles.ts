@@ -340,3 +340,44 @@ export function useBulkUploadVehicles() {
     },
   });
 }
+
+export interface DecodedVehicle {
+  vin: string;
+  year?: number;
+  make?: string;
+  model?: string;
+  trim?: string;
+  body_type?: string;
+  drivetrain?: string;
+  transmission?: string;
+  fuel_type?: string;
+  engine?: string;
+}
+
+export function useDecodeVin() {
+  return useMutation({
+    mutationFn: async (vin: string) => {
+      const res = await fetch(`/api/v1/vehicles/decode-vin?vin=${vin}`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: "Failed to decode VIN" }));
+        throw new Error(error.message || "Failed to decode VIN");
+      }
+
+      const data = await res.json() as { vehicle: DecodedVehicle };
+      return data.vehicle;
+    },
+
+    onSuccess: (decodedVehicle) => {
+      toast.success("VIN decoded successfully");
+      return decodedVehicle;
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Failed to decode VIN");
+    },
+  });
+}
