@@ -283,7 +283,7 @@ Plans:
 | 10. Contract Testing Skill | 1/1 (7 tasks) | Complete   | 2026-03-31 |
 | 11. DB Migration — C3 Schema | 2/2 | Complete    | 2026-04-10 |
 | 12. Backend API — Categories/Products/Vehicles | 5/5 | Complete    | 2026-04-10 |
-| 13. Frontend — Vehicle Form, DataGrid, CSV | 1/6 | In Progress | 2026-04-26 |
+| 13. Frontend — Vehicle Form, DataGrid, CSV | 5/6 | In Progress|  |
 | 14. E2E Verification — Generic Catalog | 0/? | Not started | - |
 
 ### Phase 8: Layout Shell + Vehicle Management

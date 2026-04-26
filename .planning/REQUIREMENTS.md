@@ -247,7 +247,7 @@ Los 46 requirements v1 se ejecutan en **dos fases inmediatas**:
 
 - [ ] **FE-01**: Vehicle form uses the new products+vehicles schema (no more standalone vehicles table)
 - [ ] **FE-02**: Categories are loaded from API and displayed in vehicle form
-- [ ] **FE-03**: Bulk CSV upload works with the new products+vehicles schema
+- [x] **FE-03**: Bulk CSV upload works with the new products+vehicles schema
 - [ ] **FE-04**: DataGrid displays vehicles from the new products+vehicles join query
 
 ### API — API Endpoints
@@ -290,7 +290,7 @@ Los 46 requirements v1 se ejecutan en **dos fases inmediatas**:
 | VEH-04 | Phase 12 — Backend API | Pending |
 | FE-01 | Phase 13 — Frontend | Pending |
 | FE-02 | Phase 13 — Frontend | Pending |
-| FE-03 | Phase 13 — Frontend | Pending |
+| FE-03 | Phase 13 — Frontend | Complete |
 | FE-04 | Phase 13 — Frontend | Pending |
 | API-01 | Phase 12 — Backend API | Pending |
 | API-02 | Phase 12 — Backend API | Pending |
