@@ -229,6 +229,7 @@ describe("VehicleForm - Category-Specific Attribute Rendering", () => {
                 name: "Sedan",
                 slug: "sedan",
                 attribute_schema: {
+                  price: true,
                   year: true,
                   make: true,
                   model: true,
@@ -254,7 +255,7 @@ describe("VehicleForm - Category-Specific Attribute Rendering", () => {
           json: async () => ({
             id: "prod-1",
             title: "2017 Toyota Camry",
-            price_cents: 18500_00,
+            price_cents: 1850000,
             category_id: "cat-sedan",
             attributes: {},
             status: "active",
