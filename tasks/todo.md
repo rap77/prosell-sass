@@ -36,14 +36,14 @@
 - [x] Write E2E test for category selection flow
 
 ### 13-04: Image Upload with Presigned URLs
-- [ ] Implement drag-drop zone for image upload (up to 20 images)
-- [ ] Create `useImageUpload` hook with Zustand progress store
-- [ ] Implement parallel upload (3-4 concurrent) via presigned URLs
-- [ ] Add progress bars for each file (0-100%)
-- [ ] Backend: Create presigned URL endpoint
-- [ ] Backend: Process images (thumbnails, WebP, EXIF strip)
-- [ ] Write unit tests for upload hook
-- [ ] Write E2E test for bulk image upload
+- [x] Implement drag-drop zone for image upload (up to 20 images)
+- [x] Create `useImageUpload` hook with Zustand progress store
+- [x] Implement parallel upload (3-4 concurrent) via presigned URLs
+- [x] Add progress bars for each file (0-100%)
+- [x] Backend: Create presigned URL endpoint
+- [x] Backend: Process images (thumbnails, WebP, EXIF strip)
+- [x] Write unit tests for upload hook
+- [x] Write E2E test for bulk image upload
 
 ### 13-05: Search and Filters with Real Data
 - [ ] Implement client-side instant search for title/ID/make/model

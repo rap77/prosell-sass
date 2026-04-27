@@ -28,7 +28,7 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 
 ---
 
-### 13-01: Category & Product API Clients
+### 13-01: VehicleForm Refactor for C3 API
 
 **Depends on**: Nothing
 **Full plan**: `.planning/phases/13-frontend/13-01-PLAN.md`
@@ -44,41 +44,7 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 
 ---
 
-### 13-02: VehicleForm Category Integration
-
-**Depends on**: 13-01
-**Full plan**: `.planning/phases/13-frontend/13-02-PLAN.md`
-
-**Objective**: Update VehicleForm to use category API and prepare for product creation integration.
-
-**Acceptance Criteria**:
-- [x] Category dropdown loads options from API (no hardcoded values)
-- [x] Category dropdown displays human-readable names (not UUIDs)
-- [x] VIN decode hook is available and functional
-- [x] Form validation works with new schema
-- [x] Component tests pass
-
----
-
-### 13-03: VehicleForm Product Submit Handler
-
-**Depends on**: 13-02
-**Full plan**: `.planning/phases/13-frontend/13-03-PLAN.md`
-
-**Objective**: Update VehicleForm submit handler to use product creation with auto-vehicle creation.
-
-**Acceptance Criteria**:
-- [x] Form submit calls POST /api/v1/products with attributes.vin
-- [x] API response includes `has_vehicle: true` and `vehicle_id` populated
-- [x] VIN decode populates form fields correctly (existing functionality preserved)
-- [x] Form validation works with new schema
-- [x] Submit redirects to catalog after success
-- [x] Component tests pass
-- [x] E2E VIN decode + submit flow passes
-
----
-
-### 13-04: DataGrid C3 Schema Integration
+### 13-02: DataGrid Integration with Vehicles API
 
 **Depends on**: 13-01
 **Full plan**: `.planning/phases/13-frontend/13-04-PLAN.md`
@@ -86,52 +52,86 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 **Objective**: Update DataGrid to use the new C3 schema vehicles endpoint with product join data and cursor-based infinite scroll.
 
 **Acceptance Criteria**:
-- [ ] DataGrid loads vehicles from GET /api/v1/vehicles with C3 join data
-- [ ] Vehicle titles display from product.title (not constructed)
-- [ ] Prices display correctly from product.price_cents
-- [ ] Status badges show product.status
-- [ ] Infinite scroll loads more rows on scroll (cursor pagination)
-- [ ] Row virtualization maintains ~40 rows in DOM (60fps performance)
-- [ ] Component tests pass
+- [x] DataGrid loads vehicles from GET /api/v1/vehicles with C3 join data
+- [x] Vehicle titles display from product.title (not constructed)
+- [x] Prices display correctly from product.price_cents
+- [x] Status badges show product.status
+- [x] Infinite scroll loads more rows on scroll (cursor pagination)
+- [x] Row virtualization maintains ~40 rows in DOM (60fps performance)
+- [x] Component tests pass
 - [ ] E2E infinite scroll test passes
 
 ---
 
-### 13-05: BulkUpload CSV with Products Schema
+### 13-03: Category Dropdown and Attribute Rendering
 
 **Depends on**: 13-01
-**Full plan**: `.planning/phases/13-frontend/13-05-PLAN.md`
+**Full plan**: `.planning/phases/13-frontend/13-02-PLAN.md`
 
-**Objective**: Update BulkUploadCSV component to use the new products+vehicles schema with auto-vehicle creation.
+**Objective**: Update VehicleForm to use category API with dynamic attribute rendering based on category schema.
 
 **Acceptance Criteria**:
-- [ ] CSV upload calls POST /api/v1/products/bulk
-- [ ] CSV rows map to products with attributes.vin
-- [ ] Backend creates both product and vehicle records per row
-- [ ] Invalid VINs show inline errors in preview table
-- [ ] Success toast displays created/failed counts
-- [ ] Progress bar shows upload progress
-- [ ] Uploaded vehicles appear in DataGrid
-- [ ] Component tests pass
-- [ ] E2E bulk upload test passes
+- [x] Category dropdown loads options from API (no hardcoded values)
+- [x] Category dropdown displays human-readable names (not UUIDs)
+- [x] VIN decode hook is available and functional
+- [x] Conditional attribute rendering based on attribute_schema
+- [x] Form validation works with new schema
+- [x] Component tests pass
+- [x] E2E category selection flow passes
 
 ---
 
-### 13-06: E2E Smoke Test Suite
+### 13-04: Image Upload with Presigned URLs
+
+**Depends on**: 13-01
+**Full plan**: `.planning/phases/13-frontend/13-03-PLAN.md`
+
+**Objective**: Implement drag-drop image upload with parallel presigned URL uploads and backend image processing.
+
+**Acceptance Criteria**:
+- [x] Drag-drop zone accepts up to 20 images
+- [x] useImageUpload hook manages upload state with Zustand
+- [x] Parallel upload (3-4 concurrent) via presigned URLs
+- [x] Progress bars show per-file progress (0-100%)
+- [x] Backend presigned URL endpoint created
+- [x] Backend processes images (thumbnails, WebP, EXIF strip)
+- [x] Unit tests for upload hook pass
+- [x] E2E bulk image upload test passes
+
+---
+
+### 13-05: Search and Filters with Real Data
+
+**Depends on**: 13-02
+**Full plan**: `.planning/phases/13-frontend/13-05-PLAN.md`
+
+**Objective**: Implement client-side search and filter functionality connected to real vehicle data.
+
+**Acceptance Criteria**:
+- [ ] Client-side instant search for title/ID/make/model
+- [ ] FilterSidebar with Brand, Status, Price, Year filters
+- [ ] CommandPalette (Cmd+K) with fuzzy search
+- [ ] URL state sync for shareable filtered links
+- [ ] Unit tests for filter hooks pass
+- [ ] E2E search and filter functionality test passes
+
+---
+
+### 13-06: E2E Verification (Smoke Tests)
 
 **Depends on**: 13-03, 13-04, 13-05
 **Full plan**: `.planning/phases/13-frontend/13-06-PLAN.md`
 
-**Objective**: Implement smoke test suite and update E2E tests for C3 schema integration.
+**Objective**: Create comprehensive smoke test suite verifying all C3 integration flows end-to-end.
 
 **Acceptance Criteria**:
-- [ ] All 20 smoke tests pass in ~2 minutes
-- [ ] VehicleForm E2E tests pass with products API
-- [ ] DataGrid E2E tests pass with C3 join data
-- [ ] Bulk upload E2E tests pass with products schema
-- [ ] No regressions in previously passing E2E tests
-- [ ] Contract tests validate API schemas
-- [ ] Manual testing confirms all flows work end-to-end
+- [ ] Smoke test suite with 20 critical path tests created
+- [ ] Auth flow tests pass (login, logout, protected route)
+- [ ] VehicleForm E2E tests pass (VIN decode, category select, submit)
+- [ ] DataGrid E2E tests pass (load, pagination, C3 join data)
+- [ ] Bulk upload E2E tests pass (CSV, images, progress)
+- [ ] All smoke tests pass in < 2 minutes
+- [ ] No regressions in existing E2E tests
 
 ---
 
