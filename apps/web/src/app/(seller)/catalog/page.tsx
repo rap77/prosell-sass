@@ -28,6 +28,9 @@ export default function CatalogPage() {
   const apiFilters = {
     search: filters.search || undefined,
     status: filters.status[0] as ApiVehicle["status"] | undefined, // Take first status for now
+    make: filters.brand[0] || undefined, // API expects 'make', not 'brand'
+    year_min: filters.year[0] !== 2010 ? filters.year[0] : undefined,
+    year_max: filters.year[1] !== 2026 ? filters.year[1] : undefined,
   }
 
   const {

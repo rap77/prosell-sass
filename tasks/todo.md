@@ -46,12 +46,12 @@
 - [x] Write E2E test for bulk image upload
 
 ### 13-05: Search and Filters with Real Data
-- [ ] Implement client-side instant search for title/ID/make/model
-- [ ] Add FilterSidebar with Brand, Status, Price, Year filters
-- [ ] Implement CommandPalette (Cmd+K) with fuzzy search
-- [ ] Add URL state sync for shareable filtered links
-- [ ] Write unit tests for filter hooks
-- [ ] Write E2E test for search and filter functionality
+- [x] Implement client-side instant search for title/ID/make/model
+- [x] Add FilterSidebar with Brand, Status, Price, Year filters
+- [x] Implement CommandPalette (Cmd+K) with fuzzy search
+- [x] Add URL state sync for shareable filtered links
+- [x] Write unit tests for filter hooks
+- [x] Write E2E test for search and filter functionality
 
 ### 13-06: E2E Verification (Smoke Tests)
 - [ ] Create smoke test suite (`tests/e2e/smoke.spec.ts`) with 20 critical path tests
