@@ -2,20 +2,20 @@
   "cookies": [
     {
       "name": "access_token",
-      "value": "mock_access_token_1777235116292",
+      "value": "mock_access_token_1777331312573",
       "domain": "localhost",
       "path": "/",
-      "expires": 1777238716,
+      "expires": 1777334912,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "refresh_token",
-      "value": "mock_refresh_token_1777235116292",
+      "value": "mock_refresh_token_1777331312573",
       "domain": "localhost",
       "path": "/",
-      "expires": 1777839916,
+      "expires": 1777936112,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
@@ -25,7 +25,7 @@
       "value": "%7B%22id%22%3A%22test-user-123%22%2C%22email%22%3A%22test%40example.com%22%2C%22first_name%22%3A%22Test%22%2C%22last_name%22%3A%22User%22%2C%22role%22%3A%22user%22%2C%22is_email_verified%22%3Atrue%2C%22is_2fa_enabled%22%3Afalse%7D",
       "domain": "localhost",
       "path": "/",
-      "expires": 1777238716,
+      "expires": 1777334912,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"

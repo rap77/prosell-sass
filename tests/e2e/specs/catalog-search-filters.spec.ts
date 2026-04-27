@@ -118,6 +118,8 @@ test.describe("Catalog Search and Filters", () => {
       // Due to router.push ordering, either param may win — accept both.
       await expect(page).toHaveURL(/minYear=|maxYear=/, { timeout: 5000 });
     } else {
+      // TODO: Implement Year Range Slider component in catalog UI
+      // GitHub Issue: https://github.com/prosell-sass/prosell-sass/issues/XXX
       test.skip(true, "Year range slider not found in UI");
     }
   });
@@ -152,6 +154,8 @@ test.describe("Catalog Search and Filters", () => {
     // connected to URL state — it's a visual placeholder for the CommandPalette feature.
     // A real filter search input would need to be inside the catalog content area.
     // Skip this test until a proper search input exists in the catalog UI.
+    // TODO: Implement catalog search input connected to URL query params
+    // GitHub Issue: https://github.com/prosell-sass/prosell-sass/issues/XXX
     const catalogSearch = page.locator("main").getByPlaceholder(/search|buscar/i).first();
     const hasRealSearch = await catalogSearch.isVisible().catch(() => false);
 
@@ -186,6 +190,8 @@ test.describe("Catalog Search and Filters", () => {
     const dialogVisible = await dialog.isVisible().catch(() => false);
 
     if (!dialogVisible) {
+      // TODO: Implement CommandPalette component with cmdk + Radix Dialog
+      // GitHub Issue: https://github.com/prosell-sass/prosell-sass/issues/XXX
       test.skip(true, "CommandPalette feature not yet implemented");
       return;
     }
@@ -220,6 +226,8 @@ test.describe("Catalog Search and Filters", () => {
     const paletteOpen = await searchInput.isVisible().catch(() => false);
 
     if (!paletteOpen) {
+      // TODO: Implement CommandPalette component
+      // GitHub Issue: https://github.com/prosell-sass/prosell-sass/issues/XXX
       test.skip(true, "CommandPalette not available");
       return;
     }
@@ -265,6 +273,8 @@ test.describe("Catalog Search and Filters", () => {
     const paletteOpen = await searchInput.isVisible().catch(() => false);
 
     if (!paletteOpen) {
+      // TODO: Implement CommandPalette component
+      // GitHub Issue: https://github.com/prosell-sass/prosell-sass/issues/XXX
       test.skip(true, "CommandPalette not available");
       return;
     }
@@ -274,6 +284,8 @@ test.describe("Catalog Search and Filters", () => {
     const optionExists = await firstOption.isVisible().catch(() => false);
 
     if (!optionExists) {
+      // TODO: Implement CommandPalette options (vehicle search results)
+      // GitHub Issue: https://github.com/prosell-sass/prosell-sass/issues/XXX
       test.skip(true, "No options in CommandPalette");
       return;
     }
