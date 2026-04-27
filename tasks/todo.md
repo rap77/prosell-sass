@@ -20,11 +20,11 @@
 - [x] Write E2E test for vehicle creation flow
 
 ### 13-02: DataGrid Integration with Vehicles API
-- [ ] Implement DataGrid to load from `/api/v1/vehicles` endpoint
-- [ ] Add cursor pagination (load more on scroll)
-- [ ] Display product + vehicle fields (title, price, VIN, status)
-- [ ] Verify TanStack Virtual handles 1000+ vehicles at 60fps
-- [ ] Write unit tests for DataGrid component
+- [x] Implement DataGrid to load from `/api/v1/vehicles` endpoint
+- [x] Add cursor pagination (load more on scroll)
+- [x] Display product + vehicle fields (title, price, VIN, status)
+- [x] Verify TanStack Virtual handles 1000+ vehicles at 60fps
+- [x] Write unit tests for DataGrid component
 - [ ] Write E2E test for DataGrid loading and pagination
 
 ### 13-03: Category Dropdown and Attribute Rendering
