@@ -104,24 +104,25 @@ test.describe("Catalog Search and Filters", () => {
     // Wait for vehicles from mock to render
     await expect(page.locator('[data-testid="vehicle-row"]').first()).toBeVisible({ timeout: 5000 });
 
+    // Wait for FilterSidebar to be fully rendered
+    const aside = page.locator("aside").filter({ hasText: "Brand" });
+    await expect(aside).toBeVisible();
+
     // Radix UI Slider renders one thumb (Minimum) per slider — the component has one <Thumb />.
     // Page has 2 role="slider" elements: .nth(0) = price (min=0), .nth(1) = year (min=2010).
     // Moving the year slider calls onValueChange([newMin, originalMax]).
     // FilterSidebar makes two setFilter calls — the last one (maxYear) wins the URL race.
     // We verify the slider interaction triggers ANY year-related URL param update.
     const yearSlider = page.locator('[role="slider"]').nth(1);
-    if (await yearSlider.isVisible()) {
-      await yearSlider.focus();
-      await yearSlider.press("ArrowRight"); // Move min-year thumb right
 
-      // The component calls setFilter('minYear', ...) then setFilter('maxYear', ...) separately.
-      // Due to router.push ordering, either param may win — accept both.
-      await expect(page).toHaveURL(/minYear=|maxYear=/, { timeout: 5000 });
-    } else {
-      // TODO: Implement Year Range Slider component in catalog UI
-      // GitHub Issue: https://github.com/prosell-sass/prosell-sass/issues/XXX
-      test.skip(true, "Year range slider not found in UI");
-    }
+    // Wait for slider to be visible and interactive
+    await expect(yearSlider).toBeVisible({ timeout: 3000 });
+    await yearSlider.focus();
+    await yearSlider.press("ArrowRight"); // Move min-year thumb right
+
+    // The component calls setFilter('minYear', ...) then setFilter('maxYear', ...) separately.
+    // Due to router.push ordering, either param may win — accept both.
+    await expect(page).toHaveURL(/minYear=|maxYear=/, { timeout: 5000 });
   });
 
   test("should clear all filters", async ({ page }) => {
@@ -150,19 +151,10 @@ test.describe("Catalog Search and Filters", () => {
     // Wait for vehicles from mock to render
     await expect(page.locator('[data-testid="vehicle-row"]').first()).toBeVisible({ timeout: 5000 });
 
-    // The header has a placeholder search input ("Search... (Cmd+K)") that is NOT
-    // connected to URL state — it's a visual placeholder for the CommandPalette feature.
-    // A real filter search input would need to be inside the catalog content area.
-    // Skip this test until a proper search input exists in the catalog UI.
-    // TODO: Implement catalog search input connected to URL query params
-    // GitHub Issue: https://github.com/prosell-sass/prosell-sass/issues/XXX
-    const catalogSearch = page.locator("main").getByPlaceholder(/search|buscar/i).first();
-    const hasRealSearch = await catalogSearch.isVisible().catch(() => false);
-
-    if (!hasRealSearch) {
-      test.skip(true, "Search input connected to URL not found in catalog UI - feature may not be implemented yet");
-      return;
-    }
+    // Find the catalog search input in the main content area
+    // This input is connected to URL state via useVehicleFilters hook
+    const catalogSearch = page.locator("main").getByPlaceholder(/search vehicles/i).first();
+    await expect(catalogSearch).toBeVisible({ timeout: 5000 });
 
     // Type search query
     await catalogSearch.fill("Toyota");
@@ -170,9 +162,10 @@ test.describe("Catalog Search and Filters", () => {
     // Wait for URL to update with search parameter
     await expect(page).toHaveURL(/search=Toyota/, { timeout: 5000 });
 
-    // Wait for new results
-    await expect(page.locator('[data-testid="vehicle-row"]').first()).toBeVisible({ timeout: 5000 });
+    // Wait for new results to render
+    await page.waitForTimeout(500); // Small delay for debounce
 
+    // Verify vehicles are still rendered (filter may return 0 results, which is valid)
     const filteredCount = await page.locator('[data-testid="vehicle-row"]').count();
     expect(filteredCount).toBeGreaterThanOrEqual(0);
   });
@@ -187,14 +180,7 @@ test.describe("Catalog Search and Filters", () => {
     // CommandDialog (cmdk + Radix Dialog) renders as role="dialog"
     // Do NOT filter by text — placeholder content is not part of the dialog's accessible text tree
     const dialog = page.locator('[role="dialog"]');
-    const dialogVisible = await dialog.isVisible().catch(() => false);
-
-    if (!dialogVisible) {
-      // TODO: Implement CommandPalette component with cmdk + Radix Dialog
-      // GitHub Issue: https://github.com/prosell-sass/prosell-sass/issues/XXX
-      test.skip(true, "CommandPalette feature not yet implemented");
-      return;
-    }
+    await expect(dialog).toBeVisible({ timeout: 3000 });
 
     // Placeholder is "Search vehicles by make, model..." — /search vehicles/i matches
     const searchInput = page.getByPlaceholder(/search vehicles/i);
@@ -223,14 +209,7 @@ test.describe("Catalog Search and Filters", () => {
 
     // Check CommandPalette opened
     const searchInput = page.getByPlaceholder(/search vehicles/i);
-    const paletteOpen = await searchInput.isVisible().catch(() => false);
-
-    if (!paletteOpen) {
-      // TODO: Implement CommandPalette component
-      // GitHub Issue: https://github.com/prosell-sass/prosell-sass/issues/XXX
-      test.skip(true, "CommandPalette not available");
-      return;
-    }
+    await expect(searchInput).toBeVisible({ timeout: 3000 });
 
     // Type search query
     await searchInput.fill("Toyota");
@@ -270,25 +249,13 @@ test.describe("Catalog Search and Filters", () => {
     await page.keyboard.press(process.platform === "darwin" ? "Meta+K" : "Control+K");
 
     const searchInput = page.getByPlaceholder(/search vehicles/i);
-    const paletteOpen = await searchInput.isVisible().catch(() => false);
-
-    if (!paletteOpen) {
-      // TODO: Implement CommandPalette component
-      // GitHub Issue: https://github.com/prosell-sass/prosell-sass/issues/XXX
-      test.skip(true, "CommandPalette not available");
-      return;
-    }
+    await expect(searchInput).toBeVisible({ timeout: 3000 });
 
     // Click on first vehicle option in CommandPalette
     const firstOption = page.locator('[role="option"]').first();
-    const optionExists = await firstOption.isVisible().catch(() => false);
 
-    if (!optionExists) {
-      // TODO: Implement CommandPalette options (vehicle search results)
-      // GitHub Issue: https://github.com/prosell-sass/prosell-sass/issues/XXX
-      test.skip(true, "No options in CommandPalette");
-      return;
-    }
+    // Wait for options to be visible
+    await expect(firstOption).toBeVisible({ timeout: 3000 });
 
     await firstOption.click();
 
@@ -410,14 +377,9 @@ test.describe("Catalog Search and Filters", () => {
     // Wait for vehicles from mock to render
     await expect(page.locator('[data-testid="vehicle-row"]').first()).toBeVisible({ timeout: 5000 });
 
-    // Look for a catalog search input that syncs to URL state (not the header placeholder)
-    const catalogSearch = page.locator("main").getByPlaceholder(/search|buscar/i).first();
-    const hasRealSearch = await catalogSearch.isVisible().catch(() => false);
-
-    if (!hasRealSearch) {
-      test.skip(true, "Search input connected to URL not found in catalog UI - feature may not be implemented yet");
-      return;
-    }
+    // Find the catalog search input in the main content area
+    const catalogSearch = page.locator("main").getByPlaceholder(/search vehicles/i).first();
+    await expect(catalogSearch).toBeVisible({ timeout: 5000 });
 
     const xssPayload = "<script>alert('xss')</script>";
 

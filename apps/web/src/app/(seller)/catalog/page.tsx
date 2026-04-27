@@ -17,7 +17,7 @@ import { useInfiniteVehicles, useDeleteVehicle, useBulkUploadVehicles, type Vehi
 
 export default function CatalogPage() {
   const router = useRouter();
-  const { filters } = useVehicleFilters();
+  const { filters, setFilter } = useVehicleFilters();
   const deleteVehicle = useDeleteVehicle();
   const bulkUpload = useBulkUploadVehicles();
   const [showBulkUpload, setShowBulkUpload] = useState(false);
@@ -104,7 +104,7 @@ export default function CatalogPage() {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl font-bold">Catálogo</h1>
               <p className="text-sm text-muted-foreground">
@@ -128,6 +128,19 @@ export default function CatalogPage() {
                 Add Vehicle
               </button>
             </div>
+          </div>
+
+          {/* Search input connected to URL state */}
+          <div className="mb-4">
+            <input
+              type="search"
+              placeholder="Search vehicles by title, make, model..."
+              value={filters.search}
+              onChange={(e) => {
+                setFilter('search', e.target.value)
+              }}
+              className="w-full max-w-md px-4 py-2 rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            />
           </div>
         </div>
 
@@ -233,7 +246,15 @@ export default function CatalogPage() {
       </div>
 
       {/* Command palette (hidden by default, opened with Cmd+K) */}
-      <CommandPalette vehicles={vehicles} />
+      <CommandPalette vehicles={vehicles.map(v => ({
+        id: v.id,
+        title: v.title,
+        make: v.make,
+        model: v.model,
+        price: v.price,
+        status: v.status,
+        photo_url: v.photo_url
+      }))} />
 
       {/* Bulk Upload Modal */}
       {showBulkUpload && (
