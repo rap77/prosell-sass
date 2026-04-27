@@ -261,6 +261,8 @@ export function DataGrid({
                 <tr
                   key={row.id}
                   data-row-id={row.id}
+                  data-testid="vehicle-row"
+                  data-vehicle-id={row.original.id}
                   className="border-b border-border hover:bg-muted/50 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (

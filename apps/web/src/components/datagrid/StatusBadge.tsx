@@ -53,7 +53,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   const { color, icon: Icon, label } = config[status];
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${color}`}>
+    <span data-testid="vehicle-status" className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${color}`}>
       <Icon className="w-3.5 h-3.5" aria-hidden="true" />
       <span className="sr-only">{status}:</span>
       {label}

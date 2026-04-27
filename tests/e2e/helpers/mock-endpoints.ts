@@ -6,7 +6,7 @@
  */
 
 import type { Page } from "@playwright/test";
-import { MOCK_VIN_DECODED } from "../fixtures/mock-data";
+import { MOCK_VIN_DECODED, MOCK_VEHICLE_LIST } from "../fixtures/mock-data";
 
 interface MockCategory {
   id: string;
@@ -37,6 +37,80 @@ interface MockVehicleData {
   drivetrain: string;
   transmission: string;
   fuel_type: string;
+}
+
+type MockVehicleItem = (typeof MOCK_VEHICLE_LIST)[number];
+
+/**
+ * Mock vehicles endpoint (GET /api/v1/vehicles)
+ *
+ * Intercepts all GET requests to the vehicles list endpoint and returns
+ * mock data. Supports filtering by query params: make, status, year_min, year_max.
+ *
+ * Only intercepts GET requests — POST/PATCH/DELETE continue to real backend.
+ */
+export async function mockVehiclesEndpoint(
+  page: Page,
+  vehicles: MockVehicleItem[] = MOCK_VEHICLE_LIST
+): Promise<void> {
+  await page.route("**/api/v1/vehicles**", async (route) => {
+    const request = route.request();
+
+    // Only intercept GET list requests — not individual vehicle fetches, bulk upload, etc.
+    if (request.method() !== "GET") {
+      await route.continue();
+      return;
+    }
+
+    const url = new URL(request.url());
+    const pathname = url.pathname;
+
+    // Skip individual vehicle routes like /api/v1/vehicles/{id} or /api/v1/vehicles/decode-vin
+    if (pathname.match(/\/api\/v1\/vehicles\/[^?]+/)) {
+      await route.continue();
+      return;
+    }
+
+    // Apply query param filters
+    const makeFilter = url.searchParams.get("make");
+    const statusFilter = url.searchParams.get("status");
+    const yearMinFilter = url.searchParams.get("year_min");
+    const yearMaxFilter = url.searchParams.get("year_max");
+
+    let filtered = [...vehicles];
+
+    if (makeFilter) {
+      filtered = filtered.filter(
+        (v) => v.make.toLowerCase() === makeFilter.toLowerCase()
+      );
+    }
+
+    if (statusFilter) {
+      filtered = filtered.filter(
+        (v) => v.product.status.toLowerCase() === statusFilter.toLowerCase()
+      );
+    }
+
+    if (yearMinFilter) {
+      const yearMin = parseInt(yearMinFilter, 10);
+      filtered = filtered.filter((v) => v.year >= yearMin);
+    }
+
+    if (yearMaxFilter) {
+      const yearMax = parseInt(yearMaxFilter, 10);
+      filtered = filtered.filter((v) => v.year <= yearMax);
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: filtered,
+        next_cursor: null,
+        has_more: false,
+      }),
+    });
+  });
 }
 
 /**
