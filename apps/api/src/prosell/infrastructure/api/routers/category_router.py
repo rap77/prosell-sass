@@ -10,12 +10,19 @@ from prosell.application.dto.category import (
     CategoryResponse,
     CreateCategoryRequest,
 )
-from prosell.application.use_cases.category.list_categories import CategoryListResponse
-from prosell.application.dto.category.update import UpdateAttributeSchemaRequest, UpdateCategoryRequest
+from prosell.application.dto.category.update import (
+    UpdateAttributeSchemaRequest,
+    UpdateCategoryRequest,
+)
 from prosell.application.use_cases.category.create_category import CreateCategoryUseCase
 from prosell.application.use_cases.category.delete_category import DeleteCategoryUseCase
-from prosell.application.use_cases.category.list_categories import ListCategoriesUseCase
-from prosell.application.use_cases.category.update_attribute_schema import UpdateCategoryAttributeSchemaUseCase
+from prosell.application.use_cases.category.list_categories import (
+    CategoryListResponse,
+    ListCategoriesUseCase,
+)
+from prosell.application.use_cases.category.update_attribute_schema import (
+    UpdateCategoryAttributeSchemaUseCase,
+)
 from prosell.application.use_cases.category.update_category import UpdateCategoryUseCase
 from prosell.domain.entities.user import User
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
@@ -23,7 +30,7 @@ from prosell.infrastructure.api.dependencies import (
     get_async_session,
     get_current_auth_user_from_cookie,
 )
-from prosell.infrastructure.api.middleware.rate_limit_middleware import rate_limit, API_LIMIT
+from prosell.infrastructure.api.middleware.rate_limit_middleware import API_LIMIT, rate_limit
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
 )
@@ -39,7 +46,7 @@ async def get_category_repository(session: AsyncSession) -> AbstractCategoryRepo
 @router.get("", response_model=CategoryListResponse)
 @rate_limit(API_LIMIT)
 async def list_categories(
-    request: Request,
+    request: Request,  # noqa: ARG001 - Required by rate_limit key_func
     parent_id: UUID | None = None,
     is_active: bool | None = None,
     skip: int = 0,
@@ -56,14 +63,14 @@ async def list_categories(
     - **limit**: Max records per page
 
     Non-admin users only see active categories.
-    
+
     Rate limit: 100 requests per minute per user/IP.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     tenant_id = current_user.tenant_id
 
-    # Role-based check: User entity has no .role attr — use has_role() which checks role.role_type.value
+    # Role-based check: User entity has no .role attr — use has_role()
     is_admin = current_user.has_role(["super_admin", "admin"])
 
     repo = SqlAlchemyCategoryRepository(db)

@@ -230,4 +230,160 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       expect(page.url()).toContain("/catalog");
     });
   });
+
+  test.describe("Edge Cases", () => {
+    test("should handle empty category selection gracefully", async ({ page }) => {
+      // Try to create vehicle without selecting category
+      await vehiclesPage.vinInput.fill("1HGCM82633A123456");
+      await vehiclesPage.priceInput.fill("10000");
+
+      // Submit - should show validation error for category
+      await vehiclesPage.submitButton.click();
+
+      // Should show error about missing category
+      await expect(page.getByText(/categoría|category|required/i)).toBeVisible({
+        timeout: 3000,
+      });
+    });
+
+    test("should validate VIN format before decode", async ({ page }) => {
+      // Fill VIN with invalid format (too short)
+      await vehiclesPage.vinInput.fill("123");
+
+      // Try to decode
+      await vehiclesPage.decodeVinButton.click();
+
+      // Should show format validation error
+      await expect(page.getByText(/vin.*format|17.*character/i)).toBeVisible({
+        timeout: 3000,
+      });
+    });
+
+    test("should validate VIN format (too long)", async ({ page }) => {
+      // Fill VIN with invalid format (too long)
+      await vehiclesPage.vinInput.fill("1HGCM82633A123456789012345");
+
+      // Try to decode
+      await vehiclesPage.decodeVinButton.click();
+
+      // Should show format validation error
+      await expect(page.getByText(/vin.*format|17.*character/i)).toBeVisible({
+        timeout: 3000,
+      });
+    });
+
+    test("should handle missing required fields with validation errors", async ({ page }) => {
+      // Select category but don't fill required fields
+      await vehiclesPage.selectCategory("Sedan");
+      await vehiclesPage.vinInput.fill("1HGCM82633A123456");
+
+      // Don't fill price - it's required
+      // Submit form
+      await vehiclesPage.submitButton.click();
+
+      // Should show validation error for price
+      await expect(page.getByText(/price|precio|required/i)).toBeVisible({
+        timeout: 3000,
+      });
+
+      // Price field should have error styling
+      await expect(vehiclesPage.priceInput).toHaveAttribute("aria-invalid", "true");
+    });
+
+    test("should handle network errors during VIN decode", async ({ page }) => {
+      // Simulate network failure by intercepting and failing the request
+      await page.route("**/api/v1/vin/decode/**", (route) => {
+        route.abort("failed");
+      });
+
+      // Fill and try to decode VIN
+      await vehiclesPage.vinInput.fill("1HGCM82633A123456");
+      await vehiclesPage.decodeVinButton.click();
+
+      // Should show network error message
+      await expect(page.getByText(/network.*error|failed.*decode|connection/i)).toBeVisible({
+        timeout: 3000,
+      });
+    });
+
+    test("should handle timeout during VIN decode", async ({ page }) => {
+      // Simulate timeout by delaying response
+      await page.route("**/api/v1/vin/decode/**", async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 10000)); // 10s delay
+        route.continue();
+      });
+
+      // Fill and try to decode VIN
+      await vehiclesPage.vinInput.fill("1HGCM82633A123456");
+      await vehiclesPage.decodeVinButton.click();
+
+      // Should show timeout error or allow retry
+      await expect(page.getByText(/timeout|try again|reintentar/i)).toBeVisible({
+        timeout: 3000,
+      });
+    });
+
+    test("should prevent duplicate VIN submissions", async ({ page }) => {
+      // Select category and fill VIN
+      await vehiclesPage.selectCategory("Sedan");
+      await vehiclesPage.vinInput.fill("1HGCM82633A123456");
+      await vehiclesPage.decodeVinButton.click();
+      await page.waitForLoadState("load");
+      await page.waitForTimeout(1500);
+
+      await vehiclesPage.priceInput.fill("10000");
+
+      // Submit first vehicle
+      await vehiclesPage.submitButton.click();
+      await page.waitForURL(/\/catalog/, { timeout: 5000 });
+
+      // Navigate to create another vehicle
+      await page.goto("/catalog/create");
+      await page.waitForLoadState("load");
+
+      // Try to create another vehicle with same VIN
+      await vehiclesPage.selectCategory("Sedan");
+      await vehiclesPage.vinInput.fill("1HGCM82633A123456");
+      await vehiclesPage.decodeVinButton.click();
+      await page.waitForLoadState("load");
+      await page.waitForTimeout(1500);
+
+      await vehiclesPage.priceInput.fill("12000");
+      await vehiclesPage.submitButton.click();
+
+      // Should show error about duplicate VIN
+      // Note: This depends on backend implementation - may need adjustment
+      await expect(page.getByText(/duplicate|already exists|ya existe/i)).toBeVisible({
+        timeout: 3000,
+      }).or(() => {
+        // If no duplicate check, at least verify form submission is blocked
+        expect(page.url()).toContain("/catalog/create");
+      });
+    });
+
+    test("should handle special characters in make/model fields", async ({ page }) => {
+      // Select category
+      await vehiclesPage.selectCategory("Sedan");
+
+      // Fill VIN and decode
+      await vehiclesPage.vinInput.fill("1HGCM82633A123456");
+      await vehiclesPage.decodeVinButton.click();
+      await page.waitForLoadState("load");
+      await page.waitForTimeout(1500);
+
+      // Manually enter make with special characters
+      await vehiclesPage.makeSelect.click();
+      // Note: Select options may not have special chars, so we test manual entry
+      await vehiclesPage.modelInput.fill("Civic Édition Spéciale");
+
+      await vehiclesPage.priceInput.fill("10000");
+
+      // Submit - should handle special chars properly
+      await vehiclesPage.submitButton.click();
+
+      // Verify success (no encoding errors)
+      await page.waitForURL(/\/catalog/, { timeout: 5000 });
+      expect(page.url()).toContain("/catalog");
+    });
+  });
 });
