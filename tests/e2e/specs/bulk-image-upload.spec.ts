@@ -16,93 +16,23 @@
  */
 
 import { expect, test } from "@playwright/test";
+import { MOCK_CATEGORIES } from "../fixtures/mock-data";
+import {
+  mockCategoriesEndpoint,
+  mockImageUploadEndpoints,
+  mockVinDecodeEndpoint,
+} from "../helpers/mock-endpoints";
 
 test.describe("Bulk Image Upload", () => {
   test.beforeEach(async ({ page }) => {
-    // Mock presigned URL endpoint
-    await page.route("**/api/v1/images/upload-url", async (route) => {
-      if (route.request().method() === "POST") {
-        const body = route.request().postDataJSON();
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            upload_url: `https://mock-spaces.com/upload/${Date.now()}`,
-            public_url: `https://mock-spaces.com/public/image-${Date.now()}.jpg`,
-            key: `orgs/test-org/vehicles/${Date.now()}.jpg`,
-            fileId: `file-${Date.now()}`,
-          }),
-        });
-      }
-    });
-
-    // Mock upload URL PUT request (direct to cloud)
-    await page.route("**/mock-spaces.com/upload/**", async (route) => {
-      if (route.request().method() === "PUT") {
-        await route.fulfill({
-          status: 200,
-          body: "",
-        });
-      }
-    });
-
-    // Mock processing status endpoint
-    await page.route("**/api/v1/images/status/**", async (route) => {
-      if (route.request().method() === "GET") {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            status: "complete",
-            url: `https://mock-spaces.com/public/final-${Date.now()}.jpg`,
-          }),
-        });
-      }
-    });
+    // Mock all image upload endpoints
+    await mockImageUploadEndpoints(page);
 
     // Mock categories endpoint (required for vehicle form)
-    await page.route("**/api/v1/categories**", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          categories: [
-            {
-              id: "cat-1",
-              name: "SUVs",
-              slug: "suvs",
-              attribute_schema: {
-                year: true,
-                make: true,
-                model: true,
-                vin: true,
-              },
-              is_active: true,
-              created_at: "2026-01-01T00:00:00Z",
-              updated_at: "2026-01-01T00:00:00Z",
-            },
-          ],
-        }),
-      });
-    });
+    await mockCategoriesEndpoint(page, MOCK_CATEGORIES);
 
     // Mock VIN decode endpoint
-    await page.route("**/api/v1/vehicles/decode-vin**", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          vehicle: {
-            vin: "2GNALCEK1H1615946",
-            year: 2017,
-            make: "Chevrolet",
-            model: "Equinox",
-            trim: "LT",
-            body_type: "SUV",
-          },
-        }),
-      });
-    });
+    await mockVinDecodeEndpoint(page, "2GNALCEK1H1615946");
   });
 
   test.describe("Drag & Drop Upload", () => {

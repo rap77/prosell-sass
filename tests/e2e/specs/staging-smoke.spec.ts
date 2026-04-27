@@ -276,7 +276,7 @@ test.describe("Staging Smoke Tests", () => {
 
       console.log("Vehicles API status:", response.status());
 
-      // May be 401 (unauthorized) or 200 (if public endpoint)
+      // May be 401 (unauthorized), 403 (forbidden), or 200 (if public endpoint)
       expect([200, 401, 403]).toContain(response.status());
     });
   });
