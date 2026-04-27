@@ -69,24 +69,9 @@ function shouldShowField(
   fieldName: string,
   selectedCategory: Category | undefined,
 ): boolean {
-  // No category selected -> show all
-  if (!selectedCategory) {
-    return true;
-  }
-
-  // No attribute_schema -> show all
-  if (!selectedCategory.attribute_schema || Object.keys(selectedCategory.attribute_schema).length === 0) {
-    return true;
-  }
-
-  // Check if field is explicitly marked in schema
-  const schema = selectedCategory.attribute_schema;
-  if (fieldName in schema) {
-    return schema[fieldName] === true;
-  }
-
-  // Field not in schema -> show by default
-  return true;
+  const schema = selectedCategory?.attribute_schema;
+  // Show field if: no schema, empty schema, or explicitly enabled in schema
+  return !schema || Object.keys(schema).length === 0 || schema[fieldName] === true;
 }
 
 /**
