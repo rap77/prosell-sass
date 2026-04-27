@@ -21,9 +21,13 @@ from prosell.infrastructure.api.main import app
 @pytest.fixture(autouse=True)
 def auto_mock_auth(mock_auth_user):
     """Automatically mock auth for all tests."""
-    from prosell.infrastructure.api.dependencies import get_current_auth_user
+    from prosell.infrastructure.api.dependencies import (
+        get_current_auth_user,
+        get_current_auth_user_from_cookie,
+    )
 
     app.dependency_overrides[get_current_auth_user] = lambda: mock_auth_user
+    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: mock_auth_user
 
     yield
 

@@ -194,7 +194,10 @@ def setup_dependencies(
     """Set up dependency overrides for all tests."""
     from unittest.mock import Mock
 
-    from prosell.infrastructure.api.dependencies import get_current_auth_user
+    from prosell.infrastructure.api.dependencies import (
+        get_current_auth_user,
+        get_current_auth_user_from_cookie,
+    )
     from prosell.infrastructure.api.di import (
         get_create_dealer_use_case,
         get_get_dealer_use_case,
@@ -215,6 +218,7 @@ def setup_dependencies(
         return mock_user
 
     app.dependency_overrides[get_current_auth_user] = get_mock_user
+    app.dependency_overrides[get_current_auth_user_from_cookie] = get_mock_user
     app.dependency_overrides[get_create_dealer_use_case] = lambda: mock_create_dealer_use_case
     app.dependency_overrides[get_get_dealer_use_case] = lambda: mock_get_dealer_use_case
     app.dependency_overrides[get_list_dealers_use_case] = lambda: mock_list_dealers_use_case

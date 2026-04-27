@@ -64,7 +64,7 @@ async def test_create_product_with_valid_attributes_succeeds(
 
     payload = base_product_payload(
         tenant_id=str(admin_user.tenant_id),
-        org_id=str(uuid4()),  # org_id from user context
+        org_id=str(admin_user.tenant_id),  # use real org ID (org.id == org.tenant_id)
         cat_id=cat_id,
         attributes={"color": "red"},
     )
@@ -85,7 +85,7 @@ async def test_create_product_missing_required_attribute_returns_422(
 
     payload = base_product_payload(
         tenant_id=str(admin_user.tenant_id),
-        org_id=str(uuid4()),
+        org_id=str(admin_user.tenant_id),
         cat_id=cat_id,
         attributes={},  # Missing required 'color'
     )
@@ -107,7 +107,7 @@ async def test_create_product_empty_schema_always_passes(
 
     payload = base_product_payload(
         tenant_id=str(admin_user.tenant_id),
-        org_id=str(uuid4()),
+        org_id=str(admin_user.tenant_id),
         cat_id=cat_id,
         attributes={"random_field": "any_value"},
     )
@@ -128,7 +128,7 @@ async def test_create_product_attribute_wrong_type_returns_422(
 
     payload = base_product_payload(
         tenant_id=str(admin_user.tenant_id),
-        org_id=str(uuid4()),
+        org_id=str(admin_user.tenant_id),
         cat_id=cat_id,
         attributes={"year": "not-a-number"},  # String instead of number
     )
@@ -144,7 +144,7 @@ async def test_create_product_no_category_skips_validation(
     """POST /products without category_id skips attribute validation."""
     payload = base_product_payload(
         tenant_id=str(admin_user.tenant_id),
-        org_id=str(uuid4()),
+        org_id=str(admin_user.tenant_id),
         cat_id=str(uuid4()),  # Non-existent category → validation skipped (category not found)
         attributes={"anything": "goes"},
     )
@@ -162,7 +162,7 @@ async def test_list_products_filtered_by_organization(
     async_client_as_admin: AsyncClient, admin_user
 ):
     """GET /products?organization_id=X returns only products from that org."""
-    org_id = str(uuid4())
+    org_id = str(admin_user.tenant_id)  # use real org ID (org.id == org.tenant_id)
     cat_id = await create_category_with_schema(
         async_client_as_admin, str(admin_user.tenant_id), {}
     )
@@ -193,8 +193,8 @@ async def test_list_products_org_filter_excludes_other_orgs(
     async_client_as_admin: AsyncClient, admin_user
 ):
     """GET /products?organization_id=X excludes products from other orgs."""
-    org_a = str(uuid4())
-    org_b = str(uuid4())
+    org_a = str(admin_user.tenant_id)  # use real org ID for the product we create
+    org_b = str(uuid4())  # fake org used only as filter — no product created in it
     cat_id = await create_category_with_schema(
         async_client_as_admin, str(admin_user.tenant_id), {}
     )
@@ -233,7 +233,7 @@ async def test_list_products_filtered_by_category(
         "/api/v1/products",
         json=base_product_payload(
             tenant_id=str(admin_user.tenant_id),
-            org_id=str(uuid4()),
+            org_id=str(admin_user.tenant_id),
             cat_id=cat_id,
         ),
     )

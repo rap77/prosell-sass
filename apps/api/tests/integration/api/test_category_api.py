@@ -87,9 +87,9 @@ async def test_admin_sees_inactive_categories(
 
 @pytest.mark.asyncio
 async def test_seller_does_not_see_inactive_categories(
-    async_client_as_admin: AsyncClient,
-    async_client_as_seller: AsyncClient,
     admin_user,
+    seller_user,
+    db_session,
 ):
     """Seller user cannot see is_active=False categories.
 
@@ -97,32 +97,54 @@ async def test_seller_does_not_see_inactive_categories(
     1. Admin creates a category with is_active=False
     2. Admin can see it in list (is_admin=True → no filter)
     3. Seller gets list → the inactive category ID is NOT in the response
+
+    NOTE: We don't use both async_client_as_admin and async_client_as_seller fixtures
+    simultaneously because they both overwrite app.dependency_overrides, causing one
+    to shadow the other. Instead, we control overrides inline.
     """
+    from collections.abc import AsyncGenerator
+    from httpx import ASGITransport, AsyncClient
+    from prosell.infrastructure.api.main import app
+    from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+    from prosell.infrastructure.database.session import get_async_session
+
+    async def override_session() -> AsyncGenerator:
+        yield db_session
+
+    async def make_client(user):
+        app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: user
+        app.dependency_overrides[get_async_session] = override_session
+        return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+
     # Step 1: Admin creates inactive category
     slug = f"hidden-{uuid4().hex[:8]}"
-    create_resp = await async_client_as_admin.post(
-        "/api/v1/categories",
-        json={
-            "name": f"Hidden-{uuid4().hex[:8]}",
-            "slug": slug,
-            "tenant_id": str(admin_user.tenant_id),
-            "is_active": False,
-        },
-    )
-    assert create_resp.status_code == 201, create_resp.text
-    cat_id = create_resp.json()["id"]
+    async with await make_client(admin_user) as admin_client:
+        create_resp = await admin_client.post(
+            "/api/v1/categories",
+            json={
+                "name": f"Hidden-{uuid4().hex[:8]}",
+                "slug": slug,
+                "tenant_id": str(admin_user.tenant_id),
+                "is_active": False,
+            },
+        )
+        assert create_resp.status_code == 201, create_resp.text
+        cat_id = create_resp.json()["id"]
 
-    # Step 2: Admin CAN see it (baseline verification)
-    admin_list = await async_client_as_admin.get("/api/v1/categories")
-    assert admin_list.status_code == 200
-    admin_ids = [c["id"] for c in admin_list.json()["categories"]]
-    assert cat_id in admin_ids, "Admin should see inactive category"
+        # Step 2: Admin CAN see it (baseline verification)
+        admin_list = await admin_client.get("/api/v1/categories")
+        assert admin_list.status_code == 200
+        admin_ids = [c["id"] for c in admin_list.json()["categories"]]
+        assert cat_id in admin_ids, "Admin should see inactive category"
 
     # Step 3: Seller CANNOT see it — inactive categories are filtered out
-    seller_list = await async_client_as_seller.get("/api/v1/categories")
-    assert seller_list.status_code == 200
-    seller_ids = [c["id"] for c in seller_list.json()["categories"]]
-    assert cat_id not in seller_ids, "Seller must NOT see inactive categories"
+    async with await make_client(seller_user) as seller_client:
+        seller_list = await seller_client.get("/api/v1/categories")
+        assert seller_list.status_code == 200
+        seller_ids = [c["id"] for c in seller_list.json()["categories"]]
+        assert cat_id not in seller_ids, "Seller must NOT see inactive categories"
+
+    app.dependency_overrides.clear()
 
 
 # ─── PATCH /categories/{id}/attribute-schema ──────────────────────────────────

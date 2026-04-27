@@ -60,12 +60,14 @@ def mock_org_repo():
 def setup_auth(mock_auth_user, mock_role_repo, mock_spaces, mock_org_repo):
     from prosell.infrastructure.api.dependencies import (
         get_current_auth_user,
+        get_current_auth_user_from_cookie,
         get_role_repository,
         get_spaces_service,
     )
     from prosell.infrastructure.api.routers.org_router import get_org_repository
 
     app.dependency_overrides[get_current_auth_user] = lambda: mock_auth_user
+    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: mock_auth_user
     app.dependency_overrides[get_role_repository] = lambda: mock_role_repo
     app.dependency_overrides[get_spaces_service] = lambda: mock_spaces
     app.dependency_overrides[get_org_repository] = lambda: mock_org_repo

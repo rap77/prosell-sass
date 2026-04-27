@@ -18,7 +18,7 @@ from httpx import AsyncClient
 async def create_test_product(client: AsyncClient, admin_user) -> str:
     """Helper: create a category + product and return the product ID."""
     tenant_id = str(admin_user.tenant_id)
-    org_id = str(uuid4())  # Use random org_id — product belongs to tenant
+    org_id = str(admin_user.tenant_id)  # Use real org_id — org.id == org.tenant_id
 
     cat_resp = await client.post(
         "/api/v1/categories",

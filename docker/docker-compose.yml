@@ -37,6 +37,26 @@ services:
       retries: 5
 
   # =============================================================================
+  # POSTGRESQL 17 - TEST DATABASE
+  # =============================================================================
+  postgres-test:
+    image: postgres:17
+    container_name: prosell-test-db
+    environment:
+      POSTGRES_DB: prosell_test
+      POSTGRES_USER: prosell
+      POSTGRES_PASSWORD: prosell_test_password
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prosell"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
   # FASTAPI BACKEND
   # =============================================================================
   api:
@@ -135,4 +155,6 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  postgres_test_data:
     driver: local

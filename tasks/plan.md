@@ -68,13 +68,13 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 **Objective**: Update VehicleForm submit handler to use product creation with auto-vehicle creation.
 
 **Acceptance Criteria**:
-- [ ] Form submit calls POST /api/v1/products with attributes.vin
-- [ ] API response includes `has_vehicle: true` and `vehicle_id` populated
-- [ ] VIN decode populates form fields correctly (existing functionality preserved)
-- [ ] Form validation works with new schema
-- [ ] Submit redirects to catalog after success
-- [ ] Component tests pass
-- [ ] E2E VIN decode + submit flow passes
+- [x] Form submit calls POST /api/v1/products with attributes.vin
+- [x] API response includes `has_vehicle: true` and `vehicle_id` populated
+- [x] VIN decode populates form fields correctly (existing functionality preserved)
+- [x] Form validation works with new schema
+- [x] Submit redirects to catalog after success
+- [x] Component tests pass
+- [x] E2E VIN decode + submit flow passes
 
 ---
 

@@ -1,41 +1,239 @@
-"""Pytest configuration for integration tests."""
+"""Integration test fixtures - provides database session for tests.
 
-import os
+NOTE: Test database must be setup BEFORE running tests:
+  make test-setup
+"""
+
+from collections.abc import AsyncGenerator
+from typing import Any
+from uuid import UUID, uuid4
 
 import pytest
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+TEST_DB_URL = "postgresql+asyncpg://prosell:prosell_test_password@localhost:5433/prosell_test"
 
 
 @pytest_asyncio.fixture
-async def db_session() -> AsyncSession:
-    """Async DB session for integration tests. Rolls back after each test."""
-    db_url = os.environ.get(
-        "DATABASE_URL",
-        "postgresql+asyncpg://postgres:postgres@localhost:5432/prosell_dev",
+async def db_session() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Function-scoped fixture providing a clean database session for each test.
+    Wraps test in transaction and rolls back after completion.
+    """
+    engine = create_async_engine(TEST_DB_URL, echo=False)
+    async_session_maker = async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False
     )
-    engine = create_async_engine(db_url)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    async with async_session() as session, session.begin():
-        yield session
-        await session.rollback()
+
+    async with async_session_maker() as session:
+        async with session.begin():
+            yield session
+            # Rollback after test to keep database clean
+            await session.rollback()
+
+    await engine.dispose()
+
+
+# =============================================================================
+# TEST DATA FIXTURES - Create data in database for tests
+# =============================================================================
+
+from prosell.infrastructure.models.category_model import CategoryModel
+from prosell.infrastructure.models.organization_model import OrganizationModel
+from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
+from prosell.infrastructure.models.user_model import UserModel
+
+
+@pytest_asyncio.fixture
+async def test_organization(db_session: AsyncSession) -> AsyncGenerator[OrganizationModel, None]:
+    """
+    Create a test organization in the database.
+    This is required for any entity that has a tenant_id foreign key.
+
+    NOTE: The organization.id is what should be used as tenant_id for other entities,
+    because categories.tenant_id references organizations(id).
+    """
+    org_id: UUID = uuid4()
+
+    org = OrganizationModel(
+        id=org_id,
+        name=f"Test Org {uuid4().hex[:8]}",
+        tenant_id=org_id,  # In this model, org.id == org.tenant_id
+        status="active",
+        description="Test organization for integration tests",
+        settings={},
+    )
+
+    db_session.add(org)
+    await db_session.flush()  # Flush to get ID but don't commit yet
+
+    yield org
+    # Rollback will happen automatically via db_session fixture
+
+
+@pytest_asyncio.fixture
+async def test_role(db_session: AsyncSession) -> AsyncGenerator[RoleModel, None]:
+    """Create a test SUPER_ADMIN role in the database."""
+    role = RoleModel(
+        id=uuid4(),
+        role_type="SUPER_ADMIN",
+        name="Super Admin",
+        description="Super admin role for tests",
+        is_system_role=True,
+        tenant_id=None,  # System role, no tenant
+    )
+
+    db_session.add(role)
+    await db_session.flush()
+
+    yield role
+
+
+@pytest_asyncio.fixture
+async def test_seller_role(db_session: AsyncSession) -> AsyncGenerator[RoleModel, None]:
+    """Create a test SALES_AGENT role in the database."""
+    role = RoleModel(
+        id=uuid4(),
+        role_type="SALES_AGENT",
+        name="Sales Agent",
+        description="Sales agent role for tests",
+        is_system_role=True,
+        tenant_id=None,  # System role, no tenant
+    )
+
+    db_session.add(role)
+    await db_session.flush()
+
+    yield role
+
+
+@pytest_asyncio.fixture
+async def test_user(
+    db_session: AsyncSession,
+    test_organization: OrganizationModel,
+    test_role: RoleModel,
+) -> AsyncGenerator[UserModel, None]:
+    """
+    Create a test user in the database with SUPER_ADMIN role.
+    User belongs to the test_organization.
+    """
+    user_id: UUID = uuid4()
+
+    user = UserModel(
+        id=user_id,
+        email=f"admin-{uuid4().hex[:8]}@test.prosell.io",
+        full_name="Admin Test User",
+        tenant_id=test_organization.tenant_id,
+        status="active",
+        email_verified=True,
+        is_2fa_enabled=False,
+        failed_login_attempts=0,
+    )
+
+    db_session.add(user)
+    await db_session.flush()
+
+    # Assign role to user
+    user_role = UserRoleModel(
+        id=uuid4(),
+        user_id=user.id,
+        role_id=test_role.id,
+    )
+
+    db_session.add(user_role)
+    await db_session.flush()
+
+    yield user
+
+
+@pytest_asyncio.fixture
+async def test_seller_user(
+    db_session: AsyncSession,
+    test_organization: OrganizationModel,
+    test_seller_role: RoleModel,
+) -> AsyncGenerator[UserModel, None]:
+    """
+    Create a test seller user in the database with SALES_AGENT role.
+    User belongs to the test_organization.
+    """
+    user_id: UUID = uuid4()
+
+    user = UserModel(
+        id=user_id,
+        email=f"seller-{uuid4().hex[:8]}@test.prosell.io",
+        full_name="Seller Test User",
+        tenant_id=test_organization.tenant_id,
+        status="active",
+        email_verified=True,
+        is_2fa_enabled=False,
+        failed_login_attempts=0,
+    )
+
+    db_session.add(user)
+    await db_session.flush()
+
+    # Assign role to user
+    user_role = UserRoleModel(
+        id=uuid4(),
+        user_id=user.id,
+        role_id=test_seller_role.id,
+    )
+
+    db_session.add(user_role)
+    await db_session.flush()
+
+    yield user
+
+
+@pytest_asyncio.fixture
+async def test_category(
+    db_session: AsyncSession,
+    test_organization: OrganizationModel,
+) -> AsyncGenerator[CategoryModel, None]:
+    """Create a test category in the database."""
+    category = CategoryModel(
+        id=uuid4(),
+        name=f"Test Category {uuid4().hex[:8]}",
+        slug=f"test-category-{uuid4().hex[:8]}",
+        tenant_id=test_organization.tenant_id,
+        level=0,
+        parent_id=None,
+        is_active=True,
+        sort_order=0,
+        field_config=[],
+        attribute_schema={},
+    )
+
+    db_session.add(category)
+    await db_session.flush()
+
+    yield category
+
+
+# =============================================================================
+# HELPER FIXTURES - For convenience
+# =============================================================================
+
+@pytest.fixture
+def shared_tenant_id() -> UUID:
+    """Shared tenant_id for all users and resources in a test (legacy)."""
+    return uuid4()
 
 
 @pytest.fixture(autouse=True)
-def disable_rate_limiting(monkeypatch):
+def disable_rate_limiting(monkeypatch: pytest.MonkeyPatch) -> None:
     """Disable rate limiting during integration tests."""
-    # Import the limiter and disable it
-    from prosell.infrastructure.api.middleware.rate_limit_middleware import limiter
+    try:
+        from prosell.infrastructure.api.middleware.rate_limit_middleware import limiter
 
-    # Check if limiter has _enabled or _storage_uri attribute
-    # The slowapi Limiter class stores enabled state in the underlying storage
-    # We'll disable it by setting enabled=False on the limiter instance
-    if hasattr(limiter, "enabled"):
-        monkeypatch.setattr(limiter, "enabled", False)
-    else:
-        # Fallback: mock the check_rate_limit method to always pass
-        def mock_check(*_args, **_kwargs):
-            return None  # No rate limit hit
-
-        monkeypatch.setattr(limiter, "_check_rate_limit", mock_check)
+        if hasattr(limiter, "enabled"):
+            monkeypatch.setattr(limiter, "enabled", False)
+        else:
+            def mock_check(*_args: Any, **_kwargs: Any) -> None:
+                return None
+            monkeypatch.setattr(limiter, "_check_rate_limit", mock_check)
+    except (ImportError, AttributeError):
+        pass  # Rate limiting may not be enabled

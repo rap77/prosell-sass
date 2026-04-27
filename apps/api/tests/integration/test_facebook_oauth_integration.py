@@ -144,9 +144,13 @@ def mock_auth_user() -> User:
 @pytest.fixture
 def auto_mock_auth(mock_auth_user: User) -> Generator[None]:
     """Automatically mock auth."""
-    from prosell.infrastructure.api.dependencies import get_current_auth_user
+    from prosell.infrastructure.api.dependencies import (
+        get_current_auth_user,
+        get_current_auth_user_from_cookie,
+    )
 
     app.dependency_overrides[get_current_auth_user] = lambda: mock_auth_user
+    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: mock_auth_user
     yield
     app.dependency_overrides.clear()
 
@@ -215,20 +219,22 @@ class TestCallbackEndpoint:
     async def test_callback_success(
         self,
         test_client: AsyncClient,
-        mock_facebook_service: MagicMock,
-        mock_redis_service: MagicMock,
     ) -> None:
-        """Test successful callback."""
-        seller_id = str(uuid4())
-        mock_redis_service.get = AsyncMock(return_value=seller_id)
+        """Test successful callback — mock the entire callback use case to avoid DB writes."""
+        from prosell.application.dto.facebook import FacebookOAuthCallbackResponse
+        from prosell.infrastructure.api.dependencies import get_facebook_callback_use_case
 
-        from prosell.infrastructure.api.dependencies import (
-            get_facebook_oauth_service,
-            get_redis_service,
+        mock_callback_use_case = MagicMock()
+        mock_callback_use_case.execute = AsyncMock(
+            return_value=FacebookOAuthCallbackResponse(
+                account_id=uuid4(),
+                facebook_user_id="987654321",
+                facebook_name="Test User",
+                pages_count=0,
+                pages=[],
+            )
         )
-
-        app.dependency_overrides[get_redis_service] = lambda: mock_redis_service
-        app.dependency_overrides[get_facebook_oauth_service] = lambda: mock_facebook_service
+        app.dependency_overrides[get_facebook_callback_use_case] = lambda: mock_callback_use_case
 
         response = await test_client.get(
             "/api/v1/facebook/callback",

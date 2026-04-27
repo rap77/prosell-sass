@@ -185,11 +185,14 @@ class TestOAuthCallbackEndpoint:
             assert response.status_code == status.HTTP_302_FOUND
             assert "localhost:3000/dashboard" in response.headers["location"]
 
-            # Should set httpOnly cookies (httpx ASGI returns cookies as dict)
-            cookies_dict = dict(response.cookies)
-            assert "access_token" in cookies_dict
-            assert "refresh_token" in cookies_dict
-            assert "user_data" in cookies_dict
+            # Should set httpOnly cookies.
+            # When domain="localhost" and base_url="http://test", httpx rejects cookies
+            # from response.cookies. Read raw Set-Cookie headers instead.
+            set_cookie_headers = response.headers.get_list("set-cookie") if hasattr(response.headers, "get_list") else [v for k, v in response.headers.items() if k.lower() == "set-cookie"]
+            cookie_names = [h.split("=")[0] for h in set_cookie_headers]
+            assert "access_token" in cookie_names
+            assert "refresh_token" in cookie_names
+            assert "user_data" in cookie_names
 
     async def test_callback_with_error_redirects_to_login(self, override_oauth_dependencies):
         """Test that callback with error parameter redirects to login with error."""

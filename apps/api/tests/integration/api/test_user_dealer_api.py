@@ -378,11 +378,6 @@ def postgres_is_available() -> bool:
     return os.getenv("POSTGRES_AVAILABLE", "false").lower() == "true"
 
 
-@pytest.mark.skipif(
-    not postgres_is_available(),
-    reason="PostgreSQL not available - set POSTGRES_AVAILABLE=true to enable",
-)
-@pytest.mark.asyncio
 async def test_assign_seller_to_dealer() -> None:
     """POST /api/users/{id}/dealers assigns dealer (201)."""
     from fastapi import status
@@ -432,10 +427,9 @@ async def test_assign_seller_to_dealer() -> None:
     mock_dealer_repo.get_by_id = AsyncMock(return_value=mock_dealer)
 
     # Set up dependencies
-    from prosell.infrastructure.api.dependencies import get_current_auth_user
-    from prosell.infrastructure.api.di import (
+    from prosell.infrastructure.api.dependencies import (
         get_assign_user_dealer_use_case,
-        get_dealer_repository,
+        get_current_auth_user_from_cookie,
         get_user_dealer_repository,
     )
 
@@ -452,10 +446,6 @@ async def test_assign_seller_to_dealer() -> None:
         mock_user.has_role = Mock(return_value=True)  # Always True for admin tests
         return mock_user
 
-    app.dependency_overrides[get_current_auth_user] = get_mock_user
-    app.dependency_overrides[get_user_dealer_repository] = lambda: mock_user_dealer_repo
-    app.dependency_overrides[get_dealer_repository] = lambda: mock_dealer_repo
-
     # Mock use case
     mock_use_case = AsyncMock()
     mock_use_case.execute = AsyncMock(
@@ -468,6 +458,7 @@ async def test_assign_seller_to_dealer() -> None:
             assigned_by=assigned_by,
         )
     )
+    app.dependency_overrides[get_current_auth_user_from_cookie] = get_mock_user
     app.dependency_overrides[get_assign_user_dealer_use_case] = lambda: mock_use_case
 
     try:
@@ -487,11 +478,6 @@ async def test_assign_seller_to_dealer() -> None:
         app.dependency_overrides.clear()
 
 
-@pytest.mark.skipif(
-    not postgres_is_available(),
-    reason="PostgreSQL not available - requires DB for these integration tests",
-)
-@pytest.mark.asyncio
 async def test_bulk_assign_sellers() -> None:
     """POST /api/users/bulk-assign assigns multiple (200)."""
     from fastapi import status
@@ -518,9 +504,9 @@ async def test_bulk_assign_sellers() -> None:
     admin_user.roles = [admin_role]
 
     # Set up dependencies
-    from prosell.infrastructure.api.dependencies import get_current_auth_user
-    from prosell.infrastructure.api.di import (
+    from prosell.infrastructure.api.dependencies import (
         get_bulk_assign_use_case,
+        get_current_auth_user_from_cookie,
     )
 
     # Mock auth user with admin role - use Mock to avoid DB connection issues
@@ -536,7 +522,7 @@ async def test_bulk_assign_sellers() -> None:
         mock_user.has_role = Mock(return_value=True)
         return mock_user
 
-    app.dependency_overrides[get_current_auth_user] = get_mock_user
+    app.dependency_overrides[get_current_auth_user_from_cookie] = get_mock_user
 
     # Mock use case
     mock_use_case = AsyncMock()
@@ -562,11 +548,6 @@ async def test_bulk_assign_sellers() -> None:
         app.dependency_overrides.clear()
 
 
-@pytest.mark.skipif(
-    not postgres_is_available(),
-    reason="PostgreSQL not available - requires DB for these integration tests",
-)
-@pytest.mark.asyncio
 async def test_remove_seller_from_dealer() -> None:
     """DELETE /api/users/{id}/dealers/{dealer_id} removes (204)."""
     from fastapi import status
@@ -592,8 +573,8 @@ async def test_remove_seller_from_dealer() -> None:
     admin_user.roles = [admin_role]
 
     # Set up dependencies
-    from prosell.infrastructure.api.dependencies import get_current_auth_user
-    from prosell.infrastructure.api.di import (
+    from prosell.infrastructure.api.dependencies import (
+        get_current_auth_user_from_cookie,
         get_remove_user_dealer_use_case,
     )
 
@@ -610,7 +591,7 @@ async def test_remove_seller_from_dealer() -> None:
         mock_user.has_role = Mock(return_value=True)
         return mock_user
 
-    app.dependency_overrides[get_current_auth_user] = get_mock_user
+    app.dependency_overrides[get_current_auth_user_from_cookie] = get_mock_user
 
     # Mock use case
     mock_use_case = AsyncMock()
@@ -630,11 +611,6 @@ async def test_remove_seller_from_dealer() -> None:
         app.dependency_overrides.clear()
 
 
-@pytest.mark.skipif(
-    not postgres_is_available(),
-    reason="PostgreSQL not available - requires DB for these integration tests",
-)
-@pytest.mark.asyncio
 async def test_list_user_dealers() -> None:
     """GET /api/users/{id}/dealers lists assignments (200)."""
     from fastapi import status
@@ -660,8 +636,8 @@ async def test_list_user_dealers() -> None:
     admin_user.roles = [admin_role]
 
     # Set up dependencies
-    from prosell.infrastructure.api.dependencies import get_current_auth_user
-    from prosell.infrastructure.api.di import (
+    from prosell.infrastructure.api.dependencies import (
+        get_current_auth_user_from_cookie,
         get_user_dealer_repository,
     )
 
@@ -678,7 +654,7 @@ async def test_list_user_dealers() -> None:
         mock_user.has_role = Mock(return_value=True)
         return mock_user
 
-    app.dependency_overrides[get_current_auth_user] = get_mock_user
+    app.dependency_overrides[get_current_auth_user_from_cookie] = get_mock_user
 
     # Mock repository
     mock_repo = AsyncMock()
@@ -737,7 +713,10 @@ async def test_admin_manager_only_access() -> None:
     seller_user.roles = [seller_role]
 
     # Set up dependencies
-    from prosell.infrastructure.api.dependencies import get_current_auth_user
+    from prosell.infrastructure.api.dependencies import (
+        get_current_auth_user,
+        get_current_auth_user_from_cookie,
+    )
     from prosell.infrastructure.api.di import (
         get_assign_user_dealer_use_case,
     )
@@ -756,6 +735,7 @@ async def test_admin_manager_only_access() -> None:
         return mock_user
 
     app.dependency_overrides[get_current_auth_user] = get_mock_user
+    app.dependency_overrides[get_current_auth_user_from_cookie] = get_mock_user
 
     # Mock use case
     mock_use_case = AsyncMock()

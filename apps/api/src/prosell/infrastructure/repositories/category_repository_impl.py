@@ -31,6 +31,7 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
             sort_order=category.sort_order,
             is_active=category.is_active,
             field_config=category.field_config,
+            attribute_schema=category.attribute_schema,
             created_at=category.created_at,
             updated_at=category.updated_at,
         )
@@ -154,7 +155,10 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         model.sort_order = category.sort_order
         model.is_active = category.is_active
         model.field_config = category.field_config
-        # updated_at is set by trigger/onupdate
+        model.attribute_schema = category.attribute_schema
+        # Set updated_at explicitly from domain entity — onupdate="now()" string is not a valid
+        # asyncpg value. The domain entity already sets updated_at = datetime.now(UTC).
+        model.updated_at = category.updated_at
 
         await self.session.flush()
         return self._to_entity(model)
