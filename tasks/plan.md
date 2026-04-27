@@ -125,13 +125,13 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 **Objective**: Create comprehensive smoke test suite verifying all C3 integration flows end-to-end.
 
 **Acceptance Criteria**:
-- [ ] Smoke test suite with 20 critical path tests created
-- [ ] Auth flow tests pass (login, logout, protected route)
-- [ ] VehicleForm E2E tests pass (VIN decode, category select, submit)
-- [ ] DataGrid E2E tests pass (load, pagination, C3 join data)
-- [ ] Bulk upload E2E tests pass (CSV, images, progress)
-- [ ] All smoke tests pass in < 2 minutes
-- [ ] No regressions in existing E2E tests
+- [x] Smoke test suite with 20 critical path tests created
+- [x] Auth flow tests pass (login, logout, protected route)
+- [x] VehicleForm E2E tests pass (VIN decode, category select, submit)
+- [x] DataGrid E2E tests pass (load, pagination, C3 join data)
+- [x] Bulk upload E2E tests pass (CSV, images, progress)
+- [x] All smoke tests pass in < 2 minutes
+- [x] No regressions in existing E2E tests
 
 ---
 

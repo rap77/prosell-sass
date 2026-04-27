@@ -54,14 +54,14 @@
 - [x] Write E2E test for search and filter functionality
 
 ### 13-06: E2E Verification (Smoke Tests)
-- [ ] Create smoke test suite (`tests/e2e/smoke.spec.ts`) with 20 critical path tests
-- [ ] Add auth flow tests (login, logout, protected route)
-- [ ] Add VehicleForm E2E tests (VIN decode, category select, submit)
-- [ ] Add Category E2E tests (dropdown load, attribute rendering)
-- [ ] Add DataGrid E2E tests (load, pagination, C3 join data)
-- [ ] Add Bulk Upload E2E tests (CSV, images, progress)
-- [ ] Verify all smoke tests pass in < 2 minutes
-- [ ] Verify no regressions in existing E2E tests
+- [x] Create smoke test suite (`tests/e2e/smoke.spec.ts`) with 20 critical path tests
+- [x] Add auth flow tests (login, logout, protected route)
+- [x] Add VehicleForm E2E tests (VIN decode, category select, submit)
+- [x] Add Category E2E tests (dropdown load, attribute rendering)
+- [x] Add DataGrid E2E tests (load, pagination, C3 join data)
+- [x] Add Bulk Upload E2E tests (CSV, images, progress)
+- [x] Verify all smoke tests pass in < 2 minutes
+- [x] Verify no regressions in existing E2E tests
 
 ---
 
