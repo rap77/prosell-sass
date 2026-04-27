@@ -108,12 +108,12 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 **Objective**: Implement client-side search and filter functionality connected to real vehicle data.
 
 **Acceptance Criteria**:
-- [ ] Client-side instant search for title/ID/make/model
-- [ ] FilterSidebar with Brand, Status, Price, Year filters
-- [ ] CommandPalette (Cmd+K) with fuzzy search
-- [ ] URL state sync for shareable filtered links
-- [ ] Unit tests for filter hooks pass
-- [ ] E2E search and filter functionality test passes
+- [x] Client-side instant search for title/ID/make/model
+- [x] FilterSidebar with Brand, Status, Price, Year filters
+- [x] CommandPalette (Cmd+K) with fuzzy search
+- [x] URL state sync for shareable filtered links
+- [x] Unit tests for filter hooks pass
+- [x] E2E search and filter functionality test passes
 
 ---
 
