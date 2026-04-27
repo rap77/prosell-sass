@@ -3,7 +3,7 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.category import (
@@ -23,6 +23,7 @@ from prosell.infrastructure.api.dependencies import (
     get_async_session,
     get_current_auth_user_from_cookie,
 )
+from prosell.infrastructure.api.middleware.rate_limit_middleware import rate_limit, API_LIMIT
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
 )
@@ -36,7 +37,9 @@ async def get_category_repository(session: AsyncSession) -> AbstractCategoryRepo
 
 
 @router.get("", response_model=CategoryListResponse)
+@rate_limit(API_LIMIT)
 async def list_categories(
+    request: Request,
     parent_id: UUID | None = None,
     is_active: bool | None = None,
     skip: int = 0,
@@ -53,6 +56,8 @@ async def list_categories(
     - **limit**: Max records per page
 
     Non-admin users only see active categories.
+    
+    Rate limit: 100 requests per minute per user/IP.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
