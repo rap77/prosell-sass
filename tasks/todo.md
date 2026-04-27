@@ -12,12 +12,12 @@
 > **Note**: These plans are already defined in `.planning/phases/13-frontend/`. Execute them first before Phase 4.
 
 ### 13-01: VehicleForm Refactor for C3 API
-- [ ] Implement VehicleForm to use `POST /api/v1/products` endpoint
-- [ ] Add VIN decode integration with NHTSA API
-- [ ] Implement category dropdown loaded from `/api/v1/categories`
-- [ ] Add category-specific attribute rendering based on attribute_schema
-- [ ] Write unit tests for VehicleForm component
-- [ ] Write E2E test for vehicle creation flow
+- [x] Implement VehicleForm to use `POST /api/v1/products` endpoint
+- [x] Add VIN decode integration with NHTSA API
+- [x] Implement category dropdown loaded from `/api/v1/categories`
+- [x] Add category-specific attribute rendering based on attribute_schema
+- [x] Write unit tests for VehicleForm component
+- [x] Write E2E test for vehicle creation flow
 
 ### 13-02: DataGrid Integration with Vehicles API
 - [ ] Implement DataGrid to load from `/api/v1/vehicles` endpoint
@@ -67,7 +67,7 @@
 
 ## Phase 4: Leads & Appointments (New Plans)
 
-### P-01: Lead Domain & Database Schema
+### 4-01: Lead Domain & Database Schema
 - [ ] Create Lead entity with all fields and validation
 - [ ] Implement lead lifecycle state machine (new → contacted → qualified → appointment_set → lost)
 - [ ] Create LeadStatus enum and LeadStateTransitionException
@@ -79,7 +79,7 @@
 - [ ] Write unit tests for appointment validation
 - [ ] Verify migration applies successfully (`alembic upgrade head`)
 
-### P-02: Lead Repository & Use Cases
+### 4-02: Lead Repository & Use Cases
 - [ ] Create ILeadRepository interface in domain layer
 - [ ] Implement LeadRepository with async SQLAlchemy
 - [ ] Add tenant_id filtering to all queries
@@ -94,7 +94,7 @@
 - [ ] Write integration tests for repository
 - [ ] Write integration tests for use cases
 
-### P-03: Appointment Repository & Use Cases
+### 4-03: Appointment Repository & Use Cases
 - [ ] Create IAppointmentRepository interface in domain layer
 - [ ] Implement AppointmentRepository with async SQLAlchemy
 - [ ] Add tenant_id filtering to all queries
@@ -107,7 +107,7 @@
 - [ ] Write integration tests for repository (with mocked SendGrid)
 - [ ] Write integration tests for use cases (with mocked SendGrid)
 
-### P-04: Facebook Lead Webhook Endpoint
+### 4-04: Facebook Lead Webhook Endpoint
 - [ ] Create POST /api/v1/webhooks/facebook endpoint
 - [ ] Implement X-Hub-Signature verification
 - [ ] Parse Facebook webhook payload (leadgen_id, listing_id, sender_id)
@@ -122,7 +122,7 @@
 - [ ] Write contract test for OpenAPI schema
 - [ ] Verify webhook signature security (403 if invalid)
 
-### P-05: Lead API Endpoints
+### 4-05: Lead API Endpoints
 - [ ] Create LeadResponse DTO
 - [ ] Create CreateLeadRequest DTO
 - [ ] Create UpdateLeadStatusRequest DTO
@@ -136,7 +136,7 @@
 - [ ] Write integration tests for all endpoints
 - [ ] Write contract tests for DTO schemas
 
-### P-06: Appointment API Endpoints
+### 4-06: Appointment API Endpoints
 - [ ] Create AppointmentResponse DTO
 - [ ] Create CreateAppointmentRequest DTO
 - [ ] Create POST /api/v1/appointments endpoint
@@ -149,7 +149,7 @@
 - [ ] Write integration tests for all endpoints
 - [ ] Write contract tests for DTO schemas
 
-### P-07: Frontend Lead Types & API Clients
+### 4-07: Frontend Lead Types & API Clients
 - [ ] Create Lead TypeScript interface
 - [ ] Create Appointment TypeScript interface
 - [ ] Create CreateLeadRequest, UpdateLeadStatusRequest interfaces
@@ -164,7 +164,7 @@
 - [ ] Add query invalidation for related queries
 - [ ] Write unit tests for hooks (mocked fetch)
 
-### P-08: Frontend Leads List View
+### 4-08: Frontend Leads List View
 - [ ] Create leads list page at /vendedor/leads
 - [ ] Implement LeadList component with DataGrid
 - [ ] Create LeadListItem component (one row per lead)
@@ -177,7 +177,7 @@
 - [ ] Add real-time updates (polling every 30s)
 - [ ] Write E2E tests for leads list
 
-### P-09: Frontend Lead Details & Appointment Form
+### 4-09: Frontend Lead Details & Appointment Form
 - [ ] Create lead details page at /vendedor/leads/{id}
 - [ ] Implement LeadDetails component
 - [ ] Show buyer contact info, vehicle details, message
@@ -191,7 +191,7 @@
 - [ ] Implement status update dropdown
 - [ ] Write E2E tests for appointment creation
 
-### P-10: Frontend Manager Team Leads View
+### 4-10: Frontend Manager Team Leads View
 - [ ] Create manager team leads page at /manager/team/leads
 - [ ] Implement TeamLeadList component
 - [ ] Add filter by vendedor dropdown
@@ -202,7 +202,7 @@
 - [ ] Show team metrics card (leads per vendedor)
 - [ ] Write E2E tests for manager view
 
-### P-11: Frontend Dealer Calendar View
+### 4-11: Frontend Dealer Calendar View
 - [ ] Create dealer appointments page at /dealer/appointments
 - [ ] Implement CalendarView component (day/week/month)
 - [ ] Create AppointmentCard component
@@ -213,7 +213,7 @@
 - [ ] Add today's appointments badge
 - [ ] Write E2E tests for dealer calendar
 
-### P-12: E2E Verification & Smoke Tests
+### 4-12: E2E Verification & Smoke Tests
 - [ ] Create E2E test for Facebook webhook lead capture
 - [ ] Create E2E test for vendedor leads list view
 - [ ] Create E2E test for lead status update
@@ -229,28 +229,28 @@
 
 ## Checkpoints
 
-### Checkpoint 1: Foundation Complete (After P-01, P-02, P-03)
+### Checkpoint 1: Foundation Complete (After 4-01, 4-02, 4-03)
 - [ ] All unit tests for domain entities pass
 - [ ] All integration tests for repositories pass
 - [ ] All integration tests for use cases pass
 - [ ] Database tables created with proper schema
 - [ ] Alembic migration applies successfully
 
-### Checkpoint 2: API Complete (After P-04, P-05, P-06)
+### Checkpoint 2: API Complete (After 4-04, 4-05, 4-06)
 - [ ] Facebook webhook endpoint works
 - [ ] Lead API endpoints work (list, create, update, details)
 - [ ] Appointment API endpoints work (create, list, update)
 - [ ] All API integration tests pass
 - [ ] Contract tests verify schema compliance
 
-### Checkpoint 3: Frontend Complete (After P-07, P-08, P-09)
+### Checkpoint 3: Frontend Complete (After 4-07, 4-08, 4-09)
 - [ ] Frontend API clients work
 - [ ] Leads list view functional
 - [ ] Lead details and appointment form functional
 - [ ] Frontend unit tests pass
 - [ ] E2E tests for core flows pass
 
-### Checkpoint 4: Full Integration Complete (After P-10, P-11, P-12)
+### Checkpoint 4: Full Integration Complete (After 4-10, 4-11, 4-12)
 - [ ] Manager view functional
 - [ ] Dealer calendar view functional
 - [ ] All E2E tests pass
@@ -313,13 +313,13 @@
 - **Parallel execution** is encouraged where dependency graph allows
 - **Test-driven development** is required for all backend code
 - **E2E tests** are mandatory for all user-facing features
-- **SendGrid API key** must be configured before P-03 execution
-- **Facebook webhook** must be registered before P-04 testing
+- **SendGrid API key** must be configured before 4-03 execution
+- **Facebook webhook** must be registered before 4-04 testing
 - **Checkbox format**: Use `- [ ]` for pending, `- [x]` for complete
 
 ---
 
 **Document Status**: Active — Ready for execution
-**Next Action**: Execute Phase 13 plans, then Phase 4 plans P-01 through P-12
+**Next Action**: Execute Phase 13 plans, then Phase 4 plans 4-01 through 4-12
 **Owner**: Engineering Team
 **Stakeholders**: Product, QA, DevOps
