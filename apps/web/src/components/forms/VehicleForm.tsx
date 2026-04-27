@@ -24,24 +24,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select } from "@/components/ui/select";
-import {
-  SelectControlled,
-  useFbOptions,
-} from "@/components/ui/select-controlled";
+import { SelectControlled } from "@/components/ui/select-controlled";
 import { toast } from "sonner";
 import {
-  FB_BRANDS,
-  FB_BODY_STYLES,
-  FB_EXTERIOR_COLORS,
-  FB_INTERIOR_COLORS,
-  FB_FUEL_TYPES,
-  FB_TRANSMISSIONS,
   FB_YEARS,
 } from "@/lib/constants/fbVehicleOptions";
 import { useCategories, useCategoryOptions } from "@/lib/api/categories";
 import { useDecodeVin } from "@/lib/api/vehicles";
 import { useCreateProduct } from "@/lib/api/products";
+import { VehicleFormAttributes } from "./VehicleFormAttributes";
+import type { Category } from "@/types/category";
 
 // ============================================
 // TYPES
@@ -198,6 +190,11 @@ export function VehicleForm({
   const { data: categoryOptions } = useCategoryOptions();
   const selectedCategoryId = watch("category_id");
 
+  // Get selected category object for attribute_schema
+  const selectedCategory: Category | undefined = categories?.find(
+    (cat) => cat.id === selectedCategoryId
+  );
+
   // VIN decode hook
   const decodeVinMutation = useDecodeVin();
 
@@ -206,18 +203,6 @@ export function VehicleForm({
 
   // Derived state
   const isDisabled = isSubmitting || isPending;
-
-  // Convert FB options to SelectOption format for SelectControlled
-  const brandOptions = useFbOptions(FB_BRANDS);
-  const bodyTypeOptions = useFbOptions(FB_BODY_STYLES);
-  const transmissionOptions = useFbOptions(FB_TRANSMISSIONS);
-  const fuelTypeOptions = useFbOptions(FB_FUEL_TYPES);
-  const exteriorColorOptions = useFbOptions(FB_EXTERIOR_COLORS);
-  const interiorColorOptions = useFbOptions(FB_INTERIOR_COLORS);
-  const yearOptions = FB_YEARS.slice(0, 30).map((year) => ({
-    value: String(year),
-    label: String(year),
-  }));
 
   /**
    * Decode VIN and auto-populate fields
@@ -526,12 +511,18 @@ export function VehicleForm({
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="category_id">Categoría</Label>
-          <SelectControlled
-            name="category_id"
+          <Controller
             control={control}
-            options={categoryOptions ?? []}
-            placeholder="Selecciona una categoría"
-            disabled={isDisabled || categoriesLoading}
+            name="category_id"
+            render={({ field }) => (
+              <SelectControlled
+                value={field.value || ""}
+                onChange={(val) => field.onChange(val || undefined)}
+                options={categoryOptions ?? []}
+                placeholder="Selecciona una categoría"
+                disabled={isDisabled || categoriesLoading}
+              />
+            )}
           />
           {errors.category_id && (
             <p className="text-sm text-destructive">{errors.category_id.message}</p>
@@ -540,364 +531,14 @@ export function VehicleForm({
       </section>
 
       {/* ========================================
-          SECTION 2: Basic Info
+          DYNAMIC ATTRIBUTES (based on category schema)
           ======================================== */}
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Información Básica</h2>
-
-        <div className="grid grid-cols-4 gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="price">
-              Precio <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              {...register("price", { valueAsNumber: true })}
-              id="price"
-              type="number"
-              placeholder="18500"
-              disabled={isDisabled}
-              min={0}
-              step={0.01}
-            />
-            {errors.price && (
-              <p className="text-sm text-destructive">{errors.price.message}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="year">Año</Label>
-            <Controller
-              control={control}
-              name="year"
-              render={({ field }) => (
-                <SelectControlled
-                  value={field.value != null ? String(field.value) : ""}
-                  onChange={(val) => field.onChange(val !== "" ? Number(val) : undefined)}
-                  options={yearOptions}
-                  placeholder="Select year"
-                  id="year"
-                  disabled={isDisabled}
-                />
-              )}
-            />
-            {errors.year && (
-              <p className="text-sm text-destructive">{errors.year.message}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="make">Marca</Label>
-            <Controller
-              control={control}
-              name="make"
-              render={({ field }) => (
-                <SelectControlled
-                  value={field.value || ""}
-                  onChange={(val) => field.onChange(val || undefined)}
-                  options={brandOptions}
-                  placeholder="Select make"
-                  id="make"
-                  disabled={isDisabled}
-                />
-              )}
-            />
-            {errors.make && (
-              <p className="text-sm text-destructive">{errors.make.message}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="model">Modelo</Label>
-            <Input
-              {...register("model")}
-              id="model"
-              type="text"
-              placeholder="Camry, F-150, etc."
-              disabled={isDisabled}
-            />
-            {errors.model && (
-              <p className="text-sm text-destructive">{errors.model.message}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="trim">Trim</Label>
-            <Input
-              {...register("trim")}
-              id="trim"
-              type="text"
-              placeholder="LE, XSE, Limited, etc."
-              disabled={isDisabled}
-            />
-            {errors.trim && (
-              <p className="text-sm text-destructive">{errors.trim.message}</p>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================
-          SECTION 3: Specifications
-          ======================================== */}
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Especificaciones</h2>
-
-        <div className="grid grid-cols-4 gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="body_type">Tipo de Carrocería</Label>
-            <Controller
-              control={control}
-              name="body_type"
-              render={({ field }) => (
-                <SelectControlled
-                  value={field.value || ""}
-                  onChange={(val) => field.onChange(val || undefined)}
-                  options={bodyTypeOptions}
-                  placeholder="Select type"
-                  id="body_type"
-                  disabled={isDisabled}
-                />
-              )}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="body_style">Estilo</Label>
-            <Input
-              {...register("body_style")}
-              id="body_style"
-              type="text"
-              placeholder="4 Door, 2 Door, etc."
-              disabled={isDisabled}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="drivetrain">Tracción</Label>
-            <Controller
-              control={control}
-              name="drivetrain"
-              render={({ field }) => {
-                const drivetrainOptions = [
-                  { value: "FWD", label: "FWD (Delantera)" },
-                  { value: "RWD", label: "RWD (Trasera)" },
-                  { value: "AWD", label: "AWD (4x4)" },
-                  { value: "4WD", label: "4WD (4x4)" },
-                ];
-                return (
-                  <SelectControlled
-                    value={field.value || ""}
-                    onChange={(val) => field.onChange(val || undefined)}
-                    options={drivetrainOptions}
-                    placeholder="Select drivetrain"
-                    id="drivetrain"
-                    disabled={isDisabled}
-                  />
-                );
-              }}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="transmission">Transmisión</Label>
-            <Controller
-              control={control}
-              name="transmission"
-              render={({ field }) => (
-                <SelectControlled
-                  value={field.value || ""}
-                  onChange={(val) => field.onChange(val || undefined)}
-                  options={transmissionOptions}
-                  placeholder="Select transmission"
-                  id="transmission"
-                  disabled={isDisabled}
-                />
-              )}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="engine">Motor</Label>
-            <Input
-              {...register("engine")}
-              id="engine"
-              type="text"
-              placeholder="2.5L 4-Cylinder, V8, etc."
-              disabled={isDisabled}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="fuel_type">Combustible</Label>
-            <Controller
-              control={control}
-              name="fuel_type"
-              render={({ field }) => (
-                <SelectControlled
-                  value={field.value || ""}
-                  onChange={(val) => field.onChange(val || undefined)}
-                  options={fuelTypeOptions}
-                  placeholder="Select fuel type"
-                  id="fuel_type"
-                  disabled={isDisabled}
-                />
-              )}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================
-          SECTION 4: Performance
-          ======================================== */}
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Rendimiento</h2>
-
-        <div className="grid grid-cols-3 gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="mpg_city">MPG Ciudad</Label>
-            <Input
-              {...register("mpg_city", {
-                setValueAs: (v) => {
-                  const n = Number(v);
-                  return v === "" || isNaN(n) ? undefined : n;
-                },
-              })}
-              id="mpg_city"
-              type="number"
-              placeholder="25"
-              disabled={isDisabled}
-              min={0}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="mpg_highway">MPG Carretera</Label>
-            <Input
-              {...register("mpg_highway", {
-                setValueAs: (v) => {
-                  const n = Number(v);
-                  return v === "" || isNaN(n) ? undefined : n;
-                },
-              })}
-              id="mpg_highway"
-              type="number"
-              placeholder="32"
-              disabled={isDisabled}
-              min={0}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="mpg_combined">MPG Combinado</Label>
-            <Input
-              {...register("mpg_combined", {
-                setValueAs: (v) => {
-                  const n = Number(v);
-                  return v === "" || isNaN(n) ? undefined : n;
-                },
-              })}
-              id="mpg_combined"
-              type="number"
-              placeholder="28"
-              disabled={isDisabled}
-              min={0}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================
-          SECTION 5: Mileage
-          ======================================== */}
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Millaje</h2>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="mileage">Odómetro</Label>
-            <Input
-              {...register("mileage", { valueAsNumber: true })}
-              id="mileage"
-              type="number"
-              placeholder="50000"
-              disabled={isDisabled}
-              min={0}
-            />
-            {errors.mileage && (
-              <p className="text-sm text-destructive">{errors.mileage.message}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="mileage_unit">Unidad</Label>
-            <Controller
-              control={control}
-              name="mileage_unit"
-              render={({ field }) => (
-                <SelectControlled
-                  value={field.value || ""}
-                  onChange={(val) => field.onChange(val || undefined)}
-                  options={[
-                    { value: "mi", label: "Millas (mi)" },
-                    { value: "km", label: "Kilómetros (km)" },
-                  ]}
-                  placeholder="Select unit"
-                  id="mileage_unit"
-                  disabled={isDisabled}
-                />
-              )}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================
-          SECTION 6: Colors
-          ======================================== */}
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Colores</h2>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="exterior_color">Color Exterior</Label>
-            <Controller
-              control={control}
-              name="exterior_color"
-              render={({ field }) => (
-                <SelectControlled
-                  value={field.value || ""}
-                  onChange={(val) => field.onChange(val || undefined)}
-                  options={exteriorColorOptions}
-                  placeholder="Select color"
-                  id="exterior_color"
-                  disabled={isDisabled}
-                />
-              )}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="interior_color">Color Interior</Label>
-            <Controller
-              control={control}
-              name="interior_color"
-              render={({ field }) => (
-                <SelectControlled
-                  value={field.value || ""}
-                  onChange={(val) => field.onChange(val || undefined)}
-                  options={interiorColorOptions}
-                  placeholder="Select color"
-                  id="interior_color"
-                  disabled={isDisabled}
-                />
-              )}
-            />
-          </div>
-        </div>
-      </section>
+      <VehicleFormAttributes
+        control={control}
+        watch={watch}
+        disabled={isDisabled}
+        selectedCategory={selectedCategory}
+      />
 
       {/* ========================================
           SECTION 7: Features
