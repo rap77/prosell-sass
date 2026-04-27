@@ -28,12 +28,12 @@
 - [ ] Write E2E test for DataGrid loading and pagination
 
 ### 13-03: Category Dropdown and Attribute Rendering
-- [ ] Implement `useCategories` hook with 5-min cache
-- [ ] Create `useCategoryOptions` transformation hook
-- [ ] Implement category selection in VehicleForm
-- [ ] Add conditional attribute rendering based on attribute_schema
-- [ ] Write unit tests for category hooks
-- [ ] Write E2E test for category selection flow
+- [x] Implement `useCategories` hook with 5-min cache
+- [x] Create `useCategoryOptions` transformation hook
+- [x] Implement category selection in VehicleForm
+- [x] Add conditional attribute rendering based on attribute_schema
+- [x] Write unit tests for category hooks
+- [x] Write E2E test for category selection flow
 
 ### 13-04: Image Upload with Presigned URLs
 - [ ] Implement drag-drop zone for image upload (up to 20 images)

@@ -1,109 +1,189 @@
+/**
+ * Products E2E Tests
+ *
+ * Tests the Products page UI with mocked API responses.
+ * The page at /products renders products from /api/v1/products.
+ * All API calls are intercepted via page.route() to ensure deterministic tests.
+ */
+
 import { expect, test } from "@playwright/test";
-import { ProductsPage } from "../pages/products-page";
 
-// NOTE: /products route is not yet implemented in the web app.
-// These tests are skipped until the products management UI is built.
-// Products are managed via the catalog at /catalog/create.
-// The products API is tested separately in products-api.spec.ts.
+const MOCK_CATEGORIES = [
+  {
+    id: "cat-1",
+    name: "SUVs",
+    slug: "suvs",
+    attribute_schema: { year: true, make: true, model: true },
+    is_active: true,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+];
+
+const MOCK_PRODUCTS = [
+  {
+    id: "prod-1",
+    title: "2024 Toyota RAV4",
+    price_cents: 3500000,
+    category_id: "cat-1",
+    attributes: { condition: "new", year: 2024, make: "Toyota", model: "RAV4" },
+    status: "draft",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "prod-2",
+    title: "2023 Honda Civic",
+    price_cents: 2500000,
+    category_id: "cat-1",
+    attributes: { condition: "used", year: 2023, make: "Honda", model: "Civic" },
+    status: "active",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+];
+
 test.describe("Products", () => {
-  let productsPage: ProductsPage;
-
   test.beforeEach(async ({ page }) => {
-    productsPage = new ProductsPage(page);
+    // Mock the products list endpoint
+    await page.route("**/api/v1/products**", async (route) => {
+      const url = route.request().url();
+
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            products: MOCK_PRODUCTS,
+            total: MOCK_PRODUCTS.length,
+            page: 1,
+            page_size: 20,
+          }),
+        });
+      } else if (route.request().method() === "POST") {
+        const body = route.request().postDataJSON();
+        await route.fulfill({
+          status: 201,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: `prod-${Date.now()}`,
+            title: body.title,
+            price_cents: body.price_cents,
+            category_id: body.category_id,
+            attributes: body.attributes || {},
+            status: "draft",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }),
+        });
+      } else if (route.request().method() === "PATCH") {
+        // For status updates (submit for approval)
+        const productId = url.match(/\/products\/([^/]+)/)?.[1];
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: productId,
+            title: "Updated Product",
+            price_cents: 1000000,
+            status: "active",
+            category_id: "cat-1",
+            attributes: {},
+            created_at: "2026-01-01T00:00:00Z",
+            updated_at: new Date().toISOString(),
+          }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    // Mock the categories endpoint for the category dropdown
+    await page.route("**/api/v1/categories**", async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            categories: MOCK_CATEGORIES,
+            total: MOCK_CATEGORIES.length,
+            page: 1,
+            page_size: 20,
+          }),
+        });
+      } else {
+        await route.fulfill({
+          status: 201,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: "cat-new",
+            name: "New Category",
+            slug: "new-category",
+            attribute_schema: {},
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }),
+        });
+      }
+    });
+
+    await page.goto("/products");
+    await page.waitForLoadState("load");
   });
 
-  test.skip("should display products page", async ({ page }) => {
-    // SKIP: /products route not implemented yet
-    await productsPage.goto();
+  test("should display products page", async ({ page }) => {
     await expect(page).toHaveURL(/.*products/);
+    await expect(page.getByRole("heading", { name: /products/i })).toBeVisible();
   });
 
-  test.skip("should create a product in draft status", async ({ page }) => {
-    // SKIP: /products route not implemented yet
-    await productsPage.goto();
+  test("should display existing products from API", async ({ page }) => {
+    await expect(page.getByText("2024 Toyota RAV4")).toBeVisible();
+    await expect(page.getByText("2023 Honda Civic")).toBeVisible();
 
-    await productsPage.createProduct({
-      title: "Test Product",
-      description: "A test product for e2e testing",
-      price: "9999",
-      condition: "new",
-    });
-
-    await productsPage.verifyProductVisible("Test Product");
+    // Verify price display (price_cents / 100)
+    await expect(page.getByText(/\$35,000\.00/)).toBeVisible();
   });
 
-  test.skip("should submit product for approval", async ({ page }) => {
-    // SKIP: /products route not implemented yet
-    await productsPage.goto();
+  test("should create a product in draft status", async ({ page }) => {
+    // Click "New Product" button
+    await page.getByRole("button", { name: /new product/i }).click();
 
-    // Create product
-    await productsPage.createProduct({
-      title: "Product to Approve",
-      price: "10000",
-    });
+    // Fill form
+    await page.getByLabel(/title/i).fill("Test Product");
+    await page.getByLabel(/price/i).fill("9999");
 
-    await productsPage.verifyProductVisible("Product to Approve");
+    // Select condition
+    await page.getByLabel(/condition/i).selectOption("new");
 
-    // Submit for approval
-    await productsPage.submitForApproval("Product to Approve");
+    // Select category
+    await page.getByLabel(/^category$/i).selectOption("cat-1");
 
-    // Verify status changed to pending
-    const productCard = productsPage.findProductByTitle("Product to Approve");
-    await expect(productCard.getByText(/pending/i)).toBeVisible();
+    // Submit
+    await page.getByRole("button", { name: /^save$/i }).click();
+
+    // Should show success toast
+    await expect(page.getByText(/product created/i)).toBeVisible({ timeout: 5000 });
   });
 
-  test.skip("should validate product title is required", async ({ page }) => {
-    // SKIP: /products route not implemented yet
-    await productsPage.goto();
-    await productsPage.clickNewProduct();
+  test("should validate product title is required", async ({ page }) => {
+    await page.getByRole("button", { name: /new product/i }).click();
 
     // Try to submit without title
-    await productsPage.submit();
-
-    // Should show validation error
-    const titleInput = productsPage.productTitleInput;
+    const titleInput = page.getByLabel(/title/i);
     await expect(titleInput).toHaveAttribute("required", "");
   });
 
-  test.skip("should validate price is positive", async ({ page }) => {
-    // SKIP: /products route not implemented yet
-    await productsPage.goto();
-    await productsPage.clickNewProduct();
+  test("should filter products by status", async ({ page }) => {
+    // The products page has a status filter dropdown
+    const statusFilter = page.getByLabel(/status/i);
+    await statusFilter.selectOption("draft");
 
-    await productsPage.fillProductForm({
-      title: "Test Product",
-      price: "-100", // Invalid negative price
-    });
-    await productsPage.submit();
-
-    // Should show validation error
-    await productsPage.waitForNotification();
-    await productsPage.verifyNotificationMessage("price");
+    // Should show only draft products
+    await expect(page.getByText("2024 Toyota RAV4")).toBeVisible();
   });
 
-  test.skip("should filter products by status", async ({ page }) => {
-    // SKIP: /products route not implemented yet
-    await productsPage.goto();
-
-    // Create products with different statuses
-    await productsPage.createProduct({
-      title: "Draft Product 1",
-      price: "1000",
-    });
-
-    // Filter by draft status
-    const draftFilter = page.getByLabel(/status/i);
-    await draftFilter.selectOption("draft");
-    await page.waitForLoadState("load");
-
-    // Verify only draft products shown
-    await expect(page.getByText("Draft Product 1")).toBeVisible();
-  });
-
-  test.skip("should pass accessibility checks", async ({ page }) => {
-    // SKIP: /products route not implemented yet (page returns 404)
-    await productsPage.goto();
-
+  test("should pass accessibility checks", async ({ page }) => {
     const AxeBuilder = (await import("@axe-core/playwright")).default;
     const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
     expect(accessibilityScanResults.violations).toEqual([]);

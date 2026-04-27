@@ -10,7 +10,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [["html"], ["list"]],
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:3999",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -46,10 +46,11 @@ export default defineConfig({
     //   use: { ...devices["Desktop Safari"] },
     // },
   ],
-  // Automatically start Next.js dev server before tests
+  // Automatically start Next.js dev server before tests.
+  // Uses port 3999 to avoid conflict with Docker staging container on 3000.
   webServer: {
-    command: "cd ../../apps/web && pnpm dev",
-    url: "http://localhost:3000",
+    command: "cd ../../apps/web && pnpm dev --port 3999",
+    url: "http://localhost:3999",
     timeout: 120 * 1000, // 2 minutes - Next.js can take time to start
     reuseExistingServer: !process.env.CI, // Use existing server if running (dev mode)
     stdout: "pipe", // Pipe stdout to avoid cluttering test output

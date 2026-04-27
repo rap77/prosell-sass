@@ -72,7 +72,10 @@ async function globalSetup(config: FullConfig) {
   // Make direct API call to get cookies
   console.log('[GLOBAL SETUP] Making direct login API call...');
 
-  const response = await fetch('http://localhost:3000/api/auth/login', {
+  // Use port 3999 to match the dev server started by Playwright webServer config.
+  // Falls back to port 3000 if BASE_URL env var is set (e.g., for CI or Docker).
+  const baseUrl = process.env.BASE_URL || 'http://localhost:3999';
+  const response = await fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -120,7 +123,8 @@ async function globalSetup(config: FullConfig) {
   // Verify by navigating to a protected route
   const page = await context.newPage();
   console.log('[GLOBAL SETUP] Testing navigation to protected route...');
-  await page.goto("http://localhost:3000/dashboard/org", { waitUntil: "load" });
+  const testBaseUrl = process.env.BASE_URL || 'http://localhost:3999';
+  await page.goto(`${testBaseUrl}/dashboard/org`, { waitUntil: "load" });
   console.log('[GLOBAL SETUP] Current URL after navigation:', page.url());
 
   // Save storage state

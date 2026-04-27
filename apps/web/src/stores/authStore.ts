@@ -150,7 +150,8 @@ export const useAuthStore = create<AuthState>()(
         markPerformance("auth-init-start");
 
         try {
-          const response = await fetch("/api/auth/state", {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+          const response = await fetch(`${apiUrl}/api/auth/state`, {
             credentials: "include", // CRITICAL: Sends httpOnly cookies
           });
           const authState = await response.json();
@@ -306,7 +307,8 @@ export const useAuthStore = create<AuthState>()(
 
           // Delete auth cookies via API route
           try {
-            await fetch("/api/auth/state", {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            await fetch(`${apiUrl}/api/auth/state`, {
               method: "DELETE",
               credentials: "include",
             });
@@ -325,7 +327,8 @@ export const useAuthStore = create<AuthState>()(
 
           // Try to delete cookies via API
           try {
-            await fetch("/api/auth/state", {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            await fetch(`${apiUrl}/api/auth/state`, {
               method: "DELETE",
               credentials: "include",
             });
@@ -369,7 +372,8 @@ export const useAuthStore = create<AuthState>()(
         });
 
         // Also delete cookies via API
-        fetch("/api/auth/state", {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        fetch(`${apiUrl}/api/auth/state`, {
           method: "DELETE",
           credentials: "include",
         }).catch((error) => {

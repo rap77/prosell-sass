@@ -1,4 +1,4 @@
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation, type UseQueryResult } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import type { Category, CategoryOption, CategoryListResponse } from "@/types/category";
@@ -78,4 +78,47 @@ export function useCategoryOptions() {
     ...categoriesQuery,
     data: transformedData,
   };
+}
+
+/**
+ * Create a new category
+ */
+export async function createCategory(data: {
+  name: string;
+  slug: string;
+  description?: string;
+}): Promise<Category> {
+  const res = await fetch("/api/v1/categories", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Failed to create category" }));
+    throw new Error(error.message || "Failed to create category");
+  }
+
+  return res.json();
+}
+
+/**
+ * Mutation hook for creating categories
+ */
+export function useCreateCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast.success("Category created successfully");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to create category");
+    },
+  });
 }

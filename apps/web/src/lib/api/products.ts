@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { CreateProductRequest, Product } from "@/types/product";
+import type { CreateProductRequest, Product, ProductListResponse } from "@/types/product";
 
 interface BackendProductResponse {
   id: string;
@@ -117,6 +117,71 @@ export function useCreateProduct(): UseMutationResult<
 
     onError: (err) => {
       toast.error(err.message || "Failed to create product");
+    },
+  });
+}
+
+/**
+ * Fetch products list
+ */
+export function useProducts(): UseQueryResult<Product[], Error> {
+  return useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const res = await fetch("/api/v1/products", {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: "Failed to fetch products" }));
+        throw new Error(error.message || "Failed to fetch products");
+      }
+
+      const data = (await res.json()) as ProductListResponse;
+      return data.products;
+    },
+  });
+}
+
+/**
+ * Update product status (for approval workflow)
+ */
+export async function updateProductStatus(
+  productId: string,
+  status: Product["status"]
+): Promise<Product> {
+  const res = await fetch(`/api/v1/products/${productId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ status }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Failed to update product" }));
+    throw new Error(error.message || "Failed to update product");
+  }
+
+  return res.json();
+}
+
+/**
+ * Mutation hook for updating product status
+ */
+export function useUpdateProductStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ productId, status }: { productId: string; status: Product["status"] }) =>
+      updateProductStatus(productId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Product status updated");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to update product status");
     },
   });
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { useImageUpload } from '@/lib/hooks/useImageUpload'
 import { useUploadStore } from '@/lib/stores/uploadStore'
 
@@ -46,6 +46,8 @@ describe('useImageUpload', () => {
 
     // Mock uploadToCloud to call progress callback
     vi.mocked(uploadToCloud).mockImplementation(async (url, file, fileId, onProgress) => {
+      // Call progress with 0 first, then 50, then 100
+      onProgress?.(0)
       onProgress?.(50)
       onProgress?.(100)
     })
@@ -54,11 +56,12 @@ describe('useImageUpload', () => {
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
 
     await act(async () => {
-      await result.current.uploadImage(file)
+      await result.current.uploadImage(file, 'test-file-id')
     })
 
-    expect(mockSetUploading).toHaveBeenCalledWith(expect.any(String), 50)
-    expect(mockSetUploading).toHaveBeenCalledWith(expect.any(String), 100)
+    expect(mockSetUploading).toHaveBeenCalledWith('test-file-id', 0)
+    expect(mockSetUploading).toHaveBeenCalledWith('test-file-id', 50)
+    expect(mockSetUploading).toHaveBeenCalledWith('test-file-id', 100)
   })
 
   it('updates file status through upload lifecycle', async () => {
@@ -72,22 +75,22 @@ describe('useImageUpload', () => {
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
 
     await act(async () => {
-      await result.current.uploadImage(file)
+      await result.current.uploadImage(file, 'test-file-id')
     })
 
-    expect(mockUpdateFileStatus).toHaveBeenCalledWith(expect.any(String), 'uploading')
-    expect(mockUpdateFileStatus).toHaveBeenCalledWith(expect.any(String), 'processing')
-    expect(mockUpdateFileStatus).toHaveBeenCalledWith(expect.any(String), 'complete', expect.any(String))
+    expect(mockUpdateFileStatus).toHaveBeenCalledWith('test-file-id', 'uploading')
+    expect(mockUpdateFileStatus).toHaveBeenCalledWith('test-file-id', 'processing')
+    expect(mockUpdateFileStatus).toHaveBeenCalledWith('test-file-id', 'complete', expect.any(String))
   })
 
   it('handles multiple images in parallel chunks', async () => {
     const { result } = renderHook(() => useImageUpload())
 
     const files = [
-      new File(['test1'], 'test1.jpg', { type: 'image/jpeg' }),
-      new File(['test2'], 'test2.jpg', { type: 'image/jpeg' }),
-      new File(['test3'], 'test3.jpg', { type: 'image/jpeg' }),
-      new File(['test4'], 'test4.jpg', { type: 'image/jpeg' }),
+      { id: 'file-1', file: new File(['test1'], 'test1.jpg', { type: 'image/jpeg' }) },
+      { id: 'file-2', file: new File(['test2'], 'test2.jpg', { type: 'image/jpeg' }) },
+      { id: 'file-3', file: new File(['test3'], 'test3.jpg', { type: 'image/jpeg' }) },
+      { id: 'file-4', file: new File(['test4'], 'test4.jpg', { type: 'image/jpeg' }) },
     ]
 
     const urls = await act(async () => {
@@ -101,9 +104,10 @@ describe('useImageUpload', () => {
   it('uploads in chunks of 3 images', async () => {
     const { result } = renderHook(() => useImageUpload())
 
-    const files = Array.from({ length: 7 }, (_, i) =>
-      new File([`test${i}`], `test${i}.jpg`, { type: 'image/jpeg' })
-    )
+    const files = Array.from({ length: 7 }, (_, i) => ({
+      id: `file-${i}`,
+      file: new File([`test${i}`], `test${i}.jpg`, { type: 'image/jpeg' }),
+    }))
 
     const urls = await act(async () => {
       return await result.current.uploadImages(files)
@@ -129,7 +133,7 @@ describe('useImageUpload', () => {
     let error: Error | null = null
     try {
       await act(async () => {
-        await result.current.uploadImage(file)
+        await result.current.uploadImage(file, 'test-file-id')
       })
     } catch (e) {
       error = e as Error
@@ -137,7 +141,7 @@ describe('useImageUpload', () => {
 
     expect(error).not.toBeNull()
     expect(error?.message).toBe('Upload failed')
-    expect(mockUpdateFileStatus).toHaveBeenCalledWith(expect.any(String), 'error')
+    expect(mockUpdateFileStatus).toHaveBeenCalledWith('test-file-id', 'error')
   })
 
   it('returns final cloud URL after successful upload', async () => {
@@ -145,7 +149,7 @@ describe('useImageUpload', () => {
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
 
     const url = await act(async () => {
-      return await result.current.uploadImage(file)
+      return await result.current.uploadImage(file, 'test-file-id')
     })
 
     expect(url).toBe('https://final-cloud-url.com/image.jpg')

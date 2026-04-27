@@ -22,20 +22,118 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 
 ---
 
-## Phase 13: Frontend C3 Integration (Existing Plans)
+## Phase 13: Frontend C3 Integration
 
-**Status**: 6 plans already defined in `.planning/phases/13-frontend/`
 **Goal**: Update frontend components to use the new C3 schema (categories+products+vehicles)
 
-**Plans**:
-- 13-01: VehicleForm refactor for C3 API
-- 13-02: DataGrid integration with vehicles API
-- 13-03: Category dropdown and attribute rendering
-- 13-04: Image upload with presigned URLs
-- 13-05: Search and filters with real data
-- 13-06: E2E verification (smoke tests)
+---
 
-**Note**: These plans are already defined. This document focuses on Phase 4 (new work).
+### 13-01: Category & Product API Clients
+
+**Depends on**: Nothing
+**Full plan**: `.planning/phases/13-frontend/13-01-PLAN.md`
+
+**Objective**: Create API client infrastructure for categories and products with the new C3 schema.
+
+**Acceptance Criteria**:
+- [x] Category API client fetches from `/api/v1/categories` with 5-minute cache
+- [x] Product API client creates products via `POST /api/v1/products` with vehicle auto-creation
+- [x] TypeScript types match backend DTOs (CategoryResponse, ProductResponse)
+- [x] Error handling works correctly with toast notifications
+- [x] Both API clients have unit tests passing
+
+---
+
+### 13-02: VehicleForm Category Integration
+
+**Depends on**: 13-01
+**Full plan**: `.planning/phases/13-frontend/13-02-PLAN.md`
+
+**Objective**: Update VehicleForm to use category API and prepare for product creation integration.
+
+**Acceptance Criteria**:
+- [x] Category dropdown loads options from API (no hardcoded values)
+- [x] Category dropdown displays human-readable names (not UUIDs)
+- [x] VIN decode hook is available and functional
+- [x] Form validation works with new schema
+- [x] Component tests pass
+
+---
+
+### 13-03: VehicleForm Product Submit Handler
+
+**Depends on**: 13-02
+**Full plan**: `.planning/phases/13-frontend/13-03-PLAN.md`
+
+**Objective**: Update VehicleForm submit handler to use product creation with auto-vehicle creation.
+
+**Acceptance Criteria**:
+- [ ] Form submit calls POST /api/v1/products with attributes.vin
+- [ ] API response includes `has_vehicle: true` and `vehicle_id` populated
+- [ ] VIN decode populates form fields correctly (existing functionality preserved)
+- [ ] Form validation works with new schema
+- [ ] Submit redirects to catalog after success
+- [ ] Component tests pass
+- [ ] E2E VIN decode + submit flow passes
+
+---
+
+### 13-04: DataGrid C3 Schema Integration
+
+**Depends on**: 13-01
+**Full plan**: `.planning/phases/13-frontend/13-04-PLAN.md`
+
+**Objective**: Update DataGrid to use the new C3 schema vehicles endpoint with product join data and cursor-based infinite scroll.
+
+**Acceptance Criteria**:
+- [ ] DataGrid loads vehicles from GET /api/v1/vehicles with C3 join data
+- [ ] Vehicle titles display from product.title (not constructed)
+- [ ] Prices display correctly from product.price_cents
+- [ ] Status badges show product.status
+- [ ] Infinite scroll loads more rows on scroll (cursor pagination)
+- [ ] Row virtualization maintains ~40 rows in DOM (60fps performance)
+- [ ] Component tests pass
+- [ ] E2E infinite scroll test passes
+
+---
+
+### 13-05: BulkUpload CSV with Products Schema
+
+**Depends on**: 13-01
+**Full plan**: `.planning/phases/13-frontend/13-05-PLAN.md`
+
+**Objective**: Update BulkUploadCSV component to use the new products+vehicles schema with auto-vehicle creation.
+
+**Acceptance Criteria**:
+- [ ] CSV upload calls POST /api/v1/products/bulk
+- [ ] CSV rows map to products with attributes.vin
+- [ ] Backend creates both product and vehicle records per row
+- [ ] Invalid VINs show inline errors in preview table
+- [ ] Success toast displays created/failed counts
+- [ ] Progress bar shows upload progress
+- [ ] Uploaded vehicles appear in DataGrid
+- [ ] Component tests pass
+- [ ] E2E bulk upload test passes
+
+---
+
+### 13-06: E2E Smoke Test Suite
+
+**Depends on**: 13-03, 13-04, 13-05
+**Full plan**: `.planning/phases/13-frontend/13-06-PLAN.md`
+
+**Objective**: Implement smoke test suite and update E2E tests for C3 schema integration.
+
+**Acceptance Criteria**:
+- [ ] All 20 smoke tests pass in ~2 minutes
+- [ ] VehicleForm E2E tests pass with products API
+- [ ] DataGrid E2E tests pass with C3 join data
+- [ ] Bulk upload E2E tests pass with products schema
+- [ ] No regressions in previously passing E2E tests
+- [ ] Contract tests validate API schemas
+- [ ] Manual testing confirms all flows work end-to-end
+
+---
 
 ---
 
@@ -61,7 +159,7 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 
 ## Phase 4 Plans
 
-### P-01: Lead Domain & Database Schema
+### 4-01: Lead Domain & Database Schema
 
 **Wave**: 1 (Foundation)
 **Depends on**: Nothing
@@ -111,10 +209,10 @@ psql -c "\d leads"  # Verify table schema
 
 ---
 
-### P-02: Lead Repository & Use Cases
+### 4-02: Lead Repository & Use Cases
 
 **Wave**: 1 (Foundation)
-**Depends on**: P-01
+**Depends on**: 4-01
 **Files Modified**:
 - `apps/api/src/prosell/application/leads/__init__.py`
 - `apps/api/src/prosell/application/leads/use_cases.py`
@@ -162,10 +260,10 @@ cd apps/api && uv run pytest tests/integration/repositories/test_lead_repository
 
 ---
 
-### P-03: Appointment Repository & Use Cases
+### 4-03: Appointment Repository & Use Cases
 
 **Wave**: 1 (Foundation)
-**Depends on**: P-01, P-02
+**Depends on**: 4-01, 4-02
 **Files Modified**:
 - `apps/api/src/prosell/application/appointments/__init__.py`
 - `apps/api/src/prosell/application/appointments/use_cases.py`
@@ -212,10 +310,10 @@ cd apps/api && uv run pytest tests/integration/test_appointment_usecases.py -v
 
 ---
 
-### P-04: Facebook Lead Webhook Endpoint
+### 4-04: Facebook Lead Webhook Endpoint
 
 **Wave**: 2 (Integration)
-**Depends on**: P-02
+**Depends on**: 4-02
 **Files Modified**:
 - `apps/api/src/prosell/infrastructure/api/routers/lead_router.py`
 - `apps/api/src/prosell/infrastructure/external/facebook/webhook_handler.py`
@@ -262,10 +360,10 @@ curl -X POST http://localhost:8000/api/v1/webhooks/facebook -d @test_payload.jso
 
 ---
 
-### P-05: Lead API Endpoints
+### 4-05: Lead API Endpoints
 
 **Wave**: 2 (Integration)
-**Depends on**: P-02
+**Depends on**: 4-02
 **Files Modified**:
 - `apps/api/src/prosell/infrastructure/api/routers/lead_router.py`
 - `apps/api/src/prosell/application/dto/lead.py`
@@ -311,10 +409,10 @@ cd tests/contract && uv run pytest openapi/test_leads_schema.py -v
 
 ---
 
-### P-06: Appointment API Endpoints
+### 4-06: Appointment API Endpoints
 
 **Wave**: 2 (Integration)
-**Depends on**: P-03
+**Depends on**: 4-03
 **Files Modified**:
 - `apps/api/src/prosell/infrastructure/api/routers/appointment_router.py`
 - `apps/api/src/prosell/application/dto/appointment.py`
@@ -357,10 +455,10 @@ cd tests/contract && uv run pytest openapi/test_appointments_schema.py -v
 
 ---
 
-### P-07: Frontend Lead Types & API Clients
+### 4-07: Frontend Lead Types & API Clients
 
 **Wave**: 3 (Frontend)
-**Depends on**: P-05
+**Depends on**: 4-05
 **Files Modified**:
 - `apps/web/src/types/lead.ts`
 - `apps/web/src/types/appointment.ts`
@@ -406,10 +504,10 @@ cd apps/web && pnpm test src/lib/api/leads.test.ts
 
 ---
 
-### P-08: Frontend Leads List View
+### 4-08: Frontend Leads List View
 
 **Wave**: 3 (Frontend)
-**Depends on**: P-07
+**Depends on**: 4-07
 **Files Modified**:
 - `apps/web/src/app/(role)/vendedor/leads/page.tsx`
 - `apps/web/src/components/leads/LeadList.tsx`
@@ -453,10 +551,10 @@ cd tests/e2e && pnpm test specs/leads.spec.ts
 
 ---
 
-### P-09: Frontend Lead Details & Appointment Form
+### 4-09: Frontend Lead Details & Appointment Form
 
 **Wave**: 3 (Frontend)
-**Depends on**: P-07
+**Depends on**: 4-07
 **Files Modified**:
 - `apps/web/src/app/(role)/vendedor/leads/[id]/page.tsx`
 - `apps/web/src/components/leads/LeadDetails.tsx`
@@ -502,10 +600,10 @@ cd tests/e2e && pnpm test specs/appointments.spec.ts
 
 ---
 
-### P-10: Frontend Manager Team Leads View
+### 4-10: Frontend Manager Team Leads View
 
 **Wave**: 4 (Manager Features)
-**Depends on**: P-08
+**Depends on**: 4-08
 **Files Modified**:
 - `apps/web/src/app/(role)/manager/team/leads/page.tsx`
 - `apps/web/src/components/leads/TeamLeadList.tsx`
@@ -545,10 +643,10 @@ cd tests/e2e && pnpm test specs/manager-leads.spec.ts
 
 ---
 
-### P-11: Frontend Dealer Calendar View
+### 4-11: Frontend Dealer Calendar View
 
 **Wave**: 4 (Dealer Features)
-**Depends on**: P-09
+**Depends on**: 4-09
 **Files Modified**:
 - `apps/web/src/app/(role)/dealer/appointments/page.tsx`
 - `apps/web/src/components/appointments/CalendarView.tsx`
@@ -589,10 +687,10 @@ cd tests/e2e && pnpm test specs/dealer-calendar.spec.ts
 
 ---
 
-### P-12: E2E Verification & Smoke Tests
+### 4-12: E2E Verification & Smoke Tests
 
 **Wave**: 5 (Verification)
-**Depends on**: P-01 through P-11
+**Depends on**: 4-01 through 4-11
 **Files Modified**:
 - `tests/e2e/smoke.spec.ts` (UPDATE)
 - `tests/e2e/specs/leads.spec.ts`
@@ -640,52 +738,52 @@ cd tests/e2e && pnpm test smoke.spec.ts
 ## Dependency Graph
 
 ```
-P-01 (Domain)
+4-01 (Domain)
   ↓
-P-02 (Lead Repository & Use Cases) ← P-03 (Appointment Repository)
+4-02 (Lead Repository & Use Cases) ← 4-03 (Appointment Repository)
   ↓                              ↓
-P-04 (Facebook Webhook) ← P-05 (Lead API) ← P-06 (Appointment API)
+4-04 (Facebook Webhook) ← 4-05 (Lead API) ← 4-06 (Appointment API)
                                   ↓
-                            P-07 (Frontend Types & Hooks)
+                            4-07 (Frontend Types & Hooks)
                                   ↓
-                         P-08 (Leads List) ← P-09 (Lead Details & Appointments)
+                         4-08 (Leads List) ← 4-09 (Lead Details & Appointments)
                                   ↓
-                     P-10 (Manager View) ← P-11 (Dealer Calendar)
+                     4-10 (Manager View) ← 4-11 (Dealer Calendar)
                                   ↓
-                            P-12 (E2E Verification)
+                            4-12 (E2E Verification)
 ```
 
 **Parallel Execution Opportunities**:
-- P-02 and P-03 can run in parallel (both depend on P-01)
-- P-04, P-05, P-06 can run in parallel (all depend on P-02)
-- P-08 and P-09 can run in parallel (both depend on P-07)
-- P-10 and P-11 can run in parallel (both depend on P-08/P-09)
+- 4-02 and 4-03 can run in parallel (both depend on 4-01)
+- 4-04, 4-05, 4-06 can run in parallel (all depend on 4-02)
+- 4-08 and 4-09 can run in parallel (both depend on 4-07)
+- 4-10 and 4-11 can run in parallel (both depend on 4-08/4-09)
 
 ---
 
 ## Execution Order (Recommended)
 
 **Wave 1 (Foundation)**:
-1. P-01: Lead Domain & Database Schema (3-4 hours)
-2. P-02: Lead Repository & Use Cases (3-4 hours) — parallel with P-03
-3. P-03: Appointment Repository & Use Cases (3-4 hours) — parallel with P-02
+1. 4-01: Lead Domain & Database Schema (3-4 hours)
+2. 4-02: Lead Repository & Use Cases (3-4 hours) — parallel with 4-03
+3. 4-03: Appointment Repository & Use Cases (3-4 hours) — parallel with 4-02
 
 **Wave 2 (Integration)**:
-4. P-04: Facebook Lead Webhook Endpoint (2-3 hours)
-5. P-05: Lead API Endpoints (2-3 hours) — parallel with P-06
-6. P-06: Appointment API Endpoints (2-3 hours) — parallel with P-05
+4. 4-04: Facebook Lead Webhook Endpoint (2-3 hours)
+5. 4-05: Lead API Endpoints (2-3 hours) — parallel with 4-06
+6. 4-06: Appointment API Endpoints (2-3 hours) — parallel with 4-05
 
 **Wave 3 (Frontend Core)**:
-7. P-07: Frontend Lead Types & API Clients (2 hours)
-8. P-08: Frontend Leads List View (3-4 hours) — parallel with P-09
-9. P-09: Frontend Lead Details & Appointment Form (3-4 hours) — parallel with P-08
+7. 4-07: Frontend Lead Types & API Clients (2 hours)
+8. 4-08: Frontend Leads List View (3-4 hours) — parallel with 4-09
+9. 4-09: Frontend Lead Details & Appointment Form (3-4 hours) — parallel with 4-08
 
 **Wave 4 (Frontend Extended)**:
-10. P-10: Frontend Manager Team Leads View (2-3 hours) — parallel with P-11
-11. P-11: Frontend Dealer Calendar View (2-3 hours) — parallel with P-10
+10. 4-10: Frontend Manager Team Leads View (2-3 hours) — parallel with 4-11
+11. 4-11: Frontend Dealer Calendar View (2-3 hours) — parallel with 4-10
 
 **Wave 5 (Verification)**:
-12. P-12: E2E Verification & Smoke Tests (3-4 hours)
+12. 4-12: E2E Verification & Smoke Tests (3-4 hours)
 
 **Total Estimated Time**: 35-45 hours (5-6 days of focused development)
 
@@ -693,7 +791,7 @@ P-04 (Facebook Webhook) ← P-05 (Lead API) ← P-06 (Appointment API)
 
 ## Checkpoints
 
-### Checkpoint 1: Foundation Complete (After P-01, P-02, P-03)
+### Checkpoint 1: Foundation Complete (After 4-01, 4-02, 4-03)
 **Verification**:
 ```bash
 cd apps/api && uv run pytest tests/unit/domain/test_lead_entity.py -v
@@ -703,7 +801,7 @@ cd apps/api && uv run pytest tests/integration/test_appointment_usecases.py -v
 psql -c "\d leads appointments lead_audit_log"
 ```
 
-### Checkpoint 2: API Complete (After P-04, P-05, P-06)
+### Checkpoint 2: API Complete (After 4-04, 4-05, 4-06)
 **Verification**:
 ```bash
 cd apps/api && uv run pytest tests/integration/test_facebook_webhook.py -v
@@ -712,7 +810,7 @@ cd apps/api && uv run pytest tests/integration/api/test_appointment_api.py -v
 curl -X POST http://localhost:8000/api/v1/webhooks/facebook -d @test_payload.json
 ```
 
-### Checkpoint 3: Frontend Complete (After P-07, P-08, P-09)
+### Checkpoint 3: Frontend Complete (After 4-07, 4-08, 4-09)
 **Verification**:
 ```bash
 cd apps/web && pnpm test src/lib/api/leads.test.ts
@@ -720,7 +818,7 @@ cd tests/e2e && pnpm test specs/leads.spec.ts
 cd tests/e2e && pnpm test specs/appointments.spec.ts
 ```
 
-### Checkpoint 4: Full Integration Complete (After P-10, P-11, P-12)
+### Checkpoint 4: Full Integration Complete (After 4-10, 4-11, 4-12)
 **Verification**:
 ```bash
 cd tests/e2e && pnpm test  # All E2E tests
@@ -732,7 +830,7 @@ cd tests/e2e && pnpm test smoke.spec.ts  # Smoke tests
 ## Success Criteria
 
 ### Phase 4 Complete
-- [ ] All 12 plans (P-01 through P-12) implemented
+- [ ] All 12 plans (4-01 through 4-12) implemented
 - [ ] All unit tests passing
 - [ ] All integration tests passing
 - [ ] All E2E tests passing
@@ -755,12 +853,12 @@ cd tests/e2e && pnpm test smoke.spec.ts  # Smoke tests
 - **Parallel execution** is encouraged where dependency graph allows
 - **Test-driven development** is required for all backend code
 - **E2E tests** are mandatory for all user-facing features
-- **SendGrid API key** must be configured before P-03 execution
-- **Facebook webhook** must be registered before P-04 testing
+- **SendGrid API key** must be configured before 4-03 execution
+- **Facebook webhook** must be registered before 4-04 testing
 
 ---
 
 **Document Status**: Active — Ready for execution
-**Next Action**: Execute Phase 13 plans first, then Phase 4 plans P-01 through P-12
+**Next Action**: Execute Phase 13 plans first, then Phase 4 plans 4-01 through 4-12
 **Owner**: Engineering Team
 **Stakeholders**: Product, QA, DevOps
