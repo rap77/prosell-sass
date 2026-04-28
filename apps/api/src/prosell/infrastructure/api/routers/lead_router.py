@@ -97,6 +97,8 @@ async def create_lead(
     - tenant_id is extracted from the authenticated user — no spoofing.
     - Returns 409 if a duplicate lead is detected (same buyer + vehicle within 24h).
     """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No organization associated with account.")
     try:
         return await use_case.execute(
             request=request,
@@ -128,6 +130,8 @@ async def list_leads(
     - MANAGER / ADMIN / SUPER_ADMIN: sees all leads in the tenant.
     - tenant_id is always derived from the JWT — no cross-tenant access.
     """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No organization associated with account.")
     list_request = ListLeadsRequest(
         limit=limit,
         offset=offset,
@@ -152,6 +156,8 @@ async def get_lead_details(
     - Returns 404 if lead does not exist or belongs to a different tenant.
     - Audit logs are ordered from most recent to oldest.
     """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No organization associated with account.")
     try:
         return await use_case.execute(
             lead_id=lead_id,
@@ -187,6 +193,8 @@ async def update_lead_status(
 
     Returns 404 if lead not found, 422 if transition is invalid.
     """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No organization associated with account.")
     try:
         return await use_case.execute(
             lead_id=lead_id,

@@ -1,7 +1,6 @@
 """AbstractLeadRepository interface."""
 
 from abc import ABC, abstractmethod
-from datetime import datetime
 from uuid import UUID
 
 from prosell.domain.entities.lead import Lead, LeadStatus
@@ -66,11 +65,6 @@ class AbstractLeadRepository(ABC):
         status: LeadStatus | None = None,
     ) -> tuple[list[Lead], int]:
         """List all leads for a tenant (manager view). Returns (leads, total)."""
-        pass
-
-    @abstractmethod
-    async def add_audit_log(self, audit_log: LeadAuditLog) -> LeadAuditLog:
-        """Add an audit log entry."""
         pass
 
     @abstractmethod

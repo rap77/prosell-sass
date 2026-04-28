@@ -5,6 +5,8 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
+from pydantic import Field
+
 from prosell.domain.base import DomainModel
 from prosell.domain.exceptions import LeadStateTransitionException
 
@@ -90,8 +92,8 @@ class Lead(DomainModel):
     status: LeadStatus = LeadStatus.NEW
 
     # Audit fields
-    created_at: datetime = datetime.now(UTC)
-    updated_at: datetime = datetime.now(UTC)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @classmethod
     def create(

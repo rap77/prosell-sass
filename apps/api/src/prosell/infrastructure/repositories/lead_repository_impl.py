@@ -69,7 +69,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
 
         stmt = select(LeadModel).where(*conditions).order_by(LeadModel.created_at.desc())
         result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
+        model = result.scalars().first()
         return self._to_entity(model) if model else None
 
     async def update_status(
@@ -186,13 +186,6 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
 
         leads = [self._to_entity(model) for model in models]
         return leads, total
-
-    async def add_audit_log(self, audit_log: LeadAuditLog) -> LeadAuditLog:
-        """Add an audit log entry."""
-        model = self._audit_log_to_model(audit_log)
-        self.session.add(model)
-        await self.session.flush()
-        return self._audit_log_to_entity(model)
 
     async def get_audit_logs(
         self,
