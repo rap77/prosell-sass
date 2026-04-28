@@ -218,9 +218,9 @@ cd tests/e2e && pnpm test specs/leads.spec.ts
 - [ ] Add logging for email delivery status
 - [x] Create AppointmentResponse DTO
 - [x] Create CreateAppointmentRequest DTO
-- [ ] Create POST /api/v1/appointments endpoint
-- [ ] Create GET /api/v1/appointments endpoint (role-based filtering)
-- [ ] Create PUT /api/v1/appointments/{id}/status endpoint
+- [x] Create POST /api/v1/appointments endpoint
+- [x] Create GET /api/v1/appointments endpoint (role-based filtering)
+- [x] Create PUT /api/v1/appointments/{id}/status endpoint
 - [ ] Create Appointment interface
 - [ ] Create CreateAppointmentRequest interface
 - [ ] Create useAppointments hook

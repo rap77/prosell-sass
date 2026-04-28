@@ -145,17 +145,23 @@
     },
     "A4.22": {
       "description": "Create POST /api/v1/appointments endpoint",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-04-28T16:40:00.000000",
+      "commit_sha": "pending",
       "retries": 0
     },
     "A4.23": {
       "description": "Create GET /api/v1/appointments endpoint (role-based filtering)",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-04-28T16:40:00.000000",
+      "commit_sha": "pending",
       "retries": 0
     },
     "A4.24": {
       "description": "Create PUT /api/v1/appointments/{id}/status endpoint",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-04-28T16:40:00.000000",
+      "commit_sha": "pending",
       "retries": 0
     },
     "A4.25": {
