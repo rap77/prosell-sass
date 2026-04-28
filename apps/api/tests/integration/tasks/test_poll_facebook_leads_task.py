@@ -87,6 +87,7 @@ class TestPollFacebookLeadsTaskStructure:
 
         assert "status" in result
         assert isinstance(result["status"], str)
+        assert result["status"] in ["pending", "success", "partial_failure", "failure"]
 
     @pytest.mark.asyncio
     async def test_result_has_pages_polled_field(self):
@@ -95,6 +96,7 @@ class TestPollFacebookLeadsTaskStructure:
 
         assert "pages_polled" in result
         assert isinstance(result["pages_polled"], int)
+        assert result["pages_polled"] >= 0
 
     @pytest.mark.asyncio
     async def test_result_has_leads_found_field(self):
@@ -103,6 +105,7 @@ class TestPollFacebookLeadsTaskStructure:
 
         assert "leads_found" in result
         assert isinstance(result["leads_found"], int)
+        assert result["leads_found"] >= 0
 
     @pytest.mark.asyncio
     async def test_result_has_leads_created_field(self):
@@ -111,6 +114,7 @@ class TestPollFacebookLeadsTaskStructure:
 
         assert "leads_created" in result
         assert isinstance(result["leads_created"], int)
+        assert result["leads_created"] >= 0
 
     @pytest.mark.asyncio
     async def test_result_has_errors_field(self):
@@ -119,6 +123,55 @@ class TestPollFacebookLeadsTaskStructure:
 
         assert "errors" in result
         assert isinstance(result["errors"], int)
+        assert result["errors"] >= 0
+
+    @pytest.mark.asyncio
+    async def test_result_has_details_field(self):
+        """Test that result includes details field for error messages."""
+        result = await poll_facebook_leads_task()
+
+        assert "details" in result
+        assert isinstance(result["details"], list)
+
+
+class TestPollFacebookLeadsTaskLogic:
+    """Test polling logic structure."""
+
+    @pytest.mark.asyncio
+    async def test_logs_polling_start(self):
+        """Test that task logs polling start."""
+        import logging
+        from io import StringIO
+
+        # Capture log output
+        log_capture = StringIO()
+        handler = logging.StreamHandler(log_capture)
+        handler.setLevel(logging.INFO)
+        logger = logging.getLogger("prosell.infrastructure.tasks.use_cases.poll_facebook_leads_task")
+        logger.addHandler(handler)
+
+        await poll_facebook_leads_task()
+
+        log_output = log_capture.getvalue()
+        assert "poll_facebook_leads_task" in log_output.lower()
+
+        logger.removeHandler(handler)
+
+    @pytest.mark.asyncio
+    async def test_returns_valid_status_values(self):
+        """Test that status field has valid values."""
+        result = await poll_facebook_leads_task()
+
+        valid_statuses = ["pending", "success", "partial_failure", "failure"]
+        assert result["status"] in valid_statuses
+
+    @pytest.mark.asyncio
+    async def test_counts_are_consistent(self):
+        """Test that lead counts are consistent."""
+        result = await poll_facebook_leads_task()
+
+        # leads_created should be <= leads_found
+        assert result["leads_created"] <= result["leads_found"]
 
 
 __all__ = [
