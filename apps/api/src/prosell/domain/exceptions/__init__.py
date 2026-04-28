@@ -41,6 +41,12 @@ from prosell.domain.exceptions.org_exceptions import (
     TeamNotFoundException,
     WalletNotFoundException,
 )
+from prosell.domain.exceptions.lead_exceptions import (
+    DuplicateLeadException,
+    LeadError,
+    LeadNotFoundException,
+    LeadStateTransitionException,
+)
 from prosell.domain.exceptions.product_exceptions import (
     InvalidVINError,
     ProductAlreadyExistsError,
@@ -68,6 +74,11 @@ __all__ = [
     "CategoryCircularReferenceError",
     "CategoryError",
     "CategoryNotFoundError",
+    # Lead exceptions
+    "LeadError",
+    "LeadNotFoundException",
+    "LeadStateTransitionException",
+    "DuplicateLeadException",
     # Product exceptions
     "ProductError",
     "ProductNotFoundError",
