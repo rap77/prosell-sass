@@ -235,6 +235,7 @@
       "retries": 0
     }
   },
-  "last_checkpoint": null,
-  "context_budget_exit": null
+  "last_checkpoint": "A4.24",
+  "context_budget_exit": "71% - exiting gracefully at checkpoint",
+  "session_summary": "Completed 19/38 subtasks (50%): Backend infrastructure complete (entity, migration, repository, use cases, DTOs, API endpoints). Remaining: Email service (A4.16-A4.19), Frontend (A4.25-A4.34), Tests (A4.35-A4.38). Next session should resume from A4.25 (frontend interfaces)."
 }
