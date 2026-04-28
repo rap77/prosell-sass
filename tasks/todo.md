@@ -205,9 +205,9 @@ cd tests/e2e && pnpm test specs/leads.spec.ts
 - [x] Add indexes on (tenant_id, dealer_id, scheduled_at)
 - [x] Add foreign keys (lead_id → leads, dealer_id → dealers, vehicle_id → vehicles)
 - [x] Create IAppointmentRepository interface
-- [ ] Implement AppointmentRepository with async SQLAlchemy
-- [ ] Implement create() with conflict detection
-- [ ] Implement list_by_dealer(), list_by_vendedor()
+- [x] Implement AppointmentRepository with async SQLAlchemy
+- [x] Implement create() with conflict detection
+- [x] Implement list_by_dealer(), list_by_vendedor()
 - [ ] Create CreateAppointmentUseCase (validates time, checks conflicts)
 - [ ] CreateAppointmentUseCase updates lead status to "appointment_set"
 - [ ] Create ListAppointmentsUseCase (role-based filtering)

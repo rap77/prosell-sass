@@ -62,17 +62,23 @@
     },
     "A4.9": {
       "description": "Implement AppointmentRepository with async SQLAlchemy",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-04-28T16:30:00.000000",
+      "commit_sha": "pending",
       "retries": 0
     },
     "A4.10": {
       "description": "Implement create() with conflict detection",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-04-28T16:30:00.000000",
+      "commit_sha": "pending",
       "retries": 0
     },
     "A4.11": {
       "description": "Implement list_by_dealer(), list_by_vendedor()",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-04-28T16:30:00.000000",
+      "commit_sha": "pending",
       "retries": 0
     },
     "A4.12": {
