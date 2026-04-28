@@ -1,5 +1,6 @@
 """Email service for sending emails (SendGrid)."""
 
+from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
@@ -36,6 +37,39 @@ class AbstractEmailService(Protocol):
         email: str,
     ) -> None:
         """Send 2FA enabled notification."""
+        ...
+
+    async def send_appointment_notification(
+        self,
+        dealer_email: str,
+        dealer_name: str,
+        buyer_name: str,
+        vehicle_info: str,
+        scheduled_at: datetime,
+        notes: str | None = None,
+    ) -> None:
+        """Send appointment notification to dealer."""
+        ...
+
+    async def send_appointment_confirmation(
+        self,
+        buyer_email: str,
+        buyer_name: str,
+        dealer_name: str,
+        vehicle_info: str,
+        scheduled_at: datetime,
+        notes: str | None = None,
+    ) -> None:
+        """Send appointment confirmation to buyer."""
+        ...
+
+    async def send_appointment_reminder(
+        self,
+        email: str,
+        person_type: str,  # "dealer" or "buyer"
+        appointment_details: dict,
+    ) -> None:
+        """Send appointment reminder."""
         ...
 
 
@@ -167,6 +201,184 @@ class SendGridEmailService:
         if response.status_code not in (200, 202):  # type: ignore[attr-defined]
             raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
+    async def send_appointment_notification(
+        self,
+        dealer_email: str,
+        dealer_name: str,
+        buyer_name: str,
+        vehicle_info: str,
+        scheduled_at: datetime,
+        notes: str | None = None,
+    ) -> None:
+        """Send appointment notification to dealer."""
+        import sendgrid  # type: ignore[import]
+        from sendgrid.helpers.mail import Mail  # type: ignore[import]
+
+        # Format datetime for display
+        scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
+
+        # Create email message
+        message = Mail(
+            from_email=self.from_email,
+            to_emails=dealer_email,
+            subject=f"Nueva Cita Agendada - {buyer_name}",
+            html_content=f"""
+            <html>
+            <body>
+                <h2>Nueva Cita Agendada</h2>
+                <p>Hola <strong>{dealer_name}</strong>,</p>
+                <p>Tienes una nueva cita agendada:</p>
+                <table cellpadding="5" style="border-collapse: collapse; border: 1px solid #ddd;">
+                    <tr style="background-color: #f2f2f2;">
+                        <td style="border: 1px solid #ddd;"><strong>Comprador:</strong></td>
+                        <td style="border: 1px solid #ddd;">{buyer_name}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #ddd;"><strong>Vehículo:</strong></td>
+                        <td style="border: 1px solid #ddd;">{vehicle_info}</td>
+                    </tr>
+                    <tr style="background-color: #f2f2f2;">
+                        <td style="border: 1px solid #ddd;"><strong>Fecha y Hora:</strong></td>
+                        <td style="border: 1px solid #ddd;">{scheduled_str}</td>
+                    </tr>
+                </table>
+                {f'<p><strong>Notas:</strong> {notes}</p>' if notes else ''}
+                <p>Por favor asegúrate de estar disponible para esta cita.</p>
+                <p>Si necesitas reprogramar, contacta a tu administrador.</p>
+            </body>
+            </html>
+            """,
+        )
+
+        # Send email
+        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
+        response = await sg.send(message)  # type: ignore[attr-defined]
+
+        # Log response for debugging
+        if response.status_code not in (200, 202):  # type: ignore[attr-defined]
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
+
+    async def send_appointment_confirmation(
+        self,
+        buyer_email: str,
+        buyer_name: str,
+        dealer_name: str,
+        vehicle_info: str,
+        scheduled_at: datetime,
+        notes: str | None = None,
+    ) -> None:
+        """Send appointment confirmation to buyer."""
+        import sendgrid  # type: ignore[import]
+        from sendgrid.helpers.mail import Mail  # type: ignore[import]
+
+        # Format datetime for display
+        scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
+
+        # Create email message
+        message = Mail(
+            from_email=self.from_email,
+            to_emails=buyer_email,
+            subject="Confirmación de Cita - ProSell",
+            html_content=f"""
+            <html>
+            <body>
+                <h2>Confirmación de Cita</h2>
+                <p>Hola <strong>{buyer_name}</strong>,</p>
+                <p>Tu cita ha sido confirmada:</p>
+                <table cellpadding="5" style="border-collapse: collapse; border: 1px solid #ddd;">
+                    <tr style="background-color: #f2f2f2;">
+                        <td style="border: 1px solid #ddd;"><strong>Asesor:</strong></td>
+                        <td style="border: 1px solid #ddd;">{dealer_name}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #ddd;"><strong>Vehículo:</strong></td>
+                        <td style="border: 1px solid #ddd;">{vehicle_info}</td>
+                    </tr>
+                    <tr style="background-color: #f2f2f2;">
+                        <td style="border: 1px solid #ddd;"><strong>Fecha y Hora:</strong></td>
+                        <td style="border: 1px solid #ddd;">{scheduled_str}</td>
+                    </tr>
+                </table>
+                {f'<p><strong>Notas:</strong> {notes}</p>' if notes else ''}
+                <p>Por favor llega 10 minutos antes de tu cita.</p>
+                <p>Si necesitas reprogramar, responde a este correo o contáctanos.</p>
+            </body>
+            </html>
+            """,
+        )
+
+        # Send email
+        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
+        response = await sg.send(message)  # type: ignore[attr-defined]
+
+        # Log response for debugging
+        if response.status_code not in (200, 202):  # type: ignore[attr-defined]
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
+
+    async def send_appointment_reminder(
+        self,
+        email: str,
+        person_type: str,  # "dealer" or "buyer"
+        appointment_details: dict,
+    ) -> None:
+        """Send appointment reminder."""
+        import sendgrid  # type: ignore[import]
+        from sendgrid.helpers.mail import Mail  # type: ignore[import]
+
+        buyer_name = appointment_details.get("buyer_name", "Cliente")
+        dealer_name = appointment_details.get("dealer_name", "Asesor")
+        vehicle_info = appointment_details.get("vehicle_info", "Vehículo")
+        scheduled_at = appointment_details.get("scheduled_at", datetime.now())
+        notes = appointment_details.get("notes")
+
+        # Format datetime for display
+        scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
+
+        # Customize message based on recipient type
+        if person_type == "dealer":
+            greeting = f"Hola <strong>{dealer_name}</strong>,"
+            instructions = "Por favor asegúrate de estar disponible para esta cita."
+        else:  # buyer
+            greeting = f"Hola <strong>{buyer_name}</strong>,"
+            instructions = "Por favor llega 10 minutos antes de tu cita."
+
+        # Create email message
+        message = Mail(
+            from_email=self.from_email,
+            to_emails=email,
+            subject="Recordatorio de Cita - ProSell",
+            html_content=f"""
+            <html>
+            <body>
+                <h2>Recordatorio de Cita</h2>
+                <p>{greeting}</p>
+                <p>Este es un recordatorio de tu próxima cita:</p>
+                <table cellpadding="5" style="border-collapse: collapse; border: 1px solid #ddd;">
+                    <tr style="background-color: #f2f2f2;">
+                        <td style="border: 1px solid #ddd;"><strong>Fecha y Hora:</strong></td>
+                        <td style="border: 1px solid #ddd;">{scheduled_str}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #ddd;"><strong>Vehículo:</strong></td>
+                        <td style="border: 1px solid #ddd;">{vehicle_info}</td>
+                    </tr>
+                    {f'<tr style="background-color: #f2f2f2;"><td style="border: 1px solid #ddd;"><strong>Notas:</strong></td><td style="border: 1px solid #ddd;">{notes}</td></tr>' if notes else ''}
+                </table>
+                <p>{instructions}</p>
+                <p>Si necesitas reprogramar, contáctanos lo antes posible.</p>
+            </body>
+            </html>
+            """,
+        )
+
+        # Send email
+        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
+        response = await sg.send(message)  # type: ignore[attr-defined]
+
+        # Log response for debugging
+        if response.status_code not in (200, 202):  # type: ignore[attr-defined]
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
+
 
 class MockEmailService:
     """
@@ -231,5 +443,101 @@ Subject: Two-factor authentication enabled
 Two-factor authentication has been enabled on your account.
 
 If you didn't make this change, please contact support immediately.
+{"=" * 60}
+        """)
+
+    async def send_appointment_notification(
+        self,
+        dealer_email: str,
+        dealer_name: str,
+        buyer_name: str,
+        vehicle_info: str,
+        scheduled_at: datetime,
+        notes: str | None = None,
+    ) -> None:
+        """Log appointment notification to dealer."""
+        scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
+        print(f"""
+{"=" * 60}
+📧 MOCK EMAIL: Appointment Notification (Dealer)
+{"=" * 60}
+To: {dealer_email}
+Subject: Nueva Cita Agendada - {buyer_name}
+
+Hola {dealer_name},
+
+Tienes una nueva cita agendada:
+  Comprador: {buyer_name}
+  Vehículo: {vehicle_info}
+  Fecha y Hora: {scheduled_str}
+{f'  Notas: {notes}' if notes else ''}
+
+Por favor asegúrate de estar disponible para esta cita.
+{"=" * 60}
+        """)
+
+    async def send_appointment_confirmation(
+        self,
+        buyer_email: str,
+        buyer_name: str,
+        dealer_name: str,
+        vehicle_info: str,
+        scheduled_at: datetime,
+        notes: str | None = None,
+    ) -> None:
+        """Log appointment confirmation to buyer."""
+        scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
+        print(f"""
+{"=" * 60}
+📧 MOCK EMAIL: Appointment Confirmation (Buyer)
+{"=" * 60}
+To: {buyer_email}
+Subject: Confirmación de Cita - ProSell
+
+Hola {buyer_name},
+
+Tu cita ha sido confirmada:
+  Asesor: {dealer_name}
+  Vehículo: {vehicle_info}
+  Fecha y Hora: {scheduled_str}
+{f'  Notas: {notes}' if notes else ''}
+
+Por favor llega 10 minutos antes de tu cita.
+{"=" * 60}
+        """)
+
+    async def send_appointment_reminder(
+        self,
+        email: str,
+        person_type: str,  # "dealer" or "buyer"
+        appointment_details: dict,
+    ) -> None:
+        """Log appointment reminder."""
+        buyer_name = appointment_details.get("buyer_name", "Cliente")
+        dealer_name = appointment_details.get("dealer_name", "Asesor")
+        vehicle_info = appointment_details.get("vehicle_info", "Vehículo")
+        scheduled_at = appointment_details.get("scheduled_at", datetime.now())
+        notes = appointment_details.get("notes")
+
+        scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
+
+        if person_type == "dealer":
+            instructions = "Por favor asegúrate de estar disponible para esta cita."
+        else:  # buyer
+            instructions = "Por favor llega 10 minutos antes de tu cita."
+
+        print(f"""
+{"=" * 60}
+📧 MOCK EMAIL: Appointment Reminder ({person_type.title()})
+{"=" * 60}
+To: {email}
+Subject: Recordatorio de Cita - ProSell
+
+Este es un recordatorio de tu próxima cita:
+  Fecha y Hora: {scheduled_str}
+  Vehículo: {vehicle_info}
+{f'  Notas: {notes}' if notes else ''}
+
+{instructions}
 {"=" * 60}
         """)
