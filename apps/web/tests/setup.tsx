@@ -132,3 +132,6 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: () => {},
   }),
 })
+
+// Mock scrollIntoView for Radix UI Select
+Element.prototype.scrollIntoView = vi.fn(() => {})
