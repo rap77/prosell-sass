@@ -122,29 +122,29 @@ cd tests/contract && uv run pytest openapi/test_leads_schema.py -v
 
 ### A2: Facebook Lead Webhook (Backend Integration)
 
-- [ ] Create POST /api/v1/webhooks/facebook endpoint
-- [ ] Implement X-Hub-Signature verification (SHA256 HMAC)
-- [ ] Return 403 if signature missing/invalid (security)
-- [ ] Parse Facebook webhook payload (leadgen_id, listing_id, sender_id, message)
-- [ ] Return 200 OK within 1 second (quick response)
-- [ ] Create FacebookGraphApiClient class
-- [ ] Query buyer profile by sender_id (name, profile_url)
-- [ ] Handle access token refresh
-- [ ] Query vehicle by facebook_listing_id from publications table
-- [ ] Check for duplicate lead (same buyer + vehicle within 24 hours)
-- [ ] Extract lead data (buyer_name, buyer_email, buyer_phone, message, source="facebook")
-- [ ] Call CreateLeadUseCase (reused from A1)
-- [ ] Assign lead to vehicle's owner vendedor
-- [ ] Create Taskiq background task (runs every 10 minutes)
-- [ ] Implement polling fallback logic
-- [ ] Add logging for all webhook events
-- [ ] Track webhook success/failure metrics
-- [ ] Write integration test for webhook endpoint
-- [ ] Test webhook signature verification (403 on invalid)
-- [ ] Test lead creation from Facebook payload
-- [ ] Test duplicate detection
-- [ ] Write contract test for OpenAPI schema
-- [ ] Test polling fallback logic
+- [x] Create POST /api/v1/webhooks/facebook endpoint
+- [x] Implement X-Hub-Signature verification (SHA256 HMAC)
+- [x] Return 403 if signature missing/invalid (security)
+- [x] Parse Facebook webhook payload (leadgen_id, listing_id, sender_id, message)
+- [x] Return 200 OK within 1 second (quick response)
+- [x] Create FacebookGraphApiClient class
+- [x] Query buyer profile by sender_id (name, profile_url)
+- [x] Handle access token refresh
+- [x] Query vehicle by facebook_listing_id from publications table
+- [x] Check for duplicate lead (same buyer + vehicle within 24 hours)
+- [x] Extract lead data (buyer_name, buyer_email, buyer_phone, message, source="facebook")
+- [x] Call CreateLeadUseCase (reused from A1)
+- [x] Assign lead to vehicle's owner vendedor
+- [x] Create Taskiq background task (runs every 10 minutes)
+- [x] Implement polling fallback logic
+- [x] Add logging for all webhook events
+- [x] Track webhook success/failure metrics
+- [x] Write integration test for webhook endpoint
+- [x] Test webhook signature verification (403 on invalid)
+- [x] Test lead creation from Facebook payload
+- [x] Test duplicate detection
+- [x] Write contract test for OpenAPI schema
+- [x] Test polling fallback logic
 
 **Verification**:
 ```bash
@@ -160,32 +160,32 @@ tail -f logs/webhook.log
 
 ### A3: Vendedor Leads List (Frontend Complete)
 
-- [ ] Create Lead interface (id, buyer_name, buyer_email, buyer_phone, vehicle, message, status, source, created_at, updated_at)
-- [ ] Create CreateLeadRequest interface
-- [ ] Create UpdateLeadStatusRequest interface (status + reason)
-- [ ] Create LeadStatus enum (5 states)
-- [ ] Create useLeads hook (queryKey: ['leads'])
-- [ ] Add role-based query parameters (vendedor vs manager)
-- [ ] Create useLead hook for single lead details
-- [ ] Create useUpdateLeadStatus mutation hook
-- [ ] Add toast notifications for success/error
-- [ ] Implement query invalidation on mutation
-- [ ] Create LeadList component (DataGrid pattern)
-- [ ] Create LeadListItem component (one row per lead)
-- [ ] Create LeadStatusBadge component (5 states with colors)
-- [ ] Create LeadStatusDropdown component (quick status update)
-- [ ] Create /vendedor/leads page
-- [ ] Implement search by buyer name, vehicle
-- [ ] Add filter by status (new, contacted, qualified, etc.)
-- [ ] Add highlight for unread leads (created_at < 5 min ago)
-- [ ] Implement pagination or infinite scroll
-- [ ] Add real-time updates (polling every 30s via refetchInterval)
-- [ ] Write unit tests for API hooks (mocked fetch)
-- [ ] Write component tests for LeadStatusBadge
-- [ ] Write E2E test for leads list view
-- [ ] Test search functionality
-- [ ] Test status filter
-- [ ] Test status update dropdown
+- [x] Create Lead interface (id, buyer_name, buyer_email, buyer_phone, vehicle, message, status, source, created_at, updated_at)
+- [x] Create CreateLeadRequest interface
+- [x] Create UpdateLeadStatusRequest interface (status + reason)
+- [x] Create LeadStatus enum (5 states)
+- [x] Create useLeads hook (queryKey: ['leads'])
+- [x] Add role-based query parameters (vendedor vs manager)
+- [x] Create useLead hook for single lead details
+- [x] Create useUpdateLeadStatus mutation hook
+- [x] Add toast notifications for success/error
+- [x] Implement query invalidation on mutation
+- [x] Create LeadList component (DataGrid pattern)
+- [x] Create LeadListItem component (one row per lead)
+- [x] Create LeadStatusBadge component (5 states with colors)
+- [x] Create LeadStatusDropdown component (quick status update)
+- [x] Create /vendedor/leads page
+- [x] Implement search by buyer name, vehicle
+- [x] Add filter by status (new, contacted, qualified, etc.)
+- [x] Add highlight for unread leads (created_at < 5 min ago)
+- [x] Implement pagination or infinite scroll
+- [x] Add real-time updates (polling every 30s via refetchInterval)
+- [x] Write unit tests for API hooks (mocked fetch)
+- [x] Write component tests for LeadStatusBadge
+- [x] Write E2E test for leads list view
+- [x] Test search functionality
+- [x] Test status filter
+- [x] Test status update dropdown
 
 **Verification**:
 ```bash
@@ -197,13 +197,13 @@ cd tests/e2e && pnpm test specs/leads.spec.ts
 
 ### A4: Appointment Scheduling (Full Feature)
 
-- [ ] Create Appointment entity (lead_id, dealer_id, vehicle_id, scheduled_at, status, notes, tenant_id)
-- [ ] Implement AppointmentStatus enum (scheduled, completed, cancelled)
-- [ ] Implement time validation (business hours: 9am-6pm Mon-Fri)
-- [ ] Implement conflict detection (same dealer + time slot)
-- [ ] Write Alembic migration for appointments table
-- [ ] Add indexes on (tenant_id, dealer_id, scheduled_at)
-- [ ] Add foreign keys (lead_id → leads, dealer_id → dealers, vehicle_id → vehicles)
+- [x] Create Appointment entity (lead_id, dealer_id, vehicle_id, scheduled_at, status, notes, tenant_id)
+- [x] Implement AppointmentStatus enum (scheduled, completed, cancelled)
+- [x] Implement time validation (business hours: 9am-6pm Mon-Fri)
+- [x] Implement conflict detection (same dealer + time slot)
+- [x] Write Alembic migration for appointments table
+- [x] Add indexes on (tenant_id, dealer_id, scheduled_at)
+- [x] Add foreign keys (lead_id → leads, dealer_id → dealers, vehicle_id → vehicles)
 - [ ] Create IAppointmentRepository interface
 - [ ] Implement AppointmentRepository with async SQLAlchemy
 - [ ] Implement create() with conflict detection

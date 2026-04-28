@@ -1,53 +1,214 @@
 {
-  "task_id": "13-05",
-  "session_id": "sess-20260427-143211",
-  "started_at": "2026-04-27T14:32:11.478103",
+  "task_id": "A4",
+  "session_id": "sess-20260428-161938",
+  "started_at": "2026-04-28T16:19:38.864095",
   "phase": 19,
   "subtasks": {
-    "13-05.1": {
-      "description": "Implement client-side instant search for title/ID/make/model",
+    "A4.1": {
+      "description": "Create Appointment entity (lead_id, dealer_id, vehicle_id, scheduled_at, status, notes, tenant_id)",
       "status": "completed",
-      "completed_at": "2026-04-27T14:34:00Z",
-      "commit_sha": "fa35280",
+      "completed_at": "2026-04-28T16:25:00.000000",
+      "commit_sha": "47797da",
       "retries": 0
     },
-    "13-05.2": {
-      "description": "Add FilterSidebar with Brand, Status, Price, Year filters",
+    "A4.2": {
+      "description": "Implement AppointmentStatus enum (scheduled, completed, cancelled)",
       "status": "completed",
-      "completed_at": "2026-04-27T14:34:00Z",
-      "commit_sha": "fa35280",
+      "completed_at": "2026-04-28T16:25:00.000000",
+      "commit_sha": "47797da",
       "retries": 0
     },
-    "13-05.3": {
-      "description": "Implement CommandPalette (Cmd+K) with fuzzy search",
+    "A4.3": {
+      "description": "Implement time validation (business hours: 9am-6pm Mon-Fri)",
       "status": "completed",
-      "completed_at": "2026-04-27T14:33:00Z",
-      "commit_sha": "fa35280",
+      "completed_at": "2026-04-28T16:25:00.000000",
+      "commit_sha": "47797da",
       "retries": 0
     },
-    "13-05.4": {
-      "description": "Add URL state sync for shareable filtered links",
+    "A4.4": {
+      "description": "Implement conflict detection (same dealer + time slot)",
       "status": "completed",
-      "completed_at": "2026-04-27T14:33:00Z",
-      "commit_sha": "fa35280",
+      "completed_at": "2026-04-28T16:25:00.000000",
+      "commit_sha": "47797da",
       "retries": 0
     },
-    "13-05.5": {
-      "description": "Write unit tests for filter hooks",
+    "A4.5": {
+      "description": "Write Alembic migration for appointments table",
       "status": "completed",
-      "completed_at": "2026-04-27T14:33:00Z",
-      "commit_sha": "fa35280",
+      "completed_at": "2026-04-28T16:26:00.000000",
+      "commit_sha": "pending",
       "retries": 0
     },
-    "13-05.6": {
-      "description": "Write E2E test for search and filter functionality",
+    "A4.6": {
+      "description": "Add indexes on (tenant_id, dealer_id, scheduled_at)",
       "status": "completed",
-      "completed_at": "2026-04-27T14:34:00Z",
-      "commit_sha": "fa35280",
+      "completed_at": "2026-04-28T16:26:00.000000",
+      "commit_sha": "pending",
+      "retries": 0
+    },
+    "A4.7": {
+      "description": "Add foreign keys (lead_id \u2192 leads, dealer_id \u2192 dealers, vehicle_id \u2192 vehicles)",
+      "status": "completed",
+      "completed_at": "2026-04-28T16:26:00.000000",
+      "commit_sha": "pending",
+      "retries": 0
+    },
+    "A4.8": {
+      "description": "Create IAppointmentRepository interface",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.9": {
+      "description": "Implement AppointmentRepository with async SQLAlchemy",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.10": {
+      "description": "Implement create() with conflict detection",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.11": {
+      "description": "Implement list_by_dealer(), list_by_vendedor()",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.12": {
+      "description": "Create CreateAppointmentUseCase (validates time, checks conflicts)",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.13": {
+      "description": "CreateAppointmentUseCase updates lead status to \"appointment_set\"",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.14": {
+      "description": "Create ListAppointmentsUseCase (role-based filtering)",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.15": {
+      "description": "Create CancelAppointmentUseCase",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.16": {
+      "description": "Create EmailService class for SendGrid",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.17": {
+      "description": "Create email template for appointment notifications",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.18": {
+      "description": "Implement error handling (retry with exponential backoff)",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.19": {
+      "description": "Add logging for email delivery status",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.20": {
+      "description": "Create AppointmentResponse DTO",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.21": {
+      "description": "Create CreateAppointmentRequest DTO",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.22": {
+      "description": "Create POST /api/v1/appointments endpoint",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.23": {
+      "description": "Create GET /api/v1/appointments endpoint (role-based filtering)",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.24": {
+      "description": "Create PUT /api/v1/appointments/{id}/status endpoint",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.25": {
+      "description": "Create Appointment interface",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.26": {
+      "description": "Create CreateAppointmentRequest interface",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.27": {
+      "description": "Create useAppointments hook",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.28": {
+      "description": "Create useCreateAppointment mutation hook",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.29": {
+      "description": "Add toast notifications",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.30": {
+      "description": "Create LeadDetails page at /vendedor/leads/{id}",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.31": {
+      "description": "Create AppointmentForm modal (date-time picker, dealer selection, notes)",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.32": {
+      "description": "Implement time validation (business hours)",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.33": {
+      "description": "Show appointment conflicts warning",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.34": {
+      "description": "Add \"Agendar Cita\" button to lead details",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.35": {
+      "description": "Write unit tests for Appointment entity (time validation)",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.36": {
+      "description": "Write integration tests for CreateAppointmentUseCase (mocked SendGrid)",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.37": {
+      "description": "Write integration tests for API endpoints",
+      "status": "pending",
+      "retries": 0
+    },
+    "A4.38": {
+      "description": "Write E2E test for appointment creation flow",
+      "status": "pending",
       "retries": 0
     }
   },
-  "last_checkpoint": "fa35280",
-  "completed_at": "2026-04-27T14:35:30Z",
+  "last_checkpoint": null,
   "context_budget_exit": null
 }
