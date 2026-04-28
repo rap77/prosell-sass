@@ -58,6 +58,12 @@ async def get_facebook_app_secret() -> str:
     response_model=WebhookResponse,
     status_code=status.HTTP_200_OK,
     summary="Facebook Lead Webhook",
+    responses={
+        403: {
+            "description": "Forbidden - Missing or invalid X-Hub-Signature",
+            "content": {"application/json": {"example": {"detail": "Missing X-Hub-Signature header"}}},
+        },
+    },
 )
 async def facebook_lead_webhook(
     request: Request,
