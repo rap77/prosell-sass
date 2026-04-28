@@ -41,6 +41,12 @@ from prosell.domain.exceptions.org_exceptions import (
     TeamNotFoundException,
     WalletNotFoundException,
 )
+from prosell.domain.exceptions.appointment_exceptions import (
+    AppointmentConflictException,
+    AppointmentError,
+    AppointmentNotFoundException,
+    AppointmentTimeValidationException,
+)
 from prosell.domain.exceptions.lead_exceptions import (
     DuplicateLeadException,
     LeadError,
@@ -74,6 +80,11 @@ __all__ = [
     "CategoryCircularReferenceError",
     "CategoryError",
     "CategoryNotFoundError",
+    # Appointment exceptions
+    "AppointmentError",
+    "AppointmentNotFoundException",
+    "AppointmentTimeValidationException",
+    "AppointmentConflictException",
     # Lead exceptions
     "LeadError",
     "LeadNotFoundException",
