@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { Lead, LeadStatus } from "@/lib/api/leads";
+import { Lead, LeadStatus, CreateLeadRequest, UpdateLeadStatusRequest } from "@/lib/api/leads";
 
 describe("Lead Interface", () => {
   describe("Lead type definition", () => {
@@ -82,6 +82,76 @@ describe("Lead Interface", () => {
       expect(LeadStatus.QUALIFIED).toBe("qualified");
       expect(LeadStatus.APPOINTMENT_SET).toBe("appointment_set");
       expect(LeadStatus.LOST).toBe("lost");
+    });
+  });
+
+  describe("CreateLeadRequest interface", () => {
+    it("should have required buyer_name field", () => {
+      const request: CreateLeadRequest = {
+        buyer_name: "Alice Johnson",
+      };
+
+      expect(request.buyer_name).toBe("Alice Johnson");
+    });
+
+    it("should allow optional fields", () => {
+      const request: CreateLeadRequest = {
+        buyer_name: "Bob Smith",
+        buyer_email: "bob@example.com",
+        buyer_phone: "+1-555-0789",
+        vehicle_id: "vehicle-456",
+        message: "Interested in this car",
+      };
+
+      expect(request.buyer_name).toBe("Bob Smith");
+      expect(request.buyer_email).toBe("bob@example.com");
+      expect(request.buyer_phone).toBe("+1-555-0789");
+      expect(request.vehicle_id).toBe("vehicle-456");
+      expect(request.message).toBe("Interested in this car");
+    });
+
+    it("should allow null for optional fields", () => {
+      const request: CreateLeadRequest = {
+        buyer_name: "Charlie",
+        buyer_email: null,
+        buyer_phone: null,
+        vehicle_id: null,
+        message: null,
+      };
+
+      expect(request.buyer_email).toBeNull();
+      expect(request.buyer_phone).toBeNull();
+      expect(request.vehicle_id).toBeNull();
+      expect(request.message).toBeNull();
+    });
+  });
+
+  describe("UpdateLeadStatusRequest interface", () => {
+    it("should have required status field", () => {
+      const request: UpdateLeadStatusRequest = {
+        status: LeadStatus.CONTACTED,
+      };
+
+      expect(request.status).toBe(LeadStatus.CONTACTED);
+    });
+
+    it("should allow optional reason field", () => {
+      const request: UpdateLeadStatusRequest = {
+        status: LeadStatus.LOST,
+        reason: "Buyer not interested",
+      };
+
+      expect(request.status).toBe(LeadStatus.LOST);
+      expect(request.reason).toBe("Buyer not interested");
+    });
+
+    it("should allow null reason", () => {
+      const request: UpdateLeadStatusRequest = {
+        status: LeadStatus.QUALIFIED,
+        reason: null,
+      };
+
+      expect(request.reason).toBeNull();
     });
   });
 });

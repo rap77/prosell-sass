@@ -54,6 +54,25 @@ export interface LeadFilters {
 }
 
 /**
+ * Request payload for creating a new lead
+ */
+export interface CreateLeadRequest {
+  buyer_name: string;
+  buyer_email?: string | null;
+  buyer_phone?: string | null;
+  vehicle_id?: string | null;
+  message?: string | null;
+}
+
+/**
+ * Request payload for updating lead status
+ */
+export interface UpdateLeadStatusRequest {
+  status: LeadStatus;
+  reason?: string | null;
+}
+
+/**
  * Backend lead response
  */
 interface BackendLeadResponse {
