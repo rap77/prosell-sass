@@ -18,7 +18,16 @@ async def poll_facebook_leads_task() -> dict[str, object]:
     This task runs every 10 minutes as a fallback mechanism to catch
     any leads that were missed by webhooks (e.g., webhook delivery failures).
 
-    Workflow:
+    PHASE 3 IMPLEMENTATION NEEDED:
+    ===============================
+    This task is currently a stub that returns pending status.
+    Full implementation requires:
+    1. DI container wiring (IFacebookPageRepository, IFacebookAccountRepository)
+    2. FacebookGraphApiClient.get_leads() implementation
+    3. Lead duplicate detection via facebook_sender_id field
+    4. Error handling and retry logic
+
+    Workflow (Phase 3):
     1. Query all active Facebook pages from database
     2. For each page, query Facebook Graph API Leadgen API for leads
     3. For each lead, check if it already exists in our system
@@ -34,9 +43,8 @@ async def poll_facebook_leads_task() -> dict[str, object]:
         - errors: number of errors encountered
         - details: list of error messages (if any)
 
-    Note:
-        Full DI wiring and Graph API integration will be implemented in Phase 3.
-        Current implementation provides the structure and returns pending status.
+    Current Status:
+        Returns pending status with zero counts until Phase 3 implementation.
     """
     # TODO(phase-3): Wire DI container to instantiate:
     #   - IFacebookPageRepository (to query active pages)
@@ -50,8 +58,24 @@ async def poll_facebook_leads_task() -> dict[str, object]:
 
     logger.info("poll_facebook_leads_task: Starting poll")
 
+    # =============================================================================
+    # PHASE 3 IMPLEMENTATION NEEDED
+    # =============================================================================
+    # This task is a stub pending Phase 3 implementation.
+    # See docstring above for required Phase 3 work.
+
+    # TODO(phase-3): Wire DI container to instantiate:
+    #   - IFacebookPageRepository (to query active pages)
+    #   - IFacebookAccountRepository (to get page access tokens)
+    #   - FacebookGraphApiClient (to fetch leads from Graph API)
+    #   - ILeadRepository (for duplicate detection)
+    #   - CreateLeadUseCase (to create new leads)
+    # TODO(phase-3): Implement actual Facebook Graph API Leadgen API calls
+    # TODO(phase-3): Add proper error handling and retry logic
+    # TODO(phase-3): Add metrics tracking (prometheus/statsd)
+
     try:
-        # Phase 3: Implementation structure
+        # Phase 3: Implementation structure (commented out)
         # pages_polled = 0
         # leads_found = 0
         # leads_created = 0
@@ -113,7 +137,7 @@ async def poll_facebook_leads_task() -> dict[str, object]:
         # else:
         #     status = "failure"
 
-        logger.info("poll_facebook_leads_task: Poll complete (pending implementation)")
+        logger.info("poll_facebook_leads_task: Poll complete (pending Phase 3 implementation)")
 
         return {
             "status": "pending",
