@@ -1,15 +1,15 @@
 # ProSell MVP Implementation Plan
 
 **Milestone**: Completar MVP de ProSell: publicación de vehículos en Facebook Marketplace, captura de leads y confirmación de citas
-**Version**: 1.0
+**Version**: 2.0
 **Status**: Active
-**Last Updated**: 2026-04-26
+**Last Updated**: 2026-04-27
 
 ---
 
 ## Overview
 
-This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend integration) and implementing **Phase 4** (Leads & Appointments). The milestone delivers a complete sales cycle: vendedores can publish vehicles to Facebook, capture leads from messages, and schedule buyer appointments with dealers.
+This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend integration - COMPLETE ✅) and implementing **Phase 4** (Leads & Appointments - VERTICAL SLICING). The milestone delivers a complete sales cycle: vendedores can publish vehicles to Facebook, capture leads from messages, and schedule buyer appointments with dealers.
 
 **Phase Status**:
 - ✅ Phase 1: Hybrid Publisher (COMPLETE)
@@ -17,8 +17,8 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 - ✅ Phase 8: Layout Shell (COMPLETE)
 - ✅ Phase 11: C3 Schema Migration (COMPLETE)
 - ✅ Phase 12: Backend API (COMPLETE)
-- 🚧 Phase 13: Frontend C3 Integration (IN PROGRESS — 6 plans)
-- 📋 Phase 4: Leads & Appointments (NEW — this plan)
+- ✅ Phase 13: Frontend C3 Integration (COMPLETE - 6 plans)
+- 📋 Phase 4: Leads & Appointments (NEW - Vertical Slicing, 7 tasks A1-A7)
 
 ---
 
@@ -59,7 +59,7 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 - [x] Infinite scroll loads more rows on scroll (cursor pagination)
 - [x] Row virtualization maintains ~40 rows in DOM (60fps performance)
 - [x] Component tests pass
-- [ ] E2E infinite scroll test passes
+- [x] E2E infinite scroll test passes
 
 ---
 
@@ -137,7 +137,10 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 
 ---
 
-## Phase 4: Leads & Appointments (New Plans)
+## Phase 4: Leads & Appointments (VERTICAL SLICING)
+
+> **RE-PLANNED**: 2026-04-27 — Tasks now follow vertical slicing principle. Each task delivers ONE complete user-facing feature (backend + frontend + tests).
+> **REPLACES**: Old tasks 4-01 through 4-12 (divided by technical layers)
 
 ### Phase 4 Overview
 
@@ -153,482 +156,465 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 - LEAD-07: Manual lead creation
 - LEAD-08: Lead data integrity
 
-**Vertical Slicing Strategy**: Each plan delivers ONE complete user-facing feature with backend, frontend, and tests.
+**Vertical Slicing Strategy**: Each task (A1-A7) delivers ONE complete user-facing feature with backend, frontend, and tests.
 
 ---
 
-## Phase 4 Plans
+## Phase 4 Plans (Vertical Slices)
 
-### 4-01: Lead Domain & Database Schema
+### A1: Lead Capture Foundation (Backend Complete)
 
 **Wave**: 1 (Foundation)
 **Depends on**: Nothing
+**User Stories**: LEAD-08 (Lead Data Integrity), LEAD-03 (Status Lifecycle), LEAD-07 (Manual Lead Creation)
+
+**Objective**:
+Implement complete lead capture foundation: domain entities, repository, use cases, API endpoints, and tests. This task delivers ONE COMPLETE feature: "Can create and manage leads via API with full audit trail."
+
+**Description**:
+Create Lead entity with 5-state lifecycle machine (new → contacted → qualified → appointment_set → lost). Implement LeadAuditLog for tracking status changes. Create SQLAlchemy repository with tenant isolation. Implement use cases for creating leads and updating status with audit logging. Expose REST API endpoints. All backend layers complete with tests.
+
 **Files Modified**:
 - `apps/api/src/prosell/domain/leads/__init__.py`
-- `apps/api/src/prosell/domain/leads/entities.py`
-- `apps/api/src/prosell/domain/leads/exceptions.py`
-- `apps/api/src/prosell/domain/appointments/__init__.py`
-- `apps/api/src/prosell/domain/appointments/entities.py`
-- `apps/api/alembic/versions/xxxx_add_leads_appointments_tables.py`
-
-**Objective**:
-Implement core domain entities for leads and appointments following Clean Architecture principles. Define lead lifecycle state machine, appointment validation rules, and database schema with proper foreign keys and tenant isolation.
-
-**Description**:
-Create Lead and Appointment entities in the domain layer with business logic, state transitions, and validation rules. Implement LeadAuditLog for tracking status changes. Create Alembic migration for leads, appointments, and lead_audit_log tables with proper indexes and constraints.
-
-**Subtasks**:
-1. Create Lead entity with fields: buyer_name, buyer_email, buyer_phone, vehicle_id, listing_id, message, status, source, assigned_vendedor_id, tenant_id
-2. Implement lead lifecycle state machine: new → contacted → qualified → appointment_set → lost
-3. Add lead validation rules (email format, phone format, required fields)
-4. Create LeadStatus enum and LeadStateTransitionException
-5. Create Appointment entity with fields: lead_id, dealer_id, vehicle_id, scheduled_at, status, notes, tenant_id
-6. Implement appointment time validation (business hours, conflict detection)
-7. Create LeadAuditLog entity for tracking status changes
-8. Write Alembic migration for all three tables with indexes and foreign keys
-9. Add tenant_id indexes for multi-tenant isolation
-10. Write unit tests for lead state transitions and appointment validation
-
-**Acceptance Criteria**:
-- [ ] Lead entity created with all fields and validation
-- [ ] Lead lifecycle state machine implemented with 5 states
-- [ ] Appointment entity created with time validation
-- [ ] LeadAuditLog entity created for audit trail
-- [ ] Alembic migration creates tables with proper schema
-- [ ] All entities include tenant_id for multi-tenancy
-- [ ] Unit tests cover state transitions and validation rules
-- [ ] No dependencies on external frameworks in domain layer (Clean Architecture)
-
-**Verification**:
-```bash
-cd apps/api && uv run pytest tests/unit/domain/test_lead_entity.py -v
-cd apps/api && uv run pytest tests/unit/domain/test_appointment_entity.py -v
-cd apps/api && uv run alembic upgrade head  # Apply migration
-psql -c "\d leads"  # Verify table schema
-```
-
----
-
-### 4-02: Lead Repository & Use Cases
-
-**Wave**: 1 (Foundation)
-**Depends on**: 4-01
-**Files Modified**:
+- `apps/api/src/prosell/domain/leads/entities.py` (Lead, LeadStatus enum, LeadAuditLog)
+- `apps/api/src/prosell/domain/leads/exceptions.py` (LeadStateTransitionException)
 - `apps/api/src/prosell/application/leads/__init__.py`
-- `apps/api/src/prosell/application/leads/use_cases.py`
-- `apps/api/src/prosell/infrastructure/repositories/lead_repository.py`
+- `apps/api/src/prosell/application/leads/use_cases.py` (CreateLeadUseCase, UpdateLeadStatusUseCase, ListLeadsUseCase, GetLeadDetailsUseCase)
+- `apps/api/src/prosell/infrastructure/repositories/lead_repository.py` (ILeadRepository, LeadRepository)
+- `apps/api/src/prosell/infrastructure/api/routers/lead_router.py` (POST /api/v1/leads, GET /api/v1/leads, GET /api/v1/leads/{id}, PUT /api/v1/leads/{id}/status)
+- `apps/api/src/prosell/application/dto/lead.py` (LeadResponse, CreateLeadRequest, UpdateLeadStatusRequest)
+- `apps/api/alembic/versions/xxxx_add_leads_tables.py`
+- `apps/api/tests/unit/domain/test_lead_entity.py`
 - `apps/api/tests/integration/test_lead_usecases.py`
 - `apps/api/tests/integration/repositories/test_lead_repository.py`
-
-**Objective**:
-Implement repository pattern for lead CRUD operations and use cases for lead lifecycle management (create, update status, assign vendedor).
-
-**Description**:
-Create SQLAlchemy-based LeadRepository following the repository pattern. Implement CreateLeadUseCase, UpdateLeadStatusUseCase, AssignLeadToVendedorUseCase, and ListLeadsUseCase. Ensure tenant isolation in all queries. Implement lead assignment logic (round-robin or vehicle owner).
-
-**Subtasks**:
-1. Create ILeadRepository interface in domain layer
-2. Implement LeadRepository with SQLAlchemy (async)
-3. Add tenant_id filtering to all queries
-4. Implement create() method with duplicate detection
-5. Implement update_status() with audit log creation
-6. Implement list_by_vendedor() with pagination
-7. Implement list_by_manager() (all team leads)
-8. Create CreateLeadUseCase with business logic
-9. Create UpdateLeadStatusUseCase with state validation
-10. Create AssignLeadToVendedorUseCase
-11. Create ListLeadsUseCase with role-based filtering
-12. Write integration tests for repository
-13. Write integration tests for use cases
-
-**Acceptance Criteria**:
-- [ ] ILeadRepository interface defined in domain layer
-- [ ] LeadRepository implements interface with async SQLAlchemy
-- [ ] All queries filter by tenant_id
-- [ ] CreateLeadUseCase creates lead and assigns vendedor
-- [ ] UpdateLeadStatusUseCase validates state transitions
-- [ ] UpdateLeadStatusUseCase creates audit log entry
-- [ ] ListLeadsUseCase filters by user role (vendedor sees own, manager sees team)
-- [ ] Integration tests cover CRUD operations
-- [ ] Integration tests cover tenant isolation
-
-**Verification**:
-```bash
-cd apps/api && uv run pytest tests/integration/test_lead_usecases.py -v
-cd apps/api && uv run pytest tests/integration/repositories/test_lead_repository.py -v
-```
-
----
-
-### 4-03: Appointment Repository & Use Cases
-
-**Wave**: 1 (Foundation)
-**Depends on**: 4-01, 4-02
-**Files Modified**:
-- `apps/api/src/prosell/application/appointments/__init__.py`
-- `apps/api/src/prosell/application/appointments/use_cases.py`
-- `apps/api/src/prosell/infrastructure/repositories/appointment_repository.py`
-- `apps/api/tests/integration/test_appointment_usecases.py`
-- `apps/api/tests/integration/repositories/test_appointment_repository.py`
-
-**Objective**:
-Implement repository and use cases for appointment management. Integrate with SendGrid for dealer email notifications.
-
-**Description**:
-Create IAppointmentRepository interface and SQLAlchemy implementation. Implement CreateAppointmentUseCase that validates appointment time, updates lead status to "appointment_set", and sends email notification to dealer. Implement ListAppointmentsUseCase with role-based filtering.
-
-**Subtasks**:
-1. Create IAppointmentRepository interface in domain layer
-2. Implement AppointmentRepository with SQLAlchemy (async)
-3. Add tenant_id filtering to all queries
-4. Implement time conflict detection in repository
-5. Create CreateAppointmentUseCase with validation
-6. CreateAppointmentUseCase updates lead status to "appointment_set"
-7. Wire SendGrid email service for dealer notifications
-8. Create email template for appointment notifications
-9. Implement error handling for SendGrid API failures
-10. Create ListAppointmentsUseCase with role-based filtering
-11. Write integration tests for repository
-12. Write integration tests for use cases (with mocked SendGrid)
-
-**Acceptance Criteria**:
-- [ ] IAppointmentRepository interface defined
-- [ ] AppointmentRepository implements interface
-- [ ] CreateAppointmentUseCase validates appointment time
-- [ ] CreateAppointmentUseCase updates lead status
-- [ ] SendGrid email sent on appointment creation
-- [ ] Email includes buyer name, contact, vehicle, date/time
-- [ ] Error handling for SendGrid failures (retry/logging)
-- [ ] ListAppointmentsUseCase filters by user role
-- [ ] Integration tests cover happy path and error cases
-
-**Verification**:
-```bash
-cd apps/api && uv run pytest tests/integration/test_appointment_usecases.py -v
-# Check email logs for SendGrid calls
-```
-
----
-
-### 4-04: Facebook Lead Webhook Endpoint
-
-**Wave**: 2 (Integration)
-**Depends on**: 4-02
-**Files Modified**:
-- `apps/api/src/prosell/infrastructure/api/routers/lead_router.py`
-- `apps/api/src/prosell/infrastructure/external/facebook/webhook_handler.py`
-- `apps/api/tests/integration/test_facebook_webhook.py`
-- `tests/contract/openapi/test_leads_schema.py`
-
-**Objective**:
-Implement Facebook webhook endpoint to receive lead messages from Facebook Marketplace listings.
-
-**Description**:
-Create POST /api/v1/webhooks/facebook endpoint that verifies webhook signature (X-Hub-Signature), extracts lead data from Facebook payload, queries vehicle by listing_id, checks for duplicates, and creates lead via CreateLeadUseCase. Implement polling fallback for reliability.
-
-**Subtasks**:
-1. Create webhook endpoint in FastAPI router
-2. Implement X-Hub-Signature verification
-3. Parse Facebook webhook payload (leadgen_id, listing_id, sender_id, message)
-4. Query vehicle by facebook_listing_id from publications table
-5. Query Facebook Graph API for buyer profile (name, profile_url)
-6. Check for duplicate lead (same buyer + vehicle within 24 hours)
-7. Call CreateLeadUseCase with extracted data
-8. Return 200 OK to Facebook (quick response)
-9. Add logging for webhook events
-10. Implement polling fallback (every 10 minutes) as backup
-11. Write integration test for webhook endpoint
-12. Write contract test for OpenAPI schema
-
-**Acceptance Criteria**:
-- [ ] Webhook endpoint exists at /api/v1/webhooks/facebook
-- [ ] Webhook signature verification implemented
-- [ ] Lead created from Facebook payload
-- [ ] Duplicate detection prevents duplicate leads
-- [ ] Webhook returns 200 OK within 1 second
-- [ ] Polling fallback implemented (Taskiq task)
-- [ ] Integration tests cover webhook payload
-- [ ] Contract test verifies OpenAPI schema
-- [ ] Security: webhook signature required (403 if missing/invalid)
-
-**Verification**:
-```bash
-cd apps/api && uv run pytest tests/integration/test_facebook_webhook.py -v
-# Test with Facebook webhook payload
-curl -X POST http://localhost:8000/api/v1/webhooks/facebook -d @test_payload.json
-```
-
----
-
-### 4-05: Lead API Endpoints
-
-**Wave**: 2 (Integration)
-**Depends on**: 4-02
-**Files Modified**:
-- `apps/api/src/prosell/infrastructure/api/routers/lead_router.py`
-- `apps/api/src/prosell/application/dto/lead.py`
 - `apps/api/tests/integration/api/test_lead_api.py`
 - `tests/contract/openapi/test_leads_schema.py`
 
-**Objective**:
-Implement REST API endpoints for lead CRUD operations: list leads, get lead details, update lead status, create manual lead.
+**Subtasks** (Vertical Slice - ALL layers):
+1. **Domain Layer**:
+   - Create Lead entity (buyer_name, buyer_email, buyer_phone, vehicle_id, listing_id, message, status, source, assigned_vendedor_id, tenant_id)
+   - Implement LeadStatus enum with 5 states (new, contacted, qualified, appointment_set, lost)
+   - Create LeadStateTransitionException for invalid transitions
+   - Implement state machine logic (can_transition_to() method)
+   - Create LeadAuditLog entity (lead_id, old_status, new_status, changed_by, changed_at, tenant_id)
+   - Add validation rules (email format, phone format, required fields)
 
-**Description**:
-Create FastAPI router with endpoints: GET /api/v1/leads (list), POST /api/v1/leads (manual create), GET /api/v1/leads/{id} (details), PUT /api/v1/leads/{id}/status (update status). Implement role-based access control (vendedor sees own leads, manager sees team leads). Create DTOs for request/response.
+2. **Database Layer**:
+   - Write Alembic migration for `leads` table (id, buyer_name, buyer_email, buyer_phone, vehicle_id, listing_id, message, status, source, assigned_vendedor_id, created_at, updated_at, tenant_id)
+   - Write Alembic migration for `lead_audit_log` table (id, lead_id, old_status, new_status, changed_by, changed_at, tenant_id)
+   - Add indexes on (tenant_id, status), (tenant_id, assigned_vendedor_id), (tenant_id, vehicle_id)
+   - Add foreign key constraints (vehicle_id → vehicles, assigned_vendedor_id → users)
 
-**Subtasks**:
-1. Create LeadResponse DTO with all lead fields
-2. Create CreateLeadRequest DTO for manual entry
-3. Create UpdateLeadStatusRequest DTO with reason field
-4. Create GET /api/v1/leads endpoint with pagination
-5. Add role-based filtering (vendedor vs manager)
-6. Create POST /api/v1/leads for manual lead creation
-7. Create GET /api/v1/leads/{id} for lead details
-8. Create PUT /api/v1/leads/{id}/status for status updates
-9. Add authentication/authorization middleware
-10. Add tenant_id filtering to all endpoints
-11. Write integration tests for all endpoints
-12. Write contract tests for DTO schemas
+3. **Repository Layer**:
+   - Create ILeadRepository interface in domain/ports
+   - Implement LeadRepository with async SQLAlchemy
+   - Implement create() method with duplicate detection
+   - Implement update_status() with audit log creation
+   - Implement get_by_id(), list_by_vendedor(), list_by_manager()
+   - Add tenant_id filtering to ALL queries
+
+4. **Use Case Layer**:
+   - Create CreateLeadUseCase (validates data, assigns vendedor via round-robin or vehicle owner)
+   - Create UpdateLeadStatusUseCase (validates state transition, creates audit log entry)
+   - Create ListLeadsUseCase (role-based filtering: vendedor sees own, manager sees team)
+   - Create GetLeadDetailsUseCase
+
+5. **API Layer**:
+   - Create LeadResponse DTO (all lead fields + audit_log)
+   - Create CreateLeadRequest DTO (manual lead creation)
+   - Create UpdateLeadStatusRequest DTO (status + reason)
+   - Create POST /api/v1/leads endpoint (manual lead creation)
+   - Create GET /api/v1/leads endpoint (pagination + role-based filtering)
+   - Create GET /api/v1/leads/{id} endpoint (lead details + audit log)
+   - Create PUT /api/v1/leads/{id}/status endpoint (update status with reason)
+   - Add authentication/authorization middleware
+   - Add tenant_id filtering to all endpoints
+
+6. **Testing**:
+   - Write unit tests for Lead entity (state transitions, validation)
+   - Write unit tests for LeadAuditLog entity
+   - Write integration tests for LeadRepository (CRUD, tenant isolation)
+   - Write integration tests for CreateLeadUseCase
+   - Write integration tests for UpdateLeadStatusUseCase (audit log creation)
+   - Write integration tests for ListLeadsUseCase (role-based filtering)
+   - Write integration tests for all API endpoints
+   - Write contract tests for DTO schemas (OpenAPI compliance)
 
 **Acceptance Criteria**:
-- [ ] GET /api/v1/leads returns paginated lead list
-- [ ] Vendedor sees only own leads, manager sees team leads
-- [ ] POST /api/v1/leads creates manual lead
-- [ ] PUT /api/v1/leads/{id}/status updates lead status
-- [ ] Status update creates audit log entry
-- [ ] All endpoints require authentication (JWT)
-- [ ] All endpoints filter by tenant_id
-- [ ] Integration tests cover all endpoints
-- [ ] Contract tests verify schema compliance
+- [x] Lead entity created with 5-state lifecycle
+- [x] LeadAuditLog entity tracks all status changes
+- [x] Alembic migration creates tables with proper schema
+- [x] All entities include tenant_id for multi-tenancy
+- [x] POST /api/v1/leads creates manual lead
+- [x] PUT /api/v1/leads/{id}/status updates status with audit trail
+- [x] GET /api/v1/leads returns paginated list (role-based filtering)
+- [x] Unit tests for state transitions pass
+- [x] Integration tests for use cases pass
+- [x] Integration tests for API endpoints pass
+- [x] Contract tests verify OpenAPI schema compliance
 
 **Verification**:
 ```bash
+# Apply migration
+cd apps/api && uv run alembic upgrade head
+psql -c "\d leads lead_audit_log"
+
+# Run tests
+cd apps/api && uv run pytest tests/unit/domain/test_lead_entity.py -v
+cd apps/api && uv run pytest tests/integration/test_lead_usecases.py -v
 cd apps/api && uv run pytest tests/integration/api/test_lead_api.py -v
 cd tests/contract && uv run pytest openapi/test_leads_schema.py -v
+
+# Manual API test
+curl -X POST http://localhost:8000/api/v1/leads \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"buyer_name": "John Doe", "buyer_email": "john@example.com", "vehicle_id": "..."}'
 ```
 
 ---
 
-### 4-06: Appointment API Endpoints
+### A2: Facebook Lead Webhook (Backend Integration)
 
-**Wave**: 2 (Integration)
-**Depends on**: 4-03
-**Files Modified**:
-- `apps/api/src/prosell/infrastructure/api/routers/appointment_router.py`
-- `apps/api/src/prosell/application/dto/appointment.py`
-- `apps/api/tests/integration/api/test_appointment_api.py`
-- `tests/contract/openapi/test_appointments_schema.py`
+**Wave**: 1 (Foundation)
+**Depends on**: A1 (uses Lead entity, repository, use cases)
+**User Stories**: LEAD-01 (Facebook Lead Capture)
 
 **Objective**:
-Implement REST API endpoints for appointment management: create appointment, list appointments, update appointment status.
+Implement complete Facebook lead webhook integration: webhook endpoint, signature verification, Graph API client, polling fallback. This task delivers ONE COMPLETE feature: "Facebook messages automatically create leads."
 
 **Description**:
-Create FastAPI router with endpoints: POST /api/v1/appointments (create), GET /api/v1/appointments (list), GET /api/v1/appointments/{id} (details), PUT /api/v1/appointments/{id}/status (update). Implement role-based access control and tenant isolation.
+Create POST /api/v1/webhooks/facebook endpoint that verifies X-Hub-Signature, extracts lead data from payload, queries vehicle by listing_id, checks for duplicates, and calls CreateLeadUseCase. Query Facebook Graph API for buyer profile. Implement polling fallback for reliability.
 
-**Subtasks**:
-1. Create AppointmentResponse DTO
-2. Create CreateAppointmentRequest DTO
-3. Create POST /api/v1/appointments endpoint
-4. Implement time validation (business hours, conflicts)
-5. Create GET /api/v1/appointments with filtering
-6. Add role-based filtering (dealer sees own, vendedor sees assigned)
-7. Create PUT /api/v1/appointments/{id}/status (cancel, complete)
-8. Add authentication/authorization middleware
-9. Write integration tests for all endpoints
-10. Write contract tests for DTO schemas
+**Files Modified**:
+- `apps/api/src/prosell/infrastructure/api/routers/webhook_router.py`
+- `apps/api/src/prosell/infrastructure/external/facebook/webhook_handler.py`
+- `apps/api/src/prosell/infrastructure/external/facebook/graph_api_client.py`
+- `apps/api/src/prosell/application/tasks/facebook_polling.py`
+- `apps/api/tests/integration/test_facebook_webhook.py`
+- `apps/api/tests/contract/openapi/test_webhooks_schema.py`
+
+**Subtasks** (Vertical Slice - COMPLETE feature):
+1. **Webhook Endpoint**:
+   - Create POST /api/v1/webhooks/facebook endpoint
+   - Implement X-Hub-Signature verification (SHA256 HMAC)
+   - Return 403 if signature missing/invalid (security)
+   - Parse Facebook webhook payload (leadgen_id, listing_id, sender_id, message)
+   - Return 200 OK within 1 second (quick response)
+
+2. **Facebook Graph API Client**:
+   - Create FacebookGraphApiClient class
+   - Query buyer profile by sender_id (name, profile_url)
+   - Handle access token refresh
+   - Implement error handling for API failures
+
+3. **Lead Creation Logic**:
+   - Query vehicle by facebook_listing_id from publications table
+   - Check for duplicate lead (same buyer + vehicle within 24 hours)
+   - Extract lead data (buyer_name, buyer_email, buyer_phone, message, source="facebook")
+   - Call CreateLeadUseCase (reused from A1)
+   - Assign lead to vehicle's owner vendedor
+
+4. **Polling Fallback**:
+   - Create Taskiq background task (runs every 10 minutes)
+   - Query Facebook Graph API for recent leads
+   - Compare with existing leads (avoid duplicates)
+   - Create missing leads via CreateLeadUseCase
+
+5. **Logging & Monitoring**:
+   - Log all webhook events (payload, lead created, errors)
+   - Track webhook success/failure metrics
+   - Alert on repeated failures
+
+6. **Testing**:
+   - Write integration test for webhook endpoint
+   - Test webhook signature verification (403 on invalid)
+   - Test lead creation from Facebook payload
+   - Test duplicate detection
+   - Write contract test for OpenAPI schema
+   - Test polling fallback logic
 
 **Acceptance Criteria**:
-- [ ] POST /api/v1/appointments creates appointment
-- [ ] Appointment triggers lead status update to "appointment_set"
-- [ ] Appointment triggers SendGrid email to dealer
-- [ ] GET /api/v1/appointments returns filtered list
-- [ ] Role-based filtering works correctly
-- [ ] All endpoints require authentication
-- [ ] Integration tests cover all endpoints
-- [ ] Contract tests verify schema compliance
+- [ ] Webhook endpoint exists at /api/v1/webhooks/facebook
+- [ ] Webhook signature verification implemented (403 if invalid)
+- [ ] Lead created from Facebook payload within 5 seconds
+- [ ] Duplicate detection prevents duplicate leads
+- [ ] Buyer profile fetched from Graph API
+- [ ] Polling fallback runs every 10 minutes
+- [ ] Integration tests cover webhook payload
+- [ ] Contract test verifies OpenAPI schema
+- [ ] Logging captures all webhook events
 
 **Verification**:
 ```bash
-cd apps/api && uv run pytest tests/integration/api/test_appointment_api.py -v
-cd tests/contract && uv run pytest openapi/test_appointments_schema.py -v
+# Run tests
+cd apps/api && uv run pytest tests/integration/test_facebook_webhook.py -v
+cd tests/contract && uv run pytest openapi/test_webhooks_schema.py -v
+
+# Manual webhook test (with test payload)
+curl -X POST http://localhost:8000/api/v1/webhooks/facebook \
+  -H "X-Hub-Signature: sha256=..." \
+  -d @test_payload.json
+
+# Check logs for webhook events
+tail -f logs/webhook.log
 ```
 
 ---
 
-### 4-07: Frontend Lead Types & API Clients
+### A3: Vendedor Leads List (Frontend Complete)
 
-**Wave**: 3 (Frontend)
-**Depends on**: 4-05
+**Wave**: 2 (Frontend)
+**Depends on**: A1 (uses API endpoints from A1)
+**User Stories**: LEAD-02 (Vendedor Leads List View), LEAD-03 (Lead Status Update)
+
+**Objective**:
+Implement complete vendedor leads list feature: TypeScript types, API clients, components, page, and E2E tests. This task delivers ONE COMPLETE feature: "Vendedor can view and manage assigned leads."
+
+**Description**:
+Create leads list page at /vendedor/leads using DataGrid pattern. Display lead information (buyer name, vehicle, message, status, timestamp). Implement status update dropdown. Add search/filter functionality. Real-time updates via polling.
+
 **Files Modified**:
 - `apps/web/src/types/lead.ts`
-- `apps/web/src/types/appointment.ts`
 - `apps/web/src/lib/api/leads.ts`
-- `apps/web/src/lib/api/appointments.ts`
-- `apps/web/tests/unit/api/leads.test.ts`
-
-**Objective**:
-Create TypeScript types and TanStack Query hooks for lead and appointment API clients.
-
-**Description**:
-Define TypeScript interfaces for Lead, Appointment, and related DTOs. Implement useLeads, useLead, useCreateLead, useUpdateLeadStatus hooks using TanStack Query. Implement useAppointments, useCreateAppointment hooks. Add optimistic updates and toast notifications.
-
-**Subtasks**:
-1. Create Lead interface (id, buyer_name, status, vehicle, etc.)
-2. Create Appointment interface
-3. Create CreateLeadRequest, UpdateLeadStatusRequest interfaces
-4. Create useLeads hook with queryKey ['leads']
-5. Add role-based query parameters (vendedor vs manager)
-6. Create useLead hook for single lead details
-7. Create useCreateLead mutation hook
-8. Create useUpdateLeadStatus mutation hook
-9. Add toast notifications for success/error
-10. Implement useAppointments hook
-11. Implement useCreateAppointment mutation hook
-12. Add query invalidation for related queries
-13. Write unit tests for hooks (mocked fetch)
-
-**Acceptance Criteria**:
-- [ ] TypeScript types defined for all entities
-- [ ] useLeads fetches from /api/v1/leads
-- [ ] useLeads filters by user role
-- [ ] useCreateLead creates manual lead
-- [ ] useUpdateLeadStatus updates status
-- [ ] Mutations show toast notifications
-- [ ] Mutations invalidate related queries
-- [ ] Unit tests cover hooks (with mocked fetch)
-
-**Verification**:
-```bash
-cd apps/web && pnpm test src/lib/api/leads.test.ts
-```
-
----
-
-### 4-08: Frontend Leads List View
-
-**Wave**: 3 (Frontend)
-**Depends on**: 4-07
-**Files Modified**:
-- `apps/web/src/app/(role)/vendedor/leads/page.tsx`
 - `apps/web/src/components/leads/LeadList.tsx`
 - `apps/web/src/components/leads/LeadListItem.tsx`
 - `apps/web/src/components/leads/LeadStatusBadge.tsx`
+- `apps/web/src/components/leads/LeadStatusDropdown.tsx`
+- `apps/web/src/app/(role)/vendedor/leads/page.tsx`
+- `apps/web/tests/unit/api/leads.test.ts`
 - `tests/e2e/specs/leads.spec.ts`
 
-**Objective**:
-Implement leads list page for vendedores with filtering, search, and status updates.
+**Subtasks** (Vertical Slice - COMPLETE feature):
+1. **TypeScript Types**:
+   - Create Lead interface (id, buyer_name, buyer_email, buyer_phone, vehicle, message, status, source, created_at, updated_at)
+   - Create CreateLeadRequest interface
+   - Create UpdateLeadStatusRequest interface (status + reason)
+   - Create LeadStatus enum (5 states)
 
-**Description**:
-Create leads list page using DataGrid pattern (TanStack Virtual if 100+ leads). Display lead information (buyer name, vehicle, message, status, timestamp). Add status badge component. Implement status update dropdown. Add search/filter functionality.
+2. **API Clients (TanStack Query)**:
+   - Create useLeads hook (queryKey: ['leads'])
+   - Add role-based query parameters (vendedor vs manager)
+   - Create useLead hook for single lead details
+   - Create useUpdateLeadStatus mutation hook
+   - Add toast notifications for success/error
+   - Implement query invalidation on mutation
 
-**Subtasks**:
-1. Create leads list page at /vendedor/leads
-2. Implement LeadList component with DataGrid
-3. Create LeadListItem component (one row per lead)
-4. Create LeadStatusBadge component (5 states with colors)
-5. Add status dropdown for quick updates
-6. Implement search by buyer name, vehicle
-7. Add filter by status (new, contacted, qualified, etc.)
-8. Add highlight for unread leads
-9. Implement pagination or infinite scroll
-10. Add real-time updates (polling every 30s)
-11. Write E2E tests for leads list
+3. **Components**:
+   - Create LeadList component (DataGrid pattern)
+   - Create LeadListItem component (one row per lead)
+   - Create LeadStatusBadge component (5 states with colors: new=blue, contacted=yellow, qualified=green, appointment_set=purple, lost=gray)
+   - Create LeadStatusDropdown component (quick status update)
+
+4. **Page & Features**:
+   - Create /vendedor/leads page
+   - Implement search by buyer name, vehicle
+   - Add filter by status (new, contacted, qualified, etc.)
+   - Add highlight for unread leads (created_at < 5 min ago)
+   - Implement pagination or infinite scroll
+   - Add real-time updates (polling every 30s via refetchInterval)
+
+5. **Testing**:
+   - Write unit tests for API hooks (mocked fetch)
+   - Write component tests for LeadStatusBadge
+   - Write E2E test for leads list view
+   - Test search functionality
+   - Test status filter
+   - Test status update dropdown
 
 **Acceptance Criteria**:
-- [ ] Vendedor can view assigned leads
+- [ ] Vendedor can view assigned leads at /vendedor/leads
 - [ ] Each lead shows buyer name, vehicle, status, timestamp
-- [ ] Unread leads are highlighted
-- [ ] Status update dropdown works
+- [ ] Unread leads (< 5 min) are highlighted
+- [ ] Status update dropdown works (calls API, shows toast)
 - [ ] Search filters by buyer name/vehicle
 - [ ] Status filter shows only selected status leads
 - [ ] Real-time updates every 30 seconds
+- [ ] Unit tests for hooks pass
 - [ ] E2E tests cover leads list view
 
 **Verification**:
 ```bash
+# Run tests
+cd apps/web && pnpm test src/lib/api/leads.test.ts
 cd tests/e2e && pnpm test specs/leads.spec.ts
+
+# Manual test: Navigate to /vendedor/leads
+# Verify: leads load, status update works, search filters
 ```
 
 ---
 
-### 4-09: Frontend Lead Details & Appointment Form
+### A4: Appointment Scheduling (Full Feature)
 
-**Wave**: 3 (Frontend)
-**Depends on**: 4-07
-**Files Modified**:
-- `apps/web/src/app/(role)/vendedor/leads/[id]/page.tsx`
-- `apps/web/src/components/leads/LeadDetails.tsx`
-- `apps/web/src/components/leads/AppointmentForm.tsx`
-- `apps/web/src/components/leads/LeadHistory.tsx`
-- `tests/e2e/specs/appointments.spec.ts`
+**Wave**: 2 (Frontend + Backend)
+**Depends on**: A1 (extends lead foundation)
+**User Stories**: LEAD-04 (Appointment Creation), LEAD-05 (Dealer Email Notifications)
 
 **Objective**:
-Implement lead details page with appointment creation form and lead history.
+Implement complete appointment scheduling feature: domain, database, repository, use cases, SendGrid emails, API, frontend, and tests. This task delivers ONE COMPLETE feature: "Vendedor can schedule buyer appointments with dealers."
 
 **Description**:
-Create lead details page showing full lead information, appointment history, and audit log. Implement AppointmentForm modal with date-time picker, dealer selection, and notes. Add "Agendar Cita" button that opens form. Show lead status lifecycle visualization.
+Create Appointment entity with time validation. Implement CreateAppointmentUseCase that validates time, updates lead status to "appointment_set", and sends SendGrid email. Create appointment form modal with date-time picker. Full stack implementation.
 
-**Subtasks**:
-1. Create lead details page at /vendedor/leads/{id}
-2. Implement LeadDetails component
-3. Show buyer contact info, vehicle details, message
-4. Add "Agendar Cita" button
-5. Create AppointmentForm modal
-6. Add date-time picker (shadcn/ui DatePicker)
-7. Pre-populate form with lead, vehicle, dealer
-8. Implement time validation (business hours)
-9. Show appointment conflicts warning
-10. Create LeadHistory component (audit log)
-11. Implement status update dropdown
-12. Write E2E tests for appointment creation
+**Files Modified**:
+- `apps/api/src/prosell/domain/appointments/__init__.py`
+- `apps/api/src/prosell/domain/appointments/entities.py` (Appointment entity, AppointmentStatus enum)
+- `apps/api/src/prosell/application/appointments/__init__.py`
+- `apps/api/src/prosell/application/appointments/use_cases.py` (CreateAppointmentUseCase, ListAppointmentsUseCase, CancelAppointmentUseCase)
+- `apps/api/src/prosell/infrastructure/repositories/appointment_repository.py` (IAppointmentRepository, AppointmentRepository)
+- `apps/api/src/prosell/infrastructure/api/routers/appointment_router.py` (POST /api/v1/appointments, GET /api/v1/appointments, PUT /api/v1/appointments/{id}/status)
+- `apps/api/src/prosell/application/dto/appointment.py` (AppointmentResponse, CreateAppointmentRequest)
+- `apps/api/src/prosell/infrastructure/external/sendgrid/email_service.py` (EmailService, email template)
+- `apps/api/alembic/versions/xxxx_add_appointments_table.py`
+- `apps/web/src/types/appointment.ts`
+- `apps/web/src/lib/api/appointments.ts`
+- `apps/web/src/components/leads/AppointmentForm.tsx`
+- `apps/web/src/components/leads/LeadDetails.tsx`
+- `apps/web/src/app/(role)/vendedor/leads/[id]/page.tsx`
+- `apps/api/tests/unit/domain/test_appointment_entity.py`
+- `apps/api/tests/integration/test_appointment_usecases.py`
+- `apps/api/tests/integration/api/test_appointment_api.py`
+- `tests/e2e/specs/appointments.spec.ts`
+
+**Subtasks** (Vertical Slice - COMPLETE feature):
+1. **Domain Layer**:
+   - Create Appointment entity (lead_id, dealer_id, vehicle_id, scheduled_at, status, notes, tenant_id)
+   - Implement AppointmentStatus enum (scheduled, completed, cancelled)
+   - Implement time validation (business hours: 9am-6pm Mon-Fri)
+   - Implement conflict detection (same dealer + time slot)
+
+2. **Database Layer**:
+   - Write Alembic migration for `appointments` table
+   - Add indexes on (tenant_id, dealer_id, scheduled_at)
+   - Add foreign keys (lead_id → leads, dealer_id → dealers, vehicle_id → vehicles)
+
+3. **Repository Layer**:
+   - Create IAppointmentRepository interface
+   - Implement AppointmentRepository with async SQLAlchemy
+   - Implement create() with conflict detection
+   - Implement list_by_dealer(), list_by_vendedor()
+
+4. **Use Case Layer**:
+   - Create CreateAppointmentUseCase (validates time, checks conflicts, updates lead status to "appointment_set")
+   - Create ListAppointmentsUseCase (role-based filtering)
+   - Create CancelAppointmentUseCase
+   - Wire SendGrid email service for dealer notifications
+
+5. **SendGrid Integration**:
+   - Create EmailService class for SendGrid
+   - Create email template for appointment notifications (buyer name, contact, vehicle, date/time, notes)
+   - Implement error handling (retry with exponential backoff)
+   - Add logging for email delivery status
+
+6. **API Layer**:
+   - Create AppointmentResponse DTO
+   - Create CreateAppointmentRequest DTO
+   - Create POST /api/v1/appointments endpoint
+   - Create GET /api/v1/appointments endpoint (role-based filtering)
+   - Create PUT /api/v1/appointments/{id}/status endpoint
+
+7. **Frontend Types**:
+   - Create Appointment interface
+   - Create CreateAppointmentRequest interface
+
+8. **Frontend API Clients**:
+   - Create useAppointments hook
+   - Create useCreateAppointment mutation hook
+   - Add toast notifications
+
+9. **Frontend Components**:
+   - Create LeadDetails page at /vendedor/leads/{id}
+   - Create AppointmentForm modal (date-time picker, dealer selection, notes)
+   - Implement time validation (business hours)
+   - Show appointment conflicts warning
+   - Add "Agendar Cita" button to lead details
+
+10. **Testing**:
+    - Write unit tests for Appointment entity (time validation)
+    - Write integration tests for CreateAppointmentUseCase (mocked SendGrid)
+    - Write integration tests for API endpoints
+    - Write E2E test for appointment creation flow
 
 **Acceptance Criteria**:
-- [ ] Lead details page shows all lead information
-- [ ] "Agendar Cita" button opens form
-- [ ] Appointment form pre-populates lead/vehicle/dealer
+- [ ] Appointment entity created with time validation
+- [ ] CreateAppointmentUseCase validates business hours
+- [ ] CreateAppointmentUseCase updates lead status to "appointment_set"
+- [ ] SendGrid email sent to dealer on appointment creation
+- [ ] Email includes buyer name, contact, vehicle, date/time
+- [ ] AppointmentForm modal opens from lead details
 - [ ] Date-time picker works
-- [ ] Form validates required fields
 - [ ] Form submission creates appointment
-- [ ] Lead status updates to "appointment_set"
-- [ ] Lead history shows audit log
-- [ ] E2E tests cover appointment creation flow
+- [ ] E2E test passes for appointment flow
 
 **Verification**:
 ```bash
+# Apply migration
+cd apps/api && uv run alembic upgrade head
+psql -c "\d appointments"
+
+# Run tests
+cd apps/api && uv run pytest tests/unit/domain/test_appointment_entity.py -v
+cd apps/api && uv run pytest tests/integration/test_appointment_usecases.py -v
+cd apps/api && uv run pytest tests/integration/api/test_appointment_api.py -v
 cd tests/e2e && pnpm test specs/appointments.spec.ts
+
+# Check SendGrid email logs
+tail -f logs/sendgrid.log
 ```
 
 ---
 
-### 4-10: Frontend Manager Team Leads View
+### A5: Manager Team View (Manager Feature)
 
-**Wave**: 4 (Manager Features)
-**Depends on**: 4-08
-**Files Modified**:
-- `apps/web/src/app/(role)/manager/team/leads/page.tsx`
-- `apps/web/src/components/leads/TeamLeadList.tsx`
-- `apps/web/src/components/leads/LeadReassignModal.tsx`
-- `tests/e2e/specs/manager-leads.spec.ts`
+**Wave**: 3 (Extended Features)
+**Depends on**: A3 (extends leads list)
+**User Stories**: LEAD-06 (Manager Team Leads View)
 
 **Objective**:
-Implement manager view for team leads with vendedor filtering and lead reassignment.
+Implement manager team leads view: filter by vendedor, reassign leads, export to CSV, team metrics. This task delivers ONE COMPLETE feature: "Manager can oversee and reassign team leads."
 
 **Description**:
-Create manager team leads page showing all leads across team members. Add filter by vendedor dropdown. Implement lead reassignment modal to transfer leads between vendedores. Add export to CSV functionality. Show team performance metrics (leads per vendedor, conversion rates).
+Create manager page showing all leads across team members. Add filter by vendedor dropdown. Implement lead reassignment modal. Add export to CSV functionality. Show team performance metrics.
 
-**Subtasks**:
-1. Create manager team leads page at /manager/team/leads
-2. Implement TeamLeadList component
-3. Add filter by vendedor dropdown
-4. Show all leads across team (not just assigned to manager)
-5. Create LeadReassignModal component
-6. Implement reassign lead mutation
-7. Add export to CSV button
-8. Show team metrics card (leads per vendedor)
-9. Write E2E tests for manager view
+**Files Modified**:
+- `apps/api/src/prosell/application/leads/use_cases.py` (extend - add AssignLeadToVendedorUseCase if not in A1)
+- `apps/api/src/prosell/infrastructure/api/routers/lead_router.py` (extend - add PUT /api/v1/leads/{id}/assign)
+- `apps/web/src/lib/api/leads.ts` (extend - add useReassignLead hook)
+- `apps/web/src/components/leads/TeamLeadList.tsx`
+- `apps/web/src/components/leads/LeadReassignModal.tsx`
+- `apps/web/src/components/leads/TeamMetricsCard.tsx`
+- `apps/web/src/app/(role)/manager/team/leads/page.tsx`
+- `tests/e2e/specs/manager-leads.spec.ts`
+
+**Subtasks** (Vertical Slice - COMPLETE feature):
+1. **API Extensions**:
+   - Extend GET /api/v1/leads with manager scope (all team leads, not just own)
+   - Create AssignLeadToVendedorUseCase (if not in A1)
+   - Create PUT /api/v1/leads/{id}/assign endpoint
+
+2. **Frontend API Clients**:
+   - Extend useLeads hook with manager scope
+   - Create useReassignLead mutation hook
+
+3. **Components**:
+   - Create TeamLeadList component (extends LeadList)
+   - Create LeadReassignModal component (vendedor dropdown, confirm button)
+   - Create TeamMetricsCard component (leads per vendedor, conversion rates)
+
+4. **Page & Features**:
+   - Create /manager/team/leads page
+   - Add filter by vendedor dropdown
+   - Show all leads across team (not just assigned to manager)
+   - Implement reassign lead mutation
+   - Add export to CSV button
+
+5. **Testing**:
+   - Write E2E test for manager view
+   - Test filter by vendedor
+   - Test lead reassignment
 
 **Acceptance Criteria**:
-- [ ] Manager can view all team leads
+- [ ] Manager can view all team leads at /manager/team/leads
 - [ ] Filter by vendedor works
 - [ ] Reassign modal opens from lead actions
 - [ ] Reassign mutation transfers lead to new vendedor
@@ -638,41 +624,62 @@ Create manager team leads page showing all leads across team members. Add filter
 
 **Verification**:
 ```bash
+# Run E2E test
 cd tests/e2e && pnpm test specs/manager-leads.spec.ts
+
+# Manual test: Navigate to /manager/team/leads
+# Verify: all team leads visible, filter works, reassign works
 ```
 
 ---
 
-### 4-11: Frontend Dealer Calendar View
+### A6: Dealer Calendar (Dealer Feature)
 
-**Wave**: 4 (Dealer Features)
-**Depends on**: 4-09
-**Files Modified**:
-- `apps/web/src/app/(role)/dealer/appointments/page.tsx`
-- `apps/web/src/components/appointments/CalendarView.tsx`
-- `apps/web/src/components/appointments/AppointmentCard.tsx`
-- `tests/e2e/specs/dealer-calendar.spec.ts`
+**Wave**: 3 (Extended Features)
+**Depends on**: A4 (uses appointments API)
+**User Stories**: (Implied by LEAD-04 - dealer needs to see appointments)
 
 **Objective**:
-Implement dealer calendar view showing upcoming appointments with details.
+Implement dealer calendar view: day/week/month toggle, appointment cards, confirm/cancel buttons. This task delivers ONE COMPLETE feature: "Dealer can view and manage upcoming appointments."
 
 **Description**:
-Create dealer appointments page with calendar view (day/week/month). Show appointment cards with buyer name, vehicle, scheduled time. Implement appointment status update (confirm, cancel). Add appointment details modal. Show today's appointments count.
+Create dealer appointments page with calendar view. Show appointment cards with buyer name, vehicle, scheduled time. Implement appointment status update (confirm, cancel). Add appointment details modal.
 
-**Subtasks**:
-1. Create dealer appointments page at /dealer/appointments
-2. Implement CalendarView component (use calendar library)
-3. Show day/week/month toggle
-4. Create AppointmentCard component
-5. Show buyer name, vehicle, time, status
-6. Add confirm/cancel buttons
-7. Implement status update mutation
-8. Show appointment details modal
-9. Add today's appointments badge
-10. Write E2E tests for dealer calendar
+**Files Modified**:
+- `apps/web/src/lib/api/appointments.ts` (extend - add useUpdateAppointmentStatus hook)
+- `apps/web/src/components/appointments/CalendarView.tsx`
+- `apps/web/src/components/appointments/AppointmentCard.tsx`
+- `apps/web/src/app/(role)/dealer/appointments/page.tsx`
+- `tests/e2e/specs/dealer-calendar.spec.ts`
+
+**Subtasks** (Vertical Slice - COMPLETE feature):
+1. **API Extensions**:
+   - Extend GET /api/v1/appointments with dealer scope (own appointments only)
+   - Create PUT /api/v1/appointments/{id}/status endpoint (confirm, cancel)
+
+2. **Frontend API Clients**:
+   - Extend useAppointments hook with dealer scope
+   - Create useUpdateAppointmentStatus mutation hook
+
+3. **Components**:
+   - Create CalendarView component (use calendar library: react-big-calendar or similar)
+   - Show day/week/month toggle
+   - Create AppointmentCard component (buyer name, vehicle, time, status)
+   - Add confirm/cancel buttons
+
+4. **Page & Features**:
+   - Create /dealer/appointments page
+   - Show appointment details modal
+   - Add today's appointments badge
+   - Implement status update mutation
+
+5. **Testing**:
+   - Write E2E test for dealer calendar
+   - Test calendar view (day/week/month)
+   - Test confirm/cancel buttons
 
 **Acceptance Criteria**:
-- [ ] Dealer can view upcoming appointments
+- [ ] Dealer can view upcoming appointments at /dealer/appointments
 - [ ] Calendar view shows day/week/month
 - [ ] Appointment cards show buyer info
 - [ ] Confirm/cancel buttons work
@@ -682,38 +689,67 @@ Create dealer appointments page with calendar view (day/week/month). Show appoin
 
 **Verification**:
 ```bash
+# Run E2E test
 cd tests/e2e && pnpm test specs/dealer-calendar.spec.ts
+
+# Manual test: Navigate to /dealer/appointments
+# Verify: calendar loads, appointments visible, confirm/cancel works
 ```
 
 ---
 
-### 4-12: E2E Verification & Smoke Tests
+### A7: E2E Verification (Final Task)
 
-**Wave**: 5 (Verification)
-**Depends on**: 4-01 through 4-11
-**Files Modified**:
-- `tests/e2e/smoke.spec.ts` (UPDATE)
-- `tests/e2e/specs/leads.spec.ts`
-- `tests/e2e/specs/appointments.spec.ts`
-- `tests/e2e/specs/facebook-webhook.spec.ts`
+**Wave**: 4 (Verification)
+**Depends on**: A1-A6 (all features complete)
+**User Stories**: (All verification)
 
 **Objective**:
-Implement comprehensive E2E test suite for lead and appointment flows. Update smoke tests to include critical lead paths.
+Implement comprehensive E2E test suite for all lead and appointment flows. Update smoke tests to include critical lead paths. Verify all features work end-to-end.
 
 **Description**:
-Create E2E tests for end-to-end lead lifecycle: Facebook webhook → lead appears in vendedor list → vendedor updates status → vendedor creates appointment → dealer receives email. Test manager view for reassigning leads. Test dealer calendar view. Update smoke test suite to include 3-5 critical lead tests.
+Create E2E tests for end-to-end lead lifecycle: Facebook webhook → lead appears in vendedor list → vendedor updates status → vendedor creates appointment → dealer receives email. Test manager view for reassigning leads. Test dealer calendar view. Update smoke test suite.
 
-**Subtasks**:
-1. Create E2E test for Facebook webhook lead capture
-2. Create E2E test for vendedor leads list view
-3. Create E2E test for lead status update
-4. Create E2E test for appointment creation
-5. Create E2E test for dealer email verification (mocked)
-6. Create E2E test for manager lead reassignment
-7. Create E2E test for dealer calendar view
-8. Update smoke.spec.ts with 5 critical lead tests
-9. Verify all E2E tests pass
-10. Measure test execution time (target: < 5 minutes)
+**Files Modified**:
+- `tests/e2e/smoke.spec.ts` (UPDATE)
+- `tests/e2e/specs/facebook-webhook.spec.ts` (NEW)
+- `tests/e2e/specs/leads.spec.ts` (EXTEND)
+- `tests/e2e/specs/appointments.spec.ts` (EXTEND)
+- `tests/e2e/specs/manager-leads.spec.ts` (EXTEND)
+- `tests/e2e/specs/dealer-calendar.spec.ts` (EXTEND)
+
+**Subtasks** (Complete verification):
+1. **Facebook Webhook E2E Test**:
+   - Test webhook endpoint receives Facebook payload
+   - Test lead creation from webhook
+   - Test duplicate lead detection
+
+2. **Vendedor Leads List E2E Test**:
+   - Test lead list loads from API
+   - Test lead status update
+   - Test search and filter
+
+3. **Appointment Creation E2E Test**:
+   - Test appointment creation from lead
+   - Test appointment form validation
+   - Test dealer email notification (mocked)
+
+4. **Manager View E2E Test**:
+   - Test manager team leads view
+   - Test lead reassignment
+
+5. **Dealer Calendar E2E Test**:
+   - Test dealer calendar view
+   - Test appointment confirm/cancel
+
+6. **Smoke Tests Update**:
+   - Add 5 critical lead tests to smoke.spec.ts
+   - Test: Facebook webhook → lead → status update → appointment
+
+7. **Verification**:
+   - Run all E2E tests
+   - Measure test execution time (target: < 5 minutes)
+   - Fix any failing tests
 
 **Acceptance Criteria**:
 - [ ] Facebook webhook test creates lead
@@ -722,15 +758,20 @@ Create E2E tests for end-to-end lead lifecycle: Facebook webhook → lead appear
 - [ ] Dealer email notification sent (mocked)
 - [ ] Manager can reassign leads
 - [ ] Dealer can view appointments
-- [ ] Smoke tests pass (20+ tests total)
+- [ ] Smoke tests pass (25+ tests total: 20 Phase 13 + 5 Phase 4)
 - [ ] All E2E tests pass
 - [ ] Test execution time < 5 minutes
 
 **Verification**:
 ```bash
+# Run all E2E tests
 cd tests/e2e && pnpm test
-# Check smoke test results
+
+# Run smoke tests only
 cd tests/e2e && pnpm test smoke.spec.ts
+
+# Check test execution time
+# Target: < 5 minutes for all E2E tests
 ```
 
 ---
@@ -738,79 +779,61 @@ cd tests/e2e && pnpm test smoke.spec.ts
 ## Dependency Graph
 
 ```
-4-01 (Domain)
+A1: Lead Capture Foundation (backend complete)
   ↓
-4-02 (Lead Repository & Use Cases) ← 4-03 (Appointment Repository)
-  ↓                              ↓
-4-04 (Facebook Webhook) ← 4-05 (Lead API) ← 4-06 (Appointment API)
-                                  ↓
-                            4-07 (Frontend Types & Hooks)
-                                  ↓
-                         4-08 (Leads List) ← 4-09 (Lead Details & Appointments)
-                                  ↓
-                     4-10 (Manager View) ← 4-11 (Dealer Calendar)
-                                  ↓
-                            4-12 (E2E Verification)
+  ├─→ A2: Facebook Webhook (parallel with A1)
+  │
+  ├─→ A3: Vendedor Leads List (frontend)
+  │     ↓
+  │     └─→ A5: Manager Team View
+  │
+  └─→ A4: Appointment Scheduling (full feature)
+        ↓
+        └─→ A6: Dealer Calendar
+              ↓
+              └─→ A7: E2E Verification
 ```
 
 **Parallel Execution Opportunities**:
-- 4-02 and 4-03 can run in parallel (both depend on 4-01)
-- 4-04, 4-05, 4-06 can run in parallel (all depend on 4-02)
-- 4-08 and 4-09 can run in parallel (both depend on 4-07)
-- 4-10 and 4-11 can run in parallel (both depend on 4-08/4-09)
+- A1 and A2 can start together (A2 depends on A1's domain, but can develop in parallel)
+- A3 and A4 can run in parallel (both depend on A1)
+- A5 and A6 can run in parallel (depend on A3 and A4 respectively)
 
 ---
 
 ## Execution Order (Recommended)
 
 **Wave 1 (Foundation)**:
-1. 4-01: Lead Domain & Database Schema (3-4 hours)
-2. 4-02: Lead Repository & Use Cases (3-4 hours) — parallel with 4-03
-3. 4-03: Appointment Repository & Use Cases (3-4 hours) — parallel with 4-02
+1. A1: Lead Capture Foundation (6-8 hours)
+2. A2: Facebook Lead Webhook (3-4 hours) — parallel with A1
 
-**Wave 2 (Integration)**:
-4. 4-04: Facebook Lead Webhook Endpoint (2-3 hours)
-5. 4-05: Lead API Endpoints (2-3 hours) — parallel with 4-06
-6. 4-06: Appointment API Endpoints (2-3 hours) — parallel with 4-05
+**Wave 2 (Core Features)**:
+3. A3: Vendedor Leads List (4-6 hours) — parallel with A4
+4. A4: Appointment Scheduling (6-8 hours) — parallel with A3
 
-**Wave 3 (Frontend Core)**:
-7. 4-07: Frontend Lead Types & API Clients (2 hours)
-8. 4-08: Frontend Leads List View (3-4 hours) — parallel with 4-09
-9. 4-09: Frontend Lead Details & Appointment Form (3-4 hours) — parallel with 4-08
+**Wave 3 (Extended Features)**:
+5. A5: Manager Team View (3-4 hours) — parallel with A6
+6. A6: Dealer Calendar (3-4 hours) — parallel with A5
 
-**Wave 4 (Frontend Extended)**:
-10. 4-10: Frontend Manager Team Leads View (2-3 hours) — parallel with 4-11
-11. 4-11: Frontend Dealer Calendar View (2-3 hours) — parallel with 4-10
+**Wave 4 (Verification)**:
+7. A7: E2E Verification (4-6 hours)
 
-**Wave 5 (Verification)**:
-12. 4-12: E2E Verification & Smoke Tests (3-4 hours)
-
-**Total Estimated Time**: 35-45 hours (5-6 days of focused development)
+**Total Estimated Time**: 30-45 hours (4-5 days of focused development)
 
 ---
 
 ## Checkpoints
 
-### Checkpoint 1: Foundation Complete (After 4-01, 4-02, 4-03)
+### Checkpoint 1: Foundation Complete (After A1, A2)
 **Verification**:
 ```bash
+cd apps/api && uv run alembic upgrade head
+psql -c "\d leads lead_audit_log"
 cd apps/api && uv run pytest tests/unit/domain/test_lead_entity.py -v
-cd apps/api && uv run pytest tests/unit/domain/test_appointment_entity.py -v
-cd apps/api && uv run pytest tests/integration/test_lead_usecases.py -v
-cd apps/api && uv run pytest tests/integration/test_appointment_usecases.py -v
-psql -c "\d leads appointments lead_audit_log"
-```
-
-### Checkpoint 2: API Complete (After 4-04, 4-05, 4-06)
-**Verification**:
-```bash
 cd apps/api && uv run pytest tests/integration/test_facebook_webhook.py -v
-cd apps/api && uv run pytest tests/integration/api/test_lead_api.py -v
-cd apps/api && uv run pytest tests/integration/api/test_appointment_api.py -v
-curl -X POST http://localhost:8000/api/v1/webhooks/facebook -d @test_payload.json
 ```
 
-### Checkpoint 3: Frontend Complete (After 4-07, 4-08, 4-09)
+### Checkpoint 2: Core Features Complete (After A3, A4)
 **Verification**:
 ```bash
 cd apps/web && pnpm test src/lib/api/leads.test.ts
@@ -818,7 +841,14 @@ cd tests/e2e && pnpm test specs/leads.spec.ts
 cd tests/e2e && pnpm test specs/appointments.spec.ts
 ```
 
-### Checkpoint 4: Full Integration Complete (After 4-10, 4-11, 4-12)
+### Checkpoint 3: Extended Features Complete (After A5, A6)
+**Verification**:
+```bash
+cd tests/e2e && pnpm test specs/manager-leads.spec.ts
+cd tests/e2e && pnpm test specs/dealer-calendar.spec.ts
+```
+
+### Checkpoint 4: Full Integration Complete (After A7)
 **Verification**:
 ```bash
 cd tests/e2e && pnpm test  # All E2E tests
@@ -830,7 +860,7 @@ cd tests/e2e && pnpm test smoke.spec.ts  # Smoke tests
 ## Success Criteria
 
 ### Phase 4 Complete
-- [ ] All 12 plans (4-01 through 4-12) implemented
+- [ ] All 7 tasks (A1 through A7) implemented
 - [ ] All unit tests passing
 - [ ] All integration tests passing
 - [ ] All E2E tests passing
@@ -838,8 +868,8 @@ cd tests/e2e && pnpm test smoke.spec.ts  # Smoke tests
 - [ ] Manual testing confirms end-to-end flow works
 
 ### MVP Complete
-- [ ] Phase 13 complete (6 plans executed)
-- [ ] Phase 4 complete (12 plans executed)
+- [ ] Phase 13 complete (6 tasks executed)
+- [ ] Phase 4 complete (7 tasks executed)
 - [ ] Vendedor can publish vehicle → capture lead → create appointment
 - [ ] Deployed to staging environment
 - [ ] Pilot dealer successfully uses system for 1 week
@@ -848,17 +878,17 @@ cd tests/e2e && pnpm test smoke.spec.ts  # Smoke tests
 
 ## Notes
 
-- **Phase 13 plans are already defined** in `.planning/phases/13-frontend/` — execute those first
-- **Phase 4 plans are defined in this document** — execute after Phase 13
+- **Phase 13 plans are COMPLETE** (13-01 through 13-06)
+- **Phase 4 plans follow vertical slicing** (A1 through A7)
 - **Parallel execution** is encouraged where dependency graph allows
 - **Test-driven development** is required for all backend code
 - **E2E tests** are mandatory for all user-facing features
-- **SendGrid API key** must be configured before 4-03 execution
-- **Facebook webhook** must be registered before 4-04 testing
+- **SendGrid API key** must be configured before A4 execution
+- **Facebook webhook** must be registered before A2 testing
 
 ---
 
 **Document Status**: Active — Ready for execution
-**Next Action**: Execute Phase 13 plans first, then Phase 4 plans 4-01 through 4-12
+**Next Action**: Execute Phase 4 plans A1 through A7
 **Owner**: Engineering Team
 **Stakeholders**: Product, QA, DevOps
