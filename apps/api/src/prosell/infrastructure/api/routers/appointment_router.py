@@ -122,6 +122,7 @@ async def create_appointment(
     summary="List appointments (role-based)",
 )
 async def list_appointments(
+    use_case: Annotated[ListAppointmentsUseCase, Depends(get_list_appointments_use_case)],
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     start_date: Annotated[
         str | None,
@@ -137,7 +138,6 @@ async def list_appointments(
     ] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
-    use_case: Annotated[ListAppointmentsUseCase, Depends(get_list_appointments_use_case)],
 ):
     """
     List appointments with role-based filtering.

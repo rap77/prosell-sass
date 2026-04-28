@@ -54,6 +54,8 @@ from prosell.infrastructure.api.routers import (
     vehicle_router,
     wallet_router,
 )
+from prosell.infrastructure.api.routers.appointment_router import router as appointment_router
+from prosell.infrastructure.api.routers.webhook_router import router as webhook_router
 
 app = FastAPI(
     title="ProSell SaaS API",
@@ -262,6 +264,18 @@ app.include_router(
     lead_router,
     prefix="/api/v1/leads",
     tags=["Leads"],
+)
+
+app.include_router(
+    appointment_router,
+    prefix="/api/v1/appointments",
+    tags=["Appointments"],
+)
+
+app.include_router(
+    webhook_router,
+    prefix="/api/v1",
+    tags=["Webhooks"],
 )
 
 
