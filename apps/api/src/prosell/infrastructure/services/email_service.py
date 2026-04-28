@@ -1,10 +1,71 @@
 """Email service for sending emails (SendGrid)."""
 
+import asyncio
+import logging
 from datetime import datetime
-from typing import Protocol
+from functools import wraps
+from typing import Callable, Protocol
 from uuid import UUID
 
 from prosell.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+
+def retry_on_sendgrid_error(
+    max_retries: int = 3,
+    initial_delay: float = 1.0,
+    backoff_multiplier: float = 2.0,
+    retryable_statuses: tuple[int, ...] = (500, 502, 503, 504),
+) -> Callable:
+    """
+    Decorator to retry SendGrid API calls with exponential backoff.
+
+    Args:
+        max_retries: Maximum number of retry attempts (default: 3)
+        initial_delay: Initial delay in seconds before first retry (default: 1.0)
+        backoff_multiplier: Multiplier for exponential backoff (default: 2.0)
+        retryable_statuses: HTTP status codes that trigger retry (default: 500, 502, 503, 504)
+
+    Returns:
+        Decorated function with retry logic
+    """
+
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(*args, **kwargs):  # type: ignore
+            delay = initial_delay
+            last_exception = None
+
+            for attempt in range(max_retries + 1):  # +1 for initial attempt
+                try:
+                    return await func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    # Check if error message contains a retryable status code
+                    is_retryable = any(str(code) in str(e) for code in retryable_statuses)
+
+                    if not is_retryable or attempt == max_retries:
+                        # Not retryable or max retries exceeded
+                        raise
+
+                    # Log retry attempt
+                    logger.warning(
+                        f"SendGrid API call failed (attempt {attempt + 1}/{max_retries + 1}): {e}. "
+                        f"Retrying in {delay:.1f}s..."
+                    )
+
+                    # Wait before retry with exponential backoff
+                    await asyncio.sleep(delay)
+                    delay *= backoff_multiplier
+
+            # Should never reach here, but just in case
+            if last_exception:
+                raise last_exception
+
+        return wrapper
+
+    return decorator
 
 
 class AbstractEmailService(Protocol):
@@ -85,6 +146,7 @@ class SendGridEmailService:
         self.from_email = settings.sendgrid_from_email
         self.from_name = settings.sendgrid_from_name
 
+    @retry_on_sendgrid_error()
     async def send_verification_email(
         self,
         email: str,
@@ -127,6 +189,7 @@ class SendGridEmailService:
         if response.status_code not in (200, 202):  # type: ignore[attr-defined]
             raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
+    @retry_on_sendgrid_error()
     async def send_password_reset(
         self,
         email: str,
@@ -168,6 +231,7 @@ class SendGridEmailService:
         if response.status_code not in (200, 202):  # type: ignore[attr-defined]
             raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
+    @retry_on_sendgrid_error()
     async def send_2fa_enabled(
         self,
         email: str,
@@ -201,6 +265,7 @@ class SendGridEmailService:
         if response.status_code not in (200, 202):  # type: ignore[attr-defined]
             raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
+    @retry_on_sendgrid_error()
     async def send_appointment_notification(
         self,
         dealer_email: str,
@@ -258,6 +323,7 @@ class SendGridEmailService:
         if response.status_code not in (200, 202):  # type: ignore[attr-defined]
             raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
+    @retry_on_sendgrid_error()
     async def send_appointment_confirmation(
         self,
         buyer_email: str,
@@ -315,6 +381,7 @@ class SendGridEmailService:
         if response.status_code not in (200, 202):  # type: ignore[attr-defined]
             raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
+    @retry_on_sendgrid_error()
     async def send_appointment_reminder(
         self,
         email: str,
