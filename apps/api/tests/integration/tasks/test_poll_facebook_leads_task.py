@@ -174,6 +174,169 @@ class TestPollFacebookLeadsTaskLogic:
         assert result["leads_created"] <= result["leads_found"]
 
 
+class TestPollFacebookLeadsTaskPhase3Integration:
+    """Integration tests for Phase 3 (when DI wiring is complete).
+
+    These tests document the expected behavior once Phase 3 dependencies
+    are wired in. They are marked as skipped until Phase 3 implementation.
+    """
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_successful_polling_flow(self):
+        """Test successful polling flow with mocked dependencies.
+
+        Expected behavior:
+        - Query all active Facebook pages
+        - Fetch leads from Graph API for each page
+        - Check for duplicates
+        - Create new leads
+        - Return success status with accurate counts
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock IFacebookPageRepository.get_all_active() → returns 2 pages
+        # Mock FacebookGraphApiClient.get_leads() → returns 5 leads total
+        # Mock ILeadRepository.get_by_facebook_leadgen_id() → returns None (no duplicates)
+        # Mock CreateLeadUseCase.execute() → creates 5 leads
+        # Assert result["status"] == "success"
+        # Assert result["pages_polled"] == 2
+        # Assert result["leads_found"] == 5
+        # Assert result["leads_created"] == 5
+        # Assert result["errors"] == 0
+        pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_partial_failure_with_some_errors(self):
+        """Test polling with some Graph API failures.
+
+        Expected behavior:
+        - Poll 3 pages
+        - 2 pages succeed, 1 fails
+        - Return partial_failure status
+        - Error details list contains failure reason
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock 3 pages, 2 succeed, 1 raises exception
+        # Assert result["status"] == "partial_failure"
+        # Assert result["errors"] == 1
+        # Assert len(result["details"]) == 1
+        # Assert "Page {page_id}" in result["details"][0]
+        pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_duplicate_leads_not_created(self):
+        """Test that duplicate leads are not created.
+
+        Expected behavior:
+        - Fetch 5 leads from Graph API
+        - 3 already exist in database
+        - Only 2 new leads created
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock leads_found = 5
+        # Mock get_by_facebook_leadgen_id → returns existing lead for 3 of them
+        # Assert result["leads_found"] == 5
+        # Assert result["leads_created"] == 2
+        # Assert result["status"] == "success"
+        pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_no_active_pages_returns_success(self):
+        """Test polling when no active pages exist.
+
+        Expected behavior:
+        - Query returns 0 pages
+        - Return success status with 0 counts
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock get_all_active() → returns []
+        # Assert result["status"] == "success"
+        # Assert result["pages_polled"] == 0
+        # Assert result["leads_found"] == 0
+        # Assert result["leads_created"] == 0
+        pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_all_leads_are_duplicates(self):
+        """Test when all fetched leads already exist.
+
+        Expected behavior:
+        - Fetch 5 leads from Graph API
+        - All 5 already exist in database
+        - 0 new leads created
+        - Return success status
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock leads_found = 5
+        # Mock get_by_facebook_leadgen_id → returns existing lead for all 5
+        # Assert result["leads_found"] == 5
+        # Assert result["leads_created"] == 0
+        # Assert result["status"] == "success"
+        pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_graph_api_failure_returns_failure_status(self):
+        """Test complete Graph API failure.
+
+        Expected behavior:
+        - All pages fail to fetch leads
+        - Return failure status
+        - All errors logged in details
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock all pages raise exceptions
+        # Assert result["status"] == "failure"
+        # Assert result["leads_created"] == 0
+        # Assert len(result["details"]) == number_of_pages
+        pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_create_lead_failure_is_logged(self):
+        """Test that lead creation failures are logged and counted.
+
+        Expected behavior:
+        - Fetch 5 leads
+        - 1 lead creation fails
+        - Error is logged in details
+        - Other 4 leads are created successfully
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock leads_found = 5
+        # Mock CreateLeadUseCase.execute() → raises exception for 1 lead
+        # Assert result["leads_created"] == 4
+        # Assert result["errors"] == 1
+        # Assert len(result["details"]) == 1
+        # Assert result["status"] == "partial_failure"
+        pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_statistics_accuracy(self):
+        """Test that all statistics are accurately counted.
+
+        Expected behavior:
+        - Poll multiple pages with varying results
+        - All counts match expected values
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock 3 pages:
+        #   Page 1: 3 leads, 1 duplicate → 2 created
+        #   Page 2: 2 leads, 0 duplicates → 2 created
+        #   Page 3: fails with error
+        # Assert result["pages_polled"] == 3
+        # Assert result["leads_found"] == 5
+        # Assert result["leads_created"] == 4
+        # Assert result["errors"] == 1
+        # Assert result["status"] == "partial_failure"
+        pass
+
+
 __all__ = [
     "TestPollFacebookLeadsTask",
     "TestPollFacebookLeadsTaskStructure",
