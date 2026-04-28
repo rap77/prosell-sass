@@ -3,6 +3,7 @@
 import hmac
 import hashlib
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 from fastapi import status
@@ -10,6 +11,12 @@ from httpx import ASGITransport, AsyncClient
 
 from prosell.infrastructure.api.main import app
 
+
+
+@pytest.fixture
+def webhook_tenant_id() -> str:
+    """Tenant ID for webhook tests."""
+    return str(uuid4())
 
 @pytest.fixture
 def webhook_app_secret() -> str:
@@ -56,6 +63,14 @@ def generate_hub_signature(payload_dict: dict, app_secret: str) -> str:
     return f"sha256={signature.hex()}"
 
 
+
+def get_webhook_headers(signature: str, tenant_id: str) -> dict:
+    """Get standard headers for webhook requests."""
+    return {
+        "X-Hub-Signature": signature,
+        "X-Tenant-ID": tenant_id,
+    }
+
 class TestFacebookWebhookEndpoint:
     """Test suite for POST /api/v1/webhooks/facebook endpoint."""
 
@@ -63,6 +78,7 @@ class TestFacebookWebhookEndpoint:
         self,
         async_client: AsyncClient,
         webhook_app_secret: str,
+        webhook_tenant_id: str,
     ):
         """Test that webhook returns 200 OK on valid request."""
         # Arrange
@@ -88,7 +104,7 @@ class TestFacebookWebhookEndpoint:
         response = await async_client.post(
             "/api/v1/webhooks/facebook",
             json=payload,
-            headers={"X-Hub-Signature": signature},
+            headers=get_webhook_headers(signature, webhook_tenant_id),
         )
 
         # Assert
@@ -137,6 +153,7 @@ class TestFacebookWebhookEndpoint:
         self,
         async_client: AsyncClient,
         webhook_app_secret: str,
+        webhook_tenant_id: str,
     ):
         """Test that webhook returns 200 OK within 1 second (Facebook requirement)."""
         import time
@@ -164,7 +181,7 @@ class TestFacebookWebhookEndpoint:
         response = await async_client.post(
             "/api/v1/webhooks/facebook",
             json=payload,
-            headers={"X-Hub-Signature": signature},
+            headers=get_webhook_headers(signature, webhook_tenant_id),
         )
         end_time = time.time()
 
@@ -176,6 +193,7 @@ class TestFacebookWebhookEndpoint:
         self,
         async_client: AsyncClient,
         webhook_app_secret: str,
+        webhook_tenant_id: str,
     ):
         """Test that webhook correctly parses leadgen_id from payload."""
         # Arrange
@@ -200,7 +218,7 @@ class TestFacebookWebhookEndpoint:
         response = await async_client.post(
             "/api/v1/webhooks/facebook",
             json=payload,
-            headers={"X-Hub-Signature": signature},
+            headers=get_webhook_headers(signature, webhook_tenant_id),
         )
 
         # Assert
@@ -210,6 +228,7 @@ class TestFacebookWebhookEndpoint:
         self,
         async_client: AsyncClient,
         webhook_app_secret: str,
+        webhook_tenant_id: str,
     ):
         """Test that webhook handles payload without sender_id."""
         # Arrange
@@ -233,7 +252,7 @@ class TestFacebookWebhookEndpoint:
         response = await async_client.post(
             "/api/v1/webhooks/facebook",
             json=payload,
-            headers={"X-Hub-Signature": signature},
+            headers=get_webhook_headers(signature, webhook_tenant_id),
         )
 
         # Assert
