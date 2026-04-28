@@ -80,38 +80,37 @@ class ProcessFacebookWebhookUseCase:
             return
 
         # 3. Query buyer profile from Facebook Graph API
-        # Phase 3: Fetch buyer profile (name, email, phone) from Graph API
-        # Current (Phase 2): Use sender_id as fallback identifier
+        # Fetch buyer profile (name, email) from Graph API
 
         buyer_name = None
         buyer_email = None
         buyer_phone = None
 
         try:
-            # Phase 3 Implementation:
-            # buyer_profile = await self.facebook_client.get_buyer_profile(
-            #     sender_id=sender_id,
-            #     page_access_token=publication.page_access_token,
-            # )
-            # buyer_name = buyer_profile.name
-            # buyer_email = buyer_profile.email
-            # buyer_phone = buyer_profile.phone
+            buyer_profile = await self.facebook_client.get_buyer_profile(
+                sender_id=sender_id,
+                page_access_token=publication.page_access_token,
+            )
+            buyer_name = buyer_profile.name
+            buyer_email = buyer_profile.email
+            # Note: phone is not returned by Graph API /{sender_id} endpoint
+            # It would require additional Leadgen API calls (Phase 3 enhancement)
 
-            # Current: Use sender_id as identifier (Phase 3 will fetch full profile)
             logger.info(
-                f"Buyer profile fetch skipped for sender_id={sender_id} "
-                "(Phase 3: Graph API integration needed)"
+                f"Successfully fetched buyer profile for sender_id={sender_id}: "
+                f"name={buyer_name}, email={buyer_email}"
             )
         except Exception as e:
-            logger.error(f"Failed to fetch buyer profile: {e}")
-            # Continue with limited data
+            logger.error(f"Failed to fetch buyer profile for sender_id={sender_id}: {e}")
+            # Continue with limited data (sender_id fallback)
+            buyer_name = f"Facebook User {sender_id}"
 
         # 4. Check for duplicate lead (same buyer + vehicle within 24 hours)
-        # Note: When buyer_email and buyer_phone are both None (current Phase 2 state),
-        # duplicate detection is skipped. This is acceptable because:
+        # Note: If buyer_email is None (Graph API privacy settings), duplicate detection
+        # is skipped. This is acceptable because:
         # - sender_id is unique per Facebook user
-        # - buyer_name will include sender_id for identification: "Facebook User {sender_id}"
-        # - Phase 3 will add proper duplicate detection via facebook_sender_id field
+        # - buyer_name includes sender_id for identification: "Facebook User {sender_id}" or actual name
+        # - Future enhancement: Add facebook_sender_id field to Lead entity for exact deduplication
         existing_lead = await self.lead_repository.get_by_buyer_and_vehicle(
             buyer_email=buyer_email,
             buyer_phone=buyer_phone,
