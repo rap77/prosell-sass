@@ -1,6 +1,7 @@
 """Repository interfaces (Ports) for ProSell SaaS."""
 
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
+from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.repositories.role_repository import AbstractRoleRepository
@@ -30,4 +31,5 @@ __all__ = [
     "AbstractVehicleRepository",
     "AbstractWalletRepository",
     "AbstractWalletTransactionRepository",
+    "AbstractLeadRepository",
 ]
