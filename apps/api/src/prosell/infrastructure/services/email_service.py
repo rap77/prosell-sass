@@ -185,8 +185,11 @@ class SendGridEmailService:
         sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
         response = await sg.send(message)  # type: ignore[attr-defined]
 
-        # Log response for debugging
-        if response.status_code not in (200, 202):  # type: ignore[attr-defined]
+        # Log delivery status
+        if response.status_code in (200, 202):  # type: ignore[attr-defined]
+            logger.info(f"Email sent successfully: type=verification, to={email}, status={response.status_code}")  # type: ignore[attr-defined]
+        else:
+            logger.error(f"Email delivery failed: type=verification, to={email}, status={response.status_code}, body={response.body}")  # type: ignore[attr-defined]
             raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
     @retry_on_sendgrid_error()
@@ -227,8 +230,11 @@ class SendGridEmailService:
         sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
         response = await sg.send(message)  # type: ignore[attr-defined]
 
-        # Log response for debugging
-        if response.status_code not in (200, 202):  # type: ignore[attr-defined]
+        # Log delivery status
+        if response.status_code in (200, 202):  # type: ignore[attr-defined]
+            logger.info(f"Email sent successfully: type=password_reset, to={email}, status={response.status_code}")  # type: ignore[attr-defined]
+        else:
+            logger.error(f"Email delivery failed: type=password_reset, to={email}, status={response.status_code}, body={response.body}")  # type: ignore[attr-defined]
             raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
     @retry_on_sendgrid_error()
@@ -261,8 +267,11 @@ class SendGridEmailService:
         sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
         response = await sg.send(message)  # type: ignore[attr-defined]
 
-        # Log response for debugging
-        if response.status_code not in (200, 202):  # type: ignore[attr-defined]
+        # Log delivery status
+        if response.status_code in (200, 202):  # type: ignore[attr-defined]
+            logger.info(f"Email sent successfully: type=2fa_enabled, to={email}, status={response.status_code}")  # type: ignore[attr-defined]
+        else:
+            logger.error(f"Email delivery failed: type=2fa_enabled, to={email}, status={response.status_code}, body={response.body}")  # type: ignore[attr-defined]
             raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
     @retry_on_sendgrid_error()
@@ -319,8 +328,11 @@ class SendGridEmailService:
         sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
         response = await sg.send(message)  # type: ignore[attr-defined]
 
-        # Log response for debugging
-        if response.status_code not in (200, 202):  # type: ignore[attr-defined]
+        # Log delivery status
+        if response.status_code in (200, 202):  # type: ignore[attr-defined]
+            logger.info(f"Email sent successfully: type=appointment_notification, to={dealer_email}, buyer={buyer_name}, vehicle={vehicle_info}, status={response.status_code}")  # type: ignore[attr-defined]
+        else:
+            logger.error(f"Email delivery failed: type=appointment_notification, to={dealer_email}, status={response.status_code}, body={response.body}")  # type: ignore[attr-defined]
             raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
     @retry_on_sendgrid_error()
@@ -377,8 +389,11 @@ class SendGridEmailService:
         sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
         response = await sg.send(message)  # type: ignore[attr-defined]
 
-        # Log response for debugging
-        if response.status_code not in (200, 202):  # type: ignore[attr-defined]
+        # Log delivery status
+        if response.status_code in (200, 202):  # type: ignore[attr-defined]
+            logger.info(f"Email sent successfully: type=appointment_confirmation, to={buyer_email}, dealer={dealer_name}, vehicle={vehicle_info}, status={response.status_code}")  # type: ignore[attr-defined]
+        else:
+            logger.error(f"Email delivery failed: type=appointment_confirmation, to={buyer_email}, status={response.status_code}, body={response.body}")  # type: ignore[attr-defined]
             raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
     @retry_on_sendgrid_error()
@@ -442,8 +457,11 @@ class SendGridEmailService:
         sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
         response = await sg.send(message)  # type: ignore[attr-defined]
 
-        # Log response for debugging
-        if response.status_code not in (200, 202):  # type: ignore[attr-defined]
+        # Log delivery status
+        if response.status_code in (200, 202):  # type: ignore[attr-defined]
+            logger.info(f"Email sent successfully: type=appointment_reminder, to={email}, person_type={person_type}, status={response.status_code}")  # type: ignore[attr-defined]
+        else:
+            logger.error(f"Email delivery failed: type=appointment_reminder, to={email}, status={response.status_code}, body={response.body}")  # type: ignore[attr-defined]
             raise Exception(f"SendGrid error: {response.status_code} - {response.body}")  # type: ignore[attr-defined]
 
 
