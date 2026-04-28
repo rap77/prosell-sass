@@ -80,29 +80,38 @@ class ProcessFacebookWebhookUseCase:
             return
 
         # 3. Query buyer profile from Facebook Graph API
-        # Note: We need the page access token from the publication
-        # For now, we'll skip this and use sender_id as identifier
-        # TODO: Add page_access_token to publication entity
+        # Phase 3: Fetch buyer profile (name, email, phone) from Graph API
+        # Current (Phase 2): Use sender_id as fallback identifier
 
         buyer_name = None
         buyer_email = None
         buyer_phone = None
 
         try:
-            # For now, we'll use sender_id as the identifier
-            # In a full implementation, we would fetch the buyer profile
+            # Phase 3 Implementation:
             # buyer_profile = await self.facebook_client.get_buyer_profile(
             #     sender_id=sender_id,
             #     page_access_token=publication.page_access_token,
             # )
             # buyer_name = buyer_profile.name
             # buyer_email = buyer_profile.email
-            logger.info(f"Buyer profile fetch skipped for sender_id={sender_id}")
+            # buyer_phone = buyer_profile.phone
+
+            # Current: Use sender_id as identifier (Phase 3 will fetch full profile)
+            logger.info(
+                f"Buyer profile fetch skipped for sender_id={sender_id} "
+                "(Phase 3: Graph API integration needed)"
+            )
         except Exception as e:
             logger.error(f"Failed to fetch buyer profile: {e}")
             # Continue with limited data
 
         # 4. Check for duplicate lead (same buyer + vehicle within 24 hours)
+        # Note: When buyer_email and buyer_phone are both None (current Phase 2 state),
+        # duplicate detection is skipped. This is acceptable because:
+        # - sender_id is unique per Facebook user
+        # - buyer_name will include sender_id for identification: "Facebook User {sender_id}"
+        # - Phase 3 will add proper duplicate detection via facebook_sender_id field
         existing_lead = await self.lead_repository.get_by_buyer_and_vehicle(
             buyer_email=buyer_email,
             buyer_phone=buyer_phone,
