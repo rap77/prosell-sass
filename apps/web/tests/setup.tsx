@@ -48,6 +48,56 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenuSeparator: () => <hr data-testid="dropdown-separator" />,
 }))
 
+// Mock Radix UI Select components globally to fix hasPointerCapture error
+vi.mock('@/components/ui/select', () => ({
+  Select: ({ children, value, onValueChange, disabled }: {
+    children?: React.ReactNode
+    value?: string
+    onValueChange?: (value: string) => void
+    disabled?: boolean
+  }) => (
+    <div data-testid="select" data-value={value} data-disabled={disabled}>
+      {React.Children.map(children, (child) => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child as React.ReactElement<any>, {
+            value,
+            onValueChange,
+            disabled,
+          })
+        }
+        return child
+      })}
+    </div>
+  ),
+  SelectTrigger: ({ children, ...props }: any) => (
+    <button data-testid="select-trigger" type="button" {...props}>
+      {children}
+    </button>
+  ),
+  SelectValue: ({ placeholder }: { placeholder?: string }) => (
+    <span data-testid="select-value">{placeholder}</span>
+  ),
+  SelectContent: ({ children }: { children?: React.ReactNode }) => (
+    <div data-testid="select-content" role="listbox">
+      {children}
+    </div>
+  ),
+  SelectItem: ({ children, value, onClick }: {
+    children?: React.ReactNode
+    value: string
+    onClick?: () => void
+  }) => (
+    <div
+      data-testid="select-item"
+      data-value={value}
+      role="option"
+      onClick={() => onClick?.(value)}
+    >
+      {children}
+    </div>
+  ),
+}))
+
 // Mock cmdk (Command Palette) components globally
 vi.mock('cmdk', () => ({
   CommandDialog: ({ children, open, onOpenChange }: {

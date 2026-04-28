@@ -26,17 +26,34 @@ import {
 } from "@/components/ui/select";
 import { useDealers } from "@/lib/api/dealers";
 import { useCreateAppointment } from "@/lib/api/appointments";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle, AlertTriangle } from "lucide-react";
 
 /**
- * Appointment form schema validation
+ * Helper function to check if a date string is a weekend
+ * Returns true for Sunday (0) or Saturday (6)
  */
-const appointmentFormSchema = z.object({
-  dealer_id: z.string().min(1, "Dealer is required"),
-  date: z.string().min(1, "Date is required"),
-  time: z.string().min(1, "Time is required"),
-  notes: z.string().optional(),
-});
+function isWeekend(dateString: string): boolean {
+  const date = new Date(dateString);
+  const day = date.getDay();
+  return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+}
+
+/**
+ * Appointment form schema validation with time constraints
+ * - Business hours: Mon-Fri, 9am-6pm
+ * - Weekends are not allowed
+ */
+const appointmentFormSchema = z
+  .object({
+    dealer_id: z.string().min(1, "Dealer is required"),
+    date: z.string().min(1, "Date is required"),
+    time: z.string().min(1, "Time is required"),
+    notes: z.string().optional(),
+  })
+  .refine((data) => !isWeekend(data.date), {
+    message: "Appointments cannot be scheduled on weekends (Saturday/Sunday)",
+    path: ["date"],
+  });
 
 type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
 
@@ -71,6 +88,12 @@ export function AppointmentForm({
   const { mutateAsync: createAppointment, isPending: isCreating } =
     useCreateAppointment();
 
+  // State for error display (A4.33)
+  const [submitError, setSubmitError] = useState<{
+    type: "conflict" | "validation";
+    message: string;
+  } | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -88,15 +111,19 @@ export function AppointmentForm({
     },
   });
 
-  // Reset form when modal opens/closes
+  // Reset form and error when modal opens/closes
   useEffect(() => {
     if (!open) {
       reset();
+      setSubmitError(null);
     }
   }, [open, reset]);
 
   const onSubmit = async (data: AppointmentFormValues) => {
     try {
+      // Clear previous errors
+      setSubmitError(null);
+
       // Combine date and time into ISO datetime string
       const scheduled_at = new Date(`${data.date}T${data.time}`).toISOString();
 
@@ -110,9 +137,32 @@ export function AppointmentForm({
 
       onSuccess();
       onClose();
-    } catch (error) {
-      // Error is handled by the mutation hook
+    } catch (error: any) {
+      // A4.33: Display conflict/validation warnings
       console.error("Failed to create appointment:", error);
+
+      // Check if error has status code (from backend response)
+      const status = (error as any).status || 500;
+
+      if (status === 409) {
+        // Conflict - dealer already has appointment
+        setSubmitError({
+          type: "conflict",
+          message: error.message || "This dealer already has an appointment at this time.",
+        });
+      } else if (status === 400) {
+        // Validation error - business hours, weekend, etc.
+        setSubmitError({
+          type: "validation",
+          message: error.message || "Invalid appointment time.",
+        });
+      } else {
+        // Generic error - fallback to toast
+        setSubmitError({
+          type: "validation",
+          message: "Failed to schedule appointment. Please try again.",
+        });
+      }
     }
   };
 
@@ -142,6 +192,44 @@ export function AppointmentForm({
             Select a dealer and preferred time slot for the appointment.
           </DialogDescription>
         </DialogHeader>
+
+        {/* A4.33: Error banner for conflicts and validation errors */}
+        {submitError && (
+          <div
+            data-testid="appointment-error-banner"
+            className={`flex items-start gap-3 p-4 rounded-lg border ${
+              submitError.type === "conflict"
+                ? "bg-red-50 border-red-200 text-red-900"
+                : "bg-yellow-50 border-yellow-200 text-yellow-900"
+            }`}
+          >
+            {submitError.type === "conflict" ? (
+              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            ) : (
+              <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            )}
+            <div className="flex-1">
+              <p className="font-medium text-sm">
+                {submitError.type === "conflict"
+                  ? "Scheduling Conflict"
+                  : "Validation Error"}
+              </p>
+              <p className="text-sm mt-1">{submitError.message}</p>
+              <p className="text-xs mt-2 opacity-90">
+                {submitError.type === "conflict"
+                  ? "Please choose a different time or dealer."
+                  : "Please choose a weekday within business hours (9:00 AM - 6:00 PM)."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSubmitError(null)}
+              className="text-current opacity-70 hover:opacity-100"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Dealer Selection */}
@@ -182,6 +270,9 @@ export function AppointmentForm({
               {...register("date")}
               className={errors.date ? "border-red-500" : ""}
             />
+            <p className="text-xs text-muted-foreground">
+              Business hours: Monday-Friday only
+            </p>
             {errors.date && (
               <p className="text-sm text-red-500">{errors.date.message}</p>
             )}
@@ -221,6 +312,9 @@ export function AppointmentForm({
                 })}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Business hours: 9:00 AM - 6:00 PM
+            </p>
             {errors.time && (
               <p className="text-sm text-red-500">{errors.time.message}</p>
             )}

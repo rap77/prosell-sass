@@ -150,7 +150,9 @@ export function useCreateAppointment() {
 
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: "Failed to create appointment" }));
-        throw new Error(error.message || "Failed to create appointment");
+        const err = new Error(error.message || "Failed to create appointment") as any;
+        err.status = res.status; // A4.33: Preserve status code for error handling
+        throw err;
       }
 
       const data = (await res.json()) as BackendAppointmentResponse;
@@ -167,8 +169,11 @@ export function useCreateAppointment() {
       toast.success("Appointment scheduled successfully");
     },
     onError: (error) => {
-      // Show error toast
-      toast.error(error.message || "Failed to schedule appointment");
+      // A4.33: Don't show toast for validation/conflict errors (handled by form)
+      const err = error as any;
+      if (err.status !== 400 && err.status !== 409) {
+        toast.error(error.message || "Failed to schedule appointment");
+      }
     },
   });
 }
