@@ -65,6 +65,23 @@ class IPublicationRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_by_fb_listing_id(
+        self,
+        fb_listing_id: str,
+        tenant_id: UUID | None = None,
+    ) -> Publication | None:
+        """Get publication by Facebook listing ID.
+
+        Args:
+            fb_listing_id: Facebook listing ID from webhook payload
+            tenant_id: Optional tenant ID for multi-tenant isolation
+
+        Returns:
+            Publication entity or None if not found
+        """
+        pass
+
+    @abstractmethod
     async def get_approaching_expiry(self, hours_before: int = 48) -> list[Publication]:
         """Get PUBLISHED listings expiring within the warning window.
 

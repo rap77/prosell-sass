@@ -54,6 +54,42 @@ class SqlAlchemyPublicationRepository(IPublicationRepository):
         result = await self.session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
+    async def get_by_fb_listing_id(
+        self,
+        fb_listing_id: str,
+        tenant_id: UUID | None = None,
+    ) -> Publication | None:
+        """Get publication by Facebook listing ID.
+
+        Args:
+            fb_listing_id: Facebook listing ID from webhook payload
+            tenant_id: Optional tenant ID for multi-tenant isolation
+
+        Returns:
+            Publication entity or None if not found
+
+        Raises:
+            ValueError: If fb_listing_id is None or empty
+        """
+        if not fb_listing_id:
+            msg = "fb_listing_id cannot be None or empty"
+            raise ValueError(msg)
+
+        stmt = select(PublicationModel).where(
+            PublicationModel.fb_listing_id == fb_listing_id
+        )
+
+        # Filter by tenant_id if provided (for multi-tenant isolation)
+        if tenant_id is not None:
+            stmt = stmt.where(PublicationModel.tenant_id == tenant_id)
+
+        # Order by created_at desc to get most recent if duplicates exist
+        stmt = stmt.order_by(PublicationModel.created_at.desc())
+
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
     async def get_approaching_expiry(self, hours_before: int = 48) -> list[Publication]:
         """Get PUBLISHED listings expiring within the warning window.
 
