@@ -5,7 +5,6 @@ from uuid import UUID
 
 from sqlalchemy import and_, func, select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.entities.lead_audit_log import LeadAuditLog
@@ -91,30 +90,24 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         model = result.scalar_one_or_none()
 
         if not model:
-            raise LeadNotFoundException(lead_id=lead_id)
+            raise LeadNotFoundException(f"Lead not found: {lead_id}")
 
         # Convert to entity to validate transition
         lead = self._to_entity(model)
+
+        # Capture old_status BEFORE transition mutates lead.status
+        old_status = lead.status
         lead.transition_to(new_status)
 
         # Update model
         model.status = new_status.value
         model.updated_at = datetime.now(timezone.utc)
 
-        # Create audit log
+        # Create audit log with correct old_status
         audit_log = LeadAuditLog.create(
             lead_id=lead_id,
             tenant_id=tenant_id,
-            old_status=LeadStatus(model.status if model.status != new_status.value else new_status.value),  # This will be old status after transition
-            new_status=new_status,
-            changed_by_user_id=changed_by_user_id,
-            reason=reason,
-        )
-        # Fix: old_status should be the status before change
-        audit_log = LeadAuditLog.create(
-            lead_id=lead_id,
-            tenant_id=tenant_id,
-            old_status=LeadStatus(lead.status.value if lead.status.value != new_status.value else new_status.value),
+            old_status=old_status,
             new_status=new_status,
             changed_by_user_id=changed_by_user_id,
             reason=reason,

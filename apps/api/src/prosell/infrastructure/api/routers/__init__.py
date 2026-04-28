@@ -13,10 +13,12 @@ from prosell.infrastructure.api.routers.team_router import router as team_router
 from prosell.infrastructure.api.routers.user_dealer_router import router as user_dealer_router
 from prosell.infrastructure.api.routers.vehicle_router import router as vehicle_router
 from prosell.infrastructure.api.routers.admin_router import router as admin_router
+from prosell.infrastructure.api.routers.lead_router import router as lead_router
 from prosell.infrastructure.api.routers.wallet_router import router as wallet_router
 
 __all__ = [
     "admin_router",
+    "lead_router",
     "auth_router",
     "category_router",
     "dealer_router",

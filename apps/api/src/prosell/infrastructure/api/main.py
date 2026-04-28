@@ -45,6 +45,7 @@ from prosell.infrastructure.api.routers import (
     facebook_router,
     health_router,
     image_router,
+    lead_router,
     org_router,
     product_router,
     publisher_router,
@@ -255,6 +256,12 @@ app.include_router(
     admin_router,
     prefix="/api/v1/admin",
     tags=["Admin"],
+)
+
+app.include_router(
+    lead_router,
+    prefix="/api/v1/leads",
+    tags=["Leads"],
 )
 
 

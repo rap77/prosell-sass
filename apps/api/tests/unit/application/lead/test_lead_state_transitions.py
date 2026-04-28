@@ -1,0 +1,391 @@
+"""Unit tests for lead state transitions and use case business logic.
+
+These tests use mock repositories — no database required.
+"""
+
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
+from uuid import uuid4
+
+import pytest
+
+from prosell.application.dto.lead.request import (
+    CreateLeadRequest,
+    ListLeadsRequest,
+    UpdateLeadStatusRequest,
+)
+from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
+from prosell.application.use_cases.lead.get_lead_details import GetLeadDetailsUseCase
+from prosell.application.use_cases.lead.list_leads import ListLeadsUseCase
+from prosell.application.use_cases.lead.update_lead_status import UpdateLeadStatusUseCase
+from prosell.domain.entities.lead import Lead, LeadStatus
+from prosell.domain.entities.lead_audit_log import LeadAuditLog
+from prosell.domain.entities.role import Role, RoleType
+from prosell.domain.entities.user import User, UserStatus
+from prosell.domain.exceptions.lead_exceptions import (
+    DuplicateLeadException,
+    LeadNotFoundException,
+    LeadStateTransitionException,
+)
+
+
+# =============================================================================
+# HELPERS
+# =============================================================================
+
+
+def make_lead(
+    status: LeadStatus = LeadStatus.NEW,
+    tenant_id=None,
+    vendedor_id=None,
+) -> Lead:
+    """Create a test Lead entity."""
+    tid = tenant_id or uuid4()
+    return Lead(
+        id=uuid4(),
+        tenant_id=tid,
+        buyer_name="Juan Pérez",
+        buyer_email="juan@example.com",
+        buyer_phone="+59899000000",
+        vehicle_id=uuid4(),
+        vendedor_id=vendedor_id or uuid4(),
+        message="Interested",
+        source="manual",
+        status=status,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+
+
+def make_user(
+    role_type: RoleType = RoleType.SALES_AGENT,
+    tenant_id=None,
+) -> User:
+    """Create a test User entity."""
+    tid = tenant_id or uuid4()
+    role = Role(
+        id=uuid4(),
+        role_type=role_type,
+        name=role_type.value,
+        is_system_role=True,
+    )
+    return User(
+        id=uuid4(),
+        email="user@example.com",
+        full_name="Test User",
+        tenant_id=tid,
+        status=UserStatus.ACTIVE,
+        email_verified=True,
+        roles=[role],
+    )
+
+
+# =============================================================================
+# CreateLeadUseCase unit tests
+# =============================================================================
+
+
+class TestCreateLeadUseCase:
+    """Unit tests for CreateLeadUseCase."""
+
+    @pytest.fixture
+    def repo(self):
+        """Mock lead repository."""
+        r = AsyncMock()
+        r.get_by_buyer_and_vehicle = AsyncMock(return_value=None)
+        r.create = AsyncMock(side_effect=lambda lead: lead)
+        return r
+
+    @pytest.mark.asyncio
+    async def test_create_lead_success(self, repo):
+        """Should create lead when no duplicate exists."""
+        use_case = CreateLeadUseCase(repo)
+        request = CreateLeadRequest(buyer_name="Ana García", buyer_email="ana@example.com")
+        tenant_id = uuid4()
+
+        result = await use_case.execute(request, tenant_id)
+
+        assert result.buyer_name == "Ana García"
+        assert result.buyer_email == "ana@example.com"
+        assert result.status == LeadStatus.NEW
+        assert result.tenant_id == tenant_id
+        repo.create.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_create_lead_duplicate_raises(self, repo):
+        """Should raise DuplicateLeadException when duplicate detected."""
+        existing = make_lead()
+        repo.get_by_buyer_and_vehicle = AsyncMock(return_value=existing)
+
+        use_case = CreateLeadUseCase(repo)
+        request = CreateLeadRequest(buyer_name="Ana García", buyer_email="ana@example.com")
+
+        with pytest.raises(DuplicateLeadException):
+            await use_case.execute(request, uuid4())
+
+        repo.create.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_create_lead_source_defaults_to_manual(self, repo):
+        """Source should default to 'manual' when not specified."""
+        use_case = CreateLeadUseCase(repo)
+        request = CreateLeadRequest(buyer_name="Carlos")
+        result = await use_case.execute(request, uuid4())
+
+        assert result.source == "manual"
+
+    @pytest.mark.asyncio
+    async def test_create_lead_tenant_id_is_from_context(self, repo):
+        """tenant_id must come from the JWT context, not the request."""
+        use_case = CreateLeadUseCase(repo)
+        tenant_id = uuid4()
+        request = CreateLeadRequest(buyer_name="Carlos")
+        result = await use_case.execute(request, tenant_id)
+
+        assert result.tenant_id == tenant_id
+
+
+# =============================================================================
+# UpdateLeadStatusUseCase unit tests
+# =============================================================================
+
+
+class TestUpdateLeadStatusUseCase:
+    """Unit tests for UpdateLeadStatusUseCase."""
+
+    def _make_repo(self, lead: Lead | None = None) -> AsyncMock:
+        r = AsyncMock()
+        r.get_by_id = AsyncMock(return_value=lead)
+        r.update_status = AsyncMock(side_effect=lambda lead_id, tenant_id, new_status, **kw: Lead(
+            id=lead_id,
+            tenant_id=tenant_id,
+            buyer_name="Test",
+            status=new_status,
+            source="manual",
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        ) if lead else None)
+        return r
+
+    @pytest.mark.asyncio
+    async def test_update_status_success(self):
+        """Should update status for valid transition."""
+        lead = make_lead(status=LeadStatus.NEW)
+        repo = AsyncMock()
+        repo.get_by_id = AsyncMock(return_value=lead)
+        repo.update_status = AsyncMock(return_value=make_lead(status=LeadStatus.CONTACTED))
+
+        use_case = UpdateLeadStatusUseCase(repo)
+        request = UpdateLeadStatusRequest(new_status=LeadStatus.CONTACTED)
+        result = await use_case.execute(lead.id, request, lead.tenant_id)
+
+        assert result.status == LeadStatus.CONTACTED
+        repo.update_status.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_update_status_not_found_raises(self):
+        """Should raise LeadNotFoundException when lead doesn't exist."""
+        repo = AsyncMock()
+        repo.get_by_id = AsyncMock(return_value=None)
+
+        use_case = UpdateLeadStatusUseCase(repo)
+        request = UpdateLeadStatusRequest(new_status=LeadStatus.CONTACTED)
+
+        with pytest.raises(LeadNotFoundException):
+            await use_case.execute(uuid4(), request, uuid4())
+
+        repo.update_status.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_update_status_invalid_transition_raises(self):
+        """Should raise LeadStateTransitionException for invalid transition."""
+        lead = make_lead(status=LeadStatus.NEW)
+        repo = AsyncMock()
+        repo.get_by_id = AsyncMock(return_value=lead)
+
+        use_case = UpdateLeadStatusUseCase(repo)
+        request = UpdateLeadStatusRequest(new_status=LeadStatus.APPOINTMENT_SET)
+
+        with pytest.raises(LeadStateTransitionException) as exc_info:
+            await use_case.execute(lead.id, request, lead.tenant_id)
+
+        assert "new" in str(exc_info.value)
+        assert "appointment_set" in str(exc_info.value)
+        repo.update_status.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_update_status_lost_is_terminal(self):
+        """Should raise exception when trying to transition from LOST."""
+        lead = make_lead(status=LeadStatus.LOST)
+        repo = AsyncMock()
+        repo.get_by_id = AsyncMock(return_value=lead)
+
+        use_case = UpdateLeadStatusUseCase(repo)
+        request = UpdateLeadStatusRequest(new_status=LeadStatus.CONTACTED)
+
+        with pytest.raises(LeadStateTransitionException):
+            await use_case.execute(lead.id, request, lead.tenant_id)
+
+
+# =============================================================================
+# ListLeadsUseCase unit tests
+# =============================================================================
+
+
+class TestListLeadsUseCase:
+    """Unit tests for ListLeadsUseCase role-based filtering."""
+
+    @pytest.mark.asyncio
+    async def test_sales_agent_sees_own_leads(self):
+        """SALES_AGENT should only see leads assigned to themselves."""
+        tenant_id = uuid4()
+        user = make_user(RoleType.SALES_AGENT, tenant_id)
+        leads = [make_lead(tenant_id=tenant_id, vendedor_id=user.id)]
+
+        repo = AsyncMock()
+        repo.list_by_vendedor = AsyncMock(return_value=(leads, 1))
+        repo.list_by_manager = AsyncMock(return_value=([], 0))
+
+        use_case = ListLeadsUseCase(repo)
+        request = ListLeadsRequest(limit=10, offset=0)
+        result = await use_case.execute(user, request)
+
+        repo.list_by_vendedor.assert_called_once_with(
+            tenant_id=tenant_id,
+            vendedor_id=user.id,
+            limit=10,
+            offset=0,
+            status=None,
+        )
+        repo.list_by_manager.assert_not_called()
+        assert result.total == 1
+
+    @pytest.mark.asyncio
+    async def test_manager_sees_all_leads(self):
+        """MANAGER should see all tenant leads."""
+        tenant_id = uuid4()
+        user = make_user(RoleType.MANAGER, tenant_id)
+        leads = [make_lead(tenant_id=tenant_id), make_lead(tenant_id=tenant_id)]
+
+        repo = AsyncMock()
+        repo.list_by_manager = AsyncMock(return_value=(leads, 2))
+        repo.list_by_vendedor = AsyncMock(return_value=([], 0))
+
+        use_case = ListLeadsUseCase(repo)
+        result = await use_case.execute(user, ListLeadsRequest())
+
+        repo.list_by_manager.assert_called_once()
+        repo.list_by_vendedor.assert_not_called()
+        assert result.total == 2
+
+    @pytest.mark.asyncio
+    async def test_super_admin_sees_all_leads(self):
+        """SUPER_ADMIN should see all tenant leads."""
+        tenant_id = uuid4()
+        user = make_user(RoleType.SUPER_ADMIN, tenant_id)
+
+        repo = AsyncMock()
+        repo.list_by_manager = AsyncMock(return_value=([], 0))
+        repo.list_by_vendedor = AsyncMock(return_value=([], 0))
+
+        use_case = ListLeadsUseCase(repo)
+        await use_case.execute(user, ListLeadsRequest())
+
+        repo.list_by_manager.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_user_without_roles_treated_as_vendedor(self):
+        """User with no roles defaults to vendedor filtering."""
+        user = User(
+            id=uuid4(),
+            email="user@example.com",
+            full_name="No Roles",
+            tenant_id=uuid4(),
+            status=UserStatus.ACTIVE,
+            email_verified=True,
+            roles=[],
+        )
+
+        repo = AsyncMock()
+        repo.list_by_vendedor = AsyncMock(return_value=([], 0))
+        repo.list_by_manager = AsyncMock(return_value=([], 0))
+
+        use_case = ListLeadsUseCase(repo)
+        await use_case.execute(user, ListLeadsRequest())
+
+        repo.list_by_vendedor.assert_called_once()
+        repo.list_by_manager.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_pagination_params_passed_through(self):
+        """Pagination params should be forwarded to the repository."""
+        tenant_id = uuid4()
+        user = make_user(RoleType.SALES_AGENT, tenant_id)
+
+        repo = AsyncMock()
+        repo.list_by_vendedor = AsyncMock(return_value=([], 0))
+
+        use_case = ListLeadsUseCase(repo)
+        await use_case.execute(user, ListLeadsRequest(limit=5, offset=10))
+
+        call_kwargs = repo.list_by_vendedor.call_args.kwargs
+        assert call_kwargs["limit"] == 5
+        assert call_kwargs["offset"] == 10
+
+
+# =============================================================================
+# GetLeadDetailsUseCase unit tests
+# =============================================================================
+
+
+class TestGetLeadDetailsUseCase:
+    """Unit tests for GetLeadDetailsUseCase."""
+
+    @pytest.mark.asyncio
+    async def test_get_lead_details_success(self):
+        """Should return lead with audit logs."""
+        lead = make_lead()
+        audit_log = LeadAuditLog.create(
+            lead_id=lead.id,
+            tenant_id=lead.tenant_id,
+            old_status=LeadStatus.NEW,
+            new_status=LeadStatus.CONTACTED,
+        )
+
+        repo = AsyncMock()
+        repo.get_by_id = AsyncMock(return_value=lead)
+        repo.get_audit_logs = AsyncMock(return_value=[audit_log])
+
+        use_case = GetLeadDetailsUseCase(repo)
+        result = await use_case.execute(lead.id, lead.tenant_id)
+
+        assert result.lead.id == lead.id
+        assert len(result.audit_logs) == 1
+        assert result.audit_logs[0].new_status == LeadStatus.CONTACTED
+
+    @pytest.mark.asyncio
+    async def test_get_lead_details_not_found(self):
+        """Should raise LeadNotFoundException when lead not found."""
+        repo = AsyncMock()
+        repo.get_by_id = AsyncMock(return_value=None)
+
+        use_case = GetLeadDetailsUseCase(repo)
+
+        with pytest.raises(LeadNotFoundException):
+            await use_case.execute(uuid4(), uuid4())
+
+        repo.get_audit_logs.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_get_lead_details_empty_audit_logs(self):
+        """Should return empty audit logs for new lead."""
+        lead = make_lead()
+
+        repo = AsyncMock()
+        repo.get_by_id = AsyncMock(return_value=lead)
+        repo.get_audit_logs = AsyncMock(return_value=[])
+
+        use_case = GetLeadDetailsUseCase(repo)
+        result = await use_case.execute(lead.id, lead.tenant_id)
+
+        assert len(result.audit_logs) == 0
