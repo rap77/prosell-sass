@@ -2,6 +2,7 @@
 
 import hmac
 import hashlib
+import json
 import logging
 from typing import Annotated
 from uuid import UUID
@@ -9,7 +10,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel
 
+from prosell.application.use_cases.facebook_webhook_use_case import ProcessFacebookWebhookUseCase
 from prosell.core.config import settings
+from prosell.infrastructure.api.di import get_process_facebook_webhook_use_case
 
 
 logger = logging.getLogger(__name__)
@@ -59,6 +62,10 @@ async def get_facebook_app_secret() -> str:
     status_code=status.HTTP_200_OK,
     summary="Facebook Lead Webhook",
     responses={
+        400: {
+            "description": "Bad Request - Invalid JSON or missing X-Tenant-ID",
+            "content": {"application/json": {"example": {"detail": "Invalid JSON payload"}}},
+        },
         403: {
             "description": "Forbidden - Missing or invalid X-Hub-Signature",
             "content": {"application/json": {"example": {"detail": "Missing X-Hub-Signature header"}}},
@@ -69,6 +76,7 @@ async def facebook_lead_webhook(
     request: Request,
     x_hub_signature: str | None = Header(default=None, alias="X-Hub-Signature"),
     facebook_app_secret: Annotated[str, Depends(get_facebook_app_secret)] = "",
+    process_webhook_use_case: ProcessFacebookWebhookUseCase = Depends(get_process_facebook_webhook_use_case),
 ) -> WebhookResponse:
     """
     Receive Facebook lead webhook notifications.
@@ -109,21 +117,53 @@ async def facebook_lead_webhook(
 
     # Parse payload
     try:
-        import json
         payload = json.loads(payload_bytes.decode("utf-8"))
         logger.info(f"Facebook webhook payload received: {payload.get('leadgen_id')}")
-    except Exception as e:
+    except json.JSONDecodeError as e:
         logger.error(f"Failed to parse Facebook webhook payload: {e}")
-        # Invalid JSON, but still return 200 to avoid Facebook retries
-        return WebhookResponse(status="received")
+        # Return 400 for invalid JSON (security consideration)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid JSON payload",
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error parsing Facebook webhook payload: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to parse payload",
+        )
 
-    # Process webhook asynchronously (background task)
-    # Note: For now, we'll process synchronously within the 1-second window
+    # Extract tenant_id from JWT (via X-Tenant-ID header for webhooks)
+    # Webhooks don't have JWT auth, so we use a header-based approach
+    tenant_id_header = request.headers.get("X-Tenant-ID")
+    if not tenant_id_header:
+        logger.warning("Facebook webhook missing X-Tenant-ID header")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing X-Tenant-ID header",
+        )
+
+    try:
+        tenant_id = UUID(tenant_id_header)
+    except ValueError:
+        logger.warning(f"Invalid X-Tenant-ID header: {tenant_id_header}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid X-Tenant-ID header",
+        )
+
+    # Process webhook (synchronously for now, within 1-second window)
     # In production, this should be a background task (Taskiq, Celery, etc.)
     # TODO: Implement Taskiq background task (subtask A2.14)
+    try:
+        # Process the webhook payload
+        await process_webhook_use_case.execute(payload=payload, tenant_id=tenant_id)
 
-    # For immediate implementation, we'll return quickly and process later
-    # The webhook router should not block on lead processing
+        logger.info(f"Facebook webhook processed successfully: leadgen_id={payload.get('leadgen_id')}")
+    except Exception as e:
+        # Log error but still return 200 (Facebook retry logic)
+        # The lead processing can be retried via polling task
+        logger.error(f"Failed to process Facebook webhook: {e}", exc_info=True)
 
     # Quick response (within 1 second)
     logger.info("Facebook webhook acknowledged")
