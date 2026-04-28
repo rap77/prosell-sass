@@ -22,6 +22,9 @@ async def main() -> None:
     from prosell.infrastructure.tasks.use_cases.auto_republish_task import (
         auto_republish_task,  # noqa: F401
     )
+    from prosell.infrastructure.tasks.use_cases.poll_facebook_leads_task import (
+        poll_facebook_leads_task,  # noqa: F401
+    )
     from prosell.infrastructure.tasks.use_cases.publish_vehicle_task import (
         publish_vehicle_task,  # noqa: F401
     )

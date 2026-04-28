@@ -2,6 +2,13 @@
 
 Runs every 10 minutes as a fallback to webhooks.
 Fetches leads from all active Facebook pages and creates them in the system.
+
+Schedule:
+    Cron: */10 * * * * (every 10 minutes)
+    Deployment: Configure via systemd timer, Kubernetes CronJob, or external cron
+
+    Example cron entry:
+    */10 * * * * cd /app && uv run python -m prosell.infrastructure.tasks.worker poll_facebook_leads_task.kiq()
 """
 
 import logging
