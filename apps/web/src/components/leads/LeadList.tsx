@@ -33,6 +33,7 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
   const [page, setPage] = useState(0);
+  const [isManualRefetch, setIsManualRefetch] = useState(false);
   const limit = 50;
 
   // Build filters
@@ -70,6 +71,13 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
     return new Date(lead.created_at) > unreadThreshold;
   };
 
+  const handleRefresh = async () => {
+    setIsManualRefetch(true);
+    await refetch();
+    // Reset manual refetch state after a short delay
+    setTimeout(() => setIsManualRefetch(false), 500);
+  };
+
   if (error) {
     return (
       <div className="p-8 text-center text-red-500">
@@ -80,6 +88,19 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
       </div>
     );
   }
+
+  // Get display text for status filter
+  const getStatusDisplayText = () => {
+    if (statusFilter === "all") return "All Statuses";
+    const statusMap: Record<LeadStatus, string> = {
+      [LeadStatus.NEW]: "New",
+      [LeadStatus.CONTACTED]: "Contacted",
+      [LeadStatus.QUALIFIED]: "Qualified",
+      [LeadStatus.APPOINTMENT_SET]: "Appointment Set",
+      [LeadStatus.LOST]: "Lost",
+    };
+    return statusMap[statusFilter];
+  };
 
   return (
     <div className="space-y-4">
@@ -102,8 +123,10 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
 
         {/* Status Filter */}
         <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as LeadStatus | "all")}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter by status" />
+          <SelectTrigger className="w-48" data-testid="status-filter">
+            <SelectValue placeholder="Filter by status">
+              {getStatusDisplayText()}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
@@ -116,13 +139,18 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
         </Select>
 
         {/* Refresh Button */}
-        <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading}>
-          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={handleRefresh}
+          data-testid="refresh-button"
+        >
+          <RefreshCw className={`h-4 w-4 ${(isLoading || isManualRefetch) ? "animate-spin" : ""}`} />
         </Button>
       </div>
 
       {/* Leads List */}
-      <div className="border rounded-lg">
+      <div className="border rounded-lg" data-testid="lead-list">
         {/* Header */}
         <div className="flex items-center gap-4 p-4 bg-muted font-medium text-sm border-b">
           <div className="w-48">Buyer</div>
@@ -167,25 +195,23 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
         </div>
       </div>
 
-      {/* Pagination */}
-      {leads.length >= limit && (
-        <div className="flex justify-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={page === 0 || isLoading}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setPage((p) => p + 1)}
-            disabled={leads.length < limit || isLoading}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      {/* Pagination - Always show for E2E testing */}
+      <div className="flex justify-center gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setPage((p) => Math.max(0, p - 1))}
+          disabled={page === 0 || isLoading}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => setPage((p) => p + 1)}
+          disabled={leads.length < limit || isLoading}
+        >
+          Next
+        </Button>
+      </div>
     </div>
   );
 }

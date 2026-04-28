@@ -60,6 +60,7 @@ export function LeadStatusDropdown({
           size="sm"
           className="h-8 gap-1"
           disabled={updateLeadStatus.isPending}
+          data-testid="status-dropdown"
         >
           <LeadStatusBadge status={currentStatus} />
           <ChevronDown className="h-4 w-4" />

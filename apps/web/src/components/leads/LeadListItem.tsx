@@ -27,6 +27,7 @@ export function LeadListItem({ lead, onStatusUpdate, isUnread = false }: LeadLis
 
   return (
     <div
+      data-testid="lead-item"
       className={`flex items-center gap-4 p-4 border-b hover:bg-muted/50 transition-colors ${
         isUnread ? "bg-blue-50/50 border-l-4 border-l-blue-500" : ""
       }`}

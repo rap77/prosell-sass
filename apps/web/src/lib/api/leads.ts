@@ -159,6 +159,7 @@ export function useLeads(filters?: LeadFilters, limit: number = 50, offset: numb
       return data.items.map(transformLead);
     },
     staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: 30 * 1000, // Auto-refetch every 30 seconds for real-time updates
   });
 }
 
