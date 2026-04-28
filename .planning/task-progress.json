@@ -83,22 +83,30 @@
     },
     "A4.12": {
       "description": "Create CreateAppointmentUseCase (validates time, checks conflicts)",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-04-28T16:35:00.000000",
+      "commit_sha": "pending",
       "retries": 0
     },
     "A4.13": {
       "description": "CreateAppointmentUseCase updates lead status to \"appointment_set\"",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-04-28T16:35:00.000000",
+      "commit_sha": "pending",
       "retries": 0
     },
     "A4.14": {
       "description": "Create ListAppointmentsUseCase (role-based filtering)",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-04-28T16:35:00.000000",
+      "commit_sha": "pending",
       "retries": 0
     },
     "A4.15": {
       "description": "Create CancelAppointmentUseCase",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-04-28T16:35:00.000000",
+      "commit_sha": "pending",
       "retries": 0
     },
     "A4.16": {
@@ -123,12 +131,16 @@
     },
     "A4.20": {
       "description": "Create AppointmentResponse DTO",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-04-28T16:35:00.000000",
+      "commit_sha": "pending",
       "retries": 0
     },
     "A4.21": {
       "description": "Create CreateAppointmentRequest DTO",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-04-28T16:35:00.000000",
+      "commit_sha": "pending",
       "retries": 0
     },
     "A4.22": {

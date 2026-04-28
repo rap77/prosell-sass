@@ -208,16 +208,16 @@ cd tests/e2e && pnpm test specs/leads.spec.ts
 - [x] Implement AppointmentRepository with async SQLAlchemy
 - [x] Implement create() with conflict detection
 - [x] Implement list_by_dealer(), list_by_vendedor()
-- [ ] Create CreateAppointmentUseCase (validates time, checks conflicts)
-- [ ] CreateAppointmentUseCase updates lead status to "appointment_set"
-- [ ] Create ListAppointmentsUseCase (role-based filtering)
-- [ ] Create CancelAppointmentUseCase
+- [x] Create CreateAppointmentUseCase (validates time, checks conflicts)
+- [x] CreateAppointmentUseCase updates lead status to "appointment_set"
+- [x] Create ListAppointmentsUseCase (role-based filtering)
+- [x] Create CancelAppointmentUseCase
 - [ ] Create EmailService class for SendGrid
 - [ ] Create email template for appointment notifications
 - [ ] Implement error handling (retry with exponential backoff)
 - [ ] Add logging for email delivery status
-- [ ] Create AppointmentResponse DTO
-- [ ] Create CreateAppointmentRequest DTO
+- [x] Create AppointmentResponse DTO
+- [x] Create CreateAppointmentRequest DTO
 - [ ] Create POST /api/v1/appointments endpoint
 - [ ] Create GET /api/v1/appointments endpoint (role-based filtering)
 - [ ] Create PUT /api/v1/appointments/{id}/status endpoint
