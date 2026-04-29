@@ -87,3 +87,11 @@ class AbstractLeadRepository(ABC):
     ) -> Lead:
         """Assign lead to a vendedor (or unassign if None)."""
         pass
+
+    @abstractmethod
+    async def list_by_tenant(
+        self,
+        tenant_id: UUID,
+    ) -> list[Lead]:
+        """List all leads for a tenant (for metrics calculation)."""
+        pass

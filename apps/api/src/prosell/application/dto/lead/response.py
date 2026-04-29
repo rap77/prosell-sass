@@ -87,3 +87,22 @@ class LeadListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class VendedorMetricsBreakdown(BaseModel):
+    """DTO for vendedor-specific metrics breakdown."""
+
+    vendedor_id: UUID
+    vendedor_name: str
+    total_leads: int
+    new_leads: int
+    conversion_rate: float
+
+
+class TeamMetricsResponse(BaseModel):
+    """DTO for team lead metrics."""
+
+    total_leads: int
+    new_leads_last_24h: int
+    conversion_rate: float
+    vendedor_breakdown: list[VendedorMetricsBreakdown]

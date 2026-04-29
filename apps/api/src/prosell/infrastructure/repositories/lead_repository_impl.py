@@ -236,6 +236,16 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         await self.session.flush()
         return self._to_entity(model)
 
+    async def list_by_tenant(
+        self,
+        tenant_id: UUID,
+    ) -> list[Lead]:
+        """List all leads for a tenant (for metrics calculation)."""
+        stmt = select(LeadModel).where(LeadModel.tenant_id == tenant_id)
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(model) for model in models]
+
     def _to_entity(self, model: LeadModel) -> Lead:
         """Convert model to entity."""
         return Lead(

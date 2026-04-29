@@ -16,10 +16,12 @@ from prosell.application.dto.lead.response import (
     LeadDetailResponse,
     LeadListResponse,
     LeadResponse,
+    TeamMetricsResponse,
 )
 from prosell.application.use_cases.lead.assign_lead import AssignLeadToVendedorUseCase
 from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
 from prosell.application.use_cases.lead.get_lead_details import GetLeadDetailsUseCase
+from prosell.application.use_cases.lead.get_team_metrics import GetTeamMetricsUseCase
 from prosell.application.use_cases.lead.list_leads import ListLeadsUseCase
 from prosell.application.use_cases.lead.update_lead_status import UpdateLeadStatusUseCase
 from prosell.domain.entities.lead import LeadStatus
@@ -81,6 +83,15 @@ async def get_assign_lead_use_case(
 ) -> AssignLeadToVendedorUseCase:
     """Get AssignLead use case instance."""
     return AssignLeadToVendedorUseCase(lead_repo)
+
+
+async def get_team_metrics_use_case(
+    lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
+) -> GetTeamMetricsUseCase:
+    """Get TeamMetrics use case instance."""
+    from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
+    user_repo = SqlAlchemyUserRepository(lead_repo.session)
+    return GetTeamMetricsUseCase(lead_repo, user_repo)
 
 
 # =============================================================================
@@ -257,5 +268,39 @@ async def assign_lead(
     except LeadNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        ) from None
+
+
+@router.get(
+    "/metrics",
+    response_model=TeamMetricsResponse,
+    summary="Get team lead metrics",
+)
+async def get_team_metrics(
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    use_case: Annotated[GetTeamMetricsUseCase, Depends(get_team_metrics_use_case)],
+) -> TeamMetricsResponse:
+    """
+    Get team lead metrics (managers and admins only).
+
+    Returns aggregated metrics including:
+    - Total leads count
+    - New leads in last 24 hours
+    - Conversion rate (leads → appointment_set)
+    - Breakdown by vendedor with individual stats
+
+    Returns 403 if user is not a manager or admin.
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No organization associated with account.")
+    try:
+        return await use_case.execute(
+            tenant_id=current_user.tenant_id,
+            user=current_user,
+        )
+    except PermissionError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
             detail=str(e),
         ) from None

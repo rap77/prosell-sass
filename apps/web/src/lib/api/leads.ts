@@ -108,6 +108,32 @@ interface BackendLeadListResponse {
 }
 
 /**
+ * Vendedor metrics breakdown
+ */
+interface VendedorMetricsBreakdown {
+  vendedor_id: string;
+  vendedor_name: string;
+  total_leads: number;
+  new_leads: number;
+  conversion_rate: number;
+}
+
+/**
+ * Team metrics response
+ */
+interface TeamMetricsResponse {
+  total_leads: number;
+  new_leads_last_24h: number;
+  conversion_rate: number;
+  vendedor_breakdown: VendedorMetricsBreakdown[];
+}
+
+/**
+ * Export team metrics type
+ */
+export type { TeamMetricsResponse, VendedorMetricsBreakdown };
+
+/**
  * Transform backend lead response to frontend lead
  */
 function transformLead(backendLead: BackendLeadResponse): Lead {
@@ -283,6 +309,30 @@ export function useReassignLead(leadId: string) {
       // Show error toast
       toast.error(error.message || "Failed to reassign lead");
     },
+  });
+}
+
+/**
+ * Fetch team lead metrics
+ * @returns Query result with team metrics
+ */
+export function useTeamMetrics(): UseQueryResult<TeamMetricsResponse, Error> {
+  return useQuery({
+    queryKey: ["team-metrics"],
+    queryFn: async () => {
+      const res = await fetch("/api/v1/leads/metrics", {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: "Failed to fetch team metrics" }));
+        throw new Error(error.message || "Failed to fetch team metrics");
+      }
+
+      return (await res.json()) as TeamMetricsResponse;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: 5 * 60 * 1000, // Auto-refetch every 5 minutes
   });
 }
 
