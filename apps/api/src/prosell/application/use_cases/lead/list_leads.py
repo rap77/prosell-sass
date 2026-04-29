@@ -57,6 +57,7 @@ class ListLeadsUseCase:
                 limit=request.limit,
                 offset=request.offset,
                 status=request.status,
+                vendedor_id=request.vendedor_id,
             )
         else:
             # Default: vendedor sees only their own leads

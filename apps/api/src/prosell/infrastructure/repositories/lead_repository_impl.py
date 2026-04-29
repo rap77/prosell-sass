@@ -161,12 +161,16 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         limit: int = 50,
         offset: int = 0,
         status: LeadStatus | None = None,
+        vendedor_id: UUID | None = None,
     ) -> tuple[list[Lead], int]:
         """List all leads for a tenant (manager view). Returns (leads, total)."""
         conditions = [LeadModel.tenant_id == tenant_id]
 
         if status:
             conditions.append(LeadModel.status == status.value)
+
+        if vendedor_id:
+            conditions.append(LeadModel.vendedor_id == vendedor_id)
 
         # Count total
         count_stmt = select(func.count(LeadModel.id)).where(*conditions)

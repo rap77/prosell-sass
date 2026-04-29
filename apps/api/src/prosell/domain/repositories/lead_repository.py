@@ -63,6 +63,7 @@ class AbstractLeadRepository(ABC):
         limit: int = 50,
         offset: int = 0,
         status: LeadStatus | None = None,
+        vendedor_id: UUID | None = None,
     ) -> tuple[list[Lead], int]:
         """List all leads for a tenant (manager view). Returns (leads, total)."""
         pass
