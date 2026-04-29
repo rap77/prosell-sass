@@ -10,6 +10,7 @@ interface LeadListItemProps {
   lead: Lead;
   onStatusUpdate?: (leadId: string, newStatus: LeadStatus) => void;
   isUnread?: boolean;
+  actions?: React.ReactNode;
 }
 
 /**
@@ -22,7 +23,7 @@ interface LeadListItemProps {
  * - Status badge (with dropdown for quick updates)
  * - Unread highlight (if created < 5 min ago)
  */
-export function LeadListItem({ lead, onStatusUpdate, isUnread = false }: LeadListItemProps) {
+export function LeadListItem({ lead, onStatusUpdate, isUnread = false, actions }: LeadListItemProps) {
   const timeAgo = formatDistanceToNow(new Date(lead.created_at), { addSuffix: true });
 
   return (
@@ -92,6 +93,13 @@ export function LeadListItem({ lead, onStatusUpdate, isUnread = false }: LeadLis
         <div className="text-sm text-muted-foreground">{timeAgo}</div>
         <div className="text-xs text-muted-foreground">via {lead.source}</div>
       </div>
+
+      {/* Actions */}
+      {actions && (
+        <div className="flex-shrink-0 w-24">
+          {actions}
+        </div>
+      )}
     </div>
   );
 }
