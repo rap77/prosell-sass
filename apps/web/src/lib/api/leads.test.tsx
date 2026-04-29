@@ -4,7 +4,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useLeads, useLead, useUpdateLeadStatus, LeadStatus } from "./leads";
+import { useLeads, useLead, useUpdateLeadStatus, useReassignLead, LeadStatus } from "./leads";
 import { toast } from "sonner";
 
 // Mock fetch
@@ -236,5 +236,88 @@ describe("useUpdateLeadStatus", () => {
     }
 
     expect(toast.error).toHaveBeenCalledWith("Invalid status transition");
+  });
+});
+
+describe("useReassignLead", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should reassign lead to new vendedor successfully", async () => {
+    const newVendedorId = "vendedor-2";
+
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        ...mockLeadResponse,
+        vendedor_id: newVendedorId,
+      }),
+    });
+
+    const { result } = renderHook(() => useReassignLead("lead-1"), {
+      wrapper: createWrapper(),
+    });
+
+    await result.current.mutateAsync({ vendedor_id: newVendedorId });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/v1/leads/lead-1/assign",
+      expect.objectContaining({
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: expect.stringContaining(`"vendedor_id":"${newVendedorId}"`),
+      })
+    );
+
+    expect(toast.success).toHaveBeenCalledWith("Lead reassigned successfully");
+  });
+
+  it("should unassign lead when vendedor_id is null", async () => {
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        ...mockLeadResponse,
+        vendedor_id: null,
+      }),
+    });
+
+    const { result } = renderHook(() => useReassignLead("lead-1"), {
+      wrapper: createWrapper(),
+    });
+
+    await result.current.mutateAsync({ vendedor_id: null });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/v1/leads/lead-1/assign",
+      expect.objectContaining({
+        method: "PUT",
+        body: expect.stringContaining('"vendedor_id":null'),
+      })
+    );
+
+    expect(toast.success).toHaveBeenCalledWith("Lead reassigned successfully");
+  });
+
+  it("should show error toast on failure", async () => {
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ message: "Lead not found" }),
+    });
+
+    const { result } = renderHook(() => useReassignLead("lead-1"), {
+      wrapper: createWrapper(),
+    });
+
+    try {
+      await result.current.mutateAsync({ vendedor_id: "vendedor-2" });
+    } catch (error) {
+      // Expected error
+    }
+
+    expect(toast.error).toHaveBeenCalledWith("Lead not found");
   });
 });

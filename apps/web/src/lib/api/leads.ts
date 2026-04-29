@@ -73,6 +73,13 @@ export interface UpdateLeadStatusRequest {
 }
 
 /**
+ * Request payload for reassigning lead to vendedor
+ */
+export interface ReassignLeadRequest {
+  vendedor_id: string | null;
+}
+
+/**
  * Backend lead response
  */
 interface BackendLeadResponse {
@@ -231,6 +238,50 @@ export function useUpdateLeadStatus(leadId: string) {
     onError: (error) => {
       // Show error toast
       toast.error(error.message || "Failed to update lead status");
+    },
+  });
+}
+
+/**
+ * Reassign lead to a different vendedor
+ * @param leadId - The lead ID to reassign
+ * @returns Mutation object with reassignLead function
+ */
+export function useReassignLead(leadId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (request: ReassignLeadRequest) => {
+      const res = await fetch(`/api/v1/leads/${leadId}/assign`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(request),
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: "Failed to reassign lead" }));
+        throw new Error(error.message || "Failed to reassign lead");
+      }
+
+      const data = (await res.json()) as BackendLeadResponse;
+      return transformLead(data);
+    },
+    onSuccess: (updatedLead) => {
+      // Invalidate and refetch leads list
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+
+      // Update specific lead cache if it exists
+      queryClient.setQueryData(["lead", leadId], updatedLead);
+
+      // Show success toast
+      toast.success("Lead reassigned successfully");
+    },
+    onError: (error) => {
+      // Show error toast
+      toast.error(error.message || "Failed to reassign lead");
     },
   });
 }
