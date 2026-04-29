@@ -48,8 +48,8 @@ class Publication(DomainModel):
     id: UUID = Field(default_factory=uuid4)
     product_id: UUID
     tenant_id: UUID
-    seller_user_id: UUID
-    facebook_page_id: UUID
+    seller_user_id: UUID | None = None  # Can be None for scheduled publications
+    facebook_page_id: UUID | None = None  # Can be None for scheduled publications
 
     # Publication state
     status: PublicationStatus = PublicationStatus.PENDING

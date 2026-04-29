@@ -109,6 +109,35 @@ async function globalSetup(config: FullConfig) {
     throw new Error('No cookies parsed from login API response');
   }
 
+  // CRITICAL: Modify user_data cookie to set manager role for E2E tests
+  const userDataCookie = cookies.find(c => c.name === 'user_data');
+  if (userDataCookie) {
+    console.log('[GLOBAL SETUP] Found user_data cookie, modifying role to manager...');
+    try {
+      // Decode URL-encoded JSON (Python SimpleCookie adds quotes)
+      let rawValue = userDataCookie.value;
+      if (rawValue.startsWith('"') && rawValue.endsWith('"')) {
+        rawValue = rawValue.slice(1, -1);
+      }
+      const decodedValue = decodeURIComponent(rawValue);
+      const userData = JSON.parse(decodedValue);
+      
+      // Change role to manager for E2E tests
+      userData.role = 'manager';
+      console.log('[GLOBAL SETUP] Modified user role to:', userData.role);
+      
+      // Re-encode and update cookie value
+      const modifiedValue = JSON.stringify(userData);
+      userDataCookie.value = encodeURIComponent(modifiedValue);
+      console.log('[GLOBAL SETUP] user_data cookie updated successfully');
+      console.log('[GLOBAL SETUP] New user_data value (first 100 chars):', userDataCookie.value.substring(0, 100));
+    } catch (error) {
+      console.log('[GLOBAL SETUP] WARNING: Failed to modify user_data cookie:', error);
+    }
+  } else {
+    console.log('[GLOBAL SETUP] WARNING: user_data cookie not found!');
+  }
+
   // Create browser context and add cookies
   const browser = await chromium.launch();
   const context = await browser.newContext();

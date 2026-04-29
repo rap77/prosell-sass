@@ -25,7 +25,7 @@ async def publication_repo(db_session):
 
 
 @pytest.fixture
-async def sample_product(db_session, test_organization):
+async def sample_product(db_session, test_organization, test_category):
     """Create a sample product for testing publications."""
     from prosell.infrastructure.models.product_model import ProductModel
 
@@ -33,10 +33,11 @@ async def sample_product(db_session, test_organization):
     product = ProductModel(
         id=product_id,
         tenant_id=test_organization.tenant_id,
+        organization_id=test_organization.id,  # REQUIRED: NOT NULL in DB
         title="Test Product",
         status="active",
         price_cents=1500000,
-        category_id=uuid4(),  # May not exist, but that's OK for this test
+        category_id=test_category.id,  # Use actual category from fixture
     )
 
     db_session.add(product)
@@ -51,8 +52,8 @@ async def sample_publication(db_session, test_organization, sample_product):
         id=uuid4(),
         tenant_id=test_organization.tenant_id,
         product_id=sample_product.id,
-        seller_user_id=uuid4(),
-        facebook_page_id=uuid4(),
+        seller_user_id=None,  # Nullable, can be None
+        facebook_page_id=None,  # Nullable, can be None
         status=PublicationStatus.PUBLISHED,
         fb_listing_id="fb_listing_12345",
         title="Test Vehicle",
@@ -118,8 +119,8 @@ async def test_get_by_fb_listing_id_filters_by_tenant(
         id=uuid4(),
         tenant_id=test_organization.tenant_id,
         product_id=sample_product.id,
-        seller_user_id=uuid4(),
-        facebook_page_id=uuid4(),
+        seller_user_id=None,  # Nullable
+        facebook_page_id=None,  # Nullable
         status=PublicationStatus.PUBLISHED,
         fb_listing_id=listing_id,
         title="Test Vehicle 1",
@@ -147,8 +148,8 @@ async def test_get_by_fb_listing_id_filters_by_tenant(
         id=uuid4(),
         tenant_id=org2.tenant_id,
         product_id=sample_product.id,
-        seller_user_id=uuid4(),
-        facebook_page_id=uuid4(),
+        seller_user_id=None,  # Nullable
+        facebook_page_id=None,  # Nullable
         status=PublicationStatus.PUBLISHED,
         fb_listing_id=listing_id,  # Same listing ID
         title="Test Vehicle 2",
@@ -158,10 +159,15 @@ async def test_get_by_fb_listing_id_filters_by_tenant(
     db_session.add(pub2)
     await db_session.flush()
 
-    # Act - query without tenant filter should return most recent
+    # Act - query WITH tenant filter should return only pub1
     repo = SqlAlchemyPublicationRepository(db_session)
-    result = await repo.get_by_fb_listing_id(listing_id)
+    result = await repo.get_by_fb_listing_id(
+        listing_id,
+        tenant_id=test_organization.tenant_id,  # Filter by tenant
+    )
 
-    # Assert - should return one of them (implementation-dependent)
+    # Assert - should return pub1 (from test_organization)
     assert result is not None
     assert result.fb_listing_id == listing_id
+    assert result.tenant_id == test_organization.tenant_id
+    assert result.title == "Test Vehicle 1"
