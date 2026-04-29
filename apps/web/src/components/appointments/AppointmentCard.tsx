@@ -33,6 +33,10 @@ interface AppointmentCardProps {
   lead: Lead;
   /** Click handler */
   onClick?: () => void;
+  /** Confirm handler (for scheduled appointments) */
+  onConfirm?: () => void;
+  /** Cancel handler (for scheduled appointments) */
+  onCancel?: () => void;
   /** Additional CSS classes */
   className?: string;
 }
@@ -61,6 +65,8 @@ export function AppointmentCard({
   appointment,
   lead,
   onClick,
+  onConfirm,
+  onCancel,
   className = "",
 }: AppointmentCardProps) {
   const statusConfig = STATUS_CONFIG[appointment.status];
@@ -132,6 +138,43 @@ export function AppointmentCard({
           <p className="text-sm text-gray-600 italic">{appointment.notes}</p>
         </div>
       )}
+
+      {/* Action buttons (only for scheduled appointments) */}
+      {appointment.status === AppointmentStatus.SCHEDULED &&
+        (onConfirm || onCancel) && (
+          <div className="mt-3 pt-3 border-t border-gray-100 flex gap-2">
+            {onConfirm && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onConfirm();
+                }}
+                className="
+                  px-3 py-1.5 text-sm font-medium text-white
+                  bg-green-600 hover:bg-green-700
+                  rounded-md transition-colors
+                "
+              >
+                Confirm
+              </button>
+            )}
+            {onCancel && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCancel();
+                }}
+                className="
+                  px-3 py-1.5 text-sm font-medium text-white
+                  bg-red-600 hover:bg-red-700
+                  rounded-md transition-colors
+                "
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        )}
     </div>
   );
 }

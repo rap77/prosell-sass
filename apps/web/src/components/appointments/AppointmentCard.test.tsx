@@ -145,4 +145,119 @@ describe("AppointmentCard", () => {
     expect(card).toHaveClass("hover:shadow-md");
     expect(card).toHaveClass("transition-shadow");
   });
+
+  it("should show confirm and cancel buttons for scheduled appointments", () => {
+    const handleConfirm = vi.fn();
+    const handleCancel = vi.fn();
+
+    render(
+      <AppointmentCard
+        appointment={mockAppointment}
+        lead={mockLead}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+    );
+
+    expect(screen.getByText("Confirm")).toBeInTheDocument();
+    expect(screen.getByText("Cancel")).toBeInTheDocument();
+  });
+
+  it("should not show buttons for completed appointments", () => {
+    const handleConfirm = vi.fn();
+    const handleCancel = vi.fn();
+    const completedAppointment = {
+      ...mockAppointment,
+      status: AppointmentStatus.COMPLETED,
+    };
+
+    render(
+      <AppointmentCard
+        appointment={completedAppointment}
+        lead={mockLead}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+    );
+
+    expect(screen.queryByText("Confirm")).not.toBeInTheDocument();
+    expect(screen.queryByText("Cancel")).not.toBeInTheDocument();
+  });
+
+  it("should not show buttons for cancelled appointments", () => {
+    const handleConfirm = vi.fn();
+    const handleCancel = vi.fn();
+    const cancelledAppointment = {
+      ...mockAppointment,
+      status: AppointmentStatus.CANCELLED,
+    };
+
+    render(
+      <AppointmentCard
+        appointment={cancelledAppointment}
+        lead={mockLead}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+    );
+
+    expect(screen.queryByText("Confirm")).not.toBeInTheDocument();
+    expect(screen.queryByText("Cancel")).not.toBeInTheDocument();
+  });
+
+  it("should call onConfirm when confirm button is clicked", () => {
+    const handleConfirm = vi.fn();
+    const eventStopPropagation = vi.fn();
+
+    render(
+      <AppointmentCard
+        appointment={mockAppointment}
+        lead={mockLead}
+        onConfirm={handleConfirm}
+      />
+    );
+
+    const confirmButton = screen.getByText("Confirm");
+    confirmButton.click();
+
+    expect(handleConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("should call onCancel when cancel button is clicked", () => {
+    const handleCancel = vi.fn();
+
+    render(
+      <AppointmentCard
+        appointment={mockAppointment}
+        lead={mockLead}
+        onCancel={handleCancel}
+      />
+    );
+
+    const cancelButton = screen.getByText("Cancel");
+    cancelButton.click();
+
+    expect(handleCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("should stop propagation when action buttons are clicked", () => {
+    const handleCardClick = vi.fn();
+    const handleConfirm = vi.fn();
+
+    render(
+      <AppointmentCard
+        appointment={mockAppointment}
+        lead={mockLead}
+        onClick={handleCardClick}
+        onConfirm={handleConfirm}
+      />
+    );
+
+    const confirmButton = screen.getByText("Confirm");
+    confirmButton.click();
+
+    // Card click should not be triggered when button is clicked
+    expect(handleConfirm).toHaveBeenCalledTimes(1);
+    expect(handleCardClick).not.toHaveBeenCalled();
+  });
 });
