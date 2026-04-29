@@ -51,6 +51,7 @@ from prosell.infrastructure.api.routers import (
     publisher_router,
     team_router,
     user_dealer_router,
+    vendedor_router,
     vehicle_router,
     wallet_router,
 )
@@ -204,6 +205,12 @@ app.include_router(
     team_router,
     prefix="/api/v1/teams",
     tags=["Teams"],
+)
+
+app.include_router(
+    vendedor_router,
+    prefix="/api/v1/vendedores",
+    tags=["Vendedores"],
 )
 
 app.include_router(

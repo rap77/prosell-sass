@@ -157,6 +157,11 @@ class Settings(BaseSettings):
         default=None,
         description="Facebook OAuth app secret",
     )
+    # Facebook Webhook App Secret (for X-Hub-Signature verification)
+    facebook_app_secret: str | None = Field(
+        default=None,
+        description="Facebook app secret for webhook signature verification",
+    )
     # Backend callback URI (where Facebook redirects after authentication)
     facebook_oauth_redirect_uri: str = Field(
         default="http://localhost:8000/api/auth/oauth/facebook/callback",

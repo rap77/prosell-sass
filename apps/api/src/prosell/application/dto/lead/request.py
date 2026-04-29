@@ -34,3 +34,9 @@ class ListLeadsRequest(BaseModel):
     limit: int = Field(default=50, ge=1, le=100)
     offset: int = Field(default=0, ge=0)
     status: LeadStatus | None = None
+
+
+class AssignLeadRequest(BaseModel):
+    """DTO for assigning a lead to a vendedor."""
+
+    vendedor_id: UUID | None = Field(..., description="New vendedor ID (null to unassign)")

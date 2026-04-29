@@ -187,3 +187,41 @@ class AbstractUserRepository(Protocol):
             True if token was found and marked as used, False otherwise
         """
         ...
+
+    async def get_users_by_tenant_and_role(
+        self,
+        tenant_id: UUID,
+        role: str,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[User]:
+        """
+        Get users by tenant ID and role.
+
+        Args:
+            tenant_id: Tenant/organization ID
+            role: Role name (e.g., 'vendedor')
+            skip: Number of records to skip
+            limit: Maximum number of records to return
+
+        Returns:
+            List of user entities
+        """
+        ...
+
+    async def count_users_by_tenant_and_role(
+        self,
+        tenant_id: UUID,
+        role: str,
+    ) -> int:
+        """
+        Count users by tenant ID and role.
+
+        Args:
+            tenant_id: Tenant/organization ID
+            role: Role name (e.g., 'vendedor')
+
+        Returns:
+            Number of users
+        """
+        ...

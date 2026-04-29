@@ -240,6 +240,61 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
         await self.session.flush()
         return True
 
+    async def get_users_by_tenant_and_role(
+        self,
+        tenant_id: UUID,
+        role: str,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[User]:
+        """
+        Get users by tenant ID and role.
+
+        Joins with user_roles and roles tables to filter by role.
+        """
+        from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
+
+        stmt = (
+            select(UserModel)
+            .join(UserRoleModel, UserRoleModel.user_id == UserModel.id)
+            .join(RoleModel, RoleModel.id == UserRoleModel.role_id)
+            .where(
+                UserModel.tenant_id == tenant_id,
+                RoleModel.role_type == role,
+            )
+        )
+
+        stmt = stmt.limit(limit).offset(skip)
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(model) for model in models]
+
+    async def count_users_by_tenant_and_role(
+        self,
+        tenant_id: UUID,
+        role: str,
+    ) -> int:
+        """
+        Count users by tenant ID and role.
+
+        Returns the total count (before pagination).
+        """
+        from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
+
+        stmt = (
+            select(func.count(UserModel.id))
+            .join(UserRoleModel, UserRoleModel.user_id == UserModel.id)
+            .join(RoleModel, RoleModel.id == UserRoleModel.role_id)
+            .where(
+                UserModel.tenant_id == tenant_id,
+                RoleModel.role_type == role,
+            )
+        )
+
+        result = await self.session.execute(stmt)
+        count: int = result.scalar() or 0
+        return count
+
     def _to_entity(self, model: UserModel) -> User:
         """
         Convert ORM model to domain entity.

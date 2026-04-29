@@ -76,3 +76,13 @@ class AbstractLeadRepository(ABC):
     ) -> list[LeadAuditLog]:
         """Get audit logs for a lead."""
         pass
+
+    @abstractmethod
+    async def assign_to_vendedor(
+        self,
+        lead_id: UUID,
+        tenant_id: UUID,
+        new_vendedor_id: UUID | None,
+    ) -> Lead:
+        """Assign lead to a vendedor (or unassign if None)."""
+        pass

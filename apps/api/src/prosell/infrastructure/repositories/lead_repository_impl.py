@@ -207,6 +207,31 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         models = result.scalars().all()
         return [self._audit_log_to_entity(model) for model in models]
 
+    async def assign_to_vendedor(
+        self,
+        lead_id: UUID,
+        tenant_id: UUID,
+        new_vendedor_id: UUID | None,
+    ) -> Lead:
+        """Assign lead to a vendedor (or unassign if None)."""
+        # Get lead
+        stmt = select(LeadModel).where(
+            LeadModel.id == lead_id,
+            LeadModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+
+        if not model:
+            raise LeadNotFoundException(f"Lead not found: {lead_id}")
+
+        # Update vendedor_id
+        model.vendedor_id = new_vendedor_id
+        model.updated_at = datetime.now(timezone.utc)
+
+        await self.session.flush()
+        return self._to_entity(model)
+
     def _to_entity(self, model: LeadModel) -> Lead:
         """Convert model to entity."""
         return Lead(
