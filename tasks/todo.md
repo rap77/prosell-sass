@@ -212,29 +212,29 @@ cd tests/e2e && pnpm test specs/leads.spec.ts
 - [x] CreateAppointmentUseCase updates lead status to "appointment_set"
 - [x] Create ListAppointmentsUseCase (role-based filtering)
 - [x] Create CancelAppointmentUseCase
-- [ ] Create EmailService class for SendGrid
-- [ ] Create email template for appointment notifications
-- [ ] Implement error handling (retry with exponential backoff)
-- [ ] Add logging for email delivery status
+- [x] Create EmailService class for SendGrid
+- [x] Create email template for appointment notifications
+- [x] Implement error handling (retry with exponential backoff)
+- [x] Add logging for email delivery status
 - [x] Create AppointmentResponse DTO
 - [x] Create CreateAppointmentRequest DTO
 - [x] Create POST /api/v1/appointments endpoint
 - [x] Create GET /api/v1/appointments endpoint (role-based filtering)
 - [x] Create PUT /api/v1/appointments/{id}/status endpoint
-- [ ] Create Appointment interface
-- [ ] Create CreateAppointmentRequest interface
-- [ ] Create useAppointments hook
-- [ ] Create useCreateAppointment mutation hook
-- [ ] Add toast notifications
-- [ ] Create LeadDetails page at /vendedor/leads/{id}
-- [ ] Create AppointmentForm modal (date-time picker, dealer selection, notes)
-- [ ] Implement time validation (business hours)
-- [ ] Show appointment conflicts warning
-- [ ] Add "Agendar Cita" button to lead details
-- [ ] Write unit tests for Appointment entity (time validation)
-- [ ] Write integration tests for CreateAppointmentUseCase (mocked SendGrid)
-- [ ] Write integration tests for API endpoints
-- [ ] Write E2E test for appointment creation flow
+- [x] Create Appointment interface
+- [x] Create CreateAppointmentRequest interface
+- [x] Create useAppointments hook
+- [x] Create useCreateAppointment mutation hook
+- [x] Add toast notifications
+- [x] Create LeadDetails page at /vendedor/leads/{id}
+- [x] Create AppointmentForm modal (date-time picker, dealer selection, notes)
+- [x] Implement time validation (business hours)
+- [x] Show appointment conflicts warning
+- [x] Add "Agendar Cita" button to lead details
+- [x] Write unit tests for Appointment entity (time validation)
+- [x] Write integration tests for CreateAppointmentUseCase (mocked SendGrid)
+- [x] Write integration tests for API endpoints
+- [x] Write E2E test for appointment creation flow
 
 **Verification**:
 ```bash
@@ -251,22 +251,22 @@ tail -f logs/sendgrid.log
 
 ### A5: Manager Team View (Manager Feature)
 
-- [ ] Extend GET /api/v1/leads with manager scope (all team leads, not just own)
-- [ ] Create AssignLeadToVendedorUseCase (if not in A1)
-- [ ] Create PUT /api/v1/leads/{id}/assign endpoint
-- [ ] Extend useLeads hook with manager scope
-- [ ] Create useReassignLead mutation hook
-- [ ] Create TeamLeadList component (extends LeadList)
-- [ ] Create LeadReassignModal component (vendedor dropdown, confirm button)
-- [ ] Create TeamMetricsCard component (leads per vendedor, conversion rates)
-- [ ] Create /manager/team/leads page
-- [ ] Add filter by vendedor dropdown
-- [ ] Show all leads across team (not just assigned to manager)
-- [ ] Implement reassign lead mutation
-- [ ] Add export to CSV button
-- [ ] Write E2E test for manager view
-- [ ] Test filter by vendedor
-- [ ] Test lead reassignment
+- [x] Extend GET /api/v1/leads with manager scope (all team leads, not just own)
+- [x] Create AssignLeadToVendedorUseCase (if not in A1)
+- [x] Create PUT /api/v1/leads/{id}/assign endpoint
+- [x] Extend useLeads hook with manager scope
+- [x] Create useReassignLead mutation hook
+- [x] Create TeamLeadList component (extends LeadList)
+- [x] Create LeadReassignModal component (vendedor dropdown, confirm button)
+- [x] Create TeamMetricsCard component (leads per vendedor, conversion rates)
+- [x] Create /manager/team/leads page
+- [x] Add filter by vendedor dropdown
+- [x] Show all leads across team (not just assigned to manager)
+- [x] Implement reassign lead mutation
+- [x] Add export to CSV button
+- [x] Write E2E test for manager view
+- [x] Test filter by vendedor
+- [x] Test lead reassignment
 
 **Verification**:
 ```bash

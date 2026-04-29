@@ -1,241 +1,129 @@
 {
-  "task_id": "A4",
-  "session_id": "sess-20260428-161938",
-  "started_at": "2026-04-28T16:19:38.864095",
+  "task_id": "A5",
+  "session_id": "sess-resume-20260429-082641",
+  "started_at": "2026-04-28T22:28:37.505169",
   "phase": 19,
   "subtasks": {
-    "A4.1": {
-      "description": "Create Appointment entity (lead_id, dealer_id, vehicle_id, scheduled_at, status, notes, tenant_id)",
+    "A5.1": {
+      "description": "Extend GET /api/v1/leads with manager scope (all team leads, not just own)",
       "status": "completed",
-      "completed_at": "2026-04-28T16:25:00.000000",
-      "commit_sha": "47797da",
-      "retries": 0
+      "completed_at": "2026-04-29T07:19:00.000000",
+      "commit_sha": "existing",
+      "retries": 0,
+      "note": "Already implemented in ListLeadsUseCase (managers see all team leads via list_by_manager)"
     },
-    "A4.2": {
-      "description": "Implement AppointmentStatus enum (scheduled, completed, cancelled)",
+    "A5.2": {
+      "description": "Create AssignLeadToVendedorUseCase (if not in A1)",
       "status": "completed",
-      "completed_at": "2026-04-28T16:25:00.000000",
-      "commit_sha": "47797da",
-      "retries": 0
+      "completed_at": "2026-04-29T07:19:00.000000",
+      "commit_sha": "existing",
+      "retries": 0,
+      "note": "Already exists at apps/api/src/prosell/application/use_cases/lead/assign_lead.py"
     },
-    "A4.3": {
-      "description": "Implement time validation (business hours: 9am-6pm Mon-Fri)",
+    "A5.3": {
+      "description": "Create PUT /api/v1/leads/{id}/assign endpoint",
       "status": "completed",
-      "completed_at": "2026-04-28T16:25:00.000000",
-      "commit_sha": "47797da",
+      "completed_at": "2026-04-29T07:19:00.000000",
+      "commit_sha": "f394c8c",
       "retries": 0
     },
-    "A4.4": {
-      "description": "Implement conflict detection (same dealer + time slot)",
+    "A5.4": {
+      "description": "Extend useLeads hook with manager scope",
       "status": "completed",
-      "completed_at": "2026-04-28T16:25:00.000000",
-      "commit_sha": "47797da",
-      "retries": 0
+      "retries": 0,
+      "completed_at": "2026-04-29T08:15:07.084684",
+      "commit_sha": "1a1c3ec"
     },
-    "A4.5": {
-      "description": "Write Alembic migration for appointments table",
+    "A5.5": {
+      "description": "Create useReassignLead mutation hook",
       "status": "completed",
-      "completed_at": "2026-04-28T16:26:00.000000",
-      "commit_sha": "pending",
-      "retries": 0
+      "retries": 0,
+      "completed_at": "2026-04-29T08:18:50.619340",
+      "commit_sha": "6eaafe6"
     },
-    "A4.6": {
-      "description": "Add indexes on (tenant_id, dealer_id, scheduled_at)",
+    "A5.6": {
+      "description": "Create TeamLeadList component (extends LeadList)",
       "status": "completed",
-      "completed_at": "2026-04-28T16:26:00.000000",
-      "commit_sha": "pending",
-      "retries": 0
+      "retries": 0,
+      "completed_at": "2026-04-29T08:19:05.977844",
+      "commit_sha": "d55fca4"
     },
-    "A4.7": {
-      "description": "Add foreign keys (lead_id \u2192 leads, dealer_id \u2192 dealers, vehicle_id \u2192 vehicles)",
+    "A5.7": {
+      "description": "Create LeadReassignModal component (vendedor dropdown, confirm button)",
       "status": "completed",
-      "completed_at": "2026-04-28T16:26:00.000000",
-      "commit_sha": "pending",
-      "retries": 0
+      "retries": 0,
+      "completed_at": "2026-04-29T08:26:10.549041",
+      "commit_sha": "1b5f70d"
     },
-    "A4.8": {
-      "description": "Create IAppointmentRepository interface",
+    "A5.8": {
+      "description": "Create TeamMetricsCard component (leads per vendedor, conversion rates)",
       "status": "completed",
-      "completed_at": "2026-04-28T16:27:00.000000",
-      "commit_sha": "pending",
+      "completed_at": "2026-04-29T08:30:00.000000",
+      "commit_sha": "bc8f235",
       "retries": 0
     },
-    "A4.9": {
-      "description": "Implement AppointmentRepository with async SQLAlchemy",
+    "A5.9": {
+      "description": "Create /manager/team/leads page",
       "status": "completed",
-      "completed_at": "2026-04-28T16:30:00.000000",
-      "commit_sha": "pending",
+      "completed_at": "2026-04-29T08:35:00.000000",
+      "commit_sha": "836384f",
       "retries": 0
     },
-    "A4.10": {
-      "description": "Implement create() with conflict detection",
+    "A5.10": {
+      "description": "Add filter by vendedor dropdown",
       "status": "completed",
-      "completed_at": "2026-04-28T16:30:00.000000",
-      "commit_sha": "pending",
-      "retries": 0
+      "completed_at": "2026-04-29T08:35:00.000000",
+      "commit_sha": "existing",
+      "retries": 0,
+      "note": "Already implemented in TeamLeadList.tsx (vendedor filter dropdown)"
     },
-    "A4.11": {
-      "description": "Implement list_by_dealer(), list_by_vendedor()",
+    "A5.11": {
+      "description": "Show all leads across team (not just assigned to manager)",
       "status": "completed",
-      "completed_at": "2026-04-28T16:30:00.000000",
-      "commit_sha": "pending",
-      "retries": 0
+      "completed_at": "2026-04-29T08:35:00.000000",
+      "commit_sha": "existing",
+      "retries": 0,
+      "note": "Already implemented via backend list_by_manager and useLeads hook"
     },
-    "A4.12": {
-      "description": "Create CreateAppointmentUseCase (validates time, checks conflicts)",
+    "A5.12": {
+      "description": "Implement reassign lead mutation",
       "status": "completed",
-      "completed_at": "2026-04-28T16:35:00.000000",
-      "commit_sha": "pending",
-      "retries": 0
+      "completed_at": "2026-04-29T08:35:00.000000",
+      "commit_sha": "existing",
+      "retries": 0,
+      "note": "Already implemented via useReassignLead hook and PUT /api/v1/leads/{id}/assign"
     },
-    "A4.13": {
-      "description": "CreateAppointmentUseCase updates lead status to \"appointment_set\"",
+    "A5.13": {
+      "description": "Add export to CSV button",
       "status": "completed",
-      "completed_at": "2026-04-28T16:35:00.000000",
-      "commit_sha": "pending",
-      "retries": 0
+      "completed_at": "2026-04-29T08:35:00.000000",
+      "commit_sha": "existing",
+      "retries": 0,
+      "note": "Already implemented in TeamLeadList.tsx with CSV injection security fix"
     },
-    "A4.14": {
-      "description": "Create ListAppointmentsUseCase (role-based filtering)",
+    "A5.14": {
+      "description": "Write E2E test for manager view",
       "status": "completed",
-      "completed_at": "2026-04-28T16:35:00.000000",
-      "commit_sha": "pending",
+      "completed_at": "2026-04-29T08:40:00.000000",
+      "commit_sha": "ad735c4",
       "retries": 0
     },
-    "A4.15": {
-      "description": "Create CancelAppointmentUseCase",
+    "A5.15": {
+      "description": "Test filter by vendedor",
       "status": "completed",
-      "completed_at": "2026-04-28T16:35:00.000000",
-      "commit_sha": "pending",
+      "completed_at": "2026-04-29T08:40:00.000000",
+      "commit_sha": "ad735c4",
       "retries": 0
     },
-    "A4.16": {
-      "description": "Create EmailService class for SendGrid",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.17": {
-      "description": "Create email template for appointment notifications",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.18": {
-      "description": "Implement error handling (retry with exponential backoff)",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.19": {
-      "description": "Add logging for email delivery status",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.20": {
-      "description": "Create AppointmentResponse DTO",
+    "A5.16": {
+      "description": "Test lead reassignment",
       "status": "completed",
-      "completed_at": "2026-04-28T16:35:00.000000",
-      "commit_sha": "pending",
-      "retries": 0
-    },
-    "A4.21": {
-      "description": "Create CreateAppointmentRequest DTO",
-      "status": "completed",
-      "completed_at": "2026-04-28T16:35:00.000000",
-      "commit_sha": "pending",
-      "retries": 0
-    },
-    "A4.22": {
-      "description": "Create POST /api/v1/appointments endpoint",
-      "status": "completed",
-      "completed_at": "2026-04-28T16:40:00.000000",
-      "commit_sha": "pending",
-      "retries": 0
-    },
-    "A4.23": {
-      "description": "Create GET /api/v1/appointments endpoint (role-based filtering)",
-      "status": "completed",
-      "completed_at": "2026-04-28T16:40:00.000000",
-      "commit_sha": "pending",
-      "retries": 0
-    },
-    "A4.24": {
-      "description": "Create PUT /api/v1/appointments/{id}/status endpoint",
-      "status": "completed",
-      "completed_at": "2026-04-28T16:40:00.000000",
-      "commit_sha": "pending",
-      "retries": 0
-    },
-    "A4.25": {
-      "description": "Create Appointment interface",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.26": {
-      "description": "Create CreateAppointmentRequest interface",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.27": {
-      "description": "Create useAppointments hook",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.28": {
-      "description": "Create useCreateAppointment mutation hook",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.29": {
-      "description": "Add toast notifications",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.30": {
-      "description": "Create LeadDetails page at /vendedor/leads/{id}",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.31": {
-      "description": "Create AppointmentForm modal (date-time picker, dealer selection, notes)",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.32": {
-      "description": "Implement time validation (business hours)",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.33": {
-      "description": "Show appointment conflicts warning",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.34": {
-      "description": "Add \"Agendar Cita\" button to lead details",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.35": {
-      "description": "Write unit tests for Appointment entity (time validation)",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.36": {
-      "description": "Write integration tests for CreateAppointmentUseCase (mocked SendGrid)",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.37": {
-      "description": "Write integration tests for API endpoints",
-      "status": "pending",
-      "retries": 0
-    },
-    "A4.38": {
-      "description": "Write E2E test for appointment creation flow",
-      "status": "pending",
+      "completed_at": "2026-04-29T08:40:00.000000",
+      "commit_sha": "ad735c4",
       "retries": 0
     }
   },
-  "last_checkpoint": "A4.24",
-  "context_budget_exit": "71% - exiting gracefully at checkpoint",
-  "session_summary": "Completed 19/38 subtasks (50%): Backend infrastructure complete (entity, migration, repository, use cases, DTOs, API endpoints). Remaining: Email service (A4.16-A4.19), Frontend (A4.25-A4.34), Tests (A4.35-A4.38). Next session should resume from A4.25 (frontend interfaces)."
+  "last_checkpoint": "A5.16",
+  "context_budget_exit": null,
+  "resumed_at": "2026-04-29T08:26:41.870326"
 }
