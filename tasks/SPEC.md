@@ -203,6 +203,113 @@ ProSell provides a unified platform that:
 
 ---
 
+## 3.5 Vertical Slicing Strategy (Phase 4 Re-Planning)
+
+**Updated**: 2026-04-27 — Phase 4 re-planned with vertical slicing
+
+### Principle: One Task = One Complete Feature
+
+**Old Approach (Horizontal Slicing)**: Tasks divided by technical layers
+- 4-01: Domain entities only
+- 4-02: Repository + use cases only
+- 4-07: Frontend types only
+- **Problem**: After 4 tasks, still no usable feature
+
+**New Approach (Vertical Slicing)**: Each task delivers ONE complete user-facing feature
+- A1: Lead Capture Foundation (domain + repo + API + tests)
+- A3: Vendedor Leads List (API + frontend + E2E)
+- **Benefit**: After A3, vendedor can use the feature
+
+### Phase 4 Vertical Slices (A1-A7)
+
+| Task | Feature | User Stories | Layers Included |
+|------|---------|--------------|-----------------|
+| **A1** | Lead Capture Foundation | LEAD-08, LEAD-03 (partial) | Domain, DB, Repo, Use Cases, API, Tests |
+| **A2** | Facebook Lead Webhook | LEAD-01 | Webhook, GraphAPI, Background Tasks |
+| **A3** | Vendedor Leads List | LEAD-02, LEAD-03 | Frontend Types, API Client, Components, Pages, E2E |
+| **A4** | Appointment Scheduling | LEAD-04, LEAD-05 | Domain, DB, Repo, Use Cases, SendGrid, API, Frontend, Tests |
+| **A5** | Manager Team View | LEAD-06 | API Extensions, Frontend, E2E |
+| **A6** | Dealer Calendar | (Implied) | Frontend, E2E |
+| **A7** | E2E Verification | All | E2E Tests, Smoke Tests |
+
+### Dependency Graph
+
+```
+A1: Lead Capture Foundation (backend complete)
+  ↓
+  ├─→ A2: Facebook Webhook (parallel with A1)
+  │
+  ├─→ A3: Vendedor Leads List (frontend)
+  │     ↓
+  │     └─→ A5: Manager Team View
+  │
+  └─→ A4: Appointment Scheduling (full feature)
+        ↓
+        └─→ A6: Dealer Calendar
+              ↓
+              └─→ A7: E2E Verification
+```
+
+**Parallel Execution**: A1+A2, A3+A4, A5+A6
+
+### Acceptance Criteria per Vertical Slice
+
+**A1 (Lead Capture Foundation)**:
+- Lead entity with 5-state lifecycle (new → contacted → qualified → appointment_set → lost)
+- LeadAuditLog tracks all status changes
+- POST /api/v1/leads creates manual lead
+- PUT /api/v1/leads/{id}/status updates status with audit trail
+- Unit tests for state transitions pass
+- Integration tests for use cases pass
+
+**A2 (Facebook Lead Webhook)**:
+- POST /api/v1/webhooks/facebook receives lead messages
+- Webhook signature verification (X-Hub-Signature)
+- Lead created from Facebook payload within 5 seconds
+- Duplicate detection (same buyer + vehicle within 24h)
+- Polling fallback runs every 10 minutes
+- Integration test passes
+
+**A3 (Vendedor Leads List)**:
+- Vendedor views assigned leads at /vendedor/leads
+- Status update dropdown works
+- Search by buyer name/vehicle
+- Filter by status
+- Unread leads highlighted
+- Real-time updates (polling 30s)
+- E2E test passes
+
+**A4 (Appointment Scheduling)**:
+- Vendedor creates appointment from lead details
+- AppointmentForm with date-time picker
+- Time validation (business hours, conflicts)
+- Lead status updates to "appointment_set"
+- Dealer receives SendGrid email notification
+- E2E test passes
+
+**A5 (Manager Team View)**:
+- Manager views all team leads at /manager/team/leads
+- Filter by vendedor dropdown
+- Reassign lead to different vendedor
+- Export to CSV
+- Team metrics card
+- E2E test passes
+
+**A6 (Dealer Calendar)**:
+- Dealer views appointments at /dealer/appointments
+- Calendar view (day/week/month)
+- Confirm/cancel appointment buttons
+- Appointment details modal
+- E2E test passes
+
+**A7 (E2E Verification)**:
+- Facebook webhook → lead → appointment flow verified
+- All E2E tests pass
+- Smoke tests updated with 5 critical lead tests
+- Test execution time < 5 minutes
+
+---
+
 ## 4. Use Cases
 
 ### UC-01: Vendedor Publishes Vehicle to Facebook
