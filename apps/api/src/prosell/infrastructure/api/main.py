@@ -51,11 +51,11 @@ from prosell.infrastructure.api.routers import (
     publisher_router,
     team_router,
     user_dealer_router,
-    vendedor_router,
     vehicle_router,
     wallet_router,
 )
 from prosell.infrastructure.api.routers.appointment_router import router as appointment_router
+from prosell.infrastructure.api.routers.vendedor_router import router as vendedor_router
 from prosell.infrastructure.api.routers.webhook_router import router as webhook_router
 
 app = FastAPI(
