@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.lead.request import (
+    AssignLeadRequest,
     CreateLeadRequest,
     ListLeadsRequest,
     UpdateLeadStatusRequest,
@@ -16,6 +17,7 @@ from prosell.application.dto.lead.response import (
     LeadListResponse,
     LeadResponse,
 )
+from prosell.application.use_cases.lead.assign_lead import AssignLeadToVendedorUseCase
 from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
 from prosell.application.use_cases.lead.get_lead_details import GetLeadDetailsUseCase
 from prosell.application.use_cases.lead.list_leads import ListLeadsUseCase
@@ -72,6 +74,13 @@ async def get_lead_details_use_case(
 ) -> GetLeadDetailsUseCase:
     """Get GetLeadDetails use case instance."""
     return GetLeadDetailsUseCase(lead_repo)
+
+
+async def get_assign_lead_use_case(
+    lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
+) -> AssignLeadToVendedorUseCase:
+    """Get AssignLead use case instance."""
+    return AssignLeadToVendedorUseCase(lead_repo)
 
 
 # =============================================================================
@@ -210,5 +219,40 @@ async def update_lead_status(
     except LeadStateTransitionException as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        ) from None
+
+
+@router.put(
+    "/{lead_id}/assign",
+    response_model=LeadResponse,
+    summary="Assign lead to vendedor",
+)
+async def assign_lead(
+    lead_id: UUID,
+    request: AssignLeadRequest,
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    use_case: Annotated[AssignLeadToVendedorUseCase, Depends(get_assign_lead_use_case)],
+) -> LeadResponse:
+    """
+    Assign or reassign a lead to a vendedor.
+
+    - Managers can reassign leads to any vendedor in their tenant.
+    - Setting vendedor_id to null unassigns the lead.
+    - Lead must exist and belong to the tenant.
+    - Returns 404 if lead not found.
+    - Returns 403 if user has no tenant_id.
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No organization associated with account.")
+    try:
+        return await use_case.execute(
+            lead_id=lead_id,
+            request=request,
+            tenant_id=current_user.tenant_id,
+        )
+    except LeadNotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         ) from None

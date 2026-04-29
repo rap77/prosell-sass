@@ -391,3 +391,114 @@ class TestUpdateLeadStatusEndpoint:
         app.dependency_overrides.clear()
 
         assert response.status_code == 404  # Lead not found in tenant2
+
+
+# =============================================================================
+# PUT /api/v1/leads/{id}/assign
+# =============================================================================
+
+
+class TestAssignLeadEndpoint:
+    """Tests for PUT /api/v1/leads/{id}/assign."""
+
+    @pytest.mark.asyncio
+    async def test_assign_lead_returns_200(self, api_client_as_manager, db_session):
+        """Should return 200 with updated lead when assigning to vendedor."""
+        from prosell.infrastructure.models.user_model import UserModel
+
+        client, manager = api_client_as_manager
+
+        # Create a lead first
+        create_resp = await client.post(
+            "/api/v1/leads",
+            json={
+                "buyer_name": "Assign Test Buyer",
+                "buyer_email": f"assign-{uuid4().hex[:6]}@test.com",
+            },
+        )
+        assert create_resp.status_code == 201
+        lead_id = create_resp.json()["id"]
+
+        # Create another user to assign lead to
+        new_vendedor = make_user_entity(RoleType.SALES_AGENT, manager.tenant_id)
+        new_vendedor_model = UserModel(
+            id=new_vendedor.id,
+            email=new_vendedor.email,
+            full_name=new_vendedor.full_name,
+            tenant_id=new_vendedor.tenant_id,
+            status=new_vendedor.status.value,
+            email_verified=new_vendedor.email_verified,
+            password_hash="hash",
+        )
+        db_session.add(new_vendedor_model)
+        await db_session.flush()
+
+        # Assign lead to new vendedor
+        response = await client.put(
+            f"/api/v1/leads/{lead_id}/assign",
+            json={"vendedor_id": str(new_vendedor.id)},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["vendedor_id"] == str(new_vendedor.id)
+
+    @pytest.mark.asyncio
+    async def test_assign_lead_unassign_returns_200(self, api_client_as_manager):
+        """Should return 200 when unassigning lead (vendedor_id=null)."""
+        client, manager = api_client_as_manager
+
+        # Create a lead with assignment
+        create_resp = await client.post(
+            "/api/v1/leads",
+            json={
+                "buyer_name": "Unassign Test Buyer",
+                "buyer_email": f"unassign-{uuid4().hex[:6]}@test.com",
+                "vendedor_id": str(manager.id),  # Initially assigned
+            },
+        )
+        assert create_resp.status_code == 201
+        lead_id = create_resp.json()["id"]
+
+        # Unassign lead
+        response = await client.put(
+            f"/api/v1/leads/{lead_id}/assign",
+            json={"vendedor_id": None},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["vendedor_id"] is None
+
+    @pytest.mark.asyncio
+    async def test_assign_lead_not_found_returns_404(self, api_client_as_manager):
+        """Should return 404 for non-existent lead."""
+        client, _ = api_client_as_manager
+
+        response = await client.put(
+            f"/api/v1/leads/{uuid4()}/assign",
+            json={"vendedor_id": str(uuid4())},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_assign_lead_no_tenant_returns_403(self, api_client_as_manager):
+        """Should return 403 if user has no tenant_id."""
+        client, manager = api_client_as_manager
+
+        # Create user without tenant
+        user_no_tenant = manager.model_copy(update={"tenant_id": None})
+        app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: user_no_tenant
+
+        # Create lead first
+        create_resp = await client.post(
+            "/api/v1/leads",
+            json={
+                "buyer_name": "No Tenant Buyer",
+                "buyer_email": f"notenant-{uuid4().hex[:6]}@test.com",
+            },
+        )
+        assert create_resp.status_code == 403  # Should fail at create
+
+        app.dependency_overrides.clear()
