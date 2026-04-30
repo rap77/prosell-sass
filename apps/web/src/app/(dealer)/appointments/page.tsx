@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { useAppointments, Appointment } from "@/lib/api/appointments";
 import { CalendarView } from "@/components/appointments/CalendarView";
+import { AppointmentDetailsModal } from "@/components/appointments/AppointmentDetailsModal";
 import { Calendar, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, parseISO, startOfDay, endOfDay } from "date-fns";
@@ -16,7 +17,8 @@ import { format, parseISO, startOfDay, endOfDay } from "date-fns";
  * - Day/week/month views
  * - Filter appointments by dealer_id from user context
  * - Show today's appointments count badge
- * - Handle appointment clicks for details modal (A6.10)
+ * - Show appointment details modal on click
+ * - Confirm/cancel appointments from modal
  * - Responsive design for mobile/desktop
  *
  * Route: /dealer/appointments
@@ -25,6 +27,7 @@ import { format, parseISO, startOfDay, endOfDay } from "date-fns";
 export default function DealerAppointmentsPage() {
   const { user } = useAuthStore();
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isManualRefetch, setIsManualRefetch] = useState(false);
 
   // Get dealer_id from user context
@@ -55,7 +58,7 @@ export default function DealerAppointmentsPage() {
   // Handle appointment click
   const handleAppointmentClick = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
-    // TODO: A6.10 - Show appointment details modal
+    setIsModalOpen(true);
   };
 
   // Handle manual refresh
@@ -153,12 +156,17 @@ export default function DealerAppointmentsPage() {
         />
       </div>
 
-      {/* Selected appointment (for testing, modal will be added in A6.10) */}
-      {selectedAppointment && (
-        <div data-testid="selected-appointment" className="hidden">
-          {selectedAppointment.id}
-        </div>
-      )}
+      {/* Appointment Details Modal */}
+      <AppointmentDetailsModal
+        appointment={selectedAppointment}
+        open={isModalOpen}
+        onOpenChange={(open) => {
+          setIsModalOpen(open);
+          if (!open) {
+            setSelectedAppointment(null);
+          }
+        }}
+      />
     </div>
   );
 }

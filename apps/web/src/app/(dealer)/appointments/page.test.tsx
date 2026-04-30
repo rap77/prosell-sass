@@ -13,6 +13,10 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/api/appointments", () => ({
   useAppointments: vi.fn(),
+  useUpdateAppointmentStatus: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+  })),
   AppointmentStatus: {
     SCHEDULED: "scheduled",
     COMPLETED: "completed",
@@ -42,6 +46,20 @@ vi.mock("@/components/appointments/CalendarView", () => ({
 
 vi.mock("@/stores/authStore", () => ({
   useAuthStore: vi.fn(),
+}));
+
+vi.mock("@/lib/api/leads", () => ({
+  useLead: vi.fn(() => ({
+    data: null,
+    isLoading: false,
+  })),
+  LeadStatus: {
+    NEW: "new",
+    CONTACTED: "contacted",
+    QUALIFIED: "qualified",
+    APPOINTMENT_SET: "appointment_set",
+    LOST: "lost",
+  },
 }));
 
 describe("DealerAppointmentsPage", () => {
@@ -225,9 +243,9 @@ describe("DealerAppointmentsPage", () => {
     const clickButton = screen.getByTestId("click-appointment");
     clickButton.click();
 
-    // Should set selected appointment (details modal would be shown in A6.10)
+    // Should show appointment details modal
     await waitFor(() => {
-      expect(screen.getByTestId("selected-appointment")).toBeInTheDocument();
+      expect(screen.getByText("Appointment Details")).toBeInTheDocument();
     });
   });
 
