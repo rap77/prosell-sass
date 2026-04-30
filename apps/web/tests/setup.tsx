@@ -91,7 +91,7 @@ vi.mock('@/components/ui/select', () => ({
       data-testid="select-item"
       data-value={value}
       role="option"
-      onClick={() => onClick?.(value)}
+      onClick={() => onClick?.()}
     >
       {children}
     </div>

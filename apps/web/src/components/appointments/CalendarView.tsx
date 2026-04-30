@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -70,8 +70,6 @@ export function CalendarView({
   onAppointmentClick,
   onDateRangeChange,
 }: CalendarViewProps) {
-  const [currentView, setCurrentView] = useState<CalendarView>(initialView);
-
   /**
    * Transform appointments to FullCalendar event format
    * Filters by dealer_id and formats dates
@@ -98,16 +96,6 @@ export function CalendarView({
   }, [appointments, dealerId]);
 
   /**
-   * Handle view change
-   */
-  const handleViewChange = useCallback(
-    (view: { type: CalendarView }) => {
-      setCurrentView(view.type);
-    },
-    [setCurrentView]
-  );
-
-  /**
    * Handle event click
    */
   const handleEventClick = useCallback(
@@ -132,7 +120,7 @@ export function CalendarView({
     <div className="calendar-view w-full">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, listPlugin]}
-        initialView={currentView}
+        initialView={initialView}
         headerToolbar={{
           left: "prev,next today",
           center: "title",
@@ -140,7 +128,6 @@ export function CalendarView({
         }}
         events={calendarEvents()}
         eventClick={handleEventClick}
-        viewDidChange={handleViewChange}
         datesSet={handleDatesSet}
         height="auto"
         editable={false}

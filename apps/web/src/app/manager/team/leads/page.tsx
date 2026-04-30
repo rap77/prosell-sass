@@ -22,9 +22,7 @@ export default function ManagerTeamLeadsPage() {
   const [reassignLeadId, setReassignLeadId] = useState<string | null>(null);
 
   // Fetch lead data when reassignLeadId is set
-  const { data: lead } = useLead(reassignLeadId || "", {
-    enabled: !!reassignLeadId,
-  });
+  const { data: lead } = useLead(reassignLeadId || undefined);
 
   const handleLeadClick = (leadId: string) => {
     // Navigate to lead details page
