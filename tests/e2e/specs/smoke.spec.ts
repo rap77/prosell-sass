@@ -615,7 +615,7 @@ test.describe("Smoke Tests - Critical Path", () => {
         // Select time
         await page.click("#time");
         await page.waitForSelector('[role="listbox"]');
-        await page.locator("[role='option']").filter({ hasText: "10:00") }.first().click();
+        await page.locator("[role='option']").filter({ hasText: "10:00" }).first().click();
 
         // Submit form
         await page.click('button[type="submit"]');
