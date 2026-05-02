@@ -1,23 +1,23 @@
-"""CancelAppointmentUseCase — cancels an appointment and sends email."""
+"""ConfirmAppointmentUseCase — confirms an appointment and sends email."""
 
 from uuid import UUID
 
 from prosell.application.dto.appointment.response import AppointmentResponse
-from prosell.domain.entities.appointment import AppointmentStatus
+from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 from prosell.domain.entities.lead import Lead
 from prosell.domain.exceptions.appointment_exceptions import AppointmentNotFoundException
 from prosell.domain.repositories.appointment_repository import AbstractAppointmentRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 
 
-class CancelAppointmentUseCase:
+class ConfirmAppointmentUseCase:
     """
-    Cancel an appointment.
+    Confirm an appointment.
 
     Business rules:
-    - Only scheduled appointments can be cancelled
-    - Cancelled/completed appointments cannot be cancelled again
+    - Marks appointment as COMPLETED
     - Sends email notification to buyer if email available
+    - Gracefully handles missing lead or missing email
     """
 
     def __init__(
@@ -36,7 +36,7 @@ class CancelAppointmentUseCase:
         tenant_id: UUID,
     ) -> AppointmentResponse:
         """
-        Execute appointment cancellation.
+        Execute appointment confirmation.
 
         Args:
             appointment_id: Appointment UUID
@@ -48,7 +48,7 @@ class CancelAppointmentUseCase:
         Raises:
             AppointmentNotFoundException: If appointment not found
         """
-        # Get appointment first to check if it exists and get lead_id
+        # Get appointment first to check if it exists
         appointment = await self.appointment_repository.get_by_id(
             appointment_id=appointment_id,
             tenant_id=tenant_id,
@@ -57,11 +57,11 @@ class CancelAppointmentUseCase:
         if not appointment:
             raise AppointmentNotFoundException(f"Appointment not found: {appointment_id}")
 
-        # Update status to cancelled
+        # Update status to completed
         updated = await self.appointment_repository.update_status(
             appointment_id=appointment_id,
             tenant_id=tenant_id,
-            new_status=AppointmentStatus.CANCELLED,
+            new_status=AppointmentStatus.COMPLETED,
         )
 
         # Try to get lead for email notification
@@ -81,7 +81,7 @@ class CancelAppointmentUseCase:
                 dealer_name="Tu Asesor",  # TODO: Fetch from user repository
                 vehicle_info="Tu Vehículo",  # TODO: Fetch from vehicle repository
                 scheduled_at=updated.scheduled_at,
-                new_status=AppointmentStatus.CANCELLED,
+                new_status=AppointmentStatus.COMPLETED,
                 notes=updated.notes,
             )
 
