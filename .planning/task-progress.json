@@ -1,129 +1,129 @@
 {
-  "task_id": "A5",
-  "session_id": "sess-resume-20260429-082641",
-  "started_at": "2026-04-28T22:28:37.505169",
+  "task_id": "A7",
+  "session_id": "sess-20260502-083325",
+  "started_at": "2026-05-02T08:33:25.508306",
   "phase": 19,
   "subtasks": {
-    "A5.1": {
-      "description": "Extend GET /api/v1/leads with manager scope (all team leads, not just own)",
+    "A7.1": {
+      "description": "Create E2E test for Facebook webhook lead capture",
       "status": "completed",
-      "completed_at": "2026-04-29T07:19:00.000000",
-      "commit_sha": "existing",
-      "retries": 0,
-      "note": "Already implemented in ListLeadsUseCase (managers see all team leads via list_by_manager)"
-    },
-    "A5.2": {
-      "description": "Create AssignLeadToVendedorUseCase (if not in A1)",
-      "status": "completed",
-      "completed_at": "2026-04-29T07:19:00.000000",
-      "commit_sha": "existing",
-      "retries": 0,
-      "note": "Already exists at apps/api/src/prosell/application/use_cases/lead/assign_lead.py"
-    },
-    "A5.3": {
-      "description": "Create PUT /api/v1/leads/{id}/assign endpoint",
-      "status": "completed",
-      "completed_at": "2026-04-29T07:19:00.000000",
-      "commit_sha": "f394c8c",
+      "completed_at": "2026-05-02T08:45:00.000000",
       "retries": 0
     },
-    "A5.4": {
-      "description": "Extend useLeads hook with manager scope",
+    "A7.2": {
+      "description": "Test webhook endpoint receives Facebook payload",
       "status": "completed",
-      "retries": 0,
-      "completed_at": "2026-04-29T08:15:07.084684",
-      "commit_sha": "1a1c3ec"
-    },
-    "A5.5": {
-      "description": "Create useReassignLead mutation hook",
-      "status": "completed",
-      "retries": 0,
-      "completed_at": "2026-04-29T08:18:50.619340",
-      "commit_sha": "6eaafe6"
-    },
-    "A5.6": {
-      "description": "Create TeamLeadList component (extends LeadList)",
-      "status": "completed",
-      "retries": 0,
-      "completed_at": "2026-04-29T08:19:05.977844",
-      "commit_sha": "d55fca4"
-    },
-    "A5.7": {
-      "description": "Create LeadReassignModal component (vendedor dropdown, confirm button)",
-      "status": "completed",
-      "retries": 0,
-      "completed_at": "2026-04-29T08:26:10.549041",
-      "commit_sha": "1b5f70d"
-    },
-    "A5.8": {
-      "description": "Create TeamMetricsCard component (leads per vendedor, conversion rates)",
-      "status": "completed",
-      "completed_at": "2026-04-29T08:30:00.000000",
-      "commit_sha": "bc8f235",
+      "completed_at": "2026-05-02T08:45:00.000000",
       "retries": 0
     },
-    "A5.9": {
-      "description": "Create /manager/team/leads page",
+    "A7.3": {
+      "description": "Test lead creation from webhook",
       "status": "completed",
-      "completed_at": "2026-04-29T08:35:00.000000",
-      "commit_sha": "836384f",
+      "completed_at": "2026-05-02T08:45:00.000000",
       "retries": 0
     },
-    "A5.10": {
-      "description": "Add filter by vendedor dropdown",
+    "A7.4": {
+      "description": "Test duplicate lead detection",
       "status": "completed",
-      "completed_at": "2026-04-29T08:35:00.000000",
-      "commit_sha": "existing",
-      "retries": 0,
-      "note": "Already implemented in TeamLeadList.tsx (vendedor filter dropdown)"
-    },
-    "A5.11": {
-      "description": "Show all leads across team (not just assigned to manager)",
-      "status": "completed",
-      "completed_at": "2026-04-29T08:35:00.000000",
-      "commit_sha": "existing",
-      "retries": 0,
-      "note": "Already implemented via backend list_by_manager and useLeads hook"
-    },
-    "A5.12": {
-      "description": "Implement reassign lead mutation",
-      "status": "completed",
-      "completed_at": "2026-04-29T08:35:00.000000",
-      "commit_sha": "existing",
-      "retries": 0,
-      "note": "Already implemented via useReassignLead hook and PUT /api/v1/leads/{id}/assign"
-    },
-    "A5.13": {
-      "description": "Add export to CSV button",
-      "status": "completed",
-      "completed_at": "2026-04-29T08:35:00.000000",
-      "commit_sha": "existing",
-      "retries": 0,
-      "note": "Already implemented in TeamLeadList.tsx with CSV injection security fix"
-    },
-    "A5.14": {
-      "description": "Write E2E test for manager view",
-      "status": "completed",
-      "completed_at": "2026-04-29T08:40:00.000000",
-      "commit_sha": "ad735c4",
+      "completed_at": "2026-05-02T08:45:00.000000",
       "retries": 0
     },
-    "A5.15": {
-      "description": "Test filter by vendedor",
-      "status": "completed",
-      "completed_at": "2026-04-29T08:40:00.000000",
-      "commit_sha": "ad735c4",
+    "A7.5": {
+      "description": "Create E2E test for vendedor leads list view",
+      "status": "pending",
       "retries": 0
     },
-    "A5.16": {
+    "A7.6": {
+      "description": "Test lead list loads from API",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.7": {
+      "description": "Test lead status update",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.8": {
+      "description": "Test search and filter",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.9": {
+      "description": "Create E2E test for appointment creation",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.10": {
+      "description": "Test appointment creation from lead",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.11": {
+      "description": "Test appointment form validation",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.12": {
+      "description": "Test dealer email notification (mocked)",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.13": {
+      "description": "Create E2E test for manager view",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.14": {
+      "description": "Test manager team leads view",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.15": {
       "description": "Test lead reassignment",
-      "status": "completed",
-      "completed_at": "2026-04-29T08:40:00.000000",
-      "commit_sha": "ad735c4",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.16": {
+      "description": "Create E2E test for dealer calendar",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.17": {
+      "description": "Test dealer calendar view",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.18": {
+      "description": "Test appointment confirm/cancel",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.19": {
+      "description": "Add 5 critical lead tests to smoke.spec.ts",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.20": {
+      "description": "Test: Facebook webhook \u2192 lead \u2192 status update \u2192 appointment",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.21": {
+      "description": "Run all E2E tests",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.22": {
+      "description": "Measure test execution time (target: < 5 minutes)",
+      "status": "pending",
+      "retries": 0
+    },
+    "A7.23": {
+      "description": "Fix any failing tests",
+      "status": "pending",
       "retries": 0
     }
   },
-  "last_checkpoint": "A5.16",
-  "context_budget_exit": null,
-  "resumed_at": "2026-04-29T08:26:41.870326"
+  "last_checkpoint": null,
+  "context_budget_exit": null
 }
