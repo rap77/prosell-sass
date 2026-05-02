@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from prosell.application.dto.appointment.request import CreateAppointmentRequest
 from prosell.application.dto.appointment.response import AppointmentResponse
 from prosell.application.use_cases.appointment.cancel_appointment import CancelAppointmentUseCase
+from prosell.application.use_cases.appointment.confirm_appointment import ConfirmAppointmentUseCase
 from prosell.application.use_cases.appointment.create_appointment import CreateAppointmentUseCase
 from prosell.application.use_cases.appointment.list_appointments import ListAppointmentsUseCase
 from prosell.domain.entities.appointment import AppointmentStatus
@@ -18,9 +19,11 @@ from prosell.domain.exceptions.appointment_exceptions import (
     AppointmentNotFoundException,
     AppointmentTimeValidationException,
 )
-from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie, get_email_service
 from prosell.infrastructure.database.session import get_async_session
-from prosell.infrastructure.repositories.appointment_repository_impl import SqlAlchemyAppointmentRepository
+from prosell.infrastructure.repositories.appointment_repository_impl import (
+    SqlAlchemyAppointmentRepository,
+)
 from prosell.infrastructure.repositories.lead_repository_impl import SqlAlchemyLeadRepository
 
 router = APIRouter()
@@ -62,9 +65,28 @@ async def get_list_appointments_use_case(
 
 async def get_cancel_appointment_use_case(
     appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],
+    lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
+    email_service: Annotated[any, Depends(get_email_service)],
 ) -> CancelAppointmentUseCase:
     """Get CancelAppointment use case instance."""
-    return CancelAppointmentUseCase(appointment_repo)
+    return CancelAppointmentUseCase(
+        appointment_repository=appointment_repo,
+        lead_repository=lead_repo,
+        email_service=email_service,
+    )
+
+
+async def get_confirm_appointment_use_case(
+    appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],
+    lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
+    email_service: Annotated[any, Depends(get_email_service)],
+) -> ConfirmAppointmentUseCase:
+    """Get ConfirmAppointment use case instance."""
+    return ConfirmAppointmentUseCase(
+        appointment_repository=appointment_repo,
+        lead_repository=lead_repo,
+        email_service=email_service,
+    )
 
 
 # =============================================================================
@@ -182,7 +204,8 @@ async def update_appointment_status(
     appointment_id: UUID,
     new_status: AppointmentStatus,
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
-    use_case: Annotated[CancelAppointmentUseCase, Depends(get_cancel_appointment_use_case)],
+    cancel_use_case: Annotated[CancelAppointmentUseCase, Depends(get_cancel_appointment_use_case)],
+    confirm_use_case: Annotated[ConfirmAppointmentUseCase, Depends(get_confirm_appointment_use_case)],
 ) -> AppointmentResponse:
     """
     Update appointment status (e.g., mark as completed or cancelled).
@@ -190,6 +213,7 @@ async def update_appointment_status(
     - Requires authentication (JWT or cookie).
     - tenant_id is extracted from the authenticated user.
     - Returns 404 if appointment not found.
+    - Sends email notification to buyer when status changes.
     """
     if current_user.tenant_id is None:
         raise HTTPException(
@@ -198,17 +222,22 @@ async def update_appointment_status(
         )
 
     try:
-        # For now, only cancellation is supported via CancelAppointmentUseCase
-        if new_status != AppointmentStatus.CANCELLED:
+        # Route to appropriate use case based on status
+        if new_status == AppointmentStatus.COMPLETED:
+            return await confirm_use_case.execute(
+                appointment_id=appointment_id,
+                tenant_id=current_user.tenant_id,
+            )
+        elif new_status == AppointmentStatus.CANCELLED:
+            return await cancel_use_case.execute(
+                appointment_id=appointment_id,
+                tenant_id=current_user.tenant_id,
+            )
+        else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Only cancellation is supported via this endpoint.",
+                detail=f"Invalid status transition to {new_status.value}. Only COMPLETED and CANCELLED are supported.",
             )
-
-        return await use_case.execute(
-            appointment_id=appointment_id,
-            tenant_id=current_user.tenant_id,
-        )
     except AppointmentNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
