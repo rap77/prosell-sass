@@ -30,87 +30,103 @@
     },
     "A7.5": {
       "description": "Create E2E test for vendedor leads list view",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:00:00.000000",
       "retries": 0
     },
     "A7.6": {
       "description": "Test lead list loads from API",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:00:00.000000",
       "retries": 0
     },
     "A7.7": {
       "description": "Test lead status update",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:00:00.000000",
       "retries": 0
     },
     "A7.8": {
       "description": "Test search and filter",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:00:00.000000",
       "retries": 0
     },
     "A7.9": {
       "description": "Create E2E test for appointment creation",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:15:00.000000",
       "retries": 0
     },
     "A7.10": {
       "description": "Test appointment creation from lead",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:15:00.000000",
       "retries": 0
     },
     "A7.11": {
       "description": "Test appointment form validation",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:15:00.000000",
       "retries": 0
     },
     "A7.12": {
       "description": "Test dealer email notification (mocked)",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:15:00.000000",
       "retries": 0
     },
     "A7.13": {
       "description": "Create E2E test for manager view",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:30:00.000000",
       "retries": 0
     },
     "A7.14": {
       "description": "Test manager team leads view",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:30:00.000000",
       "retries": 0
     },
     "A7.15": {
       "description": "Test lead reassignment",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:30:00.000000",
       "retries": 0
     },
     "A7.16": {
       "description": "Create E2E test for dealer calendar",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:45:00.000000",
       "retries": 0
     },
     "A7.17": {
       "description": "Test dealer calendar view",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:45:00.000000",
       "retries": 0
     },
     "A7.18": {
       "description": "Test appointment confirm/cancel",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T09:45:00.000000",
       "retries": 0
     },
     "A7.19": {
       "description": "Add 5 critical lead tests to smoke.spec.ts",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T10:00:00.000000",
       "retries": 0
     },
     "A7.20": {
       "description": "Test: Facebook webhook \u2192 lead \u2192 status update \u2192 appointment",
-      "status": "pending",
+      "status": "completed",
+      "completed_at": "2026-05-02T10:00:00.000000",
       "retries": 0
     },
     "A7.21": {
       "description": "Run all E2E tests",
-      "status": "pending",
+      "status": "in_progress",
       "retries": 0
     },
     "A7.22": {
@@ -124,6 +140,6 @@
       "retries": 0
     }
   },
-  "last_checkpoint": null,
+  "last_checkpoint": "A7.20",
   "context_budget_exit": null
 }

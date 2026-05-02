@@ -1,5 +1,8 @@
 # ProSell MVP Implementation Checklist
 
+> **MasterMind checklist file:** this checklist is consumed by `/mm:complete-task` using positional checkbox mapping.
+> **Do not use as executive status source.** Official consolidated status: `docs/mvp-status.md`
+
 **Milestone**: Completar MVP de ProSell: publicación de vehículos en Facebook Marketplace, captura de leads y confirmación de citas
 **Version**: 2.0
 **Status**: Active
@@ -277,21 +280,21 @@ cd tests/e2e && pnpm test specs/manager-leads.spec.ts
 
 ### A6: Dealer Calendar (Dealer Feature)
 
-- [ ] Extend GET /api/v1/appointments with dealer scope (own appointments only)
-- [ ] Create PUT /api/v1/appointments/{id}/status endpoint (confirm, cancel)
-- [ ] Extend useAppointments hook with dealer scope
-- [ ] Create useUpdateAppointmentStatus mutation hook
-- [ ] Create CalendarView component (use calendar library)
-- [ ] Show day/week/month toggle
-- [ ] Create AppointmentCard component (buyer name, vehicle, time, status)
-- [ ] Add confirm/cancel buttons
-- [ ] Create /dealer/appointments page
-- [ ] Show appointment details modal
-- [ ] Add today's appointments badge
-- [ ] Implement status update mutation
-- [ ] Write E2E test for dealer calendar
-- [ ] Test calendar view (day/week/month)
-- [ ] Test confirm/cancel buttons
+- [x] Extend GET /api/v1/appointments with dealer scope (own appointments only)
+- [x] Create PUT /api/v1/appointments/{id}/status endpoint (confirm, cancel)
+- [x] Extend useAppointments hook with dealer scope
+- [x] Create useUpdateAppointmentStatus mutation hook
+- [x] Create CalendarView component (use calendar library)
+- [x] Show day/week/month toggle
+- [x] Create AppointmentCard component (buyer name, vehicle, time, status)
+- [x] Add confirm/cancel buttons
+- [x] Create /dealer/appointments page
+- [x] Show appointment details modal
+- [x] Add today's appointments badge
+- [x] Implement status update mutation
+- [x] Write E2E test for dealer calendar
+- [x] Test calendar view (day/week/month)
+- [x] Test confirm/cancel buttons
 
 **Verification**:
 ```bash
@@ -302,26 +305,26 @@ cd tests/e2e && pnpm test specs/dealer-calendar.spec.ts
 
 ### A7: E2E Verification (Final Task)
 
-- [ ] Create E2E test for Facebook webhook lead capture
-- [ ] Test webhook endpoint receives Facebook payload
-- [ ] Test lead creation from webhook
-- [ ] Test duplicate lead detection
-- [ ] Create E2E test for vendedor leads list view
-- [ ] Test lead list loads from API
-- [ ] Test lead status update
-- [ ] Test search and filter
-- [ ] Create E2E test for appointment creation
-- [ ] Test appointment creation from lead
-- [ ] Test appointment form validation
-- [ ] Test dealer email notification (mocked)
-- [ ] Create E2E test for manager view
-- [ ] Test manager team leads view
-- [ ] Test lead reassignment
-- [ ] Create E2E test for dealer calendar
-- [ ] Test dealer calendar view
-- [ ] Test appointment confirm/cancel
-- [ ] Add 5 critical lead tests to smoke.spec.ts
-- [ ] Test: Facebook webhook → lead → status update → appointment
+- [x] Create E2E test for Facebook webhook lead capture
+- [x] Test webhook endpoint receives Facebook payload
+- [x] Test lead creation from webhook
+- [x] Test duplicate lead detection
+- [x] Create E2E test for vendedor leads list view
+- [x] Test lead list loads from API
+- [x] Test lead status update
+- [x] Test search and filter
+- [x] Create E2E test for appointment creation
+- [x] Test appointment creation from lead
+- [x] Test appointment form validation
+- [x] Test dealer email notification (mocked)
+- [x] Create E2E test for manager view
+- [x] Test manager team leads view
+- [x] Test lead reassignment
+- [x] Create E2E test for dealer calendar
+- [x] Test dealer calendar view
+- [x] Test appointment confirm/cancel
+- [x] Add 5 critical lead tests to smoke.spec.ts
+- [x] Test: Facebook webhook → lead → status update → appointment
 - [ ] Run all E2E tests
 - [ ] Measure test execution time (target: < 5 minutes)
 - [ ] Fix any failing tests
