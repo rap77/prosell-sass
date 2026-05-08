@@ -114,3 +114,17 @@ screenshots/
 
 # Next.js generated files
 apps/web/next-env.d.ts
+
+# AI Tools
+.codex/
+
+# Application Logs
+apps/api/logs/
+apps/web/logs/
+*.log
+
+# Debug Screenshots
+login-error.png
+mvp-validation/
+*-error.png
+*-debug.png
