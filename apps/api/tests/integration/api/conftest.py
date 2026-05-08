@@ -15,7 +15,6 @@ with existing tests that expect domain entities.
 
 from uuid import uuid4
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
@@ -34,8 +33,6 @@ async def admin_user(test_user):
     existing tests that expect domain entities.
     """
     # Get the user's roles from the database
-    from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
-    from sqlalchemy import select
 
     # We need the db_session from the test_user fixture's scope
     # For now, we'll create a simple domain entity with minimal data
@@ -95,8 +92,9 @@ async def async_client_as_admin(admin_user, db_session):
     Uses dependency_overrides — NOT cookies or JWT tokens.
     Overrides both auth and database session to use test database.
     """
-    from prosell.infrastructure.database.session import get_async_session
     from collections.abc import AsyncGenerator
+
+    from prosell.infrastructure.database.session import get_async_session
 
     # Override auth
     app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
@@ -124,8 +122,9 @@ async def async_client_as_seller(seller_user, db_session):
     Seller role = SALES_AGENT — ListCategoriesUseCase forces is_active=True.
     Overrides both auth and database session to use test database.
     """
-    from prosell.infrastructure.database.session import get_async_session
     from collections.abc import AsyncGenerator
+
+    from prosell.infrastructure.database.session import get_async_session
 
     # Override auth
     app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: seller_user

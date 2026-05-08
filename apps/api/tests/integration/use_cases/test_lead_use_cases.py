@@ -21,11 +21,8 @@ from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.entities.user import User, UserStatus
 from prosell.domain.exceptions.lead_exceptions import (
     DuplicateLeadException,
-    LeadNotFoundException,
-    LeadStateTransitionException,
 )
 from prosell.infrastructure.repositories.lead_repository_impl import SqlAlchemyLeadRepository
-
 
 # =============================================================================
 # HELPERS
@@ -88,12 +85,12 @@ class TestCreateLeadUseCaseIntegration:
         use_case = CreateLeadUseCase(repo)
         tenant_id = test_organization.tenant_id
         email = f"dup-{uuid4().hex[:6]}@test.com"
-        vehicle_id = uuid4()
+        product_id = uuid4()
 
         request = CreateLeadRequest(
             buyer_name="Dup Buyer",
             buyer_email=email,
-            vehicle_id=vehicle_id,
+            product_id=product_id,
         )
 
         # First lead should succeed
@@ -125,12 +122,12 @@ class TestCreateLeadUseCaseIntegration:
         repo = SqlAlchemyLeadRepository(db_session)
         use_case = CreateLeadUseCase(repo)
         email = f"multi-{uuid4().hex[:6]}@test.com"
-        vehicle_id = uuid4()
+        product_id = uuid4()
 
         req = CreateLeadRequest(
             buyer_name="Multi Tenant Buyer",
             buyer_email=email,
-            vehicle_id=vehicle_id,
+            product_id=product_id,
         )
 
         result1 = await use_case.execute(req, tenant1)
@@ -239,8 +236,6 @@ class TestListLeadsUseCaseIntegration:
         # Use real user IDs from DB fixtures
         vendedor = make_user(RoleType.SALES_AGENT, tenant_id)
         # Override the UUID to match real DB user
-        from dataclasses import replace as dc_replace
-        import pydantic
         vendedor = vendedor.model_copy(update={"id": test_user.id})
         other_vendedor = make_user(RoleType.SALES_AGENT, tenant_id)
         other_vendedor = other_vendedor.model_copy(update={"id": test_seller_user.id})

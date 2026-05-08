@@ -7,12 +7,10 @@ import pytest
 from prosell.application.dto.lead.request import AssignLeadRequest, CreateLeadRequest
 from prosell.application.use_cases.lead.assign_lead import AssignLeadToVendedorUseCase
 from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
-from prosell.domain.entities.lead import LeadStatus
 from prosell.domain.entities.role import RoleType
 from prosell.domain.entities.user import User, UserStatus
 from prosell.domain.exceptions.lead_exceptions import LeadNotFoundException
 from prosell.infrastructure.repositories.lead_repository_impl import SqlAlchemyLeadRepository
-
 
 # =============================================================================
 # HELPERS

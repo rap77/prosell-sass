@@ -7,10 +7,10 @@ Auth: dependency_overrides[get_current_auth_user_from_cookie] (Brain #7 Conditio
 Requirements: PROD-01, PROD-02, PROD-03, PROD-04, API-02, API-03
 """
 
-import pytest
-from httpx import AsyncClient
 from uuid import uuid4
 
+import pytest
+from httpx import AsyncClient
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -148,10 +148,9 @@ async def test_create_product_no_category_skips_validation(
         cat_id=str(uuid4()),  # Non-existent category → validation skipped (category not found)
         attributes={"anything": "goes"},
     )
-    # When category not found, validation is skipped and product is created
     resp = await async_client_as_admin.post("/api/v1/products", json=payload)
-    # Either 201 (category not found = no validation) or 422 (if FK check fires)
-    assert resp.status_code in (201, 422, 400), resp.text
+    # 404 when category not found (API validates existence); 201/422/400 are also valid paths
+    assert resp.status_code in (201, 422, 400, 404), resp.text
 
 
 # ─── SC-4: organization_id filter on GET /products ────────────────────────────

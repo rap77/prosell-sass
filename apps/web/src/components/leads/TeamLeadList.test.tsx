@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TeamLeadList } from "./TeamLeadList";
-import { useLeads } from "@/lib/api/leads";
+import { useLeads, LeadStatus } from "@/lib/api/leads";
 import { useVendedores } from "@/lib/api/vendedores";
 
 // Mock the API modules
@@ -29,7 +29,9 @@ vi.mock("@/lib/api/leads", () => ({
     LOST: "lost",
   },
 }));
-vi.mock("@/lib/api/vendedores");
+vi.mock("@/lib/api/vendedores", () => ({
+  useVendedores: vi.fn(),
+}));
 
 describe("TeamLeadList", () => {
   const mockLeads = [
@@ -38,9 +40,10 @@ describe("TeamLeadList", () => {
       buyer_name: "John Doe",
       buyer_email: "john@example.com",
       buyer_phone: "555-1234",
-      vehicle: { id: "v1", title: "2020 Toyota Camry", make: "Toyota", model: "Camry", year: 2020 },
+      product_id: "p1",
+      product: { id: "p1", title: "2020 Toyota Camry", price_cents: 2000000, currency: "USD", status: "active", attributes: { category: "vehicle", year: 2020, make: "Toyota", model: "Camry" }, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
       message: "Interested in this vehicle",
-      status: "new" as const,
+      status: LeadStatus.NEW,
       source: "facebook",
       created_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(), // 2 minutes ago
       updated_at: new Date().toISOString(),
@@ -50,9 +53,10 @@ describe("TeamLeadList", () => {
       buyer_name: "Jane Smith",
       buyer_email: "jane@example.com",
       buyer_phone: "555-5678",
-      vehicle: { id: "v2", title: "2021 Honda Accord", make: "Honda", model: "Accord", year: 2021 },
+      product_id: "p2",
+      product: { id: "p2", title: "2021 Honda Accord", price_cents: 2200000, currency: "USD", status: "active", attributes: { category: "vehicle", year: 2021, make: "Honda", model: "Accord" }, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
       message: "Is this still available?",
-      status: "contacted" as const,
+      status: LeadStatus.CONTACTED,
       source: "website",
       created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // 10 minutes ago
       updated_at: new Date().toISOString(),
@@ -60,8 +64,8 @@ describe("TeamLeadList", () => {
   ];
 
   const mockVendedores = [
-    { id: "v1", name: "John Seller", email: "john@dealer.com", role: "vendedor" },
-    { id: "v2", name: "Jane Seller", email: "jane@dealer.com", role: "vendedor" },
+    { id: "v1", name: "John Seller", email: "john@branch.com", role: "vendedor" },
+    { id: "v2", name: "Jane Seller", email: "jane@branch.com", role: "vendedor" },
   ];
 
   beforeEach(() => {
@@ -159,11 +163,11 @@ describe("TeamLeadList", () => {
     renderWithQueryClient(<TeamLeadList />);
 
     // John Doe (2 minutes ago) should be highlighted with blue border
-    const johnDoeRow = screen.getByText("John Doe").closest(".flex.items-center");
+    const johnDoeRow = screen.getByText("John Doe").closest('[data-testid="lead-item"]');
     expect(johnDoeRow).toHaveClass("border-l-4", "border-l-blue-500");
 
     // Jane Smith (10 minutes ago) should not be highlighted
-    const janeSmithRow = screen.getByText("Jane Smith").closest(".flex.items-center");
+    const janeSmithRow = screen.getByText("Jane Smith").closest('[data-testid="lead-item"]');
     expect(janeSmithRow).not.toHaveClass("border-l-4", "border-l-blue-500");
   });
 

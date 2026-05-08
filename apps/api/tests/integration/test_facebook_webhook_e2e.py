@@ -7,15 +7,13 @@ Tests the complete flow:
 4. Duplicate detection works
 """
 
-import hmac
 import hashlib
-from unittest.mock import AsyncMock, MagicMock, patch
+import hmac
 from uuid import uuid4
 
 import pytest
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.infrastructure.api.main import app
 
@@ -178,6 +176,7 @@ class TestFacebookWebhookUseCasePhase2Behavior:
         from prosell.application.use_cases.facebook_webhook_use_case import (
             ProcessFacebookWebhookUseCase,
         )
+        from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
         from prosell.infrastructure.repositories.lead_repository_impl import (
             SqlAlchemyLeadRepository,
         )
@@ -187,7 +186,6 @@ class TestFacebookWebhookUseCasePhase2Behavior:
         from prosell.infrastructure.services.facebook_graph_api_client import (
             FacebookGraphApiClient,
         )
-        from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
 
         # Arrange: Create use case with dependencies
         lead_repo = SqlAlchemyLeadRepository(db_session)

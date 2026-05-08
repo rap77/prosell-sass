@@ -1,15 +1,19 @@
 """Tests for ProcessFacebookWebhookUseCase."""
-import json
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
+
 import pytest
+
 from prosell.application.use_cases.facebook_webhook_use_case import ProcessFacebookWebhookUseCase
+from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
+from prosell.domain.entities.lead import Lead
+from prosell.domain.entities.publication import Publication, PublicationStatus
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.publication_repository import IPublicationRepository
-from prosell.infrastructure.services.facebook_graph_api_client import FacebookGraphApiClient, FacebookBuyerProfile
-from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
-from prosell.domain.entities.publication import Publication, PublicationStatus
-from prosell.domain.entities.lead import Lead
-from unittest.mock import AsyncMock, MagicMock
+from prosell.infrastructure.services.facebook_graph_api_client import (
+    FacebookBuyerProfile,
+    FacebookGraphApiClient,
+)
 
 
 @pytest.fixture
@@ -53,13 +57,13 @@ def vendedor_id():
 
 
 @pytest.fixture
-def vehicle_id():
+def product_id():
     """Test vehicle ID."""
     return uuid4()
 
 
 @pytest.fixture
-def sample_webhook_payload(vehicle_id):
+def sample_webhook_payload(product_id):
     """Sample Facebook webhook payload."""
     return {
         "leadgen_id": "123456789",
@@ -71,12 +75,12 @@ def sample_webhook_payload(vehicle_id):
 
 
 @pytest.fixture
-def sample_publication(vehicle_id, vendedor_id, tenant_id):
+def sample_publication(product_id, vendedor_id, tenant_id):
     """Sample publication entity."""
     return Publication(
         id=uuid4(),
         tenant_id=tenant_id,
-        product_id=vehicle_id,
+        product_id=product_id,
         seller_user_id=vendedor_id,
         facebook_page_id=uuid4(),
         facebook_listing_id="fb_listing_123",
@@ -109,19 +113,19 @@ async def test_process_webhook_success(
     mock_create_lead_use_case,
     tenant_id,
     vendedor_id,
-    vehicle_id,
+    product_id,
 ):
     """Test successful webhook processing."""
     # Setup mocks
     mock_publication_repository.get_by_fb_listing_id.return_value = sample_publication
     mock_facebook_client.get_buyer_profile.return_value = sample_buyer_profile
-    mock_lead_repository.get_by_buyer_and_vehicle.return_value = None  # No duplicate
+    mock_lead_repository.get_by_buyer_and_product.return_value = None  # No duplicate
     mock_create_lead_use_case.execute.return_value = MagicMock(
         id=uuid4(),
         buyer_name="John Doe",
         buyer_email="john.doe@example.com",
         buyer_phone=None,
-        vehicle_id=vehicle_id,
+        product_id=product_id,
         vendedor_id=vendedor_id,
     )
 
@@ -145,7 +149,7 @@ async def test_process_webhook_success(
     # mock_facebook_client.get_buyer_profile.assert_called_once()
 
     # Verify duplicate check was performed
-    mock_lead_repository.get_by_buyer_and_vehicle.assert_called_once()
+    mock_lead_repository.get_by_buyer_and_product.assert_called_once()
 
     # Verify lead was created
     mock_create_lead_use_case.execute.assert_called_once()
@@ -166,13 +170,13 @@ async def test_process_webhook_duplicate_lead(
     # Setup mocks
     mock_publication_repository.get_by_fb_listing_id.return_value = sample_publication
     mock_facebook_client.get_buyer_profile.return_value = sample_buyer_profile
-    mock_lead_repository.get_by_buyer_and_vehicle.return_value = Lead(
+    mock_lead_repository.get_by_buyer_and_product.return_value = Lead(
         id=uuid4(),
         tenant_id=tenant_id,
         buyer_name="John Doe",
         buyer_email="john.doe@example.com",
         buyer_phone=None,
-        vehicle_id=sample_publication.product_id,
+        product_id=sample_publication.product_id,
         vendedor_id=sample_publication.seller_user_id,
         message="Previous message",
         source="facebook",

@@ -9,7 +9,7 @@ import { MobileNav } from '@/components/layout/MobileNav'
  * Navigation groups:
  * - Inventario: Catálogo, Publicaciones
  * - Ventas: Leads, Citas
- * - NO Configuración access (admin/dealer only)
+ * - NO Configuración access (admin/branch only)
  *
  * Server Component by default (minimize client JS).
  */
@@ -26,7 +26,7 @@ export default function SellerLayout({
       </div>
 
       {/* Main content area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden md:ml-64">
         <Header />
         <main className="flex-1 overflow-y-auto bg-muted/20 p-6">
           {children}

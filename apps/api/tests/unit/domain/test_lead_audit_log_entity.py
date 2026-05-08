@@ -1,11 +1,12 @@
 """Unit tests for LeadAuditLog entity - TDD RED phase."""
 
-import pytest
 from datetime import UTC, datetime
-from uuid import UUID, uuid4
+from uuid import uuid4
 
-from prosell.domain.entities.lead_audit_log import LeadAuditLog
+import pytest
+
 from prosell.domain.entities.lead import LeadStatus
+from prosell.domain.entities.lead_audit_log import LeadAuditLog
 
 
 class TestLeadAuditLogEntity:

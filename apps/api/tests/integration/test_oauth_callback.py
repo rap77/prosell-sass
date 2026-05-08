@@ -102,7 +102,7 @@ class TestOAuthAuthorizeEndpoint:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/auth/oauth/google/authorize",
+                "/api/v1/auth/oauth/google/authorize",
                 follow_redirects=False,
             )
 
@@ -129,7 +129,7 @@ class TestOAuthAuthorizeEndpoint:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/auth/oauth/facebook/authorize",
+                "/api/v1/auth/oauth/facebook/authorize",
                 follow_redirects=False,
             )
 
@@ -152,7 +152,7 @@ class TestOAuthAuthorizeEndpoint:
             # Exception is raised - in production middleware would catch it
             with pytest.raises(Exception, match="Unsupported provider"):
                 await client.get(
-                    "/api/auth/oauth/github/authorize",
+                    "/api/v1/auth/oauth/github/authorize",
                     follow_redirects=False,
                 )
 
@@ -173,7 +173,7 @@ class TestOAuthCallbackEndpoint:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/auth/oauth/google/callback",
+                "/api/v1/auth/oauth/google/callback",
                 params={
                     "code": "valid-google-auth-code",
                     "state": "test-state-123",
@@ -199,7 +199,7 @@ class TestOAuthCallbackEndpoint:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/auth/oauth/google/callback",
+                "/api/v1/auth/oauth/google/callback",
                 params={
                     "code": "ignored-code",  # OAuth providers send this even on error
                     "state": "ignored-state",
@@ -227,7 +227,7 @@ class TestOAuthCallbackEndpoint:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/auth/oauth/google/callback",
+                "/api/v1/auth/oauth/google/callback",
                 params={
                     "code": "valid-code",
                     "state": "invalid-state",
@@ -251,7 +251,7 @@ class TestOAuthCallbackEndpoint:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/auth/oauth/google/callback",
+                "/api/v1/auth/oauth/google/callback",
                 params={
                     "code": "valid-code",
                     "state": "valid-state",
@@ -269,7 +269,7 @@ class TestOAuthCallbackEndpoint:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/auth/oauth/google/callback",
+                "/api/v1/auth/oauth/google/callback",
                 params={
                     "state": "test-state-123",
                     # missing 'code'
@@ -288,7 +288,7 @@ class TestOAuthCallbackEndpoint:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/auth/oauth/google/callback",
+                "/api/v1/auth/oauth/google/callback",
                 params={
                     "code": "valid-code",
                     # missing 'state'
@@ -323,7 +323,7 @@ class TestOAuthServiceCalls:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             await client.get(
-                "/api/auth/oauth/google/authorize",
+                "/api/v1/auth/oauth/google/authorize",
                 follow_redirects=False,
             )
 
@@ -344,7 +344,7 @@ class TestOAuthServiceCalls:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             await client.get(
-                "/api/auth/oauth/google/callback",
+                "/api/v1/auth/oauth/google/callback",
                 params={
                     "code": "test-auth-code",
                     "state": "test-state-token",

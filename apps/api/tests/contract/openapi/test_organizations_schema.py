@@ -1,7 +1,5 @@
 """OpenAPI schema validation for /api/v1/org endpoint."""
 
-import pytest
-from fastapi import FastAPI
 from prosell.application.dto.org.response import OrganizationListResponse
 from prosell.infrastructure.api.main import app
 

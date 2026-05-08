@@ -68,7 +68,7 @@ class TestOAuthRateLimiting:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/auth/oauth/google/authorize",
+                "/api/v1/auth/oauth/google/authorize",
                 follow_redirects=False,
             )
             # First request should always succeed
@@ -89,7 +89,7 @@ class TestOAuthRateLimiting:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/auth/oauth/google/callback",
+                "/api/v1/auth/oauth/google/callback",
                 params={"code": "test-code", "state": "test-state"},
                 follow_redirects=False,
             )

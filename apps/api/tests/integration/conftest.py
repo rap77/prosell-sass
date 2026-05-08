@@ -1,7 +1,6 @@
 """Integration test fixtures - provides database session for tests.
 
-NOTE: Test database must be setup BEFORE running tests:
-  make test-setup
+PHASE 1 FIX: Session-scoped system roles to prevent unique constraint violations.
 """
 
 from collections.abc import AsyncGenerator
@@ -10,13 +9,123 @@ from uuid import UUID, uuid4
 
 import pytest
 import pytest_asyncio
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 TEST_DB_URL = "postgresql+asyncpg://prosell:prosell_test_password@localhost:5433/prosell_test"
 
+# =============================================================================
+# SESSION-SCOPED FIXTURES - Run once per test session
+# =============================================================================
+
+@pytest_asyncio.fixture(scope="session")
+async def _session_engine():
+    """Create engine for session-scoped fixtures."""
+    engine = create_async_engine(TEST_DB_URL, echo=False)
+    yield engine
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture(scope="session")
+async def system_roles(_session_engine):
+    """
+    Create system roles ONCE per test session.
+    These roles are committed to the database and persist across all tests.
+    
+    This fixes: "duplicate key value violates unique constraint roles_role_type_key"
+    """
+    async_session_maker = async_sessionmaker(
+        _session_engine,
+        class_=AsyncSession,
+        expire_on_commit=False
+    )
+    
+    async with async_session_maker() as session:
+        # Check if roles already exist (from previous test run or manual setup)
+        stmt = select(RoleModel).where(
+            RoleModel.role_type.in_(["SUPER_ADMIN", "SALES_AGENT", "MANAGER", "ADMIN"])
+        )
+        result = await session.execute(stmt)
+        existing_roles = {r.role_type: r for r in result.scalars().all()}
+        
+        roles = {}
+        
+        # Create SUPER_ADMIN if not exists
+        if "SUPER_ADMIN" not in existing_roles:
+            role = RoleModel(
+                id=uuid4(),
+                role_type="SUPER_ADMIN",
+                name="Super Admin",
+                description="Super admin role for tests",
+                is_system_role=True,
+                tenant_id=None,
+            )
+            session.add(role)
+            await session.flush()
+            roles["SUPER_ADMIN"] = role
+        else:
+            roles["SUPER_ADMIN"] = existing_roles["SUPER_ADMIN"]
+        
+        # Create SALES_AGENT if not exists
+        if "SALES_AGENT" not in existing_roles:
+            role = RoleModel(
+                id=uuid4(),
+                role_type="SALES_AGENT",
+                name="Sales Agent",
+                description="Sales agent role for tests",
+                is_system_role=True,
+                tenant_id=None,
+            )
+            session.add(role)
+            await session.flush()
+            roles["SALES_AGENT"] = role
+        else:
+            roles["SALES_AGENT"] = existing_roles["SALES_AGENT"]
+        
+        # Create MANAGER if not exists
+        if "MANAGER" not in existing_roles:
+            role = RoleModel(
+                id=uuid4(),
+                role_type="MANAGER",
+                name="Manager",
+                description="Manager role for tests",
+                is_system_role=True,
+                tenant_id=None,
+            )
+            session.add(role)
+            await session.flush()
+            roles["MANAGER"] = role
+        else:
+            roles["MANAGER"] = existing_roles["MANAGER"]
+        
+        # Create ADMIN if not exists
+        if "ADMIN" not in existing_roles:
+            role = RoleModel(
+                id=uuid4(),
+                role_type="ADMIN",
+                name="Admin",
+                description="Admin role for tests",
+                is_system_role=True,
+                tenant_id=None,
+            )
+            session.add(role)
+            await session.flush()
+            roles["ADMIN"] = role
+        else:
+            roles["ADMIN"] = existing_roles["ADMIN"]
+        
+        # Commit to persist these roles for the entire test session
+        await session.commit()
+    
+    return roles
+
+
+# =============================================================================
+# FUNCTION-SCOPED FIXTURES - Clean state for each test
+# =============================================================================
 
 @pytest_asyncio.fixture
-async def db_session() -> AsyncGenerator[AsyncSession, None]:
+async def db_session() -> AsyncGenerator[AsyncSession]:
     """
     Function-scoped fixture providing a clean database session for each test.
     Wraps test in transaction and rolls back after completion.
@@ -28,17 +137,16 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         expire_on_commit=False
     )
 
-    async with async_session_maker() as session:
-        async with session.begin():
-            yield session
-            # Rollback after test to keep database clean
-            await session.rollback()
+    async with async_session_maker() as session, session.begin():
+        yield session
+        # Rollback after test to keep database clean
+        await session.rollback()
 
     await engine.dispose()
 
 
 # =============================================================================
-# TEST DATA FIXTURES - Create data in database for tests
+# TEST DATA FIXTURES - Use system_roles instead of creating new ones
 # =============================================================================
 
 from prosell.infrastructure.models.category_model import CategoryModel
@@ -48,7 +156,7 @@ from prosell.infrastructure.models.user_model import UserModel
 
 
 @pytest_asyncio.fixture
-async def test_organization(db_session: AsyncSession) -> AsyncGenerator[OrganizationModel, None]:
+async def test_organization(db_session: AsyncSession) -> AsyncGenerator[OrganizationModel]:
     """
     Create a test organization in the database.
     This is required for any entity that has a tenant_id foreign key.
@@ -75,39 +183,30 @@ async def test_organization(db_session: AsyncSession) -> AsyncGenerator[Organiza
 
 
 @pytest_asyncio.fixture
-async def test_role(db_session: AsyncSession) -> AsyncGenerator[RoleModel, None]:
-    """Create a test SUPER_ADMIN role in the database."""
-    role = RoleModel(
-        id=uuid4(),
-        role_type="SUPER_ADMIN",
-        name="Super Admin",
-        description="Super admin role for tests",
-        is_system_role=True,
-        tenant_id=None,  # System role, no tenant
-    )
-
-    db_session.add(role)
-    await db_session.flush()
-
-    yield role
+async def test_role(system_roles) -> RoleModel:
+    """
+    Return the SUPER_ADMIN system role.
+    Does NOT create a new role - uses the session-scoped one.
+    """
+    return system_roles["SUPER_ADMIN"]
 
 
 @pytest_asyncio.fixture
-async def test_seller_role(db_session: AsyncSession) -> AsyncGenerator[RoleModel, None]:
-    """Create a test SALES_AGENT role in the database."""
-    role = RoleModel(
-        id=uuid4(),
-        role_type="SALES_AGENT",
-        name="Sales Agent",
-        description="Sales agent role for tests",
-        is_system_role=True,
-        tenant_id=None,  # System role, no tenant
-    )
+async def test_seller_role(system_roles) -> RoleModel:
+    """
+    Return the SALES_AGENT system role.
+    Does NOT create a new role - uses the session-scoped one.
+    """
+    return system_roles["SALES_AGENT"]
 
-    db_session.add(role)
-    await db_session.flush()
 
-    yield role
+@pytest_asyncio.fixture
+async def test_manager_role(system_roles) -> RoleModel:
+    """
+    Return the MANAGER system role.
+    Does NOT create a new role - uses the session-scoped one.
+    """
+    return system_roles["MANAGER"]
 
 
 @pytest_asyncio.fixture
@@ -115,7 +214,7 @@ async def test_user(
     db_session: AsyncSession,
     test_organization: OrganizationModel,
     test_role: RoleModel,
-) -> AsyncGenerator[UserModel, None]:
+) -> AsyncGenerator[UserModel]:
     """
     Create a test user in the database with SUPER_ADMIN role.
     User belongs to the test_organization.
@@ -154,7 +253,7 @@ async def test_seller_user(
     db_session: AsyncSession,
     test_organization: OrganizationModel,
     test_seller_role: RoleModel,
-) -> AsyncGenerator[UserModel, None]:
+) -> AsyncGenerator[UserModel]:
     """
     Create a test seller user in the database with SALES_AGENT role.
     User belongs to the test_organization.
@@ -192,7 +291,7 @@ async def test_seller_user(
 async def test_category(
     db_session: AsyncSession,
     test_organization: OrganizationModel,
-) -> AsyncGenerator[CategoryModel, None]:
+) -> AsyncGenerator[CategoryModel]:
     """Create a test category in the database."""
     category = CategoryModel(
         id=uuid4(),

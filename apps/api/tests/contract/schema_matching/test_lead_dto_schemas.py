@@ -26,7 +26,6 @@ from prosell.application.dto.lead.response import (
 from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.entities.lead_audit_log import LeadAuditLog
 
-
 # =============================================================================
 # HELPERS
 # =============================================================================
@@ -39,10 +38,10 @@ def make_lead_entity(**kwargs) -> Lead:
         tenant_id=uuid4(),
         buyer_name=kwargs.get("buyer_name", "Test Buyer"),
         buyer_email=kwargs.get("buyer_email", "buyer@test.com"),
-        buyer_phone=kwargs.get("buyer_phone", None),
-        vehicle_id=kwargs.get("vehicle_id", uuid4()),
+        buyer_phone=kwargs.get("buyer_phone"),
+        product_id=kwargs.get("product_id", uuid4()),
         vendedor_id=kwargs.get("vendedor_id", uuid4()),
-        message=kwargs.get("message", None),
+        message=kwargs.get("message"),
         source=kwargs.get("source", "manual"),
         status=kwargs.get("status", LeadStatus.NEW),
         created_at=datetime.now(UTC),
@@ -76,7 +75,7 @@ class TestCreateLeadRequestSchema:
         assert req.buyer_name == "Juan Pérez"
         assert req.buyer_email is None
         assert req.buyer_phone is None
-        assert req.vehicle_id is None
+        assert req.product_id is None
         assert req.vendedor_id is None
         assert req.source == "manual"
 
@@ -86,7 +85,7 @@ class TestCreateLeadRequestSchema:
             buyer_name="Juan Pérez",
             buyer_email="juan@test.com",
             buyer_phone="+59899123456",
-            vehicle_id=uuid4(),
+            product_id=uuid4(),
             vendedor_id=uuid4(),
             message="Interested in the car",
             source="facebook",
@@ -210,7 +209,7 @@ class TestLeadResponseSchema:
         assert resp.buyer_name == lead.buyer_name
         assert resp.buyer_email == lead.buyer_email
         assert resp.buyer_phone == lead.buyer_phone
-        assert resp.vehicle_id == lead.vehicle_id
+        assert resp.product_id == lead.product_id
         assert resp.vendedor_id == lead.vendedor_id
         assert resp.message == lead.message
         assert resp.source == lead.source

@@ -1,202 +1,164 @@
 """
 Schema matching tests for Vehicle DTOs.
 
-Validates that backend Pydantic models match frontend TypeScript types.
+Validates that frontend types match backend Pydantic DTOs.
+This test was recreated after DTO refactoring (2026-05-07).
 """
 
-from typing import Any, Union, get_type_hints
+import pytest
+from pydantic import ValidationError
 
-from pydantic import BaseModel
-
-from prosell.application.dto.vehicle.create import DecodeVinResponse, VehicleData
-
-
-def extract_pydantic_fields(model_class: type[BaseModel]) -> dict[str, str]:
-    """
-    Extract field names and types from a Pydantic model.
-
-    Args:
-        model_class: Pydantic BaseModel subclass
-
-    Returns:
-        Dict mapping field names to their TypeScript-like type representation
-    """
-    fields = {}
-    type_hints = get_type_hints(model_class)
-
-    for field_name, _field_info in model_class.model_fields.items():
-        field_type = type_hints.get(field_name, "Any")
-        type_str = _type_to_string(field_type)
-        fields[field_name] = type_str
-
-    return fields
+from prosell.application.dto.vehicle.response import VehicleResponse
+from prosell.application.dto.product.create import CreateProductRequest
+from prosell.application.dto.lead.request import CreateLeadRequest, UpdateLeadStatusRequest
 
 
-def _type_to_string(python_type: type | Any) -> str:
-    """Convert Python type to TypeScript-like string."""
-    if python_type is type(None):
-        return "None"
+class TestVehicleResponseSchema:
+    """Test VehicleResponse schema matches expected structure."""
 
-    type_map = {
-        str: "string",
-        int: "number",
-        float: "number",
-        bool: "boolean",
-    }
+    def test_vehicle_response_has_required_fields(self):
+        """VehicleResponse must have all required vehicle fields."""
+        # These fields are required for vehicle display in frontend
+        required_fields = [
+            'id', 'product_id', 'vin', 'year', 'make', 'model',
+            'body_type', 'drivetrain', 'transmission', 'fuel_type',
+            'mileage', 'exterior_color', 'interior_color'
+        ]
 
-    if python_type in type_map:
-        return type_map[python_type]
+        # Check that VehicleResponse has these fields defined
+        vehicle_fields = VehicleResponse.model_fields.keys()
 
-    # Handle forward references (string annotations)
-    if isinstance(python_type, str):
-        return python_type
+        for field in required_fields:
+            assert field in vehicle_fields, f"VehicleResponse missing field: {field}"
 
-    # Check if it's a BaseModel subclass
-    try:
-        if isinstance(python_type, type) and issubclass(python_type, BaseModel):
-            return python_type.__name__
-    except TypeError:
-        pass  # Not a class type
+    def test_vehicle_response_accepts_valid_data(self):
+        """VehicleResponse should accept valid vehicle data."""
+        from uuid import uuid4
+        from datetime import datetime
 
-    if hasattr(python_type, "__origin__"):
-        origin = python_type.__origin__
-
-        if origin is list:
-            inner = _type_to_string(python_type.__args__[0])
-            return f"{inner}[]"
-
-        if origin is dict:
-            return "Record<string, any>"
-
-        if origin is Union:
-            return " | ".join(_type_to_string(arg) for arg in python_type.__args__)
-
-    return "any"
-
-
-class TestVehicleDTOSchemaMatching:
-    """Validate backend DTOs match frontend TypeScript types."""
-
-    def test_decode_vin_response_schema_complete(self):
-        """
-        Validate DecodeVinResponse has all expected fields.
-
-        This test ensures the backend DTO structure matches
-        what the frontend expects based on VehicleForm.tsx usage.
-
-        Expected fields based on frontend VIN decode usage:
-        - vin: string (17 characters)
-        - vehicle: VehicleData (nullable in practice)
-        - raw_data: dict with NHTSA response
-        - cached: boolean flag for cache hit/miss
-        """
-        backend_fields = extract_pydantic_fields(DecodeVinResponse)
-
-        # Expected fields based on frontend usage
-        expected_fields = {
-            "vin": "string",
-            "vehicle": "VehicleData",  # Nested object
-            "raw_data": "Record<string, any>",  # NHTSA raw response
-            "cached": "boolean",
+        valid_data = {
+            'id': uuid4(),
+            'product_id': uuid4(),
+            'vin': '2GNALBEK8H1615946',
+            'year': 2021,
+            'make': 'chevrolet',
+            'model': 'equinox',
+            'trim': 'LT',
+            'body_type': 'suv',
+            'drivetrain': 'FWD',
+            'transmission': 'automatic',
+            'engine': '2.0L 4-Cylinder',
+            'fuel_type': 'gasoline',
+            'mileage': 25000,
+            'mileage_unit': 'miles',
+            'exterior_color': 'silver',
+            'interior_color': 'black',
+            'has_sunroof': False,
+            'has_navigation': False,
+            'has_leather': False,
+            'has_backup_camera': True,
+            'has_bluetooth': True,
+            'has_remote_start': False,
+            'seat_material': 'cloth',
+            'vin_verified': True,
+            'stock_number': 'ABC123',
+            'created_at': datetime.now(),
+            'updated_at': datetime.now(),
         }
 
-        # Verify all expected fields exist
-        for field_name, _expected_type in expected_fields.items():
-            assert field_name in backend_fields, f"Missing field: {field_name}"
+        # Should not raise ValidationError
+        vehicle = VehicleResponse(**valid_data)
+        assert vehicle.make == 'chevrolet'
+        assert vehicle.drivetrain == 'FWD'
 
-            # Type checking is relaxed - we mainly care about field presence
-            # Exact type matching is difficult due to TypeScript vs Python differences
-            actual_type = backend_fields[field_name]
-            assert actual_type is not None, f"Field {field_name} has None type"
 
-    def test_vehicle_data_schema_complete(self):
-        """
-        Validate VehicleData has all expected fields.
+class TestCreateProductRequestSchema:
+    """Test CreateProductRequest schema for vehicle products."""
 
-        Expected fields from frontend fbVehicleOptions.ts and VehicleForm.tsx:
-        - year: number (4-digit year)
-        - make: string (manufacturer)
-        - model: string (vehicle model)
-        - trim: string (trim level)
-        - body_type: string (SUV, Sedan, etc.)
-        - drivetrain: string (FWD, AWD, 4WD, RWD)
-        - transmission: string (Automatic, Manual, CVT)
-        - engine: string (engine description)
-        - fuel_type: string (Gasoline, Electric, Hybrid)
-        """
-        backend_fields = extract_pydantic_fields(VehicleData)
+    def test_create_product_accepts_vehicle_attributes(self):
+        """CreateProductRequest should accept vehicle attributes."""
+        from uuid import uuid4
 
-        # Expected fields from frontend fbVehicleOptions.ts
-        expected_fields = [
-            "year",
-            "make",
-            "model",
-            "trim",
-            "body_type",
-            "drivetrain",
-            "transmission",
-            "engine",
-            "fuel_type",
+        valid_product = {
+            'title': '2021 Chevrolet Equinox LT',
+            'price_cents': 2500000,  # $25,000.00
+            'category_id': uuid4(),
+            'attributes': {
+                'vin': '2GNALBEK8H1615946',
+                'year': 2021,
+                'make': 'chevrolet',
+                'model': 'equinox',
+                'trim': 'LT',
+                'body_type': 'suv',
+                'drivetrain': 'FWD',
+                'transmission': 'automatic',
+                'fuel_type': 'gasoline',
+                'mileage': 25000,
+                'exterior_color': 'silver',
+                'interior_color': 'black',
+            }
+        }
+
+        # Should not raise ValidationError
+        product = CreateProductRequest(**valid_product)
+        assert product.attributes['make'] == 'chevrolet'
+        assert product.price_cents == 2500000
+
+
+class TestLeadRequestSchema:
+    """Test Lead request DTOs match expected structure."""
+
+    def test_create_lead_request_has_required_fields(self):
+        """CreateLeadRequest must have all required lead fields."""
+        required_fields = [
+            'buyer_name', 'buyer_email', 'buyer_phone',
+            'message', 'source'
         ]
 
-        # Verify all expected fields exist
-        for field_name in expected_fields:
-            assert field_name in backend_fields, f"VehicleData missing field: {field_name}"
+        lead_fields = CreateLeadRequest.model_fields.keys()
 
-    def test_decode_vin_response_field_types(self):
-        """
-        Validate DecodeVinResponse field types are reasonable.
+        for field in required_fields:
+            assert field in lead_fields, f"CreateLeadRequest missing field: {field}"
 
-        This is a relaxed type check - we verify basic type categories
-        match (string vs string, number vs number, etc.).
-        """
-        backend_fields = extract_pydantic_fields(DecodeVinResponse)
+    def test_create_lead_request_accepts_optional_fields(self):
+        """CreateLeadRequest should accept optional product_id and vendedor_id."""
+        from uuid import uuid4
 
-        # VIN should be string-like
-        assert "string" in backend_fields["vin"].lower() or backend_fields["vin"] == "string"
+        valid_lead = {
+            'buyer_name': 'John Doe',
+            'buyer_email': 'john@example.com',
+            'buyer_phone': '+15551234567',
+            'message': 'Interested in this vehicle',
+            'source': 'manual',
+            'product_id': uuid4(),
+            'vendedor_id': uuid4(),
+        }
 
-        # cached should be boolean-like
-        is_boolean = (
-            "boolean" in backend_fields["cached"].lower() or backend_fields["cached"] == "boolean"
-        )
-        assert is_boolean
+        # Should not raise ValidationError
+        lead = CreateLeadRequest(**valid_lead)
+        assert lead.buyer_name == 'John Doe'
 
-        # vehicle should be a complex type (not primitive)
-        assert backend_fields["vehicle"] not in ["string", "number", "boolean", "any"]
+    def test_update_lead_status_request_uses_new_status(self):
+        """UpdateLeadStatusRequest uses 'new_status' not 'status'."""
+        from prosell.domain.entities.lead import LeadStatus
 
-        # raw_data should be a dict/record type
-        is_record = (
-            "record" in backend_fields["raw_data"].lower()
-            or "dict" in backend_fields["raw_data"].lower()
-        )
-        assert is_record
+        valid_update = {
+            'new_status': LeadStatus.CONTACTED,
+            'reason': 'Spoke with customer'
+        }
 
-    def test_vehicle_data_field_types(self):
-        """
-        Validate VehicleData field types are reasonable.
+        # Should not raise ValidationError
+        update = UpdateLeadStatusRequest(**valid_update)
+        assert update.new_status == LeadStatus.CONTACTED
 
-        All fields should be optional (nullable) in practice since
-        NHTSA API may not return all fields for all vehicles.
-        """
-        backend_fields = extract_pydantic_fields(VehicleData)
+    def test_update_lead_status_reason_is_optional(self):
+        """UpdateLeadStatusRequest.reason should be optional."""
+        from prosell.domain.entities.lead import LeadStatus
 
-        # year should be number-like
-        assert "number" in backend_fields["year"].lower() or backend_fields["year"] == "number"
+        valid_update = {
+            'new_status': LeadStatus.QUALIFIED
+        }
 
-        # All other fields should be string-like or nullable
-        string_fields = [
-            "make",
-            "model",
-            "trim",
-            "body_type",
-            "drivetrain",
-            "transmission",
-            "engine",
-            "fuel_type",
-        ]
-
-        for field_name in string_fields:
-            assert field_name in backend_fields
-            # Allow for nullable strings (string | None, string | None, etc.)
-            field_type = backend_fields[field_name].lower()
-            assert "string" in field_type or "any" in field_type
+        # Should not raise ValidationError without reason
+        update = UpdateLeadStatusRequest(**valid_update)
+        assert update.reason is None

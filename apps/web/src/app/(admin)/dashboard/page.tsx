@@ -206,7 +206,7 @@ function RecentActivity() {
     {
       id: 1,
       action: "New organization created",
-      entity: "Auto Dealership Inc.",
+      entity: "Auto Brancheship Inc.",
       time: "2 minutes ago",
       type: "organization",
     },

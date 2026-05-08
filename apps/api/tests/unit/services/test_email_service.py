@@ -1,13 +1,11 @@
 """Unit tests for EmailService."""
 
-import asyncio
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from prosell.infrastructure.services.email_service import (
-    AbstractEmailService,
     MockEmailService,
     SendGridEmailService,
 )
@@ -26,11 +24,11 @@ class TestSendGridEmailService:
             yield SendGridEmailService()
 
     @pytest.mark.asyncio
-    async def test_send_appointment_notification_to_dealer(self, service):
-        """Test sending appointment notification to dealer."""
+    async def test_send_appointment_notification_to_branch(self, service):
+        """Test sending appointment notification to branch."""
         # Arrange
-        dealer_email = "dealer@example.com"
-        dealer_name = "Juan Pérez"
+        branch_email = "branch@example.com"
+        branch_name = "Juan Pérez"
         buyer_name = "María García"
         vehicle_info = "2020 Toyota Camry - $15,000"
         scheduled_at = datetime(2026, 4, 29, 14, 30)
@@ -58,8 +56,8 @@ class TestSendGridEmailService:
 
             # Act
             await service.send_appointment_notification(
-                dealer_email=dealer_email,
-                dealer_name=dealer_name,
+                branch_email=branch_email,
+                branch_name=branch_name,
                 buyer_name=buyer_name,
                 vehicle_info=vehicle_info,
                 scheduled_at=scheduled_at,
@@ -75,7 +73,7 @@ class TestSendGridEmailService:
         # Arrange
         buyer_email = "buyer@example.com"
         buyer_name = "María García"
-        dealer_name = "Juan Pérez"
+        branch_name = "Juan Pérez"
         vehicle_info = "2020 Toyota Camry - $15,000"
         scheduled_at = datetime(2026, 4, 29, 14, 30)
         notes = "Client interested in financing options"
@@ -97,7 +95,7 @@ class TestSendGridEmailService:
             await service.send_appointment_confirmation(
                 buyer_email=buyer_email,
                 buyer_name=buyer_name,
-                dealer_name=dealer_name,
+                branch_name=branch_name,
                 vehicle_info=vehicle_info,
                 scheduled_at=scheduled_at,
                 notes=notes,
@@ -111,10 +109,10 @@ class TestSendGridEmailService:
         """Test sending appointment reminder."""
         # Arrange
         email = "reminder@example.com"
-        person_type = "dealer"
+        person_type = "branch"
         appointment_details = {
             "buyer_name": "María García",
-            "dealer_name": "Juan Pérez",
+            "branch_name": "Juan Pérez",
             "vehicle_info": "2020 Toyota Camry - $15,000",
             "scheduled_at": datetime(2026, 4, 29, 14, 30),
             "notes": "Client interested in financing",
@@ -163,8 +161,8 @@ class TestSendGridEmailService:
             # Act & Assert
             with pytest.raises(Exception, match="SendGrid error"):
                 await service.send_appointment_notification(
-                    dealer_email="dealer@example.com",
-                    dealer_name="Juan Pérez",
+                    branch_email="branch@example.com",
+                    branch_name="Juan Pérez",
                     buyer_name="María García",
                     vehicle_info="2020 Toyota Camry",
                     scheduled_at=datetime(2026, 4, 29, 14, 30),
@@ -181,11 +179,11 @@ class TestMockEmailService:
         return MockEmailService()
 
     @pytest.mark.asyncio
-    async def test_send_appointment_notification_to_dealer(self, mock_service, capsys):
-        """Test mock appointment notification to dealer."""
+    async def test_send_appointment_notification_to_branch(self, mock_service, capsys):
+        """Test mock appointment notification to branch."""
         # Arrange
-        dealer_email = "dealer@example.com"
-        dealer_name = "Juan Pérez"
+        branch_email = "branch@example.com"
+        branch_name = "Juan Pérez"
         buyer_name = "María García"
         vehicle_info = "2020 Toyota Camry - $15,000"
         scheduled_at = datetime(2026, 4, 29, 14, 30)
@@ -193,8 +191,8 @@ class TestMockEmailService:
 
         # Act
         await mock_service.send_appointment_notification(
-            dealer_email=dealer_email,
-            dealer_name=dealer_name,
+            branch_email=branch_email,
+            branch_name=branch_name,
             buyer_name=buyer_name,
             vehicle_info=vehicle_info,
             scheduled_at=scheduled_at,
@@ -204,7 +202,7 @@ class TestMockEmailService:
         # Assert
         captured = capsys.readouterr()
         assert "📧 MOCK EMAIL" in captured.out
-        assert dealer_email in captured.out
+        assert branch_email in captured.out
         assert buyer_name in captured.out
         assert vehicle_info in captured.out
 
@@ -214,7 +212,7 @@ class TestMockEmailService:
         # Arrange
         buyer_email = "buyer@example.com"
         buyer_name = "María García"
-        dealer_name = "Juan Pérez"
+        branch_name = "Juan Pérez"
         vehicle_info = "2020 Toyota Camry - $15,000"
         scheduled_at = datetime(2026, 4, 29, 14, 30)
         notes = "Client interested in financing"
@@ -223,7 +221,7 @@ class TestMockEmailService:
         await mock_service.send_appointment_confirmation(
             buyer_email=buyer_email,
             buyer_name=buyer_name,
-            dealer_name=dealer_name,
+            branch_name=branch_name,
             vehicle_info=vehicle_info,
             scheduled_at=scheduled_at,
             notes=notes,
@@ -233,7 +231,7 @@ class TestMockEmailService:
         captured = capsys.readouterr()
         assert "📧 MOCK EMAIL" in captured.out
         assert buyer_email in captured.out
-        assert dealer_name in captured.out
+        assert branch_name in captured.out
         assert "Confirmación de Cita" in captured.out
 
     @pytest.mark.asyncio
@@ -241,10 +239,10 @@ class TestMockEmailService:
         """Test mock appointment reminder."""
         # Arrange
         email = "reminder@example.com"
-        person_type = "dealer"
+        person_type = "branch"
         appointment_details = {
             "buyer_name": "María García",
-            "dealer_name": "Juan Pérez",
+            "branch_name": "Juan Pérez",
             "vehicle_info": "2020 Toyota Camry - $15,000",
             "scheduled_at": datetime(2026, 4, 29, 14, 30),
             "notes": "Test notes",
@@ -322,8 +320,8 @@ class TestSendGridRetryLogic:
 
             # Act
             await service.send_appointment_notification(
-                dealer_email="dealer@example.com",
-                dealer_name="Juan Pérez",
+                branch_email="branch@example.com",
+                branch_name="Juan Pérez",
                 buyer_name="María García",
                 vehicle_info="2020 Toyota Camry",
                 scheduled_at=datetime(2026, 4, 29, 14, 30),
@@ -361,7 +359,7 @@ class TestSendGridRetryLogic:
             await service.send_appointment_confirmation(
                 buyer_email="buyer@example.com",
                 buyer_name="María García",
-                dealer_name="Juan Pérez",
+                branch_name="Juan Pérez",
                 vehicle_info="2020 Toyota Camry",
                 scheduled_at=datetime(2026, 4, 29, 14, 30),
             )
@@ -392,10 +390,10 @@ class TestSendGridRetryLogic:
             with pytest.raises(Exception, match="SendGrid error"):
                 await service.send_appointment_reminder(
                     email="test@example.com",
-                    person_type="dealer",
+                    person_type="branch",
                     appointment_details={
                         "buyer_name": "Test",
-                        "dealer_name": "Test",
+                        "branch_name": "Test",
                         "vehicle_info": "Test",
                         "scheduled_at": datetime(2026, 4, 29, 14, 30),
                     },
@@ -427,8 +425,8 @@ class TestSendGridRetryLogic:
             # Act & Assert
             with pytest.raises(Exception, match="SendGrid error"):
                 await service.send_appointment_notification(
-                    dealer_email="dealer@example.com",
-                    dealer_name="Juan Pérez",
+                    branch_email="branch@example.com",
+                    branch_name="Juan Pérez",
                     buyer_name="María García",
                     vehicle_info="2020 Toyota Camry",
                     scheduled_at=datetime(2026, 4, 29, 14, 30),

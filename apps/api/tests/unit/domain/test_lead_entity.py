@@ -1,8 +1,9 @@
 """Unit tests for Lead entity - TDD RED phase."""
 
-import pytest
 from datetime import UTC, datetime
-from uuid import UUID, uuid4
+from uuid import uuid4
+
+import pytest
 
 from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.exceptions import LeadStateTransitionException
@@ -39,7 +40,7 @@ class TestLeadEntity:
             buyer_name="Juan Pérez",
             buyer_email="juan@example.com",
             buyer_phone="+59899123456",
-            vehicle_id=uuid4(),
+            product_id=uuid4(),
             vendedor_id=uuid4(),
             message="Estoy interesado en este vehículo",
             source="facebook",
@@ -93,7 +94,7 @@ class TestLeadEntity:
             buyer_name="Juan Pérez",
             buyer_email="juan@example.com",
             buyer_phone="+59899123456",
-            vehicle_id=uuid4(),
+            product_id=uuid4(),
             vendedor_id=uuid4(),
             message="Interesado",
             source="facebook",
@@ -117,7 +118,7 @@ class TestLeadEntity:
             buyer_name="Juan Pérez",
             buyer_email="juan@example.com",
             buyer_phone="+59899123456",
-            vehicle_id=uuid4(),
+            product_id=uuid4(),
             vendedor_id=uuid4(),
             message="Interesado",
             source="facebook",
@@ -141,7 +142,7 @@ class TestLeadEntity:
             buyer_name="Juan Pérez",
             buyer_email="juan@example.com",
             buyer_phone="+59899123456",
-            vehicle_id=uuid4(),
+            product_id=uuid4(),
             vendedor_id=uuid4(),
             message="Interesado",
             source="facebook",

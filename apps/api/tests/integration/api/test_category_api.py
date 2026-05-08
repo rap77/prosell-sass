@@ -7,10 +7,10 @@ Auth: dependency_overrides[get_current_auth_user_from_cookie] (Brain #7 Conditio
 Requirements: CTGY-01, CTGY-02, CTGY-03, CTGY-04
 """
 
-import pytest
-from httpx import AsyncClient
 from uuid import uuid4
 
+import pytest
+from httpx import AsyncClient
 
 # ─── SC-1: POST /categories returns attribute_schema ──────────────────────────
 
@@ -103,9 +103,11 @@ async def test_seller_does_not_see_inactive_categories(
     to shadow the other. Instead, we control overrides inline.
     """
     from collections.abc import AsyncGenerator
+
     from httpx import ASGITransport, AsyncClient
-    from prosell.infrastructure.api.main import app
+
     from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+    from prosell.infrastructure.api.main import app
     from prosell.infrastructure.database.session import get_async_session
 
     async def override_session() -> AsyncGenerator:

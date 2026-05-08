@@ -17,7 +17,6 @@ from prosell.infrastructure.api.dependencies import get_current_auth_user_from_c
 from prosell.infrastructure.api.main import app
 from prosell.infrastructure.database.session import get_async_session
 
-
 # =============================================================================
 # FIXTURES
 # =============================================================================
@@ -121,12 +120,12 @@ class TestCreateLeadEndpoint:
         """Should return 409 for duplicate lead within 24h."""
         client, user = api_client_as_vendedor
         email = f"dup409-{uuid4().hex[:6]}@test.com"
-        vehicle_id = str(uuid4())
+        product_id = str(uuid4())
 
         payload = {
             "buyer_name": "Dup Buyer",
             "buyer_email": email,
-            "vehicle_id": vehicle_id,
+            "product_id": product_id,
         }
 
         # First request succeeds

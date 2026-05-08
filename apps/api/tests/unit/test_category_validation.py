@@ -6,8 +6,9 @@ All edge cases of the C3 validation method.
 Requirements: CTGY-01, CTGY-02, CTGY-03
 """
 
-import pytest
 from uuid import uuid4
+
+import pytest
 
 from prosell.domain.entities.category import Category
 

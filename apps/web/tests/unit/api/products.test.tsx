@@ -54,6 +54,7 @@ describe("Products API Client - createProductWithVehicle", () => {
       price_cents: 18500_00,
       category_id: "cat-123",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
         year: 2017,
         make: "Chevrolet",
@@ -74,6 +75,7 @@ describe("Products API Client - createProductWithVehicle", () => {
       price_cents: 18500_00,
       category_id: "cat-123",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
         year: 2017,
         make: "Chevrolet",
@@ -102,6 +104,7 @@ describe("Products API Client - createProductWithVehicle", () => {
       price_cents: 18500_00,
       category_id: "cat-123",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
         year: 2017,
         make: "Chevrolet",
@@ -122,6 +125,7 @@ describe("Products API Client - createProductWithVehicle", () => {
       price_cents: 18500_00,
       category_id: "cat-123",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
         year: 2017,
         make: "Chevrolet",
@@ -148,6 +152,7 @@ describe("Products API Client - createProductWithVehicle", () => {
       price_cents: 10000_00,
       category_id: "cat-456",
       attributes: {
+        category: "vehicle" as const,
         vin: "1HGCM82633A123456",
         year: 2003,
         make: "Honda",
@@ -168,6 +173,7 @@ describe("Products API Client - createProductWithVehicle", () => {
       price_cents: 10000_00,
       category_id: "cat-456",
       attributes: {
+        category: "vehicle" as const,
         vin: "1HGCM82633A123456",
       },
     });
@@ -191,6 +197,7 @@ describe("Products API Client - createProductWithVehicle", () => {
         price_cents: 1000_00,
         category_id: "cat-123",
         attributes: {
+        category: "vehicle" as const,
           vin: "INVALID",
         },
       }),
@@ -205,7 +212,9 @@ describe("Products API Client - createProductWithVehicle", () => {
         title: "Test Vehicle",
         price_cents: 1000_00,
         category_id: "cat-123",
-        attributes: {},
+        attributes: {
+        category: "generic" as const,
+      },
       }),
     ).rejects.toThrow("Network error");
   });
@@ -222,7 +231,9 @@ describe("Products API Client - createProductWithVehicle", () => {
         title: "Test Vehicle",
         price_cents: 1000_00,
         category_id: "cat-123",
-        attributes: {},
+        attributes: {
+        category: "generic" as const,
+      },
       }),
     ).rejects.toThrow("Failed to create product");
   });
@@ -245,6 +256,7 @@ describe("Products API Client - useCreateProduct", () => {
       price_cents: 18500_00,
       category_id: "cat-123",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
       },
       status: "active" as const,
@@ -266,6 +278,7 @@ describe("Products API Client - useCreateProduct", () => {
       price_cents: 18500_00,
       category_id: "cat-123",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
       },
     };
@@ -284,7 +297,9 @@ describe("Products API Client - useCreateProduct", () => {
       title: "Vehicle",
       price_cents: 1000_00,
       category_id: "cat-123",
-      attributes: {},
+      attributes: {
+        category: "generic" as const,
+      },
       status: "active" as const,
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
@@ -303,7 +318,9 @@ describe("Products API Client - useCreateProduct", () => {
       title: "Vehicle",
       price_cents: 1000_00,
       category_id: "cat-123",
-      attributes: {},
+      attributes: {
+        category: "generic" as const,
+      },
     };
 
     await waitFor(async () => {
@@ -322,7 +339,9 @@ describe("Products API Client - useCreateProduct", () => {
       title: "Vehicle",
       price_cents: 1000_00,
       category_id: "cat-123",
-      attributes: {},
+      attributes: {
+        category: "generic" as const,
+      },
       status: "active" as const,
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
@@ -342,7 +361,9 @@ describe("Products API Client - useCreateProduct", () => {
         title: "Vehicle",
         price_cents: 1000_00,
         category_id: "cat-123",
-        attributes: {},
+        attributes: {
+        category: "generic" as const,
+      },
       });
     });
 
@@ -368,7 +389,9 @@ describe("Products API Client - useCreateProduct", () => {
           title: "Vehicle",
           price_cents: 1000_00,
           category_id: "cat-123",
-          attributes: {},
+          attributes: {
+        category: "generic" as const,
+      },
         });
       } catch (e) {
         // Expected error
@@ -395,7 +418,9 @@ describe("Products API Client - useCreateProduct", () => {
       title: "Vehicle",
       price_cents: 1000_00,
       category_id: "cat-123",
-      attributes: {},
+      attributes: {
+        category: "generic" as const,
+      },
     });
 
     // Wait for pending state to be set
@@ -409,7 +434,9 @@ describe("Products API Client - useCreateProduct", () => {
         title: "Vehicle",
         price_cents: 1000_00,
         category_id: "cat-123",
-        attributes: {},
+        attributes: {
+        category: "generic" as const,
+      },
         status: "active" as const,
         created_at: "2024-01-01T00:00:00Z",
         updated_at: "2024-01-01T00:00:00Z",
@@ -440,7 +467,9 @@ describe("Products API Client - useCreateProduct", () => {
           title: "Vehicle",
           price_cents: 1000_00,
           category_id: "cat-123",
-          attributes: {},
+          attributes: {
+        category: "generic" as const,
+      },
         });
       } catch (e) {
         // Expected error

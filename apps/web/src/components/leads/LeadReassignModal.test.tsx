@@ -7,6 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LeadReassignModal } from "./LeadReassignModal";
 import { toast } from "sonner";
+import { LeadStatus } from "@/lib/api/leads";
 
 // Mock fetch
 global.fetch = vi.fn();
@@ -31,9 +32,19 @@ const mockLead = {
   buyer_name: "John Doe",
   buyer_email: "john@example.com",
   buyer_phone: "+1234567890",
-  vehicle: { id: "vehicle-1", title: "2020 Toyota Camry", make: "Toyota", model: "Camry", year: 2020 },
+  product_id: "product-1",
+  product: {
+    id: "product-1",
+    title: "2020 Toyota Camry",
+    price_cents: 2500000,
+    currency: "USD",
+    status: "active",
+    attributes: { category: "vehicle", year: 2020, make: "Toyota", model: "Camry" },
+    created_at: "2026-04-28T12:00:00Z",
+    updated_at: "2026-04-28T12:00:00Z",
+  },
   message: "Interested in this vehicle",
-  status: "new" as const,
+  status: LeadStatus.NEW,
   source: "facebook",
   created_at: "2026-04-28T12:00:00Z",
   updated_at: "2026-04-28T12:00:00Z",
@@ -108,7 +119,7 @@ describe("LeadReassignModal", () => {
     );
 
     expect(screen.getByText(mockLead.buyer_name)).toBeInTheDocument();
-    expect(screen.getByText(mockLead.vehicle?.title || "")).toBeInTheDocument();
+    expect(screen.getByText(mockLead.product?.title || "")).toBeInTheDocument();
   });
 
   it("should load vendedores and enable dropdown", () => {

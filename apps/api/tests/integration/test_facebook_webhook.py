@@ -1,8 +1,7 @@
 """Integration tests for Facebook lead webhook endpoint."""
 
-import hmac
 import hashlib
-from unittest.mock import AsyncMock, MagicMock, patch
+import hmac
 from uuid import uuid4
 
 import pytest
@@ -10,7 +9,6 @@ from fastapi import status
 from httpx import ASGITransport, AsyncClient
 
 from prosell.infrastructure.api.main import app
-
 
 
 @pytest.fixture

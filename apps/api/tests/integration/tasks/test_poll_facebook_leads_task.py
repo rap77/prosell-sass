@@ -4,13 +4,12 @@ Tests the background task that polls Facebook Graph API for missed leads.
 This task runs every 10 minutes as a fallback to webhooks.
 """
 
+
 import pytest
-from uuid import uuid4
 
 from prosell.infrastructure.tasks.use_cases.poll_facebook_leads_task import (
     poll_facebook_leads_task,
 )
-
 
 # Track broker state
 _broker_started = False
@@ -71,7 +70,7 @@ class TestPollFacebookLeadsTask:
             try:
                 task_result = await poll_facebook_leads_task.kiq()
                 assert task_result is not None
-            except Exception as e:
+            except Exception:
                 # InMemoryBroker may have limitations, that's OK
                 # Just verify the method exists
                 assert hasattr(poll_facebook_leads_task, "kiq")

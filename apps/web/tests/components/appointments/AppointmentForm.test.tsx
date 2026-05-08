@@ -9,17 +9,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { vi } from "vitest";
 import { AppointmentForm } from "@/components/appointments/AppointmentForm";
-import { useDealers } from "@/lib/api/dealers";
+import { useBranches } from "@/lib/api/branches";
 import { useCreateAppointment } from "@/lib/api/appointments";
 
 // Mock the API hooks
-vi.mock("@/lib/api/dealers");
+vi.mock("@/lib/api/branches");
 vi.mock("@/lib/api/appointments", () => ({
   ...vi.importActual("@/lib/api/appointments"),
   useCreateAppointment: vi.fn(),
 }));
 
-const mockUseDealers = useDealers as any;
+const mockUseBranches = useBranches as any;
 const mockUseCreateAppointment = useCreateAppointment as any;
 
 // Mock toast
@@ -36,9 +36,9 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
   let onSuccess: any;
   let mockMutateAsync: any;
 
-  const mockDealers = [
-    { id: "dealer-1", name: "John Doe" },
-    { id: "dealer-2", name: "Jane Smith" },
+  const mockBranches = [
+    { id: "branch-1", name: "John Doe" },
+    { id: "branch-2", name: "Jane Smith" },
   ];
 
   beforeEach(() => {
@@ -53,9 +53,9 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
     onSuccess = vi.fn();
     mockMutateAsync = vi.fn();
 
-    // Mock dealers data
-    mockUseDealers.mockReturnValue({
-      data: { items: mockDealers },
+    // Mock branchs data
+    mockUseBranches.mockReturnValue({
+      data: { items: mockBranches },
       isLoading: false,
     } as any);
 
@@ -88,7 +88,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
     it("should display red warning banner for 409 conflict errors", async () => {
       // Mock 409 conflict error
       const conflictError = new Error(
-        "Dealer dealer-1 already has an appointment at 2026-04-30T14:00:00"
+        "Branch branch-1 already has an appointment at 2026-04-30T14:00:00"
       );
       (conflictError as any).status = 409;
       mockMutateAsync.mockRejectedValue(conflictError);
@@ -210,7 +210,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
 
       // Check all form elements are present
       expect(screen.getByText(/schedule appointment/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/dealer/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/branch/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/date/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/time/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/notes/i)).toBeInTheDocument();

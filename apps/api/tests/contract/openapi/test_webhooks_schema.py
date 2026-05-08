@@ -1,7 +1,5 @@
 """OpenAPI schema validation for /api/v1/webhooks/facebook endpoint."""
 
-import pytest
-from fastapi import FastAPI
 from prosell.infrastructure.api.main import app
 from prosell.infrastructure.api.routers.webhook_router import WebhookResponse
 
