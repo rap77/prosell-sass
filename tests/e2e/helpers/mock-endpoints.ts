@@ -366,3 +366,83 @@ export async function mockHealthCheckEndpoint(page: Page): Promise<void> {
     });
   });
 }
+
+/**
+ * Mock Facebook Graph API for product publishing
+ * Used in integrated-critical-path.spec.ts test
+ */
+export async function mockFacebookGraphAPI(page: Page): Promise<void> {
+  // Mock Facebook Graph API publish endpoint
+  await page.route("**/graph.facebook.com/**", async (route) => {
+    if (route.request().method() === "POST") {
+      // Mock successful publication to Facebook Marketplace
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "mock-facebook-listing-id-12345",
+          success: true,
+        }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+}
+
+/**
+ * Mock Facebook webhook endpoint for lead capture
+ * Used in integrated-critical-path.spec.ts test
+ */
+export async function mockFacebookWebhookEndpoint(page: Page): Promise<void> {
+  // Mock the backend webhook endpoint that receives Facebook payloads
+  await page.route("**/api/v1/webhooks/facebook**", async (route) => {
+    if (route.request().method() === "POST") {
+      // Mock successful webhook processing
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          lead_id: "mock-lead-id-67890",
+          message: "Lead captured successfully",
+        }),
+      });
+    }
+  });
+}
+
+/**
+ * Mock SendGrid email service
+ * Used in integrated-critical-path.spec.ts test
+ */
+export async function mockSendGridEndpoint(page: Page): Promise<void> {
+  // Mock SendGrid API endpoint
+  await page.route("**/api.sendgrid.com/**", async (route) => {
+    if (route.request().method() === "POST") {
+      // Mock successful email sending
+      await route.fulfill({
+        status: 202,
+        contentType: "application/json",
+        body: JSON.stringify({
+          message: "Email sent successfully",
+          message_id: "mock-email-id-abc123",
+        }),
+      });
+    }
+  });
+
+  // Also mock the backend endpoint that calls SendGrid
+  await page.route("**/api/v1/emails/send**", async (route) => {
+    if (route.request().method() === "POST") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          message_id: "mock-email-id-def456",
+        }),
+      });
+    }
+  });
+}

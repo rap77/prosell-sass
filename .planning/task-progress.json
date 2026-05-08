@@ -1,160 +1,288 @@
 {
-  "task_id": "A7",
-  "session_id": "sess-resume-20260504-074352",
-  "started_at": "2026-05-03T16:44:09.660301",
+  "task_id": "B1.1",
+  "session_id": "sess-20260508-183237",
+  "started_at": "2026-05-08T18:32:37.536440",
   "phase": 19,
   "subtasks": {
-    "A7.1": {
-      "description": "Create E2E test for Facebook webhook lead capture",
+    "B1.1.1": {
+      "description": "Create integrated-critical-path.spec.ts test",
       "status": "completed",
-      "retries": 0
+      "completed_at": "2026-05-08T18:45:00.000000",
+      "commit_sha": null
     },
-    "A7.2": {
-      "description": "Test webhook endpoint receives Facebook payload",
+    "B1.1.2": {
+      "description": "Implement complete sales cycle scenario",
       "status": "completed",
-      "retries": 0
+      "completed_at": "2026-05-08T18:50:00.000000",
+      "commit_sha": null
     },
-    "A7.3": {
-      "description": "Test lead creation from webhook",
+    "B1.1.3": {
+      "description": "Mock Facebook Graph API for publish",
       "status": "completed",
-      "retries": 0
+      "completed_at": "2026-05-08T18:50:00.000000",
+      "commit_sha": null
     },
-    "A7.4": {
-      "description": "Test duplicate lead detection",
+    "B1.1.4": {
+      "description": "Mock webhook endpoint for lead capture",
       "status": "completed",
-      "retries": 0
+      "completed_at": "2026-05-08T18:50:00.000000",
+      "commit_sha": null
     },
-    "A7.5": {
-      "description": "Create E2E test for vendedor leads list view",
+    "B1.1.5": {
+      "description": "Mock SendGrid for email notifications",
       "status": "completed",
-      "retries": 0
+      "completed_at": "2026-05-08T18:50:00.000000",
+      "commit_sha": null
     },
-    "A7.6": {
-      "description": "Test lead list loads from API",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.7": {
-      "description": "Test lead status update",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.8": {
-      "description": "Test search and filter",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.9": {
-      "description": "Create E2E test for appointment creation",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.10": {
-      "description": "Test appointment creation from lead",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.11": {
-      "description": "Test appointment form validation",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.12": {
-      "description": "Test dealer email notification (mocked)",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.13": {
-      "description": "Create E2E test for manager view",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.14": {
-      "description": "Test manager team leads view",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.15": {
-      "description": "Test lead reassignment",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.16": {
-      "description": "Create E2E test for dealer calendar",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.17": {
-      "description": "Test dealer calendar view",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.18": {
-      "description": "Test appointment confirm/cancel",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.19": {
-      "description": "Add 5 critical lead tests to smoke.spec.ts",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.20": {
-      "description": "Test: Facebook webhook \u2192 lead \u2192 status update \u2192 appointment",
-      "status": "completed",
-      "retries": 0
-    },
-    "A7.21": {
-      "description": "Run all E2E tests",
-      "status": "completed",
+    "B1.1.6": {
+      "description": "Verify test execution time < 3 minutes",
+      "status": "pending",
       "retries": 0,
-      "completed_at": "2026-05-04T08:00:00Z",
-      "results": {
-        "total_tests": 72,
-        "passed": 50,
-        "failed": 22,
-        "a7_specific": {
-          "total": 46,
-          "passed": 33,
-          "skipped": 13
-        }
-      }
+      "note": "Requires test execution - Phase 2"
     },
-    "A7.22": {
-      "description": "Measure test execution time (target: < 5 minutes)",
+    "B1.1.7": {
+      "description": "Add test to smoke suite",
       "status": "completed",
-      "retries": 0,
-      "completed_at": "2026-05-04T08:00:00Z",
-      "results": {
-        "execution_time": "1:01.67",
-        "target": "< 5 minutes",
-        "passed": true
-      }
+      "completed_at": "2026-05-08T18:52:00.000000",
+      "commit_sha": null
     },
-    "A7.23": {
-      "description": "Fix any failing tests",
-      "status": "completed",
+    "B1.1.8": {
+      "description": "Test passes consistently (>95% success rate)",
+      "status": "pending",
       "retries": 0,
-      "completed_at": "2026-05-04T08:15:00Z",
-      "analysis": {
-        "blocking_failures": 0,
-        "non_blocking_failures": 22,
-        "failure_reason": "Backend API not running on port 8000",
-        "a7_tests_status": "PASS - All A7 acceptance criteria satisfied",
-        "acceptance_criteria": {
-          "facebook_webhook_creates_lead": true,
-          "vendedor_can_view_and_update_lead": true,
-          "appointment_creation_flow_works": true,
-          "dealer_email_notification_sent_mocked": true,
-          "manager_can_reassign_leads": true,
-          "dealer_can_view_appointments": true,
-          "smoke_tests_pass": true
-        },
-        "conclusion": "All A7 acceptance criteria PASS. 22 non-blocking failures are expected (backend not running). A7 feature tests (facebook-webhook, leads, appointments, manager, dealer-calendar) all pass."
-      }
+      "note": "Requires multiple test runs - Phase 2"
+    },
+    "B1.1.9": {
+      "description": "Create test_tenant_isolation.py suite",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.10": {
+      "description": "Test user cannot access other tenant leads",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.11": {
+      "description": "Test user cannot access other tenant products",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.12": {
+      "description": "Test user cannot access other tenant appointments",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.13": {
+      "description": "Verify API filtering enforces tenant_id",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.14": {
+      "description": "Verify repository queries include tenant_id",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.15": {
+      "description": "Verify webhook respects tenant context",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.16": {
+      "description": "Test SQL injection attempts",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.17": {
+      "description": "Test IDOR (Insecure Direct Object Reference) vectors",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.18": {
+      "description": "All tenant isolation tests pass",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.19": {
+      "description": "Create LeadDuplicateDetector service",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.20": {
+      "description": "Implement email matching (exact match)",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.21": {
+      "description": "Implement phone matching (normalized)",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.22": {
+      "description": "Implement email + phone combination matching",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.23": {
+      "description": "Extend LeadRepository with find_by_email",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.24": {
+      "description": "Extend LeadRepository with find_by_phone",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.25": {
+      "description": "Extend LeadRepository with find_potential_duplicates",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.26": {
+      "description": "Integrate detector into CreateLeadUseCase",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.27": {
+      "description": "Create duplicate warning UI component",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.28": {
+      "description": "Display duplicates in lead detail view",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.29": {
+      "description": "Unit tests for detection logic",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.30": {
+      "description": "Integration tests for API",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.31": {
+      "description": "Add 5 Auth smoke tests (login, OAuth, 2FA, reset, refresh)",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.32": {
+      "description": "Add 8 Catalog smoke tests (CRUD, VIN, pagination, search)",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.33": {
+      "description": "Add 8 Leads smoke tests (webhook, assign, update, reassign, duplicates, audit)",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.34": {
+      "description": "Add 6 Appointments smoke tests (create, calendar, confirm, cancel, email, conflicts)",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.35": {
+      "description": "Total smoke tests: 30+ (up from 20)",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.36": {
+      "description": "Group tests by feature area",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.37": {
+      "description": "Optimize test execution time < 5 minutes",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.38": {
+      "description": "Add retry mechanism for flaky tests",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.39": {
+      "description": "Add to CI/CD pipeline",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.40": {
+      "description": "Verify >95% pass rate",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.41": {
+      "description": "Create test_auth_password_reset.py integration tests",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.42": {
+      "description": "Test user can request password reset",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.43": {
+      "description": "Test reset token expires after 1 hour",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.44": {
+      "description": "Test user can reset password with valid token",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.45": {
+      "description": "Test invalid token returns 400",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.46": {
+      "description": "Test password requires new different from old",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.47": {
+      "description": "Test password successfully updates hash",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.48": {
+      "description": "Create frontend password-reset.test.tsx",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.49": {
+      "description": "Test user can request reset from login page",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.50": {
+      "description": "Test user receives email with reset link",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.51": {
+      "description": "Test user can reset password with valid token",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.52": {
+      "description": "Test invalid token shows error message",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.53": {
+      "description": "Test user can login with new password",
+      "status": "pending",
+      "retries": 0
+    },
+    "B1.1.54": {
+      "description": "All password reset tests pass",
+      "status": "pending",
+      "retries": 0
     }
   },
-  "last_checkpoint": null,
-  "context_budget_exit": null,
-  "resumed_at": "2026-05-04T07:43:52.318771"
+  "last_checkpoint": "B1.1.7",
+  "context_budget_exit": null
 }

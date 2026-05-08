@@ -440,6 +440,358 @@ cd tests/e2e && pnpm test smoke.spec.ts
 ---
 
 **Document Status**: Active — Ready for execution
-**Next Action**: Execute Phase 4 plans A1 through A7
+**Next Action**: Execute Phase Completion B1-B4
 **Owner**: Engineering Team
-**Stakeholders**: Product, QA, DevOps
+**Stakeholders**: Product, QA, DevOps, Security
+
+---
+
+## Phase Completion: 100% Module Completion
+
+> **Goal**: Complete all remaining gaps to reach 100% module completion across all ProSell SaaS features.
+> 
+> **Current Status**: 88% complete → Target: 100% complete
+> **Estimated Effort**: 284 hours (7 weeks with 1 dev, 4-5 weeks with 2 devs)
+
+### Sprint B1: Security & Release Readiness (48 hours)
+
+#### B1.1: E2E Integrated Flow Validation (8 hours)
+- [x] Create integrated-critical-path.spec.ts test
+- [x] Implement complete sales cycle scenario
+- [x] Mock Facebook Graph API for publish
+- [x] Mock webhook endpoint for lead capture
+- [x] Mock SendGrid for email notifications
+- [ ] Verify test execution time < 3 minutes
+- [x] Add test to smoke suite
+- [ ] Test passes consistently (>95% success rate)
+
+#### B1.2: Multi-Tenant Isolation Security Tests (8 hours)
+- [ ] Create test_tenant_isolation.py suite
+- [ ] Test user cannot access other tenant leads
+- [ ] Test user cannot access other tenant products
+- [ ] Test user cannot access other tenant appointments
+- [ ] Verify API filtering enforces tenant_id
+- [ ] Verify repository queries include tenant_id
+- [ ] Verify webhook respects tenant context
+- [ ] Test SQL injection attempts
+- [ ] Test IDOR (Insecure Direct Object Reference) vectors
+- [ ] All tenant isolation tests pass
+
+#### B1.3: Lead Duplicate Detection Implementation (12 hours)
+- [ ] Create LeadDuplicateDetector service
+- [ ] Implement email matching (exact match)
+- [ ] Implement phone matching (normalized)
+- [ ] Implement email + phone combination matching
+- [ ] Extend LeadRepository with find_by_email
+- [ ] Extend LeadRepository with find_by_phone
+- [ ] Extend LeadRepository with find_potential_duplicates
+- [ ] Integrate detector into CreateLeadUseCase
+- [ ] Create duplicate warning UI component
+- [ ] Display duplicates in lead detail view
+- [ ] Unit tests for detection logic
+- [ ] Integration tests for API
+
+#### B1.4: Smoke Test Suite Expansion (12 hours)
+- [ ] Add 5 Auth smoke tests (login, OAuth, 2FA, reset, refresh)
+- [ ] Add 8 Catalog smoke tests (CRUD, VIN, pagination, search)
+- [ ] Add 8 Leads smoke tests (webhook, assign, update, reassign, duplicates, audit)
+- [ ] Add 6 Appointments smoke tests (create, calendar, confirm, cancel, email, conflicts)
+- [ ] Total smoke tests: 30+ (up from 20)
+- [ ] Group tests by feature area
+- [ ] Optimize test execution time < 5 minutes
+- [ ] Add retry mechanism for flaky tests
+- [ ] Add to CI/CD pipeline
+- [ ] Verify >95% pass rate
+
+#### B1.5: Password Reset Flow Tests (8 hours)
+- [ ] Create test_auth_password_reset.py integration tests
+- [ ] Test user can request password reset
+- [ ] Test reset token expires after 1 hour
+- [ ] Test user can reset password with valid token
+- [ ] Test invalid token returns 400
+- [ ] Test password requires new different from old
+- [ ] Test password successfully updates hash
+- [ ] Create frontend password-reset.test.tsx
+- [ ] Test user can request reset from login page
+- [ ] Test user receives email with reset link
+- [ ] Test user can reset password with valid token
+- [ ] Test invalid token shows error message
+- [ ] Test user can login with new password
+- [ ] All password reset tests pass
+
+### Sprint B2: Core Feature Completion (54 hours)
+
+#### B2.1: Facebook Webhook Polling Completion (16 hours)
+- [ ] Review TODO comments in poll_facebook_leads_task.py (lines 56-82)
+- [ ] Implement error handling for API rate limits
+- [ ] Implement retry logic with exponential backoff
+- [ ] Add metrics tracking (leads polled, created, errors)
+- [ ] Implement deduplication in polling
+- [ ] Configure polling interval (10 minutes)
+- [ ] Configure timeout (30 seconds per page)
+- [ ] Configure retry policy
+- [ ] Remove all TODO comments
+- [ ] Integration tests pass
+
+#### B2.2: VIN Decode Integration Tests (6 hours)
+- [ ] Create test_vin_decode_integration.py
+- [ ] Test VIN decode calls NHTSA API successfully
+- [ ] Test VIN decode caches results
+- [ ] Test VIN decode handles API errors
+- [ ] Test VIN decode timeout returns cached data
+- [ ] Test VIN decode populates vehicle attributes
+- [ ] Mock NHTSA API responses
+- [ ] Test success scenarios
+- [ ] Test error scenarios (timeout, 404, 500)
+- [ ] Verify caching behavior
+
+#### B2.3: Team Switching UI Implementation (8 hours)
+- [ ] Create TeamSwitcher component
+- [ ] Create useTeams hook
+- [ ] Implement getUserTeams API call
+- [ ] Implement switchTeam API call
+- [ ] Add TeamSwitcher to Header component
+- [ ] Display team dropdown in header
+- [ ] Show all user's teams
+- [ ] Handle team switching
+- [ ] Update context on switch
+- [ ] Refresh page with new team context
+- [ ] Unit tests for TeamSwitcher component
+- [ ] E2E test for team switching flow
+
+#### B2.4: Calendar Integration (12 hours)
+- [ ] Install @fullcalendar/react dependencies
+- [ ] Create FullCalendarView component
+- [ ] Integrate dayGridPlugin
+- [ ] Integrate timeGridPlugin
+- [ ] Integrate interactionPlugin
+- [ ] Configure header toolbar
+- [ ] Map appointments to calendar events
+- [ ] Implement click on appointment handler
+- [ ] Implement select empty slot handler
+- [ ] Implement drag to reschedule
+- [ ] Replace basic CalendarView with FullCalendarView
+- [ ] Verify responsive design
+- [ ] Unit tests for FullCalendarView
+- [ ] E2E test for calendar interactions
+
+#### B2.5: Role-Based Permission Tests (12 hours)
+- [ ] Create test_role_based_permissions.py
+- [ ] Define PERMISSION_MATRIX (admin, manager, vendedor, viewer)
+- [ ] Test admin: full access (create, read, update, delete, assign)
+- [ ] Test manager: team management (create, read, update, assign)
+- [ ] Test vendedor: own leads/appointments (create, read, update)
+- [ ] Test viewer: read-only
+- [ ] Test all role combinations
+- [ ] Verify authorization at API layer
+- [ ] Verify cross-tenant access blocked
+- [ ] Verify role escalation blocked
+- [ ] Document permission matrix
+
+#### B2.6: API Contract Test Completion (8 hours)
+- [ ] Identify missing contract test coverage
+- [ ] Compare routers with contract tests
+- [ ] Add missing product schema tests
+- [ ] Add missing appointment schema tests
+- [ ] Create teams schema tests
+- [ ] Verify request DTOs match OpenAPI
+- [ ] Verify response DTOs match OpenAPI
+- [ ] Verify status codes correct
+- [ ] Verify validation rules documented
+- [ ] All API endpoints have contract tests
+
+### Sprint B3: UX Enhancements (44 hours)
+
+#### B3.1: Multi-Image Gallery Implementation (12 hours)
+- [ ] Create ProductImageGallery component
+- [ ] Implement main image display
+- [ ] Implement prev/next navigation
+- [ ] Implement thumbnail selection
+- [ ] Add keyboard navigation
+- [ ] Integrate with VehicleForm
+- [ ] Verify responsive design
+- [ ] Unit tests for ProductImageGallery
+- [ ] E2E test for gallery interactions
+
+#### B3.2: Image Optimization Service (8 hours)
+- [ ] Create ImageOptimizer service
+- [ ] Implement resize to max 1920x1080
+- [ ] Implement JPEG compression at 85%
+- [ ] Implement EXIF data stripping
+- [ ] Implement alpha channel removal
+- [ ] Add /optimize endpoint to router
+- [ ] Integrate optimization before upload
+- [ ] Verify file size reduced >50%
+- [ ] Unit tests for optimizer
+- [ ] Test with real images
+
+#### B3.3: Appointment Email Notifications (4 hours)
+- [ ] Review existing email_service.py
+- [ ] Verify send_appointment_confirmation exists
+- [ ] Verify send_appointment_cancellation exists
+- [ ] Wire up confirmation in ConfirmAppointmentUseCase
+- [ ] Wire up cancellation in CancelAppointmentUseCase
+- [ ] Test confirmation email sent
+- [ ] Test cancellation email sent
+- [ ] Verify email templates
+- [ ] Integration tests pass
+
+#### B3.4: Product Edit Mode Implementation (8 hours)
+- [ ] Review TODO at line 440 in VehicleForm.tsx
+- [ ] Add mode prop to VehicleForm ('create' | 'edit')
+- [ ] Add productId prop to VehicleForm
+- [ ] Create useProduct hook for edit mode
+- [ ] Load product data in edit mode
+- [ ] Pre-fill form with existing values
+- [ ] Add updateProduct API call
+- [ ] Handle validation in edit mode
+- [ ] Remove TODO comment
+- [ ] Unit tests for edit mode
+- [ ] E2E test for edit flow
+
+#### B3.5: CSV Parser for Bulk Upload (12 hours)
+- [ ] Create CSVProductParser service
+- [ ] Implement CSV parsing with DictReader
+- [ ] Validate required columns (vin, title, price, category_id)
+- [ ] Parse VIN data
+- [ ] Create CreateProductRequest from CSV row
+- [ ] Create BulkUploadProductsUseCase
+- [ ] Implement partial failure handling
+- [ ] Return BulkUploadResult with counts
+- [ ] Add /bulk-upload endpoint to router
+- [ ] Integration tests with sample CSV
+- [ ] Test error handling
+- [ ] Test partial failures
+
+### Sprint B4: Advanced Features (42 hours)
+
+#### B4.1: Team Invitation System (16 hours)
+- [ ] Create TeamInvitation entity
+- [ ] Add invitation fields (team_id, email, role, token, expires_at)
+- [ ] Create InviteTeamMemberUseCase
+- [ ] Generate invitation token
+- [ ] Send invitation email
+- [ ] Create AcceptTeamInvitationUseCase
+- [ ] Validate invitation token
+- [ ] Add user to team
+- [ ] Mark invitation as accepted
+- [ ] Add /invite endpoint to router
+- [ ] Add /accept-invitation endpoint to router
+- [ ] Create invitation acceptance page
+- [ ] Test invitation expires after 7 days
+- [ ] Test already member validation
+- [ ] Unit tests for use cases
+- [ ] Integration tests for flow
+
+#### B4.2: Appointment Conflict Detection (6 hours)
+- [ ] Create AppointmentConflictDetector service
+- [ ] Implement times_overlap logic
+- [ ] Detect dealer unavailability conflicts
+- [ ] Integrate into CreateAppointmentUseCase
+- [ ] Return conflicts to user
+- [ ] Allow override with confirmation
+- [ ] Unit tests for detection logic
+- [ ] Integration tests for conflict scenarios
+
+#### B4.3: Lead Assignment Rules Engine (8 hours)
+- [ ] Create LeadAssignmentRulesEngine
+- [ ] Implement round-robin assignment
+- [ ] Implement vehicle owner assignment
+- [ ] Implement workload balancing
+- [ ] Implement geographic proximity (if data available)
+- [ ] Integrate into CreateLeadUseCase
+- [ ] Make rules configurable
+- [ ] Unit tests for each rule
+- [ ] Integration test for flow
+
+#### B4.4: Lead Audit Trail UI (6 hours)
+- [ ] Create getLeadAuditTrail API call
+- [ ] Create useLeadAuditTrail hook
+- [ ] Create LeadAuditTrail component
+- [ ] Display audit trail chronologically
+- [ ] Show status changes
+- [ ] Show who made changes
+- [ ] Show reasons for changes
+- [ ] Integrate into lead detail page
+- [ ] Unit tests for component
+- [ ] E2E test for display
+
+#### B4.5: 2FA Backup Code Regeneration (6 hours)
+- [ ] Create RegenerateBackupCodesUseCase
+- [ ] Generate new backup codes
+- [ ] Hash and store new codes
+- [ ] Invalidate old codes
+- [ ] Add /regenerate-backup-codes endpoint
+- [ ] Create BackupCodesDisplay component
+- [ ] Display codes once to user
+- [ ] Add save codes warning
+- [ ] Unit tests for use case
+- [ ] Integration test for flow
+
+### Phase Completion Success Criteria
+
+#### Module Completion Targets
+
+##### Auth (95% → 100%)
+- [ ] Password reset flow complete
+- [ ] Session management tested
+- [ ] 2FA backup codes regeneratable
+- [ ] OAuth session handling verified
+
+##### Organizations & Teams (90% → 100%)
+- [ ] Team switching UI implemented
+- [ ] Role-based permissions tested
+- [ ] Team invitation system functional
+- [ ] Tenant isolation verified
+
+##### Catalog C3 (95% → 100%)
+- [ ] VIN decode integration tested
+- [ ] CSV parser implemented
+- [ ] Image gallery functional
+- [ ] Edit mode complete
+
+##### Image Upload (85% → 100%)
+- [ ] Image optimization implemented
+- [ ] Multi-image upload working
+- [ ] Upload progress tracked
+- [ ] Image deletion functional
+
+##### Leads (90% → 100%)
+- [ ] Duplicate detection implemented
+- [ ] Webhook polling complete
+- [ ] Assignment rules working
+- [ ] Audit trail UI displayed
+
+##### Appointments (85% → 100%)
+- [ ] Calendar integration complete
+- [ ] Email notifications wired
+- [ ] Conflict detection working
+- [ ] Recurring appointments supported
+
+##### E2E / QA (80% → 100%)
+- [ ] Integrated flow validated
+- [ ] Smoke test suite expanded (30+ tests)
+- [ ] Contract tests complete
+- [ ] Flaky tests eliminated
+
+#### Overall Completion Targets
+- [ ] All 4 sprints (B1 through B4) implemented
+- [ ] All modules at 100% completion
+- [ ] All security tests passing
+- [ ] All E2E tests passing
+- [ ] All UX enhancements deployed
+- [ ] All advanced features functional
+- [ ] Overall readiness: 100%
+
+---
+
+## Notes
+
+- **Phase 13 is COMPLETE** (all 6 tasks done)
+- **Phase A7 is COMPLETE** (E2E verification done)
+- **Phase Completion B1-B4 follows priority order**: Security → Core → UX → Advanced
+- **Parallel execution** is encouraged where dependency graph allows
+- **Test-driven development** is required for all backend code
+- **E2E tests** are mandatory for all user-facing features
+- **CI/CD gates** will enforce all critical tests pass before merge
+- **Estimated effort**: 284 hours (7 weeks solo, 4-5 weeks with 2 devs)
