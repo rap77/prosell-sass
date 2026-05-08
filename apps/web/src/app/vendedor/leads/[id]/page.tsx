@@ -1,14 +1,16 @@
 "use client";
 
+import { useState, use } from "react";
 import { useLead } from "@/lib/api/leads";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { AppointmentForm } from "@/components/appointments/AppointmentForm";
 
 interface LeadDetailsPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 /**
@@ -24,8 +26,12 @@ interface LeadDetailsPageProps {
  * - Back button to return to leads list
  */
 export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
+  // Unwrap params promise (Next.js 16 requirement)
+  const { id } = use(params);
+  
   const router = useRouter();
-  const { data: lead, isLoading, error } = useLead(params.id);
+  const { data: lead, isLoading, error } = useLead(id);
+  const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
 
   // Loading state
   if (isLoading) {
@@ -44,7 +50,7 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
     return (
       <div className="container mx-auto py-8">
         <div className="flex flex-col items-center justify-center py-20">
-          <p className="text-red-500 mb-4">Error loading lead: {error.message}</p>
+          <p className="text-red-600 mb-4">Error loading lead: {error.message}</p>
           <Button onClick={() => router.back()} variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Go Back
@@ -89,6 +95,17 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
         </p>
       </div>
 
+      {/* Action Buttons */}
+      <div className="mb-6">
+        <Button
+          onClick={() => setIsAppointmentModalOpen(true)}
+          size="lg"
+        >
+          <Calendar className="h-4 w-4 mr-2" />
+          Agendar Cita
+        </Button>
+      </div>
+
       {/* Lead details card */}
       <div className="max-w-4xl">
         <div className="border rounded-lg p-6 space-y-6">
@@ -115,14 +132,14 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
             </div>
           </div>
 
-          {/* Vehicle Interest */}
-          {lead.vehicle && (
+          {/* Product Interest */}
+          {lead.product && (
             <div>
               <h2 className="text-lg font-semibold mb-3">Vehicle Interest</h2>
               <div className="p-4 bg-muted rounded-lg">
-                <p className="font-medium">{lead.vehicle.title}</p>
+                <p className="font-medium">{lead.product.title}</p>
                 <p className="text-sm text-muted-foreground">
-                  {lead.vehicle.year} {lead.vehicle.make} {lead.vehicle.model}
+                  {lead.product.attributes.year} {lead.product.attributes.make} {lead.product.attributes.model}
                 </p>
               </div>
             </div>
@@ -154,6 +171,19 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
           </div>
         </div>
       </div>
+
+      {/* Appointment Form Modal */}
+      <AppointmentForm
+        open={isAppointmentModalOpen}
+        onClose={() => setIsAppointmentModalOpen(false)}
+        onSuccess={() => {
+          // Refresh lead data after appointment is created
+          // (handled by query invalidation in the mutation)
+          setIsAppointmentModalOpen(false);
+        }}
+        leadId={lead.id}
+        vehicleId={lead.product?.id || null}
+      />
     </div>
   );
 }

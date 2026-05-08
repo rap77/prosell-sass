@@ -108,15 +108,15 @@ describe('DataGrid', () => {
       year: 2020,
       make: 'Toyota',
       model: 'Camry',
-      dealer_id: 'dealer-1',
-      dealer_name: 'Test Dealer',
+      branch_id: 'branch-1',
+      branch_name: 'Test Branch',
     }
 
     expect(c3Vehicle.year).toBe(2020)
     expect(c3Vehicle.make).toBe('Toyota')
     expect(c3Vehicle.model).toBe('Camry')
-    expect(c3Vehicle.dealer_id).toBe('dealer-1')
-    expect(c3Vehicle.dealer_name).toBe('Test Dealer')
+    expect(c3Vehicle.branch_id).toBe('branch-1')
+    expect(c3Vehicle.branch_name).toBe('Test Branch')
   })
 
   it('DataGrid infinite scroll hook is available', () => {

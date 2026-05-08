@@ -53,7 +53,7 @@ export async function GET(): Promise<NextResponse<AuthStateResponse>> {
       .join("; ");
 
     const apiUrl = process.env.API_URL ?? "http://localhost:8000";
-    const response = await fetch(`${apiUrl}/api/auth/state`, {
+    const response = await fetch(`${apiUrl}/api/v1/auth/state`, {
       headers: { Cookie: cookieHeader },
       cache: "no-store",
     });

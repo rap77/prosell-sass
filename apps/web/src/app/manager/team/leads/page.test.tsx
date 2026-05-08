@@ -12,13 +12,20 @@ vi.mock("next/navigation", () => ({
 
 // Mock useLead hook
 vi.mock("@/lib/api/leads", () => ({
+  LeadStatus: {
+    NEW: "new",
+    CONTACTED: "contacted",
+    QUALIFIED: "qualified",
+    APPOINTMENT_SET: "appointment_set",
+    LOST: "lost",
+  },
   useLead: () => ({
     data: undefined,
     isLoading: false,
     error: null,
   }),
   useLeads: () => ({
-    data: { items: [], total: 0 },
+    data: [],
     isLoading: false,
     error: null,
   }),
@@ -36,15 +43,10 @@ const renderWithQueryClient = (component: React.ReactElement) => {
 };
 
 // Mock child components
-vi.mock("@/components/leads/TeamMetricsCard", () => ({
-  TeamMetricsCard: () => <div data-testid="team-metrics">Team Metrics</div>,
-}));
-
-vi.mock("@/components/leads/TeamLeadList", () => ({
-  TeamLeadList: ({ onLeadClick, onReassignLead }: any) => (
-    <div data-testid="team-lead-list">
+vi.mock("@/components/leads/LeadList", () => ({
+  LeadList: ({ onLeadClick }: any) => (
+    <div data-testid="lead-list">
       <button onClick={() => onLeadClick?.("lead-1")}>View Lead</button>
-      <button onClick={() => onReassignLead?.("lead-1")}>Reassign Lead</button>
     </div>
   ),
 }));
@@ -71,16 +73,16 @@ describe("ManagerTeamLeadsPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("should render TeamMetricsCard", () => {
+  it("should render LeadList", () => {
     renderWithQueryClient(<ManagerTeamLeadsPage />);
 
-    expect(screen.getByTestId("team-metrics")).toBeInTheDocument();
+    expect(screen.getByTestId("lead-list")).toBeInTheDocument();
   });
 
-  it("should render TeamLeadList", () => {
+  it("should render team description", () => {
     renderWithQueryClient(<ManagerTeamLeadsPage />);
 
-    expect(screen.getByTestId("team-lead-list")).toBeInTheDocument();
+    expect(screen.getByText("View and manage all leads across your team")).toBeInTheDocument();
   });
 
   it("should not show reassign modal initially", () => {

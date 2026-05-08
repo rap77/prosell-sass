@@ -39,7 +39,7 @@ describe('Header', () => {
   })
 
   it('accepts organization prop', () => {
-    render(<Header organization={{ name: 'Test Dealership' }} />)
+    render(<Header organization={{ name: 'Test Brancheship' }} />)
     expect(true).toBe(true)
   })
 

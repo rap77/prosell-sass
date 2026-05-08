@@ -111,7 +111,7 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
       escapeCsvField(lead.buyer_name),
       escapeCsvField(lead.buyer_email || ""),
       escapeCsvField(lead.buyer_phone || ""),
-      escapeCsvField(lead.vehicle?.title || "N/A"),
+      escapeCsvField(lead.product?.title || "N/A"),
       escapeCsvField(lead.status),
       escapeCsvField(lead.source),
       escapeCsvField(lead.created_at),
@@ -137,7 +137,7 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
 
   if (error) {
     return (
-      <div className="p-8 text-center text-red-500">
+      <div className="p-8 text-center text-red-600">
         <p>Error loading leads: {error.message}</p>
         <Button onClick={() => refetch()} variant="outline" className="mt-4">
           Retry

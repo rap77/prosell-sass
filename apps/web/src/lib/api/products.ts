@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { CreateProductRequest, Product, ProductListResponse } from "@/types/product";
+import type { CreateProductRequest, Product, ProductListResponse, ProductAttributes } from "@/types/product";
 
 interface BackendProductResponse {
   id: string;
   title: string;
   price_cents: number;
   category_id: string;
-  attributes: Record<string, unknown>;
+  attributes: ProductAttributes;
   status: "draft" | "active" | "sold";
   created_at: string;
   updated_at: string;
@@ -32,6 +32,7 @@ interface BackendProductResponse {
  *   price_cents: 18500_00,
  *   category_id: "cat-123",
  *   attributes: {
+ *     category: 'vehicle',
  *     vin: "2GNALCEK1H1615946", // triggers auto-vehicle creation
  *     year: 2017,
  *     make: "Chevrolet",

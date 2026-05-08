@@ -2,15 +2,13 @@
  * Login Page
  *
  * Authentication page for user login using email/password or OAuth providers.
- * Server Component that checks authentication and renders LoginPageContent.
+ * Server Component that renders LoginPageContent.
  *
  * Route: /auth/login
  *
  * @see https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts
  */
 
-import { checkAuthServer } from "@/lib/auth/server-check";
-import { redirect } from "next/navigation";
 import { LoginPageContent } from "./LoginPageContent";
 
 // ============================================
@@ -36,22 +34,24 @@ export const metadata = {
  *
  * Features:
  * - Async Server Component for optimal performance
- * - Server-side authentication check (defense in depth)
- * - Redirects to dashboard if already authenticated
+ * - Client-side auth redirect (via middleware and LoginPageContent)
  * - Renders LoginPageContent for the UI
  *
- * @returns The login page content or redirect to dashboard
+ * NOTE: Server-side auth check disabled due to Next.js 16 bug
+ * The cookies() function takes 80+ seconds in dev mode, causing page hangs.
+ * Client-side redirect via useAuth hook handles authenticated users.
+ *
+ * @returns The login page content
  */
 export default async function LoginPage() {
-  // Server-side authentication check (cached per request with React.cache)
-  // Vercel best practice: authenticate at the page level, not just middleware
-  const auth = await checkAuthServer();
+  // NOTE: Server-side auth check disabled due to Next.js 16 cookies() bug
+  // The checkAuthServer() function calls cookies() which hangs for 80+ seconds
+  // in dev mode. Client-side redirect in useAuth hook handles this instead.
 
-  // If user is authenticated, redirect to dashboard
-  // This prevents flash of login page and improves perceived performance
-  if (auth.isAuthenticated) {
-    redirect("/dashboard");
-  }
+  // const auth = await checkAuthServer();
+  // if (auth.isAuthenticated) {
+  //   redirect("/dashboard");
+  // }
 
   return <LoginPageContent />;
 }

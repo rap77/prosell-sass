@@ -4,13 +4,16 @@
 
 /**
  * Format a number as currency (USD)
+ * @param amount - The amount to format
+ * @param currency - Currency code (default: "USD")
+ * @param decimals - Number of decimal places (default: 2)
  */
-export function formatCurrency(amount: number, currency = "USD"): string {
+export function formatCurrency(amount: number, currency = "USD", decimals = 2): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   }).format(amount);
 }
 

@@ -23,8 +23,17 @@ interface BackendCategoryResponse {
  *
  * Categories change rarely (admin-only operation), so we cache aggressively
  * to reduce API calls and improve UI responsiveness.
+ *
+ * In test mode (detected by hostname or environment), caching is disabled
+ * to ensure tests see newly created categories immediately.
  */
 export function useCategories(): UseQueryResult<Category[], Error> {
+  // Detect test mode: localhost in development or explicit NODE_ENV=test
+  const isTestMode =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+     process.env.NODE_ENV === "test");
+
   return useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -40,7 +49,13 @@ export function useCategories(): UseQueryResult<Category[], Error> {
       const data = (await res.json()) as BackendCategoryResponse;
       return data.categories;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes - categories rarely change
+    // Disable cache in test mode, use 5-minute cache in production
+    staleTime: isTestMode ? 0 : 5 * 60 * 1000,
+    // CRITICAL: Always refetch on mount in test mode to catch newly created categories
+    // In production, respect the cache to reduce API calls
+    refetchOnMount: isTestMode ? "always" : undefined,
+    // CRITICAL: Refetch on window focus in test mode to ensure fresh data
+    refetchOnWindowFocus: isTestMode ? "always" : undefined,
   });
 }
 

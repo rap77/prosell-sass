@@ -57,7 +57,7 @@ const navigationItems: NavItem[] = [
     icon: Calendar,
     group: 'ventas',
   },
-  // Configuración group (admin/dealer only)
+  // Configuración group (admin/branch only)
   {
     label: 'Configuración',
     href: '/settings',
@@ -173,7 +173,7 @@ Sidebar.Nav = function SidebarNav({
   }
 
   return (
-    <nav className="flex-1 overflow-y-auto px-2 py-4">
+    <nav className="flex-1 overflow-y-auto px-2 py-4" aria-label="Main navigation">
       {Object.entries(groupedItems).map(([group, groupItems]) => {
         return (
           <div key={group} className="mb-6">

@@ -63,9 +63,8 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
   );
 
   // Calculate unread leads (created < 5 minutes ago)
-  const unreadThreshold = useMemo(() => {
-    return new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
-  }, []);
+  // Note: Date.now() is called on each render - acceptable overhead for this use case
+  const unreadThreshold = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
 
   const isUnread = (lead: Lead) => {
     return new Date(lead.created_at) > unreadThreshold;
@@ -80,7 +79,7 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
 
   if (error) {
     return (
-      <div className="p-8 text-center text-red-500">
+      <div className="p-8 text-center text-red-600">
         <p>Error loading leads: {error.message}</p>
         <Button onClick={() => refetch()} variant="outline" className="mt-4">
           Retry

@@ -1,22 +1,22 @@
 /**
- * Test stubs for UserDealerAssignment component.
+ * Test stubs for UserBranchAssignment component.
  *
- * This file contains test placeholders for user-dealer M:N assignment UI.
+ * This file contains test placeholders for user-branch M:N assignment UI.
  * All tests are marked as skip until implementation.
  */
 
 import { describe, it } from 'vitest'
 
-describe.skip('UserDealerAssignment', () => {
-  it('test_multi_select_dealers', () => {
-    // Component renders dropdown for dealer selection
+describe.skip('UserBranchAssignment', () => {
+  it('test_multi_select_branchs', () => {
+    // Component renders dropdown for branch selection
   })
 
-  it('test_assign_multiple_dealers', () => {
-    // Multiple dealers can be assigned to user
+  it('test_assign_multiple_branchs', () => {
+    // Multiple branchs can be assigned to user
   })
 
-  it('test_remove_dealer_assignment', () => {
-    // Dealer assignment can be removed
+  it('test_remove_branch_assignment', () => {
+    // Branch assignment can be removed
   })
 })

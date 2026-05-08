@@ -57,6 +57,7 @@ describe("createProductWithVehicle", () => {
       price_cents: 18500_00,
       category_id: "cat-1",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
         year: 2017,
         make: "Toyota",

@@ -581,10 +581,10 @@ export function TwoFactorSetupForm({
 
                 {/* Warning */}
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-yellow-600 dark:text-yellow-500 mb-2">
+                  <h3 className="text-sm font-semibold text-yellow-600 dark:text-yellow-600 mb-2">
                     Warning:
                   </h3>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                  <p className="text-sm text-yellow-700 dark:text-yellow-500">
                     Disabling two-factor authentication will make your account
                     less secure. We recommend keeping it enabled.
                   </p>

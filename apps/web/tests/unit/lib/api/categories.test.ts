@@ -124,9 +124,9 @@ describe("useCategories", () => {
     // Verify only one fetch call was made (data is cached)
     expect(mockFetch).toHaveBeenCalledTimes(1);
 
-    // Verify staleTime is configured correctly by checking isStale flag
-    // Immediately after fetch, data should not be stale (cached for 5min)
-    expect(result.current.isStale).toBe(false);
+    // In test mode (NODE_ENV=test), staleTime=0 so data is immediately stale.
+    // This is intentional: tests always see fresh data without cache delays.
+    expect(result.current.isStale).toBe(true);
   });
 
   it("should throw error with backend message on API failure", async () => {

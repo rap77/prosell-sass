@@ -38,6 +38,8 @@ interface SelectControlledProps {
   disabled?: boolean;
   /** Additional classNames for the trigger */
   className?: string;
+  /** Accessible label for E2E testing and screen readers */
+  "aria-label"?: string;
 }
 
 /**
@@ -54,9 +56,16 @@ export function SelectControlled({
   id,
   disabled,
   className,
+  "aria-label": ariaLabel,
 }: SelectControlledProps) {
-  const selectedOption = options.find((opt) => opt.value === value);
+  // Case-insensitive lookup for robustness - handles VIN decode returning "Chevrolet"
+  // when options have "chevrolet" as the key
+  const selectedOption = options.find((opt) => opt.value.toLowerCase() === value.toLowerCase());
   const displayValue = selectedOption?.label ?? (value ? value : "");
+
+  // Normalize the value to match the option's actual value (case-sensitive)
+  // This ensures Radix Select's case-sensitive comparison works correctly
+  const normalizedValue = selectedOption?.value ?? (value || "");
 
   /**
    * Guard against spurious empty-value resets from Radix BubbleInput.
@@ -76,15 +85,15 @@ export function SelectControlled({
    */
   const handleChange = React.useCallback(
     (val: string) => {
-      if (val === "" && value !== "") return;
+      if (val === "" && normalizedValue !== "") return;
       onChange(val);
     },
-    [onChange, value],
+    [onChange, normalizedValue],
   );
 
   return (
-    <Select value={value} onValueChange={handleChange} disabled={disabled}>
-      <SelectTrigger id={id} className={className}>
+    <Select value={normalizedValue} onValueChange={handleChange} disabled={disabled}>
+      <SelectTrigger id={id} className={className} aria-label={ariaLabel}>
         {/*
           Passing display value as children ensures it renders when set
           programmatically, bypassing Radix's internal DOM lookup.

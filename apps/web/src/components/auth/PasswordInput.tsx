@@ -96,8 +96,8 @@ function calculatePasswordStrength(password: string): PasswordStrength {
 function getStrengthColor(strength: PasswordStrength): string {
   const COLORS = {
     weak: "bg-destructive",
-    medium: "bg-yellow-500",
-    strong: "bg-green-500",
+    medium: "bg-yellow-600",
+    strong: "bg-green-600",
   } as const;
 
   return COLORS[strength];
@@ -299,8 +299,8 @@ export function PasswordInput({
             className={cn(
               "text-xs font-medium uppercase",
               strength === "weak" && "text-destructive",
-              strength === "medium" && "text-yellow-500",
-              strength === "strong" && "text-green-500",
+              strength === "medium" && "text-yellow-600",
+              strength === "strong" && "text-green-600",
             )}
           >
             {getStrengthText(strength)}

@@ -27,7 +27,7 @@ interface HeaderProps {
     role?: string
     initials?: string
   }
-  /** Organization data - placeholder for Phase 5 multi-dealership */
+  /** Organization data - placeholder for Phase 5 multi-brancheship */
   organization?: {
     name?: string
   }
@@ -40,7 +40,7 @@ interface HeaderProps {
  * - Global search input (placeholder for Cmd+K CommandPalette in later plan)
  * - Breadcrumb navigation using Next.js usePathname
  * - User menu dropdown with visible role badge
- * - Org switcher placeholder (multi-dealership in Phase 5)
+ * - Org switcher placeholder (multi-brancheship in Phase 5)
  * - Logout functionality
  */
 export function Header({ user, organization }: HeaderProps) {
@@ -77,7 +77,7 @@ export function Header({ user, organization }: HeaderProps) {
 
   // TODO: Replace with real org data from user context
   const orgData = organization || {
-    name: 'ProSell Dealership',
+    name: 'ProSell Brancheship',
   }
 
   // Handle logout
@@ -185,7 +185,7 @@ export function Header({ user, organization }: HeaderProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem disabled>
               <span className="text-xs text-muted-foreground">
-                Multi-dealership coming in Phase 5
+                Multi-brancheship coming in Phase 5
               </span>
             </DropdownMenuItem>
           </DropdownMenuContent>

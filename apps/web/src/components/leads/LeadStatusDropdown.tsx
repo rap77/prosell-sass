@@ -30,7 +30,11 @@ export function LeadStatusDropdown({
   onStatusUpdated,
 }: LeadStatusDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [optimisticStatus, setOptimisticStatus] = useState<LeadStatus | null>(null);
   const updateLeadStatus = useUpdateLeadStatus(leadId);
+
+  // Display optimistic status if updating, otherwise current status
+  const displayStatus = optimisticStatus || currentStatus;
 
   // All available statuses (backend will validate state transitions)
   const availableStatuses: LeadStatus[] = [
@@ -42,11 +46,18 @@ export function LeadStatusDropdown({
   ];
 
   const handleStatusChange = async (newStatus: LeadStatus) => {
+    // Optimistic update: show new status immediately
+    setOptimisticStatus(newStatus);
+
     try {
       await updateLeadStatus.mutateAsync({ status: newStatus });
       onStatusUpdated?.(newStatus);
       setIsOpen(false);
+      // Clear optimistic status on success
+      setOptimisticStatus(null);
     } catch (error) {
+      // Revert optimistic status on error
+      setOptimisticStatus(null);
       // Error toast is already shown by the mutation hook
       console.error("Failed to update lead status:", error);
     }
@@ -62,7 +73,7 @@ export function LeadStatusDropdown({
           disabled={updateLeadStatus.isPending}
           data-testid="status-dropdown"
         >
-          <LeadStatusBadge status={currentStatus} />
+          <LeadStatusBadge status={displayStatus} />
           <ChevronDown className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -71,7 +82,7 @@ export function LeadStatusDropdown({
           <DropdownMenuItem
             key={status}
             onClick={() => handleStatusChange(status)}
-            disabled={status === currentStatus || updateLeadStatus.isPending}
+            disabled={status === displayStatus || updateLeadStatus.isPending}
           >
             <LeadStatusBadge status={status} className="mr-2" />
           </DropdownMenuItem>

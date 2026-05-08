@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
   // React Compiler enabled - automatically optimizes components
   reactCompiler: true,
 
+  turbopack: {
+    root: "../../",
+  },
+
   // Bundle size optimization: Optimize imports from packages with barrel files
   // This prevents the bundler from loading the entire barrel file when importing specific exports
   // See: https://vercel.com/blog/how-we-optimized-package-imports-in-next-js
@@ -35,7 +39,9 @@ const nextConfig: NextConfig = {
   // Using 'fallback' type ensures rewrites are processed AFTER Next.js API routes
   // This allows /api/v1/vehicles/* to use Next.js API routes (for cookie forwarding)
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    // During SSR/build, we use API_URL (internal docker network)
+    // During client-side navigation, we use NEXT_PUBLIC_API_URL
+    const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
     return {
       // Process rewrites AFTER Next.js API routes

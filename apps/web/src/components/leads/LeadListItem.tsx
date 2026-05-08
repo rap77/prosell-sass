@@ -53,13 +53,13 @@ export function LeadListItem({ lead, onStatusUpdate, isUnread = false, actions }
         )}
       </div>
 
-      {/* Vehicle Info */}
+      {/* Product Info */}
       <div className="flex-shrink-0 w-48">
-        {lead.vehicle ? (
+        {lead.product ? (
           <div>
-            <div className="font-medium">{lead.vehicle.title}</div>
+            <div className="font-medium">{lead.product.title}</div>
             <div className="text-sm text-muted-foreground">
-              {lead.vehicle.year} {lead.vehicle.make} {lead.vehicle.model}
+              {lead.product.attributes.year} {lead.product.attributes.make} {lead.product.attributes.model}
             </div>
           </div>
         ) : (
@@ -80,7 +80,10 @@ export function LeadListItem({ lead, onStatusUpdate, isUnread = false, actions }
       </div>
 
       {/* Status */}
-      <div className="flex-shrink-0">
+      <div 
+        className="flex-shrink-0"
+        onClick={(e) => e.stopPropagation()} // Prevent navigation when clicking dropdown
+      >
         <LeadStatusDropdown
           leadId={lead.id}
           currentStatus={lead.status}

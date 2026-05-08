@@ -1,22 +1,22 @@
 /**
- * Test stubs for DealerForm component.
+ * Test stubs for BranchForm component.
  *
- * This file contains test placeholders for dealer form behavior.
+ * This file contains test placeholders for branch form behavior.
  * All tests are marked as skip until implementation.
  */
 
 import { describe, it } from 'vitest'
 
-describe.skip('DealerForm', () => {
-  it('test_dealer_form_render', () => {
+describe.skip('BranchForm', () => {
+  it('test_branch_form_render', () => {
     // Form renders all required fields
   })
 
-  it('test_dealer_form_validation', () => {
+  it('test_branch_form_validation', () => {
     // Form validates required fields
   })
 
-  it('test_dealer_form_submit', () => {
+  it('test_branch_form_submit', () => {
     // Form submits data to API endpoint
   })
 

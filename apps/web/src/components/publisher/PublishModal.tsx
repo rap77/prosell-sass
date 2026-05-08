@@ -74,7 +74,7 @@ function CategoryBErrorBanner({
           onChange={(e) => setChecked(e.target.checked)}
           className="rounded border-slate-300"
         />
-        <span className="text-sm text-red-700">
+        <span className="text-sm text-red-800">
           Ya validé mi cuenta de Facebook
         </span>
       </label>
@@ -87,7 +87,7 @@ function CategoryBErrorBanner({
         {unlockMutation.isPending ? "Desbloqueando..." : "Desbloquear y Reintentar"}
       </button>
       {unlockMutation.isError && (
-        <p className="mt-2 text-xs text-red-700">
+        <p className="mt-2 text-xs text-red-800">
           Error al desbloquear. Intentá de nuevo.
         </p>
       )}
@@ -202,7 +202,7 @@ export function PublishModal({
 
             {submitError && (
               <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-700">{submitError}</p>
+                <p className="text-sm text-red-800">{submitError}</p>
               </div>
             )}
 

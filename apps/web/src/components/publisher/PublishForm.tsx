@@ -125,7 +125,7 @@ function SelectField({
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-slate-700 mb-1">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-red-600 ml-1">*</span>}
       </label>
       <select
         id={id}
@@ -160,7 +160,7 @@ function InputField({
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-slate-700 mb-1">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-red-600 ml-1">*</span>}
       </label>
       <input
         id={id}
@@ -269,7 +269,7 @@ export function PublishForm({
       {/* ── FOTOS ── */}
       <div>
         <p className="block text-sm font-medium text-slate-700 mb-2">
-          Fotos <span className="text-red-500">*</span>
+          Fotos <span className="text-red-600">*</span>
           <span className="font-normal text-slate-400 ml-1">— click para elegir portada</span>
         </p>
         <HeroShotSelector
@@ -348,7 +348,7 @@ export function PublishForm({
 
           <div>
             <label htmlFor="year" className="block text-sm font-medium text-slate-700 mb-1">
-              Año <span className="text-red-500">*</span>
+              Año <span className="text-red-600">*</span>
             </label>
             <select
               id="year"
@@ -473,7 +473,7 @@ export function PublishForm({
 
         <div>
           <label htmlFor="facebook_page_id" className="block text-sm font-medium text-slate-700 mb-1">
-            Página de Facebook <span className="text-red-500">*</span>
+            Página de Facebook <span className="text-red-600">*</span>
           </label>
           <select
             id="facebook_page_id"

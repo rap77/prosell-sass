@@ -97,8 +97,8 @@ export function LeadReassignModal({
             <Label className="text-sm font-medium text-muted-foreground">Lead Details</Label>
             <div className="p-3 bg-muted/50 rounded-md space-y-1">
               <p className="text-sm font-medium">{lead.buyer_name}</p>
-              {lead.vehicle && (
-                <p className="text-sm text-muted-foreground">{lead.vehicle.title}</p>
+              {lead.product && (
+                <p className="text-sm text-muted-foreground">{lead.product.title}</p>
               )}
             </div>
           </div>
