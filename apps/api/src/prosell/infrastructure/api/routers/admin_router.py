@@ -1,15 +1,15 @@
 """Admin router for ProSell SaaS API."""
 
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from prosell.domain.entities.role import RoleType
 from prosell.domain.entities.organization import Organization
+from prosell.domain.entities.product import Product
 from prosell.domain.entities.publication import Publication
+from prosell.domain.entities.role import RoleType
 from prosell.domain.entities.user import User
-from prosell.domain.entities.vehicle import Vehicle
 from prosell.infrastructure.api.dependencies import require_role
 from prosell.infrastructure.database.session import get_async_session
 
@@ -29,7 +29,7 @@ async def get_admin_stats(
 
     Returns counts for:
     - Total organizations
-    - Total vehicles
+    - Total products (includes vehicles)
     - Total users
     - Total publications
 
@@ -39,19 +39,19 @@ async def get_admin_stats(
     result = await session.execute(
         select(
             func.count(Organization.id),
-            func.count(Vehicle.id),
+            func.count(Product.id),
             func.count(User.id),
             func.count(Publication.id),
         )
     )
 
     counts = result.one()
-    total_organizations, total_vehicles, total_users, total_publications = counts
+    total_organizations, total_products, total_users, total_publications = counts
 
     return JSONResponse(
         content={
             "total_organizations": total_organizations,
-            "total_vehicles": total_vehicles,
+            "total_products": total_products,
             "total_users": total_users,
             "total_publications": total_publications,
         }

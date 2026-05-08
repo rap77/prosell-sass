@@ -1,20 +1,29 @@
-"""SqlAlchemyLeadRepository implementation."""
+"""SqlAlchemyLeadRepository implementation with product JOIN support."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
+from typing import NamedTuple
 
-from sqlalchemy import and_, func, select, or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.entities.lead_audit_log import LeadAuditLog
-from prosell.domain.exceptions import LeadNotFoundException, DuplicateLeadException
+from prosell.domain.exceptions import LeadNotFoundException
+from prosell.domain.exceptions.lead_exceptions import LeadStateTransitionException
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.infrastructure.models.lead_model import LeadAuditLogModel, LeadModel
+from prosell.infrastructure.models.product_model import ProductModel
+
+
+class LeadWithProduct(NamedTuple):
+    """Lead entity with optional product model."""
+    lead: Lead
+    product_model: ProductModel | None = None
 
 
 class SqlAlchemyLeadRepository(AbstractLeadRepository):
-    """SQLAlchemy implementation of AbstractLeadRepository."""
+    """SQLAlchemy implementation of AbstractLeadRepository with product JOIN."""
 
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -26,51 +35,117 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         await self.session.flush()
         return self._to_entity(model)
 
-    async def get_by_id(self, lead_id: UUID, tenant_id: UUID) -> Lead | None:
-        """Get lead by ID with tenant isolation."""
-        stmt = select(LeadModel).where(
-            LeadModel.id == lead_id,
-            LeadModel.tenant_id == tenant_id,
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-        return self._to_entity(model) if model else None
+    async def get_by_id(
+        self, 
+        lead_id: UUID, 
+        tenant_id: UUID,
+        *,
+        include_product: bool = False,  # Keep parameter name for backwards compatibility
+    ) -> Lead | LeadWithProduct | None:
+        """Get lead by ID with tenant isolation and optional product JOIN."""
+        if include_product:
+            # LEFT JOIN with products table - select both models
+            # Filter for vehicle category products
+            stmt = (
+                select(LeadModel, ProductModel)
+                .outerjoin(ProductModel, LeadModel.product_id == ProductModel.id)
+                .where(
+                    LeadModel.id == lead_id,
+                    LeadModel.tenant_id == tenant_id,
+                )
+            )
+            result = await self.session.execute(stmt)
+            row = result.first()
+            if not row:
+                return None
+            lead_model, product_model = row
+            lead_entity = self._to_entity(lead_model)
+            return LeadWithProduct(lead=lead_entity, product_model=product_model)
+        else:
+            # Original behavior - just get lead
+            stmt = select(LeadModel).where(
+                LeadModel.id == lead_id,
+                LeadModel.tenant_id == tenant_id,
+            )
+            result = await self.session.execute(stmt)
+            model = result.scalar_one_or_none()
+            return self._to_entity(model) if model else None
 
-    async def get_by_buyer_and_vehicle(
+    async def get_by_buyer_and_product(
         self,
         buyer_email: str | None,
         buyer_phone: str | None,
-        vehicle_id: UUID | None,
+        product_id: UUID | None,
         tenant_id: UUID,
         within_hours: int = 24,
     ) -> Lead | None:
-        """Check for duplicate lead (same buyer + vehicle within N hours)."""
-        if not buyer_email and not buyer_phone:
+        """
+        Check for duplicate lead (same buyer + vehicle within N hours).
+
+        Duplicate logic:
+        - If product_id is provided: Only match leads with that specific product_id
+        - If product_id is null: Return None (no duplicate detection for leads without vehicles)
+        This prevents false positives when multiple leads have no vehicle associated.
+        """
+        cutoff = datetime.now(UTC) - timedelta(hours=within_hours)
+
+        conditions = [
+            LeadModel.tenant_id == tenant_id,
+            LeadModel.created_at >= cutoff,
+        ]
+
+        if buyer_email:
+            conditions.append(LeadModel.buyer_email == buyer_email)
+        elif buyer_phone:
+            conditions.append(LeadModel.buyer_phone == buyer_phone)
+        else:
+            return None  # Must have at least one identifier
+
+        # Vehicle condition: only check duplicates when product_id is provided
+        # When product_id is null, don't check for duplicates (allow multiple leads without vehicle)
+        if product_id is not None:
+            conditions.append(LeadModel.product_id == product_id)
+            stmt = select(LeadModel).where(*conditions).order_by(LeadModel.created_at.desc())
+            result = await self.session.execute(stmt)
+            model = result.scalar_one_or_none()
+            return self._to_entity(model) if model else None
+        else:
+            # No product_id provided - skip duplicate detection
             return None
 
-        # Build conditions: match email OR phone, AND same vehicle (if provided)
-        conditions = [LeadModel.tenant_id == tenant_id]
-
-        buyer_conditions = []
-        if buyer_email:
-            buyer_conditions.append(LeadModel.buyer_email == buyer_email)
-        if buyer_phone:
-            buyer_conditions.append(LeadModel.buyer_phone == buyer_phone)
-
-        if buyer_conditions:
-            conditions.append(or_(*buyer_conditions))
-
-        if vehicle_id:
-            conditions.append(LeadModel.vehicle_id == vehicle_id)
-
-        # Time window: created_at >= now() - within_hours
-        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=within_hours)
-        conditions.append(LeadModel.created_at >= cutoff_time)
-
-        stmt = select(LeadModel).where(*conditions).order_by(LeadModel.created_at.desc())
+    async def list_by_tenant(
+        self,
+        tenant_id: UUID,
+        limit: int = 50,
+        offset: int = 0,
+        status_filter: LeadStatus | None = None,
+    ) -> tuple[list[Lead], int]:
+        """List leads with pagination and status filter."""
+        # Count total
+        count_stmt = select(func.count()).select_from(LeadModel).where(
+            LeadModel.tenant_id == tenant_id
+        )
+        if status_filter:
+            count_stmt = count_stmt.where(LeadModel.status == status_filter)
+        
+        count_result = await self.session.execute(count_stmt)
+        total = count_result.scalar() or 0
+        
+        # Fetch page
+        stmt = (
+            select(LeadModel)
+            .where(LeadModel.tenant_id == tenant_id)
+            .order_by(LeadModel.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        if status_filter:
+            stmt = stmt.where(LeadModel.status == status_filter)
+            
         result = await self.session.execute(stmt)
-        model = result.scalars().first()
-        return self._to_entity(model) if model else None
+        models = result.scalars().all()
+        
+        return [self._to_entity(model) for model in models], total
 
     async def update_status(
         self,
@@ -81,43 +156,70 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         reason: str | None = None,
     ) -> Lead:
         """Update lead status and create audit log entry."""
-        # Get lead
+        # Fetch lead
         stmt = select(LeadModel).where(
             LeadModel.id == lead_id,
             LeadModel.tenant_id == tenant_id,
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-
         if not model:
             raise LeadNotFoundException(f"Lead not found: {lead_id}")
+        
+        # Validate state transition via domain entity
+        entity = self._to_entity(model)
+        if not entity.can_transition_to(new_status):
+            raise LeadStateTransitionException(
+                current_status=entity.status.value,
+                target_status=new_status.value,
+            )
 
-        # Convert to entity to validate transition
-        lead = self._to_entity(model)
-
-        # Capture old_status BEFORE transition mutates lead.status
-        old_status = lead.status
-        lead.transition_to(new_status)
-
-        # Update model
+        # Update status
+        old_status = model.status
         model.status = new_status.value
-        model.updated_at = datetime.now(timezone.utc)
+        model.updated_at = datetime.now(UTC)
 
-        # Create audit log with correct old_status
-        audit_log = LeadAuditLog.create(
+        # Create audit log
+        audit_log = LeadAuditLogModel(
             lead_id=lead_id,
             tenant_id=tenant_id,
-            old_status=old_status,
-            new_status=new_status,
+            old_status=old_status if isinstance(old_status, str) else old_status.value,
+            new_status=new_status.value,
             changed_by_user_id=changed_by_user_id,
             reason=reason,
         )
-
-        audit_model = self._audit_log_to_model(audit_log)
-        self.session.add(audit_model)
-
+        self.session.add(audit_log)
+        
         await self.session.flush()
         return self._to_entity(model)
+
+    async def get_audit_logs(
+        self,
+        lead_id: UUID,
+        tenant_id: UUID,
+        limit: int = 50,
+    ) -> list[LeadAuditLog]:
+        """Get audit log history for a lead."""
+        # Verify lead exists in tenant
+        stmt = select(LeadModel).where(
+            LeadModel.id == lead_id,
+            LeadModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        if not result.scalar_one_or_none():
+            raise LeadNotFoundException(f"Lead not found: {lead_id}")
+        
+        # Fetch audit logs
+        stmt = (
+            select(LeadAuditLogModel)
+            .where(LeadAuditLogModel.lead_id == lead_id)
+            .order_by(LeadAuditLogModel.created_at.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        
+        return [self._audit_log_to_entity(model) for model in models]
 
     async def list_by_vendedor(
         self,
@@ -126,34 +228,39 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         limit: int = 50,
         offset: int = 0,
         status: LeadStatus | None = None,
-    ) -> tuple[list[Lead], int]:
-        """List leads for a vendedor with pagination. Returns (leads, total)."""
-        conditions = [
+        include_products: bool = False,
+    ) -> tuple[list[LeadWithProduct], int]:
+        """List leads assigned to a specific vendedor with optional vehicle JOIN."""
+        base_filter = [
             LeadModel.tenant_id == tenant_id,
             LeadModel.vendedor_id == vendedor_id,
         ]
-
         if status:
-            conditions.append(LeadModel.status == status.value)
+            base_filter.append(LeadModel.status == status.value)
 
-        # Count total
-        count_stmt = select(func.count(LeadModel.id)).where(*conditions)
-        count_result = await self.session.execute(count_stmt)
+        count_result = await self.session.execute(
+            select(func.count()).select_from(LeadModel).where(*base_filter)
+        )
         total = count_result.scalar() or 0
 
-        # Fetch paginated results
-        stmt = (
-            select(LeadModel)
-            .where(*conditions)
-            .order_by(LeadModel.created_at.desc())
-            .limit(limit)
-            .offset(offset)
-        )
-        result = await self.session.execute(stmt)
-        models = result.scalars().all()
-
-        leads = [self._to_entity(model) for model in models]
-        return leads, total
+        if include_products:
+            stmt = (
+                select(LeadModel, ProductModel)
+                .outerjoin(ProductModel, LeadModel.product_id == ProductModel.id)
+                .where(*base_filter)
+                .order_by(LeadModel.created_at.desc())
+                .limit(limit)
+                .offset(offset)
+            )
+            result = await self.session.execute(stmt)
+            rows = result.all()
+            return [LeadWithProduct(lead=self._to_entity(r[0]), product_model=r[1]) for r in rows], total
+        else:
+            result = await self.session.execute(
+                select(LeadModel).where(*base_filter)
+                .order_by(LeadModel.created_at.desc()).limit(limit).offset(offset)
+            )
+            return [LeadWithProduct(lead=self._to_entity(m)) for m in result.scalars().all()], total
 
     async def list_by_manager(
         self,
@@ -162,54 +269,38 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         offset: int = 0,
         status: LeadStatus | None = None,
         vendedor_id: UUID | None = None,
-    ) -> tuple[list[Lead], int]:
-        """List all leads for a tenant (manager view). Returns (leads, total)."""
-        conditions = [LeadModel.tenant_id == tenant_id]
-
+        include_products: bool = False,
+    ) -> tuple[list[LeadWithProduct], int]:
+        """List all leads for a tenant (manager view) with optional vehicle JOIN."""
+        base_filter = [LeadModel.tenant_id == tenant_id]
         if status:
-            conditions.append(LeadModel.status == status.value)
-
+            base_filter.append(LeadModel.status == status.value)
         if vendedor_id:
-            conditions.append(LeadModel.vendedor_id == vendedor_id)
+            base_filter.append(LeadModel.vendedor_id == vendedor_id)
 
-        # Count total
-        count_stmt = select(func.count(LeadModel.id)).where(*conditions)
-        count_result = await self.session.execute(count_stmt)
+        count_result = await self.session.execute(
+            select(func.count()).select_from(LeadModel).where(*base_filter)
+        )
         total = count_result.scalar() or 0
 
-        # Fetch paginated results
-        stmt = (
-            select(LeadModel)
-            .where(*conditions)
-            .order_by(LeadModel.created_at.desc())
-            .limit(limit)
-            .offset(offset)
-        )
-        result = await self.session.execute(stmt)
-        models = result.scalars().all()
-
-        leads = [self._to_entity(model) for model in models]
-        return leads, total
-
-    async def get_audit_logs(
-        self,
-        lead_id: UUID,
-        tenant_id: UUID,
-        limit: int = 50,
-    ) -> list[LeadAuditLog]:
-        """Get audit logs for a lead."""
-        stmt = (
-            select(LeadAuditLogModel)
-            .where(
-                LeadAuditLogModel.lead_id == lead_id,
-                LeadAuditLogModel.tenant_id == tenant_id,
+        if include_products:
+            stmt = (
+                select(LeadModel, ProductModel)
+                .outerjoin(ProductModel, LeadModel.product_id == ProductModel.id)
+                .where(*base_filter)
+                .order_by(LeadModel.created_at.desc())
+                .limit(limit)
+                .offset(offset)
             )
-            .order_by(LeadAuditLogModel.created_at.desc())
-            .limit(limit)
-        )
-        result = await self.session.execute(stmt)
-        models = result.scalars().all()
-        return [self._audit_log_to_entity(model) for model in models]
+            result = await self.session.execute(stmt)
+            rows = result.all()
+            return [LeadWithProduct(lead=self._to_entity(r[0]), product_model=r[1]) for r in rows], total
+        else:
+            result = await self.session.execute(
+                select(LeadModel).where(*base_filter)
+                .order_by(LeadModel.created_at.desc()).limit(limit).offset(offset)
+            )
+            return [LeadWithProduct(lead=self._to_entity(m)) for m in result.scalars().all()], total
 
     async def assign_to_vendedor(
         self,
@@ -218,43 +309,29 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         new_vendedor_id: UUID | None,
     ) -> Lead:
         """Assign lead to a vendedor (or unassign if None)."""
-        # Get lead
-        stmt = select(LeadModel).where(
-            LeadModel.id == lead_id,
-            LeadModel.tenant_id == tenant_id,
+        result = await self.session.execute(
+            select(LeadModel).where(
+                LeadModel.id == lead_id,
+                LeadModel.tenant_id == tenant_id,
+            )
         )
-        result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-
         if not model:
             raise LeadNotFoundException(f"Lead not found: {lead_id}")
-
-        # Update vendedor_id
         model.vendedor_id = new_vendedor_id
-        model.updated_at = datetime.now(timezone.utc)
-
+        model.updated_at = datetime.now(UTC)
         await self.session.flush()
         return self._to_entity(model)
 
-    async def list_by_tenant(
-        self,
-        tenant_id: UUID,
-    ) -> list[Lead]:
-        """List all leads for a tenant (for metrics calculation)."""
-        stmt = select(LeadModel).where(LeadModel.tenant_id == tenant_id)
-        result = await self.session.execute(stmt)
-        models = result.scalars().all()
-        return [self._to_entity(model) for model in models]
-
     def _to_entity(self, model: LeadModel) -> Lead:
-        """Convert model to entity."""
+        """Convert ORM model to domain entity."""
         return Lead(
             id=model.id,
             tenant_id=model.tenant_id,
             buyer_name=model.buyer_name,
             buyer_email=model.buyer_email,
             buyer_phone=model.buyer_phone,
-            vehicle_id=model.vehicle_id,
+            product_id=model.product_id,
             vendedor_id=model.vendedor_id,
             message=model.message,
             source=model.source,
@@ -264,14 +341,14 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         )
 
     def _to_model(self, entity: Lead) -> LeadModel:
-        """Convert entity to model."""
+        """Convert domain entity to ORM model."""
         return LeadModel(
             id=entity.id,
             tenant_id=entity.tenant_id,
             buyer_name=entity.buyer_name,
             buyer_email=entity.buyer_email,
             buyer_phone=entity.buyer_phone,
-            vehicle_id=entity.vehicle_id,
+            product_id=entity.product_id,
             vendedor_id=entity.vendedor_id,
             message=entity.message,
             source=entity.source,
@@ -281,27 +358,14 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         )
 
     def _audit_log_to_entity(self, model: LeadAuditLogModel) -> LeadAuditLog:
-        """Convert audit log model to entity."""
+        """Convert audit log ORM model to domain entity."""
         return LeadAuditLog(
             id=model.id,
-            tenant_id=model.tenant_id,
             lead_id=model.lead_id,
+            tenant_id=model.tenant_id,
             old_status=LeadStatus(model.old_status),
             new_status=LeadStatus(model.new_status),
             changed_by_user_id=model.changed_by_user_id,
             reason=model.reason,
             created_at=model.created_at,
-        )
-
-    def _audit_log_to_model(self, entity: LeadAuditLog) -> LeadAuditLogModel:
-        """Convert audit log entity to model."""
-        return LeadAuditLogModel(
-            id=entity.id,
-            tenant_id=entity.tenant_id,
-            lead_id=entity.lead_id,
-            old_status=entity.old_status.value,
-            new_status=entity.new_status.value,
-            changed_by_user_id=entity.changed_by_user_id,
-            reason=entity.reason,
-            created_at=entity.created_at,
         )

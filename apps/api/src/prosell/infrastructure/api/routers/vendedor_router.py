@@ -1,17 +1,16 @@
 """Vendedor router for ProSell SaaS API."""
 
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.vendedor import VendedorListResponse
 from prosell.application.use_cases.vendedor import GetVendedoresUseCase
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.org_exceptions import OrgDomainException
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
-from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
 from prosell.infrastructure.database.session import get_async_session
-from sqlalchemy.ext.asyncio import AsyncSession
+from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
 
 router = APIRouter()
 

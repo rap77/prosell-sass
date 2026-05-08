@@ -25,8 +25,8 @@ async def main() -> None:
     from prosell.infrastructure.tasks.use_cases.poll_facebook_leads_task import (
         poll_facebook_leads_task,  # noqa: F401
     )
-    from prosell.infrastructure.tasks.use_cases.publish_vehicle_task import (
-        publish_vehicle_task,  # noqa: F401
+    from prosell.infrastructure.tasks.use_cases.publish_product_task import (
+        publish_product_task,  # noqa: F401
     )
     from prosell.infrastructure.tasks.use_cases.refresh_facebook_tokens import (
         refresh_facebook_tokens_task,  # noqa: F401

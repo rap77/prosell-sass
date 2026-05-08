@@ -22,9 +22,9 @@ class RootResponse(BaseModel):
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from starlette.middleware.base import RequestResponseEndpoint
 
@@ -41,7 +41,7 @@ from prosell.infrastructure.api.routers import (
     admin_router,
     auth_router,
     category_router,
-    dealer_router,
+    branch_router,
     facebook_router,
     health_router,
     image_router,
@@ -50,10 +50,11 @@ from prosell.infrastructure.api.routers import (
     product_router,
     publisher_router,
     team_router,
-    user_dealer_router,
+    user_branch_router,
     vehicle_router,
     wallet_router,
 )
+from prosell.infrastructure.api.routers.test_router import router as test_router
 from prosell.infrastructure.api.routers.appointment_router import router as appointment_router
 from prosell.infrastructure.api.routers.vendedor_router import router as vendedor_router
 from prosell.infrastructure.api.routers.webhook_router import router as webhook_router
@@ -174,13 +175,7 @@ app.add_middleware(
 # INCLUDE ROUTERS
 # =============================================================================
 
-# Auth router with BOTH prefixes for Google OAuth compatibility
-# Google Console has /api/auth registered, but we use /api/v1/ for consistency
-app.include_router(
-    auth_router,
-    prefix="/api/auth",
-    tags=["Authentication"],
-)
+# Auth router with /api/v1/ prefix for consistency
 app.include_router(
     auth_router,
     prefix="/api/v1/auth",
@@ -194,12 +189,12 @@ app.include_router(
 )
 
 app.include_router(
-    dealer_router,
-    prefix="/api/v1/dealers",
-    tags=["Dealers"],
+    branch_router,
+    prefix="/api/v1/branches",
+    tags=["Branchs"],
 )
 
-app.include_router(user_dealer_router)
+app.include_router(user_branch_router)
 
 app.include_router(
     team_router,
@@ -284,6 +279,14 @@ app.include_router(
     prefix="/api/v1",
     tags=["Webhooks"],
 )
+
+# Test utilities router (ONLY in development/testing)
+if settings.environment in ["development", "testing"]:
+    app.include_router(
+        test_router,
+        prefix="/api/v1",
+        tags=["Test Utilities"],
+    )
 
 
 # =============================================================================

@@ -1,7 +1,7 @@
 """Webhook router — Facebook lead webhooks."""
 
-import hmac
 import hashlib
+import hmac
 import json
 import logging
 from typing import Annotated
@@ -13,7 +13,6 @@ from pydantic import BaseModel
 from prosell.application.use_cases.facebook_webhook_use_case import ProcessFacebookWebhookUseCase
 from prosell.core.config import settings
 from prosell.infrastructure.api.di import get_process_facebook_webhook_use_case
-
 
 logger = logging.getLogger(__name__)
 

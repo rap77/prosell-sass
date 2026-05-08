@@ -78,9 +78,12 @@ NHTSA_TO_FACEBOOK = {
     # Title case → lowercase
     "Automatic": "automatic",
     "Manual": "manual",
-    "CVT": "automatic",  # FB solo tiene 2 opciones
+    "Continuously Variable Transmission (CVT)": "automatic",
+    "CVT": "automatic",
     "Dual Clutch": "automatic",
     "Automated Manual": "automatic",
+    "Automatic Transmission": "automatic",
+    "Manual Transmission": "manual",
     # ===== FUEL TYPE (Tipo de Combustible) =====
     # Title case → lowercase
     "Gasoline": "gasoline",

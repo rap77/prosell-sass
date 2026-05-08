@@ -5,7 +5,6 @@ from uuid import UUID
 
 from prosell.application.use_cases.facebook_webhook_use_case import ProcessFacebookWebhookUseCase
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -37,9 +36,9 @@ class FacebookWebhookProcessor:
             None (errors are logged, not raised)
         """
         try:
-            logger.info(f"FacebookWebhookProcessor: Processing webhook payload")
+            logger.info("FacebookWebhookProcessor: Processing webhook payload")
             await self.process_webhook_use_case.execute(payload, tenant_id)
-            logger.info(f"FacebookWebhookProcessor: Webhook processed successfully")
+            logger.info("FacebookWebhookProcessor: Webhook processed successfully")
 
         except Exception as e:
             logger.error(f"FacebookWebhookProcessor: Failed to process webhook: {e}", exc_info=True)

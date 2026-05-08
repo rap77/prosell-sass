@@ -120,7 +120,7 @@ async def poll_facebook_leads_task() -> dict[str, object]:
         #                     buyer_name=lead_data.get('field_data', {}).get('name'),
         #                     buyer_email=lead_data.get('field_data', {}).get('email'),
         #                     buyer_phone=lead_data.get('field_data', {}).get('phone'),
-        #                     vehicle_id=lead_data.get('vehicle_id'),  # From listing_id
+        #                     product_id=lead_data.get('product_id'),  # From listing_id
         #                     vendedor_id=page.seller_user_id,
         #                     message=lead_data.get('field_data', {}).get('message'),
         #                     source="facebook_polling"
@@ -163,5 +163,5 @@ async def poll_facebook_leads_task() -> dict[str, object]:
             "leads_found": 0,
             "leads_created": 0,
             "errors": 1,
-            "details": [f"Unexpected error: {str(e)}"],
+            "details": [f"Unexpected error: {e!s}"],
         }

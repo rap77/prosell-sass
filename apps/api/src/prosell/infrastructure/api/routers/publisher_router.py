@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from prosell.application.dto.publisher.publish import PublicationResponse, PublishVehicleRequest
+from prosell.application.dto.publisher.publish import PublicationResponse, PublishProductRequest
 from prosell.application.use_cases.publisher.delete_listing import DeleteListingUseCase
 from prosell.application.use_cases.publisher.publish_vehicle import PublishVehicleUseCase
 from prosell.application.use_cases.publisher.update_listing import (
@@ -33,7 +33,7 @@ router = APIRouter(prefix="/publisher", tags=["Publisher"])
 async def publish_vehicle(
     request: Request,  # noqa: ARG001 — required by slowapi @limiter.limit()
     product_id: UUID,
-    body: PublishVehicleRequest,
+    body: PublishProductRequest,
     _current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     use_case: Annotated[PublishVehicleUseCase, Depends(get_publish_vehicle_use_case)],
 ) -> PublicationResponse:

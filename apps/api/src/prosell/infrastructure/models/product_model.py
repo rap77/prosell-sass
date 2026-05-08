@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -46,7 +46,8 @@ class ProductModel(Base):
     condition: Mapped[str] = mapped_column(String(50), default="used", nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(50), default="draft", nullable=False, index=True)
 
-    # Flexible attributes (category-specific) — JSONB for @> operator support
+    # Flexible attributes (category-specific) — JSONB with GIN index
+    # GIN index enables efficient @> (contains) and ? (key exists) operators
     attributes: Mapped[dict[str, object]] = mapped_column(
         JSONB,
         default=dict,
@@ -109,6 +110,17 @@ class ProductModel(Base):
         nullable=False,
     )
 
+    # Indexes for JSONB queries
+    # GIN index with jsonb_path_ops supports @> operator efficiently
+    __table_args__ = (
+        Index(
+            "ix_products_attributes_gin",
+            "attributes",
+            postgresql_using="gin",
+            postgresql_ops={"attributes": "jsonb_path_ops"},
+        ),
+    )
+
     # Relationships
     category = relationship(
         "CategoryModel",
@@ -118,13 +130,6 @@ class ProductModel(Base):
     images = relationship(
         "ProductImageModel",
         back_populates="product",
-        cascade="all, delete-orphan",
-        lazy="noload",
-    )
-    vehicle = relationship(
-        "VehicleModel",
-        back_populates="product",
-        uselist=False,
         cascade="all, delete-orphan",
         lazy="noload",
     )

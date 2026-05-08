@@ -15,7 +15,6 @@ from prosell.infrastructure.repositories.team_repository_impl import (
     SqlAlchemyTeamRepository,
 )
 from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
-from prosell.infrastructure.repositories.vehicle_repository_impl import SqlAlchemyVehicleRepository
 from prosell.infrastructure.repositories.wallet_repository_impl import (
     SqlAlchemyWalletRepository,
     SqlAlchemyWalletTransactionRepository,
@@ -31,7 +30,6 @@ __all__ = [
     "SqlAlchemyTeamMemberRepository",
     "SqlAlchemyTeamRepository",
     "SqlAlchemyUserRepository",
-    "SqlAlchemyVehicleRepository",
     "SqlAlchemyWalletRepository",
     "SqlAlchemyWalletTransactionRepository",
 ]

@@ -13,7 +13,7 @@ from prosell.domain.ports.i_publisher_service import IPublisherService
 class NullGraphAPIPublisherService(IPublisherService):
     """Null object for Graph API publisher — raises NotImplementedError if invoked.
 
-    Used by publish_vehicle_task in Phase 1 to satisfy PublisherStrategySelector's
+    Used by publish_product_task in Phase 1 to satisfy PublisherStrategySelector's
     type requirements without pulling in the real Graph API implementation.
     The strategy selector will never select this service while graph_api_approved=False.
     """

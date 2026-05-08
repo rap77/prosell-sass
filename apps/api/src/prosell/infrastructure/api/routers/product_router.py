@@ -10,16 +10,21 @@ from prosell.application.dto.product import (
     ProductResponse,
     UpdateProductRequest,
 )
-from prosell.application.use_cases.product.list_products import ProductListResponse
 from prosell.application.use_cases.product.approve_product import ApproveProductUseCase
 from prosell.application.use_cases.product.create_product import CreateProductUseCase
 from prosell.application.use_cases.product.delete_product import DeleteProductUseCase
-from prosell.application.use_cases.product.list_products import ListProductsUseCase
+from prosell.application.use_cases.product.list_products import (
+    ListProductsUseCase,
+    ProductListResponse,
+)
 from prosell.domain.entities.user import User
+from prosell.domain.exceptions.product_exceptions import ProductError
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
 from prosell.infrastructure.database.session import get_async_session
-from prosell.infrastructure.repositories.category_repository_impl import SqlAlchemyCategoryRepository
+from prosell.infrastructure.repositories.category_repository_impl import (
+    SqlAlchemyCategoryRepository,
+)
 from prosell.infrastructure.repositories.product_repository_impl import SqlAlchemyProductRepository
 
 router = APIRouter()
@@ -33,19 +38,33 @@ async def get_product_repository(session: AsyncSession) -> AbstractProductReposi
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     request: CreateProductRequest,
-    _current_user: User = Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """
     Create a new product.
 
     Product is created in DRAFT status by default.
+    tenant_id and organization_id are injected from the authenticated user if not provided.
     """
+    # Inject auth context via model_copy (Pydantic v2 idiomatic)
+    effective_tenant_id = request.tenant_id or current_user.tenant_id or current_user.id
+    effective_org_id = request.organization_id or current_user.tenant_id or current_user.id
+    request = request.model_copy(update={
+        "tenant_id": effective_tenant_id,
+        "organization_id": effective_org_id,
+    })
+
     product_repo = SqlAlchemyProductRepository(db)
     category_repo = SqlAlchemyCategoryRepository(db)
     use_case = CreateProductUseCase(product_repo, category_repo)
 
-    return await use_case.execute(request)
+    try:
+        return await use_case.execute(request)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except ProductError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
 
 @router.get("", response_model=ProductListResponse)

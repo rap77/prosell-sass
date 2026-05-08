@@ -27,12 +27,12 @@ if TYPE_CHECKING:
     from prosell.application.use_cases.facebook.refresh_token import RefreshTokenUseCase
     from prosell.application.use_cases.facebook.set_default_page import SetDefaultPageUseCase
     from prosell.application.use_cases.publisher.publish_vehicle import PublishVehicleUseCase
-    from prosell.application.use_cases.user_dealer.assign_user_dealer import (
-        AssignUserDealerUseCase,
+    from prosell.application.use_cases.user_branch.assign_user_branch import (
+        AssignUserBranchUseCase,
     )
-    from prosell.application.use_cases.user_dealer.bulk_assign import BulkAssignUseCase
-    from prosell.application.use_cases.user_dealer.remove_user_dealer import (
-        RemoveUserDealerUseCase,
+    from prosell.application.use_cases.user_branch.bulk_assign import BulkAssignUseCase
+    from prosell.application.use_cases.user_branch.remove_user_branch import (
+        RemoveUserBranchUseCase,
     )
     from prosell.infrastructure.repositories.facebook_account_repository_impl import (
         SqlAlchemyFacebookAccountRepository,
@@ -67,12 +67,12 @@ from prosell.domain.ports import (
 from prosell.domain.ports.i_facebook_marketplace_service import (
     IFacebookMarketplaceOAuthService,
 )
-from prosell.domain.repositories.dealer_repository import AbstractDealerRepository
+from prosell.domain.repositories.branch_repository import AbstractBranchRepository
 from prosell.domain.repositories.facebook_account_repository import IFacebookAccountRepository
 from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
 from prosell.domain.repositories.publication_repository import IPublicationRepository
-from prosell.domain.repositories.user_dealer_repository import (
-    AbstractUserDealerRepository,
+from prosell.domain.repositories.user_branch_repository import (
+    AbstractUserBranchRepository,
 )
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.oauth_repository_impl import SqlAlchemyOAuthRepository
@@ -685,64 +685,64 @@ async def get_publish_vehicle_use_case(
 # =============================================================================
 
 
-async def get_dealer_repository(
+async def get_branch_repository(
     session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> AbstractDealerRepository:
-    """Get Dealer repository instance."""
-    from prosell.infrastructure.repositories.dealer_repository_impl import (
-        SqlAlchemyDealerRepository,
+) -> AbstractBranchRepository:
+    """Get Branch repository instance."""
+    from prosell.infrastructure.repositories.branch_repository_impl import (
+        SqlAlchemyBranchRepository,
     )
 
-    return SqlAlchemyDealerRepository(session)
+    return SqlAlchemyBranchRepository(session)
 
 
-async def get_user_dealer_repository(
+async def get_user_branch_repository(
     session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> AbstractUserDealerRepository:
-    """Get UserDealer repository instance."""
-    from prosell.infrastructure.repositories.user_dealer_repository_impl import (
-        SqlAlchemyUserDealerRepository,
+) -> AbstractUserBranchRepository:
+    """Get UserBranch repository instance."""
+    from prosell.infrastructure.repositories.user_branch_repository_impl import (
+        SqlAlchemyUserBranchRepository,
     )
 
-    return SqlAlchemyUserDealerRepository(session)
+    return SqlAlchemyUserBranchRepository(session)
 
 
-async def get_assign_user_dealer_use_case(
-    user_dealer_repository: Annotated[
-        AbstractUserDealerRepository, Depends(get_user_dealer_repository)
+async def get_assign_user_branch_use_case(
+    user_branch_repository: Annotated[
+        AbstractUserBranchRepository, Depends(get_user_branch_repository)
     ],
-    dealer_repository: Annotated[AbstractDealerRepository, Depends(get_dealer_repository)],
-) -> AssignUserDealerUseCase:
-    """Get AssignUserDealer use case instance."""
-    from prosell.application.use_cases.user_dealer.assign_user_dealer import (
-        AssignUserDealerUseCase,
+    branch_repository: Annotated[AbstractBranchRepository, Depends(get_branch_repository)],
+) -> AssignUserBranchUseCase:
+    """Get AssignUserBranch use case instance."""
+    from prosell.application.use_cases.user_branch.assign_user_branch import (
+        AssignUserBranchUseCase,
     )
 
-    return AssignUserDealerUseCase(
-        user_dealer_repository=user_dealer_repository,
-        dealer_repository=dealer_repository,
+    return AssignUserBranchUseCase(
+        user_branch_repository=user_branch_repository,
+        branch_repository=branch_repository,
     )
 
 
 async def get_bulk_assign_use_case(
-    user_dealer_repository: Annotated[
-        AbstractUserDealerRepository, Depends(get_user_dealer_repository)
+    user_branch_repository: Annotated[
+        AbstractUserBranchRepository, Depends(get_user_branch_repository)
     ],
 ) -> BulkAssignUseCase:
     """Get BulkAssign use case instance."""
-    from prosell.application.use_cases.user_dealer.bulk_assign import BulkAssignUseCase
+    from prosell.application.use_cases.user_branch.bulk_assign import BulkAssignUseCase
 
-    return BulkAssignUseCase(user_dealer_repository=user_dealer_repository)
+    return BulkAssignUseCase(user_branch_repository=user_branch_repository)
 
 
-async def get_remove_user_dealer_use_case(
-    user_dealer_repository: Annotated[
-        AbstractUserDealerRepository, Depends(get_user_dealer_repository)
+async def get_remove_user_branch_use_case(
+    user_branch_repository: Annotated[
+        AbstractUserBranchRepository, Depends(get_user_branch_repository)
     ],
-) -> RemoveUserDealerUseCase:
-    """Get RemoveUserDealer use case instance."""
-    from prosell.application.use_cases.user_dealer.remove_user_dealer import (
-        RemoveUserDealerUseCase,
+) -> RemoveUserBranchUseCase:
+    """Get RemoveUserBranch use case instance."""
+    from prosell.application.use_cases.user_branch.remove_user_branch import (
+        RemoveUserBranchUseCase,
     )
 
-    return RemoveUserDealerUseCase(user_dealer_repository=user_dealer_repository)
+    return RemoveUserBranchUseCase(user_branch_repository=user_branch_repository)

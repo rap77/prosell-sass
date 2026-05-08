@@ -7,7 +7,7 @@ from prosell.infrastructure.tasks.broker import broker
 async def update_listing_task(publication_id: str) -> dict:
     """Update existing FB Marketplace listing via publisher strategy.
 
-    Same DI pattern as publish_vehicle_task and delete_listing_task:
+    Same DI pattern as publish_product_task and delete_listing_task:
     - Receives only publication_id (never tokens in task payload)
     - Instantiates its own service dependencies (not FastAPI DI)
     - Updates publication.updated_at on success

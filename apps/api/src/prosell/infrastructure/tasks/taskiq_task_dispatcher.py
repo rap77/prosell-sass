@@ -14,7 +14,7 @@ class TaskiqTaskDispatcher(ITaskDispatcher):
     """Implements ITaskDispatcher by enqueuing tasks through Taskiq broker."""
 
     async def dispatch_publish(self, publication_id: UUID) -> None:
-        """Enqueue a publish_vehicle_task for the given publication.
+        """Enqueue a publish_product_task for the given publication.
 
         Raises:
             TaskDispatchError: If Taskiq fails to enqueue the task.
@@ -22,11 +22,11 @@ class TaskiqTaskDispatcher(ITaskDispatcher):
         try:
             # Lazy import: broker and task modules must not be imported at module level
             # to avoid Taskiq client initialization during test collection.
-            from prosell.infrastructure.tasks.use_cases.publish_vehicle_task import (
-                publish_vehicle_task,
+            from prosell.infrastructure.tasks.use_cases.publish_product_task import (
+                publish_product_task,
             )
 
-            await publish_vehicle_task.kiq(publication_id=str(publication_id))
+            await publish_product_task.kiq(publication_id=str(publication_id))
         except Exception as exc:
             raise TaskDispatchError(
                 publication_id=str(publication_id),

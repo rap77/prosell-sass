@@ -187,12 +187,17 @@ async def login(
     Returns access and refresh tokens via httpOnly cookies.
     If 2FA is enabled, requires_2fa will be True.
     """
+    print(f"[AUTH-ROUTER-PRINT] Login attempt for email: {login_data.email}")
+    print(f"[AUTH-ROUTER-PRINT] Password provided: {login_data.password[:3]}***")  # Solo primeros 3 chars
+
     uc_request = LoginUserRequest(
         email=login_data.email,
         password=login_data.password,
         remember_me=login_data.remember_me,
     )
     result = await use_case.execute(uc_request)
+
+    print(f"[AUTH-ROUTER-PRINT] Login completed. Requires 2FA: {result.requires_2fa}")
 
     # Set httpOnly cookies for tokens
     access_token_expiry = datetime.now(UTC) + timedelta(minutes=15)
@@ -205,7 +210,7 @@ async def login(
         httponly=True,  # CRITICAL: Prevents JavaScript access (XSS protection)
         secure=settings.environment == "production",  # HTTPS only (only in production)
         samesite="lax",  # Lax for OAuth compatibility
-        domain="localhost",  # Share across all localhost ports
+        domain=settings.cookie_domain,  # Share across all localhost ports
     )
 
     response.set_cookie(
@@ -215,7 +220,7 @@ async def login(
         httponly=True,
         secure=settings.environment != "development",
         samesite="lax",
-        domain="localhost",
+        domain=settings.cookie_domain,
     )
 
     # Also set user_data cookie for server components
@@ -227,7 +232,7 @@ async def login(
         httponly=True,
         secure=settings.environment != "development",
         samesite="lax",
-        domain="localhost",
+        domain=settings.cookie_domain,
     )
 
     return result
@@ -457,7 +462,7 @@ async def oauth_callback(
             httponly=True,  # CRITICAL: Prevents JavaScript access (XSS protection)
             secure=settings.environment == "production",  # HTTPS only (only in production)
             samesite="lax",  # Lax required: OAuth redirect chain crosses google.com
-            domain="localhost",  # Share across all localhost ports
+            domain=settings.cookie_domain,  # Share across all localhost ports
         )
 
         redirect.set_cookie(
@@ -468,7 +473,7 @@ async def oauth_callback(
             httponly=True,
             secure=settings.environment != "development",
             samesite="lax",
-            domain="localhost",
+            domain=settings.cookie_domain,
         )
 
         redirect.set_cookie(
@@ -479,7 +484,7 @@ async def oauth_callback(
             httponly=True,
             secure=settings.environment != "development",
             samesite="lax",
-            domain="localhost",
+            domain=settings.cookie_domain,
         )
 
         logger.info(
@@ -639,21 +644,21 @@ async def logout(response: Response) -> LogoutResponse:
         httponly=True,
         secure=settings.environment != "development",
         samesite="lax",
-        domain="localhost",
+        domain=settings.cookie_domain,
     )
     response.delete_cookie(
         key="refresh_token",
         httponly=True,
         secure=settings.environment != "development",
         samesite="lax",
-        domain="localhost",
+        domain=settings.cookie_domain,
     )
     response.delete_cookie(
         key="user_data",
         httponly=True,
         secure=settings.environment != "development",
         samesite="lax",
-        domain="localhost",
+        domain=settings.cookie_domain,
     )
 
     return LogoutResponse(message="Logout successful")
