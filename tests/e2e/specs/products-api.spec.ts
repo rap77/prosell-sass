@@ -6,7 +6,7 @@
  * - API: Categories / Products: FastAPI reads auth from httpOnly Cookie (access_token=JWT).
  *   Authorization: Bearer is NOT supported. We login directly to FastAPI and pass the token
  *   as a Cookie header in subsequent requests.
- *   Real users: test@example.com / Test!Password123, admin@prosell-demo.com / Admin123!
+ *   Real users: admin@prosell.saas / Admin123!
  *
  * - API: Vehicles / VIN decode: These tests call the NHTSA external API for VIN decoding.
  *   The backend container does not have reliable internet access to NHTSA, causing
@@ -27,7 +27,7 @@ test.describe("API: Categories", () => {
     // Using admin user since test@example.com may not exist in the seeded DB.
     const loginResponse = await request.post(`${API_BASE}/api/v1/auth/login`, {
       data: {
-        email: process.env.TEST_ADMIN_EMAIL || "admin@prosell-demo.com",
+        email: process.env.TEST_ADMIN_EMAIL || "admin@prosell.saas",
         password: process.env.TEST_ADMIN_PASSWORD || "Admin123!",
       },
     });
@@ -118,7 +118,7 @@ test.describe("API: Products", () => {
     // (which also logs in as test@example.com — same user, same 5/minute bucket).
     const loginResponse = await request.post(`${API_BASE}/api/v1/auth/login`, {
       data: {
-        email: process.env.TEST_ADMIN_EMAIL || "admin@prosell-demo.com",
+        email: process.env.TEST_ADMIN_EMAIL || "admin@prosell.saas",
         password: process.env.TEST_ADMIN_PASSWORD || "Admin123!",
       },
     });

@@ -108,7 +108,7 @@ echo ""
 BASE_URL="$BASE_URL" \
 TEST_USER_EMAIL="$TEST_EMAIL" \
 TEST_USER_PASSWORD="$TEST_PASSWORD" \
-pnpm test staging-smoke \
+pnpm test staging-smoke.spec.ts \
     --reporter=html \
     --reporter=list \
     --output="test-results/staging-$(date +%Y%m%d-%H%M%S)" \

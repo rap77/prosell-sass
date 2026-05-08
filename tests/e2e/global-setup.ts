@@ -66,21 +66,23 @@ async function globalSetup(config: FullConfig) {
   console.log("[GLOBAL SETUP] Starting authentication setup...");
 
   // Get test credentials from env or defaults
-  const email = process.env.TEST_USER_EMAIL || "test@example.com";
-  const password = process.env.TEST_USER_PASSWORD || "TestPassword123";
+  // Note: These must match a real user in the database
+  const email = process.env.TEST_USER_EMAIL || "admin@prosell.saas";
+  const password = process.env.TEST_USER_PASSWORD || "Admin123!";
 
   // Make direct API call to get cookies
   console.log('[GLOBAL SETUP] Making direct login API call...');
 
-  // Use port 3999 to match the dev server started by Playwright webServer config.
-  // Falls back to port 3000 if BASE_URL env var is set (e.g., for CI or Docker).
-  const baseUrl = process.env.BASE_URL || 'http://localhost:3999';
-  const response = await fetch(`${baseUrl}/api/auth/login`, {
+  // Call backend API directly (not through Next.js proxy)
+  // Backend runs on port 8000, frontend on 3000
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+  const response = await fetch(`${backendUrl}/api/v1/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ email, password }),
+    credentials: 'include', // Important for cookies
   });
 
   console.log('[GLOBAL SETUP] Login API response status:', response.status);
@@ -109,10 +111,12 @@ async function globalSetup(config: FullConfig) {
     throw new Error('No cookies parsed from login API response');
   }
 
-  // CRITICAL: Modify user_data cookie to set manager role for E2E tests
+  // CRITICAL: Extract tenant_id from user_data cookie
+  // Categories use tenant_id (which is the organization_id), not user.id
   const userDataCookie = cookies.find(c => c.name === 'user_data');
+  let authenticatedTenantId = '';
   if (userDataCookie) {
-    console.log('[GLOBAL SETUP] Found user_data cookie, modifying role to manager...');
+    console.log('[GLOBAL SETUP] Found user_data cookie, extracting tenant_id...');
     try {
       // Decode URL-encoded JSON (Python SimpleCookie adds quotes)
       let rawValue = userDataCookie.value;
@@ -122,20 +126,38 @@ async function globalSetup(config: FullConfig) {
       const decodedValue = decodeURIComponent(rawValue);
       const userData = JSON.parse(decodedValue);
       
-      // Change role to manager for E2E tests
-      userData.role = 'manager';
-      console.log('[GLOBAL SETUP] Modified user role to:', userData.role);
+      // Extract tenant_id to use for category creation (this is the organization_id)
+      authenticatedTenantId = userData.tenant_id;
+      console.log('[GLOBAL SETUP] Extracted tenant_id:', authenticatedTenantId);
+      
+      // Change role to dealer for E2E tests (dealer appointments page requires dealer role)
+      if (userData.role) {
+        userData.role = 'dealer';
+        console.log('[GLOBAL SETUP] Modified user role to:', userData.role);
+      }
       
       // Re-encode and update cookie value
       const modifiedValue = JSON.stringify(userData);
       userDataCookie.value = encodeURIComponent(modifiedValue);
       console.log('[GLOBAL SETUP] user_data cookie updated successfully');
-      console.log('[GLOBAL SETUP] New user_data value (first 100 chars):', userDataCookie.value.substring(0, 100));
     } catch (error) {
-      console.log('[GLOBAL SETUP] WARNING: Failed to modify user_data cookie:', error);
+      console.log('[GLOBAL SETUP] WARNING: Failed to parse user_data cookie:', error);
     }
   } else {
     console.log('[GLOBAL SETUP] WARNING: user_data cookie not found!');
+  }
+  
+  // Save the authenticated user's tenant_id (organization_id) for tests
+  if (authenticatedTenantId) {
+    process.env.TEST_TENANT_ID = authenticatedTenantId;
+    console.log('[GLOBAL SETUP] Set TEST_TENANT_ID to:', authenticatedTenantId);
+    
+    // Also save to a file that tests can read (env vars don't persist from globalSetup)
+    const authDir = path.join(__dirname, ".auth");
+    fs.mkdirSync(authDir, { recursive: true });
+    const tenantIdPath = path.join(authDir, "tenant-id.txt");
+    fs.writeFileSync(tenantIdPath, authenticatedTenantId);
+    console.log('[GLOBAL SETUP] Saved tenant_id to:', tenantIdPath);
   }
 
   // Create browser context and add cookies
@@ -152,8 +174,8 @@ async function globalSetup(config: FullConfig) {
   // Verify by navigating to a protected route
   const page = await context.newPage();
   console.log('[GLOBAL SETUP] Testing navigation to protected route...');
-  const testBaseUrl = process.env.BASE_URL || 'http://localhost:3999';
-  await page.goto(`${testBaseUrl}/dashboard/org`, { waitUntil: "load" });
+  const testBaseUrl = process.env.BASE_URL || 'http://localhost:3000';
+  await page.goto(`${testBaseUrl}/dashboard`, { waitUntil: "load" });
   console.log('[GLOBAL SETUP] Current URL after navigation:', page.url());
 
   // Save storage state

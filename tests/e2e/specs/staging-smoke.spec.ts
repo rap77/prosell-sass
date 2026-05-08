@@ -60,7 +60,7 @@ test.describe("Staging Smoke Tests", () => {
     test.use({ storageState: ".auth/storage-state.json" });
 
     test("should access vehicles list page", async ({ page }) => {
-      await page.goto("/vehicles");
+      await page.goto("/catalog");
       await page.waitForLoadState("load");
 
       // Take screenshot
@@ -68,40 +68,50 @@ test.describe("Staging Smoke Tests", () => {
 
       // Check if page loads
       const title = await page.title();
-      console.log("Vehicles page title:", title);
+      console.log("Catalog page title:", title);
 
       // Look for vehicle-related content
       const hasVehicleContent = await page.getByText(/vehicle/i).count();
       console.log("Vehicle-related elements found:", hasVehicleContent);
     });
 
-    test("should display filters on vehicles page", async ({ page }) => {
-      await page.goto("/vehicles");
+    test("should display filters on catalog page", async ({ page }) => {
+      await page.goto("/catalog");
       await page.waitForLoadState("load");
 
       // Look for filter elements (Phase 8 feature)
-      const filterButton = page.getByRole("button", { name: /filter/i });
-      const searchInput = page.getByPlaceholder(/search/i);
+      const filterAside = page.locator("aside").or(page.locator("[data-testid=\"filter-sidebar\"]"));
+      const searchInput = page.getByPlaceholder(/search/i).or(page.locator("input[type=\"search\"]"));
 
-      const hasFilters = await filterButton.count();
+      const hasFilters = await filterAside.count();
       const hasSearch = await searchInput.count();
 
-      console.log("Filter button found:", hasFilters);
-      console.log("Search input found:", hasSearch);
+      console.log("Filter sidebar found:", hasFilters > 0 ? "✓" : "✗");
+      console.log("Search input found:", hasSearch > 0 ? "✓" : "✗");
 
       // Take screenshot showing filters
       await page.screenshot({ path: "test-results/vehicles-filters.png" });
 
-      // If filters exist, try clicking one
+      // Check for specific filter types (Phase 8 features)
       if (hasFilters > 0) {
-        await filterButton.first().click();
-        await page.waitForTimeout(1000);
+        const makeFilter = page.getByText(/make|brand/i);
+        const modelFilter = page.getByText(/model/i);
+        const yearFilter = page.getByText(/year/i);
+
+        const hasMake = await makeFilter.count();
+        const hasModel = await modelFilter.count();
+        const hasYear = await yearFilter.count();
+
+        console.log("Make filter:", hasMake > 0 ? "✓" : "✗");
+        console.log("Model filter:", hasModel > 0 ? "✓" : "✗");
+        console.log("Year filter:", hasYear > 0 ? "✓" : "✗");
+
         await page.screenshot({ path: "test-results/vehicles-filters-open.png" });
       }
     });
 
-    test("should display data grid on vehicles page", async ({ page }) => {
-      await page.goto("/vehicles");
+    test("should display data grid on catalog page", async ({ page }) => {
+      await page.goto("/catalog");
       await page.waitForLoadState("load");
 
       // Look for data grid or table elements (Phase 8 feature)
@@ -130,7 +140,7 @@ test.describe("Staging Smoke Tests", () => {
     test.use({ storageState: ".auth/storage-state.json" });
 
     test("should access vehicle creation page", async ({ page }) => {
-      await page.goto("/vehicles/new");
+      await page.goto("/catalog/create");
       await page.waitForLoadState("load");
 
       // Take screenshot
@@ -153,7 +163,7 @@ test.describe("Staging Smoke Tests", () => {
     });
 
     test("should show validation for invalid VIN", async ({ page }) => {
-      await page.goto("/vehicles/new");
+      await page.goto("/catalog/create");
       await page.waitForLoadState("load");
 
       const vinInput = page.getByLabel(/vin/i).or(page.locator("#vin"));
@@ -179,7 +189,7 @@ test.describe("Staging Smoke Tests", () => {
     test.use({ storageState: ".auth/storage-state.json" });
 
     test("should verify dynamic filters are present", async ({ page }) => {
-      await page.goto("/vehicles");
+      await page.goto("/catalog");
       await page.waitForLoadState("load");
 
       // Phase 8: Dynamic filters by make, model, year, etc.
@@ -207,7 +217,7 @@ test.describe("Staging Smoke Tests", () => {
     });
 
     test("should verify search functionality", async ({ page }) => {
-      await page.goto("/vehicles");
+      await page.goto("/catalog");
       await page.waitForLoadState("load");
 
       // Phase 8: Search functionality
@@ -233,7 +243,7 @@ test.describe("Staging Smoke Tests", () => {
     });
 
     test("should verify infinite scroll or pagination", async ({ page }) => {
-      await page.goto("/vehicles");
+      await page.goto("/catalog");
       await page.waitForLoadState("load");
 
       // Phase 8: Infinite scroll or pagination
@@ -299,7 +309,7 @@ test.describe("Staging Smoke Tests", () => {
     });
 
     test("should pass accessibility on vehicles page", async ({ page }) => {
-      await page.goto("/vehicles");
+      await page.goto("/catalog");
       await page.waitForLoadState("load");
 
       const AxeBuilder = (await import("@axe-core/playwright")).default;

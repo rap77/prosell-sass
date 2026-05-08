@@ -20,12 +20,21 @@
 
 import { expect, test } from "@playwright/test";
 import { VehiclesPage } from "../pages/vehicles-page";
+import { mockVinDecodeEndpoint, mockCategoriesEndpoint } from "../helpers/mock-endpoints";
+import { MOCK_VIN_DECODED, MOCK_CATEGORIES } from "../fixtures/mock-data";
+import { TEST_VINS, EXPECTED_VEHICLE_DATA } from "../fixtures/test-vins";
 
 test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   let vehiclesPage: VehiclesPage;
 
   test.beforeEach(async ({ page }) => {
     vehiclesPage = new VehiclesPage(page);
+
+    // Mock VIN decode endpoint BEFORE navigation
+    await mockVinDecodeEndpoint(page, "2GNALCEK1H1615946", MOCK_VIN_DECODED);
+
+    // Mock categories endpoint to avoid 401 errors
+    await mockCategoriesEndpoint(page, MOCK_CATEGORIES);
 
     await page.goto("/catalog/create");
     await page.waitForLoadState("load");
@@ -132,12 +141,12 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(selectedText?.toLowerCase()).toBe("chevrolet");
     });
 
-    test.fixme("should update body_type select field after VIN decode", async ({ page }) => {
-      // FIXME: NHTSA (vpic.nhtsa.dot.gov) returns null for body_type intermittently
-      // for VIN 2GNALCEK1H1615946 (Chevrolet Equinox 2017). When null, the select stays
-      // empty and this assertion fails. Needs investigation into NHTSA data reliability.
-      // Fill VIN
-      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
+    test("should update body_type select field after VIN decode", async ({ page }) => {
+      // Using Toyota Camry 2018 VIN (reliable body_type data from NHTSA)
+      // Previously failed with Chevrolet Equinox VIN due to NHTSA returning null
+      const testVIN = TEST_VINS.toyotaCamry2018;
+
+      await vehiclesPage.vinInput.fill(testVIN);
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -153,7 +162,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       const selectedItem = page.locator('[role="option"][data-state="checked"]');
       const selectedText = await selectedItem.textContent();
 
-      // Should have a body type value (SUV for Equinox)
+      // Should have a body type value (Sedan 4D for Camry)
       expect(selectedText).toBeTruthy();
       expect(selectedText?.length).toBeGreaterThan(0);
     });
@@ -180,12 +189,12 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(selectedText).toMatch(/FWD|RWD|AWD|4WD/);
     });
 
-    test.fixme("should update transmission select field after VIN decode", async ({ page }) => {
-      // FIXME: NHTSA (vpic.nhtsa.dot.gov) returns null for transmission intermittently
-      // for VIN 2GNALCEK1H1615946 (Chevrolet Equinox 2017). When null, the select stays
-      // empty and this assertion fails. Needs investigation into NHTSA data reliability.
-      // Fill VIN
-      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
+    test("should update transmission select field after VIN decode", async ({ page }) => {
+      // Using Ford F-150 2020 VIN (reliable transmission data from NHTSA)
+      // Previously failed with Chevrolet Equinox VIN due to NHTSA returning null
+      const testVIN = TEST_VINS.fordF1502020;
+
+      await vehiclesPage.vinInput.fill(testVIN);
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -201,17 +210,17 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       const selectedItem = page.locator('[role="option"][data-state="checked"]');
       const selectedText = await selectedItem.textContent();
 
-      // Should have transmission value
+      // Should have transmission value (10-Speed Automatic for F-150)
       expect(selectedText).toBeTruthy();
       expect(selectedText?.length).toBeGreaterThan(0);
     });
 
-    test.fixme("should update fuel_type select field after VIN decode", async ({ page }) => {
-      // FIXME: NHTSA (vpic.nhtsa.dot.gov) returns null for fuel_type intermittently
-      // for VIN 2GNALCEK1H1615946 (Chevrolet Equinox 2017). When null, the select stays
-      // empty and this assertion fails. Needs investigation into NHTSA data reliability.
-      // Fill VIN
-      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
+    test("should update fuel_type select field after VIN decode", async ({ page }) => {
+      // Using Toyota Corolla 2019 VIN (reliable fuel_type data from NHTSA)
+      // Previously failed with Chevrolet Equinox VIN due to NHTSA returning null
+      const testVIN = TEST_VINS.toyotaCorolla2019;
+
+      await vehiclesPage.vinInput.fill(testVIN);
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -227,7 +236,7 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       const selectedItem = page.locator('[role="option"][data-state="checked"]');
       const selectedText = await selectedItem.textContent();
 
-      // Should be a fuel type (Gasoline, Diesel, etc.)
+      // Should be a fuel type (Gasoline for Corolla)
       expect(selectedText).toBeTruthy();
       expect(selectedText?.length).toBeGreaterThan(0);
     });
@@ -259,12 +268,12 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(triggerText).toMatch(/chevrolet|chevy/i);
     });
 
-    test.fixme("should display selected body_type value in trigger without placeholder", async ({ page }) => {
-      // FIXME: NHTSA (vpic.nhtsa.dot.gov) returns null for body_type intermittently
-      // for VIN 2GNALCEK1H1615946 (Chevrolet Equinox 2017). When null, the trigger
-      // shows the placeholder and this assertion fails. Needs investigation.
-      // Fill VIN
-      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
+    test("should display selected body_type value in trigger without placeholder", async ({ page }) => {
+      // Using Honda CR-V 2020 VIN (reliable body_type data from NHTSA)
+      // Previously failed with Chevrolet Equinox VIN due to NHTSA returning null
+      const testVIN = TEST_VINS.hondaCRV2020;
+
+      await vehiclesPage.vinInput.fill(testVIN);
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -297,12 +306,12 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(triggerText).toMatch(/FWD|RWD|AWD|4WD/);
     });
 
-    test.fixme("should display selected transmission value in trigger without placeholder", async ({ page }) => {
-      // FIXME: NHTSA (vpic.nhtsa.dot.gov) returns null for transmission intermittently
-      // for VIN 2GNALCEK1H1615946 (Chevrolet Equinox 2017). When null, the trigger
-      // shows the placeholder and this assertion fails. Needs investigation.
-      // Fill VIN
-      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
+    test("should display selected transmission value in trigger without placeholder", async ({ page }) => {
+      // Using Honda Accord 2019 VIN (reliable transmission data from NHTSA)
+      // Previously failed with Chevrolet Equinox VIN due to NHTSA returning null
+      const testVIN = TEST_VINS.hondaAccord2019;
+
+      await vehiclesPage.vinInput.fill(testVIN);
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -318,12 +327,12 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(triggerText).not.toContain("Select transmission");
     });
 
-    test.fixme("should display selected fuel_type value in trigger without placeholder", async ({ page }) => {
-      // FIXME: NHTSA (vpic.nhtsa.dot.gov) returns null for fuel_type intermittently
-      // for VIN 2GNALCEK1H1615946 (Chevrolet Equinox 2017). When null, the trigger
-      // shows the placeholder and this assertion fails. Needs investigation.
-      // Fill VIN
-      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
+    test("should display selected fuel_type value in trigger without placeholder", async ({ page }) => {
+      // Using Toyota RAV4 2021 VIN (reliable fuel_type data from NHTSA)
+      // Previously failed with Chevrolet Equinox VIN due to NHTSA returning null
+      const testVIN = TEST_VINS.toyotaRAV42021;
+
+      await vehiclesPage.vinInput.fill(testVIN);
 
       // Decode VIN
       await vehiclesPage.decodeVinButton.click();
@@ -533,7 +542,8 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await priceInput.fill("18500");
 
       // Select category (open dropdown, click first option)
-      const categorySelect = page.locator('button[id="category_id"]');
+      // Note: Category field uses aria-label="Categoría", not an id attribute
+      const categorySelect = page.getByRole("combobox", { name: /categoría|category/i });
       await categorySelect.click();
       await page.waitForTimeout(500);
       const firstOption = page.locator('[role="option"]').first();
@@ -627,24 +637,27 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
     });
 
     test("should handle rapid VIN decode operations without losing field values", async ({ page }) => {
+      const modelInput = page.getByLabel(/model/i);
+
       // First VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
       await vehiclesPage.decodeVinButton.click();
       await page.waitForLoadState("load");
-      await page.waitForTimeout(500);
 
-      // Get first decoded values
-      const firstModel = await page.getByLabel(/model/i).inputValue();
+      // Wait for first decode to complete using expect with retry
+      await expect(modelInput).toHaveValue(/equinox/i);
+      const firstModel = await modelInput.inputValue();
 
       // Clear and decode different VIN
       await vehiclesPage.vinInput.clear();
       await vehiclesPage.vinInput.fill("1HGCM82633A123456"); // Different VIN (Honda)
       await vehiclesPage.decodeVinButton.click();
       await page.waitForLoadState("load");
-      await page.waitForTimeout(500);
 
-      // Get second decoded values
-      const secondModel = await page.getByLabel(/model/i).inputValue();
+      // Wait for second decode to complete using expect with retry
+      // This ensures the model field actually updates to the new value
+      await expect(modelInput).toHaveValue(/accord|civic/i);
+      const secondModel = await modelInput.inputValue();
 
       // Values should be different
       expect(secondModel).not.toBe(firstModel);

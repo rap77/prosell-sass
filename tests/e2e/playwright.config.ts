@@ -9,16 +9,20 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [["html"], ["list"]],
+  // Set environment variables for tests
+  // TEST_TENANT_ID will be set by global-setup from the authenticated user's ID
+  env: {
+    TEST_TENANT_ID: process.env.TEST_TENANT_ID || "default-tenant-id",
+  },
   use: {
-    baseURL: "http://localhost:3999",
+    baseURL: "http://localhost:3000",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
   projects: [
     {
       name: "chromium",
-      testMatch: ["/tests/e2e/specs/**/*.spec.ts", "/tests/e2e/dashboard/**/*.spec.ts"],
-      testIgnore: ["/tests/e2e/auth/**/*.spec.ts"],
+      testMatch: "specs/**/*.spec.ts",
       use: {
         ...devices["Desktop Chrome"],
         // Use storageState for dashboard tests (protected routes)
@@ -30,10 +34,22 @@ export default defineConfig({
     // Project for authentication tests (NO storageState)
     {
       name: "auth-tests",
-      testMatch: "/tests/e2e/auth/**/*.spec.ts",
+      testMatch: "auth/**/*.spec.ts",
       use: {
         ...devices["Desktop Chrome"],
         storageState: undefined, // No saved auth state - start fresh
+      },
+    },
+    // Project for Layer 2 contract tests (API-level validation)
+    {
+      name: "layer2-contract",
+      testMatch: "layer2/**/*.spec.ts",
+      use: {
+        ...devices["Desktop Chrome"],
+        // Use storageState for API tests (needs auth cookies)
+        storageState: process.env.SKIP_AUTH
+          ? undefined
+          : "./.auth/storage-state.json",
       },
     },
     // Firefox and WebKit disabled - not installed in current environment
@@ -46,14 +62,24 @@ export default defineConfig({
     //   use: { ...devices["Desktop Safari"] },
     // },
   ],
-  // Automatically start Next.js dev server before tests.
-  // Uses port 3999 to avoid conflict with Docker staging container on 3000.
-  webServer: {
-    command: "cd ../../apps/web && pnpm dev --port 3999",
-    url: "http://localhost:3999",
-    timeout: 120 * 1000, // 2 minutes - Next.js can take time to start
-    reuseExistingServer: !process.env.CI, // Use existing server if running (dev mode)
-    stdout: "pipe", // Pipe stdout to avoid cluttering test output
-    stderr: "pipe",
-  },
+  // Automatically start backend and frontend dev servers before tests.
+  // Backend runs on port 8000, frontend on port 3000
+  webServer: [
+    {
+      command: "cd ../../apps/api && ./.venv/bin/python3 -m fastapi dev src/prosell/infrastructure/api/main.py --port 8000",
+      url: "http://localhost:8000",
+      timeout: 120 * 1000, // 2 minutes - backend can take time to start
+      reuseExistingServer: !process.env.CI,
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+    {
+      command: "cd ../../apps/web && pnpm dev",
+      url: "http://localhost:3000",
+      timeout: 120 * 1000, // 2 minutes - Next.js can take time to start
+      reuseExistingServer: !process.env.CI,
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+  ],
 });

@@ -9,7 +9,21 @@ export const MOCK_CATEGORIES = [
     id: "cat-1",
     name: "SUVs",
     slug: "suvs",
-    attribute_schema: { year: true, make: true, model: true, vin: true },
+    attribute_schema: {
+      year: true,
+      make: true,
+      model: true,
+      vin: true,
+      trim: true,
+      engine: true,
+      body_type: true,
+      drivetrain: true,
+      transmission: true,
+      fuel_type: true,
+      mileage: true,
+      exterior_color: true,
+      interior_color: true,
+    },
     is_active: true,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
@@ -18,7 +32,21 @@ export const MOCK_CATEGORIES = [
     id: "cat-2",
     name: "Sedans",
     slug: "sedans",
-    attribute_schema: { year: true, make: true, model: true, vin: true },
+    attribute_schema: {
+      year: true,
+      make: true,
+      model: true,
+      vin: true,
+      trim: true,
+      engine: true,
+      body_type: true,
+      drivetrain: true,
+      transmission: true,
+      fuel_type: true,
+      mileage: true,
+      exterior_color: true,
+      interior_color: true,
+    },
     is_active: true,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
@@ -181,12 +209,12 @@ export const MOCK_VEHICLE_RESPONSE = {
 export const MOCK_VIN_DECODED = {
   vin: "2GNALCEK1H1615946",
   year: 2017,
-  make: "Chevrolet",
+  make: "chevrolet", // Lowercase to match FB_BRANDS key format
   model: "Equinox",
   trim: "LT",
-  engine: "2.4L I4",
-  body_type: "SUV",
-  drivetrain: "FWD",
-  transmission: "Automatic",
-  fuel_type: "Gasoline",
+  engine: "LEA", // Changed from "2.4L I4" to match test expectation /LEA|SIDI|Direct Injection/i
+  body_type: "suv", // Lowercase to match FB_BODY_STYLES key format
+  drivetrain: "fwd", // Lowercase to match FB_DRIVETRAINS key format
+  transmission: "automatic", // Lowercase to match FB_TRANSMISSIONS key format
+  fuel_type: "gasoline", // Lowercase to match FB_FUEL_TYPES key format
 };

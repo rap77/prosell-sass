@@ -134,7 +134,7 @@ test.describe("Products", () => {
 
   test("should display products page", async ({ page }) => {
     await expect(page).toHaveURL(/.*products/);
-    await expect(page.getByRole("heading", { name: /products/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Products", level: 1 })).toBeVisible();
   });
 
   test("should display existing products from API", async ({ page }) => {
@@ -176,7 +176,7 @@ test.describe("Products", () => {
 
   test("should filter products by status", async ({ page }) => {
     // The products page has a status filter dropdown
-    const statusFilter = page.getByLabel(/status/i);
+    const statusFilter = page.getByRole("combobox", { name: "Filter by status" });
     await statusFilter.selectOption("draft");
 
     // Should show only draft products

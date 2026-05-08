@@ -41,11 +41,14 @@ interface MockVehicleData {
 
 type MockVehicleItem = (typeof MOCK_VEHICLE_LIST)[number];
 
+// Store multiple VIN mocks in a Map
+const vinMockStore = new Map<string, Partial<MockVehicleData>>();
+
 /**
- * Mock vehicles endpoint (GET /api/v1/vehicles)
+ * Mock vehicles endpoint (GET /api/v1/vehicles and GET /api/v1/products)
  *
- * Intercepts all GET requests to the vehicles list endpoint and returns
- * mock data. Supports filtering by query params: make, status, year_min, year_max.
+ * The catalog page uses GET /api/v1/products internally (via useInfiniteVehicles),
+ * so we mock both endpoints to support both usage patterns.
  *
  * Only intercepts GET requests — POST/PATCH/DELETE continue to real backend.
  */
@@ -53,6 +56,66 @@ export async function mockVehiclesEndpoint(
   page: Page,
   vehicles: MockVehicleItem[] = MOCK_VEHICLE_LIST
 ): Promise<void> {
+  // Also mock /api/v1/products so the catalog DataGrid can render via useInfiniteVehicles
+  await page.route("**/api/v1/products**", async (route) => {
+    const request = route.request();
+    if (request.method() !== "GET") {
+      await route.continue();
+      return;
+    }
+    // Return products in the format useInfiniteVehicles expects
+    const products = vehicles.map((v, i) => ({
+      id: v.product?.id || `prod-${i}`,
+      tenant_id: "test-tenant",
+      organization_id: "test-org",
+      category_id: v.product?.category_id || "cat-1",
+      title: v.product?.title || `${v.year} ${v.make} ${v.model}`,
+      slug: null,
+      description: null,
+      price_cents: v.product?.price_cents || 0,
+      currency: "USD",
+      condition: "used",
+      status: v.product?.status || "published",
+      attributes: {
+        category: "vehicle",
+        vin: v.vin,
+        year: v.year,
+        make: v.make,
+        model: v.model,
+        trim: v.trim || null,
+        mileage: v.mileage || 0,
+        exterior_color: v.exterior_color || null,
+        interior_color: v.interior_color || null,
+      },
+      location_city: null,
+      location_state: null,
+      location_zip: null,
+      is_featured: false,
+      view_count: 0,
+      favorite_count: 0,
+      submitted_for_approval_at: null,
+      submitted_by: null,
+      approved_at: null,
+      approved_by: null,
+      rejection_reason: null,
+      published_at: v.product?.created_at || "2026-01-01T00:00:00Z",
+      sold_at: null,
+      archived_at: null,
+      created_at: v.product?.created_at || "2026-01-01T00:00:00Z",
+      updated_at: v.product?.created_at || "2026-01-01T00:00:00Z",
+    }));
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        products,
+        total: products.length,
+        skip: 0,
+        limit: 50,
+      }),
+    });
+  });
+
   await page.route("**/api/v1/vehicles**", async (route) => {
     const request = route.request();
 
@@ -137,21 +200,64 @@ export async function mockCategoriesEndpoint(
 }
 
 /**
+ * Clear VIN mock store (call this in beforeEach to reset state)
+ */
+export function clearVinMocks(): void {
+  vinMockStore.clear();
+}
+
+/**
  * Mock VIN decode endpoint
+ * FIXED: Now supports multiple VIN mocks by storing them in a Map and checking the requested VIN
  */
 export async function mockVinDecodeEndpoint(
   page: Page,
   vin: string,
   vehicleData?: Partial<MockVehicleData>
 ): Promise<void> {
+  // Store this VIN mock
+  vinMockStore.set(vin, vehicleData ?? { ...MOCK_VIN_DECODED, vin });
+
+  // Set up route handler (only once per page)
   await page.route("**/api/v1/vehicles/decode-vin**", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        vehicle: vehicleData ?? { ...MOCK_VIN_DECODED, vin },
-      }),
-    });
+    // Read VIN from POST body (frontend sends it as JSON)
+    const postData = await route.request().postDataJSON();
+    const requestedVin = postData?.vin;
+
+    if (!requestedVin) {
+      await route.continue();
+      return;
+    }
+
+    // Check if we have a mock for this VIN
+    const mockVehicle = vinMockStore.get(requestedVin);
+
+    if (mockVehicle) {
+      // Return mocked data
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          vin: requestedVin,
+          vehicle: {
+            year: mockVehicle.year,
+            make: mockVehicle.make,
+            model: mockVehicle.model,
+            trim: mockVehicle.trim,
+            body_type: mockVehicle.body_type,
+            drivetrain: mockVehicle.drivetrain,
+            transmission: mockVehicle.transmission,
+            engine: mockVehicle.engine,
+            fuel_type: mockVehicle.fuel_type,
+          },
+          raw_data: {},
+          cached: false,
+        }),
+      });
+    } else {
+      // No mock for this VIN, continue to real API
+      await route.continue();
+    }
   });
 }
 
