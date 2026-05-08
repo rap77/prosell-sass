@@ -466,16 +466,16 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [x] Test passes consistently (>95% success rate)
 
 #### B1.2: Multi-Tenant Isolation Security Tests (8 hours)
-- [ ] Create test_tenant_isolation.py suite
-- [ ] Test user cannot access other tenant leads
-- [ ] Test user cannot access other tenant products
-- [ ] Test user cannot access other tenant appointments
-- [ ] Verify API filtering enforces tenant_id
-- [ ] Verify repository queries include tenant_id
-- [ ] Verify webhook respects tenant context
-- [ ] Test SQL injection attempts
-- [ ] Test IDOR (Insecure Direct Object Reference) vectors
-- [ ] All tenant isolation tests pass
+- [x] Create test_tenant_isolation.py suite
+- [x] Test user cannot access other tenant leads
+- [x] Test user cannot access other tenant products
+- [x] Test user cannot access other tenant appointments
+- [x] Verify API filtering enforces tenant_id
+- [x] Verify repository queries include tenant_id
+- [x] Verify webhook respects tenant context
+- [x] Test SQL injection attempts
+- [x] Test IDOR (Insecure Direct Object Reference) vectors
+- [x] All tenant isolation tests pass
 
 #### B1.3: Lead Duplicate Detection Implementation (12 hours)
 - [ ] Create LeadDuplicateDetector service
