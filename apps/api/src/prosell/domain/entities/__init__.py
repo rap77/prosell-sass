@@ -6,7 +6,6 @@ from prosell.domain.entities.product_image import ProductImage
 from prosell.domain.entities.role import Permission, Role, RoleType
 from prosell.domain.entities.session import Session
 from prosell.domain.entities.user import User, UserStatus
-from prosell.domain.entities.vehicle import Vehicle
 
 __all__ = [
     "Category",
@@ -18,5 +17,4 @@ __all__ = [
     "Session",
     "User",
     "UserStatus",
-    "Vehicle",
 ]

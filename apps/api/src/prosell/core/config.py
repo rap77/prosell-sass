@@ -143,7 +143,7 @@ class Settings(BaseSettings):
     )
     # Backend callback URI (where Google redirects after authentication)
     google_oauth_redirect_uri: str = Field(
-        default="http://localhost:8000/api/auth/oauth/google/callback",
+        default="http://localhost:8000/api/v1/auth/oauth/google/callback",
         description="Google OAuth backend callback URI",
     )
 
@@ -164,7 +164,7 @@ class Settings(BaseSettings):
     )
     # Backend callback URI (where Facebook redirects after authentication)
     facebook_oauth_redirect_uri: str = Field(
-        default="http://localhost:8000/api/auth/oauth/facebook/callback",
+        default="http://localhost:8000/api/v1/auth/oauth/facebook/callback",
         description="Facebook OAuth backend callback URI",
     )
     # Encryption key for Facebook access tokens (32 bytes)
@@ -190,6 +190,12 @@ class Settings(BaseSettings):
         ge=1,
         le=60,
         description="OAuth state token expiration in minutes",
+    )
+
+    # Cookie settings
+    cookie_domain: str = Field(
+        default="localhost",
+        description="Domain for authentication cookies (e.g., .prosell.saas)",
     )
 
     # =============================================================================

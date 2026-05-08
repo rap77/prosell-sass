@@ -81,7 +81,7 @@ class Lead(DomainModel):
     buyer_phone: str | None = None
 
     # Relationships
-    vehicle_id: UUID | None = None
+    product_id: UUID | None = None
     vendedor_id: UUID | None = None
 
     # Lead details
@@ -102,7 +102,7 @@ class Lead(DomainModel):
         tenant_id: UUID,
         buyer_email: str | None = None,
         buyer_phone: str | None = None,
-        vehicle_id: UUID | None = None,
+        product_id: UUID | None = None,
         vendedor_id: UUID | None = None,
         message: str | None = None,
         source: str = "manual",
@@ -116,7 +116,7 @@ class Lead(DomainModel):
             tenant_id: Unique tenant identifier
             buyer_email: Buyer's email (optional)
             buyer_phone: Buyer's phone (optional)
-            vehicle_id: Associated vehicle ID (optional)
+            product_id: Associated vehicle ID (optional)
             vendedor_id: Assigned vendedor ID (optional)
             message: Buyer's message (optional)
             source: Lead source (default: "manual")
@@ -131,7 +131,7 @@ class Lead(DomainModel):
             tenant_id=tenant_id,
             buyer_email=buyer_email,
             buyer_phone=buyer_phone,
-            vehicle_id=vehicle_id,
+            product_id=product_id,
             vendedor_id=vendedor_id,
             message=message,
             source=source,

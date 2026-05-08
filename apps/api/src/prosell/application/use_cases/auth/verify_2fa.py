@@ -103,5 +103,6 @@ class Verify2FAUseCase:
                 email=user.email,
                 full_name=user.full_name,
                 roles=user_roles,
+                tenant_id=str(user.tenant_id),
             ),
         )

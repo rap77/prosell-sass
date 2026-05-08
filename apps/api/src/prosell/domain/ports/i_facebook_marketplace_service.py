@@ -21,7 +21,7 @@ class FacebookPageInfo:
         page_id: Facebook page ID
         page_name: Page name
         access_token: Page access token (for publishing as page)
-        category: Page category (e.g., "Vehicle Dealer")
+        category: Page category (e.g., "Vehicle Branch")
         picture_url: Page profile picture URL
     """
 

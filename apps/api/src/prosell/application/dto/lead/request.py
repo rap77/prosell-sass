@@ -5,6 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field
 
 from prosell.domain.entities.lead import LeadStatus
+from prosell.domain.value_objects.lead_source import LeadSource
 
 
 class CreateLeadRequest(BaseModel):
@@ -13,10 +14,10 @@ class CreateLeadRequest(BaseModel):
     buyer_name: str = Field(..., min_length=1, max_length=255)
     buyer_email: EmailStr | None = None
     buyer_phone: str | None = Field(default=None, max_length=50)
-    vehicle_id: UUID | None = None
+    product_id: UUID | None = None
     vendedor_id: UUID | None = None
     message: str | None = Field(default=None, max_length=2000)
-    source: str = Field(default="manual", max_length=50)
+    source: LeadSource = Field(default=LeadSource.MANUAL)
 
     model_config = {"str_strip_whitespace": True}
 

@@ -10,9 +10,8 @@ from prosell.domain.repositories.team_repository import (
     AbstractTeamMemberRepository,
     AbstractTeamRepository,
 )
-from prosell.domain.repositories.user_dealer_repository import AbstractUserDealerRepository
+from prosell.domain.repositories.user_branch_repository import AbstractUserBranchRepository
 from prosell.domain.repositories.user_repository import AbstractUserRepository
-from prosell.domain.repositories.vehicle_repository import AbstractVehicleRepository
 from prosell.domain.repositories.wallet_repository import (
     AbstractWalletRepository,
     AbstractWalletTransactionRepository,
@@ -20,16 +19,15 @@ from prosell.domain.repositories.wallet_repository import (
 
 __all__ = [
     "AbstractCategoryRepository",
+    "AbstractLeadRepository",
     "AbstractOrganizationRepository",
     "AbstractProductRepository",
     "AbstractRoleRepository",
     "AbstractSessionRepository",
     "AbstractTeamMemberRepository",
     "AbstractTeamRepository",
-    "AbstractUserDealerRepository",
+    "AbstractUserBranchRepository",
     "AbstractUserRepository",
-    "AbstractVehicleRepository",
     "AbstractWalletRepository",
     "AbstractWalletTransactionRepository",
-    "AbstractLeadRepository",
 ]

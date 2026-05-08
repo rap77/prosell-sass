@@ -44,7 +44,7 @@ class FacebookPage(DomainModel):
 
     # Page metadata
     category: str | None = Field(
-        default=None, description="Page category (e.g., 'Vehicle Dealer', 'Automotive')"
+        default=None, description="Page category (e.g., 'Vehicle Branch', 'Automotive')"
     )
     picture_url: str | None = Field(default=None, description="Page profile picture URL")
 

@@ -11,3 +11,4 @@ class UserInfo(BaseModel):
     full_name: str
     avatar_url: str | None = None
     roles: list[str] = []
+    tenant_id: str  # Organization ID for multi-tenant isolation

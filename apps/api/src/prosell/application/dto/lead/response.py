@@ -5,19 +5,20 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from prosell.application.dto.product.response import ProductSummaryForLead
 from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.entities.lead_audit_log import LeadAuditLog
 
 
 class LeadResponse(BaseModel):
-    """DTO for a single lead."""
+    """DTO for a single lead with embedded product data."""
 
     id: UUID
     tenant_id: UUID
     buyer_name: str
     buyer_email: str | None
     buyer_phone: str | None
-    vehicle_id: UUID | None
+    product_id: UUID | None
     vendedor_id: UUID | None
     message: str | None
     source: str
@@ -25,24 +26,31 @@ class LeadResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    # Product data (replaces legacy vehicle field)
+    product: ProductSummaryForLead | None = None
+
     model_config = {"from_attributes": True}
 
     @classmethod
-    def from_entity(cls, lead: Lead) -> "LeadResponse":
-        """Create response DTO from domain entity."""
+    def from_entity(
+        cls,
+        lead: Lead,
+        product: ProductSummaryForLead | None = None,
+    ) -> "LeadResponse":
         return cls(
             id=lead.id,
             tenant_id=lead.tenant_id,
             buyer_name=lead.buyer_name,
             buyer_email=lead.buyer_email,
             buyer_phone=lead.buyer_phone,
-            vehicle_id=lead.vehicle_id,
+            product_id=lead.product_id,
             vendedor_id=lead.vendedor_id,
             message=lead.message,
             source=lead.source,
             status=lead.status,
             created_at=lead.created_at,
             updated_at=lead.updated_at,
+            product=product,
         )
 
 
@@ -61,7 +69,6 @@ class LeadAuditLogResponse(BaseModel):
 
     @classmethod
     def from_entity(cls, log: LeadAuditLog) -> "LeadAuditLogResponse":
-        """Create response DTO from domain entity."""
         return cls(
             id=log.id,
             lead_id=log.lead_id,

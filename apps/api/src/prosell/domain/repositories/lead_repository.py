@@ -21,11 +21,11 @@ class AbstractLeadRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_buyer_and_vehicle(
+    async def get_by_buyer_and_product(
         self,
         buyer_email: str | None,
         buyer_phone: str | None,
-        vehicle_id: UUID | None,
+        product_id: UUID | None,
         tenant_id: UUID,
         within_hours: int = 24,
     ) -> Lead | None:

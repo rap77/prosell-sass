@@ -12,8 +12,8 @@ class CreateProductRequest(BaseModel):
 
     title: str = Field(..., min_length=1, max_length=500)
     price_cents: int = Field(..., ge=0)
-    tenant_id: UUID
-    organization_id: UUID
+    tenant_id: UUID | None = None
+    organization_id: UUID | None = None
     category_id: UUID
     slug: str | None = None
     description: str | None = None

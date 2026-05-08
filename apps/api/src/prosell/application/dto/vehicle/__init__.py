@@ -1,37 +1,8 @@
-"""Vehicle DTOs."""
+"""Vehicle DTOs - BACKWARDS COMPATIBILITY LAYER.
 
-from prosell.application.dto.vehicle.assign_dealer import (
-    AssignDealerRequest,
-    AssignDealerResponse,
-)
-from prosell.application.dto.vehicle.bulk_upload import (
-    BulkUploadError,
-    BulkUploadResponse,
-    VehicleCSVRow,
-)
-from prosell.application.dto.vehicle.catalog import (
-    CatalogResponseDTO,
-    PublicationDTO,
-    VehicleCatalogItemDTO,
-)
-from prosell.application.dto.vehicle.create import (
-    CreateVehicleRequest,
-    DecodeVinRequest,
-    DecodeVinResponse,
-    VehicleData,
-)
+DEPRECATED: Use product DTOs instead. This module will be removed in a future version.
+"""
 
-__all__ = [
-    "AssignDealerRequest",
-    "AssignDealerResponse",
-    "BulkUploadError",
-    "BulkUploadResponse",
-    "CatalogResponseDTO",
-    "CreateVehicleRequest",
-    "DecodeVinRequest",
-    "DecodeVinResponse",
-    "PublicationDTO",
-    "VehicleCSVRow",
-    "VehicleCatalogItemDTO",
-    "VehicleData",
-]
+from prosell.application.dto.vehicle.response import VehicleResponse
+
+__all__ = ["VehicleResponse"]

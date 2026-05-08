@@ -8,7 +8,7 @@ from pydantic import Field
 from prosell.domain.base import DomainModel
 
 
-class PublishVehicleRequest(DomainModel):
+class PublishProductRequest(DomainModel):
     """Input DTO for PublishVehicleUseCase.
 
     Validates listing content before creating the Publication record.

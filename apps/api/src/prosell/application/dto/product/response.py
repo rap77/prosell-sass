@@ -8,6 +8,19 @@ from pydantic import BaseModel
 from prosell.domain.entities.product import Product
 
 
+class ProductSummaryForLead(BaseModel):
+    """Lightweight product summary embedded in lead responses."""
+
+    id: UUID
+    title: str
+    price_cents: int
+    currency: str
+    status: str
+    attributes: dict[str, object] = {}
+    created_at: datetime
+    updated_at: datetime
+
+
 class ProductResponse(BaseModel):
     """DTO for product responses."""
 

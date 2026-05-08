@@ -2,27 +2,27 @@
 
 Design:
   The use case is intentionally thin — it only validates input, creates the
-  Publication record in PENDING state, and dispatches publish_vehicle_task.
+  Publication record in PENDING state, and dispatches publish_product_task.
 
   Image downloading and processing happen inside the Taskiq task (not here),
   so the API request returns immediately without blocking on image downloads.
 
   Image lifecycle:
     1. publication.image_urls stores SOURCE URLs (validated by Pydantic, not fetched)
-    2. publish_vehicle_task downloads each URL with httpx
+    2. publish_product_task downloads each URL with httpx
     3. Task processes bytes through ImagePipelineService (compress, resize, JPG, strip EXIF)
     4. Task passes processed bytes to service.publish(publication, token, image_bytes_list)
 """
 
 from uuid import UUID
 
-from prosell.application.dto.publisher.publish import PublicationResponse, PublishVehicleRequest
+from prosell.application.dto.publisher.publish import PublicationResponse, PublishProductRequest
 from prosell.domain.entities.publication import Publication
 from prosell.domain.repositories.publication_repository import IPublicationRepository
 
 
 class PublishVehicleUseCase:
-    """Creates a Publication record in PENDING state and dispatches publish_vehicle_task.
+    """Creates a Publication record in PENDING state and dispatches publish_product_task.
 
     Does NOT process images — image downloading and processing happen in the task.
     Does NOT receive or store access tokens — task loads them from DB at execution time.
@@ -36,11 +36,11 @@ class PublishVehicleUseCase:
         self._repo = publication_repo
         self._seller_user_id = seller_user_id
 
-    async def execute(self, request: PublishVehicleRequest) -> PublicationResponse:
+    async def execute(self, request: PublishProductRequest) -> PublicationResponse:
         """Create Publication record and dispatch Taskiq task.
 
         Args:
-            request: PublishVehicleRequest DTO with listing content and source image URLs.
+            request: PublishProductRequest DTO with listing content and source image URLs.
 
         Returns:
             PublicationResponse with id, product_id, and status="pending".
@@ -71,11 +71,11 @@ class PublishVehicleUseCase:
         # Never pass tokens or image bytes through the task payload.
         # Lazy import preserves Clean Architecture: application layer must not
         # import from infrastructure at module level.
-        from prosell.infrastructure.tasks.use_cases.publish_vehicle_task import (
-            publish_vehicle_task,  # type: ignore[attr-defined]
+        from prosell.infrastructure.tasks.use_cases.publish_product_task import (
+            publish_product_task,  # type: ignore[attr-defined]
         )
 
-        await publish_vehicle_task.kiq(publication_id=str(publication.id))  # type: ignore[union-attr]
+        await publish_product_task.kiq(publication_id=str(publication.id))  # type: ignore[union-attr]
 
         return PublicationResponse(
             id=publication.id,

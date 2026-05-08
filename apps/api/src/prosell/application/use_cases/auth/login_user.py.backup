@@ -69,19 +69,11 @@ class LoginUserUseCase:
         logger.debug("Email is verified.")
 
         # 4. Verify password
-        logger.info(f"[LOGIN-DEBUG] Verifying password for user {user.id}")
-        logger.info(f"[LOGIN-DEBUG] Password hash exists: {bool(user.password_hash)}")
-        logger.info(f"[LOGIN-DEBUG] Provided password: {request.password!r}")
-
-        password_valid = False
-        if user.password_hash:
-            password_valid = self.password_service.verify_password(
-                request.password,
-                user.password_hash,
-            )
-            logger.info(f"[LOGIN-DEBUG] Password verification result: {password_valid}")
-
-        if not password_valid:
+        logger.debug(f"Verifying password for user {user.id}")
+        if not user.password_hash or not self.password_service.verify_password(
+            request.password,
+            user.password_hash,
+        ):
             logger.warning(f"Login failed: Invalid password for user {user.id}")
             # Record failed attempt
             should_lock = user.record_failed_login()
@@ -117,7 +109,6 @@ class LoginUserUseCase:
                     id=str(user.id),
                     email=user.email,
                     full_name=user.full_name,
-                    tenant_id=str(user.tenant_id),
                 ),
                 requires_2fa=True,
             )
@@ -162,7 +153,6 @@ class LoginUserUseCase:
                 email=user.email,
                 full_name=user.full_name,
                 roles=user_roles,
-                tenant_id=str(user.tenant_id),
             ),
             requires_2fa=False,
         )

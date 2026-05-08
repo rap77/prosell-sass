@@ -106,5 +106,6 @@ class OAuthLoginUseCase:
                 full_name=user.full_name,
                 avatar_url=user.avatar_url,
                 roles=user_roles,
+                tenant_id=str(user.tenant_id),
             ),
         )

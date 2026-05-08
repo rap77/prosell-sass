@@ -1,5 +1,11 @@
 """Domain exceptions for ProSell SaaS."""
 
+from prosell.domain.exceptions.appointment_exceptions import (
+    AppointmentConflictException,
+    AppointmentError,
+    AppointmentNotFoundException,
+    AppointmentTimeValidationException,
+)
 from prosell.domain.exceptions.auth_exceptions import (
     AccountLockedException,
     BackupCodesExhaustedException,
@@ -29,6 +35,12 @@ from prosell.domain.exceptions.category_exceptions import (
     CategoryError,
     CategoryNotFoundError,
 )
+from prosell.domain.exceptions.lead_exceptions import (
+    DuplicateLeadException,
+    LeadError,
+    LeadNotFoundException,
+    LeadStateTransitionException,
+)
 from prosell.domain.exceptions.org_exceptions import (
     InsufficientFundsException,
     OrganizationAlreadyExistsException,
@@ -40,18 +52,6 @@ from prosell.domain.exceptions.org_exceptions import (
     TeamMemberNotFoundException,
     TeamNotFoundException,
     WalletNotFoundException,
-)
-from prosell.domain.exceptions.appointment_exceptions import (
-    AppointmentConflictException,
-    AppointmentError,
-    AppointmentNotFoundException,
-    AppointmentTimeValidationException,
-)
-from prosell.domain.exceptions.lead_exceptions import (
-    DuplicateLeadException,
-    LeadError,
-    LeadNotFoundException,
-    LeadStateTransitionException,
 )
 from prosell.domain.exceptions.product_exceptions import (
     InvalidVINError,

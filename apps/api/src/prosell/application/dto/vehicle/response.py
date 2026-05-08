@@ -1,22 +1,32 @@
-"""Vehicle response DTO."""
+"""Vehicle response DTO - BACKWARDS COMPATIBILITY LAYER.
+
+This module provides backwards compatibility for code that still references VehicleResponse.
+It wraps ProductResponse and adapts it to the old VehicleResponse interface.
+
+DEPRECATED: Use ProductResponse instead. This will be removed in a future version.
+"""
 
 from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
 
-from prosell.domain.entities.vehicle import Vehicle
+from prosell.application.dto.product.response import ProductResponse
 
 
 class VehicleResponse(BaseModel):
-    """DTO for vehicle API responses — fully typed, replaces raw dict returns."""
+    """Backwards compatibility wrapper for vehicle data.
 
+    DEPRECATED: Use ProductResponse instead.
+    """
+
+    # Legacy vehicle fields
     id: UUID
     product_id: UUID
     vin: str
-    year: int | None = None
-    make: str | None = None
-    model: str | None = None
+    year: int
+    make: str
+    model: str
     trim: str | None = None
     body_type: str | None = None
     body_style: str | None = None
@@ -25,7 +35,7 @@ class VehicleResponse(BaseModel):
     engine: str | None = None
     fuel_type: str | None = None
     mileage: int | None = None
-    mileage_unit: str = "mi"
+    mileage_unit: str | None = "miles"
     exterior_color: str | None = None
     interior_color: str | None = None
     has_sunroof: bool = False
@@ -41,35 +51,40 @@ class VehicleResponse(BaseModel):
     updated_at: datetime
 
     @classmethod
-    def from_entity(cls, vehicle: Vehicle) -> "VehicleResponse":
-        """Build response from domain entity."""
+    def from_product_response(cls, product: ProductResponse) -> "VehicleResponse":
+        """Create VehicleResponse from ProductResponse.
+
+        Extracts vehicle-specific attributes from the product attributes JSONB.
+        """
+        attrs = product.attributes or {}
+        
         return cls(
-            id=vehicle.id,
-            product_id=vehicle.product_id,
-            vin=vehicle.vin,
-            year=vehicle.year,
-            make=vehicle.make,
-            model=vehicle.model,
-            trim=vehicle.trim,
-            body_type=vehicle.body_type,
-            body_style=vehicle.body_style,
-            drivetrain=vehicle.drivetrain,
-            transmission=vehicle.transmission,
-            engine=vehicle.engine,
-            fuel_type=vehicle.fuel_type,
-            mileage=vehicle.mileage,
-            mileage_unit=vehicle.mileage_unit,
-            exterior_color=vehicle.exterior_color,
-            interior_color=vehicle.interior_color,
-            has_sunroof=vehicle.has_sunroof,
-            has_navigation=vehicle.has_navigation,
-            has_leather=vehicle.has_leather,
-            has_backup_camera=vehicle.has_backup_camera,
-            has_bluetooth=vehicle.has_bluetooth,
-            has_remote_start=vehicle.has_remote_start,
-            seat_material=vehicle.seat_material,
-            vin_verified=vehicle.vin_verified,
-            stock_number=vehicle.stock_number,
-            created_at=vehicle.created_at,
-            updated_at=vehicle.updated_at,
+            id=product.id,  # Use product ID as vehicle ID
+            product_id=product.id,
+            vin=attrs.get("vin", ""),
+            year=attrs.get("year", 2020),
+            make=attrs.get("make", "Unknown"),
+            model=attrs.get("model", "Unknown"),
+            trim=attrs.get("trim"),
+            body_type=attrs.get("body_type"),
+            body_style=attrs.get("body_style"),
+            drivetrain=attrs.get("drivetrain"),
+            transmission=attrs.get("transmission"),
+            engine=attrs.get("engine"),
+            fuel_type=attrs.get("fuel_type"),
+            mileage=attrs.get("mileage"),
+            mileage_unit=attrs.get("mileage_unit", "miles"),
+            exterior_color=attrs.get("exterior_color"),
+            interior_color=attrs.get("interior_color"),
+            has_sunroof=attrs.get("has_sunroof", False),
+            has_navigation=attrs.get("has_navigation", False),
+            has_leather=attrs.get("has_leather", False),
+            has_backup_camera=attrs.get("has_backup_camera", False),
+            has_bluetooth=attrs.get("has_bluetooth", False),
+            has_remote_start=attrs.get("has_remote_start", False),
+            seat_material=attrs.get("seat_material"),
+            vin_verified=attrs.get("vin_verified", False),
+            stock_number=attrs.get("stock_number"),
+            created_at=product.created_at,
+            updated_at=product.updated_at,
         )
