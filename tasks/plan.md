@@ -935,6 +935,1676 @@ cd tests/e2e && pnpm test smoke.spec.ts  # Smoke tests
 ---
 
 **Document Status**: Active — Ready for execution
-**Next Action**: Execute Phase 4 plans A1 through A7
+**Next Action**: Execute Phase Completion (B1 through B4)
 **Owner**: Engineering Team
 **Stakeholders**: Product, QA, DevOps
+
+---
+
+## Phase Completion: 100% Module Completion
+
+**Goal**: Complete all remaining gaps to reach 100% module completion across all ProSell SaaS features.
+
+**Phase Status**:
+- ✅ Phase 1-13: MVP Core Features (COMPLETE)
+- ✅ Phase A7: E2E Verification (COMPLETE)
+- 📋 Phase Completion: B1-B4 (NEW - 4 sprints to 100%)
+
+**Current Overall Status**: 88% complete → Target: 100% complete
+
+---
+
+## Overview
+
+This phase completes the ProSell SaaS platform by addressing identified gaps in each module. Based on comprehensive gap analysis (2026-05-08), we have **284 hours of work** across **4 sprints** to reach 100% completion.
+
+**Strategy**: Prioritize security & release blockers first, then core features, then UX enhancements, finally advanced features.
+
+---
+
+## Phase Completion Plans (4 Sprints)
+
+### B1: Security & Release Readiness (1 week - 48 hours)
+
+**Goal**: Achieve 95% release readiness by addressing critical security gaps and E2E validation
+
+---
+
+### B1.1: E2E Integrated Flow Validation (8 hours)
+
+**Priority**: 🔴 BLOCKER - Release decision depends on this
+
+**Objective**: Create end-to-end test covering complete sales cycle: Catalog → Lead → Appointment
+
+**Implementation**:
+
+1. **Test Scenario**:
+   - Seller creates product in catalog (C3 model)
+   - Product published to Facebook Marketplace
+   - Lead captured from Facebook webhook
+   - Lead assigned to vendedor
+   - Appointment created from lead
+   - Appointment confirmed by dealer
+   - Email notifications sent
+
+2. **Test Structure**:
+```typescript
+// tests/e2e/specs/integrated-critical-path.spec.ts
+test.describe('Integrated Critical Path', () => {
+  test('complete sales cycle: publish → lead → appointment', async ({ page }) => {
+    // Step 1: Login as seller
+    // Step 2: Create product with VIN decode
+    // Step 3: Publish to Facebook
+    // Step 4: Simulate webhook lead capture
+    // Step 5: Assign lead to vendedor
+    // Step 6: Create appointment
+    // Step 7: Confirm appointment
+    // Step 8: Verify email notifications
+  });
+});
+```
+
+3. **API Mocking**:
+   - Mock Facebook Graph API for publish
+   - Mock webhook endpoint for lead capture
+   - Mock SendGrid for email notifications
+
+**Acceptance Criteria**:
+- [ ] Integrated test passes consistently (>95% success rate)
+- [ ] Test execution time < 3 minutes
+- [ ] All critical API endpoints exercised
+- [ ] Email notifications verified (mocked)
+- [ ] Test added to smoke suite
+
+**Verification**:
+```bash
+cd tests/e2e && pnpm test integrated-critical-path.spec.ts
+cd tests/e2e && pnpm test --grep "complete sales cycle"
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/tests/e2e/specs/integrated-critical-path.spec.ts` (new)
+- `/home/rpadron/proy/prosell-sass/tests/e2e/helpers/mock-endpoints.ts` (extend)
+
+---
+
+### B1.2: Multi-Tenant Isolation Security Tests (8 hours)
+
+**Priority**: 🔴 SECURITY CRITICAL - Data isolation vulnerability
+
+**Objective**: Verify complete tenant data isolation across all layers
+
+**Implementation**:
+
+1. **Test Scenarios**:
+```python
+# apps/api/tests/integration/security/test_tenant_isolation.py
+class TestTenantIsolation:
+    def test_user_cannot_access_other_tenant_leads(self)
+    def test_user_cannot_access_other_tenant_products(self)
+    def test_user_cannot_access_other_tenant_appointments(self)
+    def test_api_filtering_enforces_tenant_id(self)
+    def test_repository_queries_include_tenant_id(self)
+    def test_webhook_respects_tenant_context(self)
+```
+
+2. **Attack Vectors**:
+   - Direct API calls with modified tenant_id
+   - SQL injection attempts
+   - IDOR (Insecure Direct Object Reference) tests
+   - Cross-tenant enumeration attempts
+
+3. **Layers Tested**:
+   - API Router (FastAPI dependencies)
+   - Repository (SQLAlchemy queries)
+   - Use Cases (business logic)
+   - Webhook processing
+
+**Acceptance Criteria**:
+- [ ] All tenant isolation tests pass
+- [ ] No SQL injection vulnerabilities found
+- [ ] No IDOR vulnerabilities found
+- [ ] All queries include tenant_id filter
+- [ ] Webhook processing isolated by tenant
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/integration/security/test_tenant_isolation.py -v
+cd apps/api && uv run pytest --security-check
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/tests/integration/security/test_tenant_isolation.py` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/infrastructure/api/dependencies.py` (verify tenant injection)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/infrastructure/repositories/*.py` (verify queries)
+
+---
+
+### B1.3: Lead Duplicate Detection Implementation (12 hours)
+
+**Priority**: 🔴 DATA QUALITY - Prevents duplicate leads
+
+**Objective**: Implement duplicate detection based on email/phone matching
+
+**Implementation**:
+
+1. **Domain Layer**:
+```python
+# apps/api/src/prosell/domain/services/lead_duplicate_detector.py
+class LeadDuplicateDetector:
+    def find_duplicates(self, lead: Lead, tenant_id: str) -> List[Lead]:
+        # Match by email (exact)
+        # Match by phone (normalized)
+        # Match by email + phone combination
+        # Return potential duplicates
+```
+
+2. **Repository Extension**:
+```python
+# apps/api/src/prosell/domain/repositories/lead_repository.py
+async def find_by_email(self, email: str, tenant_id: str) -> Optional[Lead]
+async def find_by_phone(self, phone: str, tenant_id: str) -> Optional[Lead]
+async def find_potential_duplicates(self, lead: Lead) -> List[Lead]
+```
+
+3. **Use Case Integration**:
+```python
+# apps/api/src/prosell/application/use_cases/lead/create_lead.py
+async def execute(self, request: CreateLeadRequest) -> Lead:
+    # Check for duplicates
+    duplicates = await self.duplicate_detector.find_duplicates(...)
+    if duplicates:
+        # Update existing lead or flag as duplicate
+    # Create new lead
+```
+
+4. **Frontend Display**:
+   - Show duplicate warning when creating lead
+   - Display duplicate leads in lead detail view
+   - Allow merge of duplicate leads
+
+**Acceptance Criteria**:
+- [ ] Duplicate detection service implemented
+- [ ] Email matching works (exact match)
+- [ ] Phone matching works (normalized: +54, 0054, etc.)
+- [ ] Frontend shows duplicate warnings
+- [ ] Unit tests for detection logic
+- [ ] Integration tests for API
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/unit/services/test_lead_duplicate_detector.py -v
+cd apps/api && uv run pytest tests/integration/use_cases/test_create_lead_duplicate.py -v
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/domain/services/lead_duplicate_detector.py` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/domain/repositories/lead_repository.py` (extend)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/lead/create_lead.py` (modify)
+- `/home/rpadron/proy/prosell-sass/apps/web/src/components/leads/DuplicateLeadWarning.tsx` (new)
+
+---
+
+### B1.4: Smoke Test Suite Expansion (12 hours)
+
+**Priority**: 🔴 RELEASE CONFIDENCE - Validates critical paths
+
+**Objective**: Expand smoke test suite from 20 to 30+ critical tests
+
+**Implementation**:
+
+1. **Add Critical Tests**:
+```typescript
+// tests/e2e/specs/smoke.spec.ts (extend)
+test.describe('Smoke Tests - Critical Path', () => {
+  // Auth (5 tests)
+  test('seller can login with email/password')
+  test('seller can login with OAuth Facebook')
+  test('seller can enable 2FA')
+  test('seller can reset password')
+  test('session refresh works correctly')
+
+  // Catalog (8 tests)
+  test('seller can create product with VIN decode')
+  test('seller can upload product images')
+  test('seller can edit product')
+  test('seller can delete product')
+  test('category dropdown loads correctly')
+  test('VIN decode populates vehicle data')
+  test('product list paginates correctly')
+  test('product search filters work')
+
+  // Leads (8 tests)
+  test('webhook creates lead from Facebook')
+  test('vendedor can view assigned leads')
+  test('vendedor can update lead status')
+  test('manager can view all team leads')
+  test('manager can reassign lead')
+  test('duplicate detection works')
+  test('lead audit trail displays')
+  test('lead source attribution tracked')
+
+  // Appointments (6 tests)
+  test('vendedor can create appointment')
+  test('dealer can view calendar')
+  test('dealer can confirm appointment')
+  test('dealer can cancel appointment')
+  test('email notification sent on confirm')
+  test('appointment conflict detected')
+});
+```
+
+2. **Test Organization**:
+   - Group by feature area
+   - Use test.describe for grouping
+   - Add clear test names
+   - Include setup/teardown
+
+3. **Execution Optimization**:
+   - Run in parallel (6 workers)
+   - Target execution time < 5 minutes
+   - Retry flaky tests (max 2 retries)
+
+**Acceptance Criteria**:
+- [ ] 30+ smoke tests passing
+- [ ] All critical user paths covered
+- [ ] Test execution time < 5 minutes
+- [ ] >95% pass rate (allow 1-2 flaky tests)
+- [ ] Tests added to CI/CD pipeline
+
+**Verification**:
+```bash
+cd tests/e2e && pnpm test smoke.spec.ts --reporter=json
+# Verify: total_tests >= 30, execution_time < 300s
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/tests/e2e/specs/smoke.spec.ts` (extend)
+- `/home/rpadron/proy/prosell-sass/tests/e2e/playwright.config.ts` (verify worker config)
+
+---
+
+### B1.5: Password Reset Flow Tests (8 hours)
+
+**Priority**: 🔴 SECURITY - Auth critical path
+
+**Objective**: Complete test coverage for password reset flow
+
+**Implementation**:
+
+1. **Integration Tests**:
+```python
+# apps/api/tests/integration/api/test_auth_password_reset.py
+class TestPasswordResetFlow:
+    async def test_user_can_request_password_reset(self)
+    async def test_reset_token_expires_after_1_hour(self)
+    async def test_user_can_reset_password_with_valid_token(self)
+    async def test_invalid_token_returns_400(self)
+    async def test_password_reset_requires_new_password_different(self)
+    async def test_password_successfully_updates_hash(self)
+```
+
+2. **Frontend Tests**:
+```typescript
+// apps/web/tests/auth/password-reset.test.tsx
+describe('Password Reset Flow', () => {
+  test('user can request reset from login page')
+  test('user receives email with reset link')
+  test('user can reset password with valid token')
+  test('invalid token shows error message')
+  test('user can login with new password')
+});
+```
+
+**Acceptance Criteria**:
+- [ ] All password reset tests pass
+- [ ] Token expiration verified (1 hour)
+- [ ] Frontend error handling tested
+- [ ] Security tests pass (token uniqueness, expiration)
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/integration/api/test_auth_password_reset.py -v
+cd apps/web && pnpm test auth/password-reset.test.tsx
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/tests/integration/api/test_auth_password_reset.py` (new)
+- `/home/rpadron/proy/prosell-sass/apps/web/tests/auth/password-reset.test.tsx` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/auth/reset_password.py` (verify)
+
+---
+
+### Checkpoint B1: Security & Release Readiness Complete
+
+**Verification**:
+```bash
+# E2E integrated flow
+cd tests/e2e && pnpm test integrated-critical-path.spec.ts
+
+# Security tests
+cd apps/api && uv run pytest tests/integration/security/ -v
+
+# Smoke tests
+cd tests/e2e && pnpm test smoke.spec.ts
+
+# Password reset
+cd apps/api && uv run pytest tests/integration/api/test_auth_password_reset.py -v
+```
+
+**Success Criteria**:
+- [ ] Integrated critical path test passes
+- [ ] All tenant isolation tests pass
+- [ ] Duplicate detection implemented
+- [ ] 30+ smoke tests passing
+- [ ] Password reset tests pass
+- [ ] Overall readiness: 95%
+
+---
+
+### B2: Core Feature Completion (1 week - 54 hours)
+
+**Goal**: Complete core business features to reach 97% completion
+
+---
+
+### B2.1: Facebook Webhook Polling Completion (16 hours)
+
+**Priority**: 🟡 CORE FEATURE - Lead capture automation
+
+**Objective**: Complete Facebook webhook polling implementation (phase-3 TODOs)
+
+**Implementation**:
+
+1. **Review Existing TODOs**:
+```python
+# apps/api/src/prosell/application/use_cases/poll_facebook_leads_task.py
+# Lines 56-82: TODO comments for phase-3 implementation
+```
+
+2. **Complete Implementation**:
+   - Add error handling for API rate limits
+   - Implement retry logic with exponential backoff
+   - Add metrics tracking (leads polled, leads created, errors)
+   - Implement deduplication in polling
+
+3. **Background Task Configuration**:
+```python
+# apps/api/src/prosell/infrastructure/tasks/taskiq_task_dispatcher.py
+# Configure polling interval (10 minutes)
+# Configure timeout (30 seconds per page)
+# Configure retry policy
+```
+
+**Acceptance Criteria**:
+- [ ] Webhook polling completes without errors
+- [ ] Rate limiting handled gracefully
+- [ ] Metrics logged (prometheus/statsd format)
+- [ ] Deduplication prevents duplicate leads
+- [ ] Integration tests pass
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/integration/tasks/test_poll_facebook_leads_task.py -v
+# Verify: all TODO comments removed or addressed
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/poll_facebook_leads_task.py` (complete)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/infrastructure/tasks/worker.py` (configure)
+- `/home/rpadron/proy/prosell-sass/apps/api/tests/integration/tasks/test_poll_facebook_leads_task.py` (extend)
+
+---
+
+### B2.2: VIN Decode Integration Tests (6 hours)
+
+**Priority**: 🟡 CORE FEATURE - Catalog critical path
+
+**Objective**: Add integration tests for VIN decode service
+
+**Implementation**:
+
+1. **Integration Tests**:
+```python
+# apps/api/tests/integration/services/test_vin_decode_integration.py
+class TestVINDecodeIntegration:
+    async def test_vin_decode_calls_nhtsa_api_successfully(self)
+    async def test_vin_decode_caches_results(self)
+    async def test_vin_decode_handles_api_errors(self)
+    async def test_vin_decode_timeout_returns_cached_data(self)
+    async def test_vin_decode_populates_vehicle_attributes(self)
+```
+
+2. **Mock NHTSA API**:
+   - Mock HTTP responses for different VINs
+   - Test error scenarios (timeout, 404, 500)
+   - Verify caching behavior
+
+**Acceptance Criteria**:
+- [ ] All VIN decode integration tests pass
+- [ ] API mocking covers success/error cases
+- [ ] Caching behavior verified
+- [ ] Timeout handling tested
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/integration/services/test_vin_decode_integration.py -v
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/tests/integration/services/test_vin_decode_integration.py` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/infrastructure/services/nhtsa_vin_service.py` (verify)
+
+---
+
+### B2.3: Team Switching UI Implementation (8 hours)
+
+**Priority**: 🟡 CORE FEATURE - Multi-team support
+
+**Objective**: Add UI component to switch between multiple teams
+
+**Implementation**:
+
+1. **Header Component Extension**:
+```typescript
+// apps/web/src/components/layout/Header.tsx
+import { TeamSwitcher } from './TeamSwitcher';
+
+export function Header() {
+  return (
+    <header>
+      {/* Existing header content */}
+      <TeamSwitcher />
+    </header>
+  );
+}
+```
+
+2. **Team Switcher Component**:
+```typescript
+// apps/web/src/components/layout/TeamSwitcher.tsx
+'use client';
+
+export function TeamSwitcher() {
+  const { teams, currentTeam, switchTeam } = useTeams();
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger>
+        <Button>{currentTeam?.name}</Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        {teams.map(team => (
+          <DropdownMenuItem onClick={() => switchTeam(team.id)}>
+            {team.name}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+```
+
+3. **Hook Implementation**:
+```typescript
+// apps/web/src/hooks/useTeams.ts
+export function useTeams() {
+  // Fetch user's teams from API
+  // Handle team switching
+  // Update local storage
+  // Trigger page refresh on switch
+}
+```
+
+4. **API Integration**:
+```typescript
+// apps/web/src/lib/api/teams.ts
+export async function getUserTeams(): Promise<Team[]>
+export async function switchTeam(teamId: string): Promise<void>
+```
+
+**Acceptance Criteria**:
+- [ ] Team switcher dropdown displays in header
+- [ ] User can view all their teams
+- [ ] Switching team updates context
+- [ ] Page refreshes with new team context
+- [ ] Unit tests for component
+- [ ] E2E test for team switching flow
+
+**Verification**:
+```bash
+cd apps/web && pnpm test components/layout/TeamSwitcher.test.tsx
+cd tests/e2e && pnpm test team-switching.spec.ts
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/web/src/components/layout/TeamSwitcher.tsx` (new)
+- `/home/rpadron/proy/prosell-sass/apps/web/src/hooks/useTeams.ts` (new)
+- `/home/rpadron/proy/prosell-sass/apps/web/src/lib/api/teams.ts` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/infrastructure/api/routers/team_router.py` (verify endpoints)
+
+---
+
+### B2.4: Calendar Integration (12 hours)
+
+**Priority**: 🟡 CORE FEATURE - Dealer requirement
+
+**Objective**: Integrate real calendar library (FullCalendar or React-Big-Calendar)
+
+**Implementation**:
+
+1. **Library Selection**:
+```bash
+cd apps/web && pnpm add @fullcalendar/react @fullcalendar/daygrid @fullcalendar/timegrid @fullcalendar/interaction
+```
+
+2. **Calendar Component**:
+```typescript
+// apps/web/src/components/appointments/FullCalendarView.tsx
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+
+export function FullCalendarView() {
+  const { appointments, loading } = useAppointments();
+
+  return (
+    <FullCalendar
+      plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+      initialView="dayGridMonth"
+      headerToolbar={{
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      }}
+      events={appointments.map(apt => ({
+        title: apt.title,
+        start: apt.scheduled_at,
+        backgroundColor: apt.status === 'confirmed' ? 'green' : 'gray'
+      }))}
+      editable={true}
+      selectable={true}
+      select={(info) => onCreateAppointment(info)}
+      eventClick={(info) => onEditAppointment(info)}
+    />
+  );
+}
+```
+
+3. **Replace Basic Calendar**:
+```typescript
+// apps/web/src/components/appointments/CalendarView.tsx
+// Replace basic implementation with FullCalendarView
+```
+
+**Acceptance Criteria**:
+- [ ] FullCalendar integrated
+- [ ] Appointments display correctly
+- [ ] Month/Week/Day views work
+- [ ] Click on appointment opens detail modal
+- [ ] Click on empty slot opens create modal
+- [ ] Drag to reschedule works
+- [ ] Responsive design maintained
+
+**Verification**:
+```bash
+cd apps/web && pnpm test components/appointments/FullCalendarView.test.tsx
+cd tests/e2e && pnpm test dealer-calendar-full.spec.ts
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/web/package.json` (add dependencies)
+- `/home/rpadron/proy/prosell-sass/apps/web/src/components/appointments/FullCalendarView.tsx` (new)
+- `/home/rpadron/proy/prosell-sass/apps/web/src/components/appointments/CalendarView.tsx` (replace)
+
+---
+
+### B2.5: Role-Based Permission Tests (12 hours)
+
+**Priority**: 🟡 SECURITY - Authorization verification
+
+**Objective**: Add comprehensive tests for role-based permissions
+
+**Implementation**:
+
+1. **Permission Matrix**:
+```python
+# apps/api/tests/integration/security/test_role_based_permissions.py
+PERMISSION_MATRIX = {
+    'admin': ['create', 'read', 'update', 'delete', 'assign'],
+    'manager': ['create', 'read', 'update', 'assign'],
+    'vendedor': ['create', 'read', 'update'],
+    'viewer': ['read'],
+}
+
+RESOURCE_TYPES = ['leads', 'products', 'appointments', 'teams']
+```
+
+2. **Test Scenarios**:
+```python
+class TestRoleBasedPermissions:
+    @pytest.mark.parametrize("role,resource,action,expected", [
+        ('admin', 'leads', 'delete', 200),
+        ('manager', 'leads', 'delete', 403),
+        ('vendedor', 'leads', 'delete', 403),
+        ('manager', 'leads', 'assign', 200),
+        ('vendedor', 'leads', 'assign', 403),
+        # ... more combinations
+    ])
+    async def test_role_permission(self, role, resource, action, expected):
+        # Create user with role
+        # Attempt action
+        # Verify response code
+```
+
+3. **Test All Roles**:
+   - Admin: Full access
+   - Manager: Team management
+   - Vendedor: Own leads/appointments
+   - Viewer: Read-only
+
+**Acceptance Criteria**:
+- [ ] All role combinations tested
+- [ ] Permission matrix documented
+- [ ] Authorization verified at API layer
+- [ ] Cross-tenant access blocked
+- [ ] Role escalation blocked
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/integration/security/test_role_based_permissions.py -v
+# Verify: all permission tests pass
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/tests/integration/security/test_role_based_permissions.py` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/infrastructure/api/dependencies.py` (verify auth middleware)
+
+---
+
+### B2.6: API Contract Test Completion (8 hours)
+
+**Priority**: 🟡 CONTRACT COMPLIANCE - Frontend-backend alignment
+
+**Objective**: Complete API contract test coverage for all endpoints
+
+**Implementation**:
+
+1. **Identify Missing Coverage**:
+```bash
+cd apps/api/tests/contract
+find . -name "*_schema.py" | xargs grep -l "def test_"
+# Compare with apps/api/src/prosell/infrastructure/api/routers/*.py
+# Identify missing endpoints
+```
+
+2. **Add Contract Tests**:
+```python
+# apps/api/tests/contract/openapi/test_products_schema.py (extend)
+# apps/api/tests/contract/openapi/test_appointments_schema.py (extend)
+# apps/api/tests/contract/openapi/test_teams_schema.py (new)
+```
+
+3. **Verify Schemas**:
+   - Request DTOs match OpenAPI spec
+   - Response DTOs match OpenAPI spec
+   - Status codes are correct
+   - Validation rules documented
+
+**Acceptance Criteria**:
+- [ ] All API endpoints have contract tests
+- [ ] OpenAPI spec is up-to-date
+- [ ] Request/response schemas validated
+- [ ] Status codes verified
+- [ ] Validation rules tested
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/contract/ -v
+# Verify: all contract tests pass
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/tests/contract/openapi/` (extend)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/infrastructure/api/routers/` (verify)
+
+---
+
+### Checkpoint B2: Core Features Complete
+
+**Verification**:
+```bash
+# Facebook polling
+cd apps/api && uv run pytest tests/integration/tasks/test_poll_facebook_leads_task.py -v
+
+# VIN decode
+cd apps/api && uv run pytest tests/integration/services/test_vin_decode_integration.py -v
+
+# Team switching
+cd tests/e2e && pnpm test team-switching.spec.ts
+
+# Calendar
+cd tests/e2e && pnpm test dealer-calendar-full.spec.ts
+
+# RBAC
+cd apps/api && uv run pytest tests/integration/security/test_role_based_permissions.py -v
+
+# Contract tests
+cd apps/api && uv run pytest tests/contract/ -v
+```
+
+**Success Criteria**:
+- [ ] Facebook polling complete
+- [ ] VIN decode tested
+- [ ] Team switching UI works
+- [ ] Calendar integrated
+- [ ] RBAC verified
+- [ ] Contract tests complete
+- [ ] Overall readiness: 97%
+
+---
+
+### B3: UX Enhancements (1 week - 44 hours)
+
+**Goal**: Improve user experience to reach 99% completion
+
+---
+
+### B3.1: Multi-Image Gallery Implementation (12 hours)
+
+**Priority**: 🟢 UX IMPROVEMENT - Product management
+
+**Objective**: Implement multi-image gallery for products
+
+**Implementation**:
+
+1. **Gallery Component**:
+```typescript
+// apps/web/src/components/products/ProductImageGallery.tsx
+'use client';
+
+import { useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+export function ProductImageGallery({ images }: { images: string[] }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  return (
+    <div className="relative">
+      {/* Main image */}
+      <img src={images[currentIndex]} alt={`Product ${currentIndex + 1}`} />
+
+      {/* Navigation */}
+      <button onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}>
+        <ChevronLeft />
+      </button>
+      <button onClick={() => setCurrentIndex(Math.min(images.length - 1, currentIndex + 1))}>
+        <ChevronRight />
+      </button>
+
+      {/* Thumbnails */}
+      <div className="flex gap-2 mt-2">
+        {images.map((img, idx) => (
+          <img
+            key={idx}
+            src={img}
+            className={idx === currentIndex ? 'ring-2 ring-blue-500' : ''}
+            onClick={() => setCurrentIndex(idx)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+2. **Integration with VehicleForm**:
+```typescript
+// apps/web/src/components/forms/VehicleForm.tsx
+import { ProductImageGallery } from '../products/ProductImageGallery';
+
+{uploadedImages.length > 0 && (
+  <ProductImageGallery images={uploadedImages} />
+)}
+```
+
+**Acceptance Criteria**:
+- [ ] Gallery component created
+- [ ] Image navigation works (prev/next)
+- [ ] Thumbnail selection works
+- [ ] Integrated with VehicleForm
+- [ ] Keyboard navigation supported
+- [ ] Responsive design
+
+**Verification**:
+```bash
+cd apps/web && pnpm test components/products/ProductImageGallery.test.tsx
+cd tests/e2e && pnpm test product-image-gallery.spec.ts
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/web/src/components/products/ProductImageGallery.tsx` (new)
+- `/home/rpadron/proy/prosell-sass/apps/web/src/components/forms/VehicleForm.tsx` (integrate)
+
+---
+
+### B3.2: Image Optimization Service (8 hours)
+
+**Priority**: 🟢 PERFORMANCE - Faster uploads
+
+**Objective**: Implement image optimization before upload
+
+**Implementation**:
+
+1. **Optimization Service**:
+```python
+# apps/api/src/prosell/infrastructure/services/image_optimizer.py
+from PIL import Image
+import io
+
+class ImageOptimizer:
+    def optimize(self, image_data: bytes) -> bytes:
+        img = Image.open(io.BytesIO(image_data))
+
+        # Resize to max 1920x1080
+        img.thumbnail((1920, 1080))
+
+        # Convert to RGB (remove alpha for JPEG)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            img = img.convert('RGB')
+
+        # Compress
+        output = io.BytesIO()
+        img.save(output, format='JPEG', quality=85, optimize=True)
+
+        return output.getvalue()
+```
+
+2. **Integration with Upload Flow**:
+```python
+# apps/api/src/prosell/infrastructure/api/routers/image_router.py
+@router.post("/optimize")
+async def optimize_image(file: UploadFile):
+    image_data = await file.read()
+    optimizer = ImageOptimizer()
+    optimized = optimizer.optimize(image_data)
+    return Response(content=optimized, media_type="image/jpeg")
+```
+
+3. **Frontend Integration**:
+```typescript
+// apps/web/src/components/upload/ImageDropzone.tsx
+// Optimize before upload
+const optimizedFile = await optimizeImage(file);
+// Then upload optimized version
+```
+
+**Acceptance Criteria**:
+- [ ] Images resized to max 1920x1080
+- [ ] JPEG compression at 85% quality
+- [ ] EXIF data stripped (privacy)
+- [ ] Alpha channel removed
+- [ ] File size reduced >50%
+- [ ] Optimization tests pass
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/unit/services/test_image_optimizer.py -v
+# Test with real images: verify size reduction
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/infrastructure/services/image_optimizer.py` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/infrastructure/api/routers/image_router.py` (extend)
+
+---
+
+### B3.3: Appointment Email Notifications (4 hours)
+
+**Priority**: 🟢 USER COMMUNICATION - Keep users informed
+
+**Objective**: Wire up email notifications to appointment use cases
+
+**Implementation**:
+
+1. **Review Existing Service**:
+```python
+# apps/api/src/prosell/infrastructure/services/email_service.py
+# Verify: send_appointment_confirmation() exists
+# Verify: send_appointment_cancellation() exists
+```
+
+2. **Wire Up to Use Cases**:
+```python
+# apps/api/src/prosell/application/use_cases/appointment/confirm_appointment.py
+async def execute(self, appointment_id: UUID) -> Appointment:
+    # ... existing logic ...
+
+    # Send email notification
+    await self.email_service.send_appointment_confirmation(
+        to=appointment.buyer_email,
+        appointment=appointment
+    )
+```
+
+3. **Test Email Sending**:
+```python
+# apps/api/tests/integration/use_cases/test_confirm_appointment_use_case.py
+async def test_confirmation_email_sent(self, mock_email_service):
+    # Execute use case
+    result = await self.use_case.execute(...)
+
+    # Verify email sent
+    mock_email_service.send_appointment_confirmation.assert_called_once()
+```
+
+**Acceptance Criteria**:
+- [ ] Confirmation emails sent
+- [ ] Cancellation emails sent
+- [ ] Email templates verified
+- [ ] Integration tests pass
+- [ ] No emails sent in test environment
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/integration/use_cases/test_confirm_appointment_use_case.py -v
+# Verify: email service called
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/appointment/confirm_appointment.py` (wire email)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/appointment/cancel_appointment.py` (wire email)
+
+---
+
+### B3.4: Product Edit Mode Implementation (8 hours)
+
+**Priority**: 🟢 USABILITY - Edit existing products
+
+**Objective**: Implement edit mode in VehicleForm (TODO at line 440)
+
+**Implementation**:
+
+1. **Review TODO**:
+```typescript
+// apps/web/src/components/forms/VehicleForm.tsx (line 440)
+// TODO: Implement edit mode - load existing product data
+```
+
+2. **Edit Mode Implementation**:
+```typescript
+// apps/web/src/components/forms/VehicleForm.tsx
+interface VehicleFormProps {
+  mode?: 'create' | 'edit';
+  productId?: string; // For edit mode
+}
+
+export function VehicleForm({ mode = 'create', productId }: VehicleFormProps) {
+  const { data: product, isLoading } = useProduct(productId, mode === 'edit');
+
+  // Load product data for edit mode
+  useEffect(() => {
+    if (mode === 'edit' && product) {
+      form.setValue('title', product.title);
+      form.setValue('price', product.price);
+      form.setValue('category_id', product.category_id);
+      // ... load other fields
+    }
+  }, [product, mode]);
+
+  return (
+    <Form {...form}>
+      {/* Form fields */}
+    </Form>
+  );
+}
+```
+
+3. **API Integration**:
+```typescript
+// apps/web/src/lib/api/products.ts
+export async function getProduct(id: string): Promise<Product>
+export async function updateProduct(id: string, data: UpdateProductRequest): Promise<Product>
+```
+
+**Acceptance Criteria**:
+- [ ] Edit mode loads product data
+- [ ] Form pre-fills with existing values
+- [ ] Update endpoint called on submit
+- [ ] Validation works in edit mode
+- [ ] Unit tests for edit mode
+- [ ] E2E test for edit flow
+
+**Verification**:
+```bash
+cd apps/web && pnpm test components/forms/VehicleForm.test.tsx
+cd tests/e2e && pnpm test product-edit-mode.spec.ts
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/web/src/components/forms/VehicleForm.tsx` (line 440 - remove TODO)
+- `/home/rpadron/proy/prosell-sass/apps/web/src/lib/api/products.ts` (add getProduct)
+
+---
+
+### B3.5: CSV Parser for Bulk Upload (12 hours)
+
+**Priority**: 🟢 EFFICIENCY - Bulk operations
+
+**Objective**: Implement CSV parser for bulk product upload
+
+**Implementation**:
+
+1. **CSV Parser Service**:
+```python
+# apps/api/src/prosell/infrastructure/services/csv_parser.py
+import csv
+from io import StringIO
+
+class CSVProductParser:
+    def parse(self, csv_data: str) -> List[CreateProductRequest]:
+        """Parse CSV data and return list of product creation requests"""
+        reader = csv.DictReader(StringIO(csv_data))
+
+        products = []
+        for row in reader:
+            # Validate required columns
+            if not all(k in row for k in ['vin', 'title', 'price', 'category_id']):
+                raise ValueError("Missing required columns")
+
+            # Parse VIN
+            vehicle = self.parse_vin(row['vin'])
+
+            # Create request
+            product = CreateProductRequest(
+                title=row['title'],
+                price=float(row['price']),
+                category_id=row['category_id'],
+                vehicle=vehicle,
+                # ... other fields
+            )
+            products.append(product)
+
+        return products
+```
+
+2. **Bulk Upload Use Case**:
+```python
+# apps/api/src/prosell/application/use_cases/product/bulk_upload_products.py
+class BulkUploadProductsUseCase:
+    async def execute(self, csv_file: UploadFile, tenant_id: str) -> BulkUploadResult:
+        # Parse CSV
+        csv_data = await csv_file.read()
+        parser = CSVProductParser()
+        products = parser.parse(csv_data.decode('utf-8'))
+
+        # Create products
+        results = []
+        for product in products:
+            try:
+                created = await self.create_product.execute(product, tenant_id)
+                results.append({'vin': product.vehicle.vin, 'status': 'created'})
+            except Exception as e:
+                results.append({'vin': product.vehicle.vin, 'status': 'failed', 'error': str(e)})
+
+        return BulkUploadResult(
+            total=len(products),
+            successful=len([r for r in results if r['status'] == 'created']),
+            failed=len([r for r in results if r['status'] == 'failed']),
+            results=results
+        )
+```
+
+**Acceptance Criteria**:
+- [ ] CSV parser handles standard format
+- [ ] Validation errors reported clearly
+- [ ] Bulk upload creates multiple products
+- [ ] Partial failures handled gracefully
+- [ ] Result report shows success/failure counts
+- [ ] Integration tests pass
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/integration/use_cases/test_bulk_upload_products.py -v
+# Test with sample CSV file
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/infrastructure/services/csv_parser.py` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/product/bulk_upload_products.py` (implement)
+
+---
+
+### Checkpoint B3: UX Enhancements Complete
+
+**Verification**:
+```bash
+# Image gallery
+cd tests/e2e && pnpm test product-image-gallery.spec.ts
+
+# Image optimization
+cd apps/api && uv run pytest tests/unit/services/test_image_optimizer.py -v
+
+# Email notifications
+cd apps/api && uv run pytest tests/integration/use_cases/test_confirm_appointment_use_case.py -v
+
+# Edit mode
+cd tests/e2e && pnpm test product-edit-mode.spec.ts
+
+# CSV upload
+cd apps/api && uv run pytest tests/integration/use_cases/test_bulk_upload_products.py -v
+```
+
+**Success Criteria**:
+- [ ] Multi-image gallery works
+- [ ] Images optimized
+- [ ] Email notifications sent
+- [ ] Edit mode functional
+- [ ] CSV bulk upload works
+- [ ] Overall readiness: 99%
+
+---
+
+### B4: Advanced Features (1 week - 42 hours)
+
+**Goal**: Implement advanced collaboration features to reach 100% completion
+
+---
+
+### B4.1: Team Invitation System (16 hours)
+
+**Priority**: ⚪ COLLABORATION - Team management
+
+**Objective**: Implement email-based team invitation system
+
+**Implementation**:
+
+1. **Domain Entities**:
+```python
+# apps/api/src/prosell/domain/entities/team_invitation.py
+class TeamInvitation(AggregateRoot):
+    id: UUID
+    team_id: UUID
+    email: str
+    role: Role
+    token: str
+    expires_at: datetime
+    accepted_at: Optional[datetime]
+    created_by: UUID
+    tenant_id: UUID
+```
+
+2. **Use Cases**:
+```python
+# apps/api/src/prosell/application/use_cases/team/invite_member.py
+class InviteTeamMemberUseCase:
+    async def execute(self, team_id: UUID, email: str, role: Role) -> TeamInvitation:
+        # Create invitation
+        invitation = TeamInvitation(
+            team_id=team_id,
+            email=email,
+            role=role,
+            token=generate_token(),
+            expires_at=now() + timedelta(days=7)
+        )
+
+        # Send invitation email
+        await self.email_service.send_team_invitation(
+            to=email,
+            team_name=team.name,
+            invitation_url=f"{FRONTEND_URL}/invite/{invitation.token}"
+        )
+
+        return invitation
+
+# apps/api/src/prosell/application/use_cases/team/accept_invitation.py
+class AcceptTeamInvitationUseCase:
+    async def execute(self, token: str, user_id: UUID) -> None:
+        # Validate token
+        invitation = await self.invitation_repo.get_by_token(token)
+        if not invitation or invitation.expires_at < now():
+            raise InvalidInvitationToken()
+
+        # Add user to team
+        await self.team_service.add_member(invitation.team_id, user_id, invitation.role)
+
+        # Mark invitation as accepted
+        invitation.accept(user_id)
+```
+
+3. **API Endpoints**:
+```python
+# apps/api/src/prosell/infrastructure/api/routers/team_router.py
+@router.post("/teams/{team_id}/invite")
+async def invite_member(request: InviteMemberRequest)
+
+@router.post("/teams/accept-invitation/{token}")
+async def accept_invitation(token: str)
+```
+
+4. **Frontend Flow**:
+```typescript
+// apps/web/src/app/invite/[token]/page.tsx
+// Accept invitation page
+```
+
+**Acceptance Criteria**:
+- [ ] Team invitations created via API
+- [ ] Invitation emails sent
+- [ ] Users can accept invitations
+- [ ] Invitations expire after 7 days
+- [ ] Already member validation
+- [ ] Unit tests for use cases
+- [ ] Integration tests for flow
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/unit/use_cases/team/test_invite_member.py -v
+cd apps/api && uv run pytest tests/integration/team/test_invitation_flow.py -v
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/domain/entities/team_invitation.py` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/team/invite_member.py` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/team/accept_invitation.py` (new)
+
+---
+
+### B4.2: Appointment Conflict Detection (6 hours)
+
+**Priority**: ⚪ SMART SCHEDULING - Prevent conflicts
+
+**Objective**: Detect appointment scheduling conflicts
+
+**Implementation**:
+
+1. **Conflict Detection Logic**:
+```python
+# apps/api/src/prosell/domain/services/appointment_conflict_detector.py
+class AppointmentConflictDetector:
+    def detect_conflicts(self, appointment: Appointment, existing: List[Appointment]) -> List[Conflict]:
+        conflicts = []
+
+        for existing_app in existing:
+            # Check time overlap
+            if self.times_overlap(appointment.scheduled_at, appointment.duration, existing_app):
+                # Check same dealer
+                if appointment.dealer_id == existing_app.dealer_id:
+                    conflicts.append(Conflict(
+                        type='dealer_unavailable',
+                        existing_appointment=existing_app,
+                        message='Dealer already has appointment at this time'
+                    ))
+
+        return conflicts
+
+    def times_overlap(self, start1: datetime, duration: timedelta, start2: datetime, end2: datetime) -> bool:
+        end1 = start1 + duration
+        return start1 < end2 and start2 < end1
+```
+
+2. **Use Case Integration**:
+```python
+# apps/api/src/prosell/application/use_cases/appointment/create_appointment.py
+async def execute(self, request: CreateAppointmentRequest) -> Appointment:
+    # Check for conflicts
+    dealer_appointments = await self.appointment_repo.list_by_dealer_and_time_range(...)
+    conflicts = self.conflict_detector.detect_conflicts(appointment, dealer_appointments)
+
+    if conflicts:
+        raise AppointmentConflictError(conflicts)
+
+    # Create appointment
+    return await self.appointment_repo.create(appointment)
+```
+
+**Acceptance Criteria**:
+- [ ] Time overlap detection works
+- [ ] Same dealer conflicts detected
+- [ ] Conflicts returned to user
+- [ ] User can override with confirmation
+- [ ] Unit tests for detection logic
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/unit/services/test_appointment_conflict_detector.py -v
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/domain/services/appointment_conflict_detector.py` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/appointment/create_appointment.py` (integrate)
+
+---
+
+### B4.3: Lead Assignment Rules Engine (8 hours)
+
+**Priority**: ⚪ AUTOMATION - Smart assignment
+
+**Objective**: Implement automatic lead assignment rules
+
+**Implementation**:
+
+1. **Rules Engine**:
+```python
+# apps/api/src/prosell/domain/services/lead_assignment_rules.py
+class LeadAssignmentRulesEngine:
+    def assign_lead(self, lead: Lead, team: Team) -> UUID:
+        """Assign lead to vendedor based on rules"""
+
+        # Rule 1: Round-robin (default)
+        if not team.assignment_rules:
+            return self.round_robin_assign(team)
+
+        # Rule 2: Vehicle owner assignment
+        if lead.vehicle_id:
+            vehicle = self.vehicle_repo.get_by_id(lead.vehicle_id)
+            if vehicle and vehicle.created_by:
+                return vehicle.created_by
+
+        # Rule 3: Workload balancing
+        vendedores = self.team_service.get_vendedores(team.id)
+        return self.least_loaded_assign(vendedores)
+
+        # Rule 4: Geographic proximity (if location data available)
+        # Rule 5: Skill-based assignment (if skills tracked)
+```
+
+2. **Use Case Integration**:
+```python
+# apps/api/src/prosell/application/use_cases/lead/create_lead.py
+async def execute(self, request: CreateLeadRequest) -> Lead:
+    # Create lead
+    lead = Lead(...)
+
+    # Auto-assign based on rules
+    assigned_vendedor_id = self.assignment_rules.assign_lead(lead, team)
+    lead.assigned_to = assigned_vendedor_id
+
+    return await self.lead_repo.create(lead)
+```
+
+**Acceptance Criteria**:
+- [ ] Round-robin assignment works
+- [ ] Vehicle owner assignment works
+- [ ] Workload balancing works
+- [ ] Rules are configurable
+- [ ] Unit tests for each rule
+- [ ] Integration test for flow
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/unit/services/test_lead_assignment_rules.py -v
+cd apps/api && uv run pytest tests/integration/use_cases/test_auto_assign_lead.py -v
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/domain/services/lead_assignment_rules.py` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/lead/create_lead.py` (integrate)
+
+---
+
+### B4.4: Lead Audit Trail UI (6 hours)
+
+**Priority**: ⚪ COMPLIANCE - Transparency
+
+**Objective**: Display lead audit trail in UI
+
+**Implementation**:
+
+1. **API Integration**:
+```typescript
+// apps/web/src/lib/api/leads.ts
+export async function getLeadAuditTrail(leadId: string): Promise<AuditLog[]>
+```
+
+2. **Audit Trail Component**:
+```typescript
+// apps/web/src/components/leads/LeadAuditTrail.tsx
+'use client';
+
+import { useLeadAuditTrail } from '@/hooks/useLeadAuditTrail';
+
+export function LeadAuditTrail({ leadId }: { leadId: string }) {
+  const { auditTrail, isLoading } = useLeadAuditTrail(leadId);
+
+  return (
+    <div className="audit-trail">
+      <h3>Audit Trail</h3>
+      {isLoading ? (
+        <Spinner />
+      ) : (
+        <Timeline>
+          {auditTrail.map(log => (
+            <TimelineItem key={log.id}>
+              <TimelineDate>{log.changed_at}</TimelineDate>
+              <TimelineUser>{log.changed_by}</TimelineUser>
+              <TimelineChange>
+                {log.old_status} → {log.new_status}
+              </TimelineChange>
+              <TimelineReason>{log.reason}</TimelineReason>
+            </TimelineItem>
+          ))}
+        </Timeline>
+      )}
+    </div>
+  );
+}
+```
+
+3. **Integration with Lead Detail**:
+```typescript
+// apps/web/src/app/vendedor/leads/[id]/page.tsx
+import { LeadAuditTrail } from '@/components/leads/LeadAuditTrail';
+
+export default function LeadDetailPage({ params }) {
+  return (
+    <div>
+      {/* Existing lead detail */}
+      <LeadAuditTrail leadId={params.id} />
+    </div>
+  );
+}
+```
+
+**Acceptance Criteria**:
+- [ ] Audit trail displays chronologically
+- [ ] Shows status changes
+- [ ] Shows who made changes
+- [ ] Shows reasons for changes
+- [ ] Unit tests for component
+- [ ] E2E test for display
+
+**Verification**:
+```bash
+cd apps/web && pnpm test components/leads/LeadAuditTrail.test.tsx
+cd tests/e2e && pnpm test lead-audit-trail.spec.ts
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/web/src/components/leads/LeadAuditTrail.tsx` (new)
+- `/home/rpadron/proy/prosell-sass/apps/web/src/hooks/useLeadAuditTrail.ts` (new)
+
+---
+
+### B4.5: 2FA Backup Code Regeneration (6 hours)
+
+**Priority**: ⚪ SECURITY - Account recovery
+
+**Objective**: Implement 2FA backup code regeneration
+
+**Implementation**:
+
+1. **Use Case**:
+```python
+# apps/api/src/prosell/application/use_cases/auth/regenerate_backup_codes.py
+class RegenerateBackupCodesUseCase:
+    async def execute(self, user_id: UUID) -> List[str]:
+        # Get user's 2FA secret
+        totp_secret = await self.user_repo.get_totp_secret(user_id)
+
+        # Generate new backup codes
+        backup_codes = generate_backup_codes(totp_secret)  # 10 codes
+
+        # Hash and store
+        for code in backup_codes:
+            hashed = hash_code(code)
+            await self.user_repo.add_backup_code(user_id, hashed)
+
+        # Return plaintext codes (show once to user)
+        return backup_codes
+```
+
+2. **API Endpoint**:
+```python
+# apps/api/src/prosell/infrastructure/api/routers/auth_router.py
+@router.post("/auth/2fa/regenerate-backup-codes")
+async def regenerate_backup_codes(user: CurrentUser):
+    codes = await self.regenerate_backup_codes.execute(user.id)
+    return {'backup_codes': codes, 'show_once': True}
+```
+
+3. **Frontend Display**:
+```typescript
+// apps/web/src/components/auth/BackupCodesDisplay.tsx
+export function BackupCodesDisplay() {
+  const { regenerate, codes } = useBackupCodes();
+
+  return (
+    <Alert>
+      <AlertTitle>Save these codes</AlertTitle>
+      <AlertDescription>
+        These codes will only be shown once. Save them securely.
+      </AlertDescription>
+      <ul>
+        {codes.map(code => (
+          <li key={code}>{code}</li>
+        ))}
+      </ul>
+    </Alert>
+  );
+}
+```
+
+**Acceptance Criteria**:
+- [ ] Backup codes can be regenerated
+- [ ] Old codes invalidated
+- [ ] New codes shown once
+- [ ] Codes are securely hashed
+- [ ] Unit tests for use case
+- [ ] Integration test for flow
+
+**Verification**:
+```bash
+cd apps/api && uv run pytest tests/unit/use_cases/auth/test_regenerate_backup_codes.py -v
+```
+
+**Files to Check**:
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/auth/regenerate_backup_codes.py` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/infrastructure/api/routers/auth_router.py` (extend)
+
+---
+
+### Checkpoint B4: Advanced Features Complete
+
+**Verification**:
+```bash
+# Team invitations
+cd apps/api && uv run pytest tests/integration/team/test_invitation_flow.py -v
+
+# Conflict detection
+cd apps/api && uv run pytest tests/unit/services/test_appointment_conflict_detector.py -v
+
+# Assignment rules
+cd apps/api && uv run pytest tests/unit/services/test_lead_assignment_rules.py -v
+
+# Audit trail
+cd tests/e2e && pnpm test lead-audit-trail.spec.ts
+
+# Backup codes
+cd apps/api && uv run pytest tests/unit/use_cases/auth/test_regenerate_backup_codes.py -v
+```
+
+**Success Criteria**:
+- [ ] Team invitation system works
+- [ ] Appointment conflicts detected
+- [ ] Auto-assignment rules work
+- [ ] Audit trail UI displays
+- [ ] Backup codes regeneratable
+- [ ] Overall readiness: 100%
+
+---
+
+## Success Criteria
+
+### Phase Completion Complete (100%)
+- [ ] All 4 sprints (B1 through B4) implemented
+- [ ] All modules at 100% completion
+- [ ] All security tests passing
+- [ ] All E2E tests passing
+- [ ] All UX enhancements deployed
+- [ ] All advanced features functional
+
+### Module Completion Targets
+
+#### Auth (95% → 100%)
+- [ ] Password reset flow complete
+- [ ] Session management tested
+- [ ] 2FA backup codes regeneratable
+- [ ] OAuth session handling verified
+
+#### Organizations & Teams (90% → 100%)
+- [ ] Team switching UI implemented
+- [ ] Role-based permissions tested
+- [ ] Team invitation system functional
+- [ ] Tenant isolation verified
+
+#### Catalog C3 (95% → 100%)
+- [ ] VIN decode integration tested
+- [ ] CSV parser implemented
+- [ ] Image gallery functional
+- [ ] Edit mode complete
+
+#### Image Upload (85% → 100%)
+- [ ] Image optimization implemented
+- [ ] Multi-image upload working
+- [ ] Upload progress tracked
+- [ ] Image deletion functional
+
+#### Leads (90% → 100%)
+- [ ] Duplicate detection implemented
+- [ ] Webhook polling complete
+- [ ] Assignment rules working
+- [ ] Audit trail UI displayed
+
+#### Appointments (85% → 100%)
+- [ ] Calendar integration complete
+- [ ] Email notifications wired
+- [ ] Conflict detection working
+- [ ] Recurring appointments supported (if in scope)
+
+#### E2E / QA (80% → 100%)
+- [ ] Integrated flow validated
+- [ ] Smoke test suite expanded
+- [ ] Contract tests complete
+- [ ] Flaky tests eliminated
+
+---
+
+## Notes
+
+- **Phase B1-B4 follow priority order**: Security → Core → UX → Advanced
+- **Parallel execution** is encouraged where dependency graph allows
+- **Test-driven development** is required for all new code
+- **E2E tests** are mandatory for all user-facing features
+- **CI/CD gates** will enforce all critical tests pass before merge
+
+---
+
+**Document Status**: Active — Ready for execution
+**Next Action**: Execute Sprint B1 (Security & Release Readiness)
+**Owner**: Engineering Team
+**Stakeholders**: Product, QA, DevOps, Security
+
+**Estimated Total Effort**: 284 hours (35.5 business days ≈ 7 weeks with 1 developer, 4-5 weeks with 2 developers)

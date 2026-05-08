@@ -369,3 +369,70 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             reason=model.reason,
             created_at=model.created_at,
         )
+
+    async def find_by_email(
+        self,
+        tenant_id: UUID,
+        email: str,
+    ) -> list[Lead]:
+        """Find leads by buyer email (exact match)."""
+        from prosell.infrastructure.orm.models.lead import LeadModel
+
+        stmt = (
+            select(LeadModel)
+            .where(LeadModel.tenant_id == tenant_id)
+            .where(LeadModel.buyer_email == email)
+            .order_by(LeadModel.created_at.desc())
+        )
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(model) for model in models]
+
+    async def find_by_phone(
+        self,
+        tenant_id: UUID,
+        phone: str,
+    ) -> list[Lead]:
+        """Find leads by buyer phone (normalized match)."""
+        from prosell.infrastructure.orm.models.lead import LeadModel
+
+        stmt = (
+            select(LeadModel)
+            .where(LeadModel.tenant_id == tenant_id)
+            .where(LeadModel.buyer_phone == phone)
+            .order_by(LeadModel.created_at.desc())
+        )
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(model) for model in models]
+
+    async def find_potential_duplicates(
+        self,
+        tenant_id: UUID,
+        email: str | None = None,
+        phone: str | None = None,
+    ) -> list[Lead]:
+        """Find potential duplicate leads by email or phone."""
+        from prosell.infrastructure.orm.models.lead import LeadModel
+        from sqlalchemy import or_
+
+        conditions = []
+        if email:
+            conditions.append(LeadModel.buyer_email == email)
+        if phone:
+            conditions.append(LeadModel.buyer_phone == phone)
+
+        if not conditions:
+            return []
+
+        stmt = (
+            select(LeadModel)
+            .where(LeadModel.tenant_id == tenant_id)
+            .where(or_(*conditions))
+            .order_by(LeadModel.created_at.desc())
+        )
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(model) for model in models]
+            created_at=model.created_at,
+        )

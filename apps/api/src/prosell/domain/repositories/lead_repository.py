@@ -79,6 +79,34 @@ class AbstractLeadRepository(ABC):
         pass
 
     @abstractmethod
+    async def find_by_email(
+        self,
+        tenant_id: UUID,
+        email: str,
+    ) -> list[Lead]:
+        """Find leads by buyer email (exact match)."""
+        pass
+
+    @abstractmethod
+    async def find_by_phone(
+        self,
+        tenant_id: UUID,
+        phone: str,
+    ) -> list[Lead]:
+        """Find leads by buyer phone (normalized match)."""
+        pass
+
+    @abstractmethod
+    async def find_potential_duplicates(
+        self,
+        tenant_id: UUID,
+        email: str | None = None,
+        phone: str | None = None,
+    ) -> list[Lead]:
+        """Find potential duplicate leads by email or phone."""
+        pass
+
+    @abstractmethod
     async def assign_to_vendedor(
         self,
         lead_id: UUID,
