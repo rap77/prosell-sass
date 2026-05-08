@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 
-from prosell.application.dto.publisher.publish import PublishVehicleRequest
+from prosell.application.dto.publisher.publish import PublishProductRequest
 from prosell.application.use_cases.publisher.publish_vehicle import PublishVehicleUseCase
 from prosell.domain.entities.publication import Publication, PublicationStatus
 
@@ -39,7 +39,7 @@ def mock_publication_repo_with_publication(mock_publication_repo):
 async def test_publish_vehicle_creates_publication_record(mock_publication_repo_with_publication):
     """PublishVehicleUseCase creates a Publication with status PENDING then dispatches task."""
     with patch(
-        "prosell.infrastructure.tasks.use_cases.publish_vehicle_task.publish_vehicle_task"
+        "prosell.infrastructure.tasks.use_cases.publish_product_task.publish_product_task"
     ) as mock_task:
         mock_task.kiq = AsyncMock()
 
@@ -47,7 +47,7 @@ async def test_publish_vehicle_creates_publication_record(mock_publication_repo_
             publication_repo=mock_publication_repo_with_publication,
             seller_user_id=uuid4(),
         )
-        request = PublishVehicleRequest(
+        request = PublishProductRequest(
             product_id=uuid4(),
             tenant_id=uuid4(),
             facebook_page_id=uuid4(),
@@ -70,7 +70,7 @@ async def test_publish_vehicle_dispatches_task_with_publication_id(
     created_pub = mock_publication_repo_with_publication.create.return_value
 
     with patch(
-        "prosell.infrastructure.tasks.use_cases.publish_vehicle_task.publish_vehicle_task"
+        "prosell.infrastructure.tasks.use_cases.publish_product_task.publish_product_task"
     ) as mock_task:
         mock_task.kiq = AsyncMock()
 
@@ -78,7 +78,7 @@ async def test_publish_vehicle_dispatches_task_with_publication_id(
             publication_repo=mock_publication_repo_with_publication,
             seller_user_id=uuid4(),
         )
-        request = PublishVehicleRequest(
+        request = PublishProductRequest(
             product_id=uuid4(),
             tenant_id=uuid4(),
             facebook_page_id=uuid4(),

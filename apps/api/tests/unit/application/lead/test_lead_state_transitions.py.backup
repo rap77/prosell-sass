@@ -46,7 +46,7 @@ def make_lead(
         buyer_name="Juan Pérez",
         buyer_email="juan@example.com",
         buyer_phone="+59899000000",
-        product_id=uuid4(),
+        vehicle_id=uuid4(),
         vendedor_id=vendedor_id or uuid4(),
         message="Interested",
         source="manual",
@@ -79,12 +79,6 @@ def make_user(
     )
 
 
-def make_lead_with_product(lead: Lead):
-    """Create a LeadWithProduct named tuple for testing."""
-    from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
-    return LeadWithProduct(lead=lead, product_model=None)
-
-
 # =============================================================================
 # CreateLeadUseCase unit tests
 # =============================================================================
@@ -97,48 +91,57 @@ class TestCreateLeadUseCase:
     def repo(self):
         """Mock lead repository."""
         r = AsyncMock()
-        r.get_by_buyer_and_product = AsyncMock(return_value=None)
+        r.get_by_buyer_and_vehicle = AsyncMock(return_value=None)
         r.create = AsyncMock(side_effect=lambda lead: lead)
         return r
 
     @pytest.mark.asyncio
     async def test_create_lead_success(self, repo):
         """Should create lead when no duplicate exists."""
-        tenant_id = uuid4()
-        lead = make_lead(tenant_id=tenant_id)
-        request = CreateLeadRequest(
-            buyer_name=lead.buyer_name,
-            buyer_email=lead.buyer_email,
-            buyer_phone=lead.buyer_phone,
-            product_id=lead.product_id,
-            vendedor_id=lead.vendedor_id,
-            message=lead.message,
-        )
-
         use_case = CreateLeadUseCase(repo)
+        request = CreateLeadRequest(buyer_name="Ana García", buyer_email="ana@example.com")
+        tenant_id = uuid4()
+
         result = await use_case.execute(request, tenant_id)
 
-        assert result.buyer_name == "Juan Pérez"
+        assert result.buyer_name == "Ana García"
+        assert result.buyer_email == "ana@example.com"
         assert result.status == LeadStatus.NEW
+        assert result.tenant_id == tenant_id
+        repo.create.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_create_lead_duplicate_raises(self, repo):
-        """Should raise exception when duplicate lead exists."""
-        existing_lead = make_lead()
-        repo.get_by_buyer_and_product = AsyncMock(return_value=existing_lead)
+        """Should raise DuplicateLeadException when duplicate detected."""
+        existing = make_lead()
+        repo.get_by_buyer_and_vehicle = AsyncMock(return_value=existing)
 
         use_case = CreateLeadUseCase(repo)
-        request = CreateLeadRequest(
-            buyer_name="Juan Pérez",
-            buyer_email="juan@example.com",
-            buyer_phone="+59899000000",
-            product_id=existing_lead.product_id,
-            vendedor_id=existing_lead.vendedor_id,
-            message="Interested",
-        )
+        request = CreateLeadRequest(buyer_name="Ana García", buyer_email="ana@example.com")
 
         with pytest.raises(DuplicateLeadException):
             await use_case.execute(request, uuid4())
+
+        repo.create.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_create_lead_source_defaults_to_manual(self, repo):
+        """Source should default to 'manual' when not specified."""
+        use_case = CreateLeadUseCase(repo)
+        request = CreateLeadRequest(buyer_name="Carlos")
+        result = await use_case.execute(request, uuid4())
+
+        assert result.source == "manual"
+
+    @pytest.mark.asyncio
+    async def test_create_lead_tenant_id_is_from_context(self, repo):
+        """tenant_id must come from the JWT context, not the request."""
+        use_case = CreateLeadUseCase(repo)
+        tenant_id = uuid4()
+        request = CreateLeadRequest(buyer_name="Carlos")
+        result = await use_case.execute(request, tenant_id)
+
+        assert result.tenant_id == tenant_id
 
 
 # =============================================================================
@@ -149,51 +152,38 @@ class TestCreateLeadUseCase:
 class TestUpdateLeadStatusUseCase:
     """Unit tests for UpdateLeadStatusUseCase."""
 
+    def _make_repo(self, lead: Lead | None = None) -> AsyncMock:
+        r = AsyncMock()
+        r.get_by_id = AsyncMock(return_value=lead)
+        r.update_status = AsyncMock(side_effect=lambda lead_id, tenant_id, new_status, **kw: Lead(
+            id=lead_id,
+            tenant_id=tenant_id,
+            buyer_name="Test",
+            status=new_status,
+            source="manual",
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        ) if lead else None)
+        return r
+
     @pytest.mark.asyncio
-    async def test_valid_status_transition_succeeds(self):
-        """Should allow valid status transitions."""
-        from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
+    async def test_update_status_success(self):
+        """Should update status for valid transition."""
         lead = make_lead(status=LeadStatus.NEW)
         repo = AsyncMock()
-        repo.get_by_id = AsyncMock(return_value=LeadWithProduct(lead=lead, product_model=None))
-        repo.update_status = AsyncMock(return_value=Lead(
-            id=lead.id,
-            tenant_id=lead.tenant_id,
-            buyer_name=lead.buyer_name,
-            buyer_email=lead.buyer_email,
-            buyer_phone=lead.buyer_phone,
-            product_id=lead.product_id,
-            vendedor_id=lead.vendedor_id,
-            message=lead.message,
-            source=lead.source,
-            status=LeadStatus.CONTACTED,
-            created_at=lead.created_at,
-            updated_at=lead.updated_at,
-        ))
+        repo.get_by_id = AsyncMock(return_value=lead)
+        repo.update_status = AsyncMock(return_value=make_lead(status=LeadStatus.CONTACTED))
 
         use_case = UpdateLeadStatusUseCase(repo)
         request = UpdateLeadStatusRequest(new_status=LeadStatus.CONTACTED)
         result = await use_case.execute(lead.id, request, lead.tenant_id)
 
         assert result.status == LeadStatus.CONTACTED
+        repo.update_status.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_invalid_status_transition_raises(self):
-        """Should raise exception for invalid transitions."""
-        from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
-        lead = make_lead(status=LeadStatus.LOST)
-        repo = AsyncMock()
-        repo.get_by_id = AsyncMock(return_value=LeadWithProduct(lead=lead, product_model=None))
-
-        use_case = UpdateLeadStatusUseCase(repo)
-        request = UpdateLeadStatusRequest(new_status=LeadStatus.NEW)
-
-        with pytest.raises(LeadStateTransitionException):
-            await use_case.execute(lead.id, request, lead.tenant_id)
-
-    @pytest.mark.asyncio
-    async def test_update_nonexistent_lead_raises(self):
-        """Should raise exception when lead not found."""
+    async def test_update_status_not_found_raises(self):
+        """Should raise LeadNotFoundException when lead doesn't exist."""
         repo = AsyncMock()
         repo.get_by_id = AsyncMock(return_value=None)
 
@@ -202,6 +192,38 @@ class TestUpdateLeadStatusUseCase:
 
         with pytest.raises(LeadNotFoundException):
             await use_case.execute(uuid4(), request, uuid4())
+
+        repo.update_status.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_update_status_invalid_transition_raises(self):
+        """Should raise LeadStateTransitionException for invalid transition."""
+        lead = make_lead(status=LeadStatus.NEW)
+        repo = AsyncMock()
+        repo.get_by_id = AsyncMock(return_value=lead)
+
+        use_case = UpdateLeadStatusUseCase(repo)
+        request = UpdateLeadStatusRequest(new_status=LeadStatus.APPOINTMENT_SET)
+
+        with pytest.raises(LeadStateTransitionException) as exc_info:
+            await use_case.execute(lead.id, request, lead.tenant_id)
+
+        assert "new" in str(exc_info.value)
+        assert "appointment_set" in str(exc_info.value)
+        repo.update_status.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_update_status_lost_is_terminal(self):
+        """Should raise exception when trying to transition from LOST."""
+        lead = make_lead(status=LeadStatus.LOST)
+        repo = AsyncMock()
+        repo.get_by_id = AsyncMock(return_value=lead)
+
+        use_case = UpdateLeadStatusUseCase(repo)
+        request = UpdateLeadStatusRequest(new_status=LeadStatus.CONTACTED)
+
+        with pytest.raises(LeadStateTransitionException):
+            await use_case.execute(lead.id, request, lead.tenant_id)
 
 
 # =============================================================================
@@ -218,10 +240,9 @@ class TestListLeadsUseCase:
         tenant_id = uuid4()
         user = make_user(RoleType.SALES_AGENT, tenant_id)
         leads = [make_lead(tenant_id=tenant_id, vendedor_id=user.id)]
-        leads_with_vehicles = [make_lead_with_product(lead) for lead in leads]
 
         repo = AsyncMock()
-        repo.list_by_vendedor = AsyncMock(return_value=(leads_with_vehicles, 1))
+        repo.list_by_vendedor = AsyncMock(return_value=(leads, 1))
         repo.list_by_manager = AsyncMock(return_value=([], 0))
 
         use_case = ListLeadsUseCase(repo)
@@ -234,7 +255,6 @@ class TestListLeadsUseCase:
             limit=10,
             offset=0,
             status=None,
-            include_products=True,
         )
         repo.list_by_manager.assert_not_called()
         assert result.total == 1
@@ -245,23 +265,15 @@ class TestListLeadsUseCase:
         tenant_id = uuid4()
         user = make_user(RoleType.MANAGER, tenant_id)
         leads = [make_lead(tenant_id=tenant_id), make_lead(tenant_id=tenant_id)]
-        leads_with_vehicles = [make_lead_with_product(lead) for lead in leads]
 
         repo = AsyncMock()
-        repo.list_by_manager = AsyncMock(return_value=(leads_with_vehicles, 2))
+        repo.list_by_manager = AsyncMock(return_value=(leads, 2))
         repo.list_by_vendedor = AsyncMock(return_value=([], 0))
 
         use_case = ListLeadsUseCase(repo)
         result = await use_case.execute(user, ListLeadsRequest())
 
-        repo.list_by_manager.assert_called_once_with(
-            tenant_id=tenant_id,
-            limit=50,
-            offset=0,
-            status=None,
-            vendedor_id=None,
-            include_products=True,
-        )
+        repo.list_by_manager.assert_called_once()
         repo.list_by_vendedor.assert_not_called()
         assert result.total == 2
 
@@ -301,6 +313,23 @@ class TestListLeadsUseCase:
         await use_case.execute(user, ListLeadsRequest())
 
         repo.list_by_vendedor.assert_called_once()
+        repo.list_by_manager.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_pagination_params_passed_through(self):
+        """Pagination params should be forwarded to the repository."""
+        tenant_id = uuid4()
+        user = make_user(RoleType.SALES_AGENT, tenant_id)
+
+        repo = AsyncMock()
+        repo.list_by_vendedor = AsyncMock(return_value=([], 0))
+
+        use_case = ListLeadsUseCase(repo)
+        await use_case.execute(user, ListLeadsRequest(limit=5, offset=10))
+
+        call_kwargs = repo.list_by_vendedor.call_args.kwargs
+        assert call_kwargs["limit"] == 5
+        assert call_kwargs["offset"] == 10
 
 
 # =============================================================================
@@ -315,50 +344,27 @@ class TestGetLeadDetailsUseCase:
     async def test_get_lead_details_success(self):
         """Should return lead with audit logs."""
         lead = make_lead()
-        audit_logs = [
-            LeadAuditLog(
-                id=uuid4(),
-                lead_id=lead.id,
-                tenant_id=lead.tenant_id,
-                old_status="new",
-                new_status="contacted",
-                changed_by_user_id=uuid4(),
-                timestamp=datetime.now(UTC),
-            )
-        ]
+        audit_log = LeadAuditLog.create(
+            lead_id=lead.id,
+            tenant_id=lead.tenant_id,
+            old_status=LeadStatus.NEW,
+            new_status=LeadStatus.CONTACTED,
+        )
 
-        from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
-        
         repo = AsyncMock()
-        repo.get_by_id = AsyncMock(return_value=LeadWithProduct(lead=lead, product_model=None))
-        repo.get_audit_logs = AsyncMock(return_value=audit_logs)
+        repo.get_by_id = AsyncMock(return_value=lead)
+        repo.get_audit_logs = AsyncMock(return_value=[audit_log])
 
         use_case = GetLeadDetailsUseCase(repo)
         result = await use_case.execute(lead.id, lead.tenant_id)
 
-        assert result.lead.buyer_name == "Juan Pérez"
+        assert result.lead.id == lead.id
         assert len(result.audit_logs) == 1
-
-    @pytest.mark.asyncio
-    async def test_get_lead_details_empty_audit_logs(self):
-        """Should return lead with empty audit log list."""
-        lead = make_lead()
-
-        from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
-        
-        repo = AsyncMock()
-        repo.get_by_id = AsyncMock(return_value=LeadWithProduct(lead=lead, product_model=None))
-        repo.get_audit_logs = AsyncMock(return_value=[])
-
-        use_case = GetLeadDetailsUseCase(repo)
-        result = await use_case.execute(lead.id, lead.tenant_id)
-
-        assert result.lead.buyer_name == "Juan Pérez"
-        assert len(result.audit_logs) == 0
+        assert result.audit_logs[0].new_status == LeadStatus.CONTACTED
 
     @pytest.mark.asyncio
     async def test_get_lead_details_not_found(self):
-        """Should raise exception when lead not found."""
+        """Should raise LeadNotFoundException when lead not found."""
         repo = AsyncMock()
         repo.get_by_id = AsyncMock(return_value=None)
 
@@ -366,3 +372,19 @@ class TestGetLeadDetailsUseCase:
 
         with pytest.raises(LeadNotFoundException):
             await use_case.execute(uuid4(), uuid4())
+
+        repo.get_audit_logs.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_get_lead_details_empty_audit_logs(self):
+        """Should return empty audit logs for new lead."""
+        lead = make_lead()
+
+        repo = AsyncMock()
+        repo.get_by_id = AsyncMock(return_value=lead)
+        repo.get_audit_logs = AsyncMock(return_value=[])
+
+        use_case = GetLeadDetailsUseCase(repo)
+        result = await use_case.execute(lead.id, lead.tenant_id)
+
+        assert len(result.audit_logs) == 0

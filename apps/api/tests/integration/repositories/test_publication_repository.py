@@ -6,12 +6,12 @@ Tests the SQLAlchemy implementation of IPublicationRepository.
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import select
 
-from prosell.domain.entities.publication import Publication, PublicationStatus
+from prosell.domain.entities.publication import PublicationStatus
 from prosell.infrastructure.models.publication_model import PublicationModel
-from prosell.infrastructure.repositories.publication_repository_impl import SqlAlchemyPublicationRepository
-
+from prosell.infrastructure.repositories.publication_repository_impl import (
+    SqlAlchemyPublicationRepository,
+)
 
 # =============================================================================
 # FIXTURES

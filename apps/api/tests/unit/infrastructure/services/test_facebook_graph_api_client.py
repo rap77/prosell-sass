@@ -1,18 +1,16 @@
 """Unit tests for FacebookGraphApiClient."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 import httpx
+import pytest
 
-from prosell.infrastructure.services.facebook_graph_api_client import (
-    FacebookGraphApiClient,
-    FacebookBuyerProfile,
-)
 from prosell.domain.exceptions.facebook_exceptions import (
     FacebookUserInfoFetchException,
 )
-
+from prosell.infrastructure.services.facebook_graph_api_client import (
+    FacebookGraphApiClient,
+)
 
 # =============================================================================
 # FIXTURES

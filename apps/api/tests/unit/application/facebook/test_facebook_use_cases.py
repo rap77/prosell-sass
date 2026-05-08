@@ -67,9 +67,9 @@ def facebook_page() -> FacebookPage:
         id=str(uuid4()),
         facebook_account_id=str(uuid4()),
         page_id="987654321",
-        page_name="Test Dealership",
+        page_name="Test Branchship",
         page_access_token_encrypted="encrypted_page_token",
-        category="Automotive Dealer",
+        category="Automotive Branch",
         is_default=False,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
@@ -122,9 +122,9 @@ def make_facebook_service() -> MagicMock:
         return_value=[
             PageInfo(
                 page_id="987654321",
-                page_name="Test Dealership",
+                page_name="Test Branchship",
                 access_token="page_token",
-                category="Automotive Dealer",
+                category="Automotive Branch",
             )
         ]
     )
@@ -326,9 +326,9 @@ class TestFetchPagesUseCase:
             id=str(uuid4()),
             facebook_account_id=facebook_account.id,
             page_id="987654321",
-            page_name="Test Dealership",
+            page_name="Test Branchship",
             page_access_token_encrypted="encrypted_page_token",
-            category="Automotive Dealer",
+            category="Automotive Branch",
             is_default=False,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
@@ -341,7 +341,7 @@ class TestFetchPagesUseCase:
 
         assert len(pages) == 1
         assert pages[0].page_id == "987654321"
-        assert pages[0].page_name == "Test Dealership"
+        assert pages[0].page_name == "Test Branchship"
 
     async def test_fetch_pages_empty(self, facebook_account: FacebookAccount) -> None:
         """Returns empty list when account has no pages."""

@@ -7,7 +7,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from prosell.infrastructure.repositories.publication_repository_impl import SqlAlchemyPublicationRepository
+from prosell.infrastructure.repositories.publication_repository_impl import (
+    SqlAlchemyPublicationRepository,
+)
 
 
 @pytest.mark.asyncio

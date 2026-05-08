@@ -3,19 +3,15 @@
 Uses real test database — requires test DB to be running on port 5433.
 """
 
-from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
-import pytest_asyncio
 
 from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.exceptions.lead_exceptions import (
-    DuplicateLeadException,
     LeadNotFoundException,
 )
 from prosell.infrastructure.repositories.lead_repository_impl import SqlAlchemyLeadRepository
-
 
 # =============================================================================
 # HELPERS
@@ -29,8 +25,8 @@ def make_lead(tenant_id=None, vendedor_id=None, status=LeadStatus.NEW, **kwargs)
         buyer_name=kwargs.get("buyer_name", "Integration Test Buyer"),
         tenant_id=tid,
         buyer_email=kwargs.get("buyer_email", f"buyer-{uuid4().hex[:6]}@test.com"),
-        buyer_phone=kwargs.get("buyer_phone", None),
-        vehicle_id=kwargs.get("vehicle_id", uuid4()),
+        buyer_phone=kwargs.get("buyer_phone"),
+        product_id=kwargs.get("product_id", uuid4()),
         vendedor_id=vendedor_id,
         message="Integration test message",
         source="manual",
@@ -73,7 +69,7 @@ class TestLeadRepositoryCreate:
 
         assert created.buyer_email is None
         assert created.buyer_phone is None
-        assert created.vehicle_id is None
+        assert created.product_id is None
         assert created.vendedor_id is None
         assert created.message is None
 
@@ -118,23 +114,23 @@ class TestLeadRepositoryGetById:
 
 
 class TestLeadRepositoryDuplicateDetection:
-    """Tests for get_by_buyer_and_vehicle() duplicate detection."""
+    """Tests for get_by_buyer_and_product() duplicate detection."""
 
     @pytest.mark.asyncio
     async def test_detects_duplicate_by_email_and_vehicle(self, db_session, test_organization):
         """Should find existing lead when same buyer email + vehicle within 24h."""
         repo = SqlAlchemyLeadRepository(db_session)
         tenant_id = test_organization.tenant_id
-        vehicle_id = uuid4()
+        product_id = uuid4()
         email = f"dup-{uuid4().hex[:6]}@test.com"
 
-        lead = make_lead(tenant_id=tenant_id, buyer_email=email, vehicle_id=vehicle_id)
+        lead = make_lead(tenant_id=tenant_id, buyer_email=email, product_id=product_id)
         await repo.create(lead)
 
-        duplicate = await repo.get_by_buyer_and_vehicle(
+        duplicate = await repo.get_by_buyer_and_product(
             buyer_email=email,
             buyer_phone=None,
-            vehicle_id=vehicle_id,
+            product_id=product_id,
             tenant_id=tenant_id,
         )
 
@@ -146,16 +142,16 @@ class TestLeadRepositoryDuplicateDetection:
         """Should NOT find duplicate when tenant_id is different."""
         repo = SqlAlchemyLeadRepository(db_session)
         tenant_id = test_organization.tenant_id
-        vehicle_id = uuid4()
+        product_id = uuid4()
         email = f"notdup-{uuid4().hex[:6]}@test.com"
 
-        lead = make_lead(tenant_id=tenant_id, buyer_email=email, vehicle_id=vehicle_id)
+        lead = make_lead(tenant_id=tenant_id, buyer_email=email, product_id=product_id)
         await repo.create(lead)
 
-        result = await repo.get_by_buyer_and_vehicle(
+        result = await repo.get_by_buyer_and_product(
             buyer_email=email,
             buyer_phone=None,
-            vehicle_id=vehicle_id,
+            product_id=product_id,
             tenant_id=uuid4(),  # Different tenant
         )
 
@@ -167,10 +163,10 @@ class TestLeadRepositoryDuplicateDetection:
         repo = SqlAlchemyLeadRepository(db_session)
         tenant_id = test_organization.tenant_id
 
-        result = await repo.get_by_buyer_and_vehicle(
+        result = await repo.get_by_buyer_and_product(
             buyer_email=None,
             buyer_phone=None,
-            vehicle_id=uuid4(),
+            product_id=uuid4(),
             tenant_id=tenant_id,
         )
 
@@ -257,7 +253,7 @@ class TestLeadRepositoryList:
         )
 
         assert total == 2
-        assert all(lead.vendedor_id == vendedor_id for lead in leads)
+        assert all(lead.lead.vendedor_id == vendedor_id for lead in leads)
 
     @pytest.mark.asyncio
     async def test_list_by_manager_returns_all_tenant_leads(self, db_session, test_organization, test_user, test_seller_user):
@@ -304,8 +300,8 @@ class TestLeadRepositoryList:
         assert len(page2) == 2
 
         # IDs should not overlap between pages
-        page1_ids = {lead.id for lead in page1}
-        page2_ids = {lead.id for lead in page2}
+        page1_ids = {lead.lead.id for lead in page1}
+        page2_ids = {lead.lead.id for lead in page2}
         assert page1_ids.isdisjoint(page2_ids)
 
     @pytest.mark.asyncio
@@ -330,4 +326,4 @@ class TestLeadRepositoryList:
             vendedor_id=vendedor_id,
             status=LeadStatus.NEW,
         )
-        assert all(lead.status == LeadStatus.NEW for lead in new_leads)
+        assert all(lead.lead.status == LeadStatus.NEW for lead in new_leads)
