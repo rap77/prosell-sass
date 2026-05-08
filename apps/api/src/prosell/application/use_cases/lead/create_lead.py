@@ -7,6 +7,7 @@ from prosell.application.dto.lead.response import LeadResponse
 from prosell.domain.entities.lead import Lead
 from prosell.domain.exceptions.lead_exceptions import DuplicateLeadException
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
+from prosell.domain.services.lead_duplicate_detector import LeadDuplicateDetector
 
 
 class CreateLeadUseCase:
@@ -18,10 +19,12 @@ class CreateLeadUseCase:
       raise DuplicateLeadException.
     - At least buyer_name must be provided.
     - vendedor_id is optional (can be assigned later).
+    - Uses LeadDuplicateDetector for enhanced duplicate detection.
     """
 
     def __init__(self, lead_repository: AbstractLeadRepository) -> None:
         self.lead_repository = lead_repository
+        self.duplicate_detector = LeadDuplicateDetector(lead_repository)
 
     async def execute(
         self,
@@ -41,19 +44,29 @@ class CreateLeadUseCase:
         Raises:
             DuplicateLeadException: If same buyer + vehicle within 24h
         """
-        # 1. Duplicate detection: same buyer (email or phone) + vehicle within 24h
-        existing = await self.lead_repository.get_by_buyer_and_product(
-            buyer_email=request.buyer_email,
-            buyer_phone=request.buyer_phone,
-            product_id=request.product_id,
+        # 1. Enhanced duplicate detection using LeadDuplicateDetector
+        duplicates = await self.duplicate_detector.find_duplicates(
+            email=request.buyer_email,
+            phone=request.buyer_phone,
             tenant_id=tenant_id,
-            within_hours=24,
         )
-        if existing:
-            raise DuplicateLeadException(
-                "A lead for this buyer and vehicle already exists. "
-                "Please wait 24 hours before creating another."
-            )
+
+        if duplicates:
+            # Check if any duplicate is for the same product within 24h
+            for dup in duplicates:
+                dup_lead = await self.lead_repository.get_by_id(
+                    lead_id=dup.lead_id,
+                    tenant_id=tenant_id,
+                )
+                if dup_lead and dup_lead.product_id == request.product_id:
+                    # Same buyer + same product = hard duplicate
+                    raise DuplicateLeadException(
+                        f"A lead for this buyer and vehicle already exists (lead ID: {dup.lead_id}). "
+                        "Please wait 24 hours before creating another."
+                    )
+
+            # If duplicates exist but for different products, still warn but allow
+            # (This could be enhanced to return warnings in the response)
 
         # 2. Create domain entity
         lead = Lead.create(
