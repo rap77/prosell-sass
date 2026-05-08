@@ -4,10 +4,11 @@ Seed script for ProSell SaaS development and staging.
 Creates:
 1. Admin user (admin@prosell-demo.com / Admin123!)
 2. Demo organization (ProSell Demo)
-3. Sample dealer for testing
+3. Sample branch for testing
 
 Usage:
-    DATABASE_URL="postgresql+asyncpg://prosell:prosell@localhost:5432/prosell" uv run python scripts/seed_dev.py
+    DATABASE_URL="postgresql+asyncpg://prosell:prosell@localhost:5432/prosell" \\
+    uv run python scripts/seed_dev.py
 """
 
 import asyncio
@@ -18,8 +19,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import bcrypt
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 
 async def seed_database():
@@ -56,7 +57,8 @@ async def seed_database():
             );
         """))
 
-        # Drop and recreate user_roles junction table ( matches UserRoleModel with id PK )
+        # Drop and recreate user_roles junction table
+        # (matches UserRoleModel with id PK)
         await conn.execute(text("DROP TABLE IF EXISTS user_roles"))
         await conn.execute(text("""
             CREATE TABLE user_roles (
@@ -99,9 +101,12 @@ async def seed_database():
         await conn.execute(text("""
             CREATE TABLE IF NOT EXISTS products (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-                organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-                category_id UUID NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
+                tenant_id UUID NOT NULL REFERENCES organizations(id)
+                    ON DELETE CASCADE,
+                organization_id UUID NOT NULL REFERENCES organizations(id)
+                    ON DELETE CASCADE,
+                category_id UUID NOT NULL REFERENCES categories(id)
+                    ON DELETE RESTRICT,
                 title VARCHAR(500) NOT NULL,
                 slug VARCHAR(500),
                 description TEXT,
@@ -129,13 +134,18 @@ async def seed_database():
             );
         """))
         await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS ix_products_tenant_id ON products(tenant_id);
-            CREATE INDEX IF NOT EXISTS ix_products_organization_id ON products(organization_id);
-            CREATE INDEX IF NOT EXISTS ix_products_category_id ON products(category_id);
+            CREATE INDEX IF NOT EXISTS ix_products_tenant_id
+                ON products(tenant_id);
+            CREATE INDEX IF NOT EXISTS ix_products_organization_id
+                ON products(organization_id);
+            CREATE INDEX IF NOT EXISTS ix_products_category_id
+                ON products(category_id);
             CREATE INDEX IF NOT EXISTS ix_products_slug ON products(slug);
             CREATE INDEX IF NOT EXISTS ix_products_status ON products(status);
-            CREATE INDEX IF NOT EXISTS ix_products_condition ON products(condition);
-            CREATE INDEX IF NOT EXISTS ix_products_is_featured ON products(is_featured);
+            CREATE INDEX IF NOT EXISTS ix_products_condition
+                ON products(condition);
+            CREATE INDEX IF NOT EXISTS ix_products_is_featured
+                ON products(is_featured);
         """))
 
         await conn.execute(text("""
@@ -157,13 +167,15 @@ async def seed_database():
             );
         """))
         await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS ix_product_images_product_id ON product_images(product_id);
+            CREATE INDEX IF NOT EXISTS ix_product_images_product_id
+                ON product_images(product_id);
         """))
 
         await conn.execute(text("""
             CREATE TABLE IF NOT EXISTS vehicles (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE UNIQUE,
+                product_id UUID NOT NULL REFERENCES products(id)
+                    ON DELETE CASCADE UNIQUE,
                 vin VARCHAR(17) NOT NULL UNIQUE,
                 year INTEGER,
                 make VARCHAR(100),
@@ -236,14 +248,17 @@ async def seed_database():
             );
         """))
         await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS ix_oauth_accounts_user_id ON oauth_accounts(user_id);
-            CREATE UNIQUE INDEX IF NOT EXISTS uq_oauth_accounts_provider_user ON oauth_accounts(provider, provider_user_id);
+            CREATE INDEX IF NOT EXISTS ix_oauth_accounts_user_id
+                ON oauth_accounts(user_id);
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_oauth_accounts_provider_user
+                ON oauth_accounts(provider, provider_user_id);
         """))
 
         await conn.execute(text("""
             CREATE TABLE IF NOT EXISTS facebook_accounts (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                seller_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                seller_user_id UUID NOT NULL REFERENCES users(id)
+                    ON DELETE CASCADE,
                 facebook_user_id VARCHAR(255) NOT NULL UNIQUE,
                 facebook_name VARCHAR(255),
                 access_token_encrypted TEXT NOT NULL,
@@ -256,14 +271,17 @@ async def seed_database():
             );
         """))
         await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS ix_facebook_accounts_seller_user_id ON facebook_accounts(seller_user_id);
-            CREATE INDEX IF NOT EXISTS ix_facebook_accounts_status ON facebook_accounts(status);
+            CREATE INDEX IF NOT EXISTS ix_facebook_accounts_seller_user_id
+                ON facebook_accounts(seller_user_id);
+            CREATE INDEX IF NOT EXISTS ix_facebook_accounts_status
+                ON facebook_accounts(status);
         """))
 
         await conn.execute(text("""
             CREATE TABLE IF NOT EXISTS facebook_pages (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                facebook_account_id UUID NOT NULL REFERENCES facebook_accounts(id) ON DELETE CASCADE,
+                facebook_account_id UUID NOT NULL
+                    REFERENCES facebook_accounts(id) ON DELETE CASCADE,
                 page_id VARCHAR(255) NOT NULL,
                 page_name VARCHAR(255) NOT NULL,
                 page_access_token_encrypted TEXT NOT NULL,
@@ -275,8 +293,10 @@ async def seed_database():
             );
         """))
         await conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS ix_facebook_pages_facebook_account_id ON facebook_pages(facebook_account_id);
-            CREATE INDEX IF NOT EXISTS ix_facebook_pages_page_id ON facebook_pages(page_id);
+            CREATE INDEX IF NOT EXISTS ix_facebook_pages_facebook_account_id
+                ON facebook_pages(facebook_account_id);
+            CREATE INDEX IF NOT EXISTS ix_facebook_pages_page_id
+                ON facebook_pages(page_id);
         """))
 
         # Check if admin organization exists
@@ -292,7 +312,10 @@ async def seed_database():
                 VALUES ('ProSell Demo', 'prosell-demo')
                 RETURNING id
             """))
-            result = await conn.execute(text("SELECT id FROM organizations WHERE slug = 'prosell-demo'"))
+            result = await conn.execute(
+                text("SELECT id FROM organizations WHERE slug = :slug"),
+                {"slug": "prosell-demo"},
+            )
             org_row = result.first()
 
         org_id = org_row[0]
@@ -307,11 +330,14 @@ async def seed_database():
         if not user_row:
             # Hash password
             password = "Admin123!"
-            password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            password_hash = bcrypt.hashpw(
+                password.encode('utf-8'), bcrypt.gensalt()
+            ).decode('utf-8')
 
             # Create admin user
             await conn.execute(text("""
-                INSERT INTO users (id, email, password_hash, full_name, status, email_verified, tenant_id)
+                INSERT INTO users
+                (id, email, password_hash, full_name, status, email_verified, tenant_id)
                 VALUES (
                     gen_random_uuid(),
                     'admin@prosell-demo.com',
@@ -323,7 +349,7 @@ async def seed_database():
                 )
             """), {"password_hash": password_hash, "tenant_id": org_id})
 
-            print(f"✅ Admin user created: admin@prosell-demo.com / Admin123!")
+            print("✅ Admin user created: admin@prosell-demo.com / Admin123!")
         else:
             print("ℹ️  Admin user already exists")
 
@@ -366,9 +392,9 @@ async def seed_database():
         print("✅ Admin role assigned to user")
 
         print("\n📊 Seeding complete!")
-        print(f"   Email: admin@prosell-demo.com")
-        print(f"   Password: Admin123!")
-        print(f"   Organization: ProSell Demo")
+        print("   Email: admin@prosell-demo.com")
+        print("   Password: Admin123!")
+        print("   Organization: ProSell Demo")
 
 
 if __name__ == "__main__":

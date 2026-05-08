@@ -11,9 +11,10 @@ Usage:
 """
 
 import asyncio
+
 import bcrypt
-from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 
 async def seed_database():
@@ -75,7 +76,7 @@ async def seed_database():
         """), {"password_hash": password_hash, "tenant_id": org_id})
 
         print("✅ Admin user created: admin@prosell-demo.com / Admin123!")
-        print(f"✅ Organization: ProSell Demo")
+        print("✅ Organization: ProSell Demo")
 
 
 if __name__ == "__main__":
