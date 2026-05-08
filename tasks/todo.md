@@ -461,9 +461,9 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [x] Mock Facebook Graph API for publish
 - [x] Mock webhook endpoint for lead capture
 - [x] Mock SendGrid for email notifications
-- [ ] Verify test execution time < 3 minutes
+- [x] Verify test execution time < 3 minutes
 - [x] Add test to smoke suite
-- [ ] Test passes consistently (>95% success rate)
+- [x] Test passes consistently (>95% success rate)
 
 #### B1.2: Multi-Tenant Isolation Security Tests (8 hours)
 - [ ] Create test_tenant_isolation.py suite
