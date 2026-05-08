@@ -1,0 +1,113 @@
+/**
+ * VehiclesPage - Page Object for Vehicle management
+ */
+
+import { Page, expect } from "@playwright/test";
+import { BasePage } from "../base-page";
+
+export class VehiclesPage extends BasePage {
+  // Locators
+  readonly vinInput = this.page.getByLabel(/vin/i);
+  readonly decodeVinButton = this.page.getByRole("button", { name: /decode|decodificar/i });
+  readonly decodedInfoSection = this.page.getByTestId(/decoded-info|vehicle-info/i);
+
+  // Form fields - Note: Using SelectControlled component which renders as a div with data-state
+  readonly categorySelect = this.page.getByLabel("Categoría");
+  readonly yearSelect = this.page.getByLabel("Año");
+  readonly makeSelect = this.page.getByLabel("Marca");
+  readonly modelInput = this.page.getByLabel(/modelo|model/i);
+  readonly trimInput = this.page.getByLabel(/trim|versión/i);
+  readonly bodyTypeSelect = this.page.getByRole("combobox", { name: /tipo de carrocería|body type/i });
+  readonly drivetrainSelect = this.page.getByRole("combobox", { name: /tracción|drivetrain/i });
+  readonly transmissionSelect = this.page.getByRole("combobox", { name: /transmisión|transmission/i });
+  readonly fuelTypeSelect = this.page.getByRole("combobox", { name: /combustible|fuel type/i });
+  readonly engineInput = this.page.getByLabel(/motor|engine/i);
+  readonly priceInput = this.page.getByLabel(/precio|price/i);
+  readonly mileageInput = this.page.getByLabel(/odómetro|mileage/i);
+  readonly exteriorColorSelect = this.page.getByRole("combobox", { name: /color exterior|exterior color/i });
+  readonly interiorColorSelect = this.page.getByRole("combobox", { name: /color interior|interior color/i });
+
+  // Buttons
+  readonly submitButton = this.page.getByRole("button", { name: /create|save|crear/i });
+
+  constructor(page: Page) {
+    super(page);
+  }
+
+  /**
+   * Select a category from dropdown
+   * FIXED: Use text selector instead of role for Radix UI Portal compatibility
+   */
+  async selectCategory(categoryName: string): Promise<void> {
+    // Wait for select to be ready and visible
+    await this.categorySelect.waitFor({ state: 'visible' });
+    await this.categorySelect.click();
+    
+    // FIXED: Wait for Radix UI Portal to render options
+    // Use text content as fallback since Radix UI SelectItem might not have role="option" visible
+    const option = this.page.getByText(categoryName, { exact: true }).first();
+    await option.waitFor({ state: 'visible', timeout: 5000 });
+    await option.click();
+  }
+
+  /**
+   * Select an option from a select dropdown by text
+   * Helper for Radix UI Select components
+   */
+  async selectOption(selectLocator: any, optionText: string | RegExp): Promise<void> {
+    await selectLocator.click();
+    const option = this.page.getByText(optionText).first();
+    await option.waitFor({ state: 'visible', timeout: 5000 });
+    await option.click();
+  }
+
+  /**
+   * Decode a VIN
+   */
+  async decodeVin(vin: string): Promise<void> {
+    await this.vinInput.fill(vin);
+    await this.decodeVinButton.click();
+    await this.page.waitForLoadState("load");
+  }
+
+  /**
+   * Verify decoded vehicle info is visible
+   */
+  async verifyDecodedInfoVisible(): Promise<void> {
+    await expect(this.decodedInfoSection).toBeVisible();
+  }
+
+  /**
+   * Get decoded vehicle data
+   */
+  async getDecodedData(): Promise<{ make?: string; model?: string; year?: string }> {
+    const make = await this.page.getByTestId("vehicle-make").textContent().catch(() => "");
+    const model = await this.page.getByTestId("vehicle-model").textContent().catch(() => "");
+    const year = await this.page.getByTestId("vehicle-year").textContent().catch(() => "");
+
+    return {
+      make: make?.trim(),
+      model: model?.trim(),
+      year: year?.trim(),
+    };
+  }
+
+  /**
+   * Wait for toast message to appear and be visible
+   * FIXED: Proper toast detection for Sonner
+   */
+  async waitForToast(message: string | RegExp, timeout: number = 5000): Promise<void> {
+    // Sonner renders toasts in a fixed container with data-sonner-toast attribute
+    const toast = this.page.getByText(message).first();
+    await toast.waitFor({ state: 'visible', timeout });
+  }
+
+  /**
+   * Verify toast message is visible
+   */
+  async verifyToastVisible(message: string | RegExp): Promise<void> {
+    await this.waitForToast(message);
+    const toast = this.page.getByText(message).first();
+    await expect(toast).toBeVisible();
+  }
+}

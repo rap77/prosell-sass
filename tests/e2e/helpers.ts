@@ -49,8 +49,9 @@ export function generateTestUser() {
  * - TEST_USER_PASSWORD (default: TestPassword123)
  */
 export function getExistingUser() {
-  const email = process.env.TEST_USER_EMAIL || "test@example.com";
-  const password = process.env.TEST_USER_PASSWORD || "Test!Password123";
+  // Use admin user that exists in database from seeding
+  const email = process.env.TEST_USER_EMAIL || "admin@prosell.saas";
+  const password = process.env.TEST_USER_PASSWORD || "Admin123!";
 
   return { email, password };
 }

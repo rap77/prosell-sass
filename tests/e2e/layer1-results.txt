@@ -1,0 +1,133 @@
+
+> @prosell/e2e@0.1.0 test /home/rpadron/proy/prosell-sass/tests/e2e
+> playwright test "specs/oauth.spec.ts" "specs/oauth-fixed.spec.ts" "specs/facebook-oauth.spec.ts" "specs/smoke.spec.ts"
+
+[GLOBAL SETUP] Starting authentication setup...
+[GLOBAL SETUP] Making direct login API call...
+[GLOBAL SETUP] Login API response status: 200
+[GLOBAL SETUP] Set-Cookie headers found: 3
+[GLOBAL SETUP] Parsing Set-Cookie: access_token=mock_access_token_1777818448691; Path=/; Expire...
+[GLOBAL SETUP] Parsed cookie: access_token = mock_access_token_17...
+[GLOBAL SETUP] Parsing Set-Cookie: refresh_token=mock_refresh_token_1777818448691; Path=/; Expi...
+[GLOBAL SETUP] Parsed cookie: refresh_token = mock_refresh_token_1...
+[GLOBAL SETUP] Parsing Set-Cookie: user_data=%7B%22id%22%3A%22test-user-123%22%2C%22email%22%3A...
+[GLOBAL SETUP] Parsed cookie: user_data = %7B%22id%22%3A%22tes...
+[GLOBAL SETUP] Found user_data cookie, modifying role to manager...
+[GLOBAL SETUP] Modified user role to: dealer
+[GLOBAL SETUP] user_data cookie updated successfully
+[GLOBAL SETUP] New user_data value (first 100 chars): %7B%22id%22%3A%22test-user-123%22%2C%22email%22%3A%22test%40example.com%22%2C%22first_name%22%3A%22T
+[GLOBAL SETUP] Adding cookies to browser context...
+[GLOBAL SETUP] Cookies in context: [ 'access_token', 'refresh_token', 'user_data' ]
+[GLOBAL SETUP] Testing navigation to protected route...
+[GLOBAL SETUP] Current URL after navigation: http://localhost:3000/dealer/reports
+[GLOBAL SETUP] Storage state saved to: /home/rpadron/proy/prosell-sass/tests/e2e/.auth/storage-state.json
+[GLOBAL SETUP] Total cookies in storage: 3
+[GLOBAL SETUP] Cookie names: [ 'access_token', 'refresh_token', 'user_data' ]
+[GLOBAL SETUP] Authentication setup complete!
+
+Running 67 tests using 6 workers
+
+  ✓   2 [chromium] › specs/facebook-oauth.spec.ts:15:3 › Facebook OAuth - API Endpoint Validation › should verify authorize endpoint responds correctly (378ms)
+  ✓   7 [chromium] › specs/facebook-oauth.spec.ts:40:3 › Facebook OAuth - API Endpoint Validation › should verify callback endpoint exists (37ms)
+  ✓   8 [chromium] › specs/facebook-oauth.spec.ts:61:3 › Facebook OAuth - API Endpoint Validation › should verify accounts list endpoint requires authentication (20ms)
+  ✓   9 [chromium] › specs/facebook-oauth.spec.ts:71:3 › Facebook OAuth - API Endpoint Validation › should verify refresh tokens endpoint exists (23ms)
+  ✓  10 [chromium] › specs/facebook-oauth.spec.ts:84:3 › Facebook OAuth - Configuration Validation › should have all required endpoints registered (23ms)
+  ✓  11 [chromium] › specs/facebook-oauth.spec.ts:109:3 › Facebook OAuth - Configuration Validation › should verify endpoint CORS configuration (10ms)
+  ✓  12 [chromium] › specs/facebook-oauth.spec.ts:138:3 › Facebook OAuth - Error Handling › should handle missing authorization code gracefully (18ms)
+  ✓  13 [chromium] › specs/facebook-oauth.spec.ts:155:3 › Facebook OAuth - Error Handling › should handle missing state parameter gracefully (18ms)
+  ✓  14 [chromium] › specs/facebook-oauth.spec.ts:166:3 › Facebook OAuth - Error Handling › should handle OAuth error from Facebook (35ms)
+  ✓  15 [chromium] › specs/facebook-oauth.spec.ts:186:3 › Facebook OAuth - Error Handling › should handle invalid state token (63ms)
+  ✓  16 [chromium] › specs/facebook-oauth.spec.ts:199:3 › Facebook OAuth - Request/Response Validation › should validate required fields in authorize request (71ms)
+  ✓  17 [chromium] › specs/facebook-oauth.spec.ts:215:3 › Facebook OAuth - Request/Response Validation › should accept valid authorize request format (71ms)
+  ✓  18 [chromium] › specs/facebook-oauth.spec.ts:234:3 › Facebook OAuth - Request/Response Validation › should validate UUID format for account_id (32ms)
+  ✓  19 [chromium] › specs/facebook-oauth.spec.ts:244:3 › Facebook OAuth - Request/Response Validation › should validate UUID format for page_id (16ms)
+  ✓  20 [chromium] › specs/facebook-oauth.spec.ts:256:3 › Facebook OAuth - Security Validation › should require authentication for all protected endpoints (77ms)
+  ✓  21 [chromium] › specs/facebook-oauth.spec.ts:285:3 › Facebook OAuth - Security Validation › should use HTTPS-compatible redirect URIs in production (49ms)
+  ✓  22 [chromium] › specs/facebook-oauth.spec.ts:308:3 › Facebook OAuth - Integration Points › should verify Redis dependency for state tokens (37ms)
+  ✓  23 [chromium] › specs/facebook-oauth.spec.ts:328:3 › Facebook OAuth - Integration Points › should verify encryption service dependency (40ms)
+  ✓  24 [chromium] › specs/facebook-oauth.spec.ts:349:3 › Facebook OAuth - Data Model Validation › should verify accounts response structure (49ms)
+  ✓  25 [chromium] › specs/facebook-oauth.spec.ts:368:3 › Facebook OAuth - Data Model Validation › should verify pages response structure (49ms)
+  ✓   5 [chromium] › specs/smoke.spec.ts:71:5 › Smoke Tests - Critical Path › Auth Flow › @smoke should redirect to login when accessing protected route (1.8s)
+  ✓   3 [chromium] › specs/smoke.spec.ts:37:5 › Smoke Tests - Critical Path › Auth Flow › @smoke should display login page elements correctly (1.9s)
+  ✓   4 [chromium] › specs/oauth.spec.ts:24:3 › Google OAuth Integration › @smoke should display Google OAuth button (2.0s)
+  ✓  26 [chromium] › specs/facebook-oauth.spec.ts:386:3 › Facebook OAuth - Rate Limiting › should handle multiple rapid requests gracefully (503ms)
+  ✓   6 [chromium] › specs/smoke.spec.ts:53:5 › Smoke Tests - Critical Path › Auth Flow › @smoke should show validation error for empty email (2.1s)
+  ✓   1 [chromium] › specs/oauth-fixed.spec.ts:28:3 › Google OAuth Integration › @smoke should display Google OAuth button (2.2s)
+  ✓  27 [chromium] › specs/smoke.spec.ts:77:5 › Smoke Tests - Critical Path › Auth Flow › @smoke should allow access to public home page (2.1s)
+  ✓  28 [chromium] › specs/smoke.spec.ts:84:5 › Smoke Tests - Critical Path › Auth Flow › @smoke should display Google OAuth button (2.7s)
+  ✓  29 [chromium] › specs/oauth.spec.ts:31:3 › Google OAuth Integration › should have correct button attributes (2.6s)
+  ✓  32 [chromium] › specs/oauth-fixed.spec.ts:35:3 › Google OAuth Integration › should have correct button attributes (2.9s)
+  ✓  30 [chromium] › specs/smoke.spec.ts:120:5 › Smoke Tests - Critical Path › VehicleForm › @smoke should update make select field after VIN decode (3.5s)
+  ✓  31 [chromium] › specs/smoke.spec.ts:110:5 › Smoke Tests - Critical Path › VehicleForm › @smoke should update model field after VIN decode (3.4s)
+  ✓  33 [chromium] › specs/smoke.spec.ts:130:5 › Smoke Tests - Critical Path › VehicleForm › @smoke should display category dropdown (1.9s)
+  ✓  34 [chromium] › specs/smoke.spec.ts:144:5 › Smoke Tests - Critical Path › VehicleForm › @smoke should select category from dropdown (1.9s)
+  ✓  38 [chromium] › specs/smoke.spec.ts:174:5 › Smoke Tests - Critical Path › Category Management › @smoke should display categories page (1.6s)
+  ✓  39 [chromium] › specs/smoke.spec.ts:179:5 › Smoke Tests - Critical Path › Category Management › @smoke should display category cards (1.6s)
+  ✓  37 [chromium] › specs/smoke.spec.ts:153:5 › Smoke Tests - Critical Path › VehicleForm › @smoke should show form submit button (2.1s)
+  ✓  40 [chromium] › specs/smoke.spec.ts:184:5 › Smoke Tests - Critical Path › Category Management › @smoke should open new category form (1.2s)
+  ✓  41 [chromium] › specs/smoke.spec.ts:208:5 › Smoke Tests - Critical Path › DataGrid › @smoke should display data table (1.0s)
+  ✓  42 [chromium] › specs/smoke.spec.ts:225:5 › Smoke Tests - Critical Path › DataGrid › @smoke should display pagination controls (1.0s)
+  ✓  43 [chromium] › specs/smoke.spec.ts:231:5 › Smoke Tests - Critical Path › DataGrid › @smoke should display vehicle data in grid (1.0s)
+  ✓  47 [chromium] › specs/smoke.spec.ts:290:5 › Smoke Tests - Critical Path › API Health › @smoke API health check should respond (100ms)
+  ✓  44 [chromium] › specs/smoke.spec.ts:253:5 › Smoke Tests - Critical Path › Bulk Upload › @smoke should display image upload area (1.7s)
+  ✘  35 [chromium] › specs/oauth.spec.ts:43:3 › Google OAuth Integration › should redirect to Google OAuth on click (4.8s)
+  -  50 [chromium] › specs/oauth.spec.ts:60:3 › Google OAuth Integration › should generate unique state token for CSRF protection
+  -  51 [chromium] › specs/oauth.spec.ts:90:3 › Google OAuth Integration › should include required OAuth scopes
+  -  52 [chromium] › specs/oauth.spec.ts:104:3 › Google OAuth Integration › should show loading state during OAuth flow
+  -  53 [chromium] › specs/oauth.spec.ts:131:3 › OAuth Configuration Validation › should verify backend OAuth endpoint is accessible
+  -  54 [chromium] › specs/oauth.spec.ts:149:3 › OAuth Configuration Validation › should verify OAuth credentials are configured
+  -  55 [chromium] › specs/oauth.spec.ts:166:3 › OAuth Error Handling › should handle OAuth callback errors
+  -  56 [chromium] › specs/oauth.spec.ts:180:3 › OAuth Error Handling › should handle invalid state token
+  ✓  45 [chromium] › specs/smoke.spec.ts:259:5 › Smoke Tests - Critical Path › Bulk Upload › @smoke should show upload functionality (1.6s)
+  ✓  46 [chromium] › specs/smoke.spec.ts:265:5 › Smoke Tests - Critical Path › Bulk Upload › @smoke should allow file selection (1.8s)
+  ✓  48 [chromium] › specs/smoke.spec.ts:356:5 › Smoke Tests - Critical Path › Lead Management - Critical Path › @smoke A7.19: should load leads list page (1.5s)
+  ✓  49 [chromium] › specs/smoke.spec.ts:369:5 › Smoke Tests - Critical Path › Lead Management - Critical Path › @smoke A7.19: should display lead information (1.5s)
+  ✓  57 [chromium] › specs/smoke.spec.ts:424:5 › Smoke Tests - Critical Path › Lead Management - Critical Path › @smoke A7.19: should search leads (1.8s)
+Agendar Cita button not found - skipping appointment creation
+OAuth did not navigate - may not be configured (this is OK)
+  ✓  59 [chromium] › specs/smoke.spec.ts:495:5 › Smoke Tests - Critical Path › Complete Lead Flow - E2E › @smoke A7.20: Complete lead flow - verify critical path (1.5s)
+  ✓  36 [chromium] › specs/oauth-fixed.spec.ts:46:3 › Google OAuth Integration › should redirect to OAuth endpoint on click (with timeout) (6.9s)
+  ✓  58 [chromium] › specs/smoke.spec.ts:440:5 › Smoke Tests - Critical Path › Lead Management - Critical Path › @smoke A7.19: should filter leads by status (2.4s)
+  ✓  60 [chromium] › specs/smoke.spec.ts:385:5 › Smoke Tests - Critical Path › Lead Management - Critical Path › @smoke A7.19: should update lead status (2.8s)
+Page 1 URL: http://localhost:3000/auth/login?error=oauth_failed
+Page 2 URL: http://localhost:3000/auth/login?error=oauth_failed
+  ✓  61 [chromium] › specs/oauth-fixed.spec.ts:89:3 › Google OAuth Integration › should generate unique state token for CSRF protection (6.8s)
+OAuth navigation timed out - may not be configured (OK for testing)
+  ✓  62 [chromium] › specs/oauth-fixed.spec.ts:130:3 › Google OAuth Integration › should include required OAuth scopes (6.1s)
+Loading state not visible (redirect was fast)
+  ✓  63 [chromium] › specs/oauth-fixed.spec.ts:153:3 › Google OAuth Integration › should show loading state during OAuth flow (1.2s)
+OAuth endpoint status: [33m429[39m
+  ✓  64 [chromium] › specs/oauth-fixed.spec.ts:186:3 › OAuth Configuration Validation › should verify backend OAuth endpoint is accessible (322ms)
+OAuth navigation successful - credentials may be configured
+  ✓  65 [chromium] › specs/oauth-fixed.spec.ts:209:3 › OAuth Configuration Validation › should verify OAuth credentials are configured (1.1s)
+  ✓  66 [chromium] › specs/oauth-fixed.spec.ts:249:3 › OAuth Error Handling › should handle OAuth callback errors (1.2s)
+Callback result URL: http://localhost:3000/auth/login?error=invalid_state
+  ✓  67 [chromium] › specs/oauth-fixed.spec.ts:264:3 › OAuth Error Handling › should handle invalid state token (1.1s)
+
+
+  1) [chromium] › specs/oauth.spec.ts:43:3 › Google OAuth Integration › should redirect to Google OAuth on click 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mnot[2m.[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: not [32m"/auth/login"[39m
+    Received string:        [31m"http://localhost:3000[7m/auth/login[27m?error=oauth_failed"[39m
+
+      54 |     // Verify we're no longer on the login page (navigation occurred)
+      55 |     const currentUrl = page.url();
+    > 56 |     expect(currentUrl).not.toContain("/auth/login");
+         |                            ^
+      57 |   });
+      58 |
+      59 |   // NOTE: Validates that backend generates unique state tokens (CSRF protection).
+        at /home/rpadron/proy/prosell-sass/tests/e2e/specs/oauth.spec.ts:56:28
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/specs-oauth-Google-OAuth-I-30e24-ct-to-Google-OAuth-on-click-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/specs-oauth-Google-OAuth-I-30e24-ct-to-Google-OAuth-on-click-chromium/error-context.md
+
+  1 failed
+    [chromium] › specs/oauth.spec.ts:43:3 › Google OAuth Integration › should redirect to Google OAuth on click 
+  7 did not run
+  59 passed (32.1s)
