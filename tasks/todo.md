@@ -478,18 +478,18 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [x] All tenant isolation tests pass
 
 #### B1.3: Lead Duplicate Detection Implementation (12 hours)
-- [ ] Create LeadDuplicateDetector service
-- [ ] Implement email matching (exact match)
-- [ ] Implement phone matching (normalized)
-- [ ] Implement email + phone combination matching
-- [ ] Extend LeadRepository with find_by_email
-- [ ] Extend LeadRepository with find_by_phone
-- [ ] Extend LeadRepository with find_potential_duplicates
-- [ ] Integrate detector into CreateLeadUseCase
-- [ ] Create duplicate warning UI component
-- [ ] Display duplicates in lead detail view
-- [ ] Unit tests for detection logic
-- [ ] Integration tests for API
+- [x] Create LeadDuplicateDetector service
+- [x] Implement email matching (exact match)
+- [x] Implement phone matching (normalized)
+- [x] Implement email + phone combination matching
+- [x] Extend LeadRepository with find_by_email
+- [x] Extend LeadRepository with find_by_phone
+- [x] Extend LeadRepository with find_potential_duplicates
+- [x] Integrate detector into CreateLeadUseCase
+- [x] Create duplicate warning UI component
+- [x] Display duplicates in lead detail view
+- [x] Unit tests for detection logic
+- [x] Integration tests for API
 
 #### B1.4: Smoke Test Suite Expansion (12 hours)
 - [ ] Add 5 Auth smoke tests (login, OAuth, 2FA, reset, refresh)

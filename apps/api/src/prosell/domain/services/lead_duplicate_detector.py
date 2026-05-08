@@ -10,10 +10,9 @@ when the same buyer inquiries multiple times.
 """
 
 from dataclasses import dataclass
+import re
 from uuid import UUID
 from typing import List
-from phonenumbers import parse, PhoneNumberMatcher
-from phonenumbers.phonenumberutil import NumberParseException
 
 from prosell.domain.entities.lead import Lead
 
@@ -144,8 +143,7 @@ class LeadDuplicateDetector:
         """
         Normalize phone number for comparison.
 
-        Uses phonenumbers library to parse and format phone numbers
-        in E.164 format for consistent comparison.
+        Removes all non-numeric characters and formats in E.164 style.
 
         Args:
             phone: Phone number string (any format)
@@ -156,38 +154,21 @@ class LeadDuplicateDetector:
         if not phone:
             return None
 
-        # Remove common prefixes and formatting
-        cleaned = phone.strip()
-        if not cleaned:
+        # Remove all non-numeric characters
+        digits_only = re.sub(r'[^\d]', '', phone)
+
+        if not digits_only:
             return None
 
-        try:
-            # Try to parse as phone number
-            # Default to US if no country code specified
-            parsed = parse(cleaned, "US")
-            if not parsed.is_valid_number():
-                return None
-
-            # Format in E.164 format
-            from phonenumbers.phonenumberutil import format_number, PhoneNumberFormat
-            return format_number(parsed, PhoneNumberFormat.E164)
-
-        except (NumberParseException, AttributeError):
-            # If parsing fails, try simple cleaning
-            # Remove all non-numeric chars
-            digits_only = "".join(c for c in cleaned if c.isdigit())
-
-            # If we have 10 digits, assume US number
-            if len(digits_only) == 10:
-                return f"+1{digits_only}"
-            # If we have 11 digits starting with 1, assume US with country code
-            elif len(digits_only) == 11 and digits_only.startswith("1"):
-                return f"+{digits_only}"
-            else:
-                # Return as-is with + prefix if it looks like a number
-                if len(digits_only) >= 10:
-                    return f"+{digits_only}"
-                return None
+        # If we have 10 digits, assume US number and add +1
+        if len(digits_only) == 10:
+            return f"+1{digits_only}"
+        # If we have 11 digits starting with 1, assume US with country code
+        elif len(digits_only) == 11 and digits_only.startswith('1'):
+            return f"+{digits_only}"
+        # Otherwise, just add + prefix
+        else:
+            return f"+{digits_only}"
 
     async def is_duplicate(
         self,
