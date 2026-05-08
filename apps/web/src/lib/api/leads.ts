@@ -18,14 +18,49 @@ export enum LeadStatus {
 }
 
 /**
- * Vehicle information associated with a lead
+ * Product attributes for a vehicle product
  */
-export interface LeadVehicle {
+export interface ProductAttributes {
+  category?: string;
+  year?: number;
+  make?: string;
+  model?: string;
+  trim?: string;
+  vin?: string;
+  body_type?: string;
+  body_style?: string;
+  drivetrain?: string;
+  transmission?: string;
+  engine?: string;
+  fuel_type?: string;
+  mileage?: number;
+  mileage_unit?: string;
+  exterior_color?: string;
+  interior_color?: string;
+  has_sunroof?: boolean;
+  has_navigation?: boolean;
+  has_leather?: boolean;
+  has_backup_camera?: boolean;
+  has_bluetooth?: boolean;
+  has_remote_start?: boolean;
+  seat_material?: string;
+  vin_verified?: boolean;
+  stock_number?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Product summary embedded in lead responses
+ */
+export interface LeadProduct {
   id: string;
   title: string;
-  make: string;
-  model: string;
-  year: number;
+  price_cents: number;
+  currency: string;
+  status: string;
+  attributes: ProductAttributes;
+  created_at: string;
+  updated_at: string;
 }
 
 /**
@@ -36,7 +71,8 @@ export interface Lead {
   buyer_name: string;
   buyer_email: string | null;
   buyer_phone: string | null;
-  vehicle: LeadVehicle | null;
+  product_id: string | null;
+  product: LeadProduct | null;
   message: string | null;
   status: LeadStatus;
   source: string;
@@ -60,7 +96,7 @@ export interface CreateLeadRequest {
   buyer_name: string;
   buyer_email?: string | null;
   buyer_phone?: string | null;
-  vehicle_id?: string | null;
+  product_id?: string | null;
   message?: string | null;
 }
 
@@ -79,27 +115,35 @@ export interface ReassignLeadRequest {
   vendedor_id: string | null;
 }
 
-/**
- * Backend lead response
- */
+// ─── Backend shape ────────────────────────────────────────────────────────────
+
+interface BackendProductForLead {
+  id: string;
+  title: string;
+  price_cents: number;
+  currency: string;
+  status: string;
+  attributes: ProductAttributes;
+  created_at: string;
+  updated_at: string;
+}
+
 interface BackendLeadResponse {
   id: string;
   tenant_id: string;
   buyer_name: string;
   buyer_email: string | null;
   buyer_phone: string | null;
-  vehicle_id: string | null;
+  product_id: string | null;
   vendedor_id: string | null;
   message: string | null;
   source: string;
   status: LeadStatus;
   created_at: string;
   updated_at: string;
+  product: BackendProductForLead | null;
 }
 
-/**
- * Backend lead list response
- */
 interface BackendLeadListResponse {
   items: BackendLeadResponse[];
   total: number;
@@ -107,9 +151,6 @@ interface BackendLeadListResponse {
   offset: number;
 }
 
-/**
- * Vendedor metrics breakdown
- */
 interface VendedorMetricsBreakdown {
   vendedor_id: string;
   vendedor_name: string;
@@ -118,9 +159,6 @@ interface VendedorMetricsBreakdown {
   conversion_rate: number;
 }
 
-/**
- * Team metrics response
- */
 interface TeamMetricsResponse {
   total_leads: number;
   new_leads_last_24h: number;
@@ -128,27 +166,27 @@ interface TeamMetricsResponse {
   vendedor_breakdown: VendedorMetricsBreakdown[];
 }
 
-/**
- * Export team metrics type
- */
 export type { TeamMetricsResponse, VendedorMetricsBreakdown };
 
-/**
- * Transform backend lead response to frontend lead
- */
+// ─── Transform ────────────────────────────────────────────────────────────────
+
 function transformLead(backendLead: BackendLeadResponse): Lead {
   return {
     id: backendLead.id,
     buyer_name: backendLead.buyer_name,
     buyer_email: backendLead.buyer_email,
     buyer_phone: backendLead.buyer_phone,
-    vehicle: backendLead.vehicle_id
+    product_id: backendLead.product_id,
+    product: backendLead.product
       ? {
-          id: backendLead.vehicle_id,
-          title: "", // TODO: Fetch from vehicle endpoint if needed
-          make: "",
-          model: "",
-          year: 0,
+          id: backendLead.product.id,
+          title: backendLead.product.title,
+          price_cents: backendLead.product.price_cents,
+          currency: backendLead.product.currency,
+          status: backendLead.product.status,
+          attributes: backendLead.product.attributes,
+          created_at: backendLead.product.created_at,
+          updated_at: backendLead.product.updated_at,
         }
       : null,
     message: backendLead.message,
@@ -159,11 +197,8 @@ function transformLead(backendLead: BackendLeadResponse): Lead {
   };
 }
 
-/**
- * Fetch leads with optional filters
- * @param filters - Optional filters for status, search, vendedor_id
- * @returns Query result with leads array
- */
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+
 export function useLeads(filters?: LeadFilters, limit: number = 50, offset: number = 0): UseQueryResult<Lead[], Error> {
   const queryParams = new URLSearchParams();
   queryParams.append("limit", limit.toString());
@@ -171,9 +206,6 @@ export function useLeads(filters?: LeadFilters, limit: number = 50, offset: numb
 
   if (filters?.status) queryParams.append("status", filters.status);
   if (filters?.search) queryParams.append("search", filters.search);
-
-  // Role-based filtering: vendedor_id filter only applies if explicitly provided
-  // Otherwise backend handles role-based filtering via auth token
   if (filters?.vendedor_id) queryParams.append("vendedor_id", filters.vendedor_id);
 
   return useQuery({
@@ -191,16 +223,11 @@ export function useLeads(filters?: LeadFilters, limit: number = 50, offset: numb
       const data = (await res.json()) as BackendLeadListResponse;
       return data.items.map(transformLead);
     },
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 30 * 1000, // Auto-refetch every 30 seconds for real-time updates
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
   });
 }
 
-/**
- * Fetch a single lead by ID
- * @param leadId - The lead ID to fetch
- * @returns Query result with lead details or null if not found
- */
 export function useLead(leadId: string | undefined): UseQueryResult<Lead | null, Error> {
   return useQuery({
     queryKey: ["lead", leadId],
@@ -219,16 +246,11 @@ export function useLead(leadId: string | undefined): UseQueryResult<Lead | null,
       const data = (await res.json()) as BackendLeadResponse;
       return transformLead(data);
     },
-    enabled: !!leadId, // Only run query if leadId is provided
-    staleTime: 60 * 1000, // 1 minute
+    enabled: !!leadId,
+    staleTime: 60 * 1000,
   });
 }
 
-/**
- * Update lead status mutation
- * @param leadId - The lead ID to update
- * @returns Mutation object with updateStatus function
- */
 export function useUpdateLeadStatus(leadId: string) {
   const queryClient = useQueryClient();
 
@@ -236,9 +258,7 @@ export function useUpdateLeadStatus(leadId: string) {
     mutationFn: async (request: UpdateLeadStatusRequest) => {
       const res = await fetch(`/api/v1/leads/${leadId}/status`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(request),
       });
@@ -252,27 +272,16 @@ export function useUpdateLeadStatus(leadId: string) {
       return transformLead(data);
     },
     onSuccess: (updatedLead) => {
-      // Invalidate and refetch leads list
       queryClient.invalidateQueries({ queryKey: ["leads"] });
-
-      // Update specific lead cache if it exists
       queryClient.setQueryData(["lead", leadId], updatedLead);
-
-      // Show success toast
       toast.success("Lead status updated successfully");
     },
     onError: (error) => {
-      // Show error toast
       toast.error(error.message || "Failed to update lead status");
     },
   });
 }
 
-/**
- * Reassign lead to a different vendedor
- * @param leadId - The lead ID to reassign
- * @returns Mutation object with reassignLead function
- */
 export function useReassignLead(leadId: string) {
   const queryClient = useQueryClient();
 
@@ -280,9 +289,7 @@ export function useReassignLead(leadId: string) {
     mutationFn: async (request: ReassignLeadRequest) => {
       const res = await fetch(`/api/v1/leads/${leadId}/assign`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(request),
       });
@@ -296,26 +303,16 @@ export function useReassignLead(leadId: string) {
       return transformLead(data);
     },
     onSuccess: (updatedLead) => {
-      // Invalidate and refetch leads list
       queryClient.invalidateQueries({ queryKey: ["leads"] });
-
-      // Update specific lead cache if it exists
       queryClient.setQueryData(["lead", leadId], updatedLead);
-
-      // Show success toast
       toast.success("Lead reassigned successfully");
     },
     onError: (error) => {
-      // Show error toast
       toast.error(error.message || "Failed to reassign lead");
     },
   });
 }
 
-/**
- * Fetch team lead metrics
- * @returns Query result with team metrics
- */
 export function useTeamMetrics(): UseQueryResult<TeamMetricsResponse, Error> {
   return useQuery({
     queryKey: ["team-metrics"],
@@ -331,8 +328,7 @@ export function useTeamMetrics(): UseQueryResult<TeamMetricsResponse, Error> {
 
       return (await res.json()) as TeamMetricsResponse;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: 5 * 60 * 1000, // Auto-refetch every 5 minutes
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
   });
 }
-

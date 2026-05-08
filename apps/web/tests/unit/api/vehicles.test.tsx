@@ -98,15 +98,16 @@ describe("useDecodeVin", () => {
     });
 
     expect(fetch).toHaveBeenCalledWith(
-      "/api/v1/vehicles/decode-vin?vin=1HGCM82633A123456",
+      "/api/v1/vehicles/decode-vin",
       expect.objectContaining({
         method: "POST",
         credentials: "include",
+        body: JSON.stringify({ vin: "1HGCM82633A123456" }),
       })
     );
   });
 
-  it("should pass VIN as query parameter", async () => {
+  it("should send VIN in POST request body", async () => {
     const mockResponse = {
       vehicle: {
         vin: "1HGCM82633A123456",
@@ -130,8 +131,10 @@ describe("useDecodeVin", () => {
     });
 
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("vin=1HGCM82633A123456"),
-      expect.any(Object)
+      "/api/v1/vehicles/decode-vin",
+      expect.objectContaining({
+        body: expect.stringContaining("1HGCM82633A123456"),
+      })
     );
   });
 
@@ -202,135 +205,114 @@ describe("transformVehicleWithProduct", () => {
   });
 
   it("should extract title from product.title", async () => {
-    
     const backendItem = {
-      id: "vehicle-uuid",
-      product_id: "product-uuid",
-      vin: "1HGCM82633A123456",
-      year: 2020,
-      make: "Honda",
-      model: "Civic",
-      trim: "LX",
+      id: "product-uuid",
+      tenant_id: "tenant-uuid",
+      organization_id: "org-uuid",
+      category_id: "category-uuid",
+      title: "2020 Honda Civic LX",
+      price_cents: 2500000,
+      currency: "USD",
+      condition: "used" as const,
+      status: "active" as const,
       created_at: "2024-01-01T00:00:00Z",
-      product: {
-        id: "product-uuid",
-        title: "2020 Honda Civic LX",
-        price_cents: 2500000,
-        status: "active",
-        category_id: "category-uuid",
-        created_at: "2024-01-01T00:00:00Z",
-      },
+      updated_at: "2024-01-01T00:00:00Z",
+      attributes: { category: "vehicle", year: 2020, make: "Honda", model: "Civic", trim: "LX" },
     };
 
-    const result = transformVehicleWithProduct(backendItem);
+    const result = transformVehicleWithProduct(backendItem as any);
 
     expect(result.title).toBe("2020 Honda Civic LX");
   });
 
   it("should extract price from product.price_cents", async () => {
-    
     const backendItem = {
-      id: "vehicle-uuid",
-      product_id: "product-uuid",
-      vin: "1HGCM82633A123456",
-      year: 2020,
-      make: "Honda",
-      model: "Civic",
+      id: "product-uuid",
+      tenant_id: "tenant-uuid",
+      organization_id: "org-uuid",
+      category_id: "category-uuid",
+      title: "2020 Honda Civic",
+      price_cents: 1850000,
+      currency: "USD",
+      condition: "used" as const,
+      status: "active" as const,
       created_at: "2024-01-01T00:00:00Z",
-      product: {
-        id: "product-uuid",
-        title: "2020 Honda Civic",
-        price_cents: 1850000,
-        status: "active",
-        category_id: "category-uuid",
-        created_at: "2024-01-01T00:00:00Z",
-      },
+      updated_at: "2024-01-01T00:00:00Z",
+      attributes: { category: "vehicle", year: 2020, make: "Honda", model: "Civic" },
     };
 
-    const result = transformVehicleWithProduct(backendItem);
+    const result = transformVehicleWithProduct(backendItem as any);
 
     expect(result.price).toBe(18500);
   });
 
   it("should extract status from product.status", async () => {
-    
     const backendItem = {
-      id: "vehicle-uuid",
-      product_id: "product-uuid",
-      vin: "1HGCM82633A123456",
-      year: 2020,
-      make: "Honda",
-      model: "Civic",
+      id: "product-uuid",
+      tenant_id: "tenant-uuid",
+      organization_id: "org-uuid",
+      category_id: "category-uuid",
+      title: "2020 Honda Civic",
+      price_cents: 1850000,
+      currency: "USD",
+      condition: "used" as const,
+      status: "draft" as const,
       created_at: "2024-01-01T00:00:00Z",
-      product: {
-        id: "product-uuid",
-        title: "2020 Honda Civic",
-        price_cents: 1850000,
-        status: "draft",
-        category_id: "category-uuid",
-        created_at: "2024-01-01T00:00:00Z",
-      },
+      updated_at: "2024-01-01T00:00:00Z",
+      attributes: { category: "vehicle", year: 2020, make: "Honda", model: "Civic" },
     };
 
-    const result = transformVehicleWithProduct(backendItem);
+    const result = transformVehicleWithProduct(backendItem as any);
 
     expect(result.status).toBe("draft");
   });
 
-  it("should preserve vehicle fields", async () => {
-    
+  it("should preserve vehicle attribute fields", async () => {
     const backendItem = {
-      id: "vehicle-uuid",
-      product_id: "product-uuid",
-      vin: "1HGCM82633A123456",
-      year: 2020,
-      make: "Honda",
-      model: "Civic",
-      trim: "LX",
-      mileage: 50000,
-      exterior_color: "Blue",
-      interior_color: "Black",
-      dealer_id: "dealer-uuid",
-      dealer_name: "Test Dealer",
+      id: "product-uuid",
+      tenant_id: "tenant-uuid",
+      organization_id: "org-uuid",
+      category_id: "category-uuid",
+      title: "2020 Honda Civic LX",
+      price_cents: 1850000,
+      currency: "USD",
+      condition: "used" as const,
+      status: "active" as const,
       created_at: "2024-01-01T00:00:00Z",
-      product: {
-        id: "product-uuid",
-        title: "2020 Honda Civic LX",
-        price_cents: 1850000,
-        status: "active",
-        category_id: "category-uuid",
-        created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z",
+      attributes: {
+        category: "vehicle",
+        year: 2020,
+        make: "Honda",
+        model: "Civic",
+        trim: "LX",
+        mileage: 50000,
       },
     };
 
-    const result = transformVehicleWithProduct(backendItem);
+    const result = transformVehicleWithProduct(backendItem as any);
 
     expect(result.year).toBe(2020);
     expect(result.make).toBe("Honda");
     expect(result.model).toBe("Civic");
-    expect(result.dealer_id).toBe("dealer-uuid");
-    expect(result.dealer_name).toBe("Test Dealer");
   });
 
   it("should useInfiniteVehicles use new transform function", async () => {
     const mockResponse: any = {
-      items: [
+      products: [
         {
-          id: "vehicle-uuid",
-          product_id: "product-uuid",
-          vin: "1HGCM82633A123456",
-          year: 2020,
-          make: "Honda",
-          model: "Civic",
+          id: "product-uuid",
+          tenant_id: "tenant-uuid",
+          organization_id: "org-uuid",
+          category_id: "category-uuid",
+          title: "2020 Honda Civic",
+          price_cents: 1850000,
+          currency: "USD",
+          condition: "used",
+          status: "active",
           created_at: "2024-01-01T00:00:00Z",
-          product: {
-            id: "product-uuid",
-            title: "2020 Honda Civic",
-            price_cents: 1850000,
-            status: "active",
-            category_id: "category-uuid",
-            created_at: "2024-01-01T00:00:00Z",
-          },
+          updated_at: "2024-01-01T00:00:00Z",
+          attributes: { category: "vehicle", year: 2020, make: "Honda", model: "Civic" },
         },
       ],
       next_cursor: "next-cursor",

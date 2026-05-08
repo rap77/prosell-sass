@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import DealerAppointmentsPage from "./page";
+import BranchAppointmentsPage from "./page";
 import * as appointmentsApi from "@/lib/api/appointments";
 import * as authStoreModule from "@/stores/authStore";
 import * as CalendarViewModule from "@/components/appointments/CalendarView";
@@ -25,9 +25,9 @@ vi.mock("@/lib/api/appointments", () => ({
 }));
 
 vi.mock("@/components/appointments/CalendarView", () => ({
-  CalendarView: vi.fn(({ appointments, onAppointmentClick, dealerId }) => (
+  CalendarView: vi.fn(({ appointments, onAppointmentClick, userId }) => (
     <div data-testid="calendar-view">
-      <div data-testid="dealer-id">{dealerId}</div>
+      <div data-testid="branch-id">{userId}</div>
       <div data-testid="appointment-count">{appointments.length}</div>
       {appointments.map((apt: any) => (
         <div key={apt.id} data-testid={`appointment-${apt.id}`}>
@@ -62,7 +62,7 @@ vi.mock("@/lib/api/leads", () => ({
   },
 }));
 
-describe("DealerAppointmentsPage", () => {
+describe("BranchAppointmentsPage", () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
@@ -77,10 +77,10 @@ describe("DealerAppointmentsPage", () => {
 
   const mockUser = {
     id: "user-1",
-    email: "dealer@prosell.com",
+    email: "branch@prosell.com",
     first_name: "John",
-    last_name: "Dealer",
-    role: "dealer",
+    last_name: "Branch",
+    role: "branch",
   };
 
   const mockAppointments = [
@@ -88,8 +88,8 @@ describe("DealerAppointmentsPage", () => {
       id: "apt-1",
       tenant_id: "tenant-1",
       lead_id: "lead-1",
-      dealer_id: "dealer-1",
-      vehicle_id: "vehicle-1",
+      user_id: "branch-1",
+      product_id: "vehicle-1",
       scheduled_at: "2026-04-30T10:00:00Z",
       status: "scheduled",
       notes: null,
@@ -100,8 +100,8 @@ describe("DealerAppointmentsPage", () => {
       id: "apt-2",
       tenant_id: "tenant-1",
       lead_id: "lead-2",
-      dealer_id: "dealer-1",
-      vehicle_id: "vehicle-2",
+      user_id: "branch-1",
+      product_id: "vehicle-2",
       scheduled_at: "2026-04-30T14:00:00Z",
       status: "completed",
       notes: "Test note",
@@ -120,7 +120,7 @@ describe("DealerAppointmentsPage", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <DealerAppointmentsPage />
+        <BranchAppointmentsPage />
       </QueryClientProvider>
     );
 
@@ -130,7 +130,7 @@ describe("DealerAppointmentsPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("should render calendar view with dealer appointments", async () => {
+  it("should render calendar view with branch appointments", async () => {
     vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({ user: mockUser } as any);
     vi.spyOn(appointmentsApi, "useAppointments").mockReturnValue({
       data: mockAppointments,
@@ -140,7 +140,7 @@ describe("DealerAppointmentsPage", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <DealerAppointmentsPage />
+        <BranchAppointmentsPage />
       </QueryClientProvider>
     );
 
@@ -152,15 +152,18 @@ describe("DealerAppointmentsPage", () => {
   });
 
   it("should show today's appointments count badge", async () => {
-    const today = new Date().toISOString().split("T")[0];
+    // Use local date (not UTC) to match component's startOfDay/endOfDay comparison
+    const localDate = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const today = `${localDate.getFullYear()}-${pad(localDate.getMonth() + 1)}-${pad(localDate.getDate())}`;
     const todayAppointments = [
       {
         ...mockAppointments[0],
-        scheduled_at: `${today}T10:00:00Z`,
+        scheduled_at: `${today}T10:00:00`,
       },
       {
         ...mockAppointments[1],
-        scheduled_at: `${today}T14:00:00Z`,
+        scheduled_at: `${today}T14:00:00`,
       },
     ];
 
@@ -173,7 +176,7 @@ describe("DealerAppointmentsPage", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <DealerAppointmentsPage />
+        <BranchAppointmentsPage />
       </QueryClientProvider>
     );
 
@@ -194,7 +197,7 @@ describe("DealerAppointmentsPage", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <DealerAppointmentsPage />
+        <BranchAppointmentsPage />
       </QueryClientProvider>
     );
 
@@ -211,7 +214,7 @@ describe("DealerAppointmentsPage", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <DealerAppointmentsPage />
+        <BranchAppointmentsPage />
       </QueryClientProvider>
     );
 
@@ -231,7 +234,7 @@ describe("DealerAppointmentsPage", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <DealerAppointmentsPage />
+        <BranchAppointmentsPage />
       </QueryClientProvider>
     );
 
@@ -249,10 +252,10 @@ describe("DealerAppointmentsPage", () => {
     });
   });
 
-  it("should filter appointments by dealer_id", async () => {
-    const dealerId = "dealer-1";
+  it("should filter appointments by user_id", async () => {
+    const userId = "branch-1";
     vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({
-      user: { ...mockUser, id: dealerId },
+      user: { ...mockUser, id: userId },
     } as any);
     vi.spyOn(appointmentsApi, "useAppointments").mockReturnValue({
       data: mockAppointments,
@@ -262,7 +265,7 @@ describe("DealerAppointmentsPage", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <DealerAppointmentsPage />
+        <BranchAppointmentsPage />
       </QueryClientProvider>
     );
 
@@ -270,9 +273,9 @@ describe("DealerAppointmentsPage", () => {
       expect(screen.getByTestId("calendar-view")).toBeInTheDocument();
     });
 
-    // Verify useAppointments was called with dealer_id filter
+    // Verify useAppointments was called with user_id filter
     expect(appointmentsApi.useAppointments).toHaveBeenCalledWith(
-      { dealer_id: dealerId },
+      { user_id: userId },
       50,
       0
     );

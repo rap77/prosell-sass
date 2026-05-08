@@ -3,17 +3,17 @@ import { Header } from '@/components/layout/Header'
 import { MobileNav } from '@/components/layout/MobileNav'
 
 /**
- * Dealer-specific layout with business/financial focus.
+ * Branch-specific layout with business/financial focus.
  *
- * Role: Dealer - Business view and reporting
+ * Role: Branch - Business view and reporting
  * Navigation groups:
  * - Inventario: Catálogo, Publicaciones (inventory focus)
  * - NO Ventas access (no leads/sales data visibility)
- * - Configuración: Settings, Logs (dealership configuration)
+ * - Configuración: Settings, Logs (brancheship configuration)
  *
  * Server Component by default (minimize client JS).
  */
-export default function DealerLayout({
+export default function BranchLayout({
   children,
 }: {
   children: React.ReactNode

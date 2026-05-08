@@ -7,6 +7,7 @@ import { Plus, Filter } from "lucide-react";
 import { useProducts, useCreateProduct, useUpdateProductStatus } from "@/lib/api/products";
 import { useCategoryOptions } from "@/lib/api/categories";
 import type { Product } from "@/types/product";
+import { formatCurrency } from "@/lib/utils/format";
 
 export default function ProductsPage() {
   const [showForm, setShowForm] = useState(false);
@@ -41,7 +42,10 @@ export default function ProductsPage() {
         title: formData.title,
         price_cents: parseFloat(formData.price) * 100,
         category_id: formData.category_id,
+        tenant_id: "", // Will be filled by API middleware
+        organization_id: "", // Will be filled by API middleware
         attributes: {
+          category: "generic" as const,
           condition: formData.condition,
           description: formData.description,
         },
@@ -54,7 +58,7 @@ export default function ProductsPage() {
   };
 
   const handleSubmitForApproval = async (productId: string) => {
-    await updateStatus.mutateAsync({ productId, status: "active" });
+    await updateStatus.mutateAsync({ productId, status: "published" });
   };
 
   if (isLoading) {
@@ -104,7 +108,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Status Filter */}
-      <div className="mb-4 flex items-center gap-2">
+      <nav className="mb-4 flex items-center gap-2" aria-label="Product status filter">
         <Filter className="h-4 w-4 text-muted-foreground" />
         <select
           value={statusFilter}
@@ -117,7 +121,7 @@ export default function ProductsPage() {
           <option value="active">Active</option>
           <option value="sold">Sold</option>
         </select>
-      </div>
+      </nav>
 
       {showForm && (
         <div className="mb-6 p-4 border rounded-lg bg-card">
@@ -235,16 +239,18 @@ export default function ProductsPage() {
       )}
 
       {filteredProducts && filteredProducts.length > 0 ? (
-        <div className="space-y-2">
+        <>
+          <h2 className="sr-only">Products List</h2>
+          <ul className="space-y-2">
           {filteredProducts.map((product: Product) => (
-            <div
+            <li
               key={product.id}
               className="p-4 border rounded-lg bg-card flex items-center justify-between"
             >
               <div>
                 <h3 className="font-medium">{product.title}</h3>
                 <p className="text-sm text-muted-foreground">
-                  ${(product.price_cents / 100).toFixed(2)} • {product.status}
+                  {formatCurrency(product.price_cents / 100)} • {product.status}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -253,14 +259,16 @@ export default function ProductsPage() {
                     onClick={() => handleSubmitForApproval(product.id)}
                     disabled={updateStatus.isPending}
                     className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    aria-label={`Submit product ${product.title} for approval`}
                   >
                     Submit
                   </button>
                 )}
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+          </ul>
+        </>
       ) : (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No products found</p>

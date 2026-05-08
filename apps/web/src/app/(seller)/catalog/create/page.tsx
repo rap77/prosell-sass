@@ -35,12 +35,32 @@ export default function CreateVehiclePage() {
         : []
 
       // Then create vehicle with uploaded image URLs
-      const response = await fetch('/api/v1/vehicles', {
+      const response = await fetch('/api/v1/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...data,
-          images: uploadedUrls,
+          title: `${data.year} ${data.make} ${data.model}`,
+          price_cents: Math.round((data.price || 0) * 100),
+          category_id: data.category_id,
+          attributes: {
+            vin: data.vin,
+            category: "vehicle",
+            year: data.year,
+            make: data.make,
+            model: data.model,
+            trim: data.trim,
+            body_type: data.body_type,
+            drivetrain: data.drivetrain,
+            transmission: data.transmission,
+            fuel_type: data.fuel_type,
+            mileage: data.mileage,
+            exterior_color: data.exterior_color,
+            interior_color: data.interior_color,
+            has_sunroof: data.has_sunroof,
+            has_navigation: data.has_navigation,
+            has_backup_camera: data.has_backup_camera,
+            description: data.description,
+          },
         }),
       })
 

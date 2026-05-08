@@ -10,7 +10,7 @@ import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { FilterPills } from "@/components/filters/FilterPills";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { BulkUploadCSV } from "@/components/upload/BulkUploadCSV";
-import { BulkDealerAssign } from "@/components/dealers/BulkDealerAssign";
+import { BulkBranchAssign } from "@/components/branches/BulkBranchAssign";
 import { CatalogErrorBoundary } from "@/components/catalog/CatalogErrorBoundary";
 import { useVehicleFilters } from "@/lib/hooks/useVehicleFilters";
 import { useInfiniteVehicles, useDeleteVehicle, useBulkUploadVehicles, type Vehicle as ApiVehicle } from "@/lib/api/vehicles";
@@ -21,8 +21,8 @@ export default function CatalogPage() {
   const deleteVehicle = useDeleteVehicle();
   const bulkUpload = useBulkUploadVehicles();
   const [showBulkUpload, setShowBulkUpload] = useState(false);
-  const [showBulkDealerAssign, setShowBulkDealerAssign] = useState(false);
-  const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([]);
+  const [showBulkBranchAssign, setShowBulkBranchAssign] = useState(false);
+  const [selectedProductIds, setSelectedVehicleIds] = useState<string[]>([]);
 
   // Transform filters to match API format
   const apiFilters = {
@@ -59,9 +59,9 @@ export default function CatalogPage() {
     deleteVehicle.mutate(vehicleId);
   };
 
-  const handleBulkAssignDealer = (vehicleIds: string[]) => {
-    setSelectedVehicleIds(vehicleIds);
-    setShowBulkDealerAssign(true);
+  const handleBulkAssignBranch = (productIds: string[]) => {
+    setSelectedVehicleIds(productIds);
+    setShowBulkBranchAssign(true);
   };
 
   // Setup infinite scroll observer
@@ -214,7 +214,7 @@ export default function CatalogPage() {
                 onPublish={handlePublish}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
-                onBulkAssignDealer={handleBulkAssignDealer}
+                onBulkAssignBranch={handleBulkAssignBranch}
               />
 
               {/* Infinite scroll sentinel */}
@@ -286,12 +286,12 @@ export default function CatalogPage() {
         </div>
       )}
 
-      {/* Bulk Dealer Assign Modal */}
-      <BulkDealerAssign
-        open={showBulkDealerAssign}
-        onOpenChange={setShowBulkDealerAssign}
-        vehicleIds={selectedVehicleIds}
-        vehicleCount={selectedVehicleIds.length}
+      {/* Bulk Branch Assign Modal */}
+      <BulkBranchAssign
+        open={showBulkBranchAssign}
+        onOpenChange={setShowBulkBranchAssign}
+        vehicleIds={selectedProductIds}
+        productCount={selectedProductIds.length}
       />
       </div>
     </CatalogErrorBoundary>

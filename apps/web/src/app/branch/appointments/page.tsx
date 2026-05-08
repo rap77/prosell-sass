@@ -1,59 +1,56 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { useAppointments, Appointment } from "@/lib/api/appointments";
 import { CalendarView } from "@/components/appointments/CalendarView";
 import { AppointmentDetailsModal } from "@/components/appointments/AppointmentDetailsModal";
-import { Calendar, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Calendar, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format, parseISO, startOfDay, endOfDay } from "date-fns";
+import { parseISO, startOfDay, endOfDay } from "date-fns";
 
 /**
- * Dealer Appointments Page
+ * Branch Appointments Page
  *
  * Features:
- * - Display calendar with dealer's appointments
+ * - Display calendar with branch's appointments
  * - Day/week/month views
- * - Filter appointments by dealer_id from user context
+ * - Filter appointments by user_id from user context
  * - Show today's appointments count badge
  * - Show appointment details modal on click
  * - Confirm/cancel appointments from modal
  * - Responsive design for mobile/desktop
  *
- * Route: /dealer/appointments
- * Role: Dealer
+ * Route: /branch/appointments
+ * Role: Branch
  */
-export default function DealerAppointmentsPage() {
+export default function BranchAppointmentsPage() {
   const { user } = useAuthStore();
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isManualRefetch, setIsManualRefetch] = useState(false);
 
-  // Get dealer_id from user context
-  // Note: In a real implementation, this would come from user_dealer assignment
-  // For now, we use user.id as the dealer_id (simplified for MVP)
-  const dealerId = user?.id || "";
+  // Get user_id from user context
+  // Note: In a real implementation, this would come from user_branch assignment
+  // For now, we use user.id as the user_id (simplified for MVP)
+  const userId = user?.id || "";
 
-  // Fetch appointments with dealer filter
+  // Fetch appointments with branch filter
   const {
     data: appointments = [],
     isLoading,
     error,
     refetch,
-  } = useAppointments({ dealer_id: dealerId }, 50, 0);
+  } = useAppointments({ user_id: userId }, 50, 0);
 
   // Calculate today's appointments count
-  const todayAppointmentsCount = useMemo(() => {
-    const today = new Date();
-    const startOfToday = startOfDay(today);
-    const endOfToday = endOfDay(today);
-
-    return appointments.filter((apt) => {
-      const scheduledDate = parseISO(apt.scheduled_at);
-      return scheduledDate >= startOfToday && scheduledDate <= endOfToday;
-    }).length;
-  }, [appointments]);
+  const today = new Date();
+  const startOfToday = startOfDay(today);
+  const endOfToday = endOfDay(today);
+  const todayAppointmentsCount = appointments.filter((apt) => {
+    const scheduledDate = parseISO(apt.scheduled_at);
+    return scheduledDate >= startOfToday && scheduledDate <= endOfToday;
+  }).length;
 
   // Handle appointment click
   const handleAppointmentClick = (appointment: Appointment) => {
@@ -88,7 +85,6 @@ export default function DealerAppointmentsPage() {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="container mx-auto py-8">
@@ -98,10 +94,16 @@ export default function DealerAppointmentsPage() {
             Manage your appointments and schedule
           </p>
         </div>
-        <div className="flex flex-col items-center justify-center py-12">
-          <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-          <p className="text-red-500 mb-4">Error loading appointments: {error.message}</p>
-          <Button onClick={() => refetch()} variant="outline">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+          <p className="font-medium text-red-700">Error loading appointments</p>
+          <p className="mt-2 text-sm text-red-600">{error.message}</p>
+          <Button
+            className="mt-4"
+            variant="outline"
+            onClick={() => {
+              void refetch();
+            }}
+          >
             Retry
           </Button>
         </div>
@@ -151,7 +153,7 @@ export default function DealerAppointmentsPage() {
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <CalendarView
           appointments={appointments}
-          dealerId={dealerId}
+          userId={userId}
           onAppointmentClick={handleAppointmentClick}
         />
       </div>
