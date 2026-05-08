@@ -112,21 +112,21 @@ class AbstractEmailService(Protocol):
 
     async def send_appointment_notification(
         self,
-        dealer_email: str,
-        dealer_name: str,
+        branch_email: str,
+        branch_name: str,
         buyer_name: str,
         vehicle_info: str,
         scheduled_at: datetime,
         notes: str | None = None,
     ) -> None:
-        """Send appointment notification to dealer."""
+        """Send appointment notification to branch."""
         ...
 
     async def send_appointment_confirmation(
         self,
         buyer_email: str,
         buyer_name: str,
-        dealer_name: str,
+        branch_name: str,
         vehicle_info: str,
         scheduled_at: datetime,
         notes: str | None = None,
@@ -137,7 +137,7 @@ class AbstractEmailService(Protocol):
     async def send_appointment_reminder(
         self,
         email: str,
-        person_type: str,  # "dealer" or "buyer"
+        person_type: str,  # "branch" or "buyer"
         appointment_details: dict,
     ) -> None:
         """Send appointment reminder."""
@@ -147,7 +147,7 @@ class AbstractEmailService(Protocol):
         self,
         buyer_email: str,
         buyer_name: str,
-        dealer_name: str,
+        branch_name: str,
         vehicle_info: str,
         scheduled_at: datetime,
         new_status: "AppointmentStatus",
@@ -333,14 +333,14 @@ class SendGridEmailService:
     @retry_on_sendgrid_error()
     async def send_appointment_notification(
         self,
-        dealer_email: str,
-        dealer_name: str,
+        branch_email: str,
+        branch_name: str,
         buyer_name: str,
         vehicle_info: str,
         scheduled_at: datetime,
         notes: str | None = None,
     ) -> None:
-        """Send appointment notification to dealer."""
+        """Send appointment notification to branch."""
         import sendgrid  # type: ignore[import]
         from sendgrid.helpers.mail import Mail  # type: ignore[import]
 
@@ -359,13 +359,13 @@ class SendGridEmailService:
         # Create email message
         message = Mail(
             from_email=self.from_email,
-            to_emails=dealer_email,
+            to_emails=branch_email,
             subject=f"Nueva Cita Agendada - {buyer_name}",
             html_content=f"""
             <html>
             <body>
                 <h2>Nueva Cita Agendada</h2>
-                <p>Hola <strong>{dealer_name}</strong>,</p>
+                <p>Hola <strong>{branch_name}</strong>,</p>
                 <p>Tienes una nueva cita agendada:</p>
                 <table cellpadding="5" style="border-collapse: collapse;
                 border: 1px solid #ddd;">
@@ -401,13 +401,13 @@ class SendGridEmailService:
         if response.status_code in (200, 202):  # type: ignore[attr-defined]
             logger.info(  # type: ignore[attr-defined]
                 f"Email sent successfully: type=appointment_notification, "
-                f"to={dealer_email}, buyer={buyer_name}, vehicle={vehicle_info}, "
+                f"to={branch_email}, buyer={buyer_name}, vehicle={vehicle_info}, "
                 f"status={response.status_code}"
             )
         else:
             logger.error(  # type: ignore[attr-defined]
                 f"Email delivery failed: type=appointment_notification, "
-                f"to={dealer_email}, status={response.status_code}, "
+                f"to={branch_email}, status={response.status_code}, "
                 f"body={response.body}"
             )
             raise Exception(  # type: ignore[attr-defined]
@@ -419,7 +419,7 @@ class SendGridEmailService:
         self,
         buyer_email: str,
         buyer_name: str,
-        dealer_name: str,
+        branch_name: str,
         vehicle_info: str,
         scheduled_at: datetime,
         notes: str | None = None,
@@ -456,7 +456,7 @@ class SendGridEmailService:
                     <tr style="background-color: #f2f2f2;">
                         <td style="border: 1px solid #ddd;"><strong>Asesor:
                         </strong></td>
-                        <td style="border: 1px solid #ddd;">{dealer_name}</td>
+                        <td style="border: 1px solid #ddd;">{branch_name}</td>
                     </tr>
                     <tr>
                         <td style="border: 1px solid #ddd;"><strong>Vehículo:
@@ -485,7 +485,7 @@ class SendGridEmailService:
         if response.status_code in (200, 202):  # type: ignore[attr-defined]
             logger.info(  # type: ignore[attr-defined]
                 f"Email sent successfully: type=appointment_confirmation, "
-                f"to={buyer_email}, dealer={dealer_name}, vehicle={vehicle_info}, "
+                f"to={buyer_email}, branch={branch_name}, vehicle={vehicle_info}, "
                 f"status={response.status_code}"
             )
         else:
@@ -502,7 +502,7 @@ class SendGridEmailService:
     async def send_appointment_reminder(
         self,
         email: str,
-        person_type: str,  # "dealer" or "buyer"
+        person_type: str,  # "branch" or "buyer"
         appointment_details: dict,
     ) -> None:
         """Send appointment reminder."""
@@ -510,7 +510,7 @@ class SendGridEmailService:
         from sendgrid.helpers.mail import Mail  # type: ignore[import]
 
         buyer_name = appointment_details.get("buyer_name", "Cliente")
-        dealer_name = appointment_details.get("dealer_name", "Asesor")
+        branch_name = appointment_details.get("branch_name", "Asesor")
         vehicle_info = appointment_details.get("vehicle_info", "Vehículo")
         scheduled_at = appointment_details.get("scheduled_at", datetime.now())
         notes = appointment_details.get("notes")
@@ -528,8 +528,8 @@ class SendGridEmailService:
         )
 
         # Customize message based on recipient type
-        if person_type == "dealer":
-            greeting = f"Hola <strong>{dealer_name}</strong>,"
+        if person_type == "branch":
+            greeting = f"Hola <strong>{branch_name}</strong>,"
             instructions = "Por favor asegúrate de estar disponible para esta cita."
         else:  # buyer
             greeting = f"Hola <strong>{buyer_name}</strong>,"
@@ -591,7 +591,7 @@ class SendGridEmailService:
         self,
         buyer_email: str,
         buyer_name: str,
-        dealer_name: str,
+        branch_name: str,
         vehicle_info: str,
         scheduled_at: datetime,
         new_status: "AppointmentStatus",
@@ -652,7 +652,7 @@ class SendGridEmailService:
                     <tr>
                         <td style="border: 1px solid #ddd;"><strong>Asesor:
                         </strong></td>
-                        <td style="border: 1px solid #ddd;">{dealer_name}</td>
+                        <td style="border: 1px solid #ddd;">{branch_name}</td>
                     </tr>
                     <tr style="background-color: #f2f2f2;">
                         <td style="border: 1px solid #ddd;"><strong>Vehículo:
@@ -763,23 +763,23 @@ If you didn't make this change, please contact support immediately.
 
     async def send_appointment_notification(
         self,
-        dealer_email: str,
-        dealer_name: str,
+        branch_email: str,
+        branch_name: str,
         buyer_name: str,
         vehicle_info: str,
         scheduled_at: datetime,
         notes: str | None = None,
     ) -> None:
-        """Log appointment notification to dealer."""
+        """Log appointment notification to branch."""
         scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
         print(f"""
 {"=" * 60}
-📧 MOCK EMAIL: Appointment Notification (Dealer)
+📧 MOCK EMAIL: Appointment Notification (Branch)
 {"=" * 60}
-To: {dealer_email}
+To: {branch_email}
 Subject: Nueva Cita Agendada - {buyer_name}
 
-Hola {dealer_name},
+Hola {branch_name},
 
 Tienes una nueva cita agendada:
   Comprador: {buyer_name}
@@ -795,7 +795,7 @@ Por favor asegúrate de estar disponible para esta cita.
         self,
         buyer_email: str,
         buyer_name: str,
-        dealer_name: str,
+        branch_name: str,
         vehicle_info: str,
         scheduled_at: datetime,
         notes: str | None = None,
@@ -812,7 +812,7 @@ Subject: Confirmación de Cita - ProSell
 Hola {buyer_name},
 
 Tu cita ha sido confirmada:
-  Asesor: {dealer_name}
+  Asesor: {branch_name}
   Vehículo: {vehicle_info}
   Fecha y Hora: {scheduled_str}
 {f'  Notas: {notes}' if notes else ''}
@@ -824,19 +824,19 @@ Por favor llega 10 minutos antes de tu cita.
     async def send_appointment_reminder(
         self,
         email: str,
-        person_type: str,  # "dealer" or "buyer"
+        person_type: str,  # "branch" or "buyer"
         appointment_details: dict,
     ) -> None:
         """Log appointment reminder."""
         buyer_name = appointment_details.get("buyer_name", "Cliente")
-        dealer_name = appointment_details.get("dealer_name", "Asesor")
+        branch_name = appointment_details.get("branch_name", "Asesor")
         vehicle_info = appointment_details.get("vehicle_info", "Vehículo")
         scheduled_at = appointment_details.get("scheduled_at", datetime.now())
         notes = appointment_details.get("notes")
 
         scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
 
-        if person_type == "dealer":
+        if person_type == "branch":
             instructions = "Por favor asegúrate de estar disponible para esta cita."
         else:  # buyer
             instructions = "Por favor llega 10 minutos antes de tu cita."
@@ -861,7 +861,7 @@ Este es un recordatorio de tu próxima cita:
         self,
         buyer_email: str,
         buyer_name: str,
-        dealer_name: str,
+        branch_name: str,
         vehicle_info: str,
         scheduled_at: datetime,
         new_status: "AppointmentStatus",
@@ -893,7 +893,7 @@ Subject: [ProSell] Appointment {status_text.title()}
 Hola {buyer_name},
 
 {status_message}:
-  Asesor: {dealer_name}
+  Asesor: {branch_name}
   Vehículo: {vehicle_info}
   Fecha y Hora: {scheduled_str}
 {f'  Notas: {notes}' if notes else ''}

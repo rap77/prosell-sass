@@ -48,7 +48,7 @@ export function AppointmentDetailsModal({
   open,
   onOpenChange,
 }: AppointmentDetailsModalProps) {
-  const updateStatusMutation = useUpdateAppointmentStatus(appointment?.id || "");
+  const updateStatusMutation = useUpdateAppointmentStatus();
 
   // Fetch lead details to get buyer and vehicle info
   const { data: lead, isLoading: isLoadingLead } = useLead(appointment?.lead_id || "");
@@ -58,10 +58,9 @@ export function AppointmentDetailsModal({
     if (!appointment) return;
 
     updateStatusMutation.mutate(
-      { status: newStatus },
+      { appointmentId: appointment.id, status: newStatus },
       {
         onSuccess: () => {
-          // Close modal after successful update
           onOpenChange(false);
         },
       }
@@ -163,12 +162,12 @@ export function AppointmentDetailsModal({
               )}
             </div>
 
-            {/* Vehicle information */}
-            {lead.vehicle ? (
+            {/* Product information */}
+            {lead.product ? (
               <div className="flex items-center gap-2">
                 <Car className="w-4 h-4 text-gray-500" />
                 <span className="text-sm text-gray-700">
-                  {lead.vehicle.year} {lead.vehicle.make} {lead.vehicle.model}
+                  {lead.product.attributes.year} {lead.product.attributes.make} {lead.product.attributes.model}
                 </span>
               </div>
             ) : (

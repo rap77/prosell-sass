@@ -22,12 +22,16 @@ describe("AppointmentCard", () => {
     buyer_name: "John Doe",
     buyer_email: "john@example.com",
     buyer_phone: "+1234567890",
-    vehicle: {
-      id: "vehicle-1",
+    product_id: "product-1",
+    product: {
+      id: "product-1",
       title: "2021 Toyota Camry",
-      make: "Toyota",
-      model: "Camry",
-      year: 2021,
+      price_cents: 2100000,
+      currency: "USD",
+      status: "active",
+      attributes: { category: "vehicle", year: 2021, make: "Toyota", model: "Camry" },
+      created_at: "2026-04-29T09:00:00Z",
+      updated_at: "2026-04-29T09:00:00Z",
     },
     message: "Interested in this vehicle",
     status: "new" as any,
@@ -40,8 +44,8 @@ describe("AppointmentCard", () => {
     id: "apt-1",
     tenant_id: "tenant-1",
     lead_id: "lead-1",
-    dealer_id: "dealer-1",
-    vehicle_id: "vehicle-1",
+    user_id: "branch-1",
+    product_id: "vehicle-1",
     scheduled_at: "2026-04-29T14:00:00Z",
     status: AppointmentStatus.SCHEDULED,
     notes: "Test appointment",
@@ -91,7 +95,7 @@ describe("AppointmentCard", () => {
       />
     );
 
-    const card = container.querySelector('[data-testid="appointment-card"]');
+    const card = container.querySelector('[data-testid="appointment-card"]') as HTMLElement;
     card?.click();
 
     expect(handleClick).toHaveBeenCalledTimes(1);
@@ -126,7 +130,7 @@ describe("AppointmentCard", () => {
   it("should handle missing vehicle gracefully", () => {
     const leadWithoutVehicle = {
       ...mockLead,
-      vehicle: null,
+      product: null,
     };
 
     render(

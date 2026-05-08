@@ -22,8 +22,8 @@ export interface Appointment {
   id: string;
   tenant_id: string;
   lead_id: string;
-  dealer_id: string;
-  vehicle_id: string;
+  user_id: string;
+  product_id: string;
   scheduled_at: string; // ISO datetime string
   status: AppointmentStatus;
   notes: string | null;
@@ -36,8 +36,8 @@ export interface Appointment {
  */
 export interface CreateAppointmentRequest {
   lead_id: string;
-  dealer_id: string;
-  vehicle_id: string;
+  user_id: string;
+  product_id: string;
   scheduled_at: string; // ISO datetime string
   notes?: string | null;
 }
@@ -49,6 +49,10 @@ export interface UpdateAppointmentStatusRequest {
   status: AppointmentStatus;
 }
 
+export interface UpdateAppointmentStatusVariables extends UpdateAppointmentStatusRequest {
+  appointmentId: string;
+}
+
 /**
  * Backend appointment response
  */
@@ -56,8 +60,8 @@ interface BackendAppointmentResponse {
   id: string;
   tenant_id: string;
   lead_id: string;
-  dealer_id: string;
-  vehicle_id: string;
+  user_id: string;
+  product_id: string;
   scheduled_at: string;
   status: AppointmentStatus;
   notes: string | null;
@@ -83,8 +87,8 @@ function transformAppointment(backendAppointment: BackendAppointmentResponse): A
     id: backendAppointment.id,
     tenant_id: backendAppointment.tenant_id,
     lead_id: backendAppointment.lead_id,
-    dealer_id: backendAppointment.dealer_id,
-    vehicle_id: backendAppointment.vehicle_id,
+    user_id: backendAppointment.user_id,
+    product_id: backendAppointment.product_id,
     scheduled_at: backendAppointment.scheduled_at,
     status: backendAppointment.status,
     notes: backendAppointment.notes,
@@ -99,7 +103,7 @@ function transformAppointment(backendAppointment: BackendAppointmentResponse): A
  * @returns Query result with appointments array
  */
 export function useAppointments(
-  filters?: { dealer_id?: string; lead_id?: string; status?: AppointmentStatus },
+  filters?: { user_id?: string; lead_id?: string; status?: AppointmentStatus },
   limit: number = 50,
   offset: number = 0
 ): UseQueryResult<Appointment[], Error> {
@@ -107,7 +111,7 @@ export function useAppointments(
   queryParams.append("limit", limit.toString());
   queryParams.append("offset", offset.toString());
 
-  if (filters?.dealer_id) queryParams.append("dealer_id", filters.dealer_id);
+  if (filters?.user_id) queryParams.append("user_id", filters.user_id);
   if (filters?.lead_id) queryParams.append("lead_id", filters.lead_id);
   if (filters?.status) queryParams.append("status", filters.status);
 
@@ -183,11 +187,11 @@ export function useCreateAppointment() {
  * @param appointmentId - The appointment ID to update
  * @returns Mutation object with updateStatus function
  */
-export function useUpdateAppointmentStatus(appointmentId: string) {
+export function useUpdateAppointmentStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (request: UpdateAppointmentStatusRequest) => {
+    mutationFn: async ({ appointmentId, ...request }: UpdateAppointmentStatusVariables) => {
       const res = await fetch(`/api/v1/appointments/${appointmentId}/status`, {
         method: "PUT",
         headers: {

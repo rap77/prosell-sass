@@ -4,7 +4,7 @@
  * Test coverage:
  * - Renders calendar with day/week/month toggle
  * - Displays appointments as events
- * - Filters appointments by dealer_id
+ * - Filters appointments by user_id
  * - Handles view switching
  * - Responsive design
  */
@@ -36,8 +36,8 @@ describe("CalendarView", () => {
       id: "1",
       tenant_id: "tenant-1",
       lead_id: "lead-1",
-      dealer_id: "dealer-1",
-      vehicle_id: "vehicle-1",
+      user_id: "branch-1",
+      product_id: "vehicle-1",
       scheduled_at: "2026-04-29T10:00:00Z",
       status: AppointmentStatus.SCHEDULED,
       notes: "Test appointment 1",
@@ -48,8 +48,8 @@ describe("CalendarView", () => {
       id: "2",
       tenant_id: "tenant-1",
       lead_id: "lead-2",
-      dealer_id: "dealer-1",
-      vehicle_id: "vehicle-2",
+      user_id: "branch-1",
+      product_id: "vehicle-2",
       scheduled_at: "2026-04-29T14:00:00Z",
       status: AppointmentStatus.COMPLETED,
       notes: "Test appointment 2",
@@ -73,7 +73,7 @@ describe("CalendarView", () => {
   );
 
   it("should render calendar with view toggle buttons", () => {
-    render(<CalendarView appointments={mockAppointments} dealerId="dealer-1" />, {
+    render(<CalendarView appointments={mockAppointments} userId="branch-1" />, {
       wrapper,
     });
 
@@ -84,39 +84,39 @@ describe("CalendarView", () => {
   });
 
   it("should display number of appointments", () => {
-    render(<CalendarView appointments={mockAppointments} dealerId="dealer-1" />, {
+    render(<CalendarView appointments={mockAppointments} userId="branch-1" />, {
       wrapper,
     });
 
     expect(screen.getByTestId("calendar-events")).toHaveTextContent("2 events");
   });
 
-  it("should filter appointments by dealer_id", () => {
-    const otherDealerAppointments: Appointment[] = [
+  it("should filter appointments by user_id", () => {
+    const otherBranchAppointments: Appointment[] = [
       {
         id: "3",
         tenant_id: "tenant-1",
         lead_id: "lead-3",
-        dealer_id: "dealer-2", // Different dealer
-        vehicle_id: "vehicle-3",
+        user_id: "branch-2", // Different branch
+        product_id: "vehicle-3",
         scheduled_at: "2026-04-29T10:00:00Z",
         status: AppointmentStatus.SCHEDULED,
-        notes: "Other dealer appointment",
+        notes: "Other branch appointment",
         created_at: "2026-04-29T09:00:00Z",
         updated_at: "2026-04-29T09:00:00Z",
       },
     ];
 
-    render(<CalendarView appointments={otherDealerAppointments} dealerId="dealer-1" />, {
+    render(<CalendarView appointments={otherBranchAppointments} userId="branch-1" />, {
       wrapper,
     });
 
-    // Should show 0 events because dealer_id doesn't match
+    // Should show 0 events because user_id doesn't match
     expect(screen.getByTestId("calendar-events")).toHaveTextContent("0 events");
   });
 
   it("should handle empty appointments array", () => {
-    render(<CalendarView appointments={[]} dealerId="dealer-1" />, {
+    render(<CalendarView appointments={[]} userId="branch-1" />, {
       wrapper,
     });
 
@@ -124,7 +124,7 @@ describe("CalendarView", () => {
   });
 
   it("should switch between day, week, and month views", async () => {
-    render(<CalendarView appointments={mockAppointments} dealerId="dealer-1" />, {
+    render(<CalendarView appointments={mockAppointments} userId="branch-1" />, {
       wrapper,
     });
 

@@ -14,8 +14,8 @@ class AppointmentResponse(BaseModel):
     id: UUID
     tenant_id: UUID
     lead_id: UUID
-    dealer_id: UUID
-    vehicle_id: UUID
+    user_id: UUID
+    product_id: UUID
     scheduled_at: datetime
     status: AppointmentStatus
     notes: str | None
@@ -31,8 +31,8 @@ class AppointmentResponse(BaseModel):
             id=appointment.id,
             tenant_id=appointment.tenant_id,
             lead_id=appointment.lead_id,
-            dealer_id=appointment.dealer_id,
-            vehicle_id=appointment.vehicle_id,
+            user_id=appointment.user_id,
+            product_id=appointment.product_id,
             scheduled_at=appointment.scheduled_at,
             status=appointment.status,
             notes=appointment.notes,

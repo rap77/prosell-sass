@@ -48,8 +48,8 @@ class Appointment(DomainModel):
 
     # Relationships
     lead_id: Any  # UUID
-    dealer_id: Any  # UUID
-    vehicle_id: Any  # UUID
+    user_id: Any  # UUID
+    product_id: Any  # UUID
 
     # Appointment details
     scheduled_at: datetime
@@ -68,8 +68,8 @@ class Appointment(DomainModel):
     def create(
         cls,
         lead_id: Any,
-        dealer_id: Any,
-        vehicle_id: Any,
+        user_id: Any,
+        product_id: Any,
         tenant_id: Any,
         scheduled_at: datetime,
         notes: str | None = None,
@@ -81,8 +81,8 @@ class Appointment(DomainModel):
 
         Args:
             lead_id: Associated lead ID
-            dealer_id: Assigned dealer ID
-            vehicle_id: Associated vehicle ID
+            user_id: Assigned user ID
+            product_id: Associated vehicle ID
             tenant_id: Unique tenant identifier
             scheduled_at: When the appointment is scheduled
             notes: Additional notes (optional)
@@ -94,7 +94,7 @@ class Appointment(DomainModel):
 
         Raises:
             AppointmentTimeValidationException: If time is outside business hours
-            AppointmentConflictException: If dealer has conflicting appointment
+            AppointmentConflictException: If branch has conflicting appointment
         """
         from uuid import uuid4
 
@@ -103,13 +103,13 @@ class Appointment(DomainModel):
 
         # Check for conflicts
         if existing_appointments:
-            cls._check_conflicts(dealer_id, scheduled_at, existing_appointments)
+            cls._check_conflicts(user_id, scheduled_at, existing_appointments)
 
         return cls(
             id=uuid4(),
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             tenant_id=tenant_id,
             scheduled_at=scheduled_at,
             notes=notes,
@@ -154,17 +154,17 @@ class Appointment(DomainModel):
     @classmethod
     def _check_conflicts(
         cls,
-        dealer_id: Any,
+        user_id: Any,
         scheduled_at: datetime,
         existing_appointments: list["Appointment"],
     ) -> None:
         """
-        Check for conflicting appointments for the same dealer.
+        Check for conflicting appointments for the same branch.
 
-        Conflict = same dealer + same time slot (1-hour window)
+        Conflict = same branch + same time slot (1-hour window)
 
         Args:
-            dealer_id: Dealer ID to check
+            user_id: User ID to check
             scheduled_at: Proposed appointment time
             existing_appointments: List of existing appointments
 
@@ -176,8 +176,8 @@ class Appointment(DomainModel):
         window_end = scheduled_at + timedelta(minutes=30)
 
         for appointment in existing_appointments:
-            # Skip if different dealer
-            if appointment.dealer_id != dealer_id:
+            # Skip if different branch
+            if appointment.user_id != user_id:
                 continue
 
             # Skip if not scheduled status (cancelled/completed don't conflict)
@@ -187,7 +187,7 @@ class Appointment(DomainModel):
             # Check if time overlaps with 1-hour window
             if window_start <= appointment.scheduled_at <= window_end:
                 raise AppointmentConflictException(
-                    dealer_id=str(dealer_id),
+                    user_id=str(user_id),
                     scheduled_at=scheduled_at.isoformat(),
                 )
 

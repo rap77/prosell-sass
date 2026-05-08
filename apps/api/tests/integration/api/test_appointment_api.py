@@ -13,15 +13,14 @@ to be imported and included in the FastAPI app.
 TODO: Register appointment_router in main.py
 """
 
-import pytest
-from datetime import datetime, UTC
-from httpx import AsyncClient, ASGITransport
+from datetime import UTC, datetime
 from uuid import uuid4
 
-from prosell.infrastructure.api.main import app
+import pytest
+from httpx import ASGITransport, AsyncClient
+
 from prosell.domain.entities.user import User
-from prosell.domain.entities.lead import Lead, LeadStatus
-from prosell.domain.entities.appointment import Appointment, AppointmentStatus
+from prosell.infrastructure.api.main import app
 
 
 @pytest.fixture
@@ -47,8 +46,8 @@ def mock_user():
     user_id = uuid4()
     return User(
         id=user_id,
-        email="dealer@example.com",
-        full_name="Test Dealer",
+        email="branch@example.com",
+        full_name="Test Branch",
         tenant_id=tenant_id,
         status="active",
         created_at=datetime.now(UTC),
@@ -64,14 +63,14 @@ class TestCreateAppointmentEndpoint:
         """Test successful appointment creation via API."""
         tenant_id = uuid4()
         lead_id = uuid4()
-        dealer_id = uuid4()
-        vehicle_id = uuid4()
+        user_id = uuid4()
+        product_id = uuid4()
         scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)  # Tuesday 10am
 
         request_payload = {
             "lead_id": str(lead_id),
-            "dealer_id": str(dealer_id),
-            "vehicle_id": str(vehicle_id),
+            "user_id": str(user_id),
+            "product_id": str(product_id),
             "scheduled_at": scheduled_at.isoformat(),
             "notes": "Test appointment",
         }
@@ -93,14 +92,14 @@ class TestCreateAppointmentEndpoint:
     async def test_create_appointment_validation_error(self, async_client, auth_headers):
         """Test appointment creation with validation error (weekend)."""
         lead_id = uuid4()
-        dealer_id = uuid4()
-        vehicle_id = uuid4()
+        user_id = uuid4()
+        product_id = uuid4()
         scheduled_at = datetime(2026, 5, 3, 10, 0, 0, tzinfo=UTC)  # Saturday
 
         request_payload = {
             "lead_id": str(lead_id),
-            "dealer_id": str(dealer_id),
-            "vehicle_id": str(vehicle_id),
+            "user_id": str(user_id),
+            "product_id": str(product_id),
             "scheduled_at": scheduled_at.isoformat(),
         }
 
@@ -117,14 +116,14 @@ class TestCreateAppointmentEndpoint:
     async def test_create_appointment_conflict_error(self, async_client, auth_headers):
         """Test appointment creation with conflict error."""
         lead_id = uuid4()
-        dealer_id = uuid4()
-        vehicle_id = uuid4()
+        user_id = uuid4()
+        product_id = uuid4()
         scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)
 
         request_payload = {
             "lead_id": str(lead_id),
-            "dealer_id": str(dealer_id),
-            "vehicle_id": str(vehicle_id),
+            "user_id": str(user_id),
+            "product_id": str(product_id),
             "scheduled_at": scheduled_at.isoformat(),
         }
 
@@ -135,7 +134,7 @@ class TestCreateAppointmentEndpoint:
             headers=auth_headers,
         )
 
-        # Second request with same dealer/time (conflict)
+        # Second request with same branch/time (conflict)
         # Note: Without DB, this won't actually conflict
         # This test structure shows what we'd test with proper DB setup
         response = await async_client.post(
@@ -152,7 +151,7 @@ class TestCreateAppointmentEndpoint:
         """Test appointment creation with missing required fields."""
         request_payload = {
             "lead_id": str(uuid4()),
-            # Missing dealer_id, vehicle_id, scheduled_at
+            # Missing user_id, product_id, scheduled_at
         }
 
         response = await async_client.post(
@@ -289,8 +288,8 @@ class TestAppointmentAPIContract:
                 # Verify required fields
                 assert "id" in appointment
                 assert "lead_id" in appointment
-                assert "dealer_id" in appointment
-                assert "vehicle_id" in appointment
+                assert "user_id" in appointment
+                assert "product_id" in appointment
                 assert "scheduled_at" in appointment
                 assert "status" in appointment
                 assert "created_at" in appointment

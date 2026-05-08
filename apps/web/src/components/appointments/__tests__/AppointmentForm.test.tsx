@@ -3,9 +3,9 @@ import { vi } from "vitest";
 import { AppointmentForm } from "../AppointmentForm";
 
 // Mock dependencies
-vi.mock("@/lib/api/dealers", () => ({
-  useDealers: () => ({
-    data: { items: [{ id: "dealer-1", name: "Dealer One" }] },
+vi.mock("@/lib/api/branches", () => ({
+  useBranches: () => ({
+    data: { items: [{ id: "branch-1", name: "Branch One" }] },
     isLoading: false,
   }),
 }));

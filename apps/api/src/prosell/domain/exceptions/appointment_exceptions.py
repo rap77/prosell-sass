@@ -29,16 +29,16 @@ class AppointmentTimeValidationException(AppointmentError):
 class AppointmentConflictException(AppointmentError):
     """Appointment conflicts with existing appointment."""
 
-    def __init__(self, dealer_id: str, scheduled_at: str) -> None:
+    def __init__(self, user_id: str, scheduled_at: str) -> None:
         """Initialize exception with conflict details.
 
         Args:
-            dealer_id: Conflicting dealer ID
+            user_id: Conflicting user ID
             scheduled_at: Conflicting time slot
         """
-        self.dealer_id = dealer_id
+        self.user_id = user_id
         self.scheduled_at = scheduled_at
-        message = f"Dealer {dealer_id} already has an appointment at {scheduled_at}"
+        message = f"User {user_id} already has an appointment at {scheduled_at}"
         super().__init__(message)
 
 

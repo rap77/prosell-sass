@@ -7,10 +7,11 @@ A4.36: Test the complete flow of appointment creation including:
 - Email notification (mocked SendGrid)
 """
 
-import pytest
-from datetime import datetime, UTC, timedelta
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
+
+import pytest
 
 from prosell.application.dto.appointment.request import CreateAppointmentRequest
 from prosell.application.dto.appointment.response import AppointmentResponse
@@ -72,8 +73,8 @@ class TestCreateAppointmentUseCase:
         """Test successful appointment creation."""
         tenant_id = uuid4()
         lead_id = uuid4()
-        dealer_id = uuid4()
-        vehicle_id = uuid4()
+        user_id = uuid4()
+        product_id = uuid4()
         scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)  # Tuesday 10am
 
         # Mock lead repository to return existing lead
@@ -82,8 +83,8 @@ class TestCreateAppointmentUseCase:
         # Mock appointment creation
         created_appointment = Appointment.create(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             tenant_id=tenant_id,
             scheduled_at=scheduled_at,
             notes="Test appointment",
@@ -93,8 +94,8 @@ class TestCreateAppointmentUseCase:
         # Execute
         request = CreateAppointmentRequest(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             scheduled_at=scheduled_at.isoformat(),
             notes="Test appointment",
         )
@@ -104,7 +105,7 @@ class TestCreateAppointmentUseCase:
         # Verify appointment was created
         assert isinstance(response, AppointmentResponse)
         assert response.lead_id == lead_id
-        assert response.dealer_id == dealer_id
+        assert response.user_id == user_id
         assert response.status == AppointmentStatus.SCHEDULED
 
         # Verify lead status was updated to appointment_set
@@ -121,18 +122,18 @@ class TestCreateAppointmentUseCase:
     async def test_create_appointment_conflict_detection(
         self, create_appointment_use_case, mock_appointment_repository, mock_lead_repository, sample_lead
     ):
-        """Test conflict detection when dealer has existing appointment."""
+        """Test conflict detection when branch has existing appointment."""
         tenant_id = uuid4()
         lead_id = uuid4()
-        dealer_id = uuid4()
-        vehicle_id = uuid4()
+        user_id = uuid4()
+        product_id = uuid4()
         scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)
 
         # Mock existing conflicting appointment
         existing_appointment = Appointment.create(
             lead_id=uuid4(),
-            dealer_id=dealer_id,
-            vehicle_id=uuid4(),
+            user_id=user_id,
+            product_id=uuid4(),
             tenant_id=tenant_id,
             scheduled_at=scheduled_at,
         )
@@ -144,8 +145,8 @@ class TestCreateAppointmentUseCase:
         # Execute and expect conflict exception
         request = CreateAppointmentRequest(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             scheduled_at=scheduled_at.isoformat(),
         )
 
@@ -167,8 +168,8 @@ class TestCreateAppointmentUseCase:
         """Test time validation for weekend."""
         tenant_id = uuid4()
         lead_id = uuid4()
-        dealer_id = uuid4()
-        vehicle_id = uuid4()
+        user_id = uuid4()
+        product_id = uuid4()
         scheduled_at = datetime(2026, 5, 3, 10, 0, 0, tzinfo=UTC)  # Saturday
 
         # Mock repositories
@@ -178,8 +179,8 @@ class TestCreateAppointmentUseCase:
         # Execute and expect validation exception
         request = CreateAppointmentRequest(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             scheduled_at=scheduled_at.isoformat(),
         )
 
@@ -198,8 +199,8 @@ class TestCreateAppointmentUseCase:
         """Test time validation before business hours (8am)."""
         tenant_id = uuid4()
         lead_id = uuid4()
-        dealer_id = uuid4()
-        vehicle_id = uuid4()
+        user_id = uuid4()
+        product_id = uuid4()
         scheduled_at = datetime(2026, 4, 29, 8, 0, 0, tzinfo=UTC)  # Tuesday 8am
 
         # Mock repositories
@@ -209,8 +210,8 @@ class TestCreateAppointmentUseCase:
         # Execute and expect validation exception
         request = CreateAppointmentRequest(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             scheduled_at=scheduled_at.isoformat(),
         )
 
@@ -227,8 +228,8 @@ class TestCreateAppointmentUseCase:
         """Test time validation after business hours (7pm)."""
         tenant_id = uuid4()
         lead_id = uuid4()
-        dealer_id = uuid4()
-        vehicle_id = uuid4()
+        user_id = uuid4()
+        product_id = uuid4()
         scheduled_at = datetime(2026, 4, 29, 19, 0, 0, tzinfo=UTC)  # Tuesday 7pm
 
         # Mock repositories
@@ -238,8 +239,8 @@ class TestCreateAppointmentUseCase:
         # Execute and expect validation exception
         request = CreateAppointmentRequest(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             scheduled_at=scheduled_at.isoformat(),
         )
 
@@ -256,8 +257,8 @@ class TestCreateAppointmentUseCase:
         """Test appointment creation when lead doesn't exist."""
         tenant_id = uuid4()
         lead_id = uuid4()
-        dealer_id = uuid4()
-        vehicle_id = uuid4()
+        user_id = uuid4()
+        product_id = uuid4()
         scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)
 
         # Mock lead not found
@@ -266,8 +267,8 @@ class TestCreateAppointmentUseCase:
         # Mock appointment creation
         created_appointment = Appointment.create(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             tenant_id=tenant_id,
             scheduled_at=scheduled_at,
         )
@@ -276,8 +277,8 @@ class TestCreateAppointmentUseCase:
         # Execute
         request = CreateAppointmentRequest(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             scheduled_at=scheduled_at.isoformat(),
         )
 
@@ -294,8 +295,8 @@ class TestCreateAppointmentUseCase:
         """Test that lead status is not updated if already appointment_set."""
         tenant_id = uuid4()
         lead_id = uuid4()
-        dealer_id = uuid4()
-        vehicle_id = uuid4()
+        user_id = uuid4()
+        product_id = uuid4()
         scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)
 
         # Create a mock lead with status already appointment_set
@@ -309,8 +310,8 @@ class TestCreateAppointmentUseCase:
         # Mock appointment creation
         created_appointment = Appointment.create(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             tenant_id=tenant_id,
             scheduled_at=scheduled_at,
         )
@@ -319,8 +320,8 @@ class TestCreateAppointmentUseCase:
         # Execute
         request = CreateAppointmentRequest(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             scheduled_at=scheduled_at.isoformat(),
         )
 
@@ -338,8 +339,8 @@ class TestCreateAppointmentUseCase:
         """Test appointment creation with notes."""
         tenant_id = uuid4()
         lead_id = uuid4()
-        dealer_id = uuid4()
-        vehicle_id = uuid4()
+        user_id = uuid4()
+        product_id = uuid4()
         scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)
         notes = "Customer wants to test drive the vehicle"
 
@@ -348,8 +349,8 @@ class TestCreateAppointmentUseCase:
 
         created_appointment = Appointment.create(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             tenant_id=tenant_id,
             scheduled_at=scheduled_at,
             notes=notes,
@@ -359,8 +360,8 @@ class TestCreateAppointmentUseCase:
         # Execute
         request = CreateAppointmentRequest(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             scheduled_at=scheduled_at.isoformat(),
             notes=notes,
         )
@@ -377,8 +378,8 @@ class TestCreateAppointmentUseCase:
         """Test that conflict check is called with correct parameters."""
         tenant_id = uuid4()
         lead_id = uuid4()
-        dealer_id = uuid4()
-        vehicle_id = uuid4()
+        user_id = uuid4()
+        product_id = uuid4()
         scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)
 
         # Mock repositories
@@ -387,8 +388,8 @@ class TestCreateAppointmentUseCase:
 
         created_appointment = Appointment.create(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             tenant_id=tenant_id,
             scheduled_at=scheduled_at,
         )
@@ -397,8 +398,8 @@ class TestCreateAppointmentUseCase:
         # Execute
         request = CreateAppointmentRequest(
             lead_id=lead_id,
-            dealer_id=dealer_id,
-            vehicle_id=vehicle_id,
+            user_id=user_id,
+            product_id=product_id,
             scheduled_at=scheduled_at.isoformat(),
         )
 
@@ -406,5 +407,5 @@ class TestCreateAppointmentUseCase:
 
         # Verify check_conflicts was called with correct params
         mock_appointment_repository.check_conflicts.assert_awaited_once_with(
-            dealer_id=dealer_id, scheduled_at=scheduled_at, tenant_id=tenant_id
+            user_id=user_id, scheduled_at=scheduled_at, tenant_id=tenant_id
         )

@@ -4,10 +4,11 @@ from uuid import UUID
 
 from prosell.application.dto.appointment.response import AppointmentResponse
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
-from prosell.domain.entities.lead import Lead
 from prosell.domain.exceptions.appointment_exceptions import AppointmentNotFoundException
 from prosell.domain.repositories.appointment_repository import AbstractAppointmentRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
+from prosell.domain.repositories.product_repository import AbstractProductRepository
+from prosell.domain.repositories.user_repository import AbstractUserRepository
 
 
 class ConfirmAppointmentUseCase:
@@ -24,31 +25,21 @@ class ConfirmAppointmentUseCase:
         self,
         appointment_repository: AbstractAppointmentRepository,
         lead_repository: AbstractLeadRepository,
-        email_service,  # AbstractEmailService (Protocol)
+        email_service,
+        user_repository: AbstractUserRepository,
+        product_repository: AbstractProductRepository,
     ) -> None:
         self.appointment_repository = appointment_repository
         self.lead_repository = lead_repository
         self.email_service = email_service
+        self.user_repository = user_repository
+        self.product_repository = product_repository
 
     async def execute(
         self,
         appointment_id: UUID,
         tenant_id: UUID,
     ) -> AppointmentResponse:
-        """
-        Execute appointment confirmation.
-
-        Args:
-            appointment_id: Appointment UUID
-            tenant_id: Tenant context from JWT
-
-        Returns:
-            AppointmentResponse DTO
-
-        Raises:
-            AppointmentNotFoundException: If appointment not found
-        """
-        # Get appointment first to check if it exists
         appointment = await self.appointment_repository.get_by_id(
             appointment_id=appointment_id,
             tenant_id=tenant_id,
@@ -57,29 +48,29 @@ class ConfirmAppointmentUseCase:
         if not appointment:
             raise AppointmentNotFoundException(f"Appointment not found: {appointment_id}")
 
-        # Update status to completed
         updated = await self.appointment_repository.update_status(
             appointment_id=appointment_id,
             tenant_id=tenant_id,
             new_status=AppointmentStatus.COMPLETED,
         )
 
-        # Try to get lead for email notification
         lead = await self.lead_repository.get_by_id(
             lead_id=appointment.lead_id,
             tenant_id=tenant_id,
         )
 
-        # Send email if lead exists and has email
         if lead and lead.buyer_email:
-            # We need to get dealer name and vehicle info for the email
-            # For now, we'll use placeholder info - in production, you'd fetch these
-            # from the user and vehicle repositories
+            user = await self.user_repository.get_by_id(appointment.user_id)
+            user_name = user.full_name if user else "Tu Asesor"
+
+            product = await self.product_repository.get_by_id(appointment.product_id, tenant_id)
+            product_info = product.title if product else "Tu Vehículo"
+
             await self.email_service.send_appointment_status_update(
                 buyer_email=lead.buyer_email,
                 buyer_name=lead.buyer_name,
-                dealer_name="Tu Asesor",  # TODO: Fetch from user repository
-                vehicle_info="Tu Vehículo",  # TODO: Fetch from vehicle repository
+                branch_name=user_name,
+                vehicle_info=product_info,
                 scheduled_at=updated.scheduled_at,
                 new_status=AppointmentStatus.COMPLETED,
                 notes=updated.notes,

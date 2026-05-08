@@ -13,7 +13,7 @@ class ListAppointmentsUseCase:
     List appointments with role-based filtering.
 
     Business rules:
-    - Dealers see their own appointments
+    - Branchs see their own appointments
     - Vendedores see appointments for their leads
     - Managers see all tenant appointments
     """
@@ -21,10 +21,10 @@ class ListAppointmentsUseCase:
     def __init__(self, appointment_repository: AbstractAppointmentRepository) -> None:
         self.appointment_repository = appointment_repository
 
-    async def execute_for_dealer(
+    async def execute_for_branch(
         self,
         tenant_id: UUID,
-        dealer_id: UUID,
+        user_id: UUID,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
         status: AppointmentStatus | None = None,
@@ -32,11 +32,11 @@ class ListAppointmentsUseCase:
         offset: int = 0,
     ) -> tuple[list[AppointmentResponse], int]:
         """
-        List appointments for a dealer.
+        List appointments for a branch.
 
         Args:
             tenant_id: Tenant context from JWT
-            dealer_id: Dealer's user ID
+            user_id: User ID attending
             start_date: Optional start date filter
             end_date: Optional end date filter
             status: Optional status filter
@@ -46,9 +46,9 @@ class ListAppointmentsUseCase:
         Returns:
             Tuple of (appointment responses, total count)
         """
-        appointments, total = await self.appointment_repository.list_by_dealer(
+        appointments, total = await self.appointment_repository.list_by_branch(
             tenant_id=tenant_id,
-            dealer_id=dealer_id,
+            user_id=user_id,
             start_date=start_date,
             end_date=end_date,
             status=status,
@@ -118,7 +118,7 @@ class ListAppointmentsUseCase:
         Returns:
             Tuple of (appointment responses, total count)
         """
-        # For manager view, we list all appointments across all dealers
-        # This would require a new repository method, for now use dealer_id=None pattern
+        # For manager view, we list all appointments across all branches
+        # This would require a new repository method, for now use user_id=None pattern
         # Implementation deferred to A4.23 (API endpoint)
         raise NotImplementedError("Manager view requires additional repository method")

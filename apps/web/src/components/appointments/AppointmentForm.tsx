@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useDealers } from "@/lib/api/dealers";
+import { useBranches } from "@/lib/api/branches";
 import { useCreateAppointment } from "@/lib/api/appointments";
 import { Loader2, AlertCircle, AlertTriangle } from "lucide-react";
 
@@ -33,9 +33,12 @@ import { Loader2, AlertCircle, AlertTriangle } from "lucide-react";
  * Returns true for Sunday (0) or Saturday (6)
  */
 function isWeekend(dateString: string): boolean {
-  const date = new Date(dateString);
-  const day = date.getDay();
-  return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+  // Use local Date constructor (year, month, day) to avoid UTC-to-local shift.
+  // new Date("YYYY-MM-DD") parses as UTC midnight; getDay() then returns the
+  // previous day's weekday in negative-offset timezones (e.g. UTC-3 at night).
+  const [year, month, day] = dateString.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getDay() === 0 || date.getDay() === 6;
 }
 
 /**
@@ -45,7 +48,7 @@ function isWeekend(dateString: string): boolean {
  */
 const appointmentFormSchema = z
   .object({
-    dealer_id: z.string().min(1, "Dealer is required"),
+    user_id: z.string().min(1, "User is required"),
     date: z.string().min(1, "Date is required"),
     time: z.string().min(1, "Time is required"),
     notes: z.string().optional(),
@@ -66,11 +69,11 @@ interface AppointmentFormProps {
 }
 
 /**
- * AppointmentForm modal - Schedule appointment with dealer
+ * AppointmentForm modal - Schedule appointment with branch
  *
  * Features:
  * - Date-time picker (date input + time select)
- * - Dealer selection dropdown
+ * - Branch selection dropdown
  * - Notes textarea
  * - Form validation
  * - Loading states
@@ -83,8 +86,8 @@ export function AppointmentForm({
   leadId,
   vehicleId,
 }: AppointmentFormProps) {
-  const { data: dealersData, isLoading: dealersLoading } = useDealers();
-  const dealers = dealersData?.items || [];
+  const { data: branchesData, isLoading: branchesLoading } = useBranches();
+  const branches = branchesData?.items || [];
   const { mutateAsync: createAppointment, isPending: isCreating } =
     useCreateAppointment();
 
@@ -104,7 +107,7 @@ export function AppointmentForm({
   } = useForm<AppointmentFormValues>({
     resolver: zodResolver(appointmentFormSchema),
     defaultValues: {
-      dealer_id: "",
+      user_id: "",
       date: "",
       time: "",
       notes: "",
@@ -129,8 +132,8 @@ export function AppointmentForm({
 
       await createAppointment({
         lead_id: leadId,
-        dealer_id: data.dealer_id,
-        vehicle_id: vehicleId || "", // Required by backend
+        user_id: data.user_id,
+        product_id: vehicleId || "", // Required by backend
         scheduled_at,
         notes: data.notes || null,
       });
@@ -145,10 +148,10 @@ export function AppointmentForm({
       const status = (error as any).status || 500;
 
       if (status === 409) {
-        // Conflict - dealer already has appointment
+        // Conflict - branch already has appointment
         setSubmitError({
           type: "conflict",
-          message: error.message || "This dealer already has an appointment at this time.",
+          message: error.message || "This branch already has an appointment at this time.",
         });
       } else if (status === 400) {
         // Validation error - business hours, weekend, etc.
@@ -184,12 +187,14 @@ export function AppointmentForm({
   const today = format(new Date(), "yyyy-MM-dd");
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) onClose();
+    }}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Schedule Appointment</DialogTitle>
           <DialogDescription>
-            Select a dealer and preferred time slot for the appointment.
+            Select a branch and preferred time slot for the appointment.
           </DialogDescription>
         </DialogHeader>
 
@@ -217,7 +222,7 @@ export function AppointmentForm({
               <p className="text-sm mt-1">{submitError.message}</p>
               <p className="text-xs mt-2 opacity-90">
                 {submitError.type === "conflict"
-                  ? "Please choose a different time or dealer."
+                  ? "Please choose a different time or branch."
                   : "Please choose a weekday within business hours (9:00 AM - 6:00 PM)."}
               </p>
             </div>
@@ -232,36 +237,36 @@ export function AppointmentForm({
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Dealer Selection */}
+          {/* Branch Selection */}
           <div className="space-y-2">
-            <Label htmlFor="dealer_id">
-              Dealer <span className="text-red-500">*</span>
+            <Label htmlFor="user_id">
+              Branch <span className="text-red-600">*</span>
             </Label>
             <Select
-              value={watch("dealer_id")}
-              onValueChange={(value) => setValue("dealer_id", value)}
-              disabled={dealersLoading}
+              value={watch("user_id")}
+              onValueChange={(value) => setValue("user_id", value)}
+              disabled={branchesLoading}
             >
-              <SelectTrigger id="dealer_id">
-                <SelectValue placeholder="Select a dealer" />
+              <SelectTrigger id="user_id">
+                <SelectValue placeholder="Select a branch" />
               </SelectTrigger>
               <SelectContent>
-                {dealers.map((dealer) => (
-                  <SelectItem key={dealer.id} value={dealer.id}>
-                    {dealer.name}
+                {branches.map((branch) => (
+                  <SelectItem key={branch.id} value={branch.id}>
+                    {branch.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.dealer_id && (
-              <p className="text-sm text-red-500">{errors.dealer_id.message}</p>
+            {errors.user_id && (
+              <p className="text-sm text-red-600">{errors.user_id.message}</p>
             )}
           </div>
 
           {/* Date Selection */}
           <div className="space-y-2">
             <Label htmlFor="date">
-              Date <span className="text-red-500">*</span>
+              Date <span className="text-red-600">*</span>
             </Label>
             <Input
               id="date"
@@ -274,14 +279,14 @@ export function AppointmentForm({
               Business hours: Monday-Friday only
             </p>
             {errors.date && (
-              <p className="text-sm text-red-500">{errors.date.message}</p>
+              <p className="text-sm text-red-600">{errors.date.message}</p>
             )}
           </div>
 
           {/* Time Selection */}
           <div className="space-y-2">
             <Label htmlFor="time">
-              Time <span className="text-red-500">*</span>
+              Time <span className="text-red-600">*</span>
             </Label>
             <Select
               value={watch("time")}
@@ -316,7 +321,7 @@ export function AppointmentForm({
               Business hours: 9:00 AM - 6:00 PM
             </p>
             {errors.time && (
-              <p className="text-sm text-red-500">{errors.time.message}</p>
+              <p className="text-sm text-red-600">{errors.time.message}</p>
             )}
           </div>
 

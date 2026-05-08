@@ -107,12 +107,12 @@ export function AppointmentCard({
         <span className="font-medium text-gray-900">{lead.buyer_name}</span>
       </div>
 
-      {/* Vehicle information */}
-      {lead.vehicle ? (
+      {/* Product information */}
+      {lead.product ? (
         <div className="flex items-center gap-2 mb-2">
           <Car className="w-4 h-4 text-gray-500" />
           <span className="text-sm text-gray-700">
-            {lead.vehicle.year} {lead.vehicle.make} {lead.vehicle.model}
+            {lead.product.attributes.year} {lead.product.attributes.make} {lead.product.attributes.model}
           </span>
         </div>
       ) : (

@@ -22,8 +22,8 @@ def sample_appointment():
     """Create sample appointment."""
     return Appointment.create(
         lead_id=uuid4(),
-        dealer_id=uuid4(),
-        vehicle_id=uuid4(),
+        user_id=uuid4(),
+        product_id=uuid4(),
         tenant_id=uuid4(),
         scheduled_at=datetime(2026, 5, 15, 14, 0, 0, tzinfo=UTC),
         notes="Test appointment",
@@ -42,11 +42,11 @@ def sample_lead():
 
 
 @pytest.fixture
-def sample_dealer():
-    """Create sample dealer user info."""
+def sample_branch():
+    """Create sample branch user info."""
     return {
         "name": "Jane Smith",
-        "email": "jane@dealer.com",
+        "email": "jane@branch.com",
     }
 
 
@@ -61,7 +61,7 @@ class TestSendAppointmentStatusEmails:
 
     @pytest.mark.asyncio
     async def test_send_appointment_confirmed_email(
-        self, sendgrid_service, sample_appointment, sample_lead, sample_dealer, sample_vehicle
+        self, sendgrid_service, sample_appointment, sample_lead, sample_branch, sample_vehicle
     ):
         """Test sending appointment confirmed email to buyer."""
         with patch("sendgrid.SendGridAPIClient") as mock_sg:
@@ -76,7 +76,7 @@ class TestSendAppointmentStatusEmails:
             await sendgrid_service.send_appointment_status_update(
                 buyer_email=sample_lead.buyer_email,
                 buyer_name=sample_lead.buyer_name,
-                dealer_name=sample_dealer["name"],
+                branch_name=sample_branch["name"],
                 vehicle_info=sample_vehicle,
                 scheduled_at=sample_appointment.scheduled_at,
                 new_status=AppointmentStatus.COMPLETED,
@@ -88,7 +88,7 @@ class TestSendAppointmentStatusEmails:
 
     @pytest.mark.asyncio
     async def test_send_appointment_cancelled_email(
-        self, sendgrid_service, sample_appointment, sample_lead, sample_dealer, sample_vehicle
+        self, sendgrid_service, sample_appointment, sample_lead, sample_branch, sample_vehicle
     ):
         """Test sending appointment cancelled email to buyer."""
         with patch("sendgrid.SendGridAPIClient") as mock_sg:
@@ -103,7 +103,7 @@ class TestSendAppointmentStatusEmails:
             await sendgrid_service.send_appointment_status_update(
                 buyer_email=sample_lead.buyer_email,
                 buyer_name=sample_lead.buyer_name,
-                dealer_name=sample_dealer["name"],
+                branch_name=sample_branch["name"],
                 vehicle_info=sample_vehicle,
                 scheduled_at=sample_appointment.scheduled_at,
                 new_status=AppointmentStatus.CANCELLED,
@@ -115,7 +115,7 @@ class TestSendAppointmentStatusEmails:
 
     @pytest.mark.asyncio
     async def test_send_appointment_status_without_notes(
-        self, sendgrid_service, sample_appointment, sample_lead, sample_dealer, sample_vehicle
+        self, sendgrid_service, sample_appointment, sample_lead, sample_branch, sample_vehicle
     ):
         """Test sending appointment status email without notes."""
         with patch("sendgrid.SendGridAPIClient") as mock_sg:
@@ -130,7 +130,7 @@ class TestSendAppointmentStatusEmails:
             await sendgrid_service.send_appointment_status_update(
                 buyer_email=sample_lead.buyer_email,
                 buyer_name=sample_lead.buyer_name,
-                dealer_name=sample_dealer["name"],
+                branch_name=sample_branch["name"],
                 vehicle_info=sample_vehicle,
                 scheduled_at=sample_appointment.scheduled_at,
                 new_status=AppointmentStatus.COMPLETED,
@@ -142,7 +142,7 @@ class TestSendAppointmentStatusEmails:
 
     @pytest.mark.asyncio
     async def test_send_appointment_status_sendgrid_error(
-        self, sendgrid_service, sample_appointment, sample_lead, sample_dealer, sample_vehicle
+        self, sendgrid_service, sample_appointment, sample_lead, sample_branch, sample_vehicle
     ):
         """Test handling SendGrid API error."""
         with patch("sendgrid.SendGridAPIClient") as mock_sg:
@@ -156,7 +156,7 @@ class TestSendAppointmentStatusEmails:
                 await sendgrid_service.send_appointment_status_update(
                     buyer_email=sample_lead.buyer_email,
                     buyer_name=sample_lead.buyer_name,
-                    dealer_name=sample_dealer["name"],
+                    branch_name=sample_branch["name"],
                     vehicle_info=sample_vehicle,
                     scheduled_at=sample_appointment.scheduled_at,
                     new_status=AppointmentStatus.COMPLETED,
@@ -167,7 +167,7 @@ class TestSendAppointmentStatusEmails:
 
     @pytest.mark.asyncio
     async def test_mock_email_service_status_update(
-        self, sample_appointment, sample_lead, sample_dealer, sample_vehicle
+        self, sample_appointment, sample_lead, sample_branch, sample_vehicle
     ):
         """Test MockEmailService status update (logs to console)."""
         from prosell.infrastructure.services.email_service import MockEmailService
@@ -178,7 +178,7 @@ class TestSendAppointmentStatusEmails:
         await mock_service.send_appointment_status_update(
             buyer_email=sample_lead.buyer_email,
             buyer_name=sample_lead.buyer_name,
-            dealer_name=sample_dealer["name"],
+            branch_name=sample_branch["name"],
             vehicle_info=sample_vehicle,
             scheduled_at=sample_appointment.scheduled_at,
             new_status=AppointmentStatus.CANCELLED,

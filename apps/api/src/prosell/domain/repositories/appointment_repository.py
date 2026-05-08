@@ -24,7 +24,7 @@ class AbstractAppointmentRepository(ABC):
             Created appointment with generated ID
 
         Raises:
-            AppointmentConflictException: If dealer has conflicting appointment
+            AppointmentConflictException: If branch has conflicting appointment
         """
         pass
 
@@ -46,21 +46,21 @@ class AbstractAppointmentRepository(ABC):
         pass
 
     @abstractmethod
-    async def list_by_dealer(
+    async def list_by_branch(
         self,
         tenant_id: UUID,
-        dealer_id: UUID,
+        user_id: UUID,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
         status: AppointmentStatus | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[Appointment], int]:
-        """List appointments for a dealer with pagination.
+        """List appointments for a branch with pagination.
 
         Args:
             tenant_id: Tenant UUID
-            dealer_id: Dealer UUID (user ID)
+            user_id: User UUID (the user attending)
             start_date: Optional start date filter
             end_date: Optional end date filter
             status: Optional status filter
@@ -124,15 +124,15 @@ class AbstractAppointmentRepository(ABC):
     @abstractmethod
     async def check_conflicts(
         self,
-        dealer_id: UUID,
+        user_id: UUID,
         scheduled_at: datetime,
         tenant_id: UUID,
         exclude_appointment_id: UUID | None = None,
     ) -> list[Appointment]:
-        """Check for conflicting appointments for a dealer.
+        """Check for conflicting appointments for a branch.
 
         Args:
-            dealer_id: Dealer UUID
+            user_id: User UUID
             scheduled_at: Proposed appointment time
             tenant_id: Tenant UUID
             exclude_appointment_id: Optional appointment ID to exclude (for updates)

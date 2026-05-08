@@ -48,8 +48,8 @@ def sample_appointment():
     """Sample scheduled appointment."""
     return Appointment.create(
         lead_id=uuid4(),
-        dealer_id=uuid4(),
-        vehicle_id=uuid4(),
+        user_id=uuid4(),
+        product_id=uuid4(),
         tenant_id=uuid4(),
         scheduled_at=datetime(2026, 5, 15, 14, 0, 0, tzinfo=UTC),
         notes="Test appointment",
@@ -68,12 +68,51 @@ def sample_lead():
 
 
 @pytest.fixture
-def confirm_appointment_use_case(mock_appointment_repository, mock_lead_repository, mock_email_service):
+def mock_user_repository():
+    """Mock user repository."""
+    from unittest.mock import AsyncMock
+    from prosell.domain.entities.user import User, UserStatus
+    repo = AsyncMock()
+    user = User(
+        id=uuid4(),
+        email="asesor@prosell.io",
+        full_name="Carlos Asesor",
+        tenant_id=uuid4(),
+        status=UserStatus.ACTIVE,
+        email_verified=True,
+        roles=[],
+    )
+    repo.get_by_id = AsyncMock(return_value=user)
+    return repo
+
+
+@pytest.fixture
+def mock_product_repository():
+    """Mock product repository."""
+    from unittest.mock import AsyncMock
+    from prosell.domain.entities.product import Product, ProductCondition, ProductStatus
+    repo = AsyncMock()
+    product = AsyncMock()
+    product.title = "2022 Toyota Corolla"
+    repo.get_by_id = AsyncMock(return_value=product)
+    return repo
+
+
+@pytest.fixture
+def confirm_appointment_use_case(
+    mock_appointment_repository,
+    mock_lead_repository,
+    mock_email_service,
+    mock_user_repository,
+    mock_product_repository,
+):
     """Create use case instance with mocked dependencies."""
     return ConfirmAppointmentUseCase(
         appointment_repository=mock_appointment_repository,
         lead_repository=mock_lead_repository,
         email_service=mock_email_service,
+        user_repository=mock_user_repository,
+        product_repository=mock_product_repository,
     )
 
 
@@ -105,8 +144,8 @@ class TestConfirmAppointmentUseCase:
             id=sample_appointment.id,
             tenant_id=sample_appointment.tenant_id,
             lead_id=sample_appointment.lead_id,
-            dealer_id=sample_appointment.dealer_id,
-            vehicle_id=sample_appointment.vehicle_id,
+            user_id=sample_appointment.user_id,
+            product_id=sample_appointment.product_id,
             scheduled_at=sample_appointment.scheduled_at,
             status=AppointmentStatus.COMPLETED,
             notes=sample_appointment.notes,
@@ -138,9 +177,8 @@ class TestConfirmAppointmentUseCase:
         assert call_args[1]["buyer_email"] == sample_lead.buyer_email
         assert call_args[1]["buyer_name"] == sample_lead.buyer_name
         assert call_args[1]["new_status"] == AppointmentStatus.COMPLETED
-        # Note: dealer_name and vehicle_info are placeholders in current implementation
-        assert call_args[1]["dealer_name"] == "Tu Asesor"
-        assert call_args[1]["vehicle_info"] == "Tu Vehículo"
+        assert call_args[1]["branch_name"] == "Carlos Asesor"
+        assert call_args[1]["vehicle_info"] == "2022 Toyota Corolla"
 
     @pytest.mark.asyncio
     async def test_confirm_appointment_not_found(
@@ -190,8 +228,8 @@ class TestConfirmAppointmentUseCase:
             id=sample_appointment.id,
             tenant_id=sample_appointment.tenant_id,
             lead_id=sample_appointment.lead_id,
-            dealer_id=sample_appointment.dealer_id,
-            vehicle_id=sample_appointment.vehicle_id,
+            user_id=sample_appointment.user_id,
+            product_id=sample_appointment.product_id,
             scheduled_at=sample_appointment.scheduled_at,
             status=AppointmentStatus.COMPLETED,
             notes=sample_appointment.notes,
@@ -244,8 +282,8 @@ class TestConfirmAppointmentUseCase:
             id=sample_appointment.id,
             tenant_id=sample_appointment.tenant_id,
             lead_id=sample_appointment.lead_id,
-            dealer_id=sample_appointment.dealer_id,
-            vehicle_id=sample_appointment.vehicle_id,
+            user_id=sample_appointment.user_id,
+            product_id=sample_appointment.product_id,
             scheduled_at=sample_appointment.scheduled_at,
             status=AppointmentStatus.COMPLETED,
             notes=sample_appointment.notes,

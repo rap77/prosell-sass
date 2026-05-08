@@ -41,8 +41,8 @@ describe("AppointmentDetailsModal", () => {
     id: "apt-123",
     tenant_id: "tenant-1",
     lead_id: "lead-456",
-    dealer_id: "dealer-789",
-    vehicle_id: "vehicle-101",
+    user_id: "branch-789",
+    product_id: "vehicle-101",
     scheduled_at: "2026-05-15T14:30:00Z",
     status: AppointmentStatus.SCHEDULED,
     notes: "Interested in the SUV",
@@ -55,12 +55,16 @@ describe("AppointmentDetailsModal", () => {
     buyer_name: "John Doe",
     buyer_email: "john@example.com",
     buyer_phone: "+1-555-0123",
-    vehicle: {
-      id: "vehicle-101",
+    product_id: "product-101",
+    product: {
+      id: "product-101",
       title: "2024 Toyota RAV4",
-      make: "Toyota",
-      model: "RAV4",
-      year: 2024,
+      price_cents: 3500000,
+      currency: "USD",
+      status: "active",
+      attributes: { category: "vehicle", year: 2024, make: "Toyota", model: "RAV4" },
+      created_at: "2026-05-01T10:00:00Z",
+      updated_at: "2026-05-01T10:00:00Z",
     },
     message: "I'm interested in this vehicle",
     status: "appointment_set" as any,
@@ -239,7 +243,7 @@ describe("AppointmentDetailsModal", () => {
     (useLead as any).mockReturnValue({
       data: {
         ...mockLead,
-        vehicle: null,
+        product: null,
       },
       isLoading: false,
     });
