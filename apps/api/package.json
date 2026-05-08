@@ -1,0 +1,15 @@
+{
+  "name": "@prosell/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "uv run fastapi dev src/prosell/infrastructure/api/main.py --reload --port 8000",
+    "start": "uv run fastapi run src/prosell/infrastructure/api/main.py --port 8000",
+    "test": "uv run pytest",
+    "test:coverage": "uv run pytest --cov=prosell --cov-report=html",
+    "lint": "uv run ruff check .",
+    "lint:fix": "uv run ruff check . --fix",
+    "format": "uv run ruff format .",
+    "typecheck": "uv run pyright"
+  }
+}
