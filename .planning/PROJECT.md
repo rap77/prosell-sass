@@ -1,5 +1,8 @@
 # ProSell SaaS
 
+> **Note:** Product context and architecture live here.
+> **Current MVP progress, blockers, module status, and release readiness are maintained in `docs/mvp-status.md`.**
+
 ## What This Is
 
 ProSell SaaS es una plataforma de servicios de ventas y gestión de clientes para organizaciones, comenzando con el nicho de vehículos. Automatiza la publicación de inventario en Facebook Marketplace vía Graph API, captura leads interesados, y gestiona el ciclo completo hasta agendar citas con los dealers. El equipo de ProSell opera como intermediario entre el comprador (lead) y el concesionario (dealer), usando datos de múltiples marketplaces para generar inteligencia de mercado con IA.

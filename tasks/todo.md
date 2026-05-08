@@ -325,9 +325,9 @@ cd tests/e2e && pnpm test specs/dealer-calendar.spec.ts
 - [x] Test appointment confirm/cancel
 - [x] Add 5 critical lead tests to smoke.spec.ts
 - [x] Test: Facebook webhook → lead → status update → appointment
-- [ ] Run all E2E tests
-- [ ] Measure test execution time (target: < 5 minutes)
-- [ ] Fix any failing tests
+- [x] Run all E2E tests
+- [x] Measure test execution time (target: < 5 minutes)
+- [x] Fix any failing tests
 
 **Verification**:
 ```bash

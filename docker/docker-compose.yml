@@ -85,7 +85,7 @@ services:
       - MAX_LOGIN_ATTEMPTS=5
       - ACCOUNT_LOCK_MINUTES=15
       # RATE LIMITING - relaxed for development/testing
-      - RATE_LIMIT_AUTH_REQUESTS_PER_MINUTE=30
+      - RATE_LIMIT_AUTH_REQUESTS_PER_MINUTE=120
       # FEATURES
       - FEATURE_2FA_ENABLED=true
       - FEATURE_OAUTH_GOOGLE=true
@@ -110,8 +110,9 @@ services:
       # Mount source code for hot-reload (dev only)
       - ../apps/api/src:/app/src:ro
       - ../apps/api/scripts:/app/scripts:ro
+      - ../apps/api/alembic:/app/alembic:ro
       - ../apps/api/keys:/app/keys:ro
-    command: sh -c "python /app/scripts/init-db.py || echo 'DB init skipped' && uvicorn prosell.infrastructure.api.main:app --host 0.0.0.0 --port 8000 --reload"
+    command: sh -c "python /app/scripts/init-db.py && python /app/scripts/init_data.py || echo 'DB init failed' && uvicorn prosell.infrastructure.api.main:app --host 0.0.0.0 --port 8000 --reload"
 
   # =============================================================================
   # NGROK TUNNEL (HTTPS tunnel for OAuth development)
@@ -133,12 +134,12 @@ services:
         condition: service_started
 
   # =============================================================================
-  # NEXT.JS FRONTEND (future)
+  # NEXT.JS FRONTEND
   # =============================================================================
   web:
     build:
       context: ..
-      dockerfile: docker/web.Dockerfile
+      dockerfile: docker/web-dev.Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:8000
     container_name: prosell-web
@@ -147,9 +148,17 @@ services:
     environment:
       - API_URL=http://api:8000
       - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - WATCHPACK_POLLING=true # Useful for WSL2/Docker volume sync
     depends_on:
       api:
         condition: service_started
+    volumes:
+      - ../apps/web:/app/apps/web
+      # We don't mount node_modules to avoid host/container conflicts
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
+    # Use dev mode for hot-reload in development
+    command: pnpm --filter @prosell/web dev
 
 volumes:
   postgres_data:

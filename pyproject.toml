@@ -3,6 +3,9 @@ name = "prosell-sass"
 version = "0.1.0"
 description = "ProSell SaaS Monorepo"
 requires-python = ">=3.13"
+dependencies = [
+    "playwright>=1.59.0",
+]
 
 [tool.ruff]
 target-version = "py313"
