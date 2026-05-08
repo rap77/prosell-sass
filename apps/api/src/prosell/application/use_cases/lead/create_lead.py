@@ -14,7 +14,7 @@ class CreateLeadUseCase:
     Create a new lead with duplicate detection.
 
     Business rules:
-    - If same buyer (email or phone) + same vehicle_id already exists within 24h,
+    - If same buyer (email or phone) + same product_id already exists within 24h,
       raise DuplicateLeadException.
     - At least buyer_name must be provided.
     - vendedor_id is optional (can be assigned later).
@@ -42,10 +42,10 @@ class CreateLeadUseCase:
             DuplicateLeadException: If same buyer + vehicle within 24h
         """
         # 1. Duplicate detection: same buyer (email or phone) + vehicle within 24h
-        existing = await self.lead_repository.get_by_buyer_and_vehicle(
+        existing = await self.lead_repository.get_by_buyer_and_product(
             buyer_email=request.buyer_email,
             buyer_phone=request.buyer_phone,
-            vehicle_id=request.vehicle_id,
+            product_id=request.product_id,
             tenant_id=tenant_id,
             within_hours=24,
         )
@@ -61,7 +61,7 @@ class CreateLeadUseCase:
             tenant_id=tenant_id,
             buyer_email=request.buyer_email,
             buyer_phone=request.buyer_phone,
-            vehicle_id=request.vehicle_id,
+            product_id=request.product_id,
             vendedor_id=request.vendedor_id,
             message=request.message,
             source=request.source,

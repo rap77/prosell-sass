@@ -3,7 +3,6 @@
 from uuid import UUID
 
 from prosell.application.dto.vendedor import VendedorListResponse, VendedorResponse
-from prosell.domain.entities.user import User
 from prosell.domain.exceptions.org_exceptions import OrgDomainException
 
 

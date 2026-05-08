@@ -4,7 +4,6 @@ from uuid import UUID
 
 from prosell.application.dto.lead.request import AssignLeadRequest
 from prosell.application.dto.lead.response import LeadResponse
-from prosell.domain.exceptions.lead_exceptions import LeadNotFoundException
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 
 

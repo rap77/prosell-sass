@@ -111,10 +111,10 @@ class ProcessFacebookWebhookUseCase:
         # - sender_id is unique per Facebook user
         # - buyer_name includes sender_id for identification: "Facebook User {sender_id}" or actual name
         # - Future enhancement: Add facebook_sender_id field to Lead entity for exact deduplication
-        existing_lead = await self.lead_repository.get_by_buyer_and_vehicle(
+        existing_lead = await self.lead_repository.get_by_buyer_and_product(
             buyer_email=buyer_email,
             buyer_phone=buyer_phone,
-            vehicle_id=publication.product_id,  # product_id is the vehicle_id in C3 schema
+            product_id=publication.product_id,  # product_id is the product_id in C3 schema
             tenant_id=tenant_id,
             within_hours=24,
         )
@@ -122,7 +122,7 @@ class ProcessFacebookWebhookUseCase:
         if existing_lead:
             logger.info(
                 f"Duplicate lead detected for buyer_email={buyer_email}, "
-                f"vehicle_id={publication.product_id}. Skipping lead creation."
+                f"product_id={publication.product_id}. Skipping lead creation."
             )
             return
 
@@ -132,7 +132,7 @@ class ProcessFacebookWebhookUseCase:
                 buyer_name=buyer_name or f"Facebook User {sender_id}",
                 buyer_email=buyer_email,
                 buyer_phone=buyer_phone,
-                vehicle_id=publication.product_id,
+                product_id=publication.product_id,
                 vendedor_id=publication.seller_user_id,
                 message=message,
                 source="facebook",

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from prosell.application.dto.lead.response import TeamMetricsResponse, VendedorMetricsBreakdown
-from prosell.domain.entities.lead import Lead, LeadStatus
+from prosell.domain.entities.lead import LeadStatus
 from prosell.domain.entities.role import RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
