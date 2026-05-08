@@ -48,7 +48,7 @@ describe("useDecodeVin", () => {
     vi.clearAllMocks();
   });
 
-  it("should send POST request to /api/v1/vehicles/decode-vin with VIN parameter", async () => {
+  it("should send POST request to /api/v1/vehicles/decode-vin with VIN in body", async () => {
     const mockDecodedVehicle: DecodedVehicle = {
       vin: "2GNALCEK1H1615946",
       year: 2017,
@@ -74,10 +74,14 @@ describe("useDecodeVin", () => {
     await result.current.mutateAsync("2GNALCEK1H1615946");
 
     expect(mockFetch).toHaveBeenCalledWith(
-      "/api/v1/vehicles/decode-vin?vin=2GNALCEK1H1615946",
+      "/api/v1/vehicles/decode-vin",
       expect.objectContaining({
         method: "POST",
         credentials: "include",
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({ vin: "2GNALCEK1H1615946" }),
       })
     );
   });

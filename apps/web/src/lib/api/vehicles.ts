@@ -1,7 +1,21 @@
+/**
+ * Vehicle API hooks using Products endpoint with JSONB attributes
+ * 
+ * Updated to use /api/v1/products with vehicle attributes
+ * Old /api/v1/vehicles endpoint is deprecated
+ */
+
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery, type UseQueryResult, type UseInfiniteQueryResult } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { parse } from "csv-parse/sync";
+import type { Product, ProductWithVehicle } from "@/types/product";
+import type { VehicleAttributes } from "@/types/vehicle";
+import { isVehicleProduct } from "@/types/product";
 
+/**
+ * Vehicle data extracted from Product
+ * Legacy type for backward compatibility
+ */
 export interface Vehicle {
   id: string;
   title: string;
@@ -11,8 +25,8 @@ export interface Vehicle {
   year?: number;
   make?: string;
   model?: string;
-  dealer_id?: string;
-  dealer_name?: string;
+  branch_id?: string;
+  branch_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -32,54 +46,34 @@ export interface CatalogResponse {
   has_more: boolean;
 }
 
-interface BackendVehicleItem {
-  id: string;
-  product_id: string;
-  vin: string;
-  year: number;
-  make: string;
-  model: string;
-  trim?: string;
-  mileage?: number;
-  exterior_color?: string;
-  interior_color?: string;
-  dealer_id?: string;
-  dealer_name?: string;
-  created_at: string;
-  product: {
-    id: string;
-    title: string;
-    price_cents: number;
-    status: string;
-    category_id: string;
-    created_at: string;
-  };
-}
-
-interface BackendCatalogResponse {
-  items: BackendVehicleItem[];
-  next_cursor: string | null;
-  has_more: boolean;
-}
-
-// Transform backend vehicle to frontend vehicle (C3 schema with product join)
-export function transformVehicleWithProduct(item: BackendVehicleItem): Vehicle {
+/**
+ * Transform Product to Vehicle (legacy compatibility)
+ * Extracts vehicle data from product.attributes
+ */
+export function transformProductToVehicle(product: ProductWithVehicle): Vehicle {
+  const attrs = product.attributes;
   return {
-    id: item.id,
-    title: item.product.title, // From product, not constructed
-    price: item.product.price_cents / 100, // From product
-    status: item.product.status as Vehicle["status"], // From product
+    id: product.id,
+    title: product.title,
+    price: product.price_cents / 100,
+    status: product.status as Vehicle["status"],
     photo_url: undefined, // TODO: Add from product_images table
-    year: item.year,
-    make: item.make,
-    model: item.model,
-    dealer_id: item.dealer_id,
-    dealer_name: item.dealer_name,
-    created_at: item.created_at,
-    updated_at: item.created_at,
+    year: attrs.year,
+    make: attrs.make,
+    model: attrs.model,
+    branch_id: undefined, // TODO: Add from organization relationship
+    branch_name: undefined,
+    created_at: product.created_at,
+    updated_at: product.updated_at,
   };
 }
 
+// Alias for backward compatibility
+export const transformVehicleWithProduct = transformProductToVehicle;
+
+/**
+ * Fetch vehicles (products with category: 'vehicle')
+ */
 export function useVehicles(filters?: VehicleFilters): UseQueryResult<Vehicle[], Error> {
   const queryParams = new URLSearchParams();
   if (filters?.status) queryParams.append("status", filters.status);
@@ -88,7 +82,7 @@ export function useVehicles(filters?: VehicleFilters): UseQueryResult<Vehicle[],
   return useQuery({
     queryKey: ["vehicles", filters],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/vehicles?${queryParams.toString()}`, {
+      const res = await fetch(`/api/v1/products?${queryParams.toString()}`, {
         credentials: "include",
       });
 
@@ -97,13 +91,18 @@ export function useVehicles(filters?: VehicleFilters): UseQueryResult<Vehicle[],
         throw new Error(error.message || "Failed to fetch vehicles");
       }
 
-      const data = await res.json() as BackendCatalogResponse;
-      return data.items.map(transformVehicleWithProduct);
+      const data = await res.json() as { products: Product[] };
+      // Filter only vehicle products
+      const vehicleProducts = data.products.filter(isVehicleProduct);
+      return vehicleProducts.map(transformProductToVehicle);
     },
     staleTime: 60 * 1000, // 1 minute
   });
 }
 
+/**
+ * Infinite scroll for vehicles
+ */
 export function useInfiniteVehicles(filters?: VehicleFilters, limit: number = 50) {
   const queryParams = new URLSearchParams();
   if (filters?.status) queryParams.append("status", filters.status);
@@ -122,7 +121,7 @@ export function useInfiniteVehicles(filters?: VehicleFilters, limit: number = 50
         params.append("cursor", pageParam);
       }
 
-      const res = await fetch(`/api/v1/vehicles?${params.toString()}`, {
+      const res = await fetch(`/api/v1/products?${params.toString()}`, {
         credentials: "include",
       });
 
@@ -131,11 +130,13 @@ export function useInfiniteVehicles(filters?: VehicleFilters, limit: number = 50
         throw new Error(error.message || "Failed to fetch vehicles");
       }
 
-      const data = await res.json() as BackendCatalogResponse;
+      const data = await res.json() as { products: Product[] };
+      const vehicleProducts = data.products.filter(isVehicleProduct);
+      
       return {
-        items: data.items.map(transformVehicleWithProduct),
-        next_cursor: data.next_cursor,
-        has_more: data.has_more,
+        items: vehicleProducts.map(transformProductToVehicle),
+        next_cursor: null, // TODO: Add pagination support
+        has_more: false,
       };
     },
     initialPageParam: null,
@@ -144,11 +145,14 @@ export function useInfiniteVehicles(filters?: VehicleFilters, limit: number = 50
   });
 }
 
+/**
+ * Fetch single vehicle by ID
+ */
 export function useVehicle(id: string): UseQueryResult<Vehicle, Error> {
   return useQuery({
     queryKey: ["vehicle", id],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/vehicles/${id}`, {
+      const res = await fetch(`/api/v1/products/${id}`, {
         credentials: "include",
       });
 
@@ -157,24 +161,44 @@ export function useVehicle(id: string): UseQueryResult<Vehicle, Error> {
         throw new Error(error.message || "Failed to fetch vehicle");
       }
 
-      return res.json() as Promise<Vehicle>;
+      const product = await res.json() as Product;
+      if (!isVehicleProduct(product)) {
+        throw new Error("Product is not a vehicle");
+      }
+      
+      return transformProductToVehicle(product);
     },
     enabled: !!id,
   });
 }
 
+/**
+ * Update vehicle (update product with vehicle attributes)
+ */
 export function useUpdateVehicle() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ id, ...data }: Omit<Vehicle, "created_at" | "updated_at"> & { id: string }) => {
-      const res = await fetch(`/api/v1/vehicles/${id}`, {
+      // Transform vehicle data to product format
+      const productData = {
+        title: data.title,
+        price_cents: Math.round(data.price * 100),
+        attributes: {
+          category: 'vehicle' as const,
+          year: data.year,
+          make: data.make,
+          model: data.model,
+        },
+      };
+
+      const res = await fetch(`/api/v1/products/${id}`, {
         method: "PATCH",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(productData),
       });
 
       if (!res.ok) {
@@ -182,19 +206,21 @@ export function useUpdateVehicle() {
         throw new Error(error.message || "Failed to update vehicle");
       }
 
-      return res.json() as Promise<Vehicle>;
+      const product = await res.json() as Product;
+      if (!isVehicleProduct(product)) {
+        throw new Error("Product is not a vehicle");
+      }
+      
+      return transformProductToVehicle(product);
     },
 
     onMutate: async (newVehicle) => {
-      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["vehicles"] });
       await queryClient.cancelQueries({ queryKey: ["vehicle", newVehicle.id] });
 
-      // Snapshot previous value
       const previousVehicles = queryClient.getQueryData<Vehicle[]>(["vehicles"]);
       const previousVehicle = queryClient.getQueryData<Vehicle>(["vehicle", newVehicle.id]);
 
-      // Optimistically update to the new value
       queryClient.setQueryData<Vehicle[]>(["vehicles"], (old) =>
         old?.map((v) => (v.id === newVehicle.id ? { ...v, ...newVehicle } : v))
       );
@@ -203,12 +229,10 @@ export function useUpdateVehicle() {
         old ? { ...old, ...newVehicle } : undefined
       );
 
-      // Return context with previous values
       return { previousVehicles, previousVehicle };
     },
 
     onError: (err, newVehicle, context) => {
-      // Rollback to previous value
       if (context?.previousVehicles) {
         queryClient.setQueryData(["vehicles"], context.previousVehicles);
       }
@@ -220,19 +244,21 @@ export function useUpdateVehicle() {
     },
 
     onSettled: () => {
-      // Refetch to ensure server state
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle"] });
     },
   });
 }
 
+/**
+ * Delete vehicle (delete product)
+ */
 export function useDeleteVehicle() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/v1/vehicles/${id}`, {
+      const res = await fetch(`/api/v1/products/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -271,18 +297,36 @@ export function useDeleteVehicle() {
   });
 }
 
+/**
+ * Create vehicle (deprecated - use useCreateProduct from products.ts instead)
+ * @deprecated Use useCreateProduct from products.ts
+ */
 export function useCreateVehicle() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: Omit<Vehicle, "id" | "created_at" | "updated_at">) => {
-      const res = await fetch("/api/v1/vehicles", {
+      // Transform vehicle data to product format
+      const productData = {
+        title: data.title,
+        price_cents: Math.round(data.price * 100),
+        category_id: "", // TODO: Get from form
+        attributes: {
+          category: 'vehicle' as const,
+          vin: "", // REQUIRED for vehicles
+          year: data.year,
+          make: data.make,
+          model: data.model,
+        } as VehicleAttributes,
+      };
+
+      const res = await fetch("/api/v1/products", {
         method: "POST",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(productData),
       });
 
       if (!res.ok) {
@@ -290,7 +334,12 @@ export function useCreateVehicle() {
         throw new Error(error.message || "Failed to create vehicle");
       }
 
-      return res.json() as Promise<Vehicle>;
+      const product = await res.json() as Product;
+      if (!isVehicleProduct(product)) {
+        throw new Error("Product is not a vehicle");
+      }
+      
+      return transformProductToVehicle(product);
     },
 
     onSuccess: (newVehicle) => {
@@ -305,6 +354,10 @@ export function useCreateVehicle() {
   });
 }
 
+/**
+ * Bulk upload vehicles (deprecated - use useBulkUploadProducts instead)
+ * @deprecated Use useBulkUploadProducts
+ */
 export function useBulkUploadVehicles() {
   const queryClient = useQueryClient();
 
@@ -313,9 +366,12 @@ export function useBulkUploadVehicles() {
       const formData = new FormData();
       formData.append("csv_file", file);
 
-      const res = await fetch("/api/v1/vehicles/bulk-upload", {
+      const res = await fetch("/api/v1/products/bulk", {
         method: "POST",
         credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: formData,
       });
 
@@ -374,6 +430,7 @@ export function useBulkUploadProducts() {
         price_cents: Math.round(Number(row.price) * 100),
         category_id: row.category_id || "default-category-id", // TODO: Make configurable
         attributes: {
+          category: 'vehicle' as const,
           vin: row.vin, // REQUIRED - triggers vehicle auto-creation
           year: Number(row.year),
           make: row.make,
@@ -387,9 +444,7 @@ export function useBulkUploadProducts() {
           fuel_type: row.fuel_type,
           drivetrain: row.drivetrain,
           engine: row.engine,
-          cylinders: row.cylinders ? Number(row.cylinders) : undefined,
-          description: row.description,
-        },
+        } as VehicleAttributes,
       }));
 
       // Send to products bulk endpoint
@@ -447,12 +502,19 @@ export interface DecodedVehicle {
   engine?: string;
 }
 
+/**
+ * Decode VIN to get vehicle details
+ */
 export function useDecodeVin() {
   return useMutation({
     mutationFn: async (vin: string) => {
-      const res = await fetch(`/api/v1/vehicles/decode-vin?vin=${vin}`, {
+      const res = await fetch(`/api/v1/vehicles/decode-vin`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
+        body: JSON.stringify({ vin }),
       });
 
       if (!res.ok) {

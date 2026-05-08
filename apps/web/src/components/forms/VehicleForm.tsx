@@ -32,6 +32,7 @@ import {
 import { useCategories, useCategoryOptions } from "@/lib/api/categories";
 import { useDecodeVin } from "@/lib/api/vehicles";
 import { useCreateProduct } from "@/lib/api/products";
+import { useAuthStore } from "@/stores/authStore";
 import { VehicleFormAttributes } from "./VehicleFormAttributes";
 import type { Category } from "@/types/category";
 
@@ -57,7 +58,7 @@ const vehicleSchema = z.object({
     .regex(/^[A-HJ-NPR-Z0-9]+$/, "Invalid VIN format"),
 
   // Basic Info
-  price: z.number().min(0, "Price must be positive").optional(),
+  price: z.number().min(0, "Price must be positive"),
   year: z.number().min(1900).max(2030).optional(),
   make: z.string().optional(),
   model: z.string().optional(),
@@ -164,7 +165,7 @@ export function VehicleForm({
       body_style: initialData?.body_style ?? "",
       drivetrain: initialData?.drivetrain ?? undefined,
       transmission: initialData?.transmission ?? undefined,
-      engine: initialData?.engine ?? "",
+      engine: initialData?.engine,
       fuel_type: initialData?.fuel_type ?? undefined,
       mpg_city: initialData?.mpg_city != null ? Number(initialData.mpg_city) : undefined,
       mpg_highway: initialData?.mpg_highway != null ? Number(initialData.mpg_highway) : undefined,
@@ -184,6 +185,9 @@ export function VehicleForm({
       description: initialData?.description ?? "",
     },
   });
+
+  // Auth context for tenant/org IDs
+  const user = useAuthStore((state) => state.user);
 
   // Category API integration
   const { data: categories, isLoading: categoriesLoading } = useCategories();
@@ -210,6 +214,8 @@ export function VehicleForm({
    */
   const handleDecodeVin = async () => {
     const vin = watch("vin");
+    
+    logger.debug("🔍 VIN decode requested for:", vin);
 
     if (!vin || vin.length !== 17) {
       toast.error("Invalid VIN", {
@@ -235,6 +241,9 @@ export function VehicleForm({
       const decodedVehicle = await decodeVinMutation.mutateAsync(vin);
 
       logger.debug("📦 Decoded vehicle data:", decodedVehicle);
+      console.log("🔍 FULL DECODED VEHICLE:", JSON.stringify(decodedVehicle, null, 2));
+      console.log("🔍 DECODED VEHICLE ENGINE:", decodedVehicle?.engine);
+      console.log("🔍 DECODED VEHICLE ENGINE TYPE:", typeof decodedVehicle?.engine);
 
       // Auto-populate fields from decoded data
       if (decodedVehicle) {
@@ -299,11 +308,14 @@ export function VehicleForm({
         }
         if (decodedVehicle.engine) {
           logger.debug("✅ Setting engine:", decodedVehicle.engine);
+          console.log("🔧 ABOUT TO SET ENGINE TO:", decodedVehicle.engine);
+          console.log("🔧 CURRENT ENGINE VALUE:", watch("engine"));
           setValue("engine", decodedVehicle.engine, {
             shouldValidate: true,
             shouldDirty: true,
             shouldTouch: true,
           });
+          console.log("🔧 ENGINE VALUE AFTER setValue:", watch("engine"));
         }
         if (decodedVehicle.fuel_type) {
           logger.debug("✅ Setting fuel_type:", decodedVehicle.fuel_type);
@@ -322,6 +334,7 @@ export function VehicleForm({
             drivetrain: watch("drivetrain"),
             transmission: watch("transmission"),
             fuel_type: watch("fuel_type"),
+            engine: watch("engine"),
           });
         }, 100);
       }
@@ -341,11 +354,16 @@ export function VehicleForm({
    * Handle form submission
    * Plan 13-03: Use product creation with auto-vehicle creation
    * Brain #7 Condition #3: Field mapping table documented in PLAN.md
+   * 
+   * ENTRY POINT DEBUG: This is called when submit button is clicked
    */
   const onSubmit = async (data: VehicleFormValues) => {
-    if (isDisabled) {
-      return;
-    }
+    logger.debug("🚀 onSubmit ENTRY POINT - called with data:", data);
+    logger.debug("🚀 Form state - isSubmitting:", isSubmitting, "isPending:", isPending, "isDisabled:", isDisabled);
+    
+    // NOTE: Don't check isDisabled here - it blocks submission!
+    // isSubmitting is already true when RHF calls this handler
+    // The disabled state on button prevents double-clicks, not this handler
 
     try {
       // If custom submit handler is provided, use it
@@ -355,47 +373,66 @@ export function VehicleForm({
       }
 
       if (mode === "create") {
+        logger.debug("🚀 MODE: CREATE - Starting product creation");
+        logger.debug("📦 Product data:", {
+          title: `${data.year ?? ""} ${data.make ?? ""} ${data.model ?? ""}`.trim(),
+          price_cents: Math.round((data.price ?? 0) * 100),
+          category_id: data.category_id ?? "",
+          vin: data.vin,
+        });
+        
         // Plan 13-03: Create product with vehicle attributes
         // Backend auto-creates vehicle record when attributes.vin is present
+        logger.debug("🌐 Calling createProduct.mutateAsync...");
         const product = await createProduct.mutateAsync({
           title: `${data.year ?? ""} ${data.make ?? ""} ${data.model ?? ""}`.trim(),
           price_cents: Math.round((data.price ?? 0) * 100), // Convert dollars to cents
+          tenant_id: user?.id ?? "",
+          organization_id: user?.organization_id ?? "",
           category_id: data.category_id ?? "",
-          attributes: {
-            vin: data.vin, // REQUIRED - triggers auto-vehicle creation
-            year: data.year,
-            make: data.make,
-            model: data.model,
-            trim: data.trim,
-            body_type: data.body_type,
-            body_style: data.body_style,
-            drivetrain: data.drivetrain,
-            transmission: data.transmission,
-            engine: data.engine,
-            fuel_type: data.fuel_type,
-            mpg_city: data.mpg_city,
-            mpg_highway: data.mpg_highway,
-            mpg_combined: data.mpg_combined,
-            mileage: data.mileage,
-            mileage_unit: data.mileage_unit,
-            exterior_color: data.exterior_color,
-            interior_color: data.interior_color,
-            has_sunroof: data.has_sunroof,
-            has_navigation: data.has_navigation,
-            has_leather: data.has_leather,
-            has_backup_camera: data.has_backup_camera,
-            has_bluetooth: data.has_bluetooth,
-            has_remote_start: data.has_remote_start,
-            seat_material: data.seat_material,
-            stock_number: data.stock_number,
-            description: data.description,
-          },
+          attributes: Object.entries({
+              vin: data.vin, // REQUIRED - triggers auto-vehicle creation
+              category: "vehicle" as const,
+              year: data.year,
+              make: data.make,
+              model: data.model,
+              trim: data.trim,
+              body_type: data.body_type,
+              body_style: data.body_style,
+              drivetrain: data.drivetrain,
+              transmission: data.transmission,
+              engine: data.engine,
+              fuel_type: data.fuel_type,
+              mpg_city: data.mpg_city,
+              mpg_highway: data.mpg_highway,
+              mpg_combined: data.mpg_combined,
+              mileage: data.mileage ?? 0,
+              mileage_unit: data.mileage_unit,
+              exterior_color: data.exterior_color,
+              interior_color: data.interior_color,
+              has_sunroof: data.has_sunroof,
+              has_navigation: data.has_navigation,
+              has_leather: data.has_leather,
+              has_backup_camera: data.has_backup_camera,
+              has_bluetooth: data.has_bluetooth,
+              has_remote_start: data.has_remote_start,
+              seat_material: data.seat_material,
+              stock_number: data.stock_number,
+              description: data.description,
+            })
+              .filter(([_, value]) => value !== undefined && value !== null && value !== "")
+              .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}) as any,
         });
+
+        logger.debug("✅ Product created successfully:", product);
+        logger.debug("🎯 Success - calling onSuccess or redirecting to /catalog");
 
         // Success toast shown by useCreateProduct hook
         if (onSuccess) {
+          logger.debug("📞 Calling custom onSuccess callback");
           onSuccess();
         } else {
+          logger.debug("📞 Redirecting to /catalog");
           router.push("/catalog");
           router.refresh();
         }
@@ -406,7 +443,12 @@ export function VehicleForm({
         });
       }
     } catch (err) {
-      // Error toast shown by useCreateProduct hook
+      // Log error for debugging
+      logger.error("❌ Form submission error:", err);
+      
+      // Re-throw to ensure form doesn't silently fail
+      // Error toast is already shown by useCreateProduct hook's onError
+      throw err;
     }
   };
 
@@ -417,18 +459,19 @@ export function VehicleForm({
   return (
     <form
       onSubmit={handleSubmit(async (data) => {
-        // Submit with React transition for concurrent rendering
-        startTransition(async () => {
-          try {
-            await onSubmit(data);
-          } catch (err) {
-            // Error already handled in onSubmit with toast
-          }
-        });
+        logger.debug("📤 Form submitting with data:", data);
+        try {
+          await onSubmit(data);
+        } catch (err) {
+          logger.error("❌ Submit handler error:", err);
+          // Don't swallow - let it propagate to error boundary
+          throw err;
+        }
       }, (errors) => {
         // Show toast with specific field names
         const fieldLabels: Record<string, string> = {
           vin: "VIN",
+          price: "Precio",
           year: "Año",
           make: "Marca",
           model: "Modelo",
@@ -521,6 +564,7 @@ export function VehicleForm({
                 options={categoryOptions ?? []}
                 placeholder="Selecciona una categoría"
                 disabled={isDisabled || categoriesLoading}
+                aria-label="Categoría"
               />
             )}
           />
