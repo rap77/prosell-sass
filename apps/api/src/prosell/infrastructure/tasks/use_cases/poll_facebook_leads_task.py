@@ -498,7 +498,6 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
     #   - ILeadRepository (for duplicate detection)
     #   - CreateLeadUseCase (to create new leads)
     # TODO(phase-3): Implement actual Facebook Graph API Leadgen API calls
-    # TODO(phase-3): Add metrics tracking (prometheus/statsd) (B2.4)
 
     logger.info("poll_facebook_leads_task: Starting poll")
 
@@ -508,25 +507,12 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
     # This task is a stub pending Phase 3 implementation.
     # See docstring above for required Phase 3 work.
     #
-    # Rate limit handling infrastructure (B2.2) is implemented:
-    # - is_rate_limit_error(response) -> bool
-    # - extract_retry_after(response) -> int | None
-    # - handle_rate_limit_error(page_id, response) -> FacebookRateLimitException
-    # - format_error_message(page_id, error) -> str
-    #
-    # Retry logic with exponential backoff (B2.3) is implemented:
-    # - is_transient_error(error) -> bool
-    # - calculate_backoff_with_jitter(attempt, ...) -> float
-    # - retry_with_exponential_backoff(func, page_id, ...) -> Any
-
-    # TODO(phase-3): Wire DI container to instantiate:
-    #   - IFacebookPageRepository (to query active pages)
-    #   - IFacebookAccountRepository (to get page access tokens)
-    #   - FacebookGraphApiClient (to fetch leads from Graph API)
-    #   - ILeadRepository (for duplicate detection)
-    #   - CreateLeadUseCase (to create new leads)
-    # TODO(phase-3): Implement actual Facebook Graph API Leadgen API calls
-    # TODO(phase-3): Add metrics tracking (prometheus/statsd) (B2.4)
+    # Infrastructure implemented (B2.1):
+    # - Metrics tracking (B2.1.d): PollingMetrics class with 8 metrics
+    # - Deduplication (B2.1.e): should_create_lead() helper function
+    # - Configuration (B2.1.f-h): POLLING_INTERVAL_SECONDS, TIMEOUT_PER_PAGE_SECONDS, RETRY_*
+    # - Rate limit handling (B2.1.b): is_rate_limit_error(), extract_retry_after(), handle_rate_limit_error()
+    # - Retry logic (B2.1.c): is_transient_error(), calculate_backoff_with_jitter(), retry_with_exponential_backoff()
 
     try:
         # Phase 3: Implementation structure (commented out)
