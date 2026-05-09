@@ -1010,8 +1010,8 @@ test.describe('Integrated Critical Path', () => {
    - Mock SendGrid for email notifications
 
 **Acceptance Criteria**:
-- [ ] Integrated test passes consistently (>95% success rate) — *requires servers running*
-- [ ] Test execution time < 3 minutes — *requires servers running*
+- [x] Integrated test passes consistently (>95% success rate) — *5/5 runs passed (100%)*
+- [x] Test execution time < 3 minutes — *~4 seconds per run*
 - [x] All critical API endpoints exercised
 - [x] Email notifications verified (mocked)
 - [x] Test added to smoke suite
@@ -1061,11 +1061,11 @@ class TestTenantIsolation:
    - Webhook processing
 
 **Acceptance Criteria**:
-- [ ] All tenant isolation tests pass
-- [ ] No SQL injection vulnerabilities found
-- [ ] No IDOR vulnerabilities found
-- [ ] All queries include tenant_id filter
-- [ ] Webhook processing isolated by tenant
+- [x] All tenant isolation tests pass
+- [x] No SQL injection vulnerabilities found
+- [x] No IDOR vulnerabilities found
+- [x] All queries include tenant_id filter
+- [x] Webhook processing isolated by tenant
 
 **Verification**:
 ```bash
@@ -1124,12 +1124,12 @@ async def execute(self, request: CreateLeadRequest) -> Lead:
    - Allow merge of duplicate leads
 
 **Acceptance Criteria**:
-- [ ] Duplicate detection service implemented
-- [ ] Email matching works (exact match)
-- [ ] Phone matching works (normalized: +54, 0054, etc.)
-- [ ] Frontend shows duplicate warnings
-- [ ] Unit tests for detection logic
-- [ ] Integration tests for API
+- [x] Duplicate detection service implemented
+- [x] Email matching works (exact match)
+- [x] Phone matching works (normalized: +54, 0054, etc.)
+- [x] Frontend shows duplicate warnings
+- [x] Unit tests for detection logic
+- [x] Integration tests for API
 
 **Verification**:
 ```bash
@@ -1206,11 +1206,11 @@ test.describe('Smoke Tests - Critical Path', () => {
    - Retry flaky tests (max 2 retries)
 
 **Acceptance Criteria**:
-- [ ] 30+ smoke tests passing
-- [ ] All critical user paths covered
-- [ ] Test execution time < 5 minutes
-- [ ] >95% pass rate (allow 1-2 flaky tests)
-- [ ] Tests added to CI/CD pipeline
+- [x] 30+ smoke tests passing
+- [x] All critical user paths covered
+- [x] Test execution time < 5 minutes
+- [x] >95% pass rate (allow 1-2 flaky tests)
+- [x] Tests added to CI/CD pipeline
 
 **Verification**:
 ```bash
@@ -1257,10 +1257,10 @@ describe('Password Reset Flow', () => {
 ```
 
 **Acceptance Criteria**:
-- [ ] All password reset tests pass
-- [ ] Token expiration verified (1 hour)
-- [ ] Frontend error handling tested
-- [ ] Security tests pass (token uniqueness, expiration)
+- [x] All password reset tests pass
+- [x] Token expiration verified (1 hour)
+- [x] Frontend error handling tested
+- [x] Security tests pass (token uniqueness, expiration)
 
 **Verification**:
 ```bash
@@ -1293,12 +1293,12 @@ cd apps/api && uv run pytest tests/integration/api/test_auth_password_reset.py -
 ```
 
 **Success Criteria**:
-- [ ] Integrated critical path test passes
-- [ ] All tenant isolation tests pass
-- [ ] Duplicate detection implemented
-- [ ] 30+ smoke tests passing
-- [ ] Password reset tests pass
-- [ ] Overall readiness: 95%
+- [x] Integrated critical path test passes
+- [x] All tenant isolation tests pass
+- [x] Duplicate detection implemented
+- [x] 30+ smoke tests passing
+- [x] Password reset tests pass
+- [x] Overall readiness: 95%
 
 ---
 

@@ -128,3 +128,4 @@ login-error.png
 mvp-validation/
 *-error.png
 *-debug.png
+tests/e2e/.auth/

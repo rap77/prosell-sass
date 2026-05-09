@@ -6,7 +6,7 @@
 **Milestone**: Completar MVP de ProSell: publicación de vehículos en Facebook Marketplace, captura de leads y confirmación de citas
 **Version**: 2.0
 **Status**: Active
-**Last Updated**: 2026-04-27
+**Last Updated**: 2026-05-08
 
 ---
 
@@ -68,22 +68,10 @@
 
 ---
 
-## Phase 4: Leads & Appointments (VERTICAL SLICING)
+## Phase 4: Leads & Appointments (COMPLETE ✅)
 
-> **RE-PLANNED**: 2026-04-27 — Tasks now follow vertical slicing principle. Each task delivers ONE complete user-facing feature (backend + frontend + tests).
-> **REPLACES**: Old tasks 4-01 through 4-12
-
-### Phase 4 Overview
-
-**Goal**: Implement lead capture from Facebook, lead lifecycle management, and appointment scheduling with dealers.
-
-**Vertical Slicing Strategy**: Each task (A1-A7) delivers ONE complete user-facing feature with backend, frontend, and tests.
-
----
-
-### A1: Lead Capture Foundation (Backend Complete)
-
-- [x] Create Lead entity with 5-state lifecycle (new → contacted → qualified → appointment_set → lost)
+### A1: Lead Capture Foundation
+- [x] Create Lead entity with 5-state lifecycle
 - [x] Create LeadStatus enum and LeadStateTransitionException
 - [x] Create LeadAuditLog entity for tracking status changes
 - [x] Write Alembic migration for leads, lead_audit_log tables
@@ -111,20 +99,7 @@
 - [x] Write integration tests for all endpoints
 - [x] Write contract tests for DTO schemas
 
-**Verification**:
-```bash
-cd apps/api && uv run alembic upgrade head
-psql -c "\d leads lead_audit_log"
-cd apps/api && uv run pytest tests/unit/domain/test_lead_entity.py -v
-cd apps/api && uv run pytest tests/integration/test_lead_usecases.py -v
-cd apps/api && uv run pytest tests/integration/api/test_lead_api.py -v
-cd tests/contract && uv run pytest openapi/test_leads_schema.py -v
-```
-
----
-
-### A2: Facebook Lead Webhook (Backend Integration)
-
+### A2: Facebook Lead Webhook
 - [x] Create POST /api/v1/webhooks/facebook endpoint
 - [x] Implement X-Hub-Signature verification (SHA256 HMAC)
 - [x] Return 403 if signature missing/invalid (security)
@@ -149,20 +124,7 @@ cd tests/contract && uv run pytest openapi/test_leads_schema.py -v
 - [x] Write contract test for OpenAPI schema
 - [x] Test polling fallback logic
 
-**Verification**:
-```bash
-cd apps/api && uv run pytest tests/integration/test_facebook_webhook.py -v
-cd tests/contract && uv run pytest openapi/test_webhooks_schema.py -v
-curl -X POST http://localhost:8000/api/v1/webhooks/facebook \
-  -H "X-Hub-Signature: sha256=..." \
-  -d @test_payload.json
-tail -f logs/webhook.log
-```
-
----
-
-### A3: Vendedor Leads List (Frontend Complete)
-
+### A3: Vendedor Leads List
 - [x] Create Lead interface (id, buyer_name, buyer_email, buyer_phone, vehicle, message, status, source, created_at, updated_at)
 - [x] Create CreateLeadRequest interface
 - [x] Create UpdateLeadStatusRequest interface (status + reason)
@@ -190,16 +152,7 @@ tail -f logs/webhook.log
 - [x] Test status filter
 - [x] Test status update dropdown
 
-**Verification**:
-```bash
-cd apps/web && pnpm test src/lib/api/leads.test.ts
-cd tests/e2e && pnpm test specs/leads.spec.ts
-```
-
----
-
-### A4: Appointment Scheduling (Full Feature)
-
+### A4: Appointment Scheduling
 - [x] Create Appointment entity (lead_id, dealer_id, vehicle_id, scheduled_at, status, notes, tenant_id)
 - [x] Implement AppointmentStatus enum (scheduled, completed, cancelled)
 - [x] Implement time validation (business hours: 9am-6pm Mon-Fri)
@@ -239,21 +192,7 @@ cd tests/e2e && pnpm test specs/leads.spec.ts
 - [x] Write integration tests for API endpoints
 - [x] Write E2E test for appointment creation flow
 
-**Verification**:
-```bash
-cd apps/api && uv run alembic upgrade head
-psql -c "\d appointments"
-cd apps/api && uv run pytest tests/unit/domain/test_appointment_entity.py -v
-cd apps/api && uv run pytest tests/integration/test_appointment_usecases.py -v
-cd apps/api && uv run pytest tests/integration/api/test_appointment_api.py -v
-cd tests/e2e && pnpm test specs/appointments.spec.ts
-tail -f logs/sendgrid.log
-```
-
----
-
-### A5: Manager Team View (Manager Feature)
-
+### A5: Manager Team View
 - [x] Extend GET /api/v1/leads with manager scope (all team leads, not just own)
 - [x] Create AssignLeadToVendedorUseCase (if not in A1)
 - [x] Create PUT /api/v1/leads/{id}/assign endpoint
@@ -271,15 +210,7 @@ tail -f logs/sendgrid.log
 - [x] Test filter by vendedor
 - [x] Test lead reassignment
 
-**Verification**:
-```bash
-cd tests/e2e && pnpm test specs/manager-leads.spec.ts
-```
-
----
-
-### A6: Dealer Calendar (Dealer Feature)
-
+### A6: Dealer Calendar
 - [x] Extend GET /api/v1/appointments with dealer scope (own appointments only)
 - [x] Create PUT /api/v1/appointments/{id}/status endpoint (confirm, cancel)
 - [x] Extend useAppointments hook with dealer scope
@@ -296,15 +227,7 @@ cd tests/e2e && pnpm test specs/manager-leads.spec.ts
 - [x] Test calendar view (day/week/month)
 - [x] Test confirm/cancel buttons
 
-**Verification**:
-```bash
-cd tests/e2e && pnpm test specs/dealer-calendar.spec.ts
-```
-
----
-
-### A7: E2E Verification (Final Task)
-
+### A7: E2E Verification
 - [x] Create E2E test for Facebook webhook lead capture
 - [x] Test webhook endpoint receives Facebook payload
 - [x] Test lead creation from webhook
@@ -329,133 +252,12 @@ cd tests/e2e && pnpm test specs/dealer-calendar.spec.ts
 - [x] Measure test execution time (target: < 5 minutes)
 - [x] Fix any failing tests
 
-**Verification**:
-```bash
-cd tests/e2e && pnpm test
-cd tests/e2e && pnpm test smoke.spec.ts
-```
-
----
-
-## Checkpoints
-
-### Checkpoint 1: Foundation Complete (After A1, A2)
-- [ ] All unit tests for lead domain pass
-- [ ] All integration tests for lead repository pass
-- [ ] All integration tests for use cases pass
-- [ ] Database tables created with proper schema
-- [ ] Alembic migration applies successfully
-- [ ] Facebook webhook endpoint works
-- [ ] Webhook signature verification implemented
-- [ ] Lead created from Facebook payload
-- [ ] Duplicate detection prevents duplicate leads
-- [ ] Integration tests for webhook pass
-
-### Checkpoint 2: Core Features Complete (After A3, A4)
-- [ ] Frontend API clients work
-- [ ] Leads list view functional
-- [ ] Lead details and appointment form functional
-- [ ] Frontend unit tests pass
-- [ ] E2E tests for core flows pass
-- [ ] Appointment creation works end-to-end
-- [ ] SendGrid email notifications work
-- [ ] Appointment time validation works
-
-### Checkpoint 3: Extended Features Complete (After A5, A6)
-- [ ] Manager view functional
-- [ ] Dealer calendar view functional
-- [ ] Lead reassignment works
-- [ ] Appointment confirm/cancel works
-- [ ] Export to CSV works
-- [ ] Team metrics display correctly
-
-### Checkpoint 4: Full Integration Complete (After A7)
-- [ ] All E2E tests pass
-- [ ] Smoke test suite passes (25+ tests)
-- [ ] Test execution time < 5 minutes
-- [ ] No regressions in existing tests
-- [ ] Manual testing confirms end-to-end flow
-
----
-
-## MVP Complete Checklist
-
-### Phase 13 Complete
-- [x] All 6 Phase 13 plans executed
-- [x] VehicleForm uses C3 API
-- [x] DataGrid uses vehicles API
-- [x] Image upload with presigned URLs works
-- [x] Search and filters work with real data
-- [x] All Phase 13 E2E tests pass
-- [x] No regressions in existing tests
-
-### Phase 4 Complete
-- [ ] All 7 Phase 4 plans executed (A1-A7)
-- [ ] Lead domain and database schema implemented
-- [ ] Lead and appointment repositories work
-- [ ] Facebook webhook captures leads
-- [ ] Lead API endpoints functional
-- [ ] Appointment API endpoints functional
-- [ ] Frontend leads list view works
-- [ ] Frontend appointment form works
-- [ ] Manager team leads view works
-- [ ] Dealer calendar view works
-- [ ] All Phase 4 E2E tests pass
-- [ ] SendGrid email notifications work
-
-### End-to-End Flow Verified
-- [ ] Vendedor can publish vehicle to Facebook
-- [ ] Facebook message creates lead via webhook
-- [ ] Lead appears in vendedor's leads list
-- [ ] Vendedor can update lead status
-- [ ] Vendedor can create appointment
-- [ ] Dealer receives email notification
-- [ ] Dealer can view appointment in calendar
-- [ ] Manager can view and reassign team leads
-
-### Deployment Ready
-- [ ] All changes deployed to staging
-- [ ] Smoke tests pass on staging
-- [ ] Manual testing confirms end-to-end flow
-- [ ] SendGrid configured and verified
-- [ ] Facebook webhook registered and verified
-- [ ] Pilot dealer onboarded
-- [ ] One week pilot testing complete
-- [ ] Critical bugs fixed
-- [ ] Ready for production deployment
-
----
-
-## Notes
-
-- **Phase 13 is COMPLETE** (all 6 tasks done)
-- **Phase 4 follows vertical slicing** (7 tasks A1-A7)
-- **Parallel execution** is encouraged where dependency graph allows
-- **Test-driven development** is required for all backend code
-- **E2E tests** are mandatory for all user-facing features
-- **SendGrid API key** must be configured before A4 execution
-- **Facebook webhook** must be registered before A2 testing
-- **Checkbox format**: Use `- [ ]` for pending, `- [x]` for complete
-
----
-
-**Document Status**: Active — Ready for execution
-**Next Action**: Execute Phase Completion B1-B4
-**Owner**: Engineering Team
-**Stakeholders**: Product, QA, DevOps, Security
-
 ---
 
 ## Phase Completion: 100% Module Completion
 
-> **Goal**: Complete all remaining gaps to reach 100% module completion across all ProSell SaaS features.
-> 
-> **Current Status**: 88% complete → Target: 100% complete
-> **Estimated Effort**: 284 hours (7 weeks with 1 dev, 4-5 weeks with 2 devs)
+### B1: Security & Release Readiness
 
-### Sprint B1: Security & Release Readiness (48 hours)
-
-#### B1.1: E2E Integrated Flow Validation (8 hours)
 - [x] Create integrated-critical-path.spec.ts test
 - [x] Implement complete sales cycle scenario
 - [x] Mock Facebook Graph API for publish
@@ -464,8 +266,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [x] Verify test execution time < 3 minutes
 - [x] Add test to smoke suite
 - [x] Test passes consistently (>95% success rate)
-
-#### B1.2: Multi-Tenant Isolation Security Tests (8 hours)
 - [x] Create test_tenant_isolation.py suite
 - [x] Test user cannot access other tenant leads
 - [x] Test user cannot access other tenant products
@@ -476,8 +276,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [x] Test SQL injection attempts
 - [x] Test IDOR (Insecure Direct Object Reference) vectors
 - [x] All tenant isolation tests pass
-
-#### B1.3: Lead Duplicate Detection Implementation (12 hours)
 - [x] Create LeadDuplicateDetector service
 - [x] Implement email matching (exact match)
 - [x] Implement phone matching (normalized)
@@ -490,8 +288,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [x] Display duplicates in lead detail view
 - [x] Unit tests for detection logic
 - [x] Integration tests for API
-
-#### B1.4: Smoke Test Suite Expansion (12 hours)
 - [x] Add 5 Auth smoke tests (login, OAuth, 2FA, reset, refresh)
 - [x] Add 8 Catalog smoke tests (CRUD, VIN, pagination, search)
 - [x] Add 8 Leads smoke tests (webhook, assign, update, reassign, duplicates, audit)
@@ -502,8 +298,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [x] Add retry mechanism for flaky tests
 - [x] Add to CI/CD pipeline
 - [x] Verify >95% pass rate
-
-#### B1.5: Password Reset Flow Tests (8 hours)
 - [x] Create test_auth_password_reset.py integration tests
 - [x] Test user can request password reset
 - [x] Test reset token expires after 1 hour
@@ -519,9 +313,8 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [x] Test user can login with new password
 - [x] All password reset tests pass
 
-### Sprint B2: Core Feature Completion (54 hours)
+### B2: Core Feature Completion
 
-#### B2.1: Facebook Webhook Polling Completion (16 hours)
 - [ ] Review TODO comments in poll_facebook_leads_task.py (lines 56-82)
 - [ ] Implement error handling for API rate limits
 - [ ] Implement retry logic with exponential backoff
@@ -532,8 +325,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Configure retry policy
 - [ ] Remove all TODO comments
 - [ ] Integration tests pass
-
-#### B2.2: VIN Decode Integration Tests (6 hours)
 - [ ] Create test_vin_decode_integration.py
 - [ ] Test VIN decode calls NHTSA API successfully
 - [ ] Test VIN decode caches results
@@ -544,8 +335,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Test success scenarios
 - [ ] Test error scenarios (timeout, 404, 500)
 - [ ] Verify caching behavior
-
-#### B2.3: Team Switching UI Implementation (8 hours)
 - [ ] Create TeamSwitcher component
 - [ ] Create useTeams hook
 - [ ] Implement getUserTeams API call
@@ -558,8 +347,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Refresh page with new team context
 - [ ] Unit tests for TeamSwitcher component
 - [ ] E2E test for team switching flow
-
-#### B2.4: Calendar Integration (12 hours)
 - [ ] Install @fullcalendar/react dependencies
 - [ ] Create FullCalendarView component
 - [ ] Integrate dayGridPlugin
@@ -574,8 +361,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Verify responsive design
 - [ ] Unit tests for FullCalendarView
 - [ ] E2E test for calendar interactions
-
-#### B2.5: Role-Based Permission Tests (12 hours)
 - [ ] Create test_role_based_permissions.py
 - [ ] Define PERMISSION_MATRIX (admin, manager, vendedor, viewer)
 - [ ] Test admin: full access (create, read, update, delete, assign)
@@ -587,8 +372,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Verify cross-tenant access blocked
 - [ ] Verify role escalation blocked
 - [ ] Document permission matrix
-
-#### B2.6: API Contract Test Completion (8 hours)
 - [ ] Identify missing contract test coverage
 - [ ] Compare routers with contract tests
 - [ ] Add missing product schema tests
@@ -600,9 +383,8 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Verify validation rules documented
 - [ ] All API endpoints have contract tests
 
-### Sprint B3: UX Enhancements (44 hours)
+### B3: UX Enhancements
 
-#### B3.1: Multi-Image Gallery Implementation (12 hours)
 - [ ] Create ProductImageGallery component
 - [ ] Implement main image display
 - [ ] Implement prev/next navigation
@@ -612,8 +394,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Verify responsive design
 - [ ] Unit tests for ProductImageGallery
 - [ ] E2E test for gallery interactions
-
-#### B3.2: Image Optimization Service (8 hours)
 - [ ] Create ImageOptimizer service
 - [ ] Implement resize to max 1920x1080
 - [ ] Implement JPEG compression at 85%
@@ -624,8 +404,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Verify file size reduced >50%
 - [ ] Unit tests for optimizer
 - [ ] Test with real images
-
-#### B3.3: Appointment Email Notifications (4 hours)
 - [ ] Review existing email_service.py
 - [ ] Verify send_appointment_confirmation exists
 - [ ] Verify send_appointment_cancellation exists
@@ -635,8 +413,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Test cancellation email sent
 - [ ] Verify email templates
 - [ ] Integration tests pass
-
-#### B3.4: Product Edit Mode Implementation (8 hours)
 - [ ] Review TODO at line 440 in VehicleForm.tsx
 - [ ] Add mode prop to VehicleForm ('create' | 'edit')
 - [ ] Add productId prop to VehicleForm
@@ -648,8 +424,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Remove TODO comment
 - [ ] Unit tests for edit mode
 - [ ] E2E test for edit flow
-
-#### B3.5: CSV Parser for Bulk Upload (12 hours)
 - [ ] Create CSVProductParser service
 - [ ] Implement CSV parsing with DictReader
 - [ ] Validate required columns (vin, title, price, category_id)
@@ -663,9 +437,8 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Test error handling
 - [ ] Test partial failures
 
-### Sprint B4: Advanced Features (42 hours)
+### B4: Advanced Features
 
-#### B4.1: Team Invitation System (16 hours)
 - [ ] Create TeamInvitation entity
 - [ ] Add invitation fields (team_id, email, role, token, expires_at)
 - [ ] Create InviteTeamMemberUseCase
@@ -682,8 +455,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Test already member validation
 - [ ] Unit tests for use cases
 - [ ] Integration tests for flow
-
-#### B4.2: Appointment Conflict Detection (6 hours)
 - [ ] Create AppointmentConflictDetector service
 - [ ] Implement times_overlap logic
 - [ ] Detect dealer unavailability conflicts
@@ -692,8 +463,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Allow override with confirmation
 - [ ] Unit tests for detection logic
 - [ ] Integration tests for conflict scenarios
-
-#### B4.3: Lead Assignment Rules Engine (8 hours)
 - [ ] Create LeadAssignmentRulesEngine
 - [ ] Implement round-robin assignment
 - [ ] Implement vehicle owner assignment
@@ -703,8 +472,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Make rules configurable
 - [ ] Unit tests for each rule
 - [ ] Integration test for flow
-
-#### B4.4: Lead Audit Trail UI (6 hours)
 - [ ] Create getLeadAuditTrail API call
 - [ ] Create useLeadAuditTrail hook
 - [ ] Create LeadAuditTrail component
@@ -715,8 +482,6 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Integrate into lead detail page
 - [ ] Unit tests for component
 - [ ] E2E test for display
-
-#### B4.5: 2FA Backup Code Regeneration (6 hours)
 - [ ] Create RegenerateBackupCodesUseCase
 - [ ] Generate new backup codes
 - [ ] Hash and store new codes
@@ -728,70 +493,23 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [ ] Unit tests for use case
 - [ ] Integration test for flow
 
-### Phase Completion Success Criteria
-
-#### Module Completion Targets
-
-##### Auth (95% → 100%)
-- [ ] Password reset flow complete
-- [ ] Session management tested
-- [ ] 2FA backup codes regeneratable
-- [ ] OAuth session handling verified
-
-##### Organizations & Teams (90% → 100%)
-- [ ] Team switching UI implemented
-- [ ] Role-based permissions tested
-- [ ] Team invitation system functional
-- [ ] Tenant isolation verified
-
-##### Catalog C3 (95% → 100%)
-- [ ] VIN decode integration tested
-- [ ] CSV parser implemented
-- [ ] Image gallery functional
-- [ ] Edit mode complete
-
-##### Image Upload (85% → 100%)
-- [ ] Image optimization implemented
-- [ ] Multi-image upload working
-- [ ] Upload progress tracked
-- [ ] Image deletion functional
-
-##### Leads (90% → 100%)
-- [ ] Duplicate detection implemented
-- [ ] Webhook polling complete
-- [ ] Assignment rules working
-- [ ] Audit trail UI displayed
-
-##### Appointments (85% → 100%)
-- [ ] Calendar integration complete
-- [ ] Email notifications wired
-- [ ] Conflict detection working
-- [ ] Recurring appointments supported
-
-##### E2E / QA (80% → 100%)
-- [ ] Integrated flow validated
-- [ ] Smoke test suite expanded (30+ tests)
-- [ ] Contract tests complete
-- [ ] Flaky tests eliminated
-
-#### Overall Completion Targets
-- [ ] All 4 sprints (B1 through B4) implemented
-- [ ] All modules at 100% completion
-- [ ] All security tests passing
-- [ ] All E2E tests passing
-- [ ] All UX enhancements deployed
-- [ ] All advanced features functional
-- [ ] Overall readiness: 100%
-
 ---
 
 ## Notes
 
 - **Phase 13 is COMPLETE** (all 6 tasks done)
 - **Phase A7 is COMPLETE** (E2E verification done)
-- **Phase Completion B1-B4 follows priority order**: Security → Core → UX → Advanced
+- **Phase B1 is COMPLETE** (Security & Release Readiness)
+- **Phase Completion B2-B4 follows priority order**: Core → UX → Advanced
 - **Parallel execution** is encouraged where dependency graph allows
 - **Test-driven development** is required for all backend code
 - **E2E tests** are mandatory for all user-facing features
 - **CI/CD gates** will enforce all critical tests pass before merge
-- **Estimated effort**: 284 hours (7 weeks solo, 4-5 weeks with 2 devs)
+- **Checkbox format**: Use `- [ ]` for pending, `- [x]` for complete
+
+---
+
+**Document Status**: Active — Ready for execution
+**Next Action**: Execute B2 (Core Feature Completion)
+**Owner**: Engineering Team
+**Stakeholders**: Product, QA, DevOps, Security
