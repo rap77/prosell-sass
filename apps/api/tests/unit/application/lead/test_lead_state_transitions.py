@@ -2,10 +2,11 @@
 
 These tests use mock repositories — no database required.
 """
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportMissingParameterType=false, reportUnknownLambdaType=false
 
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
-from uuid import uuid4
+from uuid import UUID, uuid4  # noqa: F401 (UUID used in type annotations below)
 
 import pytest
 
@@ -35,8 +36,8 @@ from prosell.domain.exceptions.lead_exceptions import (
 
 def make_lead(
     status: LeadStatus = LeadStatus.NEW,
-    tenant_id=None,
-    vendedor_id=None,
+    tenant_id: UUID | None = None,
+    vendedor_id: UUID | None = None,
 ) -> Lead:
     """Create a test Lead entity."""
     tid = tenant_id or uuid4()
@@ -58,7 +59,7 @@ def make_lead(
 
 def make_user(
     role_type: RoleType = RoleType.SALES_AGENT,
-    tenant_id=None,
+    tenant_id: UUID | None = None,
 ) -> User:
     """Create a test User entity."""
     tid = tenant_id or uuid4()
@@ -332,10 +333,10 @@ class TestGetLeadDetailsUseCase:
                 id=uuid4(),
                 lead_id=lead.id,
                 tenant_id=lead.tenant_id,
-                old_status="new",
-                new_status="contacted",
+                old_status=LeadStatus.NEW,
+                new_status=LeadStatus.CONTACTED,
                 changed_by_user_id=uuid4(),
-                timestamp=datetime.now(UTC),
+                created_at=datetime.now(UTC),
             )
         ]
 

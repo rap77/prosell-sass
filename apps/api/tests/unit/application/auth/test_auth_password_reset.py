@@ -6,8 +6,8 @@ These tests validate the business logic of RequestPasswordResetUseCase
 and ResetPasswordUseCase, including token expiry, hash update, and
 validation rules.
 """
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportMissingParameterType=false, reportUnknownVariableType=false
 
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 

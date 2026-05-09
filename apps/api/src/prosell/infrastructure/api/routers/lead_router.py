@@ -35,7 +35,7 @@ from prosell.domain.services.lead_duplicate_detector import DuplicateMatch, Lead
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
 from prosell.infrastructure.api.schemas.lead_schemas import DuplicateMatchResponse, DuplicatesResponse
 from prosell.infrastructure.database.session import get_async_session
-from prosell.infrastructure.repositories.lead_repository_impl import SqlAlchemyLeadRepository
+from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct, SqlAlchemyLeadRepository
 
 router = APIRouter()
 
@@ -309,12 +309,14 @@ async def get_lead_duplicates(
         )
 
     # Fetch the lead to extract contact fields
-    lead = await lead_repo.get_by_id(lead_id=lead_id, tenant_id=current_user.tenant_id)
-    if not lead:
+    lead_result = await lead_repo.get_by_id(lead_id=lead_id, tenant_id=current_user.tenant_id)
+    if not lead_result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Lead {lead_id} not found.",
         )
+    # Narrow union type: get_by_id returns Lead or LeadWithProduct depending on include_product
+    lead = lead_result.lead if isinstance(lead_result, LeadWithProduct) else lead_result
 
     duplicates: list[DuplicateMatch] = await detector.find_duplicates(
         email=lead.buyer_email,
