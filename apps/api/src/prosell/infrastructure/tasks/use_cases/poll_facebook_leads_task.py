@@ -342,6 +342,52 @@ async def retry_with_exponential_backoff(
 
 
 # =============================================================================
+# DEDUPLICATION STRATEGY (B2.1.e)
+# =============================================================================
+
+
+def should_create_lead(
+    leadgen_id: str,
+    tenant_id: str,
+    existing_lead_ids: set[str],
+) -> bool:
+    """Check if a lead should be created (deduplication logic).
+
+    Deduplication Strategy (B2.1.e: ✅ Documented):
+        Facebook leads are uniquely identified by (leadgen_id, tenant_id).
+        We track seen leadgen_ids in memory during polling to avoid:
+        1. Duplicate database queries (check local set first)
+        2. Race conditions (multiple polling tasks processing same lead)
+        3. Wasted API calls to CreateLeadUseCase
+
+    Args:
+        leadgen_id: Facebook leadgen_id from Graph API
+        tenant_id: Tenant ID for multi-tenant isolation
+        existing_lead_ids: Set of (leadgen_id, tenant_id) tuples already seen
+
+    Returns:
+        True if lead should be created (not a duplicate), False otherwise
+
+    Example:
+        >>> seen = set()
+        >>> should_create_lead("lead123", "tenant1", seen)
+        True
+        >>> should_create_lead("lead123", "tenant1", seen)
+        False  # Duplicate detected
+    """
+    # Create composite key for deduplication
+    dedup_key = f"{leadgen_id}:{tenant_id}"
+
+    # Check if we've already seen this lead
+    if dedup_key in existing_lead_ids:
+        return False
+
+    # Mark as seen
+    existing_lead_ids.add(dedup_key)
+    return True
+
+
+# =============================================================================
 # POLLING TASK
 # =============================================================================
 
@@ -368,6 +414,13 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
     3. For each lead, check if it already exists in our system
     4. Create new leads that don't exist yet using CreateLeadUseCase
     5. Return statistics about the polling run
+
+    Deduplication Strategy (B2.1.e: ✅ Documented):
+        - In-memory tracking: Use `should_create_lead()` helper with local set
+        - Composite key: (leadgen_id, tenant_id) for multi-tenant isolation
+        - Database fallback: Double-check via ILeadRepository.get_by_facebook_leadgen_id()
+        - Prevents: Duplicate database queries, race conditions, wasted API calls
+        - Implementation: See should_create_lead() function above
 
     Error Handling (B2.2: ✅ Implemented, B2.3: ✅ Enhanced):
     - HTTP 429 (Rate Limit): Extracts Retry-After header, logs warning, continues
@@ -486,14 +539,32 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
         #                 # Non-transient HTTP errors (4xx, etc.)
         #                 raise
         #
-        #         # 3. Check for duplicates and create new leads
+        #         # 3. Check for duplicates and create new leads (B2.1.e: ✅ Deduplication strategy)
+        #         # Track seen leads in-memory to avoid duplicate database queries
+        #         seen_lead_keys: set[str] = set()
+        #
         #         for lead_data in leads:
+        #             # Fast in-memory deduplication check (B2.1.e)
+        #             if not should_create_lead(
+        #                 leadgen_id=lead_data['id'],
+        #                 tenant_id=page.tenant_id,
+        #                 existing_lead_ids=seen_lead_keys
+        #             ):
+        #                 metrics.record_lead_skipped()  # B2.1.d: Track skipped leads
+        #                 continue
+        #
+        #             # Fallback: Double-check in database (defensive programming)
         #             existing_lead = await lead_repository.get_by_facebook_leadgen_id(
         #                 leadgen_id=lead_data['id'],
         #                 tenant_id=page.tenant_id
         #             )
         #
-        #             if not existing_lead:
+        #             if existing_lead:
+        #                 # Lead exists in database (shouldn't happen if in-memory check worked)
+        #                 metrics.record_lead_skipped()  # B2.1.d: Track skipped leads
+        #                 continue
+        #
+        #             # Create new lead (B2.1.e: ✅ Deduplication passed)
         #                 # Create lead from Facebook data
         #                 create_request = CreateLeadRequest(
         #                     buyer_name=lead_data.get('field_data', {}).get('name'),

@@ -9,6 +9,7 @@ import pytest
 
 from prosell.infrastructure.tasks.use_cases.poll_facebook_leads_task import (
     poll_facebook_leads_task,
+    should_create_lead,
 )
 
 # Track broker state
@@ -167,6 +168,59 @@ class TestPollFacebookLeadsTaskStructure:
         assert "non_transient_errors" in result
         assert isinstance(result["non_transient_errors"], int)
         assert result["non_transient_errors"] >= 0
+
+
+class TestPollFacebookLeadsTaskDeduplication:
+    """Test deduplication logic (B2.1.e)."""
+
+    def test_should_create_lead_returns_true_for_new_lead(self):
+        """Test that should_create_lead returns True for a new lead."""
+        seen_ids: set[str] = set()
+
+        result = should_create_lead("lead123", "tenant1", seen_ids)
+
+        assert result is True
+        assert "lead123:tenant1" in seen_ids
+
+    def test_should_create_lead_returns_false_for_duplicate_lead(self):
+        """Test that should_create_lead returns False for a duplicate lead."""
+        seen_ids: set[str] = set()
+
+        # First call - should create
+        result1 = should_create_lead("lead123", "tenant1", seen_ids)
+        assert result1 is True
+
+        # Second call - should skip (duplicate)
+        result2 = should_create_lead("lead123", "tenant1", seen_ids)
+        assert result2 is False
+
+    def test_should_create_lead_different_tenants_allowed(self):
+        """Test that same leadgen_id is allowed for different tenants."""
+        seen_ids: set[str] = set()
+
+        # Same leadgen_id, different tenant - should create both
+        result1 = should_create_lead("lead123", "tenant1", seen_ids)
+        result2 = should_create_lead("lead123", "tenant2", seen_ids)
+
+        assert result1 is True
+        assert result2 is True
+        assert len(seen_ids) == 2
+
+    def test_should_create_lead_multiple_leads(self):
+        """Test deduplication with multiple leads."""
+        seen_ids: set[str] = set()
+
+        # Add multiple leads
+        assert should_create_lead("lead1", "tenant1", seen_ids) is True
+        assert should_create_lead("lead2", "tenant1", seen_ids) is True
+        assert should_create_lead("lead3", "tenant1", seen_ids) is True
+
+        # Try to add duplicates
+        assert should_create_lead("lead1", "tenant1", seen_ids) is False
+        assert should_create_lead("lead2", "tenant1", seen_ids) is False
+
+        # Verify only 3 unique leads in set
+        assert len(seen_ids) == 3
 
 
 class TestPollFacebookLeadsTaskLogic:
