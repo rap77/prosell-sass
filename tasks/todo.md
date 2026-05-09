@@ -330,12 +330,11 @@
 - [x] Implement retry logic with exponential backoff
 - [x] Add metrics tracking (leads polled, created, errors)
 - [x] Implement deduplication in polling
-- [ ] Implement deduplication in polling
-- [ ] Configure polling interval (10 minutes)
-- [ ] Configure timeout (30 seconds per page)
-- [ ] Configure retry policy
-- [ ] Remove all TODO comments
-- [ ] Integration tests pass
+- [x] Configure polling interval (10 minutes)
+- [x] Configure timeout (30 seconds per page)
+- [x] Configure retry policy
+- [x] Remove all TODO comments
+- [x] Integration tests pass
 
 #### B2.2: VIN Decode Integration Tests (6 hours)
 - [ ] Create test_vin_decode_integration.py

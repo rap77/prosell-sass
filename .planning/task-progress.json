@@ -35,30 +35,40 @@
     },
     "B2.1.f": {
       "description": "Configure polling interval (10 minutes)",
-      "status": "pending",
-      "retries": 0
+      "status": "completed",
+      "retries": 0,
+      "completed_at": "2026-05-09T00:43:30Z",
+      "commit_sha": "000dc05"
     },
     "B2.1.g": {
       "description": "Configure timeout (30 seconds per page)",
-      "status": "pending",
-      "retries": 0
+      "status": "completed",
+      "retries": 0,
+      "completed_at": "2026-05-09T00:43:30Z",
+      "commit_sha": "000dc05"
     },
     "B2.1.h": {
       "description": "Configure retry policy",
-      "status": "pending",
-      "retries": 0
+      "status": "completed",
+      "retries": 0,
+      "completed_at": "2026-05-09T00:43:30Z",
+      "commit_sha": "000dc05"
     },
     "B2.1.i": {
       "description": "Remove all TODO comments",
-      "status": "pending",
-      "retries": 0
+      "status": "completed",
+      "retries": 0,
+      "completed_at": "2026-05-09T00:44:30Z",
+      "commit_sha": "2e592a7"
     },
     "B2.1.j": {
       "description": "Integration tests pass",
-      "status": "pending",
-      "retries": 0
+      "status": "completed",
+      "retries": 0,
+      "completed_at": "2026-05-09T00:45:00Z",
+      "commit_sha": "a54ad42"
     }
   },
-  "last_checkpoint": null,
+  "last_checkpoint": "B2.1",
   "context_budget_exit": null
 }
