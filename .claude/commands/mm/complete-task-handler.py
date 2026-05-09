@@ -698,6 +698,161 @@ def update_subtask_status(
             mm_error(f"Failed to write runtime state: {e}")
             raise
 
+    # If this subtask was just completed, check if all siblings are complete
+    # and propagate completion to parent
+    if status == "completed":
+        # Extract parent task ID from subtask_id (e.g., "B2.1" -> "B2", "B2.1.a" -> "B2.1")
+        if "." in subtask_id:
+            # For sub-subtasks like "B2.1.a", parent is "B2.1"
+            # For subtasks like "B2.1", parent is "B2"
+            parts = subtask_id.rsplit(".", 1)
+            parent_id = parts[0] if len(parts) == 2 else subtask_id
+
+            try:
+                propagate_parent_completion(parent_id)
+            except Exception as e:
+                # Don't fail the subtask update if propagation fails
+                mm_error(f"Failed to propagate parent completion: {e}")
+
+
+def propagate_parent_completion(task_id: str) -> None:
+    """Check if all subtasks of task_id are complete and mark parent as complete in todo.md.
+
+    This function implements hierarchical completion propagation:
+    - If all sub-subtasks of a subtask are complete (e.g., B2.1.a, B2.1.b), mark B2.1 as complete
+    - If all subtasks of a parent are complete (e.g., B2.1-B2.6), mark B2 as complete
+    - Cascades up the hierarchy automatically
+
+    The function checks both task-progress.json (for leaf-level subtasks) and todo.md
+    (for intermediate-level subtasks) to determine completion status.
+
+    Args:
+        task_id: Parent task ID to check (e.g., "B2" or "B2.1").
+
+    Raises:
+        FileNotFoundError: If todo.md doesn't exist.
+        OSError: If files cannot be read or written.
+    """
+    if not TODO_MD.exists():
+        mm_error(f"todo.md not found at {TODO_MD}")
+        return
+
+    # First, try to find leaf-level subtasks in task-progress.json
+    # For parent "B2.5", find "B2.5.a", "B2.5.b", etc.
+    # For parent "B2", this won't find anything (B2.1, B2.2 aren't in the JSON)
+    has_json_subtasks = False
+    if RUNTIME_STATE_PATH.exists():
+        try:
+            state = json.loads(RUNTIME_STATE_PATH.read_text())
+
+            # Find all subtasks that belong to this parent
+            # For parent "B2.5", find "B2.5.a", "B2.5.b", etc.
+            # For parent "B2", find "B2.1", "B2.2", etc. (but these likely won't exist)
+            subtask_pattern = rf"^{re.escape(task_id)}\."
+            sibling_subtasks = {
+                st_id: st_data
+                for st_id, st_data in state["subtasks"].items()
+                if st_id.startswith(task_id + ".")
+            }
+
+            if sibling_subtasks:
+                has_json_subtasks = True
+
+                # Check if all sibling subtasks are completed
+                all_complete = all(
+                    st_data.get("status") == "completed"
+                    for st_data in sibling_subtasks.values()
+                )
+
+                if not all_complete:
+                    # Not all subtasks complete - don't mark parent as complete
+                    return
+        except (json.JSONDecodeError, OSError) as e:
+            mm_error(f"Failed to read task-progress.json: {e}")
+            # Continue to check todo.md
+
+    # If no JSON subtasks found, or if all JSON subtasks are complete,
+    # check todo.md for intermediate-level subtasks
+    # For parent "B2", check if B2.1, B2.2, etc. are marked as [x] in todo.md
+    try:
+        todo_content = TODO_MD.read_text()
+    except (FileNotFoundError, OSError) as e:
+        mm_error(f"Failed to read todo.md: {e}")
+        return
+
+    # Find all subtasks in todo.md that belong to this parent
+    # Pattern: "- [x] B2.1:", "- [~] B2.2:", etc.
+    subtask_pattern = rf"^-\s\[([ x~])\]\s+{re.escape(task_id)}\.\d+:"
+    subtask_matches = re.findall(subtask_pattern, todo_content, re.MULTILINE)
+
+    if subtask_matches:
+        # Found subtasks in todo.md
+        # Check if all are marked as complete ([x])
+        all_complete = all(state == "x" for state in subtask_matches)
+
+        if not all_complete:
+            # Not all subtasks complete - don't mark parent as complete
+            return
+    elif not has_json_subtasks:
+        # No subtasks found in either JSON or todo.md
+        # This means the parent has no children - nothing to propagate
+        return
+
+    # All subtasks are complete - mark parent as complete in todo.md
+    try:
+        todo_content = TODO_MD.read_text()
+    except (FileNotFoundError, OSError) as e:
+        mm_error(f"Failed to read todo.md: {e}")
+        return
+
+    # Find the parent task line and update its checkbox
+    # Pattern: "- [~] B2: Title" or "- [ ] B2: Title" -> "- [x] B2: Title"
+    # Group 1: "- [" (dash, optional space, open bracket)
+    # Group 2: " " or "~" (checkbox state)
+    # Group 3: "] B2:" (close bracket, space, task_id, colon)
+    parent_pattern = rf"(^-\s?\[)([ ~])(\]\s+{re.escape(task_id)}:)"
+
+    def replace_checkbox(match: re.Match[str]) -> str:
+        """Replace pending/in-progress checkbox with completed."""
+        # Replace group 2 (checkbox state) with "x"
+        return f"{match.group(1)}x{match.group(3)}"
+
+    new_content, count = re.subn(parent_pattern, replace_checkbox, todo_content, count=1, flags=re.MULTILINE)
+
+    if count == 0:
+        # Parent checkbox not found - might already be complete or formatted differently
+        # Check if it's already marked as complete
+        already_complete = re.search(rf"^-\s\[x\]\s+{re.escape(task_id)}:", todo_content, re.MULTILINE)
+        if already_complete:
+            # Already complete - nothing to do
+            return
+        else:
+            # Parent pattern not found - log and skip
+            mm_error(f"Could not find parent task checkbox for {task_id} in todo.md")
+            return
+
+    # Write updated content back to todo.md
+    try:
+        TODO_MD.write_text(new_content)
+        mm_info(f"Marked parent task {task_id} as complete in todo.md")
+    except OSError as e:
+        mm_error(f"Failed to write todo.md: {e}")
+        return
+
+    # Cascade up: check if this parent's completion makes its own parent complete
+    # For example, if B2.1 is now complete, check if all B2.1-B2.6 are complete
+    if "." in task_id:
+        # Extract grandparent ID (e.g., "B2.1" -> "B2")
+        parts = task_id.rsplit(".", 1)
+        grandparent_id = parts[0] if len(parts) == 2 else None
+
+        if grandparent_id:
+            try:
+                propagate_parent_completion(grandparent_id)
+            except Exception as e:
+                # Don't fail if cascade fails
+                mm_error(f"Failed to cascade completion to grandparent {grandparent_id}: {e}")
+
 
 def get_task_payload(task_id: str) -> dict[str, Any]:
     """Get the full task payload for the agent.
