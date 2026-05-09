@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Search, User, Settings, LogOut, Building2, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { TeamSwitcher } from '@/components/teams/TeamSwitcher'
 
 /**
  * Props for Header component.
@@ -29,8 +30,11 @@ interface HeaderProps {
   }
   /** Organization data - placeholder for Phase 5 multi-brancheship */
   organization?: {
+    id?: string
     name?: string
   }
+  /** Tenant ID for multi-tenancy */
+  tenantId?: string
 }
 
 /**
@@ -43,7 +47,7 @@ interface HeaderProps {
  * - Org switcher placeholder (multi-brancheship in Phase 5)
  * - Logout functionality
  */
-export function Header({ user, organization }: HeaderProps) {
+export function Header({ user, organization, tenantId }: HeaderProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { logout, user: authUser } = useAuth()
@@ -190,6 +194,14 @@ export function Header({ user, organization }: HeaderProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Team switcher */}
+        {organization?.id && tenantId && (
+          <TeamSwitcher
+            organizationId={organization.id}
+            tenantId={tenantId}
+          />
+        )}
 
         {/* User menu with role badge */}
         <DropdownMenu>

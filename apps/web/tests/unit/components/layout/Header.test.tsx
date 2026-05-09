@@ -7,6 +7,7 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/catalog/vehicles',
   useRouter: () => ({
     push: vi.fn(),
+    refresh: vi.fn(),
   }),
 }))
 
@@ -16,6 +17,11 @@ vi.mock('@/hooks/useAuth', () => ({
     logout: vi.fn(),
     user: null,
   }),
+}))
+
+// Mock TeamSwitcher component
+vi.mock('@/components/teams/TeamSwitcher', () => ({
+  TeamSwitcher: () => <div data-testid="team-switcher">Team Switcher</div>,
 }))
 
 describe('Header', () => {
@@ -38,9 +44,14 @@ describe('Header', () => {
     expect(true).toBe(true)
   })
 
-  it('accepts organization prop', () => {
+  it('accepts organization prop with id', () => {
+    render(<Header organization={{ id: 'org-1', name: 'Test Brancheship' }} tenantId="tenant-1" />)
+    expect(screen.getByTestId('team-switcher')).toBeInTheDocument()
+  })
+
+  it('does not render TeamSwitcher without organization id and tenantId', () => {
     render(<Header organization={{ name: 'Test Brancheship' }} />)
-    expect(true).toBe(true)
+    expect(screen.queryByTestId('team-switcher')).not.toBeInTheDocument()
   })
 
   it('user data structure is correct', () => {
@@ -59,9 +70,11 @@ describe('Header', () => {
 
   it('organization data structure is correct', () => {
     const orgData = {
+      id: 'org-1',
       name: 'Test Org',
     }
 
+    expect(typeof orgData.id).toBe('string')
     expect(typeof orgData.name).toBe('string')
   })
 })
