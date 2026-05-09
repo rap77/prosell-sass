@@ -258,6 +258,7 @@
 
 ### B1: Security & Release Readiness
 
+#### B1.1: E2E Integrated Flow Validation (8 hours)
 - [x] Create integrated-critical-path.spec.ts test
 - [x] Implement complete sales cycle scenario
 - [x] Mock Facebook Graph API for publish
@@ -266,6 +267,8 @@
 - [x] Verify test execution time < 3 minutes
 - [x] Add test to smoke suite
 - [x] Test passes consistently (>95% success rate)
+
+#### B1.2: Multi-Tenant Isolation Security Tests (8 hours)
 - [x] Create test_tenant_isolation.py suite
 - [x] Test user cannot access other tenant leads
 - [x] Test user cannot access other tenant products
@@ -276,6 +279,8 @@
 - [x] Test SQL injection attempts
 - [x] Test IDOR (Insecure Direct Object Reference) vectors
 - [x] All tenant isolation tests pass
+
+#### B1.3: Lead Duplicate Detection Implementation (12 hours)
 - [x] Create LeadDuplicateDetector service
 - [x] Implement email matching (exact match)
 - [x] Implement phone matching (normalized)
@@ -288,6 +293,8 @@
 - [x] Display duplicates in lead detail view
 - [x] Unit tests for detection logic
 - [x] Integration tests for API
+
+#### B1.4: Smoke Test Suite Expansion (12 hours)
 - [x] Add 5 Auth smoke tests (login, OAuth, 2FA, reset, refresh)
 - [x] Add 8 Catalog smoke tests (CRUD, VIN, pagination, search)
 - [x] Add 8 Leads smoke tests (webhook, assign, update, reassign, duplicates, audit)
@@ -298,6 +305,8 @@
 - [x] Add retry mechanism for flaky tests
 - [x] Add to CI/CD pipeline
 - [x] Verify >95% pass rate
+
+#### B1.5: Password Reset Flow Tests (8 hours)
 - [x] Create test_auth_password_reset.py integration tests
 - [x] Test user can request password reset
 - [x] Test reset token expires after 1 hour
@@ -396,6 +405,7 @@
 
 ### B3: UX Enhancements
 
+#### B3.1: Multi-Image Gallery Implementation (12 hours)
 - [ ] Create ProductImageGallery component
 - [ ] Implement main image display
 - [ ] Implement prev/next navigation
@@ -405,6 +415,8 @@
 - [ ] Verify responsive design
 - [ ] Unit tests for ProductImageGallery
 - [ ] E2E test for gallery interactions
+
+#### B3.2: Image Optimization Service (8 hours)
 - [ ] Create ImageOptimizer service
 - [ ] Implement resize to max 1920x1080
 - [ ] Implement JPEG compression at 85%
@@ -415,6 +427,8 @@
 - [ ] Verify file size reduced >50%
 - [ ] Unit tests for optimizer
 - [ ] Test with real images
+
+#### B3.3: Appointment Email Notifications (4 hours)
 - [ ] Review existing email_service.py
 - [ ] Verify send_appointment_confirmation exists
 - [ ] Verify send_appointment_cancellation exists
@@ -424,6 +438,8 @@
 - [ ] Test cancellation email sent
 - [ ] Verify email templates
 - [ ] Integration tests pass
+
+#### B3.4: Product Edit Mode Implementation (8 hours)
 - [ ] Review TODO at line 440 in VehicleForm.tsx
 - [ ] Add mode prop to VehicleForm ('create' | 'edit')
 - [ ] Add productId prop to VehicleForm
@@ -435,6 +451,8 @@
 - [ ] Remove TODO comment
 - [ ] Unit tests for edit mode
 - [ ] E2E test for edit flow
+
+#### B3.5: CSV Parser for Bulk Upload (12 hours)
 - [ ] Create CSVProductParser service
 - [ ] Implement CSV parsing with DictReader
 - [ ] Validate required columns (vin, title, price, category_id)
@@ -450,6 +468,7 @@
 
 ### B4: Advanced Features
 
+#### B4.1: Team Invitation System (16 hours)
 - [ ] Create TeamInvitation entity
 - [ ] Add invitation fields (team_id, email, role, token, expires_at)
 - [ ] Create InviteTeamMemberUseCase
@@ -466,6 +485,8 @@
 - [ ] Test already member validation
 - [ ] Unit tests for use cases
 - [ ] Integration tests for flow
+
+#### B4.2: Appointment Conflict Detection (6 hours)
 - [ ] Create AppointmentConflictDetector service
 - [ ] Implement times_overlap logic
 - [ ] Detect dealer unavailability conflicts
@@ -474,6 +495,8 @@
 - [ ] Allow override with confirmation
 - [ ] Unit tests for detection logic
 - [ ] Integration tests for conflict scenarios
+
+#### B4.3: Lead Assignment Rules Engine (8 hours)
 - [ ] Create LeadAssignmentRulesEngine
 - [ ] Implement round-robin assignment
 - [ ] Implement vehicle owner assignment
@@ -483,6 +506,8 @@
 - [ ] Make rules configurable
 - [ ] Unit tests for each rule
 - [ ] Integration test for flow
+
+#### B4.4: Lead Audit Trail UI (6 hours)
 - [ ] Create getLeadAuditTrail API call
 - [ ] Create useLeadAuditTrail hook
 - [ ] Create LeadAuditTrail component
@@ -493,6 +518,8 @@
 - [ ] Integrate into lead detail page
 - [ ] Unit tests for component
 - [ ] E2E test for display
+
+#### B4.5: 2FA Backup Code Regeneration (6 hours)
 - [ ] Create RegenerateBackupCodesUseCase
 - [ ] Generate new backup codes
 - [ ] Hash and store new codes
