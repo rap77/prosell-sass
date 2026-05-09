@@ -25,6 +25,110 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
+# METRICS TRACKING (B2.1.d)
+# =============================================================================
+
+
+class PollingMetrics:
+    """Track metrics for Facebook lead polling operations.
+
+    Attributes:
+        pages_polled: Total number of Facebook pages queried
+        leads_found: Total leads found from Graph API
+        leads_created: Number of new leads created in the system
+        leads_skipped: Number of leads skipped (duplicates)
+        errors: Number of errors encountered
+        rate_limit_hits: Number of rate limit errors encountered
+        transient_errors: Number of transient errors (5xx, network)
+        non_transient_errors: Number of non-transient errors (4xx, etc.)
+    """
+
+    def __init__(self) -> None:
+        """Initialize all metrics to zero."""
+        self.pages_polled: int = 0
+        self.leads_found: int = 0
+        self.leads_created: int = 0
+        self.leads_skipped: int = 0
+        self.errors: int = 0
+        self.rate_limit_hits: int = 0
+        self.transient_errors: int = 0
+        self.non_transient_errors: int = 0
+
+    def record_page_polled(self) -> None:
+        """Record that a Facebook page was polled."""
+        self.pages_polled += 1
+
+    def record_leads_found(self, count: int) -> None:
+        """Record that leads were found from Graph API.
+
+        Args:
+            count: Number of leads found
+        """
+        self.leads_found += count
+
+    def record_lead_created(self) -> None:
+        """Record that a new lead was created."""
+        self.leads_created += 1
+
+    def record_lead_skipped(self) -> None:
+        """Record that a lead was skipped (duplicate)."""
+        self.leads_skipped += 1
+
+    def record_error(self, error: Exception) -> None:
+        """Record an error encountered during polling.
+
+        Args:
+            error: The exception that occurred
+        """
+        self.errors += 1
+
+        # Categorize error type for metrics
+        if isinstance(error, FacebookRateLimitException):
+            self.rate_limit_hits += 1
+        elif isinstance(error, httpx.HTTPStatusError):
+            status_code = error.response.status_code
+            if 500 <= status_code < 600:
+                self.transient_errors += 1
+            else:
+                self.non_transient_errors += 1
+        elif isinstance(error, (httpx.TimeoutException, httpx.NetworkError)):
+            self.transient_errors += 1
+        else:
+            self.non_transient_errors += 1
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert metrics to dictionary for logging and responses.
+
+        Returns:
+            Dictionary with all metric values
+        """
+        return {
+            "pages_polled": self.pages_polled,
+            "leads_found": self.leads_found,
+            "leads_created": self.leads_created,
+            "leads_skipped": self.leads_skipped,
+            "errors": self.errors,
+            "rate_limit_hits": self.rate_limit_hits,
+            "transient_errors": self.transient_errors,
+            "non_transient_errors": self.non_transient_errors,
+        }
+
+    def log_summary(self) -> None:
+        """Log a summary of the polling metrics."""
+        logger.info(
+            f"Polling metrics: "
+            f"{self.pages_polled} pages polled, "
+            f"{self.leads_found} leads found, "
+            f"{self.leads_created} created, "
+            f"{self.leads_skipped} skipped (duplicates), "
+            f"{self.errors} errors "
+            f"({self.rate_limit_hits} rate limits, "
+            f"{self.transient_errors} transient, "
+            f"{self.non_transient_errors} non-transient)"
+        )
+
+
+# =============================================================================
 # RATE LIMIT HANDLING
 # =============================================================================
 
@@ -284,12 +388,22 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
         - pages_polled: number of pages queried
         - leads_found: total leads found from Graph API
         - leads_created: number of new leads created
+        - leads_skipped: number of leads skipped (duplicates)
         - errors: number of errors encountered
+        - rate_limit_hits: number of rate limit errors (B2.1.d)
+        - transient_errors: number of transient errors (5xx, network) (B2.1.d)
+        - non_transient_errors: number of non-transient errors (4xx, etc.) (B2.1.d)
         - details: list of error messages (if any)
+
+    Metrics Tracking (B2.1.d: ✅ Implemented):
+        - PollingMetrics class tracks all polling operations
+        - Categorizes errors by type (rate limit, transient, non-transient)
+        - Provides log_summary() for structured logging
+        - Returns metrics in response dictionary
 
     Current Status:
         Returns pending status with zero counts until Phase 3 implementation.
-        Rate limit handling (B2.2) and retry logic (B2.3) infrastructure is ready.
+        Rate limit handling (B2.1.b), retry logic (B2.1.c), and metrics tracking (B2.1.d) infrastructure is ready.
     """
     # TODO(phase-3): Wire DI container to instantiate:
     #   - IFacebookPageRepository (to query active pages)
@@ -410,24 +524,28 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
         # else:
         #     status = "failure"
 
-        logger.info("poll_facebook_leads_task: Poll complete (pending Phase 3 implementation)")
+        # Initialize metrics (B2.1.d: ✅ Implemented)
+        metrics = PollingMetrics()
 
-        return {
+        logger.info("poll_facebook_leads_task: Poll complete (pending Phase 3 implementation)")
+        metrics.log_summary()
+
+        result = {
             "status": "pending",
-            "pages_polled": 0,
-            "leads_found": 0,
-            "leads_created": 0,
-            "errors": 0,
+            **metrics.to_dict(),
             "details": [],
         }
 
+        return result
+
     except Exception as e:
         logger.error(f"poll_facebook_leads_task: Unexpected error: {e}", exc_info=True)
+        # Initialize metrics for error case (B2.1.d)
+        metrics = PollingMetrics()
+        metrics.record_error(e)
+
         return {
             "status": "failure",
-            "pages_polled": 0,
-            "leads_found": 0,
-            "leads_created": 0,
-            "errors": 1,
+            **metrics.to_dict(),
             "details": [f"Unexpected error: {e!s}"],
         }

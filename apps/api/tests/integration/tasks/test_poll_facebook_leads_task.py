@@ -132,6 +132,42 @@ class TestPollFacebookLeadsTaskStructure:
         assert "details" in result
         assert isinstance(result["details"], list)
 
+    @pytest.mark.asyncio
+    async def test_result_has_leads_skipped_field(self):
+        """Test that result includes leads_skipped field (B2.1.d: metrics tracking)."""
+        result = await poll_facebook_leads_task()
+
+        assert "leads_skipped" in result
+        assert isinstance(result["leads_skipped"], int)
+        assert result["leads_skipped"] >= 0
+
+    @pytest.mark.asyncio
+    async def test_result_has_rate_limit_hits_field(self):
+        """Test that result includes rate_limit_hits field (B2.1.d: metrics tracking)."""
+        result = await poll_facebook_leads_task()
+
+        assert "rate_limit_hits" in result
+        assert isinstance(result["rate_limit_hits"], int)
+        assert result["rate_limit_hits"] >= 0
+
+    @pytest.mark.asyncio
+    async def test_result_has_transient_errors_field(self):
+        """Test that result includes transient_errors field (B2.1.d: metrics tracking)."""
+        result = await poll_facebook_leads_task()
+
+        assert "transient_errors" in result
+        assert isinstance(result["transient_errors"], int)
+        assert result["transient_errors"] >= 0
+
+    @pytest.mark.asyncio
+    async def test_result_has_non_transient_errors_field(self):
+        """Test that result includes non_transient_errors field (B2.1.d: metrics tracking)."""
+        result = await poll_facebook_leads_task()
+
+        assert "non_transient_errors" in result
+        assert isinstance(result["non_transient_errors"], int)
+        assert result["non_transient_errors"] >= 0
+
 
 class TestPollFacebookLeadsTaskLogic:
     """Test polling logic structure."""
