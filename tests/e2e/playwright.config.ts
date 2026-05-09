@@ -6,8 +6,12 @@ export default defineConfig({
   testDir: "./", // Run tests from root (includes both ./specs and ./auth)
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // B1.1.38: Retry flaky tests — 2 retries in CI, 1 locally
+  retries: process.env.CI ? 2 : 1,
+  // B1.1.37: Optimize for < 5 minute execution — increase workers in local dev
+  workers: process.env.CI ? 2 : undefined,
+  // B1.1.37: Global timeout per test to keep suite fast
+  timeout: 30 * 1000,
   reporter: [["html"], ["list"]],
   // Set environment variables for tests
   // TEST_TENANT_ID will be set by global-setup from the authenticated user's ID

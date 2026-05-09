@@ -160,8 +160,16 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
         working-directory: tests/e2e
 
-      - name: Run E2E tests
+      # B1.1.39: Run smoke tests first for fast feedback (< 5 min target)
+      - name: Run Smoke Tests (fast feedback)
+        run: pnpm exec playwright test specs/smoke.spec.ts --reporter=list
+        working-directory: tests/e2e
+        env:
+          CI: "true"
+          SKIP_AUTH: "true"
+
+      - name: Run E2E tests (full suite)
         run: pnpm test
         working-directory: tests/e2e
         env:
-          CI: true
+          CI: "true"
