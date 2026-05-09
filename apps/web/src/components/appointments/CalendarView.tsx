@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import { Appointment, AppointmentStatus } from "@/lib/api/appointments";
 import { format, parseISO } from "date-fns";
@@ -42,6 +43,14 @@ interface CalendarViewProps {
   onAppointmentClick?: (appointment: Appointment) => void;
   /** Callback when date range changes */
   onDateRangeChange?: (start: Date, end: Date) => void;
+  /** Callback when empty slot is selected */
+  onSlotSelect?: (start: Date, end: Date) => void;
+  /** Callback when appointment is dropped (rescheduled) */
+  onAppointmentDrop?: (appointment: Appointment, newStart: Date, newEnd: Date) => void;
+  /** Enable drag and drop */
+  editable?: boolean;
+  /** Enable slot selection */
+  selectable?: boolean;
 }
 
 /**
@@ -69,6 +78,10 @@ export function CalendarView({
   initialView = "dayGridMonth",
   onAppointmentClick,
   onDateRangeChange,
+  onSlotSelect,
+  onAppointmentDrop,
+  editable = false,
+  selectable = false,
 }: CalendarViewProps) {
   /**
    * Transform appointments to FullCalendar event format
@@ -116,6 +129,27 @@ export function CalendarView({
     [onDateRangeChange]
   );
 
+  /**
+   * Handle slot selection (click on empty time slot)
+   */
+  const handleSelect = useCallback(
+    (selectInfo: any) => {
+      onSlotSelect?.(selectInfo.start, selectInfo.end);
+    },
+    [onSlotSelect]
+  );
+
+  /**
+   * Handle event drop (drag to reschedule)
+   */
+  const handleDrop = useCallback(
+    (dropInfo: any) => {
+      const appointment = dropInfo.event.extendedProps.appointment as Appointment;
+      onAppointmentDrop?.(appointment, dropInfo.event.start, dropInfo.event.end);
+    },
+    [onAppointmentDrop]
+  );
+
   console.log("[CalendarView] Rendering with", calendarEvents().length, "events");
   console.log("[CalendarView] Events:", calendarEvents());
 
@@ -123,7 +157,7 @@ export function CalendarView({
     <div className="calendar-view w-full" data-testid="calendar-view">
       <div data-testid="fullcalendar-wrapper">
         <FullCalendar
-          plugins={[dayGridPlugin, timeGridPlugin, listPlugin]}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
           initialView={initialView}
           headerToolbar={{
             left: "prev,next today",
@@ -133,9 +167,11 @@ export function CalendarView({
           events={calendarEvents()}
           eventClick={handleEventClick}
           datesSet={handleDatesSet}
+          select={handleSelect}
+          eventDrop={handleDrop}
           height="auto"
-          editable={false}
-          selectable={false}
+          editable={editable}
+          selectable={selectable}
           nowIndicator
           dayMaxEvents={true} // Allow "more" link when too many events
           weekends={false} // Hide weekends (business hours only)
