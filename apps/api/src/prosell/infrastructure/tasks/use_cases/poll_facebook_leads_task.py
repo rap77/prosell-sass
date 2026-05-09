@@ -11,8 +11,10 @@ Schedule:
     */10 * * * * cd /app && uv run python -m prosell.infrastructure.tasks.worker poll_facebook_leads_task.kiq()
 """
 
+import asyncio
 import logging
-from typing import Any
+import random
+from typing import Any, Callable
 
 import httpx
 
@@ -107,6 +109,135 @@ def format_error_message(page_id: str, error: Exception) -> str:
 
 
 # =============================================================================
+# RETRY LOGIC WITH EXPONENTIAL BACKOFF (B2.3)
+# =============================================================================
+
+
+def is_transient_error(error: Exception) -> bool:
+    """Check if an error is transient and should trigger retry.
+
+    Transient errors include:
+    - HTTP 5xx errors (server errors)
+    - Network errors (timeouts, connection errors)
+    - HTTP 429 (rate limit) - handled separately but still transient
+
+    Args:
+        error: Exception to check
+
+    Returns:
+        True if error is transient and should trigger retry
+    """
+    # HTTP 5xx errors (server errors) - transient
+    if isinstance(error, httpx.HTTPStatusError):
+        status_code = error.response.status_code
+        return 500 <= status_code < 600
+
+    # Network errors - transient
+    if isinstance(error, (httpx.TimeoutException, httpx.NetworkError)):
+        return True
+
+    # Not transient
+    return False
+
+
+def calculate_backoff_with_jitter(
+    attempt: int,
+    initial_delay: float = 1.0,
+    backoff_multiplier: float = 2.0,
+    jitter_ratio: float = 0.1,
+) -> float:
+    """Calculate exponential backoff delay with jitter.
+
+    Args:
+        attempt: Retry attempt number (0-based)
+        initial_delay: Initial delay in seconds (default: 1.0)
+        backoff_multiplier: Multiplier for exponential backoff (default: 2.0)
+        jitter_ratio: Ratio for jitter (default: 0.1 = 10%)
+
+    Returns:
+        Delay in seconds with jitter applied
+    """
+    # Calculate exponential backoff
+    base_delay = initial_delay * (backoff_multiplier ** attempt)
+
+    # Add jitter to avoid thundering herd
+    jitter_range = base_delay * jitter_ratio
+    jitter = random.uniform(-jitter_range, jitter_range)
+
+    return max(0, base_delay + jitter)
+
+
+async def retry_with_exponential_backoff(
+    func: Callable,
+    page_id: str,
+    max_retries: int = 3,
+    initial_delay: float = 1.0,
+    backoff_multiplier: float = 2.0,
+    jitter_ratio: float = 0.1,
+) -> Any:
+    """Execute function with exponential backoff retry logic.
+
+    Args:
+        func: Async function to execute
+        page_id: Facebook page ID (for logging)
+        max_retries: Maximum number of retry attempts (default: 3)
+        initial_delay: Initial delay in seconds (default: 1.0)
+        backoff_multiplier: Multiplier for exponential backoff (default: 2.0)
+        jitter_ratio: Ratio for jitter (default: 0.1 = 10%)
+
+    Returns:
+        Result from function execution
+
+    Raises:
+        Exception: If all retry attempts fail
+    """
+    last_exception = None
+
+    for attempt in range(max_retries + 1):  # +1 for initial attempt
+        try:
+            return await func()
+        except Exception as e:
+            last_exception = e
+
+            # Check if error is transient
+            if not is_transient_error(e):
+                # Not transient, don't retry
+                logger.warning(
+                    f"Page {page_id}: Non-transient error (attempt {attempt + 1}/{max_retries + 1}): {e}"
+                )
+                raise
+
+            # Max retries exceeded
+            if attempt == max_retries:
+                logger.error(
+                    f"Page {page_id}: Max retries exceeded ({max_retries + 1} attempts): {e}"
+                )
+                raise
+
+            # Calculate backoff with jitter
+            backoff = calculate_backoff_with_jitter(
+                attempt=attempt,
+                initial_delay=initial_delay,
+                backoff_multiplier=backoff_multiplier,
+                jitter_ratio=jitter_ratio,
+            )
+
+            # Log retry attempt
+            logger.warning(
+                f"Page {page_id}: Transient error (attempt {attempt + 1}/"
+                f"{max_retries + 1}): {e}. "
+                f"Retrying in {backoff:.1f}s..."
+            )
+
+            # Wait before retry
+            await asyncio.sleep(backoff)
+
+    # Should never reach here, but just in case
+    if last_exception:
+        raise last_exception
+
+
+# =============================================================================
 # POLLING TASK
 # =============================================================================
 
@@ -125,7 +256,7 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
     1. DI container wiring (IFacebookPageRepository, IFacebookAccountRepository)
     2. FacebookGraphApiClient.get_leads() implementation
     3. Lead duplicate detection via facebook_sender_id field
-    4. Error handling and retry logic (B2.2: ✅ Rate limit handling implemented)
+    4. Error handling and retry logic (B2.2: ✅ Rate limit handling, B2.3: ✅ Retry logic)
 
     Workflow (Phase 3):
     1. Query all active Facebook pages from database
@@ -134,10 +265,18 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
     4. Create new leads that don't exist yet using CreateLeadUseCase
     5. Return statistics about the polling run
 
-    Error Handling (B2.2: ✅ Implemented):
+    Error Handling (B2.2: ✅ Implemented, B2.3: ✅ Enhanced):
     - HTTP 429 (Rate Limit): Extracts Retry-After header, logs warning, continues
+    - HTTP 5xx (Transient): Retries with exponential backoff (max 3 retries)
+    - Network Errors (Timeout, NetworkError): Retries with exponential backoff
     - Other HTTP errors: Logged as errors, continues with other pages
-    - Exceptions: Logged with full details, counted in error stats
+    - Jitter: 10% jitter added to backoff to avoid thundering herd
+
+    Retry Logic (B2.3: ✅ Implemented):
+    - Exponential backoff: 1s → 2s → 4s → 8s (configurable)
+    - Max retries: 3 (configurable)
+    - Jitter: 10% of backoff value (configurable)
+    - Transient errors only (5xx, timeout, network)
 
     Returns:
         Dict with polling statistics:
@@ -150,7 +289,7 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
 
     Current Status:
         Returns pending status with zero counts until Phase 3 implementation.
-        Rate limit handling infrastructure is ready (B2.2).
+        Rate limit handling (B2.2) and retry logic (B2.3) infrastructure is ready.
     """
     # TODO(phase-3): Wire DI container to instantiate:
     #   - IFacebookPageRepository (to query active pages)
@@ -159,7 +298,6 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
     #   - ILeadRepository (for duplicate detection)
     #   - CreateLeadUseCase (to create new leads)
     # TODO(phase-3): Implement actual Facebook Graph API Leadgen API calls
-    # TODO(phase-3): Add retry logic with exponential backoff (B2.3)
     # TODO(phase-3): Add metrics tracking (prometheus/statsd) (B2.4)
 
     logger.info("poll_facebook_leads_task: Starting poll")
@@ -175,6 +313,11 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
     # - extract_retry_after(response) -> int | None
     # - handle_rate_limit_error(page_id, response) -> FacebookRateLimitException
     # - format_error_message(page_id, error) -> str
+    #
+    # Retry logic with exponential backoff (B2.3) is implemented:
+    # - is_transient_error(error) -> bool
+    # - calculate_backoff_with_jitter(attempt, ...) -> float
+    # - retry_with_exponential_backoff(func, page_id, ...) -> Any
 
     # TODO(phase-3): Wire DI container to instantiate:
     #   - IFacebookPageRepository (to query active pages)
@@ -183,7 +326,6 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
     #   - ILeadRepository (for duplicate detection)
     #   - CreateLeadUseCase (to create new leads)
     # TODO(phase-3): Implement actual Facebook Graph API Leadgen API calls
-    # TODO(phase-3): Add retry logic with exponential backoff (B2.3)
     # TODO(phase-3): Add metrics tracking (prometheus/statsd) (B2.4)
 
     try:
@@ -204,12 +346,19 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
         #         # Decrypt page access token
         #         page_access_token = decrypt_token(page.page_access_token_encrypted)
         #
-        #         # Fetch leads from Graph API Leadgen endpoint
+        #         # Fetch leads from Graph API Leadgen endpoint with retry logic (B2.3: ✅ Implemented)
         #         # GET /{page_id}/leadgen_forms
         #         try:
-        #             leads = await facebook_client.get_leads(
+        #             leads = await retry_with_exponential_backoff(
+        #                 func=lambda: facebook_client.get_leads(
+        #                     page_id=page.page_id,
+        #                     access_token=page_access_token
+        #                 ),
         #                 page_id=page.page_id,
-        #                 access_token=page_access_token
+        #                 max_retries=3,
+        #                 initial_delay=1.0,
+        #                 backoff_multiplier=2.0,
+        #                 jitter_ratio=0.1,
         #             )
         #             leads_found += len(leads)
         #         except httpx.HTTPStatusError as e:
@@ -220,7 +369,7 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
         #                 details.append(format_error_message(page.page_id, rate_limit_exc))
         #                 continue  # Skip to next page
         #             else:
-        #                 # Other HTTP errors
+        #                 # Non-transient HTTP errors (4xx, etc.)
         #                 raise
         #
         #         # 3. Check for duplicates and create new leads

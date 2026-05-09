@@ -393,8 +393,97 @@ class TestPollFacebookLeadsTaskRateLimiting:
         pass
 
 
+class TestPollFacebookLeadsTaskRetryLogic:
+    """Test retry logic with exponential backoff (B2.3)."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_retry_on_transient_5xx_errors(self):
+        """Test that transient HTTP 5xx errors trigger retries.
+
+        Expected behavior:
+        - First call fails with HTTP 503
+        - Retry happens after exponential backoff
+        - Second call succeeds
+        - Returns success status
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock get_leads() → raises HTTPStatusError with 503 (first call)
+        # Mock get_leads() → returns leads (second call)
+        # Assert retry was attempted
+        # Assert exponential backoff was used
+        # Assert result["status"] == "success"
+        pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_retry_on_network_timeout(self):
+        """Test that network timeouts trigger retries.
+
+        Expected behavior:
+        - First call times out (httpx.TimeoutException)
+        - Retry happens after backoff
+        - Second call succeeds
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock get_leads() → raises TimeoutException (first call)
+        # Mock get_leads() → returns leads (second call)
+        # Assert retry was attempted
+        pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_max_retries_exceeded(self):
+        """Test that max retries limit is respected.
+
+        Expected behavior:
+        - All 3 retry attempts fail with HTTP 503
+        - Error is logged and counted
+        - Task continues with other pages
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock get_leads() → always raises HTTPStatusError with 503
+        # Assert exactly 4 attempts made (1 initial + 3 retries)
+        # Assert error logged after max retries exceeded
+        # Assert task continues with other pages
+        pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_retry_with_jitter(self):
+        """Test that jitter is added to avoid thundering herd.
+
+        Expected behavior:
+        - Multiple pages fail simultaneously
+        - Retry delays are randomized (jitter applied)
+        - No thundering herd effect
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock multiple pages failing with HTTP 503
+        # Assert retry delays vary (jitter applied)
+        # Assert no synchronized retries
+        pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_no_retry_on_4xx_errors(self):
+        """Test that 4xx errors (except 429) do not trigger retries.
+
+        Expected behavior:
+        - HTTP 401 (Unauthorized) does not trigger retry
+        - Error is logged immediately
+        - No retry attempts made
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock get_leads() → raises HTTPStatusError with 401
+        # Assert no retry attempts
+        # Assert error logged immediately
+        pass
+
+
 __all__ = [
     "TestPollFacebookLeadsTask",
     "TestPollFacebookLeadsTaskStructure",
     "TestPollFacebookLeadsTaskRateLimiting",
+    "TestPollFacebookLeadsTaskRetryLogic",
 ]
