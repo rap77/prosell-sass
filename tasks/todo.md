@@ -6,7 +6,7 @@
 **Milestone**: Completar MVP de ProSell: publicación de vehículos en Facebook Marketplace, captura de leads y confirmación de citas
 **Version**: 2.0
 **Status**: Active
-**Last Updated**: 2026-05-08
+**Last Updated**: 2026-05-09
 
 ---
 
@@ -315,9 +315,10 @@
 
 ### B2: Core Feature Completion
 
-- [ ] Review TODO comments in poll_facebook_leads_task.py (lines 56-82)
-- [ ] Implement error handling for API rate limits
-- [ ] Implement retry logic with exponential backoff
+#### B2.1: Facebook Webhook Polling Completion (16 hours)
+- [x] Review TODO comments in poll_facebook_leads_task.py (lines 56-82)
+- [x] Implement error handling for API rate limits
+- [x] Implement retry logic with exponential backoff
 - [ ] Add metrics tracking (leads polled, created, errors)
 - [ ] Implement deduplication in polling
 - [ ] Configure polling interval (10 minutes)
@@ -325,6 +326,8 @@
 - [ ] Configure retry policy
 - [ ] Remove all TODO comments
 - [ ] Integration tests pass
+
+#### B2.2: VIN Decode Integration Tests (6 hours)
 - [ ] Create test_vin_decode_integration.py
 - [ ] Test VIN decode calls NHTSA API successfully
 - [ ] Test VIN decode caches results
@@ -335,6 +338,8 @@
 - [ ] Test success scenarios
 - [ ] Test error scenarios (timeout, 404, 500)
 - [ ] Verify caching behavior
+
+#### B2.3: Team Switching UI Implementation (8 hours)
 - [ ] Create TeamSwitcher component
 - [ ] Create useTeams hook
 - [ ] Implement getUserTeams API call
@@ -347,6 +352,8 @@
 - [ ] Refresh page with new team context
 - [ ] Unit tests for TeamSwitcher component
 - [ ] E2E test for team switching flow
+
+#### B2.4: Calendar Integration (12 hours)
 - [ ] Install @fullcalendar/react dependencies
 - [ ] Create FullCalendarView component
 - [ ] Integrate dayGridPlugin
@@ -361,6 +368,8 @@
 - [ ] Verify responsive design
 - [ ] Unit tests for FullCalendarView
 - [ ] E2E test for calendar interactions
+
+#### B2.5: Role-Based Permission Tests (12 hours)
 - [ ] Create test_role_based_permissions.py
 - [ ] Define PERMISSION_MATRIX (admin, manager, vendedor, viewer)
 - [ ] Test admin: full access (create, read, update, delete, assign)
@@ -372,6 +381,8 @@
 - [ ] Verify cross-tenant access blocked
 - [ ] Verify role escalation blocked
 - [ ] Document permission matrix
+
+#### B2.6: API Contract Test Completion (8 hours)
 - [ ] Identify missing contract test coverage
 - [ ] Compare routers with contract tests
 - [ ] Add missing product schema tests
