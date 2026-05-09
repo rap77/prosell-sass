@@ -40,7 +40,7 @@ export async function loginAsAdmin(
   const loginUrl = `${baseUrl}/api/v1/auth/login`;
 
   // Admin credentials from environment or defaults
-  const email = process.env.TEST_ADMIN_EMAIL || "admin@prosell-demo.com";
+  const email = process.env.TEST_ADMIN_EMAIL || "admin@prosell.saas";
   const password = process.env.TEST_ADMIN_PASSWORD || "Admin123!";
 
   const response = await request.post(loginUrl, {

@@ -1010,11 +1010,11 @@ test.describe('Integrated Critical Path', () => {
    - Mock SendGrid for email notifications
 
 **Acceptance Criteria**:
-- [ ] Integrated test passes consistently (>95% success rate)
-- [ ] Test execution time < 3 minutes
-- [ ] All critical API endpoints exercised
-- [ ] Email notifications verified (mocked)
-- [ ] Test added to smoke suite
+- [ ] Integrated test passes consistently (>95% success rate) — *requires servers running*
+- [ ] Test execution time < 3 minutes — *requires servers running*
+- [x] All critical API endpoints exercised
+- [x] Email notifications verified (mocked)
+- [x] Test added to smoke suite
 
 **Verification**:
 ```bash
