@@ -352,6 +352,9 @@
 - [x] Verify caching behavior
 
 #### B2.3: Team Switching UI Implementation (8 hours)
+⏱️ **Estimate**: (8 hours) | **Actual**: 1.6h | **Deviation**: -6.4h | **Progress**: 12/12 (100%)
+📊 **Avg/subtask**: 8.2m | **ETA**: 1.6h
+
 - [x] Create TeamSwitcher component
 - [x] Create useTeams hook
 - [x] Implement getUserTeams API call
@@ -366,20 +369,20 @@
 - [x] E2E test for team switching flow
 
 #### B2.4: Calendar Integration (12 hours)
-- [ ] Install @fullcalendar/react dependencies
-- [ ] Create FullCalendarView component
-- [ ] Integrate dayGridPlugin
-- [ ] Integrate timeGridPlugin
-- [ ] Integrate interactionPlugin
-- [ ] Configure header toolbar
-- [ ] Map appointments to calendar events
-- [ ] Implement click on appointment handler
-- [ ] Implement select empty slot handler
-- [ ] Implement drag to reschedule
-- [ ] Replace basic CalendarView with FullCalendarView
-- [ ] Verify responsive design
-- [ ] Unit tests for FullCalendarView
-- [ ] E2E test for calendar interactions
+- [x] Install @fullcalendar/react dependencies
+- [x] Create FullCalendarView component
+- [x] Integrate dayGridPlugin
+- [x] Integrate timeGridPlugin
+- [x] Integrate interactionPlugin
+- [x] Configure header toolbar
+- [x] Map appointments to calendar events
+- [x] Implement click on appointment handler
+- [x] Implement select empty slot handler
+- [x] Implement drag to reschedule
+- [x] Replace basic CalendarView with FullCalendarView
+- [x] Verify responsive design
+- [x] Unit tests for FullCalendarView
+- [x] E2E test for calendar interactions
 
 #### B2.5: Role-Based Permission Tests (12 hours)
 - [ ] Create test_role_based_permissions.py
