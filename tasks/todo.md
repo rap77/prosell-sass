@@ -492,32 +492,32 @@ cd tests/e2e && pnpm test smoke.spec.ts
 - [x] Integration tests for API
 
 #### B1.4: Smoke Test Suite Expansion (12 hours)
-- [ ] Add 5 Auth smoke tests (login, OAuth, 2FA, reset, refresh)
-- [ ] Add 8 Catalog smoke tests (CRUD, VIN, pagination, search)
-- [ ] Add 8 Leads smoke tests (webhook, assign, update, reassign, duplicates, audit)
-- [ ] Add 6 Appointments smoke tests (create, calendar, confirm, cancel, email, conflicts)
-- [ ] Total smoke tests: 30+ (up from 20)
-- [ ] Group tests by feature area
-- [ ] Optimize test execution time < 5 minutes
-- [ ] Add retry mechanism for flaky tests
-- [ ] Add to CI/CD pipeline
-- [ ] Verify >95% pass rate
+- [x] Add 5 Auth smoke tests (login, OAuth, 2FA, reset, refresh)
+- [x] Add 8 Catalog smoke tests (CRUD, VIN, pagination, search)
+- [x] Add 8 Leads smoke tests (webhook, assign, update, reassign, duplicates, audit)
+- [x] Add 6 Appointments smoke tests (create, calendar, confirm, cancel, email, conflicts)
+- [x] Total smoke tests: 30+ (up from 20)
+- [x] Group tests by feature area
+- [x] Optimize test execution time < 5 minutes
+- [x] Add retry mechanism for flaky tests
+- [x] Add to CI/CD pipeline
+- [x] Verify >95% pass rate
 
 #### B1.5: Password Reset Flow Tests (8 hours)
-- [ ] Create test_auth_password_reset.py integration tests
-- [ ] Test user can request password reset
-- [ ] Test reset token expires after 1 hour
-- [ ] Test user can reset password with valid token
-- [ ] Test invalid token returns 400
-- [ ] Test password requires new different from old
-- [ ] Test password successfully updates hash
-- [ ] Create frontend password-reset.test.tsx
-- [ ] Test user can request reset from login page
-- [ ] Test user receives email with reset link
-- [ ] Test user can reset password with valid token
-- [ ] Test invalid token shows error message
-- [ ] Test user can login with new password
-- [ ] All password reset tests pass
+- [x] Create test_auth_password_reset.py integration tests
+- [x] Test user can request password reset
+- [x] Test reset token expires after 1 hour
+- [x] Test user can reset password with valid token
+- [x] Test invalid token returns 400
+- [x] Test password requires new different from old
+- [x] Test password successfully updates hash
+- [x] Create frontend password-reset.test.tsx
+- [x] Test user can request reset from login page
+- [x] Test user receives email with reset link
+- [x] Test user can reset password with valid token
+- [x] Test invalid token shows error message
+- [x] Test user can login with new password
+- [x] All password reset tests pass
 
 ### Sprint B2: Core Feature Completion (54 hours)
 
