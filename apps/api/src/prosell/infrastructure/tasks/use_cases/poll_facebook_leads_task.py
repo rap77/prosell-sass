@@ -12,14 +12,107 @@ Schedule:
 """
 
 import logging
+from typing import Any
 
+import httpx
+
+from prosell.domain.exceptions.facebook_exceptions import FacebookRateLimitException
 from prosell.infrastructure.tasks.broker import broker
 
 logger = logging.getLogger(__name__)
 
 
+# =============================================================================
+# RATE LIMIT HANDLING
+# =============================================================================
+
+
+def is_rate_limit_error(response: httpx.Response) -> bool:
+    """Check if HTTP response indicates rate limiting.
+
+    Args:
+        response: HTTP response from Facebook Graph API
+
+    Returns:
+        True if status code is 429 (Too Many Requests)
+    """
+    return response.status_code == 429
+
+
+def extract_retry_after(response: httpx.Response) -> int | None:
+    """Extract Retry-After header from rate limit response.
+
+    Args:
+        response: HTTP response with 429 status code
+
+    Returns:
+        Seconds to wait before retrying, or None if header not present
+    """
+    retry_after = response.headers.get("Retry-After")
+
+    if retry_after is None:
+        return None
+
+    try:
+        # Retry-After can be a number of seconds or an HTTP-date
+        # Try parsing as integer first
+        return int(retry_after)
+    except (ValueError, TypeError):
+        # If not an integer, it's an HTTP-date (not commonly used)
+        # For simplicity, we'll return None and let the caller use default backoff
+        logger.warning(f"Unable to parse Retry-After header: {retry_after}")
+        return None
+
+
+def handle_rate_limit_error(
+    page_id: str,
+    response: httpx.Response,
+) -> FacebookRateLimitException:
+    """Handle rate limit error from Facebook Graph API.
+
+    Args:
+        page_id: Facebook page ID that was being polled
+        response: HTTP response with 429 status code
+
+    Returns:
+        FacebookRateLimitException with retry_after information
+    """
+    retry_after = extract_retry_after(response)
+
+    logger.warning(
+        f"Rate limit exceeded for page {page_id}. "
+        f"Retry-After: {retry_after or 'default backoff'} seconds"
+    )
+
+    return FacebookRateLimitException(retry_after=retry_after)
+
+
+def format_error_message(page_id: str, error: Exception) -> str:
+    """Format error message for polling details.
+
+    Args:
+        page_id: Facebook page ID
+        error: Exception that occurred
+
+    Returns:
+        Formatted error message string
+    """
+    if isinstance(error, FacebookRateLimitException):
+        retry_msg = f" (retry after {error.retry_after}s)" if error.retry_after else ""
+        return f"Page {page_id}: Rate limit exceeded{retry_msg}"
+    elif isinstance(error, httpx.HTTPStatusError):
+        return f"Page {page_id}: HTTP {error.response.status_code} - {error.response.text}"
+    else:
+        return f"Page {page_id}: {str(error)}"
+
+
+# =============================================================================
+# POLLING TASK
+# =============================================================================
+
+
 @broker.task
-async def poll_facebook_leads_task() -> dict[str, object]:
+async def poll_facebook_leads_task() -> dict[str, Any]:
     """Poll Facebook Graph API for missed leads.
 
     This task runs every 10 minutes as a fallback mechanism to catch
@@ -32,7 +125,7 @@ async def poll_facebook_leads_task() -> dict[str, object]:
     1. DI container wiring (IFacebookPageRepository, IFacebookAccountRepository)
     2. FacebookGraphApiClient.get_leads() implementation
     3. Lead duplicate detection via facebook_sender_id field
-    4. Error handling and retry logic
+    4. Error handling and retry logic (B2.2: ✅ Rate limit handling implemented)
 
     Workflow (Phase 3):
     1. Query all active Facebook pages from database
@@ -40,6 +133,11 @@ async def poll_facebook_leads_task() -> dict[str, object]:
     3. For each lead, check if it already exists in our system
     4. Create new leads that don't exist yet using CreateLeadUseCase
     5. Return statistics about the polling run
+
+    Error Handling (B2.2: ✅ Implemented):
+    - HTTP 429 (Rate Limit): Extracts Retry-After header, logs warning, continues
+    - Other HTTP errors: Logged as errors, continues with other pages
+    - Exceptions: Logged with full details, counted in error stats
 
     Returns:
         Dict with polling statistics:
@@ -52,6 +150,7 @@ async def poll_facebook_leads_task() -> dict[str, object]:
 
     Current Status:
         Returns pending status with zero counts until Phase 3 implementation.
+        Rate limit handling infrastructure is ready (B2.2).
     """
     # TODO(phase-3): Wire DI container to instantiate:
     #   - IFacebookPageRepository (to query active pages)
@@ -60,8 +159,8 @@ async def poll_facebook_leads_task() -> dict[str, object]:
     #   - ILeadRepository (for duplicate detection)
     #   - CreateLeadUseCase (to create new leads)
     # TODO(phase-3): Implement actual Facebook Graph API Leadgen API calls
-    # TODO(phase-3): Add proper error handling and retry logic
-    # TODO(phase-3): Add metrics tracking (prometheus/statsd)
+    # TODO(phase-3): Add retry logic with exponential backoff (B2.3)
+    # TODO(phase-3): Add metrics tracking (prometheus/statsd) (B2.4)
 
     logger.info("poll_facebook_leads_task: Starting poll")
 
@@ -70,6 +169,12 @@ async def poll_facebook_leads_task() -> dict[str, object]:
     # =============================================================================
     # This task is a stub pending Phase 3 implementation.
     # See docstring above for required Phase 3 work.
+    #
+    # Rate limit handling infrastructure (B2.2) is implemented:
+    # - is_rate_limit_error(response) -> bool
+    # - extract_retry_after(response) -> int | None
+    # - handle_rate_limit_error(page_id, response) -> FacebookRateLimitException
+    # - format_error_message(page_id, error) -> str
 
     # TODO(phase-3): Wire DI container to instantiate:
     #   - IFacebookPageRepository (to query active pages)
@@ -78,8 +183,8 @@ async def poll_facebook_leads_task() -> dict[str, object]:
     #   - ILeadRepository (for duplicate detection)
     #   - CreateLeadUseCase (to create new leads)
     # TODO(phase-3): Implement actual Facebook Graph API Leadgen API calls
-    # TODO(phase-3): Add proper error handling and retry logic
-    # TODO(phase-3): Add metrics tracking (prometheus/statsd)
+    # TODO(phase-3): Add retry logic with exponential backoff (B2.3)
+    # TODO(phase-3): Add metrics tracking (prometheus/statsd) (B2.4)
 
     try:
         # Phase 3: Implementation structure (commented out)
@@ -101,11 +206,22 @@ async def poll_facebook_leads_task() -> dict[str, object]:
         #
         #         # Fetch leads from Graph API Leadgen endpoint
         #         # GET /{page_id}/leadgen_forms
-        #         leads = await facebook_client.get_leads(
-        #             page_id=page.page_id,
-        #             access_token=page_access_token
-        #         )
-        #         leads_found += len(leads)
+        #         try:
+        #             leads = await facebook_client.get_leads(
+        #                 page_id=page.page_id,
+        #                 access_token=page_access_token
+        #             )
+        #             leads_found += len(leads)
+        #         except httpx.HTTPStatusError as e:
+        #             # Handle rate limiting (B2.2: ✅ Implemented)
+        #             if is_rate_limit_error(e.response):
+        #                 rate_limit_exc = handle_rate_limit_error(page.page_id, e.response)
+        #                 errors += 1
+        #                 details.append(format_error_message(page.page_id, rate_limit_exc))
+        #                 continue  # Skip to next page
+        #             else:
+        #                 # Other HTTP errors
+        #                 raise
         #
         #         # 3. Check for duplicates and create new leads
         #         for lead_data in leads:
@@ -132,9 +248,10 @@ async def poll_facebook_leads_task() -> dict[str, object]:
         #                 leads_created += 1
         #
         #     except Exception as e:
-        #         logger.error(f"Error polling page {page.page_id}: {e}")
+        #         # Log error and continue with other pages (B2.2: ✅ Improved error handling)
+        #         logger.error(f"Error polling page {page.page_id}: {e}", exc_info=True)
         #         errors += 1
-        #         details.append(f"Page {page.page_id}: {str(e)}")
+        #         details.append(format_error_message(page.page_id, e))
 
         # Determine status
         # if errors == 0:

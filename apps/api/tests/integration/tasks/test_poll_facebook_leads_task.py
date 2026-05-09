@@ -336,7 +336,65 @@ class TestPollFacebookLeadsTaskPhase3Integration:
         pass
 
 
+class TestPollFacebookLeadsTaskRateLimiting:
+    """Test rate limit handling in Facebook Graph API polling."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_rate_limit_error_handled_gracefully(self):
+        """Test that HTTP 429 rate limit errors are handled gracefully.
+
+        Expected behavior:
+        - Graph API returns HTTP 429 with Retry-After header
+        - Task logs rate limit error
+        - Task continues polling other pages
+        - Returns partial_failure or success status
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock FacebookGraphApiClient.get_leads() → raises HTTPStatusError with 429
+        # Mock response.headers["Retry-After"] = "3600" (1 hour)
+        # Assert rate limit error is logged
+        # Assert task continues with other pages
+        # Assert result["details"] contains rate limit info
+        pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_rate_limit_with_retry_after_header(self):
+        """Test that Retry-After header is parsed and logged.
+
+        Expected behavior:
+        - HTTP 429 response includes Retry-After: 3600
+        - Retry-After value is extracted and logged
+        - Error details include retry_after value
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock response with Retry-After header
+        # Assert retry_after is extracted
+        # Assert error details include retry_after
+        pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Phase 3: Requires DI container and Graph API integration")
+    async def test_all_pages_rate_limited(self):
+        """Test when all pages return rate limit errors.
+
+        Expected behavior:
+        - All pages return HTTP 429
+        - Returns failure status
+        - All rate limit errors logged
+        - No leads created
+        """
+        # TODO(phase-3): Implement with mocks
+        # Mock all pages raise HTTPStatusError with 429
+        # Assert result["status"] == "failure"
+        # Assert result["leads_created"] == 0
+        # Assert all pages logged in details
+        pass
+
+
 __all__ = [
     "TestPollFacebookLeadsTask",
     "TestPollFacebookLeadsTaskStructure",
+    "TestPollFacebookLeadsTaskRateLimiting",
 ]

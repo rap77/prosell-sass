@@ -160,3 +160,22 @@ class FacebookNotConfiguredException(FacebookDomainException):
             message=f"Facebook OAuth not configured: missing {missing}",
             details={"missing": missing},
         )
+
+
+# Rate Limiting Exceptions
+
+
+class FacebookRateLimitException(FacebookDomainException):
+    """Raised when Facebook Graph API rate limit is exceeded."""
+
+    def __init__(self, retry_after: int | None = None) -> None:
+        """Initialize rate limit exception.
+
+        Args:
+            retry_after: Seconds to wait before retrying (from Retry-After header)
+        """
+        super().__init__(
+            message="Facebook Graph API rate limit exceeded",
+            details={"retry_after": retry_after} if retry_after else {},
+        )
+        self.retry_after = retry_after
