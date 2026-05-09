@@ -1,0 +1,21 @@
+{
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "strict",
+  "include": [
+    "apps/api/src/**/*.py",
+    "apps/api/tests/**/*.py"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/node_modules",
+    "**/.venv",
+    "**/.*",
+    "**/migrations"
+  ],
+  "venvPath": "apps/api",
+  "venv": ".venv",
+  "extraPaths": [
+    "apps/api/src"
+  ],
+  "stubPath": ""
+}

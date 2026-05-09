@@ -97,7 +97,7 @@ known-first-party = ["prosell"]
 "src/prosell/domain/value_objects/email.py" = ["RUF012"]
 
 [tool.pyright]
-pythonVersion = "3.14"
+pythonVersion = "3.12"
 typeCheckingMode = "strict"
-venvPath = "."
-venv = ".venv"
+# venvPath and venv are configured in .vscode/settings.json
+# to avoid conflicts between workspace and monorepo settings

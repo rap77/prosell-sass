@@ -12,9 +12,8 @@ when the same buyer inquiries multiple times.
 from dataclasses import dataclass
 import re
 from uuid import UUID
-from typing import List
 
-from prosell.domain.entities.lead import Lead
+from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 
 
 @dataclass
@@ -36,7 +35,7 @@ class LeadDuplicateDetector:
     3. Email + phone combination (high confidence)
     """
 
-    def __init__(self, lead_repository):
+    def __init__(self, lead_repository: AbstractLeadRepository) -> None:
         """
         Initialize detector with lead repository.
 
@@ -58,7 +57,7 @@ class LeadDuplicateDetector:
         Args:
             email: Buyer email to match
             phone: Buyer phone to match (will be normalized)
-            tenant_id: Tenant context for filtering
+            tenant_id: Tenant context for filtering (required)
             exclude_lead_id: Exclude this lead from results (useful for updates)
 
         Returns:
@@ -67,8 +66,12 @@ class LeadDuplicateDetector:
         if not email and not phone:
             return []
 
+        # tenant_id is required for multi-tenant isolation
+        if not tenant_id:
+            return []
+
         duplicates: list[DuplicateMatch] = []
-        seen_lead_ids = set()
+        seen_lead_ids: set[UUID] = set()
 
         # Strategy 1: Exact email match (high confidence)
         if email:
@@ -185,7 +188,7 @@ class LeadDuplicateDetector:
         Args:
             email: Buyer email to match
             phone: Buyer phone to match
-            tenant_id: Tenant context for filtering
+            tenant_id: Tenant context for filtering (required)
             exclude_lead_id: Exclude this lead from results
 
         Returns:

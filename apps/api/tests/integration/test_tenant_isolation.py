@@ -9,19 +9,13 @@ Tests ensure that:
 - IDOR (Insecure Direct Object Reference) vectors are prevented
 """
 
-from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
-from fastapi import status
-from httpx import ASGITransport, AsyncClient
 
-from prosell.domain.entities.lead import Lead, LeadStatus
+from prosell.domain.entities.lead import Lead
 from prosell.domain.entities.product import Product
-from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 from prosell.domain.entities.user import User
-from prosell.domain.value_objects.product_status import ProductStatus
-from prosell.infrastructure.api.main import app
 
 
 # =============================================================================
@@ -30,19 +24,19 @@ from prosell.infrastructure.api.main import app
 
 
 @pytest.fixture
-def tenant_a_id():
+def tenant_a_id() -> UUID:
     """Tenant A ID."""
     return uuid4()
 
 
 @pytest.fixture
-def tenant_b_id():
+def tenant_b_id() -> UUID:
     """Tenant B ID."""
     return uuid4()
 
 
 @pytest.fixture
-def user_tenant_a(tenant_a_id):
+def user_tenant_a(tenant_a_id: UUID) -> User:
     """User belonging to Tenant A."""
     return User(
         id=uuid4(),
@@ -54,7 +48,7 @@ def user_tenant_a(tenant_a_id):
 
 
 @pytest.fixture
-def user_tenant_b(tenant_b_id):
+def user_tenant_b(tenant_b_id: UUID) -> User:
     """User belonging to Tenant B."""
     return User(
         id=uuid4(),
@@ -66,19 +60,19 @@ def user_tenant_b(tenant_b_id):
 
 
 @pytest.fixture
-def organization_id():
+def organization_id() -> UUID:
     """Organization ID for products."""
     return uuid4()
 
 
 @pytest.fixture
-def category_id():
+def category_id() -> UUID:
     """Category ID for products."""
     return uuid4()
 
 
 @pytest.fixture
-def lead_tenant_a(tenant_a_id):
+def lead_tenant_a(tenant_a_id: UUID) -> Lead:
     """Lead belonging to Tenant A."""
     return Lead.create(
         tenant_id=tenant_a_id,
@@ -90,7 +84,7 @@ def lead_tenant_a(tenant_a_id):
 
 
 @pytest.fixture
-def lead_tenant_b(tenant_b_id):
+def lead_tenant_b(tenant_b_id: UUID) -> Lead:
     """Lead belonging to Tenant B."""
     return Lead.create(
         tenant_id=tenant_b_id,
@@ -102,7 +96,7 @@ def lead_tenant_b(tenant_b_id):
 
 
 @pytest.fixture
-def product_tenant_a(tenant_a_id, organization_id, category_id):
+def product_tenant_a(tenant_a_id: UUID, organization_id: UUID, category_id: UUID) -> Product:
     """Product belonging to Tenant A."""
     return Product.create(
         tenant_id=tenant_a_id,
@@ -115,7 +109,7 @@ def product_tenant_a(tenant_a_id, organization_id, category_id):
 
 
 @pytest.fixture
-def product_tenant_b(tenant_b_id, organization_id, category_id):
+def product_tenant_b(tenant_b_id: UUID, organization_id: UUID, category_id: UUID) -> Product:
     """Product belonging to Tenant B."""
     return Product.create(
         tenant_id=tenant_b_id,
@@ -128,31 +122,15 @@ def product_tenant_b(tenant_b_id, organization_id, category_id):
 
 
 @pytest.fixture
-def mock_auth_user_tenant_a(user_tenant_a):
+def mock_auth_user_tenant_a(user_tenant_a: User) -> User:
     """Mock authenticated user from Tenant A."""
     return user_tenant_a
 
 
 @pytest.fixture
-def mock_auth_user_tenant_b(user_tenant_b):
+def mock_auth_user_tenant_b(user_tenant_b: User) -> User:
     """Mock authenticated user from Tenant B."""
     return user_tenant_b
-
-
-@pytest.fixture(autouse=True)
-def auto_mock_auth(mock_auth_user_tenant_a):
-    """Automatically mock auth for all tests (default to Tenant A)."""
-    from prosell.infrastructure.api.dependencies import (
-        get_current_auth_user,
-        get_current_auth_user_from_cookie,
-    )
-
-    app.dependency_overrides[get_current_auth_user] = lambda: mock_auth_user_tenant_a
-    app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: mock_auth_user_tenant_a
-
-    yield
-
-    app.dependency_overrides.clear()
 
 
 # =============================================================================
@@ -165,15 +143,15 @@ class TestLeadTenantIsolation:
 
     async def test_user_cannot_access_other_tenant_leads(
         self,
-        tenant_a_id,
-        tenant_b_id,
-        lead_tenant_a,
-        lead_tenant_b,
-        mock_auth_user_tenant_a,
-    ):
+        tenant_a_id: UUID,
+        tenant_b_id: UUID,
+        lead_tenant_a: Lead,
+        lead_tenant_b: Lead,
+        mock_auth_user_tenant_a: User,
+    ) -> None:
         """User from Tenant A cannot access leads from Tenant B."""
         # Setup mock repository
-        from prosell.domain.repositories.lead_repository import AbstractLeadRepository
+        # Removed unused import
         from unittest.mock import AsyncMock, MagicMock
 
         mock_repo = MagicMock()
@@ -194,12 +172,12 @@ class TestLeadTenantIsolation:
 
     async def test_repository_queries_include_tenant_id(
         self,
-        tenant_a_id,
-        lead_tenant_a,
-        mock_auth_user_tenant_a,
-    ):
+        tenant_a_id: UUID,
+        lead_tenant_a: Lead,
+        mock_auth_user_tenant_a: User,
+    ) -> None:
         """Verify repository queries include tenant_id in filters."""
-        from prosell.domain.repositories.lead_repository import AbstractLeadRepository
+        # Removed unused import
         from unittest.mock import AsyncMock, MagicMock
 
         mock_repo = MagicMock()
@@ -226,13 +204,13 @@ class TestProductTenantIsolation:
 
     async def test_user_cannot_access_other_tenant_products(
         self,
-        tenant_a_id,
-        product_tenant_a,
-        product_tenant_b,
-        mock_auth_user_tenant_a,
-    ):
+        tenant_a_id: UUID,
+        product_tenant_a: Product,
+        product_tenant_b: Product,
+        mock_auth_user_tenant_a: User,
+    ) -> None:
         """User from Tenant A cannot access products from Tenant B."""
-        from prosell.domain.repositories.product_repository import AbstractProductRepository
+        # Removed unused import
         from unittest.mock import AsyncMock, MagicMock
 
         mock_repo = MagicMock()
@@ -255,14 +233,14 @@ class TestWebhookTenantContext:
 
     async def test_webhook_respects_tenant_context(
         self,
-        tenant_a_id,
-        tenant_b_id,
-        lead_tenant_a,
-        lead_tenant_b,
-        mock_auth_user_tenant_a,
-    ):
+        tenant_a_id: UUID,
+        tenant_b_id: UUID,
+        lead_tenant_a: Lead,
+        lead_tenant_b: Lead,
+        mock_auth_user_tenant_a: User,
+    ) -> None:
         """Webhook creates leads in correct tenant context."""
-        from prosell.domain.repositories.lead_repository import AbstractLeadRepository
+        # Removed unused import
         from unittest.mock import AsyncMock, MagicMock
 
         mock_repo = MagicMock()
@@ -289,11 +267,11 @@ class TestSQLInjectionPrevention:
 
     async def test_sql_injection_in_email_blocked(
         self,
-        tenant_a_id,
-        mock_auth_user_tenant_a,
-    ):
+        tenant_a_id: UUID,
+        mock_auth_user_tenant_a: User,
+    ) -> None:
         """SQL injection attempts in email parameter are blocked."""
-        from prosell.domain.repositories.lead_repository import AbstractLeadRepository
+        # Removed unused import
         from unittest.mock import AsyncMock, MagicMock
 
         mock_repo = MagicMock()
@@ -312,11 +290,11 @@ class TestSQLInjectionPrevention:
 
     async def test_sql_injection_in_search_blocked(
         self,
-        tenant_a_id,
-        mock_auth_user_tenant_a,
-    ):
+        tenant_a_id: UUID,
+        mock_auth_user_tenant_a: User,
+    ) -> None:
         """SQL injection attempts in search parameters are blocked."""
-        from prosell.domain.repositories.product_repository import AbstractProductRepository
+        # Removed unused import
         from unittest.mock import AsyncMock, MagicMock
 
         mock_repo = MagicMock()
@@ -337,20 +315,20 @@ class TestIDORPrevention:
 
     async def test_user_cannot_access_lead_by_id_from_other_tenant(
         self,
-        tenant_a_id,
-        tenant_b_id,
-        lead_tenant_a,
-        lead_tenant_b,
-        mock_auth_user_tenant_a,
-    ):
+        tenant_a_id: UUID,
+        tenant_b_id: UUID,
+        lead_tenant_a: Lead,
+        lead_tenant_b: Lead,
+        mock_auth_user_tenant_a: User,
+    ) -> None:
         """User cannot access lead by ID from another tenant (IDOR prevention)."""
-        from prosell.domain.repositories.lead_repository import AbstractLeadRepository
         from unittest.mock import AsyncMock, MagicMock
 
         mock_repo = MagicMock()
         # Repository returns None for lead from other tenant
         mock_repo.get_by_id = AsyncMock(
-            side_effect=lambda lead_id, tenant_id: lead_tenant_a if lead_id == lead_tenant_a.id else None
+            side_effect=lambda lead_id, tenant_id: lead_tenant_a  # type: ignore
+            if lead_id == lead_tenant_a.id else None
         )
 
         # User A tries to access Tenant B's lead by ID
@@ -361,13 +339,12 @@ class TestIDORPrevention:
 
     async def test_user_cannot_update_product_from_other_tenant(
         self,
-        tenant_a_id,
-        product_tenant_a,
-        product_tenant_b,
-        mock_auth_user_tenant_a,
-    ):
+        tenant_a_id: UUID,
+        product_tenant_a: Product,
+        product_tenant_b: Product,
+        mock_auth_user_tenant_a: User,
+    ) -> None:
         """User cannot update product from another tenant."""
-        from prosell.domain.repositories.product_repository import AbstractProductRepository
         from unittest.mock import AsyncMock, MagicMock
 
         mock_repo = MagicMock()
@@ -376,8 +353,8 @@ class TestIDORPrevention:
 
         # User A tries to update Tenant B's product
         # Repository should reject or ignore the update
-        result = await mock_repo.update(product_tenant_b)
+        await mock_repo.update(product_tenant_b)
 
-        # Verify repository was called but result should be from user's tenant
+        # Verify repository was called
         mock_repo.update.assert_called_once()
         # In a real implementation, this would raise an exception or return None

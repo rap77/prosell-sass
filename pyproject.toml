@@ -35,7 +35,7 @@ ignore = [
 known-first-party = ["prosell"]
 
 [tool.pyright]
-pythonVersion = "3.13"
+pythonVersion = "3.12"
 typeCheckingMode = "strict"
-venvPath = "."
-venv = ".venv"
+# venvPath and venv are configured in .vscode/settings.json
+# per workspace (apps/api uses apps/api/.venv)

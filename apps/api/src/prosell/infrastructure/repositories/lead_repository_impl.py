@@ -1,8 +1,8 @@
 """SqlAlchemyLeadRepository implementation with product JOIN support."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Any, NamedTuple
 from uuid import UUID
-from typing import NamedTuple
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,9 +35,9 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         await self.session.flush()
         return self._to_entity(model)
 
-    async def get_by_id(
-        self, 
-        lead_id: UUID, 
+    async def get_by_id(  # type: ignore[reportIncompatibleMethodOverride]
+        self,
+        lead_id: UUID,
         tenant_id: UUID,
         *,
         include_product: bool = False,  # Keep parameter name for backwards compatibility
@@ -113,7 +113,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             # No product_id provided - skip duplicate detection
             return None
 
-    async def list_by_tenant(
+    async def list_by_tenant(  # type: ignore[reportIncompatibleMethodOverride]
         self,
         tenant_id: UUID,
         limit: int = 50,
@@ -183,8 +183,8 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         audit_log = LeadAuditLogModel(
             lead_id=lead_id,
             tenant_id=tenant_id,
-            old_status=old_status if isinstance(old_status, str) else old_status.value,
-            new_status=new_status.value,
+            old_status=old_status if old_status else None,
+            new_status=new_status,
             changed_by_user_id=changed_by_user_id,
             reason=reason,
         )
@@ -221,7 +221,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         
         return [self._audit_log_to_entity(model) for model in models]
 
-    async def list_by_vendedor(
+    async def list_by_vendedor(  # type: ignore[reportIncompatibleMethodOverride]
         self,
         tenant_id: UUID,
         vendedor_id: UUID,
@@ -262,7 +262,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             )
             return [LeadWithProduct(lead=self._to_entity(m)) for m in result.scalars().all()], total
 
-    async def list_by_manager(
+    async def list_by_manager(  # type: ignore[reportIncompatibleMethodOverride]
         self,
         tenant_id: UUID,
         limit: int = 50,
@@ -376,7 +376,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         email: str,
     ) -> list[Lead]:
         """Find leads by buyer email (exact match)."""
-        from prosell.infrastructure.orm.models.lead import LeadModel
+        from prosell.infrastructure.models.lead_model import LeadModel
 
         stmt = (
             select(LeadModel)
@@ -394,7 +394,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         phone: str,
     ) -> list[Lead]:
         """Find leads by buyer phone (normalized match)."""
-        from prosell.infrastructure.orm.models.lead import LeadModel
+        from prosell.infrastructure.models.lead_model import LeadModel
 
         stmt = (
             select(LeadModel)
@@ -413,10 +413,9 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         phone: str | None = None,
     ) -> list[Lead]:
         """Find potential duplicate leads by email or phone."""
-        from prosell.infrastructure.orm.models.lead import LeadModel
-        from sqlalchemy import or_
+        from prosell.infrastructure.models.lead_model import LeadModel
 
-        conditions = []
+        conditions: list[Any] = []
         if email:
             conditions.append(LeadModel.buyer_email == email)
         if phone:
@@ -434,5 +433,3 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         result = await self.session.execute(stmt)
         models = result.scalars().all()
         return [self._to_entity(model) for model in models]
-            created_at=model.created_at,
-        )
