@@ -328,7 +328,8 @@
 - [x] Review TODO comments in poll_facebook_leads_task.py (lines 56-82)
 - [x] Implement error handling for API rate limits
 - [x] Implement retry logic with exponential backoff
-- [ ] Add metrics tracking (leads polled, created, errors)
+- [x] Add metrics tracking (leads polled, created, errors)
+- [x] Implement deduplication in polling
 - [ ] Implement deduplication in polling
 - [ ] Configure polling interval (10 minutes)
 - [ ] Configure timeout (30 seconds per page)
