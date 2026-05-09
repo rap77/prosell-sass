@@ -127,7 +127,7 @@ def mm_launch(task_id: str) -> None:
     print(f"PAYLOAD: {json.dumps(payload)}", flush=True)
 
 
-def _open_db_session(task_id: str, pending_count: int) -> str | None:
+def _open_db_session(_task_id: str, _pending_count: int) -> str | None:
     """Open a dev session in the DB. Returns session UUID or None if DB unavailable."""
     try:
         sys.path.insert(0, str(PLANNING_DIR.parent / ".claude" / "commands" / "mm"))
@@ -284,7 +284,7 @@ def get_git_commits_for_task(task_id: str) -> set[str]:
     Uses git log --grep for more reliable detection.
     Pattern: matches "D1.1", "D1.2", etc. in commit messages.
     """
-    completed = set()
+    completed: set[str] = set()
 
     # Pattern 1: grep for task ID in commit messages
     # Matches: "D1.1:", "(D1.1)", "[D1.1]", etc.
@@ -357,9 +357,10 @@ def read_task_from_plan(task_id: str) -> dict[str, str]:
 def read_subtasks_from_todo(task_id: str) -> list[dict[str, Any]]:
     """Read subtasks from todo.md.
 
-    Supports two structures:
-    1. Flat: checkboxes directly under task heading (e.g., "### B2:" followed by "- [ ] subtask")
-    2. Nested: subtask headings under task (e.g., "#### B2.1:" under "### B2:")
+    Supports three structures:
+    1. V2 Hierarchical: "- [ ] A1: Task" with "  - [ ] A1.01: subtask" (2-space indent)
+    2. V1 Flat: checkboxes directly under task heading (e.g., "### B2:" followed by "- [ ] subtask")
+    3. V1 Nested: subtask headings under task (e.g., "#### B2.1:" under "### B2:")
 
     Args:
         task_id: Task identifier (e.g., "D1" or "D1.1").
@@ -383,6 +384,11 @@ def read_subtasks_from_todo(task_id: str) -> list[dict[str, Any]]:
     if "." in task_id:
         return _read_subtask_heading(content, task_id)
 
+    # Try V2 hierarchical format first (new format)
+    subtasks = _read_v2_hierarchical_subtasks(content, task_id)
+    if subtasks:
+        return subtasks
+
     # No dot - parent task, try both flat and nested structures
     subtasks = _read_flat_subtasks(content, task_id)
     if subtasks:
@@ -390,6 +396,74 @@ def read_subtasks_from_todo(task_id: str) -> list[dict[str, Any]]:
 
     # Try nested structure (subtask headings under parent)
     return _read_nested_subtasks(content, task_id)
+
+
+def _read_v2_hierarchical_subtasks(content: str, task_id: str) -> list[dict[str, Any]]:
+    """Read V2 hierarchical format: list-based with intermediate task headings.
+
+    Example:
+        - [~] B2: Core Feature Completion
+
+        - [x] B2.1: Facebook Webhook Polling Completion
+          - [x] B2.1.01: Review TODO comments
+          - [x] B2.1.02: Implement error handling
+
+        - [x] B2.2: VIN Decode Integration Tests
+          - [x] B2.2.01: Create test file
+
+    Args:
+        content: Full todo.md content.
+        task_id: Task identifier (e.g., "B2").
+
+    Returns:
+        List of subtask dictionaries with "id", "description", "completed" keys.
+        Empty list if task not found or has no subtasks.
+    """
+    # Find the parent task section
+    # Pattern: "- [state] B2: title" until next phase (##) or next parent task (e.g., B3, C1)
+    # The lookahead ensures we stop at the next PARENT task, not subtasks (B2.1, B2.2)
+    # Next parent task format: "- [state] <LETTER><NUMBER>:" where <NUMBER> has no dot
+    pattern = rf"^-\s\[([ x~])\]\s+{re.escape(task_id)}:.*?\n(.*?)(?=^##|^-\s\[[ x~]\]\s+[A-Z]\d+:|\Z)"
+    match = re.search(pattern, content, re.MULTILINE | re.DOTALL)
+
+    if not match:
+        return []
+
+    parent_section = match.group(2)
+
+    # Find all subtask headings (e.g., "- [x] B2.1:", "- [x] B2.2:")
+    # These are at the same level as the parent task (no indent)
+    subtask_pattern = rf"^-\s\[([ x~])\]\s+{re.escape(task_id)}\.(\d+):([^\n]+)\n((?:  -\[.*?\n)*)"
+    subtask_matches = re.finditer(subtask_pattern, parent_section, re.MULTILINE)
+
+    subtasks: list[dict[str, Any]] = []
+
+    for match in subtask_matches:
+        checkbox_state = match.group(1)
+        subtask_num = match.group(2)
+        subtask_title = match.group(3).strip()
+        subtask_body = match.group(4)  # Indented checkboxes (B2.1.01, etc.)
+
+        full_subtask_id = f"{task_id}.{subtask_num}"
+
+        # Check if subtask is complete by examining its sub-subtasks
+        # If there are sub-subtasks (indented checkboxes), check if all are complete
+        # If there are no sub-subtasks, use the checkbox state of the subtask itself
+        sub_subtasks = re.findall(r'^  - \[([ x~])\]', subtask_body, re.MULTILINE)
+        if sub_subtasks:
+            # Has sub-subtasks - check if all are complete
+            is_complete = all(state == "x" for state in sub_subtasks)
+        else:
+            # No sub-subtasks - use the subtask's checkbox state
+            is_complete = checkbox_state == "x"
+
+        subtasks.append({
+            "id": full_subtask_id,
+            "description": subtask_title,
+            "completed": is_complete
+        })
+
+    return subtasks
 
 
 def _read_flat_subtasks(content: str, task_id: str) -> list[dict[str, Any]]:
@@ -540,17 +614,21 @@ def init_runtime_state(task_id: str, subtasks: list[dict[str, Any]]) -> dict[str
         Runtime state dictionary with session info and subtask statuses.
     """
     session_id = f"sess-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    now_iso = datetime.now().isoformat()
 
     runtime_state: dict[str, Any] = {
         "task_id": task_id,
         "session_id": session_id,
-        "started_at": datetime.now().isoformat(),
+        "started_at": now_iso,
         "phase": 19,  # Current MM-Flow phase
         "subtasks": {
             st["id"]: {
                 "description": st["description"],
                 "status": "completed" if st["completed"] else "pending",
                 "retries": 0,
+                "started_at": now_iso if not st["completed"] else None,
+                "completed_at": None,
+                "duration_seconds": 0,
             }
             for st in subtasks
         },
@@ -588,8 +666,23 @@ def update_subtask_status(
     state = json.loads(RUNTIME_STATE_PATH.read_text())
 
     if subtask_id in state["subtasks"]:
+        now = datetime.now()
+        now_iso = now.isoformat()
+
         state["subtasks"][subtask_id]["status"] = status
-        state["subtasks"][subtask_id]["updated_at"] = datetime.now().isoformat()
+        state["subtasks"][subtask_id]["updated_at"] = now_iso
+
+        # Calculate duration if completing
+        if status == "completed" and state["subtasks"][subtask_id].get("started_at"):
+            started_at_str = state["subtasks"][subtask_id]["started_at"]
+            if started_at_str:
+                started_at = datetime.fromisoformat(started_at_str)
+                duration = (now - started_at).total_seconds()
+                state["subtasks"][subtask_id]["completed_at"] = now_iso
+                state["subtasks"][subtask_id]["duration_seconds"] = round(duration, 2)
+        elif status == "in_progress" and not state["subtasks"][subtask_id].get("started_at"):
+            # Start the clock when moving to in_progress
+            state["subtasks"][subtask_id]["started_at"] = now_iso
 
         if error:
             state["subtasks"][subtask_id]["error"] = error
@@ -658,12 +751,12 @@ def get_task_payload(task_id: str) -> dict[str, Any]:
 
 
 def detect_required_permissions(
-    task_id: str, pending_subtasks: list[dict[str, Any]]
+    _task_id: str, pending_subtasks: list[dict[str, Any]]
 ) -> list[str]:
     """Detect required tool permissions based on subtask descriptions.
 
     Args:
-        task_id: Task identifier.
+        _task_id: Task identifier (unused, for future extensions).
         pending_subtasks: List of pending subtask dictionaries.
 
     Returns:
@@ -908,17 +1001,31 @@ def mark_all_complete(task_id: str, subtasks: list[dict[str, Any]]) -> None:
         task_id: Task identifier.
         subtasks: List of subtask dicts.
     """
-    # Mark in todo.md
+    # Mark in todo.md (supports both V1 and V2 formats)
     todo_content = TODO_MD.read_text()
 
     def replace_todo_checkboxes(match: re.Match[str]) -> str:
         section = match.group(0)
-        return re.sub(r"- \[ \]", "- [x]", section)
+        # Replace both [ ] and [~] with [x] (pending and in-progress -> completed)
+        section = re.sub(r"- \[ \]", "- [x]", section)
+        section = re.sub(r"- \[~\]", "- [x]", section)
+        # Also replace V2 indented checkboxes
+        section = re.sub(r"  - \[ \]", "  - [x]", section)
+        section = re.sub(r"  - \[~\]", "  - [x]", section)
+        return section
 
-    pattern = rf"(### {task_id}:.*?)(?=\n###|\n---|\Z)"
-    todo_content = re.sub(
-        pattern, replace_todo_checkboxes, todo_content, flags=re.DOTALL
-    )
+    # Try V2 format first (hierarchical list)
+    v2_pattern = rf"(^-\s\[([ x~])\]\s+{re.escape(task_id)}:.*?)(?=^##|^-\s\[[ x~]\]\s+[A-Z]|\Z)"
+    if re.search(v2_pattern, todo_content, re.MULTILINE | re.DOTALL):
+        todo_content = re.sub(
+            v2_pattern, replace_todo_checkboxes, todo_content, flags=re.MULTILINE | re.DOTALL
+        )
+    else:
+        # Fall back to V1 format (heading-based)
+        v1_pattern = rf"(### {task_id}:.*?)(?=\n###|\n---|\Z)"
+        todo_content = re.sub(
+            v1_pattern, replace_todo_checkboxes, todo_content, flags=re.DOTALL
+        )
 
     TODO_MD.write_text(todo_content)
 
@@ -953,7 +1060,14 @@ def show_status() -> None:
     """Show status of all tasks."""
     mm_info("Task Status Overview")
 
-    # Read all tasks
+    # Read todo.md to get parent task checkbox states
+    try:
+        todo_content = TODO_MD.read_text()
+    except (FileNotFoundError, OSError):
+        mm_error("Could not read todo.md")
+        return
+
+    # Read all tasks from plan.md
     content = PLAN_MD.read_text()
 
     for match in re.finditer(r"### ([A-Z]\d):([^\n]+)\n", content):
@@ -961,11 +1075,33 @@ def show_status() -> None:
         title = match.group(2).strip()
 
         try:
+            # Get parent task checkbox state from todo.md
+            # Pattern: "- [state] B2: title" where state is x, ~, or space
+            parent_pattern = rf"^-\s\[([ x~])\]\s+{re.escape(task_id)}:"
+            parent_match = re.search(parent_pattern, todo_content, re.MULTILINE)
+
+            if parent_match:
+                checkbox_state = parent_match.group(1)
+            else:
+                # Default to pending if no checkbox found
+                checkbox_state = " "
+
+            # Get subtasks and count completed
             subtasks = read_subtasks_from_todo(task_id)
             completed = sum(1 for st in subtasks if st["completed"])
             total = len(subtasks)
 
-            status = "✅" if completed == total else f"{completed}/{total}"
+            # Determine status display based on parent checkbox
+            if checkbox_state == "x":
+                # Parent marked as complete
+                status = "✅"
+            elif checkbox_state == "~":
+                # Parent marked as in-progress
+                status = f"[~] {completed}/{total}"
+            else:
+                # Parent marked as pending
+                status = f"[ ] {completed}/{total}"
+
             print(f"  {task_id} {status}: {title}", flush=True)
         except ValueError:
             print(f"  {task_id}: (no subtasks found)", flush=True)
