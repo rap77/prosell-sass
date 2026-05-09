@@ -97,7 +97,12 @@ class TestCreateLeadUseCase:
     def repo(self):
         """Mock lead repository."""
         r = AsyncMock()
+        # Legacy method (kept for backward compat)
         r.get_by_buyer_and_product = AsyncMock(return_value=None)
+        # LeadDuplicateDetector methods — return no duplicates by default
+        r.find_by_email = AsyncMock(return_value=[])
+        r.find_by_phone = AsyncMock(return_value=[])
+        r.find_potential_duplicates = AsyncMock(return_value=[])
         r.create = AsyncMock(side_effect=lambda lead: lead)
         return r
 
@@ -123,22 +128,29 @@ class TestCreateLeadUseCase:
 
     @pytest.mark.asyncio
     async def test_create_lead_duplicate_raises(self, repo):
-        """Should raise exception when duplicate lead exists."""
+        """Should raise DuplicateLeadException when same buyer+product exists."""
         existing_lead = make_lead()
-        repo.get_by_buyer_and_product = AsyncMock(return_value=existing_lead)
+
+        # LeadDuplicateDetector will call find_by_email and find_by_phone.
+        # Return the existing lead on the email lookup so duplicates are detected.
+        repo.find_by_email = AsyncMock(return_value=[existing_lead])
+        repo.find_by_phone = AsyncMock(return_value=[])
+        repo.find_potential_duplicates = AsyncMock(return_value=[])
+        # get_by_id is called to resolve the dup lead and check product_id
+        repo.get_by_id = AsyncMock(return_value=existing_lead)
 
         use_case = CreateLeadUseCase(repo)
         request = CreateLeadRequest(
             buyer_name="Juan Pérez",
             buyer_email="juan@example.com",
             buyer_phone="+59899000000",
-            product_id=existing_lead.product_id,
+            product_id=existing_lead.product_id,  # same product → hard duplicate
             vendedor_id=existing_lead.vendedor_id,
             message="Interested",
         )
 
         with pytest.raises(DuplicateLeadException):
-            await use_case.execute(request, uuid4())
+            await use_case.execute(request, existing_lead.tenant_id)
 
 
 # =============================================================================
