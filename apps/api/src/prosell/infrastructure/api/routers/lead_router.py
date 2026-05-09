@@ -31,7 +31,9 @@ from prosell.domain.exceptions.lead_exceptions import (
     LeadNotFoundException,
     LeadStateTransitionException,
 )
+from prosell.domain.services.lead_duplicate_detector import DuplicateMatch, LeadDuplicateDetector
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+from prosell.infrastructure.api.schemas.lead_schemas import DuplicateMatchResponse, DuplicatesResponse
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.lead_repository_impl import SqlAlchemyLeadRepository
 
@@ -92,6 +94,13 @@ async def get_team_metrics_use_case(
     from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
     user_repo = SqlAlchemyUserRepository(lead_repo.session)
     return GetTeamMetricsUseCase(lead_repo, user_repo)
+
+
+async def get_duplicate_detector(
+    lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
+) -> LeadDuplicateDetector:
+    """Get LeadDuplicateDetector instance."""
+    return LeadDuplicateDetector(lead_repo)
 
 
 # =============================================================================
@@ -270,6 +279,62 @@ async def assign_lead(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         ) from None
+
+
+@router.get(
+    "/{lead_id}/duplicates",
+    response_model=DuplicatesResponse,
+    summary="Get potential duplicates for a lead",
+)
+async def get_lead_duplicates(
+    lead_id: UUID,
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
+    detector: Annotated[LeadDuplicateDetector, Depends(get_duplicate_detector)],
+) -> DuplicatesResponse:
+    """
+    Return potential duplicate leads for the given lead_id.
+
+    Fetches the lead's email and phone, then runs LeadDuplicateDetector
+    excluding the lead itself. Useful for displaying duplicate warnings
+    in the lead detail view without re-running detection on creation.
+
+    - Returns empty list if no duplicates found.
+    - Returns 404 if lead does not belong to the current tenant.
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No organization associated with account.",
+        )
+
+    # Fetch the lead to extract contact fields
+    lead = await lead_repo.get_by_id(lead_id=lead_id, tenant_id=current_user.tenant_id)
+    if not lead:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Lead {lead_id} not found.",
+        )
+
+    duplicates: list[DuplicateMatch] = await detector.find_duplicates(
+        email=lead.buyer_email,
+        phone=lead.buyer_phone,
+        tenant_id=current_user.tenant_id,
+        exclude_lead_id=lead_id,
+    )
+
+    return DuplicatesResponse(
+        lead_id=lead_id,
+        duplicates=[
+            DuplicateMatchResponse(
+                lead_id=dup.lead_id,
+                match_type=dup.match_type,
+                confidence=dup.confidence,
+            )
+            for dup in duplicates
+        ],
+        count=len(duplicates),
+    )
 
 
 @router.get(

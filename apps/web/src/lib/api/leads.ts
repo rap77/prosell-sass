@@ -64,6 +64,24 @@ export interface LeadProduct {
 }
 
 /**
+ * Duplicate lead match returned by /leads/{id}/duplicates
+ */
+export interface LeadDuplicateMatch {
+  lead_id: string;
+  match_type: "email" | "phone" | "both";
+  confidence: "high" | "medium" | "low";
+}
+
+/**
+ * Response from GET /leads/{id}/duplicates
+ */
+export interface LeadDuplicatesResponse {
+  lead_id: string;
+  duplicates: LeadDuplicateMatch[];
+  count: number;
+}
+
+/**
  * Lead entity
  */
 export interface Lead {
@@ -330,5 +348,35 @@ export function useTeamMetrics(): UseQueryResult<TeamMetricsResponse, Error> {
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * useLeadDuplicates — fetches potential duplicate leads for a given lead ID.
+ *
+ * Calls GET /api/v1/leads/{leadId}/duplicates and returns the list of
+ * DuplicateMatch objects so the lead detail page can display a warning.
+ *
+ * Data is cached for 2 minutes. The query is disabled when leadId is absent.
+ */
+export function useLeadDuplicates(
+  leadId: string | undefined,
+): UseQueryResult<LeadDuplicatesResponse, Error> {
+  return useQuery({
+    queryKey: ["lead-duplicates", leadId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/leads/${leadId}/duplicates`, {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: "Failed to fetch duplicates" }));
+        throw new Error(error.message || "Failed to fetch duplicates");
+      }
+
+      return (await res.json()) as LeadDuplicatesResponse;
+    },
+    enabled: !!leadId,
+    staleTime: 2 * 60 * 1000,
   });
 }

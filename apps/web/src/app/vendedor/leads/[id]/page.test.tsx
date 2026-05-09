@@ -5,7 +5,7 @@
 import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useRouter } from "next/navigation";
-import { useLead } from "@/lib/api/leads";
+import { useLead, useLeadDuplicates } from "@/lib/api/leads";
 
 // Mock Next.js router
 vi.mock("next/navigation", () => ({
@@ -15,6 +15,7 @@ vi.mock("next/navigation", () => ({
 // Mock leads API
 vi.mock("@/lib/api/leads", () => ({
   useLead: vi.fn(),
+  useLeadDuplicates: vi.fn(),
   LeadStatus: {
     NEW: "new",
     CONTACTED: "contacted",
@@ -45,6 +46,12 @@ describe("LeadDetails Page", () => {
     (useRouter as vi.Mock).mockReturnValue({
       push: mockPush,
       back: mockBack,
+    });
+    // Default: no duplicates
+    (useLeadDuplicates as vi.Mock).mockReturnValue({
+      data: { lead_id: "test-lead-123", duplicates: [], count: 0 },
+      isLoading: false,
+      error: null,
     });
   });
 
@@ -254,6 +261,78 @@ describe("LeadDetails Page", () => {
 
       // Assert: "Agendar Cita" button should not be visible
       expect(screen.queryByRole("button", { name: /Agendar Cita/i })).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Slice 4: Duplicate warning display", () => {
+    const mockLead = {
+      id: "test-lead-123",
+      buyer_name: "John Doe",
+      buyer_email: "john@example.com",
+      buyer_phone: "+1-555-0123",
+      product_id: null,
+      product: null,
+      message: null,
+      status: "new" as const,
+      source: "facebook",
+      created_at: "2026-04-28T12:00:00Z",
+      updated_at: "2026-04-28T12:00:00Z",
+    };
+
+    it("should NOT show duplicate warning when no duplicates", async () => {
+      (useLead as vi.Mock).mockReturnValue({ data: mockLead, isLoading: false, error: null });
+      (useLeadDuplicates as vi.Mock).mockReturnValue({
+        data: { lead_id: "test-lead-123", duplicates: [], count: 0 },
+        isLoading: false,
+        error: null,
+      });
+
+      await act(async () => {
+        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+      });
+
+      expect(screen.queryByTestId("duplicate-warning")).not.toBeInTheDocument();
+    });
+
+    it("should show duplicate warning when duplicates exist", async () => {
+      (useLead as vi.Mock).mockReturnValue({ data: mockLead, isLoading: false, error: null });
+      (useLeadDuplicates as vi.Mock).mockReturnValue({
+        data: {
+          lead_id: "test-lead-123",
+          duplicates: [
+            {
+              lead_id: "aaaaaaaa-0000-0000-0000-000000000001",
+              match_type: "email",
+              confidence: "high",
+            },
+          ],
+          count: 1,
+        },
+        isLoading: false,
+        error: null,
+      });
+
+      await act(async () => {
+        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+      });
+
+      expect(screen.getByTestId("duplicate-warning")).toBeInTheDocument();
+      expect(screen.getByText(/Potential Duplicate Detected/i)).toBeInTheDocument();
+    });
+
+    it("should NOT show duplicate warning when duplicates data is undefined", async () => {
+      (useLead as vi.Mock).mockReturnValue({ data: mockLead, isLoading: false, error: null });
+      (useLeadDuplicates as vi.Mock).mockReturnValue({
+        data: undefined,
+        isLoading: true,
+        error: null,
+      });
+
+      await act(async () => {
+        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+      });
+
+      expect(screen.queryByTestId("duplicate-warning")).not.toBeInTheDocument();
     });
   });
 });

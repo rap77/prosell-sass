@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, use } from "react";
-import { useLead } from "@/lib/api/leads";
+import { useLead, useLeadDuplicates } from "@/lib/api/leads";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AppointmentForm } from "@/components/appointments/AppointmentForm";
+import { DuplicateWarning } from "@/components/leads/DuplicateWarning";
 
 interface LeadDetailsPageProps {
   params: Promise<{
@@ -31,6 +32,7 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
   
   const router = useRouter();
   const { data: lead, isLoading, error } = useLead(id);
+  const { data: duplicatesData } = useLeadDuplicates(id);
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
 
   // Loading state
@@ -105,6 +107,15 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
           Agendar Cita
         </Button>
       </div>
+
+      {/* Duplicate warning — shown when potential duplicates are detected */}
+      {duplicatesData && duplicatesData.count > 0 && (
+        <DuplicateWarning
+          duplicates={duplicatesData.duplicates}
+          onLeadClick={(leadId) => router.push(`/vendedor/leads/${leadId}`)}
+          className="max-w-4xl mb-6"
+        />
+      )}
 
       {/* Lead details card */}
       <div className="max-w-4xl">
