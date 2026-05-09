@@ -184,11 +184,27 @@ def get_previous_task_id(task_id: str) -> str | None:
 def check_previous_criteria_complete(task_id: str) -> bool:
     """Block task start if the previous task has unverified acceptance criteria.
 
+    For subtasks (e.g., "B2.1"), checks the parent task (B2) ONLY if the parent
+    is marked as complete. Otherwise, skips verification to allow parallel execution.
+
     Returns True if OK to proceed, False if blocked.
     """
-    prev_id = get_previous_task_id(task_id)
-    if not prev_id:
-        return True  # First task — no previous to check
+    # If this is a subtask (has a dot), check if parent is complete
+    if "." in task_id:
+        parent_id = task_id.rsplit(".", 1)[0]
+        parent_complete = _is_parent_task_complete(parent_id)
+
+        if not parent_complete:
+            # Parent not complete - don't verify criteria (allow parallel work)
+            return True
+
+        # Parent IS complete - verify its acceptance criteria
+        prev_id = parent_id
+    else:
+        # Not a subtask - get previous task normally
+        prev_id = get_previous_task_id(task_id)
+        if not prev_id:
+            return True  # First task — no previous to check
 
     content = PLAN_MD.read_text()
     pattern = r"#{2,6}\s+" + re.escape(prev_id) + r".*?\*\*Acceptance(?: Criteria)?\*\*:?\n(.*?)(?=\n#|\n---|\Z)"
@@ -207,6 +223,34 @@ def check_previous_criteria_complete(task_id: str) -> bool:
         return False
 
     return True
+
+
+def _is_parent_task_complete(parent_id: str) -> bool:
+    """Check if parent task is marked as complete in todo.md.
+
+    A parent task is considered complete if it has a checkpoint section
+    with all checkboxes marked as complete.
+
+    Args:
+        parent_id: Parent task ID (e.g., "B2")
+
+    Returns:
+        True if parent task has a complete checkpoint section, False otherwise.
+    """
+    try:
+        content = TODO_MD.read_text()
+    except (FileNotFoundError, OSError):
+        return False
+
+    # Look for checkpoint section for this parent task
+    # Pattern: "### Checkpoint X: ... (After B1, B2)" or similar
+    checkpoint_pattern = rf"### .*{re.escape(parent_id)}.*Checkpoint.*Complete"
+    if re.search(checkpoint_pattern, content, re.IGNORECASE | re.DOTALL):
+        return True
+
+    # Alternative: check if parent heading exists and has [x] checkboxes
+    # But this is complex - for now, assume incomplete if no explicit checkpoint
+    return False
 
 
 def run_criteria_verification(task_id: str) -> None:
@@ -313,8 +357,12 @@ def read_task_from_plan(task_id: str) -> dict[str, str]:
 def read_subtasks_from_todo(task_id: str) -> list[dict[str, Any]]:
     """Read subtasks from todo.md.
 
+    Supports two structures:
+    1. Flat: checkboxes directly under task heading (e.g., "### B2:" followed by "- [ ] subtask")
+    2. Nested: subtask headings under task (e.g., "#### B2.1:" under "### B2:")
+
     Args:
-        task_id: Task identifier (e.g., "D1").
+        task_id: Task identifier (e.g., "D1" or "D1.1").
 
     Returns:
         List of subtask dictionaries with "id", "description", "completed" keys.
@@ -331,12 +379,32 @@ def read_subtasks_from_todo(task_id: str) -> list[dict[str, Any]]:
     except OSError as e:
         raise OSError(f"Failed to read todo.md: {e}")
 
-    # Match heading at any level (###, ####) — stop at any next heading or --- separator
-    pattern = r"#{2,6}\s+" + re.escape(task_id) + r":([^\n]+)\n(.*?)(?=\n#|\n---|\Z)"
+    # Check if task_id contains a dot (e.g., "B2.1") - subtask heading
+    if "." in task_id:
+        return _read_subtask_heading(content, task_id)
+
+    # No dot - parent task, try both flat and nested structures
+    subtasks = _read_flat_subtasks(content, task_id)
+    if subtasks:
+        return subtasks
+
+    # Try nested structure (subtask headings under parent)
+    return _read_nested_subtasks(content, task_id)
+
+
+def _read_flat_subtasks(content: str, task_id: str) -> list[dict[str, Any]]:
+    """Read flat structure: checkboxes directly under task heading.
+
+    Example:
+        ### B2: Core Feature Completion
+        - [ ] Review TODO comments
+        - [ ] Implement error handling
+    """
+    pattern = r"#{2,6}\s+" + re.escape(task_id) + r":([^\n]+)\n(.*?)(?=\n##|\n###|\Z)"
     match = re.search(pattern, content, re.DOTALL)
 
     if not match:
-        raise ValueError(f"Task {task_id} not found in todo.md")
+        return []
 
     section = match.group(2)
     lines = section.split("\n")
@@ -357,6 +425,101 @@ def read_subtasks_from_todo(task_id: str) -> list[dict[str, Any]]:
                     }
                 )
                 current_num += 1
+
+    return subtasks
+
+
+def _read_nested_subtasks(content: str, task_id: str) -> list[dict[str, Any]]:
+    """Read nested structure: subtask headings under parent task.
+
+    Example:
+        ### B2: Core Feature Completion
+
+        #### B2.1: Facebook Webhook Polling Completion
+        - [ ] Review TODO comments
+        - [ ] Implement error handling
+
+        #### B2.2: VIN Decode Integration Tests
+        - [ ] Create test file
+    """
+    # Find the parent task section
+    parent_pattern = r"(#{2,6}\s+" + re.escape(task_id) + r":[^\n]+\n)(.*?)(?=\n##|\n### [A-Z]|\Z)"
+    parent_match = re.search(parent_pattern, content, re.DOTALL)
+
+    if not parent_match:
+        return []
+
+    parent_section = parent_match.group(2)
+
+    # Find all subtask headings (#### B2.1:, #### B2.2:, etc.)
+    subtask_pattern = r"#{3,4}\s+" + re.escape(task_id) + r"\.\d+:(.+?)\n(.*?)(?=\n#{3,4}|\Z)"
+    subtask_matches = re.finditer(subtask_pattern, parent_section, re.DOTALL)
+
+    subtasks: list[dict[str, Any]] = []
+
+    for match in subtask_matches:
+        subtask_title = match.group(1).strip()
+        subtask_body = match.group(2)
+
+        # Extract subtask ID from the heading (e.g., "B2.1")
+        heading_line = match.group(0).split("\n")[0]
+        subtask_id_match = re.search(rf"{re.escape(task_id)}\.(\d+)", heading_line)
+        if not subtask_id_match:
+            continue
+        subtask_num = subtask_id_match.group(1)
+        full_subtask_id = f"{task_id}.{subtask_num}"
+
+        # Count completed checkboxes in this subtask
+        checkboxes = re.findall(r"- \[([ x])\]", subtask_body)
+        completed_count = sum(1 for c in checkboxes if c == "x")
+        total_count = len(checkboxes)
+
+        # Subtask is complete if all checkboxes are checked
+        is_complete = total_count > 0 and completed_count == total_count
+
+        # Use the subtask title as description
+        subtasks.append({
+            "id": full_subtask_id,
+            "description": subtask_title,
+            "completed": is_complete
+        })
+
+    return subtasks
+
+
+def _read_subtask_heading(content: str, task_id: str) -> list[dict[str, Any]]:
+    """Read a specific subtask by ID (e.g., "B2.1").
+
+    When calling /mm:complete-task B2.1, this finds the #### B2.1: section
+    and returns its checkboxes as sub-subtasks.
+    """
+    # Fixed boundary: make newline optional to avoid race condition with consumed newline
+    pattern = r"#{3,4}\s+" + re.escape(task_id) + r":([^\n]+)\n(.*?)(?=\n?#{3,4}|\n##|\Z)"
+    match = re.search(pattern, content, re.DOTALL)
+
+    if not match:
+        raise ValueError(f"Subtask {task_id} not found in todo.md")
+
+    section = match.group(2)
+    lines = section.split("\n")
+    subtasks: list[dict[str, Any]] = []
+
+    # For subtasks, we use letter suffixes (a, b, c) instead of numbers
+    current_letter = ord('a')
+
+    for line in lines:
+        if line.strip().startswith("- ["):
+            match = re.match(r"- \[([ x])\] (.+)", line)
+            if match:
+                status, text = match.groups()
+                subtasks.append(
+                    {
+                        "id": f"{task_id}.{chr(current_letter)}",
+                        "description": text.strip(),
+                        "completed": status == "x",
+                    }
+                )
+                current_letter += 1
 
     return subtasks
 
