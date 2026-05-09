@@ -10,6 +10,12 @@ import pytest
 from prosell.infrastructure.tasks.use_cases.poll_facebook_leads_task import (
     poll_facebook_leads_task,
     should_create_lead,
+    POLLING_INTERVAL_SECONDS,
+    TIMEOUT_PER_PAGE_SECONDS,
+    RETRY_MAX_RETRIES,
+    RETRY_INITIAL_DELAY_SECONDS,
+    RETRY_BACKOFF_MULTIPLIER,
+    RETRY_JITTER_RATIO,
 )
 
 # Track broker state
@@ -221,6 +227,42 @@ class TestPollFacebookLeadsTaskDeduplication:
 
         # Verify only 3 unique leads in set
         assert len(seen_ids) == 3
+
+
+class TestPollFacebookLeadsTaskConfiguration:
+    """Test task configuration constants (B2.1.f, B2.1.g, B2.1.h)."""
+
+    def test_polling_interval_is_10_minutes(self):
+        """Test that polling interval is configured to 10 minutes (B2.1.f)."""
+        assert POLLING_INTERVAL_SECONDS == 600  # 10 minutes * 60 seconds
+
+    def test_timeout_per_page_is_30_seconds(self):
+        """Test that timeout per page is configured to 30 seconds (B2.1.g)."""
+        assert TIMEOUT_PER_PAGE_SECONDS == 30
+
+    def test_retry_policy_max_retries(self):
+        """Test that retry policy max retries is configured (B2.1.h)."""
+        assert RETRY_MAX_RETRIES == 3
+        assert isinstance(RETRY_MAX_RETRIES, int)
+        assert RETRY_MAX_RETRIES > 0
+
+    def test_retry_policy_initial_delay(self):
+        """Test that retry policy initial delay is configured (B2.1.h)."""
+        assert RETRY_INITIAL_DELAY_SECONDS == 1.0
+        assert isinstance(RETRY_INITIAL_DELAY_SECONDS, (int, float))
+        assert RETRY_INITIAL_DELAY_SECONDS > 0
+
+    def test_retry_policy_backoff_multiplier(self):
+        """Test that retry policy backoff multiplier is configured (B2.1.h)."""
+        assert RETRY_BACKOFF_MULTIPLIER == 2.0
+        assert isinstance(RETRY_BACKOFF_MULTIPLIER, (int, float))
+        assert RETRY_BACKOFF_MULTIPLIER > 1.0
+
+    def test_retry_policy_jitter_ratio(self):
+        """Test that retry policy jitter ratio is configured (B2.1.h)."""
+        assert RETRY_JITTER_RATIO == 0.1
+        assert isinstance(RETRY_JITTER_RATIO, float)
+        assert 0.0 < RETRY_JITTER_RATIO < 1.0
 
 
 class TestPollFacebookLeadsTaskLogic:

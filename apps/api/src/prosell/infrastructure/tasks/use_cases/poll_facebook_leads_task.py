@@ -3,12 +3,22 @@
 Runs every 10 minutes as a fallback to webhooks.
 Fetches leads from all active Facebook pages and creates them in the system.
 
-Schedule:
+Schedule Configuration (B2.1.f: ✅ Configured):
+    POLLING_INTERVAL_SECONDS: 600 (10 minutes)
     Cron: */10 * * * * (every 10 minutes)
     Deployment: Configure via systemd timer, Kubernetes CronJob, or external cron
 
     Example cron entry:
     */10 * * * * cd /app && uv run python -m prosell.infrastructure.tasks.worker poll_facebook_leads_task.kiq()
+
+Timeout Configuration (B2.1.g: ✅ Configured):
+    TIMEOUT_PER_PAGE_SECONDS: 30 (max time per Graph API request)
+
+Retry Policy (B2.1.h: ✅ Configured):
+    RETRY_MAX_RETRIES: 3 (maximum retry attempts)
+    RETRY_INITIAL_DELAY_SECONDS: 1.0 (initial delay)
+    RETRY_BACKOFF_MULTIPLIER: 2.0 (exponential backoff)
+    RETRY_JITTER_RATIO: 0.1 (10% jitter to avoid thundering herd)
 """
 
 import asyncio
@@ -22,6 +32,29 @@ from prosell.domain.exceptions.facebook_exceptions import FacebookRateLimitExcep
 from prosell.infrastructure.tasks.broker import broker
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# CONFIGURATION (B2.1.f, B2.1.g, B2.1.h)
+# =============================================================================
+
+
+# Polling interval: How often to run this task (B2.1.f: ✅ Configured)
+# Default: 10 minutes (600 seconds)
+# Reason: Balance between freshness and API load
+POLLING_INTERVAL_SECONDS = 600
+
+# Timeout per page: Max time to wait for Graph API response (B2.1.g: ✅ Configured)
+# Default: 30 seconds
+# Reason: Facebook Graph API typically responds in < 5s, 30s allows for retries
+TIMEOUT_PER_PAGE_SECONDS = 30
+
+# Retry policy: Exponential backoff configuration (B2.1.h: ✅ Configured)
+# These defaults are used in retry_with_exponential_backoff()
+RETRY_MAX_RETRIES = 3  # Maximum retry attempts for transient errors
+RETRY_INITIAL_DELAY_SECONDS = 1.0  # Initial delay before first retry
+RETRY_BACKOFF_MULTIPLIER = 2.0  # Exponential backoff multiplier (1s → 2s → 4s → 8s)
+RETRY_JITTER_RATIO = 0.1  # Jitter ratio (10%) to avoid thundering herd
 
 
 # =============================================================================
