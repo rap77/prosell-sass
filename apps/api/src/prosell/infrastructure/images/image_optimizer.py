@@ -1,5 +1,9 @@
 """Image optimization service for ProSell SaaS."""
 
+from io import BytesIO
+
+from PIL import Image
+
 from prosell.domain.ports.i_image_pipeline import IImagePipeline
 
 
@@ -39,6 +43,40 @@ class ImageOptimizer(IImagePipeline):
         Returns:
             Processed image bytes (JPEG format)
         """
-        # Placeholder implementation - will be implemented in B3.2.02-B3.2.05
-        # For now, just return the original bytes to satisfy the interface
-        return image_bytes
+        # Load image from bytes
+        img = Image.open(BytesIO(image_bytes))
+
+        # Convert RGBA to RGB if necessary (removes alpha channel)
+        if img.mode == "RGBA":
+            # Create white background for transparent images
+            background = Image.new("RGB", img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[3])  # Use alpha channel as mask
+            img = background
+        elif img.mode not in ("RGB", "L"):
+            img = img.convert("RGB")
+
+        # Get original dimensions
+        width, height = img.size
+
+        # Check if resizing is needed
+        if width > self.max_width or height > self.max_height:
+            # Calculate aspect ratio
+            aspect_ratio = width / height
+
+            # Determine new dimensions maintaining aspect ratio
+            if width > height:
+                # Width is the limiting factor
+                new_width = self.max_width
+                new_height = int(self.max_width / aspect_ratio)
+            else:
+                # Height is the limiting factor
+                new_height = self.max_height
+                new_width = int(self.max_height * aspect_ratio)
+
+            # Resize using LANCZOS resampling for high quality
+            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # Save to bytes (PNG format for now, will be JPEG in B3.2.03)
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        return buffer.getvalue()

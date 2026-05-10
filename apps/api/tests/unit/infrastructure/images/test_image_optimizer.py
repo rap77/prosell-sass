@@ -55,3 +55,78 @@ class TestImageOptimizer:
         assert optimizer.max_width == 1280
         assert optimizer.max_height == 720
         assert optimizer.jpeg_quality == 90
+
+
+@pytest.fixture
+def large_square_image():
+    """Return 2000x2000 image (exceeds both dimensions)."""
+    img = Image.new("RGB", (2000, 2000), color="blue")
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+@pytest.fixture
+def wide_image():
+    """Return 3000x2000 image (width exceeds)."""
+    img = Image.new("RGB", (3000, 2000), color="green")
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+@pytest.fixture
+def small_image():
+    """Return 1000x500 image (under limits)."""
+    img = Image.new("RGB", (1000, 500), color="yellow")
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+class TestImageOptimizerResize:
+    """Test suite for image resizing functionality."""
+
+    @pytest.mark.asyncio
+    async def test_resize_large_square_image(self, image_optimizer, large_square_image):
+        """Test that 2000x2000 image is resized to 1080x1080 (height limited)."""
+        result = await image_optimizer.process(large_square_image)
+
+        # Verify result is bytes
+        assert isinstance(result, bytes)
+        assert len(result) > 0
+
+        # Load result to verify dimensions
+        result_img = Image.open(BytesIO(result))
+        assert result_img.width == 1080
+        assert result_img.height == 1080
+
+    @pytest.mark.asyncio
+    async def test_resize_wide_image(self, image_optimizer, wide_image):
+        """Test that 3000x2000 image is resized to 1920x1280 (width limited, aspect maintained)."""
+        result = await image_optimizer.process(wide_image)
+
+        # Verify result is bytes
+        assert isinstance(result, bytes)
+        assert len(result) > 0
+
+        # Load result to verify dimensions
+        result_img = Image.open(BytesIO(result))
+        assert result_img.width == 1920
+        assert result_img.height == 1280
+        # Verify aspect ratio maintained (3000/2000 = 1.5, 1920/1280 = 1.5)
+        assert abs(result_img.width / result_img.height - 1.5) < 0.01
+
+    @pytest.mark.asyncio
+    async def test_small_image_unchanged(self, image_optimizer, small_image):
+        """Test that 1000x500 image remains unchanged (under limits)."""
+        result = await image_optimizer.process(small_image)
+
+        # Verify result is bytes
+        assert isinstance(result, bytes)
+        assert len(result) > 0
+
+        # Load result to verify dimensions unchanged
+        result_img = Image.open(BytesIO(result))
+        assert result_img.width == 1000
+        assert result_img.height == 500
