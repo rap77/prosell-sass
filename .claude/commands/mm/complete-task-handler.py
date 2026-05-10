@@ -380,14 +380,14 @@ def read_subtasks_from_todo(task_id: str) -> list[dict[str, Any]]:
     except OSError as e:
         raise OSError(f"Failed to read todo.md: {e}")
 
-    # Check if task_id contains a dot (e.g., "B2.1") - subtask heading
-    if "." in task_id:
-        return _read_subtask_heading(content, task_id)
-
-    # Try V2 hierarchical format first (new format)
+    # Try V2 hierarchical format first (handles parent tasks with dots like B2.6)
     subtasks = _read_v2_hierarchical_subtasks(content, task_id)
     if subtasks:
         return subtasks
+
+    # Check if task_id contains a dot (e.g., "B2.1") - subtask heading
+    if "." in task_id:
+        return _read_subtask_heading(content, task_id)
 
     # No dot - parent task, try both flat and nested structures
     subtasks = _read_flat_subtasks(content, task_id)
@@ -432,8 +432,8 @@ def _read_v2_hierarchical_subtasks(content: str, task_id: str) -> list[dict[str,
     parent_section = match.group(2)
 
     # Find all subtask headings (e.g., "- [x] B2.1:", "- [x] B2.2:")
-    # These are at the same level as the parent task (no indent)
-    subtask_pattern = rf"^-\s\[([ x~])\]\s+{re.escape(task_id)}\.(\d+):([^\n]+)\n((?:  -\[.*?\n)*)"
+    # Subtasks are indented with 2 spaces in parent_section
+    subtask_pattern = rf"^  -\s\[([ x~])\]\s+{re.escape(task_id)}\.(\d+):([^\n]+)\n((?:  -\[.*?\n)*)"
     subtask_matches = re.finditer(subtask_pattern, parent_section, re.MULTILINE)
 
     subtasks: list[dict[str, Any]] = []
@@ -714,6 +714,34 @@ def update_subtask_status(
                 # Don't fail the subtask update if propagation fails
                 mm_error(f"Failed to propagate parent completion: {e}")
 
+        # Update incremental time tracking after each checkpoint
+        try:
+            # Get the root parent task ID for time tracking
+            # For B2.6.01, we want to update B2 (not B2.6)
+            # For B2.1, we want to update B2
+            root_parts = subtask_id.split(".")
+            root_task_id = root_parts[0] if root_parts else subtask_id
+
+            update_incremental_time_tracking(root_task_id)
+        except Exception as e:
+            # Don't fail the checkpoint if time tracking fails
+            mm_error(f"Failed to update incremental time tracking: {e}")
+
+    # If this subtask is now in_progress, mark all parents with ~
+    if status == "in_progress":
+        # Extract parent task ID from subtask_id (e.g., "B2.1" -> "B2", "B2.1.a" -> "B2.1")
+        if "." in subtask_id:
+            # For sub-subtasks like "B2.1.a", parent is "B2.1"
+            # For subtasks like "B2.1", parent is "B2"
+            parts = subtask_id.rsplit(".", 1)
+            parent_id = parts[0] if len(parts) == 2 else subtask_id
+
+            try:
+                propagate_in_progress(parent_id)
+            except Exception as e:
+                # Don't fail the subtask update if propagation fails
+                mm_error(f"Failed to propagate in_progress state: {e}")
+
 
 def propagate_parent_completion(task_id: str) -> None:
     """Check if all subtasks of task_id are complete and mark parent as complete in todo.md.
@@ -852,6 +880,121 @@ def propagate_parent_completion(task_id: str) -> None:
             except Exception as e:
                 # Don't fail if cascade fails
                 mm_error(f"Failed to cascade completion to grandparent {grandparent_id}: {e}")
+
+
+def propagate_in_progress(task_id: str) -> None:
+    """Mark parent task as in-progress (~) in todo.md when a child is in-progress.
+
+    This function implements hierarchical in-progress propagation:
+    - If a child subtask is in-progress (e.g., B2.6.01), mark B2.6 as ~
+    - If B2.6 is now ~, mark B2 as ~
+    - Cascades up the hierarchy automatically
+
+    Args:
+        task_id: Parent task ID to mark as in-progress (e.g., "B2" or "B2.6").
+
+    Raises:
+        FileNotFoundError: If todo.md doesn't exist.
+        OSError: If files cannot be read or written.
+    """
+    if not TODO_MD.exists():
+        mm_error(f"todo.md not found at {TODO_MD}")
+        return
+
+    # Mark parent as in-progress in todo.md
+    try:
+        todo_content = TODO_MD.read_text()
+    except (FileNotFoundError, OSError) as e:
+        mm_error(f"Failed to read todo.md: {e}")
+        return
+
+    # Find the parent task line and update its checkbox to ~
+    # Pattern: "- [ ] B2: Title" or "- [x] B2: Title" -> "- [~] B2: Title"
+    # Group 1: "- [" (dash, optional space, open bracket)
+    # Group 2: " " or "x" (checkbox state - pending or complete)
+    # Group 3: "] B2:" (close bracket, space, task_id, colon)
+    parent_pattern = rf"(^-\s?\[)([ x])(\]\s+{re.escape(task_id)}:)"
+
+    def replace_with_tilde(match: re.Match[str]) -> str:
+        """Replace pending/complete checkbox with in-progress."""
+        # Replace group 2 (checkbox state) with "~"
+        return f"{match.group(1)}~{match.group(3)}"
+
+    new_content, count = re.subn(parent_pattern, replace_with_tilde, todo_content, count=1, flags=re.MULTILINE)
+
+    if count == 0:
+        # Parent checkbox not found - might already be in-progress or formatted differently
+        # Check if it's already marked as in-progress
+        already_in_progress = re.search(rf"^-\s\[~\]\s+{re.escape(task_id)}:", todo_content, re.MULTILINE)
+        if already_in_progress:
+            # Already in-progress - nothing to do
+            return
+        else:
+            # Parent pattern not found - log and skip
+            mm_error(f"Could not find parent task checkbox for {task_id} in todo.md")
+            return
+
+    # Write updated content back to todo.md
+    try:
+        TODO_MD.write_text(new_content)
+        mm_info(f"Marked parent task {task_id} as in-progress (~) in todo.md")
+    except OSError as e:
+        mm_error(f"Failed to write todo.md: {e}")
+        return
+
+    # Cascade up: mark grandparent as ~ too
+    # For example, if B2.6 is now ~, mark B2 as ~
+    if "." in task_id:
+        # Extract grandparent ID (e.g., "B2.6" -> "B2")
+        parts = task_id.rsplit(".", 1)
+        grandparent_id = parts[0] if len(parts) == 2 else None
+
+        if grandparent_id:
+            try:
+                propagate_in_progress(grandparent_id)
+            except Exception as e:
+                # Don't fail if cascade fails
+                mm_error(f"Failed to cascade in_progress to grandparent {grandparent_id}: {e}")
+
+
+def update_incremental_time_tracking(task_id: str) -> None:
+    """Update time tracking in todo.md after each checkpoint.
+
+    This function calls the update-todo-times.py script to update:
+    - Estimate vs Actual time
+    - Deviation from estimate
+    - Average time per subtask
+    - Progress percentage
+
+    Args:
+        task_id: Task identifier (e.g., "B2" or "B2.6").
+
+    Raises:
+        FileNotFoundError: If required files don't exist.
+        OSError: If files cannot be read or written.
+        subprocess.CalledProcessError: If update-todo-times.py fails.
+    """
+    try:
+        # Call update-todo-times.py with the task_id
+        result = subprocess.run(
+            [sys.executable, str(Path(__file__).parent / "update-todo-times.py"), task_id],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=Path(__file__).parent.parent.parent.parent
+        )
+
+        if result.returncode != 0:
+            mm_error(f"update-todo-times.py failed: {result.stderr}")
+        else:
+            mm_info(f"Updated time tracking for task {task_id}")
+
+    except FileNotFoundError:
+        # update-todo-times.py not found - not critical
+        mm_info(f"update-todo-times.py not found - skipping time tracking update")
+    except Exception as e:
+        # Don't fail the checkpoint if time tracking fails
+        mm_error(f"Failed to update time tracking: {e}")
 
 
 def get_task_payload(task_id: str) -> dict[str, Any]:
