@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Lead, LeadStatus, useLeads } from "@/lib/api/leads";
 import { LeadListItem } from "./LeadListItem";
 import { Button } from "@/components/ui/button";
@@ -45,25 +45,19 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
   const { data: vendedores = [] } = useVendedores();
 
   // Build filters
-  const filters = useMemo(() => {
-    const result: { status?: LeadStatus; search?: string; vendedor_id?: string } = {};
+  const filters: { status?: LeadStatus; search?: string; vendedor_id?: string } = {};
 
-    if (statusFilter !== "all") {
-      result.status = statusFilter;
-    }
+  if (statusFilter !== "all") {
+    filters.status = statusFilter;
+  }
 
-    if (searchQuery.trim()) {
-      result.search = searchQuery.trim();
-    }
+  if (searchQuery.trim()) {
+    filters.search = searchQuery.trim();
+  }
 
-    // Manager scope: filter by vendedor if selected
-    // If "all", backend returns all team leads (no vendedor_id filter)
-    if (vendedorFilter !== "all") {
-      result.vendedor_id = vendedorFilter;
-    }
-
-    return result;
-  }, [searchQuery, statusFilter, vendedorFilter]);
+  if (vendedorFilter !== "all") {
+    filters.vendedor_id = vendedorFilter;
+  }
 
   // Fetch leads with real-time updates (30s polling)
   const { data: leads = [], isLoading, error, refetch } = useLeads(
@@ -73,9 +67,7 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
   );
 
   // Calculate unread leads (created < 5 minutes ago)
-  const unreadThreshold = useMemo(() => {
-    return new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
-  }, []);
+  const unreadThreshold = new Date(Date.now() - 5 * 60 * 1000);
 
   const isUnread = (lead: Lead) => {
     return new Date(lead.created_at) > unreadThreshold;
@@ -280,9 +272,8 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
               <LeadListItem
                 lead={lead}
                 isUnread={isUnread(lead)}
-                onStatusUpdate={(leadId, newStatus) => {
+                onStatusUpdate={() => {
                   // Status update already handled by mutation hook
-                  console.log(`Lead ${leadId} status updated to ${newStatus}`);
                 }}
                 actions={
                   onReassignLead ? (

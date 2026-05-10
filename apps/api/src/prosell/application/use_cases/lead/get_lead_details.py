@@ -40,9 +40,8 @@ class GetLeadDetailsUseCase:
         if not result:
             raise LeadNotFoundException(f"Lead not found: {lead_id}")
 
-        from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
-        lead = result.lead if isinstance(result, LeadWithProduct) else result
-        product_model = result.product_model if isinstance(result, LeadWithProduct) else None
+        lead = result.lead if hasattr(result, "lead") else result
+        product_model = result.product_model if hasattr(result, "product_model") else None
 
         product = None
         if product_model:

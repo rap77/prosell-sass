@@ -18,6 +18,7 @@ from uuid import UUID
 
 from prosell.application.dto.publisher.publish import PublicationResponse, PublishProductRequest
 from prosell.domain.entities.publication import Publication
+from prosell.domain.ports.i_task_dispatcher import ITaskDispatcher
 from prosell.domain.repositories.publication_repository import IPublicationRepository
 
 
@@ -32,9 +33,11 @@ class PublishVehicleUseCase:
         self,
         publication_repo: IPublicationRepository,
         seller_user_id: UUID,
+        task_dispatcher: ITaskDispatcher,
     ) -> None:
         self._repo = publication_repo
         self._seller_user_id = seller_user_id
+        self._task_dispatcher = task_dispatcher
 
     async def execute(self, request: PublishProductRequest) -> PublicationResponse:
         """Create Publication record and dispatch Taskiq task.
@@ -67,15 +70,7 @@ class PublishVehicleUseCase:
         )
         publication = await self._repo.create(publication)
 
-        # Dispatch Taskiq task with publication_id only.
-        # Never pass tokens or image bytes through the task payload.
-        # Lazy import preserves Clean Architecture: application layer must not
-        # import from infrastructure at module level.
-        from prosell.infrastructure.tasks.use_cases.publish_product_task import (
-            publish_product_task,  # type: ignore[attr-defined]
-        )
-
-        await publish_product_task.kiq(publication_id=str(publication.id))  # type: ignore[union-attr]
+        await self._task_dispatcher.dispatch_publish(publication.id)
 
         return PublicationResponse(
             id=publication.id,

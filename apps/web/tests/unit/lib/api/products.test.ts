@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 /**
  * Unit tests for Product API client
  *
@@ -55,15 +56,23 @@ describe("createProductWithVehicle", () => {
       id: "prod-123",
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-1",
+      currency: "USD",
+      condition: "used",
       attributes: {
         category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
         year: 2017,
         make: "Toyota",
         model: "Camry",
+        mileage: 50000,
       },
-      status: "active",
+      status: "draft",
+      is_featured: false,
+      view_count: 0,
+      favorite_count: 0,
       created_at: "2026-04-26T00:00:00Z",
       updated_at: "2026-04-26T00:00:00Z",
     };
@@ -71,12 +80,18 @@ describe("createProductWithVehicle", () => {
     const requestData: CreateProductRequest = {
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-1",
+      currency: "USD",
+      condition: "used",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
         year: 2017,
         make: "Toyota",
         model: "Camry",
+        mileage: 50000,
       },
     };
 
@@ -107,14 +122,23 @@ describe("createProductWithVehicle", () => {
       id: "prod-123",
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-1",
+      currency: "USD",
+      condition: "used",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946", // This triggers backend auto-creation
         year: 2017,
         make: "Toyota",
         model: "Camry",
+        mileage: 50000,
       },
-      status: "active",
+      status: "draft",
+      is_featured: false,
+      view_count: 0,
+      favorite_count: 0,
       created_at: "2026-04-26T00:00:00Z",
       updated_at: "2026-04-26T00:00:00Z",
     };
@@ -122,12 +146,18 @@ describe("createProductWithVehicle", () => {
     const requestData: CreateProductRequest = {
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-1",
+      currency: "USD",
+      condition: "used",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946", // VIN present = auto-vehicle creation
         year: 2017,
         make: "Toyota",
         model: "Camry",
+        mileage: 50000,
       },
     };
 
@@ -146,6 +176,8 @@ describe("createProductWithVehicle", () => {
     expect(requestBody).toEqual({
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-1",
       attributes: expect.objectContaining({
         vin: "2GNALCEK1H1615946",
@@ -158,15 +190,24 @@ describe("createProductWithVehicle", () => {
       id: "prod-123",
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-1",
+      currency: "USD",
+      condition: "used",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
         year: 2017,
         make: "Toyota",
         model: "Camry",
         trim: "SE",
+        mileage: 50000,
       },
-      status: "active",
+      status: "draft",
+      is_featured: false,
+      view_count: 0,
+      favorite_count: 0,
       created_at: "2026-04-26T00:00:00Z",
       updated_at: "2026-04-26T00:00:00Z",
     };
@@ -179,9 +220,18 @@ describe("createProductWithVehicle", () => {
     const result = await createProductWithVehicle({
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-1",
+      currency: "USD",
+      condition: "used",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
+        year: 2017,
+        make: "Toyota",
+        model: "Camry",
+        mileage: 50000,
       },
     });
 
@@ -205,8 +255,10 @@ describe("createProductWithVehicle", () => {
       createProductWithVehicle({
         title: "Test",
         price_cents: 1000_00,
+        tenant_id: "tenant-1",
+        organization_id: "org-1",
         category_id: "cat-1",
-        attributes: { vin: "INVALID" },
+        attributes: { category: "vehicle" as const, vin: "INVALID", year: 2000, make: "Test", model: "Vehicle", mileage: 0 },
       })
     ).rejects.toThrow("Invalid VIN format");
   });
@@ -223,8 +275,10 @@ describe("createProductWithVehicle", () => {
       createProductWithVehicle({
         title: "Test",
         price_cents: 1000_00,
+        tenant_id: "tenant-1",
+        organization_id: "org-1",
         category_id: "cat-1",
-        attributes: {},
+        attributes: { category: "generic" as const },
       })
     ).rejects.toThrow("Failed to create product");
   });
@@ -243,12 +297,23 @@ describe("useCreateProduct", () => {
       id: "prod-123",
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-1",
+      currency: "USD",
+      condition: "used",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
         year: 2017,
+        make: "Toyota",
+        model: "Camry",
+        mileage: 50000,
       },
-      status: "active",
+      status: "draft",
+      is_featured: false,
+      view_count: 0,
+      favorite_count: 0,
       created_at: "2026-04-26T00:00:00Z",
       updated_at: "2026-04-26T00:00:00Z",
     };
@@ -277,10 +342,16 @@ describe("useCreateProduct", () => {
     const requestData: CreateProductRequest = {
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-1",
       attributes: {
+        category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
         year: 2017,
+        make: "Toyota",
+        model: "Camry",
+        mileage: 50000,
       },
     };
 
@@ -313,8 +384,10 @@ describe("useCreateProduct", () => {
     const requestData: CreateProductRequest = {
       title: "Test",
       price_cents: 1000_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-1",
-      attributes: {},
+      attributes: { category: "generic" as const },
     };
 
     await expect(result.current.mutateAsync(requestData)).rejects.toThrow();
@@ -340,8 +413,10 @@ describe("useCreateProduct", () => {
     const requestData: CreateProductRequest = {
       title: "Test",
       price_cents: 1000_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-1",
-      attributes: {},
+      attributes: { category: "generic" as const },
     };
 
     await expect(result.current.mutateAsync(requestData)).rejects.toThrow();

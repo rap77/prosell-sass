@@ -30,11 +30,6 @@ async function proxyRequest(request: NextRequest) {
     // Get cookies from the incoming request
     const cookieHeader = request.headers.get("cookie");
 
-    // DEBUG: Log cookies for debugging
-    console.log("[PROXY DEBUG] Cookies present:", !!cookieHeader);
-    console.log("[PROXY DEBUG] access_token present:", cookieHeader?.includes("access_token"));
-    console.log("[PROXY DEBUG] Cookie header length:", cookieHeader?.length || 0);
-
     // Prepare headers for backend request
     const headers: HeadersInit = {
       "Content-Type": request.headers.get("Content-Type") || "application/json",
@@ -60,10 +55,7 @@ async function proxyRequest(request: NextRequest) {
     }
 
     // Forward request to backend
-    console.log("[PROXY DEBUG] Fetching backend:", url.toString());
-    console.log("[PROXY DEBUG] Request headers:", JSON.stringify(headers));
     const response = await fetch(url.toString(), options);
-    console.log("[PROXY DEBUG] Response status:", response.status);
 
     // Get response cookies and set them in the Next.js response
     const setCookieHeaders = response.headers.getSetCookie();

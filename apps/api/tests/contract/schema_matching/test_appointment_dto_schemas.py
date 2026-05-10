@@ -7,6 +7,7 @@ These tests verify that:
 """
 
 from datetime import UTC, datetime
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -22,19 +23,19 @@ from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 # =============================================================================
 
 
-def make_appointment_entity(**kwargs) -> Appointment:
+def make_appointment_entity(**kwargs: Any) -> Appointment:
     """Create Appointment entity for DTO tests."""
     return Appointment(
-        id=kwargs.get("id", uuid4()),
-        tenant_id=kwargs.get("tenant_id", uuid4()),
-        lead_id=kwargs.get("lead_id", uuid4()),
-        user_id=kwargs.get("user_id", uuid4()),
-        product_id=kwargs.get("product_id", uuid4()),
-        scheduled_at=kwargs.get("scheduled_at", datetime.now(UTC)),
-        status=kwargs.get("status", AppointmentStatus.SCHEDULED),
-        notes=kwargs.get("notes"),
-        created_at=kwargs.get("created_at", datetime.now(UTC)),
-        updated_at=kwargs.get("updated_at", datetime.now(UTC)),
+        id=kwargs.get("id", uuid4()),  # type: ignore[arg-type]
+        tenant_id=kwargs.get("tenant_id", uuid4()),  # type: ignore[arg-type]
+        lead_id=kwargs.get("lead_id", uuid4()),  # type: ignore[arg-type]
+        user_id=kwargs.get("user_id", uuid4()),  # type: ignore[arg-type]
+        product_id=kwargs.get("product_id", uuid4()),  # type: ignore[arg-type]
+        scheduled_at=kwargs.get("scheduled_at", datetime.now(UTC)) or datetime.now(UTC),  # type: ignore[arg-type]
+        status=kwargs.get("status", AppointmentStatus.SCHEDULED),  # type: ignore[arg-type]
+        notes=kwargs.get("notes"),  # type: ignore[arg-type]
+        created_at=kwargs.get("created_at", datetime.now(UTC)),  # type: ignore[arg-type]
+        updated_at=kwargs.get("updated_at", datetime.now(UTC)),  # type: ignore[arg-type]
     )
 
 
@@ -53,6 +54,7 @@ class TestCreateAppointmentRequestSchema:
             user_id=uuid4(),
             product_id=uuid4(),
             scheduled_at=datetime.now(UTC),
+            notes=None,
         )
         assert req.lead_id is not None
         assert req.user_id is not None
@@ -74,10 +76,11 @@ class TestCreateAppointmentRequestSchema:
     def test_lead_id_required(self):
         """lead_id is required — missing raises ValidationError."""
         with pytest.raises(ValidationError) as exc_info:
-            CreateAppointmentRequest(
+            CreateAppointmentRequest(  # type: ignore[call-arg]
                 user_id=uuid4(),
                 product_id=uuid4(),
                 scheduled_at=datetime.now(UTC),
+                notes=None,
             )
         errors = exc_info.value.errors()
         field_names = [e["loc"][0] for e in errors]
@@ -86,10 +89,11 @@ class TestCreateAppointmentRequestSchema:
     def test_user_id_required(self):
         """user_id is required — missing raises ValidationError."""
         with pytest.raises(ValidationError) as exc_info:
-            CreateAppointmentRequest(
+            CreateAppointmentRequest(  # type: ignore[call-arg]
                 lead_id=uuid4(),
                 product_id=uuid4(),
                 scheduled_at=datetime.now(UTC),
+                notes=None,
             )
         errors = exc_info.value.errors()
         field_names = [e["loc"][0] for e in errors]
@@ -98,10 +102,11 @@ class TestCreateAppointmentRequestSchema:
     def test_product_id_required(self):
         """product_id is required — missing raises ValidationError."""
         with pytest.raises(ValidationError) as exc_info:
-            CreateAppointmentRequest(
+            CreateAppointmentRequest(  # type: ignore[call-arg]
                 lead_id=uuid4(),
                 user_id=uuid4(),
                 scheduled_at=datetime.now(UTC),
+                notes=None,
             )
         errors = exc_info.value.errors()
         field_names = [e["loc"][0] for e in errors]
@@ -110,10 +115,11 @@ class TestCreateAppointmentRequestSchema:
     def test_scheduled_at_required(self):
         """scheduled_at is required — missing raises ValidationError."""
         with pytest.raises(ValidationError) as exc_info:
-            CreateAppointmentRequest(
+            CreateAppointmentRequest(  # type: ignore[call-arg]
                 lead_id=uuid4(),
                 user_id=uuid4(),
                 product_id=uuid4(),
+                notes=None,
             )
         errors = exc_info.value.errors()
         field_names = [e["loc"][0] for e in errors]

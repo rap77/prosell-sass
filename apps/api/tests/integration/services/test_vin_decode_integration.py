@@ -15,7 +15,7 @@ Test Strategy:
 - Test vehicle attribute normalization
 """
 
-from collections.abc import Generator
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -24,7 +24,6 @@ from fastapi import status
 
 from prosell.infrastructure.api.routers.vehicle_router import (
     VINDecodeRequest,
-    VINDecodeResponse,
     decode_vin,
 )
 from prosell.infrastructure.services.nhtsa_vin_service import NHTSAVinService
@@ -36,7 +35,7 @@ from prosell.infrastructure.services.nhtsa_vin_service import NHTSAVinService
 
 
 @pytest.fixture
-def mock_nhtsa_success_response() -> dict:
+def mock_nhtsa_success_response() -> dict[str, Any]:
     """Mock successful NHTSA VIN decode response for Toyota Camry."""
     return {
         "Count": 32,
@@ -57,7 +56,7 @@ def mock_nhtsa_success_response() -> dict:
 
 
 @pytest.fixture
-def mock_nhtsa_404_response() -> dict:
+def mock_nhtsa_404_response() -> dict[str, Any]:
     """Mock NHTSA 404 response for invalid VIN."""
     return {
         "Count": 0,
@@ -80,7 +79,7 @@ class TestVINDecodeIntegration:
     @pytest.mark.asyncio
     async def test_vin_decode_calls_nhtsa_api_successfully(
         self,
-        mock_nhtsa_success_response: dict,
+        mock_nhtsa_success_response: dict[str, Any],
     ) -> None:
         """
         B2.2.b: Test VIN decode calls NHTSA API successfully.
@@ -130,7 +129,7 @@ class TestVINDecodeIntegration:
     @pytest.mark.asyncio
     async def test_vin_decode_caches_results(
         self,
-        mock_nhtsa_success_response: dict,
+        mock_nhtsa_success_response: dict[str, Any],
     ) -> None:
         """
         B2.2.c, B2.2.j: Test VIN decode caches results.
@@ -143,9 +142,11 @@ class TestVINDecodeIntegration:
         vin = "4T1BF1FK5CU123456"
         request = VINDecodeRequest(vin=vin)
 
-        # Clear cache before test
-        from prosell.infrastructure.api.routers.vehicle_router import _vin_cache
-        _vin_cache.clear()
+        # Clear cache before test using public testing utility
+        from prosell.infrastructure.api.routers.vehicle_router import (
+            clear_vin_cache_for_testing,
+        )
+        clear_vin_cache_for_testing()
 
         # Create mock response
         mock_response = MagicMock()
@@ -271,7 +272,7 @@ class TestVINDecodeIntegration:
     @pytest.mark.asyncio
     async def test_vin_decode_populates_vehicle_attributes(
         self,
-        mock_nhtsa_success_response: dict,
+        mock_nhtsa_success_response: dict[str, Any],
     ) -> None:
         """
         B2.2.f, B2.2.h: Test VIN decode populates vehicle attributes.
@@ -284,9 +285,11 @@ class TestVINDecodeIntegration:
         vin = "4T1BF1FK5CU123456"
         request = VINDecodeRequest(vin=vin)
 
-        # Clear cache
-        from prosell.infrastructure.api.routers.vehicle_router import _vin_cache
-        _vin_cache.clear()
+        # Clear cache using public testing utility
+        from prosell.infrastructure.api.routers.vehicle_router import (
+            clear_vin_cache_for_testing,
+        )
+        clear_vin_cache_for_testing()
 
         # Create mock response
         mock_response = MagicMock()
@@ -409,9 +412,11 @@ class TestVINDecodeEdgeCases:
         vin = "1FTEW1EP5MFK12345"
         request = VINDecodeRequest(vin=vin)
 
-        # Clear cache
-        from prosell.infrastructure.api.routers.vehicle_router import _vin_cache
-        _vin_cache.clear()
+        # Clear cache using public testing utility
+        from prosell.infrastructure.api.routers.vehicle_router import (
+            clear_vin_cache_for_testing,
+        )
+        clear_vin_cache_for_testing()
 
         # Create mock response
         mock_response = MagicMock()

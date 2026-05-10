@@ -15,7 +15,7 @@
 type LogLevel = "info" | "error" | "warn" | "debug";
 
 interface LogContext {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export const logger = {
@@ -23,9 +23,9 @@ export const logger = {
    * Log debug messages
    * Only logs in development
    */
-  debug(message: string, ...args: any[]): void {
+  debug(message: string, ...args: unknown[]): void {
     if (process.env.NODE_ENV === "development") {
-      console.log(`[DEBUG] ${message}`, ...args);
+      console.debug(`[DEBUG] ${message}`, ...args);
     }
   },
 
@@ -33,9 +33,9 @@ export const logger = {
    * Log informational messages
    * Only logs in development to avoid noise in production
    */
-  info(message: string, ...args: any[]): void {
+  info(message: string, ...args: unknown[]): void {
     if (process.env.NODE_ENV === "development") {
-      console.log(`[INFO] ${message}`, ...args);
+      console.info(`[INFO] ${message}`, ...args);
     }
   },
 
@@ -46,7 +46,7 @@ export const logger = {
    * NOTE: In production, integrate with error tracking service (Sentry, Axiom, etc.)
    * See docs/technical-debt/error-tracking-setup.md for configuration
    */
-  error(message: string, error?: any): void {
+  error(message: string, error?: unknown): void {
     console.error(`[ERROR] ${message}`, error);
   },
 
@@ -54,7 +54,7 @@ export const logger = {
    * Log warning messages
    * Only logs in development
    */
-  warn(message: string, ...args: any[]): void {
+  warn(message: string, ...args: unknown[]): void {
     if (process.env.NODE_ENV === "development") {
       console.warn(`[WARN] ${message}`, ...args);
     }

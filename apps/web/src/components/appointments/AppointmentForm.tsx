@@ -60,6 +60,10 @@ const appointmentFormSchema = z
 
 type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
 
+interface AppointmentFormError extends Error {
+  status?: number;
+}
+
 interface AppointmentFormProps {
   open: boolean;
   onClose: () => void;
@@ -140,24 +144,24 @@ export function AppointmentForm({
 
       onSuccess();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // A4.33: Display conflict/validation warnings
-      console.error("Failed to create appointment:", error);
+      const appointmentError = error as AppointmentFormError;
 
       // Check if error has status code (from backend response)
-      const status = (error as any).status || 500;
+      const status = appointmentError.status || 500;
 
       if (status === 409) {
         // Conflict - branch already has appointment
         setSubmitError({
           type: "conflict",
-          message: error.message || "This branch already has an appointment at this time.",
+          message: appointmentError.message || "This branch already has an appointment at this time.",
         });
       } else if (status === 400) {
         // Validation error - business hours, weekend, etc.
         setSubmitError({
           type: "validation",
-          message: error.message || "Invalid appointment time.",
+          message: appointmentError.message || "Invalid appointment time.",
         });
       } else {
         // Generic error - fallback to toast

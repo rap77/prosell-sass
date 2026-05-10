@@ -1,6 +1,6 @@
 """Vehicle router."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
@@ -15,7 +15,7 @@ from prosell.infrastructure.services.nhtsa_vin_service import NHTSAVinService
 router = APIRouter()
 
 # Simple in-memory cache for VIN decode results (process-scoped, dev/test only)
-_vin_cache: dict[str, tuple["DecodedVehicle", dict]] = {}  # vin → (vehicle, raw_data)
+_vin_cache: dict[str, tuple["DecodedVehicle", dict[str, Any]]] = {}  # vin → (vehicle, raw_data)
 
 
 # Request/Response Models
@@ -45,7 +45,7 @@ class VINDecodeResponse(BaseModel):
     vin: str = Field(..., description="The decoded VIN")
     vehicle: DecodedVehicle = Field(..., description="Decoded vehicle information")
     cached: bool = Field(False, description="True if result was served from in-memory cache")
-    raw_data: dict = Field(default_factory=dict, description="Raw NHTSA response data")
+    raw_data: dict[str, Any] = Field(default_factory=dict, description="Raw NHTSA response data")
 
 
 @router.get("", status_code=status.HTTP_200_OK)
@@ -57,7 +57,7 @@ async def list_vehicles(
     status_filter: Annotated[str | None, Query(alias="status")] = None,
     search: Annotated[str | None, Query()] = None,
     make: Annotated[str | None, Query()] = None,
-) -> dict:
+) -> dict[str, Any]:
     """
     List vehicles (delegates to product catalog with auth).
     Returns vehicle products for the authenticated tenant.
@@ -179,3 +179,41 @@ def _normalize_model(model: str | None) -> str | None:
     if not model:
         return None
     return model.lower().strip()
+
+
+# ============================================================================
+# TESTING UTILITIES - These functions expose internal cache state for testing
+# ============================================================================
+
+
+def get_vin_cache_size_for_testing() -> int:
+    """Get the current size of the VIN cache (TESTING ONLY).
+
+    This function exposes internal cache state for integration testing.
+    Do not use in production code.
+    """
+    return len(_vin_cache)
+
+
+def get_vin_cache_entry_for_testing(vin: str) -> tuple[DecodedVehicle, dict[str, Any]] | None:
+    """Get a specific entry from the VIN cache (TESTING ONLY).
+
+    This function exposes internal cache state for integration testing.
+    Do not use in production code.
+
+    Args:
+        vin: The VIN to look up (case-insensitive, will be uppercased)
+
+    Returns:
+        Tuple of (DecodedVehicle, raw_data) if found, None otherwise
+    """
+    return _vin_cache.get(vin.upper())
+
+
+def clear_vin_cache_for_testing() -> None:
+    """Clear all entries from the VIN cache (TESTING ONLY).
+
+    This function clears the internal cache for testing isolation.
+    Do not use in production code.
+    """
+    _vin_cache.clear()

@@ -7,6 +7,7 @@ from pydantic import Field
 
 from prosell.application.dto.publisher.publish import PublicationResponse
 from prosell.domain.base import DomainModel
+from prosell.domain.ports.i_task_dispatcher import ITaskDispatcher
 from prosell.domain.repositories.publication_repository import IPublicationRepository
 
 
@@ -26,8 +27,13 @@ class UpdateListingUseCase:
     Dispatches update_listing_task to propagate updates to Facebook.
     """
 
-    def __init__(self, publication_repo: IPublicationRepository) -> None:
+    def __init__(
+        self,
+        publication_repo: IPublicationRepository,
+        task_dispatcher: ITaskDispatcher,
+    ) -> None:
         self._repo = publication_repo
+        self._task_dispatcher = task_dispatcher
 
     async def execute(self, request: UpdateListingRequest) -> PublicationResponse:
         publication = await self._repo.get_by_id(request.publication_id)
@@ -47,12 +53,7 @@ class UpdateListingUseCase:
         publication.updated_at = datetime.now(UTC)
         await self._repo.update(publication)
 
-        # Lazy import: application layer must not import infrastructure at module level.
-        from prosell.infrastructure.tasks.use_cases.update_listing_task import (
-            update_listing_task,  # type: ignore[attr-defined]
-        )
-
-        await update_listing_task.kiq(publication_id=str(publication.id))  # type: ignore[union-attr]
+        await self._task_dispatcher.dispatch_update(publication.id)
 
         return PublicationResponse(
             id=publication.id,

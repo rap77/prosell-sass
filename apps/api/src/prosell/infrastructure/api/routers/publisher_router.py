@@ -13,6 +13,7 @@ from prosell.application.use_cases.publisher.update_listing import (
     UpdateListingUseCase,
 )
 from prosell.domain.entities.user import User
+from prosell.domain.ports.i_task_dispatcher import ITaskDispatcher
 from prosell.domain.repositories.publication_repository import IPublicationRepository
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
@@ -20,8 +21,14 @@ from prosell.infrastructure.api.dependencies import (
     get_publish_vehicle_use_case,
 )
 from prosell.infrastructure.api.middleware import API_LIMIT, rate_limit
+from prosell.infrastructure.tasks.taskiq_task_dispatcher import TaskiqTaskDispatcher
 
 router = APIRouter(prefix="/publisher", tags=["Publisher"])
+
+
+async def get_task_dispatcher() -> ITaskDispatcher:
+    """Provide a task dispatcher implementation."""
+    return TaskiqTaskDispatcher()
 
 
 @router.post(
@@ -47,10 +54,14 @@ async def update_listing(
     publication_id: UUID,
     body: UpdateListingRequest,
     publication_repo: Annotated[IPublicationRepository, Depends(get_publication_repository)],
+    task_dispatcher: Annotated[ITaskDispatcher, Depends(get_task_dispatcher)],
     _current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
 ) -> PublicationResponse:
     """Update price/description/photos on an active FB listing."""
-    use_case = UpdateListingUseCase(publication_repo=publication_repo)
+    use_case = UpdateListingUseCase(
+        publication_repo=publication_repo,
+        task_dispatcher=task_dispatcher,
+    )
     body.publication_id = publication_id
     return await use_case.execute(body)
 
@@ -59,10 +70,14 @@ async def update_listing(
 async def delete_listing(
     publication_id: UUID,
     publication_repo: Annotated[IPublicationRepository, Depends(get_publication_repository)],
+    task_dispatcher: Annotated[ITaskDispatcher, Depends(get_task_dispatcher)],
     _current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
 ) -> PublicationResponse:
     """Mark vehicle as sold and remove FB listing."""
-    use_case = DeleteListingUseCase(publication_repo=publication_repo)
+    use_case = DeleteListingUseCase(
+        publication_repo=publication_repo,
+        task_dispatcher=task_dispatcher,
+    )
     return await use_case.execute(publication_id)
 
 

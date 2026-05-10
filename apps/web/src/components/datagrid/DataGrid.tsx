@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useMemo, useEffect, useState } from "react";
+import Image from "next/image";
+import { useRef, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -78,11 +79,13 @@ export function DataGrid({
         cell: ({ getValue }) => {
           const photoUrl = getValue() as string | undefined;
           return photoUrl ? (
-            <img
+            <Image
               src={photoUrl}
               alt=""
+              width={60}
+              height={60}
               className="w-15 h-15 rounded-md object-cover"
-              loading="lazy"
+              unoptimized
             />
           ) : (
             <div className="w-15 h-15 rounded-md bg-muted flex items-center justify-center">
@@ -152,13 +155,10 @@ export function DataGrid({
   });
 
   // Get selected vehicle IDs
-  const selectedProductIds = useMemo(
-    () => Object.keys(rowSelection).map((rowIndex) => {
+  const selectedProductIds = Object.keys(rowSelection).map((rowIndex) => {
       const index = parseInt(rowIndex, 10);
       return data[index]?.id;
-    }).filter(Boolean),
-    [rowSelection, data]
-  );
+    }).filter(Boolean);
 
   const handleBulkAssign = () => {
     if (onBulkAssignBranch && selectedProductIds.length > 0) {
@@ -175,25 +175,6 @@ export function DataGrid({
   });
 
   const virtualRows = rowVirtualizer.getVirtualItems();
-
-  // Development warning if virtualization is not working
-  useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
-      const rows = document.querySelectorAll('[data-row-id]');
-      if (rows.length > 100) {
-        console.warn(
-          `⚠️ Rendering ${rows.length} rows - should be ~40 (virtualization not working)`
-        );
-      }
-      
-      // Brain #7 Condition #7: Verify virtualization maintains ~40 rows in DOM
-      if (rows.length > 0) {
-        console.log(
-          `✅ Virtualization check: ${rows.length} rows in DOM (expected ~40 for 60fps performance)`
-        );
-      }
-    }
-  }, [data]);
 
   return (
     <div className="w-full border border-border rounded-lg overflow-hidden">

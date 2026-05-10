@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Lead, LeadStatus, useLeads } from "@/lib/api/leads";
 import { LeadListItem } from "./LeadListItem";
 import { Button } from "@/components/ui/button";
@@ -37,23 +37,19 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
   const limit = 50;
 
   // Build filters
-  const filters = useMemo(() => {
-    const result: { status?: LeadStatus; search?: string; vendedor_id?: string } = {};
+  const filters: { status?: LeadStatus; search?: string; vendedor_id?: string } = {};
 
-    if (statusFilter !== "all") {
-      result.status = statusFilter;
-    }
+  if (statusFilter !== "all") {
+    filters.status = statusFilter;
+  }
 
-    if (searchQuery.trim()) {
-      result.search = searchQuery.trim();
-    }
+  if (searchQuery.trim()) {
+    filters.search = searchQuery.trim();
+  }
 
-    if (vendedorId) {
-      result.vendedor_id = vendedorId;
-    }
-
-    return result;
-  }, [searchQuery, statusFilter, vendedorId]);
+  if (vendedorId) {
+    filters.vendedor_id = vendedorId;
+  }
 
   // Fetch leads with real-time updates (30s polling)
   const { data: leads = [], isLoading, error, refetch } = useLeads(
@@ -184,9 +180,8 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
               <LeadListItem
                 lead={lead}
                 isUnread={isUnread(lead)}
-                onStatusUpdate={(leadId, newStatus) => {
+                onStatusUpdate={() => {
                   // Status update already handled by mutation hook
-                  console.log(`Lead ${leadId} status updated to ${newStatus}`);
                 }}
               />
             </div>

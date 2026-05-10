@@ -91,8 +91,8 @@ export function WalletCard({
   const handleRecharge = async (tokens: number) => {
     // NOTE: Stripe checkout integration pending
     // See docs/technical-debt/stripe-integration.md for implementation plan
-    // For now, just show a console log for testing
-    console.log(`Recharge ${tokens} tokens for org ${organizationId}`);
+    void tokens;
+    void organizationId;
     setShowRechargeDialog(false);
   };
 

@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
+import type { DateSelectArg, DatesSetArg, EventClickArg, EventDropArg } from "@fullcalendar/core";
 import { Appointment, AppointmentStatus } from "@/lib/api/appointments";
 import { format, parseISO } from "date-fns";
 
@@ -83,75 +83,44 @@ export function CalendarView({
   editable = false,
   selectable = false,
 }: CalendarViewProps) {
-  /**
-   * Transform appointments to FullCalendar event format
-   * Filters by user_id and formats dates
-   */
-  const calendarEvents = useCallback(() => {
-    return appointments
-      .filter((apt) => apt.user_id === userId)
-      .map((apt) => {
-        const startDate = parseISO(apt.scheduled_at);
-        const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Add 1 hour
+  const calendarEvents = appointments
+    .filter((apt) => apt.user_id === userId)
+    .map((apt) => {
+      const startDate = parseISO(apt.scheduled_at);
+      const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
 
-        return {
-          id: apt.id,
-          title: `${STATUS_LABELS[apt.status]} - ${format(startDate, "h:mm a")}`,
-          start: startDate.toISOString(),
-          end: endDate.toISOString(),
-          backgroundColor: STATUS_COLORS[apt.status],
-          borderColor: STATUS_COLORS[apt.status],
-          extendedProps: {
-            appointment: apt,
-          },
-        };
-      });
-  }, [appointments, userId]);
+      return {
+        id: apt.id,
+        title: `${STATUS_LABELS[apt.status]} - ${format(startDate, "h:mm a")}`,
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+        backgroundColor: STATUS_COLORS[apt.status],
+        borderColor: STATUS_COLORS[apt.status],
+        extendedProps: {
+          appointment: apt,
+        },
+      };
+    });
 
-  /**
-   * Handle event click
-   */
-  const handleEventClick = useCallback(
-    (info: any) => {
-      const appointment = info.event.extendedProps.appointment as Appointment;
-      onAppointmentClick?.(appointment);
-    },
-    [onAppointmentClick]
-  );
+  const handleEventClick = (info: EventClickArg) => {
+    const appointment = info.event.extendedProps.appointment as Appointment;
+    onAppointmentClick?.(appointment);
+  };
 
-  /**
-   * Handle date range change
-   */
-  const handleDatesSet = useCallback(
-    (dateInfo: { start: Date; end: Date }) => {
-      onDateRangeChange?.(dateInfo.start, dateInfo.end);
-    },
-    [onDateRangeChange]
-  );
+  const handleDatesSet = (dateInfo: DatesSetArg) => {
+    onDateRangeChange?.(dateInfo.start, dateInfo.end);
+  };
 
-  /**
-   * Handle slot selection (click on empty time slot)
-   */
-  const handleSelect = useCallback(
-    (selectInfo: any) => {
-      onSlotSelect?.(selectInfo.start, selectInfo.end);
-    },
-    [onSlotSelect]
-  );
+  const handleSelect = (selectInfo: DateSelectArg) => {
+    onSlotSelect?.(selectInfo.start, selectInfo.end);
+  };
 
-  /**
-   * Handle event drop (drag to reschedule)
-   */
-  const handleDrop = useCallback(
-    (dropInfo: any) => {
-      const appointment = dropInfo.event.extendedProps.appointment as Appointment;
+  const handleDrop = (dropInfo: EventDropArg) => {
+    const appointment = dropInfo.event.extendedProps.appointment as Appointment;
+    if (dropInfo.event.start && dropInfo.event.end) {
       onAppointmentDrop?.(appointment, dropInfo.event.start, dropInfo.event.end);
-    },
-    [onAppointmentDrop]
-  );
-
-  console.log("[CalendarView] Rendering with", calendarEvents().length, "events");
-  console.log("[CalendarView] Events:", calendarEvents());
+    }
+  };
 
   return (
     <div className="calendar-view w-full" data-testid="calendar-view">
@@ -164,7 +133,7 @@ export function CalendarView({
             center: "title",
             right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
           }}
-          events={calendarEvents()}
+          events={calendarEvents}
           eventClick={handleEventClick}
           datesSet={handleDatesSet}
           select={handleSelect}

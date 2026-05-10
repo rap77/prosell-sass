@@ -7,6 +7,7 @@ These tests verify that:
 """
 
 from datetime import UTC, datetime
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -23,34 +24,32 @@ from prosell.domain.entities.team import Team, TeamMember, TeamMemberRole
 # =============================================================================
 
 
-def make_team_entity(**kwargs) -> Team:
+def make_team_entity(**kwargs: Any) -> Team:
     """Create Team entity for DTO tests."""
     return Team(
-        id=kwargs.get("id", uuid4()),
-        tenant_id=kwargs.get("tenant_id", uuid4()),
-        org_id=kwargs.get("org_id", uuid4()),
-        name=kwargs.get("name", "Test Team"),
-        description=kwargs.get("description"),
-        parent_team_id=kwargs.get("parent_team_id"),
-        created_at=kwargs.get("created_at", datetime.now(UTC)),
-        updated_at=kwargs.get("updated_at", datetime.now(UTC)),
-        manager_count=kwargs.get("manager_count", 1),
-        vendor_count=kwargs.get("vendor_count", 2),
-        members=kwargs.get("members", []),
+        id=kwargs.get("id", uuid4()),  # type: ignore[arg-type]
+        tenant_id=kwargs.get("tenant_id", uuid4()),  # type: ignore[arg-type]
+        org_id=kwargs.get("org_id", uuid4()),  # type: ignore[arg-type]
+        name=kwargs.get("name", "Test Team"),  # type: ignore[arg-type]
+        description=kwargs.get("description"),  # type: ignore[arg-type]
+        parent_team_id=kwargs.get("parent_team_id"),  # type: ignore[arg-type]
+        created_at=kwargs.get("created_at", datetime.now(UTC)),  # type: ignore[arg-type]
+        updated_at=kwargs.get("updated_at", datetime.now(UTC)),  # type: ignore[arg-type]
+        members=kwargs.get("members", []),  # type: ignore[arg-type]
     )
 
 
-def make_team_member_entity(**kwargs) -> TeamMember:
+def make_team_member_entity(**kwargs: Any) -> TeamMember:
     """Create TeamMember entity for DTO tests."""
     return TeamMember(
-        id=kwargs.get("id", uuid4()),
-        team_id=kwargs.get("team_id", uuid4()),
-        user_id=kwargs.get("user_id", uuid4()),
-        tenant_id=kwargs.get("tenant_id", uuid4()),
-        role=kwargs.get("role", TeamMemberRole.VENDOR),
-        commission_rate=kwargs.get("commission_rate"),
-        joined_at=kwargs.get("joined_at", datetime.now(UTC)),
-        updated_at=kwargs.get("updated_at", datetime.now(UTC)),
+        id=kwargs.get("id", uuid4()),  # type: ignore[arg-type]
+        team_id=kwargs.get("team_id", uuid4()),  # type: ignore[arg-type]
+        user_id=kwargs.get("user_id", uuid4()),  # type: ignore[arg-type]
+        tenant_id=kwargs.get("tenant_id", uuid4()),  # type: ignore[arg-type]
+        role=kwargs.get("role", TeamMemberRole.VENDOR),  # type: ignore[arg-type]
+        commission_rate=kwargs.get("commission_rate"),  # type: ignore[arg-type]
+        joined_at=kwargs.get("joined_at", datetime.now(UTC)),  # type: ignore[arg-type]
+        updated_at=kwargs.get("updated_at", datetime.now(UTC)),  # type: ignore[arg-type]
     )
 
 
@@ -88,7 +87,7 @@ class TestCreateTeamRequestSchema:
     def test_name_required(self):
         """name is required — missing raises ValidationError."""
         with pytest.raises(ValidationError) as exc_info:
-            CreateTeamRequest(
+            CreateTeamRequest(  # type: ignore[call-arg]
                 org_id=uuid4(),
                 tenant_id=uuid4(),
             )
@@ -117,7 +116,7 @@ class TestCreateTeamRequestSchema:
     def test_org_id_required(self):
         """org_id is required — missing raises ValidationError."""
         with pytest.raises(ValidationError) as exc_info:
-            CreateTeamRequest(
+            CreateTeamRequest(  # type: ignore[call-arg]
                 name="Test Team",
                 tenant_id=uuid4(),
             )
@@ -128,7 +127,7 @@ class TestCreateTeamRequestSchema:
     def test_tenant_id_required(self):
         """tenant_id is required — missing raises ValidationError."""
         with pytest.raises(ValidationError) as exc_info:
-            CreateTeamRequest(
+            CreateTeamRequest(  # type: ignore[call-arg]
                 name="Test Team",
                 org_id=uuid4(),
             )
@@ -260,25 +259,25 @@ class TestUpdateTeamRequestSchema:
 
     def test_valid_description_update(self):
         """Should accept valid description update."""
-        req = UpdateTeamRequest(description="Updated description")
+        req = UpdateTeamRequest(name=None, description="Updated description")
         assert req.description == "Updated description"
         assert req.name is None
 
     def test_all_fields_none(self):
         """Should accept all fields None (no-op update)."""
-        req = UpdateTeamRequest()
+        req = UpdateTeamRequest(name=None, description=None)
         assert req.name is None
         assert req.description is None
 
     def test_name_min_length(self):
         """name min_length=1 should be enforced when provided."""
         with pytest.raises(ValidationError):
-            UpdateTeamRequest(name="")
+            UpdateTeamRequest(name="", description=None)  # type: ignore[call-arg]
 
     def test_name_max_length(self):
         """name max_length=255 should be enforced."""
         with pytest.raises(ValidationError):
-            UpdateTeamRequest(name="x" * 256)
+            UpdateTeamRequest(name="x" * 256, description=None)
 
 
 # =============================================================================
@@ -291,40 +290,40 @@ class TestUpdateTeamMemberRequestSchema:
 
     def test_valid_role_update_manager(self):
         """Should accept valid role update to manager."""
-        req = UpdateTeamMemberRequest(role="manager")
+        req = UpdateTeamMemberRequest(role="manager", commission_rate=None)
         assert req.role == "manager"
         assert req.commission_rate is None
 
     def test_valid_role_update_vendor(self):
         """Should accept valid role update to vendor."""
-        req = UpdateTeamMemberRequest(role="vendor")
+        req = UpdateTeamMemberRequest(role="vendor", commission_rate=None)
         assert req.role == "vendor"
 
     def test_valid_commission_rate_update(self):
         """Should accept valid commission_rate update."""
-        req = UpdateTeamMemberRequest(commission_rate=20.0)
+        req = UpdateTeamMemberRequest(role=None, commission_rate=20.0)
         assert req.commission_rate == 20.0
         assert req.role is None
 
     def test_invalid_role_raises(self):
         """Invalid role should raise ValidationError."""
         with pytest.raises(ValidationError):
-            UpdateTeamMemberRequest(role="admin")
+            UpdateTeamMemberRequest(role="admin", commission_rate=None)
 
     def test_commission_rate_within_range(self):
         """commission_rate must be between 0 and 100."""
-        req = UpdateTeamMemberRequest(commission_rate=50)
+        req = UpdateTeamMemberRequest(role=None, commission_rate=50)
         assert req.commission_rate == 50
 
     def test_commission_rate_negative_raises(self):
         """commission_rate < 0 should raise ValidationError."""
         with pytest.raises(ValidationError):
-            UpdateTeamMemberRequest(commission_rate=-0.1)
+            UpdateTeamMemberRequest(role=None, commission_rate=-0.1)
 
     def test_commission_rate_over_hundred_raises(self):
         """commission_rate > 100 should raise ValidationError."""
         with pytest.raises(ValidationError):
-            UpdateTeamMemberRequest(commission_rate=100.1)
+            UpdateTeamMemberRequest(role=None, commission_rate=100.1)
 
 
 # =============================================================================

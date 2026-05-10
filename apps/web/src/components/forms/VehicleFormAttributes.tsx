@@ -8,7 +8,7 @@
 
 "use client";
 
-import { Controller } from "react-hook-form";
+import { Controller, type Control, type UseFormWatch } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { SelectControlled, useFbOptions } from "@/components/ui/select-controlled";
@@ -25,8 +25,8 @@ import type { VehicleFormValues } from "./VehicleForm";
 import type { Category } from "@/types/category";
 
 interface VehicleFormAttributesProps {
-  control: any; // Control<T = FieldValues>
-  watch: (name: keyof VehicleFormValues) => any;
+  control: Control<VehicleFormValues>;
+  watch: UseFormWatch<VehicleFormValues>;
   disabled: boolean;
   selectedCategory: Category | undefined;
 }

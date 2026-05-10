@@ -127,15 +127,14 @@ async def get_create_lead_use_case(
 async def get_process_facebook_webhook_use_case(
     lead_repository: AbstractLeadRepository = Depends(get_lead_repository),
     publication_repository: IPublicationRepository = Depends(get_publication_repository),
-    facebook_client: Annotated[FacebookGraphApiClient, Depends(get_facebook_graph_api_client)] = None,  # type: ignore[assignment]
     create_lead_use_case: CreateLeadUseCase = Depends(get_create_lead_use_case),
 ) -> ProcessFacebookWebhookUseCase:
     """Provide ProcessFacebookWebhookUseCase instance."""
-    # facebook_client is optional (will be None if not provided)
+    # facebook_client is instantiated directly since it's not injected
     # This is OK for now since we're not fetching buyer profiles until Phase 3
     return ProcessFacebookWebhookUseCase(
         lead_repository=lead_repository,
         publication_repository=publication_repository,
-        facebook_client=facebook_client or FacebookGraphApiClient(),
+        facebook_client=FacebookGraphApiClient(),
         create_lead_use_case=create_lead_use_case,
     )

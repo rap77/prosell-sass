@@ -142,7 +142,11 @@ def _get_provider_redirect_uris() -> dict[str, str]:
 # =============================================================================
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=RegisterUserResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 @rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
 async def register(
     request: Request,  # noqa: ARG001 - Used by rate_limit decorator
@@ -173,7 +177,7 @@ async def register(
     return result
 
 
-@router.post("/login")
+@router.post("/login", response_model=LoginUserResponse)
 @rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
 async def login(
     request: Request,  # Required by rate_limit decorator
@@ -187,17 +191,12 @@ async def login(
     Returns access and refresh tokens via httpOnly cookies.
     If 2FA is enabled, requires_2fa will be True.
     """
-    print(f"[AUTH-ROUTER-PRINT] Login attempt for email: {login_data.email}")
-    print(f"[AUTH-ROUTER-PRINT] Password provided: {login_data.password[:3]}***")  # Solo primeros 3 chars
-
     uc_request = LoginUserRequest(
         email=login_data.email,
         password=login_data.password,
         remember_me=login_data.remember_me,
     )
     result = await use_case.execute(uc_request)
-
-    print(f"[AUTH-ROUTER-PRINT] Login completed. Requires 2FA: {result.requires_2fa}")
 
     # Set httpOnly cookies for tokens
     access_token_expiry = datetime.now(UTC) + timedelta(minutes=15)

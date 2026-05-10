@@ -3,9 +3,7 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from pydantic import Field
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field
 
 
 class UserBranch(DomainModel):

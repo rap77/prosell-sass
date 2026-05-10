@@ -33,6 +33,7 @@ Features:
 
 import asyncio
 import argparse
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -69,6 +70,16 @@ class MigrationStats:
             "product_id": product_id,
             "error": error,
         })
+
+
+_SQL_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def quote_sql_identifier(identifier: str) -> str:
+    """Validate and quote a SQL identifier."""
+    if not _SQL_IDENTIFIER_PATTERN.fullmatch(identifier):
+        raise ValueError(f"Invalid SQL identifier: {identifier}")
+    return f'"{identifier}"'
 
 
 def transform_vehicle_to_attributes(vehicle: VehicleModel) -> dict[str, Any]:
@@ -141,24 +152,40 @@ def transform_vehicle_to_attributes(vehicle: VehicleModel) -> dict[str, Any]:
 async def create_backup_table(session: AsyncSession) -> None:
     """Create backup of products table before migration."""
     backup_table = f"products_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    
-    await session.execute(text(f"""
-        CREATE TABLE {backup_table} AS 
+    backup_table_identifier = quote_sql_identifier(backup_table)
+
+    await session.execute(
+        text(
+            f"""
+        CREATE TABLE {backup_table_identifier} AS
         SELECT * FROM products
-    """))
-    
+    """
+        )
+    )
+
     # Create indexes on backup table
-    await session.execute(text(f"""
-        CREATE INDEX ix_{backup_table}_id 
-        ON {backup_table}(id)
-    """))
-    
-    await session.execute(text(f"""
-        CREATE INDEX ix_{backup_table}_vehicle_id 
-        ON {backup_table}(id) 
+    backup_id_index = quote_sql_identifier(f"ix_{backup_table}_id")
+    backup_vehicle_index = quote_sql_identifier(f"ix_{backup_table}_vehicle_id")
+
+    await session.execute(
+        text(
+            f"""
+        CREATE INDEX {backup_id_index}
+        ON {backup_table_identifier}(id)
+    """
+        )
+    )
+
+    await session.execute(
+        text(
+            f"""
+        CREATE INDEX {backup_vehicle_index}
+        ON {backup_table_identifier}(id)
         WHERE id IN (SELECT product_id FROM vehicles)
-    """))
-    
+    """
+        )
+    )
+
     await session.commit()
     print(f"✅ Created backup table: {backup_table}")
 

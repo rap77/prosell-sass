@@ -4,12 +4,12 @@ import logging
 from uuid import UUID
 
 from prosell.application.dto.lead.request import CreateLeadRequest
+from prosell.application.ports.facebook_buyer_profile_service import (
+    AbstractFacebookBuyerProfileService,
+)
 from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.publication_repository import IPublicationRepository
-from prosell.infrastructure.services.facebook_graph_api_client import (
-    FacebookGraphApiClient,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class ProcessFacebookWebhookUseCase:
         self,
         lead_repository: AbstractLeadRepository,
         publication_repository: IPublicationRepository,
-        facebook_client: FacebookGraphApiClient,
+        facebook_client: AbstractFacebookBuyerProfileService,
         create_lead_use_case: CreateLeadUseCase,
     ) -> None:
         self.lead_repository = lead_repository

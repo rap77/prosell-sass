@@ -3,7 +3,7 @@
  */
 
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi, type Mock } from "vitest";
 import { AppointmentForm } from "./AppointmentForm";
 import { useBranches } from "@/lib/api/branches";
 import { useCreateAppointment } from "@/lib/api/appointments";
@@ -30,12 +30,12 @@ describe("AppointmentForm", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useBranches as vi.Mock).mockReturnValue({
+    (useBranches as Mock).mockReturnValue({
       data: mockBranches,
       isLoading: false,
       error: null,
     });
-    (useCreateAppointment as vi.Mock).mockReturnValue({
+    (useCreateAppointment as Mock).mockReturnValue({
       mutateAsync: vi.fn().mockResolvedValue({ id: "apt-123" }),
       isPending: false,
       error: null,
@@ -111,7 +111,7 @@ describe("AppointmentForm", () => {
 
   describe("Slice 3: Form submission", () => {
     it("should have submit button disabled while creating", () => {
-      (useCreateAppointment as vi.Mock).mockReturnValue({
+      (useCreateAppointment as Mock).mockReturnValue({
         mutateAsync: vi.fn().mockResolvedValue({ id: "apt-123" }),
         isPending: true,
         error: null,
@@ -131,7 +131,7 @@ describe("AppointmentForm", () => {
     });
 
     it("should show loading spinner when creating appointment", () => {
-      (useCreateAppointment as vi.Mock).mockReturnValue({
+      (useCreateAppointment as Mock).mockReturnValue({
         mutateAsync: vi.fn().mockResolvedValue({ id: "apt-123" }),
         isPending: true,
         error: null,

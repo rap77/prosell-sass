@@ -5,12 +5,15 @@ server-side processing status.
 """
 
 import logging
+from typing import Annotated
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 
 from prosell.application.dto.image import ImageUploadUrlRequest, ImageUploadUrlResponse
 from prosell.application.ports.ido_spaces import IDOSpacesService
+from prosell.domain.entities.user import User
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
     get_spaces_service,
@@ -28,6 +31,13 @@ _IMAGE_EXTENSIONS = {
 }
 
 
+class ImageStatusResponse(BaseModel):
+    """Response for image upload processing state."""
+
+    status: str
+    url: str | None = None
+
+
 @router.post(
     "/upload-url",
     response_model=ImageUploadUrlResponse,
@@ -35,8 +45,8 @@ _IMAGE_EXTENSIONS = {
 )
 async def generate_image_upload_url(
     request: ImageUploadUrlRequest,
-    current_user=Depends(get_current_auth_user_from_cookie),
-    spaces: IDOSpacesService = Depends(get_spaces_service),
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    spaces: Annotated[IDOSpacesService, Depends(get_spaces_service)],
 ) -> ImageUploadUrlResponse:
     """
     Generate a presigned PUT URL for uploading vehicle/product images
@@ -77,13 +87,14 @@ async def generate_image_upload_url(
 
 @router.get(
     "/status/{file_id}",
+    response_model=ImageStatusResponse,
     summary="Check image processing status",
 )
 async def get_image_status(
     file_id: str,
-    current_user=Depends(get_current_auth_user_from_cookie),
-    spaces: IDOSpacesService = Depends(get_spaces_service),
-) -> dict:
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    spaces: Annotated[IDOSpacesService, Depends(get_spaces_service)],
+) -> ImageStatusResponse:
     """
     Check if an uploaded image has been processed.
 
@@ -94,9 +105,9 @@ async def get_image_status(
     for ext in _IMAGE_EXTENSIONS.values():
         key = f"orgs/{current_user.tenant_id}/vehicles/{file_id}{ext}"
         if await spaces.check_file_exists(key):
-            return {
-                "status": "complete",
-                "url": f"{spaces.endpoint}/{spaces.bucket}/{key}",
-            }
+            return ImageStatusResponse(
+                status="complete",
+                url=f"{spaces.endpoint}/{spaces.bucket}/{key}",
+            )
 
-    return {"status": "pending"}
+    return ImageStatusResponse(status="pending")

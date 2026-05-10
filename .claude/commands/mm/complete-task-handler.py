@@ -997,6 +997,39 @@ def update_incremental_time_tracking(task_id: str) -> None:
         mm_error(f"Failed to update time tracking: {e}")
 
 
+def execute_subtask_with_tracking(subtask_id: str, func: callable) -> Any:
+    """Execute a subtask function with proper status tracking.
+
+    Wraps subtask execution to handle errors and update status accordingly.
+    This ensures that if a subtask fails, it's marked as 'failed' instead of
+    staying 'in_progress' indefinitely.
+
+    Args:
+        subtask_id: Subtask ID (e.g., "B2.6.03").
+        func: Function to execute (should return result or raise exception).
+
+    Returns:
+        Result of func().
+
+    Raises:
+        Exception: If func raises (after marking as failed).
+    """
+    try:
+        update_subtask_status(subtask_id, "in_progress")
+        result = func()
+        update_subtask_status(subtask_id, "completed")
+        return result
+    except Exception as e:
+        # Mark as failed with error message
+        update_subtask_status(
+            subtask_id,
+            "failed",
+            error=f"{type(e).__name__}: {str(e)}"
+        )
+        # Re-raise to allow caller to handle the exception
+        raise
+
+
 def get_task_payload(task_id: str) -> dict[str, Any]:
     """Get the full task payload for the agent.
 
@@ -1216,6 +1249,35 @@ def resume_task(task_id: str) -> None:
     mm_info(f"Previous session: {state['session_id']}")
     mm_info(f"Last checkpoint: {state.get('last_checkpoint', 'none')}")
 
+    # Detectar subtareas colgadas en in_progress > 1 hora
+    stale_subtasks = []
+    stale_threshold_hours = 1
+
+    for sid, st in state["subtasks"].items():
+        if st.get("status") == "in_progress" and st.get("started_at"):
+            try:
+                started = datetime.fromisoformat(st["started_at"])
+                hours_since = (datetime.now() - started).total_seconds() / 3600
+                if hours_since > stale_threshold_hours:
+                    stale_subtasks.append((sid, hours_since))
+            except (ValueError, TypeError):
+                pass
+
+    if stale_subtasks:
+        mm_error("=" * 60)
+        mm_error("⚠️  SUBTAREAS COLGADAS DETECTADAS")
+        mm_error("=" * 60)
+        for sid, hours in stale_subtasks:
+            mm_error(f"  {sid}: lleva {hours:.1f}h en in_progress")
+        mm_error("")
+        mm_error("Esto indica que el agente se detuvo inesperadamente.")
+        mm_error("")
+        mm_error("Opciones:")
+        mm_error(f"  1. Continuar normalmente (se reintentarán desde el último checkpoint)")
+        mm_error(f"  2. Resetear a pending: /mm:complete-task {task_id} --reset-stale")
+        mm_error("")
+        mm_status("Verificá todo.md y task-progress.json antes de continuar")
+
     # Show current status from runtime state
     completed = [
         sid for sid, info in state["subtasks"].items() if info["status"] == "completed"
@@ -1405,16 +1467,79 @@ def show_status() -> None:
             print(f"  {task_id}: (no subtasks found)", flush=True)
 
 
+def reset_stale_subtasks(task_id: str) -> None:
+    """Reset stale in_progress subtasks to pending.
+
+    Finds subtasks in in_progress > 1 hour and resets them to pending,
+    incrementing retries counter.
+
+    Args:
+        task_id: Task identifier (e.g., "B2").
+    """
+    if not RUNTIME_STATE_PATH.exists():
+        mm_error("No runtime state found")
+        return
+
+    try:
+        state = json.loads(RUNTIME_STATE_PATH.read_text())
+    except (json.JSONDecodeError, OSError) as e:
+        mm_error(f"Failed to read runtime state: {e}")
+        return
+
+    if state.get("task_id") != task_id:
+        mm_error(f"Runtime state is for task {state.get('task_id')}, not {task_id}")
+        return
+
+    stale_threshold = 1 * 60 * 60  # 1 hora en segundos
+    reset_count = 0
+
+    for sid, st in state["subtasks"].items():
+        if st.get("status") == "in_progress" and st.get("started_at"):
+            try:
+                started = datetime.fromisoformat(st["started_at"])
+                seconds_since = (datetime.now() - started).total_seconds()
+                if seconds_since > stale_threshold:
+                    # Reset to pending
+                    state["subtasks"][sid]["status"] = "pending"
+                    state["subtasks"][sid]["started_at"] = None
+                    state["subtasks"][sid]["retries"] = st.get("retries", 0) + 1
+                    reset_count += 1
+                    mm_info(f"Reset {sid} to pending (retry #{state['subtasks'][sid]['retries']})")
+            except (ValueError, TypeError) as e:
+                mm_error(f"Error processing {sid}: {e}")
+
+    if reset_count > 0:
+        state["last_checkpoint"] = None
+        try:
+            RUNTIME_STATE_PATH.write_text(json.dumps(state, indent=2))
+        except OSError as e:
+            mm_error(f"Failed to write runtime state: {e}")
+            return
+        mm_info(f"Reset {reset_count} stale subtask(s)")
+        mm_info(f"Usá /mm:complete-task {task_id} --continue para reanudar")
+    else:
+        mm_info("No stale subtasks found (all in_progress < 1 hour)")
+
+
 def main() -> None:
     """Main entry point."""
     if len(sys.argv) < 2:
-        print("Usage: mm-complete-task <TASK_ID> [--continue] [--status]", flush=True)
+        print("Usage: mm-complete-task <TASK_ID> [--continue] [--status] [--reset-stale]", flush=True)
         print("       mm-complete-task --status  # Show all tasks", flush=True)
         sys.exit(1)
 
     # Status mode
     if sys.argv[1] == "--status":
         show_status()
+        return
+
+    # Reset stale mode
+    if "--reset-stale" in sys.argv:
+        if len(sys.argv) < 3:
+            mm_error("Usage: mm-complete-task <TASK_ID> --reset-stale")
+            sys.exit(1)
+        task_id = sys.argv[1].upper()
+        reset_stale_subtasks(task_id)
         return
 
     task_id = sys.argv[1].upper()

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Upload } from "lucide-react"
@@ -67,17 +67,11 @@ export default function CatalogPage() {
   // Setup infinite scroll observer
   const observerTarget = useRef<HTMLDivElement>(null);
 
-  const loadMore = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMore();
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
         }
       },
       { threshold: 1.0 }
@@ -93,7 +87,7 @@ export default function CatalogPage() {
         observer.unobserve(currentTarget);
       }
     };
-  }, [loadMore]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
     <CatalogErrorBoundary>
@@ -290,7 +284,7 @@ export default function CatalogPage() {
       <BulkBranchAssign
         open={showBulkBranchAssign}
         onOpenChange={setShowBulkBranchAssign}
-        vehicleIds={selectedProductIds}
+        productIds={selectedProductIds}
         productCount={selectedProductIds.length}
       />
       </div>

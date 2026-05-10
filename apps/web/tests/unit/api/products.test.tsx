@@ -52,6 +52,8 @@ describe("Products API Client - createProductWithVehicle", () => {
       id: "prod-1",
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
         category: "vehicle" as const,
@@ -59,8 +61,9 @@ describe("Products API Client - createProductWithVehicle", () => {
         year: 2017,
         make: "Chevrolet",
         model: "Equinox",
+        mileage: 50000,
       },
-      status: "active" as const,
+      status: "draft" as const,
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
     };
@@ -73,6 +76,8 @@ describe("Products API Client - createProductWithVehicle", () => {
     const requestData = {
       title: "2017 Toyota Camry SE",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
         category: "vehicle" as const,
@@ -80,6 +85,7 @@ describe("Products API Client - createProductWithVehicle", () => {
         year: 2017,
         make: "Chevrolet",
         model: "Equinox",
+        mileage: 50000,
       },
     };
 
@@ -102,6 +108,8 @@ describe("Products API Client - createProductWithVehicle", () => {
       id: "prod-1",
       title: "2017 Chevrolet Equinox",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
         category: "vehicle" as const,
@@ -109,8 +117,9 @@ describe("Products API Client - createProductWithVehicle", () => {
         year: 2017,
         make: "Chevrolet",
         model: "Equinox",
+        mileage: 50000,
       },
-      status: "active" as const,
+      status: "draft" as const,
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
     };
@@ -123,6 +132,8 @@ describe("Products API Client - createProductWithVehicle", () => {
     const requestData = {
       title: "2017 Chevrolet Equinox",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
         category: "vehicle" as const,
@@ -130,6 +141,7 @@ describe("Products API Client - createProductWithVehicle", () => {
         year: 2017,
         make: "Chevrolet",
         model: "Equinox",
+        mileage: 50000,
       },
     };
 
@@ -142,7 +154,7 @@ describe("Products API Client - createProductWithVehicle", () => {
 
     // Verify the response includes the product with ID
     expect(result.id).toBe("prod-1");
-    expect(result.attributes.vin).toBe("2GNALCEK1H1615946");
+    expect(result.attributes).toMatchObject({ vin: "2GNALCEK1H1615946" });
   });
 
   it("should return product with id and attributes from response", async () => {
@@ -150,6 +162,8 @@ describe("Products API Client - createProductWithVehicle", () => {
       id: "prod-123",
       title: "Vehicle Title",
       price_cents: 10000_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-456",
       attributes: {
         category: "vehicle" as const,
@@ -171,10 +185,16 @@ describe("Products API Client - createProductWithVehicle", () => {
     const result = await createProductWithVehicle({
       title: "Vehicle Title",
       price_cents: 10000_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-456",
       attributes: {
         category: "vehicle" as const,
         vin: "1HGCM82633A123456",
+        year: 2003,
+        make: "Honda",
+        model: "Accord",
+        mileage: 50000,
       },
     });
 
@@ -195,10 +215,16 @@ describe("Products API Client - createProductWithVehicle", () => {
       createProductWithVehicle({
         title: "Test Vehicle",
         price_cents: 1000_00,
+        tenant_id: "tenant-1",
+        organization_id: "org-1",
         category_id: "cat-123",
         attributes: {
-        category: "vehicle" as const,
+          category: "vehicle" as const,
           vin: "INVALID",
+          year: 2000,
+          make: "Test",
+          model: "Vehicle",
+          mileage: 0,
         },
       }),
     ).rejects.toThrow("Invalid VIN format");
@@ -211,6 +237,8 @@ describe("Products API Client - createProductWithVehicle", () => {
       createProductWithVehicle({
         title: "Test Vehicle",
         price_cents: 1000_00,
+        tenant_id: "tenant-1",
+        organization_id: "org-1",
         category_id: "cat-123",
         attributes: {
         category: "generic" as const,
@@ -230,6 +258,8 @@ describe("Products API Client - createProductWithVehicle", () => {
       createProductWithVehicle({
         title: "Test Vehicle",
         price_cents: 1000_00,
+        tenant_id: "tenant-1",
+        organization_id: "org-1",
         category_id: "cat-123",
         attributes: {
         category: "generic" as const,
@@ -254,12 +284,18 @@ describe("Products API Client - useCreateProduct", () => {
       id: "prod-1",
       title: "2017 Toyota Camry",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
         category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
+        year: 2017,
+        make: "Toyota",
+        model: "Camry",
+        mileage: 50000,
       },
-      status: "active" as const,
+      status: "draft" as const,
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
     };
@@ -276,10 +312,16 @@ describe("Products API Client - useCreateProduct", () => {
     const requestData = {
       title: "2017 Toyota Camry",
       price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
         category: "vehicle" as const,
         vin: "2GNALCEK1H1615946",
+        year: 2017,
+        make: "Toyota",
+        model: "Camry",
+        mileage: 50000,
       },
     };
 
@@ -296,11 +338,13 @@ describe("Products API Client - useCreateProduct", () => {
       id: "prod-1",
       title: "Vehicle",
       price_cents: 1000_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
         category: "generic" as const,
       },
-      status: "active" as const,
+      status: "draft" as const,
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
     };
@@ -317,6 +361,8 @@ describe("Products API Client - useCreateProduct", () => {
     const requestData = {
       title: "Vehicle",
       price_cents: 1000_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
         category: "generic" as const,
@@ -338,11 +384,13 @@ describe("Products API Client - useCreateProduct", () => {
       id: "prod-1",
       title: "Vehicle",
       price_cents: 1000_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
         category: "generic" as const,
       },
-      status: "active" as const,
+      status: "draft" as const,
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z",
     };
@@ -360,6 +408,8 @@ describe("Products API Client - useCreateProduct", () => {
       await result.current.mutateAsync({
         title: "Vehicle",
         price_cents: 1000_00,
+        tenant_id: "tenant-1",
+        organization_id: "org-1",
         category_id: "cat-123",
         attributes: {
         category: "generic" as const,
@@ -388,10 +438,12 @@ describe("Products API Client - useCreateProduct", () => {
         await result.current.mutateAsync({
           title: "Vehicle",
           price_cents: 1000_00,
+          tenant_id: "tenant-1",
+          organization_id: "org-1",
           category_id: "cat-123",
           attributes: {
-        category: "generic" as const,
-      },
+            category: "generic" as const,
+          },
         });
       } catch (e) {
         // Expected error
@@ -417,6 +469,8 @@ describe("Products API Client - useCreateProduct", () => {
     result.current.mutate({
       title: "Vehicle",
       price_cents: 1000_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
       category_id: "cat-123",
       attributes: {
         category: "generic" as const,
@@ -433,11 +487,13 @@ describe("Products API Client - useCreateProduct", () => {
         id: "prod-1",
         title: "Vehicle",
         price_cents: 1000_00,
+        tenant_id: "tenant-1",
+        organization_id: "org-1",
         category_id: "cat-123",
         attributes: {
         category: "generic" as const,
       },
-        status: "active" as const,
+        status: "draft" as const,
         created_at: "2024-01-01T00:00:00Z",
         updated_at: "2024-01-01T00:00:00Z",
       }),
@@ -466,10 +522,12 @@ describe("Products API Client - useCreateProduct", () => {
         await result.current.mutateAsync({
           title: "Vehicle",
           price_cents: 1000_00,
+          tenant_id: "tenant-1",
+          organization_id: "org-1",
           category_id: "cat-123",
           attributes: {
-        category: "generic" as const,
-      },
+            category: "generic" as const,
+          },
         });
       } catch (e) {
         // Expected error

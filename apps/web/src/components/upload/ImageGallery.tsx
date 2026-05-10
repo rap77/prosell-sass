@@ -1,5 +1,6 @@
 'use client'
 
+import Image from "next/image"
 import { useUploadStore } from '@/lib/stores/uploadStore'
 import { X, Star, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -27,10 +28,12 @@ export function ImageGallery() {
             {/* Note: Using regular <img> instead of next/image because preview is a blob URL from URL.createObjectURL */}
             {/* Blob URLs are memory-only and don't benefit from next/image optimization */}
             {/* Final cloud URLs will use next/image in vehicle listing pages */}
-            <img
+            <Image
               src={file.preview}
               alt={`Upload ${index + 1}`}
-              className="w-full h-full object-cover"
+              fill
+              unoptimized
+              className="object-cover"
             />
 
             {/* Cover badge */}

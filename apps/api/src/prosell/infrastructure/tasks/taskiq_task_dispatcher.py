@@ -32,3 +32,31 @@ class TaskiqTaskDispatcher(ITaskDispatcher):
                 publication_id=str(publication_id),
                 reason=str(exc),
             ) from exc
+
+    async def dispatch_update(self, publication_id: UUID) -> None:
+        """Enqueue an update_listing_task for the given publication."""
+        try:
+            from prosell.infrastructure.tasks.use_cases.update_listing_task import (
+                update_listing_task,
+            )
+
+            await update_listing_task.kiq(publication_id=str(publication_id))
+        except Exception as exc:
+            raise TaskDispatchError(
+                publication_id=str(publication_id),
+                reason=str(exc),
+            ) from exc
+
+    async def dispatch_delete(self, publication_id: UUID) -> None:
+        """Enqueue a delete_listing_task for the given publication."""
+        try:
+            from prosell.infrastructure.tasks.use_cases.delete_listing_task import (
+                delete_listing_task,
+            )
+
+            await delete_listing_task.kiq(publication_id=str(publication_id))
+        except Exception as exc:
+            raise TaskDispatchError(
+                publication_id=str(publication_id),
+                reason=str(exc),
+            ) from exc

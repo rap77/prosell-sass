@@ -34,7 +34,10 @@ import { useDecodeVin } from "@/lib/api/vehicles";
 import { useCreateProduct } from "@/lib/api/products";
 import { useAuthStore } from "@/stores/authStore";
 import { VehicleFormAttributes } from "./VehicleFormAttributes";
+import { ProductImageGallery } from "@/components/catalog/ProductImageGallery";
 import type { Category } from "@/types/category";
+import type { VehicleAttributes } from "@/types/vehicle";
+import type { ProductImage } from "@/types/product-image";
 
 // ============================================
 // TYPES
@@ -241,9 +244,6 @@ export function VehicleForm({
       const decodedVehicle = await decodeVinMutation.mutateAsync(vin);
 
       logger.debug("📦 Decoded vehicle data:", decodedVehicle);
-      console.log("🔍 FULL DECODED VEHICLE:", JSON.stringify(decodedVehicle, null, 2));
-      console.log("🔍 DECODED VEHICLE ENGINE:", decodedVehicle?.engine);
-      console.log("🔍 DECODED VEHICLE ENGINE TYPE:", typeof decodedVehicle?.engine);
 
       // Auto-populate fields from decoded data
       if (decodedVehicle) {
@@ -308,14 +308,11 @@ export function VehicleForm({
         }
         if (decodedVehicle.engine) {
           logger.debug("✅ Setting engine:", decodedVehicle.engine);
-          console.log("🔧 ABOUT TO SET ENGINE TO:", decodedVehicle.engine);
-          console.log("🔧 CURRENT ENGINE VALUE:", watch("engine"));
           setValue("engine", decodedVehicle.engine, {
             shouldValidate: true,
             shouldDirty: true,
             shouldTouch: true,
           });
-          console.log("🔧 ENGINE VALUE AFTER setValue:", watch("engine"));
         }
         if (decodedVehicle.fuel_type) {
           logger.debug("✅ Setting fuel_type:", decodedVehicle.fuel_type);
@@ -384,44 +381,43 @@ export function VehicleForm({
         // Plan 13-03: Create product with vehicle attributes
         // Backend auto-creates vehicle record when attributes.vin is present
         logger.debug("🌐 Calling createProduct.mutateAsync...");
+        const vehicleAttributes: VehicleAttributes = {
+          category: "vehicle",
+          vin: data.vin,
+          year: data.year ?? new Date().getFullYear(),
+          make: data.make ?? "",
+          model: data.model ?? "",
+          mileage: data.mileage ?? 0,
+          trim: data.trim,
+          body_type: data.body_type,
+          drivetrain: data.drivetrain,
+          transmission: data.transmission,
+          engine: data.engine,
+          fuel_type: data.fuel_type,
+          mpg_city: data.mpg_city ?? undefined,
+          mpg_highway: data.mpg_highway ?? undefined,
+          mpg_combined: data.mpg_combined ?? undefined,
+          mileage_unit: data.mileage_unit === "mi" ? "miles" : data.mileage_unit,
+          exterior_color: data.exterior_color,
+          interior_color: data.interior_color,
+          has_sunroof: data.has_sunroof,
+          has_navigation: data.has_navigation,
+          has_leather: data.has_leather,
+          has_backup_camera: data.has_backup_camera,
+          has_bluetooth: data.has_bluetooth,
+          has_remote_start: data.has_remote_start,
+          seat_material: data.seat_material,
+          stock_number: data.stock_number,
+        };
+
         const product = await createProduct.mutateAsync({
           title: `${data.year ?? ""} ${data.make ?? ""} ${data.model ?? ""}`.trim(),
           price_cents: Math.round((data.price ?? 0) * 100), // Convert dollars to cents
           tenant_id: user?.id ?? "",
           organization_id: user?.organization_id ?? "",
           category_id: data.category_id ?? "",
-          attributes: Object.entries({
-              vin: data.vin, // REQUIRED - triggers auto-vehicle creation
-              category: "vehicle" as const,
-              year: data.year,
-              make: data.make,
-              model: data.model,
-              trim: data.trim,
-              body_type: data.body_type,
-              body_style: data.body_style,
-              drivetrain: data.drivetrain,
-              transmission: data.transmission,
-              engine: data.engine,
-              fuel_type: data.fuel_type,
-              mpg_city: data.mpg_city,
-              mpg_highway: data.mpg_highway,
-              mpg_combined: data.mpg_combined,
-              mileage: data.mileage ?? 0,
-              mileage_unit: data.mileage_unit,
-              exterior_color: data.exterior_color,
-              interior_color: data.interior_color,
-              has_sunroof: data.has_sunroof,
-              has_navigation: data.has_navigation,
-              has_leather: data.has_leather,
-              has_backup_camera: data.has_backup_camera,
-              has_bluetooth: data.has_bluetooth,
-              has_remote_start: data.has_remote_start,
-              seat_material: data.seat_material,
-              stock_number: data.stock_number,
-              description: data.description,
-            })
-              .filter(([_, value]) => value !== undefined && value !== null && value !== "")
-              .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}) as any,
+          description: data.description,
+          attributes: vehicleAttributes,
         });
 
         logger.debug("✅ Product created successfully:", product);
@@ -455,6 +451,19 @@ export function VehicleForm({
   // ============================================
   // RENDER
   // ============================================
+
+  // Convert imageUrls to ProductImage format for ProductImageGallery
+  const productImages: ProductImage[] = (imageUrls || []).map((url, index) => ({
+    id: `img-${index}`,
+    product_id: vehicleId || '',
+    url,
+    thumbnail_url: url, // Use same URL for thumbnail (backend will generate thumbnails)
+    sort_order: index,
+    is_primary: index === 0,
+    alt_text: `Image ${index + 1}`,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }));
 
   return (
     <form
@@ -502,6 +511,19 @@ export function VehicleForm({
       className="flex flex-col gap-8"
       noValidate
     >
+      {/* ========================================
+          IMAGE GALLERY (Edit Mode Only)
+          ======================================== */}
+      {mode === "edit" && productImages.length > 0 && (
+        <section className="flex flex-col gap-4">
+          <h2 className="text-lg font-semibold">Imágenes Actuales</h2>
+          <ProductImageGallery images={productImages} />
+          <p className="text-sm text-muted-foreground">
+            Estas son las imágenes actuales del vehículo. Para agregar o reemplazar imágenes, usá el componente de carga de imágenes abajo.
+          </p>
+        </section>
+      )}
+
       {/* ========================================
           SECTION 1: VIN & Decoding
           ======================================== */}

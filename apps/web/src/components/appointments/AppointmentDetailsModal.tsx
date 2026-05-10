@@ -111,7 +111,7 @@ export function AppointmentDetailsModal({
           <div className="flex items-center justify-center py-8">
             <div className="text-sm text-muted-foreground">Loading lead details...</div>
           </div>
-        ) : lead ? (
+        ) : (
           <div className="space-y-4">
             {/* Status badge */}
             <div className="flex items-center justify-between">
@@ -146,15 +146,17 @@ export function AppointmentDetailsModal({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-gray-500" />
-                <span className="font-medium text-gray-900">{lead.buyer_name}</span>
+                <span className="font-medium text-gray-900">
+                  {lead?.buyer_name || "Buyer information not available"}
+                </span>
               </div>
-              {lead.buyer_email && (
+              {lead?.buyer_email && (
                 <div className="flex items-center gap-2 pl-6">
                   <Mail className="w-4 h-4 text-gray-500" />
                   <span className="text-sm text-gray-700">{lead.buyer_email}</span>
                 </div>
               )}
-              {lead.buyer_phone && (
+              {lead?.buyer_phone && (
                 <div className="flex items-center gap-2 pl-6">
                   <Phone className="w-4 h-4 text-gray-500" />
                   <span className="text-sm text-gray-700">{lead.buyer_phone}</span>
@@ -163,7 +165,7 @@ export function AppointmentDetailsModal({
             </div>
 
             {/* Product information */}
-            {lead.product ? (
+            {lead?.product ? (
               <div className="flex items-center gap-2">
                 <Car className="w-4 h-4 text-gray-500" />
                 <span className="text-sm text-gray-700">
@@ -208,10 +210,6 @@ export function AppointmentDetailsModal({
                 </Button>
               </div>
             )}
-          </div>
-        ) : (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-muted-foreground">Lead details not found</div>
           </div>
         )}
       </DialogContent>

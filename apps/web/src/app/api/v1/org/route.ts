@@ -28,12 +28,14 @@ type MockOrganization = {
 
 type MockOrganizations = Record<string, MockOrganization>;
 
+declare global {
+  // eslint-disable-next-line no-var
+  var __mockOrganizations: MockOrganizations | undefined;
+}
+
 // Helper to get mock organizations from global store
 function getMockOrganizations(): MockOrganizations {
-  const globalWithMocks = global as typeof global & {
-    __mockOrganizations?: MockOrganizations;
-  };
-  return globalWithMocks.__mockOrganizations || {};
+  return global.__mockOrganizations || {};
 }
 
 export async function GET(request: NextRequest) {
@@ -96,12 +98,11 @@ export async function POST(request: NextRequest) {
       verified_by: null,
     };
 
-    (global as any).__mockOrganizations = (global as any).__mockOrganizations || {};
-    (global as any).__mockOrganizations[orgId] = org;
+    global.__mockOrganizations = global.__mockOrganizations || {};
+    global.__mockOrganizations[orgId] = org;
 
     return NextResponse.json(org, { status: 201 });
-  } catch (error) {
-    console.error("CREATE ORG ERROR:", error);
+  } catch {
     return NextResponse.json(
       { detail: "Internal server error" },
       { status: 500 }

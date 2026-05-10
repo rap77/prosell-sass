@@ -1,10 +1,10 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { VehicleForm } from '@/components/forms/VehicleForm'
 import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 
 interface VehicleData {
@@ -42,39 +42,25 @@ interface VehicleData {
 export default function EditVehiclePage() {
   const router = useRouter()
   const params = useParams()
-  const vehicleId = params.id as string
+  const vehicleId = typeof params.id === 'string' ? params.id : ''
 
-  const [vehicle, setVehicle] = useState<VehicleData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const {
+    data: vehicle,
+    isLoading,
+    error,
+  } = useQuery<VehicleData>({
+    queryKey: ['vehicle', vehicleId],
+    enabled: vehicleId.length > 0,
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/vehicles/${vehicleId}`)
 
-  // Fetch vehicle data
-  useEffect(() => {
-    async function fetchVehicle() {
-      try {
-        const response = await fetch(`/api/v1/vehicles/${vehicleId}`)
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch vehicle')
-        }
-
-        const data = await response.json()
-        setVehicle(data)
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error'
-        setError(message)
-        toast.error('Failed to load vehicle', {
-          description: message,
-        })
-      } finally {
-        setIsLoading(false)
+      if (!response.ok) {
+        throw new Error('Failed to fetch vehicle')
       }
-    }
 
-    if (vehicleId) {
-      fetchVehicle()
-    }
-  }, [vehicleId])
+      return response.json() as Promise<VehicleData>
+    },
+  })
 
   if (isLoading) {
     return (
@@ -87,18 +73,16 @@ export default function EditVehiclePage() {
     )
   }
 
-  if (error || !vehicle) {
+  if (!vehicle) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
           <p className="text-lg font-semibold text-destructive">Vehicle not found</p>
-          <p className="mt-2 text-sm text-muted-foreground">{error || 'Unknown error'}</p>
-          <Button
-            onClick={() => router.push('/catalog')}
-            className="mt-4"
-            variant="outline"
-          >
-            Back to Catalog
+          <p className="mt-2 text-sm text-muted-foreground">{errorMessage}</p>
+          <Button asChild className="mt-4" variant="outline">
+            <Link href="/catalog">Back to Catalog</Link>
           </Button>
         </div>
       </div>

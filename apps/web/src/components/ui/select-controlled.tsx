@@ -83,13 +83,10 @@ export function SelectControlled({
    * trigger — intentional clearing only happens via onChange("") from
    * parent code, not from user interaction through the Radix trigger.
    */
-  const handleChange = React.useCallback(
-    (val: string) => {
-      if (val === "" && normalizedValue !== "") return;
-      onChange(val);
-    },
-    [onChange, normalizedValue],
-  );
+  const handleChange = (val: string) => {
+    if (val === "" && normalizedValue !== "") return;
+    onChange(val);
+  };
 
   return (
     <Select value={normalizedValue} onValueChange={handleChange} disabled={disabled}>
@@ -123,8 +120,5 @@ export function useFbOptions(
   fbOptions: Array<{ key: string; es: string; en: string }>,
   locale: "es" | "en" = "es",
 ): SelectOption[] {
-  return React.useMemo(
-    () => fbOptions.map((opt) => ({ value: opt.key, label: opt[locale] })),
-    [fbOptions, locale],
-  );
+  return fbOptions.map((opt) => ({ value: opt.key, label: opt[locale] }));
 }

@@ -8,8 +8,32 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function getMockOrganizations(): Record<string, any> {
-  return (global as any).__mockOrganizations || {};
+type MockOrganization = {
+  id: string;
+  name: string;
+  tenant_id: string;
+  status: string;
+  description: string | null;
+  website: string | null;
+  phone: string | null;
+  logo_url: string | null;
+  banner_url: string | null;
+  wallet_id: string | null;
+  created_at: string;
+  updated_at: string;
+  verified_at: string | null;
+  verified_by: string | null;
+};
+
+type MockOrganizationStore = Record<string, MockOrganization>;
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __mockOrganizations: MockOrganizationStore | undefined
+}
+
+function getMockOrganizations(): MockOrganizationStore {
+  return global.__mockOrganizations || {};
 }
 
 export async function GET(
@@ -56,8 +80,8 @@ export async function PATCH(
     updated_at: new Date().toISOString(),
   };
 
-  (global as any).__mockOrganizations = (global as any).__mockOrganizations || {};
-  (global as any).__mockOrganizations[id] = updated;
+  global.__mockOrganizations = global.__mockOrganizations || {};
+  global.__mockOrganizations[id] = updated as MockOrganization;
 
   return NextResponse.json(updated);
 }

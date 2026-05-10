@@ -88,6 +88,7 @@ from prosell.infrastructure.services.oauth_service_impl import OAuthServiceImpl
 from prosell.infrastructure.services.password_service import PasswordService
 from prosell.infrastructure.services.redis_service import RedisService
 from prosell.infrastructure.services.totp_service import TOTPService
+from prosell.infrastructure.tasks.taskiq_task_dispatcher import TaskiqTaskDispatcher
 
 # =============================================================================
 # REPOSITORY FACTORIES
@@ -677,6 +678,7 @@ async def get_publish_vehicle_use_case(
     return PublishVehicleUseCase(
         publication_repo=publication_repo,
         seller_user_id=current_user.id,
+        task_dispatcher=TaskiqTaskDispatcher(),
     )
 
 

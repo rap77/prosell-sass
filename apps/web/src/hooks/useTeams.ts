@@ -16,7 +16,8 @@
  * @see {@link useTeamStore} for the underlying store implementation
  */
 import { useTeamStore } from "@/stores/teamStore"
-import type { Team, TeamError } from "@/stores/teamStore"
+import type { Team } from "@/lib/api/teamApi"
+import type { TeamError } from "@/stores/teamStore"
 
 /**
  * Return type for the useTeams hook

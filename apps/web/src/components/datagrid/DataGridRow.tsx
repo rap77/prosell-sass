@@ -1,4 +1,3 @@
-import { memo } from "react";
 import { flexRender, type Row } from "@tanstack/react-table";
 
 interface DataGridRowProps<T> {
@@ -20,6 +19,4 @@ export function DataGridRow<T>({ row }: DataGridRowProps<T>) {
   );
 }
 
-const MemoizedDataGridRowInner = memo(DataGridRow) as <T>(props: DataGridRowProps<T>) => React.ReactElement;
-(MemoizedDataGridRowInner as any).displayName = "DataGridRow";
-export const MemoizedDataGridRow = MemoizedDataGridRowInner;
+export const MemoizedDataGridRow = DataGridRow;

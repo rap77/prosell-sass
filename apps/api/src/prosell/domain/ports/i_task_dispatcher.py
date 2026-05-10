@@ -22,3 +22,13 @@ class ITaskDispatcher(ABC):
             publication_id: ID of the Publication entity to publish.
         """
         pass
+
+    @abstractmethod
+    async def dispatch_update(self, publication_id: UUID) -> None:
+        """Enqueue an update task for the given publication."""
+        pass
+
+    @abstractmethod
+    async def dispatch_delete(self, publication_id: UUID) -> None:
+        """Enqueue a delete task for the given publication."""
+        pass

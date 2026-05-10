@@ -1,0 +1,427 @@
+## Phase 13: Frontend C3 Integration (COMPLETE ✅)
+
+## Phase 4: Leads & Appointments (COMPLETE ✅)
+
+- [x] A1: Lead Capture Foundation
+  - [x] A1.01: Create Lead entity with 5-state lifecycle
+  - [x] A1.02: Create LeadStatus enum and LeadStateTransitionException
+  - [x] A1.03: Create LeadAuditLog entity for tracking status changes
+  - [x] A1.04: Write Alembic migration for leads, lead_audit_log tables
+  - [x] A1.05: Add tenant_id indexes for multi-tenant isolation
+  - [x] A1.06: Create ILeadRepository interface in domain layer
+  - [x] A1.07: Implement LeadRepository with async SQLAlchemy
+  - [x] A1.08: Add tenant_id filtering to all queries
+  - [x] A1.09: Implement create() method with duplicate detection
+  - [x] A1.10: Implement update_status() with audit log creation
+  - [x] A1.11: Implement list_by_vendedor() with pagination
+  - [x] A1.12: Implement list_by_manager() (all team leads)
+  - [x] A1.13: Create CreateLeadUseCase with business logic
+  - [x] A1.14: Create UpdateLeadStatusUseCase with state validation
+  - [x] A1.15: Create ListLeadsUseCase with role-based filtering
+  - [x] A1.16: Create GetLeadDetailsUseCase
+  - [x] A1.17: Create POST /api/v1/leads endpoint for manual lead creation
+  - [x] A1.18: Create GET /api/v1/leads endpoint with pagination
+  - [x] A1.19: Create GET /api/v1/leads/{id} for lead details
+  - [x] A1.20: Create PUT /api/v1/leads/{id}/status for status updates
+  - [x] A1.21: Add authentication/authorization middleware
+  - [x] A1.22: Add tenant_id filtering to all endpoints
+  - [x] A1.23: Write unit tests for lead state transitions
+  - [x] A1.24: Write integration tests for repository
+  - [x] A1.25: Write integration tests for use cases
+  - [x] A1.26: Write integration tests for all endpoints
+  - [x] A1.27: Write contract tests for DTO schemas
+
+- [x] A2: Facebook Lead Webhook
+  - [x] A2.01: Create POST /api/v1/webhooks/facebook endpoint
+  - [x] A2.02: Implement X-Hub-Signature verification (SHA256 HMAC)
+  - [x] A2.03: Return 403 if signature missing/invalid (security)
+  - [x] A2.04: Parse Facebook webhook payload (leadgen_id, listing_id, sender_id, message)
+  - [x] A2.05: Return 200 OK within 1 second (quick response)
+  - [x] A2.06: Create FacebookGraphApiClient class
+  - [x] A2.07: Query buyer profile by sender_id (name, profile_url)
+  - [x] A2.08: Handle access token refresh
+  - [x] A2.09: Query vehicle by facebook_listing_id from publications table
+  - [x] A2.10: Check for duplicate lead (same buyer + vehicle within 24 hours)
+  - [x] A2.11: Extract lead data (buyer_name, buyer_email, buyer_phone, message, source="facebook")
+  - [x] A2.12: Call CreateLeadUseCase (reused from A1)
+  - [x] A2.13: Assign lead to vehicle's owner vendedor
+  - [x] A2.14: Create Taskiq background task (runs every 10 minutes)
+  - [x] A2.15: Implement polling fallback logic
+  - [x] A2.16: Add logging for all webhook events
+  - [x] A2.17: Track webhook success/failure metrics
+  - [x] A2.18: Write integration test for webhook endpoint
+  - [x] A2.19: Test webhook signature verification (403 on invalid)
+  - [x] A2.20: Test lead creation from Facebook payload
+  - [x] A2.21: Test duplicate detection
+  - [x] A2.22: Write contract test for OpenAPI schema
+  - [x] A2.23: Test polling fallback logic
+
+- [x] A3: Vendedor Leads List
+  - [x] A3.01: Create Lead interface (id, buyer_name, buyer_email, buyer_phone, vehicle, message, status, source, created_at, updated_at)
+  - [x] A3.02: Create CreateLeadRequest interface
+  - [x] A3.03: Create UpdateLeadStatusRequest interface (status + reason)
+  - [x] A3.04: Create LeadStatus enum (5 states)
+  - [x] A3.05: Create useLeads hook (queryKey: ['leads'])
+  - [x] A3.06: Add role-based query parameters (vendedor vs manager)
+  - [x] A3.07: Create useLead hook for single lead details
+  - [x] A3.08: Create useUpdateLeadStatus mutation hook
+  - [x] A3.09: Add toast notifications for success/error
+  - [x] A3.10: Implement query invalidation on mutation
+  - [x] A3.11: Create LeadList component (DataGrid pattern)
+  - [x] A3.12: Create LeadListItem component (one row per lead)
+  - [x] A3.13: Create LeadStatusBadge component (5 states with colors)
+  - [x] A3.14: Create LeadStatusDropdown component (quick status update)
+  - [x] A3.15: Create /vendedor/leads page
+  - [x] A3.16: Implement search by buyer name, vehicle
+  - [x] A3.17: Add filter by status (new, contacted, qualified, etc.)
+  - [x] A3.18: Add highlight for unread leads (created_at < 5 min ago)
+  - [x] A3.19: Implement pagination or infinite scroll
+  - [x] A3.20: Add real-time updates (polling every 30s via refetchInterval)
+  - [x] A3.21: Write unit tests for API hooks (mocked fetch)
+  - [x] A3.22: Write component tests for LeadStatusBadge
+  - [x] A3.23: Write E2E test for leads list view
+  - [x] A3.24: Test search functionality
+  - [x] A3.25: Test status filter
+  - [x] A3.26: Test status update dropdown
+
+- [x] A4: Appointment Scheduling
+  - [x] A4.01: Create Appointment entity (lead_id, dealer_id, vehicle_id, scheduled_at, status, notes, tenant_id)
+  - [x] A4.02: Implement AppointmentStatus enum (scheduled, completed, cancelled)
+  - [x] A4.03: Implement time validation (business hours: 9am-6pm Mon-Fri)
+  - [x] A4.04: Implement conflict detection (same dealer + time slot)
+  - [x] A4.05: Write Alembic migration for appointments table
+  - [x] A4.06: Add indexes on (tenant_id, dealer_id, scheduled_at)
+  - [x] A4.07: Add foreign keys (lead_id → leads, dealer_id → dealers, vehicle_id → vehicles)
+  - [x] A4.08: Create IAppointmentRepository interface
+  - [x] A4.09: Implement AppointmentRepository with async SQLAlchemy
+  - [x] A4.10: Implement create() with conflict detection
+  - [x] A4.11: Implement list_by_dealer(), list_by_vendedor()
+  - [x] A4.12: Create CreateAppointmentUseCase (validates time, checks conflicts)
+  - [x] A4.13: CreateAppointmentUseCase updates lead status to "appointment_set"
+  - [x] A4.14: Create ListAppointmentsUseCase (role-based filtering)
+  - [x] A4.15: Create CancelAppointmentUseCase
+  - [x] A4.16: Create EmailService class for SendGrid
+  - [x] A4.17: Create email template for appointment notifications
+  - [x] A4.18: Implement error handling (retry with exponential backoff)
+  - [x] A4.19: Add logging for email delivery status
+  - [x] A4.20: Create AppointmentResponse DTO
+  - [x] A4.21: Create CreateAppointmentRequest DTO
+  - [x] A4.22: Create POST /api/v1/appointments endpoint
+  - [x] A4.23: Create GET /api/v1/appointments endpoint (role-based filtering)
+  - [x] A4.24: Create PUT /api/v1/appointments/{id}/status endpoint
+  - [x] A4.25: Create Appointment interface
+  - [x] A4.26: Create CreateAppointmentRequest interface
+  - [x] A4.27: Create useAppointments hook
+  - [x] A4.28: Create useCreateAppointment mutation hook
+  - [x] A4.29: Add toast notifications
+  - [x] A4.30: Create LeadDetails page at /vendedor/leads/{id}
+  - [x] A4.31: Create AppointmentForm modal (date-time picker, dealer selection, notes)
+  - [x] A4.32: Implement time validation (business hours)
+  - [x] A4.33: Show appointment conflicts warning
+  - [x] A4.34: Add "Agendar Cita" button to lead details
+  - [x] A4.35: Write unit tests for Appointment entity (time validation)
+  - [x] A4.36: Write integration tests for CreateAppointmentUseCase (mocked SendGrid)
+  - [x] A4.37: Write integration tests for API endpoints
+  - [x] A4.38: Write E2E test for appointment creation flow
+
+- [x] A5: Manager Team View
+  - [x] A5.01: Extend GET /api/v1/leads with manager scope (all team leads, not just own)
+  - [x] A5.02: Create AssignLeadToVendedorUseCase (if not in A1)
+  - [x] A5.03: Create PUT /api/v1/leads/{id}/assign endpoint
+  - [x] A5.04: Extend useLeads hook with manager scope
+  - [x] A5.05: Create useReassignLead mutation hook
+  - [x] A5.06: Create TeamLeadList component (extends LeadList)
+  - [x] A5.07: Create LeadReassignModal component (vendedor dropdown, confirm button)
+  - [x] A5.08: Create TeamMetricsCard component (leads per vendedor, conversion rates)
+  - [x] A5.09: Create /manager/team/leads page
+  - [x] A5.10: Add filter by vendedor dropdown
+  - [x] A5.11: Show all leads across team (not just assigned to manager)
+  - [x] A5.12: Implement reassign lead mutation
+  - [x] A5.13: Add export to CSV button
+  - [x] A5.14: Write E2E test for manager view
+  - [x] A5.15: Test filter by vendedor
+  - [x] A5.16: Test lead reassignment
+
+- [x] A6: Dealer Calendar
+  - [x] A6.01: Extend GET /api/v1/appointments with dealer scope (own appointments only)
+  - [x] A6.02: Create PUT /api/v1/appointments/{id}/status endpoint (confirm, cancel)
+  - [x] A6.03: Extend useAppointments hook with dealer scope
+  - [x] A6.04: Create useUpdateAppointmentStatus mutation hook
+  - [x] A6.05: Create CalendarView component (use calendar library)
+  - [x] A6.06: Show day/week/month toggle
+  - [x] A6.07: Create AppointmentCard component (buyer name, vehicle, time, status)
+  - [x] A6.08: Add confirm/cancel buttons
+  - [x] A6.09: Create /dealer/appointments page
+  - [x] A6.10: Show appointment details modal
+  - [x] A6.11: Add today's appointments badge
+  - [x] A6.12: Implement status update mutation
+  - [x] A6.13: Write E2E test for dealer calendar
+  - [x] A6.14: Test calendar view (day/week/month)
+  - [x] A6.15: Test confirm/cancel buttons
+
+## Phase Completion: 100% Module Completion
+
+- [ ] B1: Security & Release Readiness
+
+- [x] B1.1: E2E Integrated Flow Validation (8 hours)
+  - [x] B1.1.01: Create integrated-critical-path.spec.ts test
+  - [x] B1.1.02: Implement complete sales cycle scenario
+  - [x] B1.1.03: Mock Facebook Graph API for publish
+  - [x] B1.1.04: Mock webhook endpoint for lead capture
+  - [x] B1.1.05: Mock SendGrid for email notifications
+  - [x] B1.1.06: Verify test execution time < 3 minutes
+  - [x] B1.1.07: Add test to smoke suite
+  - [x] B1.1.08: Test passes consistently (>95% success rate)
+
+- [x] B1.2: Multi-Tenant Isolation Security Tests (8 hours)
+  - [x] B1.2.01: Create test_tenant_isolation.py suite
+  - [x] B1.2.02: Test user cannot access other tenant leads
+  - [x] B1.2.03: Test user cannot access other tenant products
+  - [x] B1.2.04: Test user cannot access other tenant appointments
+  - [x] B1.2.05: Verify API filtering enforces tenant_id
+  - [x] B1.2.06: Verify repository queries include tenant_id
+  - [x] B1.2.07: Verify webhook respects tenant context
+  - [x] B1.2.08: Test SQL injection attempts
+  - [x] B1.2.09: Test IDOR (Insecure Direct Object Reference) vectors
+  - [x] B1.2.10: All tenant isolation tests pass
+
+- [x] B1.3: Lead Duplicate Detection Implementation (12 hours)
+  - [x] B1.3.01: Create LeadDuplicateDetector service
+  - [x] B1.3.02: Implement email matching (exact match)
+  - [x] B1.3.03: Implement phone matching (normalized)
+  - [x] B1.3.04: Implement email + phone combination matching
+  - [x] B1.3.05: Extend LeadRepository with find_by_email
+  - [x] B1.3.06: Extend LeadRepository with find_by_phone
+  - [x] B1.3.07: Extend LeadRepository with find_potential_duplicates
+  - [x] B1.3.08: Integrate detector into CreateLeadUseCase
+  - [x] B1.3.09: Create duplicate warning UI component
+  - [x] B1.3.10: Display duplicates in lead detail view
+  - [x] B1.3.11: Unit tests for detection logic
+  - [x] B1.3.12: Integration tests for API
+
+- [x] B1.4: Smoke Test Suite Expansion (12 hours)
+  - [x] B1.4.01: Add 5 Auth smoke tests (login, OAuth, 2FA, reset, refresh)
+  - [x] B1.4.02: Add 8 Catalog smoke tests (CRUD, VIN, pagination, search)
+  - [x] B1.4.03: Add 8 Leads smoke tests (webhook, assign, update, reassign, duplicates, audit)
+  - [x] B1.4.04: Add 6 Appointments smoke tests (create, calendar, confirm, cancel, email, conflicts)
+  - [x] B1.4.05: Total smoke tests: 30+ (up from 20)
+  - [x] B1.4.06: Group tests by feature area
+  - [x] B1.4.07: Optimize test execution time < 5 minutes
+  - [x] B1.4.08: Add retry mechanism for flaky tests
+  - [x] B1.4.09: Add to CI/CD pipeline
+  - [x] B1.4.10: Verify >95% pass rate
+
+- [x] B1.5: Password Reset Flow Tests (8 hours)
+  - [x] B1.5.01: Create test_auth_password_reset.py integration tests
+  - [x] B1.5.02: Test user can request password reset
+  - [x] B1.5.03: Test reset token expires after 1 hour [requires: 02]
+  - [x] B1.5.04: Test user can reset password with valid token
+  - [x] B1.5.05: Test invalid token returns 400
+  - [x] B1.5.06: Test password requires new different from old
+  - [x] B1.5.07: Test password successfully updates hash
+  - [x] B1.5.08: Create frontend password-reset.test.tsx
+  - [x] B1.5.09: Test user can request reset from login page
+  - [x] B1.5.10: Test user receives email with reset link
+  - [x] B1.5.11: Test user can reset password with valid token
+  - [x] B1.5.12: Test invalid token shows error message
+  - [x] B1.5.13: Test user can login with new password
+  - [x] B1.5.14: All password reset tests pass
+
+- [ ] B2: Core Feature Completion
+
+- [x] B2.1: Facebook Webhook Polling Completion (16 hours)
+  - [x] B2.1.01: Review TODO comments in poll_facebook_leads_task.py (lines 56-82)
+  - [x] B2.1.02: Implement error handling for API rate limits
+  - [x] B2.1.03: Implement retry logic with exponential backoff
+  - [x] B2.1.04: Add metrics tracking (leads polled, created, errors)
+  - [x] B2.1.05: Implement deduplication in polling
+  - [x] B2.1.06: Configure polling interval (10 minutes)
+  - [x] B2.1.07: Configure timeout (30 seconds per page)
+  - [x] B2.1.08: Configure retry policy
+  - [x] B2.1.09: Remove all TODO comments
+  - [x] B2.1.10: Integration tests pass
+
+- [x] B2.2: VIN Decode Integration Tests (6 hours)
+  - [x] B2.2.01: Create test_vin_decode_integration.py
+  - [x] B2.2.02: Test VIN decode calls NHTSA API successfully
+  - [x] B2.2.03: Test VIN decode caches results
+  - [x] B2.2.04: Test VIN decode handles API errors
+  - [x] B2.2.05: Test VIN decode timeout returns cached data
+  - [x] B2.2.06: Test VIN decode populates vehicle attributes
+  - [x] B2.2.07: Mock NHTSA API responses
+  - [x] B2.2.08: Test success scenarios
+  - [x] B2.2.09: Test error scenarios (timeout, 404, 500)
+  - [x] B2.2.10: Verify caching behavior
+
+- [x] B2.3: Team Switching UI Implementation (8 hours)
+  - [x] B2.3.01: Create TeamSwitcher component
+  - [x] B2.3.02: Create useTeams hook
+  - [x] B2.3.03: Implement getUserTeams API call
+  - [x] B2.3.04: Implement switchTeam API call
+  - [x] B2.3.05: Add TeamSwitcher to Header component
+  - [x] B2.3.06: Display team dropdown in header
+  - [x] B2.3.07: Show all user's teams
+  - [x] B2.3.08: Handle team switching
+  - [x] B2.3.09: Update context on switch
+  - [x] B2.3.10: Refresh page with new team context
+  - [x] B2.3.11: Unit tests for TeamSwitcher component
+  - [x] B2.3.12: E2E test for team switching flow
+
+- [x] B2.4: Calendar Integration (12 hours)
+  - [x] B2.4.01: Install @fullcalendar/react dependencies
+  - [x] B2.4.02: Create FullCalendarView component
+  - [x] B2.4.03: Integrate dayGridPlugin
+  - [x] B2.4.04: Integrate timeGridPlugin
+  - [x] B2.4.05: Integrate interactionPlugin
+  - [x] B2.4.06: Configure header toolbar
+  - [x] B2.4.07: Map appointments to calendar events
+  - [x] B2.4.08: Implement click on appointment handler
+  - [x] B2.4.09: Implement select empty slot handler
+  - [x] B2.4.10: Implement drag to reschedule
+  - [x] B2.4.11: Replace basic CalendarView with FullCalendarView
+  - [x] B2.4.12: Verify responsive design
+  - [x] B2.4.13: Unit tests for FullCalendarView
+  - [x] B2.4.14: E2E test for calendar interactions
+
+- [x] B2.5: Role-Based Permission Tests (12 hours)
+  - [x] B2.5.01: Create test_role_based_permissions.py
+  - [x] B2.5.02: Define PERMISSION_MATRIX (admin, manager, vendedor, viewer)
+  - [x] B2.5.03: Test admin: full access (create, read, update, delete, assign)
+  - [x] B2.5.04: Test manager: team management (create, read, update, assign)
+  - [x] B2.5.05: Test vendedor: own leads/appointments (create, read, update)
+  - [x] B2.5.06: Test viewer: read-only
+  - [x] B2.5.07: Test all role combinations
+  - [x] B2.5.08: Verify authorization at API layer
+  - [x] B2.5.09: Verify cross-tenant access blocked
+  - [x] B2.5.10: Verify role escalation blocked
+  - [x] B2.5.11: Document permission matrix
+
+- [ ] B2.6: API Contract Test Completion (8 hours)
+  - [ ] B2.6.01: Identify missing contract test coverage
+  - [ ] B2.6.02: Compare routers with contract tests
+  - [ ] B2.6.03: Add missing product schema tests
+  - [ ] B2.6.04: Add missing appointment schema tests
+  - [ ] B2.6.05: Create teams schema tests
+  - [ ] B2.6.06: Verify request DTOs match OpenAPI
+  - [ ] B2.6.07: Verify response DTOs match OpenAPI
+  - [ ] B2.6.08: Verify status codes correct
+  - [ ] B2.6.09: Verify validation rules documented
+  - [ ] B2.6.10: All API endpoints have contract tests
+
+- [ ] B3: UX Enhancements
+
+- [ ] B3.1: Multi-Image Gallery Implementation (12 hours)
+  - [ ] B3.1.01: Create ProductImageGallery component
+  - [ ] B3.1.02: Implement main image display
+  - [ ] B3.1.03: Implement prev/next navigation
+  - [ ] B3.1.04: Implement thumbnail selection
+  - [ ] B3.1.05: Add keyboard navigation
+  - [ ] B3.1.06: Integrate with VehicleForm
+  - [ ] B3.1.07: Verify responsive design
+  - [ ] B3.1.08: Unit tests for ProductImageGallery
+  - [ ] B3.1.09: E2E test for gallery interactions
+
+- [ ] B3.2: Image Optimization Service (8 hours)
+  - [ ] B3.2.01: Create ImageOptimizer service
+  - [ ] B3.2.02: Implement resize to max 1920x1080
+  - [ ] B3.2.03: Implement JPEG compression at 85%
+  - [ ] B3.2.04: Implement EXIF data stripping
+  - [ ] B3.2.05: Implement alpha channel removal
+  - [ ] B3.2.06: Add /optimize endpoint to router
+  - [ ] B3.2.07: Integrate optimization before upload
+  - [ ] B3.2.08: Verify file size reduced >50%
+  - [ ] B3.2.09: Unit tests for optimizer
+  - [ ] B3.2.10: Test with real images
+
+- [ ] B3.3: Appointment Email Notifications (4 hours)
+  - [ ] B3.3.01: Review existing email_service.py
+  - [ ] B3.3.02: Verify send_appointment_confirmation exists
+  - [ ] B3.3.03: Verify send_appointment_cancellation exists
+  - [ ] B3.3.04: Wire up confirmation in ConfirmAppointmentUseCase
+  - [ ] B3.3.05: Wire up cancellation in CancelAppointmentUseCase
+  - [ ] B3.3.06: Test confirmation email sent
+  - [ ] B3.3.07: Test cancellation email sent
+  - [ ] B3.3.08: Verify email templates
+  - [ ] B3.3.09: Integration tests pass
+
+- [ ] B3.4: Product Edit Mode Implementation (8 hours)
+  - [ ] B3.4.01: Review TODO at line 440 in VehicleForm.tsx
+  - [ ] B3.4.02: Add mode prop to VehicleForm ('create' | 'edit')
+  - [ ] B3.4.03: Add productId prop to VehicleForm
+  - [ ] B3.4.04: Create useProduct hook for edit mode
+  - [ ] B3.4.05: Load product data in edit mode
+  - [ ] B3.4.06: Pre-fill form with existing values
+  - [ ] B3.4.07: Add updateProduct API call
+  - [ ] B3.4.08: Handle validation in edit mode
+  - [ ] B3.4.09: Remove TODO comment
+  - [ ] B3.4.10: Unit tests for edit mode
+  - [ ] B3.4.11: E2E test for edit flow
+
+- [ ] B3.5: CSV Parser for Bulk Upload (12 hours)
+  - [ ] B3.5.01: Create CSVProductParser service
+  - [ ] B3.5.02: Implement CSV parsing with DictReader
+  - [ ] B3.5.03: Validate required columns (vin, title, price, category_id)
+  - [ ] B3.5.04: Parse VIN data
+  - [ ] B3.5.05: Create CreateProductRequest from CSV row
+  - [ ] B3.5.06: Create BulkUploadProductsUseCase
+  - [ ] B3.5.07: Implement partial failure handling
+  - [ ] B3.5.08: Return BulkUploadResult with counts
+  - [ ] B3.5.09: Add /bulk-upload endpoint to router
+  - [ ] B3.5.10: Integration tests with sample CSV
+  - [ ] B3.5.11: Test error handling
+  - [ ] B3.5.12: Test partial failures
+
+- [ ] B4: Advanced Features
+
+- [ ] B4.1: Team Invitation System (16 hours)
+  - [ ] B4.1.01: Create TeamInvitation entity
+  - [ ] B4.1.02: Add invitation fields (team_id, email, role, token, expires_at)
+  - [ ] B4.1.03: Create InviteTeamMemberUseCase
+  - [ ] B4.1.04: Generate invitation token
+  - [ ] B4.1.05: Send invitation email
+  - [ ] B4.1.06: Create AcceptTeamInvitationUseCase
+  - [ ] B4.1.07: Validate invitation token
+  - [ ] B4.1.08: Add user to team
+  - [ ] B4.1.09: Mark invitation as accepted
+  - [ ] B4.1.10: Add /invite endpoint to router
+  - [ ] B4.1.11: Add /accept-invitation endpoint to router
+  - [ ] B4.1.12: Create invitation acceptance page
+  - [ ] B4.1.13: Test invitation expires after 7 days [requires: 12]
+  - [ ] B4.1.14: Test already member validation
+  - [ ] B4.1.15: Unit tests for use cases
+  - [ ] B4.1.16: Integration tests for flow
+
+- [ ] B4.2: Appointment Conflict Detection (6 hours)
+  - [ ] B4.2.01: Create AppointmentConflictDetector service
+  - [ ] B4.2.02: Implement times_overlap logic
+  - [ ] B4.2.03: Detect dealer unavailability conflicts
+  - [ ] B4.2.04: Integrate into CreateAppointmentUseCase
+  - [ ] B4.2.05: Return conflicts to user
+  - [ ] B4.2.06: Allow override with confirmation
+  - [ ] B4.2.07: Unit tests for detection logic
+  - [ ] B4.2.08: Integration tests for conflict scenarios
+
+- [ ] B4.3: Lead Assignment Rules Engine (8 hours)
+  - [ ] B4.3.01: Create LeadAssignmentRulesEngine
+  - [ ] B4.3.02: Implement round-robin assignment
+  - [ ] B4.3.03: Implement vehicle owner assignment
+  - [ ] B4.3.04: Implement workload balancing
+  - [ ] B4.3.05: Implement geographic proximity (if data available)
+  - [ ] B4.3.06: Integrate into CreateLeadUseCase
+  - [ ] B4.3.07: Make rules configurable
+  - [ ] B4.3.08: Unit tests for each rule
+  - [ ] B4.3.09: Integration test for flow
+
+- [ ] B4.4: Lead Audit Trail UI (6 hours)
+  - [ ] B4.4.01: Create getLeadAuditTrail API call
+  - [ ] B4.4.02: Create useLeadAuditTrail hook
+  - [ ] B4.4.03: Create LeadAuditTrail component
+  - [ ] B4.4.04: Display audit trail chronologically
+  - [ ] B4.4.05: Show status changes
+  - [ ] B4.4.06: Show who made changes
+  - [ ] B4.4.07: Show reasons for changes
+  - [ ] B4.4.08: Integrate into lead detail page
+  - [ ] B4.4.09: Unit tests for component
+  - [ ] B4.4.10: E2E test for display
+
+## Notes

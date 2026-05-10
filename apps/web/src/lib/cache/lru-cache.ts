@@ -103,7 +103,7 @@ export class LRUCache<K, V> {
  * Global API cache instance
  * Shared across all requests in the same server instance
  */
-export const apiCache = new LRUCache<string, any>();
+export const apiCache = new LRUCache<string, unknown>();
 
 /**
  * Cache key generator for API requests
@@ -112,7 +112,7 @@ export const apiCache = new LRUCache<string, any>();
 export function generateCacheKey(
   method: string,
   url: string,
-  data?: any,
+  data?: unknown,
 ): string {
   const normalizedMethod = method.toUpperCase();
   const normalizedUrl = url.replace(/https?:\/\/[^\/]+/, "");
@@ -132,13 +132,13 @@ export function withCache<T>(
     keyGenerator?: (key: string) => string;
   } = {},
 ) {
-  return async (key: string, fetchOptions?: any): Promise<T> => {
+  return async (key: string, _fetchOptions?: RequestInit): Promise<T> => {
     const cacheKey = options.keyGenerator ? options.keyGenerator(key) : key;
 
     // Try to get from cache first
     const cached = apiCache.get(cacheKey);
     if (cached !== null) {
-      return cached;
+      return cached as T;
     }
 
     // Fetch and cache the result

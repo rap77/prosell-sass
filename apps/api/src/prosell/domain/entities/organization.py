@@ -3,9 +3,7 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from pydantic import Field
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field
 from prosell.domain.value_objects.organization_status import OrganizationStatus
 
 

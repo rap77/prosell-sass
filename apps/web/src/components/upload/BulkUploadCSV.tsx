@@ -83,15 +83,15 @@ export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVPr
 
         const rows: ParsedRow[] = lines.slice(1).map((line, index) => {
           const values = line.split(",").map((v) => v.trim())
-          const row: any = {
+          const row: ParsedRow = {
             rowNumber: index + 2, // +2 for header (row 1) and 0-based index
+            vin: "",
           }
 
           headers.forEach((header, i) => {
             row[header] = values[i] || ""
           })
-
-          return row as ParsedRow
+          return row
         })
 
         // Basic validation

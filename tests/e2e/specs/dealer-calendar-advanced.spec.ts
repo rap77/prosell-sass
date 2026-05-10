@@ -319,7 +319,7 @@ test.describe("Dealer Calendar - Advanced Interactions (B2.4)", () => {
 
     // Close modal
     await page.keyboard.press("Escape");
-    await expect(page.locator('[role="dialog"]")).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 3000 });
   });
 
   test("B2.4.n: should switch between calendar views successfully", async ({ page }) => {

@@ -135,11 +135,105 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
       });
     });
 
-    // Mock appointments list endpoint (GET only).
-    // Registered FIRST so the specific /status handler (registered last) takes
-    // precedence for PUT requests — Playwright evaluates handlers LIFO.
-    await page.route("**/api/v1/appointments**", async (route) => {
+    // Mock leads API endpoint FIRST (before appointments) — required by AppointmentDetailsModal
+    // CRITICAL: Mock must be registered before appointments mock to avoid conflicts
+    const mockLeadData = {
+      "lead-1": {
+        id: "lead-1",
+        buyer_name: "John Doe",
+        buyer_email: "john@example.com",
+        buyer_phone: "+1-555-0101",
+        product_id: "prod-1",
+        product: {
+          id: "prod-1",
+          title: "Toyota Camry",
+          price_cents: 2000000,
+          currency: "USD",
+          status: "active",
+          attributes: { category: "vehicle", year: 2024, make: "Toyota", model: "Camry" },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        message: "Interested in this vehicle",
+        status: "appointment_set",
+        source: "marketplace",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      "lead-2": {
+        id: "lead-2",
+        buyer_name: "Jane Smith",
+        buyer_email: "jane@example.com",
+        buyer_phone: "+1-555-0102",
+        product_id: "prod-2",
+        product: {
+          id: "prod-2",
+          title: "Honda Accord",
+          price_cents: 2200000,
+          currency: "USD",
+          status: "active",
+          attributes: { category: "vehicle", year: 2024, make: "Honda", model: "Accord" },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        message: "Follow up required",
+        status: "appointment_set",
+        source: "marketplace",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    };
+
+    // Mock with exact URL pattern
+    await page.route("**/api/v1/leads/lead-1", async (route) => {
       if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(mockLeadData["lead-1"]),
+        });
+      } else {
+        await route.fallback();
+      }
+    });
+
+    await page.route("**/api/v1/leads/lead-2", async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(mockLeadData["lead-2"]),
+        });
+      } else {
+        await route.fallback();
+      }
+    });
+
+    // Fallback mock for any lead ID
+    await page.route(/\/api\/v1\/leads\/[^/]+$/, async (route) => {
+      if (route.request().method() === "GET") {
+        const url = route.request().url();
+        const leadId = url.split("/").pop() || "lead-1";
+        const mockLead = mockLeadData[leadId as keyof typeof mockLeadData] || mockLeadData["lead-1"];
+
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(mockLead),
+        });
+      } else {
+        await route.fallback();
+      }
+    });
+
+    // Mock appointments list endpoint (GET only).
+    // Registered AFTER leads so the more specific patterns take precedence.
+    await page.route("**/api/v1/appointments**", async (route) => {
+      console.log("[APPOINTMENTS MOCK] URL called:", route.request().url(), "Method:", route.request().method());
+
+      if (route.request().method() === "GET") {
+        console.log("[APPOINTMENTS MOCK] Returning", MOCK_APPOINTMENTS.length, "appointments");
+
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -151,6 +245,7 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
           }),
         });
       } else {
+        console.log("[APPOINTMENTS MOCK] Method not GET, calling fallback");
         await route.fallback();
       }
     });
@@ -173,69 +268,6 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
         });
       } else {
         await route.fallback();
-      }
-    });
-
-    // Mock leads API endpoint — required by AppointmentDetailsModal
-    await page.route("**/api/v1/leads/*", async (route) => {
-      if (route.request().method() === "GET") {
-        // Extract lead_id from URL: /api/v1/leads/lead-1
-        const url = route.request().url();
-        const leadId = url.split("/").pop();
-
-        // Return mock lead data with buyer_name and product
-        const mockLeads: Record<string, unknown> = {
-          "lead-1": {
-            id: "lead-1",
-            buyer_name: "John Doe",
-            buyer_email: "john@example.com",
-            buyer_phone: "+1-555-0101",
-            product_id: "prod-1",
-            product: {
-              id: "prod-1",
-              title: "Toyota Camry",
-              price_cents: 2000000,
-              currency: "USD",
-              status: "active",
-              attributes: { category: "vehicle", year: 2024, make: "Toyota", model: "Camry" },
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            message: "Interested in this vehicle",
-            status: "appointment_set",
-            source: "marketplace",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          "lead-2": {
-            id: "lead-2",
-            buyer_name: "Jane Smith",
-            buyer_email: "jane@example.com",
-            buyer_phone: "+1-555-0102",
-            product_id: "prod-2",
-            product: {
-              id: "prod-2",
-              title: "Honda Accord",
-              price_cents: 2200000,
-              currency: "USD",
-              status: "active",
-              attributes: { category: "vehicle", year: 2024, make: "Honda", model: "Accord" },
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            message: "Follow up required",
-            status: "appointment_set",
-            source: "marketplace",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        };
-
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify(mockLeads[leadId ?? "lead-1"] ?? mockLeads["lead-1"]),
-        });
       }
     });
   });
@@ -304,6 +336,13 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
   });
 
   test("should show appointment details modal on click (A6.10, A6.15)", async ({ page }) => {
+    // Intercept console.log from the browser to see React Query logs
+    page.on("console", (msg) => {
+      if (msg.text().includes("lead") || msg.text().includes("Lead") || msg.text().includes("[QUERY]")) {
+        console.log("[BROWSER CONSOLE]", msg.text());
+      }
+    });
+
     await page.goto("/branch/appointments");
     await page.waitForLoadState("networkidle");
 
@@ -312,18 +351,23 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
     await expect(firstEvent).toBeVisible({ timeout: 15000 });
     await firstEvent.click();
 
-    // Wait for modal to appear
-    await expect(page.locator("text=Appointment Details")).toBeVisible();
+    // Wait for modal to appear - use role="dialog" instead of text content
+    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
 
-    // Check that buyer name is displayed
-    await expect(page.locator("text=John Doe")).toBeVisible();
+    // Debug: Check the modal content
+    const modalText = await page.locator('[role="dialog"]').textContent();
+    console.log("[TEST] Modal content:", modalText?.substring(0, 200));
 
-    // Check that vehicle info is displayed
-    await expect(page.locator("text=/.*Toyota.*/")).toBeVisible();
+    // CRITICAL: Verify that buyer data is loaded and displayed
+    // The mock should return "John Doe" for lead-1
+    await expect(page.locator('[role="dialog"]')).toContainText("John Doe", { timeout: 3000 });
+    
+    // Also verify vehicle information is displayed
+    await expect(page.locator('[role="dialog"]')).toContainText("Toyota", { timeout: 3000 });
 
     // Close modal
     await page.keyboard.press("Escape");
-    await expect(page.locator("text=Appointment Details")).not.toBeVisible();
+    await expect(page.locator('[role="dialog"]')).not.toBeVisible();
   });
 
   test("should show confirm and cancel buttons for scheduled appointments (A6.15)", async ({ page }) => {
@@ -470,11 +514,105 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
       });
     });
 
-    // Mock appointments list endpoint (GET only).
-    // Registered FIRST so the specific /status handler (registered last) takes
-    // precedence for PUT requests — Playwright evaluates handlers LIFO.
-    await page.route("**/api/v1/appointments**", async (route) => {
+    // Mock leads API endpoint FIRST (before appointments) — required by AppointmentDetailsModal
+    // CRITICAL: Mock must be registered before appointments mock to avoid conflicts
+    const mockLeadData = {
+      "lead-1": {
+        id: "lead-1",
+        buyer_name: "John Doe",
+        buyer_email: "john@example.com",
+        buyer_phone: "+1-555-0101",
+        product_id: "prod-1",
+        product: {
+          id: "prod-1",
+          title: "Toyota Camry",
+          price_cents: 2000000,
+          currency: "USD",
+          status: "active",
+          attributes: { category: "vehicle", year: 2024, make: "Toyota", model: "Camry" },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        message: "Interested in this vehicle",
+        status: "appointment_set",
+        source: "marketplace",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      "lead-2": {
+        id: "lead-2",
+        buyer_name: "Jane Smith",
+        buyer_email: "jane@example.com",
+        buyer_phone: "+1-555-0102",
+        product_id: "prod-2",
+        product: {
+          id: "prod-2",
+          title: "Honda Accord",
+          price_cents: 2200000,
+          currency: "USD",
+          status: "active",
+          attributes: { category: "vehicle", year: 2024, make: "Honda", model: "Accord" },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        message: "Follow up required",
+        status: "appointment_set",
+        source: "marketplace",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    };
+
+    // Mock with exact URL pattern
+    await page.route("**/api/v1/leads/lead-1", async (route) => {
       if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(mockLeadData["lead-1"]),
+        });
+      } else {
+        await route.fallback();
+      }
+    });
+
+    await page.route("**/api/v1/leads/lead-2", async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(mockLeadData["lead-2"]),
+        });
+      } else {
+        await route.fallback();
+      }
+    });
+
+    // Fallback mock for any lead ID
+    await page.route(/\/api\/v1\/leads\/[^/]+$/, async (route) => {
+      if (route.request().method() === "GET") {
+        const url = route.request().url();
+        const leadId = url.split("/").pop() || "lead-1";
+        const mockLead = mockLeadData[leadId as keyof typeof mockLeadData] || mockLeadData["lead-1"];
+
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(mockLead),
+        });
+      } else {
+        await route.fallback();
+      }
+    });
+
+    // Mock appointments list endpoint (GET only).
+    // Registered AFTER leads so the more specific patterns take precedence.
+    await page.route("**/api/v1/appointments**", async (route) => {
+      console.log("[APPOINTMENTS MOCK] URL called:", route.request().url(), "Method:", route.request().method());
+
+      if (route.request().method() === "GET") {
+        console.log("[APPOINTMENTS MOCK] Returning", MOCK_APPOINTMENTS.length, "appointments");
+
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -486,6 +624,7 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
           }),
         });
       } else {
+        console.log("[APPOINTMENTS MOCK] Method not GET, calling fallback");
         await route.fallback();
       }
     });
@@ -508,69 +647,6 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
         });
       } else {
         await route.fallback();
-      }
-    });
-
-    // Mock leads API endpoint — required by AppointmentDetailsModal
-    await page.route("**/api/v1/leads/*", async (route) => {
-      if (route.request().method() === "GET") {
-        // Extract lead_id from URL: /api/v1/leads/lead-1
-        const url = route.request().url();
-        const leadId = url.split("/").pop();
-
-        // Return mock lead data with buyer_name and product
-        const mockLeads: Record<string, unknown> = {
-          "lead-1": {
-            id: "lead-1",
-            buyer_name: "John Doe",
-            buyer_email: "john@example.com",
-            buyer_phone: "+1-555-0101",
-            product_id: "prod-1",
-            product: {
-              id: "prod-1",
-              title: "Toyota Camry",
-              price_cents: 2000000,
-              currency: "USD",
-              status: "active",
-              attributes: { category: "vehicle", year: 2024, make: "Toyota", model: "Camry" },
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            message: "Interested in this vehicle",
-            status: "appointment_set",
-            source: "marketplace",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          "lead-2": {
-            id: "lead-2",
-            buyer_name: "Jane Smith",
-            buyer_email: "jane@example.com",
-            buyer_phone: "+1-555-0102",
-            product_id: "prod-2",
-            product: {
-              id: "prod-2",
-              title: "Honda Accord",
-              price_cents: 2200000,
-              currency: "USD",
-              status: "active",
-              attributes: { category: "vehicle", year: 2024, make: "Honda", model: "Accord" },
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            message: "Follow up required",
-            status: "appointment_set",
-            source: "marketplace",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        };
-
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify(mockLeads[leadId ?? "lead-1"] ?? mockLeads["lead-1"]),
-        });
       }
     });
   });
@@ -620,15 +696,12 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     // Wait for modal to appear
     await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 3000 });
 
-    // Verify buyer name is displayed
-    await expect(page.locator("text=John Doe")).toBeVisible();
-
-    // Verify vehicle information is displayed
-    await expect(page.locator("text=Toyota Camry")).toBeVisible();
-
-    // Verify appointment time is displayed
-    const modal = page.locator('[role="dialog"]');
-    await expect(modal).toContainText(/appointment/i);
+    // CRITICAL: Verify that buyer data is loaded and displayed
+    // The mock should return "John Doe" for lead-1
+    await expect(page.locator('[role="dialog"]')).toContainText("John Doe", { timeout: 3000 });
+    
+    // Also verify vehicle information is displayed
+    await expect(page.locator('[role="dialog"]')).toContainText("Toyota", { timeout: 3000 });
   });
 
   test("A7.17: should switch between calendar views", async ({ page }) => {

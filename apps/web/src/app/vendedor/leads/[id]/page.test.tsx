@@ -3,7 +3,7 @@
  */
 
 import { render, screen, act } from "@testing-library/react";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi, type Mock } from "vitest";
 import { useRouter } from "next/navigation";
 import { useLead, useLeadDuplicates } from "@/lib/api/leads";
 
@@ -43,12 +43,12 @@ describe("LeadDetails Page", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useRouter as vi.Mock).mockReturnValue({
+    (useRouter as Mock).mockReturnValue({
       push: mockPush,
       back: mockBack,
     });
     // Default: no duplicates
-    (useLeadDuplicates as vi.Mock).mockReturnValue({
+    (useLeadDuplicates as Mock).mockReturnValue({
       data: { lead_id: "test-lead-123", duplicates: [], count: 0 },
       isLoading: false,
       error: null,
@@ -58,7 +58,7 @@ describe("LeadDetails Page", () => {
   describe("Slice 1: Basic page structure and routing", () => {
     it("should render loading state when lead is being fetched", async () => {
       // Arrange: Mock loading state
-      (useLead as vi.Mock).mockReturnValue({
+      (useLead as Mock).mockReturnValue({
         data: null,
         isLoading: true,
         error: null,
@@ -74,7 +74,7 @@ describe("LeadDetails Page", () => {
 
     it("should display loading indicator", async () => {
       // Arrange: Mock loading state
-      (useLead as vi.Mock).mockReturnValue({
+      (useLead as Mock).mockReturnValue({
         data: null,
         isLoading: true,
         error: null,
@@ -92,7 +92,7 @@ describe("LeadDetails Page", () => {
     it("should display error state when fetch fails", async () => {
       // Arrange: Mock error state
       const mockError = new Error("Failed to fetch lead");
-      (useLead as vi.Mock).mockReturnValue({
+      (useLead as Mock).mockReturnValue({
         data: null,
         isLoading: false,
         error: mockError,
@@ -110,7 +110,7 @@ describe("LeadDetails Page", () => {
 
     it("should display not found state when lead is null", async () => {
       // Arrange: Mock not found state
-      (useLead as vi.Mock).mockReturnValue({
+      (useLead as Mock).mockReturnValue({
         data: null,
         isLoading: false,
         error: null,
@@ -143,7 +143,7 @@ describe("LeadDetails Page", () => {
         updated_at: "2026-04-28T12:00:00Z",
       };
 
-      (useLead as vi.Mock).mockReturnValue({
+      (useLead as Mock).mockReturnValue({
         data: mockLead,
         isLoading: false,
         error: null,
@@ -178,7 +178,7 @@ describe("LeadDetails Page", () => {
         updated_at: "2026-04-28T12:00:00Z",
       };
 
-      (useLead as vi.Mock).mockReturnValue({
+      (useLead as Mock).mockReturnValue({
         data: mockLead,
         isLoading: false,
         error: null,
@@ -213,7 +213,7 @@ describe("LeadDetails Page", () => {
         updated_at: "2026-04-28T12:00:00Z",
       };
 
-      (useLead as vi.Mock).mockReturnValue({
+      (useLead as Mock).mockReturnValue({
         data: mockLead,
         isLoading: false,
         error: null,
@@ -230,7 +230,7 @@ describe("LeadDetails Page", () => {
 
     it("should not display 'Agendar Cita' button when loading", async () => {
       // Arrange: Mock loading state
-      (useLead as vi.Mock).mockReturnValue({
+      (useLead as Mock).mockReturnValue({
         data: null,
         isLoading: true,
         error: null,
@@ -248,7 +248,7 @@ describe("LeadDetails Page", () => {
     it("should not display 'Agendar Cita' button when there's an error", async () => {
       // Arrange: Mock error state
       const mockError = new Error("Failed to fetch lead");
-      (useLead as vi.Mock).mockReturnValue({
+      (useLead as Mock).mockReturnValue({
         data: null,
         isLoading: false,
         error: mockError,
@@ -280,8 +280,8 @@ describe("LeadDetails Page", () => {
     };
 
     it("should NOT show duplicate warning when no duplicates", async () => {
-      (useLead as vi.Mock).mockReturnValue({ data: mockLead, isLoading: false, error: null });
-      (useLeadDuplicates as vi.Mock).mockReturnValue({
+      (useLead as Mock).mockReturnValue({ data: mockLead, isLoading: false, error: null });
+      (useLeadDuplicates as Mock).mockReturnValue({
         data: { lead_id: "test-lead-123", duplicates: [], count: 0 },
         isLoading: false,
         error: null,
@@ -295,8 +295,8 @@ describe("LeadDetails Page", () => {
     });
 
     it("should show duplicate warning when duplicates exist", async () => {
-      (useLead as vi.Mock).mockReturnValue({ data: mockLead, isLoading: false, error: null });
-      (useLeadDuplicates as vi.Mock).mockReturnValue({
+      (useLead as Mock).mockReturnValue({ data: mockLead, isLoading: false, error: null });
+      (useLeadDuplicates as Mock).mockReturnValue({
         data: {
           lead_id: "test-lead-123",
           duplicates: [
@@ -321,8 +321,8 @@ describe("LeadDetails Page", () => {
     });
 
     it("should NOT show duplicate warning when duplicates data is undefined", async () => {
-      (useLead as vi.Mock).mockReturnValue({ data: mockLead, isLoading: false, error: null });
-      (useLeadDuplicates as vi.Mock).mockReturnValue({
+      (useLead as Mock).mockReturnValue({ data: mockLead, isLoading: false, error: null });
+      (useLeadDuplicates as Mock).mockReturnValue({
         data: undefined,
         isLoading: true,
         error: null,

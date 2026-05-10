@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.appointment.request import CreateAppointmentRequest
 from prosell.application.dto.appointment.response import AppointmentResponse
+from prosell.application.ports.email_service import AbstractEmailService
 from prosell.application.use_cases.appointment.cancel_appointment import CancelAppointmentUseCase
 from prosell.application.use_cases.appointment.confirm_appointment import ConfirmAppointmentUseCase
 from prosell.application.use_cases.appointment.create_appointment import CreateAppointmentUseCase
@@ -92,7 +93,7 @@ async def get_local_product_repository(
 async def get_cancel_appointment_use_case(
     appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],
     lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
-    email_service: Annotated[any, Depends(get_email_service)],
+    email_service: Annotated[AbstractEmailService, Depends(get_email_service)],
     user_repo: Annotated[SqlAlchemyUserRepository, Depends(get_local_user_repository)],
     product_repo: Annotated[SqlAlchemyProductRepository, Depends(get_local_product_repository)],
 ) -> CancelAppointmentUseCase:
@@ -108,7 +109,7 @@ async def get_cancel_appointment_use_case(
 async def get_confirm_appointment_use_case(
     appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],
     lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
-    email_service: Annotated[any, Depends(get_email_service)],
+    email_service: Annotated[AbstractEmailService, Depends(get_email_service)],
     user_repo: Annotated[SqlAlchemyUserRepository, Depends(get_local_user_repository)],
     product_repo: Annotated[SqlAlchemyProductRepository, Depends(get_local_product_repository)],
 ) -> ConfirmAppointmentUseCase:

@@ -4,9 +4,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import Field, field_validator
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field, field_validator
 
 
 class Category(DomainModel):

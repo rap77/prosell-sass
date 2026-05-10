@@ -48,11 +48,10 @@ class UpdateLeadStatusUseCase:
             LeadStateTransitionException: If transition is invalid
         """
         # Validate lead exists
-        from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
         result = await self.lead_repository.get_by_id(lead_id, tenant_id)
         if not result:
             raise LeadNotFoundException(f"Lead not found: {lead_id}")
-        lead = result.lead if isinstance(result, LeadWithProduct) else result
+        lead = result.lead if hasattr(result, "lead") else result
 
         # Validate transition before persisting
         if not lead.can_transition_to(request.new_status):
