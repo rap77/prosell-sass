@@ -308,30 +308,30 @@
   - [x] B2.6.09: Verify validation rules documented [requires: 08] - PLANNED (✅ complete)
   - [x] B2.6.10: All API endpoints have contract tests [requires: 09] - PLANNED (✅ complete)
 
-- [ ] B3: UX Enhancements
+- [~] B3: UX Enhancements
 
-- [ ] B3.1: Multi-Image Gallery Implementation (12 hours)
+- [x] B3.1: Multi-Image Gallery Implementation (12 hours)
   - [x] B3.1.01: Create ProductImageGallery component
   - [x] B3.1.02: Implement main image display [requires: 01]
   - [x] B3.1.03: Implement prev/next navigation [requires: 02]
   - [x] B3.1.04: Implement thumbnail selection [requires: 03]
   - [x] B3.1.05: Add keyboard navigation [requires: 04]
-  - [ ] B3.1.06: Integrate with VehicleForm [requires: 05]
+  - [x] B3.1.06: Integrate with VehicleForm [requires: 05]
   - [x] B3.1.07: Verify responsive design [requires: 06]
   - [x] B3.1.08: Unit tests for ProductImageGallery [requires: 07]
-  - [ ] B3.1.09: E2E test for gallery interactions [requires: 01]
+  - [x] B3.1.09: E2E test for gallery interactions [requires: 01]
 
-- [ ] B3.2: Image Optimization Service (8 hours)
-  - [ ] B3.2.01: Create ImageOptimizer service
-  - [ ] B3.2.02: Implement resize to max 1920x1080 [requires: 01]
-  - [ ] B3.2.03: Implement JPEG compression at 85% [requires: 02]
-  - [ ] B3.2.04: Implement EXIF data stripping [requires: 03]
-  - [ ] B3.2.05: Implement alpha channel removal [requires: 04]
-  - [ ] B3.2.06: Add /optimize endpoint to router [requires: 05]
-  - [ ] B3.2.07: Integrate optimization before upload [requires: 06]
-  - [ ] B3.2.08: Verify file size reduced >50% [requires: 07]
-  - [ ] B3.2.09: Unit tests for optimizer [requires: 08]
-  - [ ] B3.2.10: Test with real images [requires: 09]
+- [~] B3.2: Image Optimization Service (8 hours)
+  - [x] B3.2.01: Create ImageOptimizer service
+  - [x] B3.2.02: Implement resize to max 1920x1080 [requires: 01]
+  - [x] B3.2.03: Implement JPEG compression at 85% [requires: 02]
+  - [x] B3.2.04: Implement EXIF data stripping [requires: 03]
+  - [x] B3.2.05: Implement alpha channel removal [requires: 04]
+  - [x] B3.2.06: Add /optimize endpoint to router [requires: 05]
+  - [ ] B3.2.07: Integrate optimization before upload [requires: 06] (deferred to B4)
+  - [x] B3.2.08: Verify file size reduced >50% [requires: 07] (verified in tests)
+  - [x] B3.2.09: Unit tests for optimizer [requires: 08] (14 tests passing)
+  - [ ] B3.2.10: Test with real images [requires: 09] (deferred to QA)
 
 - [ ] B3.3: Appointment Email Notifications (4 hours)
   - [ ] B3.3.01: Review existing email_service.py
