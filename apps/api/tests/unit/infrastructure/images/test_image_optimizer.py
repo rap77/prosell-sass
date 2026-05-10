@@ -130,3 +130,56 @@ class TestImageOptimizerResize:
         result_img = Image.open(BytesIO(result))
         assert result_img.width == 1000
         assert result_img.height == 500
+
+
+class TestImageOptimizerCompression:
+    """Test suite for JPEG compression and EXIF stripping."""
+
+    @pytest.mark.asyncio
+    async def test_output_format_is_jpeg(self, image_optimizer, large_square_image):
+        """Test that output is JPEG format."""
+        result = await image_optimizer.process(large_square_image)
+
+        # Load result to verify format
+        result_img = Image.open(BytesIO(result))
+        assert result_img.format == "JPEG"
+
+    @pytest.mark.asyncio
+    async def test_exif_data_stripped(self, image_optimizer):
+        """Test that EXIF metadata is stripped."""
+        # Create an image with EXIF data
+        img = Image.new("RGB", (2000, 2000), color="red")
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        image_bytes = buffer.getvalue()
+
+        result = await image_optimizer.process(image_bytes)
+
+        # Load result and verify no EXIF data
+        result_img = Image.open(BytesIO(result))
+        # JPEG images shouldn't have EXIF by default
+        assert result_img.info.get("exif") is None or len(result_img.info.get("exif", b"")) == 0
+
+    @pytest.mark.asyncio
+    async def test_jpeg_quality_reduces_size(self, image_optimizer, large_square_image):
+        """Test that JPEG compression reduces file size."""
+        result = await image_optimizer.process(large_square_image)
+
+        # JPEG should be smaller than PNG
+        assert len(result) < len(large_square_image)
+
+    @pytest.mark.asyncio
+    async def test_rgba_to_jpeg_conversion(self, image_optimizer):
+        """Test that RGBA images are converted to JPEG (alpha removed)."""
+        # Create RGBA image with transparency
+        img = Image.new("RGBA", (2000, 2000), color=(255, 0, 0, 128))  # 50% transparent red
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        rgba_bytes = buffer.getvalue()
+
+        result = await image_optimizer.process(rgba_bytes)
+
+        # Result should be JPEG (no alpha channel)
+        result_img = Image.open(BytesIO(result))
+        assert result_img.format == "JPEG"
+        assert result_img.mode == "RGB"

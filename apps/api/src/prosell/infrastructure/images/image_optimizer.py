@@ -76,7 +76,7 @@ class ImageOptimizer(IImagePipeline):
             # Resize using LANCZOS resampling for high quality
             img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-        # Save to bytes (PNG format for now, will be JPEG in B3.2.03)
+        # Save to bytes as JPEG with compression (strips EXIF automatically)
         buffer = BytesIO()
-        img.save(buffer, format="PNG")
+        img.save(buffer, format="JPEG", quality=self.jpeg_quality, optimize=True)
         return buffer.getvalue()
