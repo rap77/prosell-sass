@@ -8,7 +8,7 @@ import logging
 from typing import Annotated
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel
 
 from prosell.application.dto.image import ImageUploadUrlRequest, ImageUploadUrlResponse
@@ -18,6 +18,7 @@ from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
     get_spaces_service,
 )
+from prosell.infrastructure.images.image_optimizer import ImageOptimizer
 
 router = APIRouter(prefix="/images", tags=["images"])
 
@@ -111,3 +112,60 @@ async def get_image_status(
             )
 
     return ImageStatusResponse(status="pending")
+
+
+# Dependencies
+async def get_image_optimizer() -> ImageOptimizer:
+    """Return ImageOptimizer instance."""
+    return ImageOptimizer()
+
+
+@router.post("/optimize", status_code=status.HTTP_200_OK)
+async def optimize_image(
+    file: Annotated[UploadFile, File()],
+    optimizer: Annotated[ImageOptimizer, Depends(get_image_optimizer)],
+) -> Response:
+    """
+    Optimize uploaded image.
+
+    Performs:
+    - Resize to max 1920x1080 pixels (maintaining aspect ratio)
+    - JPEG compression at 85% quality
+    - Strip EXIF metadata
+    - Remove alpha channel (convert RGBA to RGB)
+
+    Args:
+        file: Uploaded image file
+        optimizer: ImageOptimizer service
+
+    Returns:
+        Optimized image bytes (JPEG format)
+
+    Raises:
+        HTTPException: If file is invalid or optimization fails
+    """
+    # Validate file type
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be an image",
+        )
+
+    # Read file bytes
+    file_bytes = await file.read()
+
+    if not file_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File is empty",
+        )
+
+    # Optimize image
+    try:
+        optimized_bytes = await optimizer.process(file_bytes)
+        return Response(content=optimized_bytes, media_type="image/jpeg")
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Image optimization failed: {str(e)}",
+        ) from e
