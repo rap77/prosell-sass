@@ -328,10 +328,10 @@
   - [x] B3.2.04: Implement EXIF data stripping [requires: 03]
   - [x] B3.2.05: Implement alpha channel removal [requires: 04]
   - [x] B3.2.06: Add /optimize endpoint to router [requires: 05]
-  - [ ] B3.2.07: Integrate optimization before upload [requires: 06] (deferred to B4)
+  - [x] B3.2.07: Integrate optimization before upload [requires: 06]
   - [x] B3.2.08: Verify file size reduced >50% [requires: 07] (verified in tests)
   - [x] B3.2.09: Unit tests for optimizer [requires: 08] (14 tests passing)
-  - [ ] B3.2.10: Test with real images [requires: 09] (deferred to QA)
+  - [x] B3.2.10: Test with real images [requires: 09] ✅ COMPLETADO - Testing manual exitoso (47-91% reducción)
 
 - [ ] B3.3: Appointment Email Notifications (4 hours)
   - [ ] B3.3.01: Review existing email_service.py
