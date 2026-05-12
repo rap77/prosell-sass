@@ -1,14 +1,19 @@
 """Email service for sending emails (SendGrid)."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
 from collections.abc import Callable
 from datetime import datetime
 from functools import wraps
-from typing import Protocol
+from typing import TYPE_CHECKING, Any, Callable, Protocol
 from uuid import UUID
 
 from prosell.core.config import settings
+
+if TYPE_CHECKING:
+    from prosell.domain.entities.appointment import AppointmentStatus
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +28,7 @@ def retry_on_sendgrid_error(
         503,
         504,
     ),
-) -> Callable:
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator to retry SendGrid API calls with exponential backoff.
 
@@ -38,9 +43,9 @@ def retry_on_sendgrid_error(
         Decorated function with retry logic
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        async def wrapper(*args, **kwargs):  # type: ignore
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             delay = initial_delay
             last_exception = None
 
@@ -138,7 +143,7 @@ class AbstractEmailService(Protocol):
         self,
         email: str,
         person_type: str,  # "branch" or "buyer"
-        appointment_details: dict,
+        appointment_details: dict[str, Any],
     ) -> None:
         """Send appointment reminder."""
         ...
@@ -150,7 +155,7 @@ class AbstractEmailService(Protocol):
         branch_name: str,
         vehicle_info: str,
         scheduled_at: datetime,
-        new_status: "AppointmentStatus",
+        new_status: AppointmentStatus,
         notes: str | None = None,
     ) -> None:
         """Send appointment status update (confirmed/cancelled) to buyer."""
@@ -208,7 +213,7 @@ class SendGridEmailService:
 
         # Send email
         sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response = await sg.send(message)  # type: ignore[attr-defined]
+        response: Any = await sg.send(message)  # type: ignore[attr-defined]
 
         # Log delivery status
         if response.status_code in (200, 202):  # type: ignore[attr-defined]
@@ -219,10 +224,10 @@ class SendGridEmailService:
         else:
             logger.error(  # type: ignore[attr-defined]
                 f"Email delivery failed: type=verification, to={email}, "
-                f"status={response.status_code}, body={response.body}"
+                f"status={response.status_code}, body={response.body}"  # type: ignore[attr-defined]
             )
             raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"
+                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
             )
 
     @retry_on_sendgrid_error()
@@ -264,7 +269,7 @@ class SendGridEmailService:
 
         # Send email
         sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response = await sg.send(message)  # type: ignore[attr-defined]
+        response: Any = await sg.send(message)  # type: ignore[attr-defined]
 
         # Log delivery status
         if response.status_code in (200, 202):  # type: ignore[attr-defined]
@@ -275,10 +280,10 @@ class SendGridEmailService:
         else:
             logger.error(  # type: ignore[attr-defined]
                 f"Email delivery failed: type=password_reset, to={email}, "
-                f"status={response.status_code}, body={response.body}"
+                f"status={response.status_code}, body={response.body}"  # type: ignore[attr-defined]
             )
             raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"
+                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
             )
 
     @retry_on_sendgrid_error()
@@ -313,7 +318,7 @@ class SendGridEmailService:
 
         # Send email
         sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response = await sg.send(message)  # type: ignore[attr-defined]
+        response: Any = await sg.send(message)  # type: ignore[attr-defined]
 
         # Log delivery status
         if response.status_code in (200, 202):  # type: ignore[attr-defined]
@@ -324,10 +329,10 @@ class SendGridEmailService:
         else:
             logger.error(  # type: ignore[attr-defined]
                 f"Email delivery failed: type=2fa_enabled, to={email}, "
-                f"status={response.status_code}, body={response.body}"
+                f"status={response.status_code}, body={response.body}"  # type: ignore[attr-defined]
             )
             raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"
+                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
             )
 
     @retry_on_sendgrid_error()
@@ -384,6 +389,7 @@ class SendGridEmailService:
                         </strong></td>
                         <td style="border: 1px solid #ddd;">{scheduled_str}</td>
                     </tr>
+                    {notes_row}
                 </table>
                 {f'<p><strong>Notas:</strong> {notes}</p>' if notes else ''}
                 <p>Por favor asegúrate de estar disponible para esta cita.</p>
@@ -395,7 +401,7 @@ class SendGridEmailService:
 
         # Send email
         sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response = await sg.send(message)  # type: ignore[attr-defined]
+        response: Any = await sg.send(message)  # type: ignore[attr-defined]
 
         # Log delivery status
         if response.status_code in (200, 202):  # type: ignore[attr-defined]
@@ -407,11 +413,11 @@ class SendGridEmailService:
         else:
             logger.error(  # type: ignore[attr-defined]
                 f"Email delivery failed: type=appointment_notification, "
-                f"to={branch_email}, status={response.status_code}, "
-                f"body={response.body}"
+                f"to={branch_email}, status={response.status_code}, "  # type: ignore[attr-defined]
+                f"body={response.body}"  # type: ignore[attr-defined]
             )
             raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"
+                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
             )
 
     @retry_on_sendgrid_error()
@@ -468,6 +474,7 @@ class SendGridEmailService:
                         </strong></td>
                         <td style="border: 1px solid #ddd;">{scheduled_str}</td>
                     </tr>
+                    {notes_row}
                 </table>
                 {f'<p><strong>Notas:</strong> {notes}</p>' if notes else ''}
                 <p>Por favor llega 10 minutos antes de tu cita.</p>
@@ -479,7 +486,7 @@ class SendGridEmailService:
 
         # Send email
         sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response = await sg.send(message)  # type: ignore[attr-defined]
+        response: Any = await sg.send(message)  # type: ignore[attr-defined]
 
         # Log delivery status
         if response.status_code in (200, 202):  # type: ignore[attr-defined]
@@ -491,11 +498,11 @@ class SendGridEmailService:
         else:
             logger.error(  # type: ignore[attr-defined]
                 f"Email delivery failed: type=appointment_confirmation, "
-                f"to={buyer_email}, status={response.status_code}, "
-                f"body={response.body}"
+                f"to={buyer_email}, status={response.status_code}, "  # type: ignore[attr-defined]
+                f"body={response.body}"  # type: ignore[attr-defined]
             )
             raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"
+                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
             )
 
     @retry_on_sendgrid_error()
@@ -503,7 +510,7 @@ class SendGridEmailService:
         self,
         email: str,
         person_type: str,  # "branch" or "buyer"
-        appointment_details: dict,
+        appointment_details: dict[str, Any],
     ) -> None:
         """Send appointment reminder."""
         import sendgrid  # type: ignore[import]
@@ -569,7 +576,7 @@ class SendGridEmailService:
 
         # Send email
         sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response = await sg.send(message)  # type: ignore[attr-defined]
+        response: Any = await sg.send(message)  # type: ignore[attr-defined]
 
         # Log delivery status
         if response.status_code in (200, 202):  # type: ignore[attr-defined]
@@ -580,10 +587,10 @@ class SendGridEmailService:
         else:
             logger.error(  # type: ignore[attr-defined]
                 f"Email delivery failed: type=appointment_reminder, to={email}, "
-                f"status={response.status_code}, body={response.body}"
+                f"status={response.status_code}, body={response.body}"  # type: ignore[attr-defined]
             )
             raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"
+                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
             )
 
     @retry_on_sendgrid_error()
@@ -594,7 +601,7 @@ class SendGridEmailService:
         branch_name: str,
         vehicle_info: str,
         scheduled_at: datetime,
-        new_status: "AppointmentStatus",
+        new_status: AppointmentStatus,
         notes: str | None = None,
     ) -> None:
         """Send appointment status update (confirmed/cancelled) to buyer."""
@@ -675,7 +682,7 @@ class SendGridEmailService:
 
         # Send email
         sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response = await sg.send(message)  # type: ignore[attr-defined]
+        response: Any = await sg.send(message)  # type: ignore[attr-defined]
 
         # Log delivery status
         if response.status_code in (200, 202):  # type: ignore[attr-defined]
@@ -687,11 +694,11 @@ class SendGridEmailService:
         else:
             logger.error(  # type: ignore[attr-defined]
                 f"Email delivery failed: type=appointment_status_update, "
-                f"to={buyer_email}, status={response.status_code}, "
-                f"body={response.body}"
+                f"to={buyer_email}, status={response.status_code}, "  # type: ignore[attr-defined]
+                f"body={response.body}"  # type: ignore[attr-defined]
             )
             raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"
+                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
             )
 
 
@@ -825,11 +832,11 @@ Por favor llega 10 minutos antes de tu cita.
         self,
         email: str,
         person_type: str,  # "branch" or "buyer"
-        appointment_details: dict,
+        appointment_details: dict[str, Any],
     ) -> None:
         """Log appointment reminder."""
-        buyer_name = appointment_details.get("buyer_name", "Cliente")
-        branch_name = appointment_details.get("branch_name", "Asesor")
+        _buyer_name = appointment_details.get("buyer_name", "Cliente")
+        _branch_name = appointment_details.get("branch_name", "Asesor")
         vehicle_info = appointment_details.get("vehicle_info", "Vehículo")
         scheduled_at = appointment_details.get("scheduled_at", datetime.now())
         notes = appointment_details.get("notes")
@@ -864,7 +871,7 @@ Este es un recordatorio de tu próxima cita:
         branch_name: str,
         vehicle_info: str,
         scheduled_at: datetime,
-        new_status: "AppointmentStatus",
+        new_status: AppointmentStatus,
         notes: str | None = None,
     ) -> None:
         """Log appointment status update to buyer."""
