@@ -10,7 +10,10 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from prosell.core.config import OAuthSettings
+from prosell.domain.ports.i_oauth_service import IOAuthService
 from prosell.infrastructure.services.oauth_service_impl import OAuthServiceImpl
+
+from typing import cast
 
 # =============================================================================
 # FAKE REDIS FOR UNIT TESTS
@@ -87,7 +90,7 @@ class FakeRedis:
 
 
 @pytest.fixture
-def oauth_settings():
+def oauth_settings() -> OAuthSettings:
     """Fixture for OAuth settings."""
     return OAuthSettings(
         # Google OAuth
@@ -109,11 +112,11 @@ def oauth_settings():
 
 
 @pytest.fixture
-def oauth_service(oauth_settings):
+def oauth_service(oauth_settings: OAuthSettings) -> OAuthServiceImpl:
     """Fixture for OAuth service with FakeRedis injected."""
     service = OAuthServiceImpl(settings=oauth_settings)
     # Inject FakeRedis to avoid needing real Redis in unit tests
-    service._redis = FakeRedis()
+    object.__setattr__(service, "_redis", FakeRedis())  # type: ignore[arg-type]
     return service
 
 
@@ -126,7 +129,7 @@ class TestOAuthServiceInitiate:
     """Tests for OAuth authorization initiation."""
 
     @pytest.mark.asyncio
-    async def test_initiate_google_authorization_generates_valid_url(self, oauth_service):
+    async def test_initiate_google_authorization_generates_valid_url(self, oauth_service: IOAuthService) -> None:
         """Test that Google authorization URL is correctly formatted."""
         result = await oauth_service.initiate_authorization(
             provider="google",
@@ -146,7 +149,7 @@ class TestOAuthServiceInitiate:
         assert "-" in result.state_token  # UUID format
 
     @pytest.mark.asyncio
-    async def test_initiate_google_authorization_stores_state_token(self, oauth_service):
+    async def test_initiate_google_authorization_stores_state_token(self, oauth_service: IOAuthService) -> None:
         """Test that state token is stored after Google authorization initiation."""
         result = await oauth_service.initiate_authorization(
             provider="google",
@@ -154,13 +157,13 @@ class TestOAuthServiceInitiate:
         )
 
         # Verify state token is stored in Redis
-        assert oauth_service._redis.contains_state(result.state_token)
+        assert cast(OAuthServiceImpl, oauth_service)._redis.contains_state(result.state_token)  # type: ignore[reportPrivateUsage]
 
         # Verify token exists (not expired)
         assert await oauth_service.validate_state(result.state_token) is True
 
     @pytest.mark.asyncio
-    async def test_initiate_facebook_authorization_generates_valid_url(self, oauth_service):
+    async def test_initiate_facebook_authorization_generates_valid_url(self, oauth_service: IOAuthService) -> None:
         """Test that Facebook authorization URL is correctly formatted."""
         result = await oauth_service.initiate_authorization(
             provider="facebook",
@@ -179,7 +182,7 @@ class TestOAuthServiceInitiate:
         assert len(result.state_token) > 0
 
     @pytest.mark.asyncio
-    async def test_initiate_authorization_unsupported_provider_raises_error(self, oauth_service):
+    async def test_initiate_authorization_unsupported_provider_raises_error(self, oauth_service: IOAuthService) -> None:
         """Test that unsupported provider raises OAuthProviderNotSupportedError."""
         from prosell.domain.exceptions.auth_exceptions import OAuthProviderNotSupportedError
 
@@ -193,7 +196,7 @@ class TestOAuthServiceInitiate:
         assert exc_info.value.details["provider"] == "unsupported"
 
     @pytest.mark.asyncio
-    async def test_initiate_authorization_case_insensitive_provider(self, oauth_service):
+    async def test_initiate_authorization_case_insensitive_provider(self, oauth_service: IOAuthService) -> None:
         """Test that provider name is case-insensitive."""
         result1 = await oauth_service.initiate_authorization(
             provider="Google",
@@ -218,7 +221,7 @@ class TestOAuthServiceState:
     """Tests for state token validation."""
 
     @pytest.mark.asyncio
-    async def test_valid_state_passes_validation(self, oauth_service):
+    async def test_valid_state_passes_validation(self, oauth_service: IOAuthService) -> None:
         """Test that valid state token passes validation."""
         # Initiate to create state token
         result = await oauth_service.initiate_authorization(
@@ -230,13 +233,13 @@ class TestOAuthServiceState:
         assert is_valid is True
 
     @pytest.mark.asyncio
-    async def test_invalid_state_fails_validation(self, oauth_service):
+    async def test_invalid_state_fails_validation(self, oauth_service: IOAuthService) -> None:
         """Test that invalid state token fails validation."""
         is_valid = await oauth_service.validate_state("non-existent-state")
         assert is_valid is False
 
     @pytest.mark.asyncio
-    async def test_expired_state_fails_validation(self, oauth_service):
+    async def test_expired_state_fails_validation(self, oauth_service: IOAuthService) -> None:
         """Test that expired state token fails validation."""
         # Initiate to create state token
         result = await oauth_service.initiate_authorization(
@@ -244,14 +247,14 @@ class TestOAuthServiceState:
         )
 
         # Manually expire the state token in Redis
-        oauth_service._redis.expire_state(result.state_token)
+        cast(OAuthServiceImpl, oauth_service)._redis.expire_state(result.state_token)  # type: ignore[reportPrivateUsage]
 
         # Validate should fail
         is_valid = await oauth_service.validate_state(result.state_token)
         assert is_valid is False
 
     @pytest.mark.asyncio
-    async def test_consume_state_removes_token(self, oauth_service):
+    async def test_consume_state_removes_token(self, oauth_service: IOAuthService) -> None:
         """Test that consume_state removes state token."""
         # Initiate to create state token
         result = await oauth_service.initiate_authorization(
@@ -259,22 +262,22 @@ class TestOAuthServiceState:
         )
 
         # Verify token exists
-        assert oauth_service._redis.contains_state(result.state_token)
+        assert cast(OAuthServiceImpl, oauth_service)._redis.contains_state(result.state_token)  # type: ignore[reportPrivateUsage]
 
         # Consume state token
         await oauth_service.consume_state(result.state_token)
 
         # Token should be removed
-        assert not oauth_service._redis.contains_state(result.state_token)
+        assert not cast(OAuthServiceImpl, oauth_service)._redis.contains_state(result.state_token)  # type: ignore[reportPrivateUsage]
 
     @pytest.mark.asyncio
-    async def test_consume_nonexistent_state_is_safe(self, oauth_service):
+    async def test_consume_nonexistent_state_is_safe(self, oauth_service: IOAuthService) -> None:
         """Test that consuming non-existent state doesn't raise error."""
         # Should not raise any exception
         await oauth_service.consume_state("non-existent-state")
 
     @pytest.mark.asyncio
-    async def test_state_is_single_use(self, oauth_service):
+    async def test_state_is_single_use(self, oauth_service: IOAuthService) -> None:
         """Test that state token validation works only once."""
         # Initiate to create state token
         result = await oauth_service.initiate_authorization(
@@ -293,7 +296,7 @@ class TestOAuthServiceState:
         assert is_valid is False
 
     @pytest.mark.asyncio
-    async def test_multiple_state_tokens_coexist(self, oauth_service):
+    async def test_multiple_state_tokens_coexist(self, oauth_service: IOAuthService) -> None:
         """Test that multiple state tokens can coexist."""
         result1 = await oauth_service.initiate_authorization(
             "google", "http://localhost:8000/callback"
@@ -303,8 +306,8 @@ class TestOAuthServiceState:
         )
 
         # Both tokens should exist
-        assert oauth_service._redis.contains_state(result1.state_token)
-        assert oauth_service._redis.contains_state(result2.state_token)
+        assert cast(OAuthServiceImpl, oauth_service)._redis.contains_state(result1.state_token)  # type: ignore[reportPrivateUsage]
+        assert cast(OAuthServiceImpl, oauth_service)._redis.contains_state(result2.state_token)  # type: ignore[reportPrivateUsage]
 
         # Both should be valid
         assert await oauth_service.validate_state(result1.state_token) is True
@@ -322,23 +325,24 @@ class TestOAuthServiceState:
 class TestOAuthServiceConfiguration:
     """Tests for OAuth service configuration."""
 
-    def test_oauth_service_uses_settings(self, oauth_settings):
+    def test_oauth_service_uses_settings(self, oauth_settings: OAuthSettings) -> None:
         """Test that OAuth service is initialized with settings."""
         service = OAuthServiceImpl(settings=oauth_settings)
 
         # Settings should be stored
         assert service.settings == oauth_settings
 
-    def test_state_token_expire_minutes_default(self, oauth_settings):
+    def test_state_token_expire_minutes_default(self, oauth_settings: OAuthSettings) -> None:
         """Test that state token expiration defaults to 10 minutes."""
         assert oauth_settings.state_token_expire_minutes == 10
 
-    async def test_google_credentials_required_for_authorization(self, oauth_settings):
+    async def test_google_credentials_required_for_authorization(self, oauth_settings: OAuthSettings) -> None:
         """Test that Google credentials are required for authorization."""
         # Remove client ID
         oauth_settings.google_oauth_client_id = None
         service = OAuthServiceImpl(settings=oauth_settings)
-        service._redis = FakeRedis()  # Inject FakeRedis
+        # Inject FakeRedis via private attribute (necessary for testing)
+        object.__setattr__(service, "_redis", FakeRedis())  # type: ignore[arg-type]
 
         # Should raise OAuthConfigurationError when trying to initiate
         from prosell.domain.exceptions.auth_exceptions import OAuthConfigurationError
@@ -406,7 +410,7 @@ class TestOAuthUserInfo:
 
         # Should raise FrozenInstanceError when trying to modify
         with pytest.raises(FrozenInstanceError):
-            user_info.email = "newemail@example.com"
+            user_info.email = "newemail@example.com"  # type: ignore[misc]
 
 
 # =============================================================================
@@ -440,7 +444,7 @@ class TestOAuthAuthorizeResult:
 
         # Should raise exception when trying to modify
         with pytest.raises(FrozenInstanceError):
-            result.authorization_url = "https://modified.com"
+            result.authorization_url = "https://modified.com"  # type: ignore[misc]
 
 
 # =============================================================================
@@ -492,4 +496,4 @@ class TestOAuthCallbackResult:
 
         # Should raise exception when trying to modify
         with pytest.raises(FrozenInstanceError):
-            result.provider = "facebook"
+            result.provider = "facebook"  # type: ignore[misc]

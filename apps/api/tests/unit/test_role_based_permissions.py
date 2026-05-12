@@ -22,7 +22,6 @@ They test domain entities, domain logic, and the RBAC middleware directly.
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID, uuid4
 
 import pytest
@@ -633,7 +632,7 @@ class TestAPILayerAuthorization:
 
         import asyncio
 
-        result = asyncio.get_event_loop().run_until_complete(_endpoint(current_user=user_dict))
+        result = asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
         assert result == "ok"
 
     def test_rbac_middleware_blocks_wrong_role(self) -> None:
@@ -649,7 +648,7 @@ class TestAPILayerAuthorization:
         import asyncio
 
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.get_event_loop().run_until_complete(_endpoint(current_user=user_dict))
+            asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
@@ -666,7 +665,7 @@ class TestAPILayerAuthorization:
         import asyncio
 
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.get_event_loop().run_until_complete(_endpoint(current_user=user_dict))
+            asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
@@ -682,7 +681,7 @@ class TestAPILayerAuthorization:
 
         import asyncio
 
-        result = asyncio.get_event_loop().run_until_complete(_endpoint(current_user=user_dict))
+        result = asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
         assert result == "ok"
 
     # ── require_permissions (RBACMiddleware) ───────────────────────────────────
@@ -699,7 +698,7 @@ class TestAPILayerAuthorization:
 
         import asyncio
 
-        result = asyncio.get_event_loop().run_until_complete(_endpoint(current_user=user_dict))
+        result = asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
         assert result == "ok"
 
     def test_rbac_middleware_blocks_missing_permission(self) -> None:
@@ -715,7 +714,7 @@ class TestAPILayerAuthorization:
         import asyncio
 
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.get_event_loop().run_until_complete(_endpoint(current_user=user_dict))
+            asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
@@ -732,7 +731,7 @@ class TestAPILayerAuthorization:
         import asyncio
 
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.get_event_loop().run_until_complete(_endpoint(current_user=user_dict))
+            asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
 
         assert "user:delete" in exc_info.value.detail
 
@@ -917,7 +916,7 @@ class TestRoleEscalationBlocked:
         import asyncio
 
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.get_event_loop().run_until_complete(_admin_endpoint(current_user=viewer_dict))
+            asyncio.run(_admin_endpoint(viewer_dict))  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
@@ -934,8 +933,8 @@ class TestRoleEscalationBlocked:
         import asyncio
 
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.get_event_loop().run_until_complete(
-                _create_user_endpoint(current_user=viewer_dict)
+            asyncio.run(
+                _create_user_endpoint(viewer_dict)  # type: ignore[call-arg]
             )
 
         assert exc_info.value.status_code == 403
@@ -954,7 +953,7 @@ class TestRoleEscalationBlocked:
         import asyncio
 
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.get_event_loop().run_until_complete(_endpoint(current_user=fake_role_dict))
+            asyncio.run(_endpoint(fake_role_dict))  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
