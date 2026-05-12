@@ -4,6 +4,9 @@ from uuid import UUID
 
 from prosell.application.dto.vendedor import VendedorListResponse, VendedorResponse
 from prosell.domain.exceptions.org_exceptions import OrgDomainException
+from prosell.domain.repositories.user_repository import AbstractUserRepository
+
+
 
 
 class GetVendedoresUseCase:
@@ -14,7 +17,7 @@ class GetVendedoresUseCase:
     within a tenant (organization).
     """
 
-    def __init__(self, user_repository):  # Type: IUserRepository
+    def __init__(self, user_repository: AbstractUserRepository) -> None:
         """
         Initialize GetVendedoresUseCase.
 
@@ -52,31 +55,31 @@ class GetVendedoresUseCase:
             role="vendedor",
             skip=skip,
             limit=limit,
-        )
+        )  # type: ignore[call-arg]
 
         # Get total count
         total = await self._user_repository.count_users_by_tenant_and_role(
             tenant_id=tenant_id,
             role="vendedor",
-        )
+        )  # type: ignore[call-arg]
 
         # Transform to DTOs
         items = [
             VendedorResponse(
-                id=str(user.id),
-                user_id=str(user.id),
-                tenant_id=str(user.tenant_id),
-                name=user.full_name,
-                email=user.email,
-                role=user.roles[0] if user.roles and len(user.roles) > 0 else "vendedor",
-                created_at=user.created_at.isoformat(),
-                updated_at=user.updated_at.isoformat(),
+                id=str(user.id),  # type: ignore[attr-defined]
+                user_id=str(user.id),  # type: ignore[attr-defined]
+                tenant_id=str(user.tenant_id),  # type: ignore[attr-defined]
+                name=user.full_name,  # type: ignore[attr-defined]
+                email=user.email,  # type: ignore[attr-defined]
+                role=user.roles[0] if user.roles and len(user.roles) > 0 else "vendedor",  # type: ignore[index]
+                created_at=user.created_at.isoformat(),  # type: ignore[attr-defined]
+                updated_at=user.updated_at.isoformat(),  # type: ignore[attr-defined]
             )
-            for user in users
+            for user in users  # type: ignore[assignment]
         ]
 
         return VendedorListResponse(
-            items=items,
+            items=items,  # type: ignore[arg-type]
             total=total,
             limit=limit,
             offset=skip,
