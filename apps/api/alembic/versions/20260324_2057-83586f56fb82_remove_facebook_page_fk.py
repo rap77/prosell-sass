@@ -22,16 +22,23 @@ def upgrade() -> None:
     # Drop foreign key constraint from publications.facebook_page_id
     # The table facebook_pages doesn't exist yet, so we remove the FK
     # Check if the constraint exists before dropping it
+    from sqlalchemy.inspection import inspect
+
     conn = op.get_bind()
-    inspector = conn.dialect.inspector
+    # Type ignore: Alembic's dynamic types cannot be statically typed
+    inspector = inspect(conn)  # type: ignore[assignment]
     try:
         # Check if publications table exists
-        tables = inspector.get_table_names()
+        # Type ignore: inspector.get_table_names() is dynamically typed
+        tables = inspector.get_table_names()  # type: ignore[assignment]
         if "publications" in tables:
             # Check if constraint exists
-            constraints = inspector.get_foreign_keys("publications")
+            # Type ignore: inspector.get_foreign_keys() returns dynamically typed data
+            constraints = inspector.get_foreign_keys("publications")  # type: ignore[assignment]
             constraint_exists = any(
-                c.get("name") == "publications_facebook_page_id_fkey" for c in constraints
+                # Type ignore: constraints items are dynamically typed
+                c.get("name") == "publications_facebook_page_id_fkey"  # type: ignore[assignment]
+                for c in constraints
             )
             if constraint_exists:
                 op.drop_constraint(

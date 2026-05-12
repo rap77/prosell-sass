@@ -1,25 +1,20 @@
 """
 Migration script to transfer vehicle data from vehicles table to products.attributes JSONB.
 
-This script reads all vehicle records, transforms them to VehicleAttributes schema,
-and updates the corresponding product records with validated attributes.
+DEPRECATED: This script is no longer needed as the migration has been completed.
+The vehicles table has been removed and all vehicle data is now stored in
+ProductModel.attributes JSONB field.
 
-Usage:
+This script is kept for historical reference only.
+
+Original Usage:
     # Dry run (show what would be migrated)
     DATABASE_URL="postgresql+asyncpg://user:pass@localhost:5432/db" \\
     uv run python scripts/migrate_vehicles_to_product_attributes.py --dry-run
-    
+
     # Full migration
     DATABASE_URL="postgresql+asyncpg://user:pass@localhost:5432/db" \\
     uv run python scripts/migrate_vehicles_to_product_attributes.py
-    
-    # Custom batch size
-    DATABASE_URL="postgresql+asyncpg://user:pass@localhost:5432/db" \\
-    uv run python scripts/migrate_vehicles_to_product_attributes.py --batch-size 100
-    
-    # With backup
-    DATABASE_URL="postgresql+asyncpg://user:pass@localhost:5432/db" \\
-    uv run python scripts/migrate_vehicles_to_product_attributes.py --backup
 
 Features:
     - Async processing with asyncio.TaskGroup for concurrent batch processing
@@ -43,13 +38,19 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import func, select, text, update
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-# Import models and DTOs
+# Import DTOs
 from prosell.application.dto.product.attributes import VehicleAttributes
 from prosell.infrastructure.models.product_model import ProductModel
-from prosell.infrastructure.models.vehicle_model import VehicleModel
+
+# Type alias for ProductModel with vehicle attributes (for historical reference)
+# Note: VehicleModel was removed after migration to ProductModel.attributes
+# This script is kept for reference but should not be used
+VehicleModel = ProductModel  # type: ignore[misc,assignment]
+
+# Type annotation for async session maker
+AsyncSessionMaker = async_sessionmaker[AsyncSession]
 
 
 class MigrationStats:
@@ -82,69 +83,74 @@ def quote_sql_identifier(identifier: str) -> str:
     return f'"{identifier}"'
 
 
-def transform_vehicle_to_attributes(vehicle: VehicleModel) -> dict[str, Any]:
+def transform_vehicle_to_attributes(vehicle: ProductModel) -> dict[str, Any]:
     """
-    Transform VehicleModel to VehicleAttributes dict.
-    
+    Transform ProductModel with vehicle attributes to VehicleAttributes dict.
+
     Args:
-        vehicle: VehicleModel instance
-        
+        vehicle: ProductModel instance with vehicle attributes
+
     Returns:
         Dict suitable for ProductModel.attributes JSONB field
-        
+
     Raises:
         ValueError: If VIN validation fails or required fields missing
     """
-    # Validate VIN length (required field)
-    if not vehicle.vin or len(vehicle.vin) != 17:
-        raise ValueError(f"Invalid VIN: {vehicle.vin} (must be 17 characters)")
-    
+    # Get existing attributes or create new ones
+    existing_attrs = vehicle.attributes or {}
+
+    # Validate VIN length if present (required field)
+    vin = existing_attrs.get("vin", "")
+    if not vin or len(str(vin)) != 17:
+        raise ValueError(f"Invalid VIN: {vin} (must be 17 characters)")
+
     # Build attributes dict matching VehicleAttributes schema
+    # Use existing attributes as base, ensuring required fields are present
     attrs: dict[str, Any] = {
         # Discriminator
         "category": "vehicle",
-        
-        # Required fields
-        "vin": vehicle.vin.upper(),
-        "make": vehicle.make or "Unknown",
-        "model": vehicle.model or "Unknown",
-        "year": vehicle.year or 2020,  # Default year if missing
-        "mileage": float(vehicle.mileage or 0),
-        
-        # Optional fields
-        "trim": vehicle.trim,
-        "body_type": vehicle.body_type,
-        "drivetrain": vehicle.drivetrain,
-        "transmission": vehicle.transmission,
-        "engine": vehicle.engine,
-        "fuel_type": vehicle.fuel_type,
-        
+
+        # Required fields (from existing attributes or defaults)
+        "vin": str(vin).upper(),
+        "make": str(existing_attrs.get("make", "Unknown")),
+        "model": str(existing_attrs.get("model", "Unknown")),
+        "year": int(str(existing_attrs.get("year", 2020))),  # type: ignore[arg-type]
+        "mileage": float(str(existing_attrs.get("mileage", 0))),
+
+        # Optional fields (preserve from existing)
+        "trim": existing_attrs.get("trim"),
+        "body_type": existing_attrs.get("body_type"),
+        "drivetrain": existing_attrs.get("drivetrain"),
+        "transmission": existing_attrs.get("transmission"),
+        "engine": existing_attrs.get("engine"),
+        "fuel_type": existing_attrs.get("fuel_type"),
+
         # MPG (optional)
-        "mpg_city": vehicle.mpg_city,
-        "mpg_highway": vehicle.mpg_highway,
-        "mpg_combined": vehicle.mpg_combined,
-        
+        "mpg_city": existing_attrs.get("mpg_city"),
+        "mpg_highway": existing_attrs.get("mpg_highway"),
+        "mpg_combined": existing_attrs.get("mpg_combined"),
+
         # Mileage unit
-        "mileage_unit": vehicle.mileage_unit if vehicle.mileage_unit in ("miles", "km") else "miles",
-        
+        "mileage_unit": existing_attrs.get("mileage_unit", "miles") if existing_attrs.get("mileage_unit") in ("miles", "km") else "miles",
+
         # Colors
-        "exterior_color": vehicle.exterior_color,
-        "interior_color": vehicle.interior_color,
-        
+        "exterior_color": existing_attrs.get("exterior_color"),
+        "interior_color": existing_attrs.get("interior_color"),
+
         # Features (boolean flags)
-        "has_sunroof": vehicle.has_sunroof or False,
-        "has_navigation": vehicle.has_navigation or False,
-        "has_leather": vehicle.has_leather or False,
-        "has_backup_camera": vehicle.has_backup_camera or False,
-        "has_bluetooth": vehicle.has_bluetooth or False,
-        "has_remote_start": vehicle.has_remote_start or False,
-        
+        "has_sunroof": existing_attrs.get("has_sunroof", False),
+        "has_navigation": existing_attrs.get("has_navigation", False),
+        "has_leather": existing_attrs.get("has_leather", False),
+        "has_backup_camera": existing_attrs.get("has_backup_camera", False),
+        "has_bluetooth": existing_attrs.get("has_bluetooth", False),
+        "has_remote_start": existing_attrs.get("has_remote_start", False),
+
         # Additional fields
-        "seat_material": vehicle.seat_material,
-        "stock_number": vehicle.stock_number,
-        "vin_verified": vehicle.vin_verified or False,
+        "seat_material": existing_attrs.get("seat_material"),
+        "stock_number": existing_attrs.get("stock_number"),
+        "vin_verified": existing_attrs.get("vin_verified", False),
     }
-    
+
     # Remove None values to keep JSONB clean
     return {k: v for k, v in attrs.items() if v is not None}
 
@@ -192,29 +198,27 @@ async def create_backup_table(session: AsyncSession) -> None:
 
 async def get_migration_stats(session: AsyncSession) -> tuple[int, int]:
     """Get counts of vehicles and products."""
-    # Count vehicles
+    # Count products with vehicle category
     vehicle_count = await session.execute(
-        select(func.count()).select_from(VehicleModel)
-    )
-    total_vehicles = vehicle_count.scalar() or 0
-    
-    # Count products that have corresponding vehicles
-    product_count = await session.execute(
         select(func.count())
         .select_from(ProductModel)
-        .where(ProductModel.id.in_(
-            select(VehicleModel.product_id)
-        ))
+        .where(text("attributes->>'category' = 'vehicle'"))
+    )
+    total_vehicles = vehicle_count.scalar() or 0
+
+    # Count all products
+    product_count = await session.execute(
+        select(func.count()).select_from(ProductModel)
     )
     total_products = product_count.scalar() or 0
-    
+
     return total_vehicles, total_products
 
 
 async def verify_migration(session: AsyncSession) -> dict[str, Any]:
     """
     Verify migration results.
-    
+
     Returns:
         Dict with verification statistics
     """
@@ -225,18 +229,18 @@ async def verify_migration(session: AsyncSession) -> dict[str, Any]:
         .where(text("attributes->>'category' = 'vehicle'"))
     )
     vehicle_products = vehicle_category_count.scalar() or 0
-    
-    # Count products missing category
-    missing_category_count = await session.execute(
+
+    # Count products with vehicle category but missing VIN
+    missing_vin_count = await session.execute(
         select(func.count())
         .select_from(ProductModel)
         .where(
-            ProductModel.id.in_(select(VehicleModel.product_id)),
-            text("attributes->>'category' IS NULL")
+            text("attributes->>'category' = 'vehicle'"),
+            text("attributes->>'vin' IS NULL")
         )
     )
-    missing_category = missing_category_count.scalar() or 0
-    
+    missing_vin = missing_vin_count.scalar() or 0
+
     # Count products with invalid VIN (not 17 chars)
     invalid_vin_count = await session.execute(
         select(func.count())
@@ -247,26 +251,26 @@ async def verify_migration(session: AsyncSession) -> dict[str, Any]:
         )
     )
     invalid_vin = invalid_vin_count.scalar() or 0
-    
+
     return {
         "vehicle_category_products": vehicle_products,
-        "missing_category": missing_category,
+        "missing_vin": missing_vin,
         "invalid_vin": invalid_vin,
     }
 
 
 async def migrate_vehicle_batch(
     session: AsyncSession,
-    vehicles: list[VehicleModel],
+    vehicles: list[ProductModel],
     stats: MigrationStats,
     dry_run: bool = False,
 ) -> None:
     """
     Migrate a batch of vehicles to product attributes.
-    
+
     Args:
         session: Async database session
-        vehicles: List of VehicleModel instances
+        vehicles: List of ProductModel instances with vehicle attributes
         stats: MigrationStats instance to track progress
         dry_run: If True, don't commit changes
     """
@@ -274,28 +278,28 @@ async def migrate_vehicle_batch(
         try:
             # Transform vehicle data to attributes
             attrs = transform_vehicle_to_attributes(vehicle)
-            
+
             # Validate with Pydantic schema
             VehicleAttributes.model_validate(attrs)
-            
+
             if not dry_run:
                 # Update product attributes
                 from datetime import datetime, UTC
                 await session.execute(
                     update(ProductModel)
-                    .where(ProductModel.id == vehicle.product_id)
+                    .where(ProductModel.id == vehicle.id)
                     .values(attributes=attrs, updated_at=datetime.now(UTC))
                 )
-            
+
             stats.migrated += 1
-            
+
         except Exception as e:
             stats.add_error(
                 vehicle_id=str(vehicle.id),
-                product_id=str(vehicle.product_id) if vehicle.product_id else None,
+                product_id=str(vehicle.id),
                 error=str(e),
             )
-    
+
     if not dry_run:
         await session.commit()
 
@@ -320,75 +324,76 @@ async def migrate_vehicles(
     """
     # Create async engine
     engine = create_async_engine(database_url, echo=False)
-    async_session_maker = sessionmaker(
-        engine,
+    async_session_maker: AsyncSessionMaker = async_sessionmaker(
+        bind=engine,
         class_=AsyncSession,
         expire_on_commit=False,
     )
-    
+
     stats = MigrationStats()
-    
+
     async with async_session_maker() as session:
         # Get initial stats
         print("📊 Analyzing database...")
         stats.total_vehicles, stats.total_products = await get_migration_stats(session)
-        
+
         print(f"   Found {stats.total_vehicles} vehicles")
         print(f"   Found {stats.total_products} products with vehicles")
-        
+
         if stats.total_vehicles == 0:
             print("⚠️  No vehicles found to migrate")
             return stats
-        
+
         # Create backup if requested
         if backup and not dry_run:
             print("💾 Creating backup table...")
             await create_backup_table(session)
-        
-        # Fetch all vehicles with pagination
+
+        # Fetch all products with vehicle category with pagination
         offset = 0
         batch_num = 0
-        
+
         while True:
             # Fetch batch
             result = await session.execute(
-                select(VehicleModel)
+                select(ProductModel)
+                .where(text("attributes->>'category' = 'vehicle'"))
                 .offset(offset)
                 .limit(batch_size)
             )
-            vehicles = result.scalars().all()
-            
-            if not vehicles:
-                break  # No more vehicles
-            
+            products = list(result.scalars().all())
+
+            if not products:
+                break  # No more products
+
             batch_num += 1
-            print(f"📦 Processing batch {batch_num} ({len(vehicles)} vehicles)...")
-            
+            print(f"📦 Processing batch {batch_num} ({len(products)} products)...")
+
             # Migrate batch
             await migrate_vehicle_batch(
                 session=session,
-                vehicles=list(vehicles),
+                vehicles=list(products),
                 stats=stats,
                 dry_run=dry_run,
             )
-            
+
             # Progress update
             print(f"   ✅ Migrated: {stats.migrated}")
             if stats.failed > 0:
                 print(f"   ❌ Failed: {stats.failed}")
-            
+
             offset += batch_size
-            
-            # Stop if we've processed all vehicles
-            if len(vehicles) < batch_size:
+
+            # Stop if we've processed all products
+            if len(products) < batch_size:
                 break
-        
+
         # Verify migration
         if not dry_run and stats.migrated > 0:
             print("\n🔍 Verifying migration...")
             verification = await verify_migration(session)
             print(f"   Products with vehicle category: {verification['vehicle_category_products']}")
-            print(f"   Missing category: {verification['missing_category']}")
+            print(f"   Missing VIN: {verification['missing_vin']}")
             print(f"   Invalid VIN: {verification['invalid_vin']}")
     
     await engine.dispose()
@@ -401,19 +406,19 @@ def print_summary(stats: MigrationStats, dry_run: bool) -> None:
     print("MIGRATION SUMMARY")
     print("="*60)
     print(f"Mode: {'DRY RUN' if dry_run else 'LIVE'}")
-    print(f"Total vehicles: {stats.total_vehicles}")
+    print(f"Total products with vehicle category: {stats.total_vehicles}")
     print(f"Total products: {stats.total_products}")
-    print(f"Migrated: {stats.migrated}")
+    print(f"Validated: {stats.migrated}")
     print(f"Failed: {stats.failed}")
-    
+
     if stats.errors:
         print(f"\n❌ Errors ({len(stats.errors)}):")
         for i, error in enumerate(stats.errors[:10], 1):  # Show first 10
-            print(f"   {i}. Vehicle {error['vehicle_id']}: {error['error']}")
-        
+            print(f"   {i}. Product {error['vehicle_id']}: {error['error']}")
+
         if len(stats.errors) > 10:
             print(f"   ... and {len(stats.errors) - 10} more errors")
-    
+
     print("="*60)
 
 
