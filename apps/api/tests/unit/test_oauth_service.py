@@ -157,7 +157,8 @@ class TestOAuthServiceInitiate:
         )
 
         # Verify state token is stored in Redis
-        assert cast(OAuthServiceImpl, oauth_service)._redis.contains_state(result.state_token)  # type: ignore[reportPrivateUsage]
+        service_impl: OAuthServiceImpl = cast(OAuthServiceImpl, oauth_service)  # type: ignore[reportPrivateUsage]
+        assert service_impl._redis.contains_state(result.state_token)  # type: ignore[reportPrivateUsage]
 
         # Verify token exists (not expired)
         assert await oauth_service.validate_state(result.state_token) is True
@@ -247,7 +248,8 @@ class TestOAuthServiceState:
         )
 
         # Manually expire the state token in Redis
-        cast(OAuthServiceImpl, oauth_service)._redis.expire_state(result.state_token)  # type: ignore[reportPrivateUsage]
+        service_impl: OAuthServiceImpl = cast(OAuthServiceImpl, oauth_service)  # type: ignore[reportPrivateUsage]
+        service_impl._redis.expire_state(result.state_token)  # type: ignore[reportPrivateUsage]
 
         # Validate should fail
         is_valid = await oauth_service.validate_state(result.state_token)
@@ -262,13 +264,15 @@ class TestOAuthServiceState:
         )
 
         # Verify token exists
-        assert cast(OAuthServiceImpl, oauth_service)._redis.contains_state(result.state_token)  # type: ignore[reportPrivateUsage]
+        service_impl: OAuthServiceImpl = cast(OAuthServiceImpl, oauth_service)  # type: ignore[reportPrivateUsage]
+        assert service_impl._redis.contains_state(result.state_token)  # type: ignore[reportPrivateUsage]
 
         # Consume state token
         await oauth_service.consume_state(result.state_token)
 
         # Token should be removed
-        assert not cast(OAuthServiceImpl, oauth_service)._redis.contains_state(result.state_token)  # type: ignore[reportPrivateUsage]
+        service_impl: OAuthServiceImpl = cast(OAuthServiceImpl, oauth_service)  # type: ignore[reportPrivateUsage]
+        assert not service_impl._redis.contains_state(result.state_token)  # type: ignore[reportPrivateUsage]
 
     @pytest.mark.asyncio
     async def test_consume_nonexistent_state_is_safe(self, oauth_service: IOAuthService) -> None:

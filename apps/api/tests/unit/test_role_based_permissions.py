@@ -632,7 +632,7 @@ class TestAPILayerAuthorization:
 
         import asyncio
 
-        result = asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
+        result: str = asyncio.run(_endpoint(current_user=user_dict))  # type: ignore[call-arg]
         assert result == "ok"
 
     def test_rbac_middleware_blocks_wrong_role(self) -> None:
@@ -648,7 +648,7 @@ class TestAPILayerAuthorization:
         import asyncio
 
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
+            asyncio.run(_endpoint(current_user=user_dict))  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
@@ -665,7 +665,7 @@ class TestAPILayerAuthorization:
         import asyncio
 
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
+            asyncio.run(_endpoint(current_user=user_dict))  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
@@ -681,7 +681,7 @@ class TestAPILayerAuthorization:
 
         import asyncio
 
-        result = asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
+        result: str = asyncio.run(_endpoint(current_user=user_dict))  # type: ignore[call-arg]
         assert result == "ok"
 
     # ── require_permissions (RBACMiddleware) ───────────────────────────────────
@@ -698,7 +698,7 @@ class TestAPILayerAuthorization:
 
         import asyncio
 
-        result = asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
+        result: str = asyncio.run(_endpoint(current_user=user_dict))  # type: ignore[call-arg]
         assert result == "ok"
 
     def test_rbac_middleware_blocks_missing_permission(self) -> None:
@@ -714,7 +714,7 @@ class TestAPILayerAuthorization:
         import asyncio
 
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
+            asyncio.run(_endpoint(current_user=user_dict))  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
