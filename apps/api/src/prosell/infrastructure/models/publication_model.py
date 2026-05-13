@@ -96,7 +96,7 @@ class PublicationModel(Base):
         String(20),
         nullable=False,
     )
-    image_urls: Mapped[list] = mapped_column(
+    image_urls: Mapped[list[str]] = mapped_column(
         JSONB,
         default=list,
         nullable=False,

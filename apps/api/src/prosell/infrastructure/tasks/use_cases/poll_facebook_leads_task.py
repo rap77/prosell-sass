@@ -305,7 +305,7 @@ def calculate_backoff_with_jitter(
 
 
 async def retry_with_exponential_backoff(
-    func: Callable,
+    func: Callable[[], Any],
     page_id: str,
     max_retries: int = 3,
     initial_delay: float = 1.0,

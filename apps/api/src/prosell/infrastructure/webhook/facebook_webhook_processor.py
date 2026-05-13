@@ -24,7 +24,7 @@ class FacebookWebhookProcessor:
     def __init__(self, process_webhook_use_case: ProcessFacebookWebhookUseCase) -> None:
         self.process_webhook_use_case = process_webhook_use_case
 
-    async def process(self, payload: dict, tenant_id: UUID) -> None:
+    async def process(self, payload: dict[str, object], tenant_id: UUID) -> None:
         """
         Process Facebook webhook payload asynchronously.
 
