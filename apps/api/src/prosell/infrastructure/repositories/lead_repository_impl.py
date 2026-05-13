@@ -62,7 +62,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             return self._to_entity(lead_model)
         else:
             # Original behavior - just get lead
-            stmt = select(LeadModel).where(
+            stmt_single = select(LeadModel).where(
                 LeadModel.id == lead_id,
                 LeadModel.tenant_id == tenant_id,
             )

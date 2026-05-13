@@ -39,3 +39,26 @@ class AbstractEmailService(Protocol):
     ) -> None:
         """Send 2FA enabled notification."""
         ...
+
+    @abstractmethod
+    async def send_appointment_status_update(
+        self,
+        email: str,
+        appointment_date: str,
+        time: str,
+        dealer_name: str,
+        status: str,
+    ) -> None:
+        """Send appointment status update email."""
+        ...
+
+    @abstractmethod
+    async def send_appointment_confirmation(
+        self,
+        email: str,
+        appointment_date: str,
+        time: str,
+        dealer_name: str,
+    ) -> None:
+        """Send appointment confirmation email."""
+        ...
