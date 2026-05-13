@@ -2,7 +2,7 @@
 
 ## Phase 4: Leads & Appointments (COMPLETE ✅)
 
-- [ ] A1: Lead Capture Foundation
+- [x] A1: Lead Capture Foundation
   - [x] A1.01: Create Lead entity with 5-state lifecycle
   - [x] A1.02: Create LeadStatus enum and LeadStateTransitionException [requires: 01]
   - [x] A1.03: Create LeadAuditLog entity for tracking status changes [requires: 02]
@@ -31,7 +31,7 @@
   - [x] A1.26: Write integration tests for all endpoints [requires: 25]
   - [x] A1.27: Write contract tests for DTO schemas [requires: 26]
 
-- [ ] A2: Facebook Lead Webhook
+- [x] A2: Facebook Lead Webhook
   - [x] A2.01: Create POST /api/v1/webhooks/facebook endpoint
   - [x] A2.02: Implement X-Hub-Signature verification (SHA256 HMAC) [requires: 01]
   - [x] A2.03: Return 403 if signature missing/invalid (security) [requires: 02]
@@ -56,7 +56,7 @@
   - [x] A2.22: Write contract test for OpenAPI schema [requires: 21]
   - [x] A2.23: Test polling fallback logic [requires: 22]
 
-- [ ] A3: Vendedor Leads List
+- [x] A3: Vendedor Leads List
   - [x] A3.01: Create Lead interface (id, buyer_name, buyer_email, buyer_phone, vehicle, message, status, source, created_at, updated_at)
   - [x] A3.02: Create CreateLeadRequest interface [requires: 01]
   - [x] A3.03: Create UpdateLeadStatusRequest interface (status + reason) [requires: 02]
@@ -84,7 +84,7 @@
   - [x] A3.25: Test status filter [requires: 24]
   - [x] A3.26: Test status update dropdown [requires: 25]
 
-- [ ] A4: Appointment Scheduling
+- [x] A4: Appointment Scheduling
   - [x] A4.01: Create Appointment entity (lead_id, dealer_id, vehicle_id, scheduled_at, status, notes, tenant_id)
   - [x] A4.02: Implement AppointmentStatus enum (scheduled, completed, cancelled) [requires: 01]
   - [x] A4.03: Implement time validation (business hours: 9am-6pm Mon-Fri) [requires: 02]
@@ -124,7 +124,7 @@
   - [x] A4.37: Write integration tests for API endpoints [requires: 36]
   - [x] A4.38: Write E2E test for appointment creation flow [requires: 30]
 
-- [ ] A5: Manager Team View
+- [x] A5: Manager Team View
   - [x] A5.01: Extend GET /api/v1/leads with manager scope (all team leads, not just own)
   - [x] A5.02: Create AssignLeadToVendedorUseCase (if not in A1) [requires: 01]
   - [x] A5.03: Create PUT /api/v1/leads/{id}/assign endpoint [requires: 02]
@@ -142,7 +142,7 @@
   - [x] A5.15: Test filter by vendedor [requires: 14]
   - [x] A5.16: Test lead reassignment [requires: 15]
 
-- [ ] A6: Dealer Calendar
+- [x] A6: Dealer Calendar
   - [x] A6.01: Extend GET /api/v1/appointments with dealer scope (own appointments only)
   - [x] A6.02: Create PUT /api/v1/appointments/{id}/status endpoint (confirm, cancel) [requires: 01]
   - [x] A6.03: Extend useAppointments hook with dealer scope [requires: 02]
