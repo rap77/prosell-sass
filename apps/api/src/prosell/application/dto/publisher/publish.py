@@ -16,7 +16,7 @@ class PublishProductRequest(DomainModel):
     in the Taskiq task context (not in the use case).
     """
 
-    model_config: typing.ClassVar[dict[str, str]] = {
+    model_config: typing.ClassVar[typing.ConfigDict] = {
         "extra": "ignore"
     }  # Ignore extra fields from frontend
 

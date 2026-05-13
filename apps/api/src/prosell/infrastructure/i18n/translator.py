@@ -126,7 +126,8 @@ class Translator:
 
 
 # Global translator instance
-translator = Translator()
+# Global translator instance
+translator: Translator = Translator()
 
 
 __all__ = ["Translations", "Translator", "translator"]
