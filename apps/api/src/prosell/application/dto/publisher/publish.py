@@ -3,7 +3,7 @@
 import typing
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from prosell.domain.base import DomainModel
 
@@ -16,7 +16,7 @@ class PublishProductRequest(DomainModel):
     in the Taskiq task context (not in the use case).
     """
 
-    model_config: typing.ClassVar[typing.ConfigDict] = {
+    model_config: typing.ClassVar[ConfigDict] = {
         "extra": "ignore"
     }  # Ignore extra fields from frontend
 

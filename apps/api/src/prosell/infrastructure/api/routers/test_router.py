@@ -141,12 +141,12 @@ async def cleanup_test_data(
                         AppointmentModel.tenant_id == tenant_id,
                     )
                 )
-                deleted_counts["appointments"] = result.rowcount  # type: ignore[assignment]
+                deleted_counts["appointments"] = result.rowcount  # type: ignore[attr-defined]
         else:
             result = await db.execute(
                 delete(AppointmentModel).where(AppointmentModel.tenant_id == tenant_id)
             )
-            deleted_counts["appointments"] = result.rowcount  # type: ignore[assignment]
+            deleted_counts["appointments"] = result.rowcount
         await db.commit()
 
         # 2. Leads
@@ -158,12 +158,12 @@ async def cleanup_test_data(
                         LeadModel.tenant_id == tenant_id,
                     )
                 )
-                deleted_counts["leads"] = result.rowcount  # type: ignore[assignment]
+                deleted_counts["leads"] = result.rowcount  # type: ignore[attr-defined]
         else:
             result = await db.execute(
                 delete(LeadModel).where(LeadModel.tenant_id == tenant_id)
             )
-            deleted_counts["leads"] = result.rowcount  # type: ignore[assignment]
+            deleted_counts["leads"] = result.rowcount
         await db.commit()
 
         # 3. Products
@@ -175,12 +175,12 @@ async def cleanup_test_data(
                         ProductModel.tenant_id == tenant_id,
                     )
                 )
-                deleted_counts["products"] = result.rowcount  # type: ignore[assignment]
+                deleted_counts["products"] = result.rowcount  # type: ignore[attr-defined]
         else:
             result = await db.execute(
                 delete(ProductModel).where(ProductModel.tenant_id == tenant_id)
             )
-            deleted_counts["products"] = result.rowcount  # type: ignore[assignment]
+            deleted_counts["products"] = result.rowcount
         await db.commit()
 
         # 4. Categories
@@ -192,12 +192,12 @@ async def cleanup_test_data(
                         CategoryModel.tenant_id == tenant_id,
                     )
                 )
-                deleted_counts["categories"] = result.rowcount  # type: ignore[assignment]
+                deleted_counts["categories"] = result.rowcount  # type: ignore[attr-defined]
         else:
             result = await db.execute(
                 delete(CategoryModel).where(CategoryModel.tenant_id == tenant_id)
             )
-            deleted_counts["categories"] = result.rowcount  # type: ignore[assignment]
+            deleted_counts["categories"] = result.rowcount
         await db.commit()
 
         total_deleted = sum(deleted_counts.values())

@@ -182,8 +182,8 @@ class SendGridEmailService:
         token: str,
     ) -> None:
         """Send email verification email."""
-        import sendgrid  # type: ignore[import]
-        from sendgrid.helpers.mail import Mail  # type: ignore[import]
+        import sendgrid
+        from sendgrid.helpers.mail import Mail
 
         # Create verification URL (use oauth_frontend_success_url as base)
         base_url = settings.oauth_frontend_success_url.split("/auth")[0]
@@ -212,22 +212,22 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response: Any = await sg.send(message)  # type: ignore[attr-defined]
+        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
+        response: Any = await sg.send(message)
 
         # Log delivery status
-        if response.status_code in (200, 202):  # type: ignore[attr-defined]
-            logger.info(  # type: ignore[attr-defined]
+        if response.status_code in (200, 202):
+            logger.info(
                 f"Email sent successfully: type=verification, to={email}, "
                 f"status={response.status_code}"
             )
         else:
-            logger.error(  # type: ignore[attr-defined]
+            logger.error(
                 f"Email delivery failed: type=verification, to={email}, "
-                f"status={response.status_code}, body={response.body}"  # type: ignore[attr-defined]
+                f"status={response.status_code}, body={response.body}"
             )
-            raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
+            raise Exception(
+                f"SendGrid error: {response.status_code} - {response.body}"
             )
 
     @retry_on_sendgrid_error()
@@ -237,8 +237,8 @@ class SendGridEmailService:
         token: str,
     ) -> None:
         """Send password reset email."""
-        import sendgrid  # type: ignore[import]
-        from sendgrid.helpers.mail import Mail  # type: ignore[import]
+        import sendgrid
+        from sendgrid.helpers.mail import Mail
 
         # Create reset URL
         base_url = settings.oauth_frontend_success_url.split("/auth")[0]
@@ -268,22 +268,22 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response: Any = await sg.send(message)  # type: ignore[attr-defined]
+        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
+        response: Any = await sg.send(message)
 
         # Log delivery status
-        if response.status_code in (200, 202):  # type: ignore[attr-defined]
-            logger.info(  # type: ignore[attr-defined]
+        if response.status_code in (200, 202):
+            logger.info(
                 f"Email sent successfully: type=password_reset, to={email}, "
                 f"status={response.status_code}"
             )
         else:
-            logger.error(  # type: ignore[attr-defined]
+            logger.error(
                 f"Email delivery failed: type=password_reset, to={email}, "
-                f"status={response.status_code}, body={response.body}"  # type: ignore[attr-defined]
+                f"status={response.status_code}, body={response.body}"
             )
-            raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
+            raise Exception(
+                f"SendGrid error: {response.status_code} - {response.body}"
             )
 
     @retry_on_sendgrid_error()
@@ -292,8 +292,8 @@ class SendGridEmailService:
         email: str,
     ) -> None:
         """Send 2FA enabled notification."""
-        import sendgrid  # type: ignore[import]
-        from sendgrid.helpers.mail import Mail  # type: ignore[import]
+        import sendgrid
+        from sendgrid.helpers.mail import Mail
 
         # Create email message
         message = Mail(
@@ -317,22 +317,22 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response: Any = await sg.send(message)  # type: ignore[attr-defined]
+        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
+        response: Any = await sg.send(message)
 
         # Log delivery status
-        if response.status_code in (200, 202):  # type: ignore[attr-defined]
-            logger.info(  # type: ignore[attr-defined]
+        if response.status_code in (200, 202):
+            logger.info(
                 f"Email sent successfully: type=2fa_enabled, to={email}, "
                 f"status={response.status_code}"
             )
         else:
-            logger.error(  # type: ignore[attr-defined]
+            logger.error(
                 f"Email delivery failed: type=2fa_enabled, to={email}, "
-                f"status={response.status_code}, body={response.body}"  # type: ignore[attr-defined]
+                f"status={response.status_code}, body={response.body}"
             )
-            raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
+            raise Exception(
+                f"SendGrid error: {response.status_code} - {response.body}"
             )
 
     @retry_on_sendgrid_error()
@@ -346,8 +346,8 @@ class SendGridEmailService:
         notes: str | None = None,
     ) -> None:
         """Send appointment notification to branch."""
-        import sendgrid  # type: ignore[import]
-        from sendgrid.helpers.mail import Mail  # type: ignore[import]
+        import sendgrid
+        from sendgrid.helpers.mail import Mail
 
         # Format datetime for display
         scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
@@ -400,24 +400,24 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response: Any = await sg.send(message)  # type: ignore[attr-defined]
+        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
+        response: Any = await sg.send(message)
 
         # Log delivery status
-        if response.status_code in (200, 202):  # type: ignore[attr-defined]
-            logger.info(  # type: ignore[attr-defined]
+        if response.status_code in (200, 202):
+            logger.info(
                 f"Email sent successfully: type=appointment_notification, "
                 f"to={branch_email}, buyer={buyer_name}, vehicle={vehicle_info}, "
                 f"status={response.status_code}"
             )
         else:
-            logger.error(  # type: ignore[attr-defined]
+            logger.error(
                 f"Email delivery failed: type=appointment_notification, "
-                f"to={branch_email}, status={response.status_code}, "  # type: ignore[attr-defined]
-                f"body={response.body}"  # type: ignore[attr-defined]
+                f"to={branch_email}, status={response.status_code}, "
+                f"body={response.body}"
             )
-            raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
+            raise Exception(
+                f"SendGrid error: {response.status_code} - {response.body}"
             )
 
     @retry_on_sendgrid_error()
@@ -431,8 +431,8 @@ class SendGridEmailService:
         notes: str | None = None,
     ) -> None:
         """Send appointment confirmation to buyer."""
-        import sendgrid  # type: ignore[import]
-        from sendgrid.helpers.mail import Mail  # type: ignore[import]
+        import sendgrid
+        from sendgrid.helpers.mail import Mail
 
         # Format datetime for display
         scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
@@ -485,24 +485,24 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response: Any = await sg.send(message)  # type: ignore[attr-defined]
+        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
+        response: Any = await sg.send(message)
 
         # Log delivery status
-        if response.status_code in (200, 202):  # type: ignore[attr-defined]
-            logger.info(  # type: ignore[attr-defined]
+        if response.status_code in (200, 202):
+            logger.info(
                 f"Email sent successfully: type=appointment_confirmation, "
                 f"to={buyer_email}, branch={branch_name}, vehicle={vehicle_info}, "
                 f"status={response.status_code}"
             )
         else:
-            logger.error(  # type: ignore[attr-defined]
+            logger.error(
                 f"Email delivery failed: type=appointment_confirmation, "
-                f"to={buyer_email}, status={response.status_code}, "  # type: ignore[attr-defined]
-                f"body={response.body}"  # type: ignore[attr-defined]
+                f"to={buyer_email}, status={response.status_code}, "
+                f"body={response.body}"
             )
-            raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
+            raise Exception(
+                f"SendGrid error: {response.status_code} - {response.body}"
             )
 
     @retry_on_sendgrid_error()
@@ -513,8 +513,8 @@ class SendGridEmailService:
         appointment_details: dict[str, Any],
     ) -> None:
         """Send appointment reminder."""
-        import sendgrid  # type: ignore[import]
-        from sendgrid.helpers.mail import Mail  # type: ignore[import]
+        import sendgrid
+        from sendgrid.helpers.mail import Mail
 
         buyer_name = appointment_details.get("buyer_name", "Cliente")
         branch_name = appointment_details.get("branch_name", "Asesor")
@@ -575,22 +575,22 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response: Any = await sg.send(message)  # type: ignore[attr-defined]
+        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
+        response: Any = await sg.send(message)
 
         # Log delivery status
-        if response.status_code in (200, 202):  # type: ignore[attr-defined]
-            logger.info(  # type: ignore[attr-defined]
+        if response.status_code in (200, 202):
+            logger.info(
                 f"Email sent successfully: type=appointment_reminder, to={email}, "
                 f"person_type={person_type}, status={response.status_code}"
             )
         else:
-            logger.error(  # type: ignore[attr-defined]
+            logger.error(
                 f"Email delivery failed: type=appointment_reminder, to={email}, "
-                f"status={response.status_code}, body={response.body}"  # type: ignore[attr-defined]
+                f"status={response.status_code}, body={response.body}"
             )
-            raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
+            raise Exception(
+                f"SendGrid error: {response.status_code} - {response.body}"
             )
 
     @retry_on_sendgrid_error()
@@ -608,8 +608,8 @@ class SendGridEmailService:
         # Import here to avoid circular dependency
         from prosell.domain.entities.appointment import AppointmentStatus
 
-        import sendgrid  # type: ignore[import]
-        from sendgrid.helpers.mail import Mail  # type: ignore[import]
+        import sendgrid
+        from sendgrid.helpers.mail import Mail
 
         # Format datetime for display
         scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
@@ -681,24 +681,24 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)  # type: ignore[call-arg]
-        response: Any = await sg.send(message)  # type: ignore[attr-defined]
+        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
+        response: Any = await sg.send(message)
 
         # Log delivery status
-        if response.status_code in (200, 202):  # type: ignore[attr-defined]
-            logger.info(  # type: ignore[attr-defined]
+        if response.status_code in (200, 202):
+            logger.info(
                 f"Email sent successfully: type=appointment_status_update, "
                 f"to={buyer_email}, status={new_status.value}, "
                 f"appointment_date={scheduled_str}"
             )
         else:
-            logger.error(  # type: ignore[attr-defined]
+            logger.error(
                 f"Email delivery failed: type=appointment_status_update, "
-                f"to={buyer_email}, status={response.status_code}, "  # type: ignore[attr-defined]
-                f"body={response.body}"  # type: ignore[attr-defined]
+                f"to={buyer_email}, status={response.status_code}, "
+                f"body={response.body}"
             )
-            raise Exception(  # type: ignore[attr-defined]
-                f"SendGrid error: {response.status_code} - {response.body}"  # type: ignore[attr-defined]
+            raise Exception(
+                f"SendGrid error: {response.status_code} - {response.body}"
             )
 
 

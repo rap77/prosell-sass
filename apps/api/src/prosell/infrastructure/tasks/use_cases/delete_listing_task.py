@@ -55,7 +55,7 @@ async def delete_listing_task(publication_id: str) -> dict[str, Any]:
         access_token = encryption.decrypt(page.page_access_token_encrypted)
 
         playwright_svc = PlaywrightPublisherService()
-        graph_api_svc = GraphAPIPublisherService(encryption)  # type: ignore[arg-type]
+        graph_api_svc = GraphAPIPublisherService(encryption)
         selector = PublisherStrategySelector(playwright_svc, graph_api_svc)
         service, _ = selector.select()
 

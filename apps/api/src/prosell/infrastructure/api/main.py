@@ -75,7 +75,7 @@ app = FastAPI(
 app.add_exception_handler(AuthDomainException, auth_domain_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(ValidationError, pydantic_validation_error_handler)  # type: ignore[arg-type]
 app.add_exception_handler(IntegrityError, integrity_error_handler)  # type: ignore[arg-type]
-app.add_exception_handler(Exception, generic_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(Exception, generic_exception_handler)
 
 
 # Rate limit exception handler

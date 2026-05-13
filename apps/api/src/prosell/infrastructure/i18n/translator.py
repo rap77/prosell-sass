@@ -127,7 +127,7 @@ class Translator:
 
 # Global translator instance
 # Global translator instance
-translator: Translator = Translator()
+translator: Translator = Translator()  # type: ignore[no-untyped-call]
 
 
 __all__ = ["Translations", "Translator", "translator"]

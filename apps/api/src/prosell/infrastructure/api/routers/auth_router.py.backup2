@@ -8,34 +8,49 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 
-# DTOs - all from central dto module
-from prosell.application.dto.auth import (
-    Disable2FARequest as Disable2FAUCRequest,
-    Disable2FAResponse,
-    Enable2FARequest as Enable2FAUCRequest,
-    Enable2FAResponse,
-    LoginUserRequest,
-    LoginUserResponse,
-    OAuthLoginRequest as OAuthLoginUCRequest,
-    OAuthLoginResponse,
-    RefreshTokenRequest as RefreshTokenUCRequest,
-    RefreshTokenResponse,
-    RegisterUserRequest,
-    RegisterUserResponse,
-    Verify2FARequest as Verify2FAUCRequest,
-    Verify2FAResponse,
-)
-
-# Use cases - only import the use case classes
 from prosell.application.use_cases.auth.enable_2fa import (
+    Disable2FARequest as Disable2FAUCRequest,
+)
+from prosell.application.use_cases.auth.enable_2fa import (
+    Disable2FAResponse,
     Disable2FAUseCase,
+    Enable2FAResponse,
     Enable2FAUseCase,
 )
-from prosell.application.use_cases.auth.login_user import LoginUserUseCase
-from prosell.application.use_cases.auth.oauth_login import OAuthLoginUseCase
-from prosell.application.use_cases.auth.refresh_token import RefreshTokenUseCase
-from prosell.application.use_cases.auth.register_user import RegisterUserUseCase
-from prosell.application.use_cases.auth.verify_2fa import Verify2FAUseCase
+from prosell.application.use_cases.auth.enable_2fa import (
+    Enable2FARequest as Enable2FAUCRequest,
+)
+from prosell.application.use_cases.auth.login_user import (
+    LoginUserRequest,
+    LoginUserResponse,
+    LoginUserUseCase,
+)
+from prosell.application.use_cases.auth.oauth_login import (
+    OAuthLoginRequest as OAuthLoginUCRequest,
+)
+from prosell.application.use_cases.auth.oauth_login import (
+    OAuthLoginResponse,
+    OAuthLoginUseCase,
+)
+from prosell.application.use_cases.auth.refresh_token import (
+    RefreshTokenRequest as RefreshTokenUCRequest,
+)
+from prosell.application.use_cases.auth.refresh_token import (
+    RefreshTokenResponse,
+    RefreshTokenUseCase,
+)
+from prosell.application.use_cases.auth.register_user import (
+    RegisterUserRequest,
+    RegisterUserResponse,
+    RegisterUserUseCase,
+)
+from prosell.application.use_cases.auth.verify_2fa import (
+    Verify2FARequest as Verify2FAUCRequest,
+)
+from prosell.application.use_cases.auth.verify_2fa import (
+    Verify2FAResponse,
+    Verify2FAUseCase,
+)
 from prosell.core.config import settings
 from prosell.domain.exceptions.auth_exceptions import (
     OAuthCallbackError,

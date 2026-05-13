@@ -36,15 +36,15 @@ class RBACMiddleware:
         """
 
         def decorator(
-            func: Callable[Concatenate[dict[str, Any], P], Any],  # type: ignore[valid-type]
-        ) -> Callable[P, Any]:  # type: ignore[misc]
+            func: Callable[Concatenate[dict[str, Any], P], Any],
+        ) -> Callable[P, Any]:
             @wraps(func)
             async def wrapper(
                 current_user: dict[str, Any],
                 *args: P.args,
                 **kwargs: P.kwargs,
-            ) -> Any:  # type: ignore[misc]
-                user_roles: list[str] = current_user.get("roles", [])  # type: ignore[assignment]
+            ) -> Any:
+                user_roles: list[str] = current_user.get("roles", [])
 
                 # Check if user has any of the required roles
                 if not any(role in user_roles for role in roles):
@@ -53,9 +53,9 @@ class RBACMiddleware:
                         detail=f"Access denied. Required roles: {', '.join(roles)}",
                     )
 
-                return await func(*args, current_user=current_user, **kwargs)  # type: ignore[call-arg]
+                return await func(*args, current_user=current_user, **kwargs)
 
-            return wrapper  # type: ignore[return-value]
+            return wrapper
 
         return decorator
 
@@ -77,15 +77,15 @@ class RBACMiddleware:
         """
 
         def decorator(
-            func: Callable[Concatenate[dict[str, Any], P], Any],  # type: ignore[valid-type]
-        ) -> Callable[P, Any]:  # type: ignore[misc]
+            func: Callable[Concatenate[dict[str, Any], P], Any],
+        ) -> Callable[P, Any]:
             @wraps(func)
             async def wrapper(
                 current_user: dict[str, Any],
                 *args: P.args,
                 **kwargs: P.kwargs,
-            ) -> Any:  # type: ignore[misc]
-                user_roles: list[str] = current_user.get("roles", [])  # type: ignore[assignment]
+            ) -> Any:
+                user_roles: list[str] = current_user.get("roles", [])
 
                 # Get permissions for user's roles
                 from prosell.domain.entities.role import ROLE_PERMISSIONS
@@ -106,9 +106,9 @@ class RBACMiddleware:
                         detail=f"Access denied. Missing permissions: {', '.join(missing)}",
                     )
 
-                return await func(*args, current_user=current_user, **kwargs)  # type: ignore[call-arg]
+                return await func(*args, current_user=current_user, **kwargs)
 
-            return wrapper  # type: ignore[return-value]
+            return wrapper
 
         return decorator
 

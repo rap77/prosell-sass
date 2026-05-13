@@ -54,8 +54,8 @@ def rate_limit(limit_string: str) -> Callable[[Any], Any]:
         async def endpoint(request: Request, ...):
             ...
     """
-    limit: Any = limiter.limit(limit_string)  # type: ignore[assignment]
-    return limit  # type: ignore[return-value]
+    limit: Any = limiter.limit(limit_string)
+    return limit
 
 
 # Pre-configured limit strings

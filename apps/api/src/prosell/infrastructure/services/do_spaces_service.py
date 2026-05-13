@@ -19,18 +19,18 @@ class DOSpacesService(IDOSpacesService):
         access_key: str | None = None,
         secret_key: str | None = None,
     ) -> None:
-        self.region = region or settings.do_region  # type: ignore[attr-defined]
-        self.bucket = bucket_name or settings.do_bucket_name  # type: ignore[attr-defined]
-        access_key_id = access_key or settings.do_access_key_id  # type: ignore[attr-defined]
-        secret_access_key = secret_key or settings.do_secret_access_key  # type: ignore[attr-defined]
+        self.region = region or settings.do_region
+        self.bucket = bucket_name or settings.do_bucket_name
+        access_key_id = access_key or settings.do_access_key_id
+        secret_access_key = secret_key or settings.do_secret_access_key
 
-        self.endpoint = f"https://{self.region}.digitaloceanspaces.com"  # type: ignore[call-arg]
+        self.endpoint = f"https://{self.region}.digitaloceanspaces.com"
 
-        self.s3_client = boto3.client(  # type: ignore[call-arg]
+        self.s3_client = boto3.client(
             "s3",
             endpoint_url=self.endpoint,
-            aws_access_key_id=access_key_id,  # type: ignore[arg-type]
-            aws_secret_access_key=secret_access_key,  # type: ignore[arg-type]
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key,
             config=Config(signature_version="s3v4"),
         )
 
@@ -65,10 +65,10 @@ class DOSpacesService(IDOSpacesService):
         key = file_path
 
         # Generate presigned URL for PUT operation
-        url = self.s3_client.generate_presigned_url(  # type: ignore[call-arg]
+        url = self.s3_client.generate_presigned_url(
             "put_object",
             Params={
-                "Bucket": self.bucket,  # type: ignore[dict-item]
+                "Bucket": self.bucket,
                 "Key": key,
                 "ContentType": content_type,
             },
@@ -76,7 +76,7 @@ class DOSpacesService(IDOSpacesService):
             HttpMethod="PUT",
         )
 
-        public_url = f"{self.endpoint}/{self.bucket}/{key}"  # type: ignore[call-arg]
+        public_url = f"{self.endpoint}/{self.bucket}/{key}"
 
         return {
             "upload_url": url,
@@ -96,8 +96,8 @@ class DOSpacesService(IDOSpacesService):
             True if deleted, False otherwise
         """
         try:
-            self.s3_client.delete_object(  # type: ignore[call-arg]
-                Bucket=self.bucket,  # type: ignore[dict-item]
+            self.s3_client.delete_object(
+                Bucket=self.bucket,
                 Key=key,
             )
             return True
@@ -115,12 +115,12 @@ class DOSpacesService(IDOSpacesService):
             True if file exists, False otherwise
         """
         try:
-            self.s3_client.head_object(  # type: ignore[call-arg]
-                Bucket=self.bucket,  # type: ignore[dict-item]
+            self.s3_client.head_object(
+                Bucket=self.bucket,
                 Key=key,
             )
             return True
-        except self.s3_client.exceptions.ClientError:  # type: ignore[attr-defined]
+        except self.s3_client.exceptions.ClientError:
             return False
         except Exception:
             return False
@@ -145,15 +145,15 @@ class DOSpacesService(IDOSpacesService):
         key = file_path
 
         # Upload file to Spaces
-        self.s3_client.put_object(  # type: ignore[call-arg]
-            Bucket=self.bucket,  # type: ignore[dict-item]
+        self.s3_client.put_object(
+            Bucket=self.bucket,
             Key=key,
             Body=file_bytes,
             ContentType=content_type,
         )
 
         # Return public URL
-        public_url = f"{self.endpoint}/{self.bucket}/{key}"  # type: ignore[call-arg]
+        public_url = f"{self.endpoint}/{self.bucket}/{key}"
         return public_url
 
 

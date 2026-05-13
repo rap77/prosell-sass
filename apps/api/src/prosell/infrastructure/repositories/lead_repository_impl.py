@@ -46,8 +46,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         """Get lead by ID with tenant isolation and optional product JOIN."""
         if include_product:
             # LEFT JOIN with products table - select both models
-            stmt = cast(
-                Select[tuple[LeadModel, ProductModel]],
+            stmt = (
                 select(LeadModel, ProductModel)
                 .outerjoin(ProductModel, LeadModel.product_id == ProductModel.id)
                 .where(
@@ -209,8 +208,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             raise LeadNotFoundException(f"Lead not found: {lead_id}")
         
         # Fetch audit logs
-        stmt = cast(
-            Select[tuple[LeadAuditLogModel]],
+        stmt = (
             select(LeadAuditLogModel)
             .where(LeadAuditLogModel.lead_id == lead_id)
             .order_by(LeadAuditLogModel.created_at.desc())
