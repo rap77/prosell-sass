@@ -65,6 +65,12 @@ async def assign_branch(
             detail="Admin or manager role required",
         )
 
+    if current_user.tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User must belong to a tenant",
+        )
+
     return await use_case.execute(
         user_id=id,
         request=request,
@@ -98,6 +104,12 @@ async def bulk_assign_branches(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin or manager role required",
+        )
+
+    if current_user.tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User must belong to a tenant",
         )
 
     return await use_case.execute(
@@ -166,6 +178,11 @@ async def list_user_branches(
         No role check - users can see their own assignments
     """
     # Get branch IDs for user
+    if current_user.tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User must belong to a tenant",
+        )
     branch_ids = await user_branch_repository.get_user_branch_ids(
         user_id=id,
         tenant_id=current_user.tenant_id,

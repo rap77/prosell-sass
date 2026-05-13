@@ -9,7 +9,7 @@ from prosell.domain.repositories.appointment_repository import AbstractAppointme
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.repositories.user_repository import AbstractUserRepository
-from prosell.infrastructure.services.email_service import AbstractEmailService
+from prosell.application.ports.email_service import AbstractEmailService
 
 
 class ConfirmAppointmentUseCase:
