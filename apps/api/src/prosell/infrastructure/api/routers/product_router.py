@@ -12,7 +12,7 @@ from prosell.application.dto.product import (
     UpdateProductRequest,
 )
 from prosell.application.use_cases.product.approve_product import ApproveProductUseCase
-from prosell.application.use_cases.product.create_product import CreateProductUseCase
+# from prosell.application.use_cases.product.create_product import CreateProductUseCase  # TODO: implement
 from prosell.application.use_cases.product.delete_product import DeleteProductUseCase
 from prosell.application.use_cases.product.list_products import (
     ListProductsUseCase,
@@ -47,6 +47,8 @@ async def create_product(
 
     Product is created in DRAFT status by default.
     tenant_id and organization_id are injected from the authenticated user if not provided.
+    
+    TODO: Implement CreateProductUseCase - currently commented out
     """
     # Inject auth context via model_copy (Pydantic v2 idiomatic)
     effective_tenant_id = request.tenant_id or current_user.tenant_id or current_user.id
@@ -56,16 +58,16 @@ async def create_product(
         "organization_id": effective_org_id,
     })
 
-    product_repo = SqlAlchemyProductRepository(db)
-    category_repo = SqlAlchemyCategoryRepository(db)
-    use_case = CreateProductUseCase(product_repo, category_repo)
-
-    try:
-        return cast("ProductResponse", await use_case.execute(request))
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except ProductError as e:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
+    # TODO: Implement use case when ready
+    # product_repo = SqlAlchemyProductRepository(db)
+    # category_repo = SqlAlchemyCategoryRepository(db)
+    # use_case = CreateProductUseCase(product_repo, category_repo)
+    # return await use_case.execute(request)
+    
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Product creation not yet implemented"
+    )
 
 
 @router.get("", response_model=ProductListResponse)
