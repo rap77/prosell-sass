@@ -120,10 +120,13 @@ async def get_facebook_graph_api_client() -> FacebookGraphApiClient:
     return FacebookGraphApiClient()
 
 
+
+
 async def get_create_lead_use_case(
     lead_repository: AbstractLeadRepository = Depends(get_lead_repository),
 ) -> CreateLeadUseCase:
     """Provide CreateLeadUseCase instance."""
+    return CreateLeadUseCase(lead_repository)
 
 
 async def get_facebook_page_repository(
@@ -135,10 +138,12 @@ async def get_facebook_page_repository(
 
 def get_encryption_service() -> TokenEncryptionService:
     """Provide TokenEncryptionService instance."""
-    return TokenEncryptionService()
-
-    return CreateLeadUseCase(lead_repository)
-
+    from prosell.core.config import settings
+    
+    # Convert base64 string to bytes
+    import base64
+    key_bytes = base64.urlsafe_b64decode(settings.facebook_encryption_key + "==" * (4 - len(settings.facebook_encryption_key) % 4))
+    return TokenEncryptionService(encryption_key=key_bytes)
 
 async def get_process_facebook_webhook_use_case(
     lead_repository: AbstractLeadRepository = Depends(get_lead_repository),

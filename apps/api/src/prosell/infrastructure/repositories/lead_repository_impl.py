@@ -208,7 +208,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             raise LeadNotFoundException(f"Lead not found: {lead_id}")
         
         # Fetch audit logs
-        stmt = (
+        stmt_audit = (
             select(LeadAuditLogModel)
             .where(LeadAuditLogModel.lead_id == lead_id)
             .order_by(LeadAuditLogModel.created_at.desc())

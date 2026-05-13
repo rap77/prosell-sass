@@ -1,7 +1,7 @@
 """Rate limiting middleware using slowapi for FastAPI."""
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 from fastapi import Request
 from slowapi import Limiter

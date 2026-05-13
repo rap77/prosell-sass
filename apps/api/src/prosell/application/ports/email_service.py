@@ -1,6 +1,7 @@
 """Email service port (secondary interface)."""
 
 from abc import abstractmethod
+from typing import Any
 from datetime import datetime
 from typing import Protocol
 from uuid import UUID

@@ -61,7 +61,7 @@ async def create_product(
     use_case = CreateProductUseCase(product_repo, category_repo)
 
     try:
-        return cast("ProductResponse", await use_case.execute(request))  # type: ignore[no-any-return]
+        return cast("ProductResponse", await use_case.execute(request))
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
     except ProductError as e:
@@ -72,7 +72,7 @@ async def create_product(
 async def list_products(
     organization_id: UUID | None = None,
     category_id: UUID | None = None,
-    status: str | None = None,
+    product_status: str | None = None,
     condition: str | None = None,
     is_featured: bool | None = None,
     search: str | None = None,
@@ -108,7 +108,7 @@ async def list_products(
         tenant_id=tenant_id,
         organization_id=organization_id,
         category_id=category_id,
-        status=status,
+        status=product_status,
         condition=condition,
         is_featured=is_featured,
         search_query=search,

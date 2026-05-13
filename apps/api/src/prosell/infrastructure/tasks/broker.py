@@ -11,9 +11,9 @@ from prosell.core.config import settings
 
 # Use Redis for production, InMemory for tests
 if settings.environment == "testing":
-    broker = InMemoryBroker()
+    broker: InMemoryBroker | ListQueueBroker = InMemoryBroker()
 else:
-    broker: InMemoryBroker | ListQueueBroker = ListQueueBroker(
+    broker = ListQueueBroker(
         url=settings.redis_url,
     )
 
