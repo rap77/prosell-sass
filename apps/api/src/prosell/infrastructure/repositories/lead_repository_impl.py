@@ -1,11 +1,12 @@
 """SqlAlchemyLeadRepository implementation with product JOIN support."""
 
 from datetime import UTC, datetime, timedelta
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, cast
 from uuid import UUID
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import Select
 
 from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.entities.lead_audit_log import LeadAuditLog
@@ -35,18 +36,18 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         await self.session.flush()
         return self._to_entity(model)
 
-    async def get_by_id(  # type: ignore[reportIncompatibleMethodOverride]
+    async def get_by_id(
         self,
         lead_id: UUID,
         tenant_id: UUID,
         *,
-        include_product: bool = False,  # Keep parameter name for backwards compatibility
-    ) -> Lead | LeadWithProduct | None:
+        include_product: bool = False,
+    ) -> Lead | None:
         """Get lead by ID with tenant isolation and optional product JOIN."""
         if include_product:
             # LEFT JOIN with products table - select both models
-            # Filter for vehicle category products
-            stmt = (
+            stmt = cast(
+                Select[tuple[LeadModel, ProductModel]],
                 select(LeadModel, ProductModel)
                 .outerjoin(ProductModel, LeadModel.product_id == ProductModel.id)
                 .where(
@@ -58,9 +59,8 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             row = result.first()
             if not row:
                 return None
-            lead_model, product_model = row
-            lead_entity = self._to_entity(lead_model)
-            return LeadWithProduct(lead=lead_entity, product_model=product_model)
+            lead_model, _product_model = row
+            return self._to_entity(lead_model)
         else:
             # Original behavior - just get lead
             stmt = select(LeadModel).where(
@@ -102,7 +102,6 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             return None  # Must have at least one identifier
 
         # Vehicle condition: only check duplicates when product_id is provided
-        # When product_id is null, don't check for duplicates (allow multiple leads without vehicle)
         if product_id is not None:
             conditions.append(LeadModel.product_id == product_id)
             stmt = select(LeadModel).where(*conditions).order_by(LeadModel.created_at.desc())
@@ -113,7 +112,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             # No product_id provided - skip duplicate detection
             return None
 
-    async def list_by_tenant(  # type: ignore[reportIncompatibleMethodOverride]
+    async def list_by_tenant(
         self,
         tenant_id: UUID,
         limit: int = 50,
@@ -210,7 +209,8 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             raise LeadNotFoundException(f"Lead not found: {lead_id}")
         
         # Fetch audit logs
-        stmt = (
+        stmt = cast(
+            Select[tuple[LeadAuditLogModel]],
             select(LeadAuditLogModel)
             .where(LeadAuditLogModel.lead_id == lead_id)
             .order_by(LeadAuditLogModel.created_at.desc())
@@ -221,7 +221,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         
         return [self._audit_log_to_entity(model) for model in models]
 
-    async def list_by_vendedor(  # type: ignore[reportIncompatibleMethodOverride]
+    async def list_by_vendedor(
         self,
         tenant_id: UUID,
         vendedor_id: UUID,
@@ -229,7 +229,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         offset: int = 0,
         status: LeadStatus | None = None,
         include_products: bool = False,
-    ) -> tuple[list[LeadWithProduct], int]:
+    ) -> tuple[list[Lead], int]:
         """List leads assigned to a specific vendedor with optional vehicle JOIN."""
         base_filter = [
             LeadModel.tenant_id == tenant_id,
@@ -254,15 +254,17 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             )
             result = await self.session.execute(stmt)
             rows = result.all()
-            return [LeadWithProduct(lead=self._to_entity(r[0]), product_model=r[1]) for r in rows], total
+            leads = [LeadWithProduct(lead=self._to_entity(r[0]), product_model=r[1]) for r in rows]
+            # Convert LeadWithProduct to Lead for return type compatibility
+            return [lp.lead for lp in leads], total
         else:
             result = await self.session.execute(
                 select(LeadModel).where(*base_filter)
                 .order_by(LeadModel.created_at.desc()).limit(limit).offset(offset)
             )
-            return [LeadWithProduct(lead=self._to_entity(m)) for m in result.scalars().all()], total
+            return [self._to_entity(m) for m in result.scalars().all()], total
 
-    async def list_by_manager(  # type: ignore[reportIncompatibleMethodOverride]
+    async def list_by_manager(
         self,
         tenant_id: UUID,
         limit: int = 50,
@@ -270,7 +272,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         status: LeadStatus | None = None,
         vendedor_id: UUID | None = None,
         include_products: bool = False,
-    ) -> tuple[list[LeadWithProduct], int]:
+    ) -> tuple[list[Lead], int]:
         """List all leads for a tenant (manager view) with optional vehicle JOIN."""
         base_filter = [LeadModel.tenant_id == tenant_id]
         if status:
@@ -294,13 +296,15 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             )
             result = await self.session.execute(stmt)
             rows = result.all()
-            return [LeadWithProduct(lead=self._to_entity(r[0]), product_model=r[1]) for r in rows], total
+            leads = [LeadWithProduct(lead=self._to_entity(r[0]), product_model=r[1]) for r in rows]
+            # Convert LeadWithProduct to Lead for return type compatibility
+            return [lp.lead for lp in leads], total
         else:
             result = await self.session.execute(
                 select(LeadModel).where(*base_filter)
                 .order_by(LeadModel.created_at.desc()).limit(limit).offset(offset)
             )
-            return [LeadWithProduct(lead=self._to_entity(m)) for m in result.scalars().all()], total
+            return [self._to_entity(m) for m in result.scalars().all()], total
 
     async def assign_to_vendedor(
         self,

@@ -73,9 +73,9 @@ class OAuthServiceImpl(IOAuthService):
         """
         self.settings = settings
         # Redis client for distributed state token storage
-        self._redis: redis.Redis | None = None
+        self._redis: redis.Redis[str] | None = None
 
-    async def _get_redis(self) -> redis.Redis:
+    async def _get_redis(self) -> redis.Redis[str]:
         """Get or create Redis client."""
         if self._redis is None:
             self._redis = await redis.from_url(

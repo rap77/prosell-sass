@@ -16,8 +16,14 @@ class AbstractLeadRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_id(self, lead_id: UUID, tenant_id: UUID) -> Lead | None:
-        """Get lead by ID with tenant isolation."""
+    async def get_by_id(
+        self,
+        lead_id: UUID,
+        tenant_id: UUID,
+        *,
+        include_product: bool = False,
+    ) -> Lead | None:
+        """Get lead by ID with tenant isolation and optional product JOIN."""
         pass
 
     @abstractmethod
@@ -52,6 +58,7 @@ class AbstractLeadRepository(ABC):
         limit: int = 50,
         offset: int = 0,
         status: LeadStatus | None = None,
+        include_products: bool = False,
     ) -> tuple[list[Lead], int]:
         """List leads for a vendedor with pagination. Returns (leads, total)."""
         pass
@@ -64,6 +71,7 @@ class AbstractLeadRepository(ABC):
         offset: int = 0,
         status: LeadStatus | None = None,
         vendedor_id: UUID | None = None,
+        include_products: bool = False,
     ) -> tuple[list[Lead], int]:
         """List all leads for a tenant (manager view). Returns (leads, total)."""
         pass
@@ -120,6 +128,9 @@ class AbstractLeadRepository(ABC):
     async def list_by_tenant(
         self,
         tenant_id: UUID,
-    ) -> list[Lead]:
-        """List all leads for a tenant (for metrics calculation)."""
+        limit: int = 50,
+        offset: int = 0,
+        status_filter: LeadStatus | None = None,
+    ) -> tuple[list[Lead], int]:
+        """List all leads for a tenant with pagination. Returns (leads, total)."""
         pass

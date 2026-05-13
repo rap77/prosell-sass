@@ -12,10 +12,15 @@ class ImagePipelineService(IImagePipeline):
 
     MAX_SIZE_BYTES = 1_000_000
     FB_MAX_WIDTH = 1080
+    # Use Resampling.LANCZOS for Pillow 10+ compatibility
+    try:
+        LANCZOS = Image.Resampling.LANCZOS
+    except AttributeError:
+        LANCZOS = Image.LANCZOS  # type: ignore[attr-defined]
 
     async def process(self, image_bytes: bytes) -> bytes:
         """Compress, resize to 1080px, convert to JPG, strip EXIF. Returns processed bytes."""
-        img = Image.open(BytesIO(image_bytes))
+        img: Image.Image = Image.open(BytesIO(image_bytes))
 
         # Handle palette mode (P) — convert to RGBA first to preserve transparency, then RGB
         if img.mode == "P":
@@ -28,7 +33,7 @@ class ImagePipelineService(IImagePipeline):
         if img.width > self.FB_MAX_WIDTH:
             ratio = self.FB_MAX_WIDTH / img.width
             new_height = int(img.height * ratio)
-            img = img.resize((self.FB_MAX_WIDTH, new_height), Image.LANCZOS)
+            img = img.resize((self.FB_MAX_WIDTH, new_height), self.LANCZOS)
 
         # Save as JPEG at quality=85 (strips EXIF — Pillow doesn't copy EXIF when saving fresh)
         output = BytesIO()

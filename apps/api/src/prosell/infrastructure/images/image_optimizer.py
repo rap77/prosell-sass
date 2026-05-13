@@ -15,6 +15,12 @@ class ImageOptimizer(IImagePipeline):
     Optimizes images for web display: resize, compress, strip EXIF, convert to JPEG.
     """
 
+    # Use Resampling.LANCZOS for Pillow 10+ compatibility
+    try:
+        RESAMPLING = Image.Resampling.LANCZOS
+    except AttributeError:
+        RESAMPLING = Image.LANCZOS  # type: ignore[attr-defined]
+
     def __init__(
         self,
         max_width: int = 1920,
@@ -44,7 +50,7 @@ class ImageOptimizer(IImagePipeline):
             Processed image bytes (JPEG format)
         """
         # Load image from bytes
-        img = Image.open(BytesIO(image_bytes))
+        img: Image.Image = Image.open(BytesIO(image_bytes))
 
         # Convert RGBA to RGB if necessary (removes alpha channel)
         if img.mode == "RGBA":
@@ -74,7 +80,7 @@ class ImageOptimizer(IImagePipeline):
                 new_width = int(self.max_height * aspect_ratio)
 
             # Resize using LANCZOS resampling for high quality
-            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            img = img.resize((new_width, new_height), self.RESAMPLING)
 
         # Save to bytes as JPEG with compression (strips EXIF automatically)
         buffer = BytesIO()

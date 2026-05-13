@@ -58,7 +58,7 @@ class GetTeamMetricsUseCase:
             raise PermissionError("Only managers and admins can view team metrics")
 
         # Get all leads for the tenant
-        leads = await self.lead_repo.list_by_tenant(tenant_id)
+        leads, _ = await self.lead_repo.list_by_tenant(tenant_id)
 
         # Calculate metrics
         total_leads = len(leads)
