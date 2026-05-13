@@ -52,7 +52,8 @@ export abstract class BaseFactory<T> implements TestDataFactory<T> {
    */
   protected generateEmail(prefix: string): string {
     this.counter += 1;
-    return `${prefix}${this.counter}@example.com`;
+    const timestamp = Date.now();
+    return `${prefix}${timestamp}-${this.counter}@example.com`;
   }
 
   /**
@@ -61,7 +62,9 @@ export abstract class BaseFactory<T> implements TestDataFactory<T> {
    */
   protected generatePhone(): string {
     this.counter += 1;
-    const suffix = String(this.counter).padStart(4, '0');
+    // Use last 4 digits of timestamp + counter for uniqueness across test runs
+    const timestamp = Date.now().toString().slice(-4);
+    const suffix = `${timestamp}${this.counter}`.slice(-4);
     return `+1-555-${suffix}`;
   }
 
