@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, Concatenate, ParamSpec, overload
+from typing import Any, ParamSpec
 
 from fastapi import HTTPException, status
 
@@ -17,20 +17,6 @@ class RBACMiddleware:
 
     Checks if users have required roles or permissions.
     """
-
-    @staticmethod
-    @overload
-    def require_roles(
-        *roles: str,
-    ) -> Callable[[Callable[P, Any]], Callable[P, Any]]:
-        ...
-
-    @staticmethod
-    @overload
-    def require_roles(
-        *roles: str,
-    ) -> Callable[[Callable[Concatenate[dict[str, Any], P], Any]], Callable[P, Any]]:
-        ...
 
     @staticmethod
     def require_roles(
@@ -52,8 +38,8 @@ class RBACMiddleware:
             @wraps(func)
             async def wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
                 # Extract current_user from kwargs
-                current_user_dict: dict[str, Any] = kwargs.pop("current_user", {})
-                user_roles: list[str] = current_user_dict.get("roles", [])
+                current_user_dict = kwargs.pop("current_user", {})
+                user_roles: list[str] = current_user_dict.get("roles", []) if isinstance(current_user_dict, dict) else []
 
                 # Check if user has any of the required roles
                 if not any(role in user_roles for role in roles):
@@ -68,20 +54,6 @@ class RBACMiddleware:
             return wrapper
 
         return decorator
-
-    @staticmethod
-    @overload
-    def require_permissions(
-        *permissions: str,
-    ) -> Callable[[Callable[P, Any]], Callable[P, Any]]:
-        ...
-
-    @staticmethod
-    @overload
-    def require_permissions(
-        *permissions: str,
-    ) -> Callable[[Callable[Concatenate[dict[str, Any], P], Any]], Callable[P, Any]]:
-        ...
 
     @staticmethod
     def require_permissions(
@@ -103,8 +75,8 @@ class RBACMiddleware:
             @wraps(func)
             async def wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
                 # Extract current_user from kwargs
-                current_user_dict: dict[str, Any] = kwargs.pop("current_user", {})
-                user_roles: list[str] = current_user_dict.get("roles", [])
+                current_user_dict = kwargs.pop("current_user", {})
+                user_roles: list[str] = current_user_dict.get("roles", []) if isinstance(current_user_dict, dict) else []
 
                 # Get permissions for user's roles
                 from prosell.domain.entities.role import ROLE_PERMISSIONS
