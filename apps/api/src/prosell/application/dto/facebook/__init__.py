@@ -6,7 +6,9 @@ Data Transfer Objects for Facebook account connection and management.
 from datetime import datetime
 from uuid import UUID
 
-from prosell.domain.base import DomainModel, Field
+from pydantic import Field
+
+from prosell.domain.base import DomainModel
 
 # =============================================================================
 # REQUEST DTOs

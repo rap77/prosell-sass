@@ -5,7 +5,9 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
-from prosell.domain.base import DomainModel, Field
+from pydantic import Field
+
+from prosell.domain.base import DomainModel
 from prosell.domain.exceptions import LeadStateTransitionException
 
 

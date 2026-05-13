@@ -123,7 +123,7 @@ class SqlAlchemyTeamRepository(AbstractTeamRepository):
             TeamModel.tenant_id == tenant_id,
         )
         result = await self.session.execute(stmt)
-        count: int = result.scalar() or 0  # type: ignore[assignment]
+        count: int = result.scalar() or 0
         return count > 0
 
     async def count(self, tenant_id: UUID | None = None) -> int:
@@ -132,7 +132,7 @@ class SqlAlchemyTeamRepository(AbstractTeamRepository):
         if tenant_id is not None:
             stmt = stmt.where(TeamModel.tenant_id == tenant_id)
         result = await self.session.execute(stmt)
-        return result.scalar() or 0  # type: ignore[return-value]
+        return result.scalar() or 0
 
     async def count_by_org(self, org_id: UUID, tenant_id: UUID) -> int:
         """Count teams for an organization."""
@@ -141,7 +141,7 @@ class SqlAlchemyTeamRepository(AbstractTeamRepository):
             TeamModel.tenant_id == tenant_id,
         )
         result = await self.session.execute(stmt)
-        return result.scalar() or 0  # type: ignore[return-value]
+        return result.scalar() or 0
 
     def _to_entity(self, model: TeamModel) -> Team:
         """Convert ORM model to domain entity."""
@@ -266,7 +266,7 @@ class SqlAlchemyTeamMemberRepository(AbstractTeamMemberRepository):
         if tenant_id is not None:
             stmt = stmt.where(TeamMemberModel.tenant_id == tenant_id)
         result = await self.session.execute(stmt)
-        return result.scalar() or 0  # type: ignore[return-value]
+        return result.scalar() or 0
 
     def _to_entity(self, model: TeamMemberModel) -> TeamMember:
         """Convert ORM model to domain entity."""

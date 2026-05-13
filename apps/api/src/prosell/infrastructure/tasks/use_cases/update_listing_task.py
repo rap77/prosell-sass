@@ -1,10 +1,12 @@
 """update_listing_task — propagate listing content updates to Facebook Marketplace."""
 
+from typing import Any
+
 from prosell.infrastructure.tasks.broker import broker
 
 
 @broker.task
-async def update_listing_task(publication_id: str) -> dict:
+async def update_listing_task(publication_id: str) -> dict[str, Any]:
     """Update existing FB Marketplace listing via publisher strategy.
 
     Same DI pattern as publish_product_task and delete_listing_task:
@@ -15,9 +17,10 @@ async def update_listing_task(publication_id: str) -> dict:
     - On Category A failure (transient): returns error for caller to handle retry
     """
     from uuid import UUID
+    import os
 
     from prosell.domain.entities.publication import PublicationErrorCategory
-    from prosell.infrastructure.database.session import async_session_factory
+    from prosell.infrastructure.database.session import async_session_maker
     from prosell.infrastructure.repositories.facebook_page_repository_impl import (
         SqlAlchemyFacebookPageRepository,
     )
@@ -27,14 +30,21 @@ async def update_listing_task(publication_id: str) -> dict:
     from prosell.infrastructure.services.graph_api_publisher import GraphAPIPublisherService
     from prosell.infrastructure.services.playwright_publisher import PlaywrightPublisherService
     from prosell.infrastructure.services.publisher_strategy import PublisherStrategySelector
-    from prosell.infrastructure.services.token_encryption_service import TokenEncryptionService
+    from prosell.infrastructure.services.token_encryption_service import (
+        create_encryption_service,
+    )
 
     pub_id = UUID(publication_id)
 
-    async with async_session_factory() as session:
+    # Load encryption key from environment
+    encryption_key = os.getenv("ENCRYPTION_KEY", "")
+    if not encryption_key:
+        return {"error": "ENCRYPTION_KEY environment variable not set"}
+    encryption = create_encryption_service(encryption_key)
+
+    async with async_session_maker() as session:
         pub_repo = SqlAlchemyPublicationRepository(session)
         page_repo = SqlAlchemyFacebookPageRepository(session)
-        encryption = TokenEncryptionService()
 
         publication = await pub_repo.get_by_id(pub_id)
         if not publication:
@@ -46,6 +56,9 @@ async def update_listing_task(publication_id: str) -> dict:
         # Category B lock — never retry if blocked
         if publication.blocked_until_confirmed:
             return {"status": "blocked", "publication_id": publication_id}
+
+        if not publication.facebook_page_id:
+            return {"error": f"Publication has no facebook_page_id"}
 
         page = await page_repo.get_by_id(publication.facebook_page_id)
         if not page:

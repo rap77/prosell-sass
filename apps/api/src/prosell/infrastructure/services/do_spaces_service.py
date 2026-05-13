@@ -125,6 +125,37 @@ class DOSpacesService(IDOSpacesService):
         except Exception:
             return False
 
+    async def upload_file(
+        self,
+        file_path: str,
+        file_bytes: bytes,
+        content_type: str = "image/jpeg",
+    ) -> str:
+        """
+        Upload a file directly to Spaces (server-side upload).
+
+        Args:
+            file_path: Path where file will be stored
+            file_bytes: File content as bytes
+            content_type: MIME type of the file
+
+        Returns:
+            Public URL of the uploaded file
+        """
+        key = file_path
+
+        # Upload file to Spaces
+        self.s3_client.put_object(  # type: ignore[call-arg]
+            Bucket=self.bucket,  # type: ignore[dict-item]
+            Key=key,
+            Body=file_bytes,
+            ContentType=content_type,
+        )
+
+        # Return public URL
+        public_url = f"{self.endpoint}/{self.bucket}/{key}"  # type: ignore[call-arg]
+        return public_url
+
 
 # =============================================================================
 # HELPER FUNCTIONS

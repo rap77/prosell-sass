@@ -11,7 +11,11 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel
 
-from prosell.application.dto.image import ImageUploadUrlRequest, ImageUploadUrlResponse
+from prosell.application.dto.image import (
+    ImageUploadResponse,
+    ImageUploadUrlRequest,
+    ImageUploadUrlResponse,
+)
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.domain.entities.user import User
 from prosell.infrastructure.api.dependencies import (
@@ -79,9 +83,9 @@ async def generate_image_upload_url(
     )
 
     return ImageUploadUrlResponse(
-        upload_url=result["upload_url"],
-        public_url=result["public_url"],
-        key=result["key"],
+        upload_url=str(result["upload_url"]),
+        public_url=str(result["public_url"]),
+        key=str(result["key"]),
         fileId=file_id,
     )
 
@@ -116,7 +120,11 @@ async def get_image_status(
 
 # Dependencies
 async def get_image_optimizer() -> ImageOptimizer:
-    """Return ImageOptimizer instance."""
+    """Return ImageOptimizer instance.
+
+    Returns:
+        ImageOptimizer service instance
+    """
     return ImageOptimizer()
 
 
@@ -125,6 +133,18 @@ async def optimize_image(
     file: Annotated[UploadFile, File()],
     optimizer: Annotated[ImageOptimizer, Depends(get_image_optimizer)],
 ) -> Response:
+    """Optimize uploaded image.
+
+    Args:
+        file: Uploaded image file
+        optimizer: ImageOptimizer service
+
+    Returns:
+        Response with optimized image bytes (JPEG format)
+
+    Raises:
+        HTTPException: If file is invalid or optimization fails
+    """
     """
     Optimize uploaded image.
 
@@ -169,3 +189,80 @@ async def optimize_image(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Image optimization failed: {str(e)}",
         ) from e
+
+
+@router.post(
+    "/upload",
+    response_model=ImageUploadResponse,
+    summary="Upload and optimize vehicle image",
+)
+async def upload_image(
+    file: Annotated[UploadFile, File()],
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    optimizer: Annotated[ImageOptimizer, Depends(get_image_optimizer)],
+    spaces: Annotated[IDOSpacesService, Depends(get_spaces_service)],
+) -> ImageUploadResponse:
+    """
+    Upload, optimize, and store vehicle/product image.
+
+    Flow:
+    1. Receive file from frontend
+    2. Optimize with ImageOptimizer (resize, compress, strip EXIF)
+    3. Upload optimized bytes to DO Spaces
+    4. Return public URL
+
+    This replaces the presigned URL flow for better control over optimization.
+    """
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have an associated organization",
+        )
+
+    # Validate file type
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be an image",
+        )
+
+    # Read file bytes
+    file_bytes = await file.read()
+
+    if not file_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File is empty",
+        )
+
+    # Optimize image
+    try:
+        optimized_bytes = await optimizer.process(file_bytes)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Image optimization failed: {str(e)}",
+        ) from e
+
+    # Generate file path
+    file_id = str(uuid4())
+    ext = ".jpg"  # Always JPEG after optimization
+    file_path = f"orgs/{current_user.tenant_id}/vehicles/{file_id}{ext}"
+
+    logger.info(f"Uploading optimized image: {file_path} (original size: {len(file_bytes)} bytes, optimized: {len(optimized_bytes)} bytes)")
+
+    # Upload to DO Spaces
+    try:
+        public_url = await spaces.upload_file(
+            file_path=file_path,
+            file_bytes=optimized_bytes,
+            content_type="image/jpeg",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload to storage: {str(e)}",
+        ) from e
+
+    return ImageUploadResponse(url=public_url)
+

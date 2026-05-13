@@ -2,7 +2,7 @@
 
 ## Phase 4: Leads & Appointments (COMPLETE ✅)
 
-- [x] A1: Lead Capture Foundation
+- [ ] A1: Lead Capture Foundation
   - [x] A1.01: Create Lead entity with 5-state lifecycle
   - [x] A1.02: Create LeadStatus enum and LeadStateTransitionException [requires: 01]
   - [x] A1.03: Create LeadAuditLog entity for tracking status changes [requires: 02]
@@ -31,7 +31,7 @@
   - [x] A1.26: Write integration tests for all endpoints [requires: 25]
   - [x] A1.27: Write contract tests for DTO schemas [requires: 26]
 
-- [x] A2: Facebook Lead Webhook
+- [ ] A2: Facebook Lead Webhook
   - [x] A2.01: Create POST /api/v1/webhooks/facebook endpoint
   - [x] A2.02: Implement X-Hub-Signature verification (SHA256 HMAC) [requires: 01]
   - [x] A2.03: Return 403 if signature missing/invalid (security) [requires: 02]
@@ -56,7 +56,7 @@
   - [x] A2.22: Write contract test for OpenAPI schema [requires: 21]
   - [x] A2.23: Test polling fallback logic [requires: 22]
 
-- [x] A3: Vendedor Leads List
+- [ ] A3: Vendedor Leads List
   - [x] A3.01: Create Lead interface (id, buyer_name, buyer_email, buyer_phone, vehicle, message, status, source, created_at, updated_at)
   - [x] A3.02: Create CreateLeadRequest interface [requires: 01]
   - [x] A3.03: Create UpdateLeadStatusRequest interface (status + reason) [requires: 02]
@@ -84,7 +84,7 @@
   - [x] A3.25: Test status filter [requires: 24]
   - [x] A3.26: Test status update dropdown [requires: 25]
 
-- [x] A4: Appointment Scheduling
+- [ ] A4: Appointment Scheduling
   - [x] A4.01: Create Appointment entity (lead_id, dealer_id, vehicle_id, scheduled_at, status, notes, tenant_id)
   - [x] A4.02: Implement AppointmentStatus enum (scheduled, completed, cancelled) [requires: 01]
   - [x] A4.03: Implement time validation (business hours: 9am-6pm Mon-Fri) [requires: 02]
@@ -124,7 +124,7 @@
   - [x] A4.37: Write integration tests for API endpoints [requires: 36]
   - [x] A4.38: Write E2E test for appointment creation flow [requires: 30]
 
-- [x] A5: Manager Team View
+- [ ] A5: Manager Team View
   - [x] A5.01: Extend GET /api/v1/leads with manager scope (all team leads, not just own)
   - [x] A5.02: Create AssignLeadToVendedorUseCase (if not in A1) [requires: 01]
   - [x] A5.03: Create PUT /api/v1/leads/{id}/assign endpoint [requires: 02]
@@ -142,7 +142,7 @@
   - [x] A5.15: Test filter by vendedor [requires: 14]
   - [x] A5.16: Test lead reassignment [requires: 15]
 
-- [x] A6: Dealer Calendar
+- [ ] A6: Dealer Calendar
   - [x] A6.01: Extend GET /api/v1/appointments with dealer scope (own appointments only)
   - [x] A6.02: Create PUT /api/v1/appointments/{id}/status endpoint (confirm, cancel) [requires: 01]
   - [x] A6.03: Extend useAppointments hook with dealer scope [requires: 02]
@@ -296,7 +296,7 @@
   - [x] B2.5.10: Verify role escalation blocked [requires: 09]
   - [x] B2.5.11: Document permission matrix [requires: 10]
 
-- [~] B2.6: API Contract Test Completion (8 hours)
+- [x] B2.6: API Contract Test Completion (8 hours)
   - [x] B2.6.01: Identify missing contract test coverage
   - [x] B2.6.02: Compare routers with contract tests [requires: 01]
   - [x] B2.6.03: Add missing product schema tests [requires: 02] - PLANNED (✅ complete)
@@ -321,7 +321,7 @@
   - [x] B3.1.08: Unit tests for ProductImageGallery [requires: 07]
   - [x] B3.1.09: E2E test for gallery interactions [requires: 01]
 
-- [~] B3.2: Image Optimization Service (8 hours)
+- [x] B3.2: Image Optimization Service (8 hours)
   - [x] B3.2.01: Create ImageOptimizer service
   - [x] B3.2.02: Implement resize to max 1920x1080 [requires: 01]
   - [x] B3.2.03: Implement JPEG compression at 85% [requires: 02]
@@ -333,16 +333,19 @@
   - [x] B3.2.09: Unit tests for optimizer [requires: 08] (14 tests passing)
   - [x] B3.2.10: Test with real images [requires: 09] ✅ COMPLETADO - Testing manual exitoso (47-91% reducción)
 
-- [ ] B3.3: Appointment Email Notifications (4 hours)
-  - [ ] B3.3.01: Review existing email_service.py
-  - [ ] B3.3.02: Verify send_appointment_confirmation exists [requires: 01]
-  - [ ] B3.3.03: Verify send_appointment_cancellation exists [requires: 02]
-  - [ ] B3.3.04: Wire up confirmation in ConfirmAppointmentUseCase [requires: 03]
-  - [ ] B3.3.05: Wire up cancellation in CancelAppointmentUseCase [requires: 04]
-  - [ ] B3.3.06: Test confirmation email sent [requires: 05]
-  - [ ] B3.3.07: Test cancellation email sent [requires: 06]
-  - [ ] B3.3.08: Verify email templates [requires: 07]
-  - [ ] B3.3.09: Integration tests pass [requires: 08]
+- [x] B3.3: Appointment Email Notifications (4 hours)⏱️ **Estimate**: (4 hours) | **Actual**: 5.1m | **Deviation**: -3.9h | **Progress**: 9/9 (100%)
+📊 **Avg/subtask**: 34s | **ETA**: 5.1m
+
+
+  - [x] B3.3.01: Review existing email_service.py
+  - [x] B3.3.02: Verify send_appointment_confirmation exists [requires: 01]
+  - [x] B3.3.03: Verify send_appointment_cancellation exists [requires: 02]
+  - [x] B3.3.04: Wire up confirmation in ConfirmAppointmentUseCase [requires: 03]
+  - [x] B3.3.05: Wire up cancellation in CancelAppointmentUseCase [requires: 04]
+  - [x] B3.3.06: Test confirmation email sent [requires: 05]
+  - [x] B3.3.07: Test cancellation email sent [requires: 06]
+  - [x] B3.3.08: Verify email templates [requires: 07]
+  - [x] B3.3.09: Integration tests pass [requires: 08]
 
 - [ ] B3.4: Product Edit Mode Implementation (8 hours)
   - [ ] B3.4.01: Review TODO at line 440 in VehicleForm.tsx

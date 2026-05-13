@@ -27,6 +27,19 @@ repos:
         types_or: [python, pyi, jupyter]
 
   # ============================================
+  # Python - Mypy (Type checking)
+  # ============================================
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (Python type checking)
+        entry: bash -c 'cd apps/api && uv run mypy src/ tests/'
+        language: system
+        pass_filenames: false
+        types: [python]
+        files: ^(apps/api/src|apps/api/tests)/
+
+  # ============================================
   # Frontend - ESLint (TODO: currently disabled due to next lint issues)
   # To enable manually: cd apps/web && pnpm run lint
   # ============================================

@@ -6,10 +6,9 @@ based on category type (vehicle, real_estate, etc.).
 Uses discriminated unions for type-safe runtime validation.
 """
 
-from typing import Literal
+from typing import Literal, cast
 
-from pydantic import BaseModel, Field, FieldSerializationInfo, field_serializer
-from pydantic.json_schema import SkipJsonSchema
+from pydantic import BaseModel, Field, TypeAdapter
 from typing_extensions import Annotated
 
 # ==================== Base Attributes ====================
@@ -212,9 +211,9 @@ ProductAttributes = Annotated[
 
 # TypeAdapter for runtime validation
 # This provides a validate_python() method for dict -> model conversion
-from pydantic import TypeAdapter
-
-product_attributes_adapter = TypeAdapter(ProductAttributes)
+product_attributes_adapter: TypeAdapter[VehicleAttributes | RealEstateAttributes | GenericProductAttributes] = (
+    TypeAdapter(ProductAttributes)
+)
 
 
 # ==================== Helper Functions ====================
@@ -237,7 +236,7 @@ def validate_vehicle_attributes(attributes: dict[str, object]) -> VehicleAttribu
     if "category" not in attributes:
         attributes = {**attributes, "category": "vehicle"}
 
-    return product_attributes_adapter.validate_python(attributes)
+    return cast(VehicleAttributes, product_attributes_adapter.validate_python(attributes))
 
 
 def validate_real_estate_attributes(attributes: dict[str, object]) -> RealEstateAttributes:
@@ -257,7 +256,7 @@ def validate_real_estate_attributes(attributes: dict[str, object]) -> RealEstate
     if "category" not in attributes:
         attributes = {**attributes, "category": "real_estate"}
 
-    return product_attributes_adapter.validate_python(attributes)
+    return cast(RealEstateAttributes, product_attributes_adapter.validate_python(attributes))
 
 
 def validate_generic_attributes(attributes: dict[str, object]) -> GenericProductAttributes:
@@ -277,7 +276,7 @@ def validate_generic_attributes(attributes: dict[str, object]) -> GenericProduct
     if "category" not in attributes:
         attributes = {**attributes, "category": "generic"}
 
-    return product_attributes_adapter.validate_python(attributes)
+    return cast(GenericProductAttributes, product_attributes_adapter.validate_python(attributes))
 
 
 # Export all models

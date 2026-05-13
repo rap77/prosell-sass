@@ -8,7 +8,9 @@ from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from prosell.domain.base import DomainModel, Field
+from pydantic import Field
+
+from prosell.domain.base import DomainModel
 
 
 class PublicationStatus(StrEnum):

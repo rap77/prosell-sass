@@ -7,7 +7,9 @@ electronics have specs, compatibility).
 
 from typing import cast
 
-from prosell.domain.base import ValueObject, Field, ValidationInfo, field_validator
+from pydantic import Field, ValidationInfo, field_validator
+
+from prosell.domain.base import ValueObject
 from prosell.domain.value_objects.field_type import FieldType
 
 

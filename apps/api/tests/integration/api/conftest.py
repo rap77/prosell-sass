@@ -13,19 +13,22 @@ NOTE: These fixtures now convert database models to domain entities for compatib
 with existing tests that expect domain entities.
 """
 
+from collections.abc import AsyncGenerator
 from uuid import uuid4
 
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.entities.user import User, UserStatus
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
 from prosell.infrastructure.api.main import app
+from prosell.infrastructure.models.user_model import UserModel
 
 
 @pytest_asyncio.fixture
-async def admin_user(test_user):
+async def admin_user(test_user: UserModel) -> User:
     """
     Admin user with SUPER_ADMIN role — can see inactive categories.
 
@@ -57,7 +60,7 @@ async def admin_user(test_user):
 
 
 @pytest_asyncio.fixture
-async def seller_user(test_seller_user):
+async def seller_user(test_seller_user: UserModel) -> User:
     """
     Seller user with SALES_AGENT role — only sees active categories.
 
@@ -85,7 +88,7 @@ async def seller_user(test_seller_user):
 
 
 @pytest_asyncio.fixture
-async def async_client_as_admin(admin_user, db_session):
+async def async_client_as_admin(admin_user: User, db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """
     AsyncClient authenticated as admin_user via dependency_override.
 
@@ -115,7 +118,7 @@ async def async_client_as_admin(admin_user, db_session):
 
 
 @pytest_asyncio.fixture
-async def async_client_as_seller(seller_user, db_session):
+async def async_client_as_seller(seller_user: User, db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """
     AsyncClient authenticated as seller_user via dependency_override.
 

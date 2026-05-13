@@ -10,11 +10,13 @@ This design keeps the API request fast (no image downloads in request cycle)
 and avoids serializing large image bytes into the Taskiq payload.
 """
 
+from typing import Any
+
 from prosell.infrastructure.tasks.broker import broker
 
 
 @broker.task
-async def publish_product_task(publication_id: str) -> dict:
+async def publish_product_task(publication_id: str) -> dict[str, Any]:
     """Execute publication via selected publisher strategy.
 
     Args:
@@ -28,9 +30,8 @@ async def publish_product_task(publication_id: str) -> dict:
         - Category A (transient): increments retry_count, schedules retry with exponential backoff
           Delays: retry 1 = 60s, retry 2 = 300s, retry 3 = 900s, then mark failed
     """
-    from datetime import timedelta
     from uuid import UUID
-
+    import os
     import httpx
 
     from prosell.domain.entities.publication import PublicationErrorCategory
@@ -44,14 +45,21 @@ async def publish_product_task(publication_id: str) -> dict:
     from prosell.infrastructure.services.image_pipeline import ImagePipelineService
     from prosell.infrastructure.services.playwright_publisher import PlaywrightPublisherService
     from prosell.infrastructure.services.publisher_strategy import PublisherStrategySelector
-    from prosell.infrastructure.services.token_encryption_service import TokenEncryptionService
+    from prosell.infrastructure.services.token_encryption_service import (
+        create_encryption_service,
+    )
 
     pub_id = UUID(publication_id)
+
+    # Load encryption key from environment
+    encryption_key = os.getenv("ENCRYPTION_KEY", "")
+    if not encryption_key:
+        return {"error": "ENCRYPTION_KEY environment variable not set"}
+    encryption = create_encryption_service(encryption_key)
 
     async with async_session_maker() as session:
         pub_repo = SqlAlchemyPublicationRepository(session)
         page_repo = SqlAlchemyFacebookPageRepository(session)
-        encryption = TokenEncryptionService()
 
         publication = await pub_repo.get_by_id(pub_id)
         if not publication:
@@ -67,6 +75,9 @@ async def publish_product_task(publication_id: str) -> dict:
 
         try:
             # Get decrypted page access token from DB (never in task payload)
+            if not publication.facebook_page_id:
+                raise ValueError("Publication has no facebook_page_id")
+
             page = await page_repo.get_by_id(publication.facebook_page_id)
             if not page:
                 raise ValueError(f"FacebookPage {publication.facebook_page_id} not found")
@@ -128,7 +139,7 @@ async def publish_product_task(publication_id: str) -> dict:
                     delay = retry_delays[publication.retry_count - 1]
                     await (
                         publish_product_task.kicker()
-                        .with_labels(delay=timedelta(seconds=delay))
+                        .with_labels(delay=delay)
                         .kiq(publication_id=publication_id)
                     )
                     return {

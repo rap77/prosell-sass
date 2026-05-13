@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { ImageDropzone } from '@/components/upload/ImageDropzone'
 import { ImageGallery } from '@/components/upload/ImageGallery'
 import { VehicleForm, type VehicleFormValues } from '@/components/forms/VehicleForm'
-import { useImageUpload } from '@/lib/hooks/useImageUpload'
+import { useImageUploadOptimized } from '@/lib/hooks/useImageUploadOptimized'
 import { useUploadStore } from '@/lib/stores/uploadStore'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -19,7 +19,7 @@ import { Loader2 } from 'lucide-react'
  */
 export default function CreateVehiclePage() {
   const router = useRouter()
-  const { uploadImages } = useImageUpload()
+  const { uploadImages } = useImageUploadOptimized()
   const { uploadedFiles, clearAll } = useUploadStore()
 
   const [isUploading, setIsUploading] = useState(false)

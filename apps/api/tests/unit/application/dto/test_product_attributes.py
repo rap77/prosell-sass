@@ -5,7 +5,6 @@ from pydantic import ValidationError
 
 from prosell.application.dto.product.attributes import (
     GenericProductAttributes,
-    ProductAttributes,
     RealEstateAttributes,
     VehicleAttributes,
     product_attributes_adapter,

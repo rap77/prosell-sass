@@ -2,7 +2,9 @@
 
 from typing import ClassVar
 
-from prosell.domain.base import ValueObject, EmailStr, field_validator
+from pydantic import EmailStr, field_validator
+
+from prosell.domain.base import ValueObject
 
 
 class Email(ValueObject):

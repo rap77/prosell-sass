@@ -4,7 +4,9 @@ Used for fields that need to support multiple languages (es, en).
 Immutable by definition (ValueObject).
 """
 
-from prosell.domain.base import ValueObject, Field, field_validator
+from pydantic import Field, field_validator
+
+from prosell.domain.base import ValueObject
 
 
 class MultiLanguageString(ValueObject):

@@ -78,7 +78,7 @@ class SqlAlchemyBranchRepository(AbstractBranchRepository):
         model.location_lat = branch.location_lat
         model.location_lng = branch.location_lng
         model.timezone = branch.timezone
-        model.settings = json.dumps(branch.settings) if branch.settings else None  # type: ignore[assignment]
+        model.settings = json.dumps(branch.settings) if branch.settings else None
         model.updated_at = branch.updated_at
 
         await self.session.flush()
@@ -164,7 +164,7 @@ class SqlAlchemyBranchRepository(AbstractBranchRepository):
             location_lat=branch.location_lat,
             location_lng=branch.location_lng,
             timezone=branch.timezone,
-            settings=json.dumps(branch.settings) if branch.settings else None,  # type: ignore[arg-type]
+            settings=json.dumps(branch.settings) if branch.settings else None,
             created_at=branch.created_at,
             updated_at=branch.updated_at,
         )

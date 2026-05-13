@@ -4,7 +4,9 @@ from datetime import UTC, datetime, time
 from enum import StrEnum
 from typing import Any, ClassVar
 
-from prosell.domain.base import DomainModel, Field
+from pydantic import Field
+
+from prosell.domain.base import DomainModel
 from prosell.domain.exceptions.appointment_exceptions import (
     AppointmentConflictException,
     AppointmentTimeValidationException,

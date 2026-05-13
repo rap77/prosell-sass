@@ -95,7 +95,7 @@ class SqlAlchemyUserBranchRepository(AbstractUserBranchRepository):
             UserBranchModel.tenant_id == tenant_id,
         )
         result = await self.session.execute(stmt)
-        count: int = result.scalar() or 0  # type: ignore[assignment]
+        count: int = result.scalar() or 0
         return count > 0
 
     async def get_assignment(

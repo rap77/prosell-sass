@@ -13,7 +13,7 @@ from prosell.infrastructure.api.main import app
 
 
 @pytest.fixture
-def mock_auth_user():
+def mock_auth_user() -> User:
     return User(
         id=uuid4(),
         email="test@example.com",
@@ -25,7 +25,7 @@ def mock_auth_user():
 
 
 @pytest.fixture
-def mock_role_repo():
+def mock_role_repo() -> MagicMock:
     role = Role.create_system_role(RoleType.SUPER_ADMIN)
     repo = MagicMock()
     repo.get_user_roles = AsyncMock(return_value=[role])
@@ -33,7 +33,7 @@ def mock_role_repo():
 
 
 @pytest.fixture
-def mock_spaces():
+def mock_spaces() -> MagicMock:
     spaces = MagicMock()
     spaces.generate_presigned_url = AsyncMock(
         return_value={
@@ -47,7 +47,7 @@ def mock_spaces():
 
 
 @pytest.fixture
-def mock_org_repo():
+def mock_org_repo() -> MagicMock:
     from prosell.domain.entities.organization import Organization
 
     org = Organization.create(name="Test Org", tenant_id=uuid4())
@@ -57,7 +57,12 @@ def mock_org_repo():
 
 
 @pytest.fixture(autouse=True)
-def setup_auth(mock_auth_user, mock_role_repo, mock_spaces, mock_org_repo):
+def setup_auth(
+    mock_auth_user: User,
+    mock_role_repo: MagicMock,
+    mock_spaces: MagicMock,
+    mock_org_repo: MagicMock,
+) -> None:
     from prosell.infrastructure.api.dependencies import (
         get_current_auth_user,
         get_current_auth_user_from_cookie,

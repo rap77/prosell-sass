@@ -18,3 +18,9 @@ class ImageUploadUrlResponse(BaseModel):
     key: str
     fileId: str  # Matches frontend naming (lowercase 'f', uppercase 'I')
 
+
+class ImageUploadResponse(BaseModel):
+    """Response for direct image upload with optimization."""
+
+    url: str  # Public URL of the optimized image
+

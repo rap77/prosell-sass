@@ -7,6 +7,7 @@ DEPRECATED: Use ProductResponse instead. This will be removed in a future versio
 """
 
 from datetime import datetime
+from typing import cast
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -57,34 +58,34 @@ class VehicleResponse(BaseModel):
         Extracts vehicle-specific attributes from the product attributes JSONB.
         """
         attrs = product.attributes or {}
-        
+
         return cls(
             id=product.id,  # Use product ID as vehicle ID
             product_id=product.id,
-            vin=attrs.get("vin", ""),
-            year=attrs.get("year", 2020),
-            make=attrs.get("make", "Unknown"),
-            model=attrs.get("model", "Unknown"),
-            trim=attrs.get("trim"),
-            body_type=attrs.get("body_type"),
-            body_style=attrs.get("body_style"),
-            drivetrain=attrs.get("drivetrain"),
-            transmission=attrs.get("transmission"),
-            engine=attrs.get("engine"),
-            fuel_type=attrs.get("fuel_type"),
-            mileage=attrs.get("mileage"),
-            mileage_unit=attrs.get("mileage_unit", "miles"),
-            exterior_color=attrs.get("exterior_color"),
-            interior_color=attrs.get("interior_color"),
-            has_sunroof=attrs.get("has_sunroof", False),
-            has_navigation=attrs.get("has_navigation", False),
-            has_leather=attrs.get("has_leather", False),
-            has_backup_camera=attrs.get("has_backup_camera", False),
-            has_bluetooth=attrs.get("has_bluetooth", False),
-            has_remote_start=attrs.get("has_remote_start", False),
-            seat_material=attrs.get("seat_material"),
-            vin_verified=attrs.get("vin_verified", False),
-            stock_number=attrs.get("stock_number"),
+            vin=cast(str, attrs.get("vin", "")),
+            year=cast(int, attrs.get("year", 2020)),
+            make=cast(str, attrs.get("make", "Unknown")),
+            model=cast(str, attrs.get("model", "Unknown")),
+            trim=cast(str | None, attrs.get("trim")),
+            body_type=cast(str | None, attrs.get("body_type")),
+            body_style=cast(str | None, attrs.get("body_style")),
+            drivetrain=cast(str | None, attrs.get("drivetrain")),
+            transmission=cast(str | None, attrs.get("transmission")),
+            engine=cast(str | None, attrs.get("engine")),
+            fuel_type=cast(str | None, attrs.get("fuel_type")),
+            mileage=cast(int | None, attrs.get("mileage")),
+            mileage_unit=cast(str, attrs.get("mileage_unit", "miles")),
+            exterior_color=cast(str | None, attrs.get("exterior_color")),
+            interior_color=cast(str | None, attrs.get("interior_color")),
+            has_sunroof=cast(bool, attrs.get("has_sunroof", False)),
+            has_navigation=cast(bool, attrs.get("has_navigation", False)),
+            has_leather=cast(bool, attrs.get("has_leather", False)),
+            has_backup_camera=cast(bool, attrs.get("has_backup_camera", False)),
+            has_bluetooth=cast(bool, attrs.get("has_bluetooth", False)),
+            has_remote_start=cast(bool, attrs.get("has_remote_start", False)),
+            seat_material=cast(str | None, attrs.get("seat_material")),
+            vin_verified=cast(bool, attrs.get("vin_verified", False)),
+            stock_number=cast(str | None, attrs.get("stock_number")),
             created_at=product.created_at,
             updated_at=product.updated_at,
         )

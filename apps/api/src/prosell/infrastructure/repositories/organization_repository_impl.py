@@ -124,7 +124,7 @@ class SqlAlchemyOrganizationRepository(AbstractOrganizationRepository):
             OrganizationModel.tenant_id == tenant_id,
         )
         result = await self.session.execute(stmt)
-        count: int = result.scalar() or 0  # type: ignore[assignment]
+        count: int = result.scalar() or 0
         return count > 0
 
     async def count(self, tenant_id: UUID | None = None) -> int:
@@ -133,7 +133,7 @@ class SqlAlchemyOrganizationRepository(AbstractOrganizationRepository):
         if tenant_id is not None:
             stmt = stmt.where(OrganizationModel.tenant_id == tenant_id)
         result = await self.session.execute(stmt)
-        return result.scalar() or 0  # type: ignore[return-value]
+        return result.scalar() or 0
 
     def _to_entity(self, model: OrganizationModel) -> Organization:
         """Convert ORM model to domain entity."""

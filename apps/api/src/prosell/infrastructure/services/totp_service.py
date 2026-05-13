@@ -67,7 +67,7 @@ class TOTPService(ITOTPService):
 
         # Convert to base64
         buffer = BytesIO()
-        img.save(buffer, format="PNG")  # type: ignore[arg-type]
+        img.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue()).decode()
 
         return f"data:image/png;base64,{img_str}"

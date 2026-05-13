@@ -19,15 +19,24 @@ from prosell.infrastructure.repositories.publication_repository_impl import (
 
 
 @pytest.fixture
-async def publication_repo(db_session):
+async def publication_repo(db_session: AsyncSession) -> SqlAlchemyPublicationRepository:
     """Return a PublicationRepository instance."""
+    from sqlalchemy.ext.asyncio import AsyncSession
+
     return SqlAlchemyPublicationRepository(db_session)
 
 
 @pytest.fixture
-async def sample_product(db_session, test_organization, test_category):
+async def sample_product(
+    db_session: AsyncSession,
+    test_organization: OrganizationModel,
+    test_category: CategoryModel,
+) -> ProductModel:
     """Create a sample product for testing publications."""
     from prosell.infrastructure.models.product_model import ProductModel
+    from prosell.infrastructure.models.category_model import CategoryModel
+    from prosell.infrastructure.models.organization_model import OrganizationModel
+    from sqlalchemy.ext.asyncio import AsyncSession
 
     product_id = uuid4()
     product = ProductModel(
@@ -46,8 +55,16 @@ async def sample_product(db_session, test_organization, test_category):
 
 
 @pytest.fixture
-async def sample_publication(db_session, test_organization, sample_product):
+async def sample_publication(
+    db_session: AsyncSession,
+    test_organization: OrganizationModel,
+    sample_product: ProductModel,
+) -> PublicationModel:
     """Create a sample publication for testing."""
+    from prosell.infrastructure.models.organization_model import OrganizationModel
+    from prosell.infrastructure.models.product_model import ProductModel
+    from sqlalchemy.ext.asyncio import AsyncSession
+
     publication_model = PublicationModel(
         id=uuid4(),
         tenant_id=test_organization.tenant_id,

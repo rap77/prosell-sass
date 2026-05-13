@@ -5,10 +5,7 @@ from datetime import UTC, datetime
 from pydantic import (  # noqa: F401  # type: ignore[attr-defined]
     BaseModel,
     ConfigDict,
-    EmailStr,
     Field,
-    ValidationInfo,
-    field_validator,
 )
 
 

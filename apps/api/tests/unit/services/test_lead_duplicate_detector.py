@@ -5,9 +5,8 @@ from uuid import uuid4
 
 import pytest
 
-from prosell.domain.entities.lead import Lead, LeadStatus
+from prosell.domain.entities.lead import Lead
 from prosell.domain.services.lead_duplicate_detector import (
-    DuplicateMatch,
     LeadDuplicateDetector,
 )
 

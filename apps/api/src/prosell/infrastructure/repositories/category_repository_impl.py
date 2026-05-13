@@ -195,7 +195,7 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
             stmt = stmt.where(CategoryModel.parent_id.is_(None))
 
         result = await self.session.execute(stmt)
-        count: int = result.scalar() or 0  # type: ignore[assignment]
+        count: int = result.scalar() or 0
         return count > 0
 
     async def exists_by_slug(self, slug: str, tenant_id: UUID) -> bool:
@@ -205,7 +205,7 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
             CategoryModel.tenant_id == tenant_id,
         )
         result = await self.session.execute(stmt)
-        count: int = result.scalar() or 0  # type: ignore[assignment]
+        count: int = result.scalar() or 0
         return count > 0
 
     async def count(self, tenant_id: UUID, is_active: bool | None = None) -> int:
@@ -218,7 +218,7 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
             stmt = stmt.where(CategoryModel.is_active == is_active)
 
         result = await self.session.execute(stmt)
-        return result.scalar() or 0  # type: ignore[return-value]
+        return result.scalar() or 0
 
     def _to_entity(self, model: CategoryModel) -> Category:
         """Convert ORM model to domain entity."""

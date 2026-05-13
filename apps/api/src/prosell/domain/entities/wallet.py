@@ -5,7 +5,9 @@ from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from prosell.domain.base import DomainModel, Field, field_validator
+from pydantic import Field, field_validator
+
+from prosell.domain.base import DomainModel
 
 
 class TransactionType(StrEnum):
@@ -229,7 +231,7 @@ class WalletTransaction(DomainModel):
 
     @field_validator("metadata", mode="before")
     @classmethod
-    def parse_metadata(cls, v: dict[str, object] | str | None) -> dict[str, object]:  # type: ignore[valid-type]
+    def parse_metadata(cls, v: dict[str, object] | str | None) -> dict[str, object]:
         """
         Parse metadata from JSON string or dict.
 
@@ -241,8 +243,8 @@ class WalletTransaction(DomainModel):
         if isinstance(v, str):
             import json
 
-            return json.loads(v)  # type: ignore[return-value]
-        return v  # type: ignore[return-value]
+            return json.loads(v)
+        return v
 
     @classmethod
     def create(

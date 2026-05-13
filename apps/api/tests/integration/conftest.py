@@ -19,19 +19,21 @@ TEST_DB_URL = "postgresql+asyncpg://prosell:prosell_test_password@localhost:5433
 # =============================================================================
 
 @pytest_asyncio.fixture(scope="session")
-async def _session_engine():
+async def _session_engine() -> AsyncGenerator[Any, None]:
     """Create engine for session-scoped fixtures."""
-    engine = create_async_engine(TEST_DB_URL, echo=False)
+    from sqlalchemy.ext.asynci import AsyncEngine
+
+    engine: AsyncEngine = create_async_engine(TEST_DB_URL, echo=False)
     yield engine
     await engine.dispose()
 
 
 @pytest_asyncio.fixture(scope="session")
-async def system_roles(_session_engine):
+async def system_roles(_session_engine) -> dict[str, RoleModel]:
     """
     Create system roles ONCE per test session.
     These roles are committed to the database and persist across all tests.
-    
+
     This fixes: "duplicate key value violates unique constraint roles_role_type_key"
     """
     async_session_maker = async_sessionmaker(
@@ -183,7 +185,7 @@ async def test_organization(db_session: AsyncSession) -> AsyncGenerator[Organiza
 
 
 @pytest_asyncio.fixture
-async def test_role(system_roles) -> RoleModel:
+async def test_role(system_roles: dict[str, RoleModel]) -> RoleModel:
     """
     Return the SUPER_ADMIN system role.
     Does NOT create a new role - uses the session-scoped one.
@@ -192,7 +194,7 @@ async def test_role(system_roles) -> RoleModel:
 
 
 @pytest_asyncio.fixture
-async def test_seller_role(system_roles) -> RoleModel:
+async def test_seller_role(system_roles: dict[str, RoleModel]) -> RoleModel:
     """
     Return the SALES_AGENT system role.
     Does NOT create a new role - uses the session-scoped one.
@@ -201,7 +203,7 @@ async def test_seller_role(system_roles) -> RoleModel:
 
 
 @pytest_asyncio.fixture
-async def test_manager_role(system_roles) -> RoleModel:
+async def test_manager_role(system_roles: dict[str, RoleModel]) -> RoleModel:
     """
     Return the MANAGER system role.
     Does NOT create a new role - uses the session-scoped one.
@@ -319,7 +321,7 @@ async def test_category(
 @pytest.fixture
 def shared_tenant_id() -> UUID:
     """Shared tenant_id for all users and resources in a test (legacy)."""
-    return uuid4()
+    return uuid4()  # type: ignore[no-any-return]
 
 
 @pytest.fixture(autouse=True)

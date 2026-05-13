@@ -5,8 +5,6 @@ Validates that frontend types match backend Pydantic DTOs.
 This test was recreated after DTO refactoring (2026-05-07).
 """
 
-import pytest
-from pydantic import ValidationError
 
 from prosell.application.dto.vehicle.response import VehicleResponse
 from prosell.application.dto.product.create import CreateProductRequest

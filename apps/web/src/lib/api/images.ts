@@ -8,6 +8,10 @@ interface ProcessingStatusResponse {
   url?: string
 }
 
+interface DirectUploadResponse {
+  url: string
+}
+
 /**
  * Generate presigned URL for direct cloud upload
  * @param fileType - MIME type (e.g., 'image/jpeg')
@@ -97,3 +101,28 @@ export async function pollProcessingStatus(fileId: string): Promise<{ url: strin
 
   throw new Error('Processing timeout')
 }
+
+/**
+ * Upload image directly to backend with optimization
+ * Backend will: optimize image, upload to DO Spaces, return public URL
+ * @param file - File to upload
+ * @returns Public URL of optimized image
+ */
+export async function uploadImageDirect(file: File): Promise<{ url: string }> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await fetch('/api/v1/images/upload', {
+    method: 'POST',
+    body: formData,
+    // Note: Don't set Content-Type header for FormData - browser sets it with boundary
+  })
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ detail: 'Upload failed' }))
+    throw new Error(error.detail || 'Failed to upload image')
+  }
+
+  return res.json()
+}
+

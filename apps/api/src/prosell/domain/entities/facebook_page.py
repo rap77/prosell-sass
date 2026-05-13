@@ -7,7 +7,9 @@ Pages are used to publish Marketplace listings on behalf of the page.
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from prosell.domain.base import DomainModel, Field
+from pydantic import Field
+
+from prosell.domain.base import DomainModel
 
 
 class FacebookPage(DomainModel):

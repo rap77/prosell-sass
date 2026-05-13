@@ -25,11 +25,16 @@ def webhook_app_secret() -> str:
 
 
 @pytest.fixture
-async def async_client(db_session):
+async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """
     AsyncClient for webhook tests (no auth required).
     Overrides settings.facebook_app_secret for signature verification.
     """
+    from collections.abc import AsyncGenerator
+
+    from httpx import AsyncClient
+    from sqlalchemy.ext.asyncio import AsyncSession
+
     from prosell.infrastructure.api.routers.webhook_router import get_facebook_app_secret
 
     # Override the get_facebook_app_secret dependency

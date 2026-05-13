@@ -1901,11 +1901,11 @@ async def test_confirmation_email_sent(self, mock_email_service):
 ```
 
 **Acceptance Criteria**:
-- [ ] Confirmation emails sent
-- [ ] Cancellation emails sent
-- [ ] Email templates verified
-- [ ] Integration tests pass
-- [ ] No emails sent in test environment
+- [x] Confirmation emails sent
+- [x] Cancellation emails sent
+- [x] Email templates verified
+- [x] Integration tests pass
+- [x] No emails sent in test environment
 
 **Verification**:
 ```bash

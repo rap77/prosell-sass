@@ -109,7 +109,7 @@ class SqlAlchemyWalletRepository(AbstractWalletRepository):
             WalletModel.tenant_id == tenant_id,
         )
         result = await self.session.execute(stmt)
-        count: int = result.scalar() or 0  # type: ignore[assignment]
+        count: int = result.scalar() or 0
         return count > 0
 
     async def count(self, tenant_id: UUID | None = None) -> int:
@@ -118,7 +118,7 @@ class SqlAlchemyWalletRepository(AbstractWalletRepository):
         if tenant_id is not None:
             stmt = stmt.where(WalletModel.tenant_id == tenant_id)
         result = await self.session.execute(stmt)
-        return result.scalar() or 0  # type: ignore[return-value]
+        return result.scalar() or 0
 
     def _to_entity(self, model: WalletModel) -> Wallet:
         """Convert ORM model to domain entity."""
@@ -213,7 +213,7 @@ class SqlAlchemyWalletTransactionRepository(AbstractWalletTransactionRepository)
         if tenant_id is not None:
             stmt = stmt.where(WalletTransactionModel.tenant_id == tenant_id)
         result = await self.session.execute(stmt)
-        return result.scalar() or 0  # type: ignore[return-value]
+        return result.scalar() or 0
 
     def _to_entity(self, model: WalletTransactionModel) -> WalletTransaction:
         """Convert ORM model to domain entity."""

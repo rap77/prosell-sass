@@ -6,7 +6,7 @@ Tests the complete flow of appointment confirmation including:
 """
 
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
@@ -90,7 +90,6 @@ def mock_user_repository():
 def mock_product_repository():
     """Mock product repository."""
     from unittest.mock import AsyncMock
-    from prosell.domain.entities.product import Product, ProductCondition, ProductStatus
     repo = AsyncMock()
     product = AsyncMock()
     product.title = "2022 Toyota Corolla"

@@ -1,14 +1,10 @@
 """Create product use case with JSONB attribute validation."""
 
-from uuid import UUID
 
 from pydantic import ValidationError
 
 from prosell.application.dto.product import CreateProductRequest, ProductResponse
 from prosell.application.dto.product.attributes import (
-    GenericProductAttributes,
-    ProductAttributes,
-    product_attributes_adapter,
     validate_generic_attributes,
     validate_real_estate_attributes,
     validate_vehicle_attributes,
@@ -55,6 +51,12 @@ class CreateProductUseCase:
             ProductError: If attributes fail category-specific validation
             ValueError: If category or organization doesn't exist
         """
+        # Validate required fields
+        if not request.tenant_id:
+            raise ValueError("tenant_id is required")
+        if not request.organization_id:
+            raise ValueError("organization_id is required")
+
         # 1. Fetch category to determine attribute schema
         category = await self.category_repository.get_by_id(
             request.category_id, request.tenant_id
@@ -144,7 +146,7 @@ class CreateProductUseCase:
             return validated_model.model_dump()
         except ValidationError as e:
             # Build detailed error message
-            error_details = []
+            error_details: list[str] = []
             for error in e.errors():
                 loc = " -> ".join(str(part) for part in error["loc"])
                 msg = error["msg"]

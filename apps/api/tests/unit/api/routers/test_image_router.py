@@ -1,5 +1,6 @@
 """Unit tests for image optimization router."""
 
+from collections.abc import AsyncGenerator
 from io import BytesIO
 
 import pytest
@@ -11,7 +12,7 @@ from prosell.infrastructure.api.main import app
 
 
 @pytest.fixture
-def sample_image_bytes():
+def sample_image_bytes() -> bytes:
     """Return a sample image as bytes (2000x2000 red square)."""
     img = Image.new("RGB", (2000, 2000), color="red")
     buffer = BytesIO()
@@ -20,7 +21,7 @@ def sample_image_bytes():
 
 
 @pytest.fixture
-async def async_client():
+async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Return async HTTP client for testing."""
     from httpx import ASGITransport
 
@@ -33,7 +34,9 @@ class TestImageOptimizationRouter:
     """Test suite for /api/v1/images/optimize endpoint."""
 
     @pytest.mark.asyncio
-    async def test_optimize_endpoint_returns_jpeg(self, async_client, sample_image_bytes):
+    async def test_optimize_endpoint_returns_jpeg(
+        self, async_client: AsyncClient, sample_image_bytes: bytes
+    ) -> None:
         """Test that /optimize endpoint returns optimized JPEG."""
         response = await async_client.post(
             "/api/v1/images/optimize",
@@ -44,7 +47,9 @@ class TestImageOptimizationRouter:
         assert response.content.startswith(b"\xff\xd8\xff")  # JPEG magic bytes
 
     @pytest.mark.asyncio
-    async def test_optimize_endpoint_reduces_size(self, async_client, sample_image_bytes):
+    async def test_optimize_endpoint_reduces_size(
+        self, async_client: AsyncClient, sample_image_bytes: bytes
+    ) -> None:
         """Test that /optimize endpoint reduces file size."""
         original_size = len(sample_image_bytes)
 
@@ -58,7 +63,7 @@ class TestImageOptimizationRouter:
         assert optimized_size < original_size
 
     @pytest.mark.asyncio
-    async def test_optimize_endpoint_requires_file(self, async_client):
+    async def test_optimize_endpoint_requires_file(self, async_client: AsyncClient) -> None:
         """Test that /optimize endpoint requires file upload."""
         response = await async_client.post("/api/v1/images/optimize")
 

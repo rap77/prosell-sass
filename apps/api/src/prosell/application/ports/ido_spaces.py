@@ -6,6 +6,10 @@ from abc import ABC, abstractmethod
 class IDOSpacesService(ABC):
     """Interface for DigitalOcean Spaces storage service."""
 
+    # Service configuration attributes
+    endpoint: str
+    bucket: str
+
     @abstractmethod
     async def generate_presigned_url(
         self,
@@ -53,5 +57,25 @@ class IDOSpacesService(ABC):
 
         Returns:
             True if file exists, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    async def upload_file(
+        self,
+        file_path: str,
+        file_bytes: bytes,
+        content_type: str = "image/jpeg",
+    ) -> str:
+        """
+        Upload a file directly to Spaces (server-side upload).
+
+        Args:
+            file_path: Path where file will be stored (e.g., "orgs/{org_id}/vehicles/file.jpg")
+            file_bytes: File content as bytes
+            content_type: MIME type of the file (default: "image/jpeg")
+
+        Returns:
+            Public URL of the uploaded file
         """
         pass

@@ -1,6 +1,7 @@
 """ProcessFacebookWebhookUseCase — processes Facebook lead webhooks."""
 
 import logging
+from typing import Any
 from uuid import UUID
 
 from prosell.application.dto.lead.request import CreateLeadRequest
@@ -8,8 +9,12 @@ from prosell.application.ports.facebook_buyer_profile_service import (
     AbstractFacebookBuyerProfileService,
 )
 from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
+from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.publication_repository import IPublicationRepository
+from prosell.infrastructure.services.token_encryption_service import (
+    TokenEncryptionService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -37,15 +42,19 @@ class ProcessFacebookWebhookUseCase:
         self,
         lead_repository: AbstractLeadRepository,
         publication_repository: IPublicationRepository,
+        facebook_page_repository: IFacebookPageRepository,
         facebook_client: AbstractFacebookBuyerProfileService,
         create_lead_use_case: CreateLeadUseCase,
+        encryption_service: TokenEncryptionService,
     ) -> None:
         self.lead_repository = lead_repository
         self.publication_repository = publication_repository
+        self.facebook_page_repository = facebook_page_repository
         self.facebook_client = facebook_client
         self.create_lead_use_case = create_lead_use_case
+        self.encryption_service = encryption_service
 
-    async def execute(self, payload: dict, tenant_id: UUID) -> None:
+    async def execute(self, payload: dict[str, Any], tenant_id: UUID) -> None:
         """
         Process Facebook webhook payload and create lead.
 
@@ -67,9 +76,14 @@ class ProcessFacebookWebhookUseCase:
             f"listing_id={listing_id}, sender_id={sender_id}"
         )
 
+        # Validate required fields
+        if not listing_id or not sender_id:
+            logger.warning("Missing required fields in webhook payload")
+            return
+
         # 2. Query publication by facebook_listing_id
         publication = await self.publication_repository.get_by_fb_listing_id(
-            fb_listing_id=listing_id, tenant_id=tenant_id
+            fb_listing_id=str(listing_id), tenant_id=tenant_id
         )
 
         if not publication:
@@ -79,7 +93,25 @@ class ProcessFacebookWebhookUseCase:
             )
             return
 
-        # 3. Query buyer profile from Facebook Graph API
+        # 3. Get page access token from FacebookPage
+        if not publication.facebook_page_id:
+            logger.warning(
+                f"Publication {publication.id} has no facebook_page_id. "
+                f"Skipping lead creation."
+            )
+            return
+
+        facebook_page = await self.facebook_page_repository.get_by_id(
+            publication.facebook_page_id
+        )
+        if not facebook_page:
+            logger.warning(
+                f"FacebookPage not found for id={publication.facebook_page_id}. "
+                f"Skipping lead creation."
+            )
+            return
+
+        # 4. Query buyer profile from Facebook Graph API
         # Fetch buyer profile (name, email) from Graph API
 
         buyer_name = None
@@ -87,9 +119,13 @@ class ProcessFacebookWebhookUseCase:
         buyer_phone = None
 
         try:
+            # Decrypt page access token
+            page_access_token = self.encryption_service.decrypt(
+                facebook_page.page_access_token_encrypted
+            )
             buyer_profile = await self.facebook_client.get_buyer_profile(
-                sender_id=sender_id,
-                page_access_token=publication.page_access_token,
+                sender_id=str(sender_id),
+                page_access_token=page_access_token,
             )
             buyer_name = buyer_profile.name
             buyer_email = buyer_profile.email
@@ -134,8 +170,8 @@ class ProcessFacebookWebhookUseCase:
                 buyer_phone=buyer_phone,
                 product_id=publication.product_id,
                 vendedor_id=publication.seller_user_id,
-                message=message,
-                source="facebook",
+                message=str(message) if message else "",
+                source="facebook",  # type: ignore[arg-type]
             )
 
             await self.create_lead_use_case.execute(

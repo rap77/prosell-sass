@@ -120,3 +120,11 @@ exclude = [
 ]
 # venvPath and venv are configured in .vscode/settings.json
 # to avoid conflicts between workspace and monorepo settings
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true

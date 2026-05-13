@@ -6,7 +6,10 @@ Handles phase transitions, state persistence, and cross-phase contract validatio
 
 from __future__ import annotations
 
+import json
 import logging
+from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, Optional, cast
 
 import psycopg2
@@ -33,11 +36,14 @@ class StateMachine:
         project_id: str,
         workspace_id: str,
         db_url: str,
+        runtime_state_path: Optional[str] = None,
     ) -> None:
         self.org_id = org_id
         self.project_id = project_id
         self.workspace_id = workspace_id
         self.db_url = db_url
+        # Default to .planning/.mm-flow/runtime-state.json if not provided
+        self.runtime_state_path = Path(runtime_state_path or ".planning/.mm-flow/runtime-state.json")
 
     # ------------------------------------------------------------------
     # Public API
@@ -130,6 +136,13 @@ class StateMachine:
                     )
                     logger.debug("Created phase %d state → %s", phase, status)
             conn.commit()
+
+        # Update runtime-state.json file (graceful degradation on failure)
+        try:
+            self._update_runtime_state_file(phase, status, state_data)
+        except Exception as e:
+            # Log but don't fail - database update succeeded
+            logger.warning("Failed to update runtime-state.json: %s", e)
 
     def get_current_phase(self) -> Dict[str, Any]:
         """
@@ -244,3 +257,103 @@ class StateMachine:
             )
             row = cur.fetchone()
             return cast(Dict[str, Any], row) if row else None
+
+    def _update_runtime_state_file(
+        self,
+        phase: int,
+        status: str,
+        state_data: Dict[str, Any],
+    ) -> None:
+        """
+        Update the runtime-state.json file with current progress.
+
+        This method extracts overall progress information from the phase state
+        and updates the runtime-state.json file. Failures are logged but don't
+        propagate (graceful degradation).
+
+        Args:
+            phase: Current phase number.
+            status: Current phase status.
+            state_data: Phase-specific state data (may contain task progress).
+        """
+        # Read current runtime state
+        current_state = self._read_runtime_state()
+
+        # Derive updates from phase state data
+        # Extract task info if present in state_data
+        active_task = state_data.get("active_task", current_state.get("active_task"))
+        milestone = state_data.get("milestone", current_state.get("milestone", ""))
+        subtasks_completed = state_data.get(
+            "subtasks_completed", current_state.get("subtasks_completed", 0)
+        )
+        subtasks_total = state_data.get(
+            "subtasks_total", current_state.get("subtasks_total", 0)
+        )
+
+        # Determine overall status
+        if subtasks_completed >= subtasks_total and subtasks_total > 0:
+            overall_status = "COMPLETED"
+        elif status == "in_progress":
+            overall_status = "IN_PROGRESS"
+        elif status == "failed":
+            overall_status = "PENDING"  # Reset to pending on failure
+        elif status == "completed":
+            overall_status = "COMPLETED"
+        else:
+            overall_status = current_state.get("overall_status", "PENDING")
+
+        # Build new state
+        new_state = {
+            "active_task": active_task,
+            "milestone": milestone,
+            "subtasks_completed": subtasks_completed,
+            "subtasks_total": subtasks_total,
+            "overall_status": overall_status,
+            "updated_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        }
+
+        # Write atomically
+        self._write_runtime_state(new_state)
+        logger.debug(
+            "Updated runtime-state.json: task=%s, status=%s, progress=%d/%d",
+            active_task,
+            overall_status,
+            subtasks_completed,
+            subtasks_total,
+        )
+
+    def _read_runtime_state(self) -> Dict[str, Any]:
+        """Read the current runtime-state.json file."""
+        if not self.runtime_state_path.exists():
+            return {}
+
+        try:
+            with open(self.runtime_state_path, "r") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logger.warning("Failed to read runtime-state.json: %s", e)
+            return {}
+
+    def _write_runtime_state(self, state: Dict[str, Any]) -> None:
+        """
+        Write runtime state atomically.
+
+        Uses temp file + rename to avoid partial writes.
+        """
+        # Ensure parent directory exists
+        self.runtime_state_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write to temp file first
+        temp_path = self.runtime_state_path.with_suffix(".tmp")
+        try:
+            with open(temp_path, "w") as f:
+                json.dump(state, f, indent=2)
+                f.write("\n")  # Add trailing newline
+
+            # Atomic rename
+            temp_path.replace(self.runtime_state_path)
+        except Exception as e:
+            logger.error("Failed to write runtime-state.json: %s", e)
+            if temp_path.exists():
+                temp_path.unlink()
+            raise

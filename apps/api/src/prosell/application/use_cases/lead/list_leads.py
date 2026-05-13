@@ -50,16 +50,16 @@ class ListLeadsUseCase:
             raise ValueError("User must have a tenant_id")
 
         if self._is_manager(user):
-            leads_with_products, total = await self.lead_repository.list_by_manager(  # type: ignore[call-arg]
-                tenant_id=tenant_id,  # type: ignore[arg-type]
+            leads_with_products, total = await self.lead_repository.list_by_manager(
+                tenant_id=tenant_id,
                 limit=request.limit,
                 offset=request.offset,
                 status=request.status,
                 vendedor_id=request.vendedor_id,
             )
         else:
-            leads_with_products, total = await self.lead_repository.list_by_vendedor(  # type: ignore[call-arg]
-                tenant_id=tenant_id,  # type: ignore[arg-type]
+            leads_with_products, total = await self.lead_repository.list_by_vendedor(
+                tenant_id=tenant_id,
                 vendedor_id=user.id,
                 limit=request.limit,
                 offset=request.offset,
@@ -67,27 +67,27 @@ class ListLeadsUseCase:
             )
 
         items = []
-        for item in leads_with_products:  # type: ignore[assignment]
-            lead = item.lead  # type: ignore[attr-defined]
-            product_model: ProductModel | None = item.product_model  # type: ignore[attr-defined]
+        for item in leads_with_products:
+            lead = item.lead
+            product_model: ProductModel | None = item.product_model
 
             product = None
             if product_model:
                 product = ProductSummaryForLead(
-                    id=product_model.id,  # type: ignore[attr-defined]
-                    title=product_model.title,  # type: ignore[attr-defined]
-                    price_cents=product_model.price_cents,  # type: ignore[attr-defined]
-                    currency=product_model.currency,  # type: ignore[attr-defined]
-                    status=product_model.status,  # type: ignore[attr-defined]
-                    attributes=product_model.attributes or {},  # type: ignore[attr-defined]
-                    created_at=product_model.created_at,  # type: ignore[attr-defined]
-                    updated_at=product_model.updated_at,  # type: ignore[attr-defined]
+                    id=product_model.id,
+                    title=product_model.title,
+                    price_cents=product_model.price_cents,
+                    currency=product_model.currency,
+                    status=product_model.status,
+                    attributes=product_model.attributes or {},
+                    created_at=product_model.created_at,
+                    updated_at=product_model.updated_at,
                 )
 
-            items.append(LeadResponse.from_entity(lead, product=product))  # type: ignore[arg-type]
+            items.append(LeadResponse.from_entity(lead, product=product))
 
         return LeadListResponse(
-            items=items,  # type: ignore[arg-type]
+            items=items,
             total=total,
             limit=request.limit,
             offset=request.offset,

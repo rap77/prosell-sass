@@ -283,7 +283,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             stmt = stmt.where(ProductModel.status == status.value)
 
         result = await self.session.execute(stmt)
-        return result.scalar() or 0  # type: ignore[return-value]
+        return result.scalar() or 0
 
     async def increment_view_count(self, product_id: UUID, tenant_id: UUID) -> None:
         """Increment product view count."""

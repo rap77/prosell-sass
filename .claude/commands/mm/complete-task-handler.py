@@ -1213,6 +1213,12 @@ def start_task(task_id: str) -> None:
     mm_info(f"Runtime state: {RUNTIME_STATE_PATH}")
     mm_info(f"Session ID: {runtime_state['session_id']}")
 
+    # Mark task as in-progress [~] in todo.md
+    try:
+        propagate_in_progress(task_id)
+    except Exception as e:
+        mm_error(f"Failed to mark task {task_id} as in-progress: {e}")
+
     # Open dev session in DB (non-blocking — continues if DB unavailable)
     db_session_id = _open_db_session(task_id, len(pending_subtasks))
     if db_session_id:

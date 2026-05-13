@@ -17,5 +17,5 @@
   "extraPaths": [
     "apps/api/src"
   ],
-  "stubPath": ""
+  "stubPath": "apps/api/tests/stubs"
 }
