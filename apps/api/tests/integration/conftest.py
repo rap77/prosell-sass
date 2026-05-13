@@ -10,7 +10,9 @@ from uuid import UUID, uuid4
 import pytest
 import pytest_asyncio
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+
+from prosell.infrastructure.models.role_model import RoleModel
 
 TEST_DB_URL = "postgresql+asyncpg://prosell:prosell_test_password@localhost:5433/prosell_test"
 
@@ -21,8 +23,6 @@ TEST_DB_URL = "postgresql+asyncpg://prosell:prosell_test_password@localhost:5433
 @pytest_asyncio.fixture(scope="session")
 async def _session_engine() -> AsyncGenerator[Any, None]:
     """Create engine for session-scoped fixtures."""
-    from sqlalchemy.ext.asynci import AsyncEngine
-
     engine: AsyncEngine = create_async_engine(TEST_DB_URL, echo=False)
     yield engine
     await engine.dispose()

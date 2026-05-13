@@ -7,6 +7,8 @@ Tests the complete flow:
 4. Duplicate detection works
 """
 
+from collections.abc import AsyncGenerator
+
 import hashlib
 import hmac
 from uuid import uuid4
@@ -14,6 +16,7 @@ from uuid import uuid4
 import pytest
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.infrastructure.api.main import app
 
@@ -30,11 +33,6 @@ async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, 
     AsyncClient for webhook tests (no auth required).
     Overrides settings.facebook_app_secret for signature verification.
     """
-    from collections.abc import AsyncGenerator
-
-    from httpx import AsyncClient
-    from sqlalchemy.ext.asyncio import AsyncSession
-
     from prosell.infrastructure.api.routers.webhook_router import get_facebook_app_secret
 
     # Override the get_facebook_app_secret dependency

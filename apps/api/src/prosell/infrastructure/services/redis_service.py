@@ -18,10 +18,10 @@ class RedisService:
 
     def __init__(self) -> None:
         """Initialize Redis service (lazy connection)."""
-        self._redis: redis.Redis[str] | None = None
+        self._redis: redis.Redis | None = None
         self._settings = get_settings()
 
-    async def _get_client(self) -> redis.Redis[str]:
+    async def _get_client(self) -> redis.Redis:
         """Get or create Redis client."""
         if self._redis is None:
             self._redis = await redis.from_url(

@@ -6,8 +6,12 @@ Tests the SQLAlchemy implementation of IPublicationRepository.
 from uuid import uuid4
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.publication import PublicationStatus
+from prosell.infrastructure.models.category_model import CategoryModel
+from prosell.infrastructure.models.organization_model import OrganizationModel
+from prosell.infrastructure.models.product_model import ProductModel
 from prosell.infrastructure.models.publication_model import PublicationModel
 from prosell.infrastructure.repositories.publication_repository_impl import (
     SqlAlchemyPublicationRepository,
@@ -21,8 +25,6 @@ from prosell.infrastructure.repositories.publication_repository_impl import (
 @pytest.fixture
 async def publication_repo(db_session: AsyncSession) -> SqlAlchemyPublicationRepository:
     """Return a PublicationRepository instance."""
-    from sqlalchemy.ext.asyncio import AsyncSession
-
     return SqlAlchemyPublicationRepository(db_session)
 
 
@@ -33,11 +35,6 @@ async def sample_product(
     test_category: CategoryModel,
 ) -> ProductModel:
     """Create a sample product for testing publications."""
-    from prosell.infrastructure.models.product_model import ProductModel
-    from prosell.infrastructure.models.category_model import CategoryModel
-    from prosell.infrastructure.models.organization_model import OrganizationModel
-    from sqlalchemy.ext.asyncio import AsyncSession
-
     product_id = uuid4()
     product = ProductModel(
         id=product_id,

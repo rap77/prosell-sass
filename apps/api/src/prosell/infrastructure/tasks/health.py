@@ -36,7 +36,7 @@ async def get_task_queue_health() -> TaskQueueHealth:
         try:
             import redis.asyncio as redis
 
-            client: redis.Redis[str] = redis.from_url(
+            client: redis.Redis = redis.from_url(
                 settings.redis_url,
                 password=settings.redis_password,
                 decode_responses=True,

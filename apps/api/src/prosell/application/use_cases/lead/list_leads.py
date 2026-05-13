@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class LeadWithProduct(NamedTuple):
     """Lead entity with optional product model."""
     lead: Lead
-    product_model: ProductModel | None = None
+    product_model: "ProductModel | None" = None
 
 
 class ListLeadsUseCase:

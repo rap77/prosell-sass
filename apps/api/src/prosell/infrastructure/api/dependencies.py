@@ -3,8 +3,6 @@ from __future__ import annotations
 
 __all__ = ["get_async_session", "get_current_user", "get_current_user_optional"]
 
-from __future__ import annotations
-
 from collections.abc import Awaitable, Callable
 from functools import lru_cache
 from typing import TYPE_CHECKING, Annotated
