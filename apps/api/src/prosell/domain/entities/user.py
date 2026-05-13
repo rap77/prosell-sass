@@ -80,7 +80,8 @@ class User(DomainModel):
         if v is None:
             return None
         if isinstance(v, str):
-            return json.loads(v)
+            from typing import cast
+            return cast(list[str], json.loads(v))
         return v
 
     @classmethod

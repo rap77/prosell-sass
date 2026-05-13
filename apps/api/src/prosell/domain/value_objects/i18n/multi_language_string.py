@@ -1,62 +1,34 @@
-"""Multi-language string value object.
+"""Multi-language string value object."""
 
-Used for fields that need to support multiple languages (es, en).
-Immutable by definition (ValueObject).
-"""
-
-from pydantic import Field, field_validator
-
-from prosell.domain.base import ValueObject
+from dataclasses import dataclass
 
 
-class MultiLanguageString(ValueObject):
-    """Multi-language string value object.
+@dataclass(frozen=True)
+class MultiLanguageString:
+    """
+    Multi-language text value object.
 
-    Supports Spanish (es) and English (en) text.
-    Immutable - once created, cannot be changed.
+    Immutable container for text in multiple languages.
+    Used for product names, descriptions, and UI labels.
+
+    Attributes:
+        es: Spanish text
+        en: English text
 
     Example:
         name = MultiLanguageString(es="Automóviles", en="Cars")
-        name.get("es")  # "Automóviles"
-        name.get("en")  # "Cars"
-        name.get("fr")  # "Automóviles" (defaults to es)
-
-    Args:
-        es: Spanish text (required)
-        en: English text (required)
-
-    Raises:
-        ValueError: If es or en is empty after stripping
+        description = MultiLanguageString(
+            es="Sedán compacto en excelente estado",
+            en="Compact sedan in excellent condition"
+        )
     """
 
-    es: str = Field(description="Spanish text")
-    en: str = Field(description="English text")
+    es: str
+    en: str
 
-    @field_validator("es", "en")
-    @classmethod
-    def strip_whitespace(cls, v: str) -> str:
-        """Strip whitespace from texts.
-
-        Args:
-            v: Text value
-
-        Returns:
-            Stripped text
-
-        Raises:
-            ValueError: If text is empty after stripping
+    def get_text(self, language: str) -> str:
         """
-        stripped = v.strip()
-        if not stripped:
-            raise ValueError("Text cannot be empty or whitespace only")
-        return stripped
-
-    def get(self, language: str) -> str:
-        """Get text for specific language.
-
-        Priority:
-        1. Exact language match (es or en)
-        2. Default to Spanish (es)
+        Get text in requested language.
 
         Args:
             language: Language code (es, en, etc.)
@@ -66,7 +38,10 @@ class MultiLanguageString(ValueObject):
         """
         if language not in ("es", "en"):
             language = "es"  # Default
-        return getattr(self, language)
+        if language == "es":
+            return self.es
+        else:  # language == "en"
+            return self.en
 
     @classmethod
     def from_dict(cls, data: dict[str, str]) -> "MultiLanguageString":
