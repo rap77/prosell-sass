@@ -176,6 +176,6 @@ class FacebookRateLimitException(FacebookDomainException):
         """
         super().__init__(
             message="Facebook Graph API rate limit exceeded",
-            details={"retry_after": retry_after} if retry_after else {},
+            details={"retry_after": str(retry_after)} if retry_after is not None else {},
         )
         self.retry_after = retry_after

@@ -97,7 +97,7 @@ class CircuitBreaker:
             self._on_failure()
             raise e
 
-    def _should_attempt_reset(self) -> bool:
+    def _should_attempt_reset(self) -> bool:  # noqa: D401
         """Check if timeout has passed to attempt reset.
 
         Returns:
@@ -105,13 +105,13 @@ class CircuitBreaker:
         """
         return time() - self.last_failure_time > self.config.timeout
 
-    def _on_success(self):
+    def _on_success(self) -> None:
         """Handle successful call."""
         self.failures = 0
         if self.state == CircuitState.HALF_OPEN:
             self.state = CircuitState.CLOSED
 
-    def _on_failure(self):
+    def _on_failure(self) -> None:
         """Handle failed call."""
         self.failures += 1
         self.last_failure_time = time()
