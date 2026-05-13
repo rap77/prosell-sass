@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, Concatenate, ParamSpec
+from typing import Any, Concatenate, ParamSpec, overload
 
 from fastapi import HTTPException, status
 
@@ -19,9 +19,23 @@ class RBACMiddleware:
     """
 
     @staticmethod
+    @overload
+    def require_roles(
+        *roles: str,
+    ) -> Callable[[Callable[P, Any]], Callable[P, Any]]:
+        ...
+
+    @staticmethod
+    @overload
     def require_roles(
         *roles: str,
     ) -> Callable[[Callable[Concatenate[dict[str, Any], P], Any]], Callable[P, Any]]:
+        ...
+
+    @staticmethod
+    def require_roles(
+        *roles: str,
+    ) -> Callable[[Callable[P, Any]], Callable[P, Any]]:
         """
         Decorator to require specific roles.
 
@@ -31,20 +45,15 @@ class RBACMiddleware:
         Example:
             @router.get("/admin")
             @require_roles("admin", "super_admin")
-            async def admin_endpoint(...):
+            async def admin_endpoint(current_user: dict[str, Any], ...):
                 ...
         """
-
-        def decorator(
-            func: Callable[Concatenate[dict[str, Any], P], Any],
-        ) -> Callable[P, Any]:
+        def decorator(func: Callable[P, Any]) -> Callable[P, Any]:
             @wraps(func)
-            async def wrapper(
-                current_user: dict[str, Any],
-                *args: P.args,
-                **kwargs: P.kwargs,
-            ) -> Any:
-                user_roles: list[str] = current_user.get("roles", [])
+            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                # Extract current_user from kwargs
+                current_user_dict: dict[str, Any] = kwargs.pop("current_user", {})
+                user_roles: list[str] = current_user_dict.get("roles", [])
 
                 # Check if user has any of the required roles
                 if not any(role in user_roles for role in roles):
@@ -53,16 +62,31 @@ class RBACMiddleware:
                         detail=f"Access denied. Required roles: {', '.join(roles)}",
                     )
 
-                return await func(*args, current_user=current_user, **kwargs)
+                # Call original function without current_user (it's already extracted)
+                return await func(*args, **kwargs)
 
             return wrapper
 
         return decorator
 
     @staticmethod
+    @overload
+    def require_permissions(
+        *permissions: str,
+    ) -> Callable[[Callable[P, Any]], Callable[P, Any]]:
+        ...
+
+    @staticmethod
+    @overload
     def require_permissions(
         *permissions: str,
     ) -> Callable[[Callable[Concatenate[dict[str, Any], P], Any]], Callable[P, Any]]:
+        ...
+
+    @staticmethod
+    def require_permissions(
+        *permissions: str,
+    ) -> Callable[[Callable[P, Any]], Callable[P, Any]]:
         """
         Decorator to require specific permissions.
 
@@ -72,20 +96,15 @@ class RBACMiddleware:
         Example:
             @router.post("/users")
             @require_permissions("user:create")
-            async def create_user(...):
+            async def create_user(current_user: dict[str, Any], ...):
                 ...
         """
-
-        def decorator(
-            func: Callable[Concatenate[dict[str, Any], P], Any],
-        ) -> Callable[P, Any]:
+        def decorator(func: Callable[P, Any]) -> Callable[P, Any]:
             @wraps(func)
-            async def wrapper(
-                current_user: dict[str, Any],
-                *args: P.args,
-                **kwargs: P.kwargs,
-            ) -> Any:
-                user_roles: list[str] = current_user.get("roles", [])
+            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                # Extract current_user from kwargs
+                current_user_dict: dict[str, Any] = kwargs.pop("current_user", {})
+                user_roles: list[str] = current_user_dict.get("roles", [])
 
                 # Get permissions for user's roles
                 from prosell.domain.entities.role import ROLE_PERMISSIONS
@@ -106,7 +125,8 @@ class RBACMiddleware:
                         detail=f"Access denied. Missing permissions: {', '.join(missing)}",
                     )
 
-                return await func(*args, current_user=current_user, **kwargs)
+                # Call original function without current_user (it's already extracted)
+                return await func(*args, **kwargs)
 
             return wrapper
 

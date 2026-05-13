@@ -1,8 +1,11 @@
 """Email service port (secondary interface)."""
 
 from abc import abstractmethod
+from datetime import datetime
 from typing import Protocol
 from uuid import UUID
+
+from prosell.domain.entities.appointment import AppointmentStatus
 
 
 class AbstractEmailService(Protocol):
@@ -41,24 +44,38 @@ class AbstractEmailService(Protocol):
         ...
 
     @abstractmethod
-    async def send_appointment_status_update(
+    async def send_appointment_confirmation(
         self,
-        email: str,
-        appointment_date: str,
-        time: str,
-        dealer_name: str,
-        status: str,
+        buyer_email: str,
+        buyer_name: str,
+        branch_name: str,
+        vehicle_info: str,
+        scheduled_at: datetime,
+        notes: str | None = None,
     ) -> None:
-        """Send appointment status update email."""
+        """Send appointment confirmation email to buyer."""
         ...
 
     @abstractmethod
-    async def send_appointment_confirmation(
+    async def send_appointment_status_update(
+        self,
+        buyer_email: str,
+        buyer_name: str,
+        branch_name: str,
+        vehicle_info: str,
+        scheduled_at: datetime,
+        new_status: AppointmentStatus,
+        notes: str | None = None,
+    ) -> None:
+        """Send appointment status update (confirmed/cancelled) to buyer."""
+        ...
+
+    @abstractmethod
+    async def send_appointment_reminder(
         self,
         email: str,
-        appointment_date: str,
-        time: str,
-        dealer_name: str,
+        person_type: str,  # "branch" or "buyer"
+        appointment_details: dict[str, Any],
     ) -> None:
-        """Send appointment confirmation email."""
+        """Send appointment reminder."""
         ...

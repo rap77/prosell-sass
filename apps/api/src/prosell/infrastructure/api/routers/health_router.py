@@ -5,6 +5,7 @@ Provides health check endpoints for system status monitoring.
 
 from datetime import UTC, datetime
 from typing import Any
+from prosell.infrastructure.tasks.health import TaskQueueHealth
 
 from fastapi import APIRouter
 from pydantic import BaseModel

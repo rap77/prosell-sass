@@ -1,6 +1,10 @@
 """Database session management."""
 
+from __future__ import annotations
+
 from collections.abc import AsyncGenerator
+
+__all__ = ["get_async_session"]
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,

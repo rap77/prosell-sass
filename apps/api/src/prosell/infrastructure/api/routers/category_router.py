@@ -189,7 +189,7 @@ async def update_category_attribute_schema(
     return await use_case.execute(category_id, tenant_id, request.attribute_schema)
 
 
-@router.get("/{category_id}/fields", response_model=dict)  # type: ignore[type-arg]
+@router.get("/.*", response_model=dict[str, Any])
 async def get_category_fields(
     category_id: UUID,
     current_user: User = Depends(get_current_auth_user_from_cookie),

@@ -1,4 +1,5 @@
 """Product router."""
+from typing import cast
 
 from uuid import UUID
 
@@ -60,7 +61,7 @@ async def create_product(
     use_case = CreateProductUseCase(product_repo, category_repo)
 
     try:
-        return await use_case.execute(request)
+        return cast("ProductResponse", await use_case.execute(request))  # type: ignore[no-any-return]
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
     except ProductError as e:

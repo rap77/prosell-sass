@@ -9,7 +9,7 @@ from prosell.infrastructure.tasks.broker import broker
 
 
 @broker.task
-async def auto_republish_task() -> dict:
+async def auto_republish_task() -> dict[str, bool]:
     """Detect listings approaching 7-day expiry and republish them.
 
     Runs every 6 hours via Taskiq scheduler (cron configuration in worker.py).

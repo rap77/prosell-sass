@@ -182,8 +182,8 @@ class SendGridEmailService:
         token: str,
     ) -> None:
         """Send email verification email."""
-        import sendgrid
-        from sendgrid.helpers.mail import Mail
+        import sendgrid  # type: ignore[import]
+        from sendgrid.helpers.mail import Mail  # type: ignore[import]
 
         # Create verification URL (use oauth_frontend_success_url as base)
         base_url = settings.oauth_frontend_success_url.split("/auth")[0]

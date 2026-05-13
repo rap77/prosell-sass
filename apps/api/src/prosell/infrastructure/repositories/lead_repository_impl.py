@@ -66,7 +66,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
                 LeadModel.id == lead_id,
                 LeadModel.tenant_id == tenant_id,
             )
-            result = await self.session.execute(stmt)
+            result = await self.session.execute(stmt_single)
             model = result.scalar_one_or_none()
             return self._to_entity(model) if model else None
 
@@ -214,7 +214,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             .order_by(LeadAuditLogModel.created_at.desc())
             .limit(limit)
         )
-        result = await self.session.execute(stmt)
+        result = await self.session.execute(stmt_audit)
         models = result.scalars().all()
         
         return [self._audit_log_to_entity(model) for model in models]

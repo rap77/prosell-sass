@@ -1,4 +1,7 @@
 """Dependency injection container for FastAPI."""
+from __future__ import annotations
+
+__all__ = ["get_async_session", "get_current_user", "get_current_user_optional"]
 
 from __future__ import annotations
 
@@ -150,7 +153,10 @@ def get_totp_service() -> ITOTPService:
 def get_email_service() -> AbstractEmailService:
     """Get email service instance (singleton)."""
     if settings.use_mock_email:
-        return MockEmailService()
+        service = MockEmailService()
+    # Verify compatibility with AbstractEmailService Protocol
+    _check_email_service: AbstractEmailService = service
+    return _check_email_service
     return SendGridEmailService()
 
 

@@ -13,7 +13,7 @@ from prosell.core.config import settings
 if settings.environment == "testing":
     broker = InMemoryBroker()
 else:
-    broker = ListQueueBroker(
+    broker: InMemoryBroker | ListQueueBroker = ListQueueBroker(
         url=settings.redis_url,
     )
 

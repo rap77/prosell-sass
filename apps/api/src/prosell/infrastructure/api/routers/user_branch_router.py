@@ -151,7 +151,7 @@ async def remove_branch_assignment(
     await use_case.execute(
         user_id=id,
         branch_id=branch_id,
-        tenant_id=current_user.tenant_id,
+        tenant_id=current_user.tenant_id or UUID("00000000-0000-0000-0000-000000000000"),
     )
 
 

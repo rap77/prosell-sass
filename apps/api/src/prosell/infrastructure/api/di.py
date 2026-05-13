@@ -33,6 +33,9 @@ from prosell.infrastructure.repositories.user_branch_repository_impl import (
 from prosell.infrastructure.services.facebook_graph_api_client import (
     FacebookGraphApiClient,
 )
+from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
+from prosell.infrastructure.repositories.facebook_page_repository_impl import SqlAlchemyFacebookPageRepository
+from prosell.infrastructure.services.token_encryption_service import TokenEncryptionService
 
 
 async def get_branch_repository(
@@ -121,20 +124,35 @@ async def get_create_lead_use_case(
     lead_repository: AbstractLeadRepository = Depends(get_lead_repository),
 ) -> CreateLeadUseCase:
     """Provide CreateLeadUseCase instance."""
+
+
+async def get_facebook_page_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> IFacebookPageRepository:
+    """Provide FacebookPage repository instance."""
+    return SqlAlchemyFacebookPageRepository(session)
+
+
+def get_encryption_service() -> TokenEncryptionService:
+    """Provide TokenEncryptionService instance."""
+    return TokenEncryptionService()
+
     return CreateLeadUseCase(lead_repository)
 
 
 async def get_process_facebook_webhook_use_case(
     lead_repository: AbstractLeadRepository = Depends(get_lead_repository),
     publication_repository: IPublicationRepository = Depends(get_publication_repository),
+    facebook_page_repository: IFacebookPageRepository = Depends(get_facebook_page_repository),
     create_lead_use_case: CreateLeadUseCase = Depends(get_create_lead_use_case),
+    encryption_service: TokenEncryptionService = Depends(get_encryption_service),
 ) -> ProcessFacebookWebhookUseCase:
     """Provide ProcessFacebookWebhookUseCase instance."""
-    # facebook_client is instantiated directly since it's not injected
-    # This is OK for now since we're not fetching buyer profiles until Phase 3
     return ProcessFacebookWebhookUseCase(
         lead_repository=lead_repository,
         publication_repository=publication_repository,
+        facebook_page_repository=facebook_page_repository,
         facebook_client=FacebookGraphApiClient(),
         create_lead_use_case=create_lead_use_case,
+        encryption_service=encryption_service,
     )

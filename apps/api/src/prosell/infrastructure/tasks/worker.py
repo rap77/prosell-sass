@@ -35,7 +35,7 @@ async def main() -> None:
     logger.info("Starting Taskiq worker...")
     logger.info("Broker: %s", settings.task_queue_broker_url or settings.redis_url)
 
-    await receiver.start()
+    await receiver.start()  # type: ignore[attr-defined]
 
 
 if __name__ == "__main__":
