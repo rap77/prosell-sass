@@ -36,12 +36,12 @@ async def get_task_queue_health() -> TaskQueueHealth:
         try:
             import redis.asyncio as redis
 
-            client: redis.Redis[str] = redis.from_url(  # type: ignore[call-arg]
+            client: redis.Redis[str] = redis.from_url(
                 settings.redis_url,
                 password=settings.redis_password,
                 decode_responses=True,
             )
-            await client.ping()  # type: ignore[call-arg]
+            await client.ping()
             await client.close()
             broker_connected = True
             message = f"Redis broker at {settings.redis_url}"

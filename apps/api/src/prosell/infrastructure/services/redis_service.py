@@ -24,7 +24,7 @@ class RedisService:
     async def _get_client(self) -> redis.Redis:
         """Get or create Redis client."""
         if self._redis is None:
-            self._redis = await redis.from_url(  # type: ignore[call-arg]
+            self._redis = await redis.from_url(
                 self._settings.redis_url,
                 encoding="utf-8",
                 decode_responses=True,
