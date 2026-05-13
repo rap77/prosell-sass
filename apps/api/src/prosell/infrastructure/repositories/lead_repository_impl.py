@@ -1,4 +1,5 @@
 """SqlAlchemyLeadRepository implementation with product JOIN support."""
+from typing import cast
 
 from datetime import UTC, datetime, timedelta
 from typing import Any, NamedTuple, cast
@@ -217,7 +218,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         result = await self.session.execute(stmt_audit)
         models = result.scalars().all()
         
-        return [self._audit_log_to_entity(model) for model in models]
+        return [self._audit_log_to_entity(model) for model in models]  # type: ignore[arg-type]
 
     async def list_by_vendedor(
         self,

@@ -58,7 +58,13 @@ async def health_check() -> IntegrationsHealthResponse:
     return IntegrationsHealthResponse(
         status="healthy",
         timestamp=datetime.now(UTC).isoformat(),
-        task_queue=await get_task_queue_health(),
+        task_queue={
+            "status": (await get_task_queue_health()).status,
+            "broker_type": (await get_task_queue_health()).broker_type,
+            "broker_connected": (await get_task_queue_health()).broker_connected,
+            "workers_active": (await get_task_queue_health()).workers_active,
+            "message": (await get_task_queue_health()).message,
+        },
         # Add more integrations as needed
         # "redis": await get_redis_health(),
         # "database": await get_database_health(),

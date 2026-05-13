@@ -44,7 +44,7 @@ limiter = Limiter(
 
 
 # Decorator factory for endpoints that have Request parameter
-def rate_limit(limit_string: str) -> Callable[[Any], Any]:  # type: ignore[no-any-return]
+def rate_limit(limit_string: str) -> Callable[[Any], Any]:
     """
     Rate limit decorator for endpoints with Request parameter.
 
@@ -55,7 +55,7 @@ def rate_limit(limit_string: str) -> Callable[[Any], Any]:  # type: ignore[no-an
             ...
     """
     limit: Any = limiter.limit(limit_string)
-    return limit
+    return limit  # type: ignore[no-any-return]
 
 
 # Pre-configured limit strings
