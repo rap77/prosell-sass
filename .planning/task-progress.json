@@ -6,11 +6,11 @@
   "subtasks": {
     "B3.5.01": {
       "description": "Create CSVProductParser service",
-      "status": "in_progress",
+      "status": "completed",
       "retries": 0,
       "started_at": "2026-05-14T07:19:29.728942",
-      "completed_at": null,
-      "duration_seconds": 0
+      "completed_at": "2026-05-14T07:24:00.000000",
+      "duration_seconds": 270
     },
     "B3.5.02": {
       "description": "Implement CSV parsing with DictReader [requires: 01]",
