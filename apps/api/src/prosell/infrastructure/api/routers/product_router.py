@@ -1,9 +1,7 @@
 """Product router."""
-from typing import cast
-
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.product import (
@@ -12,15 +10,20 @@ from prosell.application.dto.product import (
     UpdateProductRequest,
 )
 from prosell.application.use_cases.product.approve_product import ApproveProductUseCase
-# from prosell.application.use_cases.product.create_product import CreateProductUseCase  # TODO: implement
+from prosell.application.use_cases.product.bulk_upload_products import (
+    BulkUploadProductsUseCase,
+    BulkUploadResult,
+)
+from prosell.application.use_cases.product.create_product import CreateProductUseCase
 from prosell.application.use_cases.product.delete_product import DeleteProductUseCase
 from prosell.application.use_cases.product.list_products import (
     ListProductsUseCase,
     ProductListResponse,
 )
 from prosell.domain.entities.user import User
-from prosell.domain.exceptions.product_exceptions import ProductError
+from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
+from prosell.domain.services.csv_product_parser import CSVProductParser
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.category_repository_impl import (
@@ -36,6 +39,11 @@ async def get_product_repository(session: AsyncSession) -> AbstractProductReposi
     return SqlAlchemyProductRepository(session)
 
 
+async def get_category_repository(session: AsyncSession) -> AbstractCategoryRepository:
+    """Get category repository instance."""
+    return SqlAlchemyCategoryRepository(session)
+
+
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     request: CreateProductRequest,
@@ -47,9 +55,10 @@ async def create_product(
 
     Product is created in DRAFT status by default.
     tenant_id and organization_id are injected from the authenticated user if not provided.
-    
-    TODO: Implement CreateProductUseCase - currently commented out
     """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    
     # Inject auth context via model_copy (Pydantic v2 idiomatic)
     effective_tenant_id = request.tenant_id or current_user.tenant_id or current_user.id
     effective_org_id = request.organization_id or current_user.tenant_id or current_user.id
@@ -58,15 +67,78 @@ async def create_product(
         "organization_id": effective_org_id,
     })
 
-    # TODO: Implement use case when ready
-    # product_repo = SqlAlchemyProductRepository(db)
-    # category_repo = SqlAlchemyCategoryRepository(db)
-    # use_case = CreateProductUseCase(product_repo, category_repo)
-    # return await use_case.execute(request)
+    # Execute use case
+    product_repo = SqlAlchemyProductRepository(db)
+    category_repo = SqlAlchemyCategoryRepository(db)
+    use_case = CreateProductUseCase(product_repo, category_repo)
     
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Product creation not yet implemented"
+    try:
+        return await use_case.execute(request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        ) from e
+
+
+@router.post("/bulk-upload", response_model=BulkUploadResult, status_code=status.HTTP_201_CREATED)
+async def bulk_upload_products(
+    csv_file: UploadFile = File(..., description="CSV file with product data"),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
+    db: AsyncSession = Depends(get_async_session),
+) -> BulkUploadResult:
+    """
+    Bulk upload products from CSV file.
+
+    CSV format requirements:
+    - Required columns: vin, title, price, category_id
+    - Optional columns: description, condition, currency, location_city, location_state, location_zip, attributes
+
+    The endpoint:
+    - Parses CSV and validates all rows
+    - Continues processing after individual row errors (partial success)
+    - Returns detailed error reporting with row numbers and VINs
+    - Creates products in DRAFT status
+
+    Example CSV:
+    ```csv
+    vin,title,price,category_id,description,condition
+    1HGCM82633A123456,2020 Honda Accord,25000.00,123e4567-e89b-12d3-a456-426614174000,Well maintained,used
+    1HGCM82633A123457,2021 Honda Civic,22000.00,123e4567-e89b-12d3-a456-426614174000,Like new,used
+    ```
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    # Validate CSV file
+    if not csv_file.filename or not csv_file.filename.endswith('.csv'):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Only CSV files are supported"
+        )
+
+    # Read CSV content
+    content = await csv_file.read()
+    csv_content = content.decode('utf-8')
+
+    # Execute use case
+    product_repo = SqlAlchemyProductRepository(db)
+    category_repo = SqlAlchemyCategoryRepository(db)
+    csv_parser = CSVProductParser()
+    use_case = BulkUploadProductsUseCase(product_repo, category_repo, csv_parser)
+
+    # Parse CSV
+    parse_result = await csv_parser.parse_csv(
+        csv_content=csv_content,
+        tenant_id=current_user.tenant_id,
+        organization_id=current_user.tenant_id,
+    )
+
+    # Bulk upload
+    return await use_case.execute(
+        parsed_products=parse_result.products,
+        tenant_id=current_user.tenant_id,
+        organization_id=current_user.tenant_id,
     )
 
 
