@@ -6,6 +6,7 @@ from prosell.infrastructure.api.middleware.rate_limit_middleware import (
     PUBLIC_LIMIT,
     limiter,
     rate_limit,
+    smart_rate_limit,
 )
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "PUBLIC_LIMIT",
     "limiter",
     "rate_limit",
+    "smart_rate_limit",
 ]
