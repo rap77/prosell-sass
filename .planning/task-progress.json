@@ -14,11 +14,12 @@
     },
     "B3.5.02": {
       "description": "Implement CSV parsing with DictReader [requires: 01]",
-      "status": "pending",
+      "status": "completed",
       "retries": 0,
       "started_at": "2026-05-14T07:19:29.728942",
-      "completed_at": null,
-      "duration_seconds": 0
+      "completed_at": "2026-05-14T07:24:00.000000",
+      "duration_seconds": 0,
+      "note": "Already implemented in B3.5.01 - CSVProductParser uses csv.DictReader"
     },
     "B3.5.03": {
       "description": "Validate required columns (vin, title, price, category_id) [requires: 02]",

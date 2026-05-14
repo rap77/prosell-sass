@@ -362,7 +362,7 @@
 
 - [~] B3.5: CSV Parser for Bulk Upload (12 hours)
   - [x] B3.5.01: Create CSVProductParser service
-  - [ ] B3.5.02: Implement CSV parsing with DictReader [requires: 01]
+  - [x] B3.5.02: Implement CSV parsing with DictReader [requires: 01]
   - [ ] B3.5.03: Validate required columns (vin, title, price, category_id) [requires: 02]
   - [ ] B3.5.04: Parse VIN data [requires: 03]
   - [ ] B3.5.05: Create CreateProductRequest from CSV row [requires: 04]
