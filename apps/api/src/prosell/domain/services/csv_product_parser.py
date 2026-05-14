@@ -10,9 +10,14 @@ Optional columns: description, condition, currency, location_city, location_stat
 import csv
 from dataclasses import dataclass
 from io import StringIO
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from prosell.domain.exceptions.product_exceptions import InvalidVINError
+from prosell.domain.value_objects.product_condition import ProductCondition
+
+if TYPE_CHECKING:
+    from prosell.application.dto.product.create import CreateProductRequest
 
 
 @dataclass
@@ -36,6 +41,46 @@ class ParsedProductRow:
         """Initialize attributes dict if None."""
         if self.attributes is None:
             self.attributes = {}
+
+    def to_create_product_request(
+        self,
+        tenant_id: UUID,
+        organization_id: UUID,
+    ) -> "CreateProductRequest":
+        """
+        Convert ParsedProductRow to CreateProductRequest DTO.
+
+        Args:
+            tenant_id: Tenant ID for the product
+            organization_id: Organization ID for the product
+
+        Returns:
+            CreateProductRequest DTO ready for use case
+        """
+        # Import here to avoid circular dependency
+        from prosell.application.dto.product.create import CreateProductRequest
+
+        # Merge VIN into attributes (attributes is guaranteed to be dict after __post_init__)
+        current_attributes: dict[str, object] = self.attributes or {}
+        attributes_with_vin: dict[str, object] = {**current_attributes, "vin": self.vin}
+
+        # Map condition string to ProductCondition enum
+        condition_enum = ProductCondition(self.condition)
+
+        return CreateProductRequest(
+            title=self.title,
+            price_cents=self.price_cents,
+            tenant_id=tenant_id,
+            organization_id=organization_id,
+            category_id=self.category_id,
+            description=self.description,
+            condition=condition_enum,
+            currency=self.currency,
+            location_city=self.location_city,
+            location_state=self.location_state,
+            location_zip=self.location_zip,
+            attributes=attributes_with_vin,
+        )
 
 
 @dataclass
