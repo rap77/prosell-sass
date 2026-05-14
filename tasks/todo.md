@@ -347,21 +347,21 @@
   - [x] B3.3.08: Verify email templates [requires: 07]
   - [x] B3.3.09: Integration tests pass [requires: 08]
 
-- [ ] B3.4: Product Edit Mode Implementation (8 hours)
-  - [ ] B3.4.01: Review TODO at line 440 in VehicleForm.tsx
-  - [ ] B3.4.02: Add mode prop to VehicleForm ('create' | 'edit') [requires: 01]
-  - [ ] B3.4.03: Add productId prop to VehicleForm [requires: 02]
-  - [ ] B3.4.04: Create useProduct hook for edit mode [requires: 03]
-  - [ ] B3.4.05: Load product data in edit mode [requires: 04]
-  - [ ] B3.4.06: Pre-fill form with existing values [requires: 05]
-  - [ ] B3.4.07: Add updateProduct API call [requires: 06]
-  - [ ] B3.4.08: Handle validation in edit mode [requires: 07]
-  - [ ] B3.4.09: Remove TODO comment [requires: 08]
-  - [ ] B3.4.10: Unit tests for edit mode [requires: 09]
-  - [ ] B3.4.11: E2E test for edit flow [requires: 10]
+- [~] B3.4: Product Edit Mode Implementation (8 hours)
+  - [x] B3.4.01: Review TODO at line 440 in VehicleForm.tsx
+  - [x] B3.4.02: Add mode prop to VehicleForm ('create' | 'edit') [requires: 01]
+  - [x] B3.4.03: Add productId prop to VehicleForm [requires: 02]
+  - [x] B3.4.04: Create useProduct hook for edit mode [requires: 03]
+  - [x] B3.4.05: Load product data in edit mode [requires: 04]
+  - [x] B3.4.06: Pre-fill form with existing values [requires: 05]
+  - [x] B3.4.07: Add updateProduct API call [requires: 06]
+  - [x] B3.4.08: Handle validation in edit mode [requires: 07]
+  - [x] B3.4.09: Remove TODO comment [requires: 08]
+  - [x] B3.4.10: Unit tests for edit mode [requires: 09]
+  - [~] B3.4.11: E2E test for edit flow [requires: 10]
 
-- [ ] B3.5: CSV Parser for Bulk Upload (12 hours)
-  - [ ] B3.5.01: Create CSVProductParser service
+- [~] B3.5: CSV Parser for Bulk Upload (12 hours)
+  - [~] B3.5.01: Create CSVProductParser service
   - [ ] B3.5.02: Implement CSV parsing with DictReader [requires: 01]
   - [ ] B3.5.03: Validate required columns (vin, title, price, category_id) [requires: 02]
   - [ ] B3.5.04: Parse VIN data [requires: 03]
