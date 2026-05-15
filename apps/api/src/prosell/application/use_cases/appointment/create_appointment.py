@@ -4,10 +4,12 @@ from uuid import UUID
 
 from prosell.application.dto.appointment.request import CreateAppointmentRequest
 from prosell.application.dto.appointment.response import AppointmentResponse
-from prosell.domain.entities.appointment import Appointment
+from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 from prosell.domain.entities.lead import LeadStatus
+from prosell.domain.exceptions.appointment_exceptions import AppointmentConflictException
 from prosell.domain.repositories.appointment_repository import AbstractAppointmentRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
+from prosell.domain.services.appointment_conflict_detector import AppointmentConflictDetector
 
 
 class CreateAppointmentUseCase:
@@ -16,7 +18,7 @@ class CreateAppointmentUseCase:
 
     Business rules:
     - Validates business hours (Mon-Fri 9am-6pm) via domain entity
-    - Checks for branch conflicts (1-hour window)
+    - Checks for branch conflicts (1-hour window) via conflict detector
     - Updates lead status to "appointment_set"
     """
 
@@ -24,9 +26,11 @@ class CreateAppointmentUseCase:
         self,
         appointment_repository: AbstractAppointmentRepository,
         lead_repository: AbstractLeadRepository,
+        conflict_detector: AppointmentConflictDetector,
     ) -> None:
         self.appointment_repository = appointment_repository
         self.lead_repository = lead_repository
+        self.conflict_detector = conflict_detector
 
     async def execute(
         self,
@@ -54,7 +58,34 @@ class CreateAppointmentUseCase:
             tenant_id=tenant_id,
         )
 
-        # 2. Create domain entity (validates business hours)
+        # 2. Create a temporary appointment object for conflict detection
+        # (not persisted yet, just used for detection)
+        temp_appointment = Appointment(
+            id=None,  # Not assigned yet
+            tenant_id=tenant_id,
+            lead_id=request.lead_id,
+            user_id=request.user_id,
+            product_id=request.product_id,
+            scheduled_at=request.scheduled_at,
+            notes=request.notes,
+            status=AppointmentStatus.SCHEDULED,
+        )
+
+        # 3. Check for conflicts using the conflict detector
+        conflicts = self.conflict_detector.detect_conflicts(
+            temp_appointment, existing_appointments
+        )
+
+        if conflicts:
+            # Raise exception with conflict details
+            raise AppointmentConflictException(
+                user_id=str(request.user_id),
+                scheduled_at=request.scheduled_at.isoformat(),
+                conflicts=conflicts,
+            )
+
+        # 4. Create domain entity (validates business hours)
+        # Note: We don't pass existing_appointments here since we already checked conflicts
         appointment = Appointment.create(
             lead_id=request.lead_id,
             user_id=request.user_id,
@@ -62,13 +93,13 @@ class CreateAppointmentUseCase:
             tenant_id=tenant_id,
             scheduled_at=request.scheduled_at,
             notes=request.notes,
-            existing_appointments=existing_appointments,
+            existing_appointments=None,  # Already checked via conflict detector
         )
 
-        # 3. Persist appointment
+        # 5. Persist appointment
         created = await self.appointment_repository.create(appointment)
 
-        # 4. Update lead status to "appointment_set" (A4.13 requirement)
+        # 6. Update lead status to "appointment_set" (A4.13 requirement)
         await self._update_lead_status(
             lead_id=request.lead_id,
             tenant_id=tenant_id,

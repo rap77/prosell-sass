@@ -21,6 +21,7 @@ from prosell.domain.exceptions.appointment_exceptions import (
     AppointmentNotFoundException,
     AppointmentTimeValidationException,
 )
+from prosell.domain.services.appointment_conflict_detector import AppointmentConflictDetector
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie, get_email_service
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.appointment_repository_impl import (
@@ -75,7 +76,8 @@ async def get_create_appointment_use_case(
     appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],
     lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
 ) -> CreateAppointmentUseCase:
-    return CreateAppointmentUseCase(appointment_repo, lead_repo)
+    conflict_detector = AppointmentConflictDetector()
+    return CreateAppointmentUseCase(appointment_repo, lead_repo, conflict_detector)
 
 
 async def get_local_user_repository(

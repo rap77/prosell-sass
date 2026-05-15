@@ -22,6 +22,7 @@ from prosell.domain.exceptions.appointment_exceptions import (
     AppointmentConflictException,
     AppointmentTimeValidationException,
 )
+from prosell.domain.services.appointment_conflict_detector import AppointmentConflictDetector
 
 
 @pytest.fixture
@@ -45,21 +46,28 @@ def mock_lead_repository():
 @pytest.fixture
 def sample_lead():
     """Sample lead for testing."""
-    return Lead.create(
+    from uuid import uuid4
+
+    lead = Lead.create(
         buyer_name="John Doe",
         buyer_email="john@example.com",
         buyer_phone="+1234567890",
         source="facebook_marketplace",
         tenant_id=uuid4(),
     )
+    # Manually set to QUALIFIED status so it can transition to APPOINTMENT_SET
+    lead.status = LeadStatus.QUALIFIED
+    return lead
 
 
 @pytest.fixture
 def create_appointment_use_case(mock_appointment_repository, mock_lead_repository):
     """Create use case instance with mocked dependencies."""
+    conflict_detector = AppointmentConflictDetector()
     return CreateAppointmentUseCase(
         appointment_repository=mock_appointment_repository,
         lead_repository=mock_lead_repository,
+        conflict_detector=conflict_detector,
     )
 
 
@@ -153,7 +161,9 @@ class TestCreateAppointmentUseCase:
         with pytest.raises(AppointmentConflictException) as exc_info:
             await create_appointment_use_case.execute(request, tenant_id)
 
-        assert "already has an appointment" in str(exc_info.value).lower()
+        # New exception format includes conflict details
+        assert "conflict" in str(exc_info.value).lower()
+        assert "dealer" in str(exc_info.value).lower() or "appointment" in str(exc_info.value).lower()
 
         # Verify appointment was NOT created
         mock_appointment_repository.create.assert_not_awaited()
