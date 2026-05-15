@@ -76,8 +76,8 @@ class CreateAppointmentUseCase:
             temp_appointment, existing_appointments
         )
 
-        if conflicts:
-            # Raise exception with conflict details
+        if conflicts and not request.force:
+            # Raise exception with conflict details (unless force=True)
             raise AppointmentConflictException(
                 user_id=str(request.user_id),
                 scheduled_at=request.scheduled_at.isoformat(),

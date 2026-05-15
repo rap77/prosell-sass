@@ -309,3 +309,67 @@ class TestCreateAppointmentWithConflictDetection:
         result = await use_case.execute(request, tenant_id)
         assert isinstance(result, AppointmentResponse)
         mock_appointment_repo.create.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_create_appointment_with_force_override(
+        self,
+        mock_appointment_repo: AbstractAppointmentRepository,
+        mock_lead_repo: AbstractLeadRepository,
+        conflict_detector: AppointmentConflictDetector,
+        lead: Lead,
+        base_time: datetime,
+    ):
+        """Test creating appointment with force=True bypasses conflicts."""
+        from uuid import uuid4
+
+        tenant_id = uuid4()
+        user_id = uuid4()
+
+        # Setup mocks
+        mock_lead_repo.get_by_id.return_value = lead
+
+        # Create conflicting appointment
+        conflicting_appointment = Appointment(
+            id=uuid4(),
+            tenant_id=tenant_id,
+            lead_id=uuid4(),
+            user_id=user_id,
+            product_id=uuid4(),
+            scheduled_at=base_time,
+            status=AppointmentStatus.SCHEDULED,
+        )
+        mock_appointment_repo.check_conflicts.return_value = [conflicting_appointment]
+
+        # Create use case
+        use_case = CreateAppointmentUseCase(
+            appointment_repository=mock_appointment_repo,
+            lead_repository=mock_lead_repo,
+            conflict_detector=conflict_detector,
+        )
+
+        # Execute with force=True
+        request = CreateAppointmentRequest(
+            lead_id=lead.id,
+            user_id=user_id,
+            product_id=lead.product_id,
+            scheduled_at=base_time,
+            notes="Test appointment",
+            force=True,  # Override conflicts
+        )
+
+        # Setup return value for create
+        created_appointment = Appointment(
+            id=uuid4(),
+            tenant_id=tenant_id,
+            lead_id=lead.id,
+            user_id=user_id,
+            product_id=lead.product_id,
+            scheduled_at=base_time,
+            status=AppointmentStatus.SCHEDULED,
+        )
+        mock_appointment_repo.create.return_value = created_appointment
+
+        # Should succeed despite conflicts (force=True)
+        result = await use_case.execute(request, tenant_id)
+        assert isinstance(result, AppointmentResponse)
+        mock_appointment_repo.create.assert_called_once()
