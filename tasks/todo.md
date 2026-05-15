@@ -363,36 +363,36 @@
 - [~] B3.5: CSV Parser for Bulk Upload (12 hours)
   - [x] B3.5.01: Create CSVProductParser service
   - [x] B3.5.02: Implement CSV parsing with DictReader [requires: 01]
-  - [ ] B3.5.03: Validate required columns (vin, title, price, category_id) [requires: 02]
-  - [ ] B3.5.04: Parse VIN data [requires: 03]
-  - [ ] B3.5.05: Create CreateProductRequest from CSV row [requires: 04]
-  - [ ] B3.5.06: Create BulkUploadProductsUseCase [requires: 05]
-  - [ ] B3.5.07: Implement partial failure handling [requires: 06]
-  - [ ] B3.5.08: Return BulkUploadResult with counts [requires: 07]
-  - [ ] B3.5.09: Add /bulk-upload endpoint to router [requires: 08]
-  - [ ] B3.5.10: Integration tests with sample CSV [requires: 09]
-  - [ ] B3.5.11: Test error handling [requires: 10]
-  - [ ] B3.5.12: Test partial failures [requires: 11]
+  - [x] B3.5.03: Validate required columns (vin, title, price, category_id) [requires: 02]
+  - [x] B3.5.04: Parse VIN data [requires: 03]
+  - [x] B3.5.05: Create CreateProductRequest from CSV row [requires: 04]
+  - [x] B3.5.06: Create BulkUploadProductsUseCase [requires: 05]
+  - [x] B3.5.07: Implement partial failure handling [requires: 06]
+  - [x] B3.5.08: Return BulkUploadResult with counts [requires: 07]
+  - [x] B3.5.09: Add /bulk-upload endpoint to router [requires: 08]
+  - [x] B3.5.10: Integration tests with sample CSV [requires: 09]
+  - [x] B3.5.11: Test error handling [requires: 10]
+  - [x] B3.5.12: Test partial failures [requires: 11]
 
-- [ ] B4: Advanced Features
+- [~] B4: Advanced Features
 
-- [ ] B4.1: Team Invitation System (16 hours)
-  - [ ] B4.1.01: Create TeamInvitation entity
-  - [ ] B4.1.02: Add invitation fields (team_id, email, role, token, expires_at) [requires: 01]
-  - [ ] B4.1.03: Create InviteTeamMemberUseCase [requires: 02]
-  - [ ] B4.1.04: Generate invitation token [requires: 03]
-  - [ ] B4.1.05: Send invitation email [requires: 04]
-  - [ ] B4.1.06: Create AcceptTeamInvitationUseCase [requires: 05]
-  - [ ] B4.1.07: Validate invitation token [requires: 06]
-  - [ ] B4.1.08: Add user to team [requires: 07]
-  - [ ] B4.1.09: Mark invitation as accepted [requires: 08]
-  - [ ] B4.1.10: Add /invite endpoint to router [requires: 09]
-  - [ ] B4.1.11: Add /accept-invitation endpoint to router [requires: 10]
-  - [ ] B4.1.12: Create invitation acceptance page [requires: 11]
-  - [ ] B4.1.13: Test invitation expires after 7 days [requires: 12]
-  - [ ] B4.1.14: Test already member validation [requires: 13]
-  - [ ] B4.1.15: Unit tests for use cases [requires: 14]
-  - [ ] B4.1.16: Integration tests for flow [requires: 15]
+- [~] B4.1: Team Invitation System (16 hours)
+  - [x] B4.1.01: Create TeamInvitation entity
+  - [x] B4.1.02: Add invitation fields (team_id, email, role, token, expires_at) [requires: 01]
+  - [x] B4.1.03: Create InviteTeamMemberUseCase [requires: 02]
+  - [x] B4.1.04: Generate invitation token [requires: 03]
+  - [x] B4.1.05: Send invitation email [requires: 04]
+  - [x] B4.1.06: Create AcceptTeamInvitationUseCase [requires: 05]
+  - [x] B4.1.07: Validate invitation token [requires: 06]
+  - [x] B4.1.08: Add user to team [requires: 07]
+  - [x] B4.1.09: Mark invitation as accepted [requires: 08]
+  - [x] B4.1.10: Add /invite endpoint to router [requires: 09]
+  - [x] B4.1.11: Add /accept-invitation endpoint to router [requires: 10]
+  - [x] B4.1.12: Create invitation acceptance page [requires: 11] ✅ COMPLETE (apps/web/src/app/invite/[token]/page.tsx created)
+  - [x] B4.1.13: Test invitation expires after 7 days [requires: 12]
+  - [x] B4.1.14: Test already member validation [requires: 13]
+  - [x] B4.1.15: Unit tests for use cases [requires: 14]
+  - [x] B4.1.16: Integration tests for flow [requires: 15]
 
 - [ ] B4.2: Appointment Conflict Detection (6 hours)
   - [ ] B4.2.01: Create AppointmentConflictDetector service
