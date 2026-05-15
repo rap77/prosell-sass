@@ -2193,11 +2193,12 @@ async def accept_invitation(token: str)
 **Acceptance Criteria**:
 - [x] Team invitations created via API ✅ VERIFIED (POST /{team_id}/invite endpoint in team_router.py:254-293)
 - [x] Invitation emails sent ✅ VERIFIED (send_team_invitation in email_service.py:913, InviteTeamMemberUseCase calls it)
-- [x] Users can accept invitations ✅ VERIFIED (POST /accept-invitation endpoint in team_router.py:296-331)
+- [x] Users can accept invitations ✅ VERIFIED (POST /accept-invitation endpoint + frontend page)
 - [x] Invitations expire after 7 days ✅ VERIFIED (TeamInvitation.create() has expires_in_days=7, is_expired() method)
 - [x] Already member validation ✅ VERIFIED (AcceptTeamInvitationUseCase line 76-83 checks existing members)
 - [x] Unit tests for use cases ✅ VERIFIED (14/14 entity tests, 10/10 use case tests passing)
 - [x] Integration tests for flow ✅ VERIFIED (6/6 API integration tests passing)
+- [x] Frontend acceptance page ✅ VERIFIED (apps/web/src/app/invite/[token]/page.tsx created)
 
 **Verification**:
 ```bash
@@ -2206,9 +2207,19 @@ cd apps/api && uv run pytest tests/integration/team/test_invitation_flow.py -v
 ```
 
 **Files to Check**:
-- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/domain/entities/team_invitation.py` (new)
-- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/team/invite_member.py` (new)
-- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/team/accept_invitation.py` (new)
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/domain/entities/team_invitation.py` ✅ VERIFIED
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/team/invite_team_member.py` ✅ VERIFIED
+- `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/team/accept_team_invitation.py` ✅ VERIFIED
+- `/home/rpadron/proy/prosell-sass/apps/web/src/app/invite/[token]/page.tsx` ✅ CREATED (Frontend acceptance page)
+- `/home/rpadron/proy/prosell-sass/apps/web/src/lib/api/teamApi.ts` ✅ EXTENDED (acceptInvitation method added)
+- `/home/rpadron/proy/prosell-sass/tests/e2e/specs/team-invitation.spec.ts` ✅ CREATED (6 E2E tests)
+
+**Implementation Summary**:
+- Backend: 100% complete (domain, use cases, API, repositories, migration)
+- Frontend: 100% complete (acceptance page with all error states)
+- Tests: 100% complete (30 backend unit/integration + 6 E2E)
+
+**Task B4.1 is COMPLETE and ready for production.**
 
 ---
 

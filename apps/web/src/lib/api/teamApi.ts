@@ -53,6 +53,21 @@ export interface AddTeamMemberRequest {
   commission_rate?: number | null;
 }
 
+export interface AcceptTeamInvitationRequest {
+  token: string;
+}
+
+export interface TeamInvitation {
+  id: string;
+  team_id: string;
+  email: string;
+  role: string;
+  expires_at: string;
+  status: string;
+  created_at: string;
+  days_until_expiration: number;
+}
+
 export interface TeamListResponse {
   teams: Team[];
   total: number;
@@ -199,6 +214,25 @@ export const teamApi = {
         ...data,
         team_id: teamId,
       }),
+      credentials: "include",
+    });
+
+    return handleResponse<TeamMember>(response);
+  },
+
+  /**
+   * Accept team invitation
+   * POST /api/v1/teams/accept-invitation
+   */
+  async acceptInvitation(
+    data: AcceptTeamInvitationRequest,
+  ): Promise<TeamMember> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/teams/accept-invitation`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
       credentials: "include",
     });
 
