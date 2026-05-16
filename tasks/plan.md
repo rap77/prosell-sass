@@ -2272,11 +2272,11 @@ async def execute(self, request: CreateAppointmentRequest) -> Appointment:
 ```
 
 **Acceptance Criteria**:
-- [ ] Time overlap detection works
-- [ ] Same dealer conflicts detected
-- [ ] Conflicts returned to user
-- [ ] User can override with confirmation
-- [ ] Unit tests for detection logic
+- [x] Time overlap detection works
+- [x] Same dealer conflicts detected
+- [x] Conflicts returned to user
+- [x] User can override with confirmation
+- [x] Unit tests for detection logic
 
 **Verification**:
 ```bash
@@ -2286,6 +2286,12 @@ cd apps/api && uv run pytest tests/unit/services/test_appointment_conflict_detec
 **Files to Check**:
 - `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/domain/services/appointment_conflict_detector.py` (new)
 - `/home/rpadron/proy/prosell-sass/apps/api/src/prosell/application/use_cases/appointment/create_appointment.py` (integrate)
+
+**Verification Status**: ✅ **VERIFIED** (2026-05-15)
+- 21 tests passing (16 unit + 5 integration)
+- mypy: 0 errors
+- Files exist physically on disk
+- All acceptance criteria met
 
 ---
 
@@ -2596,7 +2602,7 @@ cd apps/api && uv run pytest tests/unit/use_cases/auth/test_regenerate_backup_co
 - [ ] Recurring appointments supported (if in scope)
 
 #### E2E / QA (80% → 100%)
-- [ ] Integrated flow validated
+- [x] Integrated flow validated in operational mode (web/api running; beyond mocked B1.1 coverage)
 - [ ] Smoke test suite expanded
 - [ ] Contract tests complete
 - [ ] Flaky tests eliminated
