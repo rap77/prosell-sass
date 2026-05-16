@@ -326,6 +326,25 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         await self.session.flush()
         return self._to_entity(model)
 
+    async def count_by_vendedor(
+        self,
+        vendedor_id: UUID,
+        tenant_id: UUID,
+        status: LeadStatus | None = None,
+    ) -> int:
+        """Count active leads assigned to a vendedor."""
+        stmt = select(func.count()).select_from(LeadModel).where(
+            LeadModel.tenant_id == tenant_id,
+            LeadModel.vendedor_id == vendedor_id,
+        )
+
+        # Filter by status if provided
+        if status:
+            stmt = stmt.where(LeadModel.status == status.value)
+
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
+
     def _to_entity(self, model: LeadModel) -> Lead:
         """Convert ORM model to domain entity."""
         return Lead(
@@ -377,14 +396,17 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         self,
         tenant_id: UUID,
         email: str,
+        within_hours: int = 24,
     ) -> list[Lead]:
-        """Find leads by buyer email (exact match)."""
+        """Find leads by buyer email (exact match) within time window."""
         from prosell.infrastructure.models.lead_model import LeadModel
 
+        cutoff_time = datetime.now(UTC) - timedelta(hours=within_hours)
         stmt = (
             select(LeadModel)
             .where(LeadModel.tenant_id == tenant_id)
             .where(LeadModel.buyer_email == email)
+            .where(LeadModel.created_at >= cutoff_time)
             .order_by(LeadModel.created_at.desc())
         )
         result = await self.session.execute(stmt)
@@ -395,14 +417,17 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         self,
         tenant_id: UUID,
         phone: str,
+        within_hours: int = 24,
     ) -> list[Lead]:
-        """Find leads by buyer phone (normalized match)."""
+        """Find leads by buyer phone (normalized match) within time window."""
         from prosell.infrastructure.models.lead_model import LeadModel
 
+        cutoff_time = datetime.now(UTC) - timedelta(hours=within_hours)
         stmt = (
             select(LeadModel)
             .where(LeadModel.tenant_id == tenant_id)
             .where(LeadModel.buyer_phone == phone)
+            .where(LeadModel.created_at >= cutoff_time)
             .order_by(LeadModel.created_at.desc())
         )
         result = await self.session.execute(stmt)
@@ -414,8 +439,9 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         tenant_id: UUID,
         email: str | None = None,
         phone: str | None = None,
+        within_hours: int = 24,
     ) -> list[Lead]:
-        """Find potential duplicate leads by email or phone."""
+        """Find potential duplicate leads by email or phone within time window."""
         from prosell.infrastructure.models.lead_model import LeadModel
 
         conditions: list[Any] = []
@@ -427,10 +453,12 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         if not conditions:
             return []
 
+        cutoff_time = datetime.now(UTC) - timedelta(hours=within_hours)
         stmt = (
             select(LeadModel)
             .where(LeadModel.tenant_id == tenant_id)
             .where(or_(*conditions))
+            .where(LeadModel.created_at >= cutoff_time)
             .order_by(LeadModel.created_at.desc())
         )
         result = await self.session.execute(stmt)

@@ -91,8 +91,9 @@ class AbstractLeadRepository(ABC):
         self,
         tenant_id: UUID,
         email: str,
+        within_hours: int = 24,
     ) -> list[Lead]:
-        """Find leads by buyer email (exact match)."""
+        """Find leads by buyer email (exact match) within time window."""
         pass
 
     @abstractmethod
@@ -100,8 +101,9 @@ class AbstractLeadRepository(ABC):
         self,
         tenant_id: UUID,
         phone: str,
+        within_hours: int = 24,
     ) -> list[Lead]:
-        """Find leads by buyer phone (normalized match)."""
+        """Find leads by buyer phone (normalized match) within time window."""
         pass
 
     @abstractmethod
@@ -110,8 +112,9 @@ class AbstractLeadRepository(ABC):
         tenant_id: UUID,
         email: str | None = None,
         phone: str | None = None,
+        within_hours: int = 24,
     ) -> list[Lead]:
-        """Find potential duplicate leads by email or phone."""
+        """Find potential duplicate leads by email or phone within time window."""
         pass
 
     @abstractmethod
@@ -122,6 +125,16 @@ class AbstractLeadRepository(ABC):
         new_vendedor_id: UUID | None,
     ) -> Lead:
         """Assign lead to a vendedor (or unassign if None)."""
+        pass
+
+    @abstractmethod
+    async def count_by_vendedor(
+        self,
+        vendedor_id: UUID,
+        tenant_id: UUID,
+        status: LeadStatus | None = None,
+    ) -> int:
+        """Count active leads assigned to a vendedor."""
         pass
 
     @abstractmethod
