@@ -170,8 +170,10 @@
   - [x] B1.1.04: Mock webhook endpoint for lead capture [requires: 03]
   - [x] B1.1.05: Mock SendGrid for email notifications [requires: 04]
   - [x] B1.1.06: Verify test execution time < 3 minutes [requires: 05]
-  - [x] B1.1.07: Add test to smoke suite [requires: 06]
-  - [x] B1.1.08: Test passes consistently (>95% success rate) [requires: 07]
+- [x] B1.1.07: Add test to smoke suite [requires: 06]
+- [x] B1.1.08: Test passes consistently (>95% success rate) [requires: 07]
+- [x] Note: this task validates the mocked/smoke integrated path; final operational E2E with live web/api services is still tracked separately in release readiness.
+- [x] Follow-up: operational `tests/e2e/specs/integrated-flow.spec.ts` validated against running Docker web/api services on 2026-05-16.
 
 - [x] B1.2: Multi-Tenant Isolation Security Tests (8 hours)
   - [x] B1.2.01: Create test_tenant_isolation.py suite
@@ -360,7 +362,7 @@
   - [x] B3.4.10: Unit tests for edit mode [requires: 09]
   - [~] B3.4.11: E2E test for edit flow [requires: 10]
 
-- [~] B3.5: CSV Parser for Bulk Upload (12 hours)
+- [x] B3.5: CSV Parser for Bulk Upload (12 hours)
   - [x] B3.5.01: Create CSVProductParser service
   - [x] B3.5.02: Implement CSV parsing with DictReader [requires: 01]
   - [x] B3.5.03: Validate required columns (vin, title, price, category_id) [requires: 02]
@@ -394,26 +396,32 @@
   - [x] B4.1.15: Unit tests for use cases [requires: 14]
   - [x] B4.1.16: Integration tests for flow [requires: 15]
 
-- [ ] B4.2: Appointment Conflict Detection (6 hours)
-  - [ ] B4.2.01: Create AppointmentConflictDetector service
-  - [ ] B4.2.02: Implement times_overlap logic [requires: 01]
-  - [ ] B4.2.03: Detect dealer unavailability conflicts [requires: 02]
-  - [ ] B4.2.04: Integrate into CreateAppointmentUseCase [requires: 03]
-  - [ ] B4.2.05: Return conflicts to user [requires: 04]
-  - [ ] B4.2.06: Allow override with confirmation [requires: 05]
-  - [ ] B4.2.07: Unit tests for detection logic [requires: 06]
-  - [ ] B4.2.08: Integration tests for conflict scenarios [requires: 07]
+- [x] B4.2: Appointment Conflict Detection (6 hours)⏱️ **Estimate**: (6 hours) | **Actual**: 39.8m | **Deviation**: -5.3h | **Progress**: 8/8 (100%)⏱️ **Estimate**: (6 hours) | **Actual**: 39.8m | **Deviation**: -5.3h | **Progress**: 8/8 (100%)
+📊 **Avg/subtask**: 5.0m | **ETA**: 39.8m
 
-- [ ] B4.3: Lead Assignment Rules Engine (8 hours)
-  - [ ] B4.3.01: Create LeadAssignmentRulesEngine
-  - [ ] B4.3.02: Implement round-robin assignment [requires: 01]
-  - [ ] B4.3.03: Implement vehicle owner assignment [requires: 02]
-  - [ ] B4.3.04: Implement workload balancing [requires: 03]
-  - [ ] B4.3.05: Implement geographic proximity (if data available) [requires: 04]
-  - [ ] B4.3.06: Integrate into CreateLeadUseCase [requires: 05]
-  - [ ] B4.3.07: Make rules configurable [requires: 06]
-  - [ ] B4.3.08: Unit tests for each rule [requires: 07]
-  - [ ] B4.3.09: Integration test for flow [requires: 08, 06]
+
+📊 **Avg/subtask**: 5.0m | **ETA**: 39.8m
+
+
+  - [x] B4.2.01: Create AppointmentConflictDetector service
+  - [x] B4.2.02: Implement times_overlap logic [requires: 01]
+  - [x] B4.2.03: Detect dealer unavailability conflicts [requires: 02]
+  - [x] B4.2.04: Integrate into CreateAppointmentUseCase [requires: 03]
+  - [x] B4.2.05: Return conflicts to user [requires: 04]
+  - [x] B4.2.06: Allow override with confirmation [requires: 05]
+  - [x] B4.2.07: Unit tests for detection logic [requires: 06]
+  - [x] B4.2.08: Integration tests for conflict scenarios [requires: 07]
+
+- [x] B4.3: Lead Assignment Rules Engine (8 hours)
+  - [x] B4.3.01: Create LeadAssignmentRulesEngine
+  - [x] B4.3.02: Implement round-robin assignment [requires: 01]
+  - [x] B4.3.03: Implement vehicle owner assignment [requires: 02]
+  - [x] B4.3.04: Implement workload balancing [requires: 03]
+  - [x] B4.3.05: Implement geographic proximity (if data available) [requires: 04]
+  - [x] B4.3.06: Integrate into CreateLeadUseCase [requires: 05]
+  - [x] B4.3.07: Make rules configurable [requires: 06]
+  - [x] B4.3.08: Unit tests for each rule [requires: 07]
+  - [x] B4.3.09: Integration test for flow [requires: 08, 06]
 
 - [ ] B4.4: Lead Audit Trail UI (6 hours)
   - [ ] B4.4.01: Create getLeadAuditTrail API call
