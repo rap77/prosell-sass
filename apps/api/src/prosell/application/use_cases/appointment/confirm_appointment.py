@@ -3,13 +3,13 @@
 from uuid import UUID
 
 from prosell.application.dto.appointment.response import AppointmentResponse
+from prosell.application.ports.email_service import AbstractEmailService
 from prosell.domain.entities.appointment import AppointmentStatus
 from prosell.domain.exceptions.appointment_exceptions import AppointmentNotFoundException
 from prosell.domain.repositories.appointment_repository import AbstractAppointmentRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.repositories.user_repository import AbstractUserRepository
-from prosell.application.ports.email_service import AbstractEmailService
 
 
 class ConfirmAppointmentUseCase:

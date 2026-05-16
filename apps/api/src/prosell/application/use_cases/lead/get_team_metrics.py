@@ -1,6 +1,7 @@
 """Get team metrics use case."""
 
 from datetime import datetime, timedelta
+from typing import ClassVar
 from uuid import UUID
 
 from prosell.application.dto.lead.response import TeamMetricsResponse, VendedorMetricsBreakdown
@@ -14,11 +15,11 @@ from prosell.domain.repositories.user_repository import AbstractUserRepository
 class GetTeamMetricsUseCase:
     """Use case for getting team lead metrics."""
 
-    _MANAGER_ROLES = {
+    _MANAGER_ROLES: ClassVar[frozenset] = frozenset({
         RoleType.SUPER_ADMIN,
         RoleType.ADMIN,
         RoleType.MANAGER,
-    }
+    })
 
     def __init__(
         self,
@@ -83,7 +84,7 @@ class GetTeamMetricsUseCase:
             vendedor_leads = [lead for lead in leads if lead.vendedor_id == vendedor.id]
             vendedor_total = len(vendedor_leads)
             vendedor_new = len([lead for lead in vendedor_leads if lead.created_at >= cutoff_time])
-            vendedor_converted = len([lead for lead in vendedor_leads if lead.status == LeadStatus.APPOINTMENT_SET])
+            vendedor_converted = len([lead for lead in vendedor_leads if lead.status == LeadStatus.APPOINTMENT_SET])  # noqa: E501
             vendedor_conversion = vendedor_converted / vendedor_total if vendedor_total > 0 else 0.0
 
             vendedor_breakdown.append(

@@ -31,18 +31,18 @@ class TestMultiLanguageString:
     def test_get_spanish(self):
         """Test getting Spanish text."""
         mls = MultiLanguageString(es="Automóviles", en="Cars")
-        assert mls.get("es") == "Automóviles"
+        assert mls.get_text("es") == "Automóviles"
 
     def test_get_english(self):
         """Test getting English text."""
         mls = MultiLanguageString(es="Automóviles", en="Cars")
-        assert mls.get("en") == "Cars"
+        assert mls.get_text("en") == "Cars"
 
     def test_get_unsupported_language_defaults_to_spanish(self):
         """Test that unsupported languages default to Spanish."""
         mls = MultiLanguageString(es="Automóviles", en="Cars")
-        assert mls.get("fr") == "Automóviles"
-        assert mls.get("de") == "Automóviles"
+        assert mls.get_text("fr") == "Automóviles"
+        assert mls.get_text("de") == "Automóviles"
 
     def test_from_dict(self):
         """Test creating from dictionary."""
@@ -69,8 +69,8 @@ class TestMultiLanguageString:
         mls = MultiLanguageString(es="Automóviles", en="Cars")
 
         # Pydantic frozen=True prevents modification
-        with pytest.raises(Exception):  # ValidationError or similar
-            mls.es = "Modified"
+        with pytest.raises(Exception):  # noqa: B017 - dataclass frozen AttributeError
+            mls.es = "Modified"  # type: ignore[misc]
 
 
 __all__ = ["TestMultiLanguageString"]

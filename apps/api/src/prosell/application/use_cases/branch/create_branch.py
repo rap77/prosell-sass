@@ -6,7 +6,7 @@ Orchestrates branch creation with slug auto-generation and uniqueness validation
 
 import uuid
 
-from prosell.application.dto.branch import CreateBranchRequest, BranchResponse
+from prosell.application.dto.branch import BranchResponse, CreateBranchRequest
 from prosell.domain.entities.branch import Branch
 from prosell.domain.exceptions.branch_exceptions import SlugNotUniqueError
 from prosell.domain.repositories.branch_repository import AbstractBranchRepository

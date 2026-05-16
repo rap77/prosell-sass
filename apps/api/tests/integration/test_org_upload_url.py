@@ -1,5 +1,6 @@
 """Tests for organization upload URL endpoint."""
 
+from collections.abc import Generator
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -8,7 +9,7 @@ from fastapi import status
 from httpx import ASGITransport, AsyncClient
 
 from prosell.domain.entities.role import Role, RoleType
-from prosell.domain.entities.user import User
+from prosell.domain.entities.user import User, UserStatus
 from prosell.infrastructure.api.main import app
 
 
@@ -19,7 +20,7 @@ def mock_auth_user() -> User:
         email="test@example.com",
         full_name="Test User",
         tenant_id=uuid4(),
-        is_active=True,
+        status=UserStatus.ACTIVE,
         email_verified=True,
     )
 
@@ -62,7 +63,7 @@ def setup_auth(
     mock_role_repo: MagicMock,
     mock_spaces: MagicMock,
     mock_org_repo: MagicMock,
-) -> None:
+) -> Generator[None]:
     from prosell.infrastructure.api.dependencies import (
         get_current_auth_user,
         get_current_auth_user_from_cookie,

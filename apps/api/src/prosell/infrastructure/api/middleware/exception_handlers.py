@@ -60,7 +60,7 @@ async def pydantic_validation_error_handler(
     Domain entities validate business rules in their constructors (e.g. slug format).
     Without this handler, those errors would propagate as 500 instead of 422.
     """
-    # Convert errors to JSON-serializable format (some ctx values like ValueError aren't serializable)
+    # Convert errors to JSON-serializable format (some ctx values like ValueError aren't serializable)  # noqa: E501
     errors = []
     for error in exc.errors(include_url=False):
         clean_error = {

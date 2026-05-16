@@ -6,10 +6,9 @@ based on category type (vehicle, real_estate, etc.).
 Uses discriminated unions for type-safe runtime validation.
 """
 
-from typing import Literal, cast
+from typing import Annotated, Literal, cast
 
 from pydantic import BaseModel, Field, TypeAdapter
-from typing_extensions import Annotated
 
 # ==================== Base Attributes ====================
 
@@ -51,10 +50,10 @@ class VehicleAttributes(BaseModel):
             description="Vehicle Identification Number (17 characters, no I, O, Q)",
         ),
     ]
-    make: Annotated[str, Field(min_length=1, max_length=100, description="Vehicle manufacturer (e.g., Toyota)")]
-    model: Annotated[str, Field(min_length=1, max_length=100, description="Vehicle model (e.g., Camry)")]
+    make: Annotated[str, Field(min_length=1, max_length=100, description="Vehicle manufacturer (e.g., Toyota)")]  # noqa: E501
+    model: Annotated[str, Field(min_length=1, max_length=100, description="Vehicle model (e.g., Camry)")]  # noqa: E501
     year: Annotated[int, Field(ge=1900, le=2100, description="Model year")]
-    trim: Annotated[str | None, Field(max_length=100, description="Trim level (e.g., XLE, Limited)")] = None
+    trim: Annotated[str | None, Field(max_length=100, description="Trim level (e.g., XLE, Limited)")] = None  # noqa: E501
     body_type: Annotated[
         str | None,
         Field(
@@ -123,10 +122,10 @@ class VehicleAttributes(BaseModel):
 
     # Features (boolean flags)
     has_sunroof: Annotated[bool, Field(default=False, description="Has sunroof/moonroof")] = False
-    has_navigation: Annotated[bool, Field(default=False, description="Has built-in navigation system")] = False
+    has_navigation: Annotated[bool, Field(default=False, description="Has built-in navigation system")] = False  # noqa: E501
     has_leather: Annotated[bool, Field(default=False, description="Has leather seats")] = False
-    has_backup_camera: Annotated[bool, Field(default=False, description="Has backup camera")] = False
-    has_bluetooth: Annotated[bool, Field(default=False, description="Has Bluetooth connectivity")] = False
+    has_backup_camera: Annotated[bool, Field(default=False, description="Has backup camera")] = False  # noqa: E501
+    has_bluetooth: Annotated[bool, Field(default=False, description="Has Bluetooth connectivity")] = False  # noqa: E501
     has_remote_start: Annotated[bool, Field(default=False, description="Has remote start")] = False
 
     # Seat material
@@ -146,7 +145,7 @@ class VehicleAttributes(BaseModel):
             description="Branch stock/inventory number",
         ),
     ] = None
-    vin_verified: Annotated[bool, Field(default=False, description="VIN verified by third-party service")] = False
+    vin_verified: Annotated[bool, Field(default=False, description="VIN verified by third-party service")] = False  # noqa: E501
 
 
 # ==================== Real Estate Attributes ====================
@@ -179,7 +178,7 @@ class RealEstateAttributes(BaseModel):
     year_built: Annotated[int | None, Field(ge=1800, le=2100, description="Year built")] = None
 
     # Parking
-    parking_spaces: Annotated[int | None, Field(ge=0, le=20, description="Number of parking spaces")] = None
+    parking_spaces: Annotated[int | None, Field(ge=0, le=20, description="Number of parking spaces")] = None  # noqa: E501
 
     # Features (boolean flags)
     has_pool: Annotated[bool, Field(default=False, description="Has swimming pool")] = False
@@ -211,7 +210,7 @@ ProductAttributes = Annotated[
 
 # TypeAdapter for runtime validation
 # This provides a validate_python() method for dict -> model conversion
-product_attributes_adapter: TypeAdapter[VehicleAttributes | RealEstateAttributes | GenericProductAttributes] = (
+product_attributes_adapter: TypeAdapter[VehicleAttributes | RealEstateAttributes | GenericProductAttributes] = (  # noqa: E501
     TypeAdapter(ProductAttributes)
 )
 
@@ -282,12 +281,12 @@ def validate_generic_attributes(attributes: dict[str, object]) -> GenericProduct
 # Export all models
 __all__ = [
     "BaseProductAttributes",
-    "VehicleAttributes",
-    "RealEstateAttributes",
     "GenericProductAttributes",
     "ProductAttributes",
+    "RealEstateAttributes",
+    "VehicleAttributes",
     "product_attributes_adapter",
-    "validate_vehicle_attributes",
-    "validate_real_estate_attributes",
     "validate_generic_attributes",
+    "validate_real_estate_attributes",
+    "validate_vehicle_attributes",
 ]

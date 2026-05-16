@@ -176,7 +176,7 @@ class TestNHTSANormalizer:
             "volvo",
         ]
 
-        mapped_brands = set(v for k, v in NHTSA_TO_FACEBOOK.items() if v in expected_brands)
+        mapped_brands = {v for k, v in NHTSA_TO_FACEBOOK.items() if v in expected_brands}
 
         # Verificar que todas las marcas esperadas están mapeadas
         for brand in expected_brands:

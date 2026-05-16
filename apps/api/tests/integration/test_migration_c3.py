@@ -336,4 +336,4 @@ async def test_jsonb_containment_operator_on_products_attributes(
         text("SELECT COUNT(*) FROM products WHERE attributes @> '{}'::jsonb")
     )
     count = result.scalar()
-    assert count >= 0  # no exception = JSONB operators work on products.attributes
+    assert (count or 0) >= 0  # no exception = JSONB operators work on products.attributes

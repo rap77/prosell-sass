@@ -132,7 +132,7 @@ class SqlAlchemyFacebookPageRepository(IFacebookPageRepository):
         """Get default page for a Facebook account."""
         stmt = select(FacebookPageModel).where(
             FacebookPageModel.facebook_account_id == facebook_account_id,
-            FacebookPageModel.is_default == True,  # noqa: E712
+            FacebookPageModel.is_default.is_(True),
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()

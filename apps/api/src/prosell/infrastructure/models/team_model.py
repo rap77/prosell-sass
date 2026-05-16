@@ -9,6 +9,53 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from prosell.infrastructure.database.base import Base
 
 
+class TeamInvitationModel(Base):
+    """SQLAlchemy model for team_invitations table."""
+
+    __tablename__ = "team_invitations"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    team_id: Mapped[UUID] = mapped_column(
+        ForeignKey("teams.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(50), nullable=False)
+    token: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    status: Mapped[str] = mapped_column(
+        String(50),
+        default="pending",
+        nullable=False,
+    )
+    tenant_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default="now()",
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default="now()",
+        onupdate="now()",
+        nullable=False,
+    )
+
+    # Relationships
+    team = relationship(
+        "TeamModel",
+        back_populates="invitations",
+        lazy="noload",
+    )
+
+
+
 class TeamModel(Base):
     """SQLAlchemy model for teams table."""
 
@@ -49,6 +96,12 @@ class TeamModel(Base):
     )
     members = relationship(
         "TeamMemberModel",
+        back_populates="team",
+        cascade="all, delete-orphan",
+        lazy="noload",
+    )
+    invitations = relationship(
+        "TeamInvitationModel",
         back_populates="team",
         cascade="all, delete-orphan",
         lazy="noload",

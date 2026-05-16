@@ -104,7 +104,7 @@ class TestCreateAppointmentUseCase:
             lead_id=lead_id,
             user_id=user_id,
             product_id=product_id,
-            scheduled_at=scheduled_at.isoformat(),
+            scheduled_at=scheduled_at,
             notes="Test appointment",
         )
 
@@ -155,7 +155,7 @@ class TestCreateAppointmentUseCase:
             lead_id=lead_id,
             user_id=user_id,
             product_id=product_id,
-            scheduled_at=scheduled_at.isoformat(),
+            scheduled_at=scheduled_at,
         )
 
         with pytest.raises(AppointmentConflictException) as exc_info:
@@ -191,7 +191,7 @@ class TestCreateAppointmentUseCase:
             lead_id=lead_id,
             user_id=user_id,
             product_id=product_id,
-            scheduled_at=scheduled_at.isoformat(),
+            scheduled_at=scheduled_at,
         )
 
         with pytest.raises(AppointmentTimeValidationException) as exc_info:
@@ -222,7 +222,7 @@ class TestCreateAppointmentUseCase:
             lead_id=lead_id,
             user_id=user_id,
             product_id=product_id,
-            scheduled_at=scheduled_at.isoformat(),
+            scheduled_at=scheduled_at,
         )
 
         with pytest.raises(AppointmentTimeValidationException):
@@ -251,7 +251,7 @@ class TestCreateAppointmentUseCase:
             lead_id=lead_id,
             user_id=user_id,
             product_id=product_id,
-            scheduled_at=scheduled_at.isoformat(),
+            scheduled_at=scheduled_at,
         )
 
         with pytest.raises(AppointmentTimeValidationException):
@@ -289,7 +289,7 @@ class TestCreateAppointmentUseCase:
             lead_id=lead_id,
             user_id=user_id,
             product_id=product_id,
-            scheduled_at=scheduled_at.isoformat(),
+            scheduled_at=scheduled_at,
         )
 
         # Should succeed but NOT update lead status
@@ -332,7 +332,7 @@ class TestCreateAppointmentUseCase:
             lead_id=lead_id,
             user_id=user_id,
             product_id=product_id,
-            scheduled_at=scheduled_at.isoformat(),
+            scheduled_at=scheduled_at,
         )
 
         response = await create_appointment_use_case.execute(request, tenant_id)
@@ -372,7 +372,7 @@ class TestCreateAppointmentUseCase:
             lead_id=lead_id,
             user_id=user_id,
             product_id=product_id,
-            scheduled_at=scheduled_at.isoformat(),
+            scheduled_at=scheduled_at,
             notes=notes,
         )
 
@@ -410,7 +410,7 @@ class TestCreateAppointmentUseCase:
             lead_id=lead_id,
             user_id=user_id,
             product_id=product_id,
-            scheduled_at=scheduled_at.isoformat(),
+            scheduled_at=scheduled_at,
         )
 
         await create_appointment_use_case.execute(request, tenant_id)

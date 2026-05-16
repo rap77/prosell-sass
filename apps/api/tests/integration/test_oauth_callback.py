@@ -62,7 +62,7 @@ def mock_oauth_use_case():
         return_value=OAuthLoginResponse(
             access_token="jwt-access-token",
             refresh_token="jwt-refresh-token",
-            user=UserInfo(
+            user=UserInfo(  # type: ignore[call-arg]
                 id=str(user_id),
                 email="test@google.example.com",
                 full_name="Test Google User",

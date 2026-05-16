@@ -37,12 +37,12 @@ from prosell.infrastructure.api.dependencies import (
     get_email_service,
 )
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.repositories.team_invitation_repository_impl import (
+    SqlAlchemyTeamInvitationRepository,
+)
 from prosell.infrastructure.repositories.team_repository_impl import (
     SqlAlchemyTeamMemberRepository,
     SqlAlchemyTeamRepository,
-)
-from prosell.infrastructure.repositories.team_invitation_repository_impl import (
-    SqlAlchemyTeamInvitationRepository,
 )
 
 router = APIRouter()

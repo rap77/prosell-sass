@@ -6,14 +6,13 @@ Tests use mocking for external HTTP calls to OAuth providers.
 
 from dataclasses import FrozenInstanceError
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 import pytest
 
 from prosell.core.config import OAuthSettings
 from prosell.domain.ports.i_oauth_service import IOAuthService
 from prosell.infrastructure.services.oauth_service_impl import OAuthServiceImpl
-
-from typing import cast
 
 # =============================================================================
 # FAKE REDIS FOR UNIT TESTS

@@ -9,7 +9,7 @@ from httpx import ASGITransport, AsyncClient
 
 from prosell.domain.entities.branch import Branch
 from prosell.domain.entities.role import Role, RoleType
-from prosell.domain.entities.user import User
+from prosell.domain.entities.user import User, UserStatus
 from prosell.domain.exceptions.branch_exceptions import SlugNotUniqueError
 from prosell.infrastructure.api.main import app
 
@@ -22,7 +22,7 @@ def admin_user(admin_role):
         email="admin@example.com",
         full_name="Admin User",
         tenant_id=uuid4(),
-        is_active=True,
+        status=UserStatus.ACTIVE,
         email_verified=True,
     )
     user.roles = [admin_role]
@@ -43,7 +43,7 @@ def admin_user_with_role(admin_role):
         email="admin@example.com",
         full_name="Admin User",
         tenant_id=uuid4(),
-        is_active=True,
+        status=UserStatus.ACTIVE,
         email_verified=True,
     )
     user.roles = [admin_role]

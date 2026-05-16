@@ -1,9 +1,9 @@
 {
-  "pythonVersion": "3.12",
-  "typeCheckingMode": "strict",
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "standard",
   "include": [
-    "apps/api/src/**/*.py",
-    "apps/api/tests/**/*.py"
+    "apps/api/src",
+    "apps/api/tests"
   ],
   "exclude": [
     "**/__pycache__",

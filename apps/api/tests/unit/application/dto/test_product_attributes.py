@@ -230,7 +230,7 @@ class TestGenericProductAttributes:
             "color": "Blue",
         }
 
-        result = validate_generic_attributes(attrs)
+        result = validate_generic_attributes(attrs)  # type: ignore[arg-type]
         assert isinstance(result, GenericProductAttributes)
         assert result.category == "generic"
         assert result.model_dump()["brand"] == "Nike"

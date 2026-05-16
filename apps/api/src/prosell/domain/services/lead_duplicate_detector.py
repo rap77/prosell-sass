@@ -9,8 +9,8 @@ This service helps prevent duplicate leads from being created
 when the same buyer inquiries multiple times.
 """
 
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 from uuid import UUID
 
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository

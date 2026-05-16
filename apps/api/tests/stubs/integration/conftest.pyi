@@ -1,12 +1,14 @@
+from collections.abc import AsyncGenerator
+from uuid import UUID
+
 import pytest
 import pytest_asyncio
-from collections.abc import AsyncGenerator
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.role_model import RoleModel
 from prosell.infrastructure.models.user_model import UserModel
-from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
 
 TEST_DB_URL: str
 

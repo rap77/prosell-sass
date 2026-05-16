@@ -7,9 +7,9 @@ To run these tests:
 """
 
 import os
+
 import pytest
 from httpx import AsyncClient
-
 
 # Skip all tests in this module if test database is not running
 if os.getenv("TEST_DB_RUNNING", "false").lower() != "true":

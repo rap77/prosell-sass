@@ -145,7 +145,7 @@ class ProcessFacebookWebhookUseCase:
         # Note: If buyer_email is None (Graph API privacy settings), duplicate detection
         # is skipped. This is acceptable because:
         # - sender_id is unique per Facebook user
-        # - buyer_name includes sender_id for identification: "Facebook User {sender_id}" or actual name
+        # - buyer_name includes sender_id for identification: "Facebook User {sender_id}" or actual name  # noqa: E501
         # - Future enhancement: Add facebook_sender_id field to Lead entity for exact deduplication
         existing_lead = await self.lead_repository.get_by_buyer_and_product(
             buyer_email=buyer_email,

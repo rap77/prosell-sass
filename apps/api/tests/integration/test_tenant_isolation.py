@@ -17,7 +17,6 @@ from prosell.domain.entities.lead import Lead
 from prosell.domain.entities.product import Product
 from prosell.domain.entities.user import User
 
-
 # =============================================================================
 # FIXTURES
 # =============================================================================

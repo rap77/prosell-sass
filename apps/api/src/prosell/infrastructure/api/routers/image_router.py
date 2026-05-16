@@ -86,7 +86,7 @@ async def generate_image_upload_url(
         upload_url=str(result["upload_url"]),
         public_url=str(result["public_url"]),
         key=str(result["key"]),
-        fileId=file_id,
+        file_id=file_id,
     )
 
 
@@ -187,7 +187,7 @@ async def optimize_image(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Image optimization failed: {str(e)}",
+            detail=f"Image optimization failed: {e!s}",
         ) from e
 
 
@@ -241,7 +241,7 @@ async def upload_image(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Image optimization failed: {str(e)}",
+            detail=f"Image optimization failed: {e!s}",
         ) from e
 
     # Generate file path
@@ -249,7 +249,7 @@ async def upload_image(
     ext = ".jpg"  # Always JPEG after optimization
     file_path = f"orgs/{current_user.tenant_id}/vehicles/{file_id}{ext}"
 
-    logger.info(f"Uploading optimized image: {file_path} (original size: {len(file_bytes)} bytes, optimized: {len(optimized_bytes)} bytes)")
+    logger.info(f"Uploading optimized image: {file_path} (original size: {len(file_bytes)} bytes, optimized: {len(optimized_bytes)} bytes)")  # noqa: E501
 
     # Upload to DO Spaces
     try:
@@ -261,7 +261,7 @@ async def upload_image(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to upload to storage: {str(e)}",
+            detail=f"Failed to upload to storage: {e!s}",
         ) from e
 
     return ImageUploadResponse(url=public_url)

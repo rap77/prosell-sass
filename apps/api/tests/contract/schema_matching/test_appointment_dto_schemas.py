@@ -17,7 +17,6 @@ from prosell.application.dto.appointment.request import CreateAppointmentRequest
 from prosell.application.dto.appointment.response import AppointmentResponse
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 
-
 # =============================================================================
 # HELPERS
 # =============================================================================

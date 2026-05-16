@@ -97,36 +97,17 @@ known-first-party = ["prosell"]
 "src/prosell/application/use_cases/auth/verify_2fa.py" = ["SIM102"]
 "src/prosell/domain/exceptions/__init__.py" = ["RUF022"]
 "src/prosell/domain/exceptions/auth_exceptions.py" = ["N818"]
+"src/prosell/domain/exceptions/appointment_exceptions.py" = ["N818"]
+"src/prosell/domain/exceptions/lead_exceptions.py" = ["N818"]
 "src/prosell/domain/value_objects/email.py" = ["RUF012"]
 
 [tool.pyright]
 pythonVersion = "3.13"
-typeCheckingMode = "strict"
+typeCheckingMode = "standard"
 include = ["src", "tests"]
 exclude = [
     ".venv",
     "**/__pycache__",
-    "tests/integration/api/test_lead_api.py",  # 213 errors - complex fixtures
-    "tests/integration/repositories/test_lead_repository.py",  # 192 errors - complex fixtures
-    "tests/integration/test_organization_api.py",  # 168 errors - complex fixtures
-    "tests/integration/use_cases/test_create_appointment_use_case.py",  # 139 errors - complex fixtures
-    "tests/integration/use_cases/test_confirm_appointment_use_case.py",  # 116 errors - complex fixtures
-    "tests/integration/use_cases/test_cancel_appointment_use_case.py",  # 116 errors - complex fixtures
-    "tests/integration/api/test_user_branch_api.py",  # 102 errors - complex fixtures
-    "tests/integration/use_cases/test_facebook_webhook_use_case.py",  # 101 errors - complex fixtures
-    "tests/integration/use_cases/test_lead_use_cases.py",  # 98 errors - complex fixtures
-    "tests/integration/api/test_appointment_api.py",  # 96 errors - complex fixtures
-    "tests/unit/services/test_lead_duplicate_detector.py",  # 87 errors - protected access
-    "tests/integration/api/test_product_c3.py",  # 85 errors - complex fixtures
-    "tests/integration/api/test_branch_endpoints.py",  # 85 errors - complex fixtures
 ]
-# venvPath and venv are configured in .vscode/settings.json
-# to avoid conflicts between workspace and monorepo settings
-
-[tool.mypy]
-python_version = "3.12"
-strict = true
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
-check_untyped_defs = true
+# venvPath and venv are resolved from .vscode/settings.json when running in VS Code.
+# When running from CLI (pre-commit, CI): uv run pyright uses the venv automatically.

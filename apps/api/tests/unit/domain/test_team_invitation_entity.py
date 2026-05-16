@@ -5,8 +5,8 @@ from uuid import uuid4
 
 import pytest
 
-from prosell.domain.entities.team_invitation import TeamInvitation, TeamInvitationStatus
 from prosell.domain.entities.team import TeamMemberRole
+from prosell.domain.entities.team_invitation import TeamInvitation, TeamInvitationStatus
 
 
 class TestTeamInvitationStatus:

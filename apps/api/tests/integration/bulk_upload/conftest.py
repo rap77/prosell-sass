@@ -6,7 +6,7 @@ To run these tests:
 2. Run tests: cd apps/api && uv run pytest tests/integration/bulk_upload/
 """
 
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 import pytest
 import pytest_asyncio

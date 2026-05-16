@@ -7,10 +7,9 @@ Tests the complete flow:
 4. Duplicate detection works
 """
 
-from collections.abc import AsyncGenerator
-
 import hashlib
 import hmac
+from collections.abc import AsyncGenerator
 from uuid import uuid4
 
 import pytest
@@ -28,7 +27,7 @@ def webhook_app_secret() -> str:
 
 
 @pytest.fixture
-async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient]:
     """
     AsyncClient for webhook tests (no auth required).
     Overrides settings.facebook_app_secret for signature verification.
@@ -195,7 +194,7 @@ class TestFacebookWebhookUseCasePhase2Behavior:
         publication_repo = SqlAlchemyPublicationRepository(db_session)
         facebook_client = FacebookGraphApiClient()
         create_lead_use_case = CreateLeadUseCase(lead_repo)
-        use_case = ProcessFacebookWebhookUseCase(
+        use_case = ProcessFacebookWebhookUseCase(  # type: ignore[call-arg]
             lead_repository=lead_repo,
             publication_repository=publication_repo,
             facebook_client=facebook_client,

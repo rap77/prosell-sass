@@ -34,7 +34,7 @@ class TestTranslator:
         """Test that invalid language defaults to Spanish."""
         translator = Translator()
         # Should not raise error, should fallback to es
-        translations = translator.load_translations("invalid")
+        translations = translator.load_translations("invalid")  # type: ignore[arg-type]
         assert translations is not None
 
     def test_get_simple_translation_spanish(self):

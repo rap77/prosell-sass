@@ -1,10 +1,9 @@
 """Test conversion from ParsedProductRow to CreateProductRequest."""
 
-import pytest
 from uuid import uuid4
 
-from prosell.domain.services.csv_product_parser import ParsedProductRow
 from prosell.application.dto.product.create import CreateProductRequest
+from prosell.domain.services.csv_product_parser import ParsedProductRow
 from prosell.domain.value_objects.product_condition import ProductCondition
 
 

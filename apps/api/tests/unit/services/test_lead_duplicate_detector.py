@@ -10,7 +10,6 @@ from prosell.domain.services.lead_duplicate_detector import (
     LeadDuplicateDetector,
 )
 
-
 # =============================================================================
 # FIXTURES
 # =============================================================================
@@ -278,5 +277,5 @@ class TestPhoneNormalization:
         """Return None for None phone number."""
         detector = LeadDuplicateDetector(lead_repository=MagicMock())
 
-        normalized = detector._normalize_phone(None)
+        normalized = detector._normalize_phone(None)  # type: ignore[arg-type]
         assert normalized is None

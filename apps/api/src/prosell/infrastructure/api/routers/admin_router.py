@@ -1,22 +1,19 @@
-from typing import Any
 """Admin router for ProSell SaaS API."""
+
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from prosell.infrastructure.models.user_model import UserModel
-from prosell.infrastructure.models.product_model import ProductModel
-from prosell.infrastructure.models.organization_model import OrganizationModel
-from prosell.infrastructure.models.publication_model import PublicationModel
-from prosell.domain.entities.organization import Organization
-from prosell.domain.entities.product import Product
-from prosell.domain.entities.publication import Publication
 from prosell.domain.entities.role import RoleType
-from prosell.domain.entities.user import User
 from prosell.infrastructure.api.dependencies import require_role
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.models.organization_model import OrganizationModel
+from prosell.infrastructure.models.product_model import ProductModel
+from prosell.infrastructure.models.publication_model import PublicationModel
+from prosell.infrastructure.models.user_model import UserModel
 
 router = APIRouter(tags=["Admin"])
 
@@ -46,12 +43,12 @@ async def get_admin_stats(
     stmt_prod = select(func.count()).select_from(ProductModel)
     stmt_user = select(func.count()).select_from(UserModel)
     stmt_pub = select(func.count()).select_from(PublicationModel)
-    
+
     result_org = await session.execute(stmt_org)
     result_prod = await session.execute(stmt_prod)
     result_user = await session.execute(stmt_user)
     result_pub = await session.execute(stmt_pub)
-    
+
     total_organizations = result_org.scalar()
     total_products = result_prod.scalar()
     total_users = result_user.scalar()

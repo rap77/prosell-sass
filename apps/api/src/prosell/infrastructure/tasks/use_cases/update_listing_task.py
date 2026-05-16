@@ -16,8 +16,8 @@ async def update_listing_task(publication_id: str) -> dict[str, Any]:
     - On Category B failure (captcha/ban): sets blocked_until_confirmed=True
     - On Category A failure (transient): returns error for caller to handle retry
     """
-    from uuid import UUID
     import os
+    from uuid import UUID
 
     from prosell.domain.entities.publication import PublicationErrorCategory
     from prosell.infrastructure.database.session import async_session_maker
@@ -58,7 +58,7 @@ async def update_listing_task(publication_id: str) -> dict[str, Any]:
             return {"status": "blocked", "publication_id": publication_id}
 
         if not publication.facebook_page_id:
-            return {"error": f"Publication has no facebook_page_id"}
+            return {"error": "Publication has no facebook_page_id"}
 
         page = await page_repo.get_by_id(publication.facebook_page_id)
         if not page:

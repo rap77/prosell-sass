@@ -56,14 +56,16 @@ async def list_vehicles(
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     status_filter: Annotated[str | None, Query(alias="status")] = None,
     search: Annotated[str | None, Query()] = None,
-    make: Annotated[str | None, Query()] = None,
+    _make: Annotated[str | None, Query()] = None,
 ) -> dict[str, Any]:
     """
     List vehicles (delegates to product catalog with auth).
     Returns vehicle products for the authenticated tenant.
     """
     from prosell.application.use_cases.product.list_products import ListProductsUseCase
-    from prosell.infrastructure.repositories.product_repository_impl import SqlAlchemyProductRepository
+    from prosell.infrastructure.repositories.product_repository_impl import (
+        SqlAlchemyProductRepository,
+    )
 
     if current_user.tenant_id is None:
         raise HTTPException(
@@ -110,7 +112,7 @@ async def decode_vin(request: VINDecodeRequest) -> VINDecodeResponse:
     vin_upper = request.vin.upper()
     if vin_upper in _vin_cache:
         cached_vehicle, cached_raw = _vin_cache[vin_upper]
-        return VINDecodeResponse(vin=vin_upper, vehicle=cached_vehicle, cached=True, raw_data=cached_raw)
+        return VINDecodeResponse(vin=vin_upper, vehicle=cached_vehicle, cached=True, raw_data=cached_raw)  # noqa: E501
 
     # Validate VIN character set before calling NHTSA (I, O, Q not allowed)
     valid_chars = set("ABCDEFGHJKLMNPRSTUVWXYZ0123456789")
@@ -118,7 +120,7 @@ async def decode_vin(request: VINDecodeRequest) -> VINDecodeResponse:
     if invalid_chars:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid VIN characters: {', '.join(sorted(invalid_chars))}. VIN cannot contain I, O, or Q.",
+            detail=f"Invalid VIN characters: {', '.join(sorted(invalid_chars))}. VIN cannot contain I, O, or Q.",  # noqa: E501
         )
 
     try:

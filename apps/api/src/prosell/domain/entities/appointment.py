@@ -1,6 +1,6 @@
 """Appointment entity - Pure domain logic with no external dependencies."""
 
-from datetime import UTC, datetime, time
+from datetime import UTC, datetime, time, timedelta
 from enum import StrEnum
 from typing import Any, ClassVar
 
@@ -147,7 +147,7 @@ class Appointment(DomainModel):
         appointment_time = scheduled_at.time()
         if not (cls.BUSINESS_HOUR_START <= appointment_time <= cls.BUSINESS_HOUR_END):
             raise AppointmentTimeValidationException(
-                f"Appointments must be scheduled between {cls.BUSINESS_HOUR_START.strftime('%I:%M %p')} "
+                f"Appointments must be scheduled between {cls.BUSINESS_HOUR_START.strftime('%I:%M %p')} "  # noqa: E501
                 f"and {cls.BUSINESS_HOUR_END.strftime('%I:%M %p')} on weekdays"
             )
 
@@ -230,5 +230,3 @@ class Appointment(DomainModel):
         return self.status == AppointmentStatus.COMPLETED
 
 
-# Need to import timedelta for the _check_conflicts method
-from datetime import timedelta  # noqa: E402

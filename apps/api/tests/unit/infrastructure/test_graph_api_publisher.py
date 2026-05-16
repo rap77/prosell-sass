@@ -15,4 +15,4 @@ async def test_graph_api_publisher_raises_not_implemented():
     """GraphAPIPublisherService.publish() raises NotImplementedError in Phase 1."""
     service = GraphAPIPublisherService(encryption_service=None)
     with pytest.raises(NotImplementedError, match="Graph API App Review"):
-        await service.publish(publication=None, access_token="", image_bytes_list=[])
+        await service.publish(publication=None, access_token="", image_bytes_list=[])  # type: ignore[arg-type]

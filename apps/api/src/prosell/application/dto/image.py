@@ -16,7 +16,7 @@ class ImageUploadUrlResponse(BaseModel):
     upload_url: str
     public_url: str
     key: str
-    fileId: str  # Matches frontend naming (lowercase 'f', uppercase 'I')
+    file_id: str = ""
 
 
 class ImageUploadResponse(BaseModel):

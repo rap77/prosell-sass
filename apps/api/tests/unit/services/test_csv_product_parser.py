@@ -5,13 +5,11 @@ from uuid import uuid4
 
 import pytest
 
-from prosell.domain.exceptions.product_exceptions import InvalidVINError
 from prosell.domain.services.csv_product_parser import (
     CSVParseError,
     CSVProductParser,
     ParsedProductRow,
 )
-
 
 # =============================================================================
 # FIXTURES
@@ -306,7 +304,7 @@ class TestErrorHandling:
         assert result.total_rows == 1
         assert len(result.products) == 0
         assert len(result.errors) == 1
-        assert "Invalid VIN" in result.errors[0]["error"]
+        assert "Invalid VIN" in str(result.errors[0]["error"])
 
     async def test_handles_missing_required_columns(
         self,
@@ -340,7 +338,7 @@ class TestErrorHandling:
         assert result.failed_count == 1
         assert result.total_rows == 2
         assert len(result.products) == 1
-        assert any("Duplicate VIN" in error["error"] for error in result.errors)
+        assert any("Duplicate VIN" in str(error["error"]) for error in result.errors)
 
     async def test_continues_parsing_after_row_error(
         self,

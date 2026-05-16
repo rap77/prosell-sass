@@ -4,7 +4,8 @@ This service parses CSV files containing product data and validates
 the content according to business rules.
 
 Required columns: vin, title, price, category_id
-Optional columns: description, condition, currency, location_city, location_state, location_zip, attributes
+Optional columns: description, condition, currency, location_city, location_state, location_zip,
+attributes
 """
 
 import csv
@@ -130,8 +131,8 @@ class CSVProductParser:
     async def parse_csv(
         self,
         csv_content: str,
-        tenant_id: UUID,
-        organization_id: UUID,
+        tenant_id: UUID,  # noqa: ARG002
+        organization_id: UUID,  # noqa: ARG002
     ) -> CSVParseResult:
         """
         Parse CSV content and extract product data.
@@ -266,7 +267,7 @@ class CSVProductParser:
             if price_dollars < 0:
                 raise ValueError("Price cannot be negative")
             # Round to nearest cent to avoid floating point precision issues
-            price_cents = int(round(price_dollars * 100))
+            price_cents = round(price_dollars * 100)
         except ValueError as e:
             raise ValueError(f"Invalid price format: {price_str}") from e
 
@@ -331,7 +332,4 @@ class CSVProductParser:
             return False
 
         # Check for alphanumeric characters only
-        if not vin.upper().isalnum():
-            return False
-
-        return True
+        return vin.upper().isalnum()

@@ -27,13 +27,13 @@ repos:
         types_or: [python, pyi, jupyter]
 
   # ============================================
-  # Python - Mypy (Type checking)
+  # Python - Pyright (Type checking)
   # ============================================
   - repo: local
     hooks:
-      - id: mypy
-        name: mypy (Python type checking)
-        entry: bash -c 'cd apps/api && uv run mypy src/ tests/'
+      - id: pyright
+        name: pyright (Python type checking)
+        entry: bash -c 'cd apps/api && uv run pyright'
         language: system
         pass_filenames: false
         types: [python]

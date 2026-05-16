@@ -7,7 +7,7 @@ import logging
 from collections.abc import Callable
 from datetime import datetime
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 from uuid import UUID
 
 from prosell.core.config import settings
@@ -178,7 +178,7 @@ class SendGridEmailService:
     async def send_verification_email(
         self,
         email: str,
-        user_id: UUID,
+        _user_id: UUID,
         token: str,
     ) -> None:
         """Send email verification email."""
@@ -606,10 +606,10 @@ class SendGridEmailService:
     ) -> None:
         """Send appointment status update (confirmed/cancelled) to buyer."""
         # Import here to avoid circular dependency
-        from prosell.domain.entities.appointment import AppointmentStatus
-
         import sendgrid
         from sendgrid.helpers.mail import Mail
+
+        from prosell.domain.entities.appointment import AppointmentStatus
 
         # Format datetime for display
         scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
@@ -696,6 +696,46 @@ class SendGridEmailService:
                 f"Email delivery failed: type=appointment_status_update, "
                 f"to={buyer_email}, status={response.status_code}, "
                 f"body={response.body}"
+            )
+            raise Exception(
+                f"SendGrid error: {response.status_code} - {response.body}"
+            )
+
+    @retry_on_sendgrid_error()
+    async def send_team_invitation(
+        self,
+        email: str,
+        team_name: str,
+        inviter_name: str,
+        invitation_token: str,
+        role: str,
+    ) -> None:
+        """Send team invitation email via SendGrid."""
+        import sendgrid
+        from sendgrid.helpers.mail import Mail
+
+        base_url = settings.oauth_frontend_success_url.split("/auth")[0]
+        invitation_url = f"{base_url}/invite/accept?token={invitation_token}"
+
+        message = Mail(
+            from_email=settings.sendgrid_from_email,
+            to_emails=email,
+            subject=f"[ProSell] You've been invited to join {team_name}",
+            html_content=(
+                f"<p>{inviter_name} has invited you to join "
+                f"<strong>{team_name}</strong> as {role}.</p>"
+                f'<p><a href="{invitation_url}">Accept invitation</a></p>'
+                f"<p>This invitation expires in 7 days.</p>"
+            ),
+        )
+
+        sg = sendgrid.SendGridAPIClient(api_key=settings.sendgrid_api_key)
+        response = sg.send(message)
+
+        if response.status_code not in (200, 202):
+            logger.error(
+                f"Email delivery failed: type=team_invitation, to={email}, "
+                f"status={response.status_code}, body={response.body}"
             )
             raise Exception(
                 f"SendGrid error: {response.status_code} - {response.body}"
@@ -906,5 +946,41 @@ Hola {buyer_name},
 {f'  Notas: {notes}' if notes else ''}
 
 If you have any questions, contact us.
+{"=" * 60}
+        """)
+
+    @retry_on_sendgrid_error()
+    async def send_team_invitation(
+        self,
+        email: str,
+        team_name: str,
+        inviter_name: str,
+        invitation_token: str,
+        role: str,
+    ) -> None:
+        """Send team invitation email."""
+        # Create invitation URL
+        base_url = settings.oauth_frontend_success_url.split("/auth")[0]
+        invitation_url = f"{base_url}/invite/accept?token={invitation_token}"
+
+        # Create email message
+        print(f"""
+{"=" * 60}
+📧 MOCK EMAIL: Team Invitation
+{"=" * 60}
+To: {email}
+Subject: You're invited to join {team_name} on ProSell
+
+Hi there,
+
+{inviter_name} has invited you to join the "{team_name}" team on ProSell
+with the role of {role}.
+
+Click the button below to accept the invitation:
+{invitation_url}
+
+This invitation expires in 7 days.
+
+If you don't want to join this team, you can safely ignore this email.
 {"=" * 60}
         """)

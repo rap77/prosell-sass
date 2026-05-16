@@ -83,7 +83,7 @@ def sample_publication(product_id, vendedor_id, tenant_id):
         product_id=product_id,
         seller_user_id=vendedor_id,
         facebook_page_id=uuid4(),
-        facebook_listing_id="fb_listing_123",
+        facebook_listing_id="fb_listing_123",  # type: ignore[call-arg]
         status=PublicationStatus.PUBLISHED,
         title="2020 Toyota Camry",
         price_cents=2500000,
@@ -130,7 +130,7 @@ async def test_process_webhook_success(
     )
 
     # Create use case
-    use_case = ProcessFacebookWebhookUseCase(
+    use_case = ProcessFacebookWebhookUseCase(  # type: ignore[call-arg]
         lead_repository=mock_lead_repository,
         publication_repository=mock_publication_repository,
         facebook_client=mock_facebook_client,
@@ -183,7 +183,7 @@ async def test_process_webhook_duplicate_lead(
     )
 
     # Create use case
-    use_case = ProcessFacebookWebhookUseCase(
+    use_case = ProcessFacebookWebhookUseCase(  # type: ignore[call-arg]
         lead_repository=mock_lead_repository,
         publication_repository=mock_publication_repository,
         facebook_client=mock_facebook_client,
@@ -211,7 +211,7 @@ async def test_process_webhook_publication_not_found(
     mock_publication_repository.get_by_fb_listing_id.return_value = None
 
     # Create use case
-    use_case = ProcessFacebookWebhookUseCase(
+    use_case = ProcessFacebookWebhookUseCase(  # type: ignore[call-arg]
         lead_repository=mock_lead_repository,
         publication_repository=mock_publication_repository,
         facebook_client=mock_facebook_client,

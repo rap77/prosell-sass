@@ -1,5 +1,6 @@
 """SQLAlchemy implementation of Product repository."""
 
+from datetime import UTC
 from uuid import UUID
 
 from sqlalchemy import func, or_, select
@@ -216,6 +217,8 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
     async def update(self, product: Product) -> Product:
         """Update an existing product."""
+        from datetime import datetime
+
         stmt = select(ProductModel).where(ProductModel.id == product.id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -245,6 +248,9 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model.published_at = product.published_at
         model.sold_at = product.sold_at
         model.archived_at = product.archived_at
+
+        # Manually update updated_at to avoid async greenlet issues with onupdate
+        model.updated_at = datetime.now(UTC)
 
         await self.session.flush()
         return self._to_entity(model)
@@ -287,6 +293,8 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
     async def increment_view_count(self, product_id: UUID, tenant_id: UUID) -> None:
         """Increment product view count."""
+        from datetime import datetime
+
         stmt = select(ProductModel).where(
             ProductModel.id == product_id,
             ProductModel.tenant_id == tenant_id,
@@ -296,6 +304,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
         if model:
             model.view_count += 1
+            model.updated_at = datetime.now(UTC)
             await self.session.flush()
 
     async def increment_favorite_count(self, product_id: UUID, tenant_id: UUID) -> None:
@@ -398,7 +407,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
-    async def set_primary_image(self, product_id: UUID, image_id: UUID, _tenant_id: UUID) -> bool:
+    async def set_primary_image(self, product_id: UUID, image_id: UUID, tenant_id: UUID) -> bool:  # noqa: ARG002
         """
         Set an image as primary for a product.
 

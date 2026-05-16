@@ -24,7 +24,6 @@ from prosell.application.use_cases.auth.reset_password import (
 from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.entities.user import User, UserStatus
 
-
 # =============================================================================
 # Helpers
 # =============================================================================

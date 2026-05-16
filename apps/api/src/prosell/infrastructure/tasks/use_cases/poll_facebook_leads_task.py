@@ -9,7 +9,8 @@ Schedule Configuration (B2.1.f: ✅ Configured):
     Deployment: Configure via systemd timer, Kubernetes CronJob, or external cron
 
     Example cron entry:
-    */10 * * * * cd /app && uv run python -m prosell.infrastructure.tasks.worker poll_facebook_leads_task.kiq()
+    */10 * * * * cd /app && uv run python -m prosell.infrastructure.tasks.worker
+    poll_facebook_leads_task.kiq()
 
 Timeout Configuration (B2.1.g: ✅ Configured):
     TIMEOUT_PER_PAGE_SECONDS: 30 (max time per Graph API request)
@@ -24,7 +25,8 @@ Retry Policy (B2.1.h: ✅ Configured):
 import asyncio
 import logging
 import random
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import httpx
 
@@ -242,7 +244,7 @@ def format_error_message(page_id: str, error: Exception) -> str:
     elif isinstance(error, httpx.HTTPStatusError):
         return f"Page {page_id}: HTTP {error.response.status_code} - {error.response.text}"
     else:
-        return f"Page {page_id}: {str(error)}"
+        return f"Page {page_id}: {error!s}"
 
 
 # =============================================================================
@@ -270,11 +272,7 @@ def is_transient_error(error: Exception) -> bool:
         return 500 <= status_code < 600
 
     # Network errors - transient
-    if isinstance(error, (httpx.TimeoutException, httpx.NetworkError)):
-        return True
-
-    # Not transient
-    return False
+    return isinstance(error, (httpx.TimeoutException, httpx.NetworkError))
 
 
 def calculate_backoff_with_jitter(
@@ -340,7 +338,8 @@ async def retry_with_exponential_backoff(
             if not is_transient_error(e):
                 # Not transient, don't retry
                 logger.warning(
-                    f"Page {page_id}: Non-transient error (attempt {attempt + 1}/{max_retries + 1}): {e}"
+                    f"Page {page_id}: Non-transient error (attempt {attempt + 1}/{max_retries +
+                    1}): {e}"
                 )
                 raise
 
@@ -489,7 +488,8 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
 
     Current Status:
         Returns pending status with zero counts until Phase 3 implementation.
-        Rate limit handling (B2.1.b), retry logic (B2.1.c), and metrics tracking (B2.1.d) infrastructure is ready.
+        Rate limit handling (B2.1.b), retry logic (B2.1.c), and metrics tracking (B2.1.d)
+        infrastructure is ready.
     """
     # TODO(phase-3): Wire DI container to instantiate:
     #   - IFacebookPageRepository (to query active pages)
@@ -511,8 +511,8 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
     # - Metrics tracking (B2.1.d): PollingMetrics class with 8 metrics
     # - Deduplication (B2.1.e): should_create_lead() helper function
     # - Configuration (B2.1.f-h): POLLING_INTERVAL_SECONDS, TIMEOUT_PER_PAGE_SECONDS, RETRY_*
-    # - Rate limit handling (B2.1.b): is_rate_limit_error(), extract_retry_after(), handle_rate_limit_error()
-    # - Retry logic (B2.1.c): is_transient_error(), calculate_backoff_with_jitter(), retry_with_exponential_backoff()
+    # - Rate limit handling (B2.1.b): is_rate_limit_error(), extract_retry_after(), handle_rate_limit_error()  # noqa: E501
+    # - Retry logic (B2.1.c): is_transient_error(), calculate_backoff_with_jitter(), retry_with_exponential_backoff()  # noqa: E501
 
     try:
         # Phase 3: Implementation structure (commented out)
@@ -532,7 +532,8 @@ async def poll_facebook_leads_task() -> dict[str, Any]:
         #         # Decrypt page access token
         #         page_access_token = decrypt_token(page.page_access_token_encrypted)
         #
-        #         # Fetch leads from Graph API Leadgen endpoint with retry logic (B2.3: ✅ Implemented)
+        #         # Fetch leads from Graph API Leadgen endpoint with retry logic
+        #         # (B2.3: ✅ Implemented)
         #         # GET /{page_id}/leadgen_forms
         #         try:
         #             leads = await retry_with_exponential_backoff(

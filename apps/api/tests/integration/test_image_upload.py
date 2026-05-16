@@ -14,7 +14,6 @@ from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.entities.user import User, UserStatus
 from prosell.infrastructure.api.main import app
 
-
 # Global mock reference for tests
 _mock_spaces = None
 
@@ -55,7 +54,7 @@ def setup_auth(
     mock_auth_user: User,
     mock_role_repo: MagicMock,
     mock_spaces: MagicMock,
-) -> Generator[None, None, None]:
+) -> Generator[None]:
     from prosell.infrastructure.api.dependencies import (
         get_current_auth_user_from_cookie,
         get_role_repository,

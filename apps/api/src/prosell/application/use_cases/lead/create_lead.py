@@ -1,7 +1,5 @@
 """CreateLeadUseCase — validates input and persists new lead."""
 
-from typing import Optional
-
 from uuid import UUID
 
 from prosell.application.dto.lead.request import CreateLeadRequest
@@ -10,7 +8,10 @@ from prosell.domain.entities.lead import Lead
 from prosell.domain.exceptions.lead_exceptions import DuplicateLeadException
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
-from prosell.domain.repositories.team_repository import AbstractTeamMemberRepository, AbstractTeamRepository
+from prosell.domain.repositories.team_repository import (
+    AbstractTeamMemberRepository,
+    AbstractTeamRepository,
+)
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 from prosell.domain.services.lead_assignment_rules_engine import (
     AssignmentCandidate,
@@ -36,11 +37,11 @@ class CreateLeadUseCase:
     def __init__(
         self,
         lead_repository: AbstractLeadRepository,
-        user_repository: Optional[AbstractUserRepository] = None,
-        product_repository: Optional[AbstractProductRepository] = None,
-        team_repository: Optional[AbstractTeamRepository] = None,
-        team_member_repository: Optional[AbstractTeamMemberRepository] = None,
-        assignment_engine: Optional[LeadAssignmentRulesEngine] = None,
+        user_repository: AbstractUserRepository | None = None,
+        product_repository: AbstractProductRepository | None = None,
+        team_repository: AbstractTeamRepository | None = None,
+        team_member_repository: AbstractTeamMemberRepository | None = None,
+        assignment_engine: LeadAssignmentRulesEngine | None = None,
     ) -> None:
         """
         Initialize CreateLeadUseCase with dependencies.
@@ -48,9 +49,11 @@ class CreateLeadUseCase:
         Args:
             lead_repository: Repository for lead persistence
             user_repository: Repository for fetching user details (optional, for auto-assignment)
-            product_repository: Repository for fetching product details (optional, for auto-assignment)
+            product_repository: Repository for fetching product details
+            (optional, for auto-assignment)
             team_repository: Repository for fetching teams (optional, for auto-assignment)
-            team_member_repository: Repository for fetching team members (optional, for auto-assignment)
+            team_member_repository: Repository for fetching team members
+            (optional, for auto-assignment)
             assignment_engine: Rules engine for lead assignment (optional, defaults to new instance)
         """
         self.lead_repository = lead_repository
@@ -99,22 +102,22 @@ class CreateLeadUseCase:
                 # 2. Both have None product_id AND it's an exact match (same email AND same phone)
                 if dup_lead:
                     same_product = (
-                        request.product_id is not None 
+                        request.product_id is not None
                         and dup_lead.product_id == request.product_id
                     )
                     exact_match = (
-                        request.product_id is None 
+                        request.product_id is None
                         and dup_lead.product_id is None
-                        and request.buyer_email 
+                        and request.buyer_email
                         and request.buyer_email == dup_lead.buyer_email
-                        and request.buyer_phone 
+                        and request.buyer_phone
                         and request.buyer_phone == dup_lead.buyer_phone
                     )
-                    
+
                     if same_product or exact_match:
                         # Same buyer + same product = hard duplicate
                         raise DuplicateLeadException(
-                            f"A lead for this buyer and vehicle already exists (lead ID: {dup.lead_id}). "
+                            f"A lead for this buyer and vehicle already exists (lead ID: {dup.lead_id}). "  # noqa: E501
                             "Please wait 24 hours before creating another."
                         )
 
@@ -147,7 +150,7 @@ class CreateLeadUseCase:
         self,
         request: CreateLeadRequest,
         tenant_id: UUID,
-    ) -> Optional[UUID]:
+    ) -> UUID | None:
         """
         Automatically assign lead to a dealer using LeadAssignmentRulesEngine.
 

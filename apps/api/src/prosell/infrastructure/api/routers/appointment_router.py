@@ -22,7 +22,10 @@ from prosell.domain.exceptions.appointment_exceptions import (
     AppointmentTimeValidationException,
 )
 from prosell.domain.services.appointment_conflict_detector import AppointmentConflictDetector
-from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie, get_email_service
+from prosell.infrastructure.api.dependencies import (
+    get_current_auth_user_from_cookie,
+    get_email_service,
+)
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.appointment_repository_impl import (
     SqlAlchemyAppointmentRepository,
@@ -73,7 +76,7 @@ async def get_lead_repository(
 
 
 async def get_create_appointment_use_case(
-    appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],
+    appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],  # noqa: E501
     lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
 ) -> CreateAppointmentUseCase:
     conflict_detector = AppointmentConflictDetector()
@@ -93,7 +96,7 @@ async def get_local_product_repository(
 
 
 async def get_cancel_appointment_use_case(
-    appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],
+    appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],  # noqa: E501
     lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
     email_service: Annotated[AbstractEmailService, Depends(get_email_service)],
     user_repo: Annotated[SqlAlchemyUserRepository, Depends(get_local_user_repository)],
@@ -109,7 +112,7 @@ async def get_cancel_appointment_use_case(
 
 
 async def get_confirm_appointment_use_case(
-    appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],
+    appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],  # noqa: E501
     lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
     email_service: Annotated[AbstractEmailService, Depends(get_email_service)],
     user_repo: Annotated[SqlAlchemyUserRepository, Depends(get_local_user_repository)],
@@ -173,7 +176,7 @@ async def create_appointment(
     summary="List appointments with optional filters",
 )
 async def list_appointments(
-    appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],
+    appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],  # noqa: E501
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     start_date: Annotated[str | None, Query(description="Start date filter (ISO 8601)")] = None,
     end_date: Annotated[str | None, Query(description="End date filter (ISO 8601)")] = None,
@@ -222,7 +225,7 @@ async def list_appointments(
 )
 async def get_appointment(
     appointment_id: UUID,
-    appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],
+    appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],  # noqa: E501
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
 ) -> AppointmentResponse:
     """Get a single appointment by ID with tenant isolation."""
@@ -250,7 +253,7 @@ async def get_appointment(
 async def update_appointment(
     appointment_id: UUID,
     request: UpdateAppointmentRequest,
-    appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],
+    appointment_repo: Annotated[SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)],  # noqa: E501
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
 ) -> AppointmentResponse:
     """Update appointment status and/or notes. Both fields are optional."""
@@ -267,7 +270,7 @@ async def update_appointment(
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Invalid status: '{request.status}'. Valid values: {[s.value for s in AppointmentStatus]}",
+                detail=f"Invalid status: '{request.status}'. Valid values: {[s.value for s in AppointmentStatus]}",  # noqa: E501
             ) from None
 
     try:
@@ -293,7 +296,7 @@ async def update_appointment_status(
     new_status: AppointmentStatus,
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     cancel_use_case: Annotated[CancelAppointmentUseCase, Depends(get_cancel_appointment_use_case)],
-    confirm_use_case: Annotated[ConfirmAppointmentUseCase, Depends(get_confirm_appointment_use_case)],
+    confirm_use_case: Annotated[ConfirmAppointmentUseCase, Depends(get_confirm_appointment_use_case)],  # noqa: E501
 ) -> AppointmentResponse:
     """
     Update via domain use cases (sends email notifications).

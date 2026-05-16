@@ -222,7 +222,7 @@ class TestTypeValidation:
         """Test that User accepts valid UUID string for id."""
         valid_uuid = str(uuid4())
         user = User(
-            id=valid_uuid,
+            id=valid_uuid,  # type: ignore[arg-type]
             email="test@example.com",
             full_name="Test User",
         )
@@ -287,7 +287,7 @@ class TestBackupCodesParsing:
             id=uuid4(),
             email="test@example.com",
             full_name="Test User",
-            backup_codes=codes_json,  # Pass as JSON string
+            backup_codes=codes_json,  # Pass as JSON string  # type: ignore[arg-type]
         )
 
         assert user.backup_codes == codes_list

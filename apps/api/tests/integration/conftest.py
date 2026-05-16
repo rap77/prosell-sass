@@ -10,7 +10,12 @@ from uuid import UUID, uuid4
 import pytest
 import pytest_asyncio
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from prosell.infrastructure.models.role_model import RoleModel
 
@@ -21,7 +26,7 @@ TEST_DB_URL = "postgresql+asyncpg://prosell:prosell_test_password@localhost:5433
 # =============================================================================
 
 @pytest_asyncio.fixture(scope="session")
-async def _session_engine() -> AsyncGenerator[Any, None]:
+async def _session_engine() -> AsyncGenerator[Any]:
     """Create engine for session-scoped fixtures."""
     engine: AsyncEngine = create_async_engine(TEST_DB_URL, echo=False)
     yield engine
@@ -41,7 +46,7 @@ async def system_roles(_session_engine) -> dict[str, RoleModel]:
         class_=AsyncSession,
         expire_on_commit=False
     )
-    
+
     async with async_session_maker() as session:
         # Check if roles already exist (from previous test run or manual setup)
         stmt = select(RoleModel).where(
@@ -49,9 +54,9 @@ async def system_roles(_session_engine) -> dict[str, RoleModel]:
         )
         result = await session.execute(stmt)
         existing_roles = {r.role_type: r for r in result.scalars().all()}
-        
+
         roles = {}
-        
+
         # Create SUPER_ADMIN if not exists
         if "SUPER_ADMIN" not in existing_roles:
             role = RoleModel(
@@ -67,7 +72,7 @@ async def system_roles(_session_engine) -> dict[str, RoleModel]:
             roles["SUPER_ADMIN"] = role
         else:
             roles["SUPER_ADMIN"] = existing_roles["SUPER_ADMIN"]
-        
+
         # Create SALES_AGENT if not exists
         if "SALES_AGENT" not in existing_roles:
             role = RoleModel(
@@ -83,7 +88,7 @@ async def system_roles(_session_engine) -> dict[str, RoleModel]:
             roles["SALES_AGENT"] = role
         else:
             roles["SALES_AGENT"] = existing_roles["SALES_AGENT"]
-        
+
         # Create MANAGER if not exists
         if "MANAGER" not in existing_roles:
             role = RoleModel(
@@ -99,7 +104,7 @@ async def system_roles(_session_engine) -> dict[str, RoleModel]:
             roles["MANAGER"] = role
         else:
             roles["MANAGER"] = existing_roles["MANAGER"]
-        
+
         # Create ADMIN if not exists
         if "ADMIN" not in existing_roles:
             role = RoleModel(
@@ -115,10 +120,10 @@ async def system_roles(_session_engine) -> dict[str, RoleModel]:
             roles["ADMIN"] = role
         else:
             roles["ADMIN"] = existing_roles["ADMIN"]
-        
+
         # Commit to persist these roles for the entire test session
         await session.commit()
-    
+
     return roles
 
 

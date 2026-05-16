@@ -6,7 +6,6 @@ It follows Clean Architecture principles as a domain service with no external de
 
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import List
 
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 
@@ -66,8 +65,8 @@ class AppointmentConflictDetector:
     def detect_conflicts(
         self,
         appointment: Appointment,
-        existing_appointments: List[Appointment],
-    ) -> List[Conflict]:
+        existing_appointments: list[Appointment],
+    ) -> list[Conflict]:
         """
         Detect conflicts between a new appointment and existing appointments.
 
@@ -85,7 +84,7 @@ class AppointmentConflictDetector:
             ...     for conflict in conflicts:
             ...         print(f"Conflict: {conflict.message}")
         """
-        conflicts: List[Conflict] = []
+        conflicts: list[Conflict] = []
 
         for existing_app in existing_appointments:
             # Skip if different dealer (no conflict)
@@ -109,7 +108,7 @@ class AppointmentConflictDetector:
                     Conflict(
                         type=ConflictType.DEALER_UNAVAILABLE,
                         existing_appointment=existing_app,
-                        message=f"Dealer already has appointment at this time",
+                        message="Dealer already has appointment at this time",
                     )
                 )
 

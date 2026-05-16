@@ -67,7 +67,7 @@ async def get_facebook_app_secret() -> str:
         },
         403: {
             "description": "Forbidden - Missing or invalid X-Hub-Signature",
-            "content": {"application/json": {"example": {"detail": "Missing X-Hub-Signature header"}}},
+            "content": {"application/json": {"example": {"detail": "Missing X-Hub-Signature header"}}},  # noqa: E501
         },
     },
 )
@@ -75,7 +75,7 @@ async def facebook_lead_webhook(
     request: Request,
     x_hub_signature: str | None = Header(default=None, alias="X-Hub-Signature"),
     facebook_app_secret: Annotated[str, Depends(get_facebook_app_secret)] = "",
-    process_webhook_use_case: ProcessFacebookWebhookUseCase = Depends(get_process_facebook_webhook_use_case),
+    process_webhook_use_case: ProcessFacebookWebhookUseCase = Depends(get_process_facebook_webhook_use_case),  # noqa: E501
 ) -> WebhookResponse:
     """
     Receive Facebook lead webhook notifications.
@@ -124,13 +124,13 @@ async def facebook_lead_webhook(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid JSON payload",
-        )
+        ) from None
     except Exception as e:
         logger.error(f"Unexpected error parsing Facebook webhook payload: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to parse payload",
-        )
+        ) from None
 
     # Extract tenant_id from JWT (via X-Tenant-ID header for webhooks)
     # Webhooks don't have JWT auth, so we use a header-based approach
@@ -149,7 +149,7 @@ async def facebook_lead_webhook(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid X-Tenant-ID header",
-        )
+        ) from None
 
     # Process webhook (synchronously for now, within 1-second window)
     # In production, this should be a background task (Taskiq, Celery, etc.)
@@ -158,7 +158,7 @@ async def facebook_lead_webhook(
         # Process the webhook payload
         await process_webhook_use_case.execute(payload=payload, tenant_id=tenant_id)
 
-        logger.info(f"Facebook webhook processed successfully: leadgen_id={payload.get('leadgen_id')}")
+        logger.info(f"Facebook webhook processed successfully: leadgen_id={payload.get('leadgen_id')}")  # noqa: E501
     except Exception as e:
         # Log error but still return 200 (Facebook retry logic)
         # The lead processing can be retried via polling task

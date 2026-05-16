@@ -21,7 +21,7 @@ async def test_get_by_fb_listing_id_with_none_raises():
 
     # Act & Assert
     with pytest.raises(ValueError, match="fb_listing_id cannot be None or empty"):
-        await repo.get_by_fb_listing_id(None)
+        await repo.get_by_fb_listing_id(None)  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio

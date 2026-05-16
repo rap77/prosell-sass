@@ -18,7 +18,6 @@ from prosell.application.dto.team.response import TeamListResponse, TeamMemberRe
 from prosell.application.dto.team.update import UpdateTeamMemberRequest, UpdateTeamRequest
 from prosell.domain.entities.team import Team, TeamMember, TeamMemberRole
 
-
 # =============================================================================
 # HELPERS
 # =============================================================================

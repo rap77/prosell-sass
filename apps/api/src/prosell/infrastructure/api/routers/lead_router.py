@@ -31,13 +31,30 @@ from prosell.domain.exceptions.lead_exceptions import (
     LeadNotFoundException,
     LeadStateTransitionException,
 )
+from prosell.domain.services.lead_assignment_rules_engine import LeadAssignmentRulesEngine
 from prosell.domain.services.lead_duplicate_detector import DuplicateMatch, LeadDuplicateDetector
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
-from prosell.infrastructure.api.schemas.lead_schemas import DuplicateMatchResponse, DuplicatesResponse
+from prosell.infrastructure.api.schemas.lead_schemas import (
+    DuplicateMatchResponse,
+    DuplicatesResponse,
+)
 from prosell.infrastructure.database.session import get_async_session
-from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct, SqlAlchemyLeadRepository
+from prosell.infrastructure.repositories.lead_repository_impl import (
+    LeadWithProduct,
+    SqlAlchemyLeadRepository,
+)
+from prosell.infrastructure.repositories.product_repository_impl import SqlAlchemyProductRepository
+from prosell.infrastructure.repositories.team_repository_impl import (
+    SqlAlchemyTeamMemberRepository,
+    SqlAlchemyTeamRepository,
+)
+from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
 
 router = APIRouter()
+
+# Shared assignment engine singleton — round-robin state must persist across requests
+# so that consecutive leads are distributed evenly across dealers.
+_shared_assignment_engine = LeadAssignmentRulesEngine()
 
 
 # =============================================================================
@@ -54,9 +71,21 @@ async def get_lead_repository(
 
 async def get_create_lead_use_case(
     lead_repo: Annotated[SqlAlchemyLeadRepository, Depends(get_lead_repository)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> CreateLeadUseCase:
-    """Get CreateLead use case instance."""
-    return CreateLeadUseCase(lead_repo)
+    """Get CreateLead use case instance with all repositories for auto-assignment.
+
+    The shared assignment engine is injected so that round-robin state
+    persists across requests within the same process lifetime.
+    """
+    return CreateLeadUseCase(
+        lead_repository=lead_repo,
+        user_repository=SqlAlchemyUserRepository(session),
+        product_repository=SqlAlchemyProductRepository(session),
+        team_repository=SqlAlchemyTeamRepository(session),
+        team_member_repository=SqlAlchemyTeamMemberRepository(session),
+        assignment_engine=_shared_assignment_engine,
+    )
 
 
 async def get_update_lead_status_use_case(
@@ -127,7 +156,10 @@ async def create_lead(
     - Returns 409 if a duplicate lead is detected (same buyer + vehicle within 24h).
     """
     if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No organization associated with account.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No organization associated with account.",
+        )
     try:
         return await use_case.execute(
             request=request,
@@ -151,7 +183,7 @@ async def list_leads(
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
     lead_status: LeadStatus | None = Query(default=None, alias="status"),
-    vendedor_id: UUID | None = Query(default=None, description="Filter by vendedor ID (manager-only)"),
+    vendedor_id: UUID | None = Query(default=None, description="Filter by vendedor ID (manager-only)"),  # noqa: E501
 ) -> LeadListResponse:
     """
     List leads with pagination and role-based filtering.
@@ -162,7 +194,10 @@ async def list_leads(
     - tenant_id is always derived from the JWT — no cross-tenant access.
     """
     if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No organization associated with account.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No organization associated with account.",
+        )
     list_request = ListLeadsRequest(
         limit=limit,
         offset=offset,
@@ -189,7 +224,10 @@ async def get_lead_details(
     - Audit logs are ordered from most recent to oldest.
     """
     if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No organization associated with account.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No organization associated with account.",
+        )
     try:
         return await use_case.execute(
             lead_id=lead_id,
@@ -226,7 +264,10 @@ async def update_lead_status(
     Returns 404 if lead not found, 422 if transition is invalid.
     """
     if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No organization associated with account.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No organization associated with account.",
+        )
     try:
         return await use_case.execute(
             lead_id=lead_id,
@@ -267,7 +308,10 @@ async def assign_lead(
     - Returns 403 if user has no tenant_id.
     """
     if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No organization associated with account.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No organization associated with account.",
+        )
     try:
         return await use_case.execute(
             lead_id=lead_id,
@@ -360,7 +404,10 @@ async def get_team_metrics(
     Returns 403 if user is not a manager or admin.
     """
     if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No organization associated with account.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No organization associated with account.",
+        )
     try:
         return await use_case.execute(
             tenant_id=current_user.tenant_id,

@@ -6,7 +6,7 @@ These tests use mock repositories — no database required.
 
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
-from uuid import UUID, uuid4  # noqa: F401 (UUID used in type annotations below)
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -341,7 +341,7 @@ class TestGetLeadDetailsUseCase:
         ]
 
         from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
-        
+
         repo = AsyncMock()
         repo.get_by_id = AsyncMock(return_value=LeadWithProduct(lead=lead, product_model=None))
         repo.get_audit_logs = AsyncMock(return_value=audit_logs)
@@ -358,7 +358,7 @@ class TestGetLeadDetailsUseCase:
         lead = make_lead()
 
         from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
-        
+
         repo = AsyncMock()
         repo.get_by_id = AsyncMock(return_value=LeadWithProduct(lead=lead, product_model=None))
         repo.get_audit_logs = AsyncMock(return_value=[])

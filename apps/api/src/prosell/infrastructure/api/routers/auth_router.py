@@ -11,19 +11,29 @@ from fastapi.responses import RedirectResponse
 # DTOs - all from central dto module
 from prosell.application.dto.auth import (
     Disable2FARequest as Disable2FAUCRequest,
+)
+from prosell.application.dto.auth import (
     Disable2FAResponse,
-    Enable2FARequest as Enable2FAUCRequest,
     Enable2FAResponse,
     LoginUserRequest,
     LoginUserResponse,
-    OAuthLoginRequest as OAuthLoginUCRequest,
     OAuthLoginResponse,
-    RefreshTokenRequest as RefreshTokenUCRequest,
     RefreshTokenResponse,
     RegisterUserRequest,
     RegisterUserResponse,
-    Verify2FARequest as Verify2FAUCRequest,
     Verify2FAResponse,
+)
+from prosell.application.dto.auth import (
+    Enable2FARequest as Enable2FAUCRequest,
+)
+from prosell.application.dto.auth import (
+    OAuthLoginRequest as OAuthLoginUCRequest,
+)
+from prosell.application.dto.auth import (
+    RefreshTokenRequest as RefreshTokenUCRequest,
+)
+from prosell.application.dto.auth import (
+    Verify2FARequest as Verify2FAUCRequest,
 )
 
 # Use cases - only import the use case classes
@@ -57,7 +67,7 @@ from prosell.infrastructure.api.dependencies import (
 
 # Rate limiting for OAuth endpoints
 # OAuth authorize/initiate endpoints are rate limited to prevent abuse
-from prosell.infrastructure.api.middleware import AUTH_LIMIT, rate_limit
+from prosell.infrastructure.api.middleware import smart_rate_limit
 from prosell.infrastructure.api.middleware.auth_middleware import (
     get_current_user,
     get_optional_user,
@@ -132,9 +142,9 @@ def _get_provider_redirect_uris() -> dict[str, str]:
     response_model=RegisterUserResponse,
     status_code=status.HTTP_201_CREATED,
 )
-@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
+@smart_rate_limit("auth")  # Higher rate limit for testing
 async def register(
-    request: Request,  # noqa: ARG001 - Used by rate_limit decorator
+    _request: Request,
     register_request: RegisterRequest,
     use_case: Annotated[RegisterUserUseCase, Depends(get_register_user_use_case)],
 ) -> RegisterUserResponse:
@@ -163,9 +173,9 @@ async def register(
 
 
 @router.post("/login", response_model=LoginUserResponse)
-@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
+@smart_rate_limit("auth")  # Higher rate limit for testing
 async def login(
-    request: Request,  # Required by rate_limit decorator
+    _request: Request,  # Required by rate_limit decorator
     login_data: LoginRequest,
     response: Response,
     use_case: Annotated[LoginUserUseCase, Depends(get_login_user_use_case)],
@@ -223,9 +233,9 @@ async def login(
 
 
 @router.post("/refresh")
-@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
+@smart_rate_limit("auth")  # Higher rate limit for testing
 async def refresh_token(
-    fastapi_request: Request,  # noqa: ARG001 - Used by rate_limit decorator
+    _fastapi_request: Request,
     request: RefreshTokenRequest,
     use_case: Annotated[RefreshTokenUseCase, Depends(get_refresh_token_use_case)],
 ) -> RefreshTokenResponse:
@@ -239,10 +249,10 @@ async def refresh_token(
 
 
 @router.post("/oauth/{provider}")
-@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
+@smart_rate_limit("auth")  # Higher rate limit for testing
 async def oauth_login(
     provider: str,
-    fastapi_request: Request,  # noqa: ARG001 - Used by rate_limit decorator
+    _fastapi_request: Request,
     request: OAuthLoginRequest,
     use_case: Annotated[OAuthLoginUseCase, Depends(get_oauth_login_use_case)],
 ) -> OAuthLoginResponse:
@@ -265,10 +275,10 @@ async def oauth_login(
 
 
 @router.get("/oauth/{provider}/authorize")
-@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
+@smart_rate_limit("auth")  # Higher rate limit for testing
 async def oauth_authorize(
     provider: str,
-    request: Request,  # noqa: ARG001 - Used by rate_limit decorator
+    _request: Request,
     oauth_service: Annotated[IOAuthService, Depends(get_oauth_service)],
 ) -> RedirectResponse:
     """
@@ -329,10 +339,10 @@ async def oauth_authorize(
 
 
 @router.get("/oauth/{provider}/callback")
-@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
+@smart_rate_limit("auth")  # Higher rate limit for testing
 async def oauth_callback(
     provider: str,
-    request: Request,  # noqa: ARG001 - Used by rate_limit decorator
+    _request: Request,
     oauth_service: Annotated[IOAuthService, Depends(get_oauth_service)],
     oauth_use_case: Annotated[OAuthLoginUseCase, Depends(get_oauth_login_use_case)],
     code: str | None = Query(None, description="Authorization code from OAuth provider"),
@@ -500,9 +510,9 @@ async def oauth_callback(
 
 
 @router.post("/2fa/enable")
-@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
+@smart_rate_limit("auth")  # Higher rate limit for testing
 async def enable_2fa(
-    fastapi_request: Request,  # noqa: ARG001 - Used by rate_limit decorator
+    _fastapi_request: Request,
     request: Enable2FARequest,
     current_user: Annotated[dict[str, Any], Depends(get_current_user)],
     use_case: Annotated[Enable2FAUseCase, Depends(get_enable_2fa_use_case)],
@@ -525,9 +535,9 @@ async def enable_2fa(
 
 
 @router.post("/2fa/verify")
-@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
+@smart_rate_limit("auth")  # Higher rate limit for testing
 async def verify_2fa(
-    fastapi_request: Request,  # noqa: ARG001 - Used by rate_limit decorator
+    _fastapi_request: Request,
     request: Verify2FARequest,
     use_case: Annotated[Verify2FAUseCase, Depends(get_verify_2fa_use_case)],
 ) -> Verify2FAResponse:
@@ -544,9 +554,9 @@ async def verify_2fa(
 
 
 @router.post("/2fa/disable")
-@rate_limit(AUTH_LIMIT)  # Rate limit: 5 requests per minute per IP
+@smart_rate_limit("auth")  # Higher rate limit for testing
 async def disable_2fa(
-    fastapi_request: Request,  # noqa: ARG001 - Used by rate_limit decorator
+    _fastapi_request: Request,
     request: Disable2FARequest,
     current_user: Annotated[dict[str, Any], Depends(get_current_user)],
     use_case: Annotated[Disable2FAUseCase, Depends(get_disable_2fa_use_case)],

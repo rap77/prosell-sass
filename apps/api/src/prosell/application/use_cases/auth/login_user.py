@@ -1,7 +1,7 @@
 """User login use case."""
 
-import secrets
 import logging
+import secrets
 
 from prosell.application.dto.auth import LoginUserRequest, LoginUserResponse, UserInfo
 from prosell.domain.exceptions.auth_exceptions import (
@@ -87,7 +87,7 @@ class LoginUserUseCase:
             should_lock = user.record_failed_login()
             await self.user_repository.update(user)
             if should_lock:
-                logger.error(f"Login failed: Account locked for user {user.id} after multiple attempts.")
+                logger.error(f"Login failed: Account locked for user {user.id} after multiple attempts.")  # noqa: E501
                 raise AccountLockedException("Account locked due to too many failed login attempts")
             raise InvalidCredentialsException()
         logger.debug("Password verified successfully.")

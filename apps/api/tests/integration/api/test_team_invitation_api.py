@@ -10,10 +10,9 @@ from httpx import ASGITransport, AsyncClient
 from prosell.domain.entities.organization import Organization
 from prosell.domain.entities.role import Role, RoleType
 from prosell.domain.entities.team import Team
-from prosell.domain.entities.user import User
+from prosell.domain.entities.user import User, UserStatus
 from prosell.infrastructure.api.dependencies import get_email_service
 from prosell.infrastructure.api.main import app
-
 
 # =============================================================================
 # FIXTURES
@@ -28,7 +27,7 @@ def mock_auth_user() -> User:
         email="test@example.com",
         full_name="Test User",
         tenant_id=uuid4(),
-        is_active=True,
+        status=UserStatus.ACTIVE,
         email_verified=True,
     )
 

@@ -53,7 +53,7 @@ class AuthStateUserResponse(BaseModel):
 class AuthStateResponse(BaseModel):
     """Auth state response model."""
 
-    isAuthenticated: bool  # noqa: N815 - camelCase required for frontend API contract
+    isAuthenticated: bool  # noqa: N815 - matches frontend camelCase convention
     user: AuthStateUserResponse | None = None
 
 

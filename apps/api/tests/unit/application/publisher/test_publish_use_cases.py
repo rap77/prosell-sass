@@ -43,7 +43,7 @@ async def test_publish_vehicle_creates_publication_record(mock_publication_repo_
     ) as mock_task:
         mock_task.kiq = AsyncMock()
 
-        use_case = PublishVehicleUseCase(
+        use_case = PublishVehicleUseCase(  # type: ignore[call-arg]
             publication_repo=mock_publication_repo_with_publication,
             seller_user_id=uuid4(),
         )
@@ -74,7 +74,7 @@ async def test_publish_vehicle_dispatches_task_with_publication_id(
     ) as mock_task:
         mock_task.kiq = AsyncMock()
 
-        use_case = PublishVehicleUseCase(
+        use_case = PublishVehicleUseCase(  # type: ignore[call-arg]
             publication_repo=mock_publication_repo_with_publication,
             seller_user_id=uuid4(),
         )
@@ -119,7 +119,7 @@ async def test_update_listing_use_case(mock_publication_repo):
         "prosell.infrastructure.tasks.use_cases.update_listing_task.update_listing_task"
     ) as mock_task:
         mock_task.kiq = AsyncMock()
-        use_case = UpdateListingUseCase(publication_repo=mock_publication_repo)
+        use_case = UpdateListingUseCase(publication_repo=mock_publication_repo)  # type: ignore[call-arg]
         request = UpdateListingRequest(
             publication_id=pub_id,
             price_cents=15000,
@@ -154,7 +154,7 @@ async def test_update_listing_raises_if_not_published(mock_publication_repo):
     )
     mock_publication_repo.get_by_id.return_value = mock_pub
 
-    use_case = UpdateListingUseCase(publication_repo=mock_publication_repo)
+    use_case = UpdateListingUseCase(publication_repo=mock_publication_repo)  # type: ignore[call-arg]
     request = UpdateListingRequest(publication_id=pub_id, price_cents=15000)
 
     with pytest.raises(ValueError, match="Cannot update a non-published listing"):
@@ -185,7 +185,7 @@ async def test_delete_listing_transitions_to_sold(mock_publication_repo):
         "prosell.infrastructure.tasks.use_cases.delete_listing_task.delete_listing_task"
     ) as mock_task:
         mock_task.kiq = AsyncMock()
-        use_case = DeleteListingUseCase(publication_repo=mock_publication_repo)
+        use_case = DeleteListingUseCase(publication_repo=mock_publication_repo)  # type: ignore[call-arg]
         result = await use_case.execute(pub_id)
 
     mock_publication_repo.update.assert_called_once()

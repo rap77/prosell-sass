@@ -9,14 +9,12 @@ This test suite verifies lead assignment logic including:
 - Thread-safe round-robin state management
 """
 
-from datetime import UTC, datetime
-from enum import StrEnum
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
-from prosell.domain.entities.lead import Lead, LeadStatus
+from prosell.domain.entities.lead import Lead
 from prosell.domain.entities.product import Product
 from prosell.domain.services.lead_assignment_rules_engine import (
     AssignmentCandidate,
@@ -113,13 +111,13 @@ class TestAssignmentRule:
         class HighPriorityRule(AssignmentRule):
             priority = 1
 
-            def score(self, lead: Lead, dealer: AssignmentCandidate) -> float:
+            def score(self, lead: Lead, candidate: AssignmentCandidate, **context: Any) -> float:  # noqa: ARG002
                 return 1.0
 
         class LowPriorityRule(AssignmentRule):
             priority = 10
 
-            def score(self, lead: Lead, dealer: AssignmentCandidate) -> float:
+            def score(self, lead: Lead, candidate: AssignmentCandidate, **context: Any) -> float:  # noqa: ARG002
                 return 1.0
 
         high_rule = HighPriorityRule()
@@ -136,7 +134,7 @@ class TestAssignmentRule:
 
         with pytest.raises(TypeError):
             # Should fail because score() is not implemented
-            IncompleteRule()
+            IncompleteRule()  # type: ignore[abstract]
 
 
 class TestRoundRobinAssignmentRule:
@@ -147,7 +145,6 @@ class TestRoundRobinAssignmentRule:
 
     def test_round_robin_first_lead(self):
         """Test that first lead goes to first dealer."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -177,7 +174,6 @@ class TestRoundRobinAssignmentRule:
 
     def test_round_robin_cycles_through_dealers(self):
         """Test that round-robin cycles through all dealers."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -205,6 +201,7 @@ class TestRoundRobinAssignmentRule:
                 strategy=AssignmentStrategy.ROUND_ROBIN,
             )
 
+            assert result.assigned_to is not None
             assigned_dealers.append(result.assigned_to.user_id)
 
         # Verify distribution is roughly even (2 each for 3 dealers)
@@ -224,7 +221,6 @@ class TestVehicleOwnerAssignmentRule:
 
     def test_vehicle_owner_gets_highest_score(self):
         """Test that product owner gets highest assignment score."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -286,7 +282,6 @@ class TestVehicleOwnerAssignmentRule:
 
     def test_vehicle_owner_no_product(self):
         """Test that rule returns 0 when no product associated."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -317,7 +312,6 @@ class TestWorkloadBalancingRule:
 
     def test_workload_balancing_prefers_less_loaded(self):
         """Test that dealer with fewer leads gets higher score."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -348,7 +342,6 @@ class TestWorkloadBalancingRule:
 
     def test_workload_balancing_equal_workload(self):
         """Test that equal workload results in similar scores."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -386,7 +379,6 @@ class TestGeographicProximityRule:
 
     def test_geographic_proximity_prefers_nearby(self):
         """Test that nearby dealer gets higher score."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -434,7 +426,6 @@ class TestGeographicProximityRule:
 
     def test_geographic_proximity_no_location(self):
         """Test that rule returns 0 when no location data available."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -469,7 +460,6 @@ class TestLeadAssignmentRulesEngine:
 
     def test_assign_lead_round_robin_strategy(self):
         """Test lead assignment with round-robin strategy."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -502,7 +492,6 @@ class TestLeadAssignmentRulesEngine:
 
     def test_assign_lead_vehicle_owner_strategy(self):
         """Test lead assignment with vehicle-owner strategy."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -550,12 +539,12 @@ class TestLeadAssignmentRulesEngine:
             organization_members=organization_members,
         )
 
+        assert result.assigned_to is not None
         assert result.assigned_to.user_id == product_owner_id, \
             "Should assign to product owner"
 
     def test_assign_lead_workload_balancing_strategy(self):
         """Test lead assignment with workload-balancing strategy."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -585,12 +574,12 @@ class TestLeadAssignmentRulesEngine:
             strategy=AssignmentStrategy.WORKLOAD_BALANCING,
         )
 
+        assert result.assigned_to is not None
         assert result.assigned_to.user_id == free_dealer.user_id, \
             "Should assign to dealer with fewer leads"
 
     def test_assign_lead_geographic_proximity_strategy(self):
         """Test lead assignment with geographic-proximity strategy."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -627,12 +616,12 @@ class TestLeadAssignmentRulesEngine:
             lead_location=lead_location,
         )
 
+        assert result.assigned_to is not None
         assert result.assigned_to.user_id == nyc_dealer.user_id, \
             "Should assign to geographically closest dealer"
 
     def test_assign_lead_empty_candidates(self):
         """Test that empty candidates list returns no assignment."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -654,7 +643,6 @@ class TestLeadAssignmentRulesEngine:
 
     def test_assign_lead_combined_strategy(self):
         """Test that COMBINED strategy uses all rules with priority."""
-        from uuid import uuid4
 
         engine = LeadAssignmentRulesEngine()
         tenant_id = uuid4()
@@ -714,7 +702,6 @@ class TestAssignmentResult:
 
     def test_assignment_result_creation(self):
         """Test AssignmentResult value object creation."""
-        from uuid import uuid4
 
         dealer = AssignmentCandidate(
             user_id=uuid4(),
@@ -752,7 +739,6 @@ class TestAssignmentCandidate:
 
     def test_assignment_candidate_creation(self):
         """Test AssignmentCandidate value object creation."""
-        from uuid import uuid4
 
         candidate = AssignmentCandidate(
             user_id=uuid4(),
@@ -770,7 +756,6 @@ class TestAssignmentCandidate:
 
     def test_assignment_candidate_optional_location(self):
         """Test AssignmentCandidate without location data."""
-        from uuid import uuid4
 
         candidate = AssignmentCandidate(
             user_id=uuid4(),

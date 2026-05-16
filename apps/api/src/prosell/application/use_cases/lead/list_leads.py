@@ -1,7 +1,6 @@
 """ListLeadsUseCase — role-based lead listing with product data."""
 
-from typing import TYPE_CHECKING, NamedTuple
-
+from typing import TYPE_CHECKING, ClassVar, NamedTuple
 from uuid import UUID
 
 from prosell.application.dto.lead.request import ListLeadsRequest
@@ -33,11 +32,11 @@ class ListLeadsUseCase:
     - Product data is included via LEFT JOIN (null if no product)
     """
 
-    _MANAGER_ROLES = {
+    _MANAGER_ROLES: ClassVar[frozenset] = frozenset({
         RoleType.SUPER_ADMIN,
         RoleType.ADMIN,
         RoleType.MANAGER,
-    }
+    })
 
     def __init__(self, lead_repository: AbstractLeadRepository) -> None:
         self.lead_repository = lead_repository

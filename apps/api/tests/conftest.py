@@ -9,19 +9,18 @@ This module provides:
 """
 
 import asyncio
-import pytest
-import pytest_asyncio
-from typing import AsyncGenerator, Generator
-from pathlib import Path
 import shutil
 import tempfile
+from collections.abc import AsyncGenerator
+from pathlib import Path
 
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+import pytest
+import pytest_asyncio
+from sqlalchemy import MetaData, create_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from prosell.core.config import get_settings
-from prosell.infrastructure.database.session import async_session_maker
 
 
 @pytest.fixture(scope="session")
@@ -38,8 +37,9 @@ async def test_database_url() -> str:
     settings = get_settings()
 
     # Use test database or create isolated test database
-    if hasattr(settings, 'TEST_DATABASE_URL'):
-        return settings.TEST_DATABASE_URL
+    test_db_url: str | None = getattr(settings, 'TEST_DATABASE_URL', None)
+    if test_db_url:
+        return test_db_url
     else:
         # Create temporary database for testing
         base_url = settings.database_url
@@ -57,7 +57,7 @@ async def test_database_url() -> str:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession, None]:
+async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession]:
     """
     Create a test database session with automatic cleanup.
 
@@ -76,12 +76,15 @@ async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession
         path="/postgres"
     ).geturl()
 
+    from sqlalchemy import text as sa_text
+
     # Create test database
+    db_name = parsed.path[1:]
     engine = create_engine(postgres_url, poolclass=NullPool)
     with engine.connect() as conn:
         conn.execution_options(isolation_level="AUTOCOMMIT")
-        conn.execute(f"DROP DATABASE IF EXISTS {parsed.path[1:]}")
-        conn.execute(f"CREATE DATABASE {parsed.path[1:]}")
+        conn.execute(sa_text(f"DROP DATABASE IF EXISTS {db_name}"))
+        conn.execute(sa_text(f"CREATE DATABASE {db_name}"))
 
     # Create async engine for test database
     async_engine = create_async_engine(test_database_url, poolclass=NullPool)
@@ -119,7 +122,7 @@ async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession
     # Drop test database
     with engine.connect() as conn:
         conn.execution_options(isolation_level="AUTOCOMMIT")
-        conn.execute(f"DROP DATABASE IF EXISTS {parsed.path[1:]}")
+        conn.execute(sa_text(f"DROP DATABASE IF EXISTS {db_name}"))
 
 
 @pytest.fixture(scope="function")
@@ -155,25 +158,12 @@ def test_settings():
     yield original_settings
 
     # Restore original settings
-    get_settings().__dict__.update(original_settings.__dict__)
+    get_settings.cache_clear()  # type: ignore[attr-defined]
 
 
 @pytest.fixture(scope="function")
-async def seeded_test_db(test_db_session: AsyncSession):
-    """
-    Database fixture with seeded test data.
-
-    This fixture:
-    1. Creates a clean database
-    2. Seeds with basic test data
-    3. Cleans up after the test
-    """
-    # Import here to avoid circular imports
-    from prosell.infrastructure.database.seeds import init_data
-
-    # Seed initial data
-    await init_data(test_db_session)
-
+async def seeded_test_db(test_db_session: AsyncSession) -> AsyncGenerator[AsyncSession]:
+    """Database fixture with seeded test data (stub — seeds module not available)."""
     yield test_db_session
 
 
@@ -190,13 +180,12 @@ def mock_external_services():
         def mock_redis_get(key: str):
             return mock_redis.get(key)
 
-        def mock_redis_set(key: str, value: str, ex: int = None):
+        def mock_redis_set(key: str, value: str, ex: int | None = None):
             mock_redis[key] = value
             return True
 
         def mock_redis_delete(key: str):
-            if key in mock_redis:
-                del mock_redis[key]
+            mock_redis.pop(key, None)
             return 1
 
         # Apply mocks
@@ -218,7 +207,7 @@ def test_user_factory():
         def __init__(self):
             self.counter = 0
 
-        def create_user(self, email: str = None, password: str = None, **kwargs):
+        def create_user(self, email: str | None = None, password: str | None = None, **kwargs):
             """Create a test user with unique email."""
             self.counter += 1
             return {
@@ -241,7 +230,7 @@ def test_organization_factory():
         def __init__(self):
             self.counter = 0
 
-        def create_organization(self, name: str = None, **kwargs):
+        def create_organization(self, name: str | None = None, **kwargs):
             """Create a test organization with unique name."""
             self.counter += 1
             return {

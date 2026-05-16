@@ -30,8 +30,9 @@ async def publish_product_task(publication_id: str) -> dict[str, Any]:
         - Category A (transient): increments retry_count, schedules retry with exponential backoff
           Delays: retry 1 = 60s, retry 2 = 300s, retry 3 = 900s, then mark failed
     """
-    from uuid import UUID
     import os
+    from uuid import UUID
+
     import httpx
 
     from prosell.domain.entities.publication import PublicationErrorCategory

@@ -1,9 +1,8 @@
 """Email service port (secondary interface)."""
 
 from abc import abstractmethod
-from typing import Any
 from datetime import datetime
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID
 
 from prosell.domain.entities.appointment import AppointmentStatus
@@ -79,4 +78,16 @@ class AbstractEmailService(Protocol):
         appointment_details: dict[str, Any],
     ) -> None:
         """Send appointment reminder."""
+        ...
+
+    @abstractmethod
+    async def send_team_invitation(
+        self,
+        email: str,
+        team_name: str,
+        inviter_name: str,
+        invitation_token: str,
+        role: str,
+    ) -> None:
+        """Send team invitation email."""
         ...

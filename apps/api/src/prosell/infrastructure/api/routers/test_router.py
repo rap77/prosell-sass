@@ -86,7 +86,7 @@ async def test_health() -> HealthResponse:
 @router.delete("/cleanup", response_model=CleanupResponse)
 async def cleanup_test_data(
     request: CleanupRequest,
-    current_user: Annotated[AbstractUserRepository, Depends(get_current_user)],
+    _current_user: Annotated[AbstractUserRepository, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> CleanupResponse:
     """Cleanup test data by tenant_id.
@@ -146,7 +146,7 @@ async def cleanup_test_data(
             result = await db.execute(
                 delete(AppointmentModel).where(AppointmentModel.tenant_id == tenant_id)
             )
-            deleted_counts["appointments"] = result.rowcount
+            deleted_counts["appointments"] = result.rowcount  # type: ignore[attr-defined]
         await db.commit()
 
         # 2. Leads
@@ -163,7 +163,7 @@ async def cleanup_test_data(
             result = await db.execute(
                 delete(LeadModel).where(LeadModel.tenant_id == tenant_id)
             )
-            deleted_counts["leads"] = result.rowcount
+            deleted_counts["leads"] = result.rowcount  # type: ignore[attr-defined]
         await db.commit()
 
         # 3. Products
@@ -180,7 +180,7 @@ async def cleanup_test_data(
             result = await db.execute(
                 delete(ProductModel).where(ProductModel.tenant_id == tenant_id)
             )
-            deleted_counts["products"] = result.rowcount
+            deleted_counts["products"] = result.rowcount  # type: ignore[attr-defined]
         await db.commit()
 
         # 4. Categories
@@ -197,7 +197,7 @@ async def cleanup_test_data(
             result = await db.execute(
                 delete(CategoryModel).where(CategoryModel.tenant_id == tenant_id)
             )
-            deleted_counts["categories"] = result.rowcount
+            deleted_counts["categories"] = result.rowcount  # type: ignore[attr-defined]
         await db.commit()
 
         total_deleted = sum(deleted_counts.values())
@@ -212,14 +212,14 @@ async def cleanup_test_data(
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error cleaning up test data: {str(e)}",
+            detail=f"Error cleaning up test data: {e!s}",
         ) from e
 
 
 @router.get("/stats/{tenant_id}")
 async def get_test_data_stats(
     tenant_id: UUID,
-    current_user: Annotated[AbstractUserRepository, Depends(get_current_user)],
+    _current_user: Annotated[AbstractUserRepository, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> dict[str, int]:
     """Get statistics about test data for a tenant.

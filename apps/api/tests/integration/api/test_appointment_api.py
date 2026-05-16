@@ -19,7 +19,7 @@ from uuid import uuid4
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from prosell.domain.entities.user import User
+from prosell.domain.entities.user import User, UserStatus
 from prosell.infrastructure.api.main import app
 
 
@@ -49,7 +49,7 @@ def mock_user():
         email="branch@example.com",
         full_name="Test Branch",
         tenant_id=tenant_id,
-        status="active",
+        status=UserStatus.ACTIVE,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
@@ -61,7 +61,6 @@ class TestCreateAppointmentEndpoint:
     @pytest.mark.asyncio
     async def test_create_appointment_success(self, async_client, auth_headers):
         """Test successful appointment creation via API."""
-        tenant_id = uuid4()
         lead_id = uuid4()
         user_id = uuid4()
         product_id = uuid4()

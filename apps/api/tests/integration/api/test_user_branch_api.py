@@ -28,7 +28,7 @@ from prosell.application.use_cases.user_branch.bulk_assign import BulkAssignUseC
 from prosell.application.use_cases.user_branch.remove_user_branch import (
     RemoveUserBranchUseCase,
 )
-from prosell.domain.entities.user import User
+from prosell.domain.entities.user import User, UserStatus
 from prosell.domain.entities.user_branch import UserBranch
 from prosell.domain.exceptions.branch_exceptions import BranchNotFoundError
 from prosell.domain.exceptions.user_branch_exceptions import (
@@ -399,7 +399,7 @@ async def test_assign_seller_to_branch() -> None:
         email="admin@example.com",
         full_name="Admin User",
         tenant_id=tenant_id,
-        is_active=True,
+        status=UserStatus.ACTIVE,
         email_verified=True,
     )
     admin_role = Role.create_system_role(RoleType.ADMIN)
@@ -496,7 +496,7 @@ async def test_bulk_assign_sellers() -> None:
         email="admin@example.com",
         full_name="Admin User",
         tenant_id=tenant_id,
-        is_active=True,
+        status=UserStatus.ACTIVE,
         email_verified=True,
     )
     admin_role = Role.create_system_role(RoleType.ADMIN)
@@ -565,7 +565,7 @@ async def test_remove_seller_from_branch() -> None:
         email="admin@example.com",
         full_name="Admin User",
         tenant_id=tenant_id,
-        is_active=True,
+        status=UserStatus.ACTIVE,
         email_verified=True,
     )
     admin_role = Role.create_system_role(RoleType.ADMIN)
@@ -628,7 +628,7 @@ async def test_list_user_branches() -> None:
         email="admin@example.com",
         full_name="Admin User",
         tenant_id=tenant_id,
-        is_active=True,
+        status=UserStatus.ACTIVE,
         email_verified=True,
     )
     admin_role = Role.create_system_role(RoleType.ADMIN)
@@ -705,7 +705,7 @@ async def test_admin_manager_only_access() -> None:
         email="seller@example.com",
         full_name="Seller User",
         tenant_id=tenant_id,
-        is_active=True,
+        status=UserStatus.ACTIVE,
         email_verified=True,
     )
     seller_role = Role.create_system_role(RoleType.SALES_AGENT)
@@ -816,7 +816,7 @@ def admin_user(admin_role):
         email="admin@example.com",
         full_name="Admin User",
         tenant_id=uuid4(),
-        is_active=True,
+        status=UserStatus.ACTIVE,
         email_verified=True,
     )
     user.roles = [admin_role]

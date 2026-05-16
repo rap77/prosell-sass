@@ -253,7 +253,7 @@ class TestLeadRepositoryList:
         )
 
         assert total == 2
-        assert all(lead.lead.vendedor_id == vendedor_id for lead in leads)
+        assert all(lead.vendedor_id == vendedor_id for lead in leads)
 
     @pytest.mark.asyncio
     async def test_list_by_manager_returns_all_tenant_leads(self, db_session, test_organization, test_user, test_seller_user):
@@ -300,8 +300,8 @@ class TestLeadRepositoryList:
         assert len(page2) == 2
 
         # IDs should not overlap between pages
-        page1_ids = {lead.lead.id for lead in page1}
-        page2_ids = {lead.lead.id for lead in page2}
+        page1_ids = {lead.id for lead in page1}
+        page2_ids = {lead.id for lead in page2}
         assert page1_ids.isdisjoint(page2_ids)
 
     @pytest.mark.asyncio
@@ -326,4 +326,4 @@ class TestLeadRepositoryList:
             vendedor_id=vendedor_id,
             status=LeadStatus.NEW,
         )
-        assert all(lead.lead.status == LeadStatus.NEW for lead in new_leads)
+        assert all(lead.status == LeadStatus.NEW for lead in new_leads)

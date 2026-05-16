@@ -28,7 +28,6 @@ from prosell.infrastructure.api.routers.vehicle_router import (
 )
 from prosell.infrastructure.services.nhtsa_vin_service import NHTSAVinService
 
-
 # =============================================================================
 # TEST FIXTURES - Mock NHTSA API Responses
 # =============================================================================

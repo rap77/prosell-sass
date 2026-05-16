@@ -30,7 +30,7 @@ from prosell.infrastructure.api.dependencies import (
     get_async_session,
     get_current_auth_user_from_cookie,
 )
-from prosell.infrastructure.api.middleware.rate_limit_middleware import API_LIMIT, rate_limit
+from prosell.infrastructure.api.middleware import smart_rate_limit
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
 )
@@ -44,9 +44,9 @@ async def get_category_repository(session: AsyncSession) -> AbstractCategoryRepo
 
 
 @router.get("", response_model=CategoryListResponse)
-@rate_limit(API_LIMIT)
+@smart_rate_limit("api")
 async def list_categories(
-    request: Request,  # noqa: ARG001 - Required by rate_limit key_func
+    _request: Request,
     parent_id: UUID | None = None,
     is_active: bool | None = None,
     skip: int = 0,
@@ -89,7 +89,7 @@ async def list_categories(
 @router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
     request: CreateCategoryRequest,
-    _current_user: User = Depends(get_current_auth_user_from_cookie),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> CategoryResponse:
     """
@@ -97,6 +97,9 @@ async def create_category(
 
     Only users with MASTER role can create categories.
     """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
     repo = SqlAlchemyCategoryRepository(db)
     use_case = CreateCategoryUseCase(repo)
 
@@ -104,6 +107,8 @@ async def create_category(
         return await use_case.execute(request)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
 
 @router.get("/{category_id}", response_model=CategoryResponse)

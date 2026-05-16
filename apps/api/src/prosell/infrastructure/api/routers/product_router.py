@@ -1,7 +1,7 @@
 """Product router."""
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.product import (
@@ -58,7 +58,7 @@ async def create_product(
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    
+
     # Inject auth context via model_copy (Pydantic v2 idiomatic)
     effective_tenant_id = request.tenant_id or current_user.tenant_id or current_user.id
     effective_org_id = request.organization_id or current_user.tenant_id or current_user.id
@@ -71,7 +71,7 @@ async def create_product(
     product_repo = SqlAlchemyProductRepository(db)
     category_repo = SqlAlchemyCategoryRepository(db)
     use_case = CreateProductUseCase(product_repo, category_repo)
-    
+
     try:
         return await use_case.execute(request)
     except ValueError as e:
@@ -92,7 +92,8 @@ async def bulk_upload_products(
 
     CSV format requirements:
     - Required columns: vin, title, price, category_id
-    - Optional columns: description, condition, currency, location_city, location_state, location_zip, attributes
+    - Optional columns: description, condition, currency, location_city, location_state,
+    location_zip, attributes
 
     The endpoint:
     - Parses CSV and validates all rows
@@ -103,7 +104,8 @@ async def bulk_upload_products(
     Example CSV:
     ```csv
     vin,title,price,category_id,description,condition
-    1HGCM82633A123456,2020 Honda Accord,25000.00,123e4567-e89b-12d3-a456-426614174000,Well maintained,used
+    1HGCM82633A123456,2020 Honda Accord,25000.00,123e4567-e89b-12d3-a456-426614174000,Well
+    maintained,used
     1HGCM82633A123457,2021 Honda Civic,22000.00,123e4567-e89b-12d3-a456-426614174000,Like new,used
     ```
     """

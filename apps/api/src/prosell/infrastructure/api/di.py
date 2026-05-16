@@ -18,11 +18,15 @@ from prosell.application.use_cases.user_branch.assign_user_branch import AssignU
 from prosell.application.use_cases.user_branch.bulk_assign import BulkAssignUseCase
 from prosell.application.use_cases.user_branch.remove_user_branch import RemoveUserBranchUseCase
 from prosell.domain.repositories.branch_repository import AbstractBranchRepository
+from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.publication_repository import IPublicationRepository
 from prosell.domain.repositories.user_branch_repository import AbstractUserBranchRepository
 from prosell.infrastructure.api.dependencies import get_async_session
 from prosell.infrastructure.repositories.branch_repository_impl import SqlAlchemyBranchRepository
+from prosell.infrastructure.repositories.facebook_page_repository_impl import (
+    SqlAlchemyFacebookPageRepository,
+)
 from prosell.infrastructure.repositories.lead_repository_impl import SqlAlchemyLeadRepository
 from prosell.infrastructure.repositories.publication_repository_impl import (
     SqlAlchemyPublicationRepository,
@@ -33,8 +37,6 @@ from prosell.infrastructure.repositories.user_branch_repository_impl import (
 from prosell.infrastructure.services.facebook_graph_api_client import (
     FacebookGraphApiClient,
 )
-from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
-from prosell.infrastructure.repositories.facebook_page_repository_impl import SqlAlchemyFacebookPageRepository
 from prosell.infrastructure.services.token_encryption_service import TokenEncryptionService
 
 
@@ -138,11 +140,11 @@ async def get_facebook_page_repository(
 
 def get_encryption_service() -> TokenEncryptionService:
     """Provide TokenEncryptionService instance."""
-    from prosell.core.config import settings
-    
     # Convert base64 string to bytes
     import base64
-    key_bytes = base64.urlsafe_b64decode(settings.facebook_encryption_key + "==" * (4 - len(settings.facebook_encryption_key) % 4))
+
+    from prosell.core.config import settings
+    key_bytes = base64.urlsafe_b64decode(settings.facebook_encryption_key + "==" * (4 - len(settings.facebook_encryption_key) % 4))  # noqa: E501
     return TokenEncryptionService(encryption_key=key_bytes)
 
 async def get_process_facebook_webhook_use_case(

@@ -8,7 +8,7 @@ from fastapi import status
 from httpx import ASGITransport, AsyncClient, Response
 
 from prosell.domain.entities.organization import Organization
-from prosell.domain.entities.user import User
+from prosell.domain.entities.user import User, UserStatus
 from prosell.domain.entities.wallet import Wallet
 from prosell.domain.value_objects.organization_status import OrganizationStatus
 from prosell.infrastructure.api.main import app
@@ -105,7 +105,7 @@ def mock_auth_user():
         email="test@example.com",
         full_name="Test User",
         tenant_id=uuid4(),
-        is_active=True,
+        status=UserStatus.ACTIVE,
         email_verified=True,
     )
 

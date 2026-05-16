@@ -225,7 +225,7 @@ class TestRoleEntity:
         assert role.name == "Admin"
         assert role.is_system_role is True
         assert role.tenant_id is None
-        assert "System role" in role.description
+        assert role.description is not None and "System role" in role.description
 
     def test_create_custom_role_factory(self) -> None:
         """Test Role.create_custom_role() factory method."""

@@ -4,7 +4,6 @@ These tests verify that when a lead is created without a vendedor_id,
 the LeadAssignmentRulesEngine automatically assigns it to an available dealer.
 """
 
-from typing import Optional
 from uuid import UUID, uuid4
 
 import pytest
@@ -12,12 +11,10 @@ import pytest
 from prosell.application.dto.lead.request import CreateLeadRequest
 from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
 from prosell.domain.entities.role import Role, RoleType
-from prosell.domain.entities.team import Team, TeamMemberRole
 from prosell.domain.entities.user import User, UserStatus
-from prosell.domain.services.lead_assignment_rules_engine import AssignmentStrategy
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.role_model import UserRoleModel
-from prosell.infrastructure.models.team_model import TeamModel, TeamMemberModel
+from prosell.infrastructure.models.team_model import TeamMemberModel, TeamModel
 from prosell.infrastructure.models.user_model import UserModel
 from prosell.infrastructure.repositories.lead_repository_impl import SqlAlchemyLeadRepository
 from prosell.infrastructure.repositories.product_repository_impl import SqlAlchemyProductRepository
@@ -27,13 +24,12 @@ from prosell.infrastructure.repositories.team_repository_impl import (
 )
 from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
 
-
 # =============================================================================
 # HELPERS
 # =============================================================================
 
 
-def make_user_domain(role_type: RoleType, tenant_id, user_id: Optional[UUID] = None) -> User:
+def make_user_domain(role_type: RoleType, tenant_id, user_id: UUID | None = None) -> User:
     """Build a User domain entity for testing."""
     role = Role(
         id=uuid4(),
@@ -160,13 +156,12 @@ class TestLeadAutoAssignmentIntegration:
         This test will FAIL because B4.3.06 is not yet implemented.
         After implementation, it should pass.
         """
-        from sqlalchemy import select
 
         tenant_id = test_organization.tenant_id
 
         # Setup: Create dealer users and a team
         dealers = await create_dealer_users(db_session, test_organization, count=3)
-        team = await create_sales_team(db_session, test_organization, dealers)
+        await create_sales_team(db_session, test_organization, dealers)
 
         # Create use case with all required dependencies
         lead_repo = SqlAlchemyLeadRepository(db_session)
@@ -295,6 +290,7 @@ class TestLeadAutoAssignmentIntegration:
 
         # Count leads per dealer
         from sqlalchemy import select
+
         from prosell.infrastructure.models.lead_model import LeadModel
 
         stmt = select(LeadModel.vendedor_id).where(

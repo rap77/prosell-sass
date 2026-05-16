@@ -1,28 +1,9 @@
 """FastAPI application entry point for ProSell SaaS."""
 
 from fastapi import FastAPI, Request, Response, status
-from pydantic import BaseModel
-
-
-# Response Models
-class HealthResponse(BaseModel):
-    """Health check response."""
-
-    status: str
-    environment: str
-
-
-class RootResponse(BaseModel):
-    """Root endpoint response."""
-
-    message: str
-    version: str
-    docs: str
-
-
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.exc import IntegrityError
@@ -40,8 +21,8 @@ from prosell.infrastructure.api.middleware.exception_handlers import (
 from prosell.infrastructure.api.routers import (
     admin_router,
     auth_router,
-    category_router,
     branch_router,
+    category_router,
     facebook_router,
     health_router,
     image_router,
@@ -54,10 +35,27 @@ from prosell.infrastructure.api.routers import (
     vehicle_router,
     wallet_router,
 )
-from prosell.infrastructure.api.routers.test_router import router as test_router
 from prosell.infrastructure.api.routers.appointment_router import router as appointment_router
+from prosell.infrastructure.api.routers.test_router import router as test_router
 from prosell.infrastructure.api.routers.vendedor_router import router as vendedor_router
 from prosell.infrastructure.api.routers.webhook_router import router as webhook_router
+
+
+# Response Models
+class HealthResponse(BaseModel):
+    """Health check response."""
+
+    status: str
+    environment: str
+
+
+class RootResponse(BaseModel):
+    """Root endpoint response."""
+
+    message: str
+    version: str
+    docs: str
+
 
 app = FastAPI(
     title="ProSell SaaS API",
@@ -295,10 +293,8 @@ if settings.environment in ["development", "testing"]:
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> JSONResponse:
     """Health check endpoint (not rate limited)."""
-    from fastapi.responses import JSONResponse
-
     return JSONResponse(
         content={
             "status": "healthy",
@@ -308,7 +304,7 @@ async def health_check():
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, str]:
     """Root endpoint (not rate limited)."""
     return {
         "message": "ProSell SaaS API",

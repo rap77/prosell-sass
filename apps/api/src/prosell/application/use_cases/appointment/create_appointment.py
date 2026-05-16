@@ -1,5 +1,6 @@
 """CreateAppointmentUseCase — validates time, checks conflicts, updates lead status."""
 
+from contextlib import suppress
 from uuid import UUID
 
 from prosell.application.dto.appointment.request import CreateAppointmentRequest
@@ -120,13 +121,10 @@ class CreateAppointmentUseCase:
             return
 
         # Only update if not already appointment_set and the transition is valid
-        if lead.status != LeadStatus.APPOINTMENT_SET and lead.can_transition_to(LeadStatus.APPOINTMENT_SET):
-            try:
+        if lead.status != LeadStatus.APPOINTMENT_SET and lead.can_transition_to(LeadStatus.APPOINTMENT_SET):  # noqa: E501
+            with suppress(LeadStateTransitionException):
                 await self.lead_repository.update_status(
                     lead_id=lead_id,
                     tenant_id=tenant_id,
                     new_status=LeadStatus.APPOINTMENT_SET,
                 )
-            except LeadStateTransitionException:
-                # Graceful: appointment is created, lead status update is skipped
-                pass

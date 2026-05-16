@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
+from pydantic import Field
+
 from prosell.domain.base import DomainModel
 
 
@@ -32,7 +34,7 @@ class Branch(DomainModel):
 
     # Business fields
     timezone: str = "America/Montevideo"
-    settings: dict[str, object] = {}
+    settings: dict[str, object] = Field(default_factory=dict)
 
     # Audit fields
     created_at: datetime = datetime.now(UTC)

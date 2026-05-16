@@ -58,9 +58,6 @@ async def sample_publication(
     sample_product: ProductModel,
 ) -> PublicationModel:
     """Create a sample publication for testing."""
-    from prosell.infrastructure.models.organization_model import OrganizationModel
-    from prosell.infrastructure.models.product_model import ProductModel
-    from sqlalchemy.ext.asyncio import AsyncSession
 
     publication_model = PublicationModel(
         id=uuid4(),

@@ -326,7 +326,19 @@ class Settings(BaseSettings):
     rate_limit_auth_requests_per_minute: int = Field(
         default=5,
         ge=1,
-        description="Auth endpoint rate limit (requests per minute). Raise for dev/test environments.",
+        description="Auth endpoint rate limit (requests per minute). Raise for dev/test environments.",  # noqa: E501
+    )
+    rate_limit_exempt_ips: list[str] = Field(
+        default=[],
+        description="List of IP addresses exempt from rate limiting (e.g., ['192.168.1.100', '10.0.0.1'])",  # noqa: E501
+    )
+    rate_limit_exempt_ranges: list[str] = Field(
+        default=[],
+        description="List of IP ranges exempt from rate limiting (e.g., ['192.168.1.*', '10.0.*.*'])",  # noqa: E501
+    )
+    test_api_key: str | None = Field(
+        default=None,
+        description="API key for test exemption (set in test environment)",
     )
 
     # =============================================================================

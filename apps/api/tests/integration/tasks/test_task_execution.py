@@ -20,7 +20,7 @@ async def setup_broker():
             await broker.startup()
         except AttributeError:
             # Fallback to start() (InMemoryBroker)
-            await broker.start()
+            await broker.start()  # type: ignore[attr-defined]
         _broker_started = True
 
     yield

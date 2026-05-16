@@ -106,7 +106,7 @@ class Translator:
 
         return key  # Fallback to key if translation not found
 
-    @lru_cache(maxsize=128)  # noqa: B019 - Cache is per-instance, acceptable use case
+    @lru_cache(maxsize=128)  # noqa: B019
     def get_cached(self, key: str, lang: Literal["es", "en"] = "es") -> str:
         """Get translated string with LRU caching.
 

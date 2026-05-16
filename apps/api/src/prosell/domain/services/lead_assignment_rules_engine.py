@@ -179,8 +179,8 @@ class RoundRobinAssignmentRule(AssignmentRule):
 
     def score(
         self,
-        lead: Lead,
-        candidate: AssignmentCandidate,
+        lead: Lead,  # noqa: ARG002
+        candidate: AssignmentCandidate,  # noqa: ARG002
         **context: Any,
     ) -> float:
         """
@@ -272,7 +272,7 @@ class WorkloadBalancingAssignmentRule(AssignmentRule):
 
     def score(
         self,
-        lead: Lead,
+        lead: Lead,  # noqa: ARG002
         candidate: AssignmentCandidate,
         **context: Any,
     ) -> float:
@@ -313,7 +313,7 @@ class GeographicProximityAssignmentRule(AssignmentRule):
 
     def score(
         self,
-        lead: Lead,
+        lead: Lead,  # noqa: ARG002
         candidate: AssignmentCandidate,
         **context: Any,
     ) -> float:
@@ -442,7 +442,7 @@ class LeadAssignmentRulesEngine:
         self,
         lead: Lead,
         candidates: list[AssignmentCandidate],
-        context: dict[str, Any],
+        context: dict[str, Any],  # noqa: ARG002
     ) -> AssignmentResult:
         """Assign using round-robin strategy."""
         dealer_count = len(candidates)

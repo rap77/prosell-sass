@@ -8,14 +8,14 @@ This task runs every 10 minutes as a fallback to webhooks.
 import pytest
 
 from prosell.infrastructure.tasks.use_cases.poll_facebook_leads_task import (
+    POLLING_INTERVAL_SECONDS,
+    RETRY_BACKOFF_MULTIPLIER,
+    RETRY_INITIAL_DELAY_SECONDS,
+    RETRY_JITTER_RATIO,
+    RETRY_MAX_RETRIES,
+    TIMEOUT_PER_PAGE_SECONDS,
     poll_facebook_leads_task,
     should_create_lead,
-    POLLING_INTERVAL_SECONDS,
-    TIMEOUT_PER_PAGE_SECONDS,
-    RETRY_MAX_RETRIES,
-    RETRY_INITIAL_DELAY_SECONDS,
-    RETRY_BACKOFF_MULTIPLIER,
-    RETRY_JITTER_RATIO,
 )
 
 # Track broker state
@@ -34,7 +34,7 @@ async def setup_broker():
             await poll_facebook_leads_task.broker.startup()
         except AttributeError:
             # Fallback to start() (InMemoryBroker)
-            await poll_facebook_leads_task.broker.start()
+            await poll_facebook_leads_task.broker.start()  # type: ignore[attr-defined]
         _broker_started = True
 
     yield
@@ -615,7 +615,7 @@ class TestPollFacebookLeadsTaskRetryLogic:
 
 __all__ = [
     "TestPollFacebookLeadsTask",
-    "TestPollFacebookLeadsTaskStructure",
     "TestPollFacebookLeadsTaskRateLimiting",
     "TestPollFacebookLeadsTaskRetryLogic",
+    "TestPollFacebookLeadsTaskStructure",
 ]

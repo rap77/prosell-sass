@@ -6,6 +6,9 @@ from prosell.domain.repositories.organization_repository import AbstractOrganiza
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.repositories.role_repository import AbstractRoleRepository
 from prosell.domain.repositories.session_repository import AbstractSessionRepository
+from prosell.domain.repositories.team_invitation_repository import (
+    AbstractTeamInvitationRepository,
+)
 from prosell.domain.repositories.team_repository import (
     AbstractTeamMemberRepository,
     AbstractTeamRepository,
@@ -24,6 +27,7 @@ __all__ = [
     "AbstractProductRepository",
     "AbstractRoleRepository",
     "AbstractSessionRepository",
+    "AbstractTeamInvitationRepository",
     "AbstractTeamMemberRepository",
     "AbstractTeamRepository",
     "AbstractUserBranchRepository",

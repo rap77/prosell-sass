@@ -6,7 +6,7 @@ async def test_rate_limiter_allows_first_request():
     from prosell.infrastructure.api.routers.publisher_router import router
 
     publish_route = next(
-        (r for r in router.routes if "/publish" in str(r.path)),
+        (r for r in router.routes if "/publish" in str(r.path)),  # type: ignore[attr-defined]
         None,
     )
     assert publish_route is not None, "publish route must be registered on publisher router"
@@ -22,7 +22,7 @@ async def test_rate_limiter_configured_on_publish_route():
     from prosell.infrastructure.api.routers.publisher_router import router
 
     publish_route = next(
-        (r for r in router.routes if "/publish" in str(r.path)),
+        (r for r in router.routes if "/publish" in str(r.path)),  # type: ignore[attr-defined]
         None,
     )
     assert publish_route is not None
@@ -30,7 +30,7 @@ async def test_rate_limiter_configured_on_publish_route():
     # Verify rate limiting is wired: the route's dependant must have dependencies.
     # FastAPI stores parameter dependencies in route.dependant.dependencies, not route.dependencies.
     # get_publish_vehicle_use_case depends on get_current_auth_user (auth + rate limit).
-    assert len(publish_route.dependant.dependencies) > 0, (
+    assert len(publish_route.dependant.dependencies) > 0, (  # type: ignore[attr-defined]
         "publish route has no dependencies — expected at least auth + rate limiter. "
         "Add rate limiting via @rate_limit decorator or Depends(rate_limit_publish)."
     )

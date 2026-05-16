@@ -21,7 +21,7 @@ def sample_image_bytes() -> bytes:
 
 
 @pytest.fixture
-async def async_client() -> AsyncGenerator[AsyncClient, None]:
+async def async_client() -> AsyncGenerator[AsyncClient]:
     """Return async HTTP client for testing."""
     from httpx import ASGITransport
 

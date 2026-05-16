@@ -25,6 +25,7 @@ from prosell.application.dto.lead.response import (
 )
 from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.entities.lead_audit_log import LeadAuditLog
+from prosell.domain.value_objects.lead_source import LeadSource
 
 # =============================================================================
 # HELPERS
@@ -88,7 +89,7 @@ class TestCreateLeadRequestSchema:
             product_id=uuid4(),
             vendedor_id=uuid4(),
             message="Interested in the car",
-            source="facebook",
+            source=LeadSource.FACEBOOK,
         )
         assert req.buyer_name == "Juan Pérez"
         assert req.source == "facebook"

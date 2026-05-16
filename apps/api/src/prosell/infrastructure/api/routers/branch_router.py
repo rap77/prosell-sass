@@ -9,7 +9,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from prosell.application.dto.branch import CreateBranchRequest, BranchListResponse, BranchResponse
+from prosell.application.dto.branch import BranchListResponse, BranchResponse, CreateBranchRequest
 from prosell.application.use_cases.branch.create_branch import CreateBranchUseCase
 from prosell.application.use_cases.branch.get_branch import GetBranchUseCase
 from prosell.application.use_cases.branch.list_branches import ListBranchesUseCase

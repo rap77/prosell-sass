@@ -242,7 +242,6 @@ class WalletTransaction(DomainModel):
             return {}
         if isinstance(v, str):
             import json
-
             from typing import cast
             return cast(dict[str, object], json.loads(v)) or {}
         return v

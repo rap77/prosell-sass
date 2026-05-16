@@ -7,8 +7,6 @@ from prosell.domain.exceptions.org_exceptions import OrgDomainException
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 
 
-
-
 class GetVendedoresUseCase:
     """
     Get all vendedores (salespersons) in an organization.
@@ -71,7 +69,7 @@ class GetVendedoresUseCase:
                 tenant_id=str(user.tenant_id),
                 name=user.full_name,
                 email=user.email,
-                role=user.roles[0].role_type.value if user.roles and len(user.roles) > 0 else "vendedor",
+                role=user.roles[0].role_type.value if user.roles and len(user.roles) > 0 else "vendedor",  # noqa: E501
                 created_at=user.created_at.isoformat(),
                 updated_at=user.updated_at.isoformat(),
             )

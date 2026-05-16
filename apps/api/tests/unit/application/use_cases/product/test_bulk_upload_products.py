@@ -1,17 +1,15 @@
 """Test BulkUploadProductsUseCase."""
 
-import pytest
 from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
+import pytest
+
 from prosell.application.use_cases.product.bulk_upload_products import (
     BulkUploadProductsUseCase,
-    BulkUploadResult,
 )
-from prosell.domain.services.csv_product_parser import CSVProductParser, ParsedProductRow
-from prosell.domain.entities.product import Product
 from prosell.domain.entities.category import Category
-from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
+from prosell.domain.services.csv_product_parser import CSVProductParser, ParsedProductRow
 
 
 class TestBulkUploadProductsUseCase:
@@ -150,7 +148,7 @@ class TestBulkUploadProductsUseCase:
         assert result.created_count == 1
         assert result.failed_count == 1
         assert len(result.errors) == 1
-        assert "Category not found" in result.errors[0]["error"]
+        assert "Category not found" in str(result.errors[0]["error"])
         assert len(created_products) == 1
 
     @pytest.mark.asyncio

@@ -88,7 +88,7 @@ async def seller_user(test_seller_user: UserModel) -> User:
 
 
 @pytest_asyncio.fixture
-async def async_client_as_admin(admin_user: User, db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+async def async_client_as_admin(admin_user: User, db_session: AsyncSession) -> AsyncGenerator[AsyncClient]:
     """
     AsyncClient authenticated as admin_user via dependency_override.
 
@@ -118,7 +118,7 @@ async def async_client_as_admin(admin_user: User, db_session: AsyncSession) -> A
 
 
 @pytest_asyncio.fixture
-async def async_client_as_seller(seller_user: User, db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+async def async_client_as_seller(seller_user: User, db_session: AsyncSession) -> AsyncGenerator[AsyncClient]:
     """
     AsyncClient authenticated as seller_user via dependency_override.
 

@@ -13,8 +13,8 @@ async def delete_listing_task(publication_id: str) -> dict[str, Any]:
     This task is best-effort — if FB delete fails, the vehicle is
     still marked sold in ProSell (prevents double-selling).
     """
-    from uuid import UUID
     import os
+    from uuid import UUID
 
     from prosell.infrastructure.database.session import async_session_maker
     from prosell.infrastructure.repositories.facebook_page_repository_impl import (

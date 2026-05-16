@@ -48,8 +48,8 @@ def seller_user_id() -> str:
 def facebook_account() -> FacebookAccount:
     """Return a test Facebook account."""
     return FacebookAccount(
-        id=str(uuid4()),
-        seller_user_id=str(uuid4()),
+        id=str(uuid4()),  # type: ignore[arg-type]
+        seller_user_id=str(uuid4()),  # type: ignore[arg-type]
         facebook_user_id="123456789",
         access_token_encrypted="encrypted_token",
         token_expires_at=None,
@@ -64,8 +64,8 @@ def facebook_account() -> FacebookAccount:
 def facebook_page() -> FacebookPage:
     """Return a test Facebook page."""
     return FacebookPage(
-        id=str(uuid4()),
-        facebook_account_id=str(uuid4()),
+        id=str(uuid4()),  # type: ignore[arg-type]
+        facebook_account_id=str(uuid4()),  # type: ignore[arg-type]
         page_id="987654321",
         page_name="Test Branchship",
         page_access_token_encrypted="encrypted_page_token",
@@ -190,7 +190,7 @@ class TestAuthorizeFacebookAccountUseCase:
 
         use_case = AuthorizeFacebookAccountUseCase(facebook_service, redis)
 
-        request = AuthorizeFacebookAccountRequest(seller_user_id=seller_user_id)
+        request = AuthorizeFacebookAccountRequest(seller_user_id=seller_user_id)  # type: ignore[arg-type]
         response = await use_case.execute(request)
 
         assert response.authorization_url == "https://facebook.com/oauth"
@@ -213,7 +213,7 @@ class TestAuthorizeFacebookAccountUseCase:
 
         use_case = AuthorizeFacebookAccountUseCase(facebook_service, redis)
 
-        request = AuthorizeFacebookAccountRequest(seller_user_id=seller_user_id)
+        request = AuthorizeFacebookAccountRequest(seller_user_id=seller_user_id)  # type: ignore[arg-type]
 
         with pytest.raises(FacebookNotConfiguredException):
             await use_case.execute(request)
@@ -290,7 +290,7 @@ class TestListAccountsUseCase:
 
         use_case = ListAccountsUseCase(account_repo)
 
-        accounts = await use_case.execute(seller_user_id)
+        accounts = await use_case.execute(seller_user_id)  # type: ignore[arg-type]
 
         assert len(accounts) == 1
         assert accounts[0].id == facebook_account.id
@@ -303,7 +303,7 @@ class TestListAccountsUseCase:
 
         use_case = ListAccountsUseCase(account_repo)
 
-        accounts = await use_case.execute(seller_user_id)
+        accounts = await use_case.execute(seller_user_id)  # type: ignore[arg-type]
 
         assert len(accounts) == 0
 
@@ -323,7 +323,7 @@ class TestFetchPagesUseCase:
 
         page_repo = make_facebook_page_repo()
         page = FacebookPage(
-            id=str(uuid4()),
+            id=str(uuid4()),  # type: ignore[arg-type]
             facebook_account_id=facebook_account.id,
             page_id="987654321",
             page_name="Test Branchship",
@@ -366,7 +366,7 @@ class TestFetchPagesUseCase:
         use_case = FetchPagesUseCase(page_repo, account_repo)
 
         with pytest.raises(FacebookAccountNotFoundException):
-            await use_case.execute(facebook_account.id, str(uuid4()))
+            await use_case.execute(facebook_account.id, str(uuid4()))  # type: ignore[arg-type]
 
     async def test_fetch_pages_account_not_found_raises(self) -> None:
         """Raises not found when account does not exist."""
@@ -377,7 +377,7 @@ class TestFetchPagesUseCase:
         use_case = FetchPagesUseCase(page_repo, account_repo)
 
         with pytest.raises(FacebookAccountNotFoundException):
-            await use_case.execute(str(uuid4()), str(uuid4()))
+            await use_case.execute(str(uuid4()), str(uuid4()))  # type: ignore[arg-type]
 
 
 # =============================================================================
@@ -423,7 +423,7 @@ class TestSetDefaultPageUseCase:
         with pytest.raises(FacebookAccountNotFoundException):
             await use_case.execute(
                 account_id=facebook_account.id,
-                page_id=str(uuid4()),
+                page_id=str(uuid4()),  # type: ignore[arg-type]
                 seller_user_id=facebook_account.seller_user_id,
             )
 
@@ -472,8 +472,8 @@ class TestDisconnectFacebookAccountUseCase:
 
         account_id = str(uuid4())
         request = DisconnectFacebookAccountRequest(
-            account_id=account_id,
-            seller_user_id=str(uuid4()),
+            account_id=account_id,  # type: ignore[arg-type]
+            seller_user_id=str(uuid4()),  # type: ignore[arg-type]
         )
 
         with pytest.raises(FacebookAccountNotFoundException):
@@ -532,7 +532,7 @@ class TestRefreshTokenUseCase:
 
         # Direct instantiation with correct parameter order
         use_case = RefreshTokenUseCase(
-            account_repository=account_repo,
+            account_repository=account_repo,  # type: ignore[arg-type]
             facebook_service=facebook_service,
             encryption_service=encryption,
         )

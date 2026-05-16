@@ -18,7 +18,7 @@ from prosell.domain.entities.facebook_account import (
     FacebookAccountStatus,
 )
 from prosell.domain.entities.facebook_page import FacebookPage
-from prosell.domain.entities.user import User
+from prosell.domain.entities.user import User, UserStatus
 from prosell.infrastructure.api.main import app
 
 # =============================================================================
@@ -100,8 +100,8 @@ def sample_account() -> FacebookAccount:
     """Sample Facebook account."""
     account_id = uuid4()
     return FacebookAccount(
-        id=str(account_id),
-        seller_user_id=str(uuid4()),
+        id=str(account_id),  # type: ignore[arg-type]
+        seller_user_id=str(uuid4()),  # type: ignore[arg-type]
         facebook_user_id="987654321",
         access_token_encrypted="encrypted",
         token_expires_at=datetime.now(UTC) + timedelta(days=60),
@@ -116,8 +116,8 @@ def sample_account() -> FacebookAccount:
 def sample_page() -> FacebookPage:
     """Sample Facebook page."""
     return FacebookPage(
-        id=str(uuid4()),
-        facebook_account_id=str(uuid4()),
+        id=str(uuid4()),  # type: ignore[arg-type]
+        facebook_account_id=str(uuid4()),  # type: ignore[arg-type]
         page_id="123456789",
         page_name="Test Page",
         page_access_token_encrypted="encrypted",
@@ -136,7 +136,7 @@ def mock_auth_user() -> User:
         email="test@example.com",
         full_name="Test User",
         tenant_id=uuid4(),
-        is_active=True,
+        status=UserStatus.ACTIVE,
         email_verified=True,
     )
 
@@ -286,7 +286,7 @@ class TestAccountsEndpoint:
         # Use the mock_auth_user.id for seller_user_id
         account = FacebookAccount(
             id=sample_account.id,
-            seller_user_id=str(mock_auth_user.id),  # Must match current user
+            seller_user_id=str(mock_auth_user.id),  # Must match current user  # type: ignore[arg-type]
             facebook_user_id=sample_account.facebook_user_id,
             access_token_encrypted=sample_account.access_token_encrypted,
             token_expires_at=sample_account.token_expires_at,

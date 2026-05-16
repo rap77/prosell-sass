@@ -6,9 +6,9 @@ This test was recreated after DTO refactoring (2026-05-07).
 """
 
 
-from prosell.application.dto.vehicle.response import VehicleResponse
-from prosell.application.dto.product.create import CreateProductRequest
 from prosell.application.dto.lead.request import CreateLeadRequest, UpdateLeadStatusRequest
+from prosell.application.dto.product.create import CreateProductRequest
+from prosell.application.dto.vehicle.response import VehicleResponse
 
 
 class TestVehicleResponseSchema:
@@ -31,8 +31,8 @@ class TestVehicleResponseSchema:
 
     def test_vehicle_response_accepts_valid_data(self):
         """VehicleResponse should accept valid vehicle data."""
-        from uuid import uuid4
         from datetime import datetime
+        from uuid import uuid4
 
         valid_data = {
             'id': uuid4(),

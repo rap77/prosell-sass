@@ -97,7 +97,7 @@ class CircuitBreaker:
             self._on_failure()
             raise e
 
-    def _should_attempt_reset(self) -> bool:  # noqa: D401
+    def _should_attempt_reset(self) -> bool:
         """Check if timeout has passed to attempt reset.
 
         Returns:

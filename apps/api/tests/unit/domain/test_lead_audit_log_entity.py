@@ -84,5 +84,5 @@ class TestLeadAuditLogEntity:
         )
 
         # Attempting to modify should raise ValidationError
-        with pytest.raises(Exception):  # Pydantic ValidationError
+        with pytest.raises(Exception):  # noqa: B017 - Pydantic ValidationError
             audit_log.reason = "Modified reason"
