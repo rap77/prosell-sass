@@ -3,7 +3,7 @@
 > **MasterMind operational file:** keep task headers, acceptance-criteria blocks, and task ordering stable for `/mm:complete-task`.
 > **Official executive MVP status:** `docs/mvp-status.md`
 
-**Milestone**: Completar MVP de ProSell: publicación de vehículos en Facebook Marketplace, captura de leads y confirmación de citas
+**Milestone**: Completar MVP de ProSell para el vertical inicial: publicación en Facebook Marketplace, captura de leads y confirmación de citas sobre una base de catálogo multinicho
 **Version**: 2.0
 **Status**: Active
 **Last Updated**: 2026-04-27
@@ -12,7 +12,7 @@
 
 ## Overview
 
-This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend integration - COMPLETE ✅) and implementing **Phase 4** (Leads & Appointments - VERTICAL SLICING). The milestone delivers a complete sales cycle: vendedores can publish vehicles to Facebook, capture leads from messages, and schedule buyer appointments with dealers.
+This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend integration - COMPLETE ✅) and implementing **Phase 4** (Leads & Appointments - VERTICAL SLICING). The milestone delivers the first complete sales cycle on top of a multiniche catalog base: vendedores can publish inventory from the initial vertical (today, vehicles) to Facebook, capture leads from messages, and schedule buyer appointments with dealers.
 
 **Phase Status**:
 - ✅ Phase 1: Hybrid Publisher (COMPLETE)
@@ -2343,12 +2343,12 @@ async def execute(self, request: CreateLeadRequest) -> Lead:
 ```
 
 **Acceptance Criteria**:
-- [ ] Round-robin assignment works
-- [ ] Vehicle owner assignment works
-- [ ] Workload balancing works
-- [ ] Rules are configurable
-- [ ] Unit tests for each rule
-- [ ] Integration test for flow
+- [x] Round-robin assignment works
+- [x] Vehicle owner assignment works
+- [x] Workload balancing works
+- [x] Rules are configurable
+- [x] Unit tests for each rule
+- [x] Integration test for flow
 
 **Verification**:
 ```bash
