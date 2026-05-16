@@ -184,27 +184,46 @@ def get_previous_task_id(task_id: str) -> str | None:
 def check_previous_criteria_complete(task_id: str) -> bool:
     """Block task start if the previous task has unverified acceptance criteria.
 
-    For subtasks (e.g., "B2.1"), checks the parent task (B2) ONLY if the parent
-    is marked as complete. Otherwise, skips verification to allow parallel execution.
+    Handles three-level task hierarchy: Phase (B3) → Task (B3.5) → Subtask (B3.5.01).
+
+    For phase-level tasks like "B3.5":
+      - Gets the previous sibling task (e.g., "B3.4") from plan.md
+      - Checks if that sibling is fully complete in todo.md (all subtasks [x])
+      - Blocks start if previous sibling has incomplete subtasks
+
+    For subtasks (e.g., "B3.5.01"), allows parallel execution within the task.
 
     Returns True if OK to proceed, False if blocked.
     """
-    # If this is a subtask (has a dot), check if parent is complete
     if "." in task_id:
-        parent_id = task_id.rsplit(".", 1)[0]
-        parent_complete = _is_parent_task_complete(parent_id)
+        # Count depth: one dot = phase task (B3.5), two dots = subtask (B3.5.01)
+        dot_count = task_id.count(".")
 
-        if not parent_complete:
-            # Parent not complete - don't verify criteria (allow parallel work)
+        if dot_count >= 2:
+            # Deep subtask (B3.5.01) — allow parallel execution within parent task
             return True
 
-        # Parent IS complete - verify its acceptance criteria
-        prev_id = parent_id
-    else:
-        # Not a subtask - get previous task normally
+        # Phase-level task (B3.5): check if previous sibling (B3.4) is complete
         prev_id = get_previous_task_id(task_id)
         if not prev_id:
+            return True  # First task in phase — no previous sibling
+
+        # Check previous sibling completion in todo.md
+        if not _is_task_complete_in_todo(prev_id):
+            mm_error(f"❌ BLOCKED: Previous task {prev_id} is not fully complete")
+            mm_error(f"   Finish {prev_id} before starting {task_id}")
+            mm_error(f"   Check pending items: grep -n '\\[~\\]\\|\\[ \\]' tasks/todo.md | grep {prev_id}")
+            return False
+
+        # Previous sibling complete — also check its acceptance criteria
+        prev_criteria_id = prev_id
+    else:
+        # Top-level task (B3) — get previous task normally
+        prev_criteria_id = get_previous_task_id(task_id)
+        if not prev_criteria_id:
             return True  # First task — no previous to check
+
+    prev_id = prev_criteria_id
 
     content = PLAN_MD.read_text()
     pattern = r"#{2,6}\s+" + re.escape(prev_id) + r".*?\*\*Acceptance(?: Criteria)?\*\*:?\n(.*?)(?=\n#|\n---|\Z)"
@@ -221,6 +240,68 @@ def check_previous_criteria_complete(task_id: str) -> bool:
         mm_error(f"   Complete them first: /mm:verify-criteria {prev_id} --all")
         mm_error(f"   Or auto-check: /mm:verify-criteria {prev_id} --verify")
         return False
+
+    return True
+
+
+def _is_task_complete_in_todo(task_id: str) -> bool:
+    """Check if a task and all its subtasks are marked [x] in todo.md.
+
+    Finds the task's block in todo.md and verifies no [~] or [ ] checkboxes remain.
+
+    Args:
+        task_id: Task ID like "B3.4"
+
+    Returns:
+        True if all subtasks are [x], False if any are [ ] or [~].
+    """
+    try:
+        content = TODO_MD.read_text()
+    except (FileNotFoundError, OSError):
+        return True  # Can't read — don't block
+
+    lines = content.split("\n")
+
+    # Find the task heading line (e.g., "- [x] B3.4:" or "- [~] B3.4:")
+    task_line_pattern = re.compile(rf"^\s*-\s*\[(.)\]\s+{re.escape(task_id)}[:\s]")
+
+    task_start = None
+    task_marker = None
+    for i, line in enumerate(lines):
+        m = task_line_pattern.match(line)
+        if m:
+            task_start = i
+            task_marker = m.group(1)
+            break
+
+    if task_start is None:
+        return True  # Task not found — don't block
+
+    # Parent marker must be [x]
+    if task_marker != "x":
+        return False
+
+    # Scan subtasks until we hit the next sibling task or end
+    # Subtasks are indented lines starting with "  - [" under the task
+    task_indent = len(lines[task_start]) - len(lines[task_start].lstrip())
+    subtask_pattern = re.compile(r"^\s+-\s*\[(.)\]")
+
+    for line in lines[task_start + 1:]:
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        # Stop if we hit a line at the same or lesser indentation that isn't a subtask
+        cur_indent = len(line) - len(line.lstrip())
+        if cur_indent <= task_indent and stripped.startswith("- ["):
+            # Next sibling or parent — stop scanning
+            break
+
+        m = subtask_pattern.match(line)
+        if m:
+            marker = m.group(1)
+            if marker in ("~", " "):
+                return False  # Incomplete subtask found
 
     return True
 
@@ -243,7 +324,6 @@ def _is_parent_task_complete(parent_id: str) -> bool:
         return False
 
     # Look for checkpoint section for this parent task
-    # Pattern: "### Checkpoint X: ... (After B1, B2)" or similar
     checkpoint_pattern = rf"### .*{re.escape(parent_id)}.*Checkpoint.*Complete"
     if re.search(checkpoint_pattern, content, re.IGNORECASE | re.DOTALL):
         return True
