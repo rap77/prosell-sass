@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ImageDropzone } from '@/components/upload/ImageDropzone'
 import { ImageGallery } from '@/components/upload/ImageGallery'
-import { VehicleForm, type VehicleFormValues } from '@/components/forms/VehicleForm'
+import { ProductForm, type ProductFormValues } from '@/components/forms/ProductForm'
 import { useImageUploadOptimized } from '@/lib/hooks/useImageUploadOptimized'
 import { useUploadStore } from '@/lib/stores/uploadStore'
 import { Button } from '@/components/ui/button'
@@ -25,7 +25,7 @@ export default function CreateVehiclePage() {
   const [isUploading, setIsUploading] = useState(false)
 
   // Custom submit handler that uploads images first
-  const handleSubmit = async (data: VehicleFormValues, _imageUrls: string[]) => {
+  const handleSubmit = async (data: ProductFormValues, _imageUrls: string[]) => {
     setIsUploading(true)
 
     try {
@@ -106,7 +106,7 @@ export default function CreateVehiclePage() {
       </section>
 
       {/* Vehicle form with custom submit handler */}
-      <VehicleForm
+      <ProductForm
         mode="create"
         onSubmit={handleSubmit}
       />
