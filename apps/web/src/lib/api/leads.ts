@@ -7,6 +7,29 @@ import { useQuery, useMutation, useQueryClient, type UseQueryResult } from "@tan
 import { toast } from "sonner";
 
 /**
+ * Audit log entry for a lead status change.
+ * Mirrors LeadAuditLogResponse from the backend.
+ */
+export interface LeadAuditLogEntry {
+  id: string;
+  lead_id: string;
+  old_status: LeadStatus;
+  new_status: LeadStatus;
+  changed_by_user_id: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
+/**
+ * Backend response shape for GET /api/v1/leads/{id}
+ * (LeadDetailResponse — includes lead + audit_logs)
+ */
+interface BackendLeadDetailResponse {
+  lead: BackendLeadResponse;
+  audit_logs: LeadAuditLogEntry[];
+}
+
+/**
  * Lead status enum - 5-state lifecycle
  */
 export enum LeadStatus {
@@ -246,24 +269,63 @@ export function useLeads(filters?: LeadFilters, limit: number = 50, offset: numb
   });
 }
 
+/**
+ * getLeadAuditTrail — fetches lead details (which includes audit_logs) for a given lead ID.
+ *
+ * The backend GET /api/v1/leads/{id} returns LeadDetailResponse:
+ *   { lead: LeadResponse, audit_logs: LeadAuditLogResponse[] }
+ *
+ * Audit logs are returned newest-first by the backend.
+ */
+export async function getLeadAuditTrail(leadId: string): Promise<LeadAuditLogEntry[]> {
+  const res = await fetch(`/api/v1/leads/${leadId}`, {
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Failed to fetch lead audit trail" }));
+    throw new Error(error.message || "Failed to fetch lead audit trail");
+  }
+
+  const data = (await res.json()) as BackendLeadDetailResponse;
+  return data.audit_logs;
+}
+
+async function fetchLeadDetail(leadId: string): Promise<BackendLeadDetailResponse> {
+  const res = await fetch(`/api/v1/leads/${leadId}`, { credentials: "include" });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Failed to fetch lead" }));
+    throw new Error(error.message || "Failed to fetch lead");
+  }
+  return (await res.json()) as BackendLeadDetailResponse;
+}
+
+/**
+ * useLead and useLeadAuditTrail share the same query key ["lead-detail", leadId].
+ * TanStack Query deduplicates the HTTP call — one request per lead, two consumers.
+ */
 export function useLead(leadId: string | undefined): UseQueryResult<Lead | null, Error> {
   return useQuery({
-    queryKey: ["lead", leadId],
-    queryFn: async () => {
-      if (!leadId) return null;
+    queryKey: ["lead-detail", leadId],
+    queryFn: () => (leadId ? fetchLeadDetail(leadId) : null),
+    select: (data) => (data ? transformLead(data.lead) : null),
+    enabled: !!leadId,
+    staleTime: 60 * 1000,
+  });
+}
 
-      const res = await fetch(`/api/v1/leads/${leadId}`, {
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to fetch lead" }));
-        throw new Error(error.message || "Failed to fetch lead");
-      }
-
-      const data = (await res.json()) as BackendLeadResponse;
-      return transformLead(data);
-    },
+/**
+ * useLeadAuditTrail — derives audit logs from the shared lead-detail query.
+ * No extra HTTP request — TanStack Query reuses the cache entry from useLead.
+ * Audit logs are returned newest-first (backend ordering).
+ */
+export function useLeadAuditTrail(
+  leadId: string | undefined,
+): UseQueryResult<LeadAuditLogEntry[], Error> {
+  return useQuery({
+    queryKey: ["lead-detail", leadId],
+    queryFn: () => (leadId ? fetchLeadDetail(leadId) : null),
+    select: (data) => data?.audit_logs ?? [],
     enabled: !!leadId,
     staleTime: 60 * 1000,
   });
@@ -291,7 +353,7 @@ export function useUpdateLeadStatus(leadId: string) {
     },
     onSuccess: (updatedLead) => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
-      queryClient.setQueryData(["lead", leadId], updatedLead);
+      queryClient.invalidateQueries({ queryKey: ["lead-detail", leadId] });
       toast.success("Lead status updated successfully");
     },
     onError: (error) => {
@@ -322,7 +384,7 @@ export function useReassignLead(leadId: string) {
     },
     onSuccess: (updatedLead) => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
-      queryClient.setQueryData(["lead", leadId], updatedLead);
+      queryClient.invalidateQueries({ queryKey: ["lead-detail", leadId] });
       toast.success("Lead reassigned successfully");
     },
     onError: (error) => {

@@ -5,4 +5,6 @@ export { LeadStatusDropdown } from "./LeadStatusDropdown";
 export { LeadReassignModal } from "./LeadReassignModal";
 export { TeamLeadList } from "./TeamLeadList";
 export { DuplicateWarning } from "./DuplicateWarning";
+export { LeadAuditTrail } from "./LeadAuditTrail";
+export type { LeadAuditTrailProps } from "./LeadAuditTrail";
 export type { DuplicateMatch } from "./DuplicateWarning";

@@ -5,7 +5,7 @@
 import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi, type Mock } from "vitest";
 import { useRouter } from "next/navigation";
-import { useLead, useLeadDuplicates } from "@/lib/api/leads";
+import { useLead, useLeadDuplicates, useLeadAuditTrail } from "@/lib/api/leads";
 
 // Mock Next.js router
 vi.mock("next/navigation", () => ({
@@ -16,6 +16,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/api/leads", () => ({
   useLead: vi.fn(),
   useLeadDuplicates: vi.fn(),
+  useLeadAuditTrail: vi.fn(),
   LeadStatus: {
     NEW: "new",
     CONTACTED: "contacted",
@@ -50,6 +51,12 @@ describe("LeadDetails Page", () => {
     // Default: no duplicates
     (useLeadDuplicates as Mock).mockReturnValue({
       data: { lead_id: "test-lead-123", duplicates: [], count: 0 },
+      isLoading: false,
+      error: null,
+    });
+    // Default: empty audit trail
+    (useLeadAuditTrail as Mock).mockReturnValue({
+      data: [],
       isLoading: false,
       error: null,
     });

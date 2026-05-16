@@ -361,6 +361,7 @@
   - [x] B3.4.09: Remove TODO comment [requires: 08]
   - [x] B3.4.10: Unit tests for edit mode [requires: 09]
   - [x] B3.4.11: E2E test for edit flow [requires: 10]
+  - [x] Follow-up: `tests/e2e/specs/product-edit-flow.spec.ts` validated against running Docker web/api services on 2026-05-16.
 
 - [x] B3.5: CSV Parser for Bulk Upload (12 hours)
   - [x] B3.5.01: Create CSVProductParser service
@@ -423,16 +424,16 @@
   - [x] B4.3.08: Unit tests for each rule [requires: 07]
   - [x] B4.3.09: Integration test for flow [requires: 08, 06]
 
-- [ ] B4.4: Lead Audit Trail UI (6 hours)
-  - [ ] B4.4.01: Create getLeadAuditTrail API call
-  - [ ] B4.4.02: Create useLeadAuditTrail hook [requires: 01]
-  - [ ] B4.4.03: Create LeadAuditTrail component [requires: 02]
-  - [ ] B4.4.04: Display audit trail chronologically [requires: 03]
-  - [ ] B4.4.05: Show status changes [requires: 04]
-  - [ ] B4.4.06: Show who made changes [requires: 05]
-  - [ ] B4.4.07: Show reasons for changes [requires: 06]
-  - [ ] B4.4.08: Integrate into lead detail page [requires: 03]
-  - [ ] B4.4.09: Unit tests for component [requires: 02]
-  - [ ] B4.4.10: E2E test for display [requires: 09]
+- [~] B4.4: Lead Audit Trail UI (6 hours)
+  - [~] B4.4.01: Create getLeadAuditTrail API call
+  - [~] B4.4.02: Create useLeadAuditTrail hook [requires: 01]
+  - [~] B4.4.03: Create LeadAuditTrail component [requires: 02]
+  - [~] B4.4.04: Display audit trail chronologically [requires: 03]
+  - [~] B4.4.05: Show status changes [requires: 04]
+  - [~] B4.4.06: Show who made changes [requires: 05]
+  - [~] B4.4.07: Show reasons for changes [requires: 06]
+  - [~] B4.4.08: Integrate into lead detail page [requires: 03]
+  - [~] B4.4.09: Unit tests for component [requires: 02]
+  - [~] B4.4.10: E2E test for display [requires: 09]
 
 ## Notes

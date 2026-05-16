@@ -152,9 +152,10 @@ describe("useLead", () => {
   });
 
   it("should fetch single lead successfully", async () => {
+    // GET /api/v1/leads/{id} returns LeadDetailResponse: { lead, audit_logs }
     (global.fetch as any).mockResolvedValueOnce({
       ok: true,
-      json: async () => mockLeadResponse,
+      json: async () => ({ lead: mockLeadResponse, audit_logs: [] }),
     });
 
     const { result } = renderHook(() => useLead("lead-1"), {
