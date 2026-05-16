@@ -59,12 +59,10 @@ async def create_product(
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    # Inject auth context via model_copy (Pydantic v2 idiomatic)
-    effective_tenant_id = request.tenant_id or current_user.tenant_id or current_user.id
-    effective_org_id = request.organization_id or current_user.tenant_id or current_user.id
+    # Always use auth context — never trust tenant_id/organization_id from the client
     request = request.model_copy(update={
-        "tenant_id": effective_tenant_id,
-        "organization_id": effective_org_id,
+        "tenant_id": current_user.tenant_id,
+        "organization_id": current_user.tenant_id,
     })
 
     # Execute use case

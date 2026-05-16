@@ -17,7 +17,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,7 @@ import {
 } from "@/lib/constants/fbVehicleOptions";
 import { useCategories, useCategoryOptions } from "@/lib/api/categories";
 import { useDecodeVin } from "@/lib/api/vehicles";
-import { useCreateProduct } from "@/lib/api/products";
+import { useCreateProduct, useUpdateProduct, useProduct } from "@/lib/api/products";
 import { useAuthStore } from "@/stores/authStore";
 import { VehicleFormAttributes } from "./VehicleFormAttributes";
 import { ProductImageGallery } from "@/components/catalog/ProductImageGallery";
@@ -51,7 +51,7 @@ export type VehicleFormMode = "create" | "edit";
 
 const vehicleSchema = z.object({
   // Category
-  category_id: z.string().optional(),
+  category_id: z.string().min(1, "Please select a category"),
 
   // VIN Section
   vin: z
@@ -69,7 +69,6 @@ const vehicleSchema = z.object({
 
   // Specifications
   body_type: z.string().optional(),
-  body_style: z.string().optional(),
   drivetrain: z.string().optional(),
   transmission: z.string().optional(),
   engine: z.string().optional(),
@@ -165,7 +164,6 @@ export function VehicleForm({
       model: initialData?.model ?? "",
       trim: initialData?.trim ?? "",
       body_type: initialData?.body_type ?? undefined,
-      body_style: initialData?.body_style ?? "",
       drivetrain: initialData?.drivetrain ?? undefined,
       transmission: initialData?.transmission ?? undefined,
       engine: initialData?.engine,
@@ -208,8 +206,56 @@ export function VehicleForm({
   // Product creation hook (Plan 13-03)
   const createProduct = useCreateProduct();
 
+  // Product update hook for edit mode
+  const updateProduct = useUpdateProduct();
+
+  // Load product data in edit mode
+  const { data: existingProduct, isLoading: isLoadingProduct } = useProduct(
+    mode === "edit" ? vehicleId : undefined
+  );
+
   // Derived state
-  const isDisabled = isSubmitting || isPending;
+  const isDisabled = isSubmitting || isPending || isLoadingProduct;
+
+  /**
+   * Pre-fill form with existing product data in edit mode
+   */
+  useEffect(() => {
+    if (mode === "edit" && existingProduct) {
+      const attrs = existingProduct.attributes as VehicleAttributes;
+
+      reset({
+        category_id: existingProduct.category_id,
+        vin: attrs.vin || "",
+        price: existingProduct.price_cents ? existingProduct.price_cents / 100 : 0,
+        year: attrs.year,
+        make: attrs.make || "",
+        model: attrs.model || "",
+        trim: attrs.trim || "",
+        body_type: attrs.body_type || "",
+        drivetrain: attrs.drivetrain || "",
+        transmission: attrs.transmission || "",
+        engine: attrs.engine || "",
+        fuel_type: attrs.fuel_type || "",
+        mpg_city: attrs.mpg_city,
+        mpg_highway: attrs.mpg_highway,
+        mpg_combined: attrs.mpg_combined,
+        mileage: attrs.mileage,
+        mileage_unit: attrs.mileage_unit === "miles" ? "mi" : "km",
+        exterior_color: attrs.exterior_color || "",
+        interior_color: attrs.interior_color || "",
+        has_sunroof: attrs.has_sunroof || false,
+        has_navigation: attrs.has_navigation || false,
+        has_leather: attrs.has_leather || false,
+        has_backup_camera: attrs.has_backup_camera || false,
+        has_bluetooth: attrs.has_bluetooth || false,
+        has_remote_start: attrs.has_remote_start || false,
+        seat_material: attrs.seat_material || "",
+        stock_number: attrs.stock_number || "",
+        description: existingProduct.description || "",
+      });
+    }
+  }, [mode, existingProduct, reset]);
 
   /**
    * Decode VIN and auto-populate fields
@@ -433,10 +479,58 @@ export function VehicleForm({
           router.refresh();
         }
       } else if (mode === "edit" && vehicleId) {
-        // TODO: Implement edit mode with product update
-        toast.error("Edit mode not yet implemented", {
-          description: "Please use the old vehicle form for editing",
+        logger.debug("🚀 MODE: EDIT - Starting product update");
+
+        const vehicleAttributes: VehicleAttributes = {
+          category: "vehicle",
+          vin: data.vin,
+          year: data.year ?? new Date().getFullYear(),
+          make: data.make ?? "",
+          model: data.model ?? "",
+          mileage: data.mileage ?? 0,
+          trim: data.trim,
+          body_type: data.body_type,
+          drivetrain: data.drivetrain,
+          transmission: data.transmission,
+          engine: data.engine,
+          fuel_type: data.fuel_type,
+          mpg_city: data.mpg_city ?? undefined,
+          mpg_highway: data.mpg_highway ?? undefined,
+          mpg_combined: data.mpg_combined ?? undefined,
+          mileage_unit: data.mileage_unit === "mi" ? "miles" : data.mileage_unit,
+          exterior_color: data.exterior_color,
+          interior_color: data.interior_color,
+          has_sunroof: data.has_sunroof,
+          has_navigation: data.has_navigation,
+          has_leather: data.has_leather,
+          has_backup_camera: data.has_backup_camera,
+          has_bluetooth: data.has_bluetooth,
+          has_remote_start: data.has_remote_start,
+          seat_material: data.seat_material,
+          stock_number: data.stock_number,
+        };
+
+        const updatedProduct = await updateProduct.mutateAsync({
+          productId: vehicleId,
+          data: {
+            title: `${data.year ?? ""} ${data.make ?? ""} ${data.model ?? ""}`.trim(),
+            price_cents: Math.round((data.price ?? 0) * 100),
+            category_id: data.category_id ?? "",
+            description: data.description,
+            attributes: vehicleAttributes,
+          },
         });
+
+        logger.debug("✅ Product updated successfully:", updatedProduct);
+
+        if (onSuccess) {
+          logger.debug("📞 Calling custom onSuccess callback");
+          onSuccess();
+        } else {
+          logger.debug("📞 Redirecting to /catalog");
+          router.push("/catalog");
+          router.refresh();
+        }
       }
     } catch (err) {
       // Log error for debugging
@@ -486,7 +580,6 @@ export function VehicleForm({
           model: "Modelo",
           trim: "Trim",
           body_type: "Tipo de Carrocería",
-          body_style: "Estilo",
           drivetrain: "Tracción",
           transmission: "Transmisión",
           engine: "Motor",
@@ -784,7 +877,15 @@ export function VehicleForm({
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.back()}
+          onClick={() => {
+            if (mode === "edit") {
+              router.push("/catalog");
+              router.refresh();
+              return;
+            }
+
+            router.back();
+          }}
           disabled={isDisabled}
           size="lg"
         >

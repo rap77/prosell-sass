@@ -76,8 +76,10 @@ export class LeadFactory extends BaseFactory<LeadData> {
       buyer_phone: 'not-a-phone', // Invalid: bad phone format
       vehicle: null,
       message: 'x'.repeat(5001), // Invalid: exceeds 5000 char limit
-      status: 'invalid' as any, // Invalid: not in enum
-      source: 'invalid' as any, // Invalid: not in enum
+      // @ts-expect-error intentionally invalid enum value for validation testing
+      status: 'invalid',
+      // @ts-expect-error intentionally invalid enum value for validation testing
+      source: 'invalid',
       created_at: 'not-a-date', // Invalid: bad datetime format
       updated_at: 'not-a-date',
     };
@@ -90,12 +92,13 @@ export class LeadFactory extends BaseFactory<LeadData> {
   createEdgeCase(): LeadData {
     const id = this.generateId('lead');
     const now = this.generateDateTime();
+    const timestamp = Date.now().toString().slice(-6); // Last 6 digits for uniqueness
 
     return {
       id,
-      buyer_name: 'Ñoño García-López III', // Special chars, long name
-      buyer_email: 'buyer+test@example.com', // Email with plus sign
-      buyer_phone: '+1 (555) 123-4567', // Phone with formatting
+      buyer_name: `Ñoño García-López III-${timestamp}`, // Special chars + unique suffix
+      buyer_email: `buyer+test-${timestamp}@example.com`, // Email with plus sign + unique
+      buyer_phone: `+1 (555) ${timestamp.slice(-4)}`, // Phone with formatting + unique
       vehicle: {
         id: this.generateUUID(), // Generate valid UUID v4
         title: ' vehicle '.repeat(50), // Very long title

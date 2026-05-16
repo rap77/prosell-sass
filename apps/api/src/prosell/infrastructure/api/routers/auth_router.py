@@ -144,7 +144,7 @@ def _get_provider_redirect_uris() -> dict[str, str]:
 )
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def register(
-    _request: Request,
+    request: Request,
     register_request: RegisterRequest,
     use_case: Annotated[RegisterUserUseCase, Depends(get_register_user_use_case)],
 ) -> RegisterUserResponse:
@@ -175,7 +175,7 @@ async def register(
 @router.post("/login", response_model=LoginUserResponse)
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def login(
-    _request: Request,  # Required by rate_limit decorator
+    request: Request,
     login_data: LoginRequest,
     response: Response,
     use_case: Annotated[LoginUserUseCase, Depends(get_login_user_use_case)],
@@ -202,7 +202,7 @@ async def login(
         value=result.access_token,
         expires=access_token_expiry,
         httponly=True,  # CRITICAL: Prevents JavaScript access (XSS protection)
-        secure=settings.environment == "production",  # HTTPS only (only in production)
+        secure=settings.environment != "development",  # HTTPS only outside dev
         samesite="lax",  # Lax for OAuth compatibility
         domain=settings.cookie_domain,  # Share across all localhost ports
     )
@@ -232,11 +232,11 @@ async def login(
     return result
 
 
-@router.post("/refresh")
+@router.post("/refresh", response_model=RefreshTokenResponse)
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def refresh_token(
-    _fastapi_request: Request,
-    request: RefreshTokenRequest,
+    request: Request,
+    refresh_request: RefreshTokenRequest,
     use_case: Annotated[RefreshTokenUseCase, Depends(get_refresh_token_use_case)],
 ) -> RefreshTokenResponse:
     """
@@ -244,16 +244,16 @@ async def refresh_token(
 
     - **refresh_token**: Valid refresh token
     """
-    uc_request = RefreshTokenUCRequest(refresh_token=request.refresh_token)
+    uc_request = RefreshTokenUCRequest(refresh_token=refresh_request.refresh_token)
     return await use_case.execute(uc_request)
 
 
-@router.post("/oauth/{provider}")
+@router.post("/oauth/{provider}", response_model=OAuthLoginResponse)
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def oauth_login(
     provider: str,
-    _fastapi_request: Request,
-    request: OAuthLoginRequest,
+    request: Request,
+    oauth_request: OAuthLoginRequest,
     use_case: Annotated[OAuthLoginUseCase, Depends(get_oauth_login_use_case)],
 ) -> OAuthLoginResponse:
     """
@@ -266,10 +266,10 @@ async def oauth_login(
     """
     uc_request = OAuthLoginUCRequest(
         provider=provider,
-        provider_user_id=request.provider_user_id,
-        email=request.email,
-        full_name=request.full_name,
-        avatar_url=request.avatar_url,
+        provider_user_id=oauth_request.provider_user_id,
+        email=oauth_request.email,
+        full_name=oauth_request.full_name,
+        avatar_url=oauth_request.avatar_url,
     )
     return await use_case.execute(uc_request)
 
@@ -278,7 +278,7 @@ async def oauth_login(
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def oauth_authorize(
     provider: str,
-    _request: Request,
+    request: Request,
     oauth_service: Annotated[IOAuthService, Depends(get_oauth_service)],
 ) -> RedirectResponse:
     """
@@ -342,7 +342,7 @@ async def oauth_authorize(
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def oauth_callback(
     provider: str,
-    _request: Request,
+    request: Request,
     oauth_service: Annotated[IOAuthService, Depends(get_oauth_service)],
     oauth_use_case: Annotated[OAuthLoginUseCase, Depends(get_oauth_login_use_case)],
     code: str | None = Query(None, description="Authorization code from OAuth provider"),
@@ -454,7 +454,7 @@ async def oauth_callback(
             expires=access_token_expiry,
             path="/",  # CRITICAL: Make cookie available to all paths
             httponly=True,  # CRITICAL: Prevents JavaScript access (XSS protection)
-            secure=settings.environment == "production",  # HTTPS only (only in production)
+            secure=settings.environment != "development",  # HTTPS only outside dev
             samesite="lax",  # Lax required: OAuth redirect chain crosses google.com
             domain=settings.cookie_domain,  # Share across all localhost ports
         )
@@ -512,8 +512,8 @@ async def oauth_callback(
 @router.post("/2fa/enable")
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def enable_2fa(
-    _fastapi_request: Request,
-    request: Enable2FARequest,
+    request: Request,
+    enable_request: Enable2FARequest,
     current_user: Annotated[dict[str, Any], Depends(get_current_user)],
     use_case: Annotated[Enable2FAUseCase, Depends(get_enable_2fa_use_case)],
 ) -> Enable2FAResponse:
@@ -524,21 +524,21 @@ async def enable_2fa(
     Save the backup codes securely!
     """
     # Ensure user can only enable 2FA for themselves
-    if current_user["sub"] != str(request.user_id):
+    if current_user["sub"] != str(enable_request.user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only enable 2FA for your own account",
         )
 
-    uc_request = Enable2FAUCRequest(user_id=request.user_id)
+    uc_request = Enable2FAUCRequest(user_id=enable_request.user_id)
     return await use_case.execute(uc_request)
 
 
 @router.post("/2fa/verify")
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def verify_2fa(
-    _fastapi_request: Request,
-    request: Verify2FARequest,
+    request: Request,
+    verify_request: Verify2FARequest,
     use_case: Annotated[Verify2FAUseCase, Depends(get_verify_2fa_use_case)],
 ) -> Verify2FAResponse:
     """
@@ -547,8 +547,8 @@ async def verify_2fa(
     Accepts either TOTP code from authenticator app or backup code.
     """
     uc_request = Verify2FAUCRequest(
-        user_id=request.user_id,
-        code=request.code,
+        user_id=verify_request.user_id,
+        code=verify_request.code,
     )
     return await use_case.execute(uc_request)
 
@@ -556,8 +556,8 @@ async def verify_2fa(
 @router.post("/2fa/disable")
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def disable_2fa(
-    _fastapi_request: Request,
-    request: Disable2FARequest,
+    request: Request,
+    disable_request: Disable2FARequest,
     current_user: Annotated[dict[str, Any], Depends(get_current_user)],
     use_case: Annotated[Disable2FAUseCase, Depends(get_disable_2fa_use_case)],
 ) -> Disable2FAResponse:
@@ -567,15 +567,15 @@ async def disable_2fa(
     Requires a valid TOTP code to confirm.
     """
     # Ensure user can only disable 2FA for themselves
-    if current_user["sub"] != str(request.user_id):
+    if current_user["sub"] != str(disable_request.user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only disable 2FA for your own account",
         )
 
     uc_request = Disable2FAUCRequest(
-        user_id=request.user_id,
-        totp_code=request.totp_code,
+        user_id=disable_request.user_id,
+        totp_code=disable_request.totp_code,
     )
     return await use_case.execute(uc_request)
 

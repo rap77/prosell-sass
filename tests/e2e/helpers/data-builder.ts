@@ -38,8 +38,8 @@ interface LeadData {
 
 interface AppointmentData {
   lead_id: string;
-  vehicle_id: string;
-  dealer_id: string;
+  user_id: string; // Dealer/Vendedor ID who will attend
+  product_id: string; // Vehicle ID (C3 model uses product_id)
   scheduled_at: string; // ISO 8601 format
   notes?: string;
 }
@@ -84,6 +84,9 @@ export class TestDataBuilder {
   private vehicleIds: string[] = [];
   private categoryIds: string[] = [];
 
+  // Static cache for shared categories across test instances
+  private static categoryCache: Map<string, string> = new Map();
+
   constructor(request: APIRequestContext | Page, tenantId?: string) {
     // Store page if passed, otherwise store request
     if ("request" in request) {
@@ -108,12 +111,19 @@ export class TestDataBuilder {
           this.tenantId = fs.readFileSync(tenantIdPath, 'utf-8').trim();
           console.log('[TestDataBuilder] Read tenant_id from file:', this.tenantId);
         } else {
-          this.tenantId = randomUUID();
-          console.log('[TestDataBuilder] No tenant_id found, using random UUID:', this.tenantId);
+          throw new Error(
+            '[TestDataBuilder] tenant-id.txt not found and TEST_TENANT_ID env var not set. ' +
+            'Run Playwright globalSetup first or set TEST_TENANT_ID.'
+          );
         }
       } catch (error) {
-        this.tenantId = randomUUID();
-        console.log('[TestDataBuilder] Failed to read tenant_id file, using random UUID:', this.tenantId);
+        if (error instanceof Error && error.message.includes('[TestDataBuilder]')) {
+          throw error;
+        }
+        throw new Error(
+          '[TestDataBuilder] Failed to read tenant-id.txt. ' +
+          'Ensure globalSetup ran successfully. Original error: ' + String(error)
+        );
       }
     }
     // Use Next.js proxy (localhost:3000) to ensure httpOnly cookies are forwarded correctly.
@@ -140,12 +150,28 @@ export class TestDataBuilder {
    * @returns Promise<string> - Category ID
    */
   async createCategory(name: string): Promise<string> {
-    const slug = name.toLowerCase().replace(/\s+/g, "-") + `-${Date.now()}`;
+    // Check static cache first (for shared categories like "SUVs", "Sedans")
+    const cacheKey = `${this.tenantId}:${name}`;
+    if (TestDataBuilder.categoryCache.has(cacheKey)) {
+      const cachedId = TestDataBuilder.categoryCache.get(cacheKey)!;
+      // Only add to local cleanup tracking if not already tracked
+      if (!this.categoryIds.includes(cachedId)) {
+        this.categoryIds.push(cachedId);
+      }
+      return cachedId;
+    }
+
+    // Only add uniqueness suffix to generic test category names
+    // Keep specific names like "SUVs", "Sedans" unchanged for UI tests
+    const isGenericName = name.toLowerCase().includes("test") || name.toLowerCase().includes("catalog");
+    const uniqueSuffix = `-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    const uniqueName = isGenericName ? `${name}${uniqueSuffix}` : name;
+    const slug = name.toLowerCase().replace(/\s+/g, "-") + (isGenericName ? uniqueSuffix : "");
     const url = `${this.baseUrl}/api/v1/categories`;
 
     const response = await this.request.post(url, {
       data: {
-        name,
+        name: uniqueName,
         slug,
         description: `Test category: ${name}`,
         is_active: true,
@@ -155,8 +181,23 @@ export class TestDataBuilder {
       },
     });
 
+    // If category already exists (parallel test race condition), try to fetch it
     if (!response.ok()) {
       const errorText = await response.text();
+      if (errorText.includes("already exists") && !isGenericName) {
+        // Category already exists - fetch it by name
+        const listUrl = `${this.baseUrl}/api/v1/categories`;
+        const listResponse = await this.request.get(listUrl);
+        if (listResponse.ok()) {
+          const response = (await listResponse.json()) as { categories: { id: string; name: string }[] };
+          const existing = response.categories.find((c) => c.name === name);
+          if (existing) {
+            this.categoryIds.push(existing.id);
+            TestDataBuilder.categoryCache.set(cacheKey, existing.id);
+            return existing.id;
+          }
+        }
+      }
       throw new Error(
         `Failed to create category '${name}': ${response.status()} - ${errorText}`,
       );
@@ -164,6 +205,11 @@ export class TestDataBuilder {
 
     const data = (await response.json()) as { id: string };
     this.categoryIds.push(data.id);
+
+    // Cache non-generic categories (like "SUVs", "Sedans") for reuse across tests
+    if (!isGenericName) {
+      TestDataBuilder.categoryCache.set(cacheKey, data.id);
+    }
 
     // Wait for DB transaction to commit
     if (this.page && typeof this.page.waitForTimeout === 'function') {
@@ -247,6 +293,38 @@ export class TestDataBuilder {
   }
 
   /**
+   * Publish a vehicle/product via API.
+   *
+   * Products must be submitted for approval first (DRAFT → PENDING → PUBLISHED).
+   *
+   * @param productId - Product ID (required)
+   * @returns Promise<void>
+   */
+  async publishVehicle(productId: string): Promise<void> {
+    // First, submit for approval (DRAFT → PENDING)
+    const submitUrl = `${this.baseUrl}/api/v1/products/${productId}/submit`;
+    let response = await this.request.post(submitUrl);
+
+    if (!response.ok()) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to submit product '${productId}' for approval: ${response.status()} - ${errorText}`,
+      );
+    }
+
+    // Then, publish directly (PENDING → PUBLISHED)
+    const publishUrl = `${this.baseUrl}/api/v1/products/${productId}/publish`;
+    response = await this.request.post(publishUrl);
+
+    if (!response.ok()) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to publish product '${productId}': ${response.status()} - ${errorText}`,
+      );
+    }
+  }
+
+  /**
    * Create a lead via API.
    *
    * @param vehicleId - Vehicle ID (required)
@@ -262,12 +340,19 @@ export class TestDataBuilder {
       buyer_email: `test${Date.now()}@example.com`,
       buyer_phone: "+15550199",
       message: "I am interested in this vehicle",
-      vehicle_id: vehicleId,
+      vehicle_id: vehicleId, // Used for backward compatibility, mapped to product_id below
       ...overrides,
     };
 
+    // Map vehicle_id to product_id for API
+    const requestData = {
+      ...leadData,
+      product_id: leadData.vehicle_id || vehicleId,
+      vehicle_id: undefined, // Remove vehicle_id from request
+    };
+
     const response = await this.request.post(url, {
-      data: leadData,
+      data: requestData,
     });
 
     if (!response.ok()) {
@@ -286,16 +371,16 @@ export class TestDataBuilder {
    * Create an appointment via API.
    *
    * @param leadId - Lead ID (required)
-   * @param vehicleId - Vehicle ID (required)
-   * @param dealerId - Dealer/Vendedor ID (required)
+   * @param productId - Vehicle/Product ID (required) - C3 model uses product_id
+   * @param userId - Dealer/Vendedor ID who will attend (required)
    * @param scheduledAt - ISO 8601 datetime string
    * @param overrides - Optional appointment data overrides
    * @returns Promise<string> - Appointment ID
    */
   async createAppointment(
     leadId: string,
-    vehicleId: string,
-    dealerId: string,
+    productId: string,
+    userId: string,
     scheduledAt: string,
     overrides?: Partial<AppointmentData>,
   ): Promise<string> {
@@ -303,8 +388,8 @@ export class TestDataBuilder {
 
     const appointmentData: AppointmentData = {
       lead_id: leadId,
-      vehicle_id: vehicleId,
-      dealer_id: dealerId,
+      user_id: userId,
+      product_id: productId,
       scheduled_at: scheduledAt,
       ...overrides,
     };

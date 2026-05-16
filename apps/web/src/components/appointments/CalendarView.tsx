@@ -3,7 +3,6 @@
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import type { DateSelectArg, DatesSetArg, EventClickArg, EventDropArg } from "@fullcalendar/core";
 import { Appointment, AppointmentStatus } from "@/lib/api/appointments";
@@ -103,8 +102,10 @@ export function CalendarView({
     });
 
   const handleEventClick = (info: EventClickArg) => {
-    const appointment = info.event.extendedProps.appointment as Appointment;
-    onAppointmentClick?.(appointment);
+    const apt = info.event.extendedProps.appointment;
+    if (apt && typeof apt === "object" && "id" in apt) {
+      onAppointmentClick?.(apt as Appointment);
+    }
   };
 
   const handleDatesSet = (dateInfo: DatesSetArg) => {
@@ -116,9 +117,9 @@ export function CalendarView({
   };
 
   const handleDrop = (dropInfo: EventDropArg) => {
-    const appointment = dropInfo.event.extendedProps.appointment as Appointment;
-    if (dropInfo.event.start && dropInfo.event.end) {
-      onAppointmentDrop?.(appointment, dropInfo.event.start, dropInfo.event.end);
+    const apt = dropInfo.event.extendedProps.appointment;
+    if (apt && typeof apt === "object" && "id" in apt && dropInfo.event.start && dropInfo.event.end) {
+      onAppointmentDrop?.(apt as Appointment, dropInfo.event.start, dropInfo.event.end);
     }
   };
 
@@ -126,7 +127,7 @@ export function CalendarView({
     <div className="calendar-view w-full" data-testid="calendar-view">
       <div data-testid="fullcalendar-wrapper">
         <FullCalendar
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+          plugins={[dayGridPlugin, timeGridPlugin, listPlugin]}
           initialView={initialView}
           headerToolbar={{
             left: "prev,next today",
@@ -136,8 +137,8 @@ export function CalendarView({
           events={calendarEvents}
           eventClick={handleEventClick}
           datesSet={handleDatesSet}
-          select={handleSelect}
-          eventDrop={handleDrop}
+          select={selectable ? handleSelect : undefined}
+          eventDrop={editable ? handleDrop : undefined}
           height="auto"
           editable={editable}
           selectable={selectable}

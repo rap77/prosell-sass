@@ -247,6 +247,11 @@ class VehicleOwnerAssignmentRule(AssignmentRule):
         if product is None:
             return 0.0
 
+        # Prefer explicit product ownership when available
+        product_owner_id = getattr(product, "submitted_by", None) or getattr(product, "approved_by", None)
+        if product_owner_id is not None:
+            return 1.0 if candidate.user_id == product_owner_id else 0.0
+
         # Check if organization members context is provided
         organization_members = context.get("organization_members")
         if organization_members is None:
@@ -588,10 +593,16 @@ class LeadAssignmentRulesEngine:
             candidate.user_id.hex: {} for candidate in candidates
         }
 
+        dealer_count = len(candidates)
         for rule in self._rules:
             rule_name = rule.__class__.__name__
-            for candidate in candidates:
-                score = rule.score(lead, candidate, **context)
+            for idx, candidate in enumerate(candidates):
+                score = rule.score(
+                    lead, candidate,
+                    candidate_index=idx,
+                    dealer_count=dealer_count,
+                    **context,
+                )
                 all_rule_scores[candidate.user_id.hex][rule_name] = score
 
         # Calculate weighted score for each candidate
@@ -621,14 +632,12 @@ class LeadAssignmentRulesEngine:
             key=lambda c: candidate_scores[c.user_id.hex],
         )
 
-        # Flatten rule scores for response
-        flat_rule_scores: dict[str, float] = {}
-        for rule_scores in all_rule_scores.values():
-            flat_rule_scores.update(rule_scores)
+        # Advance round-robin state for the next call
+        self._round_robin_rule.state.next(len(candidates))
 
         return AssignmentResult(
             assigned_to=best_candidate,
             strategy_used=AssignmentStrategy.COMBINED,
             confidence_score=candidate_scores[best_candidate.user_id.hex],
-            rule_scores=flat_rule_scores,
+            rule_scores=all_rule_scores[best_candidate.user_id.hex],
         )

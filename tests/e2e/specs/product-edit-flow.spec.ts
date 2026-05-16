@@ -95,8 +95,14 @@ test.describe("Product Edit Flow - E2E", () => {
     await expect(successToast).toBeVisible({ timeout: 10000 });
 
     // After success, we are redirected away from edit page
-    await page.waitForURL(/\/catalog/, { timeout: 10000 });
+    await page.waitForURL((url) => url.pathname === "/catalog", { timeout: 10000 });
     expect(page.url()).not.toContain("/edit");
+
+    // Verify the update actually persisted — navigate back to edit page and check value
+    await page.goto(`/catalog/${vehicleId}/edit`);
+    await page.waitForLoadState("networkidle");
+    const updatedPriceInput = page.locator("input#price");
+    await expect(updatedPriceInput).toHaveValue("30000", { timeout: 5000 });
   });
 
   test("B3.4.11: Cancel button navigates back without saving", async ({ page }) => {
@@ -113,7 +119,7 @@ test.describe("Product Edit Flow - E2E", () => {
     await cancelButton.click();
 
     // Should navigate away from edit page (back navigation)
-    await page.waitForURL(/\/catalog/, { timeout: 5000 });
+    await page.waitForURL((url) => url.pathname === "/catalog", { timeout: 5000 });
     expect(page.url()).not.toContain(`/catalog/${vehicleId}/edit`);
   });
 
