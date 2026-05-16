@@ -310,7 +310,7 @@
   - [x] B2.6.09: Verify validation rules documented [requires: 08] - PLANNED (✅ complete)
   - [x] B2.6.10: All API endpoints have contract tests [requires: 09] - PLANNED (✅ complete)
 
-- [~] B3: UX Enhancements
+- [x] B3: UX Enhancements
 
 - [x] B3.1: Multi-Image Gallery Implementation (12 hours)
   - [x] B3.1.01: Create ProductImageGallery component
@@ -349,7 +349,7 @@
   - [x] B3.3.08: Verify email templates [requires: 07]
   - [x] B3.3.09: Integration tests pass [requires: 08]
 
-- [~] B3.4: Product Edit Mode Implementation (8 hours)
+- [x] B3.4: Product Edit Mode Implementation (8 hours)
   - [x] B3.4.01: Review TODO at line 440 in VehicleForm.tsx
   - [x] B3.4.02: Add mode prop to VehicleForm ('create' | 'edit') [requires: 01]
   - [x] B3.4.03: Add productId prop to VehicleForm [requires: 02]
@@ -360,7 +360,7 @@
   - [x] B3.4.08: Handle validation in edit mode [requires: 07]
   - [x] B3.4.09: Remove TODO comment [requires: 08]
   - [x] B3.4.10: Unit tests for edit mode [requires: 09]
-  - [~] B3.4.11: E2E test for edit flow [requires: 10]
+  - [x] B3.4.11: E2E test for edit flow [requires: 10]
 
 - [x] B3.5: CSV Parser for Bulk Upload (12 hours)
   - [x] B3.5.01: Create CSVProductParser service
