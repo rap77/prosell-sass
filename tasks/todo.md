@@ -377,9 +377,9 @@
   - [x] B3.5.11: Test error handling [requires: 10]
   - [x] B3.5.12: Test partial failures [requires: 11]
 
-- [~] B4: Advanced Features
+- [x] B4: Advanced Features
 
-- [~] B4.1: Team Invitation System (16 hours)
+- [x] B4.1: Team Invitation System (16 hours)
   - [x] B4.1.01: Create TeamInvitation entity
   - [x] B4.1.02: Add invitation fields (team_id, email, role, token, expires_at) [requires: 01]
   - [x] B4.1.03: Create InviteTeamMemberUseCase [requires: 02]
