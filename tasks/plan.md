@@ -2426,12 +2426,12 @@ export default function LeadDetailPage({ params }) {
 ```
 
 **Acceptance Criteria**:
-- [ ] Audit trail displays chronologically
-- [ ] Shows status changes
-- [ ] Shows who made changes
-- [ ] Shows reasons for changes
-- [ ] Unit tests for component
-- [ ] E2E test for display
+- [x] Audit trail displays chronologically
+- [x] Shows status changes
+- [x] Shows who made changes
+- [x] Shows reasons for changes
+- [x] Unit tests for component
+- [x] E2E test for display
 
 **Verification**:
 ```bash
