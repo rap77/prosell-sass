@@ -101,7 +101,7 @@ The following tests need to be updated to use the new page object methods:
    ```typescript
    // OLD:
    await expect(page.getByText(/Invalid VIN/i)).toBeVisible({ timeout: 3000 });
-   
+
    // NEW:
    await vehiclesPage.verifyToastVisible(/Invalid VIN/i);
    ```
@@ -110,7 +110,7 @@ The following tests need to be updated to use the new page object methods:
    ```typescript
    // OLD:
    await expect(page.getByText(/Campos incompletos/i)).toBeVisible({ timeout: 3000 });
-   
+
    // NEW:
    await vehiclesPage.verifyToastVisible(/Campos incompletos/i);
    ```
@@ -120,7 +120,7 @@ The following tests need to be updated to use the new page object methods:
    // OLD:
    const toast = page.locator('[data-sonner-toast]').filter({ hasText: /Failed to decode VIN/i });
    await expect(toast).toBeVisible({ timeout: 5000 });
-   
+
    // NEW:
    await vehiclesPage.verifyToastVisible(/Failed to decode VIN/i);
    ```
@@ -130,7 +130,7 @@ The following tests need to be updated to use the new page object methods:
    // OLD:
    const toast = page.locator('[data-sonner-toast]').filter({ hasText: /Failed to decode VIN/i });
    await expect(toast).toBeVisible({ timeout: 5000 });
-   
+
    // NEW:
    await vehiclesPage.verifyToastVisible(/Failed to decode VIN/i);
    ```
@@ -153,18 +153,18 @@ test.beforeEach(async ({ page, request }) => {
   // Navigate to page first so frontend loads categories
   await page.goto("/catalog/create");
   await page.waitForLoadState("load");
-  
+
   // Wait a bit for useCategories hook to fetch the new category
   await page.waitForTimeout(2000);
 
   // Mock VIN decode endpoint
   await mockVinDecodeEndpoint(page, "2GNALCEK1H1615946", MOCK_VIN_DECODED);
-  await mockVinDecodeEndpoint(page, "1HGCM82633A123456", { 
-    ...MOCK_VIN_DECODED, 
-    vin: "1HGCM82633A123456", 
-    make: "honda", 
-    model: "Accord", 
-    year: 2003 
+  await mockVinDecodeEndpoint(page, "1HGCM82633A123456", {
+    ...MOCK_VIN_DECODED,
+    vin: "1HGCM82633A123456",
+    make: "honda",
+    model: "Accord",
+    year: 2003
   });
 });
 ```
@@ -186,4 +186,3 @@ pnpm test vehicle-creation-c3.spec.ts
 ```
 
 Expected: 19 passing tests
-

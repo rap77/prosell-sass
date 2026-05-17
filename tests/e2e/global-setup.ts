@@ -125,17 +125,17 @@ async function globalSetup(config: FullConfig) {
       }
       const decodedValue = decodeURIComponent(rawValue);
       const userData = JSON.parse(decodedValue);
-      
+
       // Extract tenant_id to use for category creation (this is the organization_id)
       authenticatedTenantId = userData.tenant_id;
       console.log('[GLOBAL SETUP] Extracted tenant_id:', authenticatedTenantId);
-      
+
       // Change role to dealer for E2E tests (dealer appointments page requires dealer role)
       if (userData.role) {
         userData.role = 'dealer';
         console.log('[GLOBAL SETUP] Modified user role to:', userData.role);
       }
-      
+
       // Re-encode and update cookie value
       const modifiedValue = JSON.stringify(userData);
       userDataCookie.value = encodeURIComponent(modifiedValue);
@@ -146,12 +146,12 @@ async function globalSetup(config: FullConfig) {
   } else {
     console.log('[GLOBAL SETUP] WARNING: user_data cookie not found!');
   }
-  
+
   // Save the authenticated user's tenant_id (organization_id) for tests
   if (authenticatedTenantId) {
     process.env.TEST_TENANT_ID = authenticatedTenantId;
     console.log('[GLOBAL SETUP] Set TEST_TENANT_ID to:', authenticatedTenantId);
-    
+
     // Also save to a file that tests can read (env vars don't persist from globalSetup)
     const authDir = path.join(__dirname, ".auth");
     fs.mkdirSync(authDir, { recursive: true });

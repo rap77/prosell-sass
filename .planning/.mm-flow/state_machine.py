@@ -10,7 +10,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, cast
+from typing import Any, cast
 
 import psycopg2
 import psycopg2.extras
@@ -36,14 +36,16 @@ class StateMachine:
         project_id: str,
         workspace_id: str,
         db_url: str,
-        runtime_state_path: Optional[str] = None,
+        runtime_state_path: str | None = None,
     ) -> None:
         self.org_id = org_id
         self.project_id = project_id
         self.workspace_id = workspace_id
         self.db_url = db_url
         # Default to .planning/.mm-flow/runtime-state.json if not provided
-        self.runtime_state_path = Path(runtime_state_path or ".planning/.mm-flow/runtime-state.json")
+        self.runtime_state_path = Path(
+            runtime_state_path or ".planning/.mm-flow/runtime-state.json"
+        )
 
     # ------------------------------------------------------------------
     # Public API
@@ -53,8 +55,8 @@ class StateMachine:
         self,
         phase: int,
         status: str,
-        state_data: Dict[str, Any],
-        backend_used: Optional[str] = None,
+        state_data: dict[str, Any],
+        backend_used: str | None = None,
         tokens_consumed: int = 0,
     ) -> None:
         """
@@ -92,12 +94,10 @@ class StateMachine:
                     (self.project_id, phase),
                 )
                 _row = cur.fetchone()
-                existing: Optional[Dict[str, Any]] = (
-                    cast(Dict[str, Any], _row) if _row else None
-                )
+                existing: dict[str, Any] | None = cast(dict[str, Any], _row) if _row else None
 
                 if existing:
-                    existing_dict = cast(Dict[str, Any], existing)
+                    existing_dict = cast(dict[str, Any], existing)
                     cur.execute(
                         """
                         UPDATE mm_flow_state
@@ -144,7 +144,7 @@ class StateMachine:
             # Log but don't fail - database update succeeded
             logger.warning("Failed to update runtime-state.json: %s", e)
 
-    def get_current_phase(self) -> Dict[str, Any]:
+    def get_current_phase(self) -> dict[str, Any]:
         """
         Return the most recent phase state for this project.
 
@@ -166,9 +166,7 @@ class StateMachine:
                     (self.project_id,),
                 )
                 _raw = cur.fetchone()
-                row: Optional[Dict[str, Any]] = (
-                    cast(Dict[str, Any], _raw) if _raw else None
-                )
+                row: dict[str, Any] | None = cast(dict[str, Any], _raw) if _raw else None
 
         if row is None:
             return {"phase": 1, "status": "pending", "state_data": {}}
@@ -195,7 +193,7 @@ class StateMachine:
             contract = self._fetch_contract(conn, from_phase, to_phase)
 
         if contract:
-            contract_dict = cast(Dict[str, Any], contract)
+            contract_dict = cast(dict[str, Any], contract)
             if contract_dict["is_required"]:
                 # Simple heuristic: validation_result must be non-empty
                 if not validation_result or not validation_result.strip():
@@ -212,15 +210,11 @@ class StateMachine:
                     contract_dict["contract_text"][:80],
                 )
             elif not contract_dict["is_required"]:
-                logger.debug(
-                    "Optional contract %d→%d — proceeding.", from_phase, to_phase
-                )
+                logger.debug("Optional contract %d→%d — proceeding.", from_phase, to_phase)
 
         # Mark from_phase complete and create to_phase pending
         current_state = self.get_current_phase()
-        self.set_phase_context(
-            from_phase, "completed", current_state.get("state_data", {})
-        )
+        self.set_phase_context(from_phase, "completed", current_state.get("state_data", {}))
         self.set_phase_context(to_phase, "pending", {})
         logger.info("Phase transition: %d → %d (pending)", from_phase, to_phase)
         return True
@@ -245,7 +239,7 @@ class StateMachine:
 
     def _fetch_contract(
         self, conn: psycopg2.extensions.connection, from_phase: int, to_phase: int
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -256,13 +250,13 @@ class StateMachine:
                 (from_phase, to_phase),
             )
             row = cur.fetchone()
-            return cast(Dict[str, Any], row) if row else None
+            return cast(dict[str, Any], row) if row else None
 
     def _update_runtime_state_file(
         self,
         phase: int,
         status: str,
-        state_data: Dict[str, Any],
+        state_data: dict[str, Any],
     ) -> None:
         """
         Update the runtime-state.json file with current progress.
@@ -286,9 +280,7 @@ class StateMachine:
         subtasks_completed = state_data.get(
             "subtasks_completed", current_state.get("subtasks_completed", 0)
         )
-        subtasks_total = state_data.get(
-            "subtasks_total", current_state.get("subtasks_total", 0)
-        )
+        subtasks_total = state_data.get("subtasks_total", current_state.get("subtasks_total", 0))
 
         # Determine overall status
         if subtasks_completed >= subtasks_total and subtasks_total > 0:
@@ -322,19 +314,19 @@ class StateMachine:
             subtasks_total,
         )
 
-    def _read_runtime_state(self) -> Dict[str, Any]:
+    def _read_runtime_state(self) -> dict[str, Any]:
         """Read the current runtime-state.json file."""
         if not self.runtime_state_path.exists():
             return {}
 
         try:
-            with open(self.runtime_state_path, "r") as f:
+            with open(self.runtime_state_path) as f:
                 return json.load(f)
-        except (json.JSONDecodeError, IOError) as e:
+        except (OSError, json.JSONDecodeError) as e:
             logger.warning("Failed to read runtime-state.json: %s", e)
             return {}
 
-    def _write_runtime_state(self, state: Dict[str, Any]) -> None:
+    def _write_runtime_state(self, state: dict[str, Any]) -> None:
         """
         Write runtime state atomically.
 

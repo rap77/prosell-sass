@@ -3,7 +3,7 @@ const { chromium } = require('playwright');
 (async () => {
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage();
-  
+
   // Set dealer role cookie
   await page.context().addCookies([
     {
@@ -120,22 +120,22 @@ const { chromium } = require('playwright');
 
   console.log("Navigating to /branch/appointments...");
   await page.goto("http://localhost:3000/branch/appointments");
-  
+
   console.log("Waiting for events...");
   await page.waitForSelector(".fc-event", { timeout: 15000 });
-  
+
   console.log("Clicking first event...");
   await page.click(".fc-event");
-  
+
   console.log("Waiting for modal...");
   await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
-  
+
   console.log("Getting modal content...");
   const modalText = await page.locator('[role="dialog"]').textContent();
   console.log("Modal content:", modalText?.substring(0, 500));
-  
+
   console.log("Press any key to close...");
   await new Promise(resolve => setTimeout(resolve, 5000));
-  
+
   await browser.close();
 })();

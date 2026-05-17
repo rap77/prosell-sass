@@ -4,15 +4,16 @@ Backend limits, token management, and multi-project settings.
 """
 
 from dataclasses import dataclass
-from typing import Dict
 
 # ============================================================================
 # BACKEND CONFIGURATION
 # ============================================================================
 
+
 @dataclass
 class BackendConfig:
     """Backend capability specification."""
+
     name: str
     token_limit: int
     tokens_per_minute: int
@@ -28,7 +29,7 @@ class BackendConfig:
 
 # Discovered limits (via testing in Phase B, Apr 22-26)
 # For now: conservative estimates based on public docs
-BACKENDS: Dict[str, BackendConfig] = {
+BACKENDS: dict[str, BackendConfig] = {
     "claude": BackendConfig(
         name="Claude (Anthropic)",
         token_limit=100_000,  # Conservative; actual may be 200K+ with rate limits
@@ -57,16 +58,16 @@ BACKENDS: Dict[str, BackendConfig] = {
 
 # Backend priority (for fallback when current backend depletes)
 BACKEND_PRIORITY: list[str] = [
-    "z_ai",      # Try z.ai first (most resets, best for long workflows)
+    "z_ai",  # Try z.ai first (most resets, best for long workflows)
     "openrouter",  # Fallback to OpenRouter
-    "claude",      # Last resort Claude (slowest reset)
+    "claude",  # Last resort Claude (slowest reset)
 ]
 
 # ============================================================================
 # ENVIRONMENT VARIABLE MAPPING
 # ============================================================================
 
-ENV_VAR_NAMES: Dict[str, str] = {
+ENV_VAR_NAMES: dict[str, str] = {
     "claude": "ANTHROPIC_API_KEY",
     "openrouter": "OPENROUTER_API_KEY",
     "z_ai": "ZAI_API_KEY",
@@ -76,9 +77,11 @@ ENV_VAR_NAMES: Dict[str, str] = {
 # POSTGRESQL CONFIGURATION
 # ============================================================================
 
+
 @dataclass
 class PostgreSQLConfig:
     """PostgreSQL connection details."""
+
     host: str = "localhost"
     port: int = 5433
     database: str = "mastermind_bd"
@@ -113,7 +116,7 @@ CURRENT_PROJECTS = {
                 "name": "MasterMind Framework",
                 "type": "software",
             }
-        }
+        },
     },
     "Prosell-CA": {
         "slug": "Prosell-CA",
@@ -124,8 +127,8 @@ CURRENT_PROJECTS = {
                 "type": "saas",
                 "features": ["scraping", "price-evaluation", "market-analysis", "multi-niche"],
             }
-        }
-    }
+        },
+    },
 }
 
 # Prepared for future expansion (3-4 more projects)
@@ -137,7 +140,7 @@ FUTURE_PROJECTS = {
     "project-4": {
         "organization": "unknown",
         "created": False,
-    }
+    },
 }
 
 # ============================================================================
@@ -145,10 +148,10 @@ FUTURE_PROJECTS = {
 # ============================================================================
 
 PHASE_BRAIN_ROUTING = {
-    "DISCUSSION": [1, 2, 3, 7],      # Product, UX, UI + Evaluator
-    "PLANNING": [4, 5, 6, 7],         # Frontend, Backend, QA + Evaluator
-    "EXECUTION": [7],                 # Evaluator only (fast verification)
-    "VERIFICATION": [7],              # Cross-phase contracts validation
+    "DISCUSSION": [1, 2, 3, 7],  # Product, UX, UI + Evaluator
+    "PLANNING": [4, 5, 6, 7],  # Frontend, Backend, QA + Evaluator
+    "EXECUTION": [7],  # Evaluator only (fast verification)
+    "VERIFICATION": [7],  # Cross-phase contracts validation
 }
 
 # ============================================================================

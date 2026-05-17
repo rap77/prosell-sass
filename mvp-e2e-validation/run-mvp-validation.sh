@@ -286,4 +286,3 @@ echo ""
 echo "Summary:"
 echo "--------"
 cat "$REPORT_FILE" | grep -A 10 "Final Assessment"
-

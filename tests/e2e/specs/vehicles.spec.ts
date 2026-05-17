@@ -46,7 +46,7 @@ test.describe("Vehicles", () => {
 
     // Take screenshot AFTER
     await page.screenshot({ path: "test-results/after-decode.png" });
-    
+
     // CRITICAL VERIFICATION: Check Select fields are populated IMMEDIATELY after screenshot
     const engineInputCheck = page.locator('#engine');
     const engineCheckValue = await engineInputCheck.inputValue();
@@ -86,23 +86,23 @@ test.describe("Vehicles", () => {
     // Wait for engine field to be populated (React state update might be delayed)
     const engineInput = page.getByLabel(/motor|engine/i);
     await expect(engineInput).toBeVisible();
-    
+
     // Debug: Check for multiple engine inputs
     const allEngineInputs = page.locator('input[id="engine"]');
     const engineInputCount = await allEngineInputs.count();
     console.log("Number of engine inputs:", engineInputCount);
-    
+
     // Debug: Check what we're actually selecting
     const engineId = await engineInput.getAttribute("id");
     console.log("Engine input ID:", engineId);
     const engineValue = await engineInput.inputValue();
     console.log("Engine input value:", engineValue);
-    
+
     // Try selecting by ID directly
     const engineById = page.locator('#engine');
     const engineByIdValue = await engineById.inputValue();
     console.log("Engine by ID value:", engineByIdValue);
-    
+
     await expect(engineInput).toHaveValue(/LEA|SIDI|Direct Injection/i);
 
     const trimInput = page.getByLabel(/versión|trim/i);

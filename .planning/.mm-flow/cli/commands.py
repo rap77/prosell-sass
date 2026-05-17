@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional, cast
+from typing import Any, cast
 
 # Setup Python path to find .mm-flow modules
 _MM_FLOW_PATH = Path(__file__).parent.parent
@@ -31,9 +31,7 @@ CONTEXT_FILE = Path.home() / ".mm-flow" / ".context.json"
 
 def _load_context() -> dict:
     if not CONTEXT_FILE.exists():
-        raise click.ClickException(
-            f"No context found at {CONTEXT_FILE}. Run 'mm-flow init' first."
-        )
+        raise click.ClickException(f"No context found at {CONTEXT_FILE}. Run 'mm-flow init' first.")
     with CONTEXT_FILE.open() as fh:
         return json.load(fh)
 
@@ -47,6 +45,7 @@ def _save_context(ctx: dict) -> None:
 def _db_url() -> str:
     import sys
     from pathlib import Path
+
     mm_flow_path = Path(__file__).parent.parent
     if str(mm_flow_path) not in sys.path:
         sys.path.insert(0, str(mm_flow_path))
@@ -93,13 +92,9 @@ def init(org: str, project: str, backend: str) -> None:
             # Resolve org
             cur.execute("SELECT id, name FROM organizations WHERE slug = %s", (org,))
             _org = cur.fetchone()
-            org_row: Optional[Dict[str, Any]] = (
-                cast(Dict[str, Any], _org) if _org else None
-            )
+            org_row: dict[str, Any] | None = cast(dict[str, Any], _org) if _org else None
             if not org_row:
-                raise click.ClickException(
-                    f"Organization '{org}' not found in database."
-                )
+                raise click.ClickException(f"Organization '{org}' not found in database.")
 
             # Resolve project
             cur.execute(
@@ -107,13 +102,9 @@ def init(org: str, project: str, backend: str) -> None:
                 (org_row["id"], project),
             )
             _proj = cur.fetchone()
-            proj_row: Optional[Dict[str, Any]] = (
-                cast(Dict[str, Any], _proj) if _proj else None
-            )
+            proj_row: dict[str, Any] | None = cast(dict[str, Any], _proj) if _proj else None
             if not proj_row:
-                raise click.ClickException(
-                    f"Project '{project}' not found under org '{org}'."
-                )
+                raise click.ClickException(f"Project '{project}' not found under org '{org}'.")
 
             # Resolve workspace
             cur.execute(
@@ -121,13 +112,10 @@ def init(org: str, project: str, backend: str) -> None:
                 (proj_row["id"],),
             )
             _ws = cur.fetchone()
-            ws_row: Optional[Dict[str, Any]] = (
-                cast(Dict[str, Any], _ws) if _ws else None
-            )
+            ws_row: dict[str, Any] | None = cast(dict[str, Any], _ws) if _ws else None
             if not ws_row:
                 raise click.ClickException(
-                    f"No workspace found for project '{project}'. "
-                    "Run the seed script first."
+                    f"No workspace found for project '{project}'. " "Run the seed script first."
                 )
 
     context = {
@@ -141,10 +129,7 @@ def init(org: str, project: str, backend: str) -> None:
         "last_checkpoint": None,
     }
     _save_context(context)
-    click.echo(
-        f"✅ Initialized {org}/{project} "
-        f"(phase={context['phase']}, backend={backend})"
-    )
+    click.echo(f"✅ Initialized {org}/{project} " f"(phase={context['phase']}, backend={backend})")
     click.echo(f"   Context saved to: {CONTEXT_FILE}")
 
 
@@ -287,8 +272,7 @@ def execute_phase(phase: int) -> None:
 
     best = mgr.get_best_available_backend()
     click.echo(
-        f"Using backend: {best['backend']} "
-        f"({best['tokens_available']:,} tokens available)"
+        f"Using backend: {best['backend']} " f"({best['tokens_available']:,} tokens available)"
     )
 
     sm.set_phase_context(
@@ -325,9 +309,7 @@ def execute_phase(phase: int) -> None:
 @cli.command()
 @click.option("--project", required=True, help="Project slug")
 @click.option("--phase", type=int, required=True, help="Phase number to run")
-@click.option(
-    "--max-hours", default=8, type=float, help="Maximum runtime hours (default: 8)"
-)
+@click.option("--max-hours", default=8, type=float, help="Maximum runtime hours (default: 8)")
 def night_run(project: str, phase: int, max_hours: float) -> None:
     """Run phase autonomously for max_hours (overnight mode)."""
     ctx = _load_context()
@@ -348,9 +330,7 @@ def night_run(project: str, phase: int, max_hours: float) -> None:
         db_url=_db_url(),
     )
 
-    click.echo(
-        f"Starting night run: {project}/phase={phase} " f"max_hours={max_hours} …"
-    )
+    click.echo(f"Starting night run: {project}/phase={phase} " f"max_hours={max_hours} …")
     result = executor.run()
 
     click.echo(f"\n{'='*50}")

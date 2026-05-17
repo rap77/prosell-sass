@@ -7,14 +7,14 @@ Used by night_mode and the state machine to decide whether to continue or pause.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, cast
+from datetime import UTC
+from typing import Any, cast
 
 import psycopg2
 import psycopg2.extras
-
 from config import (
-    BACKENDS,
     BACKEND_PRIORITY,
+    BACKENDS,
     CONTEXT_CHECKPOINT_INTERVAL,
     MAX_ITERATIONS_PER_PHASE,
 )
@@ -99,7 +99,7 @@ class TokenLimiter:
         """
         return self.check_token_availability(MIN_TOKENS_SAFETY)
 
-    def get_best_backend_info(self) -> Optional[Dict]:
+    def get_best_backend_info(self) -> dict | None:
         """
         Return info on the backend with the most tokens.
 
@@ -119,7 +119,7 @@ class TokenLimiter:
             cursor_factory=psycopg2.extras.RealDictCursor,
         )
 
-    def _best_available(self) -> Optional[Dict[str, Any]]:
+    def _best_available(self) -> dict[str, Any] | None:
         with self._connect() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -131,7 +131,7 @@ class TokenLimiter:
                     """,
                     (self.project_id,),
                 )
-                rows: List[Dict[str, Any]] = cast(List[Dict[str, Any]], cur.fetchall())
+                rows: list[dict[str, Any]] = cast(list[dict[str, Any]], cur.fetchall())
 
         if not rows:
             # Fallback: return first priority backend with full limit
@@ -148,13 +148,13 @@ class TokenLimiter:
         best_tokens = -1
 
         for row_tuple in rows:
-            from datetime import datetime, timezone
+            from datetime import datetime
 
-            row = cast(Dict[str, Any], row_tuple)
+            row = cast(dict[str, Any], row_tuple)
             last_reset = row["last_reset"]
             if last_reset.tzinfo is None:
-                last_reset = last_reset.replace(tzinfo=timezone.utc)
-            elapsed = (datetime.now(timezone.utc) - last_reset).total_seconds() / 3600
+                last_reset = last_reset.replace(tzinfo=UTC)
+            elapsed = (datetime.now(UTC) - last_reset).total_seconds() / 3600
             if elapsed >= row["reset_cycle_hours"]:
                 available = row["tokens_limit"]
             else:

@@ -5,10 +5,8 @@ Contract Test Coverage Analysis Tool
 Analyzes all API routers and identifies missing contract test coverage.
 """
 
-import os
 import re
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
 
 # Project structure
 PROJECT_ROOT = Path("/home/rpadron/proy/prosell-sass")
@@ -41,7 +39,7 @@ ROUTER_TEST_MAPPING = {
 }
 
 
-def extract_router_info(router_file: Path) -> Dict[str, any]:
+def extract_router_info(router_file: Path) -> dict[str, any]:
     """Extract endpoint information from a router file."""
     content = router_file.read_text()
 
@@ -66,7 +64,7 @@ def extract_router_info(router_file: Path) -> Dict[str, any]:
     }
 
 
-def check_test_coverage(router_file: Path) -> Dict[str, any]:
+def check_test_coverage(router_file: Path) -> dict[str, any]:
     """Check if a router has contract test coverage."""
     router_name = router_file.name
     router_info = extract_router_info(router_file)

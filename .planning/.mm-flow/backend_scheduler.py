@@ -7,12 +7,11 @@ Maintains per-backend token budgets and detects when reset cycles have elapsed.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, cast
+from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
 import psycopg2
 import psycopg2.extras
-
 from config import BACKENDS
 
 logger = logging.getLogger(__name__)
@@ -88,7 +87,7 @@ class BackendScheduler:
 
         return max(0, session["tokens_limit"] - session["tokens_used"])
 
-    def detect_reset_cycles(self) -> Dict[str, float]:
+    def detect_reset_cycles(self) -> dict[str, float]:
         """
         Return reset_cycle_hours for each configured backend.
 
@@ -97,7 +96,7 @@ class BackendScheduler:
         """
         return {name: cfg.reset_cycle_hours for name, cfg in BACKENDS.items()}
 
-    def time_until_next_reset(self, backend: str) -> Dict[str, Any]:
+    def time_until_next_reset(self, backend: str) -> dict[str, Any]:
         """
         Return countdown info for the next token reset of a backend.
 
@@ -117,7 +116,7 @@ class BackendScheduler:
         with self._connect() as conn:
             session = self._fetch_session(conn, backend)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         if session is None:
             # No DB record — backend is fully fresh
@@ -129,25 +128,23 @@ class BackendScheduler:
             return self._build_countdown(next_reset, is_depleted=False)
 
         # Prefer explicitly tracked next_reset_time (set when depletion occurs)
-        next_reset: Optional[datetime] = session.get("next_reset_time")
+        next_reset: datetime | None = session.get("next_reset_time")
 
         if next_reset is None:
             # Fall back: calculate from last_reset
             last_reset: datetime = session["last_reset"]
             if last_reset.tzinfo is None:
-                last_reset = last_reset.replace(tzinfo=timezone.utc)
+                last_reset = last_reset.replace(tzinfo=UTC)
             next_reset = last_reset + timedelta(hours=session["reset_cycle_hours"])
 
         is_depleted: bool = session.get("depletion_timestamp") is not None
         return self._build_countdown(next_reset, is_depleted=is_depleted)
 
-    def _build_countdown(
-        self, next_reset: datetime, is_depleted: bool
-    ) -> Dict[str, Any]:
+    def _build_countdown(self, next_reset: datetime, is_depleted: bool) -> dict[str, Any]:
         """Compute countdown fields from a target reset datetime."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if next_reset.tzinfo is None:
-            next_reset = next_reset.replace(tzinfo=timezone.utc)
+            next_reset = next_reset.replace(tzinfo=UTC)
 
         if next_reset <= now:
             return {
@@ -176,7 +173,7 @@ class BackendScheduler:
             "status": f"{hours}h {minutes}m {seconds}s",
         }
 
-    def get_all_usage_summary(self) -> list[Dict]:
+    def get_all_usage_summary(self) -> list[dict]:
         """
         Return token usage summary for all backends of this project.
 
@@ -203,19 +200,15 @@ class BackendScheduler:
                     """,
                     (self.project_id,),
                 )
-                rows: List[Dict[str, Any]] = cast(List[Dict[str, Any]], cur.fetchall())
+                rows: list[dict[str, Any]] = cast(list[dict[str, Any]], cur.fetchall())
 
         summary = []
         for row_tuple in rows:
-            row = cast(Dict[str, Any], row_tuple)
+            row = cast(dict[str, Any], row_tuple)
             available = max(0, row["tokens_limit"] - row["tokens_used"])
             if self._reset_cycle_completed(row):
                 available = row["tokens_limit"]
-            pct = (
-                round(available / row["tokens_limit"] * 100, 1)
-                if row["tokens_limit"]
-                else 0
-            )
+            pct = round(available / row["tokens_limit"] * 100, 1) if row["tokens_limit"] else 0
             countdown = self.time_until_next_reset(row["backend"])
             summary.append(
                 {
@@ -249,7 +242,7 @@ class BackendScheduler:
 
     def _fetch_session(
         self, conn: psycopg2.extensions.connection, backend: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -264,16 +257,16 @@ class BackendScheduler:
                 (self.project_id, backend),
             )
             row = cur.fetchone()
-            return cast(Dict[str, Any], row) if row else None
+            return cast(dict[str, Any], row) if row else None
 
-    def _reset_cycle_completed(self, session: Dict) -> bool:
+    def _reset_cycle_completed(self, session: dict) -> bool:
         last_reset: datetime = session["last_reset"]
         if last_reset.tzinfo is None:
-            last_reset = last_reset.replace(tzinfo=timezone.utc)
-        elapsed = (datetime.now(timezone.utc) - last_reset).total_seconds() / 3600
+            last_reset = last_reset.replace(tzinfo=UTC)
+        elapsed = (datetime.now(UTC) - last_reset).total_seconds() / 3600
         return elapsed >= session["reset_cycle_hours"]
 
-    def _apply_reset(self, session: Dict) -> None:
+    def _apply_reset(self, session: dict) -> None:
         with self._connect() as conn:
             with conn.cursor() as cur:
                 cur.execute(

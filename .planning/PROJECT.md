@@ -5,17 +5,17 @@
 
 ## What This Is
 
-ProSell SaaS es una plataforma de servicios de ventas y gestión de clientes para organizaciones, comenzando con el nicho de vehículos. Automatiza la publicación de inventario en Facebook Marketplace vía Graph API, captura leads interesados, y gestiona el ciclo completo hasta agendar citas con los dealers. El equipo de ProSell opera como intermediario entre el comprador (lead) y el concesionario (dealer), usando datos de múltiples marketplaces para generar inteligencia de mercado con IA.
+ProSell SaaS es una plataforma multinicho de ventas, catálogo y gestión de clientes para organizaciones. El producto arrancó por el nicho de vehículos, pero la arquitectura base ya se definió para soportar múltiples verticales sobre un catálogo genérico. En su rollout actual, ProSell automatiza la publicación de inventario en Facebook Marketplace vía Graph API, captura leads interesados y gestiona el ciclo completo hasta agendar citas con dealers/comercios desde un panel interno. El equipo de ProSell opera como intermediario entre el comprador (lead) y el negocio anunciante, usando datos de múltiples marketplaces para generar inteligencia de mercado con IA.
 
 ## Core Value
 
-El vendedor de ProSell puede publicar cualquier vehículo en Facebook Marketplace desde la app, capturar el lead interesado, y confirmar la cita con el dealer — todo sin salir del panel interno.
+El vendedor de ProSell puede operar el ciclo comercial completo de un inventario desde la app — publicación, captura del lead y coordinación comercial — sin salir del panel interno. El primer playbook operativo es vehículos, pero la plataforma no queda limitada a ese nicho.
 
 ## Current Milestone
 
 **Version**: v1.1
 **Name**: Generic Catalog — Categories & Products
-**Goal**: Migrate from monolithic vehicles table to generic categories+products+vehicles(FK) architecture, enabling multi-niche catalog management with type-safe vehicle fields, efficient queries, and clean extensibility.
+**Goal**: Migrate from monolithic vehicles table to generic categories+products+vehicles(FK) architecture, enabling multi-niche catalog management with vehicle as the first specialized vertical, while preserving type-safe vehicle fields, efficient queries, and clean extensibility.
 
 **Target Features**:
 - DB migration to C3 schema: `categories(attribute_schema JSONB)`, `products(attributes JSONB)`, `vehicles(product_id FK → products ON DELETE CASCADE)`
@@ -82,16 +82,16 @@ vehicles(id, product_id FK → products ON DELETE CASCADE,
 
 <!-- MVP lanzable: cerrar el ciclo completo publicación → lead → cita -->
 
-- [ ] Publicar vehículo en Facebook Marketplace via Graph API desde el panel interno
-- [ ] Actualizar y eliminar listings existentes en Facebook Marketplace
+- [ ] Publicar items del vertical inicial (vehículos) en Facebook Marketplace via Graph API desde el panel interno
+- [ ] Actualizar y eliminar listings existentes del vertical inicial en Facebook Marketplace
 - [ ] Scraper Playwright para extraer listings de Facebook Marketplace (mientras se aprueba la app)
 - [ ] Scraper Playwright para CarGurus (datos de mercado)
 - [ ] Normalización y almacenamiento de listings scrapeados en DB
 - [ ] Detección de duplicados entre inventario propio y listings externos
-- [ ] Dashboard interno: ver catálogo de vehículos con estado de publicación
-- [ ] Panel de Control de Activos: precio sugerido vs precio de mercado por vehículo
+- [ ] Dashboard interno: ver catálogo del vertical inicial con estado de publicación
+- [ ] Panel de Control de Activos: precio sugerido vs precio de mercado por item del vertical inicial
 - [ ] Captura de leads desde Facebook (webhooks o polling via Graph API)
-- [ ] Entidad Appointment: vincular Lead → Vehicle → Dealer con fecha/hora
+- [ ] Entidad Appointment: vincular Lead → Product/Item → Dealer con fecha/hora
 - [ ] Asignación de lead a vendedor ProSell
 - [ ] Notificación simple al dealer cuando se confirma una cita (email/webhook)
 - [ ] Métricas básicas: citas generadas por publicación, conversión por dealer
@@ -102,20 +102,20 @@ vehicles(id, product_id FK → products ON DELETE CASCADE,
 - Ecommerce con pagos — no es el modelo de negocio actual (ProSell cobra al dealer, no al comprador)
 - Calendario/scheduling propio — Appointment entity + notificación email es suficiente para v1
 - AI price prediction completo — requiere datos limpios primero; v1 solo muestra delta precio propio vs mercado
-- Multi-niche (Real Estate, etc.) — mismo stack pero requiere datos de mercado diferentes; post-MVP
+- Nuevos playbooks operativos y data pipelines específicos para verticales no-vehículo (Real Estate, etc.) — la plataforma base es multinicho, pero la operacionalización por nicho adicional queda post-MVP
 - Mobile app — web-first
 
 ## Context
 
 **Tracción actual:** 5+ concesionarios en EE.UU. como clientes activos, servicio prestado manualmente hoy.
 
-**Operación actual:** El equipo ProSell entra manualmente a Facebook y publica cada vehículo. Los interesados contactan directo y se agenda la cita por WhatsApp. ProSell es el intermediario entre buyer y dealer.
+**Operación actual:** El equipo ProSell entra manualmente a Facebook y publica cada unidad del vertical inicial (hoy, vehículos). Los interesados contactan directo y se agenda la cita por WhatsApp. ProSell es el intermediario entre buyer y dealer/comercio.
 
 **Stack implementado:** Python 3.13 + FastAPI + SQLAlchemy 2.0 (async) + Next.js 16 + React 19. Clean Architecture. PostgreSQL + Redis.
 
-**Facebook app:** Configurada en Developers Console. Phase 2 (OAuth) mergeado a main. Graph API publishing y Playwright scraping son el siguiente paso (Sprint 7 Phase 3).
+**Facebook app:** Configurada en Developers Console. Phase 2 (OAuth) mergeado a main. Graph API publishing y Playwright scraping son el siguiente paso (Sprint 7 Phase 3) para el vertical inicial.
 
-**Multi-niche por diseño:** Entidades genéricas (Organization, Product, Category). Vehicle es un nicho sobre la base. Real Estate y otros siguen el mismo patrón. El schema debe mantenerse niche-agnostic donde sea posible.
+**Multi-niche por diseño:** Entidades genéricas (Organization, Product, Category). Vehicle es el primer nicho sobre la base, no el único destino del producto. Real Estate y otros verticales siguen el mismo patrón. El schema debe mantenerse niche-agnostic donde sea posible.
 
 **Constraint de scraping:** Facebook bloquea scrapers agresivos. Playwright debe operar con rate limiting y anti-detection patterns. Usar como fallback mientras Graph API permissions se aprueban.
 
@@ -131,7 +131,7 @@ vehicles(id, product_id FK → products ON DELETE CASCADE,
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Catálogo solo interno en v1 | Validar consistencia de datos antes de exponer al público; foco en cerrar citas | — Pending |
+| Catálogo solo interno en v1 | Validar consistencia de datos antes de exponer al público; foco en cerrar operaciones del vertical inicial | — Pending |
 | Appointment entity propia (no Calendly) | Trazabilidad del ROI; datos para IA futura; métricas por dealer | — Pending |
 | Playwright como fallback de Graph API | App en revisión por Facebook; no bloquear progreso | — Pending |
 | Phase Researcher por fase | APIs externas cambian; validar rate limits y políticas antes de planear | — Pending |

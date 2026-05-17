@@ -376,7 +376,7 @@ BASE_URL=https://staging.prosell-demo.com pnpm test
 -- Seed categories (run as admin)
 INSERT INTO categories (tenant_id, name, slug, attribute_schema, is_active)
 VALUES
-  ('org-uuid', 'Electronics', 'electronics', 
+  ('org-uuid', 'Electronics', 'electronics',
    '{"cpu": "text", "ram": "text", "storage": "text"}', true),
   ('org-uuid', 'Vehicles', 'vehicles',
    '{"vin": "text", "make": "text", "model": "text", "year": "number"}', true);
@@ -399,7 +399,7 @@ test('rate limiting on /api/v1/categories', async ({ request }) => {
     data: { email: 'user@example.com', password: 'password' }
   });
   const cookies = loginResponse.headers()['set-cookie'];
-  
+
   let rateLimited = false;
   for (let i = 0; i < 101; i++) {
     const response = await request.get('/api/v1/categories', {
@@ -420,27 +420,27 @@ test('rate limiting on /api/v1/categories', async ({ request }) => {
 test('tenant isolation', async ({ browser }) => {
   const context1 = await browser.newContext();
   const context2 = await browser.newContext();
-  
+
   // Login as User A
   const page1 = await context1.newPage();
   await page1.goto('/login');
   await page1.fill('[name="email"]', 'user-a@example.com');
   await page1.fill('[name="password"]', 'password');
   await page1.click('button[type="submit"]');
-  
+
   // Login as User B
   const page2 = await context2.newPage();
   await page2.goto('/login');
   await page2.fill('[name="email"]', 'user-b@example.com');
   await page2.fill('[name="password"]', 'password');
   await page2.click('button[type="submit"]');
-  
+
   // Create category in User A's session
   await page1.goto('/categories');
   await page1.click('text=New Category');
   await page1.fill('[name="name"]', 'User A Category');
   await page1.click('button[type="submit"]');
-  
+
   // Verify User B cannot see User A's category
   await page2.goto('/categories');
   const categories = await page2.textContent('[data-testid="category-list"]');

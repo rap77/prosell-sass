@@ -9,13 +9,12 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 import psycopg2
 import psycopg2.extras
-
 from backend_scheduler import BackendScheduler  # type: ignore[import]
 from config import BACKENDS, POSTGRES_LOCAL  # type: ignore[import]
 from multi_backend_manager import MultiBackendManager  # type: ignore[import]
@@ -36,7 +35,7 @@ PERIODIC_CHECKPOINT_SECONDS = 1800  # 30 minutes
 # Subtask registry (phase → ordered list of subtask names)
 # ---------------------------------------------------------------------------
 
-_PHASE_SUBTASKS: Dict[int, List[str]] = {
+_PHASE_SUBTASKS: dict[int, list[str]] = {
     1: ["define_problem_statement", "draft_user_stories", "validate_assumptions"],
     2: ["create_technical_design", "break_down_tasks", "estimate_complexity"],
     3: ["implement_core", "write_tests", "code_review"],
@@ -54,7 +53,7 @@ class NightModeExecutor:
         project_id: str,
         phase: int,
         max_hours: float = 8.0,
-        db_url: Optional[str] = None,
+        db_url: str | None = None,
     ) -> None:
         self.org_id = org_id
         self.project_id = project_id
@@ -68,9 +67,7 @@ class NightModeExecutor:
         self._verifier = VerificationGates(self.db_url)
 
         self._log_path = (
-            Path.home()
-            / ".mm-flow"
-            / f"night-run-{datetime.now(timezone.utc).strftime('%Y-%m-%d')}.log"
+            Path.home() / ".mm-flow" / f"night-run-{datetime.now(UTC).strftime('%Y-%m-%d')}.log"
         )
         self._log_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -78,7 +75,7 @@ class NightModeExecutor:
     # Public API
     # ------------------------------------------------------------------
 
-    def run(self) -> Dict[str, Any]:
+    def run(self) -> dict[str, Any]:
         """
         Execute the phase autonomously for up to max_hours.
 
@@ -86,7 +83,7 @@ class NightModeExecutor:
             Dict with: phase, status, progress_pct, completed_subtasks,
                        skipped_subtasks, paused_reason, started_at, ended_at.
         """
-        started_at = datetime.now(timezone.utc)
+        started_at = datetime.now(UTC)
         deadline = started_at.timestamp() + self.max_hours * 3600
 
         self.log(f"Night mode started — phase={self.phase} max_hours={self.max_hours}")
@@ -95,12 +92,12 @@ class NightModeExecutor:
         state = self._load_last_checkpoint()
         subtasks = _PHASE_SUBTASKS.get(self.phase, ["execute_phase"])
 
-        completed: List[str] = state.get("completed_subtasks", [])
+        completed: list[str] = state.get("completed_subtasks", [])
         pending = [t for t in subtasks if t not in completed]
 
         consecutive_errors = 0
         last_checkpoint_time = time.monotonic()
-        paused_reason: Optional[str] = None
+        paused_reason: str | None = None
 
         while pending and time.monotonic() < deadline - 1:
             # Safety check: tokens
@@ -167,13 +164,11 @@ class NightModeExecutor:
             if remaining > LOOP_INTERVAL_SECONDS:
                 time.sleep(LOOP_INTERVAL_SECONDS)
 
-        ended_at = datetime.now(timezone.utc)
+        ended_at = datetime.now(UTC)
         total = len(subtasks)
         progress_pct = round(len(completed) / total * 100) if total else 100
 
-        final_status = (
-            "completed" if not pending else ("paused" if paused_reason else "partial")
-        )
+        final_status = "completed" if not pending else ("paused" if paused_reason else "partial")
         self.log(
             f"Night mode ended — status={final_status} progress={progress_pct}% "
             f"completed={len(completed)}/{total}"
@@ -193,7 +188,7 @@ class NightModeExecutor:
         self.checkpoint(state | result, "night_mode_end")
         return result
 
-    def checkpoint(self, state: Dict[str, Any], reason: str) -> None:
+    def checkpoint(self, state: dict[str, Any], reason: str) -> None:
         """
         Persist current state to context_checkpoints.
 
@@ -233,7 +228,7 @@ class NightModeExecutor:
 
     def log(self, message: str) -> None:
         """Write a timestamped line to the nightly log file and stderr."""
-        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        ts = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
         line = f"[{ts}] [phase={self.phase}] {message}"
         logger.info(message)
         try:
@@ -252,9 +247,7 @@ class NightModeExecutor:
             try:
                 countdown = self._scheduler.time_until_next_reset(backend_name)
                 if countdown["is_depleted"] and countdown["total_seconds"] > 0:
-                    self.log(
-                        f"⏳ {backend_name}: depleted — resets in {countdown['status']}"
-                    )
+                    self.log(f"⏳ {backend_name}: depleted — resets in {countdown['status']}")
                 else:
                     self.log(
                         f"✅ {backend_name}: available (reset at {countdown['next_reset_iso']})"
@@ -262,9 +255,7 @@ class NightModeExecutor:
             except Exception as exc:
                 self.log(f"Could not get countdown for '{backend_name}': {exc}")
 
-    def _execute_subtask(
-        self, subtask_name: str, state: Dict[str, Any], backend: str
-    ) -> str:
+    def _execute_subtask(self, subtask_name: str, state: dict[str, Any], backend: str) -> str:
         """
         Placeholder executor — returns a synthetic output for the subtask.
 
@@ -276,7 +267,7 @@ class NightModeExecutor:
             f"Output ready for Brain #7 validation."
         )
 
-    def _load_last_checkpoint(self) -> Dict[str, Any]:
+    def _load_last_checkpoint(self) -> dict[str, Any]:
         """Restore state from the most recent checkpoint for this phase."""
         try:
             with self._connect() as conn:
@@ -292,9 +283,7 @@ class NightModeExecutor:
                         (self.project_id, self.phase),
                     )
                     _raw = cur.fetchone()
-                    row: Optional[Dict[str, Any]] = (
-                        cast(Dict[str, Any], _raw) if _raw else None
-                    )
+                    row: dict[str, Any] | None = cast(dict[str, Any], _raw) if _raw else None
             if row:
                 self.log("Restored from last checkpoint.")
                 return dict(row["state_data"]) if row["state_data"] else {}

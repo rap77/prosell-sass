@@ -8,7 +8,6 @@ AGGRESSIVE MODE: Generates dependencies for ALL tasks, not just completed ones.
 
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Set
 
 
 class Task:
@@ -17,14 +16,14 @@ class Task:
     def __init__(self, line_number: int, full_id: str, prefix: str, number: int, description: str):
         self.line_number = line_number
         self.full_id = full_id  # e.g., "A1.04" or "B1.1.01"
-        self.prefix = prefix    # e.g., "A1" or "B1.1"
-        self.number = number    # e.g., 4 or 1 (last segment)
+        self.prefix = prefix  # e.g., "A1" or "B1.1"
+        self.number = number  # e.g., 4 or 1 (last segment)
         self.description = description.strip()
-        self.dependencies: List[str] = []
-        self.existing_requires: Optional[str] = None
-        self.entity_names: Set[str] = set()
-        self.component_names: Set[str] = set()
-        self.hook_names: Set[str] = set()
+        self.dependencies: list[str] = []
+        self.existing_requires: str | None = None
+        self.entity_names: set[str] = set()
+        self.component_names: set[str] = set()
+        self.hook_names: set[str] = set()
 
     def __repr__(self):
         return f"Task({self.full_id}: {self.description[:50]}...)"
@@ -103,7 +102,14 @@ class DependencyGenerator:
         "value_object": ["value object", "valueobject"],
         "exception": ["exception", "create exception"],
         "domain_event": ["domain event", "event"],
-        "interface": ["interface", "create i", "irepository", "iservice", "port", "repository interface"],
+        "interface": [
+            "interface",
+            "create i",
+            "irepository",
+            "iservice",
+            "port",
+            "repository interface",
+        ],
         "port": ["port"],
         "repository": ["repository", "implement.*repository", "sqlalchemy", "create repository"],
         "implementation": ["implementation", "implement"],
@@ -118,14 +124,26 @@ class DependencyGenerator:
         "hook": ["hook", "use", "create use", "mutation"],
         "component": ["component", "create .*component", ".* component$"],
         "page": ["page", "create /", "page at", "/.*/.* page"],
-        "test_unit": ["unit test", "write unit test", "test .*entity", "test .*service", "test .*component"],
-        "test_integration": ["integration test", "write integration test", "test .*endpoint", "test .*usecase", "test .*router"],
+        "test_unit": [
+            "unit test",
+            "write unit test",
+            "test .*entity",
+            "test .*service",
+            "test .*component",
+        ],
+        "test_integration": [
+            "integration test",
+            "write integration test",
+            "test .*endpoint",
+            "test .*usecase",
+            "test .*router",
+        ],
         "test_e2e": ["e2e test", "write e2e test", "test .*flow", "test .*view", "test .*page"],
         "test_contract": ["contract test", "schema test", "verify .*dto", "verify .*schema"],
     }
 
     @classmethod
-    def detect_layer(cls, description: str) -> Tuple[str, int]:
+    def detect_layer(cls, description: str) -> tuple[str, int]:
         """Detect which layer a task belongs to and its order."""
         description_lower = description.lower()
 
@@ -138,7 +156,7 @@ class DependencyGenerator:
         return "unknown", 999
 
     @classmethod
-    def extract_entity_name(cls, description: str) -> Optional[str]:
+    def extract_entity_name(cls, description: str) -> str | None:
         """Extract entity name from task description."""
         patterns = [
             r"create (\w+) entity",
@@ -152,7 +170,7 @@ class DependencyGenerator:
         return None
 
     @classmethod
-    def extract_interface_name(cls, description: str) -> Optional[str]:
+    def extract_interface_name(cls, description: str) -> str | None:
         """Extract interface name from task description."""
         patterns = [
             r"create i(\w+)repository",
@@ -166,7 +184,7 @@ class DependencyGenerator:
         return None
 
     @classmethod
-    def extract_repository_name(cls, description: str) -> Optional[str]:
+    def extract_repository_name(cls, description: str) -> str | None:
         """Extract repository name from task description."""
         patterns = [
             r"implement (\w+)repository",
@@ -179,7 +197,7 @@ class DependencyGenerator:
         return None
 
     @classmethod
-    def extract_usecase_name(cls, description: str) -> Optional[str]:
+    def extract_usecase_name(cls, description: str) -> str | None:
         """Extract use case name from task description."""
         patterns = [
             r"create (\w+)usecase",
@@ -193,7 +211,7 @@ class DependencyGenerator:
         return None
 
     @classmethod
-    def extract_component_name(cls, description: str) -> Optional[str]:
+    def extract_component_name(cls, description: str) -> str | None:
         """Extract component name from task description."""
         patterns = [
             r"create (\w+) component",
@@ -206,7 +224,7 @@ class DependencyGenerator:
         return None
 
     @classmethod
-    def extract_hook_name(cls, description: str) -> Optional[str]:
+    def extract_hook_name(cls, description: str) -> str | None:
         """Extract hook name from task description."""
         patterns = [
             r"create use(\w+) hook",
@@ -220,7 +238,7 @@ class DependencyGenerator:
         return None
 
     @classmethod
-    def extract_endpoint_entity(cls, description: str) -> Optional[str]:
+    def extract_endpoint_entity(cls, description: str) -> str | None:
         """Extract entity name from endpoint task description."""
         # Look for patterns like "Create POST /api/v1/leads" -> extract "leads"
         match = re.search(r"/api/v1/\w+/(\w+)", description)
@@ -235,17 +253,17 @@ class DependencyGenerator:
         return None
 
 
-def parse_todo_md(file_path: Path) -> Tuple[List[str], Dict[str, List[Task]]]:
+def parse_todo_md(file_path: Path) -> tuple[list[str], dict[str, list[Task]]]:
     """Parse todo.md and return lines and tasks grouped by prefix."""
     lines = file_path.read_text(encoding="utf-8").splitlines()
-    tasks: Dict[str, List[Task]] = {}
+    tasks: dict[str, list[Task]] = {}
 
     # Regex to match task lines: "  - [x] A1.04: Description [requires: XX]"
     # Requires at least one dot in the task ID (to skip parent tasks like "A1:")
     # Supports multi-level IDs like "B1.1.01" and single-level like "A1.04"
     # Matches both "  - " (subtask with 2 spaces) and "    - " (sub-subtask with 4 spaces)
     task_pattern = re.compile(
-        r'^\s+-\s+\[[x ]\]\s+([A-Z]\d+(?:\.\d+)+):\s+(.*?)(?:\s+\[requires:\s*([^\]]+)\])?$'
+        r"^\s+-\s+\[[x ]\]\s+([A-Z]\d+(?:\.\d+)+):\s+(.*?)(?:\s+\[requires:\s*([^\]]+)\])?$"
     )
 
     for line_num, line in enumerate(lines, 1):
@@ -272,10 +290,7 @@ def parse_todo_md(file_path: Path) -> Tuple[List[str], Dict[str, List[Task]]]:
     return lines, tasks
 
 
-def find_previous_task_in_group(
-    current_task: Task,
-    tasks_in_prefix: List[Task]
-) -> Optional[Task]:
+def find_previous_task_in_group(current_task: Task, tasks_in_prefix: list[Task]) -> Task | None:
     """Find the immediately previous task in the same group."""
     for task in sorted(tasks_in_prefix, key=lambda t: t.number):
         if task.number == current_task.number - 1:
@@ -284,10 +299,8 @@ def find_previous_task_in_group(
 
 
 def find_entity_task(
-    entity_name: str,
-    tasks_in_prefix: List[Task],
-    current_task: Task
-) -> Optional[Task]:
+    entity_name: str, tasks_in_prefix: list[Task], current_task: Task
+) -> Task | None:
     """Find the task that creates an entity."""
     for task in tasks_in_prefix:
         if task.number >= current_task.number:
@@ -300,10 +313,8 @@ def find_entity_task(
 
 
 def find_interface_task(
-    interface_name: str,
-    tasks_in_prefix: List[Task],
-    current_task: Task
-) -> Optional[Task]:
+    interface_name: str, tasks_in_prefix: list[Task], current_task: Task
+) -> Task | None:
     """Find the task that creates an interface."""
     for task in tasks_in_prefix:
         if task.number >= current_task.number:
@@ -318,10 +329,8 @@ def find_interface_task(
 
 
 def find_repository_task(
-    repository_name: str,
-    tasks_in_prefix: List[Task],
-    current_task: Task
-) -> Optional[Task]:
+    repository_name: str, tasks_in_prefix: list[Task], current_task: Task
+) -> Task | None:
     """Find the task that implements a repository."""
     for task in tasks_in_prefix:
         if task.number >= current_task.number:
@@ -335,10 +344,10 @@ def find_repository_task(
 
 def find_usecase_task(
     usecase_name: str,
-    tasks_in_prefix: List[Task],
+    tasks_in_prefix: list[Task],
     current_task: Task,
-    all_tasks: Dict[str, List[Task]]
-) -> Optional[Task]:
+    all_tasks: dict[str, list[Task]],
+) -> Task | None:
     """Find a use case task (search across all prefixes)."""
     # First search in same prefix
     for task in tasks_in_prefix:
@@ -361,10 +370,8 @@ def find_usecase_task(
 
 
 def find_component_task(
-    component_name: str,
-    tasks_in_prefix: List[Task],
-    current_task: Task
-) -> Optional[Task]:
+    component_name: str, tasks_in_prefix: list[Task], current_task: Task
+) -> Task | None:
     """Find a component task."""
     for task in tasks_in_prefix:
         if task.number >= current_task.number:
@@ -376,11 +383,7 @@ def find_component_task(
     return None
 
 
-def find_hook_task(
-    hook_name: str,
-    tasks_in_prefix: List[Task],
-    current_task: Task
-) -> Optional[Task]:
+def find_hook_task(hook_name: str, tasks_in_prefix: list[Task], current_task: Task) -> Task | None:
     """Find a hook task."""
     for task in tasks_in_prefix:
         if task.number >= current_task.number:
@@ -392,10 +395,7 @@ def find_hook_task(
     return None
 
 
-def find_last_endpoint_task(
-    tasks_in_prefix: List[Task],
-    current_task: Task
-) -> Optional[Task]:
+def find_last_endpoint_task(tasks_in_prefix: list[Task], current_task: Task) -> Task | None:
     """Find the last endpoint task before current task."""
     last_endpoint = None
     for task in tasks_in_prefix:
@@ -407,10 +407,7 @@ def find_last_endpoint_task(
     return last_endpoint
 
 
-def find_implementation_task(
-    tasks_in_prefix: List[Task],
-    current_task: Task
-) -> Optional[Task]:
+def find_implementation_task(tasks_in_prefix: list[Task], current_task: Task) -> Task | None:
     """Find the most recent implementation task."""
     for task in reversed(tasks_in_prefix):
         if task.number >= current_task.number:
@@ -421,10 +418,7 @@ def find_implementation_task(
     return None
 
 
-def find_page_or_component_task(
-    tasks_in_prefix: List[Task],
-    current_task: Task
-) -> Optional[Task]:
+def find_page_or_component_task(tasks_in_prefix: list[Task], current_task: Task) -> Task | None:
     """Find the most recent page or component task."""
     for task in reversed(tasks_in_prefix):
         if task.number >= current_task.number:
@@ -436,10 +430,8 @@ def find_page_or_component_task(
 
 
 def generate_dependencies_for_task(
-    task: Task,
-    tasks_in_prefix: List[Task],
-    all_tasks: Dict[str, List[Task]]
-) -> List[str]:
+    task: Task, tasks_in_prefix: list[Task], all_tasks: dict[str, list[Task]]
+) -> list[str]:
     """Generate dependencies for a single task."""
     if task.existing_requires:
         # Keep existing dependencies
@@ -527,7 +519,11 @@ def generate_dependencies_for_task(
                         dependencies.append(prev_task.full_id)
                     break
             # If no DTO found, depend on endpoint
-            if not any(dep.endswith(str(prev_task.number)) for prev_task in tasks_in_prefix for dep in dependencies):
+            if not any(
+                dep.endswith(str(prev_task.number))
+                for prev_task in tasks_in_prefix
+                for dep in dependencies
+            ):
                 last_endpoint = find_last_endpoint_task(tasks_in_prefix, task)
                 if last_endpoint and last_endpoint.full_id not in dependencies:
                     dependencies.append(last_endpoint.full_id)
@@ -584,7 +580,7 @@ def generate_dependencies_for_task(
     return dependencies
 
 
-def generate_short_form(dependencies: List[str], current_task: Task) -> str:
+def generate_short_form(dependencies: list[str], current_task: Task) -> str:
     """Generate short-form dependency tag [requires: XX]."""
     if not dependencies:
         return ""
@@ -606,7 +602,7 @@ def generate_short_form(dependencies: List[str], current_task: Task) -> str:
     return f"[requires: {', '.join(short_deps)}]"
 
 
-def update_todo_md(file_path: Path, lines: List[str], tasks: Dict[str, List[Task]]) -> None:
+def update_todo_md(file_path: Path, lines: list[str], tasks: dict[str, list[Task]]) -> None:
     """Update todo.md with generated dependencies."""
     updated_lines = []
 
@@ -687,7 +683,7 @@ def main():
             else:
                 no_deps_count += 1
 
-    print(f"\n📈 Summary:")
+    print("\n📈 Summary:")
     print(f"  - Tasks with existing dependencies: {skipped_count}")
     print(f"  - Tasks with new dependencies: {generated_count}")
     print(f"  - Tasks without dependencies (first in group): {no_deps_count}")

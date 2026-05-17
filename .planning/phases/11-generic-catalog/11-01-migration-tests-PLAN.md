@@ -153,7 +153,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Add attribute_schema to categories, upgrade JSON → JSONB on attributes/field_config."""
-    
+
     # Step 1: Add attribute_schema column to categories
     # This column is the C3 API validation schema (object format, JSONB)
     # Different from field_config (array format, UI renderer)
@@ -166,20 +166,20 @@ def upgrade() -> None:
             nullable=False,
         )
     )
-    
+
     # Step 2: Upgrade products.attributes JSON → JSONB
     # lossless: all valid JSON is valid JSONB
     op.execute(
         "ALTER TABLE products ALTER COLUMN attributes TYPE JSONB "
         "USING attributes::text::jsonb"
     )
-    
+
     # Step 3: Upgrade categories.field_config JSON → JSONB
     op.execute(
         "ALTER TABLE categories ALTER COLUMN field_config TYPE JSONB "
         "USING field_config::text::jsonb"
     )
-    
+
     # Step 4: GIN indexes for JSONB operator performance
     # Note: NOT using CONCURRENTLY — cannot run inside Alembic transaction
     op.execute(
@@ -197,7 +197,7 @@ def downgrade() -> None:
     # Drop GIN indexes first
     op.execute("DROP INDEX IF EXISTS ix_products_attributes_gin;")
     op.execute("DROP INDEX IF EXISTS ix_categories_attribute_schema_gin;")
-    
+
     # Revert JSONB → JSON (lossless roundtrip)
     op.execute(
         "ALTER TABLE products ALTER COLUMN attributes TYPE JSON "
@@ -207,7 +207,7 @@ def downgrade() -> None:
         "ALTER TABLE categories ALTER COLUMN field_config TYPE JSON "
         "USING field_config::text::json"
     )
-    
+
     # Drop attribute_schema column
     op.drop_column('categories', 'attribute_schema')
 ```
@@ -336,35 +336,35 @@ async def test_vehicles_product_id_fk_exists(db_session):
 @pytest.mark.asyncio
 async def test_existing_categories_rows_preserved(db_session):
     """SC-2: All existing categories rows preserved after migration.
-    
+
     This test seeds a category BEFORE running assertions. In CI, the DB starts clean,
     so we just verify the schema works correctly for new inserts too.
     """
     # Insert a category and verify it reads back correctly
     org_id = uuid4()
     cat_id = uuid4()
-    
+
     # First ensure org exists (or use a test org)
     # Note: Skip if no organizations exist — check first
     result = await db_session.execute(text("SELECT id FROM organizations LIMIT 1"))
     org_row = result.fetchone()
     if org_row is None:
         pytest.skip("No organizations in test DB — seed data required")
-    
+
     org_id = org_row.id
-    
+
     await db_session.execute(text("""
         INSERT INTO categories (id, tenant_id, name, slug, field_config, attribute_schema)
         VALUES (:id, :tenant_id, 'Test Category', 'test-category-migration', '[]'::jsonb, '{}'::jsonb)
     """), {'id': cat_id, 'tenant_id': org_id})
     await db_session.flush()
-    
+
     result = await db_session.execute(text("""
         SELECT id, name, field_config, attribute_schema
         FROM categories WHERE id = :id
     """), {'id': cat_id})
     row = result.fetchone()
-    
+
     assert row is not None, "Inserted category not found"
     assert row.name == 'Test Category'
     assert row.field_config == []  # field_config preserved as array (JSONB)
@@ -378,7 +378,7 @@ async def test_attribute_schema_default_is_empty_object(db_session):
     org_row = result.fetchone()
     if org_row is None:
         pytest.skip("No organizations in test DB")
-    
+
     cat_id = uuid4()
     # Insert WITHOUT specifying attribute_schema — should use DEFAULT '{}'
     await db_session.execute(text("""
@@ -386,7 +386,7 @@ async def test_attribute_schema_default_is_empty_object(db_session):
         VALUES (:id, :tenant_id, 'Default Schema Test', 'default-schema-test')
     """), {'id': cat_id, 'tenant_id': org_row.id})
     await db_session.flush()
-    
+
     result = await db_session.execute(text(
         "SELECT attribute_schema FROM categories WHERE id = :id"
     ), {'id': cat_id})
@@ -407,21 +407,21 @@ async def test_product_delete_cascades_to_vehicle(db_session):
     org_row = result.fetchone()
     if org_row is None:
         pytest.skip("No organizations in test DB")
-    
+
     # Insert category
     cat_id = uuid4()
     await db_session.execute(text("""
         INSERT INTO categories (id, tenant_id, name, slug)
         VALUES (:id, :tenant_id, 'Cascade Test Cat', 'cascade-test-cat')
     """), {'id': cat_id, 'tenant_id': org_row.id})
-    
+
     # Insert product
     prod_id = uuid4()
     await db_session.execute(text("""
         INSERT INTO products (id, tenant_id, organization_id, category_id, title, price_cents)
         VALUES (:id, :tenant_id, :org_id, :cat_id, 'Test Product', 1500000)
     """), {'id': prod_id, 'tenant_id': org_row.id, 'org_id': org_row.id, 'cat_id': cat_id})
-    
+
     # Insert vehicle linked to product
     veh_id = uuid4()
     await db_session.execute(text("""
@@ -429,11 +429,11 @@ async def test_product_delete_cascades_to_vehicle(db_session):
         VALUES (:id, :product_id, '1HGBH41JXMN109186')
     """), {'id': veh_id, 'product_id': prod_id})
     await db_session.flush()
-    
+
     # Delete the product
     await db_session.execute(text("DELETE FROM products WHERE id = :id"), {'id': prod_id})
     await db_session.flush()
-    
+
     # Vehicle should be gone (CASCADE)
     result = await db_session.execute(text(
         "SELECT id FROM vehicles WHERE id = :id"
@@ -452,7 +452,7 @@ async def test_jsonb_containment_operator_on_attribute_schema(db_session):
     org_row = result.fetchone()
     if org_row is None:
         pytest.skip("No organizations in test DB")
-    
+
     cat_id = uuid4()
     await db_session.execute(text("""
         INSERT INTO categories (id, tenant_id, name, slug, attribute_schema)
@@ -460,7 +460,7 @@ async def test_jsonb_containment_operator_on_attribute_schema(db_session):
                 '{"year": {"type": "number", "required": true}}'::jsonb)
     """), {'id': cat_id, 'tenant_id': org_row.id})
     await db_session.flush()
-    
+
     # @> operator — only works with JSONB (not JSON)
     result = await db_session.execute(text("""
         SELECT COUNT(*) FROM categories

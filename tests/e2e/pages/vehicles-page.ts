@@ -41,7 +41,7 @@ export class VehiclesPage extends BasePage {
    */
   async selectCategory(categoryName: string): Promise<void> {
     console.log(`[SELECT CATEGORY] Attempting to select: ${categoryName}`);
-    
+
     // Wait for select to be ready and visible
     await this.categorySelect.waitFor({ state: 'visible', timeout: 5000 });
 
@@ -102,10 +102,10 @@ export class VehiclesPage extends BasePage {
    */
   async selectOption(selectLocator: any, optionText: string | RegExp): Promise<void> {
     await selectLocator.click();
-    
+
     // Wait for Portal to render
     await this.page.waitForTimeout(500);
-    
+
     const option = this.page.getByText(optionText).first();
     await option.waitFor({ state: 'visible', timeout: 5000 });
     await option.click();
@@ -149,13 +149,13 @@ export class VehiclesPage extends BasePage {
   async waitForToast(message: string | RegExp, timeout: number = 5000): Promise<void> {
     // Sonner renders toasts in a fixed container with data-sonner-toast attribute
     // The toast might be in a Portal, so we need multiple strategies
-    
+
     // Strategy 1: Look for toast container
     const toastByAttr = this.page.locator('[data-sonner-toast]').filter({ hasText: message });
-    
+
     // Strategy 2: Look for text in the entire page (fallback)
     const toastByText = this.page.getByText(message);
-    
+
     // Wait for either strategy to find the toast
     await Promise.race([
       toastByAttr.waitFor({ state: 'visible', timeout }).catch(() => {}),
@@ -168,14 +168,14 @@ export class VehiclesPage extends BasePage {
    */
   async verifyToastVisible(message: string | RegExp): Promise<void> {
     await this.waitForToast(message);
-    
+
     // Check both strategies
     const toastByAttr = this.page.locator('[data-sonner-toast]').filter({ hasText: message });
     const toastByText = this.page.getByText(message);
-    
-    const isVisible = await toastByAttr.isVisible().catch(() => false) || 
+
+    const isVisible = await toastByAttr.isVisible().catch(() => false) ||
                       await toastByText.isVisible().catch(() => false);
-    
+
     expect(isVisible).toBeTruthy();
   }
 }

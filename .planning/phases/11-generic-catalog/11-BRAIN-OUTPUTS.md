@@ -65,19 +65,19 @@ def upgrade() -> None:
             nullable=False,
         )
     )
-    
+
     # 2. Upgrade products.attributes from JSON → JSONB (data preserved)
     op.execute(
         "ALTER TABLE products ALTER COLUMN attributes TYPE JSONB "
         "USING attributes::text::jsonb"
     )
-    
+
     # 3. Upgrade categories.field_config from JSON → JSONB (data preserved)
     op.execute(
         "ALTER TABLE categories ALTER COLUMN field_config TYPE JSONB "
         "USING field_config::text::jsonb"
     )
-    
+
     # 4. Optional GIN index on attribute_schema for JSONB operators
     op.execute(
         "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_categories_attribute_schema "
@@ -92,7 +92,7 @@ def downgrade() -> None:
     # Drop GIN indexes
     op.execute("DROP INDEX IF EXISTS ix_categories_attribute_schema;")
     op.execute("DROP INDEX IF EXISTS ix_products_attributes;")
-    
+
     # Revert JSONB → JSON
     op.execute(
         "ALTER TABLE products ALTER COLUMN attributes TYPE JSON "
@@ -102,7 +102,7 @@ def downgrade() -> None:
         "ALTER TABLE categories ALTER COLUMN field_config TYPE JSON "
         "USING field_config::text::json"
     )
-    
+
     # Drop attribute_schema column
     op.drop_column('categories', 'attribute_schema')
 ```
@@ -264,7 +264,7 @@ Technical facts:
 
 Recommended safe order of Alembic ops within transaction:
 1. `ALTER TABLE products ALTER COLUMN attributes TYPE JSONB` (brief lock)
-2. `ALTER TABLE categories ALTER COLUMN field_config TYPE JSONB` (brief lock)  
+2. `ALTER TABLE categories ALTER COLUMN field_config TYPE JSONB` (brief lock)
 3. `ALTER TABLE categories ADD COLUMN attribute_schema JSONB DEFAULT '{}'` (instant)
 4. GIN indexes as separate non-transactional step (or skip CONCURRENTLY)
 
@@ -332,19 +332,19 @@ async def test_jsonb_containment_operator(test_db):
         # Insert category with attribute_schema
         await conn.execute(text("""
             INSERT INTO categories (id, tenant_id, name, slug, attribute_schema)
-            VALUES (gen_random_uuid(), :org_id, 'Vehicles', 'vehicles', 
+            VALUES (gen_random_uuid(), :org_id, 'Vehicles', 'vehicles',
                     '{"year": {"type": "number", "required": true}}'::jsonb)
         """), {'org_id': ...})
-        
+
         # Test @> containment
         result = await conn.execute(text("""
-            SELECT COUNT(*) FROM categories 
+            SELECT COUNT(*) FROM categories
             WHERE attribute_schema @> '{"year": {}}'::jsonb
         """))
         count = result.scalar()
         assert count == 1  # @> operator worked
 
-@pytest.mark.asyncio  
+@pytest.mark.asyncio
 async def test_attribute_schema_default_empty_object(test_db):
     """attribute_schema defaults to {} not null."""
     async with test_db.begin() as conn:
@@ -352,7 +352,7 @@ async def test_attribute_schema_default_empty_object(test_db):
             INSERT INTO categories (id, tenant_id, name, slug)
             VALUES (gen_random_uuid(), :org_id, 'Test', 'test')
         """), {'org_id': ...})
-        
+
         result = await conn.execute(text(
             "SELECT attribute_schema FROM categories WHERE slug = 'test'"
         ))

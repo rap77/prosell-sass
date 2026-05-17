@@ -1,86 +1,38 @@
 {
-  "task_id": "B4.4",
-  "session_id": "sess-20260516-170108",
-  "started_at": "2026-05-16T17:01:08.434362",
+  "task_id": "M3",
+  "session_id": "sess-20260517-124900",
+  "started_at": "2026-05-17T12:49:00.120787",
   "phase": 19,
   "subtasks": {
-    "B4.4.01": {
-      "description": "Create getLeadAuditTrail API call",
-      "status": "in_progress",
+    "M3.01": {
+      "description": "Crear `app/not-found.tsx` con branding ProSell (logo, mensaje claro, CTA a dashboard)",
+      "status": "pending",
       "retries": 0,
-      "started_at": "2026-05-16T17:01:08.434362",
+      "started_at": "2026-05-17T12:49:00.120787",
       "completed_at": null,
       "duration_seconds": 0
     },
-    "B4.4.02": {
-      "description": "Create useLeadAuditTrail hook [requires: 01]",
-      "status": "in_progress",
+    "M3.02": {
+      "description": "Crear `app/error.tsx` (Client Component) con mensaje amigable y bot\u00f3n \"Intentar de nuevo\"",
+      "status": "pending",
       "retries": 0,
-      "started_at": "2026-05-16T17:01:08.434362",
+      "started_at": "2026-05-17T12:49:00.120787",
       "completed_at": null,
       "duration_seconds": 0
     },
-    "B4.4.03": {
-      "description": "Create LeadAuditTrail component [requires: 02]",
-      "status": "in_progress",
+    "M3.03": {
+      "description": "Verificar TypeScript strict sin errores en ambos archivos",
+      "status": "pending",
       "retries": 0,
-      "started_at": "2026-05-16T17:01:08.434362",
+      "started_at": "2026-05-17T12:49:00.120787",
       "completed_at": null,
       "duration_seconds": 0
     },
-    "B4.4.04": {
-      "description": "Display audit trail chronologically [requires: 03]",
-      "status": "in_progress",
+    "M3.04": {
+      "description": "Verificar que el build pasa (`pnpm typecheck`)",
+      "status": "pending",
       "retries": 0,
-      "started_at": "2026-05-16T17:01:08.434362",
-      "completed_at": null,
-      "duration_seconds": 0
-    },
-    "B4.4.05": {
-      "description": "Show status changes [requires: 04]",
-      "status": "in_progress",
-      "retries": 0,
-      "started_at": "2026-05-16T17:01:08.434362",
-      "completed_at": null,
-      "duration_seconds": 0
-    },
-    "B4.4.06": {
-      "description": "Show who made changes [requires: 05]",
-      "status": "in_progress",
-      "retries": 0,
-      "started_at": "2026-05-16T17:01:08.434362",
-      "completed_at": null,
-      "duration_seconds": 0
-    },
-    "B4.4.07": {
-      "description": "Show reasons for changes [requires: 06]",
-      "status": "in_progress",
-      "retries": 0,
-      "started_at": "2026-05-16T17:01:08.434362",
-      "completed_at": null,
-      "duration_seconds": 0
-    },
-    "B4.4.08": {
-      "description": "Integrate into lead detail page [requires: 03]",
-      "status": "in_progress",
-      "retries": 0,
-      "started_at": "2026-05-16T17:01:08.434362",
-      "completed_at": null,
-      "duration_seconds": 0
-    },
-    "B4.4.09": {
-      "description": "Unit tests for component [requires: 02]",
-      "status": "in_progress",
-      "retries": 0,
-      "started_at": "2026-05-16T17:01:08.434362",
-      "completed_at": null,
-      "duration_seconds": 0
-    },
-    "B4.4.10": {
-      "description": "E2E test for display [requires: 09]",
-      "status": "in_progress",
-      "retries": 0,
-      "started_at": "2026-05-16T17:01:08.434362",
+      "started_at": "2026-05-17T12:49:00.120787",
       "completed_at": null,
       "duration_seconds": 0
     }

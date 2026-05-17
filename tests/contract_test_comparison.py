@@ -5,10 +5,8 @@ Contract Test Comparison Tool
 Compares router endpoints with existing contract tests to identify coverage gaps.
 """
 
-import os
 import re
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
 
 # Project structure
 PROJECT_ROOT = Path("/home/rpadron/proy/prosell-sass")
@@ -17,7 +15,7 @@ E2E_CONTRACT_DIR = PROJECT_ROOT / "tests/e2e/layer2"
 API_CONTRACT_DIR = PROJECT_ROOT / "apps/api/tests/contract"
 
 
-def extract_router_endpoints(router_file: Path) -> List[Dict[str, str]]:
+def extract_router_endpoints(router_file: Path) -> list[dict[str, str]]:
     """Extract all endpoints from a router file with details."""
     content = router_file.read_text()
 
@@ -43,17 +41,19 @@ def extract_router_endpoints(router_file: Path) -> List[Dict[str, str]]:
         else:
             full_path = f"{prefix}{path}" if prefix != "UNKNOWN" else path
 
-        endpoints.append({
-            "method": method,
-            "path": path,
-            "full_path": full_path,
-            "router": router_file.name,
-        })
+        endpoints.append(
+            {
+                "method": method,
+                "path": path,
+                "full_path": full_path,
+                "router": router_file.name,
+            }
+        )
 
     return endpoints
 
 
-def extract_e2e_test_coverage(test_file: Path) -> Set[str]:
+def extract_e2e_test_coverage(test_file: Path) -> set[str]:
     """Extract endpoint coverage from E2E contract test file."""
     if not test_file.exists():
         return set()
@@ -80,7 +80,7 @@ def extract_e2e_test_coverage(test_file: Path) -> Set[str]:
     return endpoints
 
 
-def extract_api_test_coverage(test_file: Path) -> Set[str]:
+def extract_api_test_coverage(test_file: Path) -> set[str]:
     """Extract endpoint coverage from API contract test file."""
     if not test_file.exists():
         return set()
@@ -90,7 +90,7 @@ def extract_api_test_coverage(test_file: Path) -> Set[str]:
 
     # Look for endpoint references in comments or test descriptions
     # Pattern: # GET /api/v1/organizations
-    doc_pattern = r'#\s*(GET|POST|PUT|DELETE|PATCH)\s+([^\s]+)'
+    doc_pattern = r"#\s*(GET|POST|PUT|DELETE|PATCH)\s+([^\s]+)"
 
     for match in re.finditer(doc_pattern, content):
         method = match.group(1)
@@ -188,9 +188,10 @@ def compare_coverage():
             covered_count = 0
             for endpoint in endpoints:
                 full_endpoint = f"{endpoint['method']} {endpoint['full_path']}"
-                is_covered = any(full_endpoint in covered or
-                               endpoint['full_path'] in covered
-                               for covered in covered_endpoints)
+                is_covered = any(
+                    full_endpoint in covered or endpoint["full_path"] in covered
+                    for covered in covered_endpoints
+                )
 
                 status = "✅" if is_covered else "❌"
                 print(f"  {status} {endpoint['method']} {endpoint['full_path']}")
@@ -202,9 +203,9 @@ def compare_coverage():
             print()
             print(f"**Coverage**: {covered_count}/{len(endpoints)} ({coverage_percent:.0f}%)")
         else:
-            print(f"**Test File**: NONE")
+            print("**Test File**: NONE")
             print()
-            print(f"  ❌ NO TEST COVERAGE")
+            print("  ❌ NO TEST COVERAGE")
             for endpoint in endpoints:
                 print(f"     {endpoint['method']} {endpoint['full_path']}")
 

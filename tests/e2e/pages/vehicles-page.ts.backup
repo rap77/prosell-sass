@@ -42,7 +42,7 @@ export class VehiclesPage extends BasePage {
     // Wait for select to be ready and visible
     await this.categorySelect.waitFor({ state: 'visible' });
     await this.categorySelect.click();
-    
+
     // FIXED: Wait for Radix UI Portal to render options
     // Use text content as fallback since Radix UI SelectItem might not have role="option" visible
     const option = this.page.getByText(categoryName, { exact: true }).first();

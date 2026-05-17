@@ -5,7 +5,7 @@
 ### Problem
 Migration `20260324_2102-17d9ed732cf9_complete_publications_table.py` had duplicate code:
 - FK constraint created twice (lines 58-65 and 67-73)
-- Indexes created twice (lines 53-55 and 125-127)  
+- Indexes created twice (lines 53-55 and 125-127)
 - Columns added via add_column that already existed in CREATE TABLE
 
 ### Error
@@ -22,7 +22,7 @@ Removed all duplicate code from the migration file, keeping only:
 ### Migration Status
 ✅ All migrations now run successfully:
 - 001 → Initial UUID schema
-- 20f24e79033e → recreate_users_table_complete  
+- 20f24e79033e → recreate_users_table_complete
 - 83586f56fb82 → remove_facebook_page_fk
 - 17d9ed732cf9 → complete_publications_table (FIXED)
 - a546709840eb → add_dealers_table

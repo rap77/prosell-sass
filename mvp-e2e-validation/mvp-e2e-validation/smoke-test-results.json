@@ -1,8 +1,0 @@
-
-> prosell-sass@0.1.0 test /home/rpadron/proy/prosell-sass
-> turbo test "smoke.spec.ts"
-
-• turbo 2.8.3
-  x Missing tasks in project
-  `->   x Could not find task `smoke.spec.ts` in project
-

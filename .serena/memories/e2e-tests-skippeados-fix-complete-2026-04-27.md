@@ -16,7 +16,7 @@
 - `should search vehicles by text` (líneas 149-178)
 - `should escape XSS in search query` (líneas 409-444)
 
-**Causa Raíz**: 
+**Causa Raíz**:
 - **NO existía** un input de búsqueda conectado a URL state en el catálogo
 - Solo había un placeholder visual en el header
 

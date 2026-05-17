@@ -8,13 +8,12 @@ and checkpoints context before every switch.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, cast
+from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
 import psycopg2
 import psycopg2.extras
-
-from config import BACKENDS, BACKEND_PRIORITY, MIN_TOKENS_FOR_SWITCH
+from config import BACKEND_PRIORITY, BACKENDS, MIN_TOKENS_FOR_SWITCH
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +30,7 @@ class MultiBackendManager:
     # Public API
     # ------------------------------------------------------------------
 
-    def get_best_available_backend(self) -> Dict[str, Any]:
+    def get_best_available_backend(self) -> dict[str, Any]:
         """
         Return the backend with the most available tokens for this project.
 
@@ -87,7 +86,7 @@ class MultiBackendManager:
 
         return best
 
-    def switch_backend(self, from_backend: str, to_backend: str) -> Dict[str, Any]:
+    def switch_backend(self, from_backend: str, to_backend: str) -> dict[str, Any]:
         """
         Switch from one backend to another.
 
@@ -145,7 +144,7 @@ class MultiBackendManager:
         return {
             "from": from_backend,
             "to": to_backend,
-            "switched_at": datetime.now(timezone.utc).isoformat(),
+            "switched_at": datetime.now(UTC).isoformat(),
         }
 
     def track_token_depletion(self, backend: str, tokens_remaining: int) -> None:
@@ -162,7 +161,7 @@ class MultiBackendManager:
         if tokens_remaining >= MIN_TOKENS_FOR_SWITCH:
             return  # Not actually depleted yet
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         next_reset = self._calculate_next_reset_time(backend, now)
 
         with self._connect() as conn:
@@ -204,8 +203,8 @@ class MultiBackendManager:
         self,
         from_backend: str,
         to_backend: str,
-        state_data: Optional[Dict[str, Any]] = None,
-        conversation_history: Optional[list] = None,
+        state_data: dict[str, Any] | None = None,
+        conversation_history: list | None = None,
     ) -> None:
         """
         Save a context_checkpoints row with reason='backend_switch'.
@@ -261,9 +260,7 @@ class MultiBackendManager:
             cursor_factory=psycopg2.extras.RealDictCursor,
         )
 
-    def _fetch_active_sessions(
-        self, conn: psycopg2.extensions.connection
-    ) -> List[Dict[str, Any]]:
+    def _fetch_active_sessions(self, conn: psycopg2.extensions.connection) -> list[dict[str, Any]]:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -282,11 +279,9 @@ class MultiBackendManager:
                 """,
                 (self.project_id,),
             )
-            return cast(List[Dict[str, Any]], cur.fetchall())
+            return cast(list[dict[str, Any]], cur.fetchall())
 
-    def _fetch_current_state(
-        self, conn: psycopg2.extensions.connection
-    ) -> Optional[Dict[str, Any]]:
+    def _fetch_current_state(self, conn: psycopg2.extensions.connection) -> dict[str, Any] | None:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -299,7 +294,7 @@ class MultiBackendManager:
                 (self.project_id,),
             )
             row = cur.fetchone()
-            return cast(Dict[str, Any], row) if row else None
+            return cast(dict[str, Any], row) if row else None
 
     def _fetch_workspace_id(self, conn: psycopg2.extensions.connection) -> str:
         with conn.cursor() as cur:
@@ -308,10 +303,10 @@ class MultiBackendManager:
                 (self.project_id,),
             )
             _raw = cur.fetchone()
-            row: Optional[Dict[str, Any]] = cast(Dict[str, Any], _raw) if _raw else None
+            row: dict[str, Any] | None = cast(dict[str, Any], _raw) if _raw else None
             return str(row["id"]) if row else "00000000-0000-0000-0000-000000000000"
 
-    def _compute_available_tokens(self, session: Dict[str, Any]) -> int:
+    def _compute_available_tokens(self, session: dict[str, Any]) -> int:
         """
         Available tokens = limit - used, unless reset cycle has elapsed.
         If cycle elapsed, reset tokens_used to 0 in DB and return full limit.
@@ -321,15 +316,15 @@ class MultiBackendManager:
             return session["tokens_limit"]
         return max(0, session["tokens_limit"] - session["tokens_used"])
 
-    def _reset_cycle_completed(self, session: Dict[str, Any]) -> bool:
+    def _reset_cycle_completed(self, session: dict[str, Any]) -> bool:
         """Return True if reset_cycle_hours have passed since last_reset."""
         last_reset: datetime = session["last_reset"]
         if last_reset.tzinfo is None:
-            last_reset = last_reset.replace(tzinfo=timezone.utc)
-        elapsed_hours = (datetime.now(timezone.utc) - last_reset).total_seconds() / 3600
+            last_reset = last_reset.replace(tzinfo=UTC)
+        elapsed_hours = (datetime.now(UTC) - last_reset).total_seconds() / 3600
         return elapsed_hours >= session["reset_cycle_hours"]
 
-    def _reset_session_tokens(self, session: Dict[str, Any]) -> None:
+    def _reset_session_tokens(self, session: dict[str, Any]) -> None:
         """Zero out tokens_used and update last_reset in the DB."""
         with self._connect() as conn:
             with conn.cursor() as cur:
@@ -342,6 +337,4 @@ class MultiBackendManager:
                     (session["id"],),
                 )
             conn.commit()
-        logger.info(
-            "Reset cycle completed for backend '%s' — tokens reset.", session["backend"]
-        )
+        logger.info("Reset cycle completed for backend '%s' — tokens reset.", session["backend"])

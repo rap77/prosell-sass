@@ -63,7 +63,7 @@ def upgrade() -> None:
     # Step 1: Pre-flight check — verify no duplicate JSON keys in products.attributes
     # (JSONB silently deduplicates; we assert data is clean before upgrade)
     # Note: This is a CHECK, not a blocker — log warning if found.
-    
+
     # Step 2: Add attribute_schema to categories (new column, no data migration needed)
     op.add_column(
         'categories',
@@ -74,19 +74,19 @@ def upgrade() -> None:
             nullable=False,
         )
     )
-    
+
     # Step 3: Upgrade products.attributes JSON → JSONB (data preserved, lossless cast)
     op.execute(
         "ALTER TABLE products ALTER COLUMN attributes TYPE JSONB "
         "USING attributes::text::jsonb"
     )
-    
+
     # Step 4: Upgrade categories.field_config JSON → JSONB (data preserved)
     op.execute(
         "ALTER TABLE categories ALTER COLUMN field_config TYPE JSONB "
         "USING field_config::text::jsonb"
     )
-    
+
     # Step 5: GIN indexes — DO NOT USE CONCURRENTLY (cannot run inside Alembic transaction)
     op.execute(
         "CREATE INDEX IF NOT EXISTS ix_categories_attribute_schema_gin "
@@ -178,18 +178,18 @@ Update `create()` factory method to accept `attribute_schema` optional kwarg.
 ```sql
 -- Check 1: Verify no duplicate JSON keys in products.attributes
 -- JSONB silently deduplicates — if any exist, log warning before upgrading
-SELECT id, attributes::text 
-FROM products 
-WHERE attributes IS NOT NULL 
+SELECT id, attributes::text
+FROM products
+WHERE attributes IS NOT NULL
   AND attributes::text != '{}'
 LIMIT 10;
 
 -- Check 2: Verify vehicles.product_id FK exists (already known — confirming)
-SELECT conname FROM pg_constraint 
+SELECT conname FROM pg_constraint
 WHERE conrelid = 'vehicles'::regclass AND contype = 'f';
 
 -- Check 3: Count existing rows (to verify post-migration preservation)
-SELECT 
+SELECT
   (SELECT COUNT(*) FROM categories) AS categories_count,
   (SELECT COUNT(*) FROM products) AS products_count,
   (SELECT COUNT(*) FROM vehicles) AS vehicles_count;

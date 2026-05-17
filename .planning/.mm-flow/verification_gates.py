@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import Any
 
 import psycopg2
 import psycopg2.extras
@@ -47,7 +47,7 @@ class VerificationGates:
         org_id: str,
         project_id: str,
         confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
-        backend_used: Optional[str] = None,
+        backend_used: str | None = None,
     ) -> bool:
         """
         Run heuristic Brain #7 validation on an output.
@@ -87,9 +87,7 @@ class VerificationGates:
         )
 
         if passed:
-            logger.info(
-                "Brain #7: phase %d APPROVED (confidence=%.2f)", phase, confidence
-            )
+            logger.info("Brain #7: phase %d APPROVED (confidence=%.2f)", phase, confidence)
         else:
             logger.warning(
                 "Brain #7: phase %d REJECTED (confidence=%.2f < threshold=%.2f)",
@@ -187,9 +185,7 @@ class VerificationGates:
 
         return max(0.0, round(score, 2))
 
-    def _fetch_contract(
-        self, from_phase: int, to_phase: int
-    ) -> Optional[Dict[str, Any]]:
+    def _fetch_contract(self, from_phase: int, to_phase: int) -> dict[str, Any] | None:
         with self._connect() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -212,8 +208,8 @@ class VerificationGates:
         output_text: str,
         confidence: float,
         validated: bool,
-        backend_used: Optional[str],
-        metadata: Dict[str, Any],
+        backend_used: str | None,
+        metadata: dict[str, Any],
     ) -> None:
         try:
             with self._connect() as conn:

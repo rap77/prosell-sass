@@ -105,7 +105,7 @@ Callback result URL: http://localhost:3000/auth/login?error=invalid_state
   ✓  67 [chromium] › specs/oauth-fixed.spec.ts:264:3 › OAuth Error Handling › should handle invalid state token (1.1s)
 
 
-  1) [chromium] › specs/oauth.spec.ts:43:3 › Google OAuth Integration › should redirect to Google OAuth on click 
+  1) [chromium] › specs/oauth.spec.ts:43:3 › Google OAuth Integration › should redirect to Google OAuth on click
 
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mnot[2m.[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
 
@@ -128,6 +128,6 @@ Callback result URL: http://localhost:3000/auth/login?error=invalid_state
     Error Context: test-results/specs-oauth-Google-OAuth-I-30e24-ct-to-Google-OAuth-on-click-chromium/error-context.md
 
   1 failed
-    [chromium] › specs/oauth.spec.ts:43:3 › Google OAuth Integration › should redirect to Google OAuth on click 
+    [chromium] › specs/oauth.spec.ts:43:3 › Google OAuth Integration › should redirect to Google OAuth on click
   7 did not run
   59 passed (32.1s)

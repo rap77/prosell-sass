@@ -8,54 +8,50 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Set, Tuple, Optional
 
 
 class DependencyValidator:
     def __init__(self, todo_file: Path):
         self.todo_file = todo_file
         self.content = todo_file.read_text()
-        self.tasks: Dict[str, Dict] = {}
-        self.subtasks: Dict[str, Dict] = {}
-        self.errors: List[str] = []
-        self.warnings: List[str] = []
-        self.suggestions: List[str] = []
+        self.tasks: dict[str, dict] = {}
+        self.subtasks: dict[str, dict] = {}
+        self.errors: list[str] = []
+        self.warnings: list[str] = []
+        self.suggestions: list[str] = []
 
     def parse(self):
         """Parse the todo.md file and extract tasks with dependencies."""
-        lines = self.content.split('\n')
+        lines = self.content.split("\n")
         current_task = None
 
         for line in lines:
             # Match subtasks FIRST (indented with 2 spaces): - [x] A1.01: Subtask OR - [x] B1.1.01: Subtask
             # Subtasks always have at least 2 dots after the letter (e.g., A1.01 or B1.1.01)
             # And they are indented with 2 spaces
-            subtask_match = re.match(
-                r'^  - \[(x| )\]\s+([A-Z]\d+\.\d+(?:\.\d+)?):\s*(.+)',
-                line
-            )
+            subtask_match = re.match(r"^  - \[(x| )\]\s+([A-Z]\d+\.\d+(?:\.\d+)?):\s*(.+)", line)
             if subtask_match:
                 subtask_id = subtask_match.group(2)
                 subtask_desc = subtask_match.group(3)
 
                 # Infer parent task from subtask ID
                 # A1.01 -> A1, B1.1.01 -> B1.1
-                parent_id_match = re.match(r'([A-Z]\d+(?:\.\d+)?)\.\d+', subtask_id)
+                parent_id_match = re.match(r"([A-Z]\d+(?:\.\d+)?)\.\d+", subtask_id)
                 parent_task = parent_id_match.group(1) if parent_id_match else current_task
 
                 # Ensure parent task exists
                 if parent_task not in self.tasks:
                     self.tasks[parent_task] = {
-                        'name': f'Auto-generated parent for {subtask_id}',
-                        'done': False,
-                        'line': '',
-                        'requires': [],
-                        'parallel_with': [],
-                        'subtasks': []
+                        "name": f"Auto-generated parent for {subtask_id}",
+                        "done": False,
+                        "line": "",
+                        "requires": [],
+                        "parallel_with": [],
+                        "subtasks": [],
                     }
 
                 # Extract tags from the end
-                tags_pattern = r'\[(requires:|parallel-with:|requires-all:)(.+?)\]'
+                tags_pattern = r"\[(requires:|parallel-with:|requires-all:)(.+?)\]"
                 tags = re.findall(tags_pattern, line)
 
                 requires = []
@@ -64,44 +60,44 @@ class DependencyValidator:
 
                 for tag_type, tag_value in tags:
                     tag_value = tag_value.strip()
-                    if tag_type == 'requires:':
+                    if tag_type == "requires:":
                         # Parse multiple dependencies: "02, 03" or "02" or "previous"
-                        if tag_value == 'previous':
+                        if tag_value == "previous":
                             requires_all = True
                         else:
-                            deps = [d.strip() for d in tag_value.split(',')]
+                            deps = [d.strip() for d in tag_value.split(",")]
                             requires.extend(deps)
-                    elif tag_type == 'parallel-with:':
-                        deps = [d.strip() for d in tag_value.split(',')]
+                    elif tag_type == "parallel-with:":
+                        deps = [d.strip() for d in tag_value.split(",")]
                         parallel_with.extend(deps)
-                    elif tag_type == 'requires-all:':
-                        if tag_value == 'previous':
+                    elif tag_type == "requires-all:":
+                        if tag_value == "previous":
                             requires_all = True
 
                 self.subtasks[subtask_id] = {
-                    'task_id': parent_task,
-                    'description': subtask_desc,
-                    'done': subtask_match.group(1) == 'x',
-                    'line': line,
-                    'requires': requires,
-                    'parallel_with': parallel_with,
-                    'requires_all_previous': requires_all
+                    "task_id": parent_task,
+                    "description": subtask_desc,
+                    "done": subtask_match.group(1) == "x",
+                    "line": line,
+                    "requires": requires,
+                    "parallel_with": parallel_with,
+                    "requires_all_previous": requires_all,
                 }
-                self.tasks[parent_task]['subtasks'].append(subtask_id)
+                self.tasks[parent_task]["subtasks"].append(subtask_id)
                 continue
 
             # Match main tasks: - [x] A1: Task Name OR - [x] B1.1: Task Name
             # Main tasks have 1-2 dots after the letter (e.g., A1 or B1.1)
-            task_match = re.match(r'- \[(x| )\]\s+([A-Z]\d+(?:\.\d+)?)\s*:\s*(.+)', line)
+            task_match = re.match(r"- \[(x| )\]\s+([A-Z]\d+(?:\.\d+)?)\s*:\s*(.+)", line)
             if task_match:
                 current_task = task_match.group(2)
                 self.tasks[current_task] = {
-                    'name': task_match.group(3),
-                    'done': task_match.group(1) == 'x',
-                    'line': line,
-                    'requires': [],
-                    'parallel_with': [],
-                    'subtasks': []
+                    "name": task_match.group(3),
+                    "done": task_match.group(1) == "x",
+                    "line": line,
+                    "requires": [],
+                    "parallel_with": [],
+                    "subtasks": [],
                 }
                 continue
             if subtask_match and current_task:
@@ -109,7 +105,7 @@ class DependencyValidator:
                 subtask_desc = subtask_match.group(3)
 
                 # Extract tags from the end
-                tags_pattern = r'\[(requires:|parallel-with:|requires-all:)(.+?)\]'
+                tags_pattern = r"\[(requires:|parallel-with:|requires-all:)(.+?)\]"
                 tags = re.findall(tags_pattern, line)
 
                 requires = []
@@ -118,30 +114,30 @@ class DependencyValidator:
 
                 for tag_type, tag_value in tags:
                     tag_value = tag_value.strip()
-                    if tag_type == 'requires:':
+                    if tag_type == "requires:":
                         # Parse multiple dependencies: "02, 03" or "02" or "previous"
-                        if tag_value == 'previous':
+                        if tag_value == "previous":
                             requires_all = True
                         else:
-                            deps = [d.strip() for d in tag_value.split(',')]
+                            deps = [d.strip() for d in tag_value.split(",")]
                             requires.extend(deps)
-                    elif tag_type == 'parallel-with:':
-                        deps = [d.strip() for d in tag_value.split(',')]
+                    elif tag_type == "parallel-with:":
+                        deps = [d.strip() for d in tag_value.split(",")]
                         parallel_with.extend(deps)
-                    elif tag_type == 'requires-all:':
-                        if tag_value == 'previous':
+                    elif tag_type == "requires-all:":
+                        if tag_value == "previous":
                             requires_all = True
 
                 self.subtasks[subtask_id] = {
-                    'task_id': current_task,
-                    'description': subtask_desc,
-                    'done': subtask_match.group(1) == 'x',
-                    'line': line,
-                    'requires': requires,
-                    'parallel_with': parallel_with,
-                    'requires_all_previous': requires_all
+                    "task_id": current_task,
+                    "description": subtask_desc,
+                    "done": subtask_match.group(1) == "x",
+                    "line": line,
+                    "requires": requires,
+                    "parallel_with": parallel_with,
+                    "requires_all_previous": requires_all,
                 }
-                self.tasks[current_task]['subtasks'].append(subtask_id)
+                self.tasks[current_task]["subtasks"].append(subtask_id)
 
     def validate_references(self):
         """Validate that all referenced tasks exist."""
@@ -150,18 +146,18 @@ class DependencyValidator:
         for subtask_id, subtask in self.subtasks.items():
             # Extract prefix correctly for multi-level IDs
             # e.g., "A1.01" -> "A1", "B2.3.05" -> "B2.3"
-            parts = subtask_id.split('.')
+            parts = subtask_id.split(".")
             if len(parts) == 3:
                 # 3 levels: B2.3.05 -> prefix is B2.3
-                task_prefix = '.'.join(parts[:-1])
+                task_prefix = ".".join(parts[:-1])
             else:
                 # 2 levels: A1.01 -> prefix is A1
                 task_prefix = parts[0]
 
             # Check requires
-            for req in subtask['requires']:
+            for req in subtask["requires"]:
                 # Try to find the referenced subtask
-                if '.' not in req:
+                if "." not in req:
                     # Reference without subtask number, try same task
                     req_full = f"{task_prefix}.{req}"
                 else:
@@ -173,8 +169,8 @@ class DependencyValidator:
                     )
 
             # Check parallel_with
-            for pw in subtask['parallel_with']:
-                if '.' not in pw:
+            for pw in subtask["parallel_with"]:
+                if "." not in pw:
                     pw_full = f"{task_prefix}.{pw}"
                 else:
                     pw_full = pw
@@ -187,28 +183,28 @@ class DependencyValidator:
     def detect_self_dependencies(self):
         """Detect tasks that depend on themselves."""
         for subtask_id, subtask in self.subtasks.items():
-            for req in subtask['requires']:
-                req_full = req if '.' in req else f"{subtask['task_id']}.{req}"
+            for req in subtask["requires"]:
+                req_full = req if "." in req else f"{subtask['task_id']}.{req}"
                 if req_full == subtask_id:
                     self.errors.append(f"❌ Self-dependency: {subtask_id} depends on itself")
 
             # Check for conflicting tags
-            if subtask['requires'] and subtask['parallel_with']:
+            if subtask["requires"] and subtask["parallel_with"]:
                 # Check if there's overlap
-                for req in subtask['requires']:
-                    req_full = req if '.' in req else f"{subtask['task_id']}.{req}"
-                    if req_full in subtask['parallel_with'] or req in subtask['parallel_with']:
+                for req in subtask["requires"]:
+                    req_full = req if "." in req else f"{subtask['task_id']}.{req}"
+                    if req_full in subtask["parallel_with"] or req in subtask["parallel_with"]:
                         self.errors.append(
                             f"❌ Conflicting tags: {subtask_id} has both requires and parallel-with for {req_full}"
                         )
 
-    def detect_circular_dependencies(self) -> List[List[str]]:
+    def detect_circular_dependencies(self) -> list[list[str]]:
         """Detect circular dependencies using DFS."""
         cycles = []
         visited = set()
         rec_stack = set()
 
-        def dfs(node: str, path: List[str]) -> bool:
+        def dfs(node: str, path: list[str]) -> bool:
             visited.add(node)
             rec_stack.add(node)
             path.append(node)
@@ -216,9 +212,9 @@ class DependencyValidator:
             # Get all dependencies
             if node in self.subtasks:
                 subtask = self.subtasks[node]
-                task_prefix = subtask['task_id']
-                for req in subtask['requires']:
-                    req_full = req if '.' in req else f"{task_prefix}.{req}"
+                task_prefix = subtask["task_id"]
+                for req in subtask["requires"]:
+                    req_full = req if "." in req else f"{task_prefix}.{req}"
                     if req_full not in visited:
                         if dfs(req_full, path.copy()):
                             return True
@@ -241,14 +237,14 @@ class DependencyValidator:
     def suggest_parallelization(self):
         """Suggest tasks that could run in parallel."""
         # Group tasks by their required tasks
-        dependency_groups: Dict[str, Set[str]] = defaultdict(set)
+        dependency_groups: dict[str, set[str]] = defaultdict(set)
 
         for subtask_id, subtask in self.subtasks.items():
-            if not subtask['requires'] and not subtask['requires_all_previous']:
-                dependency_groups['none'].add(subtask_id)
+            if not subtask["requires"] and not subtask["requires_all_previous"]:
+                dependency_groups["none"].add(subtask_id)
             else:
-                for req in subtask['requires']:
-                    req_full = req if '.' in req else f"{subtask['task_id']}.{req}"
+                for req in subtask["requires"]:
+                    req_full = req if "." in req else f"{subtask['task_id']}.{req}"
                     dependency_groups[req_full].add(subtask_id)
 
         # Find groups that could run in parallel (same dependencies)
@@ -265,7 +261,7 @@ class DependencyValidator:
                     # Check if all tasks in this group are marked as parallel with each other
                     for other in tasks_list:
                         if other != task:
-                            if other not in task_obj['parallel_with']:
+                            if other not in task_obj["parallel_with"]:
                                 already_parallel = False
                                 break
                     if not already_parallel:
@@ -275,17 +271,17 @@ class DependencyValidator:
                     # Limit output to first 5 tasks and show total count
                     tasks_sorted = sorted(tasks_list)
                     if len(tasks_sorted) > 5:
-                        sample = ', '.join(tasks_sorted[:5])
+                        sample = ", ".join(tasks_sorted[:5])
                         self.suggestions.append(
                             f"💡 Could parallelize {len(tasks_sorted)} tasks depending on {dep}: {sample} ... (+{len(tasks_sorted) - 5} more)"
                         )
                     else:
-                        group_str = ', '.join(tasks_sorted)
+                        group_str = ", ".join(tasks_sorted)
                         self.suggestions.append(
                             f"💡 Could parallelize: {group_str} (all depend on {dep})"
                         )
 
-    def validate(self) -> Tuple[bool, str]:
+    def validate(self) -> tuple[bool, str]:
         """Run all validations and return report."""
         self.parse()
 
@@ -305,10 +301,12 @@ class DependencyValidator:
 
         # Summary
         total_subtasks = len(self.subtasks)
-        with_deps = sum(1 for st in self.subtasks.values() if st['requires'] or st['requires_all_previous'])
-        parallel = sum(1 for st in self.subtasks.values() if st['parallel_with'])
+        with_deps = sum(
+            1 for st in self.subtasks.values() if st["requires"] or st["requires_all_previous"]
+        )
+        parallel = sum(1 for st in self.subtasks.values() if st["parallel_with"])
 
-        report.append(f"📊 Summary:")
+        report.append("📊 Summary:")
         report.append(f"   Total subtasks: {total_subtasks}")
         report.append(f"   With dependencies: {with_deps}")
         report.append(f"   Marked parallel: {parallel}")
@@ -338,11 +336,11 @@ class DependencyValidator:
         if not self.errors and not self.warnings and not self.suggestions:
             report.append("✅ All dependencies validated successfully!")
 
-        return len(self.errors) == 0, '\n'.join(report)
+        return len(self.errors) == 0, "\n".join(report)
 
 
 def main():
-    todo_file = Path(__file__).parent.parent / 'tasks' / 'todo.md'
+    todo_file = Path(__file__).parent.parent / "tasks" / "todo.md"
 
     if not todo_file.exists():
         print(f"❌ Error: {todo_file} not found")
@@ -357,5 +355,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

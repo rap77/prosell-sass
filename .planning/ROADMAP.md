@@ -2,7 +2,7 @@
 
 ## Overview
 
-ProSell SaaS automates the complete vehicle sales cycle for dealerships: publish inventory to Facebook Marketplace, capture leads, confirm appointments — all from an internal panel. The roadmap executes in two delivery phases: Phase A (Core MVP) ships the closed loop publish → lead → appointment to the 5 active dealers and starts accumulating real market data. Phase B (Visibility) adds the public-facing catalog, landing page, AI-generated titles, and market intelligence built on those real data.
+ProSell SaaS is a multiniche sales-ops platform with a generic catalog foundation. The initial rollout and most advanced operational playbook today is vehicles: publish inventory to Facebook Marketplace, capture leads, confirm appointments — all from an internal panel. The roadmap executes in two delivery phases: Phase A (Core MVP) ships the closed loop publish → lead → appointment for the initial vertical and starts accumulating real market data. Phase B (Visibility) adds the public-facing catalog, landing page, AI-generated titles, and market intelligence built on those real data.
 
 ## Milestones
 
@@ -13,13 +13,13 @@ ProSell SaaS automates the complete vehicle sales cycle for dealerships: publish
 
 ## Phases
 
-- [x] **Phase 1: Hybrid Publisher** - Publish, update, delete, and auto-republish vehicle listings on FB Marketplace via Playwright (primary) and Graph API (secondary) (completed 2026-03-15)
+- [x] **Phase 1: Hybrid Publisher** - Publish, update, delete, and auto-republish listings for the initial vehicle vertical on FB Marketplace via Playwright (primary) and Graph API (secondary) (completed 2026-03-15)
 - [x] **Phase 2: Catalog & Roles** - Role-based internal catalog showing inventory per dealer with publishing state; dealer without user account; seller-to-dealer assignment (completed 2026-03-30)
 - [ ] **Phase 3: Scraping** - Automated dealer website sync and CarGurus market price extraction with deduplication and anti-detection
 - [ ] **Phase 4: Leads & Appointments** - Capture FB leads via webhook + polling, manual entry, lead lifecycle, and appointment creation with dealer notifications
 - [ ] **Phase 5: Dashboards** - Role-based dashboards for Admin, Manager, Vendedor, and Dealer with metrics
 - [ ] **Phase 6: Market Intelligence** - Price benchmarking (own vs. market), segmented price history, and market position indicators
-- [ ] **Phase 7: Visibility** - Temporal landing page, public vehicle catalog with SEO, and AI-generated listing titles
+- [ ] **Phase 7: Visibility** - Temporal landing page, public catalog for the initial vertical with SEO, and AI-generated listing titles
 - [x] **Phase 8: Layout Shell + Vehicle Management** - Professional dashboard shell with role-based navigation, high-performance DataGrid, bulk CSV upload, image handling, and search/filter capabilities (completed 2026-03-27)
 - [x] **Phase 9: Anti-patterns Fix** - Fix controlled components, FormField label placement, and toast notification issues (completed 2026-03-29)
 - [x] **Phase 10: Contract Testing Skill** - Create skill for multi-layer contract testing (OpenAPI → Integration → E2E) (completed 2026-03-31)

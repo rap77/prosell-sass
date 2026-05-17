@@ -18,11 +18,11 @@
 
 **Razón**: `test.skip(true, "Year range slider not found in UI")`
 
-**Feature faltante**: 
+**Feature faltante**:
 - Componente **Year Range Slider** en la UI del catálogo
 - El test espera un slider con `role="slider"` para filtrar por rango de años
 
-**Referencia**: 
+**Referencia**:
 ```typescript
 // Línea 121-123
 // TODO: Implement Year Range Slider component in catalog UI
@@ -35,7 +35,7 @@
 
 ### 2. Catalog Search Input (2 tests)
 
-**Tests**: 
+**Tests**:
 - `should search vehicles by text` (línea 149-178)
 - `should escape XSS in search query` (línea 409-444)
 
@@ -53,7 +53,7 @@
 // GitHub Issue: https://github.com/prosell-sass/prosell-sass/issues/XXX
 ```
 
-**Impacto**: 
+**Impacto**:
 - No se puede buscar vehículos por texto
 - No se comparten URLs de búsqueda
 - Vulnerabilidad XSS no verificada en búsqueda
@@ -108,7 +108,7 @@
 
 ### 1. Prioridad Inmediata: Catalog Search Input
 
-**Por qué**: 
+**Por qué**:
 - Feature core de UX para catálogos
 - 2 tests cubren funcionalidad + XSS security
 - Relativamente simple de implementar

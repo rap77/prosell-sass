@@ -51,7 +51,7 @@ docker compose -f docker/docker-compose.staging.yml exec web printenv | grep NOD
 # Output: NODE_ENV=production
 ```
 
-**Impacto**: 
+**Impacto**:
 - `logger.info/warn/debug` solo loguean en development
 - `logger.error` siempre loguea (todos los ambientes)
 - **Staging no muestra logs de debug**

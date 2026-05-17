@@ -83,6 +83,53 @@ file:line - rule_category - issue - fix
 
 ---
 
+## MasterMind Codex Compatibility
+
+For Codex sessions, the canonical compatibility entry point is:
+
+```bash
+bash scripts/mm/mm.sh <command> [args...]
+```
+
+Use this wrapper instead of assuming Claude-native `/mm:*` runtime support.
+
+### Handler-backed commands
+
+- `init`
+- `discover`
+- `complete-task`
+- `review`
+- `safe-commit`
+- `verify-criteria`
+- `ship`
+- `status`
+- `next-task`
+- `brain-plan`
+
+### Complete-task execution model
+
+- User-facing execution is by parent block/task (for example `M3`)
+- Internally, the worker must execute each pending subtask sequentially with checkpoints
+- After each subtask checkpoint, update progress artifacts and time tracking
+- Use completion sound at the end of the parent block, not every micro-step
+- Finish the block with `review` → `verify-criteria` → `safe-commit`
+
+### Workflow-doc commands
+
+If a command does not have a handler-backed wrapper, read its source markdown from:
+
+```text
+.claude/commands/mm/<command>.md
+```
+
+The Codex compatibility notes live in:
+
+```text
+scripts/mm/README.md
+```
+
+---
+
 ## Critical Rules (Block Commit)
 
 ### Security

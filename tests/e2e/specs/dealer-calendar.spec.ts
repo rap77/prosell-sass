@@ -361,7 +361,7 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
     // CRITICAL: Verify that buyer data is loaded and displayed
     // The mock should return "John Doe" for lead-1
     await expect(page.locator('[role="dialog"]')).toContainText("John Doe", { timeout: 3000 });
-    
+
     // Also verify vehicle information is displayed
     await expect(page.locator('[role="dialog"]')).toContainText("Toyota", { timeout: 3000 });
 
@@ -699,7 +699,7 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     // CRITICAL: Verify that buyer data is loaded and displayed
     // The mock should return "John Doe" for lead-1
     await expect(page.locator('[role="dialog"]')).toContainText("John Doe", { timeout: 3000 });
-    
+
     // Also verify vehicle information is displayed
     await expect(page.locator('[role="dialog"]')).toContainText("Toyota", { timeout: 3000 });
   });

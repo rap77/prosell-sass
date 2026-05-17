@@ -300,7 +300,7 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       // Log response details for debugging
       console.log(`[TEST] API response status: ${response.status()}`);
       console.log(`[TEST] API response OK: ${response.ok()}`);
-      
+
       // If not OK, log the response body to see validation errors
       if (!response.ok()) {
         const errorBody = await response.json();
@@ -487,7 +487,7 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       // Add explicit wait for category dropdown to be ready
       await page.waitForTimeout(1000);
       await vehiclesPage.selectCategory(testCategoryName);
-      
+
       await vehiclesPage.vinInput.fill("KNAFX4A65E5134820"); // Same VIN - duplicate
       await vehiclesPage.decodeVinButton.click();
       await page.waitForLoadState("load");

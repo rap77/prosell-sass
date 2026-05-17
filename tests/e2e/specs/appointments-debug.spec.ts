@@ -31,7 +31,7 @@ test("debug: check network requests", async ({ page }) => {
 
   // Take a screenshot
   await page.screenshot({ path: "debug-screenshot.png", fullPage: true });
-  
+
   // Get page content
   const content = await page.content();
   console.log("Page title:", await page.title());

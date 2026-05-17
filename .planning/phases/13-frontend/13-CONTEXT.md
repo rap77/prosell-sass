@@ -260,7 +260,7 @@ Phase 13.3 (DataGrid Real Data)
 - Release cycle +1 day (test fixing)
 - Flakiness hunting = quarterly fire drill
 
-**Mitigation**: 
+**Mitigation**:
 - Contract tests como guardrails
 - PACT testing para endpoints críticos (future)
 - Monocle timers: si test fixing > 20% dev time, refactor test strategy
