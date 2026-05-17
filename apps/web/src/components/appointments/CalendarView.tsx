@@ -4,6 +4,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
+import interactionPlugin from "@fullcalendar/interaction";
 import type { DateSelectArg, DatesSetArg, EventClickArg, EventDropArg } from "@fullcalendar/core";
 import { Appointment, AppointmentStatus } from "@/lib/api/appointments";
 import { format, parseISO } from "date-fns";
@@ -127,7 +128,7 @@ export function CalendarView({
     <div className="calendar-view w-full" data-testid="calendar-view">
       <div data-testid="fullcalendar-wrapper">
         <FullCalendar
-          plugins={[dayGridPlugin, timeGridPlugin, listPlugin]}
+          plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
           initialView={initialView}
           headerToolbar={{
             left: "prev,next today",

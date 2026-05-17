@@ -25,6 +25,7 @@ const {
 }));
 
 import { useProduct, useUpdateProduct } from "@/lib/api/products";
+import type { AuthState } from "@/stores/authStore";
 import { useAuthStore } from "@/stores/authStore";
 import { VehicleForm } from "../VehicleForm";
 
@@ -94,10 +95,36 @@ vi.mock("@/components/catalog/ProductImageGallery", () => ({
 const mockUser = {
   id: "user-1",
   email: "test@example.com",
+  first_name: "Test",
+  last_name: "Seller",
   role: "vendedor" as const,
   tenant_id: "tenant-1",
   organization_id: "org-1",
 };
+
+const mockAuthState: AuthState = {
+  user: mockUser,
+  isAuthenticated: true,
+  isLoading: false,
+  error: null,
+  initialized: true,
+  initializeAuth: vi.fn(),
+  login: vi.fn(),
+  register: vi.fn(),
+  logout: vi.fn(),
+  updateUser: vi.fn(),
+  clearError: vi.fn(),
+  setLoading: vi.fn(),
+  reset: vi.fn(),
+};
+
+function createUpdateProductMutationMock(): ReturnType<typeof useUpdateProduct> {
+  return {
+    mutateAsync: mockMutateAsync.mockResolvedValue({ id: "prod-1" }),
+    isPending: false,
+    error: null,
+  } as unknown as ReturnType<typeof useUpdateProduct>;
+}
 
 const mockExistingProduct = {
   id: "prod-1",
@@ -151,7 +178,7 @@ describe("VehicleForm - edit mode", () => {
     vi.clearAllMocks();
 
     vi.mocked(useAuthStore).mockImplementation((selector) =>
-      selector({ user: mockUser }),
+      selector(mockAuthState),
     );
 
     vi.mocked(useProduct).mockReturnValue({
@@ -160,11 +187,9 @@ describe("VehicleForm - edit mode", () => {
       error: null,
     } as ReturnType<typeof useProduct>);
 
-    vi.mocked(useUpdateProduct).mockReturnValue({
-      mutateAsync: mockMutateAsync.mockResolvedValue({ id: "prod-1" }),
-      isPending: false,
-      error: null,
-    } as ReturnType<typeof useUpdateProduct>);
+    vi.mocked(useUpdateProduct).mockReturnValue(
+      createUpdateProductMutationMock(),
+    );
   });
 
   test("loads product data in edit mode", async () => {

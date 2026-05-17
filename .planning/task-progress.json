@@ -1,42 +1,45 @@
 {
   "task_id": "M3",
-  "session_id": "sess-20260517-124900",
-  "started_at": "2026-05-17T12:49:00.120787",
+  "session_id": "sess-20260517-134856",
+  "started_at": "2026-05-17T13:48:56.315532",
   "phase": 19,
   "subtasks": {
     "M3.01": {
       "description": "Crear `app/not-found.tsx` con branding ProSell (logo, mensaje claro, CTA a dashboard)",
-      "status": "pending",
+      "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T12:49:00.120787",
-      "completed_at": null,
+      "started_at": "2026-05-17T13:48:56.315532",
+      "completed_at": "2026-05-17T17:53:02.977623+00:00",
       "duration_seconds": 0
     },
     "M3.02": {
       "description": "Crear `app/error.tsx` (Client Component) con mensaje amigable y bot\u00f3n \"Intentar de nuevo\"",
-      "status": "pending",
+      "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T12:49:00.120787",
-      "completed_at": null,
+      "started_at": "2026-05-17T13:48:56.315532",
+      "completed_at": "2026-05-17T17:53:02.977623+00:00",
       "duration_seconds": 0
     },
     "M3.03": {
       "description": "Verificar TypeScript strict sin errores en ambos archivos",
-      "status": "pending",
+      "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T12:49:00.120787",
-      "completed_at": null,
+      "started_at": "2026-05-17T13:48:56.315532",
+      "completed_at": "2026-05-17T17:53:02.977623+00:00",
       "duration_seconds": 0
     },
     "M3.04": {
       "description": "Verificar que el build pasa (`pnpm typecheck`)",
-      "status": "pending",
+      "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T12:49:00.120787",
-      "completed_at": null,
+      "started_at": "2026-05-17T13:48:56.315532",
+      "completed_at": "2026-05-17T18:05:00+00:00",
       "duration_seconds": 0
     }
   },
-  "last_checkpoint": null,
+  "last_checkpoint": {
+    "at": "2026-05-17T18:05:00+00:00",
+    "summary": "Completed M3. Added branded global not-found and error pages, fixed blocking frontend typecheck issues, and verified pnpm --prefix apps/web typecheck passes."
+  },
   "context_budget_exit": null
 }

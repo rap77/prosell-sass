@@ -21,11 +21,14 @@
 
 ---
 
-- [~] M3: Páginas de error globales
-  - [ ] M3.01: Crear `app/not-found.tsx` con branding ProSell (logo, mensaje claro, CTA a dashboard)
-  - [ ] M3.02: Crear `app/error.tsx` (Client Component) con mensaje amigable y botón "Intentar de nuevo"
-  - [ ] M3.03: Verificar TypeScript strict sin errores en ambos archivos
-  - [ ] M3.04: Verificar que el build pasa (`pnpm typecheck`)
+- [x] M3: Páginas de error globales⏱️ **Estimate**: N/A | **Actual**: in progress | **Deviation**: — | **Progress**: 4/4 (100%)
+📊 **Avg/subtask**: — | **ETA**: in progress
+
+
+  - [x] M3.01: Crear `app/not-found.tsx` con branding ProSell (logo, mensaje claro, CTA a dashboard)
+  - [x] M3.02: Crear `app/error.tsx` (Client Component) con mensaje amigable y botón "Intentar de nuevo"
+  - [x] M3.03: Verificar TypeScript strict sin errores en ambos archivos
+  - [x] M3.04: Verificar que el build pasa (`pnpm typecheck`)
 
 - [ ] M2: Detalle de ítem de catálogo (view-only)
   - [ ] M2.01: Crear `app/(seller)/catalog/[id]/page.tsx` (Server Component, fetch del producto)
