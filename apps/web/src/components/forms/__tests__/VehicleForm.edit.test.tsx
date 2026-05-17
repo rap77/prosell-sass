@@ -26,7 +26,7 @@ const {
 
 import { useProduct, useUpdateProduct } from "@/lib/api/products";
 import { useAuthStore } from "@/stores/authStore";
-import { ProductForm } from "../ProductForm";
+import { VehicleForm } from "../VehicleForm";
 
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({
@@ -94,8 +94,6 @@ vi.mock("@/components/catalog/ProductImageGallery", () => ({
 const mockUser = {
   id: "user-1",
   email: "test@example.com",
-  first_name: "Test",
-  last_name: "User",
   role: "vendedor" as const,
   tenant_id: "tenant-1",
   organization_id: "org-1",
@@ -148,12 +146,12 @@ function renderWithClient(ui: ReactElement) {
   );
 }
 
-describe("ProductForm - edit mode", () => {
+describe("VehicleForm - edit mode", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
     vi.mocked(useAuthStore).mockImplementation((selector) =>
-      selector({ user: mockUser } as unknown as Parameters<typeof selector>[0]),
+      selector({ user: mockUser }),
     );
 
     vi.mocked(useProduct).mockReturnValue({
@@ -166,11 +164,11 @@ describe("ProductForm - edit mode", () => {
       mutateAsync: mockMutateAsync.mockResolvedValue({ id: "prod-1" }),
       isPending: false,
       error: null,
-    } as unknown as ReturnType<typeof useUpdateProduct>);
+    } as ReturnType<typeof useUpdateProduct>);
   });
 
   test("loads product data in edit mode", async () => {
-    renderWithClient(<ProductForm mode="edit" productId="prod-1" />);
+    renderWithClient(<VehicleForm mode="edit" vehicleId="prod-1" />);
 
     expect(useProduct).toHaveBeenCalledWith("prod-1", { internal: true });
 
@@ -186,12 +184,12 @@ describe("ProductForm - edit mode", () => {
   });
 
   test("does not fetch a product in create mode", () => {
-    renderWithClient(<ProductForm mode="create" />);
+    renderWithClient(<VehicleForm mode="create" />);
     expect(useProduct).toHaveBeenCalledWith(undefined, { internal: true });
   });
 
   test("submits updates with transformed payload", async () => {
-    renderWithClient(<ProductForm mode="edit" productId="prod-1" />);
+    renderWithClient(<VehicleForm mode="edit" vehicleId="prod-1" />);
 
     const user = userEvent.setup();
 
@@ -227,7 +225,7 @@ describe("ProductForm - edit mode", () => {
   test("calls onSuccess after a successful update", async () => {
     const onSuccess = vi.fn();
     renderWithClient(
-      <ProductForm mode="edit" productId="prod-1" onSuccess={onSuccess} />,
+      <VehicleForm mode="edit" vehicleId="prod-1" onSuccess={onSuccess} />,
     );
 
     const user = userEvent.setup();
@@ -239,7 +237,7 @@ describe("ProductForm - edit mode", () => {
   });
 
   test("shows validation errors in edit mode", async () => {
-    renderWithClient(<ProductForm mode="edit" productId="prod-1" />);
+    renderWithClient(<VehicleForm mode="edit" vehicleId="prod-1" />);
 
     const user = userEvent.setup();
     const vinInput = screen.getByLabelText(/VIN/i);
@@ -263,7 +261,7 @@ describe("ProductForm - edit mode", () => {
       error: null,
     } as ReturnType<typeof useProduct>);
 
-    renderWithClient(<ProductForm mode="edit" productId="prod-1" />);
+    renderWithClient(<VehicleForm mode="edit" vehicleId="prod-1" />);
 
     expect(
       screen.getByRole("button", { name: /update vehicle/i }),

@@ -145,6 +145,31 @@ export function useProducts(): UseQueryResult<Product[], Error> {
 }
 
 /**
+ * Update a product
+ */
+export async function updateProduct(
+  productId: string,
+  data: Partial<CreateProductRequest>
+): Promise<Product> {
+  const res = await fetch(`/api/v1/products/${productId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Failed to update product" }));
+    throw new Error(error.message || "Failed to update product");
+  }
+
+  const product = (await res.json()) as BackendProductResponse;
+  return product as Product;
+}
+
+/**
  * Update product status (for approval workflow)
  */
 export async function updateProductStatus(
@@ -183,6 +208,75 @@ export function useUpdateProductStatus() {
     },
     onError: (err) => {
       toast.error(err.message || "Failed to update product status");
+    },
+  });
+}
+
+/**
+ * Fetch a single product by ID.
+ *
+ * @param productId - Product UUID
+ * @param options.internal - When true, passes `?internal=true` to the backend
+ *   so that view_count is NOT incremented. Use this for seller-side reads
+ *   (edit forms, admin panels) to avoid polluting analytics with internal traffic.
+ */
+export function useProduct(
+  productId: string | undefined,
+  options: { internal?: boolean } = {}
+): UseQueryResult<Product, Error> {
+  const { internal = false } = options;
+
+  return useQuery({
+    queryKey: ["products", productId, { internal }],
+    queryFn: async () => {
+      if (!productId) {
+        throw new Error("Product ID is required");
+      }
+
+      const url = internal
+        ? `/api/v1/products/${productId}?internal=true`
+        : `/api/v1/products/${productId}`;
+
+      const res = await fetch(url, {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: "Failed to fetch product" }));
+        throw new Error(error.message || "Failed to fetch product");
+      }
+
+      const product = (await res.json()) as BackendProductResponse;
+      return product as Product;
+    },
+    enabled: !!productId,
+  });
+}
+
+/**
+ * Mutation hook for updating products
+ */
+export function useUpdateProduct(): UseMutationResult<
+  Product,
+  Error,
+  { productId: string; data: Partial<CreateProductRequest> },
+  unknown
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ productId, data }) => updateProduct(productId, data),
+
+    onSuccess: (updatedProduct) => {
+      // Invalidate products queries
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["products", updatedProduct.id] });
+
+      toast.success("Product updated successfully");
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Failed to update product");
     },
   });
 }

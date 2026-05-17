@@ -196,10 +196,16 @@ async def list_products(
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(
     product_id: UUID,
+    internal: bool = False,
     current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
-    """Get a product by ID."""
+    """Get a product by ID.
+
+    - **internal**: When True, skip view_count increment. Use this for
+      seller-side reads (edit forms, admin panels) to avoid polluting
+      analytics with internal traffic.
+    """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     tenant_id = current_user.tenant_id
@@ -210,8 +216,9 @@ async def get_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # Increment view count
-    await repo.increment_view_count(product_id, tenant_id)
+    # Only increment view count for public/buyer reads, not internal seller reads
+    if not internal:
+        await repo.increment_view_count(product_id, tenant_id)
 
     return ProductResponse.from_entity(product)
 

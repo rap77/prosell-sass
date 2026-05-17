@@ -209,9 +209,12 @@ export function ProductForm({
   // Product update hook for edit mode
   const updateProduct = useUpdateProduct();
 
-  // Load product data in edit mode
+  // Load product data in edit mode.
+  // Pass internal=true so the backend does not increment view_count for
+  // seller-side reads (this is an admin/edit context, not a buyer view).
   const { data: existingProduct, isLoading: isLoadingProduct } = useProduct(
-    mode === "edit" ? productId : undefined
+    mode === "edit" ? productId : undefined,
+    { internal: true }
   );
 
   // Derived state
