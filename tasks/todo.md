@@ -30,14 +30,16 @@
   - [x] M3.03: Verificar TypeScript strict sin errores en ambos archivos
   - [x] M3.04: Verificar que el build pasa (`pnpm typecheck`)
 
-- [ ] M2: Detalle de ítem de catálogo (view-only)
-  - [ ] M2.01: Crear `app/(seller)/catalog/[id]/page.tsx` (Server Component, fetch del producto)
-  - [ ] M2.02: Renderizar datos del producto (título, precio, atributos del vehículo)
-  - [ ] M2.03: Integrar `ProductImageGallery` para mostrar imágenes
-  - [ ] M2.04: Agregar botón "Editar" que navega a `/catalog/[id]/edit`
-  - [ ] M2.05: Modificar `DataGrid.tsx` para que click en row navegue a `/catalog/[id]`
-  - [ ] M2.06: Implementar loading state (skeleton) y error state con mensaje
-  - [ ] M2.07: Verificar TypeScript strict sin errores
+- [x] M2: Detalle de ítem de catálogo (view-only)⏱️ **Estimate**: 2h | **Actual**: done | **Deviation**: — | **Progress**: 7/7 (100%)
+📊 **Avg/subtask**: — | **ETA**: done
+
+  - [x] M2.01: Crear `app/(seller)/catalog/[id]/page.tsx` (Server Component, fetch del producto)
+  - [x] M2.02: Renderizar datos del producto (título, precio, atributos del vehículo)
+  - [x] M2.03: Integrar `ProductImageGallery` para mostrar imágenes
+  - [x] M2.04: Agregar botón "Editar" que navega a `/catalog/[id]/edit`
+  - [x] M2.05: Modificar `DataGrid.tsx` para que click en row navegue a `/catalog/[id]`
+  - [x] M2.06: Implementar loading state (skeleton) y error state con mensaje
+  - [x] M2.07: Verificar TypeScript strict sin errores
 
 - [ ] M1: Publicaciones — ruta accesible
   - [ ] M1.01: Crear `app/(seller)/publications/page.tsx` con lista de publicaciones del tenant

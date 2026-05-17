@@ -1,13 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   type ColumnDef,
-  type SortingState,
   type RowSelectionState,
   flexRender,
 } from "@tanstack/react-table";
@@ -15,6 +14,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { Building2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
 import { ActionMenu } from "./ActionMenu";
 
@@ -37,6 +37,7 @@ interface DataGridProps {
   onEdit?: (vehicleId: string) => void;
   onDelete?: (vehicleId: string) => void;
   onBulkAssignBranch?: (productIds: string[]) => void;
+  onRowClick?: (vehicleId: string) => void;
 }
 
 export function DataGrid({
@@ -45,9 +46,37 @@ export function DataGrid({
   onEdit = () => {},
   onDelete = () => {},
   onBulkAssignBranch,
+  onRowClick,
 }: DataGridProps) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+  const stopRowNavigation = (event: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>) => {
+    event.stopPropagation();
+  };
+
+  const handleRowClick = (vehicleId: string) => {
+    if (!onRowClick) {
+      return undefined;
+    }
+
+    return () => {
+      onRowClick(vehicleId);
+    };
+  };
+
+  const handleRowKeyDown = (vehicleId: string) => (event: KeyboardEvent<HTMLTableRowElement>) => {
+    if (!onRowClick) {
+      return;
+    }
+
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    onRowClick(vehicleId);
+  };
 
   // Stable columns definition (prevent re-renders)
   const columns: ColumnDef<Vehicle>[] = [
@@ -64,11 +93,13 @@ export function DataGrid({
           />
         ),
         cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label={`Select row ${row.id}`}
-          />
+          <div onClick={stopRowNavigation} onKeyDown={stopRowNavigation}>
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={(value) => row.toggleSelected(!!value)}
+              aria-label={`Select row ${row.id}`}
+            />
+          </div>
         ),
         enableSorting: false,
         enableHiding: false,
@@ -76,8 +107,8 @@ export function DataGrid({
       {
         accessorKey: "photo_url",
         header: "Photo",
-        cell: ({ getValue }) => {
-          const photoUrl = getValue() as string | undefined;
+        cell: ({ row }) => {
+          const photoUrl = row.original.photo_url;
           return photoUrl ? (
             <Image
               src={photoUrl}
@@ -97,13 +128,15 @@ export function DataGrid({
       {
         accessorKey: "title",
         header: "Vehicle",
-        cell: (info) => <span className="font-medium">{info.getValue() as string}</span>,
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.title}</span>
+        ),
       },
       {
         accessorKey: "price",
         header: "Price",
-        cell: (info) => {
-          const price = info.getValue() as number;
+        cell: ({ row }) => {
+          const price = row.original.price;
           return new Intl.NumberFormat("en-US", {
             style: "currency",
             currency: "USD",
@@ -113,13 +146,13 @@ export function DataGrid({
       {
         accessorKey: "status",
         header: "Status",
-        cell: (info) => <StatusBadge status={info.getValue() as Vehicle["status"]} />,
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
       },
       {
         accessorKey: "branch_name",
         header: "Branch",
-        cell: (info) => {
-          const branchName = info.getValue() as string | undefined;
+        cell: ({ row }) => {
+          const branchName = row.original.branch_name;
           return branchName ? (
             <span className="text-sm">{branchName}</span>
           ) : (
@@ -131,13 +164,15 @@ export function DataGrid({
         id: "actions",
         header: "Actions",
         cell: ({ row }) => (
-          <ActionMenu
-            vehicleId={row.original.id}
-            vehicleTitle={row.original.title}
-            onPublish={() => onPublish(row.original.id)}
-            onEdit={() => onEdit(row.original.id)}
-            onDelete={() => onDelete(row.original.id)}
-          />
+          <div onClick={stopRowNavigation} onKeyDown={stopRowNavigation}>
+            <ActionMenu
+              vehicleId={row.original.id}
+              vehicleTitle={row.original.title}
+              onPublish={() => onPublish(row.original.id)}
+              onEdit={() => onEdit(row.original.id)}
+              onDelete={() => onDelete(row.original.id)}
+            />
+          </div>
         ),
       },
     ];
@@ -158,7 +193,7 @@ export function DataGrid({
   const selectedProductIds = Object.keys(rowSelection).map((rowIndex) => {
       const index = parseInt(rowIndex, 10);
       return data[index]?.id;
-    }).filter(Boolean);
+    }).filter((productId): productId is string => productId !== undefined);
 
   const handleBulkAssign = () => {
     if (onBulkAssignBranch && selectedProductIds.length > 0) {
@@ -175,6 +210,16 @@ export function DataGrid({
   });
 
   const virtualRows = rowVirtualizer.getVirtualItems();
+  const rowsToRender =
+    virtualRows.length > 0
+      ? virtualRows.map((virtualRow) => ({
+          key: virtualRow.key,
+          row: table.getRowModel().rows[virtualRow.index],
+        }))
+      : table.getRowModel().rows.map((row) => ({
+          key: row.id,
+          row,
+        }));
 
   return (
     <div className="w-full border border-border rounded-lg overflow-hidden">
@@ -236,15 +281,21 @@ export function DataGrid({
             ))}
           </thead>
           <tbody>
-            {virtualRows.map((virtualRow) => {
-              const row = table.getRowModel().rows[virtualRow.index];
-              return (
+            {rowsToRender.map(({ key, row }) => (
                 <tr
-                  key={row.id}
+                  key={key}
                   data-row-id={row.id}
                   data-testid="vehicle-row"
                   data-vehicle-id={row.original.id}
-                  className="border-b border-border hover:bg-muted/50 transition-colors"
+                  className={cn(
+                    "border-b border-border transition-colors",
+                    onRowClick
+                      ? "cursor-pointer hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                      : "hover:bg-muted/50",
+                  )}
+                  onClick={handleRowClick(row.original.id)}
+                  onKeyDown={handleRowKeyDown(row.original.id)}
+                  tabIndex={onRowClick ? 0 : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
@@ -255,8 +306,7 @@ export function DataGrid({
                     </td>
                   ))}
                 </tr>
-              );
-            })}
+            ))}
           </tbody>
         </table>
       </div>

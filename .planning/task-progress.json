@@ -1,45 +1,69 @@
 {
-  "task_id": "M3",
-  "session_id": "sess-20260517-134856",
-  "started_at": "2026-05-17T13:48:56.315532",
+  "task_id": "M2",
+  "session_id": "sess-20260517-161700",
+  "started_at": "2026-05-17T16:17:00-04:00",
   "phase": 19,
   "subtasks": {
-    "M3.01": {
-      "description": "Crear `app/not-found.tsx` con branding ProSell (logo, mensaje claro, CTA a dashboard)",
+    "M2.01": {
+      "description": "Crear `app/(seller)/catalog/[id]/page.tsx` (Server Component, fetch del producto)",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T13:48:56.315532",
-      "completed_at": "2026-05-17T17:53:02.977623+00:00",
-      "duration_seconds": 0
+      "started_at": "2026-05-17T16:17:00-04:00",
+      "completed_at": "2026-05-17T16:24:00-04:00",
+      "duration_seconds": 420
     },
-    "M3.02": {
-      "description": "Crear `app/error.tsx` (Client Component) con mensaje amigable y bot\u00f3n \"Intentar de nuevo\"",
+    "M2.02": {
+      "description": "Renderizar datos del producto (título, precio, atributos del vehículo)",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T13:48:56.315532",
-      "completed_at": "2026-05-17T17:53:02.977623+00:00",
-      "duration_seconds": 0
+      "started_at": "2026-05-17T16:24:00-04:00",
+      "completed_at": "2026-05-17T16:33:00-04:00",
+      "duration_seconds": 540
     },
-    "M3.03": {
-      "description": "Verificar TypeScript strict sin errores en ambos archivos",
+    "M2.03": {
+      "description": "Integrar `ProductImageGallery` para mostrar imágenes",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T13:48:56.315532",
-      "completed_at": "2026-05-17T17:53:02.977623+00:00",
-      "duration_seconds": 0
+      "started_at": "2026-05-17T16:33:00-04:00",
+      "completed_at": "2026-05-17T16:39:00-04:00",
+      "duration_seconds": 360
     },
-    "M3.04": {
-      "description": "Verificar que el build pasa (`pnpm typecheck`)",
+    "M2.04": {
+      "description": "Agregar botón \"Editar\" que navega a `/catalog/[id]/edit`",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T13:48:56.315532",
-      "completed_at": "2026-05-17T18:05:00+00:00",
-      "duration_seconds": 0
+      "started_at": "2026-05-17T16:39:00-04:00",
+      "completed_at": "2026-05-17T16:42:00-04:00",
+      "duration_seconds": 180
+    },
+    "M2.05": {
+      "description": "Modificar `DataGrid.tsx` para que click en row navegue a `/catalog/[id]`",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-17T16:42:00-04:00",
+      "completed_at": "2026-05-17T16:52:00-04:00",
+      "duration_seconds": 600
+    },
+    "M2.06": {
+      "description": "Implementar loading state (skeleton) y error state con mensaje",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-17T16:52:00-04:00",
+      "completed_at": "2026-05-17T17:00:00-04:00",
+      "duration_seconds": 480
+    },
+    "M2.07": {
+      "description": "Verificar TypeScript strict sin errores",
+      "status": "completed",
+      "retries": 1,
+      "started_at": "2026-05-17T17:00:00-04:00",
+      "completed_at": "2026-05-17T17:20:00-04:00",
+      "duration_seconds": 1200
     }
   },
   "last_checkpoint": {
-    "at": "2026-05-17T18:05:00+00:00",
-    "summary": "Completed M3. Added branded global not-found and error pages, fixed blocking frontend typecheck issues, and verified pnpm --prefix apps/web typecheck passes."
+    "at": "2026-05-17T17:20:00-04:00",
+    "summary": "Completed M2. Added the catalog detail route, wired row navigation from the catalog grid, validated the DataGrid interaction tests, and confirmed frontend typecheck passes."
   },
   "context_budget_exit": null
 }

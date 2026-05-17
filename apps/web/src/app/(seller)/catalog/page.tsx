@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Upload } from "lucide-react"
-import { DataGrid, type Vehicle } from "@/components/datagrid/DataGrid";
+import { DataGrid } from "@/components/datagrid/DataGrid";
 import { DataGridSkeleton } from "@/components/datagrid/DataGridSkeleton";
 import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { FilterPills } from "@/components/filters/FilterPills";
@@ -13,13 +13,34 @@ import { BulkUploadCSV } from "@/components/upload/BulkUploadCSV";
 import { BulkBranchAssign } from "@/components/branches/BulkBranchAssign";
 import { CatalogErrorBoundary } from "@/components/catalog/CatalogErrorBoundary";
 import { useVehicleFilters } from "@/lib/hooks/useVehicleFilters";
-import { useInfiniteVehicles, useDeleteVehicle, useBulkUploadVehicles, type Vehicle as ApiVehicle } from "@/lib/api/vehicles";
+import { useInfiniteVehicles, useDeleteVehicle, type Vehicle as ApiVehicle } from "@/lib/api/vehicles";
+
+const VALID_VEHICLE_STATUSES = {
+  published: true,
+  pending: true,
+  failed: true,
+  draft: true,
+  expired: true,
+  online: true,
+  sold: true,
+} satisfies Record<ApiVehicle["status"], true>;
+
+function isApiStatus(status: string): status is ApiVehicle["status"] {
+  return status in VALID_VEHICLE_STATUSES;
+}
+
+function getApiStatus(status: string | undefined): ApiVehicle["status"] | undefined {
+  if (!status || !isApiStatus(status)) {
+    return undefined;
+  }
+
+  return status;
+}
 
 export default function CatalogPage() {
   const router = useRouter();
   const { filters, setFilter } = useVehicleFilters();
   const deleteVehicle = useDeleteVehicle();
-  const bulkUpload = useBulkUploadVehicles();
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [showBulkBranchAssign, setShowBulkBranchAssign] = useState(false);
   const [selectedProductIds, setSelectedVehicleIds] = useState<string[]>([]);
@@ -27,7 +48,7 @@ export default function CatalogPage() {
   // Transform filters to match API format
   const apiFilters = {
     search: filters.search || undefined,
-    status: filters.status[0] as ApiVehicle["status"] | undefined, // Take first status for now
+    status: getApiStatus(filters.status[0]),
     make: filters.brand[0] || undefined, // API expects 'make', not 'brand'
     year_min: filters.year[0] !== 2010 ? filters.year[0] : undefined,
     year_max: filters.year[1] !== 2026 ? filters.year[1] : undefined,
@@ -45,7 +66,7 @@ export default function CatalogPage() {
   // Flatten infinite query pages into single array
   const vehicles = data?.pages.flatMap((page) => page.items) ?? [];
 
-  const handlePublish = (vehicleId: string) => {
+  const handlePublish = (_vehicleId: string) => {
     toast.info("Publish feature coming soon!", {
       description: "Multi-marketplace publishing will be available in Phase 4."
     });
@@ -53,6 +74,10 @@ export default function CatalogPage() {
 
   const handleEdit = (vehicleId: string) => {
     router.push(`/catalog/${vehicleId}/edit`);
+  };
+
+  const handleView = (vehicleId: string) => {
+    router.push(`/catalog/${vehicleId}`);
   };
 
   const handleDelete = (vehicleId: string) => {
@@ -209,6 +234,7 @@ export default function CatalogPage() {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onBulkAssignBranch={handleBulkAssignBranch}
+                onRowClick={handleView}
               />
 
               {/* Infinite scroll sentinel */}
@@ -271,7 +297,7 @@ export default function CatalogPage() {
 
                 return res.json()
               }}
-              onSuccess={(count) => {
+              onSuccess={() => {
                 setShowBulkUpload(false)
               }}
               onCancel={() => setShowBulkUpload(false)}
