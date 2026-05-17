@@ -131,7 +131,7 @@ def _open_db_session(_task_id: str, _pending_count: int) -> str | None:
     """Open a dev session in the DB. Returns session UUID or None if DB unavailable."""
     try:
         sys.path.insert(0, str(PLANNING_DIR.parent / ".claude" / "commands" / "mm"))
-        from db_client import MasterMindDB  # noqa: PLC0415
+        from db_client import MasterMindDB
 
         project_id = _read_project_id_from_config(PROJECT_ROOT)
         with MasterMindDB() as db:
@@ -212,7 +212,9 @@ def check_previous_criteria_complete(task_id: str) -> bool:
         if not _is_task_complete_in_todo(prev_id):
             mm_error(f"❌ BLOCKED: Previous task {prev_id} is not fully complete")
             mm_error(f"   Finish {prev_id} before starting {task_id}")
-            mm_error(f"   Check pending items: grep -n '\\[~\\]\\|\\[ \\]' tasks/todo.md | grep {prev_id}")
+            mm_error(
+                f"   Check pending items: grep -n '\\[~\\]\\|\\[ \\]' tasks/todo.md | grep {prev_id}"
+            )
             return False
 
         # Previous sibling complete — also check its acceptance criteria
@@ -226,7 +228,11 @@ def check_previous_criteria_complete(task_id: str) -> bool:
     prev_id = prev_criteria_id
 
     content = PLAN_MD.read_text()
-    pattern = r"#{2,6}\s+" + re.escape(prev_id) + r".*?\*\*Acceptance(?: Criteria)?\*\*:?\n(.*?)(?=\n#|\n---|\Z)"
+    pattern = (
+        r"#{2,6}\s+"
+        + re.escape(prev_id)
+        + r".*?\*\*Acceptance(?: Criteria)?\*\*:?\n(.*?)(?=\n#|\n---|\Z)"
+    )
     m = re.search(pattern, content, re.DOTALL)
     if not m:
         return True  # No criteria section found — don't block
@@ -286,7 +292,7 @@ def _is_task_complete_in_todo(task_id: str) -> bool:
     task_indent = len(lines[task_start]) - len(lines[task_start].lstrip())
     subtask_pattern = re.compile(r"^\s+-\s*\[(.)\]")
 
-    for line in lines[task_start + 1:]:
+    for line in lines[task_start + 1 :]:
         stripped = line.strip()
         if not stripped:
             continue
@@ -503,7 +509,9 @@ def _read_v2_hierarchical_subtasks(content: str, task_id: str) -> list[dict[str,
     # Pattern: "- [state] B2: title" until next phase (##) or next parent task (e.g., B3, C1)
     # The lookahead ensures we stop at the next PARENT task, not subtasks (B2.1, B2.2)
     # Next parent task format: "- [state] <LETTER><NUMBER>:" where <NUMBER> has no dot
-    pattern = rf"^-\s\[([ x~])\]\s+{re.escape(task_id)}:.*?\n(.*?)(?=^##|^-\s\[[ x~]\]\s+[A-Z]\d+:|\Z)"
+    pattern = (
+        rf"^-\s\[([ x~])\]\s+{re.escape(task_id)}:.*?\n(.*?)(?=^##|^-\s\[[ x~]\]\s+[A-Z]\d+:|\Z)"
+    )
     match = re.search(pattern, content, re.MULTILINE | re.DOTALL)
 
     if not match:
@@ -513,7 +521,9 @@ def _read_v2_hierarchical_subtasks(content: str, task_id: str) -> list[dict[str,
 
     # Find all subtask headings (e.g., "- [x] B2.1:", "- [x] B2.2:")
     # Subtasks are indented with 2 spaces in parent_section
-    subtask_pattern = rf"^  -\s\[([ x~])\]\s+{re.escape(task_id)}\.(\d+):([^\n]+)\n((?:  -\[.*?\n)*)"
+    subtask_pattern = (
+        rf"^  -\s\[([ x~])\]\s+{re.escape(task_id)}\.(\d+):([^\n]+)\n((?:  -\[.*?\n)*)"
+    )
     subtask_matches = re.finditer(subtask_pattern, parent_section, re.MULTILINE)
 
     subtasks: list[dict[str, Any]] = []
@@ -529,7 +539,7 @@ def _read_v2_hierarchical_subtasks(content: str, task_id: str) -> list[dict[str,
         # Check if subtask is complete by examining its sub-subtasks
         # If there are sub-subtasks (indented checkboxes), check if all are complete
         # If there are no sub-subtasks, use the checkbox state of the subtask itself
-        sub_subtasks = re.findall(r'^  - \[([ x~])\]', subtask_body, re.MULTILINE)
+        sub_subtasks = re.findall(r"^  - \[([ x~])\]", subtask_body, re.MULTILINE)
         if sub_subtasks:
             # Has sub-subtasks - check if all are complete
             is_complete = all(state == "x" for state in sub_subtasks)
@@ -537,11 +547,9 @@ def _read_v2_hierarchical_subtasks(content: str, task_id: str) -> list[dict[str,
             # No sub-subtasks - use the subtask's checkbox state
             is_complete = checkbox_state == "x"
 
-        subtasks.append({
-            "id": full_subtask_id,
-            "description": subtask_title,
-            "completed": is_complete
-        })
+        subtasks.append(
+            {"id": full_subtask_id, "description": subtask_title, "completed": is_complete}
+        )
 
     return subtasks
 
@@ -632,11 +640,9 @@ def _read_nested_subtasks(content: str, task_id: str) -> list[dict[str, Any]]:
         is_complete = total_count > 0 and completed_count == total_count
 
         # Use the subtask title as description
-        subtasks.append({
-            "id": full_subtask_id,
-            "description": subtask_title,
-            "completed": is_complete
-        })
+        subtasks.append(
+            {"id": full_subtask_id, "description": subtask_title, "completed": is_complete}
+        )
 
     return subtasks
 
@@ -659,7 +665,7 @@ def _read_subtask_heading(content: str, task_id: str) -> list[dict[str, Any]]:
     subtasks: list[dict[str, Any]] = []
 
     # For subtasks, we use letter suffixes (a, b, c) instead of numbers
-    current_letter = ord('a')
+    current_letter = ord("a")
 
     for line in lines:
         if line.strip().startswith("- ["):
@@ -868,8 +874,7 @@ def propagate_parent_completion(task_id: str) -> None:
 
                 # Check if all sibling subtasks are completed
                 all_complete = all(
-                    st_data.get("status") == "completed"
-                    for st_data in sibling_subtasks.values()
+                    st_data.get("status") == "completed" for st_data in sibling_subtasks.values()
                 )
 
                 if not all_complete:
@@ -925,12 +930,16 @@ def propagate_parent_completion(task_id: str) -> None:
         # Replace group 2 (checkbox state) with "x"
         return f"{match.group(1)}x{match.group(3)}"
 
-    new_content, count = re.subn(parent_pattern, replace_checkbox, todo_content, count=1, flags=re.MULTILINE)
+    new_content, count = re.subn(
+        parent_pattern, replace_checkbox, todo_content, count=1, flags=re.MULTILINE
+    )
 
     if count == 0:
         # Parent checkbox not found - might already be complete or formatted differently
         # Check if it's already marked as complete
-        already_complete = re.search(rf"^-\s\[x\]\s+{re.escape(task_id)}:", todo_content, re.MULTILINE)
+        already_complete = re.search(
+            rf"^-\s\[x\]\s+{re.escape(task_id)}:", todo_content, re.MULTILINE
+        )
         if already_complete:
             # Already complete - nothing to do
             return
@@ -1000,12 +1009,16 @@ def propagate_in_progress(task_id: str) -> None:
         # Replace group 2 (checkbox state) with "~"
         return f"{match.group(1)}~{match.group(3)}"
 
-    new_content, count = re.subn(parent_pattern, replace_with_tilde, todo_content, count=1, flags=re.MULTILINE)
+    new_content, count = re.subn(
+        parent_pattern, replace_with_tilde, todo_content, count=1, flags=re.MULTILINE
+    )
 
     if count == 0:
         # Parent checkbox not found - might already be in-progress or formatted differently
         # Check if it's already marked as in-progress
-        already_in_progress = re.search(rf"^-\s\[~\]\s+{re.escape(task_id)}:", todo_content, re.MULTILINE)
+        already_in_progress = re.search(
+            rf"^-\s\[~\]\s+{re.escape(task_id)}:", todo_content, re.MULTILINE
+        )
         if already_in_progress:
             # Already in-progress - nothing to do
             return
@@ -1061,7 +1074,7 @@ def update_incremental_time_tracking(task_id: str) -> None:
             capture_output=True,
             text=True,
             check=False,
-            cwd=Path(__file__).parent.parent.parent.parent
+            cwd=Path(__file__).parent.parent.parent.parent,
         )
 
         if result.returncode != 0:
@@ -1071,7 +1084,7 @@ def update_incremental_time_tracking(task_id: str) -> None:
 
     except FileNotFoundError:
         # update-todo-times.py not found - not critical
-        mm_info(f"update-todo-times.py not found - skipping time tracking update")
+        mm_info("update-todo-times.py not found - skipping time tracking update")
     except Exception as e:
         # Don't fail the checkpoint if time tracking fails
         mm_error(f"Failed to update time tracking: {e}")
@@ -1101,11 +1114,7 @@ def execute_subtask_with_tracking(subtask_id: str, func: callable) -> Any:
         return result
     except Exception as e:
         # Mark as failed with error message
-        update_subtask_status(
-            subtask_id,
-            "failed",
-            error=f"{type(e).__name__}: {str(e)}"
-        )
+        update_subtask_status(subtask_id, "failed", error=f"{type(e).__name__}: {e!s}")
         # Re-raise to allow caller to handle the exception
         raise
 
@@ -1131,9 +1140,7 @@ def get_task_payload(task_id: str) -> dict[str, Any]:
 
         # Filter to pending subtasks only
         pending_subtasks = [
-            st
-            for st in subtasks
-            if st["id"] not in git_completed and not st["completed"]
+            st for st in subtasks if st["id"] not in git_completed and not st["completed"]
         ]
 
         project_id = _read_project_id_from_config(PROJECT_ROOT)
@@ -1161,9 +1168,7 @@ def get_task_payload(task_id: str) -> dict[str, Any]:
 # ============================================================================
 
 
-def detect_required_permissions(
-    _task_id: str, pending_subtasks: list[dict[str, Any]]
-) -> list[str]:
+def detect_required_permissions(_task_id: str, pending_subtasks: list[dict[str, Any]]) -> list[str]:
     """Detect required tool permissions based on subtask descriptions.
 
     Args:
@@ -1202,17 +1207,13 @@ def detect_required_permissions(
         desc_lower = st["description"].lower()
 
         # Check Bash patterns
-        if any(
-            re.search(pattern, desc_lower, re.IGNORECASE) for pattern in bash_patterns
-        ):
+        if any(re.search(pattern, desc_lower, re.IGNORECASE) for pattern in bash_patterns):
             warnings.append(
                 f"⚠️  Subtask {st['id']}: '{st['description']}' requires BASH permission"
             )
 
         # Check Write patterns
-        if any(
-            re.search(pattern, desc_lower, re.IGNORECASE) for pattern in write_patterns
-        ):
+        if any(re.search(pattern, desc_lower, re.IGNORECASE) for pattern in write_patterns):
             warnings.append(
                 f"⚠️  Subtask {st['id']}: '{st['description']}' requires WRITE permission"
             )
@@ -1284,9 +1285,7 @@ def start_task(task_id: str) -> None:
         mm_info("PERMISSION CHECK:")
         for warning in permission_warnings:
             print(warning, flush=True)
-        mm_info(
-            "Please ensure Claude Code has these permissions enabled in settings.json"
-        )
+        mm_info("Please ensure Claude Code has these permissions enabled in settings.json")
 
     # Initialize runtime state
     runtime_state = init_runtime_state(task_id, subtasks)
@@ -1359,18 +1358,14 @@ def resume_task(task_id: str) -> None:
         mm_error("Esto indica que el agente se detuvo inesperadamente.")
         mm_error("")
         mm_error("Opciones:")
-        mm_error(f"  1. Continuar normalmente (se reintentarán desde el último checkpoint)")
+        mm_error("  1. Continuar normalmente (se reintentarán desde el último checkpoint)")
         mm_error(f"  2. Resetear a pending: /mm:complete-task {task_id} --reset-stale")
         mm_error("")
         mm_status("Verificá todo.md y task-progress.json antes de continuar")
 
     # Show current status from runtime state
-    completed = [
-        sid for sid, info in state["subtasks"].items() if info["status"] == "completed"
-    ]
-    pending = [
-        sid for sid, info in state["subtasks"].items() if info["status"] == "pending"
-    ]
+    completed = [sid for sid, info in state["subtasks"].items() if info["status"] == "completed"]
+    pending = [sid for sid, info in state["subtasks"].items() if info["status"] == "pending"]
 
     mm_info(f"Completed: {len(completed)}/{len(state['subtasks'])}")
     if completed:
@@ -1404,9 +1399,7 @@ def resume_task(task_id: str) -> None:
         mm_info("PERMISSION CHECK:")
         for warning in permission_warnings:
             print(warning, flush=True)
-        mm_info(
-            "Please ensure Claude Code has these permissions enabled in settings.json"
-        )
+        mm_info("Please ensure Claude Code has these permissions enabled in settings.json")
 
     # Update runtime state with new session
     session_id = f"sess-resume-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
@@ -1469,9 +1462,7 @@ def mark_all_complete(task_id: str, subtasks: list[dict[str, Any]]) -> None:
     else:
         # Fall back to V1 format (heading-based)
         v1_pattern = rf"(### {task_id}:.*?)(?=\n###|\n---|\Z)"
-        todo_content = re.sub(
-            v1_pattern, replace_todo_checkboxes, todo_content, flags=re.DOTALL
-        )
+        todo_content = re.sub(v1_pattern, replace_todo_checkboxes, todo_content, flags=re.DOTALL)
 
     TODO_MD.write_text(todo_content)
 
@@ -1610,7 +1601,9 @@ def reset_stale_subtasks(task_id: str) -> None:
 def main() -> None:
     """Main entry point."""
     if len(sys.argv) < 2:
-        print("Usage: mm-complete-task <TASK_ID> [--continue] [--status] [--reset-stale]", flush=True)
+        print(
+            "Usage: mm-complete-task <TASK_ID> [--continue] [--status] [--reset-stale]", flush=True
+        )
         print("       mm-complete-task --status  # Show all tasks", flush=True)
         sys.exit(1)
 
