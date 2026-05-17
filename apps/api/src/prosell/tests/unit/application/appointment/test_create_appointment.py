@@ -53,9 +53,7 @@ class TestCreateAppointmentConflictDetection:
         return AppointmentConflictDetector()
 
     @pytest.fixture
-    def use_case(
-        self, mock_appointment_repo, mock_lead_repo, conflict_detector
-    ):
+    def use_case(self, mock_appointment_repo, mock_lead_repo, conflict_detector):
         """Create use case with mocked repositories."""
         return CreateAppointmentUseCase(
             appointment_repository=mock_appointment_repo,
@@ -75,7 +73,7 @@ class TestCreateAppointmentConflictDetection:
         }
 
     async def test_create_appointment_no_conflicts_success(
-        self, use_case, mock_appointment_repo, _mock_lead_repo, valid_request_data
+        self, use_case, mock_appointment_repo, mock_lead_repo, valid_request_data
     ):
         """Test successful appointment creation when no conflicts exist."""
         # Setup: No existing appointments
@@ -120,9 +118,7 @@ class TestCreateAppointmentConflictDetection:
             scheduled_at=valid_request_data["scheduled_at"],  # Same time
             status=AppointmentStatus.SCHEDULED,
         )
-        mock_appointment_repo.check_conflicts.return_value = [
-            conflicting_appointment
-        ]
+        mock_appointment_repo.check_conflicts.return_value = [conflicting_appointment]
 
         # Execute & Verify
         request = CreateAppointmentRequest(**valid_request_data)
@@ -176,7 +172,7 @@ class TestCreateAppointmentConflictDetection:
         assert len(exception.conflicts) == 2
 
     async def test_create_appointment_cancelled_no_conflict(
-        self, use_case, mock_appointment_repo, _mock_lead_repo, valid_request_data
+        self, use_case, mock_appointment_repo, mock_lead_repo, valid_request_data
     ):
         """Test that cancelled appointments don't cause conflicts."""
         # Setup: Create cancelled appointment (should not conflict)
@@ -189,9 +185,7 @@ class TestCreateAppointmentConflictDetection:
             scheduled_at=valid_request_data["scheduled_at"],  # Same time
             status=AppointmentStatus.CANCELLED,  # Cancelled
         )
-        mock_appointment_repo.check_conflicts.return_value = [
-            cancelled_appointment
-        ]
+        mock_appointment_repo.check_conflicts.return_value = [cancelled_appointment]
 
         # Create mock appointment for repository response
         mock_appointment = Appointment(
@@ -218,7 +212,7 @@ class TestCreateAppointmentConflictDetection:
         # Note: update_status may or may not be called depending on lead state
 
     async def test_create_appointment_with_force_override(
-        self, use_case, mock_appointment_repo, _mock_lead_repo, valid_request_data
+        self, use_case, mock_appointment_repo, mock_lead_repo, valid_request_data
     ):
         """Test that force=True overrides conflict detection."""
         # Setup: Create conflicting appointment
@@ -231,9 +225,7 @@ class TestCreateAppointmentConflictDetection:
             scheduled_at=valid_request_data["scheduled_at"],
             status=AppointmentStatus.SCHEDULED,
         )
-        mock_appointment_repo.check_conflicts.return_value = [
-            conflicting_appointment
-        ]
+        mock_appointment_repo.check_conflicts.return_value = [conflicting_appointment]
 
         # Create mock appointment for repository response
         mock_appointment = Appointment(
@@ -250,7 +242,8 @@ class TestCreateAppointmentConflictDetection:
 
         # Execute with force=True
         request = CreateAppointmentRequest(
-            **valid_request_data, force=True  # Force override
+            **valid_request_data,
+            force=True,  # Force override
         )
         tenant_id = uuid4()
 

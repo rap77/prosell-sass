@@ -4,7 +4,7 @@ This service is responsible for detecting scheduling conflicts for appointments.
 It follows Clean Architecture principles as a domain service with no external dependencies.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
@@ -61,6 +61,13 @@ class AppointmentConflictDetector:
     - Cancelled/completed appointments don't cause conflicts
     - Time overlap uses strict inequality (boundaries don't count)
     """
+
+    @staticmethod
+    def _normalize_datetime(value: datetime) -> datetime:
+        """Normalize datetimes to UTC-aware values for safe comparison."""
+        if value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
+        return value.astimezone(UTC)
 
     def detect_conflicts(
         self,
@@ -148,9 +155,12 @@ class AppointmentConflictDetector:
             ... )
             False
         """
-        end1 = start1 + duration
+        normalized_start1 = self._normalize_datetime(start1)
+        normalized_start2 = self._normalize_datetime(start2)
+        normalized_end2 = self._normalize_datetime(end2)
+        end1 = normalized_start1 + duration
 
         # Check for overlap using strict inequality
         # Two ranges [start1, end1) and [start2, end2) overlap iff:
         # start1 < end2 AND start2 < end1
-        return start1 < end2 and start2 < end1
+        return normalized_start1 < normalized_end2 and normalized_start2 < end1

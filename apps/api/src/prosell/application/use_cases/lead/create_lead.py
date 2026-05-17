@@ -42,6 +42,7 @@ class CreateLeadUseCase:
         team_repository: AbstractTeamRepository | None = None,
         team_member_repository: AbstractTeamMemberRepository | None = None,
         assignment_engine: LeadAssignmentRulesEngine | None = None,
+        assignment_strategy: AssignmentStrategy = AssignmentStrategy.COMBINED,
     ) -> None:
         """
         Initialize CreateLeadUseCase with dependencies.
@@ -55,6 +56,7 @@ class CreateLeadUseCase:
             team_member_repository: Repository for fetching team members
             (optional, for auto-assignment)
             assignment_engine: Rules engine for lead assignment (optional, defaults to new instance)
+            assignment_strategy: Default strategy used for automatic assignment
         """
         self.lead_repository = lead_repository
         self.user_repository = user_repository
@@ -62,6 +64,7 @@ class CreateLeadUseCase:
         self.team_repository = team_repository
         self.team_member_repository = team_member_repository
         self.assignment_engine = assignment_engine or LeadAssignmentRulesEngine()
+        self.assignment_strategy = assignment_strategy
         self.duplicate_detector = LeadDuplicateDetector(lead_repository)
 
     async def execute(
@@ -102,8 +105,7 @@ class CreateLeadUseCase:
                 # 2. Both have None product_id AND it's an exact match (same email AND same phone)
                 if dup_lead:
                     same_product = (
-                        request.product_id is not None
-                        and dup_lead.product_id == request.product_id
+                        request.product_id is not None and dup_lead.product_id == request.product_id
                     )
                     exact_match = (
                         request.product_id is None
@@ -158,8 +160,8 @@ class CreateLeadUseCase:
         into CreateLeadUseCase for automatic dealer assignment.
 
         Assignment Strategy:
-        - Uses ROUND_ROBIN by default (distributes leads evenly)
-        - Respects vehicle ownership if product_id is provided
+        - Uses the configured strategy (COMBINED by default)
+        - Respects vehicle ownership if product ownership data is available
         - Falls back gracefully if no dealers are available
 
         Args:
@@ -170,11 +172,13 @@ class CreateLeadUseCase:
             Assigned dealer's user_id, or None if assignment failed
         """
         # Skip assignment if dependencies are not available
-        if not all([
-            self.user_repository,
-            self.team_repository,
-            self.team_member_repository,
-        ]):
+        if not all(
+            [
+                self.user_repository,
+                self.team_repository,
+                self.team_member_repository,
+            ]
+        ):
             return None
 
         # Type assertions for Pyright - after the check above, these are guaranteed to be not None
@@ -235,9 +239,9 @@ class CreateLeadUseCase:
                 if product:
                     context["product"] = product
 
-            # Run assignment engine with ROUND_ROBIN strategy
-            # Note: lead parameter is not used for round-robin strategy
+            # Run assignment engine with the configured strategy.
             from prosell.domain.entities.lead import Lead as LeadEntity
+
             result = self.assignment_engine.assign_lead(
                 lead=LeadEntity(
                     id=UUID("00000000-0000-0000-0000-000000000000"),  # Dummy ID
@@ -251,7 +255,7 @@ class CreateLeadUseCase:
                     source=request.source.value if request.source else "manual",
                 ),
                 candidates=candidates,
-                strategy=AssignmentStrategy.ROUND_ROBIN,
+                strategy=self.assignment_strategy,
                 **context,
             )
 

@@ -34,12 +34,17 @@ class RBACMiddleware:
             async def admin_endpoint(current_user: dict[str, Any], ...):
                 ...
         """
+
         def decorator(func: Callable[P, Any]) -> Callable[P, Any]:
             @wraps(func)
             async def wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
                 # Extract current_user from kwargs
                 current_user_dict = kwargs.pop("current_user", {})
-                user_roles: list[str] = current_user_dict.get("roles", []) if isinstance(current_user_dict, dict) else []  # noqa: E501
+                user_roles: list[str] = (
+                    current_user_dict.get("roles", [])
+                    if isinstance(current_user_dict, dict)
+                    else []
+                )
 
                 # Check if user has any of the required roles
                 if not any(role in user_roles for role in roles):
@@ -71,12 +76,17 @@ class RBACMiddleware:
             async def create_user(current_user: dict[str, Any], ...):
                 ...
         """
+
         def decorator(func: Callable[P, Any]) -> Callable[P, Any]:
             @wraps(func)
             async def wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
                 # Extract current_user from kwargs
                 current_user_dict = kwargs.pop("current_user", {})
-                user_roles: list[str] = current_user_dict.get("roles", []) if isinstance(current_user_dict, dict) else []  # noqa: E501
+                user_roles: list[str] = (
+                    current_user_dict.get("roles", [])
+                    if isinstance(current_user_dict, dict)
+                    else []
+                )
 
                 # Get permissions for user's roles
                 from prosell.domain.entities.role import ROLE_PERMISSIONS
