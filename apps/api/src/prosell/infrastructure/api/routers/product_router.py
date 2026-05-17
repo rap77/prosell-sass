@@ -245,6 +245,8 @@ async def update_product(
         product.description = request.description
     if request.price_cents is not None:
         product.price_cents = request.price_cents
+    if request.category_id is not None:
+        product.category_id = request.category_id
     if request.condition is not None:
         product.condition = request.condition
     if request.attributes is not None:
