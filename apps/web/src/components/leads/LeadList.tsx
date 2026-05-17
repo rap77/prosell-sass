@@ -134,9 +134,9 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
         </Select>
 
         {/* Refresh Button */}
-        <Button 
-          variant="outline" 
-          size="icon" 
+        <Button
+          variant="outline"
+          size="icon"
           onClick={handleRefresh}
           data-testid="refresh-button"
         >

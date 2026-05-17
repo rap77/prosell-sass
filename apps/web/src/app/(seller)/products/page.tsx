@@ -31,7 +31,7 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.category_id) {
       alert("Please select a category");
       return;

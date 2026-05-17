@@ -1,6 +1,6 @@
 /**
  * Vehicle API hooks using Products endpoint with JSONB attributes
- * 
+ *
  * Updated to use /api/v1/products with vehicle attributes
  * Old /api/v1/vehicles endpoint is deprecated
  */
@@ -132,7 +132,7 @@ export function useInfiniteVehicles(filters?: VehicleFilters, limit: number = 50
 
       const data = await res.json() as { products: Product[] };
       const vehicleProducts = data.products.filter(isVehicleProduct);
-      
+
       return {
         items: vehicleProducts.map(transformProductToVehicle),
         next_cursor: null, // TODO: Add pagination support
@@ -165,7 +165,7 @@ export function useVehicle(id: string): UseQueryResult<Vehicle, Error> {
       if (!isVehicleProduct(product)) {
         throw new Error("Product is not a vehicle");
       }
-      
+
       return transformProductToVehicle(product);
     },
     enabled: !!id,
@@ -210,7 +210,7 @@ export function useUpdateVehicle() {
       if (!isVehicleProduct(product)) {
         throw new Error("Product is not a vehicle");
       }
-      
+
       return transformProductToVehicle(product);
     },
 
@@ -338,7 +338,7 @@ export function useCreateVehicle() {
       if (!isVehicleProduct(product)) {
         throw new Error("Product is not a vehicle");
       }
-      
+
       return transformProductToVehicle(product);
     },
 

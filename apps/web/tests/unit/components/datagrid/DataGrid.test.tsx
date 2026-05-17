@@ -90,10 +90,10 @@ describe('DataGrid', () => {
         model: 'Camry',
       },
     ]
-    
+
     const { rerender } = render(<DataGrid data={[]} />)
     rerender(<DataGrid data={c3Vehicles} />)
-    
+
     // Verify component accepts C3 data structure without errors
     expect(true).toBe(true)
   })

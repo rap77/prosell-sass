@@ -20,7 +20,7 @@ export default function CategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       await createCategory.mutateAsync(formData);
       setShowForm(false);

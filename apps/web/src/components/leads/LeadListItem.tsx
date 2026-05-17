@@ -80,7 +80,7 @@ export function LeadListItem({ lead, onStatusUpdate, isUnread = false, actions }
       </div>
 
       {/* Status */}
-      <div 
+      <div
         className="flex-shrink-0"
         onClick={(e) => e.stopPropagation()} // Prevent navigation when clicking dropdown
       >

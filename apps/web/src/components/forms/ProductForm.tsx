@@ -266,7 +266,7 @@ export function ProductForm({
    */
   const handleDecodeVin = async () => {
     const vin = watch("vin");
-    
+
     logger.debug("🔍 VIN decode requested for:", vin);
 
     if (!vin || vin.length !== 17) {
@@ -400,13 +400,13 @@ export function ProductForm({
    * Handle form submission
    * Plan 13-03: Use product creation with auto-vehicle creation
    * Brain #7 Condition #3: Field mapping table documented in PLAN.md
-   * 
+   *
    * ENTRY POINT DEBUG: This is called when submit button is clicked
    */
   const onSubmit = async (data: ProductFormValues) => {
     logger.debug("🚀 onSubmit ENTRY POINT - called with data:", data);
     logger.debug("🚀 Form state - isSubmitting:", isSubmitting, "isPending:", isPending, "isDisabled:", isDisabled);
-    
+
     // NOTE: Don't check isDisabled here - it blocks submission!
     // isSubmitting is already true when RHF calls this handler
     // The disabled state on button prevents double-clicks, not this handler
@@ -426,7 +426,7 @@ export function ProductForm({
           category_id: data.category_id ?? "",
           vin: data.vin,
         });
-        
+
         // Plan 13-03: Create product with vehicle attributes
         // Backend auto-creates vehicle record when attributes.vin is present
         logger.debug("🌐 Calling createProduct.mutateAsync...");
@@ -538,7 +538,7 @@ export function ProductForm({
     } catch (err) {
       // Log error for debugging
       logger.error("❌ Form submission error:", err);
-      
+
       // Re-throw to ensure form doesn't silently fail
       // Error toast is already shown by useCreateProduct hook's onError
       throw err;

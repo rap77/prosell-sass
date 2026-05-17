@@ -9,11 +9,11 @@
 
 import { Suspense } from "react";
 import Link from "next/link";
-import { 
-  Building2, 
-  Car, 
-  Users, 
-  FileText, 
+import {
+  Building2,
+  Car,
+  Users,
+  FileText,
   TrendingUp,
   Activity,
   ArrowRight
@@ -32,16 +32,16 @@ export const metadata = {
  * Stat Card Component
  * Displays a single statistic with icon and label
  */
-function StatCard({ 
-  title, 
-  value, 
-  description, 
-  icon: Icon 
-}: { 
-  title: string; 
-  value: string | number; 
-  description: string; 
-  icon: React.ElementType; 
+function StatCard({
+  title,
+  value,
+  description,
+  icon: Icon
+}: {
+  title: string;
+  value: string | number;
+  description: string;
+  icon: React.ElementType;
 }) {
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200">
@@ -82,16 +82,16 @@ function StatCardSkeleton() {
 /**
  * Quick Action Card Component
  */
-function QuickActionCard({ 
-  title, 
-  description, 
-  href, 
-  icon: Icon 
-}: { 
-  title: string; 
-  description: string; 
-  href: string; 
-  icon: React.ElementType; 
+function QuickActionCard({
+  title,
+  description,
+  href,
+  icon: Icon
+}: {
+  title: string;
+  description: string;
+  href: string;
+  icon: React.ElementType;
 }) {
   return (
     <Link href={href} className="block group">

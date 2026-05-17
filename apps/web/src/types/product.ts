@@ -1,6 +1,6 @@
 /**
  * Product types matching backend Pydantic models
- * 
+ *
  * Matches: apps/api/src/prosell/application/dto/product/
  */
 
@@ -8,7 +8,7 @@ import type { ProductAttributes, VehicleAttributes } from './vehicle';
 
 /**
  * Product entity with status workflow
- * 
+ *
  * Matches: apps/api/src/prosell/domain/entities/product.py
  */
 export interface Product {
@@ -16,45 +16,45 @@ export interface Product {
   tenant_id: string;
   organization_id: string;
   category_id: string;
-  
+
   // Basic info
   title: string;
   slug?: string;
   description?: string;
-  
+
   // Pricing (in cents)
   price_cents: number;
   currency: string; // default: "USD"
-  
+
   // Condition and status
   condition: 'new' | 'used' | 'refurbished';
   status: 'draft' | 'pending' | 'published' | 'paused' | 'reserved' | 'sold' | 'rejected' | 'archived';
-  
+
   // Flexible attributes (category-specific)
   attributes: ProductAttributes;
-  
+
   // Location
   location_city?: string;
   location_state?: string;
   location_zip?: string;
-  
+
   // Visibility
   is_featured: boolean;
   view_count: number;
   favorite_count: number;
-  
+
   // Approval workflow
   submitted_for_approval_at?: string;
   submitted_by?: string;
   approved_at?: string;
   approved_by?: string;
   rejection_reason?: string;
-  
+
   // Publication
   published_at?: string;
   sold_at?: string;
   archived_at?: string;
-  
+
   // Timestamps
   created_at: string;
   updated_at: string;
@@ -62,7 +62,7 @@ export interface Product {
 
 /**
  * Create product request
- * 
+ *
  * Matches: apps/api/src/prosell/application/dto/product/create.py
  */
 export interface CreateProductRequest {

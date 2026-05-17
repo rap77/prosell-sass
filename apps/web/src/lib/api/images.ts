@@ -125,4 +125,3 @@ export async function uploadImageDirect(file: File): Promise<{ url: string }> {
 
   return res.json()
 }
-
