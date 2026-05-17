@@ -32,7 +32,7 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.core.config import get_settings
-from prosell.infrastructure.db.session import get_async_session
+from prosell.infrastructure.database.session import get_async_session
 
 
 async def cleanup_test_data(
@@ -53,10 +53,10 @@ async def cleanup_test_data(
     Returns:
         Dictionary with counts of deleted records
     """
-    from prosell.infrastructure.db.models.appointment import AppointmentModel
-    from prosell.infrastructure.db.models.lead import LeadModel
-    from prosell.infrastructure.db.models.product import ProductModel
-    from prosell.infrastructure.db.models.category import CategoryModel
+    from prosell.infrastructure.models.appointment_model import AppointmentModel
+    from prosell.infrastructure.models.lead_model import LeadModel
+    from prosell.infrastructure.models.product_model import ProductModel
+    from prosell.infrastructure.models.category_model import CategoryModel
 
     cutoff_time = datetime.utcnow() - timedelta(hours=hours_old)
     counts = {
@@ -75,7 +75,7 @@ async def cleanup_test_data(
         .where(AppointmentModel.created_at < cutoff_time)
         .where(AppointmentModel.tenant_id == "00000000-0000-0000-0000-000000000000")
     )
-    counts["appointments"] = result.rowcount
+    counts["appointments"] = result.rowcount  # type: ignore[attr-defined]
     if verbose:
         print(f"  Appointments to delete: {counts['appointments']}")
 
@@ -85,7 +85,7 @@ async def cleanup_test_data(
         .where(LeadModel.created_at < cutoff_time)
         .where(LeadModel.tenant_id == "00000000-0000-0000-0000-000000000000")
     )
-    counts["leads"] = result.rowcount
+    counts["leads"] = result.rowcount  # type: ignore[attr-defined]
     if verbose:
         print(f"  Leads to delete: {counts['leads']}")
 
@@ -95,7 +95,7 @@ async def cleanup_test_data(
         .where(ProductModel.created_at < cutoff_time)
         .where(ProductModel.tenant_id == "00000000-0000-0000-0000-000000000000")
     )
-    counts["products"] = result.rowcount
+    counts["products"] = result.rowcount  # type: ignore[attr-defined]
     if verbose:
         print(f"  Products to delete: {counts['products']}")
 
@@ -109,7 +109,7 @@ async def cleanup_test_data(
             .where(ProductModel.tenant_id == "00000000-0000-0000-0000-000000000000")
         ))
     )
-    counts["categories"] = result.rowcount
+    counts["categories"] = result.rowcount  # type: ignore[attr-defined]
     if verbose:
         print(f"  Categories to delete: {counts['categories']}")
 
@@ -141,7 +141,7 @@ async def cleanup_test_users(
     Returns:
         Number of deleted users
     """
-    from prosell.infrastructure.db.models.user import UserModel
+    from prosell.infrastructure.models.user_model import UserModel
 
     cutoff_time = datetime.utcnow() - timedelta(hours=hours_old)
 
@@ -152,7 +152,7 @@ async def cleanup_test_users(
         .where(UserModel.email.like("%@example.com"))
         .where(UserModel.email != "admin@prosell-demo.com")
     )
-    count = result.rowcount
+    count = result.rowcount  # type: ignore[attr-defined]
 
     if verbose:
         print(f"  Test users to delete: {count}")
