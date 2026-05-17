@@ -1,4 +1,58 @@
-# ProSell SaaS - Code Review Rules
+# ProSell SaaS — Agent Context
+
+## Project Overview
+
+ProSell SaaS is a **multi-tenant B2B SaaS** for vehicle dealerships. Vehicles is the first vertical; the catalog model is generic (categories → products → vehicles).
+
+**Core workflow:** catalog → publish to Facebook Marketplace → capture leads → schedule appointments.
+
+## Stack
+
+| Layer | Tech |
+|-------|------|
+| Frontend | Next.js 16 App Router + React 19 + TypeScript strict |
+| Styling | TailwindCSS 4 (no `var()` in className) |
+| State | TanStack Query v5 + Zustand 5 |
+| Backend | FastAPI + Python 3.13 |
+| ORM | SQLAlchemy 2.0 async (`Mapped[]`) |
+| DB | PostgreSQL 17 + Redis 7.4 |
+| Auth | JWT in httpOnly cookies |
+| Type checker | Pyright standard (0 errors enforced) |
+
+## Architecture
+
+**Backend — Clean Architecture:**
+- `domain/` — entities, value objects, interfaces (ZERO external deps)
+- `application/` — use cases, DTOs
+- `infrastructure/` — FastAPI, SQLAlchemy, external services
+
+**Security:** Never trust `tenant_id` from the client — always use `current_user.tenant_id`.
+
+## Current Work
+
+```bash
+cat tasks/todo.md | grep "\[ \]"      # pending tasks
+grep -A 30 "^## M3:" tasks/plan.md   # task details
+```
+
+**After implementing:**
+1. `cd apps/api && uv run pytest` + `pnpm --prefix apps/web test run`
+2. `cd apps/api && uv run pyright` (must be 0 errors)
+3. `cd apps/api && uv run ruff check src`
+4. Commit with conventional commits: `feat(scope): description`
+5. Mark done in `tasks/todo.md`
+
+## Available Skills
+
+Use `$skill-name`:
+- `$mm/safe-commit` — commit with validation gates
+- `$nextjs-15`, `$react-19`, `$tailwind-4`, `$typescript`
+- `$pytest`, `$playwright`, `$zod-4`, `$zustand-5`
+- `$test-driven-development`, `$debugging-and-error-recovery`
+
+---
+
+# Code Review Rules
 
 You are reviewing code for a vehicle market analysis platform. The codebase is a monorepo with:
 
