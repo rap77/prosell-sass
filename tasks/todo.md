@@ -21,7 +21,7 @@
 
 ---
 
-- [ ] M3: Páginas de error globales
+- [~] M3: Páginas de error globales
   - [ ] M3.01: Crear `app/not-found.tsx` con branding ProSell (logo, mensaje claro, CTA a dashboard)
   - [ ] M3.02: Crear `app/error.tsx` (Client Component) con mensaje amigable y botón "Intentar de nuevo"
   - [ ] M3.03: Verificar TypeScript strict sin errores en ambos archivos
