@@ -90,8 +90,9 @@ class TestRoundRobinState:
             thread.join()
 
         # Verify all indices are within valid range
-        assert all(0 <= idx < dealer_count for idx in results), \
-            "All indices should be within valid range"
+        assert all(
+            0 <= idx < dealer_count for idx in results
+        ), "All indices should be within valid range"
 
         # Verify we got a reasonable distribution (not all the same)
         unique_indices = set(results)
@@ -123,8 +124,9 @@ class TestAssignmentRule:
         high_rule = HighPriorityRule()
         low_rule = LowPriorityRule()
 
-        assert high_rule.priority < low_rule.priority, \
-            "High priority should have lower numeric value"
+        assert (
+            high_rule.priority < low_rule.priority
+        ), "High priority should have lower numeric value"
 
     def test_rule_score_method_must_be_implemented(self):
         """Test that custom rules must implement score()."""
@@ -208,8 +210,9 @@ class TestRoundRobinAssignmentRule:
         from collections import Counter
 
         counts = Counter(assigned_dealers)
-        assert all(count == 2 for count in counts.values()), \
-            "Each dealer should get exactly 2 leads in 2 full cycles"
+        assert all(
+            count == 2 for count in counts.values()
+        ), "Each dealer should get exactly 2 leads in 2 full cycles"
 
 
 class TestVehicleOwnerAssignmentRule:
@@ -277,8 +280,7 @@ class TestVehicleOwnerAssignmentRule:
         )
 
         # Owner should get significantly higher score
-        assert owner_score > other_score, \
-            "Product owner should get higher score than other dealers"
+        assert owner_score > other_score, "Product owner should get higher score than other dealers"
 
     def test_vehicle_owner_no_product(self):
         """Test that rule returns 0 when no product associated."""
@@ -337,8 +339,7 @@ class TestWorkloadBalancingRule:
         free_score = engine._workload_balancing_rule.score(lead, free_dealer)
 
         # Free dealer should get higher score
-        assert free_score > busy_score, \
-            "Dealer with fewer leads should get higher score"
+        assert free_score > busy_score, "Dealer with fewer leads should get higher score"
 
     def test_workload_balancing_equal_workload(self):
         """Test that equal workload results in similar scores."""
@@ -367,8 +368,7 @@ class TestWorkloadBalancingRule:
         score2 = engine._workload_balancing_rule.score(lead, dealer2)
 
         # Scores should be similar for equal workload
-        assert abs(score1 - score2) < 0.1, \
-            "Dealers with equal workload should get similar scores"
+        assert abs(score1 - score2) < 0.1, "Dealers with equal workload should get similar scores"
 
 
 class TestGeographicProximityRule:
@@ -421,8 +421,7 @@ class TestGeographicProximityRule:
         )
 
         # Nearby dealer should get higher score
-        assert nearby_score > far_score, \
-            "Geographically closer dealer should get higher score"
+        assert nearby_score > far_score, "Geographically closer dealer should get higher score"
 
     def test_geographic_proximity_no_location(self):
         """Test that rule returns 0 when no location data available."""
@@ -540,8 +539,7 @@ class TestLeadAssignmentRulesEngine:
         )
 
         assert result.assigned_to is not None
-        assert result.assigned_to.user_id == product_owner_id, \
-            "Should assign to product owner"
+        assert result.assigned_to.user_id == product_owner_id, "Should assign to product owner"
 
     def test_assign_lead_workload_balancing_strategy(self):
         """Test lead assignment with workload-balancing strategy."""
@@ -575,8 +573,9 @@ class TestLeadAssignmentRulesEngine:
         )
 
         assert result.assigned_to is not None
-        assert result.assigned_to.user_id == free_dealer.user_id, \
-            "Should assign to dealer with fewer leads"
+        assert (
+            result.assigned_to.user_id == free_dealer.user_id
+        ), "Should assign to dealer with fewer leads"
 
     def test_assign_lead_geographic_proximity_strategy(self):
         """Test lead assignment with geographic-proximity strategy."""
@@ -617,8 +616,9 @@ class TestLeadAssignmentRulesEngine:
         )
 
         assert result.assigned_to is not None
-        assert result.assigned_to.user_id == nyc_dealer.user_id, \
-            "Should assign to geographically closest dealer"
+        assert (
+            result.assigned_to.user_id == nyc_dealer.user_id
+        ), "Should assign to geographically closest dealer"
 
     def test_assign_lead_empty_candidates(self):
         """Test that empty candidates list returns no assignment."""
@@ -637,8 +637,7 @@ class TestLeadAssignmentRulesEngine:
             strategy=AssignmentStrategy.ROUND_ROBIN,
         )
 
-        assert result.assigned_to is None, \
-            "Should return None when no candidates available"
+        assert result.assigned_to is None, "Should return None when no candidates available"
         assert result.confidence_score == 0.0
 
     def test_assign_lead_combined_strategy(self):

@@ -50,10 +50,16 @@ class VehicleAttributes(BaseModel):
             description="Vehicle Identification Number (17 characters, no I, O, Q)",
         ),
     ]
-    make: Annotated[str, Field(min_length=1, max_length=100, description="Vehicle manufacturer (e.g., Toyota)")]  # noqa: E501
-    model: Annotated[str, Field(min_length=1, max_length=100, description="Vehicle model (e.g., Camry)")]  # noqa: E501
+    make: Annotated[
+        str, Field(min_length=1, max_length=100, description="Vehicle manufacturer (e.g., Toyota)")
+    ]
+    model: Annotated[
+        str, Field(min_length=1, max_length=100, description="Vehicle model (e.g., Camry)")
+    ]
     year: Annotated[int, Field(ge=1900, le=2100, description="Model year")]
-    trim: Annotated[str | None, Field(max_length=100, description="Trim level (e.g., XLE, Limited)")] = None  # noqa: E501
+    trim: Annotated[
+        str | None, Field(max_length=100, description="Trim level (e.g., XLE, Limited)")
+    ] = None
     body_type: Annotated[
         str | None,
         Field(
@@ -122,10 +128,16 @@ class VehicleAttributes(BaseModel):
 
     # Features (boolean flags)
     has_sunroof: Annotated[bool, Field(default=False, description="Has sunroof/moonroof")] = False
-    has_navigation: Annotated[bool, Field(default=False, description="Has built-in navigation system")] = False  # noqa: E501
+    has_navigation: Annotated[
+        bool, Field(default=False, description="Has built-in navigation system")
+    ] = False
     has_leather: Annotated[bool, Field(default=False, description="Has leather seats")] = False
-    has_backup_camera: Annotated[bool, Field(default=False, description="Has backup camera")] = False  # noqa: E501
-    has_bluetooth: Annotated[bool, Field(default=False, description="Has Bluetooth connectivity")] = False  # noqa: E501
+    has_backup_camera: Annotated[bool, Field(default=False, description="Has backup camera")] = (
+        False
+    )
+    has_bluetooth: Annotated[
+        bool, Field(default=False, description="Has Bluetooth connectivity")
+    ] = False
     has_remote_start: Annotated[bool, Field(default=False, description="Has remote start")] = False
 
     # Seat material
@@ -145,7 +157,9 @@ class VehicleAttributes(BaseModel):
             description="Branch stock/inventory number",
         ),
     ] = None
-    vin_verified: Annotated[bool, Field(default=False, description="VIN verified by third-party service")] = False  # noqa: E501
+    vin_verified: Annotated[
+        bool, Field(default=False, description="VIN verified by third-party service")
+    ] = False
 
 
 # ==================== Real Estate Attributes ====================
@@ -178,7 +192,9 @@ class RealEstateAttributes(BaseModel):
     year_built: Annotated[int | None, Field(ge=1800, le=2100, description="Year built")] = None
 
     # Parking
-    parking_spaces: Annotated[int | None, Field(ge=0, le=20, description="Number of parking spaces")] = None  # noqa: E501
+    parking_spaces: Annotated[
+        int | None, Field(ge=0, le=20, description="Number of parking spaces")
+    ] = None
 
     # Features (boolean flags)
     has_pool: Annotated[bool, Field(default=False, description="Has swimming pool")] = False
@@ -210,9 +226,9 @@ ProductAttributes = Annotated[
 
 # TypeAdapter for runtime validation
 # This provides a validate_python() method for dict -> model conversion
-product_attributes_adapter: TypeAdapter[VehicleAttributes | RealEstateAttributes | GenericProductAttributes] = (  # noqa: E501
-    TypeAdapter(ProductAttributes)
-)
+product_attributes_adapter: TypeAdapter[
+    VehicleAttributes | RealEstateAttributes | GenericProductAttributes
+] = TypeAdapter(ProductAttributes)
 
 
 # ==================== Helper Functions ====================

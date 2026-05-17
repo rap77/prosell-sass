@@ -121,6 +121,7 @@ async def get_team_metrics_use_case(
 ) -> GetTeamMetricsUseCase:
     """Get TeamMetrics use case instance."""
     from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
+
     user_repo = SqlAlchemyUserRepository(lead_repo.session)
     return GetTeamMetricsUseCase(lead_repo, user_repo)
 
@@ -183,7 +184,9 @@ async def list_leads(
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
     lead_status: LeadStatus | None = Query(default=None, alias="status"),
-    vendedor_id: UUID | None = Query(default=None, description="Filter by vendedor ID (manager-only)"),  # noqa: E501
+    vendedor_id: UUID | None = Query(
+        default=None, description="Filter by vendedor ID (manager-only)"
+    ),
 ) -> LeadListResponse:
     """
     List leads with pagination and role-based filtering.

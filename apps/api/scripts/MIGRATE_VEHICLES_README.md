@@ -218,9 +218,9 @@ If you need to rollback the migration:
 ```sql
 BEGIN;
   -- Find backup table name
-  SELECT tablename FROM pg_tables 
-  WHERE tablename LIKE 'products_backup_%' 
-  ORDER BY tablename DESC 
+  SELECT tablename FROM pg_tables
+  WHERE tablename LIKE 'products_backup_%'
+  ORDER BY tablename DESC
   LIMIT 1;
 
   -- Drop current products table
@@ -230,7 +230,7 @@ BEGIN;
   ALTER TABLE products_backup_YYYYMMDD_HHMMSS RENAME TO products;
 
   -- Recreate indexes
-  CREATE INDEX ix_products_attributes_gin ON products 
+  CREATE INDEX ix_products_attributes_gin ON products
     USING gin (attributes jsonb_path_ops);
   CREATE INDEX ix_products_tenant_id ON products(tenant_id);
   CREATE INDEX ix_products_organization_id ON products(organization_id);
@@ -246,8 +246,8 @@ COMMIT;
 
 ```sql
 -- Keep products, remove migrated attributes
-UPDATE products 
-SET attributes = '{}'::jsonb 
+UPDATE products
+SET attributes = '{}'::jsonb
 WHERE attributes->>'category' = 'vehicle';
 ```
 
@@ -259,7 +259,7 @@ WHERE attributes->>'category' = 'vehicle';
 
 ### Issue: "Invalid VIN: must be 17 characters"
 **Cause**: VIN in database is not 17 characters.
-**Solution**: 
+**Solution**:
 1. Run dry-run to see which vehicles have invalid VINs
 2. Fix VINs in database: `UPDATE vehicles SET vin = '...' WHERE id = '...';`
 3. Re-run migration
@@ -268,8 +268,8 @@ WHERE attributes->>'category' = 'vehicle';
 **Cause**: Vehicle has NULL make/model.
 **Solution**: The script defaults to "Unknown", but if you want real data:
 ```sql
-UPDATE vehicles 
-SET make = 'Unknown', model = 'Unknown' 
+UPDATE vehicles
+SET make = 'Unknown', model = 'Unknown'
 WHERE make IS NULL OR model IS NULL;
 ```
 
@@ -286,7 +286,7 @@ After migration, verify in PostgreSQL:
 
 ```sql
 -- Check products with vehicle category
-SELECT COUNT(*) FROM products 
+SELECT COUNT(*) FROM products
 WHERE attributes->>'category' = 'vehicle';
 
 -- Check for missing categories
@@ -301,7 +301,7 @@ WHERE attributes->>'category' = 'vehicle'
 AND LENGTH(attributes->>'vin') != 17;
 
 -- Sample migrated data
-SELECT 
+SELECT
     id,
     title,
     attributes->>'category' as category,

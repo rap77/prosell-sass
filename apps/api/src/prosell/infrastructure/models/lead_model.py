@@ -15,9 +15,7 @@ class LeadModel(Base):
     __tablename__ = "leads"
 
     # Identity
-    id: Mapped[UUID] = mapped_column(
-        primary_key=True, server_default=func.gen_random_uuid()
-    )
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
     tenant_id: Mapped[UUID] = mapped_column(
         ForeignKey("organizations.id", ondelete="CASCADE"),
         nullable=False,
@@ -44,12 +42,8 @@ class LeadModel(Base):
 
     # Lead details
     message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    source: Mapped[str] = mapped_column(
-        String(50), nullable=False, default="manual"
-    )
-    status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="new", index=True
-    )
+    source: Mapped[str] = mapped_column(String(50), nullable=False, default="manual")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="new", index=True)
 
     # Audit timestamps
     created_at: Mapped[datetime] = mapped_column(
@@ -77,9 +71,7 @@ class LeadAuditLogModel(Base):
     __tablename__ = "lead_audit_log"
 
     # Identity
-    id: Mapped[UUID] = mapped_column(
-        primary_key=True, server_default=func.gen_random_uuid()
-    )
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
     tenant_id: Mapped[UUID] = mapped_column(
         ForeignKey("organizations.id", ondelete="CASCADE"),
         nullable=False,

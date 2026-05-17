@@ -286,7 +286,9 @@ class TestAccountsEndpoint:
         # Use the mock_auth_user.id for seller_user_id
         account = FacebookAccount(
             id=sample_account.id,
-            seller_user_id=str(mock_auth_user.id),  # Must match current user  # type: ignore[arg-type]
+            seller_user_id=str(
+                mock_auth_user.id
+            ),  # Must match current user  # type: ignore[arg-type]
             facebook_user_id=sample_account.facebook_user_id,
             access_token_encrypted=sample_account.access_token_encrypted,
             token_expires_at=sample_account.token_expires_at,

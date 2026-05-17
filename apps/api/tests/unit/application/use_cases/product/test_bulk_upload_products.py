@@ -35,9 +35,11 @@ class TestBulkUploadProductsUseCase:
 
         # Mock product creation
         created_products = []
+
         async def mock_create(product):
             created_products.append(product)
             return product
+
         product_repository.create.side_effect = mock_create
 
         # Create use case
@@ -106,9 +108,11 @@ class TestBulkUploadProductsUseCase:
 
         # Mock product creation
         created_products = []
+
         async def mock_create(product):
             created_products.append(product)
             return product
+
         product_repository.create.side_effect = mock_create
 
         # Create use case
@@ -202,9 +206,11 @@ class TestBulkUploadProductsUseCase:
 
         # Mock product creation
         created_products = []
+
         async def mock_create(product):
             created_products.append(product)
             return product
+
         product_repository.create.side_effect = mock_create
 
         # Create use case

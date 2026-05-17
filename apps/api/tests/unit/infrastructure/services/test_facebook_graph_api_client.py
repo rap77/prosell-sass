@@ -42,7 +42,7 @@ def sample_facebook_buyer_response():
         "first_name": "John",
         "last_name": "Doe",
         "email": "john.doe@example.com",
-        "profile_pic": "https://platform-lookaside.fbsbx.com/profile_pic.jpg"
+        "profile_pic": "https://platform-lookaside.fbsbx.com/profile_pic.jpg",
     }
 
 
@@ -135,7 +135,7 @@ async def test_get_buyer_profile_http_error(
         side_effect=httpx.HTTPStatusError(
             "Invalid token",
             request=MagicMock(),
-            response=MagicMock(status_code=401, text="Unauthorized")
+            response=MagicMock(status_code=401, text="Unauthorized"),
         )
     )
 
@@ -157,9 +157,7 @@ async def test_get_buyer_profile_network_error(
     sender_id = "1234567890"
     page_access_token = "test_token"
 
-    mock_httpx_client.get = AsyncMock(
-        side_effect=httpx.NetworkError("Connection failed")
-    )
+    mock_httpx_client.get = AsyncMock(side_effect=httpx.NetworkError("Connection failed"))
 
     # Act & Assert
     with pytest.raises(FacebookUserInfoFetchException) as exc_info:

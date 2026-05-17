@@ -47,7 +47,9 @@ class TestAssignLeadToVendedorUseCaseIntegration:
     """Integration tests for AssignLeadToVendedorUseCase."""
 
     @pytest.mark.asyncio
-    async def test_assign_lead_to_vendedor_success(self, db_session, test_organization, test_user, test_seller_user):
+    async def test_assign_lead_to_vendedor_success(
+        self, db_session, test_organization, test_user, test_seller_user
+    ):
         """Should assign lead to a new vendedor successfully."""
         repo = SqlAlchemyLeadRepository(db_session)
         create_uc = CreateLeadUseCase(repo)
@@ -120,7 +122,9 @@ class TestAssignLeadToVendedorUseCaseIntegration:
             )
 
     @pytest.mark.asyncio
-    async def test_assign_lead_different_tenant_raises(self, db_session, test_organization, test_user):
+    async def test_assign_lead_different_tenant_raises(
+        self, db_session, test_organization, test_user
+    ):
         """Should raise LeadNotFoundException if lead belongs to different tenant."""
         repo = SqlAlchemyLeadRepository(db_session)
         create_uc = CreateLeadUseCase(repo)

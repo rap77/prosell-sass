@@ -160,9 +160,7 @@ async def cleanup_test_data(
                 )
                 deleted_counts["leads"] = result.rowcount  # type: ignore[attr-defined]
         else:
-            result = await db.execute(
-                delete(LeadModel).where(LeadModel.tenant_id == tenant_id)
-            )
+            result = await db.execute(delete(LeadModel).where(LeadModel.tenant_id == tenant_id))
             deleted_counts["leads"] = result.rowcount  # type: ignore[attr-defined]
         await db.commit()
 
@@ -238,34 +236,23 @@ async def get_test_data_stats(
 
     # Count categories
     result_categories = await db.execute(
-        select(CategoryModel).where(
-            CategoryModel.tenant_id == tenant_id
-        )
+        select(CategoryModel).where(CategoryModel.tenant_id == tenant_id)
     )
     stats["categories"] = len(result_categories.scalars().all())
 
-
     # Count products
     result_products = await db.execute(
-        select(ProductModel).where(
-            ProductModel.tenant_id == tenant_id
-        )
+        select(ProductModel).where(ProductModel.tenant_id == tenant_id)
     )
     stats["products"] = len(result_products.scalars().all())
 
     # Count leads
-    result_leads = await db.execute(
-        select(LeadModel).where(
-            LeadModel.tenant_id == tenant_id
-        )
-    )
+    result_leads = await db.execute(select(LeadModel).where(LeadModel.tenant_id == tenant_id))
     stats["leads"] = len(result_leads.scalars().all())
 
     # Count appointments
     result_appointments = await db.execute(
-        select(AppointmentModel).where(
-            AppointmentModel.tenant_id == tenant_id
-        )
+        select(AppointmentModel).where(AppointmentModel.tenant_id == tenant_id)
     )
     stats["appointments"] = len(result_appointments.scalars().all())
 

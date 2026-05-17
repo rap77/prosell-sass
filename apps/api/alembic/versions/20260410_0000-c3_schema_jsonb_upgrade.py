@@ -14,14 +14,15 @@ MIGRATION NOTES:
   (JSONB deduplicates them silently)
 - GIN indexes use plain CREATE INDEX (not CONCURRENTLY) -- runs inside transaction
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
 
-revision: str = 'c3schema001'
-down_revision: str | Sequence[str] | None = '504440751584'
+revision: str = "c3schema001"
+down_revision: str | Sequence[str] | None = "504440751584"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -33,20 +34,19 @@ def upgrade() -> None:
     # This column is the C3 API validation schema (object format, JSONB)
     # Different from field_config (array format, UI renderer)
     op.add_column(
-        'categories',
+        "categories",
         sa.Column(
-            'attribute_schema',
+            "attribute_schema",
             JSONB(),
-            server_default='{}',
+            server_default="{}",
             nullable=False,
-        )
+        ),
     )
 
     # Step 2: Upgrade products.attributes JSON -> JSONB
     # lossless: all valid JSON is valid JSONB
     op.execute(
-        "ALTER TABLE products ALTER COLUMN attributes TYPE JSONB "
-        "USING attributes::text::jsonb"
+        "ALTER TABLE products ALTER COLUMN attributes TYPE JSONB " "USING attributes::text::jsonb"
     )
 
     # Step 3: Upgrade categories.field_config JSON -> JSONB
@@ -62,8 +62,7 @@ def upgrade() -> None:
         "ON categories USING gin(attribute_schema)"
     )
     op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_products_attributes_gin "
-        "ON products USING gin(attributes)"
+        "CREATE INDEX IF NOT EXISTS ix_products_attributes_gin " "ON products USING gin(attributes)"
     )
 
 
@@ -75,8 +74,7 @@ def downgrade() -> None:
 
     # Revert JSONB -> JSON (lossless roundtrip)
     op.execute(
-        "ALTER TABLE products ALTER COLUMN attributes TYPE JSON "
-        "USING attributes::text::json"
+        "ALTER TABLE products ALTER COLUMN attributes TYPE JSON " "USING attributes::text::json"
     )
     op.execute(
         "ALTER TABLE categories ALTER COLUMN field_config TYPE JSON "
@@ -84,4 +82,4 @@ def downgrade() -> None:
     )
 
     # Drop attribute_schema column
-    op.drop_column('categories', 'attribute_schema')
+    op.drop_column("categories", "attribute_schema")

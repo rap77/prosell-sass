@@ -13,12 +13,16 @@ from httpx import AsyncClient
 
 # Skip all tests in this module if test database is not running
 if os.getenv("TEST_DB_RUNNING", "false").lower() != "true":
-    pytestmark = pytest.mark.skip(reason="Test database not running. Set TEST_DB_RUNNING=true to enable.")
+    pytestmark = pytest.mark.skip(
+        reason="Test database not running. Set TEST_DB_RUNNING=true to enable."
+    )
 
 
 @pytest.mark.asyncio
 class TestBulkUpload:
-    async def test_bulk_upload_success(self, async_client: AsyncClient, auth_headers: dict[str, str], sample_csv_content: str) -> None:
+    async def test_bulk_upload_success(
+        self, async_client: AsyncClient, auth_headers: dict[str, str], sample_csv_content: str
+    ) -> None:
         """Test successful bulk upload with valid CSV."""
         response = await async_client.post(
             "/api/v1/vehicles/bulk-upload",
@@ -33,7 +37,9 @@ class TestBulkUpload:
         assert data["total_rows"] == 1
         assert len(data["errors"]) == 0
 
-    async def test_bulk_upload_with_csv_injection(self, async_client: AsyncClient, auth_headers: dict[str, str], csv_injection_attempts: str) -> None:
+    async def test_bulk_upload_with_csv_injection(
+        self, async_client: AsyncClient, auth_headers: dict[str, str], csv_injection_attempts: str
+    ) -> None:
         """Test that CSV injection is sanitized."""
         response = await async_client.post(
             "/api/v1/vehicles/bulk-upload",
@@ -49,7 +55,9 @@ class TestBulkUpload:
         # Verify VINs are sanitized (prefixed with ')
         assert all("=" not in error["vin"] for error in errors)
 
-    async def test_bulk_upload_file_too_large(self, async_client: AsyncClient, auth_headers: dict[str, str]) -> None:
+    async def test_bulk_upload_file_too_large(
+        self, async_client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
         """Test that large files are rejected."""
         # Create a CSV larger than 10MB
         large_csv = "vin,year,make,model\n" + "1HGCM82633A123456,2020,Honda,Civic\n" * 300000
@@ -62,10 +70,14 @@ class TestBulkUpload:
 
         assert response.status_code == 413  # Payload Too Large
 
-    async def test_bulk_upload_too_many_rows(self, async_client: AsyncClient, auth_headers: dict[str, str]) -> None:
+    async def test_bulk_upload_too_many_rows(
+        self, async_client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
         """Test that CSVs with too many rows are rejected."""
         # Create CSV with 1001 rows (over the 1000 limit)
-        rows = ["1HGCM82633A123456,2020,Honda,Civic,EX,35000,18500,excellent,Black,Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Desc"]
+        rows = [
+            "1HGCM82633A123456,2020,Honda,Civic,EX,35000,18500,excellent,Black,Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Desc"
+        ]
         csv_content = "vin,year,make,model,trim,mileage,price,condition,exterior_color,interior_color,transmission,fuel_type,body_style,drivetrain,engine,cylinders,description\n"
         csv_content += "\n".join(rows * 1001)
 
@@ -78,7 +90,9 @@ class TestBulkUpload:
         assert response.status_code == 400
         assert "Too many rows" in response.json()["detail"]
 
-    async def test_bulk_upload_duplicate_vin_in_csv(self, async_client: AsyncClient, auth_headers: dict[str, str], csv_duplicate_vins: str) -> None:
+    async def test_bulk_upload_duplicate_vin_in_csv(
+        self, async_client: AsyncClient, auth_headers: dict[str, str], csv_duplicate_vins: str
+    ) -> None:
         """Test that duplicate VINs in the same CSV are rejected."""
         response = await async_client.post(
             "/api/v1/vehicles/bulk-upload",
@@ -91,7 +105,9 @@ class TestBulkUpload:
         assert data["failed_count"] == 1
         assert any("Duplicate VIN in CSV" in error["error"] for error in data["errors"])
 
-    async def test_bulk_upload_invalid_vin_checksum(self, async_client: AsyncClient, auth_headers: dict[str, str]) -> None:
+    async def test_bulk_upload_invalid_vin_checksum(
+        self, async_client: AsyncClient, auth_headers: dict[str, str]
+    ) -> None:
         """Test that invalid VIN checksums are rejected."""
         csv_content = """vin,year,make,model,trim,mileage,price,condition,exterior_color,interior_color,transmission,fuel_type,body_style,drivetrain,engine,cylinders,description
 1HGCM82633A123457,2020,Honda,Civic,EX,35000,18500,excellent,Black,Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Desc
@@ -108,7 +124,9 @@ class TestBulkUpload:
         assert data["failed_count"] == 1
         assert any("Invalid VIN checksum" in error["error"] for error in data["errors"])
 
-    async def test_bulk_upload_missing_required_columns(self, async_client: AsyncClient, auth_headers: dict[str, str], csv_missing_columns: str) -> None:
+    async def test_bulk_upload_missing_required_columns(
+        self, async_client: AsyncClient, auth_headers: dict[str, str], csv_missing_columns: str
+    ) -> None:
         """Test that CSVs without required columns are rejected."""
         response = await async_client.post(
             "/api/v1/vehicles/bulk-upload",
@@ -119,7 +137,9 @@ class TestBulkUpload:
         assert response.status_code == 400
         assert "Missing required columns" in response.json()["detail"]
 
-    async def test_bulk_upload_all_or_nothing_on_validation_error(self, async_client: AsyncClient, auth_headers: dict[str, str], sample_csv_with_errors: str) -> None:
+    async def test_bulk_upload_all_or_nothing_on_validation_error(
+        self, async_client: AsyncClient, auth_headers: dict[str, str], sample_csv_with_errors: str
+    ) -> None:
         """Test that all-or-nothing approach works - no vehicles created if any row fails."""
         response = await async_client.post(
             "/api/v1/vehicles/bulk-upload",

@@ -130,14 +130,14 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
     # Log full traceback to stderr/file
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
     # Also print to stdout for immediate visibility
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("⚠️  EXCEPTION CAUGHT:")
     print(f"   Path: {request.url.path}")
     print(f"   Method: {request.method}")
     print(f"   Exception: {type(exc).__name__}: {exc}")
     print("   Traceback:")
     traceback.print_exc()
-    print("="*80 + "\n")
+    print("=" * 80 + "\n")
 
     # Get origin from request for CORS
     origin = request.headers.get("origin")

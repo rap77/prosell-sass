@@ -112,7 +112,9 @@ async def decode_vin(request: VINDecodeRequest) -> VINDecodeResponse:
     vin_upper = request.vin.upper()
     if vin_upper in _vin_cache:
         cached_vehicle, cached_raw = _vin_cache[vin_upper]
-        return VINDecodeResponse(vin=vin_upper, vehicle=cached_vehicle, cached=True, raw_data=cached_raw)  # noqa: E501
+        return VINDecodeResponse(
+            vin=vin_upper, vehicle=cached_vehicle, cached=True, raw_data=cached_raw
+        )
 
     # Validate VIN character set before calling NHTSA (I, O, Q not allowed)
     valid_chars = set("ABCDEFGHJKLMNPRSTUVWXYZ0123456789")

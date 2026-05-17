@@ -83,8 +83,8 @@ uv run python scripts/migrate_vehicles_to_product_attributes.py
 
 ```sql
 -- Find backup table
-SELECT tablename FROM pg_tables 
-WHERE tablename LIKE 'products_backup_%' 
+SELECT tablename FROM pg_tables
+WHERE tablename LIKE 'products_backup_%'
 ORDER BY tablename DESC;
 
 -- Restore from backup
@@ -122,8 +122,8 @@ SELECT COUNT(*) FROM vehicles;
 ### "Invalid VIN: must be 17 characters"
 ```sql
 -- Find invalid VINs
-SELECT id, vin, LENGTH(vin) as vin_length 
-FROM vehicles 
+SELECT id, vin, LENGTH(vin) as vin_length
+FROM vehicles
 WHERE LENGTH(vin) != 17;
 ```
 
@@ -144,6 +144,6 @@ Migration is successful when:
 
 ---
 
-**Time Estimate**: 5-10 minutes for 1000 vehicles  
-**Dependencies**: None (uses existing database)  
+**Time Estimate**: 5-10 minutes for 1000 vehicles
+**Dependencies**: None (uses existing database)
 **Risk Level**: Low (with --backup and dry-run)

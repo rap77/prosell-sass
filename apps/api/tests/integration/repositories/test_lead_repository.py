@@ -235,7 +235,9 @@ class TestLeadRepositoryList:
     """Tests for list_by_vendedor() and list_by_manager() methods."""
 
     @pytest.mark.asyncio
-    async def test_list_by_vendedor_returns_own_leads(self, db_session, test_organization, test_user, test_seller_user):
+    async def test_list_by_vendedor_returns_own_leads(
+        self, db_session, test_organization, test_user, test_seller_user
+    ):
         """list_by_vendedor should return only leads for given vendedor."""
         repo = SqlAlchemyLeadRepository(db_session)
         tenant_id = test_organization.tenant_id
@@ -256,7 +258,9 @@ class TestLeadRepositoryList:
         assert all(lead.vendedor_id == vendedor_id for lead in leads)
 
     @pytest.mark.asyncio
-    async def test_list_by_manager_returns_all_tenant_leads(self, db_session, test_organization, test_user, test_seller_user):
+    async def test_list_by_manager_returns_all_tenant_leads(
+        self, db_session, test_organization, test_user, test_seller_user
+    ):
         """list_by_manager should return all leads in the tenant."""
         repo = SqlAlchemyLeadRepository(db_session)
         tenant_id = test_organization.tenant_id
@@ -317,9 +321,7 @@ class TestLeadRepositoryList:
 
         contacted_lead = make_lead(tenant_id=tenant_id, vendedor_id=vendedor_id)
         await repo.create(contacted_lead)
-        await repo.update_status(
-            contacted_lead.id, tenant_id, LeadStatus.CONTACTED
-        )
+        await repo.update_status(contacted_lead.id, tenant_id, LeadStatus.CONTACTED)
 
         new_leads, new_total = await repo.list_by_vendedor(
             tenant_id=tenant_id,

@@ -1,4 +1,5 @@
 """Product router."""
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -60,10 +61,12 @@ async def create_product(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     # Always use auth context — never trust tenant_id/organization_id from the client
-    request = request.model_copy(update={
-        "tenant_id": current_user.tenant_id,
-        "organization_id": current_user.tenant_id,
-    })
+    request = request.model_copy(
+        update={
+            "tenant_id": current_user.tenant_id,
+            "organization_id": current_user.tenant_id,
+        }
+    )
 
     # Execute use case
     product_repo = SqlAlchemyProductRepository(db)
@@ -73,10 +76,7 @@ async def create_product(
     try:
         return await use_case.execute(request)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
 
 @router.post("/bulk-upload", response_model=BulkUploadResult, status_code=status.HTTP_201_CREATED)
@@ -111,15 +111,14 @@ async def bulk_upload_products(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
     # Validate CSV file
-    if not csv_file.filename or not csv_file.filename.endswith('.csv'):
+    if not csv_file.filename or not csv_file.filename.endswith(".csv"):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Only CSV files are supported"
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Only CSV files are supported"
         )
 
     # Read CSV content
     content = await csv_file.read()
-    csv_content = content.decode('utf-8')
+    csv_content = content.decode("utf-8")
 
     # Execute use case
     product_repo = SqlAlchemyProductRepository(db)

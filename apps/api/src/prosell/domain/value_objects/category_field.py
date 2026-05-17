@@ -31,9 +31,7 @@ class CategoryField(ValueObject):
 
     # Options for SELECT/MULTISELECT
     # Format: [{"value": "red", "label": "Red"}, ...]
-    options: list[dict[str, str]] = Field(
-        default_factory=lambda: cast(list[dict[str, str]], [])
-    )
+    options: list[dict[str, str]] = Field(default_factory=lambda: cast(list[dict[str, str]], []))
 
     # Organization
     field_group: str | None = None  # e.g., "specs", "dimensions", "media"

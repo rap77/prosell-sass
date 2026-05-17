@@ -25,6 +25,7 @@ TEST_DB_URL = "postgresql+asyncpg://prosell:prosell_test_password@localhost:5433
 # SESSION-SCOPED FIXTURES - Run once per test session
 # =============================================================================
 
+
 @pytest_asyncio.fixture(scope="session")
 async def _session_engine() -> AsyncGenerator[Any]:
     """Create engine for session-scoped fixtures."""
@@ -42,9 +43,7 @@ async def system_roles(_session_engine) -> dict[str, RoleModel]:
     This fixes: "duplicate key value violates unique constraint roles_role_type_key"
     """
     async_session_maker = async_sessionmaker(
-        _session_engine,
-        class_=AsyncSession,
-        expire_on_commit=False
+        _session_engine, class_=AsyncSession, expire_on_commit=False
     )
 
     async with async_session_maker() as session:
@@ -131,6 +130,7 @@ async def system_roles(_session_engine) -> dict[str, RoleModel]:
 # FUNCTION-SCOPED FIXTURES - Clean state for each test
 # =============================================================================
 
+
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession]:
     """
@@ -138,11 +138,7 @@ async def db_session() -> AsyncGenerator[AsyncSession]:
     Wraps test in transaction and rolls back after completion.
     """
     engine = create_async_engine(TEST_DB_URL, echo=False)
-    async_session_maker = async_sessionmaker(
-        engine,
-        class_=AsyncSession,
-        expire_on_commit=False
-    )
+    async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session_maker() as session, session.begin():
         yield session
@@ -323,6 +319,7 @@ async def test_category(
 # HELPER FIXTURES - For convenience
 # =============================================================================
 
+
 @pytest.fixture
 def shared_tenant_id() -> UUID:
     """Shared tenant_id for all users and resources in a test (legacy)."""
@@ -338,8 +335,10 @@ def disable_rate_limiting(monkeypatch: pytest.MonkeyPatch) -> None:
         if hasattr(limiter, "enabled"):
             monkeypatch.setattr(limiter, "enabled", False)
         else:
+
             def mock_check(*_args: Any, **_kwargs: Any) -> None:
                 return None
+
             monkeypatch.setattr(limiter, "_check_rate_limit", mock_check)
     except (ImportError, AttributeError):
         pass  # Rate limiting may not be enabled

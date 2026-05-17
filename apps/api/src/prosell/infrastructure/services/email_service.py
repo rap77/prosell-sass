@@ -55,9 +55,7 @@ def retry_on_sendgrid_error(
                 except Exception as e:
                     last_exception = e
                     # Check if error message contains a retryable status code
-                    is_retryable = any(
-                        str(code) in str(e) for code in retryable_statuses
-                    )
+                    is_retryable = any(str(code) in str(e) for code in retryable_statuses)
 
                     if not is_retryable or attempt == max_retries:
                         # Not retryable or max retries exceeded
@@ -226,9 +224,7 @@ class SendGridEmailService:
                 f"Email delivery failed: type=verification, to={email}, "
                 f"status={response.status_code}, body={response.body}"
             )
-            raise Exception(
-                f"SendGrid error: {response.status_code} - {response.body}"
-            )
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")
 
     @retry_on_sendgrid_error()
     async def send_password_reset(
@@ -282,9 +278,7 @@ class SendGridEmailService:
                 f"Email delivery failed: type=password_reset, to={email}, "
                 f"status={response.status_code}, body={response.body}"
             )
-            raise Exception(
-                f"SendGrid error: {response.status_code} - {response.body}"
-            )
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")
 
     @retry_on_sendgrid_error()
     async def send_2fa_enabled(
@@ -299,9 +293,7 @@ class SendGridEmailService:
         message = Mail(
             from_email=self.from_email,
             to_emails=email,
-            subject=(
-                "Two-factor authentication enabled"
-            ),
+            subject=("Two-factor authentication enabled"),
             html_content="""
             <html>
             <body>
@@ -331,9 +323,7 @@ class SendGridEmailService:
                 f"Email delivery failed: type=2fa_enabled, to={email}, "
                 f"status={response.status_code}, body={response.body}"
             )
-            raise Exception(
-                f"SendGrid error: {response.status_code} - {response.body}"
-            )
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")
 
     @retry_on_sendgrid_error()
     async def send_appointment_notification(
@@ -416,9 +406,7 @@ class SendGridEmailService:
                 f"to={branch_email}, status={response.status_code}, "
                 f"body={response.body}"
             )
-            raise Exception(
-                f"SendGrid error: {response.status_code} - {response.body}"
-            )
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")
 
     @retry_on_sendgrid_error()
     async def send_appointment_confirmation(
@@ -501,9 +489,7 @@ class SendGridEmailService:
                 f"to={buyer_email}, status={response.status_code}, "
                 f"body={response.body}"
             )
-            raise Exception(
-                f"SendGrid error: {response.status_code} - {response.body}"
-            )
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")
 
     @retry_on_sendgrid_error()
     async def send_appointment_reminder(
@@ -589,9 +575,7 @@ class SendGridEmailService:
                 f"Email delivery failed: type=appointment_reminder, to={email}, "
                 f"status={response.status_code}, body={response.body}"
             )
-            raise Exception(
-                f"SendGrid error: {response.status_code} - {response.body}"
-            )
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")
 
     @retry_on_sendgrid_error()
     async def send_appointment_status_update(
@@ -697,9 +681,7 @@ class SendGridEmailService:
                 f"to={buyer_email}, status={response.status_code}, "
                 f"body={response.body}"
             )
-            raise Exception(
-                f"SendGrid error: {response.status_code} - {response.body}"
-            )
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")
 
     @retry_on_sendgrid_error()
     async def send_team_invitation(
@@ -737,9 +719,7 @@ class SendGridEmailService:
                 f"Email delivery failed: type=team_invitation, to={email}, "
                 f"status={response.status_code}, body={response.body}"
             )
-            raise Exception(
-                f"SendGrid error: {response.status_code} - {response.body}"
-            )
+            raise Exception(f"SendGrid error: {response.status_code} - {response.body}")
 
 
 class MockEmailService:

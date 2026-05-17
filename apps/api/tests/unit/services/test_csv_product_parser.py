@@ -374,10 +374,7 @@ class TestRowLimits:
     ):
         """Enforce maximum rows limit."""
         parser = CSVProductParser(max_rows=2)
-        rows = [
-            f"1HGCM82633A12345{i},Car {i},1000.00,{category_id}"
-            for i in range(3)
-        ]
+        rows = [f"1HGCM82633A12345{i},Car {i},1000.00,{category_id}" for i in range(3)]
         csv_content = "vin,title,price,category_id\n" + "\n".join(rows)
 
         with pytest.raises(CSVParseError) as exc_info:

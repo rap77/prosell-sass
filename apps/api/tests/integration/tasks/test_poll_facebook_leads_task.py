@@ -4,7 +4,6 @@ Tests the background task that polls Facebook Graph API for missed leads.
 This task runs every 10 minutes as a fallback to webhooks.
 """
 
-
 import pytest
 
 from prosell.infrastructure.tasks.use_cases.poll_facebook_leads_task import (
@@ -278,7 +277,9 @@ class TestPollFacebookLeadsTaskLogic:
         log_capture = StringIO()
         handler = logging.StreamHandler(log_capture)
         handler.setLevel(logging.INFO)
-        logger = logging.getLogger("prosell.infrastructure.tasks.use_cases.poll_facebook_leads_task")
+        logger = logging.getLogger(
+            "prosell.infrastructure.tasks.use_cases.poll_facebook_leads_task"
+        )
         logger.addHandler(handler)
 
         await poll_facebook_leads_task()

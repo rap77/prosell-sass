@@ -42,7 +42,12 @@ actual_schemas = set()
 components = openapi_schema.get("components", {}).get("schemas", {})
 
 for schema_name in components.keys():
-    if "Request" in schema_name or "Create" in schema_name or "Update" in schema_name or "List" in schema_name:
+    if (
+        "Request" in schema_name
+        or "Create" in schema_name
+        or "Update" in schema_name
+        or "List" in schema_name
+    ):
         actual_schemas.add(schema_name)
 
 print("=" * 80)
@@ -88,11 +93,11 @@ for schema_name in expected_request_dtos:
         # Check that properties have valid types
         for prop_name, prop_def in properties.items():
             has_valid_type = (
-                "$ref" in prop_def or
-                "type" in prop_def or
-                "anyOf" in prop_def or
-                "allOf" in prop_def or
-                "oneOf" in prop_def
+                "$ref" in prop_def
+                or "type" in prop_def
+                or "anyOf" in prop_def
+                or "allOf" in prop_def
+                or "oneOf" in prop_def
             )
             if not has_valid_type:
                 issues.append(f"{schema_name}.{prop_name}: missing type, $ref, or anyOf")

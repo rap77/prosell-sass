@@ -73,6 +73,7 @@ def mock_user_repository():
     from unittest.mock import AsyncMock
 
     from prosell.domain.entities.user import User, UserStatus
+
     repo = AsyncMock()
     user = User(
         id=uuid4(),
@@ -91,6 +92,7 @@ def mock_user_repository():
 def mock_product_repository():
     """Mock product repository."""
     from unittest.mock import AsyncMock
+
     repo = AsyncMock()
     product = AsyncMock()
     product.title = "2022 Toyota Corolla"
@@ -202,6 +204,7 @@ class TestConfirmAppointmentUseCase:
 
         # Verify email was NOT sent
         from unittest.mock import AsyncMock
+
         mock_email_service = AsyncMock()
         mock_email_service.send_appointment_status_update.assert_not_awaited()
 

@@ -55,7 +55,6 @@ class TeamInvitationModel(Base):
     )
 
 
-
 class TeamModel(Base):
     """SQLAlchemy model for teams table."""
 

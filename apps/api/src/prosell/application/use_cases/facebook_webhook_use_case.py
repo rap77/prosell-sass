@@ -96,14 +96,11 @@ class ProcessFacebookWebhookUseCase:
         # 3. Get page access token from FacebookPage
         if not publication.facebook_page_id:
             logger.warning(
-                f"Publication {publication.id} has no facebook_page_id. "
-                f"Skipping lead creation."
+                f"Publication {publication.id} has no facebook_page_id. " f"Skipping lead creation."
             )
             return
 
-        facebook_page = await self.facebook_page_repository.get_by_id(
-            publication.facebook_page_id
-        )
+        facebook_page = await self.facebook_page_repository.get_by_id(publication.facebook_page_id)
         if not facebook_page:
             logger.warning(
                 f"FacebookPage not found for id={publication.facebook_page_id}. "
@@ -174,13 +171,9 @@ class ProcessFacebookWebhookUseCase:
                 source="facebook",  # type: ignore[arg-type]
             )
 
-            await self.create_lead_use_case.execute(
-                request=create_request, tenant_id=tenant_id
-            )
+            await self.create_lead_use_case.execute(request=create_request, tenant_id=tenant_id)
 
-            logger.info(
-                f"Successfully created lead from Facebook webhook: leadgen_id={leadgen_id}"
-            )
+            logger.info(f"Successfully created lead from Facebook webhook: leadgen_id={leadgen_id}")
 
         except Exception as e:
             logger.error(f"Failed to create lead from webhook: {e}")

@@ -248,7 +248,9 @@ class VehicleOwnerAssignmentRule(AssignmentRule):
             return 0.0
 
         # Prefer explicit product ownership when available
-        product_owner_id = getattr(product, "submitted_by", None) or getattr(product, "approved_by", None)
+        product_owner_id = getattr(product, "submitted_by", None) or getattr(
+            product, "approved_by", None
+        )
         if product_owner_id is not None:
             return 1.0 if candidate.user_id == product_owner_id else 0.0
 
@@ -598,7 +600,8 @@ class LeadAssignmentRulesEngine:
             rule_name = rule.__class__.__name__
             for idx, candidate in enumerate(candidates):
                 score = rule.score(
-                    lead, candidate,
+                    lead,
+                    candidate,
                     candidate_index=idx,
                     dealer_count=dealer_count,
                     **context,
@@ -622,9 +625,7 @@ class LeadAssignmentRulesEngine:
                 total_weight += weight
 
             # Normalize by total weight
-            candidate_scores[user_id] = (
-                weighted_score / total_weight if total_weight > 0 else 0.0
-            )
+            candidate_scores[user_id] = weighted_score / total_weight if total_weight > 0 else 0.0
 
         # Find the candidate with highest weighted score
         best_candidate = max(

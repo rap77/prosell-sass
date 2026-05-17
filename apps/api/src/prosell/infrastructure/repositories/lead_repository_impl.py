@@ -18,6 +18,7 @@ from prosell.infrastructure.models.product_model import ProductModel
 
 class LeadWithProduct(NamedTuple):
     """Lead entity with optional product model."""
+
     lead: Lead
     product_model: ProductModel | None = None
 
@@ -119,8 +120,8 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
     ) -> tuple[list[Lead], int]:
         """List leads with pagination and status filter."""
         # Count total
-        count_stmt = select(func.count()).select_from(LeadModel).where(
-            LeadModel.tenant_id == tenant_id
+        count_stmt = (
+            select(func.count()).select_from(LeadModel).where(LeadModel.tenant_id == tenant_id)
         )
         if status_filter:
             count_stmt = count_stmt.where(LeadModel.status == status_filter)
@@ -256,8 +257,11 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             return [lp.lead for lp in leads], total
         else:
             result = await self.session.execute(
-                select(LeadModel).where(*base_filter)
-                .order_by(LeadModel.created_at.desc()).limit(limit).offset(offset)
+                select(LeadModel)
+                .where(*base_filter)
+                .order_by(LeadModel.created_at.desc())
+                .limit(limit)
+                .offset(offset)
             )
             return [self._to_entity(m) for m in result.scalars().all()], total
 
@@ -298,8 +302,11 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             return [lp.lead for lp in leads], total
         else:
             result = await self.session.execute(
-                select(LeadModel).where(*base_filter)
-                .order_by(LeadModel.created_at.desc()).limit(limit).offset(offset)
+                select(LeadModel)
+                .where(*base_filter)
+                .order_by(LeadModel.created_at.desc())
+                .limit(limit)
+                .offset(offset)
             )
             return [self._to_entity(m) for m in result.scalars().all()], total
 
@@ -331,9 +338,13 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         status: LeadStatus | None = None,
     ) -> int:
         """Count active leads assigned to a vendedor."""
-        stmt = select(func.count()).select_from(LeadModel).where(
-            LeadModel.tenant_id == tenant_id,
-            LeadModel.vendedor_id == vendedor_id,
+        stmt = (
+            select(func.count())
+            .select_from(LeadModel)
+            .where(
+                LeadModel.tenant_id == tenant_id,
+                LeadModel.vendedor_id == vendedor_id,
+            )
         )
 
         # Filter by status if provided

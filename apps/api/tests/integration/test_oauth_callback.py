@@ -188,7 +188,11 @@ class TestOAuthCallbackEndpoint:
             # Should set httpOnly cookies.
             # When domain="localhost" and base_url="http://test", httpx rejects cookies
             # from response.cookies. Read raw Set-Cookie headers instead.
-            set_cookie_headers = response.headers.get_list("set-cookie") if hasattr(response.headers, "get_list") else [v for k, v in response.headers.items() if k.lower() == "set-cookie"]
+            set_cookie_headers = (
+                response.headers.get_list("set-cookie")
+                if hasattr(response.headers, "get_list")
+                else [v for k, v in response.headers.items() if k.lower() == "set-cookie"]
+            )
             cookie_names = [h.split("=")[0] for h in set_cookie_headers]
             assert "access_token" in cookie_names
             assert "refresh_token" in cookie_names

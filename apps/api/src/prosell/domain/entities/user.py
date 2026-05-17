@@ -81,6 +81,7 @@ class User(DomainModel):
             return None
         if isinstance(v, str):
             from typing import cast
+
             return cast(list[str], json.loads(v))
         return v
 

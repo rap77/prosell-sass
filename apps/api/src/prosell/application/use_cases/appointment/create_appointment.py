@@ -73,9 +73,7 @@ class CreateAppointmentUseCase:
         )
 
         # 3. Check for conflicts using the conflict detector
-        conflicts = self.conflict_detector.detect_conflicts(
-            temp_appointment, existing_appointments
-        )
+        conflicts = self.conflict_detector.detect_conflicts(temp_appointment, existing_appointments)
 
         if conflicts and not request.force:
             # Raise exception with conflict details (unless force=True)
@@ -121,7 +119,9 @@ class CreateAppointmentUseCase:
             return
 
         # Only update if not already appointment_set and the transition is valid
-        if lead.status != LeadStatus.APPOINTMENT_SET and lead.can_transition_to(LeadStatus.APPOINTMENT_SET):  # noqa: E501
+        if lead.status != LeadStatus.APPOINTMENT_SET and lead.can_transition_to(
+            LeadStatus.APPOINTMENT_SET
+        ):
             with suppress(LeadStateTransitionException):
                 await self.lead_repository.update_status(
                     lead_id=lead_id,

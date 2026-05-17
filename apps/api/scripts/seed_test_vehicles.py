@@ -20,6 +20,7 @@ from uuid import uuid4
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from sqlalchemy import select
+
 from prosell.infrastructure.database import async_session_maker
 from prosell.infrastructure.models.product_model import ProductModel
 from prosell.infrastructure.models.vehicle_model import VehicleModel
@@ -206,13 +207,13 @@ async def get_or_create_test_data():
             select(ProductModel.__table__.c.organization_id).distinct().limit(1)
         )
         org_row = result.first()
-        
+
         if org_row:
             org_id = org_row[0]
         else:
             # Fallback: use known org ID from seed.py
             org_id = "f63ef6cf-4659-40bb-9e25-c08bbd5d03a3"
-        
+
         # Get vehicles category
         result = await session.execute(
             select(ProductModel.__table__.c.category_id)
@@ -220,45 +221,45 @@ async def get_or_create_test_data():
             .limit(1)
         )
         cat_row = result.first()
-        
+
         if cat_row:
             cat_id = cat_row[0]
         else:
             # Fallback: use known category ID
             cat_id = "776bd2e7-fe89-4a52-ac5c-717b134eb9c6"
-        
+
         return org_id, cat_id
 
 
 async def create_vehicles():
     """Create test vehicles with products."""
     print("🚗 Seeding test vehicles for migration testing...")
-    
+
     org_id, cat_id = await get_or_create_test_data()
     print(f"   Using organization: {org_id}")
     print(f"   Using category: {cat_id}")
-    
+
     async with async_session_maker() as session:
         created_count = 0
         skipped_count = 0
-        
+
         for vehicle_data in TEST_VEHICLES:
             # Check if vehicle already exists
             result = await session.execute(
                 select(VehicleModel).where(VehicleModel.vin == vehicle_data["vin"])
             )
             existing_vehicle = result.scalar_one_or_none()
-            
+
             if existing_vehicle:
                 print(f"   ✓ Vehicle {vehicle_data['vin']} already exists, skipping...")
                 skipped_count += 1
                 continue
-            
+
             # Extract product fields
             price_cents = vehicle_data.pop("price_cents")
             currency = vehicle_data.pop("currency")
             description = vehicle_data.pop("description", None)
-            
+
             # Create product
             product_id = uuid4()
             product = ProductModel(
@@ -278,9 +279,9 @@ async def create_vehicles():
                 view_count=0,
                 favorite_count=0,
             )
-            
+
             session.add(product)
-            
+
             # Create vehicle linked to product
             vehicle = VehicleModel(
                 id=uuid4(),
@@ -311,15 +312,17 @@ async def create_vehicles():
                 created_at=datetime.now(UTC),
                 updated_at=datetime.now(UTC),
             )
-            
+
             session.add(vehicle)
             created_count += 1
-            
-            print(f"   ✓ Created: {vehicle_data['year']} {vehicle_data['make']} {vehicle_data['model']} ({vehicle_data['vin']})")
-        
+
+            print(
+                f"   ✓ Created: {vehicle_data['year']} {vehicle_data['make']} {vehicle_data['model']} ({vehicle_data['vin']})"
+            )
+
         await session.commit()
-        
-        print(f"\n✅ Seeding complete!")
+
+        print("\n✅ Seeding complete!")
         print(f"   Created: {created_count} vehicles")
         print(f"   Skipped: {skipped_count} already existing")
         print(f"   Total in database: {len(TEST_VEHICLES)}")
@@ -330,14 +333,13 @@ async def show_summary():
     async with async_session_maker() as session:
         # Count vehicles
         from sqlalchemy import func
-        result = await session.execute(
-            select(func.count()).select_from(VehicleModel)
-        )
+
+        result = await session.execute(select(func.count()).select_from(VehicleModel))
         total = result.scalar() or 0
-        
-        print(f"\n📊 Database Summary:")
+
+        print("\n📊 Database Summary:")
         print(f"   Total vehicles: {total}")
-        
+
         if total > 0:
             # Show sample
             result = await session.execute(
@@ -345,8 +347,8 @@ async def show_summary():
                 .join(ProductModel, VehicleModel.product_id == ProductModel.id)
                 .limit(3)
             )
-            
-            print(f"\n   Sample vehicles:")
+
+            print("\n   Sample vehicles:")
             for i, (vehicle, product) in enumerate(result.all(), 1):
                 print(f"      {i}. {vehicle.year} {vehicle.make} {vehicle.model}")
                 print(f"         VIN: {vehicle.vin}")

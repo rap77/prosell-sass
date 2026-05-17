@@ -293,7 +293,7 @@ def calculate_backoff_with_jitter(
         Delay in seconds with jitter applied
     """
     # Calculate exponential backoff
-    base_delay = initial_delay * (backoff_multiplier ** attempt)
+    base_delay = initial_delay * (backoff_multiplier**attempt)
 
     # Add jitter to avoid thundering herd
     jitter_range = base_delay * jitter_ratio

@@ -42,7 +42,9 @@ def mock_role_repo() -> MagicMock:
 def mock_spaces() -> MagicMock:
     global _mock_spaces
     spaces = MagicMock()
-    spaces.upload_file = AsyncMock(return_value="https://region.digitaloceanspaces.com/bucket/orgs/123/vehicles/uuid.jpg")
+    spaces.upload_file = AsyncMock(
+        return_value="https://region.digitaloceanspaces.com/bucket/orgs/123/vehicles/uuid.jpg"
+    )
     spaces.endpoint = "https://region.digitaloceanspaces.com"
     spaces.bucket = "test-bucket"
     _mock_spaces = spaces

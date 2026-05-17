@@ -184,9 +184,7 @@ async def test_invite_team_member_success(
     app.dependency_overrides[get_email_service] = lambda: mock_email_service  # type: ignore
 
     # Test request
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             f"/api/v1/teams/{sample_team.id}/invite",
             json={
@@ -228,9 +226,7 @@ async def test_invite_team_member_team_not_found(
     app.dependency_overrides[get_team_invitation_repository] = lambda: mock_invitation_repo  # type: ignore
     app.dependency_overrides[get_email_service] = lambda: mock_email_service  # type: ignore
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             f"/api/v1/teams/{team_id}/invite",
             json={
@@ -263,9 +259,7 @@ async def test_invite_team_member_invalid_email(
     app.dependency_overrides[get_team_invitation_repository] = lambda: mock_invitation_repo  # type: ignore
     app.dependency_overrides[get_email_service] = lambda: mock_email_service  # type: ignore
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             f"/api/v1/teams/{sample_team.id}/invite",
             json={
@@ -307,9 +301,7 @@ async def test_accept_team_invitation_success(
     app.dependency_overrides[get_team_member_repository] = lambda: mock_team_member_repo  # type: ignore
 
     # Test request
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/api/v1/teams/accept-invitation",
             json={"token": "a" * 64},
@@ -345,9 +337,7 @@ async def test_accept_team_invitation_invalid_token(
     app.dependency_overrides[get_team_invitation_repository] = lambda: mock_invitation_repo  # type: ignore
     app.dependency_overrides[get_team_member_repository] = lambda: mock_team_member_repo  # type: ignore
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/api/v1/teams/accept-invitation",
             json={"token": "a" * 64},  # Valid length but invalid token
@@ -394,9 +384,7 @@ async def test_accept_team_invitation_expired_token(
     app.dependency_overrides[get_team_invitation_repository] = lambda: mock_invitation_repo  # type: ignore
     app.dependency_overrides[get_team_member_repository] = lambda: mock_team_member_repo  # type: ignore
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/api/v1/teams/accept-invitation",
             json={"token": "a" * 64},

@@ -1,4 +1,5 @@
 """Tests for ProcessFacebookWebhookUseCase."""
+
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 

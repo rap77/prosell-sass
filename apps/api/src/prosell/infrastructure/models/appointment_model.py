@@ -15,9 +15,7 @@ class AppointmentModel(Base):
     __tablename__ = "appointments"
 
     # Identity
-    id: Mapped[UUID] = mapped_column(
-        primary_key=True, server_default=func.gen_random_uuid()
-    )
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
     tenant_id: Mapped[UUID] = mapped_column(
         ForeignKey("organizations.id", ondelete="CASCADE"),
         nullable=False,
@@ -45,9 +43,7 @@ class AppointmentModel(Base):
     scheduled_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, index=True
     )
-    status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="scheduled", index=True
-    )
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="scheduled", index=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Audit timestamps

@@ -60,9 +60,7 @@ async def test_create_category_without_attribute_schema_defaults_empty(
 
 
 @pytest.mark.asyncio
-async def test_admin_sees_inactive_categories(
-    async_client_as_admin: AsyncClient, admin_user
-):
+async def test_admin_sees_inactive_categories(async_client_as_admin: AsyncClient, admin_user):
     """Admin user can see is_active=False categories via list."""
     # Create category with is_active=False
     slug = f"inactive-{uuid4().hex[:8]}"
@@ -187,9 +185,7 @@ async def test_update_attribute_schema_replaces_existing(
 
 
 @pytest.mark.asyncio
-async def test_delete_category_soft_deletes(
-    async_client_as_admin: AsyncClient, admin_user
-):
+async def test_delete_category_soft_deletes(async_client_as_admin: AsyncClient, admin_user):
     """DELETE /categories/{id} soft-deletes (deactivates) the category."""
     create_resp = await async_client_as_admin.post(
         "/api/v1/categories",
@@ -216,9 +212,7 @@ async def test_delete_category_soft_deletes(
 
 
 @pytest.mark.asyncio
-async def test_update_category_basic_info(
-    async_client_as_admin: AsyncClient, admin_user
-):
+async def test_update_category_basic_info(async_client_as_admin: AsyncClient, admin_user):
     """PATCH /categories/{id} updates name and description."""
     create_resp = await async_client_as_admin.post(
         "/api/v1/categories",

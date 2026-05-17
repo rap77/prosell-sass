@@ -1,6 +1,5 @@
 """Vendedor (salesperson) DTOs for ProSell SaaS."""
 
-
 from typing import Annotated
 
 from pydantic import BaseModel, Field
@@ -22,7 +21,9 @@ class VendedorResponse(BaseModel):
 class VendedorListResponse(BaseModel):
     """Vendedor list response DTO."""
 
-    items: Annotated[list[VendedorResponse], Field(default_factory=list, description="List of vendedores")]  # noqa: E501
+    items: Annotated[
+        list[VendedorResponse], Field(default_factory=list, description="List of vendedores")
+    ]
     total: Annotated[int, Field(..., description="Total number of vendedores")]
     limit: Annotated[int, Field(..., description="Page size limit")]
     offset: Annotated[int, Field(..., description="Number of items skipped")]

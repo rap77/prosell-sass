@@ -76,7 +76,11 @@ class TestCreateAppointmentUseCase:
 
     @pytest.mark.asyncio
     async def test_create_appointment_success(
-        self, create_appointment_use_case, mock_appointment_repository, mock_lead_repository, sample_lead
+        self,
+        create_appointment_use_case,
+        mock_appointment_repository,
+        mock_lead_repository,
+        sample_lead,
     ):
         """Test successful appointment creation."""
         tenant_id = uuid4()
@@ -128,7 +132,11 @@ class TestCreateAppointmentUseCase:
 
     @pytest.mark.asyncio
     async def test_create_appointment_conflict_detection(
-        self, create_appointment_use_case, mock_appointment_repository, mock_lead_repository, sample_lead
+        self,
+        create_appointment_use_case,
+        mock_appointment_repository,
+        mock_lead_repository,
+        sample_lead,
     ):
         """Test conflict detection when branch has existing appointment."""
         tenant_id = uuid4()
@@ -163,7 +171,9 @@ class TestCreateAppointmentUseCase:
 
         # New exception format includes conflict details
         assert "conflict" in str(exc_info.value).lower()
-        assert "dealer" in str(exc_info.value).lower() or "appointment" in str(exc_info.value).lower()
+        assert (
+            "dealer" in str(exc_info.value).lower() or "appointment" in str(exc_info.value).lower()
+        )
 
         # Verify appointment was NOT created
         mock_appointment_repository.create.assert_not_awaited()
@@ -173,7 +183,11 @@ class TestCreateAppointmentUseCase:
 
     @pytest.mark.asyncio
     async def test_create_appointment_time_validation_weekend(
-        self, create_appointment_use_case, mock_appointment_repository, mock_lead_repository, sample_lead
+        self,
+        create_appointment_use_case,
+        mock_appointment_repository,
+        mock_lead_repository,
+        sample_lead,
     ):
         """Test time validation for weekend."""
         tenant_id = uuid4()
@@ -197,14 +211,21 @@ class TestCreateAppointmentUseCase:
         with pytest.raises(AppointmentTimeValidationException) as exc_info:
             await create_appointment_use_case.execute(request, tenant_id)
 
-        assert "weekend" in str(exc_info.value).lower() or "outside business hours" in str(exc_info.value).lower()
+        assert (
+            "weekend" in str(exc_info.value).lower()
+            or "outside business hours" in str(exc_info.value).lower()
+        )
 
         # Verify appointment was NOT created
         mock_appointment_repository.create.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_create_appointment_time_validation_before_business_hours(
-        self, create_appointment_use_case, mock_appointment_repository, mock_lead_repository, sample_lead
+        self,
+        create_appointment_use_case,
+        mock_appointment_repository,
+        mock_lead_repository,
+        sample_lead,
     ):
         """Test time validation before business hours (8am)."""
         tenant_id = uuid4()
@@ -233,7 +254,11 @@ class TestCreateAppointmentUseCase:
 
     @pytest.mark.asyncio
     async def test_create_appointment_time_validation_after_business_hours(
-        self, create_appointment_use_case, mock_appointment_repository, mock_lead_repository, sample_lead
+        self,
+        create_appointment_use_case,
+        mock_appointment_repository,
+        mock_lead_repository,
+        sample_lead,
     ):
         """Test time validation after business hours (7pm)."""
         tenant_id = uuid4()
@@ -344,7 +369,11 @@ class TestCreateAppointmentUseCase:
 
     @pytest.mark.asyncio
     async def test_create_appointment_with_notes(
-        self, create_appointment_use_case, mock_appointment_repository, mock_lead_repository, sample_lead
+        self,
+        create_appointment_use_case,
+        mock_appointment_repository,
+        mock_lead_repository,
+        sample_lead,
     ):
         """Test appointment creation with notes."""
         tenant_id = uuid4()
@@ -383,7 +412,11 @@ class TestCreateAppointmentUseCase:
 
     @pytest.mark.asyncio
     async def test_create_appointment_conflict_check_params(
-        self, create_appointment_use_case, mock_appointment_repository, mock_lead_repository, sample_lead
+        self,
+        create_appointment_use_case,
+        mock_appointment_repository,
+        mock_lead_repository,
+        sample_lead,
     ):
         """Test that conflict check is called with correct parameters."""
         tenant_id = uuid4()

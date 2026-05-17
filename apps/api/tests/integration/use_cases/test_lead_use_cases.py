@@ -226,7 +226,9 @@ class TestListLeadsUseCaseIntegration:
     """Integration tests for ListLeadsUseCase role-based filtering."""
 
     @pytest.mark.asyncio
-    async def test_vendedor_sees_only_own_leads(self, db_session, test_organization, test_user, test_seller_user):
+    async def test_vendedor_sees_only_own_leads(
+        self, db_session, test_organization, test_user, test_seller_user
+    ):
         """SALES_AGENT should see only their own leads."""
         repo = SqlAlchemyLeadRepository(db_session)
         create_uc = CreateLeadUseCase(repo)
@@ -269,7 +271,9 @@ class TestListLeadsUseCaseIntegration:
         )
 
     @pytest.mark.asyncio
-    async def test_manager_sees_all_tenant_leads(self, db_session, test_organization, test_user, test_seller_user):
+    async def test_manager_sees_all_tenant_leads(
+        self, db_session, test_organization, test_user, test_seller_user
+    ):
         """MANAGER should see all leads in the tenant."""
         repo = SqlAlchemyLeadRepository(db_session)
         create_uc = CreateLeadUseCase(repo)

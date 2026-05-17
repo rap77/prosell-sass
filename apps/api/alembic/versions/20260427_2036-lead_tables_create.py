@@ -5,14 +5,15 @@ Revises:
 Create Date: 2026-04-27 20:36:00.000000
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '20260427_2036'
-down_revision: str | Sequence[str] | None = 'c3schema001'
+revision: str = "20260427_2036"
+down_revision: str | Sequence[str] | None = "c3schema001"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -23,7 +24,8 @@ def upgrade() -> None:
     # =========================================================================
     # LEADS TABLE
     # =========================================================================
-    op.execute(sa.text("""
+    op.execute(
+        sa.text("""
         CREATE TABLE IF NOT EXISTS leads (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -38,12 +40,19 @@ def upgrade() -> None:
             created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
             updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
         );
-    """))
+    """)
+    )
 
     # Multi-tenant indexes
     op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_leads_tenant_id ON leads(tenant_id);"))
-    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_leads_tenant_id_status ON leads(tenant_id, status);"))
-    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_leads_tenant_id_created_at ON leads(tenant_id, created_at DESC);"))
+    op.execute(
+        sa.text("CREATE INDEX IF NOT EXISTS ix_leads_tenant_id_status ON leads(tenant_id, status);")
+    )
+    op.execute(
+        sa.text(
+            "CREATE INDEX IF NOT EXISTS ix_leads_tenant_id_created_at ON leads(tenant_id, created_at DESC);"
+        )
+    )
     op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_leads_vendedor_id ON leads(vendedor_id);"))
     op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_leads_vehicle_id ON leads(vehicle_id);"))
     op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_leads_status ON leads(status);"))
@@ -51,7 +60,8 @@ def upgrade() -> None:
     # =========================================================================
     # LEAD AUDIT LOG TABLE
     # =========================================================================
-    op.execute(sa.text("""
+    op.execute(
+        sa.text("""
         CREATE TABLE IF NOT EXISTS lead_audit_log (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             tenant_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -62,12 +72,23 @@ def upgrade() -> None:
             reason TEXT,
             created_at TIMESTAMPTZ DEFAULT now() NOT NULL
         );
-    """))
+    """)
+    )
 
     # Multi-tenant indexes
-    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_lead_audit_log_tenant_id ON lead_audit_log(tenant_id);"))
-    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_lead_audit_log_lead_id ON lead_audit_log(lead_id);"))
-    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_lead_audit_log_tenant_id_created_at ON lead_audit_log(tenant_id, created_at DESC);"))
+    op.execute(
+        sa.text(
+            "CREATE INDEX IF NOT EXISTS ix_lead_audit_log_tenant_id ON lead_audit_log(tenant_id);"
+        )
+    )
+    op.execute(
+        sa.text("CREATE INDEX IF NOT EXISTS ix_lead_audit_log_lead_id ON lead_audit_log(lead_id);")
+    )
+    op.execute(
+        sa.text(
+            "CREATE INDEX IF NOT EXISTS ix_lead_audit_log_tenant_id_created_at ON lead_audit_log(tenant_id, created_at DESC);"
+        )
+    )
 
 
 def downgrade() -> None:

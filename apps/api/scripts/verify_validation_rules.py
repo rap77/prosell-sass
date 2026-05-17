@@ -68,7 +68,9 @@ for schema_name, field_validations in expected_validations.items():
                 if actual_value == rule_value:
                     checked_count += 1
                 else:
-                    issues.append(f"{schema_name}.{field_name}: {rule_name}={actual_value}, expected={rule_value}")
+                    issues.append(
+                        f"{schema_name}.{field_name}: {rule_name}={actual_value}, expected={rule_value}"
+                    )
             else:
                 issues.append(f"{schema_name}.{field_name}: Missing {rule_name} validation")
 

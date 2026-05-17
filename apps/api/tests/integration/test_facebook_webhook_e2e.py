@@ -55,8 +55,9 @@ def generate_hub_signature(payload_dict: dict, app_secret: str) -> str:
     Uses the same JSON serialization as httpx (compact, no spaces).
     """
     import json
+
     # httpx serializes JSON with compact separators
-    payload_bytes = json.dumps(payload_dict, separators=(',', ':')).encode("utf-8")
+    payload_bytes = json.dumps(payload_dict, separators=(",", ":")).encode("utf-8")
     signature = hmac.new(
         app_secret.encode("utf-8"),
         payload_bytes,
@@ -103,16 +104,13 @@ class TestFacebookWebhookProcessingE2E:
         # (This verifies Critical Issue #1 is fixed)
         # We check logs to verify the use case was executed
         assert any(
-            "Processing Facebook webhook" in record.message
-            for record in caplog.records
+            "Processing Facebook webhook" in record.message for record in caplog.records
         ), "ProcessFacebookWebhookUseCase should have been called"
         assert any(
-            "leadgen_id=123456789" in record.message
-            for record in caplog.records
+            "leadgen_id=123456789" in record.message for record in caplog.records
         ), "Use case should have received correct leadgen_id"
         assert any(
-            "sender_id=111222333" in record.message
-            for record in caplog.records
+            "sender_id=111222333" in record.message for record in caplog.records
         ), "Use case should have received correct sender_id"
 
     async def test_webhook_returns_400_for_invalid_json(
@@ -131,10 +129,10 @@ class TestFacebookWebhookProcessingE2E:
 
         # Valid JSON structure but we'll test the error path
         payload = {"leadgen_id": "123"}  # Minimal valid payload
-        payload_bytes = json.dumps(payload, separators=(',', ':')).encode("utf-8")
+        payload_bytes = json.dumps(payload, separators=(",", ":")).encode("utf-8")
 
         # Tamper with JSON to make it invalid
-        invalid_payload = payload_bytes.replace(b'"', b'')
+        invalid_payload = payload_bytes.replace(b'"', b"")
 
         # Generate signature for the invalid payload
         signature = hmac.new(

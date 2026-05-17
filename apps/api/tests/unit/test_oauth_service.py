@@ -128,7 +128,9 @@ class TestOAuthServiceInitiate:
     """Tests for OAuth authorization initiation."""
 
     @pytest.mark.asyncio
-    async def test_initiate_google_authorization_generates_valid_url(self, oauth_service: IOAuthService) -> None:
+    async def test_initiate_google_authorization_generates_valid_url(
+        self, oauth_service: IOAuthService
+    ) -> None:
         """Test that Google authorization URL is correctly formatted."""
         result = await oauth_service.initiate_authorization(
             provider="google",
@@ -148,7 +150,9 @@ class TestOAuthServiceInitiate:
         assert "-" in result.state_token  # UUID format
 
     @pytest.mark.asyncio
-    async def test_initiate_google_authorization_stores_state_token(self, oauth_service: IOAuthService) -> None:
+    async def test_initiate_google_authorization_stores_state_token(
+        self, oauth_service: IOAuthService
+    ) -> None:
         """Test that state token is stored after Google authorization initiation."""
         result = await oauth_service.initiate_authorization(
             provider="google",
@@ -163,7 +167,9 @@ class TestOAuthServiceInitiate:
         assert await oauth_service.validate_state(result.state_token) is True
 
     @pytest.mark.asyncio
-    async def test_initiate_facebook_authorization_generates_valid_url(self, oauth_service: IOAuthService) -> None:
+    async def test_initiate_facebook_authorization_generates_valid_url(
+        self, oauth_service: IOAuthService
+    ) -> None:
         """Test that Facebook authorization URL is correctly formatted."""
         result = await oauth_service.initiate_authorization(
             provider="facebook",
@@ -182,7 +188,9 @@ class TestOAuthServiceInitiate:
         assert len(result.state_token) > 0
 
     @pytest.mark.asyncio
-    async def test_initiate_authorization_unsupported_provider_raises_error(self, oauth_service: IOAuthService) -> None:
+    async def test_initiate_authorization_unsupported_provider_raises_error(
+        self, oauth_service: IOAuthService
+    ) -> None:
         """Test that unsupported provider raises OAuthProviderNotSupportedError."""
         from prosell.domain.exceptions.auth_exceptions import OAuthProviderNotSupportedError
 
@@ -196,7 +204,9 @@ class TestOAuthServiceInitiate:
         assert exc_info.value.details["provider"] == "unsupported"
 
     @pytest.mark.asyncio
-    async def test_initiate_authorization_case_insensitive_provider(self, oauth_service: IOAuthService) -> None:
+    async def test_initiate_authorization_case_insensitive_provider(
+        self, oauth_service: IOAuthService
+    ) -> None:
         """Test that provider name is case-insensitive."""
         result1 = await oauth_service.initiate_authorization(
             provider="Google",
@@ -339,7 +349,9 @@ class TestOAuthServiceConfiguration:
         """Test that state token expiration defaults to 10 minutes."""
         assert oauth_settings.state_token_expire_minutes == 10
 
-    async def test_google_credentials_required_for_authorization(self, oauth_settings: OAuthSettings) -> None:
+    async def test_google_credentials_required_for_authorization(
+        self, oauth_settings: OAuthSettings
+    ) -> None:
         """Test that Google credentials are required for authorization."""
         # Remove client ID
         oauth_settings.google_oauth_client_id = None

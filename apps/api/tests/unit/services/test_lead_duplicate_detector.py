@@ -142,9 +142,7 @@ class TestLeadDuplicateDetector:
         lead_with_both,
     ):
         """Detector finds duplicates when both email and phone match."""
-        mock_lead_repository.find_potential_duplicates = AsyncMock(
-            return_value=[lead_with_both]
-        )
+        mock_lead_repository.find_potential_duplicates = AsyncMock(return_value=[lead_with_both])
         detector = LeadDuplicateDetector(mock_lead_repository)
 
         duplicates = await detector.find_duplicates(

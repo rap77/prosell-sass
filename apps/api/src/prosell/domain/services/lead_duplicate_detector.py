@@ -158,7 +158,7 @@ class LeadDuplicateDetector:
             return None
 
         # Remove all non-numeric characters
-        digits_only = re.sub(r'[^\d]', '', phone)
+        digits_only = re.sub(r"[^\d]", "", phone)
 
         if not digits_only:
             return None
@@ -167,7 +167,7 @@ class LeadDuplicateDetector:
         if len(digits_only) == 10:
             return f"+1{digits_only}"
         # If we have 11 digits starting with 1, assume US with country code
-        elif len(digits_only) == 11 and digits_only.startswith('1'):
+        elif len(digits_only) == 11 and digits_only.startswith("1"):
             return f"+{digits_only}"
         # Otherwise, just add + prefix
         else:

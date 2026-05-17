@@ -15,9 +15,7 @@ from httpx import AsyncClient
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 
-async def create_category_with_schema(
-    client: AsyncClient, tenant_id: str, schema: dict
-) -> str:
+async def create_category_with_schema(client: AsyncClient, tenant_id: str, schema: dict) -> str:
     """Helper: create category and return its ID."""
     resp = await client.post(
         "/api/v1/categories",
@@ -162,9 +160,7 @@ async def test_list_products_filtered_by_organization(
 ):
     """GET /products?organization_id=X returns only products from that org."""
     org_id = str(admin_user.tenant_id)  # use real org ID (org.id == org.tenant_id)
-    cat_id = await create_category_with_schema(
-        async_client_as_admin, str(admin_user.tenant_id), {}
-    )
+    cat_id = await create_category_with_schema(async_client_as_admin, str(admin_user.tenant_id), {})
 
     # Create a product in this specific org
     prod_resp = await async_client_as_admin.post(
@@ -179,9 +175,7 @@ async def test_list_products_filtered_by_organization(
     prod_id = prod_resp.json()["id"]
 
     # Filter by org — should see this product
-    list_resp = await async_client_as_admin.get(
-        f"/api/v1/products?organization_id={org_id}"
-    )
+    list_resp = await async_client_as_admin.get(f"/api/v1/products?organization_id={org_id}")
     assert list_resp.status_code == 200, list_resp.text
     ids = [p["id"] for p in list_resp.json()["products"]]
     assert prod_id in ids, f"Product {prod_id} should be in org filter results"
@@ -194,9 +188,7 @@ async def test_list_products_org_filter_excludes_other_orgs(
     """GET /products?organization_id=X excludes products from other orgs."""
     org_a = str(admin_user.tenant_id)  # use real org ID for the product we create
     org_b = str(uuid4())  # fake org used only as filter — no product created in it
-    cat_id = await create_category_with_schema(
-        async_client_as_admin, str(admin_user.tenant_id), {}
-    )
+    cat_id = await create_category_with_schema(async_client_as_admin, str(admin_user.tenant_id), {})
 
     # Create product in org_a
     prod_resp = await async_client_as_admin.post(
@@ -211,22 +203,16 @@ async def test_list_products_org_filter_excludes_other_orgs(
     prod_id_a = prod_resp.json()["id"]
 
     # Filter by org_b — should NOT see org_a product
-    list_resp = await async_client_as_admin.get(
-        f"/api/v1/products?organization_id={org_b}"
-    )
+    list_resp = await async_client_as_admin.get(f"/api/v1/products?organization_id={org_b}")
     assert list_resp.status_code == 200, list_resp.text
     ids = [p["id"] for p in list_resp.json()["products"]]
     assert prod_id_a not in ids, "Product from org_a should not appear in org_b filter"
 
 
 @pytest.mark.asyncio
-async def test_list_products_filtered_by_category(
-    async_client_as_admin: AsyncClient, admin_user
-):
+async def test_list_products_filtered_by_category(async_client_as_admin: AsyncClient, admin_user):
     """GET /products?category_id=X returns only products in that category."""
-    cat_id = await create_category_with_schema(
-        async_client_as_admin, str(admin_user.tenant_id), {}
-    )
+    cat_id = await create_category_with_schema(async_client_as_admin, str(admin_user.tenant_id), {})
 
     prod_resp = await async_client_as_admin.post(
         "/api/v1/products",

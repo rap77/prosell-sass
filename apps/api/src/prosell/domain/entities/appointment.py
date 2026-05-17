@@ -139,9 +139,7 @@ class Appointment(DomainModel):
         # Check if weekend (Saturday=5, Sunday=6)
         weekday = scheduled_at.weekday()
         if weekday >= 5:  # Saturday or Sunday
-            raise AppointmentTimeValidationException(
-                "Appointments cannot be scheduled on weekends"
-            )
+            raise AppointmentTimeValidationException("Appointments cannot be scheduled on weekends")
 
         # Check if within business hours (9am-6pm)
         appointment_time = scheduled_at.time()
@@ -199,9 +197,7 @@ class Appointment(DomainModel):
             ValueError: If appointment is already cancelled or completed
         """
         if self.status.is_terminal():
-            raise ValueError(
-                f"Cannot cancel appointment with status '{self.status.value}'"
-            )
+            raise ValueError(f"Cannot cancel appointment with status '{self.status.value}'")
 
         self.status = AppointmentStatus.CANCELLED
         self.updated_at = datetime.now(UTC)
@@ -214,9 +210,7 @@ class Appointment(DomainModel):
             ValueError: If appointment is already cancelled or completed
         """
         if self.status.is_terminal():
-            raise ValueError(
-                f"Cannot complete appointment with status '{self.status.value}'"
-            )
+            raise ValueError(f"Cannot complete appointment with status '{self.status.value}'")
 
         self.status = AppointmentStatus.COMPLETED
         self.updated_at = datetime.now(UTC)
@@ -228,5 +222,3 @@ class Appointment(DomainModel):
     def is_completed(self) -> bool:
         """Check if appointment is completed."""
         return self.status == AppointmentStatus.COMPLETED
-
-

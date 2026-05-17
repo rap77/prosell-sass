@@ -33,9 +33,7 @@ router = APIRouter(
 
 
 @router.delete("/categories", status_code=status.HTTP_200_OK)
-async def clear_test_categories(
-    session: AsyncSession = Depends(get_async_session)
-):
+async def clear_test_categories(session: AsyncSession = Depends(get_async_session)):
     """
     Clear all test categories from the database.
 
@@ -54,7 +52,7 @@ async def clear_test_categories(
                 AND created_at >= :cutoff_time
                 RETURNING id
             """),
-            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)}
+            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)},
         )
 
         deleted_count = len(result.fetchall())
@@ -70,14 +68,12 @@ async def clear_test_categories(
         logger.error(f"❌ Failed to clear test categories: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear test categories: {e!s}"
+            detail=f"Failed to clear test categories: {e!s}",
         ) from None
 
 
 @router.delete("/leads", status_code=status.HTTP_200_OK)
-async def clear_test_leads(
-    session: AsyncSession = Depends(get_async_session)
-):
+async def clear_test_leads(session: AsyncSession = Depends(get_async_session)):
     """
     Clear all test leads from the database.
 
@@ -98,7 +94,7 @@ async def clear_test_leads(
                 AND created_at >= :cutoff_time
                 RETURNING id
             """),
-            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)}
+            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)},
         )
 
         deleted_count = len(result.fetchall())
@@ -114,14 +110,12 @@ async def clear_test_leads(
         logger.error(f"❌ Failed to clear test leads: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear test leads: {e!s}"
+            detail=f"Failed to clear test leads: {e!s}",
         ) from None
 
 
 @router.delete("/appointments", status_code=status.HTTP_200_OK)
-async def clear_test_appointments(
-    session: AsyncSession = Depends(get_async_session)
-):
+async def clear_test_appointments(session: AsyncSession = Depends(get_async_session)):
     """
     Clear all test appointments from the database.
 
@@ -139,7 +133,7 @@ async def clear_test_appointments(
                 AND created_at >= :cutoff_time
                 RETURNING id
             """),
-            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)}
+            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)},
         )
 
         deleted_count = len(result.fetchall())
@@ -155,14 +149,12 @@ async def clear_test_appointments(
         logger.error(f"❌ Failed to clear test appointments: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear test appointments: {e!s}"
+            detail=f"Failed to clear test appointments: {e!s}",
         ) from None
 
 
 @router.delete("/users", status_code=status.HTTP_200_OK)
-async def clear_test_users(
-    session: AsyncSession = Depends(get_async_session)
-):
+async def clear_test_users(session: AsyncSession = Depends(get_async_session)):
     """
     Clear all test users from the database.
 
@@ -182,7 +174,7 @@ async def clear_test_users(
                 AND created_at >= :cutoff_time
                 RETURNING id
             """),
-            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)}
+            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)},
         )
 
         deleted_count = len(result.fetchall())
@@ -198,14 +190,12 @@ async def clear_test_users(
         logger.error(f"❌ Failed to clear test users: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear test users: {e!s}"
+            detail=f"Failed to clear test users: {e!s}",
         ) from None
 
 
 @router.delete("/organizations", status_code=status.HTTP_200_OK)
-async def clear_test_organizations(
-    session: AsyncSession = Depends(get_async_session)
-):
+async def clear_test_organizations(session: AsyncSession = Depends(get_async_session)):
     """
     Clear all test organizations from the database.
 
@@ -224,7 +214,7 @@ async def clear_test_organizations(
                 AND name NOT LIKE '%prosell%'
                 RETURNING id
             """),
-            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)}
+            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)},
         )
 
         deleted_count = len(result.fetchall())
@@ -240,14 +230,12 @@ async def clear_test_organizations(
         logger.error(f"❌ Failed to clear test organizations: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear test organizations: {e!s}"
+            detail=f"Failed to clear test organizations: {e!s}",
         ) from None
 
 
 @router.delete("/all", status_code=status.HTTP_200_OK)
-async def clear_all_test_data(
-    session: AsyncSession = Depends(get_async_session)
-):
+async def clear_all_test_data(session: AsyncSession = Depends(get_async_session)):
     """
     Clear all test data from the database in proper order.
 
@@ -272,7 +260,7 @@ async def clear_all_test_data(
                 AND created_at >= :cutoff_time
                 RETURNING id
             """),
-            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)}
+            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)},
         )
         appointments_deleted = len(result.fetchall())
         total_deleted += appointments_deleted
@@ -288,7 +276,7 @@ async def clear_all_test_data(
                 AND created_at >= :cutoff_time
                 RETURNING id
             """),
-            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)}
+            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)},
         )
         leads_deleted = len(result.fetchall())
         total_deleted += leads_deleted
@@ -303,7 +291,7 @@ async def clear_all_test_data(
                 AND created_at >= :cutoff_time
                 RETURNING id
             """),
-            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)}
+            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)},
         )
         categories_deleted = len(result.fetchall())
         total_deleted += categories_deleted
@@ -318,7 +306,7 @@ async def clear_all_test_data(
                 AND role NOT IN ('system', 'admin')
                 RETURNING id
             """),
-            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)}
+            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)},
         )
         users_deleted = len(result.fetchall())
         total_deleted += users_deleted
@@ -333,7 +321,7 @@ async def clear_all_test_data(
                 AND name NOT LIKE '%prosell%'
                 RETURNING id
             """),
-            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)}
+            {"cutoff_time": datetime.utcnow() - timedelta(hours=24)},
         )
         organizations_deleted = len(result.fetchall())
         total_deleted += organizations_deleted
@@ -352,14 +340,12 @@ async def clear_all_test_data(
         logger.error(f"❌ Failed to clear all test data: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear all test data: {e!s}"
+            detail=f"Failed to clear all test data: {e!s}",
         ) from None
 
 
 @router.delete("/rate-limit-buckets", status_code=status.HTTP_200_OK)
-async def clear_test_rate_limit_buckets(
-    session: AsyncSession = Depends(get_async_session)
-):
+async def clear_test_rate_limit_buckets(session: AsyncSession = Depends(get_async_session)):
     """
     Clear test rate limit buckets.
 
@@ -373,7 +359,7 @@ async def clear_test_rate_limit_buckets(
                 WHERE created_at >= :cutoff_time
                 RETURNING id
             """),
-            {"cutoff_time": datetime.utcnow() - timedelta(hours=1)}
+            {"cutoff_time": datetime.utcnow() - timedelta(hours=1)},
         )
 
         deleted_count = len(result.fetchall())
@@ -389,14 +375,12 @@ async def clear_test_rate_limit_buckets(
         logger.error(f"❌ Failed to clear test rate limit buckets: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear test rate limit buckets: {e!s}"
+            detail=f"Failed to clear test rate limit buckets: {e!s}",
         ) from None
 
 
 @router.get("/status", status_code=status.HTTP_200_OK)
-async def get_cleanup_status(
-    session: AsyncSession = Depends(get_async_session)
-):
+async def get_cleanup_status(session: AsyncSession = Depends(get_async_session)):
     """
     Get the current status of test data in the database.
 
@@ -414,7 +398,7 @@ async def get_cleanup_status(
                        OR description ILIKE '%test%')
                 AND created_at >= :cutoff_time
             """),
-            {"cutoff_time": cutoff_time}
+            {"cutoff_time": cutoff_time},
         )
         test_categories = categories_result.scalar() or 0
 
@@ -428,7 +412,7 @@ async def get_cleanup_status(
                        OR last_name ILIKE '%test%')
                 AND created_at >= :cutoff_time
             """),
-            {"cutoff_time": cutoff_time}
+            {"cutoff_time": cutoff_time},
         )
         test_leads = leads_result.scalar() or 0
 
@@ -440,7 +424,7 @@ async def get_cleanup_status(
                 WHERE notes ILIKE '%test%'
                 AND created_at >= :cutoff_time
             """),
-            {"cutoff_time": cutoff_time}
+            {"cutoff_time": cutoff_time},
         )
         test_appointments = appointments_result.scalar() or 0
 
@@ -453,7 +437,7 @@ async def get_cleanup_status(
                 AND created_at >= :cutoff_time
                 AND role NOT IN ('system', 'admin')
             """),
-            {"cutoff_time": cutoff_time}
+            {"cutoff_time": cutoff_time},
         )
         test_users = users_result.scalar() or 0
 
@@ -466,13 +450,12 @@ async def get_cleanup_status(
                 AND created_at >= :cutoff_time
                 AND name NOT LIKE '%prosell%'
             """),
-            {"cutoff_time": cutoff_time}
+            {"cutoff_time": cutoff_time},
         )
         test_organizations = organizations_result.scalar() or 0
 
         total_test_data = (
-            test_categories + test_leads +
-            test_appointments + test_users + test_organizations
+            test_categories + test_leads + test_appointments + test_users + test_organizations
         )
 
         return {
@@ -493,5 +476,5 @@ async def get_cleanup_status(
         logger.error(f"❌ Failed to get cleanup status: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get cleanup status: {e!s}"
+            detail=f"Failed to get cleanup status: {e!s}",
         ) from None

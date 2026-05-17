@@ -16,6 +16,7 @@ def webhook_tenant_id() -> str:
     """Tenant ID for webhook tests."""
     return str(uuid4())
 
+
 @pytest.fixture
 def webhook_app_secret() -> str:
     """Facebook webhook app secret for testing."""
@@ -51,8 +52,9 @@ def generate_hub_signature(payload_dict: dict, app_secret: str) -> str:
     Uses the same JSON serialization as httpx (compact, no spaces).
     """
     import json
+
     # httpx serializes JSON with compact separators
-    payload_bytes = json.dumps(payload_dict, separators=(',', ':')).encode("utf-8")
+    payload_bytes = json.dumps(payload_dict, separators=(",", ":")).encode("utf-8")
     signature = hmac.new(
         app_secret.encode("utf-8"),
         payload_bytes,
@@ -61,13 +63,13 @@ def generate_hub_signature(payload_dict: dict, app_secret: str) -> str:
     return f"sha256={signature.hex()}"
 
 
-
 def get_webhook_headers(signature: str, tenant_id: str) -> dict:
     """Get standard headers for webhook requests."""
     return {
         "X-Hub-Signature": signature,
         "X-Tenant-ID": tenant_id,
     }
+
 
 class TestFacebookWebhookEndpoint:
     """Test suite for POST /api/v1/webhooks/facebook endpoint."""
@@ -256,4 +258,3 @@ class TestFacebookWebhookEndpoint:
         # Assert
         # Should still return 200 (webhook received), but may log error
         assert response.status_code == status.HTTP_200_OK
-

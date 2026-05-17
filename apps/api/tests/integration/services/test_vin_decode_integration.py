@@ -145,6 +145,7 @@ class TestVINDecodeIntegration:
         from prosell.infrastructure.api.routers.vehicle_router import (
             clear_vin_cache_for_testing,
         )
+
         clear_vin_cache_for_testing()
 
         # Create mock response
@@ -288,6 +289,7 @@ class TestVINDecodeIntegration:
         from prosell.infrastructure.api.routers.vehicle_router import (
             clear_vin_cache_for_testing,
         )
+
         clear_vin_cache_for_testing()
 
         # Create mock response
@@ -415,6 +417,7 @@ class TestVINDecodeEdgeCases:
         from prosell.infrastructure.api.routers.vehicle_router import (
             clear_vin_cache_for_testing,
         )
+
         clear_vin_cache_for_testing()
 
         # Create mock response

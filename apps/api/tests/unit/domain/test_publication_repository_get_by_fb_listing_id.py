@@ -34,4 +34,3 @@ async def test_get_by_fb_listing_id_with_empty_string_raises():
     # Act & Assert
     with pytest.raises(ValueError, match="fb_listing_id cannot be None or empty"):
         await repo.get_by_fb_listing_id("")
-

@@ -21,6 +21,7 @@ from prosell.infrastructure.models.user_model import UserModel
 def _is_test_db_available() -> bool:
     """Check if test database is available."""
     import os
+
     # Check if TEST_DB_RUNNING flag is set
     return os.getenv("TEST_DB_RUNNING", "false").lower() == "true"
 
@@ -33,6 +34,7 @@ async def async_client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
 
     NOTE: This fixture requires the test database to be running.
     """
+
     # Override the database dependency
     async def get_test_db() -> AsyncIterator[AsyncSession]:
         yield db_session
@@ -111,4 +113,6 @@ def csv_duplicate_vins() -> str:
 # Skip all integration tests if test database is not available
 pytestmark: list[pytest.MarkDecorator] = []
 if not _is_test_db_available():
-    pytestmark.append(pytest.mark.skip(reason="Test database not running. Set TEST_DB_RUNNING=true to enable."))
+    pytestmark.append(
+        pytest.mark.skip(reason="Test database not running. Set TEST_DB_RUNNING=true to enable.")
+    )

@@ -71,9 +71,7 @@ async def test_attribute_schema_column_exists(db_session: AsyncSession) -> None:
     assert row is not None, "attribute_schema column missing from categories"
     assert row.data_type == "jsonb", f"Expected jsonb, got {row.data_type}"
     assert row.is_nullable == "NO", "attribute_schema must be NOT NULL"
-    assert "{}" in (row.column_default or ""), (
-        f"Expected default '{{}}', got {row.column_default}"
-    )
+    assert "{}" in (row.column_default or ""), f"Expected default '{{}}', got {row.column_default}"
 
 
 @pytest.mark.asyncio
@@ -104,7 +102,9 @@ async def test_categories_field_config_is_jsonb(db_session: AsyncSession) -> Non
     assert row.data_type == "jsonb", f"Expected jsonb, got {row.data_type}"
 
 
-@pytest.mark.xfail(reason="vehicles table was dropped in c3schema_cleanup migration — FK no longer exists")
+@pytest.mark.xfail(
+    reason="vehicles table was dropped in c3schema_cleanup migration — FK no longer exists"
+)
 @pytest.mark.asyncio
 async def test_vehicles_product_id_fk_exists(db_session: AsyncSession) -> None:
     """SC-4: vehicles table had product_id FK -> products ON DELETE CASCADE (table now dropped)."""
@@ -203,9 +203,7 @@ async def test_attribute_schema_default_is_empty_object(
     row = result.fetchone()
     assert row is not None
     assert row.attribute_schema == {}, f"Expected {{}}, got {row.attribute_schema}"
-    assert isinstance(
-        row.attribute_schema, dict
-    ), "attribute_schema must be a dict (object)"
+    assert isinstance(row.attribute_schema, dict), "attribute_schema must be a dict (object)"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -270,18 +268,15 @@ async def test_product_delete_cascades_to_vehicle(db_session: AsyncSession) -> N
     await db_session.flush()
 
     # Delete the product — vehicle should cascade
-    await db_session.execute(
-        text("DELETE FROM products WHERE id = :id"), {"id": prod_id}
-    )
+    await db_session.execute(text("DELETE FROM products WHERE id = :id"), {"id": prod_id})
     await db_session.flush()
 
     # Vehicle should be gone (CASCADE)
     result = await db_session.execute(
         text("SELECT id FROM vehicles WHERE id = :id"), {"id": veh_id}
     )
-    assert result.fetchone() is None, (
-        "Vehicle should have been cascade-deleted with product"
-    )
+    assert result.fetchone() is None, "Vehicle should have been cascade-deleted with product"
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # JSONB Operator Tests (proves JSONB, not JSON)
@@ -321,9 +316,7 @@ async def test_jsonb_containment_operator_on_attribute_schema(
         {"id": cat_id},
     )
     count = result.scalar()
-    assert count == 1, (
-        "@> containment operator failed — attribute_schema may not be JSONB"
-    )
+    assert count == 1, "@> containment operator failed — attribute_schema may not be JSONB"
 
 
 @pytest.mark.asyncio

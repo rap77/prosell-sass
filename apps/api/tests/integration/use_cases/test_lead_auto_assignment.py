@@ -302,13 +302,14 @@ class TestLeadAutoAssignmentIntegration:
 
         # Count assignments per dealer
         from collections import Counter
+
         counts = Counter(assigned_vendedor_ids)
 
         # ASSERTION: With 3 dealers and 6 leads, each should get 2 leads (round-robin)
         assert len(counts) == 3, "All 3 dealers should have leads assigned"
-        assert all(count == 2 for count in counts.values()), (
-            f"With round-robin, each dealer should have 2 leads. Got: {dict(counts)}"
-        )
+        assert all(
+            count == 2 for count in counts.values()
+        ), f"With round-robin, each dealer should have 2 leads. Got: {dict(counts)}"
 
 
 # Import for create_dealer_users helper

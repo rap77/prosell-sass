@@ -159,7 +159,10 @@ class TestAppointment:
                 scheduled_at=scheduled_at,
             )
 
-        assert "weekend" in str(exc_info.value).lower() or "outside business hours" in str(exc_info.value).lower()
+        assert (
+            "weekend" in str(exc_info.value).lower()
+            or "outside business hours" in str(exc_info.value).lower()
+        )
 
     def test_conflict_detection_same_branch_same_time(self):
         """Test conflict detection - same branch, same time slot."""

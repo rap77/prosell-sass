@@ -126,10 +126,10 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         )
         if status_filter:
             count_stmt = count_stmt.where(LeadModel.status == status_filter)
-        
+
         count_result = await self.session.execute(count_stmt)
         total = count_result.scalar() or 0
-        
+
         # Fetch page
         stmt = (
             select(LeadModel)
@@ -140,10 +140,10 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         )
         if status_filter:
             stmt = stmt.where(LeadModel.status == status_filter)
-            
+
         result = await self.session.execute(stmt)
         models = result.scalars().all()
-        
+
         return [self._to_entity(model) for model in models], total
 
     async def update_status(
@@ -164,7 +164,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         model = result.scalar_one_or_none()
         if not model:
             raise LeadNotFoundException(f"Lead not found: {lead_id}")
-        
+
         # Validate state transition via domain entity
         entity = self._to_entity(model)
         if not entity.can_transition_to(new_status):
@@ -188,7 +188,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             reason=reason,
         )
         self.session.add(audit_log)
-        
+
         await self.session.flush()
         return self._to_entity(model)
 
@@ -207,7 +207,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         result = await self.session.execute(stmt)
         if not result.scalar_one_or_none():
             raise LeadNotFoundException(f"Lead not found: {lead_id}")
-        
+
         # Fetch audit logs
         stmt_audit = (
             select(LeadAuditLogModel)
@@ -217,7 +217,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         )
         result = await self.session.execute(stmt_audit)
         models = result.scalars().all()
-        
+
         return [self._audit_log_to_entity(model) for model in models]  # type: ignore[arg-type]
 
     async def list_by_vendedor(

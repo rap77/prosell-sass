@@ -39,5 +39,3 @@ class TestOrganizationsOpenAPIContract:
         assert "total" in response_model["properties"]
         assert "skip" in response_model["properties"]
         assert "limit" in response_model["properties"]
-
-

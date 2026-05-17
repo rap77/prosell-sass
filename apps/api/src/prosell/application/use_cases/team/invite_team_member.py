@@ -61,12 +61,10 @@ class InviteTeamMemberUseCase:
             raise TeamNotFoundException(str(team_id))
 
         # 2. Check for existing pending invitation
-        existing_invitation = (
-            await self.invitation_repository.get_pending_by_team_and_email(
-                team_id=team_id,
-                email=email,
-                tenant_id=tenant_id,
-            )
+        existing_invitation = await self.invitation_repository.get_pending_by_team_and_email(
+            team_id=team_id,
+            email=email,
+            tenant_id=tenant_id,
         )
 
         if existing_invitation:

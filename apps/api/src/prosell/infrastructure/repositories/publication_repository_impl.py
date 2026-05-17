@@ -75,9 +75,7 @@ class SqlAlchemyPublicationRepository(IPublicationRepository):
             msg = "fb_listing_id cannot be None or empty"
             raise ValueError(msg)
 
-        stmt = select(PublicationModel).where(
-            PublicationModel.fb_listing_id == fb_listing_id
-        )
+        stmt = select(PublicationModel).where(PublicationModel.fb_listing_id == fb_listing_id)
 
         # Filter by tenant_id if provided (for multi-tenant isolation)
         if tenant_id is not None:

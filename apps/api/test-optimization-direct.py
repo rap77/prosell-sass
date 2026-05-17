@@ -2,9 +2,10 @@
 """Script para probar Image Optimization Service directamente."""
 
 import asyncio
-from pathlib import Path
-from PIL import Image
 from io import BytesIO
+from pathlib import Path
+
+from PIL import Image
 
 from prosell.infrastructure.images.image_optimizer import ImageOptimizer
 
@@ -64,7 +65,7 @@ async def test_optimization():
             print(f"  📊 Tamaño optimizado: {optimized_size:,} bytes ({optimized_size // 1024} KB)")
             print(f"  📊 Reducción: {reduction_pct:.1f}%")
             print(f"  📊 Dimensiones: {dimensions}")
-            print(f"  📊 Formato: JPEG")
+            print("  📊 Formato: JPEG")
 
             # Validaciones
             checks = {
@@ -81,9 +82,9 @@ async def test_optimization():
             results.append((img_file.name, passed))
 
             if passed:
-                print(f"  ✨ Optimización exitosa!")
+                print("  ✨ Optimización exitosa!")
             else:
-                print(f"  ⚠️ Optimización con problemas")
+                print("  ⚠️ Optimización con problemas")
 
         except Exception as e:
             print(f"  ❌ Error: {e}")

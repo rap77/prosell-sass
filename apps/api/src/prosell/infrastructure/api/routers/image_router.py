@@ -249,7 +249,9 @@ async def upload_image(
     ext = ".jpg"  # Always JPEG after optimization
     file_path = f"orgs/{current_user.tenant_id}/vehicles/{file_id}{ext}"
 
-    logger.info(f"Uploading optimized image: {file_path} (original size: {len(file_bytes)} bytes, optimized: {len(optimized_bytes)} bytes)")  # noqa: E501
+    logger.info(
+        f"Uploading optimized image: {file_path} (original size: {len(file_bytes)} bytes, optimized: {len(optimized_bytes)} bytes)"
+    )
 
     # Upload to DO Spaces
     try:
@@ -265,4 +267,3 @@ async def upload_image(
         ) from e
 
     return ImageUploadResponse(url=public_url)
-

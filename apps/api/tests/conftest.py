@@ -37,7 +37,7 @@ async def test_database_url() -> str:
     settings = get_settings()
 
     # Use test database or create isolated test database
-    test_db_url: str | None = getattr(settings, 'TEST_DATABASE_URL', None)
+    test_db_url: str | None = getattr(settings, "TEST_DATABASE_URL", None)
     if test_db_url:
         return test_db_url
     else:
@@ -47,11 +47,9 @@ async def test_database_url() -> str:
 
         # Extract base URL components
         import urllib.parse
+
         parsed = urllib.parse.urlparse(base_url)
-        test_url = parsed._replace(
-            database=test_db_name,
-            path=f"/{test_db_name}"
-        ).geturl()
+        test_url = parsed._replace(database=test_db_name, path=f"/{test_db_name}").geturl()
 
         return test_url
 
@@ -68,13 +66,11 @@ async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession
     """
     # Create isolated test database
     import urllib.parse
+
     parsed = urllib.parse.urlparse(test_database_url)
 
     # Connect to postgres database to create test database
-    postgres_url = parsed._replace(
-        database="postgres",
-        path="/postgres"
-    ).geturl()
+    postgres_url = parsed._replace(database="postgres", path="/postgres").geturl()
 
     from sqlalchemy import text as sa_text
 
@@ -189,12 +185,19 @@ def mock_external_services():
             return 1
 
         # Apply mocks
-        m.setattr("redis.Redis", lambda *args, **kwargs: type('MockRedis', (), {
-            'get': mock_redis_get,
-            'set': mock_redis_set,
-            'delete': mock_redis_delete,
-            'flushdb': lambda: mock_redis.clear(),
-        })())
+        m.setattr(
+            "redis.Redis",
+            lambda *args, **kwargs: type(
+                "MockRedis",
+                (),
+                {
+                    "get": mock_redis_get,
+                    "set": mock_redis_set,
+                    "delete": mock_redis_delete,
+                    "flushdb": lambda: mock_redis.clear(),
+                },
+            )(),
+        )
 
         yield mock_redis
 
@@ -216,7 +219,7 @@ def test_user_factory():
                 "first_name": kwargs.get("first_name", f"Test{self.counter}"),
                 "last_name": kwargs.get("last_name", "User"),
                 "role": kwargs.get("role", "admin"),
-                **kwargs
+                **kwargs,
             }
 
     return TestUserFactory()
@@ -237,7 +240,7 @@ def test_organization_factory():
                 "name": name or f"Test Organization {self.counter}",
                 "description": kwargs.get("description", f"Test organization {self.counter}"),
                 "owner_email": kwargs.get("owner_email", f"owner{self.counter}@example.com"),
-                **kwargs
+                **kwargs,
             }
 
     return TestOrganizationFactory()

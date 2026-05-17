@@ -164,9 +164,7 @@ class CSVProductParser:
 
         # Check row limit
         if len(rows) > self.max_rows:
-            raise CSVParseError(
-                f"Too many rows: {len(rows)} exceeds maximum of {self.max_rows}"
-            )
+            raise CSVParseError(f"Too many rows: {len(rows)} exceeds maximum of {self.max_rows}")
 
         # Track seen VINs for duplicate detection
         seen_vins: set[str] = set()
@@ -290,6 +288,7 @@ class CSVProductParser:
         attributes_str = row.get("attributes", "").strip()
         if attributes_str:
             import json
+
             try:
                 attributes = json.loads(attributes_str)
             except json.JSONDecodeError as e:

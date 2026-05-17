@@ -5,11 +5,13 @@ Revises: c3schema_cleanup
 Create Date: 2026-05-07 21:01:00.000000
 
 """
+
 from collections.abc import Sequence
+
 from alembic import op
 
-revision: str = 'b53d13201dcb'
-down_revision: str | Sequence[str] | None = 'c3schema_cleanup'
+revision: str = "b53d13201dcb"
+down_revision: str | Sequence[str] | None = "c3schema_cleanup"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

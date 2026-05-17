@@ -25,6 +25,7 @@ class CreateCategoryRequest(BaseModel):
                 "slug must contain only lowercase letters, numbers, hyphens and underscores"
             )
         return normalized
+
     tenant_id: UUID
     parent_id: UUID | None = None
     description: str | None = None

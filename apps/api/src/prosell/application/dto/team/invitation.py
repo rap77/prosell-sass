@@ -50,4 +50,6 @@ class TeamInvitationResponse(BaseModel):
 class AcceptTeamInvitationRequest(BaseModel):
     """Request DTO for accepting a team invitation."""
 
-    token: str = Field(..., min_length=64, max_length=64, description="Invitation token (SHA256 hash)")  # noqa: E501
+    token: str = Field(
+        ..., min_length=64, max_length=64, description="Invitation token (SHA256 hash)"
+    )

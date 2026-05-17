@@ -71,6 +71,7 @@ def sample_lead():
 def mock_user_repository():
     """Mock user repository."""
     from prosell.domain.entities.user import User, UserStatus
+
     repo = AsyncMock()
     user = User(
         id=uuid4(),

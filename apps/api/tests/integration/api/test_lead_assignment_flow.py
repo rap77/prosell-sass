@@ -245,9 +245,9 @@ class TestLeadAssignmentFlowAPI:
 
         # Assigned dealer must belong to the team we created
         dealer_ids = {str(d.id) for d in dealers}
-        assert data["vendedor_id"] in dealer_ids, (
-            f"Assigned vendedor {data['vendedor_id']} is not in the team's dealers: {dealer_ids}"
-        )
+        assert (
+            data["vendedor_id"] in dealer_ids
+        ), f"Assigned vendedor {data['vendedor_id']} is not in the team's dealers: {dealer_ids}"
 
     async def test_explicit_vendedor_id_is_respected(
         self,
@@ -325,14 +325,14 @@ class TestLeadAssignmentFlowAPI:
         dealer_id_set = {d.id for d in dealers}
 
         # Only our 3 dealers should appear
-        assert set(counts.keys()) == dealer_id_set, (
-            f"Unexpected dealers in assignment. Got {counts.keys()}, expected {dealer_id_set}"
-        )
+        assert (
+            set(counts.keys()) == dealer_id_set
+        ), f"Unexpected dealers in assignment. Got {counts.keys()}, expected {dealer_id_set}"
 
         # Even distribution: 6 leads / 3 dealers = 2 each
-        assert all(count == 2 for count in counts.values()), (
-            f"Round-robin should distribute leads evenly. Got distribution: {dict(counts)}"
-        )
+        assert all(
+            count == 2 for count in counts.values()
+        ), f"Round-robin should distribute leads evenly. Got distribution: {dict(counts)}"
 
     async def test_lead_creation_response_contains_correct_fields(
         self,

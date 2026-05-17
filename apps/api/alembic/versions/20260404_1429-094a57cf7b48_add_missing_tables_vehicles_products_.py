@@ -5,14 +5,15 @@ Revises: 17d9ed732cf9
 Create Date: 2026-04-04 14:29:06.057628
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '094a57cf7b48'
-down_revision: str | Sequence[str] | None = 'b1c2d3e4f5a6'
+revision: str = "094a57cf7b48"
+down_revision: str | Sequence[str] | None = "b1c2d3e4f5a6"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -25,19 +26,42 @@ def upgrade() -> None:
     op.create_table(
         "categories",
         sa.Column("id", sa.UUID(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", sa.UUID(), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True),
+        sa.Column(
+            "tenant_id",
+            sa.UUID(),
+            sa.ForeignKey("organizations.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
         sa.Column("name", sa.String(255), nullable=False, index=True),
         sa.Column("slug", sa.String(255), nullable=False, unique=True),
         sa.Column("level", sa.Integer, server_default="0", nullable=False),
-        sa.Column("parent_id", sa.UUID(), sa.ForeignKey("categories.id", ondelete="SET NULL"), nullable=True, index=True),
+        sa.Column(
+            "parent_id",
+            sa.UUID(),
+            sa.ForeignKey("categories.id", ondelete="SET NULL"),
+            nullable=True,
+            index=True,
+        ),
         sa.Column("icon", sa.String(100), nullable=True),
         sa.Column("description", sa.Text, nullable=True),
         sa.Column("image_url", sa.String(500), nullable=True),
         sa.Column("sort_order", sa.Integer, server_default="0", nullable=False),
         sa.Column("is_active", sa.Boolean, server_default="true", nullable=False, index=True),
         sa.Column("field_config", sa.JSON, server_default="[]", nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), onupdate=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            onupdate=sa.text("now()"),
+            nullable=False,
+        ),
     )
 
     # =========================================================================
@@ -46,9 +70,27 @@ def upgrade() -> None:
     op.create_table(
         "products",
         sa.Column("id", sa.UUID(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", sa.UUID(), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True),
-        sa.Column("organization_id", sa.UUID(), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True),
-        sa.Column("category_id", sa.UUID(), sa.ForeignKey("categories.id", ondelete="RESTRICT"), nullable=False, index=True),
+        sa.Column(
+            "tenant_id",
+            sa.UUID(),
+            sa.ForeignKey("organizations.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column(
+            "organization_id",
+            sa.UUID(),
+            sa.ForeignKey("organizations.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column(
+            "category_id",
+            sa.UUID(),
+            sa.ForeignKey("categories.id", ondelete="RESTRICT"),
+            nullable=False,
+            index=True,
+        ),
         sa.Column("title", sa.String(500), nullable=False),
         sa.Column("slug", sa.String(500), nullable=True, index=True),
         sa.Column("description", sa.Text, nullable=True),
@@ -64,15 +106,30 @@ def upgrade() -> None:
         sa.Column("view_count", sa.Integer, server_default="0", nullable=False),
         sa.Column("favorite_count", sa.Integer, server_default="0", nullable=False),
         sa.Column("submitted_for_approval_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("submitted_by", sa.UUID(), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "submitted_by", sa.UUID(), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+        ),
         sa.Column("approved_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("approved_by", sa.UUID(), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "approved_by", sa.UUID(), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+        ),
         sa.Column("rejection_reason", sa.Text, nullable=True),
         sa.Column("published_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("sold_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("archived_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), onupdate=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            onupdate=sa.text("now()"),
+            nullable=False,
+        ),
     )
 
     # Indexes for products
@@ -90,7 +147,13 @@ def upgrade() -> None:
     op.create_table(
         "product_images",
         sa.Column("id", sa.UUID(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("product_id", sa.UUID(), sa.ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True),
+        sa.Column(
+            "product_id",
+            sa.UUID(),
+            sa.ForeignKey("products.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
         sa.Column("url", sa.String(1000), nullable=False),
         sa.Column("thumbnail_url", sa.String(1000), nullable=True),
         sa.Column("sort_order", sa.Integer, server_default="0", nullable=False),
@@ -101,8 +164,19 @@ def upgrade() -> None:
         sa.Column("file_size_bytes", sa.Integer, nullable=True),
         sa.Column("storage_key", sa.String(1000), nullable=True),
         sa.Column("content_type", sa.String(100), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), onupdate=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            onupdate=sa.text("now()"),
+            nullable=False,
+        ),
     )
 
     # =========================================================================
@@ -111,7 +185,14 @@ def upgrade() -> None:
     op.create_table(
         "vehicles",
         sa.Column("id", sa.UUID(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("product_id", sa.UUID(), sa.ForeignKey("products.id", ondelete="CASCADE"), nullable=False, unique=True, index=True),
+        sa.Column(
+            "product_id",
+            sa.UUID(),
+            sa.ForeignKey("products.id", ondelete="CASCADE"),
+            nullable=False,
+            unique=True,
+            index=True,
+        ),
         sa.Column("vin", sa.String(17), nullable=False, unique=True, index=True),
         sa.Column("year", sa.Integer, nullable=True),
         sa.Column("make", sa.String(100), nullable=True, index=True),
@@ -141,8 +222,19 @@ def upgrade() -> None:
         sa.Column("vin_decoded_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("stock_number", sa.String(100), nullable=True),
         sa.Column("vin_verified", sa.Boolean, server_default="false", nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), onupdate=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            onupdate=sa.text("now()"),
+            nullable=False,
+        ),
     )
 
     # =========================================================================
@@ -151,13 +243,24 @@ def upgrade() -> None:
     op.create_table(
         "sessions",
         sa.Column("id", sa.UUID(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("user_id", sa.UUID(), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True),
+        sa.Column(
+            "user_id",
+            sa.UUID(),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
         sa.Column("token_hash", sa.String(255), nullable=False, unique=True, index=True),
         sa.Column("user_agent", sa.String(500), nullable=True),
         sa.Column("ip_address", sa.String(45), nullable=True),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False, index=True),
         sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
     )
 
     # =========================================================================
@@ -166,15 +269,32 @@ def upgrade() -> None:
     op.create_table(
         "oauth_accounts",
         sa.Column("id", sa.UUID(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("user_id", sa.UUID(), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True),
+        sa.Column(
+            "user_id",
+            sa.UUID(),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
         sa.Column("provider", sa.String(50), nullable=False),
         sa.Column("provider_user_id", sa.String(255), nullable=False),
         sa.Column("provider_email", sa.String(255), nullable=True),
         sa.Column("access_token", sa.String(500), nullable=True),
         sa.Column("refresh_token", sa.String(500), nullable=True),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), onupdate=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            onupdate=sa.text("now()"),
+            nullable=False,
+        ),
     )
 
     # =========================================================================
@@ -183,7 +303,13 @@ def upgrade() -> None:
     op.create_table(
         "facebook_accounts",
         sa.Column("id", sa.UUID(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("seller_user_id", sa.UUID(), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True),
+        sa.Column(
+            "seller_user_id",
+            sa.UUID(),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
         sa.Column("facebook_user_id", sa.String(255), nullable=False, unique=True, index=True),
         sa.Column("facebook_name", sa.String(255), nullable=True),
         sa.Column("access_token_encrypted", sa.Text, nullable=False),
@@ -191,8 +317,16 @@ def upgrade() -> None:
         sa.Column("scopes", sa.String(1000), server_default="", nullable=False),
         sa.Column("status", sa.String(50), server_default="active", nullable=False, index=True),
         sa.Column("refresh_failure_count", sa.Integer, server_default="0", nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), default=sa.text("now()"), onupdate=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), default=sa.text("now()"), nullable=False
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            default=sa.text("now()"),
+            onupdate=sa.text("now()"),
+            nullable=False,
+        ),
     )
 
     # =========================================================================
@@ -201,15 +335,29 @@ def upgrade() -> None:
     op.create_table(
         "facebook_pages",
         sa.Column("id", sa.UUID(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("facebook_account_id", sa.UUID(), sa.ForeignKey("facebook_accounts.id", ondelete="CASCADE"), nullable=False, index=True),
+        sa.Column(
+            "facebook_account_id",
+            sa.UUID(),
+            sa.ForeignKey("facebook_accounts.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
         sa.Column("page_id", sa.String(255), nullable=False, index=True),
         sa.Column("page_name", sa.String(255), nullable=False),
         sa.Column("page_access_token_encrypted", sa.Text, nullable=False),
         sa.Column("category", sa.String(255), nullable=True),
         sa.Column("picture_url", sa.String(500), nullable=True),
         sa.Column("is_default", sa.Boolean, server_default="false", nullable=False, index=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), default=sa.text("now()"), onupdate=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), default=sa.text("now()"), nullable=False
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            default=sa.text("now()"),
+            onupdate=sa.text("now()"),
+            nullable=False,
+        ),
     )
 
 

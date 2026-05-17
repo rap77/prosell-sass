@@ -1,4 +1,5 @@
 """Dependency injection container for FastAPI."""
+
 from __future__ import annotations
 
 __all__ = ["get_async_session"]

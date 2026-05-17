@@ -24,7 +24,8 @@ async def seed_database():
 
     async with engine.begin() as conn:
         # Create organizations table if not exists
-        await conn.execute(text("""
+        await conn.execute(
+            text("""
             CREATE TABLE IF NOT EXISTS organizations (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
@@ -33,7 +34,8 @@ async def seed_database():
                 created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
                 updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
             );
-        """))
+        """)
+        )
 
         # Get or create organization
         result = await conn.execute(
@@ -42,27 +44,30 @@ async def seed_database():
         org_row = result.first()
 
         if not org_row:
-            await conn.execute(text("""
+            await conn.execute(
+                text("""
                 INSERT INTO organizations (name, slug)
                 VALUES ('ProSell Demo', 'prosell-demo')
                 RETURNING id
-            """))
-            result = await conn.execute(text("SELECT id FROM organizations WHERE slug = 'prosell-demo'"))
+            """)
+            )
+            result = await conn.execute(
+                text("SELECT id FROM organizations WHERE slug = 'prosell-demo'")
+            )
             org_row = result.first()
 
         org_id = org_row[0]
         print(f"✅ Organization ID: {org_id}")
 
         # Delete existing admin user if any
-        await conn.execute(
-            text("DELETE FROM users WHERE email = 'admin@prosell-demo.com'")
-        )
+        await conn.execute(text("DELETE FROM users WHERE email = 'admin@prosell-demo.com'"))
 
         # Create admin user
         password = "Admin123!"
-        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
-        await conn.execute(text("""
+        await conn.execute(
+            text("""
             INSERT INTO users (id, email, password_hash, full_name, status, email_verified, tenant_id)
             VALUES (
                 gen_random_uuid(),
@@ -73,7 +78,9 @@ async def seed_database():
                 true,
                 :tenant_id
             )
-        """), {"password_hash": password_hash, "tenant_id": org_id})
+        """),
+            {"password_hash": password_hash, "tenant_id": org_id},
+        )
 
         print("✅ Admin user created: admin@prosell-demo.com / Admin123!")
         print("✅ Organization: ProSell Demo")

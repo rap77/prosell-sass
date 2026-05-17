@@ -15,6 +15,7 @@ from prosell.domain.repositories.user_repository import AbstractUserRepository
 # Get logger instance
 logger = logging.getLogger(__name__)
 
+
 class LoginUserUseCase:
     """Use case for user login."""
 
@@ -87,7 +88,9 @@ class LoginUserUseCase:
             should_lock = user.record_failed_login()
             await self.user_repository.update(user)
             if should_lock:
-                logger.error(f"Login failed: Account locked for user {user.id} after multiple attempts.")  # noqa: E501
+                logger.error(
+                    f"Login failed: Account locked for user {user.id} after multiple attempts."
+                )
                 raise AccountLockedException("Account locked due to too many failed login attempts")
             raise InvalidCredentialsException()
         logger.debug("Password verified successfully.")

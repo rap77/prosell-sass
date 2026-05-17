@@ -13,8 +13,8 @@ Usage:
     python scripts/test_data_cleanup.py --dry-run
 """
 
-import asyncio
 import argparse
+import asyncio
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -28,7 +28,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(project_root))
 
-from sqlalchemy import select, delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.core.config import get_settings
@@ -54,9 +54,9 @@ async def cleanup_test_data(
         Dictionary with counts of deleted records
     """
     from prosell.infrastructure.models.appointment_model import AppointmentModel
+    from prosell.infrastructure.models.category_model import CategoryModel
     from prosell.infrastructure.models.lead_model import LeadModel
     from prosell.infrastructure.models.product_model import ProductModel
-    from prosell.infrastructure.models.category_model import CategoryModel
 
     cutoff_time = datetime.utcnow() - timedelta(hours=hours_old)
     counts = {
@@ -104,10 +104,13 @@ async def cleanup_test_data(
         delete(CategoryModel)
         .where(CategoryModel.created_at < cutoff_time)
         .where(CategoryModel.tenant_id == "00000000-0000-0000-0000-000000000000")
-        .where(~CategoryModel.id.in_(
-            select(ProductModel.category_id)
-            .where(ProductModel.tenant_id == "00000000-0000-0000-0000-000000000000")
-        ))
+        .where(
+            ~CategoryModel.id.in_(
+                select(ProductModel.category_id).where(
+                    ProductModel.tenant_id == "00000000-0000-0000-0000-000000000000"
+                )
+            )
+        )
     )
     counts["categories"] = result.rowcount  # type: ignore[attr-defined]
     if verbose:
@@ -182,7 +185,8 @@ async def main():
         help="Only delete data older than this many hours (default: 1)",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Print detailed information",
     )
@@ -236,6 +240,7 @@ async def main():
         except Exception as e:
             print(f"\n❌ Error during cleanup: {e}")
             import traceback
+
             traceback.print_exc()
             sys.exit(1)
 

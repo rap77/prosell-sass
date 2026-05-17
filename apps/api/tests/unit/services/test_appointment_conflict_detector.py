@@ -80,9 +80,7 @@ class TestTimesOverlap:
 
         assert conflict_detector.times_overlap(start1, duration, start2, end2)
 
-    def test_overlap_complete_containment(
-        self, conflict_detector: AppointmentConflictDetector
-    ):
+    def test_overlap_complete_containment(self, conflict_detector: AppointmentConflictDetector):
         """Test overlap when new appointment completely contains existing."""
         start1 = datetime(2026, 5, 19, 9, 0, tzinfo=UTC)
         duration = timedelta(hours=3)
@@ -102,9 +100,7 @@ class TestTimesOverlap:
 
         assert conflict_detector.times_overlap(start1, duration, start2, end2)
 
-    def test_exact_boundary_no_overlap(
-        self, conflict_detector: AppointmentConflictDetector
-    ):
+    def test_exact_boundary_no_overlap(self, conflict_detector: AppointmentConflictDetector):
         """Test that exact boundaries don't count as overlap."""
         start1 = datetime(2026, 5, 19, 10, 0, tzinfo=UTC)
         duration = timedelta(hours=1)
@@ -135,9 +131,7 @@ class TestDetectConflicts:
             status=AppointmentStatus.SCHEDULED,
         )
 
-        conflicts = conflict_detector.detect_conflicts(
-            new_appointment, [existing_appointment]
-        )
+        conflicts = conflict_detector.detect_conflicts(new_appointment, [existing_appointment])
 
         assert len(conflicts) == 0
 
@@ -158,9 +152,7 @@ class TestDetectConflicts:
             status=AppointmentStatus.SCHEDULED,
         )
 
-        conflicts = conflict_detector.detect_conflicts(
-            new_appointment, [existing_appointment]
-        )
+        conflicts = conflict_detector.detect_conflicts(new_appointment, [existing_appointment])
 
         assert len(conflicts) == 0
 
@@ -184,9 +176,7 @@ class TestDetectConflicts:
             status=AppointmentStatus.SCHEDULED,
         )
 
-        conflicts = conflict_detector.detect_conflicts(
-            new_appointment, [existing_appointment]
-        )
+        conflicts = conflict_detector.detect_conflicts(new_appointment, [existing_appointment])
 
         assert len(conflicts) == 0
 
@@ -210,9 +200,7 @@ class TestDetectConflicts:
             status=AppointmentStatus.SCHEDULED,
         )
 
-        conflicts = conflict_detector.detect_conflicts(
-            new_appointment, [existing_appointment]
-        )
+        conflicts = conflict_detector.detect_conflicts(new_appointment, [existing_appointment])
 
         assert len(conflicts) == 0
 
@@ -233,9 +221,7 @@ class TestDetectConflicts:
             status=AppointmentStatus.SCHEDULED,
         )
 
-        conflicts = conflict_detector.detect_conflicts(
-            new_appointment, [existing_appointment]
-        )
+        conflicts = conflict_detector.detect_conflicts(new_appointment, [existing_appointment])
 
         assert len(conflicts) == 1
         assert conflicts[0].type == ConflictType.DEALER_UNAVAILABLE
@@ -259,9 +245,7 @@ class TestDetectConflicts:
             status=AppointmentStatus.SCHEDULED,
         )
 
-        conflicts = conflict_detector.detect_conflicts(
-            new_appointment, [existing_appointment]
-        )
+        conflicts = conflict_detector.detect_conflicts(new_appointment, [existing_appointment])
 
         assert len(conflicts) == 1
         assert conflicts[0].type == ConflictType.DEALER_UNAVAILABLE
