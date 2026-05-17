@@ -83,6 +83,7 @@ def make_user(
 def make_lead_with_product(lead: Lead):
     """Create a LeadWithProduct named tuple for testing."""
     from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
+
     return LeadWithProduct(lead=lead, product_model=None)
 
 
@@ -165,24 +166,25 @@ class TestUpdateLeadStatusUseCase:
     @pytest.mark.asyncio
     async def test_valid_status_transition_succeeds(self):
         """Should allow valid status transitions."""
-        from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
         lead = make_lead(status=LeadStatus.NEW)
         repo = AsyncMock()
-        repo.get_by_id = AsyncMock(return_value=LeadWithProduct(lead=lead, product_model=None))
-        repo.update_status = AsyncMock(return_value=Lead(
-            id=lead.id,
-            tenant_id=lead.tenant_id,
-            buyer_name=lead.buyer_name,
-            buyer_email=lead.buyer_email,
-            buyer_phone=lead.buyer_phone,
-            product_id=lead.product_id,
-            vendedor_id=lead.vendedor_id,
-            message=lead.message,
-            source=lead.source,
-            status=LeadStatus.CONTACTED,
-            created_at=lead.created_at,
-            updated_at=lead.updated_at,
-        ))
+        repo.get_by_id = AsyncMock(return_value=lead)
+        repo.update_status = AsyncMock(
+            return_value=Lead(
+                id=lead.id,
+                tenant_id=lead.tenant_id,
+                buyer_name=lead.buyer_name,
+                buyer_email=lead.buyer_email,
+                buyer_phone=lead.buyer_phone,
+                product_id=lead.product_id,
+                vendedor_id=lead.vendedor_id,
+                message=lead.message,
+                source=lead.source,
+                status=LeadStatus.CONTACTED,
+                created_at=lead.created_at,
+                updated_at=lead.updated_at,
+            )
+        )
 
         use_case = UpdateLeadStatusUseCase(repo)
         request = UpdateLeadStatusRequest(new_status=LeadStatus.CONTACTED)
@@ -193,10 +195,9 @@ class TestUpdateLeadStatusUseCase:
     @pytest.mark.asyncio
     async def test_invalid_status_transition_raises(self):
         """Should raise exception for invalid transitions."""
-        from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
         lead = make_lead(status=LeadStatus.LOST)
         repo = AsyncMock()
-        repo.get_by_id = AsyncMock(return_value=LeadWithProduct(lead=lead, product_model=None))
+        repo.get_by_id = AsyncMock(return_value=lead)
 
         use_case = UpdateLeadStatusUseCase(repo)
         request = UpdateLeadStatusRequest(new_status=LeadStatus.NEW)
@@ -340,10 +341,8 @@ class TestGetLeadDetailsUseCase:
             )
         ]
 
-        from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
-
         repo = AsyncMock()
-        repo.get_by_id = AsyncMock(return_value=LeadWithProduct(lead=lead, product_model=None))
+        repo.get_by_id = AsyncMock(return_value=lead)
         repo.get_audit_logs = AsyncMock(return_value=audit_logs)
 
         use_case = GetLeadDetailsUseCase(repo)
@@ -357,10 +356,8 @@ class TestGetLeadDetailsUseCase:
         """Should return lead with empty audit log list."""
         lead = make_lead()
 
-        from prosell.infrastructure.repositories.lead_repository_impl import LeadWithProduct
-
         repo = AsyncMock()
-        repo.get_by_id = AsyncMock(return_value=LeadWithProduct(lead=lead, product_model=None))
+        repo.get_by_id = AsyncMock(return_value=lead)
         repo.get_audit_logs = AsyncMock(return_value=[])
 
         use_case = GetLeadDetailsUseCase(repo)

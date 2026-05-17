@@ -1,7 +1,7 @@
 """Tests for PublishVehicleUseCase, UpdateListingUseCase, DeleteListingUseCase."""
 
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -38,58 +38,52 @@ def mock_publication_repo_with_publication(mock_publication_repo):
 
 async def test_publish_vehicle_creates_publication_record(mock_publication_repo_with_publication):
     """PublishVehicleUseCase creates a Publication with status PENDING then dispatches task."""
-    with patch(
-        "prosell.infrastructure.tasks.use_cases.publish_product_task.publish_product_task"
-    ) as mock_task:
-        mock_task.kiq = AsyncMock()
-
-        use_case = PublishVehicleUseCase(  # type: ignore[call-arg]
-            publication_repo=mock_publication_repo_with_publication,
-            seller_user_id=uuid4(),
-        )
-        request = PublishProductRequest(
-            product_id=uuid4(),
-            tenant_id=uuid4(),
-            facebook_page_id=uuid4(),
-            title="2020 Toyota Camry",
-            price_cents=2_500_000,
-            zip_code="90210",
-            image_urls=["https://example.com/img1.jpg"],
-        )
-        result = await use_case.execute(request)
+    mock_dispatcher = AsyncMock()
+    use_case = PublishVehicleUseCase(  # type: ignore[call-arg]
+        publication_repo=mock_publication_repo_with_publication,
+        seller_user_id=uuid4(),
+        task_dispatcher=mock_dispatcher,
+    )
+    request = PublishProductRequest(
+        product_id=uuid4(),
+        tenant_id=uuid4(),
+        facebook_page_id=uuid4(),
+        title="2020 Toyota Camry",
+        price_cents=2_500_000,
+        zip_code="90210",
+        image_urls=["https://example.com/img1.jpg"],
+    )
+    result = await use_case.execute(request)
 
     mock_publication_repo_with_publication.create.assert_called_once()
-    mock_task.kiq.assert_called_once()
+    mock_dispatcher.dispatch_publish.assert_called_once()
     assert result.status == PublicationStatus.PENDING.value
 
 
 async def test_publish_vehicle_dispatches_task_with_publication_id(
     mock_publication_repo_with_publication,
 ):
-    """publish_vehicle_task.kiq() is called with the correct publication_id after create."""
+    """dispatch_publish() is called with the correct publication_id after create."""
     created_pub = mock_publication_repo_with_publication.create.return_value
+    mock_dispatcher = AsyncMock()
 
-    with patch(
-        "prosell.infrastructure.tasks.use_cases.publish_product_task.publish_product_task"
-    ) as mock_task:
-        mock_task.kiq = AsyncMock()
+    use_case = PublishVehicleUseCase(  # type: ignore[call-arg]
+        publication_repo=mock_publication_repo_with_publication,
+        seller_user_id=uuid4(),
+        task_dispatcher=mock_dispatcher,
+    )
+    request = PublishProductRequest(
+        product_id=uuid4(),
+        tenant_id=uuid4(),
+        facebook_page_id=uuid4(),
+        title="Test",
+        price_cents=10_000,
+        zip_code="90210",
+        image_urls=["https://example.com/img1.jpg", "https://example.com/img2.jpg"],
+    )
+    await use_case.execute(request)
 
-        use_case = PublishVehicleUseCase(  # type: ignore[call-arg]
-            publication_repo=mock_publication_repo_with_publication,
-            seller_user_id=uuid4(),
-        )
-        request = PublishProductRequest(
-            product_id=uuid4(),
-            tenant_id=uuid4(),
-            facebook_page_id=uuid4(),
-            title="Test",
-            price_cents=10_000,
-            zip_code="90210",
-            image_urls=["https://example.com/img1.jpg", "https://example.com/img2.jpg"],
-        )
-        await use_case.execute(request)
-
-    mock_task.kiq.assert_called_once_with(publication_id=str(created_pub.id))
+    mock_dispatcher.dispatch_publish.assert_called_once_with(created_pub.id)
 
 
 async def test_update_listing_use_case(mock_publication_repo):
@@ -115,20 +109,19 @@ async def test_update_listing_use_case(mock_publication_repo):
     )
     mock_publication_repo.get_by_id.return_value = mock_pub
 
-    with patch(
-        "prosell.infrastructure.tasks.use_cases.update_listing_task.update_listing_task"
-    ) as mock_task:
-        mock_task.kiq = AsyncMock()
-        use_case = UpdateListingUseCase(publication_repo=mock_publication_repo)  # type: ignore[call-arg]
-        request = UpdateListingRequest(
-            publication_id=pub_id,
-            price_cents=15000,
-            description="Updated description",
-        )
-        result = await use_case.execute(request)
+    mock_dispatcher = AsyncMock()
+    use_case = UpdateListingUseCase(
+        publication_repo=mock_publication_repo, task_dispatcher=mock_dispatcher
+    )  # type: ignore[call-arg]
+    request = UpdateListingRequest(
+        publication_id=pub_id,
+        price_cents=15000,
+        description="Updated description",
+    )
+    result = await use_case.execute(request)
 
     mock_publication_repo.update.assert_called_once()
-    mock_task.kiq.assert_called_once_with(publication_id=str(pub_id))
+    mock_dispatcher.dispatch_update.assert_called_once()
     assert result.status == "published"
 
 
@@ -154,7 +147,9 @@ async def test_update_listing_raises_if_not_published(mock_publication_repo):
     )
     mock_publication_repo.get_by_id.return_value = mock_pub
 
-    use_case = UpdateListingUseCase(publication_repo=mock_publication_repo)  # type: ignore[call-arg]
+    use_case = UpdateListingUseCase(
+        publication_repo=mock_publication_repo, task_dispatcher=AsyncMock()
+    )  # type: ignore[call-arg]
     request = UpdateListingRequest(publication_id=pub_id, price_cents=15000)
 
     with pytest.raises(ValueError, match="Cannot update a non-published listing"):
@@ -181,13 +176,12 @@ async def test_delete_listing_transitions_to_sold(mock_publication_repo):
     )
     mock_publication_repo.get_by_id.return_value = mock_pub
 
-    with patch(
-        "prosell.infrastructure.tasks.use_cases.delete_listing_task.delete_listing_task"
-    ) as mock_task:
-        mock_task.kiq = AsyncMock()
-        use_case = DeleteListingUseCase(publication_repo=mock_publication_repo)  # type: ignore[call-arg]
-        result = await use_case.execute(pub_id)
+    mock_dispatcher = AsyncMock()
+    use_case = DeleteListingUseCase(
+        publication_repo=mock_publication_repo, task_dispatcher=mock_dispatcher
+    )  # type: ignore[call-arg]
+    result = await use_case.execute(pub_id)
 
     mock_publication_repo.update.assert_called_once()
-    mock_task.kiq.assert_called_once_with(publication_id=str(pub_id))
+    mock_dispatcher.dispatch_delete.assert_called_once()
     assert result.status == "sold"

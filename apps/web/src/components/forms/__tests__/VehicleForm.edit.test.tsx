@@ -168,7 +168,7 @@ describe("VehicleForm - edit mode", () => {
   });
 
   test("loads product data in edit mode", async () => {
-    renderWithClient(<VehicleForm mode="edit" vehicleId="prod-1" />);
+    renderWithClient(<VehicleForm mode="edit" productId="prod-1" />);
 
     expect(useProduct).toHaveBeenCalledWith("prod-1", { internal: true });
 
@@ -189,7 +189,7 @@ describe("VehicleForm - edit mode", () => {
   });
 
   test("submits updates with transformed payload", async () => {
-    renderWithClient(<VehicleForm mode="edit" vehicleId="prod-1" />);
+    renderWithClient(<VehicleForm mode="edit" productId="prod-1" />);
 
     const user = userEvent.setup();
 
@@ -225,7 +225,7 @@ describe("VehicleForm - edit mode", () => {
   test("calls onSuccess after a successful update", async () => {
     const onSuccess = vi.fn();
     renderWithClient(
-      <VehicleForm mode="edit" vehicleId="prod-1" onSuccess={onSuccess} />,
+      <VehicleForm mode="edit" productId="prod-1" onSuccess={onSuccess} />,
     );
 
     const user = userEvent.setup();
@@ -237,7 +237,7 @@ describe("VehicleForm - edit mode", () => {
   });
 
   test("shows validation errors in edit mode", async () => {
-    renderWithClient(<VehicleForm mode="edit" vehicleId="prod-1" />);
+    renderWithClient(<VehicleForm mode="edit" productId="prod-1" />);
 
     const user = userEvent.setup();
     const vinInput = screen.getByLabelText(/VIN/i);
@@ -261,7 +261,7 @@ describe("VehicleForm - edit mode", () => {
       error: null,
     } as ReturnType<typeof useProduct>);
 
-    renderWithClient(<VehicleForm mode="edit" vehicleId="prod-1" />);
+    renderWithClient(<VehicleForm mode="edit" productId="prod-1" />);
 
     expect(
       screen.getByRole("button", { name: /update vehicle/i }),

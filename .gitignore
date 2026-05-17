@@ -58,6 +58,10 @@ coverage/
 test-results/
 playwright-report/
 playwright/.cache/
+tests/e2e/test-results.json
+tests/e2e/test-errors.json
+tests/e2e/test-result.json
+mvp-e2e-validation/
 
 # IDE
 .idea/

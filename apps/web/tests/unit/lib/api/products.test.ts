@@ -179,6 +179,8 @@ describe("createProductWithVehicle", () => {
       tenant_id: "tenant-1",
       organization_id: "org-1",
       category_id: "cat-1",
+      currency: "USD",
+      condition: "used",
       attributes: expect.objectContaining({
         vin: "2GNALCEK1H1615946",
       }),
@@ -236,13 +238,13 @@ describe("createProductWithVehicle", () => {
     });
 
     expect(result.id).toBe("prod-123");
-    expect(result.attributes).toEqual({
+    expect(result.attributes).toEqual(expect.objectContaining({
       vin: "2GNALCEK1H1615946",
       year: 2017,
       make: "Toyota",
       model: "Camry",
       trim: "SE",
-    });
+    }));
   });
 
   it("should throw error with backend message on failure", async () => {

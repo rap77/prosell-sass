@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 class LeadWithProduct(NamedTuple):
     """Lead entity with optional product model."""
+
     lead: Lead
     product_model: "ProductModel | None" = None
 
@@ -32,11 +33,13 @@ class ListLeadsUseCase:
     - Product data is included via LEFT JOIN (null if no product)
     """
 
-    _MANAGER_ROLES: ClassVar[frozenset] = frozenset({
-        RoleType.SUPER_ADMIN,
-        RoleType.ADMIN,
-        RoleType.MANAGER,
-    })
+    _MANAGER_ROLES: ClassVar[frozenset] = frozenset(
+        {
+            RoleType.SUPER_ADMIN,
+            RoleType.ADMIN,
+            RoleType.MANAGER,
+        }
+    )
 
     def __init__(self, lead_repository: AbstractLeadRepository) -> None:
         self.lead_repository = lead_repository
@@ -78,8 +81,9 @@ class ListLeadsUseCase:
 
         items = []
         for item in leads:
-            # Handle both Lead and LeadWithProduct
-            if isinstance(item, LeadWithProduct):
+            # Handle both Lead and LeadWithProduct (duck typing — avoids import cycle
+            # between application and infrastructure layers)
+            if hasattr(item, "lead") and hasattr(item, "product_model"):
                 lead = item.lead
                 product_model = item.product_model
             else:

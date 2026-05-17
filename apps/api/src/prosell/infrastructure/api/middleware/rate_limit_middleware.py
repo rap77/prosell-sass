@@ -41,20 +41,21 @@ def is_rate_limit_exempt(request: Request) -> bool:
     if test_api_key and test_api_key == getattr(settings, "test_api_key", ""):
         return True
 
-    # Check exempt IP ranges
-    client_ip = get_identifier(request)
+    # Check exempt IP ranges — use get_remote_address directly to avoid
+    # circular call with get_identifier (which calls is_rate_limit_exempt)
+    client_ip = get_remote_address(request) or ""
     exempt_ips = getattr(settings, "rate_limit_exempt_ips", [])
     exempt_ranges = getattr(settings, "rate_limit_exempt_ranges", [])
 
     # Check exact IP match
-    if client_ip in [f"ip:{ip}" for ip in exempt_ips]:
+    if client_ip in exempt_ips:
         return True
 
     # Check IP ranges (e.g., 192.168.1.0/24)
     for ip_range in exempt_ranges:
         try:
             network_pattern = ip_range.replace(".", "\\.").replace("*", "\\d+")
-            if re.match(f"^{network_pattern}$", client_ip.split(":")[1]):
+            if re.match(f"^{network_pattern}$", client_ip):
                 return True
         except (ValueError, IndexError):
             continue
@@ -110,6 +111,7 @@ def rate_limit(limit_string: str) -> Callable[[Any], Any]:
         async def endpoint(request: Request, ...):
             ...
     """
+
     def decorator(func: Callable[[Any], Any]) -> Callable[[Any], Any]:
         original_signature = inspect.signature(func)
 
@@ -140,13 +142,13 @@ def rate_limit(limit_string: str) -> Callable[[Any], Any]:
         # to interpret *args/**kwargs as query parameters.
         wrapper.__signature__ = original_signature  # type: ignore[attr-defined]
         return wrapper
+
     return decorator
 
 
 # Smart rate limit function that adjusts limits based on environment
 def smart_rate_limit(
-    endpoint_type: str = "api",
-    custom_limit: str | None = None
+    endpoint_type: str = "api", custom_limit: str | None = None
 ) -> Callable[[Any], Any]:
     """
     Smart rate limit decorator that adjusts limits based on environment.
@@ -160,7 +162,7 @@ def smart_rate_limit(
         if endpoint_type == "auth":
             limit = custom_limit or "1000/minute"  # 1000 requests per minute for auth in testing
         elif endpoint_type == "api":
-            limit = custom_limit or "500/minute"   # 500 requests per minute for API in testing
+            limit = custom_limit or "500/minute"  # 500 requests per minute for API in testing
         else:  # public
             limit = custom_limit or "2000/minute"  # 2000 requests per minute for public in testing
     else:

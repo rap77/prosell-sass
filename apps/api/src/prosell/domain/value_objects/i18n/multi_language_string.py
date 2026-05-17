@@ -26,6 +26,12 @@ class MultiLanguageString:
     es: str
     en: str
 
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "es", self.es.strip())
+        object.__setattr__(self, "en", self.en.strip())
+        if not self.es or not self.en:
+            raise ValueError("MultiLanguageString text cannot be empty")
+
     def get_text(self, language: str) -> str:
         """
         Get text in requested language.

@@ -34,8 +34,8 @@ export default defineConfig({
     // Include files
     include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}', 'tests/**/*.{test,spec}.{js,jsx,ts,tsx}'],
 
-    // Exclude files
-    exclude: ['node_modules/', 'dist/', '.next/', 'out/'],
+    // Exclude files — e2e/ uses Playwright, not Vitest
+    exclude: ['node_modules/', 'dist/', '.next/', 'out/', 'tests/e2e/**'],
 
     // Global aliases
     alias: {

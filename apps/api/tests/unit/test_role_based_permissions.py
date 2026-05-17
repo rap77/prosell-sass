@@ -48,9 +48,9 @@ PERMISSION_MATRIX: dict[str, dict[str, bool]] = {
     "admin": {
         # User management
         "user:read": True,
-        "user:create": False,   # USER_CREATE belongs only to super_admin
+        "user:create": False,  # USER_CREATE belongs only to super_admin
         "user:update": True,
-        "user:delete": False,   # USER_DELETE belongs only to super_admin
+        "user:delete": False,  # USER_DELETE belongs only to super_admin
         # Role management
         "role:read": False,
         "role:create": False,
@@ -213,9 +213,9 @@ class TestPermissionMatrixConsistency:
         for role_name in PERMISSION_MATRIX:
             matrix_keys = set(PERMISSION_MATRIX[role_name].keys())
             missing = all_perm_strings - matrix_keys
-            assert not missing, (
-                f"Role '{role_name}' is missing permissions in PERMISSION_MATRIX: {missing}"
-            )
+            assert (
+                not missing
+            ), f"Role '{role_name}' is missing permissions in PERMISSION_MATRIX: {missing}"
 
 
 # =============================================================================
@@ -541,9 +541,7 @@ class TestAllRoleCombinations:
             ("viewer", "settings:read", False),
         ],
     )
-    def test_role_permission_pair(
-        self, role_name: str, perm_str: str, expected: bool
-    ) -> None:
+    def test_role_permission_pair(self, role_name: str, perm_str: str, expected: bool) -> None:
         role_type = ROLE_NAME_TO_TYPE[role_name]
         role_entity = Role.create_system_role(role_type)
         perm = Permission(perm_str)
@@ -570,12 +568,17 @@ class TestAllRoleCombinations:
     def test_viewer_subset_of_every_higher_role(self) -> None:
         """Every viewer permission is present in all higher roles."""
         viewer_perms = _perms_for(RoleType.VIEWER)
-        for role_type in [RoleType.SALES_AGENT, RoleType.MANAGER, RoleType.ADMIN, RoleType.SUPER_ADMIN]:
+        for role_type in [
+            RoleType.SALES_AGENT,
+            RoleType.MANAGER,
+            RoleType.ADMIN,
+            RoleType.SUPER_ADMIN,
+        ]:
             higher_perms = _perms_for(role_type)
             for perm in viewer_perms:
-                assert perm in higher_perms, (
-                    f"Role '{role_type.value}' missing viewer permission '{perm}'"
-                )
+                assert (
+                    perm in higher_perms
+                ), f"Role '{role_type.value}' missing viewer permission '{perm}'"
 
     def test_no_role_above_super_admin(self) -> None:
         """SUPER_ADMIN has all defined permissions."""
@@ -627,7 +630,7 @@ class TestAPILayerAuthorization:
 
         # Instantiate the wrapper inline to verify it doesn't raise
         @RBACMiddleware.require_roles("admin", "super_admin")
-        async def _endpoint(current_user: dict[str, Any]) -> str:
+        async def _endpoint() -> str:
             return "ok"
 
         import asyncio
@@ -676,7 +679,7 @@ class TestAPILayerAuthorization:
         user_dict: dict[str, Any] = {"roles": ["manager"]}
 
         @RBACMiddleware.require_roles("admin", "manager", "super_admin")
-        async def _endpoint(current_user: dict[str, Any]) -> str:
+        async def _endpoint() -> str:
             return "ok"
 
         import asyncio
@@ -693,7 +696,7 @@ class TestAPILayerAuthorization:
         user_dict: dict[str, Any] = {"roles": ["admin"]}
 
         @RBACMiddleware.require_permissions("vehicle:create")
-        async def _endpoint(current_user: dict[str, Any]) -> str:
+        async def _endpoint() -> str:
             return "ok"
 
         import asyncio
@@ -858,9 +861,9 @@ class TestRoleEscalationBlocked:
             Permission.SETTINGS_UPDATE,
         ]
         for perm in admin_only_perms:
-            assert not viewer.has_permission(perm), (
-                f"VIEWER unexpectedly has admin permission: {perm}"
-            )
+            assert not viewer.has_permission(
+                perm
+            ), f"VIEWER unexpectedly has admin permission: {perm}"
 
     def test_vendedor_cannot_delete_vehicles(self) -> None:
         """SALES_AGENT does not have VEHICLE_DELETE — that requires manager+."""
@@ -880,9 +883,9 @@ class TestRoleEscalationBlocked:
             Permission.ORG_DELETE,
         ]
         for perm in escalation_perms:
-            assert not manager.has_permission(perm), (
-                f"MANAGER unexpectedly has super_admin permission: {perm}"
-            )
+            assert not manager.has_permission(
+                perm
+            ), f"MANAGER unexpectedly has super_admin permission: {perm}"
 
     def test_custom_role_defaults_to_viewer_permissions(self) -> None:
         """Custom roles start with VIEWER permissions (minimal) — no escalation."""
@@ -1012,38 +1015,33 @@ class TestPermissionMatrixDocumentation:
         """Permission counts decrease monotonically down the hierarchy."""
         counts = [
             len(_perms_for(RoleType.SUPER_ADMIN)),  # 20
-            len(_perms_for(RoleType.ADMIN)),          # 12
-            len(_perms_for(RoleType.MANAGER)),         # 9
-            len(_perms_for(RoleType.SALES_AGENT)),     # 4
-            len(_perms_for(RoleType.VIEWER)),           # 2
+            len(_perms_for(RoleType.ADMIN)),  # 12
+            len(_perms_for(RoleType.MANAGER)),  # 9
+            len(_perms_for(RoleType.SALES_AGENT)),  # 4
+            len(_perms_for(RoleType.VIEWER)),  # 2
         ]
         for i in range(len(counts) - 1):
-            assert counts[i] > counts[i + 1], (
-                f"Hierarchy broken at index {i}: {counts[i]} <= {counts[i + 1]}"
-            )
+            assert (
+                counts[i] > counts[i + 1]
+            ), f"Hierarchy broken at index {i}: {counts[i]} <= {counts[i + 1]}"
 
     def test_doc_every_role_can_at_least_read_vehicles(self) -> None:
         """All roles have at minimum VEHICLE_READ (the most basic read access)."""
         for role_type in RoleType:
             perms = _perms_for(role_type)
-            assert Permission.VEHICLE_READ in perms, (
-                f"Role {role_type.value} missing VEHICLE_READ"
-            )
+            assert Permission.VEHICLE_READ in perms, f"Role {role_type.value} missing VEHICLE_READ"
 
     def test_doc_analytics_view_available_to_all_roles(self) -> None:
         """ANALYTICS_VIEW is granted to every role (basic business insight)."""
         for role_type in RoleType:
             perms = _perms_for(role_type)
-            assert Permission.ANALYTICS_VIEW in perms, (
-                f"Role {role_type.value} missing ANALYTICS_VIEW"
-            )
+            assert (
+                Permission.ANALYTICS_VIEW in perms
+            ), f"Role {role_type.value} missing ANALYTICS_VIEW"
 
     def test_doc_destructive_ops_require_manager_or_above(self) -> None:
         """VEHICLE_DELETE requires at least MANAGER role."""
-        roles_with_delete = {
-            rt for rt in RoleType
-            if Permission.VEHICLE_DELETE in _perms_for(rt)
-        }
+        roles_with_delete = {rt for rt in RoleType if Permission.VEHICLE_DELETE in _perms_for(rt)}
         roles_without_delete = set(RoleType) - roles_with_delete
         assert RoleType.SALES_AGENT in roles_without_delete
         assert RoleType.VIEWER in roles_without_delete

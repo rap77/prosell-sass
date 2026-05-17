@@ -32,7 +32,7 @@ def test_environment_detection():
     print("Testing environment detection...")
 
     # Test with current settings
-    settings = get_settings()  # noqa: F841
+    settings = get_settings()
     print(f"Current environment: {settings.environment}")
     print(f"Is test environment: {is_test_environment()}")
 
@@ -77,7 +77,7 @@ def test_identifier_generation():
     """Test identifier generation for different request types."""
     print("\nTesting identifier generation...")
 
-    settings = get_settings()  # noqa: F841
+    settings = get_settings()
 
     # Test with test environment
     original_env = settings.environment
@@ -102,7 +102,7 @@ def test_smart_rate_limit():
     """Test smart rate limit configuration."""
     print("\nTesting smart rate limit configuration...")
 
-    settings = get_settings()  # noqa: F841
+    settings = get_settings()
     original_env = settings.environment
 
     # Test with test environment
@@ -130,7 +130,7 @@ def test_rate_limits_in_different_environments():
     """Test rate limits in different environments."""
     print("\nTesting rate limits in different environments...")
 
-    settings = get_settings()  # noqa: F841
+    settings = get_settings()
     original_env = settings.environment
 
     # Test production-like environment
@@ -168,6 +168,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Test failed with error: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 

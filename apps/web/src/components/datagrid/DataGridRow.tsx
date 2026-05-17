@@ -19,4 +19,6 @@ export function DataGridRow<T>({ row }: DataGridRowProps<T>) {
   );
 }
 
+DataGridRow.displayName = "DataGridRow";
+
 export const MemoizedDataGridRow = DataGridRow;

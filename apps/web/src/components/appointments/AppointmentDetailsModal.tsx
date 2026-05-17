@@ -111,6 +111,10 @@ export function AppointmentDetailsModal({
           <div className="flex items-center justify-center py-8">
             <div className="text-sm text-muted-foreground">Loading lead details...</div>
           </div>
+        ) : !lead ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-muted-foreground">Lead details not found</div>
+          </div>
         ) : (
           <div className="space-y-4">
             {/* Status badge */}

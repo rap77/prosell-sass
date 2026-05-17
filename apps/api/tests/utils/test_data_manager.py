@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class TestDataCleaner:
+    __test__ = False  # Not a test class — utility for test setup/teardown
     """
     Automatic test data cleaner with transaction rollback capabilities.
 
@@ -74,15 +75,15 @@ class TestDataCleaner:
             try:
                 # Check if table exists
                 result = await self.session.execute(
-                    text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = :table_name)"),
-                    {"table_name": table_name}
+                    text(
+                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = :table_name)"
+                    ),
+                    {"table_name": table_name},
                 )
                 table_exists = result.scalar()
 
                 if table_exists:
-                    await self.session.execute(
-                        text(f"DELETE FROM {table_name}")
-                    )
+                    await self.session.execute(text(f"DELETE FROM {table_name}"))
                     logger.debug(f"Cleaned table: {table_name}")
 
             except Exception as e:
@@ -95,7 +96,7 @@ class TestDataCleaner:
 
         await self.session.execute(
             text("DELETE FROM user_sessions WHERE created_at < :cutoff_time"),
-            {"cutoff_time": cutoff_time}
+            {"cutoff_time": cutoff_time},
         )
 
         # Clean old rate limit buckets (older than 1 day)
@@ -103,7 +104,7 @@ class TestDataCleaner:
 
         await self.session.execute(
             text("DELETE FROM rate_limit_buckets WHERE created_at < :cutoff_time"),
-            {"cutoff_time": cutoff_time}
+            {"cutoff_time": cutoff_time},
         )
 
         logger.debug("Cleaned orphaned records")
@@ -136,6 +137,7 @@ class TestDataCleaner:
 
 
 class TestDataSeeder:
+    __test__ = False  # Not a test class — utility for test setup/teardown
     """
     Utility for seeding test data with proper cleanup.
 
@@ -152,7 +154,7 @@ class TestDataSeeder:
             "name": f"Test Organization {datetime.utcnow().timestamp()}",
             "description": "Test organization for E2E testing",
             "owner_email": f"test-owner-{datetime.utcnow().timestamp()}@example.com",
-            **kwargs
+            **kwargs,
         }
 
         # Insert organization (assuming this is the actual database model)
@@ -163,7 +165,7 @@ class TestDataSeeder:
                 VALUES (:name, :description, :owner_email, NOW(), NOW())
                 RETURNING id
             """),
-            org_data
+            org_data,
         )
 
         org_id = result.scalar()
@@ -184,7 +186,7 @@ class TestDataSeeder:
             "last_name": "User",
             "organization_id": organization_id,
             "role": "admin",
-            **kwargs
+            **kwargs,
         }
 
         result = await self.session.execute(
@@ -193,7 +195,7 @@ class TestDataSeeder:
                 VALUES (:email, :password_hash, :first_name, :last_name, :organization_id, :role, NOW(), NOW())
                 RETURNING id
             """),
-            user_data
+            user_data,
         )
 
         user_id = result.scalar()
@@ -211,7 +213,7 @@ class TestDataSeeder:
             "name": f"Test Category {datetime.utcnow().timestamp()}",
             "organization_id": organization_id,
             "description": "Test category for E2E testing",
-            **kwargs
+            **kwargs,
         }
 
         result = await self.session.execute(
@@ -220,7 +222,7 @@ class TestDataSeeder:
                 VALUES (:name, :organization_id, :description, NOW(), NOW())
                 RETURNING id
             """),
-            category_data
+            category_data,
         )
 
         category_id = result.scalar()
@@ -268,6 +270,7 @@ async def test_transaction(session: AsyncSession) -> AsyncGenerator[AsyncSession
 
 
 class TestDatabaseManager:
+    __test__ = False  # Not a test class — utility for test setup/teardown
     """
     High-level test database manager.
 
@@ -291,10 +294,7 @@ class TestDatabaseManager:
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         test_db_name = f"prosell_test_{timestamp}"
 
-        return parsed._replace(
-            database=test_db_name,
-            path=f"/{test_db_name}"
-        ).geturl()
+        return parsed._replace(database=test_db_name, path=f"/{test_db_name}").geturl()
 
     async def setup_test_database(self) -> str:
         """Set up a test database with migrations."""
@@ -302,10 +302,7 @@ class TestDatabaseManager:
 
         # Extract base URL for database creation
         parsed = urllib.parse.urlparse(self.test_database_url)
-        postgres_url = parsed._replace(
-            database="postgres",
-            path="/postgres"
-        ).geturl()
+        postgres_url = parsed._replace(database="postgres", path="/postgres").geturl()
 
         # Create test database
         engine = create_engine(postgres_url, poolclass=NullPool)
@@ -327,10 +324,7 @@ class TestDatabaseManager:
         logger.info(f"🧹 Cleaning up test database: {self.test_database_url}")
 
         parsed = urllib.parse.urlparse(self.test_database_url)
-        postgres_url = parsed._replace(
-            database="postgres",
-            path="/postgres"
-        ).geturl()
+        postgres_url = parsed._replace(database="postgres", path="/postgres").geturl()
 
         engine = create_engine(postgres_url, poolclass=NullPool)
         with engine.connect() as conn:
@@ -350,6 +344,7 @@ async def get_test_database_manager() -> TestDatabaseManager:
 
     if _test_db_manager is None:
         from prosell.core.config import get_settings
+
         settings = get_settings()
         _test_db_manager = TestDatabaseManager(settings.database_url)
 

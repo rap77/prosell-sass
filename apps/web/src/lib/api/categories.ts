@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient, useMutation, type UseQueryResult } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import type { Category, CategoryOption, CategoryListResponse } from "@/types/category";
 
@@ -79,13 +80,16 @@ export function useCategories(): UseQueryResult<Category[], Error> {
 export function useCategoryOptions() {
   const categoriesQuery = useCategories();
 
-  return {
-    ...categoriesQuery,
-    data: categoriesQuery.data?.map((category) => ({
-      value: category.id,
-      label: category.name,
-    })),
-  };
+  const data = useMemo(
+    () =>
+      categoriesQuery.data?.map((category) => ({
+        value: category.id,
+        label: category.name,
+      })),
+    [categoriesQuery.data],
+  );
+
+  return { ...categoriesQuery, data };
 }
 
 /**
