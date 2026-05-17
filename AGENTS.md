@@ -112,7 +112,10 @@ Use this wrapper instead of assuming Claude-native `/mm:*` runtime support.
 - Internally, the worker must execute each pending subtask sequentially with checkpoints
 - After each subtask checkpoint, update progress artifacts and time tracking
 - Use completion sound at the end of the parent block, not every micro-step
-- Finish the block with `review` → `verify-criteria` → `safe-commit`
+- Finish the block with `review` → `verify-criteria` → final Codex review → post-review fixes → update source-of-truth docs → revalidation → `safe-commit`
+- If the final review raises confirmed findings, fix them before attempting the commit
+- If GGA fails during `safe-commit`, fix the issues, revalidate, and retry until clean
+- Before closing the block, synchronize the canonical project docs (`tasks/todo.md`, `tasks/plan.md`, and any equivalent source-of-truth artifact affected by the work)
 
 ### Workflow-doc commands
 

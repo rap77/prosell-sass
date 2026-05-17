@@ -122,6 +122,9 @@ apps/web/next-env.d.ts
 # AI Tools
 .codex/
 
+# MasterMind runtime state (local, ephemeral)
+.planning/.mm-flow/runtime-state.json
+
 # Application Logs
 apps/api/logs/
 apps/web/logs/

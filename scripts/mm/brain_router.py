@@ -8,7 +8,6 @@ import re
 import sys
 from collections import Counter
 from dataclasses import asdict, dataclass
-from pathlib import Path
 
 BRAIN_CATALOG: dict[int, dict[str, str]] = {
     1: {
@@ -304,9 +303,18 @@ def infer_route(task_id: str, task_title: str, task_text: str) -> BrainRoutingRe
         if scores[category] > 0:
             optional_cascade_ids.append(brain_id)
 
-    primary_brains = [_brain(brain_id, _reason(BRAIN_TO_CATEGORY[brain_id], task_text)) for brain_id in primary_ids]
-    support_brains = [_brain(brain_id, _reason(BRAIN_TO_CATEGORY[brain_id], task_text)) for brain_id in support_ids]
-    optional_cascades = [_brain(brain_id, _reason(BRAIN_TO_CATEGORY[brain_id], task_text)) for brain_id in optional_cascade_ids]
+    primary_brains = [
+        _brain(brain_id, _reason(BRAIN_TO_CATEGORY[brain_id], task_text))
+        for brain_id in primary_ids
+    ]
+    support_brains = [
+        _brain(brain_id, _reason(BRAIN_TO_CATEGORY[brain_id], task_text))
+        for brain_id in support_ids
+    ]
+    optional_cascades = [
+        _brain(brain_id, _reason(BRAIN_TO_CATEGORY[brain_id], task_text))
+        for brain_id in optional_cascade_ids
+    ]
 
     if route_kind == "full_stack_feature":
         worker_strategy = (
@@ -350,8 +358,10 @@ def infer_route(task_id: str, task_title: str, task_text: str) -> BrainRoutingRe
             " failures requiring user attention"
         ),
         safe_commit_policy=(
-            "Run review → verify-criteria → safe-commit once the block is complete; if GGA or checks fail, fix and"
-            " retry until clean, never use git commit --no-verify"
+            "Run review → verify-criteria → final Codex review → fix confirmed findings → revalidate →"
+            " safe-commit once the block is complete; before revalidation, sync the source-of-truth artifacts"
+            " (`tasks/todo.md`, `tasks/plan.md`, and equivalent canonical docs if affected`). If GGA or checks"
+            " fail, fix and retry until clean, never use git commit --no-verify"
         ),
     )
 

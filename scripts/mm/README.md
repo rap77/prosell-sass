@@ -87,8 +87,44 @@ Dentro del worker:
    - tracking de tiempo (`checkpoint-time-tracker.py` / `update-todo-times.py`)
 4. Al terminar el bloque padre:
    - suena la notificación de finalización
-   - corre `review → verify-criteria → safe-commit`
+   - corre `review → verify-criteria`
+   - corre un **review final de Codex**
+   - corrige hallazgos confirmados del review
+   - revalida (`tests/typecheck/lint`) si hubo cambios
+   - recién entonces corre `safe-commit`
    - si GGA falla, se corrige y se reintenta hasta quedar limpio
+
+## Cierre obligatorio del bloque
+
+Antes de considerar un bloque como “cerrado”, la secuencia obligatoria es:
+
+1. implementación completa del bloque
+2. tests + typecheck + lint
+3. `review`
+4. `verify-criteria`
+5. **review final de Codex**
+6. corrección de findings confirmados
+7. **actualización de la fuente de verdad** (`tasks/todo.md`, criterios/estado en `tasks/plan.md` y artefacto canónico equivalente si aplica)
+8. revalidación
+9. `safe-commit`
+
+Si el review o GGA encuentra problemas:
+
+- se corrigen
+- se revalidan
+- se reintenta el paso correspondiente
+
+No se salta directamente de implementación a commit.
+
+## Sincronización de la fuente de verdad
+
+Al final del bloque, antes del commit, Codex debe dejar sincronizados los artefactos canónicos del proyecto:
+
+- `tasks/todo.md` — estado real de tareas/subtasks
+- `tasks/plan.md` — criterios de aceptación, notas de cierre o estado canónico si el bloque lo requiere
+- documento canónico equivalente del framework si el bloque cambió planificación/roadmap/fase
+
+La regla es: **si el estado real cambió, la fuente de verdad también debe cambiar antes del cierre**.
 
 ## Brain routing
 
