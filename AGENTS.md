@@ -98,6 +98,7 @@ Use this wrapper instead of assuming Claude-native `/mm:*` runtime support.
 - `init`
 - `discover`
 - `complete-task`
+- `closeout`
 - `review`
 - `safe-commit`
 - `verify-criteria`
@@ -110,12 +111,22 @@ Use this wrapper instead of assuming Claude-native `/mm:*` runtime support.
 
 - User-facing execution is by parent block/task (for example `M3`)
 - Internally, the worker must execute each pending subtask sequentially with checkpoints
-- After each subtask checkpoint, update progress artifacts and time tracking
+- After each subtask checkpoint, update progress artifacts and run `bash scripts/mm/mm.sh closeout <TASK_ID>` for time tracking + sound
 - Use completion sound at the end of the parent block, not every micro-step
 - Finish the block with `review` → `verify-criteria` → final Codex review → post-review fixes → update source-of-truth docs → revalidation → `safe-commit`
 - If the final review raises confirmed findings, fix them before attempting the commit
 - If GGA fails during `safe-commit`, fix the issues, revalidate, and retry until clean
 - Before closing the block, synchronize the canonical project docs (`tasks/todo.md`, `tasks/plan.md`, and any equivalent source-of-truth artifact affected by the work)
+
+### Sound notification integration
+
+In Codex, notifications are not implicit. The canonical way to preserve Claude's sound behavior is:
+
+```bash
+bash scripts/mm/mm.sh closeout <TASK_ID>
+```
+
+That command runs the original `update-todo-times.py` flow and ensures `notify-complete.py` fires when the parent block reaches completion.
 
 ### Workflow-doc commands
 

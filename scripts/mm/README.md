@@ -15,6 +15,7 @@ bash scripts/mm/mm.sh <command> [args...]
 - `init`
 - `discover`
 - `complete-task`
+- `closeout <TASK_ID>`
 - `review`
 - `safe-commit`
 - `verify-criteria`
@@ -42,6 +43,9 @@ bash scripts/mm/mm.sh brain-plan M3
 
 # Obtener payload estructurado para ejecutar una task desde Codex
 bash scripts/mm/mm.sh complete-task M3 --bundle-json
+
+# Sincronizar tracking + sonido de cierre del bloque
+bash scripts/mm/mm.sh closeout M3
 
 # Ver el markdown fuente de un comando orientado a workflow
 bash scripts/mm/mm.sh help plan-phase
@@ -84,9 +88,9 @@ Dentro del worker:
 3. Cada checkpoint actualiza:
    - `.planning/task-progress.json`
    - `tasks/todo.md`
-   - tracking de tiempo (`checkpoint-time-tracker.py` / `update-todo-times.py`)
+   - tracking de tiempo y notificación sonora vía `bash scripts/mm/mm.sh closeout <TASK_ID>`
 4. Al terminar el bloque padre:
-   - suena la notificación de finalización
+   - `closeout <TASK_ID>` asegura tracking + sonido de finalización
    - corre `review → verify-criteria`
    - corre un **review final de Codex**
    - corrige hallazgos confirmados del review
@@ -125,6 +129,22 @@ Al final del bloque, antes del commit, Codex debe dejar sincronizados los artefa
 - documento canónico equivalente del framework si el bloque cambió planificación/roadmap/fase
 
 La regla es: **si el estado real cambió, la fuente de verdad también debe cambiar antes del cierre**.
+
+## Integración real de sonido
+
+El sonido no debe quedar implícito en prompts o en parches manuales. En Codex, el punto de integración canónico es:
+
+```bash
+bash scripts/mm/mm.sh closeout <TASK_ID>
+```
+
+Ese helper:
+
+1. ejecuta `.claude/commands/mm/update-todo-times.py`
+2. sincroniza `tasks/todo.md` con `.planning/task-progress.json`
+3. y, si el bloque está completo, dispara `.claude/commands/mm/notify-complete.py`
+
+Así Codex obtiene el mismo comportamiento que antes estaba acoplado al runtime de Claude.
 
 ## Brain routing
 

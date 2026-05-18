@@ -18,6 +18,7 @@ Handler-backed commands:
   init [flags...]
   discover [idea|flags...]
   complete-task <TASK_ID> [--continue|--payload-only|--bundle-json]
+  closeout <TASK_ID>
   review [--staged|--branch <name>|--files ...|--last-commit]
   safe-commit [flags...]
   verify-criteria <TASK_ID> [--verify|--all|--criteria N,N]
@@ -46,6 +47,7 @@ Automated via handler/wrapper:
   init
   discover
   complete-task
+  closeout
   review
   safe-commit
   verify-criteria
@@ -214,6 +216,13 @@ case "$COMMAND" in
     ;;
   complete-task)
     bash ".claude/commands/codex/mm-task.sh" "$@"
+    ;;
+  closeout)
+    if [[ $# -lt 1 ]]; then
+      echo "ERROR: closeout requires a task id"
+      exit 1
+    fi
+    python3 "scripts/mm/block_closeout.py" "$@"
     ;;
   review)
     run_handler ".claude/commands/mm/review-handler.py" "$@"
