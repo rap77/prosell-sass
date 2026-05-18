@@ -8,6 +8,8 @@
  * POST   /api/v1/publisher/{publication_id}/unlock → 200 PublicationResponse
  */
 
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { z } from "zod";
 import { API_BASE_URL } from "./authApi";
 
 // ============================================
@@ -44,6 +46,68 @@ export interface PublicationResponse {
   error_category?: ErrorCategory;
   blocked_until_confirmed: boolean;
 }
+
+export interface FacebookAccountResponse {
+  id: string;
+}
+
+export interface FacebookPageOption {
+  id: string;
+  name: string;
+  is_default: boolean;
+}
+
+interface ListFacebookAccountsResponse {
+  accounts: FacebookAccountResponse[];
+}
+
+interface ListFacebookPagesResponse {
+  pages: Array<{
+    id: string;
+    page_name: string;
+    is_default: boolean;
+  }>;
+}
+
+const publicationStatusSchema = z.enum([
+  "pending",
+  "publishing",
+  "published",
+  "failed",
+  "expired",
+  "sold",
+]);
+
+const errorCategorySchema = z.enum(["transient", "blocking"]);
+
+const publicationResponseSchema = z.object({
+  id: z.string(),
+  product_id: z.string(),
+  status: publicationStatusSchema,
+  strategy_used: z.string().optional(),
+  fb_listing_id: z.string().optional(),
+  error_message: z.string().optional(),
+  error_category: errorCategorySchema.optional(),
+  blocked_until_confirmed: z.boolean().default(false),
+});
+
+const facebookAccountsResponseSchema = z.object({
+  accounts: z.array(
+    z.object({
+      id: z.string(),
+    }),
+  ),
+});
+
+const facebookPagesResponseSchema = z.object({
+  pages: z.array(
+    z.object({
+      id: z.string(),
+      page_name: z.string(),
+      is_default: z.boolean(),
+    }),
+  ),
+});
 
 // ============================================
 // REQUEST TYPES
@@ -95,25 +159,46 @@ export class PublisherApiError extends Error {
   }
 }
 
-async function handlePublisherResponse<T>(response: Response): Promise<T> {
+function isErrorBody(value: unknown): value is { detail?: unknown; message?: unknown } {
+  return typeof value === "object" && value !== null;
+}
+
+async function handlePublisherResponse<T>(
+  response: Response,
+  parser: (data: unknown) => T,
+): Promise<T> {
   if (!response.ok) {
-    const errorData = await response
+    const errorData: unknown = await response
       .json()
       .catch(() => ({ detail: "Error desconocido" }));
 
     let message: string;
-    if (Array.isArray(errorData.detail)) {
-      message = errorData.detail.map((e: { msg: string }) => e.msg).join(", ");
+    if (!isErrorBody(errorData)) {
+      message = "Error en la petición";
+    } else if (Array.isArray(errorData.detail)) {
+      message = errorData.detail
+        .map((entry) =>
+          typeof entry === "object" &&
+          entry !== null &&
+          "msg" in entry &&
+          typeof entry.msg === "string"
+            ? entry.msg
+            : "Error de validación",
+        )
+        .join(", ");
     } else if (typeof errorData.detail === "string") {
       message = errorData.detail;
+    } else if (typeof errorData.message === "string") {
+      message = errorData.message;
     } else {
-      message = errorData.message || "Error en la petición";
+      message = "Error en la petición";
     }
 
     throw new PublisherApiError(message, response.status);
   }
 
-  return response.json() as Promise<T>;
+  const data: unknown = await response.json();
+  return parser(data);
 }
 
 // ============================================
@@ -137,7 +222,7 @@ export async function publishVehicle(
       body: JSON.stringify(data),
     },
   );
-  return handlePublisherResponse<PublicationResponse>(res);
+  return handlePublisherResponse(res, (data) => publicationResponseSchema.parse(data));
 }
 
 /**
@@ -157,7 +242,7 @@ export async function updateListing(
       body: JSON.stringify(data),
     },
   );
-  return handlePublisherResponse<PublicationResponse>(res);
+  return handlePublisherResponse(res, (data) => publicationResponseSchema.parse(data));
 }
 
 /**
@@ -175,7 +260,7 @@ export async function deleteListing(
       credentials: "include",
     },
   );
-  return handlePublisherResponse<PublicationResponse>(res);
+  return handlePublisherResponse(res, (data) => publicationResponseSchema.parse(data));
 }
 
 /**
@@ -193,5 +278,60 @@ export async function unlockCategoryB(
       credentials: "include",
     },
   );
-  return handlePublisherResponse<PublicationResponse>(res);
+  return handlePublisherResponse(res, (data) => publicationResponseSchema.parse(data));
+}
+
+export async function listFacebookAccounts(): Promise<FacebookAccountResponse[]> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/facebook/accounts`, {
+    credentials: "include",
+  });
+
+  const data = await handlePublisherResponse(
+    res,
+    (value) => facebookAccountsResponseSchema.parse(value),
+  );
+  return data.accounts;
+}
+
+export async function listFacebookPages(
+  accountId: string,
+): Promise<FacebookPageOption[]> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/v1/facebook/accounts/${accountId}/pages`,
+    {
+      credentials: "include",
+    },
+  );
+
+  const data = await handlePublisherResponse(
+    res,
+    (value) => facebookPagesResponseSchema.parse(value),
+  );
+  return data.pages.map((page) => ({
+    id: page.id,
+    name: page.page_name,
+    is_default: page.is_default,
+  }));
+}
+
+export function useFacebookPages(): UseQueryResult<FacebookPageOption[], Error> {
+  return useQuery({
+    queryKey: ["facebook-pages"],
+    queryFn: async () => {
+      const accounts = await listFacebookAccounts();
+
+      if (accounts.length === 0) {
+        return [];
+      }
+
+      const pagesByAccount = await Promise.all(
+        accounts.map((account) => listFacebookPages(account.id)),
+      );
+
+      return pagesByAccount
+        .flat()
+        .toSorted((left, right) => Number(right.is_default) - Number(left.is_default));
+    },
+    staleTime: 60 * 1000,
+  });
 }

@@ -1,69 +1,69 @@
 {
-  "task_id": "M2",
-  "session_id": "sess-20260517-161700",
-  "started_at": "2026-05-17T16:17:00-04:00",
+  "task_id": "M1",
+  "session_id": "sess-20260517-201000",
+  "started_at": "2026-05-17T20:10:00-04:00",
   "phase": 19,
   "subtasks": {
-    "M2.01": {
-      "description": "Crear `app/(seller)/catalog/[id]/page.tsx` (Server Component, fetch del producto)",
+    "M1.01": {
+      "description": "Crear `app/(seller)/publications/page.tsx` con lista de publicaciones del tenant",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T16:17:00-04:00",
-      "completed_at": "2026-05-17T16:24:00-04:00",
-      "duration_seconds": 420
+      "started_at": "2026-05-17T20:10:00-04:00",
+      "completed_at": "2026-05-17T20:24:00-04:00",
+      "duration_seconds": 840
     },
-    "M2.02": {
-      "description": "Renderizar datos del producto (título, precio, atributos del vehículo)",
+    "M1.02": {
+      "description": "Agregar botón \"Nueva publicación\" que abre `PublishModal`",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T16:24:00-04:00",
-      "completed_at": "2026-05-17T16:33:00-04:00",
+      "started_at": "2026-05-17T20:24:00-04:00",
+      "completed_at": "2026-05-17T20:33:00-04:00",
       "duration_seconds": 540
     },
-    "M2.03": {
-      "description": "Integrar `ProductImageGallery` para mostrar imágenes",
+    "M1.03": {
+      "description": "Verificar/extender `publisherApi.ts` con hook de lista si falta",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T16:33:00-04:00",
-      "completed_at": "2026-05-17T16:39:00-04:00",
-      "duration_seconds": 360
-    },
-    "M2.04": {
-      "description": "Agregar botón \"Editar\" que navega a `/catalog/[id]/edit`",
-      "status": "completed",
-      "retries": 0,
-      "started_at": "2026-05-17T16:39:00-04:00",
-      "completed_at": "2026-05-17T16:42:00-04:00",
-      "duration_seconds": 180
-    },
-    "M2.05": {
-      "description": "Modificar `DataGrid.tsx` para que click en row navegue a `/catalog/[id]`",
-      "status": "completed",
-      "retries": 0,
-      "started_at": "2026-05-17T16:42:00-04:00",
-      "completed_at": "2026-05-17T16:52:00-04:00",
-      "duration_seconds": 600
-    },
-    "M2.06": {
-      "description": "Implementar loading state (skeleton) y error state con mensaje",
-      "status": "completed",
-      "retries": 0,
-      "started_at": "2026-05-17T16:52:00-04:00",
-      "completed_at": "2026-05-17T17:00:00-04:00",
+      "started_at": "2026-05-17T20:33:00-04:00",
+      "completed_at": "2026-05-17T20:41:00-04:00",
       "duration_seconds": 480
     },
-    "M2.07": {
+    "M1.04": {
+      "description": "Mostrar estados de la publicación (pending/published/failed) con badges",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-17T20:41:00-04:00",
+      "completed_at": "2026-05-17T20:49:00-04:00",
+      "duration_seconds": 480
+    },
+    "M1.05": {
+      "description": "Implementar estado vacío con CTA cuando no hay publicaciones",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-17T20:49:00-04:00",
+      "completed_at": "2026-05-17T20:55:00-04:00",
+      "duration_seconds": 360
+    },
+    "M1.06": {
+      "description": "Verificar que el link \"Publicaciones\" del sidebar navega correctamente",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-17T20:55:00-04:00",
+      "completed_at": "2026-05-17T20:58:00-04:00",
+      "duration_seconds": 180
+    },
+    "M1.07": {
       "description": "Verificar TypeScript strict sin errores",
       "status": "completed",
-      "retries": 1,
-      "started_at": "2026-05-17T17:00:00-04:00",
-      "completed_at": "2026-05-17T17:20:00-04:00",
-      "duration_seconds": 1200
+      "retries": 0,
+      "started_at": "2026-05-17T20:58:00-04:00",
+      "completed_at": "2026-05-17T21:05:00-04:00",
+      "duration_seconds": 420
     }
   },
   "last_checkpoint": {
-    "at": "2026-05-17T17:20:00-04:00",
-    "summary": "Completed M2. Added the catalog detail route, wired row navigation from the catalog grid, validated the DataGrid interaction tests, and confirmed frontend typecheck passes."
+    "at": "2026-05-17T21:05:00-04:00",
+    "summary": "Completed M1. Added the seller publications route, wired the publish modal with catalog vehicle selection, added Facebook pages query hooks, and validated frontend typecheck."
   },
   "context_budget_exit": null
 }

@@ -41,14 +41,16 @@
   - [x] M2.06: Implementar loading state (skeleton) y error state con mensaje
   - [x] M2.07: Verificar TypeScript strict sin errores
 
-- [ ] M1: Publicaciones — ruta accesible
-  - [ ] M1.01: Crear `app/(seller)/publications/page.tsx` con lista de publicaciones del tenant
-  - [ ] M1.02: Agregar botón "Nueva publicación" que abre `PublishModal`
-  - [ ] M1.03: Verificar/extender `publisherApi.ts` con hook de lista si falta
-  - [ ] M1.04: Mostrar estados de publicación (pending/published/failed) con badges
-  - [ ] M1.05: Implementar estado vacío con CTA cuando no hay publicaciones
-  - [ ] M1.06: Verificar que el link "Publicaciones" del sidebar navega correctamente
-  - [ ] M1.07: Verificar TypeScript strict sin errores
+- [x] M1: Publicaciones — ruta accesible⏱️ **Estimate**: 3h | **Actual**: done | **Deviation**: — | **Progress**: 7/7 (100%)
+📊 **Avg/subtask**: — | **ETA**: done
+
+  - [x] M1.01: Crear `app/(seller)/publications/page.tsx` con lista de publicaciones del tenant
+  - [x] M1.02: Agregar botón "Nueva publicación" que abre `PublishModal`
+  - [x] M1.03: Verificar/extender `publisherApi.ts` con hook de lista si falta
+  - [x] M1.04: Mostrar estados de publicación (pending/published/failed) con badges
+  - [x] M1.05: Implementar estado vacío con CTA cuando no hay publicaciones
+  - [x] M1.06: Verificar que el link "Publicaciones" del sidebar navega correctamente
+  - [x] M1.07: Verificar TypeScript strict sin errores
 
 - [ ] A1: Settings — estructura y tab Perfil
   - [ ] A1.01: Crear `app/settings/layout.tsx` con tabs (Perfil, Notificaciones, Seguridad)

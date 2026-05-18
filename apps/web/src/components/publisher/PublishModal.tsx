@@ -34,13 +34,38 @@ interface FacebookPage {
   name: string;
 }
 
+interface VehicleOption {
+  id: string;
+  title: string;
+  description?: string;
+  price_cents: number;
+  zip_code: string;
+  image_urls: string[];
+  tenant_id: string;
+  year?: number;
+  make?: string;
+  model?: string;
+  mileage?: number;
+  body_style?: string;
+  exterior_color?: string;
+  interior_color?: string;
+  vehicle_condition?: string;
+  fuel_type?: string;
+  transmission?: string;
+  clean_title?: boolean;
+  vin?: string;
+  vehicle_type?: string;
+}
+
 interface PublishModalProps {
   vehicleId: string | null;
   mode: "publish" | "update" | null;
   vehicleData?: VehicleData;
+  vehicleOptions?: VehicleOption[];
   currentPublication?: PublicationResponse | null;
   facebookPages?: FacebookPage[];
   onClose: () => void;
+  onPublished?: (publication: PublicationResponse, vehicleData: VehicleData) => void;
 }
 
 // ============================================
@@ -103,18 +128,36 @@ export function PublishModal({
   vehicleId,
   mode,
   vehicleData,
+  vehicleOptions = [],
   currentPublication,
   facebookPages = [],
   onClose,
+  onPublished,
 }: PublishModalProps) {
   const queryClient = useQueryClient();
   const isOpen = mode !== null && vehicleId !== null;
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
+  const effectiveVehicleId = vehicleData?.id || selectedVehicleId || vehicleOptions[0]?.id || "";
+  const selectedVehicleData =
+    vehicleData ??
+    vehicleOptions.find((option) => option.id === effectiveVehicleId);
 
   const publishMutation = useMutation({
-    mutationFn: (data: PublishVehicleRequest) =>
-      publishVehicle(vehicleId!, data),
-    onSuccess: () => {
+    mutationFn: (data: PublishVehicleRequest) => {
+      const productId = selectedVehicleData?.id ?? vehicleId;
+
+      if (!productId) {
+        throw new Error("Seleccioná un vehículo antes de publicar.");
+      }
+
+      return publishVehicle(productId, data);
+    },
+    onSuccess: (publication) => {
       queryClient.invalidateQueries({ queryKey: ["catalog"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      if (selectedVehicleData) {
+        onPublished?.(publication, selectedVehicleData);
+      }
       onClose();
     },
   });
@@ -191,6 +234,29 @@ export function PublishModal({
 
           {/* Content - overflow-y-auto */}
           <div className="overflow-y-auto px-6 py-4 flex-1 min-h-0">
+            {!vehicleData && vehicleOptions.length > 0 ? (
+              <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <label
+                  htmlFor="publication-vehicle-select"
+                  className="mb-2 block text-sm font-medium text-slate-700"
+                >
+                  Vehículo a publicar
+                </label>
+                <select
+                  id="publication-vehicle-select"
+                  value={effectiveVehicleId}
+                  onChange={(event) => setSelectedVehicleId(event.target.value)}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  {vehicleOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
             {currentPublication?.blocked_until_confirmed && (
               <CategoryBErrorBanner
                 publicationId={currentPublication.id}
@@ -206,9 +272,16 @@ export function PublishModal({
               </div>
             )}
 
+            {!selectedVehicleData ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                Seleccioná un vehículo del catálogo para preparar la publicación.
+              </div>
+            ) : null}
+
             <PublishForm
               mode={mode!}
-              vehicleData={vehicleData}
+              key={selectedVehicleData?.id ?? "publish-form"}
+              vehicleData={selectedVehicleData}
               currentPublication={currentPublication}
               facebookPages={facebookPages}
               onSubmit={handleSubmit}
