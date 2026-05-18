@@ -67,7 +67,9 @@ def extract_estimate_from_plan(task_id: str) -> str:
         title = match.group(1)
         # Look for estimate patterns: (X hours), (X days), (X hrs)
         estimate_match = re.search(
-            r"\((\d+(?:\.\d+)?)\s+(hour|hr|day|week|min|second)s?\)", title, re.IGNORECASE
+            r"\((\d+(?:\.\d+)?)\s*(hours?|hrs?|hr|h|days?|d|weeks?|w|mins?|min|m|seconds?|secs?|sec|s)\)",
+            title,
+            re.IGNORECASE,
         )
         if estimate_match:
             return estimate_match.group(0)

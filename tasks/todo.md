@@ -41,8 +41,8 @@
   - [x] M2.06: Implementar loading state (skeleton) y error state con mensaje
   - [x] M2.07: Verificar TypeScript strict sin errores
 
-- [x] M1: Publicaciones — ruta accesible⏱️ **Estimate**: 3h | **Actual**: done | **Deviation**: — | **Progress**: 7/7 (100%)
-📊 **Avg/subtask**: — | **ETA**: done
+- [x] M1: Publicaciones — ruta accesible⏱️ **Estimate**: (3h) | **Actual**: 55.0m | **Deviation**: N/A | **Progress**: 7/7 (100%)
+📊 **Avg/subtask**: 7.9m | **ETA**: 55.0m
 
   - [x] M1.01: Crear `app/(seller)/publications/page.tsx` con lista de publicaciones del tenant
   - [x] M1.02: Agregar botón "Nueva publicación" que abre `PublishModal`
