@@ -7,7 +7,7 @@
 
 **Milestone**: Milestone C — UX Completion
 **Status**: Active
-**Last Updated**: 2026-05-17
+**Last Updated**: 2026-05-18
 
 ---
 
@@ -52,16 +52,18 @@
   - [x] M1.06: Verificar que el link "Publicaciones" del sidebar navega correctamente
   - [x] M1.07: Verificar TypeScript strict sin errores
 
-- [ ] A1: Settings — estructura y tab Perfil
-  - [ ] A1.01: Crear `app/settings/layout.tsx` con tabs (Perfil, Notificaciones, Seguridad)
-  - [ ] A1.02: Crear `app/settings/page.tsx` que redirige a `/settings/profile`
-  - [ ] A1.03: Crear `app/settings/profile/page.tsx` con formulario de edición de perfil
-  - [ ] A1.04: Prellenar formulario con datos del usuario autenticado (`useAuth()`)
-  - [ ] A1.05: Conectar guardado a `PUT /api/v1/users/me` (verificar/crear endpoint si falta)
-  - [ ] A1.06: Crear `app/settings/notifications/page.tsx` (placeholder con toggles)
-  - [ ] A1.07: Crear `lib/api/userApi.ts` con hook `useUpdateProfile`
-  - [ ] A1.08: Toast de éxito al guardar cambios
-  - [ ] A1.09: Verificar TypeScript strict sin errores
+- [x] A1: Settings — estructura y tab Perfil⏱️ **Estimate**: (4h) | **Actual**: 53.0m | **Deviation**: N/A | **Progress**: 9/9 (100%)
+📊 **Avg/subtask**: 5.9m | **ETA**: 53.0m
+
+  - [x] A1.01: Crear `app/settings/layout.tsx` con tabs (Perfil, Notificaciones, Seguridad)
+  - [x] A1.02: Crear `app/settings/page.tsx` que redirige a `/settings/profile`
+  - [x] A1.03: Crear `app/settings/profile/page.tsx` con formulario de edición de perfil
+  - [x] A1.04: Prellenar formulario con datos del usuario autenticado (`useAuth()`)
+  - [x] A1.05: Conectar guardado a `PUT /api/v1/users/me` (verificar/crear endpoint si falta)
+  - [x] A1.06: Crear `app/settings/notifications/page.tsx` (placeholder con toggles)
+  - [x] A1.07: Crear `lib/api/userApi.ts` con hook `useUpdateProfile`
+  - [x] A1.08: Toast de éxito al guardar cambios
+  - [x] A1.09: Verificar TypeScript strict sin errores
 
 - [ ] A2: Settings/Seguridad — cambio de contraseña y 2FA
   - [ ] A2.01: Crear `app/settings/security/page.tsx` con sección "Cambiar contraseña"

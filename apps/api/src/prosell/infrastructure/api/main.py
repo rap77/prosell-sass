@@ -32,6 +32,7 @@ from prosell.infrastructure.api.routers import (
     publisher_router,
     team_router,
     user_branch_router,
+    user_router,
     vehicle_router,
     wallet_router,
 )
@@ -195,6 +196,12 @@ app.include_router(
 app.include_router(user_branch_router)
 
 app.include_router(
+    user_router,
+    prefix="/api/v1/users",
+    tags=["Users"],
+)
+
+app.include_router(
     team_router,
     prefix="/api/v1/teams",
     tags=["Teams"],
@@ -292,18 +299,18 @@ if settings.environment in ["development", "testing"]:
 # =============================================================================
 
 
-@app.get("/health")
+@app.get("/health", response_model=HealthResponse)
 async def health_check() -> JSONResponse:
     """Health check endpoint (not rate limited)."""
     return JSONResponse(
         content={
             "status": "healthy",
-            "environment": "staging",  # hardcoded test
+            "environment": settings.environment,
         }
     )
 
 
-@app.get("/")
+@app.get("/", response_model=RootResponse)
 async def root() -> dict[str, str]:
     """Root endpoint (not rate limited)."""
     return {

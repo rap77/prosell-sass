@@ -7,6 +7,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const BACKEND_URL = process.env.API_URL || "http://localhost:8000";
+
 type MockOrganization = {
   id: string;
   name: string;
@@ -26,11 +28,12 @@ type MockOrganization = {
 
 type MockOrganizations = Record<string, MockOrganization>;
 
+declare global {
+  var __mockOrganizations: MockOrganizations | undefined
+}
+
 function getMockOrganizations(): MockOrganizations {
-  const globalWithMocks = global as typeof global & {
-    __mockOrganizations?: MockOrganizations;
-  };
-  return globalWithMocks.__mockOrganizations || {};
+  return global.__mockOrganizations || {};
 }
 
 export async function GET(request: NextRequest) {
@@ -40,12 +43,29 @@ export async function GET(request: NextRequest) {
   const orgs = getMockOrganizations();
   const orgList = Object.values(orgs).filter((o) => o.tenant_id === tenantId);
 
-  if (orgList.length === 0) {
+  if (orgList.length > 0) {
+    return NextResponse.json(orgList[0]);
+  }
+
+  try {
+    const backendUrl = new URL(`${BACKEND_URL}/api/v1/org/me`);
+    request.nextUrl.searchParams.forEach((value, key) => {
+      backendUrl.searchParams.set(key, value);
+    });
+
+    const cookieHeader = request.headers.get("cookie");
+    const response = await fetch(backendUrl.toString(), {
+      headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    });
+
+    return NextResponse.json(await response.json(), {
+      status: response.status,
+      statusText: response.statusText,
+    });
+  } catch {
     return NextResponse.json(
       { detail: "Organization not found" },
       { status: 404 }
     );
   }
-
-  return NextResponse.json(orgList[0]);
 }

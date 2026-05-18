@@ -1,69 +1,85 @@
 {
-  "task_id": "M1",
-  "session_id": "sess-20260517-201000",
-  "started_at": "2026-05-17T20:10:00-04:00",
+  "task_id": "A1",
+  "session_id": "sess-20260518-071600",
+  "started_at": "2026-05-18T07:16:00-04:00",
   "phase": 19,
   "subtasks": {
-    "M1.01": {
-      "description": "Crear `app/(seller)/publications/page.tsx` con lista de publicaciones del tenant",
+    "A1.01": {
+      "description": "Crear `app/settings/layout.tsx` con tabs (Perfil, Notificaciones, Seguridad)",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T20:10:00-04:00",
-      "completed_at": "2026-05-17T20:24:00-04:00",
-      "duration_seconds": 840
+      "started_at": "2026-05-18T07:16:00-04:00",
+      "completed_at": "2026-05-18T07:21:00-04:00",
+      "duration_seconds": 300
     },
-    "M1.02": {
-      "description": "Agregar botón \"Nueva publicación\" que abre `PublishModal`",
+    "A1.02": {
+      "description": "Crear `app/settings/page.tsx` que redirige a `/settings/profile`",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T20:24:00-04:00",
-      "completed_at": "2026-05-17T20:33:00-04:00",
-      "duration_seconds": 540
+      "started_at": "2026-05-18T07:21:00-04:00",
+      "completed_at": "2026-05-18T07:23:00-04:00",
+      "duration_seconds": 120
     },
-    "M1.03": {
-      "description": "Verificar/extender `publisherApi.ts` con hook de lista si falta",
+    "A1.03": {
+      "description": "Crear `app/settings/profile/page.tsx` con formulario de edición de perfil",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T20:33:00-04:00",
-      "completed_at": "2026-05-17T20:41:00-04:00",
-      "duration_seconds": 480
+      "started_at": "2026-05-18T07:23:00-04:00",
+      "completed_at": "2026-05-18T07:33:00-04:00",
+      "duration_seconds": 600
     },
-    "M1.04": {
-      "description": "Mostrar estados de la publicación (pending/published/failed) con badges",
+    "A1.04": {
+      "description": "Prellenar formulario con datos del usuario autenticado (`useAuth()`)",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T20:41:00-04:00",
-      "completed_at": "2026-05-17T20:49:00-04:00",
-      "duration_seconds": 480
+      "started_at": "2026-05-18T07:33:00-04:00",
+      "completed_at": "2026-05-18T07:37:00-04:00",
+      "duration_seconds": 240
     },
-    "M1.05": {
-      "description": "Implementar estado vacío con CTA cuando no hay publicaciones",
+    "A1.05": {
+      "description": "Conectar guardado a `PUT /api/v1/users/me` (verificar/crear endpoint si falta)",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T20:49:00-04:00",
-      "completed_at": "2026-05-17T20:55:00-04:00",
-      "duration_seconds": 360
+      "started_at": "2026-05-18T07:37:00-04:00",
+      "completed_at": "2026-05-18T07:52:00-04:00",
+      "duration_seconds": 900
     },
-    "M1.06": {
-      "description": "Verificar que el link \"Publicaciones\" del sidebar navega correctamente",
+    "A1.06": {
+      "description": "Crear `app/settings/notifications/page.tsx` (placeholder con toggles)",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T20:55:00-04:00",
-      "completed_at": "2026-05-17T20:58:00-04:00",
+      "started_at": "2026-05-18T07:52:00-04:00",
+      "completed_at": "2026-05-18T07:55:00-04:00",
       "duration_seconds": 180
     },
-    "M1.07": {
+    "A1.07": {
+      "description": "Crear `lib/api/userApi.ts` con hook `useUpdateProfile`",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-18T07:55:00-04:00",
+      "completed_at": "2026-05-18T08:03:00-04:00",
+      "duration_seconds": 480
+    },
+    "A1.08": {
+      "description": "Toast de éxito al guardar cambios",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-18T08:03:00-04:00",
+      "completed_at": "2026-05-18T08:05:00-04:00",
+      "duration_seconds": 120
+    },
+    "A1.09": {
       "description": "Verificar TypeScript strict sin errores",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-17T20:58:00-04:00",
-      "completed_at": "2026-05-17T21:05:00-04:00",
-      "duration_seconds": 420
+      "started_at": "2026-05-18T08:05:00-04:00",
+      "completed_at": "2026-05-18T08:09:00-04:00",
+      "duration_seconds": 240
     }
   },
   "last_checkpoint": {
-    "at": "2026-05-17T21:05:00-04:00",
-    "summary": "Completed M1. Added the seller publications route, wired the publish modal with catalog vehicle selection, added Facebook pages query hooks, and validated frontend typecheck."
+    "at": "2026-05-18T08:09:00-04:00",
+    "summary": "Completed A1. Added the settings area with profile, notifications, and security tabs, wired current-user profile updates through a new users/me endpoint, and validated frontend and targeted backend typing."
   },
   "context_budget_exit": null
 }

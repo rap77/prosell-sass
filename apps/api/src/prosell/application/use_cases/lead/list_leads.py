@@ -1,6 +1,7 @@
 """ListLeadsUseCase — role-based lead listing with product data."""
 
-from typing import TYPE_CHECKING, ClassVar, NamedTuple
+from datetime import datetime
+from typing import ClassVar, NamedTuple, Protocol
 from uuid import UUID
 
 from prosell.application.dto.lead.request import ListLeadsRequest
@@ -11,15 +12,25 @@ from prosell.domain.entities.role import RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 
-if TYPE_CHECKING:
-    from prosell.infrastructure.models.product_model import ProductModel
+
+class SupportsLeadProductSummary(Protocol):
+    """Minimal product shape needed to build ProductSummaryForLead."""
+
+    id: UUID
+    title: str
+    price_cents: int
+    currency: str
+    status: str
+    attributes: dict[str, object] | None
+    created_at: datetime
+    updated_at: datetime
 
 
 class LeadWithProduct(NamedTuple):
     """Lead entity with optional product model."""
 
     lead: Lead
-    product_model: "ProductModel | None" = None
+    product_model: SupportsLeadProductSummary | None = None
 
 
 class ListLeadsUseCase:
@@ -81,14 +92,8 @@ class ListLeadsUseCase:
 
         items = []
         for item in leads:
-            # Handle both Lead and LeadWithProduct (duck typing — avoids import cycle
-            # between application and infrastructure layers)
-            if hasattr(item, "lead") and hasattr(item, "product_model"):
-                lead = item.lead
-                product_model = item.product_model
-            else:
-                lead = item
-                product_model = None
+            lead = getattr(item, "lead", item)
+            product_model = getattr(item, "product_model", None)
 
             product = None
             if product_model:
