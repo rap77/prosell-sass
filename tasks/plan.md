@@ -243,14 +243,14 @@ Esta milestone cierra los 8 gaps de UX identificados para dejar la app operativa
 - `components/onboarding/OnboardingProgress.tsx` — barra de progreso
 
 **Acceptance Criteria**:
-- [ ] Wizard de 3 pasos funcional con navegación adelante/atrás
-- [ ] Paso 1 (datos org) guarda con PUT /api/v1/org/me
-- [ ] Paso 3 (invitar miembro) es opcional y salteable
-- [ ] Botón "Saltar todo" disponible en cualquier paso
-- [ ] Al completar, redirige a `/catalog` (o dashboard)
-- [ ] Usuarios existentes (setup_complete=true) no ven el onboarding
-- [ ] Barra de progreso refleja el paso actual
-- [ ] TypeScript strict sin errores
+- [x] Wizard de 3 pasos funcional con navegación adelante/atrás
+- [x] Paso 1 (datos org) guarda con PUT /api/v1/org/me
+- [x] Paso 3 (invitar miembro) es opcional y salteable
+- [x] Botón "Saltar todo" disponible en cualquier paso
+- [x] Al completar, redirige a `/catalog` (o dashboard)
+- [x] Usuarios existentes (setup_complete=true) no ven el onboarding
+- [x] Barra de progreso refleja el paso actual
+- [x] TypeScript strict sin errores
 
 **Files**:
 - `apps/web/src/app/onboarding/page.tsx` (new)
