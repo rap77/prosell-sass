@@ -113,6 +113,7 @@ export interface Lead {
   buyer_email: string | null;
   buyer_phone: string | null;
   product_id: string | null;
+  vendedor_id?: string | null;
   product: LeadProduct | null;
   message: string | null;
   status: LeadStatus;
@@ -230,6 +231,7 @@ function transformLead(backendLead: BackendLeadResponse): Lead {
           updated_at: backendLead.product.updated_at,
         }
       : null,
+    vendedor_id: backendLead.vendedor_id,
     message: backendLead.message,
     status: backendLead.status,
     source: backendLead.source,

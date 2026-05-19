@@ -107,17 +107,17 @@
   - [x] A4.11: Usuarios existentes (`setup_complete=true`) no ven el onboarding
   - [x] A4.12: Verificar TypeScript strict sin errores
 
-- [ ] C1: Pipeline/Deals — Kanban de leads
-  - [ ] C1.01: Agregar item "Pipeline" con ícono `TrendingUp` al sidebar (`Sidebar.tsx`)
-  - [ ] C1.02: Crear `app/(seller)/pipeline/page.tsx` (container del kanban)
-  - [ ] C1.03: Crear `KanbanBoard.tsx` con layout de 4 columnas activas (New, Contacted, Qualified, Appointment Set)
-  - [ ] C1.04: Crear `KanbanColumn.tsx` con header (status, count leads, suma precios)
-  - [ ] C1.05: Crear `LeadCard.tsx` (nombre buyer, vehículo de interés, tiempo en stage, avatar vendedor)
-  - [ ] C1.06: Instalar/verificar `@dnd-kit/core` en `apps/web/package.json`
-  - [ ] C1.07: Implementar drag-and-drop — al soltar ejecuta `PUT /api/v1/leads/{id}/status`
-  - [ ] C1.08: Validar transiciones inválidas en UI antes de llamar al backend
-  - [ ] C1.09: Toast de error si transición inválida, sin persistir el cambio
-  - [ ] C1.10: Selector de vendedor filtra el board por `vendedor_id`
-  - [ ] C1.11: Vista mobile degrada a lista vertical
-  - [ ] C1.12: Evaluar y crear `GET /api/v1/leads/pipeline` si se elige grouping en backend
-  - [ ] C1.13: Verificar TypeScript strict sin errores
+- [x] C1: Pipeline/Deals — Kanban de leads
+  - [x] C1.01: Agregar item "Pipeline" con ícono `TrendingUp` al sidebar (`Sidebar.tsx`)
+  - [x] C1.02: Crear `app/(seller)/pipeline/page.tsx` (container del kanban)
+  - [x] C1.03: Crear `KanbanBoard.tsx` con layout de 4 columnas activas (New, Contacted, Qualified, Appointment Set)
+  - [x] C1.04: Crear `KanbanColumn.tsx` con header (status, count leads, suma precios)
+  - [x] C1.05: Crear `LeadCard.tsx` (nombre buyer, vehículo de interés, tiempo en stage, avatar vendedor)
+  - [x] C1.06: Instalar/verificar `@dnd-kit/core` en `apps/web/package.json`
+  - [x] C1.07: Implementar drag-and-drop — al soltar ejecuta `PUT /api/v1/leads/{id}/status`
+  - [x] C1.08: Validar transiciones inválidas en UI antes de llamar al backend
+  - [x] C1.09: Toast de error si transición inválida, sin persistir el cambio
+  - [x] C1.10: Selector de vendedor filtra el board por `vendedor_id`
+  - [x] C1.11: Vista mobile degrada a lista vertical
+  - [x] C1.12: Evaluar y crear `GET /api/v1/leads/pipeline` si se elige grouping en backend
+  - [x] C1.13: Verificar TypeScript strict sin errores

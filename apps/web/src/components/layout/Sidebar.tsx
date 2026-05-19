@@ -8,6 +8,7 @@ import { LucideIcon } from 'lucide-react'
 import {
   LayoutGrid,
   FileText,
+  TrendingUp,
   Users,
   Calendar,
   Settings,
@@ -45,6 +46,12 @@ const navigationItems: NavItem[] = [
     group: 'inventario',
   },
   // Ventas group
+  {
+    label: 'Pipeline',
+    href: '/pipeline',
+    icon: TrendingUp,
+    group: 'ventas',
+  },
   {
     label: 'Leads',
     href: '/leads',
