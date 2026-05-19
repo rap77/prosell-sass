@@ -20,8 +20,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { useFeatureFlagStore } from "@/stores/featureFlagStore";
-import { authApi } from "@/lib/api/authApi";
+import { twoFactorApi } from "@/lib/api/twoFactorApi";
 import { getErrorMessage } from "@/lib/utils/error";
 import { TwoFactorInput } from "./TwoFactorInput";
 import { Button } from "@/components/ui/button";
@@ -38,17 +37,9 @@ import { cn } from "@/lib/utils";
 // Pre-compiled regex for 6-digit TOTP codes
 const TOTP_REGEX = /^\d{6}$/;
 
-// Feature flag name
-const FEATURE_FLAG_2FA_MANAGEMENT = "auth-2fa-management";
-
 // ============================================
 // TYPES
 // ============================================
-
-interface BackupCodes {
-  qr_code: string;
-  backup_codes: string[];
-}
 
 type SetupState =
   | "idle" // Not started - show "Enable 2FA" button
@@ -89,12 +80,7 @@ export function TwoFactorSetupForm({
   className,
 }: TwoFactorSetupFormProps) {
   const router = useRouter();
-  const { updateUser } = useAuth();
-
-  // Feature flag check
-  const useManagementFlow = useFeatureFlagStore((state) =>
-    state.get(FEATURE_FLAG_2FA_MANAGEMENT, true),
-  );
+  const { updateUser, userId } = useAuth();
 
   // Lazy state init: derive from prop (no auto-call to API)
   const [formState, setFormState] = useState<FormState>(() => ({
@@ -109,14 +95,12 @@ export function TwoFactorSetupForm({
   // Note: This state sync is necessary because is2FAEnabled can change externally
   // (e.g., user enables 2FA in another tab). The alternative would be using a key
   // to force re-mount, but that would lose all local state (qrCode, backupCodes, etc).
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setFormState((prev) => ({
       ...prev,
       state: is2FAEnabled ? "protected" : "idle",
     }));
   }, [is2FAEnabled]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   // ============================================
   // EFFECTS
@@ -158,15 +142,24 @@ export function TwoFactorSetupForm({
   // ============================================
 
   async function handleEnable2FA() {
+    if (!userId) {
+      setFormState((prev) => ({
+        ...prev,
+        state: "error",
+        error: "No se pudo identificar tu cuenta",
+      }));
+      return;
+    }
+
     setFormState((prev) => ({ ...prev, state: "loading", error: null }));
 
     try {
-      const response = await authApi.enable2FA();
+      const response = await twoFactorApi.enable();
       setFormState((prev) => ({
         ...prev,
         state: "setup",
-        qrCode: response.qr_code,
-        backupCodes: response.backup_codes,
+        qrCode: response.qrCode,
+        backupCodes: response.backupCodes,
         error: null,
       }));
     } catch (error) {
@@ -199,7 +192,7 @@ export function TwoFactorSetupForm({
     setFormState((prev) => ({ ...prev, state: "verifying", error: null }));
 
     try {
-      await authApi.verify2FA(formState.totpCode);
+      await twoFactorApi.verify(formState.totpCode);
       updateUser({ is_2fa_enabled: true });
 
       setFormState((prev) => ({
@@ -221,7 +214,11 @@ export function TwoFactorSetupForm({
     setFormState((prev) => ({ ...prev, state: "disabling", error: null }));
 
     try {
-      await authApi.disable2FA();
+      if (!userId) {
+        throw new Error("No se pudo identificar tu cuenta");
+      }
+
+      await twoFactorApi.disable(formState.totpCode);
       updateUser({ is_2fa_enabled: false });
 
       setFormState((prev) => ({
@@ -233,7 +230,7 @@ export function TwoFactorSetupForm({
       const message = getErrorMessage(error, "Failed to disable 2FA");
       setFormState((prev) => ({
         ...prev,
-        state: "disabled",
+        state: "protected",
         error: message,
       }));
     }
@@ -415,9 +412,9 @@ export function TwoFactorSetupForm({
                   </p>
                   {formState.backupCodes.length > 0 ? (
                     <div className="grid grid-cols-2 gap-2 bg-muted rounded-lg p-4">
-                      {formState.backupCodes.toSorted().map((code, index) => (
+                      {formState.backupCodes.toSorted().map((code) => (
                         <code
-                          key={index}
+                          key={code}
                           className="text-sm font-mono text-foreground bg-background px-2 py-1 rounded"
                         >
                           {code}
@@ -602,12 +599,27 @@ export function TwoFactorSetupForm({
                   </div>
                 )}
 
+                <TwoFactorInput
+                  label="2FA Code"
+                  name="disable-totp"
+                  value={formState.totpCode}
+                  onChange={(code) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      totpCode: code,
+                    }))
+                  }
+                  disabled={isLoadingState}
+                  error={null}
+                />
+
                 {/* Disable Button */}
                 <Button
                   type="button"
                   onClick={handleDisable2FA}
                   variant="destructive"
                   className="w-full"
+                  disabled={!canVerify}
                 >
                   Disable 2FA
                 </Button>

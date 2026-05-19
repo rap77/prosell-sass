@@ -6,9 +6,12 @@ from prosell.application.dto.auth import (
     Enable2FARequest,
     Enable2FAResponse,
 )
-from prosell.application.ports.email_service import AbstractEmailService
-from prosell.domain.exceptions.auth_exceptions import UserNotFoundException
-from prosell.domain.ports import ITOTPService
+from prosell.domain.exceptions.auth_exceptions import (
+    Invalid2FACodeException,
+    TwoFactorNotEnabledException,
+    UserNotFoundException,
+)
+from prosell.domain.ports import AbstractEmailService, ITOTPService
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 
 
@@ -43,8 +46,8 @@ class Enable2FAUseCase:
         # 2. Generate TOTP secret
         secret = self.totp_service.generate_secret()
 
-        # 3. Generate QR code URI
-        qr_code_uri = self.totp_service.generate_qr_code_uri(user.email, secret)
+        # 3. Generate QR code image as data URI for direct frontend rendering
+        qr_code_uri = self.totp_service.generate_qr_code_base64(user.email, secret)
 
         # 4. Generate backup codes
         backup_codes = self.totp_service.generate_backup_codes()
@@ -92,10 +95,10 @@ class Disable2FAUseCase:
 
         # 2. Verify TOTP code
         if not user.totp_secret:
-            raise ValueError("2FA is not enabled")
+            raise TwoFactorNotEnabledException()
 
         if not self.totp_service.verify_code(user.totp_secret, request.totp_code):
-            raise ValueError("Invalid 2FA code")
+            raise Invalid2FACodeException()
 
         # 3. Disable 2FA
         user.disable_2fa()

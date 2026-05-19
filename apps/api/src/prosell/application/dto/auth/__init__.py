@@ -28,6 +28,8 @@ from prosell.application.dto.auth.oauth import OAuthLoginRequest, OAuthLoginResp
 
 # Password
 from prosell.application.dto.auth.password import (
+    ChangePasswordRequest,
+    ChangePasswordResponse,
     RequestPasswordResetRequest,
     RequestPasswordResetResponse,
     ResetPasswordRequest,
@@ -64,6 +66,8 @@ __all__ += ["LoginUserRequest", "LoginUserResponse"]
 __all__ += ["OAuthLoginRequest", "OAuthLoginResponse"]
 __all__ += ["RegisterUserRequest", "RegisterUserResponse"]
 __all__ += [
+    "ChangePasswordRequest",
+    "ChangePasswordResponse",
     "RequestPasswordResetRequest",
     "RequestPasswordResetResponse",
     "ResetPasswordRequest",

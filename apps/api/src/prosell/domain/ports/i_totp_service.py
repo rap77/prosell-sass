@@ -34,6 +34,19 @@ class ITOTPService(Protocol):
         """
         ...
 
+    def generate_qr_code_base64(self, email: str, secret: str) -> str:
+        """
+        Generate QR code image as base64 data URI.
+
+        Args:
+            email: User email
+            secret: TOTP secret
+
+        Returns:
+            Base64-encoded PNG data URI
+        """
+        ...
+
     def generate_backup_codes(self, count: int = 10) -> list[str]:
         """
         Generate backup codes for 2FA.

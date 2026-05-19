@@ -1,6 +1,6 @@
 """Request schemas for authentication endpoints."""
 
-from uuid import UUID
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -13,7 +13,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
     full_name: str = Field(..., min_length=2)
-    accept_terms: bool = True
+    accept_terms: Literal[True]
 
 
 class LoginRequest(BaseModel):
@@ -32,30 +32,34 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
+class ChangePasswordRequest(BaseModel):
+    """Authenticated password change request model."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8)
+
+
 class Enable2FARequest(BaseModel):
     """Enable 2FA request model."""
-
-    user_id: UUID
 
 
 class Verify2FARequest(BaseModel):
     """Verify 2FA request model."""
 
-    user_id: UUID
     code: str = Field(..., min_length=6, max_length=6)
 
 
 class Disable2FARequest(BaseModel):
     """Disable 2FA request model."""
 
-    user_id: UUID
     totp_code: str = Field(..., min_length=6, max_length=6)
 
 
 class OAuthLoginRequest(BaseModel):
     """OAuth login request model."""
 
-    provider: str = Field(..., pattern="^(google|facebook)$")
     provider_user_id: str
     email: EmailStr
     full_name: str

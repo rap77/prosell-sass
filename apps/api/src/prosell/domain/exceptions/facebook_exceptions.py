@@ -4,16 +4,20 @@ These exceptions are specific to Facebook OAuth for Marketplace integration,
 separate from authentication OAuth.
 """
 
-from prosell.domain.exceptions.auth_exceptions import AuthDomainException
+from collections.abc import Mapping
+
+from prosell.domain.exceptions.auth_exceptions import AuthDomainException, AuthExceptionDetailValue
 
 
 class FacebookDomainException(AuthDomainException):
     """Base exception for Facebook Marketplace domain errors."""
 
-    def __init__(self, message: str, details: dict[str, str | list[str]] | None = None) -> None:
-        self.message: str = message
-        self.details: dict[str, str | list[str]] = details or {}
-        super().__init__(message)
+    def __init__(
+        self,
+        message: str,
+        details: Mapping[str, AuthExceptionDetailValue] | None = None,
+    ) -> None:
+        super().__init__(message=message, details=details)
 
 
 # Account Exceptions

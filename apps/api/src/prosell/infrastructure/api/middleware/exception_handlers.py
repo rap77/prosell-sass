@@ -1,10 +1,13 @@
 """Centralized exception handlers for ProSell SaaS API."""
 
+import logging
+
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
+from prosell.core.config import settings
 from prosell.domain.exceptions.auth_exceptions import (
     AccountLockedException,
     AuthDomainException,
@@ -13,8 +16,12 @@ from prosell.domain.exceptions.auth_exceptions import (
     EmailNotVerifiedException,
     Invalid2FACodeException,
     InvalidCredentialsException,
+    PasswordReuseException,
+    TwoFactorNotEnabledException,
     UserNotFoundException,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def auth_domain_exception_handler(
@@ -38,7 +45,10 @@ async def auth_domain_exception_handler(
         status_code = status.HTTP_403_FORBIDDEN
     elif isinstance(exc, Invalid2FACodeException):
         status_code = status.HTTP_401_UNAUTHORIZED
-    elif isinstance(exc, BackupCodesExhaustedException):
+    elif isinstance(
+        exc,
+        TwoFactorNotEnabledException | BackupCodesExhaustedException | PasswordReuseException,
+    ):
         status_code = status.HTTP_400_BAD_REQUEST
 
     return JSONResponse(
@@ -123,30 +133,18 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
     Provides a generic error response for unexpected errors.
     Always adds CORS headers to prevent browser rejection.
     """
-    import logging
-    import traceback
-
-    logger = logging.getLogger(__name__)
-    # Log full traceback to stderr/file
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
-    # Also print to stdout for immediate visibility
-    print("\n" + "=" * 80)
-    print("⚠️  EXCEPTION CAUGHT:")
-    print(f"   Path: {request.url.path}")
-    print(f"   Method: {request.method}")
-    print(f"   Exception: {type(exc).__name__}: {exc}")
-    print("   Traceback:")
-    traceback.print_exc()
-    print("=" * 80 + "\n")
+    logger.exception(
+        "Unhandled exception",
+        extra={
+            "path": request.url.path,
+            "method": request.method,
+            "exception_type": type(exc).__name__,
+        },
+    )
 
     # Get origin from request for CORS
     origin = request.headers.get("origin")
-    allowed_origins = [
-        "http://localhost:3000",
-        "http://localhost:8000",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:8000",
-    ]
+    allowed_origins = settings.allowed_origins
 
     response = JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

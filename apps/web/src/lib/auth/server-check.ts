@@ -5,9 +5,34 @@
  * Uses React.cache() for per-request deduplication (Next.js 15+).
  */
 
+import "server-only";
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+
+interface AuthUserData {
+  is_2fa_enabled?: boolean;
+}
+
+interface ServerAuthState {
+  isAuthenticated: boolean;
+  accessToken: string | null;
+  userData: AuthUserData | null;
+  redirectTo: (path: string) => void;
+}
+
+function isAuthUserData(value: unknown): value is AuthUserData {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  if (!("is_2fa_enabled" in value)) {
+    return true;
+  }
+
+  return typeof value.is_2fa_enabled === "boolean";
+}
 
 /**
  * Check if user is authenticated from cookies (cached per request)
@@ -29,24 +54,27 @@ import { cache } from "react";
  * }
  * ```
  */
-export const checkAuthServer = cache(async function checkAuthServer() {
+export const checkAuthServer = cache(async function checkAuthServer(): Promise<ServerAuthState> {
   const cookieStore = await cookies();
 
   const accessToken = cookieStore.get("access_token")?.value;
   const userDataCookie = cookieStore.get("user_data")?.value;
 
-  const isAuthenticated = Boolean(accessToken && userDataCookie);
-
   // Safely parse user data from cookie
-  let userData = null;
+  let userData: AuthUserData | null = null;
   if (userDataCookie) {
     try {
-      userData = JSON.parse(userDataCookie);
+      const parsedUserData: unknown = JSON.parse(decodeURIComponent(userDataCookie));
+      if (isAuthUserData(parsedUserData)) {
+        userData = parsedUserData;
+      }
     } catch {
       // Invalid JSON in cookie, treat as not authenticated
       userData = null;
     }
   }
+
+  const isAuthenticated = Boolean(accessToken && userData);
 
   return {
     isAuthenticated,

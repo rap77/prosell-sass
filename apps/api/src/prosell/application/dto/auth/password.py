@@ -1,28 +1,41 @@
-"""DTOs for password reset."""
+"""DTOs for password flows."""
 
-from pydantic import BaseModel, EmailStr, Field
+from prosell.domain.base import DomainModel, EmailStr, Field
 
 
-class RequestPasswordResetRequest(BaseModel):
+class RequestPasswordResetRequest(DomainModel):
     """DTO for password reset request."""
 
     email: EmailStr
 
 
-class RequestPasswordResetResponse(BaseModel):
+class RequestPasswordResetResponse(DomainModel):
     """DTO for password reset request response."""
 
     message: str
 
 
-class ResetPasswordRequest(BaseModel):
+class ResetPasswordRequest(DomainModel):
     """DTO for password reset."""
 
     token: str = Field(min_length=1)
     new_password: str = Field(min_length=8)
 
 
-class ResetPasswordResponse(BaseModel):
+class ResetPasswordResponse(DomainModel):
     """DTO for password reset response."""
+
+    message: str
+
+
+class ChangePasswordRequest(DomainModel):
+    """DTO for authenticated password changes."""
+
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=8)
+
+
+class ChangePasswordResponse(DomainModel):
+    """DTO for authenticated password changes response."""
 
     message: str

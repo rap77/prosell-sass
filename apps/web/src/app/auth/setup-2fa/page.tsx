@@ -18,9 +18,7 @@ export default async function Setup2FAPage() {
     redirect("/auth/login?redirect=/auth/setup-2fa");
   }
 
-  // For now, default to false (2FA not enabled)
-  // In Task #15, we'll get this from server session
-  const is2FAEnabled = false;
+  const is2FAEnabled = auth.userData?.is_2fa_enabled ?? false;
 
   return <Setup2FAPageContent is2FAEnabled={is2FAEnabled} />;
 }

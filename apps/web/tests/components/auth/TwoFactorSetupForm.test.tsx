@@ -7,26 +7,18 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-// Mock authApi - use vi.hoisted to avoid hoisting issues
+// Mock twoFactorApi - use vi.hoisted to avoid hoisting issues
 const { enable2FAMock, verify2FAMock, disable2FAMock } = vi.hoisted(() => ({
   enable2FAMock: vi.fn(),
   verify2FAMock: vi.fn(),
   disable2FAMock: vi.fn(),
 }));
 
-vi.mock("@/lib/api/authApi", () => ({
-  authApi: {
-    enable2FA: enable2FAMock,
-    verify2FA: verify2FAMock,
-    disable2FA: disable2FAMock,
-  },
-  ApiError: class MockApiError extends Error {
-    status: number;
-    constructor(message: string, status: number) {
-      super(message);
-      this.status = status;
-      this.name = "ApiError";
-    }
+vi.mock("@/lib/api/twoFactorApi", () => ({
+  twoFactorApi: {
+    enable: enable2FAMock,
+    verify: verify2FAMock,
+    disable: disable2FAMock,
   },
 }));
 
@@ -52,6 +44,7 @@ vi.mock("@/hooks/useAuth", () => ({
   useAuth: vi.fn(() => ({
     updateUser: mockUpdateUser,
     isAuthenticated: true,
+    userId: "user-123",
   })),
 }));
 
@@ -63,7 +56,7 @@ vi.mock("@/stores/featureFlagStore", () => ({
 }));
 
 import { TwoFactorSetupForm } from "@/components/auth/TwoFactorSetupForm";
-import { authApi } from "@/lib/api/authApi";
+import { twoFactorApi } from "@/lib/api/twoFactorApi";
 
 describe("TwoFactorSetupForm Component", () => {
   const mockQRCode =
@@ -83,10 +76,20 @@ describe("TwoFactorSetupForm Component", () => {
 
   beforeEach(() => {
     enable2FAMock.mockResolvedValue({
-      qr_code: mockQRCode,
-      backup_codes: mockBackupCodes,
+      qrCode: mockQRCode,
+      backupCodes: mockBackupCodes,
+      message: "2FA enabled successfully",
     });
-    verify2FAMock.mockResolvedValue({ message: "2FA enabled successfully" });
+    verify2FAMock.mockResolvedValue({
+      access_token: "access-token",
+      refresh_token: "refresh-token",
+      user: {
+        id: "user-123",
+        email: "seller@example.com",
+        full_name: "Seller Demo",
+        tenant_id: "tenant-123",
+      },
+    });
     disable2FAMock.mockResolvedValue({ message: "2FA disabled successfully" });
     mockUpdateUser.mockClear();
     pushMock.mockClear();
@@ -102,7 +105,7 @@ describe("TwoFactorSetupForm Component", () => {
       render(<TwoFactorSetupForm is2FAEnabled={false} />);
 
       // Should NOT call enable2FA on mount
-      expect(authApi.enable2FA).not.toHaveBeenCalled();
+      expect(twoFactorApi.enable).not.toHaveBeenCalled();
 
       // Should show idle state with "Enable 2FA" button
       await waitFor(() => {
@@ -129,7 +132,7 @@ describe("TwoFactorSetupForm Component", () => {
 
       // Should call enable2FA
       await waitFor(() => {
-        expect(authApi.enable2FA).toHaveBeenCalledWith();
+        expect(twoFactorApi.enable).toHaveBeenCalledWith();
       });
     });
 
@@ -280,7 +283,7 @@ describe("TwoFactorSetupForm Component", () => {
       await user.click(verifyButton);
 
       await waitFor(() => {
-        expect(authApi.verify2FA).toHaveBeenCalledWith("123456");
+        expect(twoFactorApi.verify).toHaveBeenCalledWith("123456");
       });
     });
 
@@ -445,13 +448,16 @@ describe("TwoFactorSetupForm Component", () => {
       const user = userEvent.setup();
       render(<TwoFactorSetupForm is2FAEnabled={true} />);
 
+      const input = screen.getAllByRole("textbox")[0];
+      input.focus();
+      await user.paste("123456");
       const disableButton = screen.getByRole("button", {
         name: /disable 2fa/i,
       });
       await user.click(disableButton);
 
       await waitFor(() => {
-        expect(authApi.disable2FA).toHaveBeenCalledWith();
+        expect(twoFactorApi.disable).toHaveBeenCalledWith("123456");
       });
     });
 
@@ -460,6 +466,9 @@ describe("TwoFactorSetupForm Component", () => {
       disable2FAMock.mockImplementation(() => new Promise(() => {})); // Never resolves
       render(<TwoFactorSetupForm is2FAEnabled={true} />);
 
+      const input = screen.getAllByRole("textbox")[0];
+      input.focus();
+      await user.paste("123456");
       const disableButton = screen.getByRole("button", {
         name: /disable 2fa/i,
       });
@@ -477,6 +486,9 @@ describe("TwoFactorSetupForm Component", () => {
       const user = userEvent.setup();
       render(<TwoFactorSetupForm is2FAEnabled={true} />);
 
+      const input = screen.getAllByRole("textbox")[0];
+      input.focus();
+      await user.paste("123456");
       const disableButton = screen.getByRole("button", {
         name: /disable 2fa/i,
       });
@@ -493,6 +505,9 @@ describe("TwoFactorSetupForm Component", () => {
       const user = userEvent.setup();
       render(<TwoFactorSetupForm is2FAEnabled={true} />);
 
+      const input = screen.getAllByRole("textbox")[0];
+      input.focus();
+      await user.paste("123456");
       const disableButton = screen.getByRole("button", {
         name: /disable 2fa/i,
       });
@@ -508,6 +523,9 @@ describe("TwoFactorSetupForm Component", () => {
       disable2FAMock.mockRejectedValue(new Error("Failed to disable 2FA"));
       render(<TwoFactorSetupForm is2FAEnabled={true} />);
 
+      const input = screen.getAllByRole("textbox")[0];
+      input.focus();
+      await user.paste("123456");
       const disableButton = screen.getByRole("button", {
         name: /disable 2fa/i,
       });
@@ -516,7 +534,7 @@ describe("TwoFactorSetupForm Component", () => {
       // The component should handle the error gracefully
       // Just verify the API was called and no crash occurred
       await waitFor(() => {
-        expect(disable2FAMock).toHaveBeenCalledWith();
+        expect(disable2FAMock).toHaveBeenCalledWith("123456");
       });
     });
   });
@@ -647,8 +665,9 @@ describe("TwoFactorSetupForm Component", () => {
     it("should handle empty backup codes gracefully", async () => {
       const user = userEvent.setup();
       enable2FAMock.mockResolvedValue({
-        qr_code: mockQRCode,
-        backup_codes: [],
+        qrCode: mockQRCode,
+        backupCodes: [],
+        message: "2FA enabled successfully",
       });
       render(<TwoFactorSetupForm is2FAEnabled={false} />);
 

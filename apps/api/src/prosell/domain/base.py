@@ -5,8 +5,11 @@ from datetime import UTC, datetime
 from pydantic import (  # type: ignore[attr-defined]
     BaseModel,
     ConfigDict,
+    EmailStr,
     Field,
 )
+
+__all__ = ["DomainEvent", "DomainModel", "EmailStr", "Field", "ValueObject"]
 
 
 class DomainModel(BaseModel):

@@ -14,11 +14,12 @@
  */
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { authApi, ApiError } from "@/lib/api/authApi";
+import { twoFactorApi } from "@/lib/api/twoFactorApi";
 import { getErrorMessage } from "@/lib/utils/error";
 import { TwoFactorInput } from "../TwoFactorInput";
 import { Button } from "@/components/ui/button";
@@ -40,24 +41,22 @@ const TOTP_REGEX = /^\d{6}$/;
 // TYPES
 // ============================================
 
-interface BackupCodes {
-  qr_code: string;
-  backup_codes: string[];
-}
-
 // ============================================
 // STATES
 // ============================================
 
-type SetupState =
-  | "loading" // Loading 2FA enable
-  | "setup" // Show QR code and backup codes
-  | "verifying" // Verifying TOTP code
-  | "enabled" // Successfully enabled
-  | "disable" // Show disable button (already enabled)
-  | "disabling" // Disabling 2FA
-  | "disabled" // Successfully disabled
-  | "error"; // Error state
+const SETUP_STATE = {
+  LOADING: "loading",
+  SETUP: "setup",
+  VERIFYING: "verifying",
+  ENABLED: "enabled",
+  DISABLE: "disable",
+  DISABLING: "disabling",
+  DISABLED: "disabled",
+  ERROR: "error",
+} as const;
+
+type SetupState = (typeof SETUP_STATE)[keyof typeof SETUP_STATE];
 
 type FormState = {
   state: SetupState;
@@ -138,7 +137,7 @@ export function TwoFactorSetupForm({
   className,
 }: TwoFactorSetupFormProps) {
   const router = useRouter();
-  const { updateUser } = useAuth();
+  const { updateUser, userId } = useAuth();
 
   const [formState, setFormState] = useState<FormState>({
     state: is2FAEnabled ? "disable" : "loading",
@@ -152,77 +151,102 @@ export function TwoFactorSetupForm({
   // EFFECTS
   // ============================================
 
-  // Enable 2FA on mount if not already enabled
+  const enableTwoFactorQuery = useQuery({
+    queryKey: ["two-factor-setup", userId],
+    queryFn: async () => {
+      if (!userId) {
+        throw new Error("No se pudo identificar tu cuenta");
+      }
+
+      return twoFactorApi.enable();
+    },
+    enabled: !is2FAEnabled && Boolean(userId),
+    retry: false,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+
+  // Sync React Query state into the local UI state machine
   useEffect(() => {
-    if (!is2FAEnabled) {
-      (async () => {
-        try {
-          setFormState((prev) => ({ ...prev, state: "loading", error: null }));
-          const response = await authApi.enable2FA();
-          setFormState((prev) => ({
-            ...prev,
-            state: "setup",
-            qrCode: response.qr_code,
-            backupCodes: response.backup_codes,
-            error: null,
-          }));
-        } catch (error) {
-          const message = getErrorMessage(error, "Failed to enable 2FA");
-          setFormState((prev) => ({
-            ...prev,
-            state: "error",
-            error: message,
-          }));
-        }
-      })();
+    if (is2FAEnabled || formState.state !== "loading") {
+      return;
     }
-  }, [is2FAEnabled]);
+
+    if (enableTwoFactorQuery.isError) {
+      const message = getErrorMessage(
+        enableTwoFactorQuery.error,
+        "Failed to enable 2FA",
+      );
+      queueMicrotask(() => {
+        setFormState((prev) => ({
+          ...prev,
+          state: SETUP_STATE.ERROR,
+          error: message,
+        }));
+      });
+      return;
+    }
+
+    if (enableTwoFactorQuery.data) {
+      queueMicrotask(() => {
+        setFormState((prev) => ({
+          ...prev,
+          state: SETUP_STATE.SETUP,
+          qrCode: enableTwoFactorQuery.data.qrCode,
+          backupCodes: enableTwoFactorQuery.data.backupCodes,
+          error: null,
+        }));
+      });
+    }
+  }, [
+    enableTwoFactorQuery.data,
+    enableTwoFactorQuery.error,
+    enableTwoFactorQuery.isError,
+    formState.state,
+    is2FAEnabled,
+  ]);
+
+  // ============================================
+  // DERIVED STATE
+  // ============================================
+
+  const loadingStates: readonly SetupState[] = [
+    SETUP_STATE.LOADING,
+    SETUP_STATE.VERIFYING,
+    SETUP_STATE.DISABLING,
+  ];
+  const isBusy = loadingStates.includes(formState.state);
+  const isTotpCodeValid = TOTP_REGEX.test(formState.totpCode);
+  const canVerify = !isBusy && isTotpCodeValid;
 
   // ============================================
   // HANDLERS
   // ============================================
 
   const handleEnable2FA = async () => {
-    setFormState((prev) => ({ ...prev, state: "loading", error: null }));
-
-    try {
-      const response = await authApi.enable2FA();
-      setFormState((prev) => ({
-        ...prev,
-        state: "setup",
-        qrCode: response.qr_code,
-        backupCodes: response.backup_codes,
-        error: null,
-      }));
-    } catch (error) {
-      const message = getErrorMessage(error, "Failed to enable 2FA");
-      setFormState((prev) => ({
-        ...prev,
-        state: "error",
-        error: message,
-      }));
-    }
+    setFormState((prev) => ({ ...prev, state: SETUP_STATE.LOADING, error: null }));
+    await enableTwoFactorQuery.refetch();
   };
 
   const handleVerifyCode = async () => {
     try {
-      setFormState((prev) => ({ ...prev, state: "verifying", error: null }));
+      setFormState((prev) => ({ ...prev, state: SETUP_STATE.VERIFYING, error: null }));
 
-      await authApi.verify2FA(formState.totpCode);
+      await twoFactorApi.verify(formState.totpCode);
 
       // Update user state
       updateUser({ is_2fa_enabled: true });
 
       setFormState((prev) => ({
         ...prev,
-        state: "enabled",
+        state: SETUP_STATE.ENABLED,
         error: null,
       }));
     } catch (error) {
       const message = getErrorMessage(error, "Failed to verify code");
       setFormState((prev) => ({
         ...prev,
-        state: "setup",
+        state: SETUP_STATE.SETUP,
         error: message,
       }));
     }
@@ -230,23 +254,23 @@ export function TwoFactorSetupForm({
 
   const handleDisable2FA = async () => {
     try {
-      setFormState((prev) => ({ ...prev, state: "disabling", error: null }));
+      setFormState((prev) => ({ ...prev, state: SETUP_STATE.DISABLING, error: null }));
 
-      await authApi.disable2FA();
+      await twoFactorApi.disable(formState.totpCode);
 
       // Update user state
       updateUser({ is_2fa_enabled: false });
 
       setFormState((prev) => ({
         ...prev,
-        state: "disabled",
+        state: SETUP_STATE.DISABLED,
         error: null,
       }));
     } catch (error) {
       const message = getErrorMessage(error, "Failed to disable 2FA");
       setFormState((prev) => ({
         ...prev,
-        state: "disable",
+        state: SETUP_STATE.DISABLE,
         error: message,
       }));
     }
@@ -533,12 +557,27 @@ export function TwoFactorSetupForm({
                   </div>
                 )}
 
+                <TwoFactorInput
+                  label="2FA Code"
+                  name="disable-totp"
+                  value={formState.totpCode}
+                  onChange={(code) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      totpCode: code,
+                    }))
+                  }
+                  disabled={isBusy}
+                  error={null}
+                />
+
                 {/* Disable Button */}
                 <Button
                   type="button"
                   onClick={handleDisable2FA}
                   variant="destructive"
                   className="w-full"
+                  disabled={!canVerify}
                 >
                   Disable 2FA
                 </Button>

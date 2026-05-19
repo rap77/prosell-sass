@@ -5,6 +5,7 @@
 
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Setup2FAPageContent } from "@/app/auth/setup-2fa/Setup2FAPageContent";
 
 // Mock next/navigation
@@ -16,6 +17,20 @@ vi.mock("next/navigation", () => ({
   })),
 }));
 
+function renderWithProviders(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+
+  return render(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+  );
+}
+
 describe("Setup-2FA Page", () => {
   afterEach(() => {
     cleanup();
@@ -24,19 +39,19 @@ describe("Setup-2FA Page", () => {
 
   describe("Layout", () => {
     it("should render ProSell logo", () => {
-      render(<Setup2FAPageContent />);
+      renderWithProviders(<Setup2FAPageContent />);
 
       expect(screen.getByText("ProSell")).toBeInTheDocument();
     });
 
     it("should render TwoFactorSetupForm", () => {
-      const { container } = render(<Setup2FAPageContent />);
+      const { container } = renderWithProviders(<Setup2FAPageContent />);
 
       expect(container.firstChild).toBeInTheDocument();
     });
 
     it("should have proper page structure", () => {
-      const { container } = render(<Setup2FAPageContent />);
+      const { container } = renderWithProviders(<Setup2FAPageContent />);
 
       const pageDiv = container.querySelector(".min-h-screen");
       expect(pageDiv).toBeInTheDocument();
@@ -45,7 +60,7 @@ describe("Setup-2FA Page", () => {
 
   describe("2FA State", () => {
     it("should pass is2FAEnabled=false to TwoFactorSetupForm by default", () => {
-      const { container } = render(<Setup2FAPageContent />);
+      const { container } = renderWithProviders(<Setup2FAPageContent />);
 
       // TwoFactorSetupForm should be rendered
       expect(container.firstChild).toBeInTheDocument();

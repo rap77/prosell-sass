@@ -1,85 +1,85 @@
 {
-  "task_id": "A1",
-  "session_id": "sess-20260518-071600",
-  "started_at": "2026-05-18T07:16:00-04:00",
-  "phase": 19,
+  "task_id": "A2",
+  "session_id": "sess-20260518-085500",
+  "started_at": "2026-05-18T08:55:00-04:00",
+  "phase": 20,
   "subtasks": {
-    "A1.01": {
-      "description": "Crear `app/settings/layout.tsx` con tabs (Perfil, Notificaciones, Seguridad)",
+    "A2.01": {
+      "description": "Crear `app/settings/security/page.tsx` con sección \"Cambiar contraseña\"",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-18T07:16:00-04:00",
-      "completed_at": "2026-05-18T07:21:00-04:00",
+      "started_at": "2026-05-18T08:55:00-04:00",
+      "completed_at": "2026-05-18T09:00:00-04:00",
       "duration_seconds": 300
     },
-    "A1.02": {
-      "description": "Crear `app/settings/page.tsx` que redirige a `/settings/profile`",
+    "A2.02": {
+      "description": "Implementar formulario con validación (mínimo 8 chars, confirmación igual)",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-18T07:21:00-04:00",
-      "completed_at": "2026-05-18T07:23:00-04:00",
-      "duration_seconds": 120
-    },
-    "A1.03": {
-      "description": "Crear `app/settings/profile/page.tsx` con formulario de edición de perfil",
-      "status": "completed",
-      "retries": 0,
-      "started_at": "2026-05-18T07:23:00-04:00",
-      "completed_at": "2026-05-18T07:33:00-04:00",
-      "duration_seconds": 600
-    },
-    "A1.04": {
-      "description": "Prellenar formulario con datos del usuario autenticado (`useAuth()`)",
-      "status": "completed",
-      "retries": 0,
-      "started_at": "2026-05-18T07:33:00-04:00",
-      "completed_at": "2026-05-18T07:37:00-04:00",
-      "duration_seconds": 240
-    },
-    "A1.05": {
-      "description": "Conectar guardado a `PUT /api/v1/users/me` (verificar/crear endpoint si falta)",
-      "status": "completed",
-      "retries": 0,
-      "started_at": "2026-05-18T07:37:00-04:00",
-      "completed_at": "2026-05-18T07:52:00-04:00",
-      "duration_seconds": 900
-    },
-    "A1.06": {
-      "description": "Crear `app/settings/notifications/page.tsx` (placeholder con toggles)",
-      "status": "completed",
-      "retries": 0,
-      "started_at": "2026-05-18T07:52:00-04:00",
-      "completed_at": "2026-05-18T07:55:00-04:00",
-      "duration_seconds": 180
-    },
-    "A1.07": {
-      "description": "Crear `lib/api/userApi.ts` con hook `useUpdateProfile`",
-      "status": "completed",
-      "retries": 0,
-      "started_at": "2026-05-18T07:55:00-04:00",
-      "completed_at": "2026-05-18T08:03:00-04:00",
+      "started_at": "2026-05-18T09:00:00-04:00",
+      "completed_at": "2026-05-18T09:08:00-04:00",
       "duration_seconds": 480
     },
-    "A1.08": {
-      "description": "Toast de éxito al guardar cambios",
+    "A2.03": {
+      "description": "Conectar a `POST /api/v1/auth/change-password`",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-18T08:03:00-04:00",
-      "completed_at": "2026-05-18T08:05:00-04:00",
-      "duration_seconds": 120
+      "started_at": "2026-05-18T09:08:00-04:00",
+      "completed_at": "2026-05-18T09:23:00-04:00",
+      "duration_seconds": 900
     },
-    "A1.09": {
+    "A2.04": {
+      "description": "Mostrar estado de 2FA (habilitado/deshabilitado) correctamente",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-18T09:23:00-04:00",
+      "completed_at": "2026-05-18T09:29:00-04:00",
+      "duration_seconds": 360
+    },
+    "A2.05": {
+      "description": "Flujo \"Habilitar 2FA\" navega a `/auth/setup-2fa`",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-18T09:29:00-04:00",
+      "completed_at": "2026-05-18T09:33:00-04:00",
+      "duration_seconds": 240
+    },
+    "A2.06": {
+      "description": "Flujo \"Deshabilitar 2FA\" con modal de confirmación → `POST /api/v1/auth/disable-2fa`",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-18T09:33:00-04:00",
+      "completed_at": "2026-05-18T09:42:00-04:00",
+      "duration_seconds": 540
+    },
+    "A2.07": {
+      "description": "Mapear errores del backend a mensajes en español",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-18T09:42:00-04:00",
+      "completed_at": "2026-05-18T09:48:00-04:00",
+      "duration_seconds": 360
+    },
+    "A2.08": {
+      "description": "Extender `lib/api/userApi.ts` con hook `useChangePassword`",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-18T09:48:00-04:00",
+      "completed_at": "2026-05-18T09:53:00-04:00",
+      "duration_seconds": 300
+    },
+    "A2.09": {
       "description": "Verificar TypeScript strict sin errores",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-18T08:05:00-04:00",
-      "completed_at": "2026-05-18T08:09:00-04:00",
-      "duration_seconds": 240
+      "started_at": "2026-05-18T09:53:00-04:00",
+      "completed_at": "2026-05-18T10:01:00-04:00",
+      "duration_seconds": 480
     }
   },
   "last_checkpoint": {
-    "at": "2026-05-18T08:09:00-04:00",
-    "summary": "Completed A1. Added the settings area with profile, notifications, and security tabs, wired current-user profile updates through a new users/me endpoint, and validated frontend and targeted backend typing."
+    "at": "2026-05-18T10:01:00-04:00",
+    "summary": "Completed A2. Added the settings security workspace with password change and 2FA management, implemented the backend change-password endpoint, aligned auth state with persisted 2FA status, and validated the new flows with unit and UI tests."
   },
   "context_budget_exit": null
 }

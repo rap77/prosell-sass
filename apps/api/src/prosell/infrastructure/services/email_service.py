@@ -3,19 +3,47 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Protocol
+from html import escape
+from typing import TYPE_CHECKING, ParamSpec, Protocol, TypeVar
 from uuid import UUID
 
 from prosell.core.config import settings
+from prosell.domain.ports.i_email_service import AppointmentReminderDetails
 
 if TYPE_CHECKING:
     from prosell.domain.entities.appointment import AppointmentStatus
 
 logger = logging.getLogger(__name__)
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+class SendGridResponse(Protocol):
+    """Minimal SendGrid response contract used by this adapter."""
+
+    status_code: int
+    body: str | bytes | None
+
+
+class SendGridClient(Protocol):
+    """Minimal SendGrid client contract used by this adapter."""
+
+    def send(self, message: object) -> SendGridResponse:
+        """Send a message through SendGrid."""
+        ...
+
+
+class SendGridClientFactory(Protocol):
+    """Factory contract for creating SendGrid clients."""
+
+    def __call__(self, api_key: str) -> SendGridClient:
+        """Create a configured SendGrid client."""
+        ...
 
 
 def retry_on_sendgrid_error(
@@ -28,7 +56,7 @@ def retry_on_sendgrid_error(
         503,
         504,
     ),
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     """
     Decorator to retry SendGrid API calls with exponential backoff.
 
@@ -43,11 +71,11 @@ def retry_on_sendgrid_error(
         Decorated function with retry logic
     """
 
-    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+    def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
         @wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             delay = initial_delay
-            last_exception = None
+            last_exception: Exception | None = None
 
             for attempt in range(max_retries + 1):  # +1 for initial attempt
                 try:
@@ -76,88 +104,11 @@ def retry_on_sendgrid_error(
             if last_exception:
                 raise last_exception
 
+            raise RuntimeError("retry_on_sendgrid_error exhausted without result")
+
         return wrapper
 
     return decorator
-
-
-class AbstractEmailService(Protocol):
-    """
-    Email service interface (Protocol).
-
-    Abstract port for email sending functionality.
-    Uses Protocol for duck typing, not ABC inheritance.
-    """
-
-    async def send_verification_email(
-        self,
-        email: str,
-        user_id: UUID,
-        token: str,
-    ) -> None:
-        """Send email verification email."""
-        ...
-
-    async def send_password_reset(
-        self,
-        email: str,
-        token: str,
-    ) -> None:
-        """Send password reset email."""
-        ...
-
-    async def send_2fa_enabled(
-        self,
-        email: str,
-    ) -> None:
-        """Send 2FA enabled notification."""
-        ...
-
-    async def send_appointment_notification(
-        self,
-        branch_email: str,
-        branch_name: str,
-        buyer_name: str,
-        vehicle_info: str,
-        scheduled_at: datetime,
-        notes: str | None = None,
-    ) -> None:
-        """Send appointment notification to branch."""
-        ...
-
-    async def send_appointment_confirmation(
-        self,
-        buyer_email: str,
-        buyer_name: str,
-        branch_name: str,
-        vehicle_info: str,
-        scheduled_at: datetime,
-        notes: str | None = None,
-    ) -> None:
-        """Send appointment confirmation to buyer."""
-        ...
-
-    async def send_appointment_reminder(
-        self,
-        email: str,
-        person_type: str,  # "branch" or "buyer"
-        appointment_details: dict[str, Any],
-    ) -> None:
-        """Send appointment reminder."""
-        ...
-
-    async def send_appointment_status_update(
-        self,
-        buyer_email: str,
-        buyer_name: str,
-        branch_name: str,
-        vehicle_info: str,
-        scheduled_at: datetime,
-        new_status: AppointmentStatus,
-        notes: str | None = None,
-    ) -> None:
-        """Send appointment status update (confirmed/cancelled) to buyer."""
-        ...
 
 
 class SendGridEmailService:
@@ -167,20 +118,47 @@ class SendGridEmailService:
     Uses SendGrid API for transactional emails.
     """
 
-    def __init__(self) -> None:
-        self.api_key = settings.sendgrid_api_key
-        self.from_email = settings.sendgrid_from_email
-        self.from_name = settings.sendgrid_from_name
+    def __init__(
+        self,
+        api_key: str | None = None,
+        from_email: str | None = None,
+        from_name: str | None = None,
+        client_factory: SendGridClientFactory | None = None,
+    ) -> None:
+        self.api_key = api_key or settings.sendgrid_api_key or ""
+        self.from_email = from_email or settings.sendgrid_from_email or ""
+        self.from_name = from_name or settings.sendgrid_from_name or ""
+        self.client_factory = client_factory or self._default_client_factory
+
+    @staticmethod
+    def _default_client_factory(api_key: str) -> SendGridClient:
+        """Create the real SendGrid client."""
+        import sendgrid  # type: ignore[import-untyped]
+
+        return sendgrid.SendGridAPIClient(api_key=api_key)
+
+    @staticmethod
+    def _escape_html(value: object) -> str:
+        """Escape dynamic values before interpolating them into HTML emails."""
+        return escape(str(value), quote=True)
+
+    async def _send_message(self, message: object) -> SendGridResponse:
+        """Offload SendGrid's synchronous client call away from the event loop."""
+        sg = self.client_factory(self.api_key)
+        if inspect.iscoroutinefunction(sg.send):
+            return await sg.send(message)
+
+        return await asyncio.to_thread(sg.send, message)
 
     @retry_on_sendgrid_error()
     async def send_verification_email(
         self,
         email: str,
-        _user_id: UUID,
+        user_id: UUID,
         token: str,
     ) -> None:
         """Send email verification email."""
-        import sendgrid  # type: ignore[import-untyped]
+        _ = user_id
         from sendgrid.helpers.mail import Mail  # type: ignore[import-untyped]
 
         # Create verification URL (use oauth_frontend_success_url as base)
@@ -210,8 +188,7 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
-        response: Any = await sg.send(message)
+        response = await self._send_message(message)
 
         # Log delivery status
         if response.status_code in (200, 202):
@@ -233,7 +210,6 @@ class SendGridEmailService:
         token: str,
     ) -> None:
         """Send password reset email."""
-        import sendgrid
         from sendgrid.helpers.mail import Mail
 
         # Create reset URL
@@ -264,8 +240,7 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
-        response: Any = await sg.send(message)
+        response = await self._send_message(message)
 
         # Log delivery status
         if response.status_code in (200, 202):
@@ -286,7 +261,6 @@ class SendGridEmailService:
         email: str,
     ) -> None:
         """Send 2FA enabled notification."""
-        import sendgrid
         from sendgrid.helpers.mail import Mail
 
         # Create email message
@@ -309,8 +283,7 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
-        response: Any = await sg.send(message)
+        response = await self._send_message(message)
 
         # Log delivery status
         if response.status_code in (200, 202):
@@ -336,18 +309,22 @@ class SendGridEmailService:
         notes: str | None = None,
     ) -> None:
         """Send appointment notification to branch."""
-        import sendgrid
         from sendgrid.helpers.mail import Mail
 
         # Format datetime for display
         scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
+        safe_branch_name = self._escape_html(branch_name)
+        safe_buyer_name = self._escape_html(buyer_name)
+        safe_vehicle_info = self._escape_html(vehicle_info)
+        safe_scheduled_str = self._escape_html(scheduled_str)
+        safe_notes = self._escape_html(notes) if notes else None
 
         # Build notes row if notes exist
         notes_row = (
             f'<tr style="background-color: #f2f2f2;">'
             f'<td style="border: 1px solid #ddd;"><strong>Notas:</strong></td>'
-            f'<td style="border: 1px solid #ddd;">{notes}</td></tr>'
-            if notes
+            f'<td style="border: 1px solid #ddd;">{safe_notes}</td></tr>'
+            if safe_notes
             else ""
         )
 
@@ -360,28 +337,28 @@ class SendGridEmailService:
             <html>
             <body>
                 <h2>Nueva Cita Agendada</h2>
-                <p>Hola <strong>{branch_name}</strong>,</p>
+                <p>Hola <strong>{safe_branch_name}</strong>,</p>
                 <p>Tienes una nueva cita agendada:</p>
                 <table cellpadding="5" style="border-collapse: collapse;
                 border: 1px solid #ddd;">
                     <tr style="background-color: #f2f2f2;">
                         <td style="border: 1px solid #ddd;">
                         <strong>Comprador:</strong></td>
-                        <td style="border: 1px solid #ddd;">{buyer_name}</td>
+                        <td style="border: 1px solid #ddd;">{safe_buyer_name}</td>
                     </tr>
                     <tr>
                         <td style="border: 1px solid #ddd;"><strong>Vehículo:
                         </strong></td>
-                        <td style="border: 1px solid #ddd;">{vehicle_info}</td>
+                        <td style="border: 1px solid #ddd;">{safe_vehicle_info}</td>
                     </tr>
                     <tr style="background-color: #f2f2f2;">
                         <td style="border: 1px solid #ddd;"><strong>Fecha y Hora:
                         </strong></td>
-                        <td style="border: 1px solid #ddd;">{scheduled_str}</td>
+                        <td style="border: 1px solid #ddd;">{safe_scheduled_str}</td>
                     </tr>
                     {notes_row}
                 </table>
-                {f'<p><strong>Notas:</strong> {notes}</p>' if notes else ''}
+                {f"<p><strong>Notas:</strong> {safe_notes}</p>" if safe_notes else ""}
                 <p>Por favor asegúrate de estar disponible para esta cita.</p>
                 <p>Si necesitas reprogramar, contacta a tu administrador.</p>
             </body>
@@ -390,8 +367,7 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
-        response: Any = await sg.send(message)
+        response = await self._send_message(message)
 
         # Log delivery status
         if response.status_code in (200, 202):
@@ -419,18 +395,22 @@ class SendGridEmailService:
         notes: str | None = None,
     ) -> None:
         """Send appointment confirmation to buyer."""
-        import sendgrid
         from sendgrid.helpers.mail import Mail
 
         # Format datetime for display
         scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
+        safe_buyer_name = self._escape_html(buyer_name)
+        safe_branch_name = self._escape_html(branch_name)
+        safe_vehicle_info = self._escape_html(vehicle_info)
+        safe_scheduled_str = self._escape_html(scheduled_str)
+        safe_notes = self._escape_html(notes) if notes else None
 
         # Build notes row if notes exist
         notes_row = (
             f'<tr style="background-color: #f2f2f2;">'
             f'<td style="border: 1px solid #ddd;"><strong>Notas:</strong></td>'
-            f'<td style="border: 1px solid #ddd;">{notes}</td></tr>'
-            if notes
+            f'<td style="border: 1px solid #ddd;">{safe_notes}</td></tr>'
+            if safe_notes
             else ""
         )
 
@@ -443,28 +423,28 @@ class SendGridEmailService:
             <html>
             <body>
                 <h2>Confirmación de Cita</h2>
-                <p>Hola <strong>{buyer_name}</strong>,</p>
+                <p>Hola <strong>{safe_buyer_name}</strong>,</p>
                 <p>Tu cita ha sido confirmada:</p>
                 <table cellpadding="5" style="border-collapse: collapse;
                 border: 1px solid #ddd;">
                     <tr style="background-color: #f2f2f2;">
                         <td style="border: 1px solid #ddd;"><strong>Asesor:
                         </strong></td>
-                        <td style="border: 1px solid #ddd;">{branch_name}</td>
+                        <td style="border: 1px solid #ddd;">{safe_branch_name}</td>
                     </tr>
                     <tr>
                         <td style="border: 1px solid #ddd;"><strong>Vehículo:
                         </strong></td>
-                        <td style="border: 1px solid #ddd;">{vehicle_info}</td>
+                        <td style="border: 1px solid #ddd;">{safe_vehicle_info}</td>
                     </tr>
                     <tr style="background-color: #f2f2f2;">
                         <td style="border: 1px solid #ddd;"><strong>Fecha y Hora:
                         </strong></td>
-                        <td style="border: 1px solid #ddd;">{scheduled_str}</td>
+                        <td style="border: 1px solid #ddd;">{safe_scheduled_str}</td>
                     </tr>
                     {notes_row}
                 </table>
-                {f'<p><strong>Notas:</strong> {notes}</p>' if notes else ''}
+                {f"<p><strong>Notas:</strong> {safe_notes}</p>" if safe_notes else ""}
                 <p>Por favor llega 10 minutos antes de tu cita.</p>
                 <p>Si necesitas reprogramar, responde a este correo o contáctanos.</p>
             </body>
@@ -473,8 +453,7 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
-        response: Any = await sg.send(message)
+        response = await self._send_message(message)
 
         # Log delivery status
         if response.status_code in (200, 202):
@@ -496,10 +475,9 @@ class SendGridEmailService:
         self,
         email: str,
         person_type: str,  # "branch" or "buyer"
-        appointment_details: dict[str, Any],
+        appointment_details: AppointmentReminderDetails,
     ) -> None:
         """Send appointment reminder."""
-        import sendgrid
         from sendgrid.helpers.mail import Mail
 
         buyer_name = appointment_details.get("buyer_name", "Cliente")
@@ -510,22 +488,27 @@ class SendGridEmailService:
 
         # Format datetime for display
         scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
+        safe_buyer_name = self._escape_html(buyer_name)
+        safe_branch_name = self._escape_html(branch_name)
+        safe_vehicle_info = self._escape_html(vehicle_info)
+        safe_scheduled_str = self._escape_html(scheduled_str)
+        safe_notes = self._escape_html(notes) if notes else None
 
         # Build notes row if notes exist
         notes_row = (
             f'<tr style="background-color: #f2f2f2;">'
             f'<td style="border: 1px solid #ddd;"><strong>Notas:</strong></td>'
-            f'<td style="border: 1px solid #ddd;">{notes}</td></tr>'
-            if notes
+            f'<td style="border: 1px solid #ddd;">{safe_notes}</td></tr>'
+            if safe_notes
             else ""
         )
 
         # Customize message based on recipient type
         if person_type == "branch":
-            greeting = f"Hola <strong>{branch_name}</strong>,"
+            greeting = f"Hola <strong>{safe_branch_name}</strong>,"
             instructions = "Por favor asegúrate de estar disponible para esta cita."
         else:  # buyer
-            greeting = f"Hola <strong>{buyer_name}</strong>,"
+            greeting = f"Hola <strong>{safe_buyer_name}</strong>,"
             instructions = "Por favor llega 10 minutos antes de tu cita."
 
         # Create email message
@@ -544,12 +527,12 @@ class SendGridEmailService:
                     <tr style="background-color: #f2f2f2;">
                         <td style="border: 1px solid #ddd;"><strong>Fecha y Hora:
                         </strong></td>
-                        <td style="border: 1px solid #ddd;">{scheduled_str}</td>
+                        <td style="border: 1px solid #ddd;">{safe_scheduled_str}</td>
                     </tr>
                     <tr>
                         <td style="border: 1px solid #ddd;"><strong>Vehículo:
                         </strong></td>
-                        <td style="border: 1px solid #ddd;">{vehicle_info}</td>
+                        <td style="border: 1px solid #ddd;">{safe_vehicle_info}</td>
                     </tr>
                     {notes_row}
                 </table>
@@ -561,8 +544,7 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
-        response: Any = await sg.send(message)
+        response = await self._send_message(message)
 
         # Log delivery status
         if response.status_code in (200, 202):
@@ -590,13 +572,17 @@ class SendGridEmailService:
     ) -> None:
         """Send appointment status update (confirmed/cancelled) to buyer."""
         # Import here to avoid circular dependency
-        import sendgrid
         from sendgrid.helpers.mail import Mail
 
         from prosell.domain.entities.appointment import AppointmentStatus
 
         # Format datetime for display
         scheduled_str = scheduled_at.strftime("%A, %d %B %Y at %I:%M %p")
+        safe_buyer_name = self._escape_html(buyer_name)
+        safe_branch_name = self._escape_html(branch_name)
+        safe_vehicle_info = self._escape_html(vehicle_info)
+        safe_scheduled_str = self._escape_html(scheduled_str)
+        safe_notes = self._escape_html(notes) if notes else None
 
         # Determine email content based on status
         if new_status == AppointmentStatus.COMPLETED:
@@ -612,13 +598,14 @@ class SendGridEmailService:
             subject = "[ProSell] Appointment Status Update"
             status_text = new_status.value
             status_message = f"Your appointment status has been updated to: {new_status.value}"
+        safe_status_text = self._escape_html(status_text.title())
 
         # Build notes row if notes exist
         notes_section = (
             f'<tr style="background-color: #f2f2f2;">'
             f'<td style="border: 1px solid #ddd;"><strong>Notas:</strong></td>'
-            f'<td style="border: 1px solid #ddd;">{notes}</td></tr>'
-            if notes
+            f'<td style="border: 1px solid #ddd;">{safe_notes}</td></tr>'
+            if safe_notes
             else ""
         )
 
@@ -631,33 +618,33 @@ class SendGridEmailService:
             <html>
             <body>
                 <h2>{status_message}</h2>
-                <p>Hola <strong>{buyer_name}</strong>,</p>
+                <p>Hola <strong>{safe_buyer_name}</strong>,</p>
                 <p>El estado de tu cita ha sido actualizado:</p>
                 <table cellpadding="5" style="border-collapse: collapse;
                 border: 1px solid #ddd;">
                     <tr style="background-color: #f2f2f2;">
                         <td style="border: 1px solid #ddd;"><strong>Estado:
                         </strong></td>
-                        <td style="border: 1px solid #ddd;">{status_text.title()}</td>
+                        <td style="border: 1px solid #ddd;">{safe_status_text}</td>
                     </tr>
                     <tr>
                         <td style="border: 1px solid #ddd;"><strong>Asesor:
                         </strong></td>
-                        <td style="border: 1px solid #ddd;">{branch_name}</td>
+                        <td style="border: 1px solid #ddd;">{safe_branch_name}</td>
                     </tr>
                     <tr style="background-color: #f2f2f2;">
                         <td style="border: 1px solid #ddd;"><strong>Vehículo:
                         </strong></td>
-                        <td style="border: 1px solid #ddd;">{vehicle_info}</td>
+                        <td style="border: 1px solid #ddd;">{safe_vehicle_info}</td>
                     </tr>
                     <tr>
                         <td style="border: 1px solid #ddd;"><strong>Fecha y Hora:
                         </strong></td>
-                        <td style="border: 1px solid #ddd;">{scheduled_str}</td>
+                        <td style="border: 1px solid #ddd;">{safe_scheduled_str}</td>
                     </tr>
                     {notes_section}
                 </table>
-                {f'<p><strong>Notas:</strong> {notes}</p>' if notes else ''}
+                {f"<p><strong>Notas:</strong> {safe_notes}</p>" if safe_notes else ""}
                 <p>Si tienes alguna pregunta, contáctanos.</p>
             </body>
             </html>
@@ -665,8 +652,7 @@ class SendGridEmailService:
         )
 
         # Send email
-        sg = sendgrid.SendGridAPIClient(api_key=self.api_key)
-        response: Any = await sg.send(message)
+        response = await self._send_message(message)
 
         # Log delivery status
         if response.status_code in (200, 202):
@@ -693,26 +679,27 @@ class SendGridEmailService:
         role: str,
     ) -> None:
         """Send team invitation email via SendGrid."""
-        import sendgrid
         from sendgrid.helpers.mail import Mail
 
         base_url = settings.oauth_frontend_success_url.split("/auth")[0]
         invitation_url = f"{base_url}/invite/accept?token={invitation_token}"
+        safe_team_name = self._escape_html(team_name)
+        safe_inviter_name = self._escape_html(inviter_name)
+        safe_role = self._escape_html(role)
 
         message = Mail(
-            from_email=settings.sendgrid_from_email,
+            from_email=self.from_email,
             to_emails=email,
             subject=f"[ProSell] You've been invited to join {team_name}",
             html_content=(
-                f"<p>{inviter_name} has invited you to join "
-                f"<strong>{team_name}</strong> as {role}.</p>"
+                f"<p>{safe_inviter_name} has invited you to join "
+                f"<strong>{safe_team_name}</strong> as {safe_role}.</p>"
                 f'<p><a href="{invitation_url}">Accept invitation</a></p>'
                 f"<p>This invitation expires in 7 days.</p>"
             ),
         )
 
-        sg = sendgrid.SendGridAPIClient(api_key=settings.sendgrid_api_key)
-        response = sg.send(message)
+        response = await self._send_message(message)
 
         if response.status_code not in (200, 202):
             logger.error(
@@ -812,7 +799,7 @@ Tienes una nueva cita agendada:
   Comprador: {buyer_name}
   Vehículo: {vehicle_info}
   Fecha y Hora: {scheduled_str}
-{f'  Notas: {notes}' if notes else ''}
+{f"  Notas: {notes}" if notes else ""}
 
 Por favor asegúrate de estar disponible para esta cita.
 {"=" * 60}
@@ -842,7 +829,7 @@ Tu cita ha sido confirmada:
   Asesor: {branch_name}
   Vehículo: {vehicle_info}
   Fecha y Hora: {scheduled_str}
-{f'  Notas: {notes}' if notes else ''}
+{f"  Notas: {notes}" if notes else ""}
 
 Por favor llega 10 minutos antes de tu cita.
 {"=" * 60}
@@ -852,7 +839,7 @@ Por favor llega 10 minutos antes de tu cita.
         self,
         email: str,
         person_type: str,  # "branch" or "buyer"
-        appointment_details: dict[str, Any],
+        appointment_details: AppointmentReminderDetails,
     ) -> None:
         """Log appointment reminder."""
         _buyer_name = appointment_details.get("buyer_name", "Cliente")
@@ -878,7 +865,7 @@ Subject: Recordatorio de Cita - ProSell
 Este es un recordatorio de tu próxima cita:
   Fecha y Hora: {scheduled_str}
   Vehículo: {vehicle_info}
-{f'  Notas: {notes}' if notes else ''}
+{f"  Notas: {notes}" if notes else ""}
 
 {instructions}
 {"=" * 60}
@@ -923,7 +910,7 @@ Hola {buyer_name},
   Asesor: {branch_name}
   Vehículo: {vehicle_info}
   Fecha y Hora: {scheduled_str}
-{f'  Notas: {notes}' if notes else ''}
+{f"  Notas: {notes}" if notes else ""}
 
 If you have any questions, contact us.
 {"=" * 60}

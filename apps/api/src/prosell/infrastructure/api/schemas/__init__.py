@@ -1,6 +1,7 @@
 """API schemas for ProSell SaaS."""
 
 from prosell.infrastructure.api.schemas.auth import (
+    ChangePasswordRequest,
     Disable2FARequest,
     Enable2FARequest,
     LoginRequest,
@@ -12,6 +13,7 @@ from prosell.infrastructure.api.schemas.auth import (
 from prosell.infrastructure.api.schemas.responses import (
     AuthStateResponse,
     AuthTokenResponse,
+    HealthCheckResponse,
     LogoutResponse,
     MeResponse,
     MessageResponse,
@@ -21,8 +23,10 @@ from prosell.infrastructure.api.schemas.responses import (
 __all__ = [
     "AuthStateResponse",
     "AuthTokenResponse",
+    "ChangePasswordRequest",
     "Disable2FARequest",
     "Enable2FARequest",
+    "HealthCheckResponse",
     "LoginRequest",
     "LogoutResponse",
     "MeResponse",

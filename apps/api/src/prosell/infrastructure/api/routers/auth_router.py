@@ -2,17 +2,19 @@
 
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, Any  # Any: JWT payload is dynamically typed by python-jose
+from typing import Annotated
 from urllib.parse import quote
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 
 # DTOs - all from central dto module
 from prosell.application.dto.auth import (
-    Disable2FARequest as Disable2FAUCRequest,
+    ChangePasswordRequest as ChangePasswordUCRequest,
 )
 from prosell.application.dto.auth import (
+    ChangePasswordResponse,
     Disable2FAResponse,
     Enable2FAResponse,
     LoginUserRequest,
@@ -22,6 +24,9 @@ from prosell.application.dto.auth import (
     RegisterUserRequest,
     RegisterUserResponse,
     Verify2FAResponse,
+)
+from prosell.application.dto.auth import (
+    Disable2FARequest as Disable2FAUCRequest,
 )
 from prosell.application.dto.auth import (
     Enable2FARequest as Enable2FAUCRequest,
@@ -37,6 +42,7 @@ from prosell.application.dto.auth import (
 )
 
 # Use cases - only import the use case classes
+from prosell.application.use_cases.auth.change_password import ChangePasswordUseCase
 from prosell.application.use_cases.auth.enable_2fa import (
     Disable2FAUseCase,
     Enable2FAUseCase,
@@ -47,6 +53,7 @@ from prosell.application.use_cases.auth.refresh_token import RefreshTokenUseCase
 from prosell.application.use_cases.auth.register_user import RegisterUserUseCase
 from prosell.application.use_cases.auth.verify_2fa import Verify2FAUseCase
 from prosell.core.config import settings
+from prosell.domain.entities.user import User
 from prosell.domain.exceptions.auth_exceptions import (
     OAuthCallbackError,
     OAuthConfigurationError,
@@ -54,7 +61,10 @@ from prosell.domain.exceptions.auth_exceptions import (
     OAuthStateInvalidError,
 )
 from prosell.domain.ports import IOAuthService
+from prosell.domain.repositories.user_repository import AbstractUserRepository
 from prosell.infrastructure.api.dependencies import (
+    get_change_password_use_case,
+    get_current_auth_user_from_cookie,
     get_disable_2fa_use_case,
     get_enable_2fa_use_case,
     get_login_user_use_case,
@@ -62,6 +72,7 @@ from prosell.infrastructure.api.dependencies import (
     get_oauth_service,
     get_refresh_token_use_case,
     get_register_user_use_case,
+    get_user_repository,
     get_verify_2fa_use_case,
 )
 
@@ -69,13 +80,15 @@ from prosell.infrastructure.api.dependencies import (
 # OAuth authorize/initiate endpoints are rate limited to prevent abuse
 from prosell.infrastructure.api.middleware import smart_rate_limit
 from prosell.infrastructure.api.middleware.auth_middleware import (
+    AuthTokenPayload,
     get_current_user,
     get_optional_user,
 )
 from prosell.infrastructure.api.schemas import (
     AuthStateResponse,
+    ChangePasswordRequest,
     Disable2FARequest,
-    Enable2FARequest,
+    HealthCheckResponse,
     LoginRequest,
     LogoutResponse,
     MeResponse,
@@ -95,18 +108,19 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 
-@router.get("/health")
-async def health_check() -> dict[str, Any]:
+@router.get("/health", response_model=HealthCheckResponse)
+async def health_check() -> HealthCheckResponse:
     """
     Health check endpoint.
     Returns the current status of the API.
     Does not require authentication.
     """
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now(UTC).isoformat(),
-        "service": "prosell-api",
-    }
+    return HealthCheckResponse(
+        status="healthy",
+        timestamp=datetime.now(UTC).isoformat(),
+        service="prosell-api",
+        version="0.1.0",
+    )
 
 
 # =============================================================================
@@ -158,6 +172,7 @@ async def register(
 
     Sets httpOnly cookies for authentication tokens.
     """
+    _ = request
     uc_request = RegisterUserRequest(
         email=register_request.email,
         password=register_request.password,
@@ -186,6 +201,7 @@ async def login(
     Returns access and refresh tokens via httpOnly cookies.
     If 2FA is enabled, requires_2fa will be True.
     """
+    _ = request
     uc_request = LoginUserRequest(
         email=login_data.email,
         password=login_data.password,
@@ -244,6 +260,7 @@ async def refresh_token(
 
     - **refresh_token**: Valid refresh token
     """
+    _ = request
     uc_request = RefreshTokenUCRequest(refresh_token=refresh_request.refresh_token)
     return await use_case.execute(uc_request)
 
@@ -264,6 +281,7 @@ async def oauth_login(
 
     Supports Google and Facebook OAuth.
     """
+    _ = request
     uc_request = OAuthLoginUCRequest(
         provider=provider,
         provider_user_id=oauth_request.provider_user_id,
@@ -274,7 +292,11 @@ async def oauth_login(
     return await use_case.execute(uc_request)
 
 
-@router.get("/oauth/{provider}/authorize")
+@router.get(
+    "/oauth/{provider}/authorize",
+    response_model=None,
+    response_class=RedirectResponse,
+)
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def oauth_authorize(
     provider: str,
@@ -305,6 +327,7 @@ async def oauth_authorize(
         GET /api/v1/auth/oauth/google/authorize
         → Redirects to: https://accounts.google.com/o/oauth2/v2/auth?...
     """
+    _ = request
     try:
         # Get provider redirect URI from settings
         provider_redirect_uris = _get_provider_redirect_uris()
@@ -338,7 +361,11 @@ async def oauth_authorize(
         )
 
 
-@router.get("/oauth/{provider}/callback")
+@router.get(
+    "/oauth/{provider}/callback",
+    response_model=None,
+    response_class=RedirectResponse,
+)
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def oauth_callback(
     provider: str,
@@ -382,6 +409,7 @@ async def oauth_callback(
         → Redirects to: http://localhost:3000/dashboard
     """
     # Handle OAuth error from provider (user denied access)
+    _ = request
     if error:
         logger.warning(f"OAuth callback error for provider={provider}: {error}")
         # Sanitize provider error to allowed values only
@@ -509,12 +537,27 @@ async def oauth_callback(
         return RedirectResponse(url=error_url, status_code=302)
 
 
-@router.post("/2fa/enable")
+@router.post("/change-password", response_model=ChangePasswordResponse)
+@smart_rate_limit("auth")
+async def change_password(
+    change_request: ChangePasswordRequest,
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    use_case: Annotated[ChangePasswordUseCase, Depends(get_change_password_use_case)],
+) -> ChangePasswordResponse:
+    """Change the authenticated user's password."""
+    uc_request = ChangePasswordUCRequest(
+        current_password=change_request.current_password,
+        new_password=change_request.new_password,
+    )
+
+    return await use_case.execute(current_user.id, uc_request)
+
+
+@router.post("/2fa/enable", response_model=Enable2FAResponse)
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def enable_2fa(
     request: Request,
-    enable_request: Enable2FARequest,
-    current_user: Annotated[dict[str, Any], Depends(get_current_user)],
+    current_user: Annotated[AuthTokenPayload, Depends(get_current_user)],
     use_case: Annotated[Enable2FAUseCase, Depends(get_enable_2fa_use_case)],
 ) -> Enable2FAResponse:
     """
@@ -523,42 +566,38 @@ async def enable_2fa(
     Returns TOTP secret, QR code URI, and backup codes.
     Save the backup codes securely!
     """
-    # Ensure user can only enable 2FA for themselves
-    if current_user["sub"] != str(enable_request.user_id):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only enable 2FA for your own account",
-        )
-
-    uc_request = Enable2FAUCRequest(user_id=enable_request.user_id)
+    _ = request
+    uc_request = Enable2FAUCRequest(user_id=UUID(current_user["sub"]))
     return await use_case.execute(uc_request)
 
 
-@router.post("/2fa/verify")
+@router.post("/2fa/verify", response_model=Verify2FAResponse)
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def verify_2fa(
     request: Request,
     verify_request: Verify2FARequest,
+    current_user: Annotated[AuthTokenPayload, Depends(get_current_user)],
     use_case: Annotated[Verify2FAUseCase, Depends(get_verify_2fa_use_case)],
 ) -> Verify2FAResponse:
     """
-    Verify 2FA code during login.
+    Verify 2FA code for the authenticated user.
 
     Accepts either TOTP code from authenticator app or backup code.
     """
+    _ = request
     uc_request = Verify2FAUCRequest(
-        user_id=verify_request.user_id,
+        user_id=UUID(current_user["sub"]),
         code=verify_request.code,
     )
     return await use_case.execute(uc_request)
 
 
-@router.post("/2fa/disable")
+@router.post("/2fa/disable", response_model=Disable2FAResponse)
 @smart_rate_limit("auth")  # Higher rate limit for testing
 async def disable_2fa(
     request: Request,
     disable_request: Disable2FARequest,
-    current_user: Annotated[dict[str, Any], Depends(get_current_user)],
+    current_user: Annotated[AuthTokenPayload, Depends(get_current_user)],
     use_case: Annotated[Disable2FAUseCase, Depends(get_disable_2fa_use_case)],
 ) -> Disable2FAResponse:
     """
@@ -566,23 +605,18 @@ async def disable_2fa(
 
     Requires a valid TOTP code to confirm.
     """
-    # Ensure user can only disable 2FA for themselves
-    if current_user["sub"] != str(disable_request.user_id):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only disable 2FA for your own account",
-        )
-
+    _ = request
     uc_request = Disable2FAUCRequest(
-        user_id=disable_request.user_id,
+        user_id=UUID(current_user["sub"]),
         totp_code=disable_request.totp_code,
     )
     return await use_case.execute(uc_request)
 
 
-@router.get("/state")
+@router.get("/state", response_model=AuthStateResponse)
 async def get_auth_state(
-    current_user: Annotated[dict[str, Any] | None, Depends(get_optional_user)] = None,
+    current_user: Annotated[AuthTokenPayload | None, Depends(get_optional_user)],
+    user_repository: Annotated[AbstractUserRepository, Depends(get_user_repository)],
 ) -> AuthStateResponse:
     """
     Get current authentication state from httpOnly cookies.
@@ -593,25 +627,33 @@ async def get_auth_state(
     Returns user data and authentication status based on cookies.
     """
     if not current_user:
-        return AuthStateResponse(isAuthenticated=False, user=None)
+        return AuthStateResponse(is_authenticated=False, user=None)
+
+    user = await user_repository.get_by_id(UUID(current_user["sub"]))
+    if not user:
+        return AuthStateResponse(is_authenticated=False, user=None)
+
+    name_parts = user.full_name.split(" ", 1)
+    first_name = name_parts[0]
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
 
     return AuthStateResponse(
-        isAuthenticated=True,
+        is_authenticated=True,
         user=AuthStateUserResponse(
             id=current_user["sub"],
-            email=current_user.get("email"),
-            first_name=current_user.get("first_name"),
-            last_name=current_user.get("last_name"),
-            role=current_user.get("role"),
-            is_email_verified=current_user.get("is_email_verified", False),
-            is_2fa_enabled=current_user.get("is_2fa_enabled", False),
+            email=user.email,
+            first_name=first_name,
+            last_name=last_name,
+            role=current_user.get("roles", [None])[0],
+            is_email_verified=user.email_verified,
+            is_2fa_enabled=user.is_2fa_enabled,
         ),
     )
 
 
-@router.get("/me")
+@router.get("/me", response_model=MeResponse)
 async def get_me(
-    current_user: Annotated[dict[str, Any], Depends(get_current_user)],
+    current_user: Annotated[AuthTokenPayload, Depends(get_current_user)],
 ) -> MeResponse:
     """
     Get current user info from JWT token.
@@ -624,7 +666,7 @@ async def get_me(
     )
 
 
-@router.post("/logout")
+@router.post("/logout", response_model=LogoutResponse)
 async def logout(response: Response) -> LogoutResponse:
     """
     Logout user.

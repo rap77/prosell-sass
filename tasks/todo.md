@@ -65,16 +65,18 @@
   - [x] A1.08: Toast de éxito al guardar cambios
   - [x] A1.09: Verificar TypeScript strict sin errores
 
-- [ ] A2: Settings/Seguridad — cambio de contraseña y 2FA
-  - [ ] A2.01: Crear `app/settings/security/page.tsx` con sección "Cambiar contraseña"
-  - [ ] A2.02: Implementar formulario con validación (mínimo 8 chars, confirmación igual)
-  - [ ] A2.03: Conectar a `POST /api/v1/auth/change-password`
-  - [ ] A2.04: Mostrar estado de 2FA (habilitado/deshabilitado) correctamente
-  - [ ] A2.05: Flujo "Habilitar 2FA" navega a `/auth/setup-2fa`
-  - [ ] A2.06: Flujo "Deshabilitar 2FA" con modal de confirmación → `POST /api/v1/auth/disable-2fa`
-  - [ ] A2.07: Mapear errores del backend a mensajes en español
-  - [ ] A2.08: Extender `lib/api/userApi.ts` con hook `useChangePassword`
-  - [ ] A2.09: Verificar TypeScript strict sin errores
+- [x] A2: Settings/Seguridad — cambio de contraseña y 2FA⏱️ **Estimate**: (4h) | **Actual**: 1.1h | **Deviation**: N/A | **Progress**: 9/9 (100%)
+📊 **Avg/subtask**: 7.3m | **ETA**: 1.1h
+
+  - [x] A2.01: Crear `app/settings/security/page.tsx` con sección "Cambiar contraseña"
+  - [x] A2.02: Implementar formulario con validación (mínimo 8 chars, confirmación igual)
+  - [x] A2.03: Conectar a `POST /api/v1/auth/change-password`
+  - [x] A2.04: Mostrar estado de 2FA (habilitado/deshabilitado) correctamente
+  - [x] A2.05: Flujo "Habilitar 2FA" navega a `/auth/setup-2fa`
+  - [x] A2.06: Flujo "Deshabilitar 2FA" con modal de confirmación → `POST /api/v1/auth/disable-2fa`
+  - [x] A2.07: Mapear errores del backend a mensajes en español
+  - [x] A2.08: Extender `lib/api/userApi.ts` con hook `useChangePassword`
+  - [x] A2.09: Verificar TypeScript strict sin errores
 
 - [ ] A3: Panel de notificaciones en header
   - [ ] A3.01: Crear modelo `Notification` en `domain/entities/notification.py`

@@ -1,6 +1,8 @@
 """Authentication-related domain exceptions."""
 
-from typing import Any
+from collections.abc import Mapping
+
+type AuthExceptionDetailValue = str | int | list[str]
 
 # User Exceptions
 
@@ -8,9 +10,13 @@ from typing import Any
 class AuthDomainException(Exception):
     """Base exception for auth domain errors."""
 
-    def __init__(self, message: str, details: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        details: Mapping[str, AuthExceptionDetailValue] | None = None,
+    ) -> None:
         self.message: str = message
-        self.details: dict[str, Any] = details or {}
+        self.details: dict[str, AuthExceptionDetailValue] = dict(details) if details else {}
         super().__init__(message)
 
 
@@ -113,6 +119,15 @@ class InvalidPasswordResetTokenException(AuthDomainException):
         )
 
 
+class PasswordReuseException(AuthDomainException):
+    """Raised when the new password matches the current password."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            message="New password must be different from the current password",
+        )
+
+
 # 2FA Exceptions
 
 
@@ -122,6 +137,15 @@ class Invalid2FACodeException(AuthDomainException):
     def __init__(self) -> None:
         super().__init__(
             message="Invalid two-factor authentication code",
+        )
+
+
+class TwoFactorNotEnabledException(AuthDomainException):
+    """Raised when 2FA is required but not enabled for the account."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            message="Two-factor authentication is not enabled for this account",
         )
 
 

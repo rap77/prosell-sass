@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class UserResponse(BaseModel):
@@ -38,6 +38,15 @@ class LogoutResponse(BaseModel):
     message: str
 
 
+class HealthCheckResponse(BaseModel):
+    """Health check response model."""
+
+    status: str
+    service: str
+    timestamp: str
+    version: str
+
+
 class AuthStateUserResponse(BaseModel):
     """User data within auth state response."""
 
@@ -53,7 +62,10 @@ class AuthStateUserResponse(BaseModel):
 class AuthStateResponse(BaseModel):
     """Auth state response model."""
 
-    isAuthenticated: bool  # noqa: N815 - matches frontend camelCase convention
+    is_authenticated: bool = Field(
+        serialization_alias="isAuthenticated",
+        validation_alias="isAuthenticated",
+    )
     user: AuthStateUserResponse | None = None
 
 
