@@ -13,6 +13,7 @@ from prosell.application.dto.org import (
     UploadUrlRequest,
     UploadUrlResponse,
 )
+from pydantic import BaseModel
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.use_cases.org import (
     CreateOrganizationUseCase,
@@ -148,6 +149,39 @@ async def get_my_organization(
         return await use_case.execute(tenant_id=current_user.tenant_id)
     except OrganizationNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
+
+
+class CompleteSetupRequest(BaseModel):
+    """Request body for completing onboarding setup."""
+
+    setup_complete: bool = True
+
+
+@router.patch(
+    "/me/setup",
+    response_model=OrganizationResponse,
+    summary="Mark organization onboarding as complete",
+)
+async def complete_org_setup(
+    request: CompleteSetupRequest,
+    current_user: User = Depends(get_current_auth_user_from_cookie),
+    org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
+) -> OrganizationResponse:
+    """Mark the current organization's onboarding wizard as complete or skip."""
+    if not current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No organization associated with account.",
+        )
+    org = await org_repo.get_by_tenant_id(tenant_id=current_user.tenant_id)
+    if org is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found.",
+        )
+    org.setup_complete = request.setup_complete
+    updated = await org_repo.update(org)
+    return OrganizationResponse.model_validate(updated, from_attributes=True)
 
 
 @router.get(

@@ -37,6 +37,9 @@ class Organization(DomainModel):
     # Wallet (lazy loaded)
     wallet_id: UUID | None = None
 
+    # Onboarding
+    setup_complete: bool = False
+
     # Metadata
     settings: dict[str, object] = Field(default_factory=dict)
 

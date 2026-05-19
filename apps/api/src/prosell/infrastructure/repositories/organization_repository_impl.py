@@ -94,6 +94,7 @@ class SqlAlchemyOrganizationRepository(AbstractOrganizationRepository):
         model.verified_at = organization.verified_at
         model.verified_by = organization.verified_by
         model.wallet_id = organization.wallet_id
+        model.setup_complete = organization.setup_complete
         model.settings = organization.settings
         model.updated_at = datetime.now(UTC)
 

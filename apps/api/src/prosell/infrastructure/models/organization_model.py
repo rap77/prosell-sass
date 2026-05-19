@@ -44,6 +44,9 @@ class OrganizationModel(Base):
     # Wallet ref (plain UUID to avoid circular FK)
     wallet_id: Mapped[UUID | None] = mapped_column(nullable=True)
 
+    # Onboarding
+    setup_complete: Mapped[bool] = mapped_column(default=False, nullable=False)
+
     # Settings
     settings: Mapped[dict[str, object]] = mapped_column(JSON, default=dict, nullable=False)
 
