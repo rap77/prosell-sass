@@ -3,6 +3,9 @@
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
 )
+from prosell.infrastructure.repositories.notification_repository_impl import (
+    SqlAlchemyNotificationRepository,
+)
 from prosell.infrastructure.repositories.oauth_repository_impl import SqlAlchemyOAuthRepository
 from prosell.infrastructure.repositories.organization_repository_impl import (
     SqlAlchemyOrganizationRepository,
@@ -22,6 +25,7 @@ from prosell.infrastructure.repositories.wallet_repository_impl import (
 
 __all__ = [
     "SqlAlchemyCategoryRepository",
+    "SqlAlchemyNotificationRepository",
     "SqlAlchemyOAuthRepository",
     "SqlAlchemyOrganizationRepository",
     "SqlAlchemyProductRepository",

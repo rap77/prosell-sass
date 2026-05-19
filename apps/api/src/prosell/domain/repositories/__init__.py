@@ -2,6 +2,7 @@
 
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
+from prosell.domain.repositories.notification_repository import AbstractNotificationRepository
 from prosell.domain.repositories.oauth_repository import AbstractOAuthRepository
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
@@ -24,6 +25,7 @@ from prosell.domain.repositories.wallet_repository import (
 __all__ = [
     "AbstractCategoryRepository",
     "AbstractLeadRepository",
+    "AbstractNotificationRepository",
     "AbstractOAuthRepository",
     "AbstractOrganizationRepository",
     "AbstractProductRepository",
