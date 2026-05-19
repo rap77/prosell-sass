@@ -119,8 +119,16 @@ class SqlAlchemyNotificationRepository(AbstractNotificationRepository):
         updated = result.scalar_one_or_none()
         if updated:
             return self._to_entity(updated)
-        # Notification already read or not found — try to return existing
-        return await self.get_by_id(notification_id, tenant_id)
+        # UPDATE matched zero rows: already read, not found, or not owned by user_id.
+        # Fetch only if the notification belongs to this user to avoid data exposure.
+        stmt_check = select(NotificationModel).where(
+            NotificationModel.id == notification_id,
+            NotificationModel.tenant_id == tenant_id,
+            NotificationModel.user_id == user_id,
+        )
+        check_result = await self.session.execute(stmt_check)
+        model = check_result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
 
     async def mark_all_as_read(self, user_id: UUID, tenant_id: UUID) -> int:
         """Mark all unread notifications for a user as read.
@@ -136,6 +144,7 @@ class SqlAlchemyNotificationRepository(AbstractNotificationRepository):
                 NotificationModel.is_read.is_(False),
             )
             .values(is_read=True, read_at=now)
+            .execution_options(synchronize_session=False)
         )
         result = await self.session.execute(stmt)
         return result.rowcount  # type: ignore[return-value]

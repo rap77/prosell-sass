@@ -261,10 +261,8 @@ class CreateLeadUseCase:
                     context["product"] = product
 
             # Run assignment engine with the configured strategy.
-            from prosell.domain.entities.lead import Lead as LeadEntity
-
             result = self.assignment_engine.assign_lead(
-                lead=LeadEntity(
+                lead=Lead(
                     id=UUID("00000000-0000-0000-0000-000000000000"),  # Dummy ID
                     tenant_id=tenant_id,
                     buyer_name=request.buyer_name,

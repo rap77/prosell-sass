@@ -23,7 +23,7 @@ export default function OnboardingPage() {
     let cancelled = false;
     async function checkSetup() {
       try {
-        const data = await orgApi.getMyOrganization("");
+        const data = await orgApi.getMyOrganization();
         if (cancelled) return;
         if (data.setup_complete) {
           router.replace("/dashboard");

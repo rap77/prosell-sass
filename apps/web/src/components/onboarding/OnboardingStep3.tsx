@@ -17,8 +17,10 @@ export function OnboardingStep3({ onComplete, onBack, onSkip, isLoading }: Onboa
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
 
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   async function handleInvite() {
-    if (!email.trim()) {
+    if (!email.trim() || !EMAIL_RE.test(email)) {
       onComplete();
       return;
     }

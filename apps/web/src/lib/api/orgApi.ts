@@ -148,14 +148,11 @@ export const orgApi = {
    * Get current user's organization
    * GET /api/v1/org/me
    */
-  async getMyOrganization(tenant_id: string): Promise<Organization> {
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/org/me?tenant_id=${tenant_id}`,
-      {
-        method: "GET",
-        credentials: "include",
-      },
-    );
+  async getMyOrganization(): Promise<Organization> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/org/me`, {
+      method: "GET",
+      credentials: "include",
+    });
 
     return handleResponse<Organization>(response);
   },

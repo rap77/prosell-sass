@@ -112,7 +112,7 @@ export const useOrganizationStore = create<OrganizationState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const org = await orgApi.getMyOrganization(tenantId);
+          const org = await orgApi.getMyOrganization();
 
           set({
             currentOrg: org,
