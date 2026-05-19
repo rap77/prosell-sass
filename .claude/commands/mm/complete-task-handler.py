@@ -1150,7 +1150,7 @@ def get_task_payload(task_id: str) -> dict[str, Any]:
             "subtasks": pending_subtasks,
             "total_subtasks": len(subtasks),
             "pending_count": len(pending_subtasks),
-            "context_budget_threshold": 0.75,  # Exit at 75% context
+            "context_budget_threshold": 0.90,  # Exit at 90% context
             "working_directory": str(PROJECT_ROOT),
             "stack": _read_stack_from_config(PROJECT_ROOT),
             "project_id": project_id,

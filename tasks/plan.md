@@ -297,15 +297,15 @@ Esta milestone cierra los 8 gaps de UX identificados para dejar la app operativa
 - Alternativa: el frontend reutiliza `GET /api/v1/leads` sin paginación y agrupa en cliente (más simple, evaluar según performance)
 
 **Acceptance Criteria**:
-- [ ] `/pipeline` accesible desde sidebar con item "Pipeline"
-- [ ] Kanban muestra 4 columnas activas: New, Contacted, Qualified, Appointment Set
-- [ ] Cada columna muestra count de leads y suma de precios de vehículos
-- [ ] Cards de lead muestran: nombre buyer, vehículo de interés, tiempo en stage
-- [ ] Drag-and-drop funciona y ejecuta state transition en backend
-- [ ] Transiciones inválidas (ej: new → appointment_set) muestran error toast y no persisten
-- [ ] Selector de vendedor filtra el board por vendedor asignado
-- [ ] En mobile, el board degrada a vista de lista vertical
-- [ ] TypeScript strict sin errores
+- [x] `/pipeline` accesible desde sidebar con item "Pipeline"
+- [x] Kanban muestra 4 columnas activas: New, Contacted, Qualified, Appointment Set
+- [x] Cada columna muestra count de leads y suma de precios de vehículos
+- [x] Cards de lead muestran: nombre buyer, vehículo de interés, tiempo en stage
+- [x] Drag-and-drop funciona y ejecuta state transition en backend
+- [x] Transiciones inválidas (ej: new → appointment_set) muestran error toast y no persisten
+- [x] Selector de vendedor filtra el board por vendedor asignado
+- [x] En mobile, el board degrada a vista de lista vertical
+- [x] TypeScript strict sin errores
 
 **Files**:
 - `apps/web/src/app/(seller)/pipeline/page.tsx` (new)
