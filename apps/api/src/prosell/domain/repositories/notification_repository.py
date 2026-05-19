@@ -30,10 +30,16 @@ class AbstractNotificationRepository(ABC):
         ...
 
     @abstractmethod
-    async def mark_as_read(self, notification_id: UUID, tenant_id: UUID) -> Notification | None:
+    async def mark_as_read(
+        self,
+        notification_id: UUID,
+        tenant_id: UUID,
+        user_id: UUID,
+    ) -> Notification | None:
         """Mark a single notification as read.
 
-        Returns the updated entity, or None if not found.
+        Only marks if the notification belongs to user_id (ownership check).
+        Returns the updated entity, or None if not found or not owned.
         """
         ...
 

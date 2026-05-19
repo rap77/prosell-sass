@@ -144,6 +144,7 @@ async def mark_notification_read(
     notification = await repo.mark_as_read(
         notification_id=notification_id,
         tenant_id=current_user.tenant_id,
+        user_id=current_user.id,
     )
     if notification is None:
         raise HTTPException(

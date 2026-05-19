@@ -96,17 +96,20 @@ class SqlAlchemyNotificationRepository(AbstractNotificationRepository):
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
-    async def mark_as_read(self, notification_id: UUID, tenant_id: UUID) -> Notification | None:
-        """Mark a single notification as read.
-
-        Returns the updated entity, or None if not found.
-        """
+    async def mark_as_read(
+        self,
+        notification_id: UUID,
+        tenant_id: UUID,
+        user_id: UUID,
+    ) -> Notification | None:
+        """Mark a single notification as read (ownership-checked)."""
         now = datetime.now(UTC)
         stmt = (
             update(NotificationModel)
             .where(
                 NotificationModel.id == notification_id,
                 NotificationModel.tenant_id == tenant_id,
+                NotificationModel.user_id == user_id,
                 NotificationModel.is_read.is_(False),
             )
             .values(is_read=True, read_at=now)

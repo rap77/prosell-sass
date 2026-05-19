@@ -1,5 +1,6 @@
 """Organization use cases."""
 
+from prosell.application.use_cases.org.complete_setup import CompleteSetupUseCase
 from prosell.application.use_cases.org.create_organization import CreateOrganizationUseCase
 from prosell.application.use_cases.org.get_organization import (
     GetOrganizationByTenantUseCase,
@@ -14,6 +15,7 @@ from prosell.application.use_cases.org.verify_organization import (
 )
 
 __all__ = [
+    "CompleteSetupUseCase",
     "CreateOrganizationUseCase",
     "GetOrganizationByTenantUseCase",
     "GetOrganizationUseCase",
