@@ -29,6 +29,7 @@ export interface Organization {
   website: string | null;
   phone: string | null;
   wallet_id: string | null;
+  setup_complete: boolean;
   created_at: string;
   updated_at: string;
   verified_at: string | null;
@@ -226,6 +227,20 @@ export const orgApi = {
       credentials: "include",
     });
 
+    return handleResponse<Organization>(response);
+  },
+
+  /**
+   * Mark current organization onboarding as complete (or skip)
+   * PATCH /api/v1/org/me/setup
+   */
+  async completeSetup(): Promise<Organization> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/org/me/setup`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ setup_complete: true }),
+    });
     return handleResponse<Organization>(response);
   },
 

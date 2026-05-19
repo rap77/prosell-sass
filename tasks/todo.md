@@ -93,19 +93,19 @@
   - [x] A3.12: "Marcar todas como leídas" funcional
   - [x] A3.13: Verificar TypeScript strict sin errores en frontend
 
-- [ ] A4: Onboarding — wizard de primer ingreso
-  - [ ] A4.01: Agregar campo `setup_complete: bool = False` al modelo `Organization`
-  - [ ] A4.02: Crear Alembic migration para `setup_complete`
-  - [ ] A4.03: Agregar `PATCH /api/v1/org/me` con `setup_complete: true` al finalizar
-  - [ ] A4.04: Crear `app/onboarding/page.tsx` con wizard multi-step (3 pasos)
-  - [ ] A4.05: Crear `OnboardingStep1.tsx` — datos de la organización
-  - [ ] A4.06: Crear `OnboardingStep2.tsx` — configuración inicial (zona horaria, moneda)
-  - [ ] A4.07: Crear `OnboardingStep3.tsx` — invitar primer miembro del equipo (opcional)
-  - [ ] A4.08: Crear `OnboardingProgress.tsx` — barra de progreso (paso 1/3, 2/3, 3/3)
-  - [ ] A4.09: Botón "Saltar" disponible en cada paso
-  - [ ] A4.10: Al completar o saltar, marcar org como setup completo y redirigir al dashboard
-  - [ ] A4.11: Usuarios existentes (`setup_complete=true`) no ven el onboarding
-  - [ ] A4.12: Verificar TypeScript strict sin errores
+- [x] A4: Onboarding — wizard de primer ingreso
+  - [x] A4.01: Agregar campo `setup_complete: bool = False` al modelo `Organization`
+  - [x] A4.02: Crear Alembic migration para `setup_complete`
+  - [x] A4.03: Agregar `PATCH /api/v1/org/me` con `setup_complete: true` al finalizar
+  - [x] A4.04: Crear `app/onboarding/page.tsx` con wizard multi-step (3 pasos)
+  - [x] A4.05: Crear `OnboardingStep1.tsx` — datos de la organización
+  - [x] A4.06: Crear `OnboardingStep2.tsx` — configuración inicial (zona horaria, moneda)
+  - [x] A4.07: Crear `OnboardingStep3.tsx` — invitar primer miembro del equipo (opcional)
+  - [x] A4.08: Crear `OnboardingProgress.tsx` — barra de progreso (paso 1/3, 2/3, 3/3)
+  - [x] A4.09: Botón "Saltar" disponible en cada paso
+  - [x] A4.10: Al completar o saltar, marcar org como setup completo y redirigir al dashboard
+  - [x] A4.11: Usuarios existentes (`setup_complete=true`) no ven el onboarding
+  - [x] A4.12: Verificar TypeScript strict sin errores
 
 - [ ] C1: Pipeline/Deals — Kanban de leads
   - [ ] C1.01: Agregar item "Pipeline" con ícono `TrendingUp` al sidebar (`Sidebar.tsx`)
