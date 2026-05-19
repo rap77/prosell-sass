@@ -27,6 +27,7 @@ from prosell.infrastructure.api.routers import (
     health_router,
     image_router,
     lead_router,
+    notification_router,
     org_router,
     product_router,
     publisher_router,
@@ -271,6 +272,12 @@ app.include_router(
     lead_router,
     prefix="/api/v1/leads",
     tags=["Leads"],
+)
+
+app.include_router(
+    notification_router,
+    prefix="/api/v1",
+    tags=["Notifications"],
 )
 
 app.include_router(

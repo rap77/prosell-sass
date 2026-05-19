@@ -8,6 +8,7 @@ from prosell.infrastructure.api.routers.facebook_router import router as faceboo
 from prosell.infrastructure.api.routers.health_router import router as health_router
 from prosell.infrastructure.api.routers.image_router import router as image_router
 from prosell.infrastructure.api.routers.lead_router import router as lead_router
+from prosell.infrastructure.api.routers.notification_router import router as notification_router
 from prosell.infrastructure.api.routers.org_router import router as org_router
 from prosell.infrastructure.api.routers.product_router import router as product_router
 from prosell.infrastructure.api.routers.publisher_router import router as publisher_router
@@ -18,6 +19,7 @@ from prosell.infrastructure.api.routers.vehicle_router import router as vehicle_
 from prosell.infrastructure.api.routers.wallet_router import router as wallet_router
 
 __all__ = [
+    "notification_router",
     "admin_router",
     "auth_router",
     "branch_router",
