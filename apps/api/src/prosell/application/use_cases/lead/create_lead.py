@@ -5,8 +5,10 @@ from uuid import UUID
 from prosell.application.dto.lead.request import CreateLeadRequest
 from prosell.application.dto.lead.response import LeadResponse
 from prosell.domain.entities.lead import Lead
+from prosell.domain.entities.notification import Notification, NotificationType
 from prosell.domain.exceptions.lead_exceptions import DuplicateLeadException
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
+from prosell.domain.repositories.notification_repository import AbstractNotificationRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.repositories.team_repository import (
     AbstractTeamMemberRepository,
@@ -43,6 +45,7 @@ class CreateLeadUseCase:
         team_member_repository: AbstractTeamMemberRepository | None = None,
         assignment_engine: LeadAssignmentRulesEngine | None = None,
         assignment_strategy: AssignmentStrategy = AssignmentStrategy.COMBINED,
+        notification_repository: AbstractNotificationRepository | None = None,
     ) -> None:
         """
         Initialize CreateLeadUseCase with dependencies.
@@ -57,6 +60,7 @@ class CreateLeadUseCase:
             (optional, for auto-assignment)
             assignment_engine: Rules engine for lead assignment (optional, defaults to new instance)
             assignment_strategy: Default strategy used for automatic assignment
+            notification_repository: Repository for creating in-app notifications (optional)
         """
         self.lead_repository = lead_repository
         self.user_repository = user_repository
@@ -65,6 +69,7 @@ class CreateLeadUseCase:
         self.team_member_repository = team_member_repository
         self.assignment_engine = assignment_engine or LeadAssignmentRulesEngine()
         self.assignment_strategy = assignment_strategy
+        self.notification_repository = notification_repository
         self.duplicate_detector = LeadDuplicateDetector(lead_repository)
 
     async def execute(
@@ -145,6 +150,22 @@ class CreateLeadUseCase:
 
         # 3. Persist
         created = await self.lead_repository.create(lead)
+
+        # 4. Notify assigned vendedor (fire-and-forget — never blocks lead creation)
+        if created.vendedor_id is not None and self.notification_repository is not None:
+            try:
+                notification = Notification.create(
+                    tenant_id=tenant_id,
+                    user_id=created.vendedor_id,
+                    notification_type=NotificationType.LEAD_ASSIGNED,
+                    title="Nuevo lead asignado",
+                    body=f"Se te asignó el lead de {created.buyer_name}",
+                    resource_type="lead",
+                    resource_id=created.id,
+                )
+                await self.notification_repository.create(notification)
+            except Exception:
+                pass  # Notification failure must never block lead creation
 
         return LeadResponse.from_entity(created)
 
