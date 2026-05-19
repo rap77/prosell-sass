@@ -1,6 +1,7 @@
 """Domain entities for ProSell SaaS."""
 
 from prosell.domain.entities.category import Category
+from prosell.domain.entities.notification import Notification, NotificationType
 from prosell.domain.entities.product import Product
 from prosell.domain.entities.product_image import ProductImage
 from prosell.domain.entities.role import Permission, Role, RoleType
@@ -10,6 +11,8 @@ from prosell.domain.entities.user import User, UserStatus
 
 __all__ = [
     "Category",
+    "Notification",
+    "NotificationType",
     "Permission",
     "Product",
     "ProductImage",
