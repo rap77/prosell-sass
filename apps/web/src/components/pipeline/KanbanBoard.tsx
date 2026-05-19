@@ -13,6 +13,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useLeads, LeadStatus, type Lead } from "@/lib/api/leads";
+import { useVendedores } from "@/lib/api/vendedores";
 import { KanbanColumn } from "./KanbanColumn";
 import { LeadCard } from "./LeadCard";
 
@@ -44,6 +45,7 @@ export function KanbanBoard() {
     vendedorFilter ? { vendedor_id: vendedorFilter } : undefined,
     200
   );
+  const { data: vendedores = [] } = useVendedores();
 
   const updateStatus = useMutation({
     mutationFn: async ({ leadId, status }: { leadId: string; status: LeadStatus }) => {
@@ -77,10 +79,9 @@ export function KanbanBoard() {
     [leads]
   );
 
-  // Unique vendedores for selector
-  const vendedorOptions = useMemo(() => {
-    const ids = new Set(leads.map((l) => l.vendedor_id).filter(Boolean) as string[]);
-    return Array.from(ids);
+  // Vendedores with leads in the current board (for selector)
+  const activeVendedorIds = useMemo(() => {
+    return new Set(leads.map((l) => l.vendedor_id).filter(Boolean) as string[]);
   }, [leads]);
 
   const sensors = useSensors(
@@ -134,11 +135,13 @@ export function KanbanBoard() {
           onChange={(e) => setVendedorFilter(e.target.value)}
         >
           <option value="">Todos los vendedores</option>
-          {vendedorOptions.map((id) => (
-            <option key={id} value={id}>
-              {id.slice(0, 8)}...
-            </option>
-          ))}
+          {vendedores
+            .filter((v) => activeVendedorIds.has(v.id))
+            .map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name}
+              </option>
+            ))}
         </select>
       </div>
 
