@@ -78,20 +78,20 @@
   - [x] A2.08: Extender `lib/api/userApi.ts` con hook `useChangePassword`
   - [x] A2.09: Verificar TypeScript strict sin errores
 
-- [ ] A3: Panel de notificaciones en header
-  - [ ] A3.01: Crear modelo `Notification` en `domain/entities/notification.py`
-  - [ ] A3.02: Crear Alembic migration para tabla `notifications`
-  - [ ] A3.03: Crear `INotificationRepository` + implementación SQLAlchemy
-  - [ ] A3.04: Crear `GET /api/v1/notifications` (lista paginada, últimas 20, con auth)
-  - [ ] A3.05: Crear `PUT /api/v1/notifications/{id}/read` y `PUT /api/v1/notifications/read-all`
-  - [ ] A3.06: Hook en `CreateLeadUseCase` para crear notificación al asignar lead
-  - [ ] A3.07: Crear `NotificationBell.tsx` en `components/layout/` (ícono + badge de count)
-  - [ ] A3.08: Crear panel dropdown con lista de notificaciones (título, cuerpo, tiempo relativo)
-  - [ ] A3.09: Crear hook `useNotifications` con polling cada 30s
-  - [ ] A3.10: Integrar `NotificationBell` en `Header.tsx`
-  - [ ] A3.11: Click en notificación navega al recurso y la marca como leída
-  - [ ] A3.12: "Marcar todas como leídas" funcional
-  - [ ] A3.13: Verificar TypeScript strict sin errores en frontend
+- [x] A3: Panel de notificaciones en header
+  - [x] A3.01: Crear modelo `Notification` en `domain/entities/notification.py`
+  - [x] A3.02: Crear Alembic migration para tabla `notifications`
+  - [x] A3.03: Crear `INotificationRepository` + implementación SQLAlchemy
+  - [x] A3.04: Crear `GET /api/v1/notifications` (lista paginada, últimas 20, con auth)
+  - [x] A3.05: Crear `PUT /api/v1/notifications/{id}/read` y `PUT /api/v1/notifications/read-all`
+  - [x] A3.06: Hook en `CreateLeadUseCase` para crear notificación al asignar lead
+  - [x] A3.07: Crear `NotificationBell.tsx` en `components/layout/` (ícono + badge de count)
+  - [x] A3.08: Crear panel dropdown con lista de notificaciones (título, cuerpo, tiempo relativo)
+  - [x] A3.09: Crear hook `useNotifications` con polling cada 30s
+  - [x] A3.10: Integrar `NotificationBell` en `Header.tsx`
+  - [x] A3.11: Click en notificación navega al recurso y la marca como leída
+  - [x] A3.12: "Marcar todas como leídas" funcional
+  - [x] A3.13: Verificar TypeScript strict sin errores en frontend
 
 - [ ] A4: Onboarding — wizard de primer ingreso
   - [ ] A4.01: Agregar campo `setup_complete: bool = False` al modelo `Organization`

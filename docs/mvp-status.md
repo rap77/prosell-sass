@@ -1,7 +1,7 @@
 # ProSell MVP Status
 
-**Status**: Milestone C — UX Completion In Progress
-**Last Updated**: 2026-05-17
+**Status**: Milestone C — UX Completion In Progress (5/8 tasks complete)
+**Last Updated**: 2026-05-19
 **Source Type**: Executive / release-status document
 **MasterMind Runtime Files**: `tasks/plan.md`, `tasks/todo.md`
 
@@ -15,9 +15,10 @@
 - Se completó y verificó la **detección de conflictos de citas**, incluyendo validación de solapamiento, respuesta al usuario y override controlado.
 - El **modo edición de productos** quedó implementado y verificado a nivel de formulario/API, unit tests y E2E real.
 - El **motor de reglas de asignación de leads** ya quedó mejor cerrado: round-robin, owner assignment, workload balancing e integración en `CreateLeadUseCase`, con estrategia configurable a nivel de use case y tests de integración unitaria pasando.
-- El flujo **catálogo → lead → cita** tiene el **path API verificado** end-to-end (`integrated-flow.spec.ts` contra Docker real). El **path UI browser** tiene verificación parcial: `/catalog` y `/vendedor/leads` pasan; `/catalog/{id}`, `/publications` y `/pipeline` son nuevas páginas pendientes en Milestone C.
+- El flujo **catálogo → lead → cita** tiene el **path API verificado** end-to-end (`integrated-flow.spec.ts` contra Docker real). El **path UI browser** tiene verificación parcial: `/catalog` y `/vendedor/leads` pasan; `/pipeline` es la página central pendiente en Milestone C.
+- **Milestone C avanza al 62.5%**: M3 (error pages), M2 (catalog detail), M1 (publications), A1 (settings/profile), A2 (settings/security) completados. Quedan A3 (notificaciones), A4 (onboarding) y C1 (pipeline kanban).
 - La suite web y los artefactos de smoke siguen siendo la base de confianza operativa.
-- **Próximo objetivo**: cerrar Milestone C (8 gaps de UX: error pages, catalog detail, publications, settings, notifications, onboarding, pipeline kanban) para que el path UI del E2E esté 100% cubierto y el go/no-go pueda ejecutarse.
+- **Próximo objetivo**: cerrar A3, A4 y C1 para completar Milestone C y habilitar el go/no-go final.
 
 ---
 
@@ -29,7 +30,7 @@ Permitir que el equipo de ProSell gestione el flujo interno completo de ventas d
 
 ## Release Readiness
 
-**Overall Readiness**: 82% (backend sólido, UX gaps pendientes en Milestone C)
+**Overall Readiness**: 88% (backend sólido, Milestone C al 62.5% — A3/A4/C1 pendientes)
 **Implementation Completeness**: High
 **Verification Completeness**: Medium-High
 **Release Confidence**: Medium
@@ -42,7 +43,7 @@ Permitir que el equipo de ProSell gestione el flujo interno completo de ventas d
 - [x] Initial data (Seeding) automated for fresh environments
 - [x] Team invitation flow implemented end-to-end
 - [x] Appointment conflict detection verified
-- [~] End-to-end flow verified: API path ✅ (`integrated-flow.spec.ts`) — UI browser path ⚠️ parcial (catalog list + leads list verifica; catalog detail, publications, pipeline pendientes en Milestone C)
+- [~] End-to-end flow verified: API path ✅ (`integrated-flow.spec.ts`) — UI browser path ⚠️ parcial (catalog list + leads list + catalog detail + publications verifican; pipeline pendiente en Milestone C/C1)
 - [x] Documentation is aligned with one executive status source
 - [x] No high-severity configuration blockers remain open
 
@@ -58,7 +59,7 @@ Permitir que el equipo de ProSell gestione el flujo interno completo de ventas d
 | Image Upload | 🟢 Green | 85% | Components and endpoints verified, hot-reload active in Docker | Real-env storage latency | Verify in staging |
 | Leads | 🟢 Green | 95% | Lead lifecycle, duplicate detection y auto-assignment ya verificados a nivel engine + use case | Final hardening / broader API coverage | Expand release regression if needed |
 | Appointments | 🟢 Green | 92% | Migrations merged, API verified, conflict detection verified, operational E2E path green, calendar route compiles again | Final UI/E2E hardening | Expand calendar UI coverage if needed |
-| E2E / QA | 🟡 Yellow | 80% | API integration path green (`integrated-flow.spec.ts`); UI browser path parcial (catalog list + leads list verificados) | UI path incompleto hasta Milestone C (catalog detail, publications, pipeline) | Completar Milestone C → activar test.skip blocks en integrated-flow.spec.ts |
+| E2E / QA | 🟡 Yellow | 85% | API integration path green (`integrated-flow.spec.ts`); UI browser path parcial (catalog list + detail + publications + leads verificados) | UI path incompleto hasta C1 (pipeline kanban) | Completar A3/A4/C1 → activar test.skip blocks en integrated-flow.spec.ts |
 | Documentation Status | 🟢 Green | 100% | Centralized in this file; stale docs marked for archival | Low | Maintain this file |
 
 ---

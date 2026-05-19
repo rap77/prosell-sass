@@ -1,85 +1,115 @@
 {
-  "task_id": "A2",
-  "session_id": "sess-20260518-085500",
-  "started_at": "2026-05-18T08:55:00-04:00",
-  "phase": 20,
+  "task_id": "A3",
+  "session_id": "sess-resume-20260519-181029",
+  "started_at": "2026-05-19T17:59:10.568678",
+  "phase": 19,
   "subtasks": {
-    "A2.01": {
-      "description": "Crear `app/settings/security/page.tsx` con sección \"Cambiar contraseña\"",
+    "A3.01": {
+      "description": "Crear modelo `Notification` en `domain/entities/notification.py`",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-18T08:55:00-04:00",
-      "completed_at": "2026-05-18T09:00:00-04:00",
-      "duration_seconds": 300
+      "started_at": "2026-05-19T17:59:10.568678",
+      "completed_at": "2026-05-19T18:05:00.000000",
+      "duration_seconds": 0
     },
-    "A2.02": {
-      "description": "Implementar formulario con validación (mínimo 8 chars, confirmación igual)",
+    "A3.02": {
+      "description": "Crear Alembic migration para tabla `notifications`",
       "status": "completed",
       "retries": 0,
-      "started_at": "2026-05-18T09:00:00-04:00",
-      "completed_at": "2026-05-18T09:08:00-04:00",
-      "duration_seconds": 480
+      "started_at": "2026-05-19T18:10:00.000000",
+      "completed_at": "2026-05-19T18:15:00.000000",
+      "duration_seconds": 0
     },
-    "A2.03": {
-      "description": "Conectar a `POST /api/v1/auth/change-password`",
-      "status": "completed",
+    "A3.03": {
+      "description": "Crear `INotificationRepository` + implementación SQLAlchemy",
+      "status": "in_progress",
       "retries": 0,
-      "started_at": "2026-05-18T09:08:00-04:00",
-      "completed_at": "2026-05-18T09:23:00-04:00",
-      "duration_seconds": 900
+      "started_at": "2026-05-19T18:20:00.000000",
+      "completed_at": null,
+      "duration_seconds": 0
     },
-    "A2.04": {
-      "description": "Mostrar estado de 2FA (habilitado/deshabilitado) correctamente",
-      "status": "completed",
+    "A3.04": {
+      "description": "Crear `GET /api/v1/notifications` (lista paginada, últimas 20, con auth)",
+      "status": "pending",
       "retries": 0,
-      "started_at": "2026-05-18T09:23:00-04:00",
-      "completed_at": "2026-05-18T09:29:00-04:00",
-      "duration_seconds": 360
+      "started_at": "2026-05-19T17:59:10.568678",
+      "completed_at": null,
+      "duration_seconds": 0
     },
-    "A2.05": {
-      "description": "Flujo \"Habilitar 2FA\" navega a `/auth/setup-2fa`",
-      "status": "completed",
+    "A3.05": {
+      "description": "Crear `PUT /api/v1/notifications/{id}/read` y `PUT /api/v1/notifications/read-all`",
+      "status": "pending",
       "retries": 0,
-      "started_at": "2026-05-18T09:29:00-04:00",
-      "completed_at": "2026-05-18T09:33:00-04:00",
-      "duration_seconds": 240
+      "started_at": "2026-05-19T17:59:10.568678",
+      "completed_at": null,
+      "duration_seconds": 0
     },
-    "A2.06": {
-      "description": "Flujo \"Deshabilitar 2FA\" con modal de confirmación → `POST /api/v1/auth/disable-2fa`",
-      "status": "completed",
+    "A3.06": {
+      "description": "Hook en `CreateLeadUseCase` para crear notificación al asignar lead",
+      "status": "pending",
       "retries": 0,
-      "started_at": "2026-05-18T09:33:00-04:00",
-      "completed_at": "2026-05-18T09:42:00-04:00",
-      "duration_seconds": 540
+      "started_at": "2026-05-19T17:59:10.568678",
+      "completed_at": null,
+      "duration_seconds": 0
     },
-    "A2.07": {
-      "description": "Mapear errores del backend a mensajes en español",
-      "status": "completed",
+    "A3.07": {
+      "description": "Crear `NotificationBell.tsx` en `components/layout/` (ícono + badge de count)",
+      "status": "pending",
       "retries": 0,
-      "started_at": "2026-05-18T09:42:00-04:00",
-      "completed_at": "2026-05-18T09:48:00-04:00",
-      "duration_seconds": 360
+      "started_at": "2026-05-19T17:59:10.568678",
+      "completed_at": null,
+      "duration_seconds": 0
     },
-    "A2.08": {
-      "description": "Extender `lib/api/userApi.ts` con hook `useChangePassword`",
-      "status": "completed",
+    "A3.08": {
+      "description": "Crear panel dropdown con lista de notificaciones (título, cuerpo, tiempo relativo)",
+      "status": "pending",
       "retries": 0,
-      "started_at": "2026-05-18T09:48:00-04:00",
-      "completed_at": "2026-05-18T09:53:00-04:00",
-      "duration_seconds": 300
+      "started_at": "2026-05-19T17:59:10.568678",
+      "completed_at": null,
+      "duration_seconds": 0
     },
-    "A2.09": {
-      "description": "Verificar TypeScript strict sin errores",
-      "status": "completed",
+    "A3.09": {
+      "description": "Crear hook `useNotifications` con polling cada 30s",
+      "status": "pending",
       "retries": 0,
-      "started_at": "2026-05-18T09:53:00-04:00",
-      "completed_at": "2026-05-18T10:01:00-04:00",
-      "duration_seconds": 480
+      "started_at": "2026-05-19T17:59:10.568678",
+      "completed_at": null,
+      "duration_seconds": 0
+    },
+    "A3.10": {
+      "description": "Integrar `NotificationBell` en `Header.tsx`",
+      "status": "pending",
+      "retries": 0,
+      "started_at": "2026-05-19T17:59:10.568678",
+      "completed_at": null,
+      "duration_seconds": 0
+    },
+    "A3.11": {
+      "description": "Click en notificación navega al recurso y la marca como leída",
+      "status": "pending",
+      "retries": 0,
+      "started_at": "2026-05-19T17:59:10.568678",
+      "completed_at": null,
+      "duration_seconds": 0
+    },
+    "A3.12": {
+      "description": "\"Marcar todas como leídas\" funcional",
+      "status": "pending",
+      "retries": 0,
+      "started_at": "2026-05-19T17:59:10.568678",
+      "completed_at": null,
+      "duration_seconds": 0
+    },
+    "A3.13": {
+      "description": "Verificar TypeScript strict sin errores en frontend",
+      "status": "pending",
+      "retries": 0,
+      "started_at": "2026-05-19T17:59:10.568678",
+      "completed_at": null,
+      "duration_seconds": 0
     }
   },
-  "last_checkpoint": {
-    "at": "2026-05-18T10:01:00-04:00",
-    "summary": "Completed A2. Added the settings security workspace with password change and 2FA management, implemented the backend change-password endpoint, aligned auth state with persisted 2FA status, and validated the new flows with unit and UI tests."
-  },
-  "context_budget_exit": null
+  "last_checkpoint": "A3.02",
+  "context_budget_exit": null,
+  "resumed_at": "2026-05-19T18:10:29.137861"
 }

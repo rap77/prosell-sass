@@ -149,13 +149,13 @@ Esta milestone cierra los 8 gaps de UX identificados para dejar la app operativa
 - React Hook Form + Zod para validación de contraseña
 
 **Acceptance Criteria**:
-- [ ] Sección "Cambiar contraseña" con validación (mínimo 8 chars, confirmación igual)
-- [ ] Guardado conectado al endpoint de cambio de contraseña del backend
-- [ ] Estado de 2FA (habilitado/deshabilitado) mostrado correctamente
-- [ ] Flujo "Habilitar 2FA" navega a `/auth/setup-2fa`
-- [ ] Flujo "Deshabilitar 2FA" con confirmación modal funcional
-- [ ] Errores del backend (contraseña incorrecta, etc.) mapeados a mensajes en español
-- [ ] TypeScript strict sin errores
+- [x] Sección "Cambiar contraseña" con validación (mínimo 8 chars, confirmación igual)
+- [x] Guardado conectado al endpoint de cambio de contraseña del backend
+- [x] Estado de 2FA (habilitado/deshabilitado) mostrado correctamente
+- [x] Flujo "Habilitar 2FA" navega a `/auth/setup-2fa`
+- [x] Flujo "Deshabilitar 2FA" con confirmación modal funcional
+- [x] Errores del backend (contraseña incorrecta, etc.) mapeados a mensajes en español
+- [x] TypeScript strict sin errores
 
 **Files**:
 - `apps/web/src/app/settings/security/page.tsx` (new)
