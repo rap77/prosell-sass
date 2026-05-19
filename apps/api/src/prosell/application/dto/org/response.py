@@ -22,6 +22,7 @@ class OrganizationResponse(BaseModel):
     phone: str | None = None
     verified_at: datetime | None = None
     wallet_id: UUID | None = None
+    setup_complete: bool = False
     settings: dict[str, object] = {}
     created_at: datetime
     updated_at: datetime
@@ -41,6 +42,7 @@ class OrganizationResponse(BaseModel):
             phone=org.phone,
             verified_at=org.verified_at,
             wallet_id=org.wallet_id,
+            setup_complete=org.setup_complete,
             settings=org.settings,
             created_at=org.created_at,
             updated_at=org.updated_at,

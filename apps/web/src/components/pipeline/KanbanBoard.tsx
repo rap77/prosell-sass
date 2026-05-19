@@ -5,12 +5,14 @@ import {
   DndContext,
   DragEndEvent,
   DragOverlay,
+  DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useLeads, useUpdateLeadStatus, LeadStatus, type Lead } from "@/lib/api/leads";
+import { useLeads, LeadStatus, type Lead } from "@/lib/api/leads";
 import { KanbanColumn } from "./KanbanColumn";
 import { LeadCard } from "./LeadCard";
 
@@ -36,14 +38,31 @@ function isValidTransition(from: LeadStatus, to: LeadStatus): boolean {
 export function KanbanBoard() {
   const [vendedorFilter, setVendedorFilter] = useState<string>("");
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
-  const [pendingUpdate, setPendingUpdate] = useState<{ leadId: string; status: LeadStatus } | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: leads = [], isLoading } = useLeads(
     vendedorFilter ? { vendedor_id: vendedorFilter } : undefined,
     200
   );
 
-  const updateStatus = useUpdateLeadStatus(pendingUpdate?.leadId ?? "");
+  const updateStatus = useMutation({
+    mutationFn: async ({ leadId, status }: { leadId: string; status: LeadStatus }) => {
+      const res = await fetch(`/api/v1/leads/${leadId}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error("Failed to update lead status");
+      return res.json();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["leads"] });
+    },
+    onError: () => {
+      toast.error("No se pudo actualizar el estado del lead");
+    },
+  });
 
   // Group leads by status
   const columnLeads = useMemo(
@@ -68,8 +87,8 @@ export function KanbanBoard() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  function handleDragStart(event: { active: { data: { current?: { lead?: Lead } } } }) {
-    const lead = event.active.data.current?.lead;
+  function handleDragStart(event: DragStartEvent) {
+    const lead = event.active.data.current?.lead as Lead | undefined;
     if (lead) setActiveLead(lead);
   }
 
@@ -90,18 +109,7 @@ export function KanbanBoard() {
       return;
     }
 
-    setPendingUpdate({ leadId: lead.id, status: targetStatus });
-    updateStatus.mutate(
-      { status: targetStatus },
-      {
-        onError: () => {
-          toast.error("No se pudo actualizar el estado del lead");
-        },
-        onSettled: () => {
-          setPendingUpdate(null);
-        },
-      }
-    );
+    updateStatus.mutate({ leadId: lead.id, status: targetStatus });
   }
 
   if (isLoading) {
