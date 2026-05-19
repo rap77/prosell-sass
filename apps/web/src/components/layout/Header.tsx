@@ -16,6 +16,7 @@ import {
 import { Search, User, Settings, LogOut, Building2, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { TeamSwitcher } from '@/components/teams/TeamSwitcher'
+import { NotificationBell } from '@/components/layout/NotificationBell'
 
 /**
  * Props for Header component.
@@ -202,6 +203,9 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
             tenantId={tenantId}
           />
         )}
+
+        {/* Notification bell */}
+        <NotificationBell />
 
         {/* User menu with role badge */}
         <DropdownMenu>
