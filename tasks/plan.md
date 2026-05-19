@@ -188,15 +188,15 @@ Esta milestone cierra los 8 gaps de UX identificados para dejar la app operativa
 - Estado vacío con mensaje amigable cuando no hay notificaciones
 
 **Acceptance Criteria**:
-- [ ] Endpoint `GET /api/v1/notifications` devuelve lista paginada con auth
-- [ ] Endpoint `PUT /api/v1/notifications/{id}/read` funciona correctamente
-- [ ] Header muestra ícono de campanita con badge cuando hay notificaciones no leídas
-- [ ] Panel de notificaciones abre al hacer click en la campanita
-- [ ] Notificaciones de nuevo lead asignado aparecen automáticamente
-- [ ] Click en notificación navega al recurso correspondiente y la marca como leída
-- [ ] "Marcar todas como leídas" funciona
-- [ ] Polling cada 30s actualiza el count sin recargar la página
-- [ ] TypeScript strict sin errores en frontend
+- [x] Endpoint `GET /api/v1/notifications` devuelve lista paginada con auth
+- [x] Endpoint `PUT /api/v1/notifications/{id}/read` funciona correctamente
+- [x] Header muestra ícono de campanita con badge cuando hay notificaciones no leídas
+- [x] Panel de notificaciones abre al hacer click en la campanita
+- [x] Notificaciones de nuevo lead asignado aparecen automáticamente
+- [x] Click en notificación navega al recurso correspondiente y la marca como leída
+- [x] "Marcar todas como leídas" funciona
+- [x] Polling cada 30s actualiza el count sin recargar la página
+- [x] TypeScript strict sin errores en frontend
 
 **Files**:
 - `apps/api/src/prosell/domain/entities/notification.py` (new)
