@@ -39,6 +39,10 @@ class InMemoryLeadRepository(AbstractLeadRepository):
         del tenant_id, include_product
         return self.leads.get(lead_id)
 
+    async def get_many_by_ids(self, lead_ids: list[UUID], tenant_id: UUID) -> list[Lead]:
+        del tenant_id
+        return [self.leads[lid] for lid in lead_ids if lid in self.leads]
+
     async def get_by_buyer_and_product(
         self,
         buyer_email: str | None,

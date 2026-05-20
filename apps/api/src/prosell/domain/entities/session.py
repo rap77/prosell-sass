@@ -16,6 +16,7 @@ class Session(DomainModel):
     # Required fields
     id: UUID
     user_id: UUID
+    tenant_id: UUID | None = None  # Multi-tenant isolation; None = legacy records pre-migration
     token_hash: str  # Hashed refresh token
     expires_at: datetime
     created_at: datetime

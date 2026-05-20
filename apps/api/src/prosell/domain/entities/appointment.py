@@ -2,7 +2,8 @@
 
 from datetime import UTC, datetime, time, timedelta
 from enum import StrEnum
-from typing import Any, ClassVar
+from typing import ClassVar
+from uuid import UUID
 
 from pydantic import Field
 
@@ -43,13 +44,13 @@ class Appointment(DomainModel):
     """
 
     # Identity fields
-    id: Any  # UUID - will be set by create()
-    tenant_id: Any  # UUID
+    id: UUID
+    tenant_id: UUID
 
     # Relationships
-    lead_id: Any  # UUID
-    user_id: Any  # UUID
-    product_id: Any  # UUID
+    lead_id: UUID
+    user_id: UUID
+    product_id: UUID
 
     # Appointment details
     scheduled_at: datetime
@@ -67,14 +68,14 @@ class Appointment(DomainModel):
     @classmethod
     def create(
         cls,
-        lead_id: Any,
-        user_id: Any,
-        product_id: Any,
-        tenant_id: Any,
+        lead_id: UUID,
+        user_id: UUID,
+        product_id: UUID,
+        tenant_id: UUID,
         scheduled_at: datetime,
         notes: str | None = None,
         existing_appointments: list["Appointment"] | None = None,
-        **kwargs: Any,
+        **kwargs: object,
     ) -> "Appointment":
         """
         Factory method for new appointment creation.
@@ -152,7 +153,7 @@ class Appointment(DomainModel):
     @classmethod
     def _check_conflicts(
         cls,
-        user_id: Any,
+        user_id: UUID,
         scheduled_at: datetime,
         existing_appointments: list["Appointment"],
     ) -> None:

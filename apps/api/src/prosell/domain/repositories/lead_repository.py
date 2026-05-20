@@ -27,6 +27,15 @@ class AbstractLeadRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_many_by_ids(
+        self,
+        lead_ids: list[UUID],
+        tenant_id: UUID,
+    ) -> list[Lead]:
+        """Get multiple leads by ID in a single query (no N+1)."""
+        pass
+
+    @abstractmethod
     async def get_by_buyer_and_product(
         self,
         buyer_email: str | None,

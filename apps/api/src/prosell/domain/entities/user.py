@@ -1,6 +1,5 @@
 """User entity - Pure domain logic with no external dependencies."""
 
-import json
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from uuid import UUID, uuid4
@@ -79,11 +78,15 @@ class User(DomainModel):
         """
         if v is None:
             return None
-        if isinstance(v, str):
-            from typing import cast
+        if isinstance(v, list):
+            return v
+        # JSON string path: only reached if the repository mapper did not pre-deserialize.
+        # Kept as a safety net — normal path is handled by the repository.
+        import json  # noqa: PLC0415 — intentional late import, infrastructure concern
 
-            return cast(list[str], json.loads(v))
-        return v
+        from typing import cast
+
+        return cast(list[str], json.loads(v))
 
     @classmethod
     def create(

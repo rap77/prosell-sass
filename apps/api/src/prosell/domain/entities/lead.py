@@ -9,6 +9,7 @@ from pydantic import Field
 
 from prosell.domain.base import DomainModel
 from prosell.domain.exceptions import LeadStateTransitionException
+from prosell.domain.value_objects.lead_source import LeadSource
 
 
 class LeadStatus(StrEnum):
@@ -86,7 +87,7 @@ class Lead(DomainModel):
 
     # Lead details
     message: str | None = None
-    source: str = "manual"  # facebook, web, manual, etc.
+    source: LeadSource = LeadSource.MANUAL
 
     # Status
     status: LeadStatus = LeadStatus.NEW
@@ -105,7 +106,7 @@ class Lead(DomainModel):
         product_id: UUID | None = None,
         vendedor_id: UUID | None = None,
         message: str | None = None,
-        source: str = "manual",
+        source: LeadSource = LeadSource.MANUAL,
         **kwargs: Any,
     ) -> "Lead":
         """

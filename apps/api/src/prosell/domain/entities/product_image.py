@@ -20,6 +20,7 @@ class ProductImage(DomainModel):
     # Required fields
     id: UUID
     product_id: UUID
+    tenant_id: UUID | None = None  # Multi-tenant isolation; inherited from product
 
     # Image URLs
     url: str  # Public URL of the image

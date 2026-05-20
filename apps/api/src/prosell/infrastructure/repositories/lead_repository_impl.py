@@ -8,6 +8,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.lead import Lead, LeadStatus
+from prosell.domain.value_objects.lead_source import LeadSource
 from prosell.domain.entities.lead_audit_log import LeadAuditLog
 from prosell.domain.exceptions import LeadNotFoundException
 from prosell.domain.exceptions.lead_exceptions import LeadStateTransitionException
@@ -111,6 +112,17 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             # No product_id provided - skip duplicate detection
             return None
 
+    async def get_many_by_ids(self, lead_ids: list[UUID], tenant_id: UUID) -> list[Lead]:
+        """Batch-fetch multiple leads in a single query."""
+        if not lead_ids:
+            return []
+        stmt = select(LeadModel).where(
+            LeadModel.id.in_(lead_ids),
+            LeadModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        return [self._to_entity(m) for m in result.scalars().all()]
+
     async def list_by_tenant(
         self,
         tenant_id: UUID,
@@ -181,7 +193,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         audit_log = LeadAuditLogModel(
             lead_id=lead_id,
             tenant_id=tenant_id,
-            old_status=old_status if old_status else None,
+            old_status=old_status,  # model.status is always a non-empty string at this point
             new_status=new_status,
             changed_by_user_id=changed_by_user_id,
             reason=reason,
@@ -207,10 +219,14 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         if not result.scalar_one_or_none():
             raise LeadNotFoundException(f"Lead not found: {lead_id}")
 
-        # Fetch audit logs
+        # Fetch audit logs — join to lead to enforce tenant isolation defensively
         stmt_audit = (
             select(LeadAuditLogModel)
-            .where(LeadAuditLogModel.lead_id == lead_id)
+            .join(LeadModel, LeadAuditLogModel.lead_id == LeadModel.id)
+            .where(
+                LeadAuditLogModel.lead_id == lead_id,
+                LeadModel.tenant_id == tenant_id,
+            )
             .order_by(LeadAuditLogModel.created_at.desc())
             .limit(limit)
         )
@@ -365,7 +381,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
             product_id=model.product_id,
             vendedor_id=model.vendedor_id,
             message=model.message,
-            source=model.source,
+            source=LeadSource(model.source),
             status=LeadStatus(model.status),
             created_at=model.created_at,
             updated_at=model.updated_at,

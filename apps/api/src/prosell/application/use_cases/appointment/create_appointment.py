@@ -1,7 +1,7 @@
 """CreateAppointmentUseCase — validates time, checks conflicts, updates lead status."""
 
 from contextlib import suppress
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from prosell.application.dto.appointment.request import CreateAppointmentRequest
 from prosell.application.dto.appointment.response import AppointmentResponse
@@ -62,7 +62,7 @@ class CreateAppointmentUseCase:
         # 2. Create a temporary appointment object for conflict detection
         # (not persisted yet, just used for detection)
         temp_appointment = Appointment(
-            id=None,  # Not assigned yet
+            id=uuid4(),  # Ephemeral — used only for conflict detection, not persisted
             tenant_id=tenant_id,
             lead_id=request.lead_id,
             user_id=request.user_id,

@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import Field
 
 from prosell.domain.base import DomainModel
+from prosell.domain.exceptions.org_exceptions import OrganizationVerificationException
 from prosell.domain.value_objects.organization_status import OrganizationStatus
 
 
@@ -91,8 +92,8 @@ class Organization(DomainModel):
             ValueError: If organization is not in PENDING_VERIFICATION status
         """
         if self.status != OrganizationStatus.PENDING_VERIFICATION:
-            raise ValueError(
-                f"Only pending organizations can be verified. Current status: {self.status}"
+            raise OrganizationVerificationException(
+                f"only pending organizations can be verified; current: {self.status}"
             )
 
         self.status = OrganizationStatus.ACTIVE
@@ -140,8 +141,8 @@ class Organization(DomainModel):
             ValueError: If organization is REJECTED (cannot activate)
         """
         if self.status == OrganizationStatus.REJECTED:
-            raise ValueError(
-                "Rejected organizations cannot be activated. Please create a new organization."
+            raise OrganizationVerificationException(
+                "rejected organizations cannot be activated; create a new organization"
             )
 
         if self.status == OrganizationStatus.ACTIVE:

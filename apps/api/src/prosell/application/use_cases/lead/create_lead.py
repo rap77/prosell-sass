@@ -1,10 +1,11 @@
 """CreateLeadUseCase — validates input and persists new lead."""
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from prosell.application.dto.lead.request import CreateLeadRequest
 from prosell.application.dto.lead.response import LeadResponse
 from prosell.domain.entities.lead import Lead
+from prosell.domain.value_objects.lead_source import LeadSource
 from prosell.domain.entities.notification import Notification, NotificationType
 from prosell.domain.exceptions.lead_exceptions import DuplicateLeadException
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
@@ -98,13 +99,14 @@ class CreateLeadUseCase:
         )
 
         if duplicates:
+            # Batch-fetch all candidate duplicate leads in one query (avoids N+1)
+            dup_ids = [dup.lead_id for dup in duplicates]
+            dup_leads = await self.lead_repository.get_many_by_ids(dup_ids, tenant_id)
+            dup_leads_by_id = {dl.id: dl for dl in dup_leads}
             # Check if any duplicate is for the same product within 24h
             # When product_id is None, we're more lenient (only exact matches count)
             for dup in duplicates:
-                dup_lead = await self.lead_repository.get_by_id(
-                    lead_id=dup.lead_id,
-                    tenant_id=tenant_id,
-                )
+                dup_lead = dup_leads_by_id.get(dup.lead_id)
                 # Only flag as duplicate if:
                 # 1. Both have the same non-None product_id, OR
                 # 2. Both have None product_id AND it's an exact match (same email AND same phone)
@@ -263,7 +265,7 @@ class CreateLeadUseCase:
             # Run assignment engine with the configured strategy.
             result = self.assignment_engine.assign_lead(
                 lead=Lead(
-                    id=UUID("00000000-0000-0000-0000-000000000000"),  # Dummy ID
+                    id=uuid4(),  # Ephemeral ID — this lead hasn't been persisted yet
                     tenant_id=tenant_id,
                     buyer_name=request.buyer_name,
                     buyer_email=request.buyer_email,
@@ -271,7 +273,7 @@ class CreateLeadUseCase:
                     product_id=request.product_id,
                     vendedor_id=None,
                     message=request.message,
-                    source=request.source.value if request.source else "manual",
+                    source=request.source if request.source else LeadSource.MANUAL,
                 ),
                 candidates=candidates,
                 strategy=self.assignment_strategy,
