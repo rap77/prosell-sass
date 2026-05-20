@@ -2,12 +2,10 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { Car, Clock, User, XCircle } from "lucide-react";
-import { toast } from "sonner";
-import { LeadStatus, type Lead } from "@/lib/api/leads";
+import { LeadStatus, useUpdateLeadStatus, type Lead } from "@/lib/api/leads";
 import { Button } from "@/components/ui/button";
 
 interface LeadCardProps {
@@ -15,30 +13,12 @@ interface LeadCardProps {
 }
 
 export function LeadCard({ lead }: LeadCardProps) {
-  const queryClient = useQueryClient();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     data: { lead },
   });
 
-  const markLost = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/v1/leads/${lead.id}/status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ status: LeadStatus.LOST }),
-      });
-      if (!res.ok) throw new Error("Failed to mark lead as lost");
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["leads"] });
-      toast.success("Lead marcado como perdido");
-    },
-    onError: () => {
-      toast.error("No se pudo actualizar el lead");
-    },
-  });
+  const markLost = useUpdateLeadStatus(lead.id);
 
   const style = transform
     ? { transform: CSS.Translate.toString(transform) }
@@ -113,7 +93,7 @@ export function LeadCard({ lead }: LeadCardProps) {
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              markLost.mutate();
+              markLost.mutate({ status: LeadStatus.LOST });
             }}
           >
             <XCircle className="h-3.5 w-3.5" />

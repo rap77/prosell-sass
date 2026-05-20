@@ -398,7 +398,8 @@ export const useAuthStore = create<AuthState>()(
             }
           : null,
         isAuthenticated: state.isAuthenticated,
-        initialized: state.initialized, // Persist initialized flag
+        // `initialized` is intentionally NOT persisted — must always verify with
+        // the server on mount to detect expired cookies and stale localStorage state.
       }),
       version: 4,
       migrate: (persistedState: unknown, version: number) => {

@@ -214,6 +214,8 @@ async def list_leads(
     return await use_case.execute(user=current_user, request=list_request)
 
 
+
+
 @router.get(
     "/{lead_id}",
     response_model=LeadDetailResponse,

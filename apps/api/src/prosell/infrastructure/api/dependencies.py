@@ -266,10 +266,10 @@ async def get_current_auth_user_from_cookie(
     # Verify token type
     try:
         payload = jwt_service.verify_token(access_token)
-    except ValueError as e:
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token verification failed: {e!s}",
+            detail="Authentication failed",
         ) from None
 
     if payload.get("type") != "access":

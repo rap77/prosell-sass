@@ -12,9 +12,7 @@ from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
 from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.publication_repository import IPublicationRepository
-from prosell.infrastructure.services.token_encryption_service import (
-    TokenEncryptionService,
-)
+from prosell.domain.ports.i_encryption_service import IEncryptionService
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +43,7 @@ class ProcessFacebookWebhookUseCase:
         facebook_page_repository: IFacebookPageRepository,
         facebook_client: AbstractFacebookBuyerProfileService,
         create_lead_use_case: CreateLeadUseCase,
-        encryption_service: TokenEncryptionService,
+        encryption_service: IEncryptionService,
     ) -> None:
         self.lead_repository = lead_repository
         self.publication_repository = publication_repository

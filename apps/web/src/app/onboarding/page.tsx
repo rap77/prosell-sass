@@ -52,7 +52,7 @@ export default function OnboardingPage() {
       toast.error("No se pudo guardar la configuración", {
         description: "Podés intentarlo de nuevo desde Configuración.",
       });
-      router.push("/dashboard");
+      // Do NOT navigate on failure — let the user retry from this page.
     } finally {
       setIsLoading(false);
     }
