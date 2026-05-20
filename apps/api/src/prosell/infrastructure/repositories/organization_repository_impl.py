@@ -77,7 +77,10 @@ class SqlAlchemyOrganizationRepository(AbstractOrganizationRepository):
 
     async def update(self, organization: Organization) -> Organization:
         """Update an existing organization."""
-        stmt = select(OrganizationModel).where(OrganizationModel.id == organization.id)
+        stmt = select(OrganizationModel).where(
+            OrganizationModel.id == organization.id,
+            OrganizationModel.tenant_id == organization.tenant_id,
+        )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
 
