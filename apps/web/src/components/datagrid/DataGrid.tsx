@@ -48,6 +48,7 @@ export function DataGrid({
   onBulkAssignBranch,
   onRowClick,
 }: DataGridProps) {
+  "use no memo"; // TanStack Table API is incompatible with React Compiler auto-memoization
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
@@ -177,6 +178,7 @@ export function DataGrid({
       },
     ];
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table v8 is incompatible with React Compiler by design; "use no memo" is already applied
   const table = useReactTable({
     data,
     columns,

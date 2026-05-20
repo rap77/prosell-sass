@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Settings } from "lucide-react";
@@ -52,6 +52,9 @@ export function OnboardingStep2({ onNext, onBack, onSkip, isLoading }: Onboardin
     defaultValues: { timezone: "America/Argentina/Buenos_Aires", currency: "ARS" },
   });
 
+  const timezone = useWatch({ control: form.control, name: "timezone" });
+  const currency = useWatch({ control: form.control, name: "currency" });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -68,7 +71,7 @@ export function OnboardingStep2({ onNext, onBack, onSkip, isLoading }: Onboardin
         <div className="space-y-2">
           <Label>Zona horaria</Label>
           <Select
-            value={form.watch("timezone")}
+            value={timezone}
             onValueChange={(value) => form.setValue("timezone", value)}
           >
             <SelectTrigger>
@@ -90,7 +93,7 @@ export function OnboardingStep2({ onNext, onBack, onSkip, isLoading }: Onboardin
         <div className="space-y-2">
           <Label>Moneda</Label>
           <Select
-            value={form.watch("currency")}
+            value={currency}
             onValueChange={(value) => form.setValue("currency", value)}
           >
             <SelectTrigger>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
@@ -104,8 +104,8 @@ export function AppointmentForm({
   const {
     register,
     handleSubmit,
+    control,
     setValue,
-    watch,
     reset,
     formState: { errors },
   } = useForm<AppointmentFormValues>({
@@ -118,10 +118,11 @@ export function AppointmentForm({
     },
   });
 
-  // Reset form and error when modal opens/closes
+  // Reset form and error when modal closes
   useEffect(() => {
     if (!open) {
       reset();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset error state on modal close
       setSubmitError(null);
     }
   }, [open, reset]);
@@ -187,6 +188,9 @@ export function AppointmentForm({
     "18:00",
   ];
 
+  const watchedUserId = useWatch({ control, name: "user_id" });
+  const watchedTime = useWatch({ control, name: "time" });
+
   // Set minimum date to today
   const today = format(new Date(), "yyyy-MM-dd");
 
@@ -247,7 +251,7 @@ export function AppointmentForm({
               Branch <span className="text-red-600">*</span>
             </Label>
             <Select
-              value={watch("user_id")}
+              value={watchedUserId}
               onValueChange={(value) => setValue("user_id", value)}
               disabled={branchesLoading}
             >
@@ -293,7 +297,7 @@ export function AppointmentForm({
               Time <span className="text-red-600">*</span>
             </Label>
             <Select
-              value={watch("time")}
+              value={watchedTime}
               onValueChange={(value) => setValue("time", value)}
             >
               <SelectTrigger id="time">

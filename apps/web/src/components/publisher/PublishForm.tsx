@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { HeroShotSelector } from "./HeroShotSelector";
@@ -189,8 +189,8 @@ export function PublishForm({
   const {
     register,
     handleSubmit,
+    control,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<PublishFormValues>({
     resolver: zodResolver(publishSchema),
@@ -219,8 +219,8 @@ export function PublishForm({
     },
   });
 
-  const imageUrls = watch("image_urls");
-  const heroIndex = watch("hero_shot_index");
+  const imageUrls = useWatch({ control, name: "image_urls" });
+  const heroIndex = useWatch({ control, name: "hero_shot_index" });
 
   const handleHeroChange = (newIndex: number) => {
     const reordered = [...imageUrls];

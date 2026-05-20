@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTeamStore, TeamMemberRole } from "@/stores";
@@ -96,7 +96,6 @@ export function MemberForm({
     control,
     formState: { errors, isSubmitting },
     setValue,
-    watch,
   } = useForm<MemberFormValues>({
     resolver: zodResolver(memberSchema),
     mode: "all",
@@ -107,7 +106,7 @@ export function MemberForm({
     },
   });
 
-  const selectedRole = watch("role");
+  const selectedRole = useWatch({ control, name: "role" });
 
   // Derived state
   const isDisabled = isLoading || isSubmitting || isPending;

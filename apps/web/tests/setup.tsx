@@ -91,6 +91,7 @@ vi.mock('@/components/ui/select', () => ({
       data-testid="select-item"
       data-value={value}
       role="option"
+      aria-selected={false}
       onClick={() => onClick?.()}
     >
       {children}
