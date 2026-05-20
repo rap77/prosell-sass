@@ -58,9 +58,8 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
     page * limit
   );
 
-  // Calculate unread leads (created < 5 minutes ago)
-  // Note: Date.now() is called on each render - acceptable overhead for this use case
-  const unreadThreshold = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
+  // Stable threshold — computed once per render cycle, not on every re-render
+  const [unreadThreshold] = useState<Date>(() => new Date(Date.now() - 5 * 60 * 1000));
 
   const isUnread = (lead: Lead) => {
     return new Date(lead.created_at) > unreadThreshold;

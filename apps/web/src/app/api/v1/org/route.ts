@@ -29,7 +29,6 @@ type MockOrganization = {
 type MockOrganizations = Record<string, MockOrganization>;
 
 declare global {
-  // eslint-disable-next-line no-var
   var __mockOrganizations: MockOrganizations | undefined;
 }
 

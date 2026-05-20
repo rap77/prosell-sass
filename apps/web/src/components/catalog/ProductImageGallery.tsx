@@ -1,33 +1,46 @@
-/**
- * ProductImageGallery Component
- *
- * Multi-image gallery with:
- * - Main image display
- * - Thumbnail navigation
- * - Prev/next buttons
- * - Keyboard arrow navigation
- * - Responsive design
- *
- * Following React 19 patterns (ref as prop, no forwardRef)
- */
-
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import type { ProductImage } from '@/types/product-image';
 import { ChevronLeft, ChevronRight } from '@/components/icons/chevron';
 
 interface ProductImageGalleryProps {
-  /** Array of product images to display */
   images: ProductImage[];
-  /** Optional CSS class name */
   className?: string;
 }
 
 export function ProductImageGallery({ images, className = '' }: ProductImageGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Handle empty images array
+  // All hooks must be called unconditionally — before any early return
+  const galleryRef = useRef<HTMLDivElement>(null);
+
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex < images.length - 1;
+
+  const goToPrevious = useCallback(() => {
+    if (hasPrevious) setCurrentIndex((prev) => prev - 1);
+  }, [hasPrevious]);
+
+  const goToNext = useCallback(() => {
+    if (hasNext) setCurrentIndex((prev) => prev + 1);
+  }, [hasNext]);
+
+  const selectImage = useCallback((index: number) => {
+    setCurrentIndex(index);
+  }, []);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') goToPrevious();
+    else if (e.key === 'ArrowRight') goToNext();
+  }, [goToPrevious, goToNext]);
+
+  useEffect(() => {
+    if (galleryRef.current) galleryRef.current.focus();
+  }, []);
+
+  // Early return after all hooks
   if (!images || images.length === 0) {
     return (
       <div
@@ -42,44 +55,6 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
   }
 
   const currentImage = images[currentIndex];
-  const hasPrevious = currentIndex > 0;
-  const hasNext = currentIndex < images.length - 1;
-
-  // Navigation handlers
-  const goToPrevious = useCallback(() => {
-    if (hasPrevious) {
-      setCurrentIndex((prev) => prev - 1);
-    }
-  }, [hasPrevious]);
-
-  const goToNext = useCallback(() => {
-    if (hasNext) {
-      setCurrentIndex((prev) => prev + 1);
-    }
-  }, [hasNext]);
-
-  const selectImage = useCallback((index: number) => {
-    setCurrentIndex(index);
-  }, []);
-
-  // Keyboard navigation
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowLeft') {
-      goToPrevious();
-    } else if (e.key === 'ArrowRight') {
-      goToNext();
-    }
-  }, [goToPrevious, goToNext]);
-
-  // Focus management for keyboard navigation
-  const galleryRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Focus gallery on mount to enable keyboard navigation
-    if (galleryRef.current) {
-      galleryRef.current.focus();
-    }
-  }, []);
 
   return (
     <div
@@ -91,15 +66,16 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
       onKeyDown={handleKeyDown}
       className={`flex flex-col gap-4 ${className}`}
     >
-      {/* Main Image Display */}
+      {/* Main Image */}
       <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
-        <img
+        <Image
           src={currentImage.url}
           alt={currentImage.alt_text || ''}
-          className="w-full h-full object-contain"
+          fill
+          className="object-contain"
+          sizes="(max-width: 768px) 100vw, 50vw"
         />
 
-        {/* Navigation Buttons */}
         {images.length > 1 && (
           <>
             <button
@@ -120,7 +96,6 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
               <ChevronRight className="w-6 h-6" />
             </button>
 
-            {/* Image Counter */}
             <div className="absolute bottom-2 right-2 px-3 py-1 bg-black/70 text-white text-sm rounded-full">
               {currentIndex + 1} / {images.length}
             </div>
@@ -138,7 +113,7 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
               aria-label={`View image ${index + 1}${image.alt_text ? `: ${image.alt_text}` : ''}`}
               aria-current={index === currentIndex ? 'true' : undefined}
               className={`
-                flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden
+                flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden relative
                 transition-all ring-2 ring-offset-2
                 ${index === currentIndex
                   ? 'ring-blue-500 scale-105'
@@ -146,10 +121,12 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
                 }
               `}
             >
-              <img
+              <Image
                 src={image.thumbnail_url || image.url}
                 alt={image.alt_text || ''}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="80px"
               />
             </button>
           ))}

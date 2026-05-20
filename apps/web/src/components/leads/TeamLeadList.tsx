@@ -66,8 +66,7 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
     page * limit
   );
 
-  // Calculate unread leads (created < 5 minutes ago)
-  const unreadThreshold = new Date(Date.now() - 5 * 60 * 1000);
+  const [unreadThreshold] = useState<Date>(() => new Date(Date.now() - 5 * 60 * 1000));
 
   const isUnread = (lead: Lead) => {
     return new Date(lead.created_at) > unreadThreshold;

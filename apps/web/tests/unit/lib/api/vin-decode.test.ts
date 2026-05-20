@@ -38,8 +38,10 @@ function createWrapper() {
     },
   });
 
-  return ({ children }: { children: React.ReactNode }) =>
-    createElement(QueryClientProvider, { client: queryClient }, children);
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return createElement(QueryClientProvider, { client: queryClient }, children);
+  }
+  return Wrapper;
 }
 
 describe("useDecodeVin", () => {

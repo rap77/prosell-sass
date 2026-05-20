@@ -16,7 +16,7 @@
  * - Not logged in → Redirect to login with invitation token saved
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,17 +40,7 @@ export default function AcceptInvitationPage() {
   const [message, setMessage] = useState<string>('');
   const [teamName, setTeamName] = useState<string>('');
 
-  useEffect(() => {
-    if (!token) {
-      setState('error');
-      setMessage('No invitation token provided');
-      return;
-    }
-
-    acceptInvitation();
-  }, [token]);
-
-  const acceptInvitation = async () => {
+  const acceptInvitation = useCallback(async () => {
     try {
       const member = await teamApi.acceptInvitation({ token });
 
@@ -88,7 +78,17 @@ export default function AcceptInvitationPage() {
         setMessage('An unexpected error occurred. Please try again.');
       }
     }
-  };
+  }, [token, router]);
+
+  useEffect(() => {
+    if (!token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- guard pattern, not a cascade
+      setState('error');
+      setMessage('No invitation token provided');
+      return;
+    }
+    void acceptInvitation();
+  }, [token, acceptInvitation]);
 
   const renderContent = () => {
     switch (state) {
