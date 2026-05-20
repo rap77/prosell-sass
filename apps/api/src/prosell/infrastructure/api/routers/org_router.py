@@ -3,6 +3,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.org import (
@@ -13,7 +14,6 @@ from prosell.application.dto.org import (
     UploadUrlRequest,
     UploadUrlResponse,
 )
-from pydantic import BaseModel
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.use_cases.org import (
     CompleteSetupUseCase,

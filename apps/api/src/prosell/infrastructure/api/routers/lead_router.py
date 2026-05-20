@@ -43,10 +43,10 @@ from prosell.infrastructure.repositories.lead_repository_impl import (
     LeadWithProduct,
     SqlAlchemyLeadRepository,
 )
-from prosell.infrastructure.repositories.product_repository_impl import SqlAlchemyProductRepository
 from prosell.infrastructure.repositories.notification_repository_impl import (
     SqlAlchemyNotificationRepository,
 )
+from prosell.infrastructure.repositories.product_repository_impl import SqlAlchemyProductRepository
 from prosell.infrastructure.repositories.team_repository_impl import (
     SqlAlchemyTeamMemberRepository,
     SqlAlchemyTeamRepository,

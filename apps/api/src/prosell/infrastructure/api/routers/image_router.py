@@ -250,7 +250,10 @@ async def upload_image(
     file_path = f"orgs/{current_user.tenant_id}/vehicles/{file_id}{ext}"
 
     logger.info(
-        f"Uploading optimized image: {file_path} (original size: {len(file_bytes)} bytes, optimized: {len(optimized_bytes)} bytes)"
+        "Uploading optimized image: %s (original: %d bytes, optimized: %d bytes)",
+        file_path,
+        len(file_bytes),
+        len(optimized_bytes),
     )
 
     # Upload to DO Spaces

@@ -1,8 +1,8 @@
 """SQLAlchemy ORM models for ProSell SaaS."""
 
 from prosell.infrastructure.models.branch_model import BranchModel
-from prosell.infrastructure.models.notification_model import NotificationModel
 from prosell.infrastructure.models.category_model import CategoryModel
+from prosell.infrastructure.models.notification_model import NotificationModel
 from prosell.infrastructure.models.oauth_account_model import OAuthAccountModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.product_image_model import ProductImageModel
@@ -18,8 +18,8 @@ from prosell.infrastructure.models.wallet_model import WalletModel, WalletTransa
 
 __all__ = [
     "BranchModel",
-    "NotificationModel",
     "CategoryModel",
+    "NotificationModel",
     "OAuthAccountModel",
     "OrganizationModel",
     "ProductImageModel",

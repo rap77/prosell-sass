@@ -73,7 +73,7 @@ class TestCreateAppointmentConflictDetection:
         }
 
     async def test_create_appointment_no_conflicts_success(
-        self, use_case, mock_appointment_repo, mock_lead_repo, valid_request_data
+        self, use_case, mock_appointment_repo, _mock_lead_repo, valid_request_data
     ):
         """Test successful appointment creation when no conflicts exist."""
         # Setup: No existing appointments
@@ -172,7 +172,7 @@ class TestCreateAppointmentConflictDetection:
         assert len(exception.conflicts) == 2
 
     async def test_create_appointment_cancelled_no_conflict(
-        self, use_case, mock_appointment_repo, mock_lead_repo, valid_request_data
+        self, use_case, mock_appointment_repo, _mock_lead_repo, valid_request_data
     ):
         """Test that cancelled appointments don't cause conflicts."""
         # Setup: Create cancelled appointment (should not conflict)
@@ -212,7 +212,7 @@ class TestCreateAppointmentConflictDetection:
         # Note: update_status may or may not be called depending on lead state
 
     async def test_create_appointment_with_force_override(
-        self, use_case, mock_appointment_repo, mock_lead_repo, valid_request_data
+        self, use_case, mock_appointment_repo, _mock_lead_repo, valid_request_data
     ):
         """Test that force=True overrides conflict detection."""
         # Setup: Create conflicting appointment

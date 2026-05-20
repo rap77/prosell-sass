@@ -19,7 +19,6 @@ from prosell.infrastructure.api.routers.vehicle_router import router as vehicle_
 from prosell.infrastructure.api.routers.wallet_router import router as wallet_router
 
 __all__ = [
-    "notification_router",
     "admin_router",
     "auth_router",
     "branch_router",
@@ -28,6 +27,7 @@ __all__ = [
     "health_router",
     "image_router",
     "lead_router",
+    "notification_router",
     "org_router",
     "product_router",
     "publisher_router",
