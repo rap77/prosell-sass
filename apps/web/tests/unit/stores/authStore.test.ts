@@ -223,7 +223,7 @@ const createTestAuthStore = () =>
           set({ isLoading: loading });
         },
 
-        reset: () => {
+        reset: async () => {
           set({
             user: null,
             isAuthenticated: false,

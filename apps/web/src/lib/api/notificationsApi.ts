@@ -51,6 +51,7 @@ export function useNotifications() {
       return NOTIFICATION_LIST_SCHEMA.parse(data);
     },
     refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     staleTime: 20_000,
   });
 }

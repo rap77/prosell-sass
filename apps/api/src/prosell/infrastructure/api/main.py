@@ -191,7 +191,7 @@ app.include_router(
 app.include_router(
     branch_router,
     prefix="/api/v1/branches",
-    tags=["Branchs"],
+    tags=["Branches"],
 )
 
 app.include_router(user_branch_router)

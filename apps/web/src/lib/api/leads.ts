@@ -243,17 +243,17 @@ function transformLead(backendLead: BackendLeadResponse): Lead {
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
 export function useLeads(filters?: LeadFilters, limit: number = 50, offset: number = 0): UseQueryResult<Lead[], Error> {
-  const queryParams = new URLSearchParams();
-  queryParams.append("limit", limit.toString());
-  queryParams.append("offset", offset.toString());
-
-  if (filters?.status) queryParams.append("status", filters.status);
-  if (filters?.search) queryParams.append("search", filters.search);
-  if (filters?.vendedor_id) queryParams.append("vendedor_id", filters.vendedor_id);
-
   return useQuery({
     queryKey: ["leads", filters, limit, offset],
     queryFn: async () => {
+      // Build params inside queryFn to avoid stale closure on background refetches
+      const queryParams = new URLSearchParams();
+      queryParams.append("limit", limit.toString());
+      queryParams.append("offset", offset.toString());
+      if (filters?.status) queryParams.append("status", filters.status);
+      if (filters?.search) queryParams.append("search", filters.search);
+      if (filters?.vendedor_id) queryParams.append("vendedor_id", filters.vendedor_id);
+
       const res = await fetch(`/api/v1/leads?${queryParams.toString()}`, {
         credentials: "include",
       });
@@ -266,8 +266,9 @@ export function useLeads(filters?: LeadFilters, limit: number = 50, offset: numb
       const data = (await res.json()) as BackendLeadListResponse;
       return data.items.map(transformLead);
     },
-    staleTime: 30 * 1000,
-    refetchInterval: 30 * 1000,
+    staleTime: 35_000,          // slightly above refetchInterval to avoid redundant refetches
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,  // pause polling when tab is not visible
   });
 }
 

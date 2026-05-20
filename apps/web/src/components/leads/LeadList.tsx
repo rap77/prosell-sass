@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Lead, LeadStatus, useLeads } from "@/lib/api/leads";
 import { LeadListItem } from "./LeadListItem";
 import { Button } from "@/components/ui/button";
@@ -31,10 +31,17 @@ interface LeadListProps {
  */
 export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
   const [page, setPage] = useState(0);
   const [isManualRefetch, setIsManualRefetch] = useState(false);
   const limit = 50;
+
+  // Debounce search to avoid firing a query on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Build filters
   const filters: { status?: LeadStatus; search?: string; vendedor_id?: string } = {};
@@ -43,8 +50,8 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
     filters.status = statusFilter;
   }
 
-  if (searchQuery.trim()) {
-    filters.search = searchQuery.trim();
+  if (debouncedSearch) {
+    filters.search = debouncedSearch;
   }
 
   if (vendedorId) {

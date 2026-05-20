@@ -117,6 +117,7 @@ async def list_organizations(
     skip: int = 0,
     limit: int = 100,
     tenant_id: UUID | None = None,
+    current_user: User = Depends(get_current_auth_user_from_cookie),
     org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationListResponse:
     """
@@ -125,8 +126,11 @@ async def list_organizations(
     - SUPER_ADMIN: can pass tenant_id=None to see all orgs
     - ORG_ADMIN: only sees their own org (enforce tenant_id in middleware)
     """
+    # Non-SUPER_ADMIN users are scoped to their own tenant
+    is_admin = current_user.has_role(["super_admin", "admin"])
+    effective_tenant = tenant_id if is_admin else current_user.tenant_id
     use_case = ListOrganizationsUseCase(org_repository=org_repo)
-    return await use_case.execute(tenant_id=tenant_id, skip=skip, limit=limit)
+    return await use_case.execute(tenant_id=effective_tenant, skip=skip, limit=limit)
 
 
 @router.get(
@@ -276,6 +280,13 @@ async def get_upload_url(
         await use_case.execute(org_id=org_id, tenant_id=current_user.tenant_id)
     except OrganizationNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
+
+    _ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+    if request.content_type not in _ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"content_type must be one of: {', '.join(sorted(_ALLOWED_CONTENT_TYPES))}",
+        )
 
     if request.file_type == "logo":
         file_path = generate_logo_path(str(org_id))

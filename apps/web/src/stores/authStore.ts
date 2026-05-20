@@ -116,7 +116,7 @@ export interface AuthState {
   updateUser: (updates: Partial<User>) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
-  reset: () => void; // Added for testing
+  reset: () => Promise<void>;
 }
 
 // ============================================
@@ -150,8 +150,8 @@ export const useAuthStore = create<AuthState>()(
         markPerformance("auth-init-start");
 
         try {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-          const response = await fetch(`${apiUrl}/api/auth/state`, {
+          const { API_BASE_URL } = await import("@/lib/config");
+          const response = await fetch(`${API_BASE_URL}/api/auth/state`, {
             credentials: "include", // CRITICAL: Sends httpOnly cookies
           });
           const authState = await response.json();
@@ -362,23 +362,25 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: loading });
       },
 
-      reset: () => {
+      reset: async () => {
         set({
           user: null,
           isAuthenticated: false,
           isLoading: false,
-          initialized: false, // Reset initialized flag
+          initialized: false,
           error: null,
         });
 
-        // Also delete cookies via API
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        fetch(`${apiUrl}/api/auth/state`, {
-          method: "DELETE",
-          credentials: "include",
-        }).catch((error) => {
+        // Delete httpOnly cookies via API — awaited so callers can sequence navigation after this
+        try {
+          const { API_BASE_URL } = await import("@/lib/config");
+          await fetch(`${API_BASE_URL}/api/auth/state`, {
+            method: "DELETE",
+            credentials: "include",
+          });
+        } catch (error) {
           logger.error("Failed to delete auth cookies during reset", error);
-        });
+        }
       },
     }),
     {

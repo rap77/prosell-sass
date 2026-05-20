@@ -26,12 +26,15 @@ interface KanbanColumnProps {
 export function KanbanColumn({ status, leads }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
-  const totalPriceCents = leads.reduce(
-    (sum, lead) => sum + (lead.product?.price_cents ?? 0),
-    0
-  );
+  // Group totals by currency to avoid summing across incompatible currencies
+  const totalsByCurrency = leads.reduce<Record<string, number>>((acc, lead) => {
+    if (lead.product?.price_cents && lead.product.currency) {
+      acc[lead.product.currency] = (acc[lead.product.currency] ?? 0) + lead.product.price_cents;
+    }
+    return acc;
+  }, {});
 
-  const hasPrices = leads.some((l) => l.product?.price_cents);
+  const hasPrices = Object.keys(totalsByCurrency).length > 0;
 
   const dotColor = COLUMN_COLORS[status] ?? "bg-muted";
 
@@ -48,13 +51,17 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
         </span>
       </div>
       {hasPrices && (
-        <p className="px-3 pb-1 text-xs text-muted-foreground">
-          {new Intl.NumberFormat("es-AR", {
-            style: "currency",
-            currency: leads.find((l) => l.product)?.product?.currency ?? "ARS",
-            maximumFractionDigits: 0,
-          }).format(totalPriceCents / 100)}
-        </p>
+        <div className="px-3 pb-1 flex flex-wrap gap-x-2">
+          {Object.entries(totalsByCurrency).map(([currency, cents]) => (
+            <p key={currency} className="text-xs text-muted-foreground">
+              {new Intl.NumberFormat("es-AR", {
+                style: "currency",
+                currency,
+                maximumFractionDigits: 0,
+              }).format(cents / 100)}
+            </p>
+          ))}
+        </div>
       )}
 
       {/* Drop zone */}

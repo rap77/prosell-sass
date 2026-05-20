@@ -99,9 +99,12 @@ export function KanbanBoard() {
     if (!over) return;
 
     const lead = active.data.current?.lead as Lead | undefined;
+    if (!lead) return;
+
+    if (!KANBAN_COLUMNS.includes(over.id as LeadStatus)) return;
     const targetStatus = over.id as LeadStatus;
 
-    if (!lead || lead.status === targetStatus) return;
+    if (lead.status === targetStatus) return;
 
     if (!isValidTransition(lead.status, targetStatus)) {
       toast.error("Transición inválida", {
