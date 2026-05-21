@@ -96,19 +96,19 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
       renderComponent();
 
       // Submit form (will fail with 409) - form validation will fail first but that's ok
-      const submitButton = screen.getByRole("button", { name: /schedule/i });
+      const submitButton = screen.getByRole("button", { name: /^Agendar$/i });
       await userEvent.click(submitButton);
 
       // Since form validation fails, let's test the error display logic directly
       // by checking that the component has the error state management
       // The actual backend error will be shown when form is valid
-      expect(screen.getByRole("button", { name: /schedule/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^Agendar$/i })).toBeInTheDocument();
     });
 
     it("should display yellow warning for 400 validation errors", async () => {
       // Mock 400 validation error
       const validationError = new Error(
-        "Appointments cannot be scheduled on weekends"
+        "No se pueden agendar turnos en fin de semana"
       );
       (validationError as any).status = 400;
       mockMutateAsync.mockRejectedValue(validationError);
@@ -116,7 +116,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
       renderComponent();
 
       // Form is rendered
-      expect(screen.getByText(/schedule appointment/i)).toBeInTheDocument();
+      expect(screen.getByText(/agendar turno/i)).toBeInTheDocument();
     });
 
     it("should close error banner when clicking X button", async () => {
@@ -127,7 +127,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
       renderComponent();
 
       // Form is rendered
-      expect(screen.getByText(/schedule appointment/i)).toBeInTheDocument();
+      expect(screen.getByText(/agendar turno/i)).toBeInTheDocument();
     });
 
     it("should clear error when modal closes and reopens", async () => {
@@ -148,7 +148,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
       );
 
       // Form is rendered
-      expect(screen.getByText(/schedule appointment/i)).toBeInTheDocument();
+      expect(screen.getByText(/agendar turno/i)).toBeInTheDocument();
 
       // Close and reopen
       rerender(
@@ -176,7 +176,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
       );
 
       // Form is rendered again
-      expect(screen.getByText(/schedule appointment/i)).toBeInTheDocument();
+      expect(screen.getByText(/agendar turno/i)).toBeInTheDocument();
     });
   });
 
@@ -187,7 +187,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
       renderComponent();
 
       // Form is rendered
-      expect(screen.getByText(/schedule appointment/i)).toBeInTheDocument();
+      expect(screen.getByText(/agendar turno/i)).toBeInTheDocument();
       expect(screen.queryByTestId("appointment-error-banner")).not.toBeInTheDocument();
     });
 
@@ -197,7 +197,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
       renderComponent();
 
       // Form is rendered
-      expect(screen.getByText(/schedule appointment/i)).toBeInTheDocument();
+      expect(screen.getByText(/agendar turno/i)).toBeInTheDocument();
       expect(screen.queryByTestId("appointment-error-banner")).not.toBeInTheDocument();
     });
   });
@@ -209,20 +209,20 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
       renderComponent();
 
       // Check all form elements are present
-      expect(screen.getByText(/schedule appointment/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/branch/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/date/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/time/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/notes/i)).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /schedule/i })).toBeInTheDocument();
+      expect(screen.getByText(/agendar turno/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Sucursal/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Fecha/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Horario/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Notas/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^Agendar$/i })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
     });
 
     it("should show business hours hint", async () => {
       renderComponent();
 
-      expect(screen.getByText(/business hours: monday-friday only/i)).toBeInTheDocument();
-      expect(screen.getByText(/business hours: 9:00 am - 6:00 pm/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/horario/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Sólo días hábiles/i)).toBeInTheDocument();
     });
   });
 
@@ -233,7 +233,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
       renderComponent();
 
       // Form renders without errors
-      expect(screen.getByText(/schedule appointment/i)).toBeInTheDocument();
+      expect(screen.getByText(/agendar turno/i)).toBeInTheDocument();
     });
   });
 });

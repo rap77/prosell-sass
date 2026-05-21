@@ -1,6 +1,7 @@
 """Unit tests for AppointmentConflictDetector service."""
 
 from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 import pytest
 
@@ -24,21 +25,32 @@ def base_time() -> datetime:
     return datetime(2026, 5, 19, 14, 0, tzinfo=UTC)  # Tuesday
 
 
+def make_appointment(
+    scheduled_at: datetime,
+    *,
+    user_id=None,
+    status: AppointmentStatus = AppointmentStatus.SCHEDULED,
+    notes: str | None = None,
+) -> Appointment:
+    """Create a valid appointment entity for tests."""
+    return Appointment(
+        id=uuid4(),
+        tenant_id=uuid4(),
+        lead_id=uuid4(),
+        user_id=user_id or uuid4(),
+        product_id=uuid4(),
+        scheduled_at=scheduled_at,
+        status=status,
+        notes=notes,
+    )
+
+
 @pytest.fixture
 def existing_appointment(
     base_time: datetime,
 ) -> Appointment:
     """Create an existing appointment for testing conflicts."""
-    return Appointment(
-        id="existing-1",
-        tenant_id="tenant-1",
-        lead_id="lead-1",
-        user_id="dealer-1",
-        product_id="product-1",
-        scheduled_at=base_time,
-        status=AppointmentStatus.SCHEDULED,
-        notes="Existing appointment",
-    )
+    return make_appointment(base_time, notes="Existing appointment")
 
 
 class TestTimesOverlap:
@@ -121,15 +133,7 @@ class TestDetectConflicts:
         existing_appointment: Appointment,
     ):
         """Test no conflict when different dealer."""
-        new_appointment = Appointment(
-            id="new-1",
-            tenant_id="tenant-1",
-            lead_id="lead-2",
-            user_id="dealer-2",  # Different dealer
-            product_id="product-2",
-            scheduled_at=base_time,
-            status=AppointmentStatus.SCHEDULED,
-        )
+        new_appointment = make_appointment(base_time)
 
         conflicts = conflict_detector.detect_conflicts(new_appointment, [existing_appointment])
 
@@ -142,14 +146,9 @@ class TestDetectConflicts:
         existing_appointment: Appointment,
     ):
         """Test no conflict when different time."""
-        new_appointment = Appointment(
-            id="new-1",
-            tenant_id="tenant-1",
-            lead_id="lead-2",
-            user_id="dealer-1",  # Same dealer
-            product_id="product-2",
-            scheduled_at=base_time + timedelta(hours=3),  # Different time
-            status=AppointmentStatus.SCHEDULED,
+        new_appointment = make_appointment(
+            base_time + timedelta(hours=3),
+            user_id=existing_appointment.user_id,
         )
 
         conflicts = conflict_detector.detect_conflicts(new_appointment, [existing_appointment])
@@ -166,15 +165,7 @@ class TestDetectConflicts:
         # Mark existing as cancelled
         existing_appointment.status = AppointmentStatus.CANCELLED
 
-        new_appointment = Appointment(
-            id="new-1",
-            tenant_id="tenant-1",
-            lead_id="lead-2",
-            user_id="dealer-1",
-            product_id="product-2",
-            scheduled_at=base_time,  # Same time
-            status=AppointmentStatus.SCHEDULED,
-        )
+        new_appointment = make_appointment(base_time, user_id=existing_appointment.user_id)
 
         conflicts = conflict_detector.detect_conflicts(new_appointment, [existing_appointment])
 
@@ -190,15 +181,7 @@ class TestDetectConflicts:
         # Mark existing as completed
         existing_appointment.status = AppointmentStatus.COMPLETED
 
-        new_appointment = Appointment(
-            id="new-1",
-            tenant_id="tenant-1",
-            lead_id="lead-2",
-            user_id="dealer-1",
-            product_id="product-2",
-            scheduled_at=base_time,  # Same time
-            status=AppointmentStatus.SCHEDULED,
-        )
+        new_appointment = make_appointment(base_time, user_id=existing_appointment.user_id)
 
         conflicts = conflict_detector.detect_conflicts(new_appointment, [existing_appointment])
 
@@ -211,15 +194,7 @@ class TestDetectConflicts:
         existing_appointment: Appointment,
     ):
         """Test conflict detected for same dealer and time."""
-        new_appointment = Appointment(
-            id="new-1",
-            tenant_id="tenant-1",
-            lead_id="lead-2",
-            user_id="dealer-1",  # Same dealer
-            product_id="product-2",
-            scheduled_at=base_time,  # Same time
-            status=AppointmentStatus.SCHEDULED,
-        )
+        new_appointment = make_appointment(base_time, user_id=existing_appointment.user_id)
 
         conflicts = conflict_detector.detect_conflicts(new_appointment, [existing_appointment])
 
@@ -235,14 +210,9 @@ class TestDetectConflicts:
         existing_appointment: Appointment,
     ):
         """Test conflict detected when times overlap."""
-        new_appointment = Appointment(
-            id="new-1",
-            tenant_id="tenant-1",
-            lead_id="lead-2",
-            user_id="dealer-1",  # Same dealer
-            product_id="product-2",
-            scheduled_at=base_time + timedelta(minutes=30),  # 30 min later
-            status=AppointmentStatus.SCHEDULED,
+        new_appointment = make_appointment(
+            base_time + timedelta(minutes=30),
+            user_id=existing_appointment.user_id,
         )
 
         conflicts = conflict_detector.detect_conflicts(new_appointment, [existing_appointment])
@@ -258,25 +228,12 @@ class TestDetectConflicts:
     ):
         """Test multiple conflicts detected."""
         # Create multiple existing appointments
-        existing_2 = Appointment(
-            id="existing-2",
-            tenant_id="tenant-1",
-            lead_id="lead-3",
-            user_id="dealer-1",  # Same dealer
-            product_id="product-3",
-            scheduled_at=base_time + timedelta(minutes=30),  # 30 min later - overlaps
-            status=AppointmentStatus.SCHEDULED,
+        existing_2 = make_appointment(
+            base_time + timedelta(minutes=30),
+            user_id=existing_appointment.user_id,
         )
 
-        new_appointment = Appointment(
-            id="new-1",
-            tenant_id="tenant-1",
-            lead_id="lead-2",
-            user_id="dealer-1",  # Same dealer
-            product_id="product-2",
-            scheduled_at=base_time,  # Conflicts with both
-            status=AppointmentStatus.SCHEDULED,
-        )
+        new_appointment = make_appointment(base_time, user_id=existing_appointment.user_id)
 
         conflicts = conflict_detector.detect_conflicts(
             new_appointment, [existing_appointment, existing_2]
@@ -290,15 +247,7 @@ class TestDetectConflicts:
         base_time: datetime,
     ):
         """Test with no existing appointments."""
-        new_appointment = Appointment(
-            id="new-1",
-            tenant_id="tenant-1",
-            lead_id="lead-2",
-            user_id="dealer-1",
-            product_id="product-2",
-            scheduled_at=base_time,
-            status=AppointmentStatus.SCHEDULED,
-        )
+        new_appointment = make_appointment(base_time)
 
         conflicts = conflict_detector.detect_conflicts(new_appointment, [])
 
@@ -310,15 +259,7 @@ class TestConflictValueObject:
 
     def test_conflict_creation(self):
         """Test creating a conflict object."""
-        existing = Appointment(
-            id="existing-1",
-            tenant_id="tenant-1",
-            lead_id="lead-1",
-            user_id="dealer-1",
-            product_id="product-1",
-            scheduled_at=datetime(2026, 5, 19, 14, 0, tzinfo=UTC),
-            status=AppointmentStatus.SCHEDULED,
-        )
+        existing = make_appointment(datetime(2026, 5, 19, 14, 0, tzinfo=UTC))
 
         conflict = Conflict(
             type=ConflictType.DEALER_UNAVAILABLE,

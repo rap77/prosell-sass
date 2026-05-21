@@ -53,7 +53,7 @@ describe("AppointmentForm", () => {
         />
       );
 
-      expect(screen.getByText(/Schedule Appointment/i)).toBeInTheDocument();
+      expect(screen.getByText(/Agendar turno/i)).toBeInTheDocument();
     });
 
     it("should not render modal when closed", () => {
@@ -66,7 +66,7 @@ describe("AppointmentForm", () => {
         />
       );
 
-      expect(screen.queryByText(/Schedule Appointment/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Agendar/i)).not.toBeInTheDocument();
     });
 
     it("should display form fields", () => {
@@ -79,10 +79,10 @@ describe("AppointmentForm", () => {
         />
       );
 
-      expect(screen.getByLabelText(/Branch/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Date/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Time/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Notes/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Sucursal/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Fecha/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Horario/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Notas/i)).toBeInTheDocument();
     });
   });
 
@@ -98,13 +98,13 @@ describe("AppointmentForm", () => {
       );
 
       // Try to submit without filling fields
-      const submitButton = screen.getByRole("button", { name: /Schedule/i });
+      const submitButton = screen.getByRole("button", { name: /^Agendar$/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/User is required/i)).toBeInTheDocument();
-        expect(screen.getByText(/Date is required/i)).toBeInTheDocument();
-        expect(screen.getByText(/Time is required/i)).toBeInTheDocument();
+        expect(screen.getByText(/La sucursal es requerida/i)).toBeInTheDocument();
+        expect(screen.getByText(/La fecha es requerida/i)).toBeInTheDocument();
+        expect(screen.getByText(/El horario es requerido/i)).toBeInTheDocument();
       });
     });
   });
@@ -126,7 +126,7 @@ describe("AppointmentForm", () => {
         />
       );
 
-      const submitButton = screen.getByRole("button", { name: /Schedule/i });
+      const submitButton = screen.getByRole("button", { name: /^Agendar$/i });
       expect(submitButton).toBeDisabled();
     });
 
@@ -147,7 +147,7 @@ describe("AppointmentForm", () => {
       );
 
       // Check for loading spinner
-      const submitButton = screen.getByRole("button", { name: /Schedule/i });
+      const submitButton = screen.getByRole("button", { name: /^Agendar$/i });
       expect(submitButton.innerHTML).toContain("svg");
     });
   });

@@ -67,9 +67,9 @@ describe("ManagerTeamLeadsPage", () => {
   it("should render page header", () => {
     renderWithQueryClient(<ManagerTeamLeadsPage />);
 
-    expect(screen.getByText("Team Leads")).toBeInTheDocument();
+    expect(screen.getByText("Leads del equipo")).toBeInTheDocument();
     expect(
-      screen.getByText("View and manage all leads across your team")
+      screen.getByText("Supervisión de todos los leads activos asignados al equipo.")
     ).toBeInTheDocument();
   });
 
@@ -82,7 +82,7 @@ describe("ManagerTeamLeadsPage", () => {
   it("should render team description", () => {
     renderWithQueryClient(<ManagerTeamLeadsPage />);
 
-    expect(screen.getByText("View and manage all leads across your team")).toBeInTheDocument();
+    expect(screen.getByText("Supervisión de todos los leads activos asignados al equipo.")).toBeInTheDocument();
   });
 
   it("should not show reassign modal initially", () => {

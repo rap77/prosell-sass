@@ -41,7 +41,7 @@ const fillAndSubmitForgotForm = async (email: string) => {
   const user = userEvent.setup();
   const emailInput = screen.getByLabelText(/email/i);
   await user.type(emailInput, email);
-  const submitBtn = screen.getByRole("button", { name: /send reset link/i });
+  const submitBtn = screen.getByRole("button", { name: /Enviar enlace de recuperación/i });
   await user.click(submitBtn);
 };
 
@@ -67,13 +67,13 @@ describe("B1.1.49 — Request password reset from forgot-password form", () => {
   it("shows a 'Send Reset Link' submit button", () => {
     render(<ForgotPasswordForm />);
     expect(
-      screen.getByRole("button", { name: /send reset link/i })
+      screen.getByRole("button", { name: /Enviar enlace de recuperación/i })
     ).toBeInTheDocument();
   });
 
   it("has a 'Back to Login' link pointing to /auth/login", () => {
     render(<ForgotPasswordForm />);
-    const link = screen.getByRole("link", { name: /back to login/i });
+    const link = screen.getByRole("link", { name: /Volver al inicio de sesión/i });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute("href", "/auth/login");
   });
@@ -81,7 +81,7 @@ describe("B1.1.49 — Request password reset from forgot-password form", () => {
   it("shows validation error when submitting without email", async () => {
     render(<ForgotPasswordForm />);
     const user = userEvent.setup();
-    const submitBtn = screen.getByRole("button", { name: /send reset link/i });
+    const submitBtn = screen.getByRole("button", { name: /Enviar enlace de recuperación/i });
     await user.click(submitBtn);
     // Error message should appear
     await waitFor(() => {
@@ -104,7 +104,7 @@ describe("B1.1.49 — Request password reset from forgot-password form", () => {
     render(<ForgotPasswordForm />);
     const user = userEvent.setup();
     await user.type(screen.getByLabelText(/email/i), "user@example.com");
-    const submitBtn = screen.getByRole("button", { name: /send reset link/i });
+    const submitBtn = screen.getByRole("button", { name: /Enviar enlace de recuperación/i });
     await user.click(submitBtn);
 
     // Button should be disabled during loading
@@ -148,7 +148,7 @@ describe("B1.1.50 — Email API is called when form is submitted", () => {
     await fillAndSubmitForgotForm("alice@example.com");
 
     await waitFor(() => {
-      const successText = screen.queryByText(/check your email/i);
+      const successText = screen.queryByText(/Revisá tu email/i);
       expect(successText).toBeInTheDocument();
     });
   });
@@ -195,7 +195,7 @@ describe("B1.1.51 — ResetPasswordForm: valid token + new password", () => {
       await user.type(passwordInputs[1], "NewSecure1!");
     }
 
-    const submitBtn = screen.getByRole("button", { name: /reset password/i });
+    const submitBtn = screen.getByRole("button", { name: /Restablecer contraseña/i });
     await user.click(submitBtn);
 
     await waitFor(() => {
@@ -216,10 +216,10 @@ describe("B1.1.51 — ResetPasswordForm: valid token + new password", () => {
       await user.type(passwordInputs[1], "NewSecure1!");
     }
 
-    await user.click(screen.getByRole("button", { name: /reset password/i }));
+    await user.click(screen.getByRole("button", { name: /Restablecer contraseña/i }));
 
     await waitFor(() => {
-      const success = screen.queryByText(/password reset/i);
+      const success = screen.queryByText(/contraseña actualizada/i);
       expect(success).toBeInTheDocument();
     });
   });
@@ -270,7 +270,7 @@ describe("B1.1.52 — Invalid/missing token shows error state", () => {
     if (passwordInputs.length >= 2) {
       await user.type(passwordInputs[0], "NewSecure1!");
       await user.type(passwordInputs[1], "NewSecure1!");
-      await user.click(screen.getByRole("button", { name: /reset password/i }));
+      await user.click(screen.getByRole("button", { name: /Restablecer contraseña/i }));
     }
 
     await waitFor(() => {
@@ -304,7 +304,7 @@ describe("B1.1.53 — After reset, user is directed to login", () => {
     if (passwordInputs.length >= 2) {
       await user.type(passwordInputs[0], "NewSecure1!");
       await user.type(passwordInputs[1], "NewSecure1!");
-      await user.click(screen.getByRole("button", { name: /reset password/i }));
+      await user.click(screen.getByRole("button", { name: /Restablecer contraseña/i }));
     }
 
     await waitFor(() => {

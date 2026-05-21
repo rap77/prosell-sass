@@ -92,7 +92,7 @@ describe("AppointmentDetailsModal", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Appointment Details")).toBeInTheDocument();
+      expect(screen.getByText("Detalle del turno")).toBeInTheDocument();
       expect(screen.getByText("John Doe")).toBeInTheDocument();
       expect(screen.getByText("john@example.com")).toBeInTheDocument();
       expect(screen.getByText("+1-555-0123")).toBeInTheDocument();
@@ -115,7 +115,7 @@ describe("AppointmentDetailsModal", () => {
       />
     );
 
-    expect(screen.getByText("Loading lead details...")).toBeInTheDocument();
+    expect(screen.getByText("Cargando datos del lead...")).toBeInTheDocument();
   });
 
   it("should show error when lead not found", () => {
@@ -132,7 +132,7 @@ describe("AppointmentDetailsModal", () => {
       />
     );
 
-    expect(screen.getByText("Lead details not found")).toBeInTheDocument();
+    expect(screen.getByText("No se encontró información del lead")).toBeInTheDocument();
   });
 
   it("should not render when appointment is null", () => {
@@ -257,7 +257,7 @@ describe("AppointmentDetailsModal", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Vehicle not available")).toBeInTheDocument();
+      expect(screen.getByText("Vehículo no disponible")).toBeInTheDocument();
     });
   });
 
@@ -276,9 +276,9 @@ describe("AppointmentDetailsModal", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/May 15, 2026/)).toBeInTheDocument();
-      // Time will be formatted in local timezone, so just check that AM/PM is present
-      expect(screen.getByText(/AM|PM/)).toBeInTheDocument();
+      expect(screen.getByText(/15 de May 2026/)).toBeInTheDocument();
+      // Time is in 24h format (HH:mm)
+      expect(screen.getByText(/\d{2}:\d{2}/)).toBeInTheDocument();
     });
   });
 
@@ -300,11 +300,11 @@ describe("AppointmentDetailsModal", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Appointment Details")).toBeInTheDocument();
+      expect(screen.getByText("Detalle del turno")).toBeInTheDocument();
     });
 
     // Click the close button (X icon)
-    const closeButton = screen.getByRole("button", { name: /close/i });
+    const closeButton = screen.getByRole("button", { name: /Cerrar/i });
     await user.click(closeButton);
 
     expect(onOpenChange).toHaveBeenCalledWith(false);

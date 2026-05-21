@@ -141,7 +141,7 @@ describe("PasswordInput Component", () => {
 
       const strengthIndicator = screen.getByTestId("password-strength");
       expect(strengthIndicator).toBeInTheDocument();
-      expect(strengthIndicator).toHaveTextContent(/weak/i);
+      expect(strengthIndicator).toHaveTextContent(/débil/i);
     });
 
     it("should show medium strength for moderate passwords", async () => {
@@ -153,7 +153,7 @@ describe("PasswordInput Component", () => {
       await user.type(input, "Abc12345");
 
       const strengthIndicator = screen.getByTestId("password-strength");
-      expect(strengthIndicator).toHaveTextContent(/medium/i);
+      expect(strengthIndicator).toHaveTextContent(/media/i);
     });
 
     it("should show strong strength for complex passwords", async () => {
@@ -165,7 +165,7 @@ describe("PasswordInput Component", () => {
       await user.type(input, "Str0ng!Pass@2026");
 
       const strengthIndicator = screen.getByTestId("password-strength");
-      expect(strengthIndicator).toHaveTextContent(/strong/i);
+      expect(strengthIndicator).toHaveTextContent(/fuerte/i);
     });
 
     it("should update strength indicator in real-time", async () => {
@@ -177,11 +177,11 @@ describe("PasswordInput Component", () => {
       // Start with weak - type first, then query
       await user.type(input, "abc");
       const strengthIndicator = screen.getByTestId("password-strength");
-      expect(strengthIndicator).toHaveTextContent(/weak/i);
+      expect(strengthIndicator).toHaveTextContent(/débil/i);
 
       // Add more characters
       await user.type(input, "12345");
-      expect(strengthIndicator).toHaveTextContent(/medium/i);
+      expect(strengthIndicator).toHaveTextContent(/media/i);
     });
   });
 

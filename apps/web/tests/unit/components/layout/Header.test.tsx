@@ -24,10 +24,18 @@ vi.mock('@/components/teams/TeamSwitcher', () => ({
   TeamSwitcher: () => <div data-testid="team-switcher">Team Switcher</div>,
 }))
 
+vi.mock('@/components/layout/NotificationBell', () => ({
+  NotificationBell: () => <div data-testid="notification-bell" />,
+}))
+
+vi.mock('@/components/layout/ThemeToggle', () => ({
+  ThemeToggle: () => <div data-testid="theme-toggle" />,
+}))
+
 describe('Header', () => {
   it('renders without crashing', () => {
     render(<Header />)
-    expect(true).toBe(true)
+    expect(screen.getByTestId('notification-bell')).toBeInTheDocument()
   })
 
   it('accepts user prop', () => {

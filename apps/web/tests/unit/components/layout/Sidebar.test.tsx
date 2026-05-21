@@ -84,7 +84,10 @@ describe('Sidebar', () => {
     render(<Sidebar groups={['inventario']} />)
 
     const catalogLink = screen.getByText('Catálogo').closest('a')
-    expect(catalogLink).toHaveClass('bg-accent', 'text-accent-foreground')
+    expect(catalogLink).toHaveStyle({
+      background: 'var(--ps-nav-active-bg)',
+      color: 'var(--ps-text-primary)',
+    })
   })
 
   it('renders collapse toggle button', () => {

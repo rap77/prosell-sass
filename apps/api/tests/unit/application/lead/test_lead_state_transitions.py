@@ -138,8 +138,8 @@ class TestCreateLeadUseCase:
         repo.find_by_email = AsyncMock(return_value=[existing_lead])
         repo.find_by_phone = AsyncMock(return_value=[])
         repo.find_potential_duplicates = AsyncMock(return_value=[])
-        # get_by_id is called to resolve the dup lead and check product_id
-        repo.get_by_id = AsyncMock(return_value=existing_lead)
+        # get_many_by_ids is called to resolve duplicate lead entities and compare product_id
+        repo.get_many_by_ids = AsyncMock(return_value=[existing_lead])
 
         use_case = CreateLeadUseCase(repo)
         request = CreateLeadRequest(

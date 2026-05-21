@@ -12,10 +12,10 @@ import ForgotPasswordPage from "@/app/auth/forgot-password/page";
 // MOCKS
 // ============================================
 
-// Mock ForgotPasswordForm component
-vi.mock("@/components/auth/ForgotPasswordForm", () => ({
-  ForgotPasswordForm: () => (
-    <div data-testid="forgot-password-form">ForgotPasswordForm</div>
+// Mock page content component
+vi.mock("@/app/auth/forgot-password/ForgotPasswordPageContent", () => ({
+  ForgotPasswordPageContent: () => (
+    <div data-testid="forgot-password-page-content">ForgotPasswordPageContent</div>
   ),
 }));
 
@@ -28,7 +28,7 @@ describe("ForgotPasswordPage", () => {
     it("should render the ForgotPasswordForm component", () => {
       render(<ForgotPasswordPage />);
 
-      const form = screen.getByTestId("forgot-password-form");
+      const form = screen.getByTestId("forgot-password-page-content");
       expect(form).toBeInTheDocument();
     });
 
@@ -44,7 +44,7 @@ describe("ForgotPasswordPage", () => {
     it("should have direct child as ForgotPasswordForm", () => {
       const { container } = render(<ForgotPasswordPage />);
 
-      const form = screen.getByTestId("forgot-password-form");
+      const form = screen.getByTestId("forgot-password-page-content");
       expect(container.firstChild).toContainElement(form);
     });
   });

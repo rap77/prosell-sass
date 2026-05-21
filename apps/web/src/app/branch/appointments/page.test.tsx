@@ -124,9 +124,9 @@ describe("BranchAppointmentsPage", () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByText("Appointments")).toBeInTheDocument();
+    expect(screen.getByText("Citas")).toBeInTheDocument();
     expect(
-      screen.getByText("Manage your appointments and schedule")
+      screen.getByText("Agenda y seguimiento de citas de la sucursal.")
     ).toBeInTheDocument();
   });
 
@@ -219,9 +219,9 @@ describe("BranchAppointmentsPage", () => {
     );
 
     expect(
-      screen.getByText((content) => content.includes("Error loading appointments"))
+      screen.getByText((content) => content.includes("Error al cargar las citas"))
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Reintentar/i })).toBeInTheDocument();
   });
 
   it("should handle appointment click", async () => {
@@ -248,7 +248,7 @@ describe("BranchAppointmentsPage", () => {
 
     // Should show appointment details modal
     await waitFor(() => {
-      expect(screen.getByText("Appointment Details")).toBeInTheDocument();
+      expect(screen.getByText("Detalle del turno")).toBeInTheDocument();
     });
   });
 

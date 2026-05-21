@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from prosell.domain.entities.organization import Organization
+from prosell.domain.exceptions.org_exceptions import OrganizationVerificationException
 from prosell.domain.value_objects.organization_status import OrganizationStatus
 
 
@@ -65,7 +66,7 @@ class TestOrganizationVerification:
         org.verify(verifier_id)
 
         # Second verify should fail
-        with pytest.raises(ValueError, match="Only pending"):
+        with pytest.raises(OrganizationVerificationException, match="only pending"):
             org.verify(uuid4())
 
     def test_verify_sets_timestamp(self) -> None:
@@ -154,7 +155,10 @@ class TestOrganizationSuspension:
 
         org.reject(verifier_id)
 
-        with pytest.raises(ValueError, match="Rejected organizations cannot be activated"):
+        with pytest.raises(
+            OrganizationVerificationException,
+            match="rejected organizations cannot be activated",
+        ):
             org.activate()
 
 

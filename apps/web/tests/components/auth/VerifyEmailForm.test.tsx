@@ -62,7 +62,7 @@ describe("VerifyEmailForm Component", () => {
     it("should render loading state initially", () => {
       render(<VerifyEmailForm token={mockToken} />);
 
-      expect(screen.getByText(/verifying your email/i)).toBeInTheDocument();
+      expect(screen.getByText(/Verificando tu email/i)).toBeInTheDocument();
       expect(screen.getByRole("status")).toBeInTheDocument();
     });
 
@@ -71,10 +71,10 @@ describe("VerifyEmailForm Component", () => {
 
       // Wait for useEffect to run
       await waitFor(() => {
-        expect(screen.getByText(/Verification Failed/i)).toBeInTheDocument();
+        expect(screen.getByText(/Verificación fallida/i)).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/Missing or invalid token/i)).toBeInTheDocument();
+      expect(screen.getByText(/enlace de verificación no es válido/i)).toBeInTheDocument();
     });
   });
 
@@ -93,15 +93,15 @@ describe("VerifyEmailForm Component", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/email verified successfully/i),
+          screen.getByText(/Email verificado/i),
         ).toBeInTheDocument();
       });
 
       expect(
-        screen.getByText(/your email has been verified/i),
+        screen.getByText(/Email verificado/i),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("link", { name: /continue to login/i }),
+        screen.getByRole("link", { name: /Iniciar sesión/i }),
       ).toBeInTheDocument();
     });
 
@@ -113,7 +113,7 @@ describe("VerifyEmailForm Component", () => {
       render(<VerifyEmailForm token={mockToken} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/verification failed/i)).toBeInTheDocument();
+        expect(screen.getByText(/verificación fallida/i)).toBeInTheDocument();
       });
 
       expect(screen.getByText(/invalid or expired token/i)).toBeInTheDocument();
@@ -127,9 +127,9 @@ describe("VerifyEmailForm Component", () => {
       render(<VerifyEmailForm token={mockToken} />);
 
       await waitFor(() => {
-        // Check that the heading shows "Verification Link Not Found"
+        // Check that the heading shows "Enlace no encontrado"
         expect(
-          screen.getByText("Verification Link Not Found"),
+          screen.getByText("Enlace no encontrado"),
         ).toBeInTheDocument();
       });
     });
@@ -151,12 +151,12 @@ describe("VerifyEmailForm Component", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/email verified successfully/i),
+          screen.getByText(/Email verificado/i),
         ).toBeInTheDocument();
       });
 
       const continueButton = screen.getByRole("link", {
-        name: /continue to login/i,
+        name: /Iniciar sesión/i,
       });
       expect(continueButton).toHaveAttribute("href", "/auth/login");
     });
@@ -166,12 +166,12 @@ describe("VerifyEmailForm Component", () => {
       render(<VerifyEmailForm token={mockToken} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/verification failed/i)).toBeInTheDocument();
+        expect(screen.getByText(/verificación fallida/i)).toBeInTheDocument();
       });
 
       // Verify there's a way to request new verification
       expect(
-        screen.getByRole("link", { name: /request new verification/i }),
+        screen.getByRole("link", { name: /Solicitar nueva verificación/i }),
       ).toBeInTheDocument();
     });
   });
@@ -182,7 +182,7 @@ describe("VerifyEmailForm Component", () => {
 
       // chadcn/ui CardTitle - search by text instead of level
       const heading = screen.getByRole("heading", {
-        name: /email verification/i,
+        name: /Verificación de email/i,
       });
       expect(heading).toBeInTheDocument();
     });
@@ -201,7 +201,7 @@ describe("VerifyEmailForm Component", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/Missing or invalid token/i),
+          screen.getByText(/enlace de verificación no es válido/i),
         ).toBeInTheDocument();
       });
     });
@@ -211,7 +211,7 @@ describe("VerifyEmailForm Component", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/Missing or invalid token/i),
+          screen.getByText(/enlace de verificación no es válido/i),
         ).toBeInTheDocument();
       });
     });

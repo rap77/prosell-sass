@@ -15,7 +15,7 @@ class CreateAppointmentRequest(BaseModel):
     scheduled_at: datetime = Field(
         ..., description="Appointment time (will be validated for business hours)"
     )
-    notes: str | None = None
+    notes: str | None = Field(default=None, max_length=2000)
     force: bool = False
 
     model_config = {"from_attributes": True}

@@ -127,8 +127,8 @@ describe("LeadAuditTrail", () => {
       const badges = within(statusChange).getAllByTestId("status-badge");
       // Two badges: old and new status
       expect(badges).toHaveLength(2);
-      expect(badges[0]).toHaveTextContent("New");
-      expect(badges[1]).toHaveTextContent("Contacted");
+      expect(badges[0]).toHaveTextContent("Nuevo");
+      expect(badges[1]).toHaveTextContent("Contactado");
     });
 
     it("renders who made the change", () => {
@@ -182,13 +182,13 @@ describe("LeadAuditTrail", () => {
 
       // First (newest): contacted → qualified
       const newestBadges = within(entries[0]).getAllByTestId("status-badge");
-      expect(newestBadges[0]).toHaveTextContent("Contacted");
-      expect(newestBadges[1]).toHaveTextContent("Qualified");
+      expect(newestBadges[0]).toHaveTextContent("Contactado");
+      expect(newestBadges[1]).toHaveTextContent("Calificado");
 
       // Second (older): new → contacted
       const olderBadges = within(entries[1]).getAllByTestId("status-badge");
-      expect(olderBadges[0]).toHaveTextContent("New");
-      expect(olderBadges[1]).toHaveTextContent("Contacted");
+      expect(olderBadges[0]).toHaveTextContent("Nuevo");
+      expect(olderBadges[1]).toHaveTextContent("Contactado");
     });
 
     it("renders reason for each entry", () => {
@@ -201,10 +201,10 @@ describe("LeadAuditTrail", () => {
 
   describe("all status transitions", () => {
     const statusPairs: Array<[LeadStatus, LeadStatus, string, string]> = [
-      [LeadStatus.NEW, LeadStatus.CONTACTED, "New", "Contacted"],
-      [LeadStatus.CONTACTED, LeadStatus.QUALIFIED, "Contacted", "Qualified"],
-      [LeadStatus.QUALIFIED, LeadStatus.APPOINTMENT_SET, "Qualified", "Appointment Set"],
-      [LeadStatus.NEW, LeadStatus.LOST, "New", "Lost"],
+      [LeadStatus.NEW, LeadStatus.CONTACTED, "Nuevo", "Contactado"],
+      [LeadStatus.CONTACTED, LeadStatus.QUALIFIED, "Contactado", "Calificado"],
+      [LeadStatus.QUALIFIED, LeadStatus.APPOINTMENT_SET, "Calificado", "Cita agendada"],
+      [LeadStatus.NEW, LeadStatus.LOST, "Nuevo", "Perdido"],
     ];
 
     statusPairs.forEach(([oldStatus, newStatus, oldLabel, newLabel]) => {

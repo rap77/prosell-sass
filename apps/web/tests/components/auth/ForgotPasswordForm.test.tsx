@@ -1,6 +1,6 @@
 /**
  * TDD: ForgotPasswordForm Component Tests
- * RED PHASE - Escribir tests ANTES de implementar
+ * Updated to match Spanish redesign (ProSell design tokens)
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
@@ -44,7 +44,7 @@ describe("ForgotPasswordForm Component", () => {
       render(<ForgotPasswordForm />);
 
       expect(
-        screen.getByRole("button", { name: /send reset link/i }),
+        screen.getByRole("button", { name: /enviar enlace de recuperaci/i }),
       ).toBeInTheDocument();
     });
 
@@ -52,7 +52,7 @@ describe("ForgotPasswordForm Component", () => {
       render(<ForgotPasswordForm />);
 
       expect(
-        screen.getByRole("link", { name: /back to login/i }),
+        screen.getByRole("link", { name: /volver al inicio de sesi/i }),
       ).toBeInTheDocument();
     });
   });
@@ -62,12 +62,12 @@ describe("ForgotPasswordForm Component", () => {
       render(<ForgotPasswordForm />);
 
       const submitButton = screen.getByRole("button", {
-        name: /send reset link/i,
+        name: /enviar enlace de recuperaci/i,
       });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/email is required/i)).toBeInTheDocument();
+        expect(screen.getByText(/el email es requerido/i)).toBeInTheDocument();
       });
     });
 
@@ -78,12 +78,12 @@ describe("ForgotPasswordForm Component", () => {
       await userEvent.type(emailInput, "invalid-email");
 
       const submitButton = screen.getByRole("button", {
-        name: /send reset link/i,
+        name: /enviar enlace de recuperaci/i,
       });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/Invalid email/i)).toBeInTheDocument();
+        expect(screen.getByText(/el email no es válido/i)).toBeInTheDocument();
       });
     });
   });
@@ -96,7 +96,7 @@ describe("ForgotPasswordForm Component", () => {
       await userEvent.type(emailInput, "test@example.com");
 
       const submitButton = screen.getByRole("button", {
-        name: /send reset link/i,
+        name: /enviar enlace de recuperaci/i,
       });
       await userEvent.click(submitButton);
 
@@ -113,12 +113,12 @@ describe("ForgotPasswordForm Component", () => {
       await userEvent.type(emailInput, "test@example.com");
 
       const submitButton = screen.getByRole("button", {
-        name: /send reset link/i,
+        name: /enviar enlace de recuperaci/i,
       });
       await userEvent.click(submitButton);
 
       expect(
-        screen.getByRole("button", { name: /sending/i }),
+        screen.getByRole("button", { name: /enviando/i }),
       ).toBeInTheDocument();
     });
   });
@@ -132,16 +132,16 @@ describe("ForgotPasswordForm Component", () => {
       await userEvent.type(emailInput, "test@example.com");
 
       const submitButton = screen.getByRole("button", {
-        name: /send reset link/i,
+        name: /enviar enlace de recuperaci/i,
       });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/check your email/i)).toBeInTheDocument();
+        expect(screen.getByText(/revis/i)).toBeInTheDocument();
       });
 
       expect(
-        screen.getByText(/we sent a password reset link/i),
+        screen.getByText(/te enviamos un enlace de recuperaci/i),
       ).toBeInTheDocument();
     });
 
@@ -153,13 +153,13 @@ describe("ForgotPasswordForm Component", () => {
       await userEvent.type(emailInput, "test@example.com");
 
       const submitButton = screen.getByRole("button", {
-        name: /send reset link/i,
+        name: /enviar enlace de recuperaci/i,
       });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
         expect(
-          screen.getByRole("link", { name: /back to login/i }),
+          screen.getByRole("link", { name: /volver al inicio de sesi/i }),
         ).toBeInTheDocument();
       });
     });
@@ -177,7 +177,7 @@ describe("ForgotPasswordForm Component", () => {
       await userEvent.type(emailInput, "nonexistent@example.com");
 
       const submitButton = screen.getByRole("button", {
-        name: /send reset link/i,
+        name: /enviar enlace de recuperaci/i,
       });
       await userEvent.click(submitButton);
 
@@ -194,7 +194,7 @@ describe("ForgotPasswordForm Component", () => {
       await userEvent.type(emailInput, "test@example.com");
 
       const submitButton = screen.getByRole("button", {
-        name: /send reset link/i,
+        name: /enviar enlace de recuperaci/i,
       });
       await userEvent.click(submitButton);
 
@@ -208,9 +208,8 @@ describe("ForgotPasswordForm Component", () => {
     it("should have proper heading structure", () => {
       render(<ForgotPasswordForm />);
 
-      // chadcn/ui CardTitle - search by text
       const heading = screen.getByRole("heading", {
-        name: /forgot your password/i,
+        name: /olvidaste tu contrase/i,
       });
       expect(heading).toBeInTheDocument();
     });
@@ -228,7 +227,7 @@ describe("ForgotPasswordForm Component", () => {
     it("should navigate to login when clicking back link", () => {
       render(<ForgotPasswordForm />);
 
-      const backLink = screen.getByRole("link", { name: /back to login/i });
+      const backLink = screen.getByRole("link", { name: /volver al inicio de sesi/i });
       expect(backLink).toHaveAttribute("href", "/auth/login");
     });
 
@@ -241,17 +240,17 @@ describe("ForgotPasswordForm Component", () => {
       await userEvent.type(emailInput, "test@example.com");
 
       const submitButton = screen.getByRole("button", {
-        name: /send reset link/i,
+        name: /enviar enlace de recuperaci/i,
       });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/check your email/i)).toBeInTheDocument();
+        expect(screen.getByText(/revis/i)).toBeInTheDocument();
       });
 
       // Should have option to send again
       expect(
-        screen.queryByRole("button", { name: /send another/i }),
+        screen.queryByRole("button", { name: /reenviar email/i }),
       ).toBeInTheDocument();
     });
   });

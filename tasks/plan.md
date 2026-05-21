@@ -6,14 +6,25 @@
 
 **Milestone**: Milestone C — UX Completion
 **Version**: 1.0
-**Status**: Active
-**Last Updated**: 2026-05-16
+**Status**: Completed
+**Last Updated**: 2026-05-21
+
+---
+
+## Cierre formal
+
+Milestone C queda cerrada formalmente el **2026-05-21**.
+
+Resultado del audit:
+- **8/8 tasks** completadas
+- sin tasks pendientes ni en progreso en el runtime de MasterMind
+- entregados los bloques UX planeados para error handling, catálogo, publicaciones, settings, seguridad, notificaciones, onboarding y pipeline
 
 ---
 
 ## Overview
 
-Esta milestone cierra los 8 gaps de UX identificados para dejar la app operativa en producción. Las fases A y B (catálogo C3, leads, citas) están completas. Cada task a continuación es autocontenida y puede ser ejecutada por `/mm:complete-task`.
+Esta milestone cierra los 8 gaps de UX identificados para dejar la app operativa en producción. Las fases A y B (catálogo C3, leads, citas) están completas. Cada task a continuación fue planificada como unidad autocontenida para el flujo de MasterMind.
 
 **Orden de ejecución recomendado** (respeta dependencias):
 1. M3 → M2 → M1 (foundation, sin dependencias entre sí)

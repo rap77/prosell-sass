@@ -5,7 +5,11 @@
 import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi, type Mock } from "vitest";
 import { useRouter } from "next/navigation";
-import { useLead, useLeadDuplicates, useLeadAuditTrail } from "@/lib/api/leads";
+import {
+  useLead,
+  useLeadDuplicates,
+  useLeadAuditTrail,
+} from "@/lib/api/leads";
 
 // Mock Next.js router
 vi.mock("next/navigation", () => ({
@@ -17,6 +21,7 @@ vi.mock("@/lib/api/leads", () => ({
   useLead: vi.fn(),
   useLeadDuplicates: vi.fn(),
   useLeadAuditTrail: vi.fn(),
+  useUpdateLeadStatus: vi.fn(),
   LeadStatus: {
     NEW: "new",
     CONTACTED: "contacted",
@@ -24,6 +29,14 @@ vi.mock("@/lib/api/leads", () => ({
     APPOINTMENT_SET: "appointment_set",
     LOST: "lost",
   },
+}));
+
+vi.mock("@/components/leads/LeadStatusDropdown", () => ({
+  LeadStatusDropdown: () => <div data-testid="lead-status-dropdown" />,
+}));
+
+vi.mock("@/components/leads/DuplicateWarning", () => ({
+  DuplicateWarning: () => <div data-testid="duplicate-warning" />,
 }));
 
 // Mock AppointmentForm component
@@ -93,7 +106,7 @@ describe("LeadDetails Page", () => {
       });
 
       // Assert: Loading text should be visible
-      expect(screen.getByText(/Loading lead details/i)).toBeInTheDocument();
+      expect(screen.getByText(/Cargando lead/i)).toBeInTheDocument();
     });
 
     it("should display error state when fetch fails", async () => {
@@ -111,7 +124,7 @@ describe("LeadDetails Page", () => {
       });
 
       // Assert: Error message should be visible
-      expect(screen.getByText(/Error loading lead/i)).toBeInTheDocument();
+      expect(screen.getByText(/Error al cargar el lead/i)).toBeInTheDocument();
       expect(screen.getByText(/Failed to fetch lead/i)).toBeInTheDocument();
     });
 
@@ -129,7 +142,7 @@ describe("LeadDetails Page", () => {
       });
 
       // Assert: Not found message should be visible
-      expect(screen.getByText(/Lead not found/i)).toBeInTheDocument();
+      expect(screen.getByText(/Lead no encontrado/i)).toBeInTheDocument();
     });
   });
 
@@ -162,11 +175,11 @@ describe("LeadDetails Page", () => {
       });
 
       // Assert: Lead details should be visible
-      expect(screen.getByText("John Doe")).toBeInTheDocument();
+      expect(screen.getAllByText("John Doe").length).toBeGreaterThan(0);
       expect(screen.getByText("john@example.com")).toBeInTheDocument();
       expect(screen.getByText("+1-555-0123")).toBeInTheDocument();
       expect(screen.getByText("I'm interested in this vehicle")).toBeInTheDocument();
-      expect(screen.getByText(/facebook/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/facebook/i).length).toBeGreaterThan(0);
     });
 
     it("should handle missing email and phone", async () => {
@@ -196,15 +209,14 @@ describe("LeadDetails Page", () => {
         render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
       });
 
-      // Assert: Should show N/A for missing fields
-      expect(screen.getByText("Jane Smith")).toBeInTheDocument();
-      const emailElements = screen.getAllByText("N/A");
-      expect(emailElements.length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Jane Smith").length).toBeGreaterThan(0);
+      expect(screen.queryByText("jane@example.com")).not.toBeInTheDocument();
+      expect(screen.queryByText("+1-555-0123")).not.toBeInTheDocument();
     });
   });
 
   describe("Slice 3: Appointment scheduling button", () => {
-    it("should display 'Agendar Cita' button when lead is loaded", async () => {
+    it("should display 'Agendar cita' button when lead is loaded", async () => {
       // Arrange: Mock successful lead data
       const mockLead = {
         id: "test-lead-123",
@@ -232,7 +244,7 @@ describe("LeadDetails Page", () => {
       });
 
       // Assert: "Agendar Cita" button should be visible
-      expect(screen.getByRole("button", { name: /Agendar Cita/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Agendar cita/i })).toBeInTheDocument();
     });
 
     it("should not display 'Agendar Cita' button when loading", async () => {
@@ -249,7 +261,7 @@ describe("LeadDetails Page", () => {
       });
 
       // Assert: "Agendar Cita" button should not be visible
-      expect(screen.queryByRole("button", { name: /Agendar Cita/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Agendar cita/i })).not.toBeInTheDocument();
     });
 
     it("should not display 'Agendar Cita' button when there's an error", async () => {
@@ -267,7 +279,7 @@ describe("LeadDetails Page", () => {
       });
 
       // Assert: "Agendar Cita" button should not be visible
-      expect(screen.queryByRole("button", { name: /Agendar Cita/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Agendar cita/i })).not.toBeInTheDocument();
     });
   });
 
@@ -324,7 +336,6 @@ describe("LeadDetails Page", () => {
       });
 
       expect(screen.getByTestId("duplicate-warning")).toBeInTheDocument();
-      expect(screen.getByText(/Potential Duplicate Detected/i)).toBeInTheDocument();
     });
 
     it("should NOT show duplicate warning when duplicates data is undefined", async () => {

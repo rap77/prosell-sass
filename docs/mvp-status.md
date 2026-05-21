@@ -1,7 +1,7 @@
 # ProSell MVP Status
 
-**Status**: Milestone C — UX Completion In Progress (5/8 tasks complete)
-**Last Updated**: 2026-05-19
+**Status**: Milestone C — UX Completion Completed (8/8 tasks complete)
+**Last Updated**: 2026-05-21
 **Source Type**: Executive / release-status document
 **MasterMind Runtime Files**: `tasks/plan.md`, `tasks/todo.md`
 
@@ -15,10 +15,10 @@
 - Se completó y verificó la **detección de conflictos de citas**, incluyendo validación de solapamiento, respuesta al usuario y override controlado.
 - El **modo edición de productos** quedó implementado y verificado a nivel de formulario/API, unit tests y E2E real.
 - El **motor de reglas de asignación de leads** ya quedó mejor cerrado: round-robin, owner assignment, workload balancing e integración en `CreateLeadUseCase`, con estrategia configurable a nivel de use case y tests de integración unitaria pasando.
-- El flujo **catálogo → lead → cita** tiene el **path API verificado** end-to-end (`integrated-flow.spec.ts` contra Docker real). El **path UI browser** tiene verificación parcial: `/catalog` y `/vendedor/leads` pasan; `/pipeline` es la página central pendiente en Milestone C.
-- **Milestone C avanza al 62.5%**: M3 (error pages), M2 (catalog detail), M1 (publications), A1 (settings/profile), A2 (settings/security) completados. Quedan A3 (notificaciones), A4 (onboarding) y C1 (pipeline kanban).
+- El flujo **catálogo → lead → cita** tiene el **path API verificado** end-to-end (`integrated-flow.spec.ts` contra Docker real). El **path UI browser** avanzó materialmente con catálogo, publicaciones, settings, onboarding y pipeline ya implementados, aunque la decisión final de release sigue dependiendo del cierre go/no-go.
+- **Milestone C quedó completada (8/8)**: M3 (error pages), M2 (catalog detail), M1 (publications), A1 (settings/profile), A2 (settings/security), A3 (notificaciones), A4 (onboarding) y C1 (pipeline kanban) ya fueron entregados y cerrados en MasterMind.
 - La suite web y los artefactos de smoke siguen siendo la base de confianza operativa.
-- **Próximo objetivo**: cerrar A3, A4 y C1 para completar Milestone C y habilitar el go/no-go final.
+- **Próximo objetivo**: consolidar el cierre formal de Milestone C, separar el rediseño frontend/landing en curso y preparar la evaluación final de go/no-go.
 
 ---
 
@@ -30,7 +30,7 @@ Permitir que el equipo de ProSell gestione el flujo interno completo de ventas d
 
 ## Release Readiness
 
-**Overall Readiness**: 88% (backend sólido, Milestone C al 62.5% — A3/A4/C1 pendientes)
+**Overall Readiness**: 93% (backend sólido, Milestone C cerrada; pendiente validación final de release y publishing path real)
 **Implementation Completeness**: High
 **Verification Completeness**: Medium-High
 **Release Confidence**: Medium
@@ -43,7 +43,7 @@ Permitir que el equipo de ProSell gestione el flujo interno completo de ventas d
 - [x] Initial data (Seeding) automated for fresh environments
 - [x] Team invitation flow implemented end-to-end
 - [x] Appointment conflict detection verified
-- [~] End-to-end flow verified: API path ✅ (`integrated-flow.spec.ts`) — UI browser path ⚠️ parcial (catalog list + leads list + catalog detail + publications verifican; pipeline pendiente en Milestone C/C1)
+- [~] End-to-end flow verified: API path ✅ (`integrated-flow.spec.ts`) — UI browser path ⚠️ avanzado pero todavía requiere validación final de release
 - [x] Documentation is aligned with one executive status source
 - [x] No high-severity configuration blockers remain open
 
@@ -59,7 +59,7 @@ Permitir que el equipo de ProSell gestione el flujo interno completo de ventas d
 | Image Upload | 🟢 Green | 85% | Components and endpoints verified, hot-reload active in Docker | Real-env storage latency | Verify in staging |
 | Leads | 🟢 Green | 95% | Lead lifecycle, duplicate detection y auto-assignment ya verificados a nivel engine + use case | Final hardening / broader API coverage | Expand release regression if needed |
 | Appointments | 🟢 Green | 92% | Migrations merged, API verified, conflict detection verified, operational E2E path green, calendar route compiles again | Final UI/E2E hardening | Expand calendar UI coverage if needed |
-| E2E / QA | 🟡 Yellow | 85% | API integration path green (`integrated-flow.spec.ts`); UI browser path parcial (catalog list + detail + publications + leads verificados) | UI path incompleto hasta C1 (pipeline kanban) | Completar A3/A4/C1 → activar test.skip blocks en integrated-flow.spec.ts |
+| E2E / QA | 🟡 Yellow | 90% | API integration path green (`integrated-flow.spec.ts`); UI browser path ampliamente cubierto tras cerrar Milestone C | Falta consolidar verificación final de release con el estado actual del frontend | Ejecutar go/no-go final y ampliar smoke/UI donde aplique |
 | Documentation Status | 🟢 Green | 100% | Centralized in this file; stale docs marked for archival | Low | Maintain this file |
 
 ---
@@ -73,7 +73,7 @@ Permitir que el equipo de ProSell gestione el flujo interno completo de ventas d
 | Leads | High | High | High | Assignment strategy ya configurable en el use case y con cobertura adicional. |
 | Appointments | High | High | High | Operational flow passes and the dealer calendar route compile blocker was removed. |
 | Facebook/Publisher | Medium | Low-Medium | Low | Functional code exists but needs real API approval for the initial vehicle-first rollout. |
-| End-to-End MVP Flow | High | Medium | Medium | API path verificado (`integrated-flow.spec.ts`). UI browser path parcial: catalog list + leads list OK; catalog detail + publications + pipeline penden Milestone C. |
+| End-to-End MVP Flow | High | Medium-High | Medium-High | API path verificado (`integrated-flow.spec.ts`). El path UI ya cubre más superficie funcional tras el cierre de Milestone C, pero falta una pasada final de release. |
 | Team Collaboration | High | High | High | Team invitation system implemented end-to-end. |
 
 ---
@@ -90,24 +90,27 @@ Permitir que el equipo de ProSell gestione el flujo interno completo de ventas d
 - **Team Invitations**: Backend + frontend + tests complete for invite/accept flow.
 - **Appointment Conflict Detection**: Verified at service/use case level with user-facing conflict responses.
 
-### Milestone C — UX Completion (En progreso)
+### Milestone C — UX Completion (Cerrada)
 
-8 gaps de UX identificados para dejar la app operativa. Ver `tasks/plan.md` y `tasks/todo.md`:
-- **M3**: Error pages (`not-found.tsx`, `error.tsx`) — sin branding
-- **M2**: Catalog detail `/catalog/{id}` view-only — página no existe
-- **M1**: Publications route `/publications` — entry point faltante
-- **A1/A2**: Settings + Seguridad — `/settings` da 404
-- **A3**: Panel de notificaciones — sin campanita en header
-- **A4**: Onboarding wizard — sin flujo de primer ingreso
-- **C1**: Pipeline kanban `/pipeline` — vista operativa central faltante
+Milestone C quedó cerrada formalmente el **2026-05-21**. Ver `tasks/plan.md`, `tasks/todo.md` y `docs/audit/MILESTONE-C-CLOSEOUT-2026-05-21.md`.
 
-Cuando Milestone C cierre: activar los `test.skip` blocks en `integrated-flow.spec.ts` para completar el path UI del go/no-go E2E.
+Bloques entregados:
+- **M3**: Error pages globales (`not-found.tsx`, `error.tsx`, `global-error.tsx`)
+- **M2**: Catalog detail `/catalog/{id}` en modo lectura
+- **M1**: Publications route `/publications` como entry point funcional
+- **A1**: `/settings` + perfil
+- **A2**: seguridad, cambio de contraseña y 2FA
+- **A3**: panel de notificaciones en header
+- **A4**: onboarding wizard de primer ingreso
+- **C1**: pipeline kanban `/pipeline`
+
+El siguiente paso ya no es completar la milestone, sino validar el estado final de release y separar el rediseño frontend actualmente en progreso.
 
 ---
 
 ## Current Evidence Snapshot
 
-**Evidence date for this review:** 2026-05-16
+**Evidence date for this review:** 2026-05-21
 
 ### Backend
 - Alembic: Lineal (Head: `20260428_1625`).
@@ -129,15 +132,12 @@ Cuando Milestone C cierre: activar los `test.skip` blocks en `integrated-flow.sp
 - Operational E2E: `pnpm --dir tests/e2e exec playwright test specs/integrated-flow.spec.ts --project=chromium --config=playwright.no-webserver.config.ts` → **1 passed** (2026-05-16).
 
 ### Current Sprint Evidence
-- `tasks/todo.md`: B4.1 Team Invitation System marked effectively complete.
-- `tasks/todo.md`: B4.2 Appointment Conflict Detection complete and verified.
-- `tasks/todo.md`: B3.4 Product Edit Mode verified también a nivel E2E real.
-- `tasks/todo.md`: B4.3 Lead Assignment Rules Engine appears complete and now has both engine-level and use-case auto-assignment coverage.
-- `apps/web/src/components/forms/__tests__/VehicleForm.edit.test.tsx`: unit suite repaired for Vitest and passing (6 tests).
-- `apps/api/src/prosell/tests/unit/application/test_create_lead_auto_assignment.py`: verifies owner-priority and configurable workload-balancing assignment through `CreateLeadUseCase`.
-- `tests/e2e/specs/integrated-critical-path.spec.ts`: smoke integrado con mocks para Facebook/SendGrid.
+- `tasks/todo.md`: refleja **Milestone C completada (8/8)** y cerrada formalmente.
+- `tasks/plan.md`: refleja el cierre formal de Milestone C y ausencia de tasks operativas pendientes para esta milestone.
+- `bash scripts/mm/mm.sh status`: sin tasks pendientes ni en progreso al momento del audit de cierre.
+- `docs/audit/MILESTONE-C-CLOSEOUT-2026-05-21.md`: evidencia de cierre formal y alcance del audit.
 - `tests/e2e/specs/integrated-flow.spec.ts`: flujo operativo validado en Docker real (catalog → lead → appointment green).
-- `apps/web/src/components/appointments/CalendarView.tsx`: compile blocker removido quitando la dependencia faltante de interacción en la ruta actual.
+- El rediseño frontend/landing actualmente en worktree quedó explícitamente excluido de este cierre formal para no mezclar scopes.
 
 ---
 
@@ -153,10 +153,11 @@ Cuando Milestone C cierre: activar los `test.skip` blocks en `integrated-flow.sp
 
 ## Next 5 Actions
 
-1. Ampliar cobertura API/E2E de leads si se quiere un cierre aún más fuerte del assignment flow.
-2. Ampliar cobertura UI/E2E de citas si se quiere reactivar interacción avanzada de calendario.
+1. Separar y consolidar el rediseño frontend/landing actualmente en progreso como scope independiente.
+2. Ejecutar revisión final Go/No-Go con el estado actual de la app ya cerrada en Milestone C.
 3. Verificar Facebook Publisher con credenciales/product path real si están disponibles.
-4. Hacer revisión final Go/No-Go y preparar staging.
+4. Ampliar cobertura E2E/UI final donde haga falta para la decisión de release.
+5. Definir la siguiente milestone o ciclo formal en MasterMind.
 
 ---
 

@@ -318,7 +318,7 @@ describe("TwoFactorSetupForm Component", () => {
       });
       await user.click(verifyButton);
 
-      expect(screen.getByText(/verifying/i)).toBeInTheDocument();
+      expect(screen.getByText(/Verificando/i)).toBeInTheDocument();
     });
 
     it("should show success state after verification", async () => {
@@ -353,7 +353,7 @@ describe("TwoFactorSetupForm Component", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/two-factor authentication enabled/i),
+          screen.getByText(/Autenticación de dos factores activada/i),
         ).toBeInTheDocument();
       });
     });
@@ -437,10 +437,10 @@ describe("TwoFactorSetupForm Component", () => {
       render(<TwoFactorSetupForm is2FAEnabled={true} />);
 
       expect(
-        screen.getByText(/two-factor authentication is enabled/i),
+        screen.getByText(/Autenticación de dos factores activada/i),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: /disable 2fa/i }),
+        screen.getByRole("button", { name: /Desactivar 2FA/i }),
       ).toBeInTheDocument();
     });
 
@@ -452,7 +452,7 @@ describe("TwoFactorSetupForm Component", () => {
       input.focus();
       await user.paste("123456");
       const disableButton = screen.getByRole("button", {
-        name: /disable 2fa/i,
+        name: /Desactivar 2FA/i,
       });
       await user.click(disableButton);
 
@@ -470,16 +470,16 @@ describe("TwoFactorSetupForm Component", () => {
       input.focus();
       await user.paste("123456");
       const disableButton = screen.getByRole("button", {
-        name: /disable 2fa/i,
+        name: /Desactivar 2FA/i,
       });
       await user.click(disableButton);
 
       // Button should be replaced with disabling state
       expect(
-        screen.queryByRole("button", { name: /disable 2fa/i }),
+        screen.queryByRole("button", { name: /Desactivar 2FA/i }),
       ).not.toBeInTheDocument();
       // Text "Disabling..." should be present somewhere in the document
-      expect(screen.getAllByText(/disabling/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Desactivando/i).length).toBeGreaterThan(0);
     });
 
     it("should show success state after disabling", async () => {
@@ -490,13 +490,13 @@ describe("TwoFactorSetupForm Component", () => {
       input.focus();
       await user.paste("123456");
       const disableButton = screen.getByRole("button", {
-        name: /disable 2fa/i,
+        name: /Desactivar 2FA/i,
       });
       await user.click(disableButton);
 
       await waitFor(() => {
         expect(
-          screen.getByText(/two-factor authentication disabled/i),
+          screen.getByText(/Autenticación de dos factores desactivada/i),
         ).toBeInTheDocument();
       });
     });
@@ -509,7 +509,7 @@ describe("TwoFactorSetupForm Component", () => {
       input.focus();
       await user.paste("123456");
       const disableButton = screen.getByRole("button", {
-        name: /disable 2fa/i,
+        name: /Desactivar 2FA/i,
       });
       await user.click(disableButton);
 
@@ -527,7 +527,7 @@ describe("TwoFactorSetupForm Component", () => {
       input.focus();
       await user.paste("123456");
       const disableButton = screen.getByRole("button", {
-        name: /disable 2fa/i,
+        name: /Desactivar 2FA/i,
       });
       await user.click(disableButton);
 
@@ -572,11 +572,11 @@ describe("TwoFactorSetupForm Component", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/two-factor authentication enabled/i),
+          screen.getByText(/Autenticación de dos factores activada/i),
         ).toBeInTheDocument();
       });
 
-      const doneButton = screen.getByRole("button", { name: /done/i });
+      const doneButton = screen.getByRole("button", { name: /Listo/i });
       await user.click(doneButton);
 
       expect(pushMock).toHaveBeenCalledWith("/profile");

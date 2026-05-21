@@ -1,6 +1,6 @@
 /**
  * TDD: ResetPasswordForm Component Tests
- * RED PHASE - Escribir tests ANTES de implementar
+ * Updated to match Spanish redesign (ProSell design tokens)
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
@@ -68,7 +68,7 @@ describe("ResetPasswordForm Component", () => {
       render(<ResetPasswordForm token={mockToken} />);
 
       expect(
-        await screen.findByRole("button", { name: /reset password/i }),
+        await screen.findByRole("button", { name: /restablecer contrase/i }),
       ).toBeInTheDocument();
     });
   });
@@ -78,7 +78,7 @@ describe("ResetPasswordForm Component", () => {
       render(<ResetPasswordForm token="" />);
 
       await waitFor(() => {
-        expect(screen.getByText(/invalid reset link/i)).toBeInTheDocument();
+        expect(screen.getByText(/enlace inv/i)).toBeInTheDocument();
       });
     });
 
@@ -86,7 +86,7 @@ describe("ResetPasswordForm Component", () => {
       render(<ResetPasswordForm token={undefined} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/invalid reset link/i)).toBeInTheDocument();
+        expect(screen.getByText(/enlace inv/i)).toBeInTheDocument();
       });
     });
   });
@@ -102,12 +102,12 @@ describe("ResetPasswordForm Component", () => {
       await userEvent.type(passwordInput!, "short");
 
       const submitButton = screen.getByRole("button", {
-        name: /reset password/i,
+        name: /restablecer contrase/i,
       });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
+        expect(screen.getByText(/al menos 8 caracteres/i)).toBeInTheDocument();
       });
     });
 
@@ -126,12 +126,12 @@ describe("ResetPasswordForm Component", () => {
       await userEvent.type(confirmPasswordInput!, "different456");
 
       const submitButton = screen.getByRole("button", {
-        name: /reset password/i,
+        name: /restablecer contrase/i,
       });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument();
+        expect(screen.getByText(/no coinciden/i)).toBeInTheDocument();
       });
     });
   });
@@ -152,7 +152,7 @@ describe("ResetPasswordForm Component", () => {
       await userEvent.type(confirmPasswordInput!, "newPassword123");
 
       const submitButton = screen.getByRole("button", {
-        name: /reset password/i,
+        name: /restablecer contrase/i,
       });
       await userEvent.click(submitButton);
 
@@ -180,12 +180,12 @@ describe("ResetPasswordForm Component", () => {
       await userEvent.type(confirmPasswordInput!, "newPassword123");
 
       const submitButton = screen.getByRole("button", {
-        name: /reset password/i,
+        name: /restablecer contrase/i,
       });
       await userEvent.click(submitButton);
 
       expect(
-        screen.getByRole("button", { name: /resetting/i }),
+        screen.getByRole("button", { name: /restableciendo/i }),
       ).toBeInTheDocument();
     });
   });
@@ -207,13 +207,13 @@ describe("ResetPasswordForm Component", () => {
       await userEvent.type(confirmPasswordInput!, "newPassword123");
 
       const submitButton = screen.getByRole("button", {
-        name: /reset password/i,
+        name: /restablecer contrase/i,
       });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
         expect(
-          screen.getByText(/Password Reset Successful/i),
+          screen.getByText(/contrase.*actualizada/i),
         ).toBeInTheDocument();
       });
     });
@@ -234,13 +234,13 @@ describe("ResetPasswordForm Component", () => {
       await userEvent.type(confirmPasswordInput!, "newPassword123");
 
       const submitButton = screen.getByRole("button", {
-        name: /reset password/i,
+        name: /restablecer contrase/i,
       });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
         expect(
-          screen.getByRole("link", { name: /continue to login/i }),
+          screen.getByRole("link", { name: /iniciar sesi/i }),
         ).toBeInTheDocument();
       });
     });
@@ -266,7 +266,7 @@ describe("ResetPasswordForm Component", () => {
       await userEvent.type(confirmPasswordInput!, "newPassword123");
 
       const submitButton = screen.getByRole("button", {
-        name: /reset password/i,
+        name: /restablecer contrase/i,
       });
       await userEvent.click(submitButton);
 
@@ -293,7 +293,7 @@ describe("ResetPasswordForm Component", () => {
       await userEvent.type(confirmPasswordInput!, "newPassword123");
 
       const submitButton = screen.getByRole("button", {
-        name: /reset password/i,
+        name: /restablecer contrase/i,
       });
       await userEvent.click(submitButton);
 
@@ -310,9 +310,9 @@ describe("ResetPasswordForm Component", () => {
       // Wait for useEffect to run and form to render
       await waitFor(
         () => {
-          // chadcn/ui CardTitle - search by text (component has "Reset Your Password")
+          // Component heading is "Nueva contraseña"
           const heading = screen.getByRole("heading", {
-            name: /reset your password/i,
+            name: /nueva contrase/i,
           });
           expect(heading).toBeInTheDocument();
         },

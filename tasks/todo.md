@@ -6,10 +6,19 @@
 > **Milestone anterior:** B4 completa ✅ (ver `tasks/todo.md.backup_milestone_b4_complete_20260517`)
 
 **Milestone**: Milestone C — UX Completion
-**Status**: Active
-**Last Updated**: 2026-05-18
+**Status**: Completed
+**Last Updated**: 2026-05-21
 
 ---
+
+## Cierre formal
+
+Milestone C queda cerrada formalmente el **2026-05-21**.
+
+Resultado del audit:
+- **8/8 tasks** completadas
+- sin tasks pendientes ni en progreso en el runtime de MasterMind
+- bloques UX planeados entregados: error pages, catalog detail, publications, settings/profile, settings/security, notifications, onboarding y pipeline
 
 ## Orden de ejecución recomendado
 

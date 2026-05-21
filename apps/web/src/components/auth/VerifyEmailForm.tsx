@@ -98,6 +98,8 @@ export function VerifyEmailForm({ token }: VerifyEmailFormProps) {
       case "loading":
         return (
           <div
+            role="status"
+            aria-label="Verificando email"
             style={{
               display: 'flex',
               flexDirection: 'column',

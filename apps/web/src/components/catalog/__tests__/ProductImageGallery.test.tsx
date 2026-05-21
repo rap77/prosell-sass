@@ -5,8 +5,13 @@
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 import { ProductImageGallery } from '../ProductImageGallery';
 import type { ProductImage } from '@/types/product-image';
+
+vi.mock('next/image', () => ({
+  default: (props: Record<string, unknown>) => <img {...props} />,
+}));
 
 // Mock images for testing
 const mockImages: ProductImage[] = [
@@ -74,15 +79,15 @@ describe('ProductImageGallery', () => {
       render(<ProductImageGallery images={mockImages} />);
 
       // First thumbnail button should have ring-blue-500 class
-      const firstThumbnail = screen.getByLabelText('View image 1: Front view');
-      expect(firstThumbnail).toHaveClass('ring-blue-500');
+      const firstThumbnail = screen.getByLabelText('Ver imagen 1: Front view');
+      expect(firstThumbnail).toHaveAttribute('aria-current', 'true');
     });
 
     it('should be responsive - stack thumbnails on mobile', () => {
       render(<ProductImageGallery images={mockImages} />);
 
       const gallery = screen.getByTestId('image-gallery');
-      expect(gallery).toHaveClass('flex-col');
+      expect(gallery).toHaveStyle({ flexDirection: 'column' });
     });
   });
 
@@ -90,7 +95,7 @@ describe('ProductImageGallery', () => {
     it('should show next button when there are more images', () => {
       render(<ProductImageGallery images={mockImages} />);
 
-      const nextButton = screen.getByLabelText('Next image');
+      const nextButton = screen.getByLabelText('Imagen siguiente');
       expect(nextButton).toBeInTheDocument();
       expect(nextButton).not.toBeDisabled();
     });
@@ -99,11 +104,11 @@ describe('ProductImageGallery', () => {
       render(<ProductImageGallery images={mockImages} />);
 
       // Click next to move to second image
-      const nextButton = screen.getByLabelText('Next image');
+      const nextButton = screen.getByLabelText('Imagen siguiente');
       fireEvent.click(nextButton);
 
       await waitFor(() => {
-        const prevButton = screen.getByLabelText('Previous image');
+        const prevButton = screen.getByLabelText('Imagen anterior');
         expect(prevButton).not.toBeDisabled();
       });
     });
@@ -111,7 +116,7 @@ describe('ProductImageGallery', () => {
     it('should disable previous button on first image', () => {
       render(<ProductImageGallery images={mockImages} />);
 
-      const prevButton = screen.getByLabelText('Previous image');
+      const prevButton = screen.getByLabelText('Imagen anterior');
       expect(prevButton).toBeDisabled();
     });
 
@@ -119,12 +124,12 @@ describe('ProductImageGallery', () => {
       render(<ProductImageGallery images={mockImages} />);
 
       // Navigate to last image
-      const nextButton = screen.getByLabelText('Next image');
+      const nextButton = screen.getByLabelText('Imagen siguiente');
       fireEvent.click(nextButton);
       fireEvent.click(nextButton);
 
       await waitFor(() => {
-        const nextBtn = screen.getByLabelText('Next image');
+        const nextBtn = screen.getByLabelText('Imagen siguiente');
         expect(nextBtn).toBeDisabled();
       });
     });
@@ -132,7 +137,7 @@ describe('ProductImageGallery', () => {
     it('should update main image when next button is clicked', async () => {
       render(<ProductImageGallery images={mockImages} />);
 
-      const nextButton = screen.getByLabelText('Next image');
+      const nextButton = screen.getByLabelText('Imagen siguiente');
       fireEvent.click(nextButton);
 
       await waitFor(() => {
@@ -146,12 +151,12 @@ describe('ProductImageGallery', () => {
       render(<ProductImageGallery images={mockImages} />);
 
       // Go to second image
-      const nextButton = screen.getByLabelText('Next image');
+      const nextButton = screen.getByLabelText('Imagen siguiente');
       fireEvent.click(nextButton);
 
       // Go back to first
       await waitFor(() => {
-        const prevButton = screen.getByLabelText('Previous image');
+        const prevButton = screen.getByLabelText('Imagen anterior');
         fireEvent.click(prevButton);
 
         const mainImages = screen.getAllByAltText('Front view');
@@ -165,7 +170,7 @@ describe('ProductImageGallery', () => {
     it('should update main image when thumbnail is clicked', async () => {
       render(<ProductImageGallery images={mockImages} />);
 
-      const thirdThumbnail = screen.getByLabelText('View image 3: Rear view');
+      const thirdThumbnail = screen.getByLabelText('Ver imagen 3: Rear view');
       fireEvent.click(thirdThumbnail);
 
       await waitFor(() => {
@@ -178,11 +183,11 @@ describe('ProductImageGallery', () => {
     it('should update thumbnail highlight when clicked', async () => {
       render(<ProductImageGallery images={mockImages} />);
 
-      const secondThumbnail = screen.getByLabelText('View image 2: Side view');
+      const secondThumbnail = screen.getByLabelText('Ver imagen 2: Side view');
       fireEvent.click(secondThumbnail);
 
       await waitFor(() => {
-        expect(secondThumbnail).toHaveClass('ring-blue-500');
+        expect(secondThumbnail).toHaveAttribute('aria-current', 'true');
       });
     });
   });
@@ -205,7 +210,7 @@ describe('ProductImageGallery', () => {
       render(<ProductImageGallery images={mockImages} />);
 
       // First go to second image
-      const nextButton = screen.getByLabelText('Next image');
+      const nextButton = screen.getByLabelText('Imagen siguiente');
       fireEvent.click(nextButton);
 
       // Then go back with keyboard
@@ -249,8 +254,8 @@ describe('ProductImageGallery', () => {
       expect(mainImage).toBeInTheDocument();
 
       // With single image, navigation buttons should not be rendered
-      expect(screen.queryByLabelText('Next image')).not.toBeInTheDocument();
-      expect(screen.queryByLabelText('Previous image')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Imagen siguiente')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Imagen anterior')).not.toBeInTheDocument();
     });
 
     it('should handle images without alt text', () => {
@@ -274,8 +279,8 @@ describe('ProductImageGallery', () => {
     it('should have proper ARIA labels', () => {
       render(<ProductImageGallery images={mockImages} />);
 
-      expect(screen.getByLabelText('Previous image')).toBeInTheDocument();
-      expect(screen.getByLabelText('Next image')).toBeInTheDocument();
+      expect(screen.getByLabelText('Imagen anterior')).toBeInTheDocument();
+      expect(screen.getByLabelText('Imagen siguiente')).toBeInTheDocument();
       expect(screen.getByTestId('image-gallery')).toHaveAttribute('role', 'region');
     });
 

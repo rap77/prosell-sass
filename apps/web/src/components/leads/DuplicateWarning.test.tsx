@@ -60,33 +60,33 @@ describe("DuplicateWarning", () => {
     it("shows singular heading for one duplicate", () => {
       render(<DuplicateWarning duplicates={[emailMatch]} />);
       expect(
-        screen.getByText("Potential Duplicate Detected")
+        screen.getByText("Posible duplicado detectado")
       ).toBeInTheDocument();
     });
 
     it("shows email match type label", () => {
       render(<DuplicateWarning duplicates={[emailMatch]} />);
-      expect(screen.getByText(/via email match/i)).toBeInTheDocument();
+      expect(screen.getByText(/vía coincidencia de email/i)).toBeInTheDocument();
     });
 
     it("shows phone match type label", () => {
       render(<DuplicateWarning duplicates={[phoneMatch]} />);
-      expect(screen.getByText(/via phone match/i)).toBeInTheDocument();
+      expect(screen.getByText(/vía coincidencia de teléfono/i)).toBeInTheDocument();
     });
 
     it("shows combined email+phone match label", () => {
       render(<DuplicateWarning duplicates={[bothMatch]} />);
-      expect(screen.getByText(/via email \+ phone match/i)).toBeInTheDocument();
+      expect(screen.getByText(/coincidencia de email y teléfono/i)).toBeInTheDocument();
     });
 
     it("shows high confidence badge", () => {
       render(<DuplicateWarning duplicates={[emailMatch]} />);
-      expect(screen.getByText("High confidence")).toBeInTheDocument();
+      expect(screen.getByText("Confianza Alta")).toBeInTheDocument();
     });
 
     it("shows medium confidence badge for phone match", () => {
       render(<DuplicateWarning duplicates={[phoneMatch]} />);
-      expect(screen.getByText("Medium confidence")).toBeInTheDocument();
+      expect(screen.getByText("Confianza Media")).toBeInTheDocument();
     });
 
     it("truncates the lead ID to first 8 chars with ellipsis", () => {
@@ -101,14 +101,14 @@ describe("DuplicateWarning", () => {
     it("renders plural heading for multiple duplicates", () => {
       render(<DuplicateWarning duplicates={multipleDuplicates} />);
       expect(
-        screen.getByText("Potential Duplicates Detected")
+        screen.getByText(/posibles duplicados detectados/i)
       ).toBeInTheDocument();
     });
 
     it("mentions count in description", () => {
       render(<DuplicateWarning duplicates={multipleDuplicates} />);
       expect(
-        screen.getByText(/3 possible duplicate leads were found/i)
+        screen.getByText(/3 posibles duplicados/i)
       ).toBeInTheDocument();
     });
 
@@ -139,7 +139,7 @@ describe("DuplicateWarning", () => {
         />
       );
       const btn = screen.getByRole("button", {
-        name: /view lead/i,
+        name: /Ver lead/i,
       });
       expect(btn).toBeInTheDocument();
     });
@@ -152,7 +152,7 @@ describe("DuplicateWarning", () => {
           onLeadClick={onLeadClick}
         />
       );
-      const btn = screen.getByRole("button", { name: /view lead/i });
+      const btn = screen.getByRole("button", { name: /Ver lead/i });
       fireEvent.click(btn);
       expect(onLeadClick).toHaveBeenCalledOnce();
       expect(onLeadClick).toHaveBeenCalledWith(emailMatch.lead_id);
@@ -171,7 +171,7 @@ describe("DuplicateWarning", () => {
       const alert = screen.getByRole("alert");
       expect(alert).toHaveAttribute(
         "aria-label",
-        "Potential duplicate leads detected"
+        "Posibles leads duplicados detectados"
       );
     });
 

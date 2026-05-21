@@ -235,6 +235,10 @@ const createTestAuthStore = () =>
       }),
       {
         name: "auth-storage",
+        partialize: (state) => ({
+          user: state.user,
+          isAuthenticated: state.isAuthenticated,
+        }),
         skipHydration: true, // Key: prevents async hydration on mount, eliminating act() warnings
       },
     ),
@@ -247,6 +251,12 @@ const useAuthStore = createTestAuthStore();
 beforeEach(() => {
   localStorage.clear();
   vi.clearAllMocks();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      json: async () => ({ isAuthenticated: false, user: null }),
+    }),
+  );
   useAuthStore.getState().reset();
 });
 
@@ -254,6 +264,7 @@ beforeEach(() => {
 afterEach(() => {
   useAuthStore.getState().reset();
   localStorage.clear();
+  vi.unstubAllGlobals();
   cleanup();
 });
 
@@ -481,7 +492,7 @@ describe("authStore - Persist Middleware", () => {
     expect(parsed.state.user.email).toBe("persist@example.com");
     expect(parsed.state.isAuthenticated).toBe(true);
     expect(parsed.state.user.id).toBe("1");
-    expect(parsed.state.initialized).toBe(true);
+    expect(parsed.state.initialized).toBeUndefined();
   });
 
   it("should have correct structure in localStorage", async () => {
@@ -511,7 +522,7 @@ describe("authStore - Persist Middleware", () => {
     expect(parsed.state.user).toBeDefined();
     expect(parsed.state.user.email).toBe("serialize@example.com");
     expect(parsed.state.isAuthenticated).toBe(true);
-    expect(parsed.state.initialized).toBe(true);
+    expect(parsed.state.initialized).toBeUndefined();
     expect(parsed.version).toBeDefined();
   });
 });
@@ -560,7 +571,7 @@ describe("authStore - initialized Flag", () => {
     expect(initialized).toBe(false);
   });
 
-  it("should persist initialized in localStorage", async () => {
+  it("should not persist initialized in localStorage", async () => {
     vi.mocked(authApi.login).mockResolvedValue(createMockUserResponse());
 
     const { useAuthStore } = await import("@/stores/authStore");
@@ -571,6 +582,6 @@ describe("authStore - initialized Flag", () => {
 
     // Check localStorage was updated
     const stored = localStorage.getItem("auth-storage");
-    expect(stored).toContain('"initialized":true');
+    expect(stored).not.toContain('"initialized"');
   });
 });

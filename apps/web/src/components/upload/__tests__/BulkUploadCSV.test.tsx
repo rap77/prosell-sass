@@ -80,9 +80,9 @@ describe("BulkUploadCSV", () => {
   it("should render dropzone", () => {
     render(<BulkUploadCSV onUpload={mockOnUpload} />, { wrapper });
 
-    expect(screen.getByText("Bulk Upload Vehicles")).toBeInTheDocument();
-    expect(screen.getByText(/drag & drop csv file here/i)).toBeInTheDocument();
-    expect(screen.getByText("CSV Template")).toBeInTheDocument();
+    expect(screen.getByText("Carga masiva de vehículos")).toBeInTheDocument();
+    expect(screen.getByText(/Arrastrá y soltá el archivo CSV acá/i)).toBeInTheDocument();
+    expect(screen.getByText("Plantilla CSV")).toBeInTheDocument();
   });
 
   it("should parse CSV file", async () => {
@@ -99,7 +99,7 @@ describe("BulkUploadCSV", () => {
 
     await waitFor(() => {
       expect(screen.getByText("test.csv")).toBeInTheDocument();
-      expect(screen.getByText(/2 rows/)).toBeInTheDocument();
+      expect(screen.getByText(/2 filas/)).toBeInTheDocument();
     });
   });
 
@@ -115,13 +115,13 @@ describe("BulkUploadCSV", () => {
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText("Row")).toBeInTheDocument();
+      expect(screen.getByText("Fila")).toBeInTheDocument();
       expect(screen.getByText("VIN")).toBeInTheDocument();
-      expect(screen.getByText("Year")).toBeInTheDocument();
-      expect(screen.getByText("Make")).toBeInTheDocument();
-      expect(screen.getByText("Model")).toBeInTheDocument();
-      expect(screen.getByText("Price")).toBeInTheDocument();
-      expect(screen.getByText("Status")).toBeInTheDocument();
+      expect(screen.getByText("Año")).toBeInTheDocument();
+      expect(screen.getByText("Marca")).toBeInTheDocument();
+      expect(screen.getByText("Modelo")).toBeInTheDocument();
+      expect(screen.getByText("Precio")).toBeInTheDocument();
+      expect(screen.getByText("Estado")).toBeInTheDocument();
     });
   });
 
@@ -144,10 +144,10 @@ describe("BulkUploadCSV", () => {
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText("Upload 1 Vehicles")).toBeInTheDocument();
+      expect(screen.getByText("Subir 1 vehículos")).toBeInTheDocument();
     });
 
-    const uploadButton = screen.getByText("Upload 1 Vehicles");
+    const uploadButton = screen.getByText("Subir 1 vehículos");
     fireEvent.click(uploadButton);
 
     await waitFor(() => {
@@ -181,10 +181,10 @@ describe("BulkUploadCSV", () => {
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText("Upload 2 Vehicles")).toBeInTheDocument();
+      expect(screen.getByText("Subir 2 vehículos")).toBeInTheDocument();
     });
 
-    const uploadButton = screen.getByText("Upload 2 Vehicles");
+    const uploadButton = screen.getByText("Subir 2 vehículos");
     fireEvent.click(uploadButton);
 
     await waitFor(() => {
@@ -204,14 +204,14 @@ SHORT,2020,Honda,Civic,18500`;
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText(/VIN must be exactly 17 characters/)).toBeInTheDocument();
+      expect(screen.getByText(/El VIN debe tener exactamente 17 caracteres/)).toBeInTheDocument();
     });
   });
 
   it("should download CSV template", () => {
     render(<BulkUploadCSV onUpload={mockOnUpload} />, { wrapper });
 
-    const downloadButton = screen.getByText("Download Template");
+    const downloadButton = screen.getByText("Descargar plantilla");
     const clickSpy = vi.fn();
     const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue({
       href: "",
@@ -240,7 +240,7 @@ SHORT,2020,Honda,Civic,18500`;
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      const uploadButton = screen.getByText("Upload 1 Vehicles");
+      const uploadButton = screen.getByText("Subir 1 vehículos");
       expect(uploadButton).toBeDisabled();
     });
   });
@@ -260,12 +260,12 @@ SHORT,2020,Honda,Civic,18500`;
       expect(screen.getByText("test.csv")).toBeInTheDocument();
     });
 
-    const clearButton = screen.getByText("Clear");
+    const clearButton = screen.getByText("Limpiar");
     fireEvent.click(clearButton);
 
     await waitFor(() => {
       expect(screen.queryByText("test.csv")).not.toBeInTheDocument();
-      expect(screen.getByText(/drag & drop csv file here/i)).toBeInTheDocument();
+      expect(screen.getByText(/Arrastrá y soltá el archivo CSV acá/i)).toBeInTheDocument();
     });
   });
 
@@ -284,14 +284,14 @@ SHORT,2020,Honda,Civic,18500`;
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText("Upload 2 Vehicles")).toBeInTheDocument();
+      expect(screen.getByText("Subir 2 vehículos")).toBeInTheDocument();
     });
 
-    const uploadButton = screen.getByText("Upload 2 Vehicles");
+    const uploadButton = screen.getByText("Subir 2 vehículos");
     fireEvent.click(uploadButton);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Successfully uploaded 2 vehicles");
+      expect(toast.success).toHaveBeenCalledWith("Se cargaron 2 vehículos correctamente");
       expect(mockOnSuccess).toHaveBeenCalledWith(2);
     });
   });
