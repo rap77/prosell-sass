@@ -15,6 +15,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { orgApi, type Organization } from '@/lib/api/orgApi'
@@ -129,16 +130,10 @@ export default function OnboardingPage() {
 
         {/* Brand */}
         <div style={{ textAlign: 'center' }}>
-          <p style={{
-            margin: '0 0 12px',
-            fontSize: 13,
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: 'var(--ps-cyan)',
-          }}>
-            ProSell
-          </p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 28, width: 'auto', flexShrink: 0 }} />
+            <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>ProSell</span>
+          </div>
           <h1 style={{
             margin: 0,
             fontSize: 24,

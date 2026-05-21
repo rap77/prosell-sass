@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 /**
  * 404 — ProSell not found page.
@@ -21,13 +22,10 @@ export default function NotFound() {
         <div>
           <Link
             href="/"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              fontSize: 20, fontWeight: 800, color: 'var(--ps-text-primary)',
-              textDecoration: 'none', letterSpacing: '-0.02em',
-            }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
           >
-            ProSell
+            <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 28, width: 'auto', flexShrink: 0 }} />
+            <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>ProSell</span>
           </Link>
         </div>
 

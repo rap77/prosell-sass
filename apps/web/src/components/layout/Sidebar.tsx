@@ -44,7 +44,7 @@ const navigationItems: NavItem[] = [
   },
   // Inventario group
   {
-    label: 'Inventario',
+    label: 'Catálogo',
     href: '/catalog',
     icon: Package,
     group: 'inventario',
@@ -146,7 +146,7 @@ export function Sidebar({ groups }: SidebarProps) {
             onClick={toggleSidebar}
             className="rounded-md p-2 transition-colors"
             style={{ color: 'var(--ps-text-secondary)' }}
-            aria-label={sidebarCollapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ps-text-primary)')}
             onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ps-text-secondary)')}
           >

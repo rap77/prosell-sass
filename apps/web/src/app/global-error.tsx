@@ -9,6 +9,7 @@
  */
 
 import Link from 'next/link'
+import Image from 'next/image'
 
 const PS_VARS = `
   :root {
@@ -50,15 +51,9 @@ export default function GlobalRootErrorPage({ error, reset }: GlobalRootErrorPag
           <main style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 28 }}>
 
             {/* Brand */}
-            <Link
-              href="/"
-              style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 20, fontWeight: 800, color: 'var(--ps-text-primary)',
-                textDecoration: 'none', letterSpacing: '-0.02em',
-              }}
-            >
-              ProSell
+            <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none', justifyContent: 'center' }}>
+              <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 28, width: 'auto', flexShrink: 0 }} />
+              <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>ProSell</span>
             </Link>
 
             {/* Copy */}
