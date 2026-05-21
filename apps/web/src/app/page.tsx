@@ -2,7 +2,16 @@
  * Landing page — ProSell SaaS.
  *
  * Server Component — no auth state needed.
- * All colors via var(--ps-*) tokens. CSS keyframes via embedded <style>.
+ * All colors via var(--ps-*) tokens. CSS keyframes + hover states via embedded <style>.
+ *
+ * Sections:
+ * 1. Nav
+ * 2. Hero (two-column: copy + dashboard mockup)
+ * 3. Proof strip
+ * 4. Problem → Solution (pain stats + solution cards + niche switcher)
+ * 5. Features alternating rows (Distribución / Leads / Inteligencia)
+ * 6. CTA banner
+ * 7. Footer
  */
 
 import Link from "next/link";
@@ -11,7 +20,6 @@ import Image from "next/image";
 export default function HomePage() {
   return (
     <>
-      {/* Keyframes + interactive states that can't be expressed via inline styles */}
       <style>{`
         @keyframes ps-float {
           0%, 100% { transform: translateY(0); }
@@ -30,6 +38,7 @@ export default function HomePage() {
           100% { transform: scale(2.2); opacity: 0; }
         }
 
+        /* Nav */
         .ps-nav-link {
           font-size: 14px; font-weight: 500;
           color: var(--ps-text-secondary); text-decoration: none;
@@ -37,6 +46,7 @@ export default function HomePage() {
         }
         .ps-nav-link:hover { color: var(--ps-text-primary); }
 
+        /* Buttons */
         .ps-btn-primary {
           display: inline-flex; align-items: center; gap: 8px;
           padding: 11px 22px; border-radius: 8px;
@@ -59,12 +69,12 @@ export default function HomePage() {
           text-decoration: none; cursor: pointer;
           background: transparent; color: var(--ps-text-primary);
           border: 1px solid rgba(77,184,255,0.2);
-          transition: border-color 200ms cubic-bezier(0.16,1,0.3,1),
-                      color 200ms cubic-bezier(0.16,1,0.3,1);
+          transition: border-color 200ms cubic-bezier(0.16,1,0.3,1);
         }
         .ps-btn-ghost:hover { border-color: var(--ps-cyan); }
 
-        .ps-feat-card {
+        /* Solution + Feature cards */
+        .ps-sol-card {
           background: rgba(13,27,62,0.7);
           border: 1px solid rgba(77,184,255,0.12);
           border-radius: 16px;
@@ -74,183 +84,96 @@ export default function HomePage() {
           transition: border-color 220ms cubic-bezier(0.16,1,0.3,1),
                       transform 220ms cubic-bezier(0.16,1,0.3,1);
         }
-        .ps-feat-card:hover {
+        .ps-sol-card:hover {
           border-color: rgba(77,184,255,0.3);
           transform: translateY(-4px);
         }
 
+        /* Footer links */
         .ps-footer-link {
           font-size: 12px; color: var(--ps-text-disabled); text-decoration: none;
           transition: color 200ms cubic-bezier(0.16,1,0.3,1);
         }
         .ps-footer-link:hover { color: var(--ps-text-secondary); }
 
+        /* Responsive */
         @media (max-width: 1100px) {
-          .ps-hero        { grid-template-columns: 1fr !important; gap: 60px !important; }
-          .ps-hero-h1     { font-size: 44px !important; }
-          .ps-nav-links   { display: none !important; }
-          .ps-mockup-col  { min-height: 400px !important; }
-          .ps-feat-grid   { grid-template-columns: 1fr 1fr !important; }
+          .ps-hero       { grid-template-columns: 1fr !important; gap: 60px !important; }
+          .ps-hero-h1    { font-size: 44px !important; }
+          .ps-nav-links  { display: none !important; }
+          .ps-mockup-col { min-height: 400px !important; }
           .ps-float-badge { display: none !important; }
+          .ps-ft-row     { grid-template-columns: 1fr !important; gap: 48px !important; }
+          .ps-sol-grid   { grid-template-columns: 1fr !important; }
+          .ps-ft-h2      { font-size: 36px !important; }
+          .ps-ft-h3      { font-size: 26px !important; }
+          .ps-ft-row.reverse .ps-ft-text { order: 1 !important; }
+          .ps-ft-row.reverse .ps-ft-mock { order: 2 !important; }
         }
         @media (max-width: 700px) {
-          .ps-hero-h1     { font-size: 32px !important; }
-          .ps-cta-row     { flex-direction: column !important; align-items: stretch !important; }
-          .ps-cta-row a   { text-align: center; }
-          .ps-feat-grid   { grid-template-columns: 1fr !important; }
+          .ps-hero-h1  { font-size: 32px !important; }
+          .ps-cta-row  { flex-direction: column !important; align-items: stretch !important; }
+          .ps-cta-row a { text-align: center; }
+          .ps-pain-row { flex-direction: column !important; }
         }
       `}</style>
 
-      <div style={{
-        minHeight: "100vh",
-        background: "var(--ps-bg-base)",
-        color: "var(--ps-text-primary)",
-        overflowX: "hidden",
-      }}>
+      <div style={{ minHeight: "100vh", background: "var(--ps-bg-base)", color: "var(--ps-text-primary)", overflowX: "hidden" }}>
 
-        {/* ── BACKGROUND DECORATION ── */}
-        <div aria-hidden="true" style={{
-          position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
-          backgroundImage: [
-            "linear-gradient(rgba(77,184,255,0.04) 1px, transparent 1px)",
-            "linear-gradient(90deg, rgba(77,184,255,0.04) 1px, transparent 1px)",
-          ].join(", "),
-          backgroundSize: "56px 56px",
-          maskImage: "radial-gradient(ellipse at center, black 30%, transparent 80%)",
-          WebkitMaskImage: "radial-gradient(ellipse at center, black 30%, transparent 80%)",
-        }} />
-        <div aria-hidden="true" style={{
-          position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
-          background: "radial-gradient(ellipse 60% 50% at 80% 20%, rgba(30,95,212,0.35), transparent 60%)",
-        }} />
-        <div aria-hidden="true" style={{
-          position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
-          background: "radial-gradient(ellipse 50% 40% at 10% 80%, rgba(13,27,110,0.4), transparent 60%)",
-        }} />
+        {/* Background decoration */}
+        <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", backgroundImage: "linear-gradient(rgba(77,184,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(77,184,255,0.04) 1px, transparent 1px)", backgroundSize: "56px 56px", maskImage: "radial-gradient(ellipse at center, black 30%, transparent 80%)", WebkitMaskImage: "radial-gradient(ellipse at center, black 30%, transparent 80%)" }} />
+        <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: "radial-gradient(ellipse 60% 50% at 80% 20%, rgba(30,95,212,0.35), transparent 60%)" }} />
+        <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: "radial-gradient(ellipse 50% 40% at 10% 80%, rgba(13,27,110,0.4), transparent 60%)" }} />
 
         <div style={{ position: "relative", zIndex: 1 }}>
 
-          {/* ──────────────────────── NAV ──────────────────────── */}
-          <header style={{
-            position: "sticky", top: 0, zIndex: 50,
-            height: 72,
-            display: "flex", alignItems: "center",
-            background: "rgba(6,13,36,0.72)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            borderBottom: "1px solid rgba(77,184,255,0.08)",
-          }}>
-            <div style={{
-              display: "flex", alignItems: "center", gap: 40,
-              width: "100%", maxWidth: 1280,
-              margin: "0 auto", padding: "0 32px",
-            }}>
-              {/* Logo */}
+          {/* ══════════════ NAV ══════════════ */}
+          <header style={{ position: "sticky", top: 0, zIndex: 50, height: 72, display: "flex", alignItems: "center", background: "rgba(6,13,36,0.72)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: "1px solid rgba(77,184,255,0.08)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 40, width: "100%", maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
               <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
                 <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 34, width: "auto", flexShrink: 0 }} />
-                <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ps-text-primary)" }}>
-                  ProSell
-                </span>
+                <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ps-text-primary)" }}>ProSell</span>
               </Link>
-
-              {/* Nav links */}
               <nav className="ps-nav-links" style={{ display: "flex", gap: 32, flex: 1, justifyContent: "center" }}>
-                {["Funciones", "Precios", "Integraciones", "Recursos"].map((label) => (
-                  <a key={label} href="#funciones" className="ps-nav-link">{label}</a>
+                {["Producto", "Soluciones", "Precios", "Blog"].map((l) => (
+                  <a key={l} href="#" className="ps-nav-link">{l}</a>
                 ))}
               </nav>
-
-              {/* Actions */}
               <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
-                <Link href="/auth/login" className="ps-nav-link" style={{ padding: "0 4px" }}>
-                  Iniciar sesión
-                </Link>
-                <Link href="/auth/register" className="ps-btn-primary" style={{ padding: "9px 16px", fontSize: 13 }}>
-                  Comenzar gratis
-                </Link>
+                <Link href="/auth/login" className="ps-btn-ghost" style={{ padding: "9px 16px", fontSize: 13 }}>Iniciar sesión</Link>
+                <Link href="/auth/register" className="ps-btn-primary" style={{ padding: "9px 16px", fontSize: 13 }}>Empezar gratis</Link>
               </div>
             </div>
           </header>
 
-          {/* ──────────────────────── HERO ──────────────────────── */}
           <main>
+            {/* ══════════════ HERO ══════════════ */}
             <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
-              <div
-                className="ps-hero"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1.05fr 1fr",
-                  gap: 80,
-                  alignItems: "center",
-                  minHeight: "calc(100vh - 72px)",
-                  padding: "60px 0 100px",
-                }}
-              >
-                {/* ── LEFT: copy ── */}
+              <div className="ps-hero" style={{ display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: 80, alignItems: "center", minHeight: "calc(100vh - 72px)", padding: "60px 0 100px" }}>
+
+                {/* Copy */}
                 <div>
-                  {/* Pill badge */}
-                  <div style={{
-                    display: "inline-flex", alignItems: "center", gap: 8,
-                    padding: "6px 14px 6px 12px",
-                    background: "rgba(77,184,255,0.08)",
-                    border: "1px solid rgba(77,184,255,0.18)",
-                    borderRadius: 100,
-                    fontSize: 12.5, fontWeight: 500,
-                    color: "var(--ps-text-primary)",
-                    marginBottom: 24,
-                  }}>
-                    <span style={{
-                      width: 8, height: 8, borderRadius: "50%",
-                      background: "var(--ps-cyan)",
-                      display: "inline-block", position: "relative", flexShrink: 0,
-                    }}>
-                      <span style={{
-                        position: "absolute", inset: -4, borderRadius: "50%",
-                        background: "var(--ps-cyan)", opacity: 0.5,
-                        animation: "ps-pulse 1.8s cubic-bezier(0.16,1,0.3,1) infinite",
-                      }} />
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px 6px 12px", background: "rgba(77,184,255,0.08)", border: "1px solid rgba(77,184,255,0.18)", borderRadius: 100, fontSize: 12.5, fontWeight: 500, marginBottom: 24 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--ps-cyan)", display: "inline-block", position: "relative", flexShrink: 0 }}>
+                      <span style={{ position: "absolute", inset: -4, borderRadius: "50%", background: "var(--ps-cyan)", opacity: 0.5, animation: "ps-pulse 1.8s cubic-bezier(0.16,1,0.3,1) infinite" }} />
                     </span>
-                    Plataforma de ventas para concesionarias
+                    Inteligencia comercial en tiempo real
                   </div>
 
-                  {/* H1 */}
-                  <h1
-                    className="ps-hero-h1"
-                    style={{
-                      fontSize: 64, fontWeight: 800, lineHeight: 1.04,
-                      letterSpacing: "-0.03em",
-                      margin: "0 0 24px",
-                      color: "var(--ps-text-primary)",
-                    }}
-                  >
-                    Vendé más vehículos.{" "}
-                    <span style={{
-                      background: "linear-gradient(135deg, #4DB8FF 0%, #1E5FD4 100%)",
-                      WebkitBackgroundClip: "text", backgroundClip: "text",
-                      WebkitTextFillColor: "transparent", color: "transparent",
-                    }}>
-                      Con inteligencia de mercado.
+                  <h1 className="ps-hero-h1" style={{ fontSize: 64, fontWeight: 800, lineHeight: 1.04, letterSpacing: "-0.03em", margin: "0 0 24px" }}>
+                    Tu equipo de ventas,{" "}
+                    <span style={{ background: "linear-gradient(135deg, #4DB8FF 0%, #1E5FD4 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>
+                      sin fricción.
                     </span>
                   </h1>
 
-                  {/* Subtitle */}
-                  <p style={{
-                    fontSize: 18, lineHeight: 1.6,
-                    color: "var(--ps-text-secondary)",
-                    maxWidth: 520, margin: "0 0 36px",
-                  }}>
-                    ProSell centraliza tu inventario, automatiza la publicación en Facebook Marketplace,
-                    captura leads y te da visibilidad real sobre tu pipeline — todo desde una sola plataforma.
+                  <p style={{ fontSize: 18, lineHeight: 1.6, color: "var(--ps-text-secondary)", maxWidth: 520, margin: "0 0 36px" }}>
+                    ProSell unifica tu pipeline, automatiza la publicación en múltiples canales y te da visibilidad total sobre cada deal. Cerrá más, trabajá menos, escalá sin límites.
                   </p>
 
-                  {/* CTAs */}
                   <div className="ps-cta-row" style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 40 }}>
-                    <Link href="/auth/register" className="ps-btn-primary" style={{ padding: "13px 24px", fontSize: 15 }}>
-                      Comenzar gratis
-                    </Link>
-                    <Link href="/auth/login" className="ps-btn-ghost" style={{ padding: "13px 24px", fontSize: 15 }}>
-                      Ver demo
-                    </Link>
+                    <Link href="/auth/register" className="ps-btn-primary" style={{ padding: "13px 24px", fontSize: 15 }}>Empezar gratis</Link>
+                    <Link href="/auth/login" className="ps-btn-ghost" style={{ padding: "13px 24px", fontSize: 15 }}>Ver demo</Link>
                   </div>
 
                   {/* Social proof */}
@@ -258,97 +181,49 @@ export default function HomePage() {
                     <div style={{ display: "flex" }}>
                       {[
                         { i: "MR", bg: "linear-gradient(135deg,#4DB8FF,#1E5FD4)" },
-                        { i: "LC", bg: "linear-gradient(135deg,#22D3A0,#0D9B74)" },
-                        { i: "SA", bg: "linear-gradient(135deg,#F5A623,#E88C00)" },
-                        { i: "PG", bg: "linear-gradient(135deg,#4DB8FF,#7DCEFF)" },
-                        { i: "AR", bg: "linear-gradient(135deg,#1E5FD4,#4DB8FF)" },
+                        { i: "JC", bg: "linear-gradient(135deg,#22D3A0,#1E5FD4)" },
+                        { i: "AL", bg: "linear-gradient(135deg,#7DCEFF,#4DB8FF)" },
+                        { i: "SP", bg: "linear-gradient(135deg,#F5A623,#F04438)" },
                       ].map(({ i, bg }, idx) => (
-                        <div key={i} style={{
-                          width: 34, height: 34, borderRadius: "50%",
-                          display: "inline-flex", alignItems: "center", justifyContent: "center",
-                          fontWeight: 600, fontSize: 11, color: "#060D24",
-                          border: "2px solid var(--ps-bg-base)",
-                          marginLeft: idx === 0 ? 0 : -8,
-                          background: bg,
-                          flexShrink: 0,
-                        }}>{i}</div>
+                        <div key={i} style={{ width: 34, height: 34, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 11, color: "#060D24", border: "2px solid var(--ps-bg-base)", marginLeft: idx === 0 ? 0 : -8, background: bg, flexShrink: 0 }}>{i}</div>
                       ))}
                     </div>
                     <div>
                       <div style={{ display: "flex", gap: 2, marginBottom: 4 }}>
-                        {[0, 1, 2, 3, 4].map((s) => (
-                          <svg key={s} style={{ width: 12, height: 12, color: "#F5A623" }} fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                          </svg>
+                        {[0,1,2,3,4].map((s) => (
+                          <svg key={s} style={{ width: 12, height: 12, color: "#F5A623" }} fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
                         ))}
                       </div>
                       <p style={{ fontSize: 13, color: "var(--ps-text-secondary)", margin: 0 }}>
-                        <strong style={{ color: "var(--ps-text-primary)", fontWeight: 600 }}>+120 concesionarias</strong>
-                        {" "}ya gestionan su pipeline con ProSell
+                        <strong style={{ color: "var(--ps-text-primary)", fontWeight: 600 }}>2.400 equipos</strong>{" "}ya cerraron más este mes
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* ── RIGHT: dashboard mockup ── */}
+                {/* Dashboard mockup */}
                 <div className="ps-mockup-col" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 600 }}>
-                  {/* Glow */}
-                  <div aria-hidden="true" style={{
-                    position: "absolute", inset: "-20%",
-                    background: "radial-gradient(ellipse at center, rgba(77,184,255,0.18) 0%, rgba(30,95,212,0.12) 30%, transparent 60%)",
-                    filter: "blur(40px)",
-                    pointerEvents: "none",
-                  }} />
+                  <div aria-hidden="true" style={{ position: "absolute", inset: "-20%", background: "radial-gradient(ellipse at center, rgba(77,184,255,0.18) 0%, rgba(30,95,212,0.12) 30%, transparent 60%)", filter: "blur(40px)", pointerEvents: "none" }} />
 
-                  {/* Main dashboard card */}
-                  <div style={{
-                    position: "relative",
-                    width: "100%", maxWidth: 520,
-                    background: "rgba(13,27,62,0.75)",
-                    border: "1px solid rgba(77,184,255,0.18)",
-                    borderRadius: 20,
-                    backdropFilter: "blur(24px)",
-                    WebkitBackdropFilter: "blur(24px)",
-                    boxShadow: "0 32px 80px rgba(6,13,36,0.6), inset 0 1px 0 rgba(255,255,255,0.06)",
-                    padding: 22,
-                    animation: "ps-float 6s ease-in-out infinite",
-                  }}>
-                    {/* Header */}
+                  <div style={{ position: "relative", width: "100%", maxWidth: 520, background: "rgba(13,27,62,0.75)", border: "1px solid rgba(77,184,255,0.18)", borderRadius: 20, backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", boxShadow: "0 32px 80px rgba(6,13,36,0.6), inset 0 1px 0 rgba(255,255,255,0.06)", padding: 22, animation: "ps-float 6s ease-in-out infinite" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-                      <span style={{ fontSize: 15, fontWeight: 600 }}>Pipeline activo</span>
-                      <span style={{
-                        display: "inline-flex", alignItems: "center", gap: 6,
-                        padding: "3px 10px", borderRadius: 100,
-                        background: "rgba(34,211,160,0.12)", color: "var(--ps-success)",
-                        fontSize: 11, fontWeight: 600,
-                      }}>
+                      <span style={{ fontSize: 15, fontWeight: 600 }}>Pipeline Q2 2026</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 100, background: "rgba(34,211,160,0.12)", color: "var(--ps-success)", fontSize: 11, fontWeight: 600 }}>
                         <span style={{ position: "relative", width: 6, height: 6, display: "inline-block" }}>
-                          <span style={{
-                            position: "absolute", inset: 0, borderRadius: "50%",
-                            background: "var(--ps-success)",
-                          }} />
-                          <span style={{
-                            position: "absolute", inset: -2, borderRadius: "50%",
-                            background: "var(--ps-success)", opacity: 0.4,
-                            animation: "ps-pulse 1.8s cubic-bezier(0.16,1,0.3,1) infinite",
-                          }} />
+                          <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "var(--ps-success)" }} />
+                          <span style={{ position: "absolute", inset: -2, borderRadius: "50%", background: "var(--ps-success)", opacity: 0.4, animation: "ps-pulse 1.8s cubic-bezier(0.16,1,0.3,1) infinite" }} />
                         </span>
                         En vivo
                       </span>
                     </div>
 
-                    {/* Metrics */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 20 }}>
                       {[
-                        { label: "Stock activo", value: "48", delta: "+6 este mes" },
-                        { label: "Leads activos", value: "127", delta: "+18 esta semana" },
-                        { label: "Tasa de cierre", value: "64%", delta: "+5% vs mes ant." },
+                        { label: "Revenue", value: "$284K", delta: "+12.4%" },
+                        { label: "Deals abiertos", value: "47", delta: "en proceso" },
+                        { label: "Win rate", value: "68%", delta: "+5.2%" },
                       ].map((m) => (
-                        <div key={m.label} style={{
-                          background: "rgba(6,13,36,0.5)",
-                          border: "1px solid rgba(77,184,255,0.08)",
-                          borderRadius: 8, padding: "12px 14px",
-                        }}>
+                        <div key={m.label} style={{ background: "rgba(6,13,36,0.5)", border: "1px solid rgba(77,184,255,0.08)", borderRadius: 8, padding: "12px 14px" }}>
                           <div style={{ fontSize: 10.5, color: "var(--ps-text-secondary)", marginBottom: 4, letterSpacing: "0.04em" }}>{m.label}</div>
                           <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{m.value}</div>
                           <div style={{ fontSize: 10.5, color: "var(--ps-success)", fontWeight: 600, marginTop: 3 }}>{m.delta}</div>
@@ -356,281 +231,427 @@ export default function HomePage() {
                       ))}
                     </div>
 
-                    {/* Bar chart */}
                     <div style={{ marginBottom: 18 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ps-text-secondary)", letterSpacing: "0.04em" }}>LEADS / SEMANA</span>
-                        <span style={{ fontSize: 10.5, color: "var(--ps-text-disabled)" }}>últimas 8 semanas</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ps-text-secondary)", letterSpacing: "0.04em" }}>DEALS CERRADOS / SEMANA</span>
+                        <span style={{ fontSize: 10.5, color: "var(--ps-text-disabled)" }}>S1 — S8</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 64, padding: "0 2px" }}>
-                        {[35, 52, 41, 68, 73, 59, 81, 94].map((h, idx) => {
-                          const isActive = idx === 7;
+                        {[38, 52, 44, 64, 58, 72, 80, 96].map((h, idx) => {
+                          const active = idx === 7;
                           return (
-                            <div key={idx} style={{
-                              flex: 1, borderRadius: "3px 3px 0 0",
-                              height: `${h}%`,
-                              background: isActive
-                                ? "linear-gradient(to top, #4DB8FF, #7DCEFF)"
-                                : "rgba(77,184,255,0.15)",
-                              boxShadow: isActive ? "0 0 18px rgba(77,184,255,0.45)" : "none",
-                              position: "relative",
-                            }}>
-                              {isActive && (
-                                <div style={{
-                                  position: "absolute", top: -5, left: "50%", transform: "translateX(-50%)",
-                                  width: 6, height: 6, borderRadius: "50%",
-                                  background: "#7DCEFF", boxShadow: "0 0 8px #7DCEFF",
-                                }} />
-                              )}
+                            <div key={idx} style={{ flex: 1, borderRadius: "3px 3px 0 0", height: `${h}%`, background: active ? "linear-gradient(to top, #4DB8FF, #7DCEFF)" : "rgba(77,184,255,0.15)", boxShadow: active ? "0 0 18px rgba(77,184,255,0.45)" : "none", position: "relative" }}>
+                              {active && <div style={{ position: "absolute", top: -5, left: "50%", transform: "translateX(-50%)", width: 6, height: 6, borderRadius: "50%", background: "#7DCEFF", boxShadow: "0 0 8px #7DCEFF" }} />}
                             </div>
                           );
                         })}
                       </div>
                     </div>
 
-                    {/* Deal list */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 1, background: "rgba(77,184,255,0.06)", borderRadius: 8, overflow: "hidden" }}>
                       {[
-                        { av: "MR", name: "Toyota Corolla 2023", amount: "$28.500", stage: "Negociación", stageColor: "#F5A623", stageBg: "rgba(245,166,35,0.14)", avBg: "linear-gradient(135deg,#4DB8FF,#1E5FD4)" },
-                        { av: "LC", name: "Ford Ranger 2022",    amount: "$34.200", stage: "Demo",        stageColor: "var(--ps-cyan)",    stageBg: "rgba(77,184,255,0.14)",  avBg: "linear-gradient(135deg,#22D3A0,#0D9B74)" },
-                        { av: "SA", name: "VW Tiguan 2024",      amount: "$52.000", stage: "Cierre",      stageColor: "var(--ps-success)", stageBg: "rgba(34,211,160,0.14)", avBg: "linear-gradient(135deg,#F5A623,#E88C00)" },
-                      ].map((deal) => (
-                        <div key={deal.name} style={{
-                          display: "flex", alignItems: "center", gap: 12,
-                          padding: "11px 14px", background: "rgba(6,13,36,0.5)",
-                        }}>
-                          <div style={{
-                            width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 12, fontWeight: 700, color: "#060D24",
-                            background: deal.avBg,
-                          }}>{deal.av}</div>
-                          <span style={{
-                            flex: 1, fontSize: 13, fontWeight: 500,
-                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                          }}>{deal.name}</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{deal.amount}</span>
-                          <span style={{
-                            fontSize: 10.5, fontWeight: 600, padding: "3px 9px", borderRadius: 100,
-                            color: deal.stageColor, background: deal.stageBg,
-                            letterSpacing: "0.02em", flexShrink: 0,
-                          }}>{deal.stage}</span>
+                        { av: "A", name: "Acme Tech",       amount: "$48K", stage: "Cierre",    sc: "var(--ps-success)", sb: "rgba(34,211,160,0.14)", bg: "linear-gradient(135deg,#4DB8FF,#1E5FD4)" },
+                        { av: "N", name: "Northwind Labs",  amount: "$32K", stage: "Demo",      sc: "var(--ps-cyan)",    sb: "rgba(77,184,255,0.14)",  bg: "linear-gradient(135deg,#22D3A0,#1E5FD4)" },
+                        { av: "G", name: "Globex SA",       amount: "$76K", stage: "Propuesta", sc: "#F5A623",           sb: "rgba(245,166,35,0.14)",  bg: "linear-gradient(135deg,#F5A623,#F04438)" },
+                      ].map((d) => (
+                        <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", background: "rgba(6,13,36,0.5)" }}>
+                          <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#060D24", background: d.bg }}>{d.av}</div>
+                          <span style={{ flex: 1, fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{d.amount}</span>
+                          <span style={{ fontSize: 10.5, fontWeight: 600, padding: "3px 9px", borderRadius: 100, color: d.sc, background: d.sb, flexShrink: 0 }}>{d.stage}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Floating badge — top left */}
-                  <div className="ps-float-badge" style={{
-                    position: "absolute", top: -28, left: -56,
-                    display: "inline-flex", alignItems: "center", gap: 8,
-                    padding: "9px 14px",
-                    background: "rgba(13,27,62,0.92)",
-                    border: "1px solid rgba(77,184,255,0.25)",
-                    borderRadius: 8,
-                    backdropFilter: "blur(20px)",
-                    WebkitBackdropFilter: "blur(20px)",
-                    boxShadow: "0 16px 48px rgba(6,13,36,0.55)",
-                    fontSize: 12.5, fontWeight: 500, whiteSpace: "nowrap", zIndex: 2,
-                    animation: "ps-float-badge-1 7s ease-in-out infinite",
-                  }}>
-                    <div style={{
-                      width: 26, height: 26, borderRadius: 6, flexShrink: 0,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      background: "rgba(34,211,160,0.15)", color: "var(--ps-success)",
-                    }}>
-                      <svg style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                      </svg>
+                  {/* Floating badge top */}
+                  <div className="ps-float-badge" style={{ position: "absolute", top: -28, left: -56, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "rgba(13,27,62,0.92)", border: "1px solid rgba(77,184,255,0.25)", borderRadius: 8, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 16px 48px rgba(6,13,36,0.55)", fontSize: 12.5, fontWeight: 500, whiteSpace: "nowrap", zIndex: 2, animation: "ps-float-badge-1 7s ease-in-out infinite" }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(34,211,160,0.15)", color: "var(--ps-success)" }}>
+                      <svg style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
                     </div>
                     <div>
-                      <b style={{ display: "block", fontWeight: 600, fontSize: 12.5 }}>+1 lead nuevo</b>
-                      <span style={{ fontSize: 10.5, color: "var(--ps-text-secondary)" }}>Facebook Marketplace · hace 2 min</span>
+                      <b style={{ display: "block", fontWeight: 600, fontSize: 12.5 }}>Conversión este mes</b>
+                      <span style={{ fontSize: 10.5, color: "var(--ps-text-secondary)" }}>+34% vs anterior</span>
                     </div>
                   </div>
 
-                  {/* Floating badge — bottom right */}
-                  <div className="ps-float-badge" style={{
-                    position: "absolute", bottom: -28, right: -56,
-                    display: "inline-flex", alignItems: "center", gap: 8,
-                    padding: "9px 14px",
-                    background: "rgba(13,27,62,0.92)",
-                    border: "1px solid rgba(77,184,255,0.25)",
-                    borderRadius: 8,
-                    backdropFilter: "blur(20px)",
-                    WebkitBackdropFilter: "blur(20px)",
-                    boxShadow: "0 16px 48px rgba(6,13,36,0.55)",
-                    fontSize: 12.5, fontWeight: 500, whiteSpace: "nowrap", zIndex: 2,
-                    animation: "ps-float-badge-2 7s ease-in-out infinite",
-                  }}>
-                    <div style={{
-                      width: 26, height: 26, borderRadius: 6, flexShrink: 0,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      background: "rgba(77,184,255,0.15)", color: "var(--ps-cyan)",
-                    }}>
-                      <svg style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                      </svg>
+                  {/* Floating badge bottom */}
+                  <div className="ps-float-badge" style={{ position: "absolute", bottom: -28, right: -56, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "rgba(13,27,62,0.92)", border: "1px solid rgba(77,184,255,0.25)", borderRadius: 8, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 16px 48px rgba(6,13,36,0.55)", fontSize: 12.5, fontWeight: 500, whiteSpace: "nowrap", zIndex: 2, animation: "ps-float-badge-2 7s ease-in-out infinite" }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(77,184,255,0.15)", color: "var(--ps-cyan)" }}>
+                      <svg style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
                     </div>
                     <div>
-                      <b style={{ display: "block", fontWeight: 600, fontSize: 12.5 }}>Publicado en Marketplace</b>
-                      <span style={{ fontSize: 10.5, color: "var(--ps-text-secondary)" }}>VW Tiguan 2024 · hace 5 min</span>
+                      <b style={{ display: "block", fontWeight: 600, fontSize: 12.5 }}>Deal cerrado · $48K</b>
+                      <span style={{ fontSize: 10.5, color: "var(--ps-text-secondary)" }}>Acme Tech</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* ──────────── SOCIAL PROOF STRIP ──────────── */}
-            <div style={{
-              borderTop: "1px solid rgba(77,184,255,0.08)",
-              padding: "36px 32px 60px",
-              display: "flex", flexDirection: "column", gap: 22, alignItems: "center",
-            }}>
-              <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ps-text-disabled)", margin: 0 }}>
-                De confianza para concesionarias líderes
-              </p>
+            {/* ══════════════ PROOF STRIP ══════════════ */}
+            <div style={{ borderTop: "1px solid rgba(77,184,255,0.08)", padding: "36px 32px 60px", display: "flex", flexDirection: "column", gap: 22, alignItems: "center" }}>
+              <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ps-text-disabled)", margin: 0 }}>Confiado por equipos que escalan</p>
               <div style={{ display: "flex", gap: 52, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
-                {["AutoNorte", "CarMax AR", "Motorel", "ConcesAR", "AutoGrupo", "VehiMax"].map((name) => (
-                  <span key={name} style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.16em", color: "var(--ps-text-disabled)" }}>
-                    {name}
-                  </span>
+                {["MERIDIAN", "STACKFLOW", "NOVA GROUP", "AXION", "VELTRIX"].map((n) => (
+                  <span key={n} style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.18em", color: "var(--ps-text-disabled)" }}>{n}</span>
                 ))}
               </div>
             </div>
 
-            {/* ──────────── FEATURES GRID ──────────── */}
-            <section id="funciones" style={{
-              position: "relative",
-              padding: "100px 32px",
-              borderTop: "1px solid rgba(77,184,255,0.08)",
-              overflow: "hidden",
-            }}>
-              <div aria-hidden="true" style={{
-                position: "absolute", inset: 0, pointerEvents: "none",
-                background: [
-                  "radial-gradient(ellipse 50% 35% at 20% 0%, rgba(240,67,56,0.06), transparent 60%)",
-                  "radial-gradient(ellipse 50% 40% at 85% 100%, rgba(77,184,255,0.08), transparent 60%)",
-                ].join(", "),
-              }} />
+            {/* ══════════════ PROBLEM → SOLUTION ══════════════ */}
+            <section style={{ position: "relative", padding: "100px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
+              <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 50% 35% at 20% 0%, rgba(240,67,56,0.08), transparent 60%), radial-gradient(ellipse 50% 40% at 85% 100%, rgba(77,184,255,0.10), transparent 60%)" }} />
 
               <div style={{ position: "relative", zIndex: 1, maxWidth: 1280, margin: "0 auto" }}>
-                {/* Section head */}
-                <div style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 64px" }}>
-                  <span style={{
-                    display: "inline-block",
-                    fontSize: 12, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase",
-                    color: "var(--ps-cyan)", marginBottom: 18,
-                  }}>
-                    INTELIGENCIA COMERCIAL
-                  </span>
-                  <h2 style={{ fontSize: 44, fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.025em", margin: "0 0 18px" }}>
-                    Todo lo que necesita{" "}
-                    <span style={{
-                      background: "linear-gradient(135deg,#4DB8FF 0%,#1E5FD4 100%)",
-                      WebkitBackgroundClip: "text", backgroundClip: "text",
-                      WebkitTextFillColor: "transparent", color: "transparent",
-                    }}>
-                      tu equipo de ventas
+
+                {/* Part A: Problem */}
+                <div style={{ maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
+                  <span style={{ display: "inline-block", fontSize: 12, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "#F04438", marginBottom: 18 }}>El problema</span>
+                  <h2 style={{ fontSize: 48, fontWeight: 800, lineHeight: 1.08, letterSpacing: "-0.025em", margin: "0 0 22px" }}>
+                    Publicás en mil lados.<br />
+                    <span style={{ background: "linear-gradient(135deg, #F04438 0%, #F5A623 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>
+                      Cerrás en ninguno.
                     </span>
                   </h2>
-                  <p style={{ fontSize: 17, lineHeight: 1.6, color: "var(--ps-text-secondary)", maxWidth: 560, margin: "0 auto" }}>
-                    Desde el primer contacto hasta la firma. ProSell conecta cada punto del proceso comercial.
+                  <p style={{ fontSize: 18, lineHeight: 1.6, color: "var(--ps-text-secondary)", maxWidth: 600, margin: "0 auto 40px" }}>
+                    Vender hoy significa estar en múltiples canales a la vez, responder antes que tu competencia y saber exactamente qué funciona. Sin un sistema que unifique todo eso, el presupuesto se va y los leads no vuelven.
+                  </p>
+
+                  {/* Pain chips */}
+                  <div className="ps-pain-row" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+                    {[
+                      { num: "43%",    lbl: "de leads sin seguimiento" },
+                      { num: "65–80%", lbl: "usan sistemas desconectados" },
+                      { num: "+8 hs",  lbl: "tiempo promedio de respuesta" },
+                    ].map((c) => (
+                      <div key={c.num} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(240,67,56,0.08)", border: "1px solid rgba(240,67,56,0.2)", borderRadius: 10, padding: "16px 20px" }}>
+                        <span style={{ fontSize: 24, fontWeight: 700, color: "#F04438", letterSpacing: "-0.02em" }}>{c.num}</span>
+                        <span style={{ fontSize: 12, color: "var(--ps-text-secondary)", lineHeight: 1.35, textAlign: "left", maxWidth: 140 }}>{c.lbl}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", margin: "80px 0" }}>
+                  <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, transparent, rgba(77,184,255,0.2), transparent)", maxWidth: 220 }} />
+                  <div style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(77,184,255,0.10)", border: "1px solid rgba(77,184,255,0.25)", color: "var(--ps-cyan)", margin: "0 16px" }}>
+                    <svg style={{ width: 18, height: 18 }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 19 5 12" /></svg>
+                  </div>
+                  <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(77,184,255,0.2), transparent)", maxWidth: 220 }} />
+                </div>
+
+                {/* Part B: Solution */}
+                <div style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 56px" }}>
+                  <span style={{ display: "inline-block", fontSize: 12, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ps-cyan)", marginBottom: 18 }}>La solución</span>
+                  <h2 style={{ fontSize: 40, fontWeight: 700, lineHeight: 1.12, letterSpacing: "-0.022em", margin: "0 0 18px" }}>
+                    Un sistema. Cualquier nicho.<br />
+                    <span style={{ background: "linear-gradient(135deg, #4DB8FF 0%, #1E5FD4 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>
+                      Todo el pipeline.
+                    </span>
+                  </h2>
+                  <p style={{ fontSize: 16, lineHeight: 1.6, color: "var(--ps-text-secondary)", maxWidth: 560, margin: "0 auto" }}>
+                    Vehículos, inmuebles, productos — ProSell se adapta a lo que vendés. Vos traés el stock, nosotros ponemos la infraestructura de distribución, inteligencia y cierre.
                   </p>
                 </div>
 
-                {/* Cards */}
-                <div className="ps-feat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
-                  {FEATURES.map((feat) => (
-                    <div key={feat.title} className="ps-feat-card">
-                      <div style={{
-                        width: 44, height: 44, borderRadius: 12, marginBottom: 22,
-                        background: "rgba(77,184,255,0.10)",
-                        border: "1px solid rgba(77,184,255,0.2)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        color: "var(--ps-cyan)",
-                      }}>
-                        {feat.icon}
-                      </div>
-                      <div style={{
-                        fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase",
-                        color: "var(--ps-text-disabled)", marginBottom: 10,
-                      }}>
-                        {feat.kicker}
-                      </div>
-                      <h3 style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.3, margin: "0 0 12px" }}>
-                        {feat.title}
-                      </h3>
-                      <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--ps-text-secondary)", margin: "0 0 24px", flex: 1 }}>
-                        {feat.desc}
-                      </p>
-                      <span style={{
-                        alignSelf: "flex-start",
-                        display: "inline-flex", alignItems: "center", gap: 8,
-                        padding: "6px 12px", borderRadius: 100,
-                        border: "1px solid rgba(77,184,255,0.3)",
-                        background: "rgba(77,184,255,0.06)",
-                        color: "var(--ps-cyan)",
-                        fontSize: 11.5, fontWeight: 600,
-                      }}>
+                {/* Solution cards (3) */}
+                <div className="ps-sol-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+                  {[
+                    {
+                      icon: <svg style={{ width: 22, height: 22 }} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>,
+                      kicker: "Distribución automática",
+                      title: "Publicá en todos los canales a la vez",
+                      desc: "Un producto cargado una vez. Distribuido automáticamente en todos los portales y redes relevantes para tu nicho.",
+                      badge: "< 2 min · time-to-publish",
+                    },
+                    {
+                      icon: <svg style={{ width: 22, height: 22 }} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>,
+                      kicker: "Leads centralizados",
+                      title: "Todos tus leads, un solo lugar",
+                      desc: "Sin importar de dónde vienen — inbox unificado, respuesta inmediata, sin leads cayéndose por las grietas.",
+                      badge: "< 60s · response time",
+                    },
+                    {
+                      icon: <svg style={{ width: 22, height: 22 }} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>,
+                      kicker: "Inteligencia de cierre",
+                      title: "Sabé exactamente qué cierra",
+                      desc: "Qué canal trae mejores leads, qué precio mueve el stock, qué vendedor necesita soporte. Todo visible, todo accionable.",
+                      badge: "ROI visible · por canal",
+                    },
+                  ].map((c) => (
+                    <div key={c.title} className="ps-sol-card">
+                      <div style={{ width: 44, height: 44, borderRadius: 12, marginBottom: 22, background: "rgba(77,184,255,0.10)", border: "1px solid rgba(77,184,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ps-cyan)" }}>{c.icon}</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ps-text-disabled)", marginBottom: 10 }}>{c.kicker}</div>
+                      <h3 style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.3, margin: "0 0 12px" }}>{c.title}</h3>
+                      <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--ps-text-secondary)", margin: "0 0 24px", flex: 1 }}>{c.desc}</p>
+                      <span style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 12px", borderRadius: 100, border: "1px solid rgba(77,184,255,0.3)", background: "rgba(77,184,255,0.06)", color: "var(--ps-cyan)", fontSize: 11.5, fontWeight: 600 }}>
                         <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ps-cyan)", boxShadow: "0 0 6px var(--ps-cyan)" }} />
-                        {feat.badge}
+                        {c.badge}
                       </span>
                     </div>
+                  ))}
+                </div>
+
+                {/* Niche switcher */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap", marginTop: 48 }}>
+                  <span style={{ fontSize: 13, color: "var(--ps-text-secondary)", marginRight: 4 }}>Disponible para:</span>
+                  {[
+                    { label: "Vehículos", ico: "🚗", active: true },
+                    { label: "Inmuebles", ico: "🏠", active: false },
+                    { label: "Productos", ico: "📦", active: false },
+                  ].map((p) => (
+                    <span key={p.label} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 16px", borderRadius: 100, fontSize: 13, fontWeight: 500, border: p.active ? "1px solid var(--ps-cyan)" : "1px solid rgba(77,184,255,0.12)", color: p.active ? "var(--ps-cyan)" : "var(--ps-text-secondary)", background: p.active ? "rgba(77,184,255,0.06)" : "transparent" }}>
+                      <span style={{ fontSize: 14, lineHeight: 1 }}>{p.ico}</span>
+                      {p.label}
+                    </span>
                   ))}
                 </div>
               </div>
             </section>
 
-            {/* ──────────── CTA BANNER ──────────── */}
-            <section style={{
-              padding: "100px 32px",
-              borderTop: "1px solid rgba(77,184,255,0.08)",
-              textAlign: "center",
-            }}>
+            {/* ══════════════ FEATURES ALTERNATING ROWS ══════════════ */}
+            <section style={{ position: "relative", padding: "120px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
+              <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 40% 30% at 10% 30%, rgba(77,184,255,0.06), transparent 60%), radial-gradient(ellipse 40% 30% at 90% 70%, rgba(30,95,212,0.10), transparent 60%)" }} />
+
+              <div style={{ position: "relative", zIndex: 1, maxWidth: 1280, margin: "0 auto" }}>
+                {/* Head */}
+                <div style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 96px" }}>
+                  <span style={{ display: "inline-block", fontSize: 12, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ps-cyan)", marginBottom: 18 }}>Funcionalidades</span>
+                  <h2 className="ps-ft-h2" style={{ fontSize: 44, fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.025em", margin: "0 0 18px" }}>Todo lo que necesitás para vender más</h2>
+                  <p style={{ fontSize: 17, lineHeight: 1.6, color: "var(--ps-text-secondary)", maxWidth: 600, margin: "0 auto" }}>
+                    Sin apps extras. Sin integraciones complicadas. Todo dentro de ProSell desde el día uno.
+                  </p>
+                </div>
+
+                {/* Row 1: Distribución */}
+                <div className="ps-ft-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center", marginBottom: 100 }}>
+                  <div className="ps-ft-text" style={{ maxWidth: 520 }}>
+                    <span style={{ display: "inline-block", padding: "5px 12px", borderRadius: 100, background: "rgba(77,184,255,0.10)", border: "1px solid rgba(77,184,255,0.25)", color: "var(--ps-cyan)", fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 20 }}>Distribución</span>
+                    <h3 className="ps-ft-h3" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-0.022em", margin: "0 0 18px" }}>Publicá en todos los canales en 2 minutos</h3>
+                    <p style={{ fontSize: 16, lineHeight: 1.7, color: "var(--ps-text-secondary)", margin: "0 0 24px" }}>
+                      Cargás el producto una sola vez y ProSell lo distribuye automáticamente a todos los portales y redes activas para tu nicho. Sin copiar, sin pegar, sin errores.
+                    </p>
+                    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+                      {["Facebook Marketplace, AutoTrader, Cars.com y más", "Fotos, precio y descripción sincronizados automáticamente", "Alertas si algún canal falla en la publicación"].map((b) => (
+                        <li key={b} style={{ display: "flex", alignItems: "flex-start", gap: 12, fontSize: 14.5, lineHeight: 1.5 }}>
+                          <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(77,184,255,0.12)", border: "1px solid rgba(77,184,255,0.3)", color: "var(--ps-cyan)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
+                            <svg style={{ width: 12, height: 12 }} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                          </span>
+                          {b}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="ps-ft-mock" style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center", minHeight: 380 }}>
+                    <div style={{ position: "absolute", inset: "-10%", background: "radial-gradient(ellipse at center, rgba(77,184,255,0.12), transparent 60%)", filter: "blur(40px)", pointerEvents: "none" }} />
+                    <div style={{ position: "relative", width: "100%", maxWidth: 480, background: "rgba(13,27,62,0.7)", border: "1px solid rgba(77,184,255,0.12)", borderRadius: 16, backdropFilter: "blur(20px)", boxShadow: "0 0 60px rgba(77,184,255,0.08), 0 16px 48px rgba(6,13,36,0.55)", padding: 22 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600 }}>Nueva publicación</span>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 100, background: "rgba(34,211,160,0.14)", color: "var(--ps-success)", fontSize: 11, fontWeight: 600 }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
+                          Publicando…
+                        </span>
+                      </div>
+                      {/* Vehicle card */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 14, background: "rgba(6,13,36,0.5)", border: "1px solid rgba(77,184,255,0.08)", borderRadius: 12, padding: 12, marginBottom: 16 }}>
+                        <div style={{ width: 78, height: 60, flexShrink: 0, borderRadius: 8, background: "linear-gradient(135deg, rgba(77,184,255,0.18), rgba(30,95,212,0.25))", border: "1px solid rgba(77,184,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ps-text-disabled)" }}>
+                          <svg style={{ width: 22, height: 22 }} fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><rect x="2" y="9" width="20" height="11" rx="2" /><path d="M5 9V7a2 2 0 012-2h10a2 2 0 012 2v2" /><circle cx="7" cy="20" r="1" /><circle cx="17" cy="20" r="1" /></svg>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Toyota Corolla 2024</div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ps-cyan)", letterSpacing: "-0.01em" }}>$28.500</div>
+                        </div>
+                      </div>
+                      {/* Channel grid */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 18 }}>
+                        {[
+                          { swatch: "#1877F2", label: "FB Marketplace", abbr: "f" },
+                          { swatch: "#F5A623", label: "AutoTrader",    abbr: "AT" },
+                          { swatch: "#F04438", label: "Cars.com",      abbr: "C" },
+                          { swatch: "#22D3A0", label: "CarGurus",      abbr: "CG" },
+                        ].map((ch) => (
+                          <div key={ch.label} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 10, border: "1px solid rgba(77,184,255,0.08)", background: "rgba(6,13,36,0.4)", fontSize: 12, fontWeight: 600 }}>
+                            <span style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff", background: ch.swatch }}>{ch.abbr}</span>
+                            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ch.label}</span>
+                            <span style={{ width: 18, height: 18, borderRadius: "50%", background: "var(--ps-success)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <svg style={{ width: 11, height: 11, color: "#060D24" }} fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ height: 6, borderRadius: 100, background: "rgba(77,184,255,0.10)", overflow: "hidden", marginBottom: 8 }}>
+                        <div style={{ height: "100%", width: "100%", background: "linear-gradient(90deg, var(--ps-cyan), #7DCEFF)", boxShadow: "0 0 12px rgba(77,184,255,0.5)", borderRadius: 100 }} />
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "var(--ps-text-secondary)" }}>
+                        <span style={{ color: "var(--ps-success)", fontWeight: 600 }}>4/4 canales publicados</span>
+                        <span>00:01:48</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Row 2: Leads (reversed) */}
+                <div className="ps-ft-row reverse" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center", marginBottom: 100 }}>
+                  <div className="ps-ft-mock" style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center", minHeight: 380 }}>
+                    <div style={{ position: "absolute", inset: "-10%", background: "radial-gradient(ellipse at center, rgba(77,184,255,0.12), transparent 60%)", filter: "blur(40px)", pointerEvents: "none" }} />
+                    <div style={{ position: "relative", width: "100%", maxWidth: 480, background: "rgba(13,27,62,0.7)", border: "1px solid rgba(77,184,255,0.12)", borderRadius: 16, backdropFilter: "blur(20px)", boxShadow: "0 0 60px rgba(77,184,255,0.08), 0 16px 48px rgba(6,13,36,0.55)", padding: 22 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600 }}>Leads · Hoy</span>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 100, background: "rgba(77,184,255,0.14)", color: "var(--ps-cyan)", fontSize: 11, fontWeight: 600 }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
+                          12 nuevos
+                        </span>
+                      </div>
+                      {/* Lead rows */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 1, background: "rgba(77,184,255,0.06)", borderRadius: 12, overflow: "hidden", marginBottom: 14 }}>
+                        {[
+                          { av: "MR", bg: "linear-gradient(135deg,#4DB8FF,#1E5FD4)", name: "Martín Rivas",  src: "FB",      srcC: "var(--ps-cyan)",    srcBg: "rgba(77,184,255,0.15)",  time: "hace 2 min",  status: "Respondido < 60s", ok: true },
+                          { av: "JC", bg: "linear-gradient(135deg,#22D3A0,#1E5FD4)", name: "Julieta Castro", src: "AT",      srcC: "#F5A623",           srcBg: "rgba(245,166,35,0.15)", time: "hace 15 min", status: "Respondido < 60s", ok: true },
+                          { av: "SP", bg: "linear-gradient(135deg,#F5A623,#F04438)", name: "Sofía Paz",     src: "Directo", srcC: "var(--ps-success)", srcBg: "rgba(34,211,160,0.15)", time: "hace 1 hora", status: "Pendiente",         ok: false },
+                        ].map((l) => (
+                          <div key={l.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 12px", background: "rgba(6,13,36,0.5)" }}>
+                            <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#060D24", background: l.bg }}>{l.av}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                                {l.name}
+                                <span style={{ fontSize: 9.5, fontWeight: 700, padding: "2px 6px", borderRadius: 4, letterSpacing: "0.04em", color: l.srcC, background: l.srcBg }}>{l.src}</span>
+                              </div>
+                              <div style={{ fontSize: 11, color: "var(--ps-text-disabled)" }}>{l.time}</div>
+                            </div>
+                            <span style={{ fontSize: 10.5, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", color: l.ok ? "var(--ps-success)" : "#F5A623" }}>
+                              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
+                              {l.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* AI input */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "rgba(6,13,36,0.6)", border: "1px solid rgba(77,184,255,0.2)", borderRadius: 12 }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", padding: "2px 6px", borderRadius: 4, background: "rgba(77,184,255,0.15)", color: "var(--ps-cyan)" }}>IA</span>
+                        <span style={{ flex: 1, fontSize: 13, color: "var(--ps-text-secondary)" }}>Responder con IA…</span>
+                        <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--ps-cyan)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <svg style={{ width: 14, height: 14, color: "#060D24" }} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="ps-ft-text" style={{ maxWidth: 520 }}>
+                    <span style={{ display: "inline-block", padding: "5px 12px", borderRadius: 100, background: "rgba(77,184,255,0.10)", border: "1px solid rgba(77,184,255,0.25)", color: "var(--ps-cyan)", fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 20 }}>Leads</span>
+                    <h3 className="ps-ft-h3" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-0.022em", margin: "0 0 18px" }}>Todos tus leads, respondidos antes que tu competencia</h3>
+                    <p style={{ fontSize: 16, lineHeight: 1.7, color: "var(--ps-text-secondary)", margin: "0 0 24px" }}>
+                      Sin importar de qué canal venga — Facebook, portal, formulario web — todos llegan al mismo inbox inteligente. Respondés en segundos, no en horas.
+                    </p>
+                    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+                      {["Inbox unificado multi-canal y multi-nicho", "Respuesta asistida por IA con contexto del lead", "Alertas automáticas si un lead lleva más de 60s sin respuesta"].map((b) => (
+                        <li key={b} style={{ display: "flex", alignItems: "flex-start", gap: 12, fontSize: 14.5, lineHeight: 1.5 }}>
+                          <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(77,184,255,0.12)", border: "1px solid rgba(77,184,255,0.3)", color: "var(--ps-cyan)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
+                            <svg style={{ width: 12, height: 12 }} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                          </span>
+                          {b}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Row 3: Inteligencia */}
+                <div className="ps-ft-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }}>
+                  <div className="ps-ft-text" style={{ maxWidth: 520 }}>
+                    <span style={{ display: "inline-block", padding: "5px 12px", borderRadius: 100, background: "rgba(77,184,255,0.10)", border: "1px solid rgba(77,184,255,0.25)", color: "var(--ps-cyan)", fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 20 }}>Inteligencia</span>
+                    <h3 className="ps-ft-h3" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-0.022em", margin: "0 0 18px" }}>Sabé exactamente qué canal cierra más</h3>
+                    <p style={{ fontSize: 16, lineHeight: 1.7, color: "var(--ps-text-secondary)", margin: "0 0 24px" }}>
+                      ProSell rastrea cada lead desde el origen hasta el cierre. Sabés cuánto gastás por lead, qué canal convierte mejor y qué vendedor necesita soporte — todo en tiempo real.
+                    </p>
+                    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+                      {["Attribution completa por canal y por vendedor", "Pricing dinámico: alertas cuando el stock se mueve lento", "Dashboard de ROI: costo por lead vs revenue cerrado"].map((b) => (
+                        <li key={b} style={{ display: "flex", alignItems: "flex-start", gap: 12, fontSize: 14.5, lineHeight: 1.5 }}>
+                          <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(77,184,255,0.12)", border: "1px solid rgba(77,184,255,0.3)", color: "var(--ps-cyan)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
+                            <svg style={{ width: 12, height: 12 }} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                          </span>
+                          {b}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="ps-ft-mock" style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center", minHeight: 380 }}>
+                    <div style={{ position: "absolute", inset: "-10%", background: "radial-gradient(ellipse at center, rgba(77,184,255,0.12), transparent 60%)", filter: "blur(40px)", pointerEvents: "none" }} />
+                    <div style={{ position: "relative", width: "100%", maxWidth: 480, background: "rgba(13,27,62,0.7)", border: "1px solid rgba(77,184,255,0.12)", borderRadius: 16, backdropFilter: "blur(20px)", boxShadow: "0 0 60px rgba(77,184,255,0.08), 0 16px 48px rgba(6,13,36,0.55)", padding: 22 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600 }}>Performance · Q2 2026</span>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 100, background: "rgba(77,184,255,0.14)", color: "var(--ps-cyan)", fontSize: 11, fontWeight: 600 }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
+                          En vivo
+                        </span>
+                      </div>
+                      {/* Bar chart */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 18 }}>
+                        {[
+                          { label: "Facebook",   pct: 68, type: "cyan" },
+                          { label: "AutoTrader", pct: 52, type: "blue" },
+                          { label: "Cars.com",   pct: 38, type: "muted" },
+                        ].map((r) => (
+                          <div key={r.label} style={{ display: "grid", gridTemplateColumns: "90px 1fr 50px", gap: 12, alignItems: "center" }}>
+                            <span style={{ fontSize: 12.5, fontWeight: 600 }}>{r.label}</span>
+                            <div style={{ height: 10, borderRadius: 100, background: "rgba(77,184,255,0.08)", overflow: "hidden" }}>
+                              <div style={{ height: "100%", width: `${r.pct}%`, borderRadius: 100, background: r.type === "cyan" ? "linear-gradient(90deg, var(--ps-cyan), #7DCEFF)" : r.type === "blue" ? "linear-gradient(90deg, var(--ps-blue), var(--ps-cyan))" : "rgba(138,155,191,0.4)", boxShadow: r.type === "cyan" ? "0 0 12px rgba(77,184,255,0.4)" : "none" }} />
+                            </div>
+                            <span style={{ fontSize: 12, fontWeight: 700, textAlign: "right" }}>{r.pct}%</span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Metric chips */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+                        {[
+                          { v: "$148", l: "costo/lead promedio" },
+                          { v: "3.2x", l: "ROI por canal" },
+                        ].map((m) => (
+                          <div key={m.v} style={{ background: "rgba(6,13,36,0.5)", border: "1px solid rgba(77,184,255,0.08)", borderRadius: 10, padding: "10px 12px" }}>
+                            <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-0.015em" }}>{m.v}</div>
+                            <div style={{ fontSize: 10.5, color: "var(--ps-text-secondary)", marginTop: 2 }}>{m.l}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Insight */}
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", background: "rgba(77,184,255,0.06)", border: "1px solid rgba(77,184,255,0.3)", borderRadius: 10, fontSize: 12, lineHeight: 1.5 }}>
+                        <div style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, background: "rgba(77,184,255,0.15)", color: "var(--ps-cyan)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <svg style={{ width: 12, height: 12 }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                        </div>
+                        <span><strong style={{ color: "var(--ps-cyan)", fontWeight: 700 }}>Insight:</strong> Facebook trae 2x más cierres que AutoTrader este mes.</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ══════════════ CTA BANNER ══════════════ */}
+            <section style={{ padding: "100px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", textAlign: "center" }}>
               <div style={{ maxWidth: 720, margin: "0 auto" }}>
-                <span style={{
-                  display: "inline-block",
-                  fontSize: 12, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase",
-                  color: "var(--ps-cyan)", marginBottom: 18,
-                }}>
-                  EMPEZÁ HOY
-                </span>
+                <span style={{ display: "inline-block", fontSize: 12, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ps-cyan)", marginBottom: 18 }}>EMPEZÁ HOY</span>
                 <h2 style={{ fontSize: 44, fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.025em", margin: "0 0 20px" }}>
-                  Tu concesionaria necesita un sistema que trabaje tan duro como vos.
+                  Tu negocio necesita un sistema que trabaje tan duro como vos.
                 </h2>
                 <p style={{ fontSize: 18, lineHeight: 1.6, color: "var(--ps-text-secondary)", margin: "0 0 40px" }}>
                   Comenzá gratis. Sin tarjeta de crédito. Onboarding en menos de 10 minutos.
                 </p>
                 <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                  <Link href="/auth/register" className="ps-btn-primary" style={{ padding: "14px 28px", fontSize: 15 }}>
-                    Crear cuenta gratis
-                  </Link>
-                  <Link href="/auth/login" className="ps-btn-ghost" style={{ padding: "14px 28px", fontSize: 15 }}>
-                    Iniciar sesión
-                  </Link>
+                  <Link href="/auth/register" className="ps-btn-primary" style={{ padding: "14px 28px", fontSize: 15 }}>Crear cuenta gratis</Link>
+                  <Link href="/auth/login" className="ps-btn-ghost" style={{ padding: "14px 28px", fontSize: 15 }}>Iniciar sesión</Link>
                 </div>
               </div>
             </section>
           </main>
 
-          {/* ──────────────────────── FOOTER ──────────────────────── */}
-          <footer style={{
-            borderTop: "1px solid rgba(77,184,255,0.08)",
-            padding: "32px",
-          }}>
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              maxWidth: 1280, margin: "0 auto",
-              flexWrap: "wrap", gap: 16,
-            }}>
+          {/* ══════════════ FOOTER ══════════════ */}
+          <footer style={{ borderTop: "1px solid rgba(77,184,255,0.08)", padding: "32px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 1280, margin: "0 auto", flexWrap: "wrap", gap: 16 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <Image src="/logo-mark.png" alt="ProSell" width={28} height={28} style={{ flexShrink: 0 }} />
+                <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 28, width: "auto", flexShrink: 0 }} />
                 <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.02em" }}>ProSell</span>
               </div>
-              <p style={{ fontSize: 12, color: "var(--ps-text-disabled)", margin: 0 }}>
-                © {new Date().getFullYear()} ProSell SaaS. Todos los derechos reservados.
-              </p>
+              <p style={{ fontSize: 12, color: "var(--ps-text-disabled)", margin: 0 }}>© {new Date().getFullYear()} ProSell SaaS. Todos los derechos reservados.</p>
               <div style={{ display: "flex", gap: 24 }}>
                 <Link href="/privacy" className="ps-footer-link">Privacidad</Link>
                 <Link href="/terms" className="ps-footer-link">Términos</Link>
@@ -642,74 +663,3 @@ export default function HomePage() {
     </>
   );
 }
-
-// ──────────── DATA ────────────
-
-const FEATURES = [
-  {
-    kicker: "Inventario",
-    title: "Stock en tiempo real",
-    desc: "Cargá tu inventario una sola vez. ProSell sincroniza el estado de cada vehículo automáticamente — disponible, reservado, vendido.",
-    badge: "Actualización instantánea",
-    icon: (
-      <svg style={{ width: 22, height: 22 }} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
-        <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
-      </svg>
-    ),
-  },
-  {
-    kicker: "Publicación",
-    title: "Facebook Marketplace automático",
-    desc: "Publicá cualquier vehículo en Facebook Marketplace con un click. Imágenes, precio y descripción optimizados para conversión.",
-    badge: "Multi-cuenta",
-    icon: (
-      <svg style={{ width: 22, height: 22 }} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
-        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" />
-      </svg>
-    ),
-  },
-  {
-    kicker: "Leads",
-    title: "Captura y gestión de leads",
-    desc: "Todos los leads en un solo lugar. Asignación automática, historial completo y deduplicación inteligente para evitar contactos repetidos.",
-    badge: "Dedup automático",
-    icon: (
-      <svg style={{ width: 22, height: 22 }} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
-        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-      </svg>
-    ),
-  },
-  {
-    kicker: "Pipeline",
-    title: "Kanban de ventas",
-    desc: "Mové oportunidades por las etapas del proceso con drag & drop. Visibilidad completa del pipeline para todo el equipo.",
-    badge: "Drag & drop",
-    icon: (
-      <svg style={{ width: 22, height: 22 }} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
-        <rect x="3" y="3" width="4" height="18" rx="1" /><rect x="10" y="3" width="4" height="14" rx="1" /><rect x="17" y="3" width="4" height="10" rx="1" />
-      </svg>
-    ),
-  },
-  {
-    kicker: "Citas",
-    title: "Agenda integrada",
-    desc: "Los clientes reservan horarios online. El vendedor recibe la notificación y confirma en segundos. Sin llamadas innecesarias.",
-    badge: "Self-service",
-    icon: (
-      <svg style={{ width: 22, height: 22 }} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
-        <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-      </svg>
-    ),
-  },
-  {
-    kicker: "Analytics",
-    title: "Inteligencia de mercado",
-    desc: "Dashboards con métricas de stock, conversión por fuente, tiempo en etapa y proyección de cierre. Decisiones basadas en datos reales.",
-    badge: "Real-time",
-    icon: (
-      <svg style={{ width: 22, height: 22 }} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      </svg>
-    ),
-  },
-] as const;
