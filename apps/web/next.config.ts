@@ -17,7 +17,13 @@ const nextConfig: NextConfig = {
   // React Compiler enabled - automatically optimizes components
   reactCompiler: true,
 
-  // transpilePackages kept as fallback for dnd-kit if needed after restart
+  turbopack: {
+    root: "../../",
+  },
+
+  // Fix @dnd-kit/core resolution in pnpm monorepo with Turbopack.
+  // Symlinks were created at node_modules/@dnd-kit/ (monorepo root) so that
+  // Turbopack's root:../../ context can find them. transpilePackages as backup.
   transpilePackages: ["@dnd-kit/core", "@dnd-kit/utilities", "@dnd-kit/sortable"],
 
   // Bundle size optimization: Optimize imports from packages with barrel files
