@@ -6,6 +6,7 @@
  */
 
 import Link from "next/link";
+import Image from "next/image";
 
 export default function HomePage() {
   return (
@@ -146,12 +147,7 @@ export default function HomePage() {
             }}>
               {/* Logo */}
               <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                  background: "linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 16, fontWeight: 800, color: "#060D24",
-                }}>P</div>
+                <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 34, width: "auto", flexShrink: 0 }} />
                 <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ps-text-primary)" }}>
                   ProSell
                 </span>
@@ -629,12 +625,7 @@ export default function HomePage() {
               flexWrap: "wrap", gap: 16,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: 6, flexShrink: 0,
-                  background: "linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 14, fontWeight: 800, color: "#060D24",
-                }}>P</div>
+                <Image src="/logo-mark.png" alt="ProSell" width={28} height={28} style={{ flexShrink: 0 }} />
                 <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.02em" }}>ProSell</span>
               </div>
               <p style={{ fontSize: 12, color: "var(--ps-text-disabled)", margin: 0 }}>
