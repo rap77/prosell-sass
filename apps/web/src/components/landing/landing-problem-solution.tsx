@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function LandingProblemSolution() {
   return (
-    <section style={{ position: "relative", padding: "100px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
+    <section id="soluciones" style={{ position: "relative", padding: "100px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
               <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 50% 35% at 20% 0%, rgba(240,67,56,0.08), transparent 60%), radial-gradient(ellipse 50% 40% at 85% 100%, rgba(77,184,255,0.10), transparent 60%)" }} />
 
               <div style={{ position: "relative", zIndex: 1, maxWidth: 1280, margin: "0 auto" }}>

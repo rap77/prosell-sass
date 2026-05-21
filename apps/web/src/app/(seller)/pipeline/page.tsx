@@ -1,9 +1,10 @@
 /**
  * PipelinePage — ProSell kanban pipeline.
- * Server Component: just renders the KanbanBoard client island.
+ * Server Component: delegates to KanbanBoardIsland (client) which lazy-loads
+ * KanbanBoard with ssr:false to avoid Turbopack @dnd-kit/core pnpm symlink issue.
  */
 
-import { KanbanBoard } from '@/components/pipeline/KanbanBoard'
+import { KanbanBoardIsland } from '@/components/pipeline/KanbanBoardIsland'
 
 export default function PipelinePage() {
   return (
@@ -21,8 +22,7 @@ export default function PipelinePage() {
         </div>
       </div>
 
-      {/* Kanban board */}
-      <KanbanBoard />
+      <KanbanBoardIsland />
     </div>
   )
 }

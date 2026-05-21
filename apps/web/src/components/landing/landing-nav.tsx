@@ -20,9 +20,10 @@ export function LandingNav() {
         </Link>
 
         <nav className="ps-nav-links" style={{ display: "flex", gap: 32, flex: 1, justifyContent: "center" }}>
-          {["Producto", "Soluciones", "Precios", "Blog"].map((l) => (
-            <a key={l} href="#" className="ps-nav-link">{l}</a>
-          ))}
+          <a href="#producto" className="ps-nav-link">Producto</a>
+          <a href="#soluciones" className="ps-nav-link">Soluciones</a>
+          <a href="#precios" className="ps-nav-link">Precios</a>
+          <a href="#como-funciona" className="ps-nav-link">Cómo funciona</a>
         </nav>
 
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>

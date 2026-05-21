@@ -9,7 +9,7 @@ const CheckIcon = () => (
 
 export function LandingPricing() {
   return (
-    <section style={{ position: "relative", padding: "100px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
+    <section id="precios" style={{ position: "relative", padding: "100px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
       <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(50% 35% at 50% 0%, rgba(77,184,255,0.08), transparent 60%), radial-gradient(60% 40% at 50% 100%, rgba(30,95,212,0.10), transparent 60%)" }} />
 
       <div style={{ position: "relative", zIndex: 1, maxWidth: 1280, margin: "0 auto" }}>

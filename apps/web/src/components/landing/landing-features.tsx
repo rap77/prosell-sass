@@ -1,6 +1,6 @@
 export function LandingFeatures() {
   return (
-    <section style={{ position: "relative", padding: "120px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
+    <section id="producto" style={{ position: "relative", padding: "120px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
               <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 40% 30% at 10% 30%, rgba(77,184,255,0.06), transparent 60%), radial-gradient(ellipse 40% 30% at 90% 70%, rgba(30,95,212,0.10), transparent 60%)" }} />
 
               <div style={{ position: "relative", zIndex: 1, maxWidth: 1280, margin: "0 auto" }}>

@@ -40,7 +40,7 @@ const STEPS = [
 
 export function LandingHowItWorks() {
   return (
-    <section style={{ position: "relative", padding: "100px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
+    <section id="como-funciona" style={{ position: "relative", padding: "100px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
       <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(50% 35% at 50% 0%, rgba(77,184,255,0.06), transparent 60%)" }} />
 
       <div style={{ position: "relative", zIndex: 1, maxWidth: 1280, margin: "0 auto" }}>
