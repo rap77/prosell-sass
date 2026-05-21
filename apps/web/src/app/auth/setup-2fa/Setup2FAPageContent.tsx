@@ -1,8 +1,8 @@
 /**
- * Setup2FAPageContent - Client component with the 2FA setup page UI
+ * Setup2FAPageContent — componente cliente de la página de configuración 2FA.
  *
- * This component contains all the visual elements of the 2FA setup page.
- * The async server page (page.tsx) handles auth redirect and renders this.
+ * La página server async (page.tsx) maneja la redirección de auth y renderiza esto.
+ * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 "use client";
 
@@ -11,7 +11,7 @@ import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { TwoFactorSetupSkeleton } from "@/components/auth/dynamic/TwoFactorSetupForm";
 
-// Dynamically load the TwoFactorSetupForm component
+// Carga dinámica del formulario de setup 2FA
 const TwoFactorSetupForm = dynamic(
   () =>
     import("@/components/auth/dynamic/TwoFactorSetupForm").then(
@@ -31,27 +31,40 @@ export function Setup2FAPageContent({
   is2FAEnabled = false,
 }: Setup2FAPageContentProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo/Brand */}
-        <div className="text-center mb-8">
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--ps-bg-base)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 16,
+    }}>
+      <div style={{ width: '100%', maxWidth: 448 }}>
+
+        {/* Brand */}
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-slate-100"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 22,
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+              color: 'var(--ps-text-primary)',
+              textDecoration: 'none',
+            }}
           >
-            <svg
-              className="w-8 h-8 text-blue-600"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-            <span>ProSell</span>
+            ProSell
           </Link>
         </div>
 
-        {/* TwoFactorSetupForm */}
-        <TwoFactorSetupForm is2FAEnabled={is2FAEnabled} />
+        {/* Form */}
+        <Suspense fallback={<TwoFactorSetupSkeleton />}>
+          <TwoFactorSetupForm is2FAEnabled={is2FAEnabled} />
+        </Suspense>
+
       </div>
     </div>
   );

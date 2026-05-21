@@ -1,72 +1,107 @@
-"use client";
+'use client'
 
-import Link from "next/link";
+/**
+ * Route error boundary — ProSell error page.
+ * All colors via var(--ps-*) tokens — dark/light automatic.
+ */
 
-interface GlobalErrorPageProps {
-  error: Error & { digest?: string };
-  reset: () => void;
+import Link from 'next/link'
+import { AlertTriangle } from 'lucide-react'
+
+interface ErrorPageProps {
+  error: Error & { digest?: string }
+  reset: () => void
 }
 
-export default function GlobalErrorPage({
-  error,
-  reset,
-}: GlobalErrorPageProps) {
+export default function ErrorPage({ error, reset }: ErrorPageProps) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-12 dark:from-slate-900 dark:to-slate-800 sm:px-6 lg:px-8">
-      <main className="w-full max-w-md space-y-8 text-center">
-        <div className="space-y-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-2xl font-bold text-slate-900 transition-colors hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-400"
-          >
-            <svg
-              className="h-8 w-8"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-            <span>ProSell</span>
-          </Link>
+    <div style={{
+      display: 'flex',
+      minHeight: '100vh',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'var(--ps-bg-base)',
+      padding: '32px 24px',
+      textAlign: 'center',
+    }}>
+      <main style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 28 }}>
 
-          <div className="space-y-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400">
+        {/* Brand */}
+        <Link
+          href="/"
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, fontWeight: 800, color: 'var(--ps-text-primary)',
+            textDecoration: 'none', letterSpacing: '-0.02em',
+          }}
+        >
+          ProSell
+        </Link>
+
+        {/* Icon + copy */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 14,
+            background: 'var(--ps-warning-bg)', border: '1px solid var(--ps-warning)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <AlertTriangle size={22} strokeWidth={2} style={{ color: 'var(--ps-warning)' }} />
+          </div>
+          <div>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--ps-warning)' }}>
               Algo salió mal
             </p>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+            <h1 style={{ margin: '8px 0 0', fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>
               No pudimos cargar esta vista
             </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400 sm:text-base">
-              Ocurrió un problema inesperado. Intenta nuevamente o vuelve al
-              dashboard para seguir trabajando.
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--ps-text-secondary)', lineHeight: 1.6 }}>
+              Ocurrió un problema inesperado. Intentá de nuevo o volvé al dashboard para seguir trabajando.
             </p>
           </div>
         </div>
 
-        <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-700 dark:bg-slate-800">
+        {/* Action card */}
+        <div style={{
+          background: 'var(--ps-bg-surface)',
+          border: '1px solid var(--ps-border-default)',
+          borderRadius: 14,
+          padding: '24px 24px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+          boxShadow: '0 4px 24px rgba(6,13,36,0.3)',
+        }}>
           <button
             type="button"
             onClick={reset}
-            className="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800"
+            style={{
+              display: 'inline-flex', width: '100%', alignItems: 'center', justifyContent: 'center',
+              height: 42, borderRadius: 8, border: 'none',
+              background: 'var(--ps-cyan)', color: 'var(--ps-bg-base)',
+              fontSize: 14, fontWeight: 700, cursor: 'pointer',
+            }}
           >
             Intentar de nuevo
           </button>
-
           <Link
             href="/dashboard"
-            className="inline-flex w-full items-center justify-center rounded-md border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus-visible:ring-offset-slate-800"
+            style={{
+              display: 'inline-flex', width: '100%', alignItems: 'center', justifyContent: 'center',
+              height: 42, borderRadius: 8,
+              background: 'var(--ps-bg-elevated)', border: '1px solid var(--ps-border-default)',
+              color: 'var(--ps-text-secondary)', fontSize: 14, fontWeight: 500, textDecoration: 'none',
+            }}
           >
             Ir al dashboard
           </Link>
-
-          {error.digest ? (
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Código de referencia: {error.digest}
+          {error.digest && (
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--ps-text-disabled)' }}>
+              Referencia: {error.digest}
             </p>
-          ) : null}
+          )}
         </div>
+
       </main>
     </div>
-  );
+  )
 }

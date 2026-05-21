@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProSell — Leads del equipo</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+a { color: inherit; text-decoration: none; }
+
+/* =========================================
+   App shell
+   ========================================= */
+.app {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+/* ============== Sidebar ============== */
+.sidebar {
+  background: #040A1A;
+  border-right: 1px solid rgba(77,184,255,0.06);
+  display: flex; flex-direction: column;
+  padding: 20px 0 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.sb-top { padding: 0 16px 16px; border-bottom: 1px solid rgba(77,184,255,0.06); display: flex; flex-direction: column; gap: 14px; }
+.sb-logo {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 17px; font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.sb-logo img { height: 26px; width: auto; }
+
+.workspace {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  background: rgba(77,184,255,0.06);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 180ms;
+}
+.workspace:hover { color: var(--text-primary); border-color: rgba(77,184,255,0.2); }
+.workspace span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace [data-lucide] { width: 14px; height: 14px; stroke-width: 2; flex-shrink: 0; }
+
+.sb-nav {
+  flex: 1;
+  display: flex; flex-direction: column;
+  padding: 16px 8px;
+  gap: 2px;
+}
+.sb-nav .group-divider {
+  height: 1px;
+  background: rgba(77,184,255,0.06);
+  margin: 12px 8px;
+}
+.sb-nav .group-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-disabled);
+  padding: 12px 16px 6px;
+  display: flex; align-items: center; gap: 6px;
+}
+.sb-nav .group-label .lock {
+  width: 11px; height: 11px;
+  color: var(--text-disabled);
+}
+.nav-item {
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 180ms, color 180ms;
+}
+.nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
+.nav-item [data-lucide] { width: 18px; height: 18px; stroke-width: 2; flex-shrink: 0; }
+.nav-item .label { flex: 1; min-width: 0; }
+.nav-item .badge {
+  font-size: 11px; font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 100px;
+  background: rgba(77,184,255,0.14);
+  color: var(--cyan);
+  letter-spacing: 0.02em;
+}
+.nav-item .role-tag {
+  font-size: 9.5px; font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+  background: rgba(245,166,35,0.14);
+  color: var(--warning);
+  text-transform: uppercase;
+}
+.nav-item.active {
+  background: rgba(77,184,255,0.08);
+  color: var(--text-primary);
+  font-weight: 600;
+  border-right: 2px solid var(--cyan);
+  border-radius: 8px 0 0 8px;
+}
+.nav-item.active [data-lucide] { color: var(--cyan); }
+
+.sb-user {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 12px;
+  padding: 10px 12px;
+  background: rgba(13,27,62,0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 180ms;
+}
+.sb-user:hover { border-color: rgba(77,184,255,0.2); }
+.sb-user .av {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  color: var(--bg-base);
+  background: linear-gradient(135deg, #4DB8FF, #1E5FD4);
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+.sb-user .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.sb-user .meta b { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.sb-user .plan {
+  display: inline-flex; align-self: flex-start;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 100px;
+  background: rgba(245,166,35,0.14);
+  color: var(--warning);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sb-user [data-lucide].chev { width: 14px; height: 14px; stroke-width: 2; color: var(--text-secondary); }
+
+/* ============== Main ============== */
+.main {
+  padding: 32px;
+  max-width: calc(100vw - 240px);
+}
+
+/* Top bar */
+.top {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+.greet h1 {
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 0 0 4px;
+}
+.greet p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+.top-actions { display: flex; align-items: center; gap: 10px; }
+
+.filter {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  background: rgba(13,27,62,0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 180ms;
+}
+.filter:hover { color: var(--text-primary); border-color: rgba(77,184,255,0.25); }
+.filter b { color: var(--text-primary); font-weight: 600; }
+.filter [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+.filter .chev { color: var(--text-disabled); }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 180ms;
+}
+.btn-ghost:hover { border-color: rgba(77,184,255,0.3); background: rgba(77,184,255,0.04); }
+.btn-ghost [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+
+/* KPI row */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.kpi {
+  position: relative;
+  background: var(--bg-surface);
+  border: 1px solid rgba(77,184,255,0.10);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex; flex-direction: column;
+  gap: 6px;
+  transition: border-color 200ms;
+}
+.kpi:hover { border-color: rgba(77,184,255,0.22); }
+.kpi.warn { border-color: rgba(245,166,35,0.22); }
+.kpi.warn:hover { border-color: rgba(245,166,35,0.35); }
+.kpi-ico {
+  position: absolute;
+  top: 18px; right: 18px;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: rgba(77,184,255,0.10);
+  border: 1px solid rgba(77,184,255,0.18);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--cyan);
+}
+.kpi-ico.warn { background: rgba(245,166,35,0.10); border-color: rgba(245,166,35,0.25); color: var(--warning); }
+.kpi-ico.success { background: rgba(34,211,160,0.10); border-color: rgba(34,211,160,0.25); color: var(--success); }
+.kpi-ico [data-lucide] { width: 16px; height: 16px; stroke-width: 2; }
+.kpi-label { font-size: 13px; color: var(--text-secondary); }
+.kpi-value {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text-primary);
+  margin: 2px 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+.kpi.warn .kpi-value { color: var(--warning); }
+.kpi.success .kpi-value { color: var(--success); }
+.kpi-delta {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.kpi-delta.up { color: var(--success); }
+.kpi-delta.warn { color: var(--warning); }
+.kpi-delta [data-lucide] { width: 12px; height: 12px; stroke-width: 2.5; }
+
+/* Two-column section */
+.two-col {
+  display: grid;
+  grid-template-columns: 65fr 35fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid rgba(77,184,255,0.10);
+  border-radius: 12px;
+}
+.card.padded { padding: 20px; }
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.card-title { font-size: 15px; font-weight: 600; }
+.card-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Bulk action bar */
+.bulk-bar {
+  display: none;
+  align-items: center; gap: 14px;
+  padding: 12px 20px;
+  background: rgba(77,184,255,0.06);
+  border-bottom: 1px solid rgba(77,184,255,0.18);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.bulk-bar.on { display: flex; }
+.bulk-bar .count {
+  font-weight: 600;
+}
+.bulk-bar .count b {
+  color: var(--cyan);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.bulk-bar .sep {
+  color: var(--text-disabled);
+}
+.bulk-bar .assign-label {
+  color: var(--text-secondary);
+}
+.bulk-bar .bulk-select {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  background: rgba(13,27,62,0.8);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.bulk-bar .bulk-select [data-lucide] { width: 12px; height: 12px; }
+.bulk-bar .bulk-select .av {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #4DB8FF, #1E5FD4);
+  color: var(--bg-base);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.bulk-bar .bulk-confirm {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  background: var(--cyan);
+  color: var(--bg-base);
+  border: 0;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 180ms;
+}
+.bulk-bar .bulk-confirm:hover { background: var(--cyan-hover); }
+.bulk-bar .bulk-confirm [data-lucide] { width: 12px; height: 12px; stroke-width: 2.5; }
+.bulk-bar .bulk-clear {
+  background: transparent;
+  border: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px;
+}
+.bulk-bar .bulk-clear:hover { color: var(--text-primary); }
+
+/* Table */
+.tbl {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.tbl thead th {
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-disabled);
+  padding: 12px 14px;
+  background: rgba(6,13,36,0.4);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+.tbl thead th:first-child { padding-left: 20px; }
+.tbl thead th:last-child { padding-right: 20px; text-align: right; }
+.tbl tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(77,184,255,0.06);
+  font-size: 13px;
+  vertical-align: middle;
+  color: var(--text-primary);
+}
+.tbl tbody td:first-child { padding-left: 20px; }
+.tbl tbody td:last-child { padding-right: 20px; text-align: right; }
+.tbl tbody tr {
+  transition: background 180ms;
+  cursor: pointer;
+}
+.tbl tbody tr:hover { background: rgba(77,184,255,0.04); }
+.tbl tbody tr.selected { background: rgba(77,184,255,0.06); }
+.tbl tbody tr.unassigned {
+  background: rgba(245,166,35,0.04);
+  box-shadow: inset 2px 0 0 var(--warning);
+}
+.tbl tbody tr.unassigned:hover { background: rgba(245,166,35,0.08); }
+.tbl tbody tr.unassigned.selected { background: rgba(245,166,35,0.10); }
+.tbl tbody tr:last-child td { border-bottom: 0; }
+
+/* Checkbox column */
+.tbl .col-check { width: 36px; padding-right: 0; }
+.cb {
+  width: 16px; height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid rgba(77,184,255,0.35);
+  background: rgba(13,27,62,0.8);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 180ms;
+  vertical-align: middle;
+}
+.cb [data-lucide] {
+  width: 10px; height: 10px;
+  stroke-width: 3;
+  color: var(--bg-base);
+  opacity: 0;
+}
+.cb.checked {
+  background: var(--cyan);
+  border-color: var(--cyan);
+}
+.cb.checked [data-lucide] { opacity: 1; }
+
+/* Lead cell */
+.lead-cell {
+  display: flex; align-items: center; gap: 10px;
+}
+.lead-cell .av {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  color: var(--bg-base);
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+.lead-cell .av.empty {
+  background: rgba(245,166,35,0.12);
+  border: 1.5px dashed rgba(245,166,35,0.45);
+  color: var(--warning);
+}
+.lead-cell .av.empty [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+.lead-cell .info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.lead-cell .name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.005em;
+}
+.lead-cell .email {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.vehicle {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+/* Vendor cell */
+.vendor-cell {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-primary);
+}
+.vendor-cell .v-av {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9.5px; font-weight: 700;
+  color: var(--bg-base);
+  letter-spacing: 0.02em;
+}
+.vendor-cell.empty {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--warning);
+}
+.vendor-cell.empty [data-lucide] { width: 12px; height: 12px; stroke-width: 2.5; }
+
+/* Stage pill */
+.stage {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+.stage .d { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.stage.nuevo { background: rgba(77,184,255,0.14); color: var(--cyan); }
+.stage.contactado { background: rgba(125,206,255,0.14); color: #7DCEFF; }
+.stage.demo { background: rgba(245,166,35,0.14); color: var(--warning); }
+.stage.cierre { background: rgba(34,211,160,0.14); color: var(--success); }
+
+/* Source pill */
+.src {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.src.fb { background: rgba(77,184,255,0.15); color: var(--cyan); }
+.src.at { background: rgba(245,166,35,0.15); color: var(--warning); }
+.src.dir { background: rgba(34,211,160,0.15); color: var(--success); }
+
+.time {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.time.fresh { color: var(--cyan); }
+.time.stale { color: var(--text-disabled); }
+
+/* Row actions */
+.row-actions {
+  display: inline-flex; gap: 4px;
+  justify-content: flex-end;
+}
+.icon-btn {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 150ms;
+}
+.icon-btn:hover {
+  border-color: rgba(77,184,255,0.20);
+  background: rgba(77,184,255,0.05);
+  color: var(--cyan);
+}
+.icon-btn [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+.icon-btn.urgent {
+  background: rgba(245,166,35,0.10);
+  color: var(--warning);
+}
+.icon-btn.urgent:hover {
+  background: rgba(245,166,35,0.18);
+  color: var(--warning);
+  border-color: rgba(245,166,35,0.3);
+}
+
+/* Table foot */
+.tbl-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.tbl-foot .pager {
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.tbl-foot .pgr-btn {
+  width: 26px; height: 26px;
+  border-radius: 5px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.tbl-foot .pgr-btn:hover { color: var(--text-primary); border-color: var(--border-default); }
+.tbl-foot .pgr-btn [data-lucide] { width: 12px; height: 12px; stroke-width: 2.5; }
+.tbl-foot .pgr-page {
+  padding: 0 8px;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+/* ============ Right column: Team performance ============ */
+.team-card { padding: 20px; }
+.team-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 4px;
+}
+.team-head h3 { font-size: 15px; font-weight: 600; margin: 0; }
+.team-head .range {
+  font-size: 11px;
+  color: var(--text-disabled);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.team-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0 0 16px;
+}
+
+.vendor-list { display: flex; flex-direction: column; gap: 12px; }
+.vendor-row {
+  position: relative;
+  background: rgba(6,13,36,0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex; flex-direction: column;
+  gap: 10px;
+  transition: all 180ms;
+}
+.vendor-row:hover { border-color: var(--border-default); }
+.vendor-row.top {
+  background: linear-gradient(135deg, rgba(77,184,255,0.06), rgba(30,95,212,0.03));
+  border-color: rgba(77,184,255,0.20);
+}
+
+.vendor-head {
+  display: flex; align-items: center; gap: 10px;
+}
+.vendor-rank {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: rgba(77,184,255,0.05);
+  border: 1px solid var(--border-subtle);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.vendor-rank.gold { background: linear-gradient(135deg, #F5C842, #C49019); color: #2A1F00; border-color: rgba(245,200,66,0.5); }
+.vendor-rank.silver { background: linear-gradient(135deg, #D9DFE8, #8B95A8); color: #1A1F2C; border-color: rgba(217,223,232,0.5); }
+.vendor-rank.bronze { background: linear-gradient(135deg, #C97A4B, #8B4F2B); color: #2A1300; border-color: rgba(201,122,75,0.4); }
+
+.v-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--bg-base);
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.vendor-id { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.vendor-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.005em;
+}
+.role-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 100px;
+  background: rgba(77,184,255,0.10);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  letter-spacing: 0.02em;
+}
+.role-pill.gerente {
+  background: rgba(245,166,35,0.10);
+  color: var(--warning);
+  border-color: rgba(245,166,35,0.25);
+}
+
+.vendor-stats {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+.vendor-stats b {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+}
+.vendor-stats .stat { display: inline-flex; align-items: baseline; gap: 4px; }
+.vendor-stats .dot {
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--text-disabled);
+}
+.vendor-stats .conv {
+  margin-left: auto;
+  color: var(--success);
+  font-weight: 700;
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+
+.vendor-bar {
+  height: 5px;
+  border-radius: 100px;
+  background: rgba(77,184,255,0.08);
+  overflow: hidden;
+}
+.vendor-bar .fill {
+  height: 100%;
+  border-radius: 100px;
+  background: linear-gradient(90deg, var(--cyan), var(--cyan-hover));
+  box-shadow: 0 0 8px rgba(77,184,255,0.4);
+  transition: width 320ms var(--ease-out);
+}
+.vendor-row:not(.top) .vendor-bar .fill {
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  box-shadow: none;
+}
+
+.team-foot {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+  text-align: center;
+}
+.team-foot a {
+  font-size: 13px;
+  color: var(--cyan);
+  font-weight: 500;
+  display: inline-flex; align-items: center; gap: 4px;
+  transition: opacity 180ms, gap 180ms;
+}
+.team-foot a:hover { opacity: 0.85; gap: 7px; }
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .two-col { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .main { padding: 20px 18px; max-width: 100%; }
+  .top { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .top-actions { width: 100%; flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============== Sidebar ============== -->
+  <aside class="sidebar">
+    <div class="sb-top">
+      <a class="sb-logo" href="Dashboard.html">
+        <img src="../assets/logo-mark.png" alt="" />
+        <span>ProSell</span>
+      </a>
+      <button class="workspace" type="button">
+        <span>Automotores del Norte</span>
+        <i data-lucide="chevron-down"></i>
+      </button>
+    </div>
+
+    <nav class="sb-nav">
+      <a class="nav-item" href="Dashboard.html">
+        <i data-lucide="layout-dashboard"></i>
+        <span class="label">Dashboard</span>
+      </a>
+      <a class="nav-item" href="Leads Inbox.html">
+        <i data-lucide="inbox"></i>
+        <span class="label">Leads</span>
+        <span class="badge">12</span>
+      </a>
+      <a class="nav-item" href="Pipeline.html">
+        <i data-lucide="git-branch"></i>
+        <span class="label">Pipeline</span>
+      </a>
+      <a class="nav-item" href="Inventario.html">
+        <i data-lucide="package"></i>
+        <span class="label">Inventario</span>
+        <span class="badge">38</span>
+      </a>
+      <a class="nav-item" href="Publicaciones.html">
+        <i data-lucide="megaphone"></i>
+        <span class="label">Publicaciones</span>
+      </a>
+      <a class="nav-item" href="Analytics.html">
+        <i data-lucide="bar-chart-3"></i>
+        <span class="label">Analytics</span>
+      </a>
+
+      <div class="group-label">
+        <i data-lucide="shield" class="lock"></i>
+        Gerencia
+      </div>
+      <a class="nav-item active" href="#">
+        <i data-lucide="users"></i>
+        <span class="label">Equipo</span>
+        <span class="role-tag">Mgr</span>
+      </a>
+
+      <div class="group-divider"></div>
+
+      <a class="nav-item" href="Settings General.html">
+        <i data-lucide="settings"></i>
+        <span class="label">Configuración</span>
+      </a>
+      <a class="nav-item" href="#">
+        <i data-lucide="help-circle"></i>
+        <span class="label">Ayuda</span>
+      </a>
+    </nav>
+
+    <div class="sb-user">
+      <span class="av">MR</span>
+      <span class="meta">
+        <b>Martín R.</b>
+        <span class="plan">Gerente</span>
+      </span>
+      <i data-lucide="chevron-right" class="chev"></i>
+    </div>
+  </aside>
+
+  <!-- ============== Main ============== -->
+  <main class="main">
+    <!-- Top bar -->
+    <div class="top">
+      <div class="greet">
+        <h1>Leads del equipo</h1>
+        <p>Todos los leads asignados a tu equipo</p>
+      </div>
+      <div class="top-actions">
+        <button class="filter" type="button">
+          <i data-lucide="calendar"></i>
+          <b>Esta semana</b>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </button>
+        <button class="filter" type="button">
+          <span style="color: var(--text-secondary);">Vendedor:</span>
+          <b>Todos</b>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </button>
+        <button class="btn-ghost" type="button">
+          <i data-lucide="download"></i>
+          Exportar
+        </button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi">
+        <span class="kpi-ico"><i data-lucide="inbox"></i></span>
+        <span class="kpi-label">Total leads</span>
+        <span class="kpi-value">47</span>
+        <span class="kpi-delta up"><i data-lucide="trending-up"></i>+8 vs semana anterior</span>
+      </div>
+      <div class="kpi warn">
+        <span class="kpi-ico warn"><i data-lucide="user-x"></i></span>
+        <span class="kpi-label">Sin asignar</span>
+        <span class="kpi-value">6</span>
+        <span class="kpi-delta warn"><i data-lucide="alert-triangle"></i>Requiere atención</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-ico"><i data-lucide="zap"></i></span>
+        <span class="kpi-label">Tasa respuesta</span>
+        <span class="kpi-value">91%</span>
+        <span class="kpi-delta up"><i data-lucide="trending-up"></i>+3pp vs semana anterior</span>
+      </div>
+      <div class="kpi success">
+        <span class="kpi-ico success"><i data-lucide="check-circle-2"></i></span>
+        <span class="kpi-label">Cerrados esta semana</span>
+        <span class="kpi-value">8</span>
+        <span class="kpi-delta up"><i data-lucide="trending-up"></i>+2 vs semana anterior</span>
+      </div>
+    </div>
+
+    <!-- Two-column -->
+    <div class="two-col">
+      <!-- Left: Leads table -->
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h3 class="card-title">Leads asignados</h3>
+            <p class="card-sub">47 leads · ordenados por más recientes</p>
+          </div>
+          <button class="btn-ghost" type="button" style="height: 32px; padding: 0 10px; font-size: 12px;">
+            <i data-lucide="filter"></i>
+            Filtros
+          </button>
+        </div>
+
+        <!-- Bulk action bar -->
+        <div class="bulk-bar on" id="bulk-bar">
+          <span class="count"><b id="bulk-count">3</b> leads seleccionados</span>
+          <span class="sep">·</span>
+          <span class="assign-label">Asignar a:</span>
+          <button class="bulk-select" type="button">
+            <span class="av" style="background: linear-gradient(135deg,#22D3A0,#1E5FD4)">SG</span>
+            Sofía G.
+            <i data-lucide="chevron-down"></i>
+          </button>
+          <button class="bulk-confirm" type="button">
+            <i data-lucide="check"></i>
+            Confirmar
+          </button>
+          <button class="bulk-clear" type="button" id="bulk-clear" aria-label="Limpiar selección">
+            <i data-lucide="x" style="width:14px;height:14px;"></i>
+          </button>
+        </div>
+
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th class="col-check"><span class="cb" id="cb-all"><i data-lucide="check"></i></span></th>
+              <th>Lead</th>
+              <th>Vehículo</th>
+              <th>Vendedor</th>
+              <th>Etapa</th>
+              <th>Origen</th>
+              <th>Tiempo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+
+            <tr class="unassigned" data-name="Martín Rivas">
+              <td><span class="cb"><i data-lucide="check"></i></span></td>
+              <td>
+                <div class="lead-cell">
+                  <span class="av" style="background: linear-gradient(135deg,#4DB8FF,#1E5FD4)">MR</span>
+                  <span class="info">
+                    <span class="name">Martín Rivas</span>
+                    <span class="email">mrivas@gmail.com</span>
+                  </span>
+                </div>
+              </td>
+              <td><span class="vehicle">Toyota Corolla 2024</span></td>
+              <td><span class="vendor-cell empty"><i data-lucide="user-x"></i>Sin asignar</span></td>
+              <td><span class="stage nuevo"><span class="d"></span>Nuevo</span></td>
+              <td><span class="src fb">FB</span></td>
+              <td><span class="time fresh">hace 2 min</span></td>
+              <td>
+                <div class="row-actions">
+                  <button class="icon-btn urgent" aria-label="Asignar"><i data-lucide="user-plus"></i></button>
+                  <button class="icon-btn" aria-label="Ver"><i data-lucide="eye"></i></button>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="selected" data-name="Julieta Castro">
+              <td><span class="cb checked"><i data-lucide="check"></i></span></td>
+              <td>
+                <div class="lead-cell">
+                  <span class="av" style="background: linear-gradient(135deg,#22D3A0,#1E5FD4)">JC</span>
+                  <span class="info">
+                    <span class="name">Julieta Castro</span>
+                    <span class="email">jcastro@hotmail.com</span>
+                  </span>
+                </div>
+              </td>
+              <td><span class="vehicle">VW Amarok 2023</span></td>
+              <td>
+                <span class="vendor-cell">
+                  <span class="v-av" style="background: linear-gradient(135deg,#22D3A0,#1E5FD4)">SG</span>
+                  Sofía G.
+                </span>
+              </td>
+              <td><span class="stage contactado"><span class="d"></span>Contactado</span></td>
+              <td><span class="src at">AT</span></td>
+              <td><span class="time">hace 12 min</span></td>
+              <td>
+                <div class="row-actions">
+                  <button class="icon-btn" aria-label="Reasignar"><i data-lucide="user-plus"></i></button>
+                  <button class="icon-btn" aria-label="Ver"><i data-lucide="eye"></i></button>
+                </div>
+              </td>
+            </tr>
+
+            <tr data-name="Andrés López">
+              <td><span class="cb"><i data-lucide="check"></i></span></td>
+              <td>
+                <div class="lead-cell">
+                  <span class="av" style="background: linear-gradient(135deg,#7DCEFF,#4DB8FF)">AL</span>
+                  <span class="info">
+                    <span class="name">Andrés López</span>
+                    <span class="email">a.lopez@empresa.com.ar</span>
+                  </span>
+                </div>
+              </td>
+              <td><span class="vehicle">Ford Ranger 2024</span></td>
+              <td>
+                <span class="vendor-cell">
+                  <span class="v-av" style="background: linear-gradient(135deg,#4DB8FF,#1E5FD4)">MR</span>
+                  Martín R.
+                </span>
+              </td>
+              <td><span class="stage demo"><span class="d"></span>Demo</span></td>
+              <td><span class="src fb">FB</span></td>
+              <td><span class="time">hace 47 min</span></td>
+              <td>
+                <div class="row-actions">
+                  <button class="icon-btn" aria-label="Reasignar"><i data-lucide="user-plus"></i></button>
+                  <button class="icon-btn" aria-label="Ver"><i data-lucide="eye"></i></button>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="selected" data-name="Sofía Paz">
+              <td><span class="cb checked"><i data-lucide="check"></i></span></td>
+              <td>
+                <div class="lead-cell">
+                  <span class="av" style="background: linear-gradient(135deg,#F5A623,#F04438)">SP</span>
+                  <span class="info">
+                    <span class="name">Sofía Paz</span>
+                    <span class="email">sofia.paz@gmail.com</span>
+                  </span>
+                </div>
+              </td>
+              <td><span class="vehicle">Chevrolet Tracker 2024</span></td>
+              <td>
+                <span class="vendor-cell">
+                  <span class="v-av" style="background: linear-gradient(135deg,#F5A623,#7DCEFF)">LT</span>
+                  Luis T.
+                </span>
+              </td>
+              <td><span class="stage cierre"><span class="d"></span>Cierre</span></td>
+              <td><span class="src dir">Dir</span></td>
+              <td><span class="time">hace 1 hora</span></td>
+              <td>
+                <div class="row-actions">
+                  <button class="icon-btn" aria-label="Reasignar"><i data-lucide="user-plus"></i></button>
+                  <button class="icon-btn" aria-label="Ver"><i data-lucide="eye"></i></button>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="unassigned" data-name="Carlos Ríos">
+              <td><span class="cb"><i data-lucide="check"></i></span></td>
+              <td>
+                <div class="lead-cell">
+                  <span class="av" style="background: linear-gradient(135deg,#0D1B6E,#1E5FD4)">CR</span>
+                  <span class="info">
+                    <span class="name">Carlos Ríos</span>
+                    <span class="email">crios.04@gmail.com</span>
+                  </span>
+                </div>
+              </td>
+              <td><span class="vehicle">Renault Duster 2024</span></td>
+              <td><span class="vendor-cell empty"><i data-lucide="user-x"></i>Sin asignar</span></td>
+              <td><span class="stage nuevo"><span class="d"></span>Nuevo</span></td>
+              <td><span class="src at">AT</span></td>
+              <td><span class="time fresh">hace 3 horas</span></td>
+              <td>
+                <div class="row-actions">
+                  <button class="icon-btn urgent" aria-label="Asignar"><i data-lucide="user-plus"></i></button>
+                  <button class="icon-btn" aria-label="Ver"><i data-lucide="eye"></i></button>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="selected" data-name="Florencia Núñez">
+              <td><span class="cb checked"><i data-lucide="check"></i></span></td>
+              <td>
+                <div class="lead-cell">
+                  <span class="av" style="background: linear-gradient(135deg,#22D3A0,#4DB8FF)">FN</span>
+                  <span class="info">
+                    <span class="name">Florencia Núñez</span>
+                    <span class="email">flornunez@outlook.com</span>
+                  </span>
+                </div>
+              </td>
+              <td><span class="vehicle">Toyota Hilux 2023</span></td>
+              <td>
+                <span class="vendor-cell">
+                  <span class="v-av" style="background: linear-gradient(135deg,#22D3A0,#1E5FD4)">SG</span>
+                  Sofía G.
+                </span>
+              </td>
+              <td><span class="stage demo"><span class="d"></span>Demo</span></td>
+              <td><span class="src fb">FB</span></td>
+              <td><span class="time">hace 5 horas</span></td>
+              <td>
+                <div class="row-actions">
+                  <button class="icon-btn" aria-label="Reasignar"><i data-lucide="user-plus"></i></button>
+                  <button class="icon-btn" aria-label="Ver"><i data-lucide="eye"></i></button>
+                </div>
+              </td>
+            </tr>
+
+            <tr data-name="Diego Méndez">
+              <td><span class="cb"><i data-lucide="check"></i></span></td>
+              <td>
+                <div class="lead-cell">
+                  <span class="av" style="background: linear-gradient(135deg,#F5A623,#1E5FD4)">DM</span>
+                  <span class="info">
+                    <span class="name">Diego Méndez</span>
+                    <span class="email">d.mendez@hotmail.com</span>
+                  </span>
+                </div>
+              </td>
+              <td><span class="vehicle">Peugeot 208 2024</span></td>
+              <td>
+                <span class="vendor-cell">
+                  <span class="v-av" style="background: linear-gradient(135deg,#4DB8FF,#1E5FD4)">MR</span>
+                  Martín R.
+                </span>
+              </td>
+              <td><span class="stage contactado"><span class="d"></span>Contactado</span></td>
+              <td><span class="src dir">Dir</span></td>
+              <td><span class="time">ayer</span></td>
+              <td>
+                <div class="row-actions">
+                  <button class="icon-btn" aria-label="Reasignar"><i data-lucide="user-plus"></i></button>
+                  <button class="icon-btn" aria-label="Ver"><i data-lucide="eye"></i></button>
+                </div>
+              </td>
+            </tr>
+
+            <tr data-name="Valeria Ibáñez">
+              <td><span class="cb"><i data-lucide="check"></i></span></td>
+              <td>
+                <div class="lead-cell">
+                  <span class="av" style="background: linear-gradient(135deg,#7DCEFF,#22D3A0)">VI</span>
+                  <span class="info">
+                    <span class="name">Valeria Ibáñez</span>
+                    <span class="email">valeria.i@gmail.com</span>
+                  </span>
+                </div>
+              </td>
+              <td><span class="vehicle">Fiat Cronos 2024</span></td>
+              <td>
+                <span class="vendor-cell">
+                  <span class="v-av" style="background: linear-gradient(135deg,#22D3A0,#1E5FD4)">SG</span>
+                  Sofía G.
+                </span>
+              </td>
+              <td><span class="stage cierre"><span class="d"></span>Cierre</span></td>
+              <td><span class="src fb">FB</span></td>
+              <td><span class="time">ayer</span></td>
+              <td>
+                <div class="row-actions">
+                  <button class="icon-btn" aria-label="Reasignar"><i data-lucide="user-plus"></i></button>
+                  <button class="icon-btn" aria-label="Ver"><i data-lucide="eye"></i></button>
+                </div>
+              </td>
+            </tr>
+
+            <tr data-name="Tomás Bianchi">
+              <td><span class="cb"><i data-lucide="check"></i></span></td>
+              <td>
+                <div class="lead-cell">
+                  <span class="av" style="background: linear-gradient(135deg,#F5A623,#7DCEFF)">TB</span>
+                  <span class="info">
+                    <span class="name">Tomás Bianchi</span>
+                    <span class="email">tbianchi.99@gmail.com</span>
+                  </span>
+                </div>
+              </td>
+              <td><span class="vehicle">Jeep Compass 2024</span></td>
+              <td>
+                <span class="vendor-cell">
+                  <span class="v-av" style="background: linear-gradient(135deg,#F5A623,#7DCEFF)">LT</span>
+                  Luis T.
+                </span>
+              </td>
+              <td><span class="stage contactado"><span class="d"></span>Contactado</span></td>
+              <td><span class="src at">AT</span></td>
+              <td><span class="time stale">hace 2 días</span></td>
+              <td>
+                <div class="row-actions">
+                  <button class="icon-btn" aria-label="Reasignar"><i data-lucide="user-plus"></i></button>
+                  <button class="icon-btn" aria-label="Ver"><i data-lucide="eye"></i></button>
+                </div>
+              </td>
+            </tr>
+
+            <tr data-name="Camila Ortega">
+              <td><span class="cb"><i data-lucide="check"></i></span></td>
+              <td>
+                <div class="lead-cell">
+                  <span class="av" style="background: linear-gradient(135deg,#22D3A0,#7DCEFF)">CO</span>
+                  <span class="info">
+                    <span class="name">Camila Ortega</span>
+                    <span class="email">camiortega@gmail.com</span>
+                  </span>
+                </div>
+              </td>
+              <td><span class="vehicle">Honda HR-V 2023</span></td>
+              <td>
+                <span class="vendor-cell">
+                  <span class="v-av" style="background: linear-gradient(135deg,#4DB8FF,#1E5FD4)">MR</span>
+                  Martín R.
+                </span>
+              </td>
+              <td><span class="stage demo"><span class="d"></span>Demo</span></td>
+              <td><span class="src dir">Dir</span></td>
+              <td><span class="time stale">hace 3 días</span></td>
+              <td>
+                <div class="row-actions">
+                  <button class="icon-btn" aria-label="Reasignar"><i data-lucide="user-plus"></i></button>
+                  <button class="icon-btn" aria-label="Ver"><i data-lucide="eye"></i></button>
+                </div>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+
+        <div class="tbl-foot">
+          <span>Mostrando <b style="color:var(--text-primary);">1–10</b> de 47</span>
+          <div class="pager">
+            <button class="pgr-btn"><i data-lucide="chevron-left"></i></button>
+            <span class="pgr-page">1 / 5</span>
+            <button class="pgr-btn"><i data-lucide="chevron-right"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Team performance -->
+      <section class="card team-card">
+        <div class="team-head">
+          <h3>Rendimiento del equipo</h3>
+          <span class="range">7d</span>
+        </div>
+        <p class="team-sub">Ranking por leads cerrados</p>
+
+        <div class="vendor-list">
+          <!-- 1st: Sofía -->
+          <div class="vendor-row top">
+            <div class="vendor-head">
+              <span class="vendor-rank gold">1</span>
+              <span class="v-avatar" style="background: linear-gradient(135deg,#22D3A0,#1E5FD4)">SG</span>
+              <span class="vendor-id">
+                <span class="vendor-name">Sofía G.</span>
+                <span class="role-pill">Vendedor</span>
+              </span>
+            </div>
+            <div class="vendor-stats">
+              <span class="stat"><b>18</b>leads</span>
+              <span class="dot"></span>
+              <span class="stat"><b>9</b>cerrados</span>
+              <span class="conv">50%</span>
+            </div>
+            <div class="vendor-bar"><span class="fill" style="width:100%"></span></div>
+          </div>
+
+          <!-- 2nd: Martín -->
+          <div class="vendor-row">
+            <div class="vendor-head">
+              <span class="vendor-rank silver">2</span>
+              <span class="v-avatar" style="background: linear-gradient(135deg,#4DB8FF,#1E5FD4)">MR</span>
+              <span class="vendor-id">
+                <span class="vendor-name">Martín R.</span>
+                <span class="role-pill gerente">Gerente</span>
+              </span>
+            </div>
+            <div class="vendor-stats">
+              <span class="stat"><b>16</b>leads</span>
+              <span class="dot"></span>
+              <span class="stat"><b>7</b>cerrados</span>
+              <span class="conv" style="color: var(--cyan);">44%</span>
+            </div>
+            <div class="vendor-bar"><span class="fill" style="width:78%"></span></div>
+          </div>
+
+          <!-- 3rd: Luis -->
+          <div class="vendor-row">
+            <div class="vendor-head">
+              <span class="vendor-rank bronze">3</span>
+              <span class="v-avatar" style="background: linear-gradient(135deg,#F5A623,#7DCEFF)">LT</span>
+              <span class="vendor-id">
+                <span class="vendor-name">Luis T.</span>
+                <span class="role-pill">Vendedor</span>
+              </span>
+            </div>
+            <div class="vendor-stats">
+              <span class="stat"><b>13</b>leads</span>
+              <span class="dot"></span>
+              <span class="stat"><b>4</b>cerrados</span>
+              <span class="conv" style="color: var(--warning);">31%</span>
+            </div>
+            <div class="vendor-bar"><span class="fill" style="width:44%"></span></div>
+          </div>
+        </div>
+
+        <div class="team-foot">
+          <a href="Analytics.html">Ver analytics completo <i data-lucide="arrow-right" style="width:13px;height:13px;stroke-width:2.5;"></i></a>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+  lucide.createIcons();
+
+  // ===== Checkbox / bulk bar interactions =====
+  const tbody = document.getElementById('tbody');
+  const bulkBar = document.getElementById('bulk-bar');
+  const bulkCount = document.getElementById('bulk-count');
+  const cbAll = document.getElementById('cb-all');
+
+  function updateBulkBar() {
+    const selected = tbody.querySelectorAll('tr.selected').length;
+    if (selected > 0) {
+      bulkBar.classList.add('on');
+      bulkCount.textContent = selected;
+    } else {
+      bulkBar.classList.remove('on');
+    }
+    const total = tbody.querySelectorAll('tr').length;
+    if (selected === total && total > 0) cbAll.classList.add('checked');
+    else cbAll.classList.remove('checked');
+  }
+
+  tbody.addEventListener('click', (e) => {
+    const cb = e.target.closest('.cb');
+    if (!cb) return;
+    e.stopPropagation();
+    const row = cb.closest('tr');
+    row.classList.toggle('selected');
+    cb.classList.toggle('checked');
+    updateBulkBar();
+  });
+
+  cbAll.addEventListener('click', () => {
+    const isAll = cbAll.classList.contains('checked');
+    tbody.querySelectorAll('tr').forEach(r => {
+      const cb = r.querySelector('.cb');
+      if (isAll) { r.classList.remove('selected'); cb.classList.remove('checked'); }
+      else { r.classList.add('selected'); cb.classList.add('checked'); }
+    });
+    updateBulkBar();
+  });
+
+  document.getElementById('bulk-clear').addEventListener('click', () => {
+    tbody.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected'));
+    tbody.querySelectorAll('.cb.checked').forEach(c => c.classList.remove('checked'));
+    updateBulkBar();
+  });
+</script>
+</body>
+</html>

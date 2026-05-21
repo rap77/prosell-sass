@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Iconography</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  body { margin: 0; padding: 24px; background: var(--bg-base); font-family: var(--font-sans); color: var(--text-primary); }
+  .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 14px; }
+  .icon-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; border-radius: 8px; background: rgba(13,27,62,0.5); border: 1px solid rgba(77,184,255,0.1); }
+  .icon-cell svg { width: 22px; height: 22px; stroke-width: 1.5; color: var(--text-primary); }
+  .icon-name { font-family: var(--font-mono); font-size: 9px; color: var(--text-secondary); white-space: nowrap; }
+  .meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-secondary); margin-top: 12px; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="icon-cell"><i data-lucide="trending-up"></i><div class="icon-name">trending-up</div></div>
+    <div class="icon-cell"><i data-lucide="users"></i><div class="icon-name">users</div></div>
+    <div class="icon-cell"><i data-lucide="building-2"></i><div class="icon-name">building-2</div></div>
+    <div class="icon-cell"><i data-lucide="briefcase"></i><div class="icon-name">briefcase</div></div>
+    <div class="icon-cell"><i data-lucide="target"></i><div class="icon-name">target</div></div>
+    <div class="icon-cell"><i data-lucide="zap"></i><div class="icon-name">zap</div></div>
+    <div class="icon-cell"><i data-lucide="bell"></i><div class="icon-name">bell</div></div>
+    <div class="icon-cell"><i data-lucide="search"></i><div class="icon-name">search</div></div>
+    <div class="icon-cell"><i data-lucide="filter"></i><div class="icon-name">filter</div></div>
+    <div class="icon-cell"><i data-lucide="dollar-sign"></i><div class="icon-name">dollar-sign</div></div>
+    <div class="icon-cell"><i data-lucide="inbox"></i><div class="icon-name">inbox</div></div>
+    <div class="icon-cell"><i data-lucide="sparkles"></i><div class="icon-name">sparkles</div></div>
+    <div class="icon-cell"><i data-lucide="activity"></i><div class="icon-name">activity</div></div>
+    <div class="icon-cell"><i data-lucide="settings"></i><div class="icon-name">settings</div></div>
+    <div class="icon-cell"><i data-lucide="arrow-up-right"></i><div class="icon-name">arrow-up-right</div></div>
+    <div class="icon-cell"><i data-lucide="plus"></i><div class="icon-name">plus</div></div>
+  </div>
+  <div class="meta">Lucide · 1.5px stroke · 22px shown</div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

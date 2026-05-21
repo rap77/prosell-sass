@@ -6,23 +6,25 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePathname } from 'next/navigation'
 import { LucideIcon } from 'lucide-react'
 import {
-  LayoutGrid,
+  LayoutDashboard,
+  Package,
   FileText,
   TrendingUp,
   Users,
-  Calendar,
+  BarChart3,
   Settings,
   ScrollText,
 } from 'lucide-react'
 
 /**
  * Navigation group types for role-based sidebar filtering.
- * Using corrected user terminology from CONTEXT.md Brain #2:
- * - "inventario" (NOT "Operations")
- * - "ventas" (NOT "Growth")
- * - "configuración" (NOT "System")
+ *
+ * - 'general'       → top-level items (Dashboard), no group header shown
+ * - 'inventario'    → catalog & publications
+ * - 'ventas'        → sales execution (leads, pipeline, analytics)
+ * - 'configuración' → admin/branch only
  */
-export type NavGroup = 'inventario' | 'ventas' | 'configuración'
+export type NavGroup = 'general' | 'inventario' | 'ventas' | 'configuración'
 
 interface NavItem {
   label: string
@@ -32,11 +34,18 @@ interface NavItem {
 }
 
 const navigationItems: NavItem[] = [
+  // General — top-level (no section header)
+  {
+    label: 'Dashboard',
+    href: '/dashboard',
+    icon: LayoutDashboard,
+    group: 'general',
+  },
   // Inventario group
   {
-    label: 'Catálogo',
+    label: 'Inventario',
     href: '/catalog',
-    icon: LayoutGrid,
+    icon: Package,
     group: 'inventario',
   },
   {
@@ -47,21 +56,21 @@ const navigationItems: NavItem[] = [
   },
   // Ventas group
   {
+    label: 'Leads',
+    href: '/vendedor/leads',
+    icon: Users,
+    group: 'ventas',
+  },
+  {
     label: 'Pipeline',
     href: '/pipeline',
     icon: TrendingUp,
     group: 'ventas',
   },
   {
-    label: 'Leads',
-    href: '/leads',
-    icon: Users,
-    group: 'ventas',
-  },
-  {
-    label: 'Citas',
-    href: '/appointments',
-    icon: Calendar,
+    label: 'Analytics',
+    href: '/analytics',
+    icon: BarChart3,
     group: 'ventas',
   },
   // Configuración group (admin/branch only)
@@ -106,35 +115,44 @@ export function Sidebar({ groups }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen border-r bg-background transition-all duration-300 ease-in-out',
+        'fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out',
         sidebarCollapsed ? 'w-16' : 'w-64'
       )}
+      style={{
+        background: 'var(--ps-bg-sidebar)',
+        borderRight: '1px solid rgba(77,184,255,0.06)',
+      }}
     >
       <div className="flex h-full flex-col">
-        {/* Logo/Collapse Toggle */}
-        <div className="flex h-16 items-center justify-between border-b px-4">
+        {/* Logo + collapse toggle */}
+        <div
+          className={cn(
+            'flex items-center border-b px-4',
+            sidebarCollapsed ? 'h-16 justify-center' : 'h-16 justify-between'
+          )}
+          style={{ borderBottomColor: 'rgba(77,184,255,0.06)' }}
+        >
           {!sidebarCollapsed && (
-            <span className="text-lg font-bold">ProSell</span>
+            <span
+              className="flex items-center gap-2 text-[17px] font-bold tracking-tight"
+              style={{ color: 'var(--ps-text-primary)' }}
+            >
+              ProSell
+            </span>
           )}
           <button
             onClick={toggleSidebar}
-            className="rounded-md p-2 hover:bg-accent"
-            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="rounded-md p-2 transition-colors"
+            style={{ color: 'var(--ps-text-secondary)' }}
+            aria-label={sidebarCollapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ps-text-primary)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ps-text-secondary)')}
           >
             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={cn(
-                'transition-transform duration-300',
-                sidebarCollapsed ? 'rotate-180' : 'rotate-0'
-              )}
+              width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round"
+              className={cn('transition-transform duration-300', sidebarCollapsed ? 'rotate-180' : 'rotate-0')}
             >
               <path d="m15 18-6-6 6-6" />
             </svg>
@@ -174,48 +192,80 @@ Sidebar.Nav = function SidebarNav({
   }, {} as Record<NavGroup, NavItem[]>)
 
   const groupLabels: Record<NavGroup, string> = {
+    general: '',            // top-level items — no visible header
     inventario: 'Inventario',
     ventas: 'Ventas',
     configuración: 'Configuración',
   }
 
   return (
-    <nav className="flex-1 overflow-y-auto px-2 py-4" aria-label="Main navigation">
-      {Object.entries(groupedItems).map(([group, groupItems]) => {
-        return (
-          <div key={group} className="mb-6">
-            {!collapsed && (
-              <h3 className="mb-2 px-2 text-xs font-semibold uppercase text-muted-foreground">
-                {groupLabels[group as NavGroup]}
-              </h3>
-            )}
-            <ul className="space-y-1">
-              {groupItems.map((item) => {
-                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
-                const Icon = item.icon
+    <nav className="flex-1 overflow-y-auto py-4" style={{ padding: '16px 8px' }} aria-label="Main navigation">
+      {Object.entries(groupedItems).map(([group, groupItems], groupIdx) => (
+        <div key={group}>
+          {/* Group divider between sections (not before first) */}
+          {groupIdx > 0 && (
+            <div
+              className="my-3"
+              style={{ height: 1, background: 'rgba(77,184,255,0.06)', margin: '12px 8px' }}
+            />
+          )}
 
-                return (
-                  <li key={item.href}>
-                    <a
-                      href={item.href}
-                      className={cn(
-                        'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200',
-                        isActive
-                          ? 'bg-accent text-accent-foreground'
-                          : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground',
-                        collapsed && 'justify-center px-2'
-                      )}
-                    >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
-                      {!collapsed && <span>{item.label}</span>}
-                    </a>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        )
-      })}
+          {/* Group label (only when expanded and group has a label) */}
+          {!collapsed && groupLabels[group as NavGroup] && (
+            <span
+              className="block mb-1 px-4 text-[10px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: 'var(--ps-text-disabled)' }}
+            >
+              {groupLabels[group as NavGroup]}
+            </span>
+          )}
+
+          <ul style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {groupItems.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+              const Icon = item.icon
+
+              return (
+                <li key={item.href}>
+                  <a
+                    href={item.href}
+                    className={cn(
+                      'flex items-center gap-3 text-sm font-medium transition-all duration-200',
+                      collapsed ? 'justify-center px-2 py-2' : 'px-4 py-[10px]'
+                    )}
+                    style={{
+                      borderRadius: isActive ? '8px 0 0 8px' : 8,
+                      background: isActive ? 'var(--ps-nav-active-bg)' : 'transparent',
+                      color: isActive ? 'var(--ps-text-primary)' : 'var(--ps-text-secondary)',
+                      fontWeight: isActive ? 600 : 500,
+                      borderRight: isActive ? '2px solid var(--ps-cyan)' : '2px solid transparent',
+                      textDecoration: 'none',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
+                        e.currentTarget.style.color = 'var(--ps-text-primary)'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.color = 'var(--ps-text-secondary)'
+                      }
+                    }}
+                  >
+                    <Icon
+                      className="h-[18px] w-[18px] flex-shrink-0"
+                      style={{ strokeWidth: 2, color: isActive ? 'var(--ps-cyan)' : 'inherit' }}
+                    />
+                    {!collapsed && <span className="flex-1">{item.label}</span>}
+                  </a>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      ))}
     </nav>
   )
 }
@@ -244,21 +294,62 @@ Sidebar.Footer = function SidebarFooter({ collapsed }: { collapsed: boolean }) {
   const role = user?.role || 'Seller'
 
   return (
-    <div className="border-t p-4">
+    <div
+      className="p-3"
+      style={{ borderTop: '1px solid rgba(77,184,255,0.06)' }}
+    >
       <div
         className={cn(
-          'flex items-center gap-3 rounded-md p-2 hover:bg-accent',
-          collapsed && 'justify-center'
+          'flex items-center gap-[10px] rounded-[10px] cursor-pointer transition-all',
+          collapsed ? 'justify-center p-2' : 'p-3'
         )}
+        style={{
+          background: 'var(--ps-user-card-bg)',
+          border: '1px solid var(--ps-border-subtle)',
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--ps-border-medium)')}
+        onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--ps-border-subtle)')}
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <span className="text-sm font-medium">{initials}</span>
+        {/* Avatar */}
+        <div
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
+          style={{
+            background: 'linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))',
+            color: 'var(--ps-bg-base)',
+            letterSpacing: '0.02em',
+          }}
+        >
+          {initials}
         </div>
+
         {!collapsed && (
-          <div className="flex-1 overflow-hidden">
-            <p className="truncate text-sm font-medium">{displayName}</p>
-            <p className="truncate text-xs text-muted-foreground">{role}</p>
-          </div>
+          <>
+            <div className="flex-1 min-w-0 flex flex-col gap-[3px]">
+              <b
+                className="truncate text-[13px] font-semibold"
+                style={{ color: 'var(--ps-text-primary)' }}
+              >
+                {displayName}
+              </b>
+              <span
+                className="inline-flex self-start text-[10px] font-bold uppercase px-[7px] py-[2px] rounded-full tracking-[0.04em]"
+                style={{
+                  background: 'var(--ps-badge-bg)',
+                  color: 'var(--ps-cyan)',
+                }}
+              >
+                {role}
+              </span>
+            </div>
+            <svg
+              width="14" height="14" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round"
+              style={{ color: 'var(--ps-text-secondary)', flexShrink: 0 }}
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </>
         )}
       </div>
     </div>

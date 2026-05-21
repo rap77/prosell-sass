@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProSell — Carga masiva</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow: hidden;
+}
+a { color: inherit; text-decoration: none; }
+
+/* ===== Underlay: faint hint of the table behind the modal ===== */
+.underlay {
+  position: fixed; inset: 0;
+  z-index: 0;
+  background: var(--bg-base);
+  overflow: hidden;
+}
+.underlay::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 15% 30%, rgba(30,95,212,0.25), transparent 55%),
+    radial-gradient(ellipse at 85% 80%, rgba(77,184,255,0.12), transparent 55%);
+}
+.underlay::after {
+  content: "";
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(77,184,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77,184,255,0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask: linear-gradient(180deg, black 0%, transparent 80%);
+  -webkit-mask: linear-gradient(180deg, black 0%, transparent 80%);
+}
+
+/* ===== Backdrop ===== */
+.backdrop {
+  position: fixed; inset: 0;
+  z-index: 10;
+  background: rgba(4, 10, 26, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 28px;
+  overflow-y: auto;
+}
+
+/* ===== Modal shell ===== */
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  background: linear-gradient(180deg, #0F1F45 0%, #0A1632 100%);
+  border: 1px solid rgba(77,184,255,0.18);
+  border-radius: 20px;
+  box-shadow:
+    0 40px 100px rgba(0,0,0,0.7),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 56px);
+  overflow: hidden;
+}
+
+/* Header */
+.m-head {
+  position: relative;
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid rgba(77,184,255,0.10);
+  background: linear-gradient(180deg, rgba(77,184,255,0.06), transparent);
+}
+.m-head::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(77,184,255,0.4), transparent);
+}
+.m-close {
+  position: absolute;
+  top: 18px; right: 18px;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: rgba(6,13,36,0.5);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 180ms;
+}
+.m-close:hover { background: rgba(77,184,255,0.08); color: var(--text-primary); border-color: var(--cyan); }
+.m-close [data-lucide] { width: 16px; height: 16px; stroke-width: 2; }
+
+.m-head-row { display: flex; align-items: center; gap: 16px; padding-right: 48px; }
+.m-icon {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(77,184,255,0.28), rgba(30,95,212,0.18));
+  border: 1px solid rgba(77,184,255,0.35);
+  color: var(--cyan);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 24px rgba(77,184,255,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.m-icon [data-lucide] { width: 24px; height: 24px; stroke-width: 1.75; }
+.m-titles { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.m-eyebrow {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.m-titles h1 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.15;
+}
+.m-titles p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+
+/* Stepper */
+.stepper {
+  display: flex; align-items: center;
+  gap: 0;
+  margin-top: 22px;
+}
+.step {
+  flex: 1;
+  display: inline-flex; align-items: center; gap: 10px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  min-width: 0;
+}
+.step .num {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: rgba(6,13,36,0.6);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-default);
+  font-family: var(--font-mono);
+  transition: all 220ms var(--ease-out);
+  flex-shrink: 0;
+}
+.step .num [data-lucide] { width: 13px; height: 13px; stroke-width: 3; display: none; }
+.step .lbl {
+  display: flex; flex-direction: column; gap: 1px;
+  min-width: 0;
+}
+.step .lbl .s {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-disabled);
+}
+.step .lbl .t {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: -0.005em;
+  transition: color 200ms;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.step.active .num {
+  background: var(--cyan);
+  color: var(--bg-base);
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 4px rgba(77,184,255,0.18), 0 0 16px rgba(77,184,255,0.45);
+}
+.step.active .lbl .t { color: var(--text-primary); }
+.step.active .lbl .s { color: var(--cyan); }
+.step.done .num {
+  background: var(--success);
+  color: var(--bg-base);
+  border-color: var(--success);
+}
+.step.done .num span { display: none; }
+.step.done .num [data-lucide] { display: inline-block; }
+.step.done .lbl .t { color: var(--text-primary); }
+.step.done .lbl .s { color: var(--success); }
+.step-sep {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 1.5px;
+  margin: 0 14px 0 6px;
+  background: repeating-linear-gradient(90deg, rgba(77,184,255,0.22) 0 4px, transparent 4px 8px);
+  border-radius: 100px;
+  position: relative;
+  top: 13px;
+  align-self: flex-start;
+}
+.step-sep.done { background: var(--success); }
+
+/* ===== Panels ===== */
+.panels { padding: 28px 32px 8px; overflow-y: auto; flex: 1; }
+.panel { display: none; flex-direction: column; gap: 18px; }
+.panel.active { display: flex; }
+
+/* === Step 1: Dropzone === */
+.dropzone {
+  position: relative;
+  border: 1.5px dashed rgba(77,184,255,0.3);
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(77,184,255,0.10), transparent 60%),
+    rgba(77,184,255,0.025);
+  padding: 44px 24px 36px;
+  display: flex; flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 220ms var(--ease-out);
+  overflow: hidden;
+}
+.dropzone:hover, .dropzone.dragover {
+  border-color: var(--cyan);
+  border-style: solid;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(77,184,255,0.18), transparent 60%),
+    rgba(77,184,255,0.05);
+  transform: translateY(-2px);
+}
+.dz-icon {
+  width: 76px; height: 76px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(77,184,255,0.22), rgba(30,95,212,0.16));
+  color: var(--cyan);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(77,184,255,0.35);
+  box-shadow: 0 12px 32px rgba(30,95,212,0.25), inset 0 1px 0 rgba(255,255,255,0.06);
+  margin-bottom: 6px;
+  position: relative;
+}
+.dz-icon::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 24px;
+  border: 1px dashed rgba(77,184,255,0.18);
+  pointer-events: none;
+}
+.dz-icon [data-lucide] { width: 36px; height: 36px; stroke-width: 1.5; }
+.dz-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.dz-or {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 11px;
+  color: var(--text-disabled);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.dz-or::before, .dz-or::after {
+  content: ""; width: 32px; height: 1px;
+  background: var(--border-default);
+}
+.dz-formats {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px;
+  color: var(--text-disabled);
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
+  margin-top: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.dz-formats .pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  background: rgba(6,13,36,0.5);
+  border: 1px solid var(--border-subtle);
+}
+.dz-formats .pill [data-lucide] { width: 11px; height: 11px; stroke-width: 3; color: var(--success); }
+.dz-formats .sep { color: rgba(138,155,191,0.35); }
+
+/* Template box */
+.tpl {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 18px;
+  background: rgba(77,184,255,0.05);
+  border: 1px solid rgba(77,184,255,0.20);
+  border-radius: 12px;
+}
+.tpl .ic {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: rgba(77,184,255,0.16);
+  color: var(--cyan);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(77,184,255,0.25);
+}
+.tpl .ic [data-lucide] { width: 16px; height: 16px; stroke-width: 2; }
+.tpl .txt { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.tpl .txt b { color: var(--text-primary); font-weight: 600; }
+
+/* === Step 2: Preview === */
+.file-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(34,211,160,0.06);
+  border: 1px solid rgba(34,211,160,0.28);
+  border-radius: 10px;
+}
+.file-row .fic {
+  width: 40px; height: 40px;
+  border-radius: 9px;
+  background: rgba(34,211,160,0.18);
+  color: var(--success);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(34,211,160,0.35);
+}
+.file-row .fic [data-lucide] { width: 18px; height: 18px; stroke-width: 2; }
+.file-row .fmeta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.file-row .fname { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.file-row .fsub { font-size: 11.5px; color: var(--text-secondary); font-family: var(--font-mono); letter-spacing: -0.01em; }
+.file-row .fsub b.ok { color: var(--success); font-weight: 700; }
+.file-row .fsub b.warn { color: var(--warning); font-weight: 700; }
+.file-row .change {
+  font-size: 12px;
+  color: var(--cyan);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: all 160ms;
+}
+.file-row .change:hover { background: rgba(77,184,255,0.08); }
+
+/* Preview table */
+.preview-card {
+  background: rgba(6,13,36,0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.preview-card-scroll { overflow-x: auto; }
+.preview-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 700px; }
+.preview-table th, .preview-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+  white-space: nowrap;
+}
+.preview-table thead th {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-disabled);
+  background: rgba(13,27,62,0.75);
+}
+.preview-table tbody tr:last-child td { border-bottom: 0; }
+.preview-table .rn { font-family: var(--font-mono); color: var(--text-disabled); font-size: 11px; }
+.preview-table .vstate {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+}
+.preview-table .vstate.ok { background: rgba(34,211,160,0.14); color: var(--success); }
+.preview-table .vstate.warn { background: rgba(245,166,35,0.14); color: var(--warning); }
+.preview-table .vstate.err { background: rgba(240,68,56,0.14); color: var(--error); }
+.preview-table .vstate [data-lucide] { width: 12px; height: 12px; stroke-width: 3; }
+.preview-table tbody tr.row-err td { background: rgba(240,68,56,0.04); }
+.preview-table tbody tr.row-warn td { background: rgba(245,166,35,0.03); }
+.preview-table .pmono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.preview-table .result { font-size: 11px; font-weight: 600; }
+.preview-table .result.ok { color: var(--success); }
+.preview-table .result.warn { color: var(--warning); }
+.preview-table .result.err { color: var(--error); }
+.preview-table .mdash { color: var(--text-disabled); }
+.preview-foot {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border-top: 1px solid var(--border-subtle);
+  background: rgba(13,27,62,0.4);
+  font-size: 11px;
+  color: var(--text-disabled);
+  font-family: var(--font-mono);
+}
+
+/* Issues summary */
+.issues {
+  display: flex; flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(13,27,62,0.55);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+.issues .summary {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.summary .pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.summary .pill.err { background: rgba(240,68,56,0.14); color: var(--error); border: 1px solid rgba(240,68,56,0.3); }
+.summary .pill.warn { background: rgba(245,166,35,0.14); color: var(--warning); border: 1px solid rgba(245,166,35,0.3); }
+.summary .pill [data-lucide] { width: 11px; height: 11px; stroke-width: 3; }
+.issues-list { display: flex; flex-direction: column; gap: 8px; }
+.issue {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 12.5px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+.issue .b {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.issue .b [data-lucide] { width: 12px; height: 12px; stroke-width: 3; }
+.issue.err .b { background: rgba(240,68,56,0.14); color: var(--error); }
+.issue.warn .b { background: rgba(245,166,35,0.14); color: var(--warning); }
+.issue .row {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
+  margin-right: 4px;
+  font-weight: 600;
+}
+.issue b { color: var(--text-primary); font-weight: 700; font-family: var(--font-mono); }
+
+/* === Step 3: Confirm === */
+.cstats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.cstat {
+  padding: 18px 20px;
+  border-radius: 14px;
+  display: flex; flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.cstat::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+}
+.cstat.ok { background: rgba(34,211,160,0.08); border: 1px solid rgba(34,211,160,0.3); }
+.cstat.ok::before { background: linear-gradient(90deg, transparent, var(--success), transparent); }
+.cstat.err { background: rgba(240,68,56,0.06); border: 1px solid rgba(240,68,56,0.24); }
+.cstat.err::before { background: linear-gradient(90deg, transparent, var(--error), transparent); }
+.cstat .top {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.cstat.ok .top { color: var(--success); }
+.cstat.err .top { color: var(--error); }
+.cstat .top [data-lucide] { width: 14px; height: 14px; stroke-width: 2.5; }
+.cstat .v {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.cstat .v .unit { font-size: 14px; color: var(--text-secondary); font-weight: 500; margin-left: 4px; letter-spacing: 0; }
+.cstat .desc { font-size: 11.5px; color: var(--text-secondary); font-family: var(--font-mono); letter-spacing: -0.01em; }
+
+.summary-line {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: rgba(13,27,62,0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
+  flex-wrap: wrap;
+}
+.summary-line b { color: var(--text-primary); font-weight: 700; }
+.summary-line .sep { color: rgba(138,155,191,0.35); }
+
+.opt-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+.radio-set { display: flex; flex-direction: column; gap: 8px; }
+.radio-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(13,27,62,0.6);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all 180ms;
+}
+.radio-row:hover { border-color: rgba(77,184,255,0.25); background: rgba(77,184,255,0.03); }
+.radio-row.checked { border-color: var(--cyan); background: rgba(77,184,255,0.06); }
+.radio-dot {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-default);
+  flex-shrink: 0;
+  margin-top: 2px;
+  position: relative;
+  transition: all 180ms;
+}
+.radio-row.checked .radio-dot { border-color: var(--cyan); }
+.radio-row.checked .radio-dot::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+}
+.radio-text { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.radio-text .t { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.radio-text .s { font-size: 11.5px; color: var(--text-secondary); line-height: 1.5; }
+
+.channel-select {
+  display: none;
+  padding: 14px 16px 14px 48px;
+  border-radius: 12px;
+  background: rgba(13,27,62,0.6);
+  border: 1px solid var(--border-subtle);
+  flex-direction: column; gap: 10px;
+  margin-top: -4px;
+}
+.channel-select.show { display: flex; }
+.channel-select .lbl {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-disabled);
+}
+.channel-select .options { display: flex; flex-wrap: wrap; gap: 8px; }
+.cbx-row {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 12px 7px 10px;
+  border-radius: 8px;
+  background: rgba(6,13,36,0.5);
+  border: 1px solid var(--border-default);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all 160ms;
+}
+.cbx-row:hover { color: var(--text-primary); border-color: var(--cyan); }
+.cbx-row.on { border-color: var(--cyan); color: var(--text-primary); background: rgba(77,184,255,0.08); }
+.cbx-row .cbx-box {
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  border: 1.5px solid var(--border-default);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 160ms;
+}
+.cbx-row.on .cbx-box { background: var(--cyan); border-color: var(--cyan); }
+.cbx-row.on .cbx-box [data-lucide] { color: var(--bg-base); }
+.cbx-row .cbx-box [data-lucide] { width: 9px; height: 9px; stroke-width: 4; color: transparent; }
+.cbx-row .ch-pill {
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9.5px; font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.cbx-row .ch-pill.f  { background: rgba(77,184,255,0.18); color: var(--cyan); border: 1px solid rgba(77,184,255,0.3); }
+.cbx-row .ch-pill.at { background: rgba(245,166,35,0.18); color: var(--warning); border: 1px solid rgba(245,166,35,0.3); }
+.cbx-row .ch-pill.c  { background: rgba(34,211,160,0.18); color: var(--success); border: 1px solid rgba(34,211,160,0.3); }
+.cbx-row .ch-pill.w  { background: rgba(138,155,191,0.18); color: var(--text-primary); border: 1px solid rgba(138,155,191,0.3); }
+
+/* Progress (post-confirm) */
+.import-progress {
+  display: none;
+  flex-direction: column; gap: 8px;
+  padding: 14px 16px;
+  background: rgba(77,184,255,0.06);
+  border: 1px solid rgba(77,184,255,0.28);
+  border-radius: 12px;
+}
+.import-progress.show { display: flex; }
+.import-progress .top {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12.5px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.import-progress .top .pct { color: var(--cyan); font-family: var(--font-mono); font-weight: 700; }
+.import-progress .bar {
+  height: 8px; border-radius: 100px;
+  background: rgba(77,184,255,0.10);
+  overflow: hidden;
+}
+.import-progress .fill {
+  height: 100%;
+  width: 78%;
+  background: linear-gradient(90deg, var(--cyan), var(--cyan-hover));
+  border-radius: 100px;
+  box-shadow: 0 0 12px rgba(77,184,255,0.45);
+  position: relative;
+  overflow: hidden;
+}
+.import-progress .fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+/* ===== Footer ===== */
+.foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  padding: 18px 32px;
+  border-top: 1px solid rgba(77,184,255,0.10);
+  background: rgba(6,13,36,0.3);
+}
+.foot.center { justify-content: center; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: all 180ms;
+}
+.btn [data-lucide] { width: 14px; height: 14px; stroke-width: 2.5; }
+.btn-ghost { border-color: var(--border-default); color: var(--text-secondary); }
+.btn-ghost:hover { border-color: var(--cyan); color: var(--text-primary); }
+.btn-ghost.cyan { color: var(--cyan); border-color: rgba(77,184,255,0.4); }
+.btn-ghost.cyan:hover { border-color: var(--cyan); background: rgba(77,184,255,0.08); }
+.btn-primary {
+  background: var(--cyan);
+  color: var(--bg-base);
+  box-shadow: 0 4px 16px rgba(77,184,255,0.25);
+}
+.btn-primary:hover { background: var(--cyan-hover); box-shadow: 0 8px 24px rgba(77,184,255,0.4); transform: translateY(-1px); }
+.btn-lg { height: 46px; font-size: 14px; padding: 0 22px; }
+
+/* Responsive */
+@media (max-width: 720px) {
+  .backdrop { padding: 16px; }
+  .modal { max-height: calc(100vh - 32px); border-radius: 16px; }
+  .m-head { padding: 22px 22px 18px; }
+  .panels { padding: 22px 22px 8px; }
+  .foot { padding: 14px 22px; }
+  .stepper { margin-top: 18px; }
+  .step .lbl { display: none; }
+  .step { flex: 0 0 26px; }
+  .step-sep { width: 100%; margin: 0 6px; }
+  .dropzone { padding: 32px 18px 28px; }
+  .cstats { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="underlay"></div>
+
+<div class="backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-title">
+
+    <!-- Header -->
+    <header class="m-head">
+      <button class="m-close" type="button" aria-label="Cerrar"><i data-lucide="x"></i></button>
+
+      <div class="m-head-row">
+        <span class="m-icon"><i data-lucide="upload-cloud"></i></span>
+        <div class="m-titles">
+          <span class="m-eyebrow">Inventario · Importar</span>
+          <h1 id="m-title">Carga masiva de unidades</h1>
+          <p>Importá tu stock desde un archivo Excel o CSV. Verificamos los datos antes de confirmar.</p>
+        </div>
+      </div>
+
+      <div class="stepper" role="tablist">
+        <button class="step active" type="button" data-step="1" role="tab">
+          <span class="num"><span>1</span><i data-lucide="check"></i></span>
+          <span class="lbl"><span class="s">Paso 1</span><span class="t">Subir archivo</span></span>
+        </button>
+        <span class="step-sep"></span>
+        <button class="step" type="button" data-step="2" role="tab">
+          <span class="num"><span>2</span><i data-lucide="check"></i></span>
+          <span class="lbl"><span class="s">Paso 2</span><span class="t">Verificar datos</span></span>
+        </button>
+        <span class="step-sep"></span>
+        <button class="step" type="button" data-step="3" role="tab">
+          <span class="num"><span>3</span><i data-lucide="check"></i></span>
+          <span class="lbl"><span class="s">Paso 3</span><span class="t">Confirmar</span></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Panels -->
+    <div class="panels">
+
+      <!-- ===== Step 1 ===== -->
+      <div class="panel active" data-panel="1">
+        <div class="dropzone" id="dropzone">
+          <span class="dz-icon"><i data-lucide="upload"></i></span>
+          <span class="dz-title">Arrastrá tu archivo acá</span>
+          <span class="dz-or"><span>o</span></span>
+          <button class="btn btn-ghost cyan" type="button"><i data-lucide="file-plus-2"></i>Seleccionar archivo</button>
+          <div class="dz-formats">
+            <span class="pill"><i data-lucide="check"></i>Excel · .xlsx .xls</span>
+            <span class="pill"><i data-lucide="check"></i>CSV · .csv</span>
+            <span class="sep">·</span>
+            <span>Máx 10 MB</span>
+            <span class="sep">·</span>
+            <span>Hasta 500 unidades</span>
+          </div>
+        </div>
+
+        <div class="tpl">
+          <span class="ic"><i data-lucide="file-spreadsheet"></i></span>
+          <span class="txt"><b>¿Primera vez?</b> Descargá nuestra plantilla con el formato correcto y completala con tu stock.</span>
+          <button class="btn btn-ghost cyan" type="button"><i data-lucide="download"></i>Plantilla .xlsx</button>
+        </div>
+      </div>
+
+      <!-- ===== Step 2 ===== -->
+      <div class="panel" data-panel="2">
+        <div class="file-row">
+          <span class="fic"><i data-lucide="file-spreadsheet"></i></span>
+          <div class="fmeta">
+            <span class="fname">inventario-mayo-2026.xlsx</span>
+            <span class="fsub">184 KB · <b class="ok">24 filas detectadas</b> · <b class="warn">2 advertencias</b></span>
+          </div>
+          <button class="change" type="button">Cambiar archivo</button>
+        </div>
+
+        <div class="preview-card">
+          <div class="preview-card-scroll">
+            <table class="preview-table">
+              <thead>
+                <tr>
+                  <th style="width: 36px;">#</th>
+                  <th style="width: 32px;"></th>
+                  <th>Marca</th>
+                  <th>Modelo</th>
+                  <th>Año</th>
+                  <th>KM</th>
+                  <th>Color</th>
+                  <th>Patente</th>
+                  <th>Precio</th>
+                  <th>Estado</th>
+                  <th>Resultado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="rn">1</td>
+                  <td><span class="vstate ok"><i data-lucide="check"></i></span></td>
+                  <td>Toyota</td><td>Corolla</td><td class="pmono">2024</td><td class="pmono">45.000</td>
+                  <td>Blanco</td><td class="pmono">ABC 123</td><td class="pmono">$28.500</td><td>Disponible</td>
+                  <td><span class="result ok">OK</span></td>
+                </tr>
+                <tr>
+                  <td class="rn">2</td>
+                  <td><span class="vstate ok"><i data-lucide="check"></i></span></td>
+                  <td>Ford</td><td>Ranger</td><td class="pmono">2023</td><td class="pmono">28.000</td>
+                  <td>Gris</td><td class="pmono">DEF 458</td><td class="pmono">$42.000</td><td>Disponible</td>
+                  <td><span class="result ok">OK</span></td>
+                </tr>
+                <tr class="row-warn">
+                  <td class="rn">3</td>
+                  <td><span class="vstate warn"><i data-lucide="alert-triangle"></i></span></td>
+                  <td>VW</td><td>Amarok</td><td class="pmono">2024</td><td class="pmono">0</td>
+                  <td><span class="mdash">—</span></td><td class="pmono">GHI 789</td><td class="pmono">$65.000</td><td>Disponible</td>
+                  <td><span class="result warn">Color no especificado</span></td>
+                </tr>
+                <tr class="row-err">
+                  <td class="rn">4</td>
+                  <td><span class="vstate err"><i data-lucide="x"></i></span></td>
+                  <td>Honda</td><td>Civic</td><td class="pmono">2022</td><td class="pmono">52.000</td>
+                  <td>Azul</td><td class="pmono">ABC 123</td><td class="pmono">$22.000</td><td>Reservado</td>
+                  <td><span class="result err">Patente duplicada</span></td>
+                </tr>
+                <tr>
+                  <td class="rn">5</td>
+                  <td><span class="vstate ok"><i data-lucide="check"></i></span></td>
+                  <td>Toyota</td><td>Hilux</td><td class="pmono">2023</td><td class="pmono">18.000</td>
+                  <td>Blanco</td><td class="pmono">JKL 184</td><td class="pmono">$58.000</td><td>Disponible</td>
+                  <td><span class="result ok">OK</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="preview-foot">Mostrando 5 de 24 filas · desplazá para ver el resto</div>
+        </div>
+
+        <div class="issues">
+          <div class="summary">
+            <span class="pill err"><i data-lucide="x"></i>1 error</span>
+            <span>debe resolverse</span>
+            <span style="color: rgba(138,155,191,0.35); margin: 0 4px;">·</span>
+            <span class="pill warn"><i data-lucide="alert-triangle"></i>1 advertencia</span>
+            <span>puede ignorarse</span>
+          </div>
+          <div class="issues-list">
+            <div class="issue err">
+              <span class="b"><i data-lucide="x"></i></span>
+              <span><span class="row">Fila 4 ·</span>Patente <b>ABC 123</b> ya existe en tu inventario actual.</span>
+            </div>
+            <div class="issue warn">
+              <span class="b"><i data-lucide="alert-triangle"></i></span>
+              <span><span class="row">Fila 3 ·</span>Color vacío — se puede completar después del importe.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Step 3 ===== -->
+      <div class="panel" data-panel="3">
+        <div class="cstats">
+          <div class="cstat ok">
+            <span class="top"><i data-lucide="check-circle-2"></i>Listas para importar</span>
+            <span class="v">23<span class="unit">unidades</span></span>
+            <span class="desc">23 nuevas · 0 actualizaciones</span>
+          </div>
+          <div class="cstat err">
+            <span class="top"><i data-lucide="x-circle"></i>Con errores</span>
+            <span class="v">1<span class="unit">omitida</span></span>
+            <span class="desc">Patente duplicada · fila 4</span>
+          </div>
+        </div>
+
+        <div class="summary-line">
+          <b>Resumen</b>
+          <span class="sep">·</span>
+          <span>23 nuevas</span><span class="sep">·</span>
+          <span>14 disponibles</span><span class="sep">·</span>
+          <span>6 reservadas</span><span class="sep">·</span>
+          <span>3 borradores</span>
+        </div>
+
+        <span class="opt-label">¿Qué hacer con las unidades importadas?</span>
+        <div class="radio-set" role="radiogroup">
+          <label class="radio-row checked" data-radio="add-only">
+            <span class="radio-dot"></span>
+            <span class="radio-text">
+              <span class="t">Solo agregar al inventario</span>
+              <span class="s">Las unidades quedan disponibles para publicar manualmente más tarde.</span>
+            </span>
+          </label>
+          <label class="radio-row" data-radio="add-publish">
+            <span class="radio-dot"></span>
+            <span class="radio-text">
+              <span class="t">Agregar al inventario y publicar automáticamente</span>
+              <span class="s">Se publican apenas finalizada la importación, en los canales que elijas.</span>
+            </span>
+          </label>
+          <div class="channel-select" id="channelSel">
+            <span class="lbl">Publicar en</span>
+            <div class="options">
+              <button class="cbx-row on" type="button"><span class="cbx-box"><i data-lucide="check"></i></span><span class="ch-pill f">F</span>Facebook</button>
+              <button class="cbx-row on" type="button"><span class="cbx-box"><i data-lucide="check"></i></span><span class="ch-pill at">AT</span>AutoTrader</button>
+              <button class="cbx-row" type="button"><span class="cbx-box"><i data-lucide="check"></i></span><span class="ch-pill c">C</span>Cars.com</button>
+              <button class="cbx-row" type="button"><span class="cbx-box"><i data-lucide="check"></i></span><span class="ch-pill w">W</span>Sitio web</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="import-progress" id="progress">
+          <div class="top"><span>Importando <b>18 de 23 unidades</b>…</span><span class="pct">78%</span></div>
+          <div class="bar"><div class="fill"></div></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer with contextual buttons -->
+    <footer class="foot" id="modalFoot">
+      <button class="btn btn-ghost" type="button" id="btn-back"><i data-lucide="arrow-left"></i>Volver</button>
+      <button class="btn btn-primary" type="button" id="btn-next">Continuar<i data-lucide="arrow-right"></i></button>
+    </footer>
+  </div>
+</div>
+
+<script>
+  lucide.createIcons();
+
+  const steps  = document.querySelectorAll('.step');
+  const seps   = document.querySelectorAll('.step-sep');
+  const panels = document.querySelectorAll('.panel');
+  const btnBack = document.getElementById('btn-back');
+  const btnNext = document.getElementById('btn-next');
+
+  let current = 1;
+
+  function render() {
+    steps.forEach(s => {
+      const sn = parseInt(s.dataset.step, 10);
+      s.classList.remove('active', 'done');
+      if (sn < current) s.classList.add('done');
+      else if (sn === current) s.classList.add('active');
+    });
+    seps.forEach((sep, i) => sep.classList.toggle('done', (i + 1) < current));
+    panels.forEach(p => p.classList.toggle('active', parseInt(p.dataset.panel, 10) === current));
+
+    btnBack.style.visibility = current === 1 ? 'hidden' : 'visible';
+    if (current === 1) { btnNext.innerHTML = 'Continuar<i data-lucide="arrow-right"></i>'; }
+    else if (current === 2) { btnNext.innerHTML = 'Continuar con 23 filas<i data-lucide="arrow-right"></i>'; }
+    else { btnNext.innerHTML = '<i data-lucide="check"></i>Confirmar importación · 23 unidades'; }
+    lucide.createIcons();
+  }
+
+  steps.forEach(s => s.addEventListener('click', () => { current = parseInt(s.dataset.step, 10); render(); }));
+  btnBack.addEventListener('click', () => { if (current > 1) { current--; render(); } });
+  btnNext.addEventListener('click', () => {
+    if (current < 3) { current++; render(); }
+    else { document.getElementById('progress').classList.add('show'); }
+  });
+
+  document.querySelectorAll('.radio-row').forEach(r => {
+    r.addEventListener('click', () => {
+      document.querySelectorAll('.radio-row').forEach(x => x.classList.remove('checked'));
+      r.classList.add('checked');
+      document.getElementById('channelSel').classList.toggle('show', r.dataset.radio === 'add-publish');
+    });
+  });
+
+  document.querySelectorAll('.cbx-row').forEach(c => c.addEventListener('click', () => c.classList.toggle('on')));
+
+  const dz = document.getElementById('dropzone');
+  ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover'); }));
+  ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover'); }));
+
+  render();
+</script>
+</body>
+</html>

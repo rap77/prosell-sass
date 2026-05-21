@@ -1,40 +1,85 @@
 /**
- * Terms of Service Page
- *
- * Placeholder page for Terms of Service - to be implemented
+ * Términos y Condiciones — ProSell.
+ * Placeholder — en desarrollo.
+ * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+
+export const metadata = {
+  title: "Términos y Condiciones | ProSell",
+  description: "Términos y condiciones de uso de ProSell SaaS.",
+};
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700">
-          <div className="space-y-6">
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-                Terms of Service
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--ps-bg-base)',
+      padding: '48px 16px',
+    }}>
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+        <div style={{
+          background: 'var(--ps-bg-surface)',
+          border: '1px solid var(--ps-border-default)',
+          borderRadius: 14,
+          padding: 40,
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+            {/* Header */}
+            <div style={{ textAlign: 'center' }}>
+              <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>
+                Términos y Condiciones
               </h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Coming Soon
+              <p style={{ margin: 0, fontSize: 14, color: 'var(--ps-text-disabled)' }}>
+                Próximamente
               </p>
             </div>
 
-            <div className="prose dark:prose-invert max-w-none">
-              <p>The Terms of Service page is currently under development. Please check back soon for the complete terms and conditions governing the use of ProSell SaaS.</p>
-
-              <p>For any immediate questions or concerns regarding our terms of service, please contact our legal team at legal@prosell.saas.</p>
+            {/* Content */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <p style={{ margin: 0, fontSize: 15, color: 'var(--ps-text-secondary)', lineHeight: 1.7 }}>
+                La página de Términos y Condiciones está en desarrollo. Próximamente vas a encontrar
+                los términos y condiciones completos que rigen el uso de ProSell SaaS.
+              </p>
+              <p style={{ margin: 0, fontSize: 15, color: 'var(--ps-text-secondary)', lineHeight: 1.7 }}>
+                Para consultas urgentes sobre nuestros términos de servicio, contactá al equipo legal en{' '}
+                <a
+                  href="mailto:legal@prosell.saas"
+                  style={{ color: 'var(--ps-cyan)', textDecoration: 'none', fontWeight: 500 }}
+                >
+                  legal@prosell.saas
+                </a>.
+              </p>
             </div>
 
-            <div className="text-center mt-8">
+            {/* Back button */}
+            <div style={{ textAlign: 'center', marginTop: 8 }}>
               <Link
                 href="/"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  height: 40,
+                  padding: '0 18px',
+                  background: 'var(--ps-bg-elevated)',
+                  border: '1px solid var(--ps-border-default)',
+                  borderRadius: 8,
+                  color: 'var(--ps-text-secondary)',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  textDecoration: 'none',
+                  transition: 'border-color 150ms',
+                }}
               >
-                ← Return to Home
+                <ArrowLeft size={14} strokeWidth={2} />
+                Volver al inicio
               </Link>
             </div>
+
           </div>
         </div>
       </div>

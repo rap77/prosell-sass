@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Type — eyebrow + gradient</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 32px; background: var(--bg-base); }
+  .stack { display: flex; flex-direction: column; gap: 18px; }
+  .meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-secondary); }
+  .gradient-headline { font-family: var(--font-sans); font-weight: 800; font-size: 38px; letter-spacing: -0.025em; line-height: 1.05; }
+  .grad-text { background: linear-gradient(135deg, #4DB8FF, #1E5FD4); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+</style>
+</head>
+<body>
+  <div class="stack">
+    <div>
+      <div class="meta" style="margin-bottom: 8px;">Eyebrow · 12 / 600 · UPPERCASE · 0.12em tracking</div>
+      <div class="ds-eyebrow">PIPELINE INTELLIGENCE</div>
+    </div>
+    <div>
+      <div class="meta" style="margin-bottom: 8px;">Gradient text · used 1–2× per surface</div>
+      <div class="gradient-headline">See <span class="grad-text">every signal</span> before<br>your competitors do.</div>
+    </div>
+  </div>
+</body>
+</html>

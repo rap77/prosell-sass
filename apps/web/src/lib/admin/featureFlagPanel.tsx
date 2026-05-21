@@ -1,17 +1,11 @@
 /**
- * Feature Flag Admin Panel (Dev Only)
+ * Feature Flag Admin Panel (Dev Only) — ProSell.
  *
- * Dev-only UI for toggling feature flags at runtime.
- * Enables quick testing and rollback without deployment.
- *
- * SECURITY: This component is dev-only and will NOT be
- * included in production builds due to the conditional export.
+ * Panel dev-only para togglear feature flags en runtime.
+ * SECURITY: Solo incluido en builds de desarrollo.
  *
  * Usage:
  * ```tsx
- * import { FeatureFlagPanel } from '@/lib/admin/featureFlagPanel';
- *
- * // In your layout or root component (dev only)
  * {process.env.NODE_ENV === 'development' && <FeatureFlagPanel />}
  * ```
  */
@@ -20,40 +14,62 @@
 
 import { useFeatureFlagStore } from "@/stores/featureFlagStore";
 
-/**
- * Feature Flag Panel Component
- *
- * Fixed position panel at bottom-right of screen for easy access.
- * Shows all flags with checkboxes to toggle them.
- */
 export function FeatureFlagPanel() {
   const flags = useFeatureFlagStore((s) => s.flags);
   const setFlag = useFeatureFlagStore((s) => s.set);
   const reset = useFeatureFlagStore((s) => s.reset);
 
   return (
-    <div className="fixed bottom-4 right-4 bg-gray-900 text-white p-4 rounded-lg shadow-lg border border-gray-700 z-50 max-w-xs">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-white">Feature Flags</h3>
-        <span className="text-xs text-gray-400">(Dev Only)</span>
+    <div style={{
+      position: 'fixed',
+      bottom: 16,
+      right: 16,
+      background: 'var(--ps-bg-surface)',
+      border: '1px solid var(--ps-border-default)',
+      borderRadius: 10,
+      padding: 16,
+      boxShadow: '0 8px 24px rgba(6,13,36,0.4)',
+      zIndex: 50,
+      maxWidth: 280,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <h3 style={{ margin: 0, fontSize: 12, fontWeight: 700, color: 'var(--ps-text-primary)' }}>
+          Feature Flags
+        </h3>
+        <span style={{ fontSize: 10, color: 'var(--ps-text-disabled)' }}>(Dev Only)</span>
       </div>
 
-      <div className="space-y-2 mb-3">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 }}>
         {Object.entries(flags).map(([key, value]) => (
           <label
             key={key}
-            className="flex items-center gap-2 cursor-pointer hover:bg-gray-800 p-1 rounded"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer',
+              padding: '4px 6px',
+              borderRadius: 6,
+              background: 'transparent',
+              transition: 'background 0.1s',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--ps-bg-elevated)' }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
           >
             <input
               type="checkbox"
               checked={value}
               onChange={(e) => setFlag(key, e.target.checked)}
-              className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-900"
+              style={{ width: 14, height: 14, accentColor: 'var(--ps-cyan)' }}
             />
-            <span className="text-sm font-mono text-gray-300">{key}</span>
-            <span
-              className={`text-xs ml-auto ${value ? "text-green-400" : "text-red-400"}`}
-            >
+            <span style={{ flex: 1, fontSize: 11, fontFamily: 'monospace', color: 'var(--ps-text-secondary)' }}>
+              {key}
+            </span>
+            <span style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: value ? 'var(--ps-success)' : 'var(--ps-error)',
+            }}>
               {value ? "ON" : "OFF"}
             </span>
           </label>
@@ -62,13 +78,31 @@ export function FeatureFlagPanel() {
 
       <button
         onClick={reset}
-        className="w-full py-1.5 px-3 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition-colors border border-gray-600"
+        style={{
+          width: '100%',
+          padding: '6px 12px',
+          borderRadius: 6,
+          background: 'var(--ps-bg-elevated)',
+          border: '1px solid var(--ps-border-default)',
+          color: 'var(--ps-text-secondary)',
+          fontSize: 11,
+          cursor: 'pointer',
+          transition: 'background 0.1s',
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--ps-bg-base)' }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--ps-bg-elevated)' }}
       >
-        Reset All to Defaults
+        Restablecer valores por defecto
       </button>
 
-      <div className="mt-2 text-xs text-gray-500 border-t border-gray-700 pt-2">
-        Changes persist to localStorage
+      <div style={{
+        marginTop: 8,
+        paddingTop: 8,
+        borderTop: '1px solid var(--ps-border-subtle)',
+        fontSize: 10,
+        color: 'var(--ps-text-disabled)',
+      }}>
+        Cambios persisten en localStorage
       </div>
     </div>
   );

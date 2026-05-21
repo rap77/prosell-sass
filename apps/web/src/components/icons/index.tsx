@@ -4,10 +4,13 @@
  * Extracted from inline SVGs for better maintainability.
  */
 
+import type { CSSProperties } from "react";
+
 export interface IconProps {
   className?: string;
   width?: number;
   height?: number;
+  style?: CSSProperties;
 }
 
 /**
@@ -165,10 +168,11 @@ export function XIcon({ className, width = 24, height = 24 }: IconProps) {
 /**
  * Shield icon (for 2FA security)
  */
-export function ShieldIcon({ className, width = 24, height = 24 }: IconProps) {
+export function ShieldIcon({ className, width = 24, height = 24, style }: IconProps) {
   return (
     <svg
       className={className}
+      style={style}
       width={width}
       height={height}
       viewBox="0 0 24 24"

@@ -1,156 +1,151 @@
-"use client";
-
-import { useState } from "react";
-import { useAuthStore } from "@/stores/authStore";
-import { useAppointments, Appointment } from "@/lib/api/appointments";
-import { CalendarView } from "@/components/appointments/CalendarView";
-import { AppointmentDetailsModal } from "@/components/appointments/AppointmentDetailsModal";
-import { Calendar, Loader2, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { parseISO, startOfDay, endOfDay } from "date-fns";
+'use client'
 
 /**
- * Branch Appointments Page
+ * Branch › Citas — ProSell appointments calendar.
  *
  * Features:
- * - Display calendar with branch's appointments
- * - Day/week/month views
- * - Filter appointments by user_id from user context
- * - Show today's appointments count badge
- * - Show appointment details modal on click
- * - Confirm/cancel appointments from modal
- * - Responsive design for mobile/desktop
+ *   - Full calendar (FullCalendar via CalendarView) with day/week/month/list views
+ *   - Today's appointments count badge
+ *   - Appointment detail modal on click (confirm/cancel from modal)
+ *   - Manual refresh
  *
- * Route: /branch/appointments
- * Role: Branch
+ * All colors via var(--ps-*) tokens — dark/light automatic.
  */
+
+import { useState } from 'react'
+import { useAuthStore } from '@/stores/authStore'
+import { useAppointments, type Appointment } from '@/lib/api/appointments'
+import { CalendarView } from '@/components/appointments/CalendarView'
+import { AppointmentDetailsModal } from '@/components/appointments/AppointmentDetailsModal'
+import { Calendar, Loader2, RefreshCw, AlertCircle } from 'lucide-react'
+import { parseISO, startOfDay, endOfDay } from 'date-fns'
+
 export default function BranchAppointmentsPage() {
-  const { user } = useAuthStore();
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isManualRefetch, setIsManualRefetch] = useState(false);
+  const { user } = useAuthStore()
 
-  // Get user_id from user context
-  // Note: In a real implementation, this would come from user_branch assignment
-  // For now, we use user.id as the user_id (simplified for MVP)
-  const userId = user?.id || "";
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  const [isModalOpen,         setIsModalOpen]         = useState(false)
+  const [isRefreshing,        setIsRefreshing]        = useState(false)
 
-  // Fetch appointments with branch filter
-  const {
-    data: appointments = [],
-    isLoading,
-    error,
-    refetch,
-  } = useAppointments({ user_id: userId }, 50, 0);
+  // user.id is used as user_id (simplified MVP assignment)
+  const userId = user?.id ?? ''
 
-  // Calculate today's appointments count
-  const today = new Date();
-  const startOfToday = startOfDay(today);
-  const endOfToday = endOfDay(today);
-  const todayAppointmentsCount = appointments.filter((apt) => {
-    const scheduledDate = parseISO(apt.scheduled_at);
-    return scheduledDate >= startOfToday && scheduledDate <= endOfToday;
-  }).length;
+  const { data: appointments = [], isLoading, error, refetch } = useAppointments(
+    { user_id: userId },
+    50,
+    0,
+  )
 
-  // Handle appointment click
-  const handleAppointmentClick = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
-    setIsModalOpen(true);
-  };
+  // Count today's appointments
+  const today      = new Date()
+  const todayStart = startOfDay(today)
+  const todayEnd   = endOfDay(today)
+  const todayCount = appointments.filter((apt) => {
+    const d = parseISO(apt.scheduled_at)
+    return d >= todayStart && d <= todayEnd
+  }).length
 
-  // Handle manual refresh
-  const handleRefresh = async () => {
-    setIsManualRefetch(true);
-    await refetch();
-    setTimeout(() => setIsManualRefetch(false), 500);
-  };
+  function handleAppointmentClick(appointment: Appointment) {
+    setSelectedAppointment(appointment)
+    setIsModalOpen(true)
+  }
 
-  // Loading state
+  async function handleRefresh() {
+    setIsRefreshing(true)
+    await refetch()
+    setTimeout(() => setIsRefreshing(false), 500)
+  }
+
+  // ── Loading ──────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Appointments</h1>
-          <p className="text-muted-foreground">
-            Manage your appointments and schedule
-          </p>
-        </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <PageHeader todayCount={0} isRefreshing={false} onRefresh={() => void handleRefresh()} />
         <div
           data-testid="calendar-loading"
-          className="flex items-center justify-center py-12"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 64,
+            gap: 10,
+            color: 'var(--ps-text-secondary)',
+          }}
         >
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 size={20} strokeWidth={2} style={{ animation: 'spin 0.8s linear infinite' }} />
+          <span style={{ fontSize: 14 }}>Cargando citas…</span>
         </div>
+        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
-    );
+    )
   }
 
+  // ── Error ────────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Appointments</h1>
-          <p className="text-muted-foreground">
-            Manage your appointments and schedule
-          </p>
-        </div>
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-          <p className="font-medium text-red-700">Error loading appointments</p>
-          <p className="mt-2 text-sm text-red-600">{error.message}</p>
-          <Button
-            className="mt-4"
-            variant="outline"
-            onClick={() => {
-              void refetch();
-            }}
-          >
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="container mx-auto py-8">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <PageHeader todayCount={0} isRefreshing={false} onRefresh={() => void handleRefresh()} />
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 12,
+          padding: '40px 24px',
+          borderRadius: 12,
+          background: 'var(--ps-error-bg)',
+          border: '1px solid var(--ps-error)',
+          textAlign: 'center',
+        }}>
+          <AlertCircle size={24} strokeWidth={2} style={{ color: 'var(--ps-error)' }} />
           <div>
-            <h1 className="text-3xl font-bold">Appointments</h1>
-            <p className="text-muted-foreground">
-              Manage your appointments and schedule
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--ps-error)' }}>
+              Error al cargar las citas
+            </p>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ps-text-secondary)' }}>
+              {error.message}
             </p>
           </div>
-          {/* Today's appointments badge */}
-          {todayAppointmentsCount > 0 && (
-            <div
-              data-testid="today-badge"
-              className="flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full"
-            >
-              <Calendar className="h-4 w-4" />
-              <span className="text-sm font-medium">
-                {todayAppointmentsCount} today
-              </span>
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            style={{
+              height: 34,
+              padding: '0 16px',
+              background: 'var(--ps-bg-elevated)',
+              border: '1px solid var(--ps-border-default)',
+              borderRadius: 8,
+              color: 'var(--ps-text-secondary)',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            Reintentar
+          </button>
         </div>
-
-        {/* Refresh button */}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleRefresh}
-          data-testid="refresh-button"
-        >
-          <RefreshCw
-            className={`h-4 w-4 ${isManualRefetch ? "animate-spin" : ""}`}
-          />
-        </Button>
       </div>
+    )
+  }
 
-      {/* Calendar View */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+  // ── Render ───────────────────────────────────────────────────────────────────
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+
+      <PageHeader
+        todayCount={todayCount}
+        isRefreshing={isRefreshing}
+        onRefresh={() => void handleRefresh()}
+      />
+
+      {/* Calendar container */}
+      <div style={{
+        background: 'var(--ps-bg-surface)',
+        border: '1px solid var(--ps-border-default)',
+        borderRadius: 12,
+        padding: 24,
+        overflow: 'hidden',
+      }}>
         <CalendarView
           appointments={appointments}
           userId={userId}
@@ -158,17 +153,107 @@ export default function BranchAppointmentsPage() {
         />
       </div>
 
-      {/* Appointment Details Modal */}
+      {/* Appointment detail modal */}
       <AppointmentDetailsModal
         appointment={selectedAppointment}
         open={isModalOpen}
         onOpenChange={(open) => {
-          setIsModalOpen(open);
-          if (!open) {
-            setSelectedAppointment(null);
-          }
+          setIsModalOpen(open)
+          if (!open) setSelectedAppointment(null)
         }}
       />
     </div>
-  );
+  )
+}
+
+// ─── Page header (extracted to avoid duplication in loading/error states) ──────
+
+function PageHeader({
+  todayCount,
+  isRefreshing,
+  onRefresh,
+}: {
+  todayCount: number
+  isRefreshing: boolean
+  onRefresh: () => void
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+        <div>
+          <h1 style={{
+            margin: 0,
+            fontSize: 22,
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
+            color: 'var(--ps-text-primary)',
+            lineHeight: 1.2,
+          }}>
+            Citas
+          </h1>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ps-text-secondary)' }}>
+            Agenda y seguimiento de citas de la sucursal.
+          </p>
+        </div>
+
+        {/* Today badge */}
+        {todayCount > 0 && (
+          <div
+            data-testid="today-badge"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '5px 12px',
+              borderRadius: 99,
+              background: 'var(--ps-info-bg)',
+              border: '1px solid rgba(77,184,255,0.2)',
+              fontSize: 12,
+              fontWeight: 500,
+              color: 'var(--ps-cyan)',
+              marginTop: 4,
+              flexShrink: 0,
+            }}
+          >
+            <Calendar size={12} strokeWidth={2} />
+            {todayCount} hoy
+          </div>
+        )}
+      </div>
+
+      {/* Refresh button */}
+      <button
+        type="button"
+        onClick={onRefresh}
+        data-testid="refresh-button"
+        style={{
+          width: 36,
+          height: 36,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--ps-bg-elevated)',
+          border: '1px solid var(--ps-border-default)',
+          borderRadius: 8,
+          color: 'var(--ps-text-secondary)',
+          cursor: 'pointer',
+          flexShrink: 0,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'var(--ps-border-medium)'
+          e.currentTarget.style.color = 'var(--ps-text-primary)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = 'var(--ps-border-default)'
+          e.currentTarget.style.color = 'var(--ps-text-secondary)'
+        }}
+      >
+        <RefreshCw
+          size={14}
+          strokeWidth={2}
+          style={{ animation: isRefreshing ? 'spin 0.8s linear infinite' : 'none' }}
+        />
+      </button>
+    </div>
+  )
 }

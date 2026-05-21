@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProSell — Turnos y citas</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+a { color: inherit; text-decoration: none; }
+
+/* =========================================
+   App shell
+   ========================================= */
+.app {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+/* ============== Sidebar ============== */
+.sidebar {
+  background: #040A1A;
+  border-right: 1px solid rgba(77,184,255,0.06);
+  display: flex; flex-direction: column;
+  padding: 20px 0 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.sb-top { padding: 0 16px 16px; border-bottom: 1px solid rgba(77,184,255,0.06); display: flex; flex-direction: column; gap: 14px; }
+.sb-logo {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 17px; font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.sb-logo img { height: 26px; width: auto; }
+.workspace {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  background: rgba(77,184,255,0.06);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 180ms;
+}
+.workspace:hover { color: var(--text-primary); border-color: rgba(77,184,255,0.2); }
+.workspace span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.workspace [data-lucide] { width: 14px; height: 14px; stroke-width: 2; flex-shrink: 0; }
+
+.sb-nav {
+  flex: 1;
+  display: flex; flex-direction: column;
+  padding: 16px 8px;
+  gap: 2px;
+}
+.sb-nav .group-divider {
+  height: 1px;
+  background: rgba(77,184,255,0.06);
+  margin: 12px 8px;
+}
+.sb-nav .group-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-disabled);
+  padding: 12px 16px 6px;
+}
+.nav-item {
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 180ms, color 180ms;
+}
+.nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
+.nav-item [data-lucide] { width: 18px; height: 18px; stroke-width: 2; flex-shrink: 0; }
+.nav-item .label { flex: 1; min-width: 0; }
+.nav-item .badge {
+  font-size: 11px; font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 100px;
+  background: rgba(77,184,255,0.14);
+  color: var(--cyan);
+  letter-spacing: 0.02em;
+}
+.nav-item.active {
+  background: rgba(77,184,255,0.08);
+  color: var(--text-primary);
+  font-weight: 600;
+  border-right: 2px solid var(--cyan);
+  border-radius: 8px 0 0 8px;
+}
+.nav-item.active [data-lucide] { color: var(--cyan); }
+
+.sb-user {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 12px;
+  padding: 10px 12px;
+  background: rgba(13,27,62,0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 180ms;
+}
+.sb-user:hover { border-color: rgba(77,184,255,0.2); }
+.sb-user .av {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  color: var(--bg-base);
+  background: linear-gradient(135deg, #4DB8FF, #1E5FD4);
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+.sb-user .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.sb-user .meta b { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.sb-user .plan {
+  display: inline-flex; align-self: flex-start;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 100px;
+  background: rgba(77,184,255,0.14);
+  color: var(--cyan);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sb-user [data-lucide].chev { width: 14px; height: 14px; stroke-width: 2; color: var(--text-secondary); }
+
+/* ============== Main ============== */
+.main {
+  padding: 32px;
+  max-width: calc(100vw - 240px);
+}
+
+/* Top bar */
+.top {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.greet h1 {
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 0 0 4px;
+}
+.greet p { font-size: 13px; color: var(--text-secondary); margin: 0; }
+.top-actions { display: flex; align-items: center; gap: 10px; }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  background: rgba(13,27,62,0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 180ms;
+}
+.btn-ghost:hover { border-color: rgba(77,184,255,0.3); background: rgba(77,184,255,0.04); }
+.btn-ghost [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+.btn-ghost .chev { color: var(--text-disabled); }
+
+/* Segmented view toggle */
+.seg {
+  display: inline-flex;
+  background: rgba(13,27,62,0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 2px;
+  height: 36px;
+}
+.seg button {
+  background: transparent;
+  border: 0;
+  color: var(--text-secondary);
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 180ms;
+  letter-spacing: -0.005em;
+}
+.seg button:hover { color: var(--text-primary); }
+.seg button.on {
+  background: rgba(77,184,255,0.14);
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+.btn-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--cyan);
+  color: var(--bg-base);
+  border: 0;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 180ms;
+}
+.btn-cta:hover { background: var(--cyan-hover); box-shadow: 0 6px 20px rgba(77,184,255,0.3); transform: translateY(-1px); }
+.btn-cta [data-lucide] { width: 14px; height: 14px; stroke-width: 2.5; }
+
+/* ============== Layout ============== */
+.cols {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid rgba(77,184,255,0.10);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+/* ===== Mini calendar ===== */
+.cal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.cal-month {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.005em;
+}
+.cal-nav { display: flex; gap: 2px; }
+.cal-nav button {
+  width: 28px; height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 150ms;
+}
+.cal-nav button:hover { border-color: var(--border-subtle); color: var(--text-primary); }
+.cal-nav button [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.cal-dow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-disabled);
+  text-transform: uppercase;
+  text-align: center;
+  padding: 8px 0 4px;
+}
+.cal-day {
+  aspect-ratio: 1;
+  display: inline-flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  transition: all 150ms;
+  font-variant-numeric: tabular-nums;
+}
+.cal-day:hover:not(.empty) {
+  background: rgba(77,184,255,0.06);
+  color: var(--text-primary);
+}
+.cal-day.muted { color: var(--text-disabled); }
+.cal-day.empty { cursor: default; }
+.cal-day.today {
+  background: var(--cyan);
+  color: var(--bg-base);
+  font-weight: 700;
+}
+.cal-day.today:hover { background: var(--cyan-hover); }
+.cal-day.selected {
+  box-shadow: inset 0 0 0 1.5px var(--cyan);
+  color: var(--cyan);
+  font-weight: 700;
+}
+.cal-day .dot {
+  position: absolute;
+  bottom: 4px;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--cyan);
+}
+.cal-day.today .dot { background: var(--bg-base); }
+
+/* Upcoming list */
+.up-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-disabled);
+  margin: 18px 0 10px;
+}
+
+.up-list { display: flex; flex-direction: column; gap: 6px; }
+.up-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px;
+  background: rgba(6,13,36,0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 180ms;
+}
+.up-item:hover {
+  border-color: rgba(77,184,255,0.22);
+  background: rgba(6,13,36,0.75);
+}
+.up-time {
+  flex-shrink: 0;
+  background: rgba(77,184,255,0.12);
+  color: var(--cyan);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.up-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.up-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.up-veh {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.up-status {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  justify-content: center;
+}
+.up-status.ok { background: rgba(34,211,160,0.18); color: var(--success); }
+.up-status.pend { background: rgba(245,166,35,0.18); color: var(--warning); }
+.up-status.none { background: rgba(138,155,191,0.12); color: var(--text-secondary); }
+.up-status [data-lucide] { width: 10px; height: 10px; stroke-width: 3; }
+.up-status .d { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* ============== Day timeline ============== */
+.day-card { padding: 20px; }
+.day-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 14px;
+}
+.day-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  display: flex; align-items: center; gap: 10px;
+}
+.day-title b { color: var(--text-primary); font-weight: 600; }
+.day-title .now {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.day-title .now .pulse {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 0 0 rgba(77,184,255,0.5);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(77,184,255,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(77,184,255,0); }
+}
+.day-stats {
+  display: flex; gap: 14px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.day-stats b { color: var(--text-primary); font-weight: 700; font-variant-numeric: tabular-nums; }
+.day-stats span { display: inline-flex; align-items: center; gap: 4px; }
+
+/* Timeline grid */
+.timeline {
+  position: relative;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+}
+.tl-hour {
+  height: 60px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-disabled);
+  padding-top: 0;
+  transform: translateY(-7px);
+  text-align: right;
+  padding-right: 12px;
+  letter-spacing: -0.02em;
+}
+.tl-track {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1 / -1;
+  border-left: 1px solid var(--border-subtle);
+}
+.tl-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: rgba(77,184,255,0.06);
+}
+.tl-half {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  border-top: 1px dashed rgba(77,184,255,0.04);
+}
+
+/* "Now" marker */
+.tl-now {
+  position: absolute;
+  left: -8px; right: 0;
+  height: 0;
+  display: flex; align-items: center;
+  z-index: 3;
+  pointer-events: none;
+}
+.tl-now::before {
+  content: "";
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 0 4px rgba(77,184,255,0.18);
+  flex-shrink: 0;
+}
+.tl-now::after {
+  content: "";
+  flex: 1;
+  height: 1.5px;
+  background: linear-gradient(90deg, var(--cyan), rgba(77,184,255,0));
+}
+
+/* Appointment blocks */
+.appt {
+  position: absolute;
+  left: 12px; right: 12px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex; flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  transition: all 180ms;
+  z-index: 2;
+}
+.appt:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+.appt.cy {
+  background: rgba(77,184,255,0.12);
+  border-left: 3px solid var(--cyan);
+}
+.appt.wn {
+  background: rgba(245,166,35,0.10);
+  border-left: 3px solid var(--warning);
+}
+.appt.next {
+  background: rgba(77,184,255,0.08);
+  border: 1px solid rgba(77,184,255,0.30);
+  border-left: 3px solid var(--cyan);
+  box-shadow: 0 4px 18px rgba(77,184,255,0.18);
+}
+.appt-row {
+  display: flex; align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.appt-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+.appt.next .appt-time, .appt.cy .appt-time { color: var(--cyan); }
+.appt.wn .appt-time { color: var(--warning); }
+.appt-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.005em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex: 1; min-width: 0;
+}
+.appt-meta {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+.appt-meta .sep { color: var(--text-disabled); }
+.appt-status {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 100px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+.appt-status .d { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.appt-status.ok { background: rgba(34,211,160,0.14); color: var(--success); }
+.appt-status.pend { background: rgba(245,166,35,0.14); color: var(--warning); }
+
+.appt-badge {
+  position: absolute;
+  top: 8px; right: 10px;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 100px;
+  background: var(--cyan);
+  color: var(--bg-base);
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 10px rgba(77,184,255,0.35);
+}
+.appt-badge [data-lucide] { width: 10px; height: 10px; stroke-width: 3; }
+
+/* Empty slot hover */
+.tl-slot {
+  position: absolute;
+  left: 12px; right: 12px;
+  border-radius: 8px;
+  border: 1px dashed transparent;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 180ms;
+  color: transparent;
+  z-index: 1;
+}
+.tl-slot:hover {
+  border-color: rgba(77,184,255,0.25);
+  background: rgba(77,184,255,0.04);
+  color: var(--cyan);
+}
+.tl-slot .plus {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.tl-slot .plus [data-lucide] { width: 12px; height: 12px; stroke-width: 2.5; }
+
+/* ============== Modal overlay ============== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(6,13,36,0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.modal {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(13,27,62,0.95);
+  border: 1px solid rgba(77,184,255,0.18);
+  border-radius: 14px;
+  box-shadow: var(--shadow-xl);
+  display: flex; flex-direction: column;
+  gap: 18px;
+  padding: 22px;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 150ms;
+}
+.modal-close:hover { color: var(--text-primary); border-color: var(--border-subtle); background: rgba(77,184,255,0.04); }
+.modal-close [data-lucide] { width: 16px; height: 16px; stroke-width: 2; }
+
+.modal-head { display: flex; flex-direction: column; gap: 8px; padding-right: 36px; }
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  margin: 0;
+}
+.modal-meta-row {
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap;
+}
+.modal-when {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.modal-when b { color: var(--text-primary); font-weight: 600; }
+.modal-when [data-lucide] { width: 13px; height: 13px; stroke-width: 2; color: var(--cyan); }
+.modal-status-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 100px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(34,211,160,0.14);
+  color: var(--success);
+}
+.modal-status-pill .d { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+.modal-section { display: flex; flex-direction: column; gap: 8px; }
+.modal-sect-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-disabled);
+}
+
+.contact-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px;
+  background: rgba(6,13,36,0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+.contact-row .av {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #4DB8FF, #1E5FD4);
+  color: var(--bg-base);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+.contact-row .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.contact-row .nm { font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.005em; }
+.contact-row .det {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  display: flex; flex-wrap: wrap; gap: 4px 10px;
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
+}
+.contact-row .det span { display: inline-flex; align-items: center; gap: 4px; }
+.contact-row .det [data-lucide] { width: 11px; height: 11px; stroke-width: 2; color: var(--cyan); }
+
+.vehicle-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px;
+  background: rgba(6,13,36,0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+.veh-ico {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: rgba(77,184,255,0.10);
+  border: 1px solid rgba(77,184,255,0.20);
+  color: var(--cyan);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.veh-ico [data-lucide] { width: 18px; height: 18px; stroke-width: 1.75; }
+.vehicle-row .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.vehicle-row .nm { font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.005em; }
+.vehicle-row .price {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.vehicle-row .price b { color: var(--cyan); font-weight: 700; font-family: var(--font-sans); letter-spacing: -0.01em; }
+.vehicle-row .link {
+  font-size: 12px;
+  color: var(--cyan);
+  font-weight: 500;
+  display: inline-flex; align-items: center; gap: 4px;
+  flex-shrink: 0;
+}
+.vehicle-row .link [data-lucide] { width: 12px; height: 12px; stroke-width: 2.5; }
+
+.modal-notes {
+  width: 100%;
+  min-height: 70px;
+  padding: 10px 12px;
+  background: rgba(6,13,36,0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: border-color 180ms, box-shadow 180ms;
+}
+.modal-notes:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(77,184,255,0.10);
+}
+
+.modal-actions {
+  display: flex; align-items: center; gap: 8px;
+  padding-top: 6px;
+}
+.btn-confirm {
+  flex: 1;
+  height: 40px;
+  background: var(--success);
+  color: #062012;
+  border: 0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 180ms;
+}
+.btn-confirm:hover { background: #5BE6BC; box-shadow: 0 6px 20px rgba(34,211,160,0.30); transform: translateY(-1px); }
+.btn-confirm [data-lucide] { width: 14px; height: 14px; stroke-width: 3; }
+
+.btn-resched {
+  flex: 1;
+  height: 40px;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 180ms;
+}
+.btn-resched:hover { border-color: var(--cyan); background: rgba(77,184,255,0.04); }
+.btn-resched [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+
+.btn-cancel {
+  height: 40px;
+  padding: 0 14px;
+  background: transparent;
+  color: var(--error);
+  border: 0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 180ms;
+}
+.btn-cancel:hover { background: rgba(240,68,56,0.10); }
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .cols { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .main { padding: 20px 18px; max-width: 100%; }
+  .top { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .top-actions { width: 100%; flex-wrap: wrap; }
+  .modal-actions { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============== Sidebar ============== -->
+  <aside class="sidebar">
+    <div class="sb-top">
+      <a class="sb-logo" href="Dashboard.html">
+        <img src="../assets/logo-mark.png" alt="" />
+        <span>ProSell</span>
+      </a>
+      <button class="workspace" type="button">
+        <span>Suc. Norte · Automotores</span>
+        <i data-lucide="chevron-down"></i>
+      </button>
+    </div>
+
+    <nav class="sb-nav">
+      <a class="nav-item" href="Dashboard.html">
+        <i data-lucide="layout-dashboard"></i>
+        <span class="label">Dashboard</span>
+      </a>
+      <a class="nav-item" href="Leads Inbox.html">
+        <i data-lucide="inbox"></i>
+        <span class="label">Leads</span>
+        <span class="badge">12</span>
+      </a>
+      <a class="nav-item" href="Pipeline.html">
+        <i data-lucide="git-branch"></i>
+        <span class="label">Pipeline</span>
+      </a>
+      <a class="nav-item" href="Inventario.html">
+        <i data-lucide="package"></i>
+        <span class="label">Inventario</span>
+      </a>
+
+      <div class="group-label">Sucursal</div>
+      <a class="nav-item active" href="#">
+        <i data-lucide="calendar-days"></i>
+        <span class="label">Turnos</span>
+        <span class="badge">7</span>
+      </a>
+      <a class="nav-item" href="#">
+        <i data-lucide="store"></i>
+        <span class="label">Showroom</span>
+      </a>
+
+      <div class="group-divider"></div>
+
+      <a class="nav-item" href="Analytics.html">
+        <i data-lucide="bar-chart-3"></i>
+        <span class="label">Analytics</span>
+      </a>
+      <a class="nav-item" href="Settings General.html">
+        <i data-lucide="settings"></i>
+        <span class="label">Configuración</span>
+      </a>
+    </nav>
+
+    <div class="sb-user">
+      <span class="av">SG</span>
+      <span class="meta">
+        <b>Sofía G.</b>
+        <span class="plan">Sucursal</span>
+      </span>
+      <i data-lucide="chevron-right" class="chev"></i>
+    </div>
+  </aside>
+
+  <!-- ============== Main ============== -->
+  <main class="main">
+    <!-- Top bar -->
+    <div class="top">
+      <div class="greet">
+        <h1>Turnos y citas</h1>
+        <p>Agenda de visitas y test drives</p>
+      </div>
+      <div class="top-actions">
+        <button class="btn-ghost" type="button">
+          <i data-lucide="calendar"></i>
+          Hoy · 16 mayo
+          <i data-lucide="chevron-down" class="chev"></i>
+        </button>
+        <div class="seg" role="tablist" aria-label="Vista">
+          <button class="on" type="button">Día</button>
+          <button type="button">Semana</button>
+          <button type="button">Lista</button>
+        </div>
+        <button class="btn-cta" type="button">
+          <i data-lucide="plus"></i>
+          Nuevo turno
+        </button>
+      </div>
+    </div>
+
+    <!-- Two columns -->
+    <div class="cols">
+      <!-- Left: mini calendar + upcoming -->
+      <aside>
+        <section class="card">
+          <div class="cal-head">
+            <span class="cal-month">Mayo 2026</span>
+            <div class="cal-nav">
+              <button type="button" aria-label="Mes anterior"><i data-lucide="chevron-left"></i></button>
+              <button type="button" aria-label="Mes siguiente"><i data-lucide="chevron-right"></i></button>
+            </div>
+          </div>
+
+          <div class="cal-grid">
+            <div class="cal-dow">L</div><div class="cal-dow">M</div><div class="cal-dow">M</div>
+            <div class="cal-dow">J</div><div class="cal-dow">V</div><div class="cal-dow">S</div><div class="cal-dow">D</div>
+
+            <!-- Friday May 1 starts (assume Mon=L start, so Apr 27 28 29 30 + 1) -->
+            <span class="cal-day muted">27</span>
+            <span class="cal-day muted">28</span>
+            <span class="cal-day muted">29</span>
+            <span class="cal-day muted">30</span>
+            <span class="cal-day">1</span>
+            <span class="cal-day">2</span>
+            <span class="cal-day">3</span>
+
+            <span class="cal-day">4</span>
+            <span class="cal-day">5<span class="dot"></span></span>
+            <span class="cal-day">6</span>
+            <span class="cal-day">7<span class="dot"></span></span>
+            <span class="cal-day">8</span>
+            <span class="cal-day">9</span>
+            <span class="cal-day">10</span>
+
+            <span class="cal-day">11<span class="dot"></span></span>
+            <span class="cal-day">12<span class="dot"></span></span>
+            <span class="cal-day">13</span>
+            <span class="cal-day">14<span class="dot"></span></span>
+            <span class="cal-day">15<span class="dot"></span></span>
+            <span class="cal-day today">16<span class="dot"></span></span>
+            <span class="cal-day">17<span class="dot"></span></span>
+
+            <span class="cal-day">18</span>
+            <span class="cal-day selected">19</span>
+            <span class="cal-day">20<span class="dot"></span></span>
+            <span class="cal-day">21<span class="dot"></span></span>
+            <span class="cal-day">22</span>
+            <span class="cal-day">23</span>
+            <span class="cal-day">24</span>
+
+            <span class="cal-day">25</span>
+            <span class="cal-day">26<span class="dot"></span></span>
+            <span class="cal-day">27</span>
+            <span class="cal-day">28</span>
+            <span class="cal-day">29</span>
+            <span class="cal-day">30</span>
+            <span class="cal-day">31</span>
+          </div>
+        </section>
+
+        <h3 class="up-label">Próximos turnos</h3>
+        <div class="up-list">
+          <div class="up-item">
+            <span class="up-time">15:00</span>
+            <span class="up-info">
+              <span class="up-name">Martín R.</span>
+              <span class="up-veh">Corolla 2024</span>
+            </span>
+            <span class="up-status ok" title="Confirmado"><i data-lucide="check"></i></span>
+          </div>
+          <div class="up-item">
+            <span class="up-time">16:30</span>
+            <span class="up-info">
+              <span class="up-name">Juliana C.</span>
+              <span class="up-veh">Hilux 2023</span>
+            </span>
+            <span class="up-status pend" title="Pendiente"><span class="d"></span></span>
+          </div>
+          <div class="up-item">
+            <span class="up-time">Mañ 10:00</span>
+            <span class="up-info">
+              <span class="up-name">Carlos R.</span>
+              <span class="up-veh">Amarok · Sin confirmar</span>
+            </span>
+            <span class="up-status none" title="Sin confirmar"><span class="d"></span></span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right: Day view -->
+      <section class="card day-card">
+        <div class="day-head">
+          <div class="day-title">
+            <span>Jueves <b>16 de mayo</b></span>
+            <span class="now"><span class="pulse"></span>Ahora 14:15</span>
+          </div>
+          <div class="day-stats">
+            <span><b>3</b>turnos</span>
+            <span style="color: var(--success);"><b>1</b>confirmado</span>
+            <span style="color: var(--warning);"><b>1</b>pendiente</span>
+          </div>
+        </div>
+
+        <!-- Timeline body. Hour height = 60px. 8AM (480m) is row 0. -->
+        <div class="timeline">
+          <!-- Hour labels -->
+          <div class="tl-hour">08:00</div>
+          <div class="tl-hour">09:00</div>
+          <div class="tl-hour">10:00</div>
+          <div class="tl-hour">11:00</div>
+          <div class="tl-hour">12:00</div>
+          <div class="tl-hour">13:00</div>
+          <div class="tl-hour">14:00</div>
+          <div class="tl-hour">15:00</div>
+          <div class="tl-hour">16:00</div>
+          <div class="tl-hour">17:00</div>
+          <div class="tl-hour">18:00</div>
+          <div class="tl-hour">19:00</div>
+          <div class="tl-hour">20:00</div>
+
+          <div class="tl-track">
+            <!-- Hour lines every 60px -->
+            <div class="tl-line" style="top: 0"></div>
+            <div class="tl-half"  style="top: 30px"></div>
+            <div class="tl-line" style="top: 60px"></div>
+            <div class="tl-half"  style="top: 90px"></div>
+            <div class="tl-line" style="top: 120px"></div>
+            <div class="tl-half"  style="top: 150px"></div>
+            <div class="tl-line" style="top: 180px"></div>
+            <div class="tl-half"  style="top: 210px"></div>
+            <div class="tl-line" style="top: 240px"></div>
+            <div class="tl-half"  style="top: 270px"></div>
+            <div class="tl-line" style="top: 300px"></div>
+            <div class="tl-half"  style="top: 330px"></div>
+            <div class="tl-line" style="top: 360px"></div>
+            <div class="tl-half"  style="top: 390px"></div>
+            <div class="tl-line" style="top: 420px"></div>
+            <div class="tl-half"  style="top: 450px"></div>
+            <div class="tl-line" style="top: 480px"></div>
+            <div class="tl-half"  style="top: 510px"></div>
+            <div class="tl-line" style="top: 540px"></div>
+            <div class="tl-half"  style="top: 570px"></div>
+            <div class="tl-line" style="top: 600px"></div>
+            <div class="tl-half"  style="top: 630px"></div>
+            <div class="tl-line" style="top: 660px"></div>
+            <div class="tl-half"  style="top: 690px"></div>
+            <div class="tl-line" style="top: 720px"></div>
+
+            <!-- Empty slots (cover full timeline; appointments stack above) -->
+            <div class="tl-slot" style="top: 4px; height: 116px;"><span class="plus"><i data-lucide="plus"></i>Agregar</span></div>
+            <div class="tl-slot" style="top: 170px; height: 190px;"><span class="plus"><i data-lucide="plus"></i>Agregar</span></div>
+            <div class="tl-slot" style="top: 395px; height: 25px;"><span class="plus"><i data-lucide="plus"></i></span></div>
+            <div class="tl-slot" style="top: 470px; height: 250px;"><span class="plus"><i data-lucide="plus"></i>Agregar</span></div>
+
+            <!-- 10:00–10:45 (top: 2h*60=120, height: 45) -->
+            <div class="appt cy" style="top: 120px; height: 45px;" data-modal="open">
+              <div class="appt-row">
+                <span class="appt-time">10:00 – 10:45</span>
+                <span class="appt-title">Test drive — Toyota Corolla</span>
+                <span class="appt-status ok"><span class="d"></span>Confirmado</span>
+              </div>
+              <div class="appt-meta">
+                <span>Martín Rivas</span>
+                <span class="sep">·</span>
+                <span>+54 11 4567-8901</span>
+              </div>
+            </div>
+
+            <!-- 14:00–14:30 (top: 6h*60=360, height: 30) -->
+            <div class="appt wn" style="top: 360px; height: 30px;">
+              <div class="appt-row">
+                <span class="appt-time">14:00 – 14:30</span>
+                <span class="appt-title">Visita — Ford Ranger</span>
+                <span class="appt-status pend"><span class="d"></span>Pendiente</span>
+              </div>
+              <div class="appt-meta">
+                <span>Sofía Paz</span>
+                <span class="sep">·</span>
+                <span>Pendiente de confirmación</span>
+              </div>
+            </div>
+
+            <!-- 15:00–15:45 HIGHLIGHTED (top: 7h*60=420, height: 45) -->
+            <div class="appt next" style="top: 420px; height: 50px;">
+              <span class="appt-badge"><i data-lucide="zap"></i>En 45 min</span>
+              <div class="appt-row">
+                <span class="appt-time">15:00 – 15:45</span>
+                <span class="appt-title">Test drive — Toyota Hilux</span>
+              </div>
+              <div class="appt-meta">
+                <span>Carlos Ríos</span>
+                <span class="sep">·</span>
+                <span style="color: var(--success);">Confirmado</span>
+              </div>
+            </div>
+
+            <!-- Now marker at 14:15 → 6h15m = 375px -->
+            <div class="tl-now" style="top: 375px;"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- ============== Modal overlay ============== -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal" role="dialog" aria-labelledby="modal-title">
+    <button class="modal-close" type="button" id="modal-close" aria-label="Cerrar">
+      <i data-lucide="x"></i>
+    </button>
+
+    <div class="modal-head">
+      <h2 class="modal-title" id="modal-title">Test drive — Toyota Corolla 2024</h2>
+      <div class="modal-meta-row">
+        <span class="modal-when">
+          <i data-lucide="clock"></i>
+          <b>Hoy · 10:00 – 10:45hs</b>
+        </span>
+        <span class="modal-status-pill"><span class="d"></span>Confirmado</span>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <span class="modal-sect-label">Contacto</span>
+      <div class="contact-row">
+        <span class="av">MR</span>
+        <span class="info">
+          <span class="nm">Martín Rivas</span>
+          <span class="det">
+            <span><i data-lucide="phone"></i>+54 11 4567-8901</span>
+            <span><i data-lucide="mail"></i>mrivas@gmail.com</span>
+          </span>
+        </span>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <span class="modal-sect-label">Vehículo</span>
+      <div class="vehicle-row">
+        <span class="veh-ico"><i data-lucide="car"></i></span>
+        <span class="info">
+          <span class="nm">Toyota Corolla 2024</span>
+          <span class="price"><b>$28.500</b> · XEi 2.0 CVT</span>
+        </span>
+        <a class="link" href="Inventario.html">
+          Ver
+          <i data-lucide="arrow-up-right"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <span class="modal-sect-label">Notas internas</span>
+      <textarea class="modal-notes">Primera visita. Interesado en financiación.</textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-confirm" type="button">
+        <i data-lucide="check"></i>
+        Confirmar
+      </button>
+      <button class="btn-resched" type="button">
+        <i data-lucide="calendar"></i>
+        Reprogramar
+      </button>
+      <button class="btn-cancel" type="button">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  lucide.createIcons();
+
+  const modal = document.getElementById('modal');
+  document.getElementById('modal-close').addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.style.display = 'none';
+  });
+  document.querySelectorAll('[data-modal="open"]').forEach(el => {
+    el.addEventListener('click', () => modal.style.display = 'flex');
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') modal.style.display = 'none';
+  });
+</script>
+</body>
+</html>

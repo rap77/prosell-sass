@@ -1,8 +1,16 @@
 "use client";
 
-import * as Dialog from "@radix-ui/react-dialog";
+/**
+ * PublishModal — ProSell publisher modal.
+ *
+ * Custom modal (replaces Radix Dialog) for publishing vehicles to
+ * Facebook Marketplace. Business logic preserved exactly.
+ * All colors via var(--ps-*) tokens — dark/light automatic.
+ */
+
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import {
   publishVehicle,
   updateListing,
@@ -87,19 +95,25 @@ function CategoryBErrorBanner({
   });
 
   return (
-    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-      <p className="text-red-800 text-sm font-medium">
+    <div style={{
+      background: 'var(--ps-error-bg)',
+      border: '1px solid var(--ps-error)',
+      borderRadius: 10,
+      padding: 16,
+      marginBottom: 16,
+    }}>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--ps-error)' }}>
         Facebook solicita validación de seguridad. Abrí tu cuenta en un
         navegador para resolver el desafío antes de reintentar.
       </p>
-      <label className="flex items-center gap-2 mt-3 cursor-pointer">
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, cursor: 'pointer' }}>
         <input
           type="checkbox"
           checked={checked}
           onChange={(e) => setChecked(e.target.checked)}
-          className="rounded border-slate-300"
+          style={{ width: 16, height: 16, accentColor: 'var(--ps-cyan)' }}
         />
-        <span className="text-sm text-red-800">
+        <span style={{ fontSize: 13, color: 'var(--ps-error)' }}>
           Ya validé mi cuenta de Facebook
         </span>
       </label>
@@ -107,12 +121,25 @@ function CategoryBErrorBanner({
         type="button"
         disabled={!checked || unlockMutation.isPending}
         onClick={() => unlockMutation.mutate()}
-        className="mt-3 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 hover:bg-red-700 transition-colors"
+        style={{
+          marginTop: 12,
+          height: 34,
+          padding: '0 14px',
+          background: 'var(--ps-error)',
+          color: '#fff',
+          fontSize: 13,
+          fontWeight: 600,
+          border: 'none',
+          borderRadius: 8,
+          cursor: 'pointer',
+          opacity: !checked || unlockMutation.isPending ? 0.5 : 1,
+          transition: 'opacity 0.15s',
+        }}
       >
         {unlockMutation.isPending ? "Desbloqueando..." : "Desbloquear y Reintentar"}
       </button>
       {unlockMutation.isError && (
-        <p className="mt-2 text-xs text-red-800">
+        <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--ps-error)' }}>
           Error al desbloquear. Intentá de nuevo.
         </p>
       )}
@@ -195,106 +222,199 @@ export function PublishModal({
     deleteMutation.mutate();
   };
 
-  const isSubmitting =
-    publishMutation.isPending || updateMutation.isPending;
+  const isSubmitting = publishMutation.isPending || updateMutation.isPending;
+  const submitError = publishMutation.error?.message ?? updateMutation.error?.message ?? null;
 
-  const submitError =
-    publishMutation.error?.message ?? updateMutation.error?.message ?? null;
+  if (!isOpen) return null;
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-xl shadow-xl z-50 max-h-[85vh] flex flex-col overflow-hidden p-0">
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0">
-            <Dialog.Title className="text-lg font-semibold text-slate-900">
-              {mode === "publish"
-                ? "Preparar Publicación"
-                : "Actualizar Publicación"}
-            </Dialog.Title>
-            <Dialog.Close className="rounded-md p-1 text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <span className="sr-only">Cerrar</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 40,
+        }}
+      />
+
+      {/* Dialog */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={mode === "publish" ? "Preparar publicación" : "Actualizar publicación"}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'fixed',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '100%',
+          maxWidth: 672,
+          background: 'var(--ps-bg-surface)',
+          border: '1px solid var(--ps-border-default)',
+          borderRadius: 14,
+          boxShadow: '0 24px 48px rgba(6,13,36,0.4)',
+          zIndex: 50,
+          maxHeight: '85vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 24px',
+          borderBottom: '1px solid var(--ps-border-default)',
+          flexShrink: 0,
+        }}>
+          <h2 style={{
+            margin: 0,
+            fontSize: 16,
+            fontWeight: 700,
+            letterSpacing: '-0.01em',
+            color: 'var(--ps-text-primary)',
+          }}>
+            {mode === "publish" ? "Preparar Publicación" : "Actualizar Publicación"}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--ps-text-secondary)',
+              cursor: 'pointer',
+              transition: 'background 0.15s, color 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--ps-bg-elevated)'
+              e.currentTarget.style.color = 'var(--ps-text-primary)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.color = 'var(--ps-text-secondary)'
+            }}
+          >
+            <X size={18} strokeWidth={2} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div style={{ overflowY: 'auto', padding: '16px 24px', flex: 1, minHeight: 0 }}>
+
+          {/* Vehicle selector (when no fixed vehicleData) */}
+          {!vehicleData && vehicleOptions.length > 0 && (
+            <div style={{
+              marginBottom: 16,
+              borderRadius: 10,
+              border: '1px solid var(--ps-border-default)',
+              background: 'var(--ps-bg-elevated)',
+              padding: 16,
+            }}>
+              <label
+                htmlFor="publication-vehicle-select"
+                style={{
+                  display: 'block',
+                  marginBottom: 8,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: 'var(--ps-text-primary)',
+                }}
               >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </Dialog.Close>
-          </div>
+                Vehículo a publicar
+              </label>
+              <select
+                id="publication-vehicle-select"
+                value={effectiveVehicleId}
+                onChange={(event) => setSelectedVehicleId(event.target.value)}
+                style={{
+                  width: '100%',
+                  borderRadius: 8,
+                  border: '1px solid var(--ps-input-border)',
+                  background: 'var(--ps-input-bg)',
+                  color: 'var(--ps-text-primary)',
+                  fontSize: 13,
+                  padding: '8px 12px',
+                  outline: 'none',
+                }}
+              >
+                {vehicleOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {/* Content - overflow-y-auto */}
-          <div className="overflow-y-auto px-6 py-4 flex-1 min-h-0">
-            {!vehicleData && vehicleOptions.length > 0 ? (
-              <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <label
-                  htmlFor="publication-vehicle-select"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Vehículo a publicar
-                </label>
-                <select
-                  id="publication-vehicle-select"
-                  value={effectiveVehicleId}
-                  onChange={(event) => setSelectedVehicleId(event.target.value)}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  {vehicleOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
-
-            {currentPublication?.blocked_until_confirmed && (
-              <CategoryBErrorBanner
-                publicationId={currentPublication.id}
-                onUnlocked={() =>
-                  queryClient.invalidateQueries({ queryKey: ["catalog"] })
-                }
-              />
-            )}
-
-            {submitError && (
-              <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-800">{submitError}</p>
-              </div>
-            )}
-
-            {!selectedVehicleData ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                Seleccioná un vehículo del catálogo para preparar la publicación.
-              </div>
-            ) : null}
-
-            <PublishForm
-              mode={mode!}
-              key={selectedVehicleData?.id ?? "publish-form"}
-              vehicleData={selectedVehicleData}
-              currentPublication={currentPublication}
-              facebookPages={facebookPages}
-              onSubmit={handleSubmit}
-              onDelete={mode === "update" ? handleDelete : undefined}
-              isSubmitting={isSubmitting}
-              isDeleting={deleteMutation.isPending}
+          {/* Category B error */}
+          {currentPublication?.blocked_until_confirmed && (
+            <CategoryBErrorBanner
+              publicationId={currentPublication.id}
+              onUnlocked={() =>
+                queryClient.invalidateQueries({ queryKey: ["catalog"] })
+              }
             />
-          </div>
+          )}
 
-          {/* Footer - spacer to maintain rounded bottom corners */}
-          <div className="flex-shrink-0 h-6" />
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+          {/* Submit error */}
+          {submitError && (
+            <div style={{
+              marginBottom: 16,
+              background: 'var(--ps-error-bg)',
+              border: '1px solid var(--ps-error)',
+              borderRadius: 10,
+              padding: 12,
+            }}>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--ps-error)' }}>{submitError}</p>
+            </div>
+          )}
+
+          {/* No vehicle selected warning */}
+          {!selectedVehicleData && (
+            <div style={{
+              borderRadius: 10,
+              border: '1px solid var(--ps-warning)',
+              background: 'var(--ps-warning-bg)',
+              padding: 16,
+              fontSize: 13,
+              color: 'var(--ps-warning)',
+              marginBottom: 16,
+            }}>
+              Seleccioná un vehículo del catálogo para preparar la publicación.
+            </div>
+          )}
+
+          <PublishForm
+            mode={mode!}
+            key={selectedVehicleData?.id ?? "publish-form"}
+            vehicleData={selectedVehicleData}
+            currentPublication={currentPublication}
+            facebookPages={facebookPages}
+            onSubmit={handleSubmit}
+            onDelete={mode === "update" ? handleDelete : undefined}
+            isSubmitting={isSubmitting}
+            isDeleting={deleteMutation.isPending}
+          />
+        </div>
+
+        {/* Footer spacer */}
+        <div style={{ flexShrink: 0, height: 24 }} />
+      </div>
+    </>
   );
 }

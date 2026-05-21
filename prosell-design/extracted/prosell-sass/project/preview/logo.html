@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Logo</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 24px; background: var(--bg-base); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column; gap: 18px; }
+  .row { display: flex; align-items: center; gap: 24px; }
+  .tile { padding: 18px 24px; border-radius: var(--radius-lg); border: 1px solid var(--border-default); display: flex; align-items: center; justify-content: center; }
+  .tile img { display: block; }
+  .tile-base { background: var(--bg-base); }
+  .tile-surface { background: var(--bg-surface); }
+  .tile-hero { background: linear-gradient(135deg, #060D24 0%, #0D1B6E 50%, #1E5FD4 100%); }
+  .meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-secondary); }
+  .lockup { display: flex; align-items: center; gap: 12px; }
+  .wordmark { font-size: 28px; font-weight: 700; letter-spacing: -0.025em; color: var(--text-primary); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="tile tile-base"><img src="../assets/logo-mark.png" height="64" alt="ProSell mark" /></div>
+    <div class="tile tile-surface"><img src="../assets/logo-mark.png" height="64" alt="ProSell mark" /></div>
+    <div class="tile tile-hero"><img src="../assets/logo-mark.png" height="64" alt="ProSell mark" /></div>
+    <div class="meta">Mark · transparent PNG</div>
+  </div>
+  <div class="row">
+    <div class="tile tile-base">
+      <div class="lockup">
+        <img src="../assets/logo-mark.png" height="44" alt="" />
+        <span class="wordmark">ProSell</span>
+      </div>
+    </div>
+    <div class="meta">Horizontal lockup</div>
+  </div>
+</body>
+</html>

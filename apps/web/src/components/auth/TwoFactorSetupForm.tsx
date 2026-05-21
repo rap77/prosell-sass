@@ -481,10 +481,10 @@ export function TwoFactorSetupForm({
                   </span>
                 </div>
                 <h2 className="mt-4 text-xl font-semibold text-foreground">
-                  Verifying...
+                  Verificando...
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Please wait while we verify your code
+                  Esperá un momento mientras verificamos tu código
                 </p>
               </div>
             </CardContent>
@@ -494,9 +494,15 @@ export function TwoFactorSetupForm({
           {formState.state === "enabled" && (
             <CardContent className="pt-8">
               <div className="text-center py-12 space-y-6">
-                <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
+                <div style={{
+                  display: 'inline-flex', width: 80, height: 80,
+                  alignItems: 'center', justifyContent: 'center',
+                  borderRadius: '50%',
+                  background: 'var(--ps-success-bg)',
+                  border: '1px solid rgba(34,211,160,0.25)',
+                }}>
                   <svg
-                    className="h-10 w-10 text-green-600 dark:text-green-400"
+                    style={{ width: 40, height: 40, color: 'var(--ps-success)' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -511,14 +517,14 @@ export function TwoFactorSetupForm({
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-foreground">
-                    Two-Factor Authentication Enabled
+                    Autenticación de dos factores activada
                   </h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Your account is now protected with two-factor authentication
+                    Tu cuenta está protegida con autenticación de dos factores
                   </p>
                 </div>
                 <Button onClick={handleDone} className="w-full">
-                  Done
+                  Listo
                 </Button>
               </div>
             </CardContent>
@@ -529,19 +535,25 @@ export function TwoFactorSetupForm({
             <>
               <CardHeader>
                 <CardTitle className="text-2xl">
-                  Two-Factor Authentication is Enabled
+                  Autenticación de dos factores activada
                 </CardTitle>
                 <CardDescription>
-                  Your account is currently protected with two-factor
-                  authentication
+                  Tu cuenta está protegida actualmente con autenticación de dos factores
                 </CardDescription>
               </CardHeader>
 
               <CardContent className="space-y-6">
                 <div className="text-center">
-                  <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20 mb-4">
+                  <div style={{
+                    display: 'inline-flex', width: 64, height: 64,
+                    alignItems: 'center', justifyContent: 'center',
+                    borderRadius: '50%',
+                    background: 'var(--ps-success-bg)',
+                    border: '1px solid rgba(34,211,160,0.25)',
+                    marginBottom: 16,
+                  }}>
                     <svg
-                      className="h-8 w-8 text-green-600 dark:text-green-400"
+                      style={{ width: 32, height: 32, color: 'var(--ps-success)' }}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -555,7 +567,7 @@ export function TwoFactorSetupForm({
                     </svg>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Your account is protected with an authenticator app
+                    Tu cuenta está protegida con una app autenticadora
                   </p>
                 </div>
 
@@ -567,23 +579,28 @@ export function TwoFactorSetupForm({
                     className="w-full"
                     onClick={() => router.push("/auth/backup-codes")}
                   >
-                    View Backup Codes
+                    Ver códigos de respaldo
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
-                    View or download your backup codes for account recovery
+                    Visualizá o descargá tus códigos de recuperación
                   </p>
                 </div>
 
                 <Separator />
 
                 {/* Warning */}
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-yellow-600 dark:text-yellow-600 mb-2">
-                    Warning:
+                <div style={{
+                  background: 'var(--ps-warning-bg)',
+                  border: '1px solid rgba(251,191,36,0.25)',
+                  borderRadius: 8,
+                  padding: 16,
+                }}>
+                  <h3 style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: 'var(--ps-warning)' }}>
+                    Atención:
                   </h3>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-500">
-                    Disabling two-factor authentication will make your account
-                    less secure. We recommend keeping it enabled.
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--ps-warning)' }}>
+                    Desactivar la autenticación de dos factores reducirá la seguridad de tu cuenta.
+                    Recomendamos mantenerla activada.
                   </p>
                 </div>
 
@@ -600,7 +617,7 @@ export function TwoFactorSetupForm({
                 )}
 
                 <TwoFactorInput
-                  label="2FA Code"
+                  label="Código 2FA"
                   name="disable-totp"
                   value={formState.totpCode}
                   onChange={(code) =>
@@ -621,7 +638,7 @@ export function TwoFactorSetupForm({
                   className="w-full"
                   disabled={!canVerify}
                 >
-                  Disable 2FA
+                  Desactivar 2FA
                 </Button>
               </CardContent>
             </>
@@ -641,10 +658,10 @@ export function TwoFactorSetupForm({
                   </span>
                 </div>
                 <h2 className="mt-4 text-xl font-semibold text-foreground">
-                  Disabling...
+                  Desactivando...
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Please wait while we disable two-factor authentication
+                  Esperá un momento mientras desactivamos la autenticación de dos factores
                 </p>
               </div>
             </CardContent>
@@ -654,9 +671,15 @@ export function TwoFactorSetupForm({
           {formState.state === "disabled" && (
             <CardContent className="pt-8">
               <div className="text-center py-12 space-y-6">
-                <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
+                <div style={{
+                  display: 'inline-flex', width: 80, height: 80,
+                  alignItems: 'center', justifyContent: 'center',
+                  borderRadius: '50%',
+                  background: 'var(--ps-warning-bg)',
+                  border: '1px solid rgba(251,191,36,0.25)',
+                }}>
                   <svg
-                    className="h-10 w-10 text-green-600 dark:text-green-400"
+                    style={{ width: 40, height: 40, color: 'var(--ps-warning)' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -671,14 +694,14 @@ export function TwoFactorSetupForm({
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-foreground">
-                    Two-Factor Authentication Disabled
+                    Autenticación de dos factores desactivada
                   </h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Two-factor authentication has been disabled for your account
+                    La autenticación de dos factores fue desactivada para tu cuenta
                   </p>
                 </div>
                 <Button onClick={handleDone} className="w-full">
-                  Done
+                  Listo
                 </Button>
               </div>
             </CardContent>
@@ -688,9 +711,15 @@ export function TwoFactorSetupForm({
           {formState.state === "error" && (
             <CardContent className="pt-8">
               <div className="text-center py-12 space-y-6">
-                <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                <div style={{
+                  display: 'inline-flex', width: 80, height: 80,
+                  alignItems: 'center', justifyContent: 'center',
+                  borderRadius: '50%',
+                  background: 'var(--ps-error-bg)',
+                  border: '1px solid rgba(240,68,56,0.25)',
+                }}>
                   <svg
-                    className="h-10 w-10 text-red-600 dark:text-red-400"
+                    style={{ width: 40, height: 40, color: 'var(--ps-error)' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -706,20 +735,20 @@ export function TwoFactorSetupForm({
                 <div>
                   <h2 className="text-2xl font-bold text-foreground">Error</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {formState.error || "An error occurred"}
+                    {formState.error || "Ocurrió un error inesperado"}
                   </p>
                 </div>
-                {/* Show "Try Again" if not enabled, "Back to Profile" if enabled */}
+                {/* Mostrar "Volver al perfil" si 2FA ya estaba activo, o "Reintentar" */}
                 {is2FAEnabled ? (
                   <Button
                     onClick={() => router.push("/profile")}
                     className="w-full"
                   >
-                    Back to Profile
+                    Volver al perfil
                   </Button>
                 ) : (
                   <Button onClick={handleEnable2FA} className="w-full">
-                    Try Again
+                    Reintentar
                   </Button>
                 )}
               </div>

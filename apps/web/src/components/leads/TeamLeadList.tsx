@@ -1,38 +1,75 @@
 "use client";
 
+/**
+ * TeamLeadList — lista de leads para managers en ProSell.
+ *
+ * Features:
+ * - Ver todos los leads del equipo (no solo los propios)
+ * - Filtrar por vendedor
+ * - Buscar por nombre de comprador o vehículo
+ * - Filtrar por estado
+ * - Destacar leads no leídos (< 5 min de antigüedad)
+ * - Actualización en tiempo real (polling cada 30s)
+ * - Soporte de paginación
+ * - Exportar a CSV
+ *
+ * All colors via var(--ps-*) tokens — dark/light automatic.
+ */
+
 import { useState } from "react";
 import { Lead, LeadStatus, useLeads } from "@/lib/api/leads";
 import { LeadListItem } from "./LeadListItem";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Search, RefreshCw, Download } from "lucide-react";
+import { Search, RefreshCw, Download, AlertCircle } from "lucide-react";
 import { useVendedores } from "@/lib/api/vendedores";
+
+// ============================================
+// STYLES
+// ============================================
+
+const FILTER_STYLES = `
+  .ps-tll-input,
+  .ps-tll-select {
+    border-radius: 8px;
+    border: 1px solid var(--ps-input-border);
+    background: var(--ps-input-bg);
+    color: var(--ps-text-primary);
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+  }
+  .ps-tll-input:focus,
+  .ps-tll-select:focus {
+    border-color: var(--ps-cyan);
+  }
+  .ps-tll-input::placeholder {
+    color: var(--ps-text-disabled);
+  }
+  .ps-tll-select option {
+    background: var(--ps-bg-surface);
+    color: var(--ps-text-primary);
+  }
+  @keyframes spinRefresh {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+`
+
+// ============================================
+// TYPES
+// ============================================
 
 interface TeamLeadListProps {
   onLeadClick?: (leadId: string) => void;
   onReassignLead?: (leadId: string) => void;
 }
 
-/**
- * TeamLeadList - Extended LeadList for managers
- *
- * Features:
- * - View all leads across team (not just own)
- * - Filter by vendedor dropdown
- * - Search by buyer name or vehicle
- * - Filter by status
- * - Highlight unread leads (< 5 min old)
- * - Real-time updates (polling every 30s)
- * - Pagination support
- * - Export to CSV button
- */
+// ============================================
+// COMPONENT
+// ============================================
+
 export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
@@ -41,10 +78,10 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
   const [isManualRefetch, setIsManualRefetch] = useState(false);
   const limit = 50;
 
-  // Fetch vendedores for filter dropdown
+  // Fetch vendedores para el filtro
   const { data: vendedores = [] } = useVendedores();
 
-  // Build filters
+  // Construir filtros
   const filters: { status?: LeadStatus; search?: string; vendedor_id?: string } = {};
 
   if (statusFilter !== "all") {
@@ -59,7 +96,7 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
     filters.vendedor_id = vendedorFilter;
   }
 
-  // Fetch leads with real-time updates (30s polling)
+  // Fetch leads con polling en tiempo real (30s)
   const { data: leads = [], isLoading, error, refetch } = useLeads(
     filters,
     limit,
@@ -75,17 +112,15 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
   const handleRefresh = async () => {
     setIsManualRefetch(true);
     await refetch();
-    // Reset manual refetch state after a short delay
     setTimeout(() => setIsManualRefetch(false), 500);
   };
 
   const handleExportToCSV = () => {
-    // CSV header
-    const headers = ["Buyer Name", "Email", "Phone", "Vehicle", "Status", "Source", "Created At"];
+    const headers = ["Comprador", "Email", "Teléfono", "Vehículo", "Estado", "Fuente", "Fecha"];
 
     /**
-     * Escape CSV field to prevent CSV injection attacks.
-     * If a field starts with =, -, +, or @, prepend a single quote to prevent Excel from executing it as a formula.
+     * Escapar campo CSV para prevenir CSV injection.
+     * Si el campo comienza con =, -, +, o @, se antepone una comilla simple.
      * @see https://owasp.org/www-community/attacks/CSV_Injection
      */
     const escapeCsvField = (field: string): string => {
@@ -97,7 +132,6 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
       return trimmed;
     };
 
-    // Convert leads to CSV rows
     const rows = leads.map((lead) => [
       escapeCsvField(lead.buyer_name),
       escapeCsvField(lead.buyer_email || ""),
@@ -108,13 +142,11 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
       escapeCsvField(lead.created_at),
     ]);
 
-    // Combine headers and rows
     const csvContent = [
       headers.join(","),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
     ].join("\n");
 
-    // Create download link
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -126,194 +158,321 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
     URL.revokeObjectURL(url);
   };
 
+  // Estado de error
   if (error) {
     return (
-      <div className="p-8 text-center text-red-600">
-        <p>Error loading leads: {error.message}</p>
-        <Button onClick={() => refetch()} variant="outline" className="mt-4">
-          Retry
-        </Button>
+      <div style={{
+        padding: 32,
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 16,
+      }}>
+        <AlertCircle size={32} strokeWidth={1.5} style={{ color: 'var(--ps-error)' }} />
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--ps-error)' }}>
+          Error al cargar los leads: {error.message}
+        </p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          style={{
+            height: 36,
+            padding: '0 16px',
+            borderRadius: 8,
+            background: 'var(--ps-bg-elevated)',
+            border: '1px solid var(--ps-border-default)',
+            color: 'var(--ps-text-secondary)',
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: 'pointer',
+          }}
+        >
+          Reintentar
+        </button>
       </div>
     );
   }
 
-  // Get display text for status filter
-  const getStatusDisplayText = () => {
-    if (statusFilter === "all") return "All Statuses";
-    const statusMap: Record<LeadStatus, string> = {
-      [LeadStatus.NEW]: "New",
-      [LeadStatus.CONTACTED]: "Contacted",
-      [LeadStatus.QUALIFIED]: "Qualified",
-      [LeadStatus.APPOINTMENT_SET]: "Appointment Set",
-      [LeadStatus.LOST]: "Lost",
-    };
-    return statusMap[statusFilter];
+  const STATUS_LABELS: Record<LeadStatus, string> = {
+    [LeadStatus.NEW]:              "Nuevo",
+    [LeadStatus.CONTACTED]:        "Contactado",
+    [LeadStatus.QUALIFIED]:        "Calificado",
+    [LeadStatus.APPOINTMENT_SET]:  "Turno agendado",
+    [LeadStatus.LOST]:             "Perdido",
   };
 
-  // Get display text for vendedor filter
-  const getVendedorDisplayText = () => {
-    if (vendedorFilter === "all") return "All Vendedores";
-    const vendedor = vendedores.find((v) => v.id === vendedorFilter);
-    return vendedor?.name || "Unknown";
-  };
+  const isSpinning = isLoading || isManualRefetch;
 
   return (
-    <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search by buyer name or vehicle..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(0); // Reset to first page on search
-            }}
-            className="pl-10"
-            data-testid="search-input"
-          />
-        </div>
+    <>
+      <style>{FILTER_STYLES}</style>
 
-        {/* Vendedor Filter */}
-        <Select value={vendedorFilter} onValueChange={setVendedorFilter}>
-          <SelectTrigger className="w-48" data-testid="vendedor-filter">
-            <SelectValue placeholder="Filter by vendedor">
-              {getVendedorDisplayText()}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Vendedores</SelectItem>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* ── Filtros ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+
+          {/* Búsqueda */}
+          <div style={{ position: 'relative', flex: 1, maxWidth: 360 }}>
+            <Search
+              size={14}
+              strokeWidth={2}
+              style={{
+                position: 'absolute',
+                left: 10,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--ps-text-disabled)',
+                pointerEvents: 'none',
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Buscar por comprador o vehículo..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(0);
+              }}
+              className="ps-tll-input"
+              style={{ paddingLeft: 32, width: '100%' }}
+              data-testid="search-input"
+            />
+          </div>
+
+          {/* Filtro por vendedor */}
+          <select
+            value={vendedorFilter}
+            onChange={(e) => setVendedorFilter(e.target.value)}
+            className="ps-tll-select"
+            style={{ width: 192 }}
+            data-testid="vendedor-filter"
+          >
+            <option value="all">Todos los vendedores</option>
             {vendedores.map((vendedor) => (
-              <SelectItem key={vendedor.id} value={vendedor.id}>
+              <option key={vendedor.id} value={vendedor.id}>
                 {vendedor.name}
-              </SelectItem>
+              </option>
             ))}
-          </SelectContent>
-        </Select>
+          </select>
 
-        {/* Status Filter */}
-        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as LeadStatus | "all")}>
-          <SelectTrigger className="w-48" data-testid="status-filter">
-            <SelectValue placeholder="Filter by status">
-              {getStatusDisplayText()}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value={LeadStatus.NEW}>New</SelectItem>
-            <SelectItem value={LeadStatus.CONTACTED}>Contacted</SelectItem>
-            <SelectItem value={LeadStatus.QUALIFIED}>Qualified</SelectItem>
-            <SelectItem value={LeadStatus.APPOINTMENT_SET}>Appointment Set</SelectItem>
-            <SelectItem value={LeadStatus.LOST}>Lost</SelectItem>
-          </SelectContent>
-        </Select>
+          {/* Filtro por estado */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as LeadStatus | "all")}
+            className="ps-tll-select"
+            style={{ width: 192 }}
+            data-testid="status-filter"
+          >
+            <option value="all">Todos los estados</option>
+            {Object.entries(STATUS_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
 
-        {/* Export to CSV Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExportToCSV}
-          disabled={leads.length === 0}
-          data-testid="export-csv-button"
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
+          {/* Exportar CSV */}
+          <button
+            type="button"
+            onClick={handleExportToCSV}
+            disabled={leads.length === 0}
+            data-testid="export-csv-button"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              height: 36,
+              padding: '0 14px',
+              borderRadius: 8,
+              background: 'var(--ps-bg-elevated)',
+              border: '1px solid var(--ps-border-default)',
+              color: 'var(--ps-text-secondary)',
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: 'pointer',
+              opacity: leads.length === 0 ? 0.5 : 1,
+              transition: 'opacity 0.15s',
+            }}
+          >
+            <Download size={13} strokeWidth={2} />
+            Exportar CSV
+          </button>
 
-        {/* Refresh Button */}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleRefresh}
-          data-testid="refresh-button"
-        >
-          <RefreshCw className={`h-4 w-4 ${(isLoading || isManualRefetch) ? "animate-spin" : ""}`} />
-        </Button>
-      </div>
-
-      {/* Leads List */}
-      <div className="border rounded-lg" data-testid="team-lead-list">
-        {/* Header */}
-        <div className="flex items-center gap-4 p-4 bg-muted font-medium text-sm border-b">
-          <div className="w-48">Buyer</div>
-          <div className="w-48">Vehicle</div>
-          <div className="flex-1">Message</div>
-          <div className="flex-shrink-0">Status</div>
-          <div className="w-24 text-right">Time</div>
-          {onReassignLead && <div className="w-24">Actions</div>}
+          {/* Refresh */}
+          <button
+            type="button"
+            onClick={() => void handleRefresh()}
+            data-testid="refresh-button"
+            aria-label="Actualizar lista"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              background: 'var(--ps-bg-elevated)',
+              border: '1px solid var(--ps-border-default)',
+              color: 'var(--ps-text-secondary)',
+              cursor: 'pointer',
+            }}
+          >
+            <RefreshCw
+              size={14}
+              strokeWidth={2}
+              style={{ animation: isSpinning ? 'spinRefresh 0.8s linear infinite' : 'none' }}
+            />
+          </button>
         </div>
 
-        {/* Loading State */}
-        {isLoading && leads.length === 0 && (
-          <div className="p-8 text-center text-muted-foreground">
-            Loading leads...
+        {/* ── Tabla de leads ── */}
+        <div
+          data-testid="team-lead-list"
+          style={{
+            border: '1px solid var(--ps-border-default)',
+            borderRadius: 10,
+            overflow: 'hidden',
+          }}
+        >
+          {/* Header de columnas */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+            padding: '12px 16px',
+            background: 'var(--ps-bg-elevated)',
+            borderBottom: '1px solid var(--ps-border-default)',
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'var(--ps-text-disabled)',
+          }}>
+            <div style={{ width: 192 }}>Comprador</div>
+            <div style={{ width: 192 }}>Vehículo</div>
+            <div style={{ flex: 1 }}>Mensaje</div>
+            <div style={{ flexShrink: 0 }}>Estado</div>
+            <div style={{ width: 96, textAlign: 'right' }}>Hora</div>
+            {onReassignLead && <div style={{ width: 96 }}>Acciones</div>}
           </div>
-        )}
 
-        {/* Empty State */}
-        {!isLoading && leads.length === 0 && (
-          <div className="p-8 text-center text-muted-foreground">
-            No leads found. Try adjusting your filters.
-          </div>
-        )}
-
-        {/* Leads */}
-        <div>
-          {leads.map((lead) => (
-            <div
-              key={lead.id}
-              onClick={() => onLeadClick?.(lead.id)}
-              className={onLeadClick ? "cursor-pointer" : ""}
-            >
-              <LeadListItem
-                lead={lead}
-                isUnread={isUnread(lead)}
-                onStatusUpdate={() => {
-                  // Status update already handled by mutation hook
-                }}
-                actions={
-                  onReassignLead ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onReassignLead(lead.id);
-                      }}
-                      data-testid={`reassign-${lead.id}`}
-                    >
-                      Reassign
-                    </Button>
-                  ) : undefined
-                }
-              />
+          {/* Estado de carga */}
+          {isLoading && leads.length === 0 && (
+            <div style={{
+              padding: 32,
+              textAlign: 'center',
+              fontSize: 13,
+              color: 'var(--ps-text-secondary)',
+            }}>
+              Cargando leads...
             </div>
-          ))}
-        </div>
-      </div>
+          )}
 
-      {/* Pagination - Always show for E2E testing */}
-      <div className="flex justify-center gap-2">
-        <Button
-          variant="outline"
-          onClick={() => setPage((p) => Math.max(0, p - 1))}
-          disabled={page === 0 || isLoading}
-          data-testid="previous-page"
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => setPage((p) => p + 1)}
-          disabled={leads.length < limit || isLoading}
-          data-testid="next-page"
-        >
-          Next
-        </Button>
+          {/* Estado vacío */}
+          {!isLoading && leads.length === 0 && (
+            <div style={{
+              padding: 32,
+              textAlign: 'center',
+              fontSize: 13,
+              color: 'var(--ps-text-secondary)',
+            }}>
+              Sin resultados. Ajustá los filtros.
+            </div>
+          )}
+
+          {/* Leads */}
+          <div>
+            {leads.map((lead) => (
+              <div
+                key={lead.id}
+                onClick={() => onLeadClick?.(lead.id)}
+                style={{ cursor: onLeadClick ? 'pointer' : 'default' }}
+              >
+                <LeadListItem
+                  lead={lead}
+                  isUnread={isUnread(lead)}
+                  onStatusUpdate={() => {
+                    // Manejo por mutation hook
+                  }}
+                  actions={
+                    onReassignLead ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onReassignLead(lead.id);
+                        }}
+                        data-testid={`reassign-${lead.id}`}
+                        style={{
+                          height: 28,
+                          padding: '0 10px',
+                          borderRadius: 6,
+                          background: 'transparent',
+                          border: '1px solid var(--ps-border-default)',
+                          color: 'var(--ps-text-secondary)',
+                          fontSize: 12,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'background 0.15s',
+                        }}
+                      >
+                        Reasignar
+                      </button>
+                    ) : undefined
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Paginación ── */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0 || isLoading}
+            data-testid="previous-page"
+            style={{
+              height: 36,
+              padding: '0 16px',
+              borderRadius: 8,
+              background: 'var(--ps-bg-elevated)',
+              border: '1px solid var(--ps-border-default)',
+              color: 'var(--ps-text-secondary)',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+              opacity: page === 0 || isLoading ? 0.5 : 1,
+              transition: 'opacity 0.15s',
+            }}
+          >
+            Anterior
+          </button>
+          <button
+            type="button"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={leads.length < limit || isLoading}
+            data-testid="next-page"
+            style={{
+              height: 36,
+              padding: '0 16px',
+              borderRadius: 8,
+              background: 'var(--ps-bg-elevated)',
+              border: '1px solid var(--ps-border-default)',
+              color: 'var(--ps-text-secondary)',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+              opacity: leads.length < limit || isLoading ? 0.5 : 1,
+              transition: 'opacity 0.15s',
+            }}
+          >
+            Siguiente
+          </button>
+        </div>
+
       </div>
-    </div>
+    </>
   );
 }

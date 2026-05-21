@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * PublishForm — ProSell publisher form.
+ *
+ * Handles both "publish" and "update" modes for Facebook Marketplace listings.
+ * Business logic (validation, payload construction) is preserved exactly.
+ * All colors via var(--ps-*) tokens — dark/light automatic.
+ */
+
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,6 +28,49 @@ import {
   FB_YEARS,
   type FbOption,
 } from "@/lib/constants/fbVehicleOptions";
+
+// ============================================
+// STYLES
+// ============================================
+
+const FORM_STYLES = `
+  .ps-pub-input,
+  .ps-pub-select,
+  .ps-pub-textarea {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--ps-input-border);
+    background: var(--ps-input-bg);
+    color: var(--ps-text-primary);
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-sizing: border-box;
+  }
+  .ps-pub-input:focus,
+  .ps-pub-select:focus,
+  .ps-pub-textarea:focus {
+    border-color: var(--ps-cyan);
+    box-shadow: var(--ps-input-focus-shadow);
+  }
+  .ps-pub-input::placeholder,
+  .ps-pub-textarea::placeholder {
+    color: var(--ps-text-disabled);
+  }
+  .ps-pub-select option {
+    background: var(--ps-bg-surface);
+    color: var(--ps-text-primary);
+  }
+  .ps-pub-checkbox {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    accent-color: var(--ps-cyan);
+    cursor: pointer;
+  }
+`
 
 // ============================================
 // VALIDATION SCHEMA
@@ -107,6 +158,24 @@ interface PublishFormProps {
 // HELPERS
 // ============================================
 
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: 13,
+  fontWeight: 500,
+  color: 'var(--ps-text-primary)',
+  marginBottom: 4,
+}
+
+const errorStyle: React.CSSProperties = {
+  marginTop: 4,
+  fontSize: 11,
+  color: 'var(--ps-error)',
+}
+
+const requiredMark = (
+  <span style={{ color: 'var(--ps-error)', marginLeft: 3 }}>*</span>
+)
+
 function SelectField({
   id,
   label,
@@ -123,15 +192,10 @@ function SelectField({
 } & React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-slate-700 mb-1">
-        {label}
-        {required && <span className="text-red-600 ml-1">*</span>}
+      <label htmlFor={id} style={labelStyle}>
+        {label}{required && requiredMark}
       </label>
-      <select
-        id={id}
-        {...props}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-      >
+      <select id={id} {...props} className="ps-pub-select">
         <option value="">Seleccioná...</option>
         {options.map((opt) => (
           <option key={opt.key} value={opt.key}>
@@ -139,7 +203,7 @@ function SelectField({
           </option>
         ))}
       </select>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && <p style={errorStyle}>{error}</p>}
     </div>
   );
 }
@@ -158,16 +222,11 @@ function InputField({
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-slate-700 mb-1">
-        {label}
-        {required && <span className="text-red-600 ml-1">*</span>}
+      <label htmlFor={id} style={labelStyle}>
+        {label}{required && requiredMark}
       </label>
-      <input
-        id={id}
-        {...props}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-      />
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      <input id={id} {...props} className="ps-pub-input" />
+      {error && <p style={errorStyle}>{error}</p>}
     </div>
   );
 }
@@ -263,261 +322,328 @@ export function PublishForm({
     onSubmit(payload);
   };
 
+  const sectionDivider: React.CSSProperties = {
+    borderTop: '1px solid var(--ps-border-subtle)',
+    paddingTop: 16,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 16,
+  }
+
+  const sectionLabel: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.12em',
+    color: 'var(--ps-text-disabled)',
+    marginBottom: 0,
+  }
+
+  const grid2: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 16,
+  }
+
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5">
+    <>
+      <style>{FORM_STYLES}</style>
 
-      {/* ── FOTOS ── */}
-      <div>
-        <p className="block text-sm font-medium text-slate-700 mb-2">
-          Fotos <span className="text-red-600">*</span>
-          <span className="font-normal text-slate-400 ml-1">— click para elegir portada</span>
-        </p>
-        <HeroShotSelector
-          images={imageUrls}
-          heroIndex={heroIndex}
-          onHeroChange={handleHeroChange}
-        />
-        {errors.image_urls && (
-          <p className="mt-1 text-xs text-red-600">{errors.image_urls.message}</p>
-        )}
-      </div>
+      <form
+        onSubmit={handleSubmit(handleFormSubmit)}
+        style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
+      >
 
-      {/* ── TÍTULO Y DESCRIPCIÓN ── */}
-      <div className="border-t border-slate-100 pt-4 space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Publicación</p>
-
-        <InputField
-          id="title"
-          label="Título"
-          required
-          type="text"
-          {...register("title")}
-          error={errors.title?.message}
-        />
-
+        {/* ── FOTOS ── */}
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-1">
-            Descripción <span className="text-slate-400 font-normal">(opcional)</span>
-          </label>
-          <textarea
-            id="description"
-            rows={3}
-            {...register("description")}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+          <p style={{ ...labelStyle, marginBottom: 8 }}>
+            Fotos{requiredMark}
+            <span style={{ fontWeight: 400, color: 'var(--ps-text-disabled)', marginLeft: 6 }}>
+              — click para elegir portada
+            </span>
+          </p>
+          <HeroShotSelector
+            images={imageUrls}
+            heroIndex={heroIndex}
+            onHeroChange={handleHeroChange}
           />
-          {errors.description && (
-            <p className="mt-1 text-xs text-red-600">{errors.description.message}</p>
+          {errors.image_urls && (
+            <p style={errorStyle}>{errors.image_urls.message}</p>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* ── TÍTULO Y DESCRIPCIÓN ── */}
+        <div style={sectionDivider}>
+          <p style={sectionLabel}>Publicación</p>
+
           <InputField
-            id="price_usd"
-            label="Precio (USD)"
-            required
-            type="number"
-            step="0.01"
-            min="0.01"
-            {...register("price_usd", { valueAsNumber: true })}
-            error={errors.price_usd?.message}
-          />
-          <InputField
-            id="zip_code"
-            label="ZIP Code"
+            id="title"
+            label="Título"
             required
             type="text"
-            {...register("zip_code")}
-            error={errors.zip_code?.message}
-          />
-        </div>
-      </div>
-
-      {/* ── DATOS DEL VEHÍCULO ── */}
-      <div className="border-t border-slate-100 pt-4 space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Datos del vehículo</p>
-
-        <div className="grid grid-cols-2 gap-4">
-          <SelectField
-            id="vehicle_type"
-            label="Tipo de vehículo"
-            required
-            options={FB_VEHICLE_TYPES}
-            {...register("vehicle_type")}
-            error={errors.vehicle_type?.message}
+            {...register("title")}
+            error={errors.title?.message}
           />
 
           <div>
-            <label htmlFor="year" className="block text-sm font-medium text-slate-700 mb-1">
-              Año <span className="text-red-600">*</span>
+            <label htmlFor="description" style={labelStyle}>
+              Descripción{' '}
+              <span style={{ fontWeight: 400, color: 'var(--ps-text-disabled)' }}>(opcional)</span>
             </label>
-            <select
-              id="year"
-              {...register("year", { valueAsNumber: true })}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-            >
-              <option value="">Seleccioná...</option>
-              {FB_YEARS.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-            {errors.year && <p className="mt-1 text-xs text-red-600">{errors.year.message}</p>}
+            <textarea
+              id="description"
+              rows={3}
+              {...register("description")}
+              className="ps-pub-textarea"
+              style={{ resize: 'none' }}
+            />
+            {errors.description && (
+              <p style={errorStyle}>{errors.description.message}</p>
+            )}
+          </div>
+
+          <div style={grid2}>
+            <InputField
+              id="price_usd"
+              label="Precio (USD)"
+              required
+              type="number"
+              step="0.01"
+              min="0.01"
+              {...register("price_usd", { valueAsNumber: true })}
+              error={errors.price_usd?.message}
+            />
+            <InputField
+              id="zip_code"
+              label="ZIP Code"
+              required
+              type="text"
+              {...register("zip_code")}
+              error={errors.zip_code?.message}
+            />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <SelectField
-            id="make"
-            label="Marca"
-            required
-            options={FB_BRANDS}
-            {...register("make")}
-            error={errors.make?.message}
-          />
-          <InputField
-            id="model"
-            label="Modelo"
-            required
-            type="text"
-            placeholder="ej: Corolla, Civic, F-150"
-            {...register("model")}
-            error={errors.model?.message}
-          />
-        </div>
+        {/* ── DATOS DEL VEHÍCULO ── */}
+        <div style={sectionDivider}>
+          <p style={sectionLabel}>Datos del vehículo</p>
 
-        <div className="grid grid-cols-2 gap-4">
-          <InputField
-            id="mileage"
-            label="Millaje"
-            required
-            type="number"
-            min="0"
-            placeholder="ej: 45000"
-            {...register("mileage", { valueAsNumber: true })}
-            error={errors.mileage?.message}
-          />
-          <SelectField
-            id="body_style"
-            label="Carrocería"
-            options={FB_BODY_STYLES}
-            {...register("body_style")}
-            error={errors.body_style?.message}
-          />
-        </div>
+          <div style={grid2}>
+            <SelectField
+              id="vehicle_type"
+              label="Tipo de vehículo"
+              required
+              options={FB_VEHICLE_TYPES}
+              {...register("vehicle_type")}
+              error={errors.vehicle_type?.message}
+            />
 
-        <div className="grid grid-cols-2 gap-4">
-          <SelectField
-            id="exterior_color"
-            label="Color exterior"
-            options={FB_EXTERIOR_COLORS}
-            {...register("exterior_color")}
-            error={errors.exterior_color?.message}
-          />
-          <SelectField
-            id="interior_color"
-            label="Color interior"
-            options={FB_INTERIOR_COLORS}
-            {...register("interior_color")}
-            error={errors.interior_color?.message}
-          />
-        </div>
+            <div>
+              <label htmlFor="year" style={labelStyle}>
+                Año{requiredMark}
+              </label>
+              <select
+                id="year"
+                {...register("year", { valueAsNumber: true })}
+                className="ps-pub-select"
+              >
+                <option value="">Seleccioná...</option>
+                {FB_YEARS.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+              {errors.year && <p style={errorStyle}>{errors.year.message}</p>}
+            </div>
+          </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <SelectField
-            id="vehicle_condition"
-            label="Estado del vehículo"
-            options={FB_VEHICLE_CONDITIONS}
-            {...register("vehicle_condition")}
-            error={errors.vehicle_condition?.message}
-          />
-          <SelectField
-            id="fuel_type"
-            label="Tipo de combustible"
-            options={FB_FUEL_TYPES}
-            {...register("fuel_type")}
-            error={errors.fuel_type?.message}
-          />
-        </div>
+          <div style={grid2}>
+            <SelectField
+              id="make"
+              label="Marca"
+              required
+              options={FB_BRANDS}
+              {...register("make")}
+              error={errors.make?.message}
+            />
+            <InputField
+              id="model"
+              label="Modelo"
+              required
+              type="text"
+              placeholder="ej: Corolla, Civic, F-150"
+              {...register("model")}
+              error={errors.model?.message}
+            />
+          </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <SelectField
-            id="transmission"
-            label="Transmisión"
-            options={FB_TRANSMISSIONS}
-            {...register("transmission")}
-            error={errors.transmission?.message}
-          />
-          <InputField
-            id="vin"
-            label="VIN"
-            type="text"
-            placeholder="17 caracteres"
-            maxLength={17}
-            {...register("vin")}
-            error={errors.vin?.message}
-          />
-        </div>
+          <div style={grid2}>
+            <InputField
+              id="mileage"
+              label="Millaje"
+              required
+              type="number"
+              min="0"
+              placeholder="ej: 45000"
+              {...register("mileage", { valueAsNumber: true })}
+              error={errors.mileage?.message}
+            />
+            <SelectField
+              id="body_style"
+              label="Carrocería"
+              options={FB_BODY_STYLES}
+              {...register("body_style")}
+              error={errors.body_style?.message}
+            />
+          </div>
 
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            {...register("clean_title")}
-            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span className="text-sm text-slate-700">Título limpio (Clean Title)</span>
-        </label>
-      </div>
+          <div style={grid2}>
+            <SelectField
+              id="exterior_color"
+              label="Color exterior"
+              options={FB_EXTERIOR_COLORS}
+              {...register("exterior_color")}
+              error={errors.exterior_color?.message}
+            />
+            <SelectField
+              id="interior_color"
+              label="Color interior"
+              options={FB_INTERIOR_COLORS}
+              {...register("interior_color")}
+              error={errors.interior_color?.message}
+            />
+          </div>
 
-      {/* ── FACEBOOK ── */}
-      <div className="border-t border-slate-100 pt-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-4">Facebook</p>
+          <div style={grid2}>
+            <SelectField
+              id="vehicle_condition"
+              label="Estado del vehículo"
+              options={FB_VEHICLE_CONDITIONS}
+              {...register("vehicle_condition")}
+              error={errors.vehicle_condition?.message}
+            />
+            <SelectField
+              id="fuel_type"
+              label="Tipo de combustible"
+              options={FB_FUEL_TYPES}
+              {...register("fuel_type")}
+              error={errors.fuel_type?.message}
+            />
+          </div>
 
-        <div>
-          <label htmlFor="facebook_page_id" className="block text-sm font-medium text-slate-700 mb-1">
-            Página de Facebook <span className="text-red-600">*</span>
+          <div style={grid2}>
+            <SelectField
+              id="transmission"
+              label="Transmisión"
+              options={FB_TRANSMISSIONS}
+              {...register("transmission")}
+              error={errors.transmission?.message}
+            />
+            <InputField
+              id="vin"
+              label="VIN"
+              type="text"
+              placeholder="17 caracteres"
+              maxLength={17}
+              {...register("vin")}
+              error={errors.vin?.message}
+            />
+          </div>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              {...register("clean_title")}
+              className="ps-pub-checkbox"
+            />
+            <span style={{ fontSize: 13, color: 'var(--ps-text-primary)' }}>
+              Título limpio (Clean Title)
+            </span>
           </label>
-          <select
-            id="facebook_page_id"
-            {...register("facebook_page_id")}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-          >
-            <option value="">Seleccioná una página...</option>
-            {facebookPages.map((page) => (
-              <option key={page.id} value={page.id}>
-                {page.name}
-              </option>
-            ))}
-          </select>
-          {errors.facebook_page_id && (
-            <p className="mt-1 text-xs text-red-600">{errors.facebook_page_id.message}</p>
-          )}
         </div>
-      </div>
 
-      {/* ── BOTONES ── */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-        {mode === "update" && onDelete && (
+        {/* ── FACEBOOK ── */}
+        <div style={{ borderTop: '1px solid var(--ps-border-subtle)', paddingTop: 16 }}>
+          <p style={{ ...sectionLabel, marginBottom: 16 }}>Facebook</p>
+
+          <div>
+            <label htmlFor="facebook_page_id" style={labelStyle}>
+              Página de Facebook{requiredMark}
+            </label>
+            <select
+              id="facebook_page_id"
+              {...register("facebook_page_id")}
+              className="ps-pub-select"
+            >
+              <option value="">Seleccioná una página...</option>
+              {facebookPages.map((page) => (
+                <option key={page.id} value={page.id}>
+                  {page.name}
+                </option>
+              ))}
+            </select>
+            {errors.facebook_page_id && (
+              <p style={errorStyle}>{errors.facebook_page_id.message}</p>
+            )}
+          </div>
+        </div>
+
+        {/* ── BOTONES ── */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingTop: 8,
+          borderTop: '1px solid var(--ps-border-subtle)',
+        }}>
+          {mode === "update" && onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={isDeleting || isSubmitting}
+              style={{
+                height: 38,
+                padding: '0 16px',
+                fontSize: 13,
+                fontWeight: 500,
+                color: 'var(--ps-error)',
+                background: 'transparent',
+                border: '1px solid var(--ps-error)',
+                borderRadius: 8,
+                cursor: 'pointer',
+                opacity: isDeleting || isSubmitting ? 0.5 : 1,
+                transition: 'opacity 0.15s',
+              }}
+            >
+              {isDeleting ? "Eliminando..." : "Eliminar / Finalizar"}
+            </button>
+          )}
+
           <button
-            type="button"
-            onClick={onDelete}
-            disabled={isDeleting || isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors"
+            type="submit"
+            disabled={isSubmitting || isDeleting}
+            style={{
+              marginLeft: 'auto',
+              height: 38,
+              padding: '0 20px',
+              fontSize: 13,
+              fontWeight: 700,
+              color: 'var(--ps-bg-base)',
+              background: 'var(--ps-cyan)',
+              border: 'none',
+              borderRadius: 8,
+              cursor: 'pointer',
+              opacity: isSubmitting || isDeleting ? 0.5 : 1,
+              transition: 'opacity 0.15s',
+            }}
           >
-            {isDeleting ? "Eliminando..." : "Eliminar / Finalizar"}
+            {isSubmitting
+              ? "Publicando..."
+              : mode === "publish"
+                ? "Publicar en Facebook"
+                : "Actualizar publicación"}
           </button>
-        )}
-
-        <button
-          type="submit"
-          disabled={isSubmitting || isDeleting}
-          className="ml-auto px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-        >
-          {isSubmitting
-            ? "Publicando..."
-            : mode === "publish"
-              ? "Publicar en Facebook"
-              : "Actualizar publicación"}
-        </button>
-      </div>
-    </form>
+        </div>
+      </form>
+    </>
   );
 }

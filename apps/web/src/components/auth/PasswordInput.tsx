@@ -93,23 +93,40 @@ function calculatePasswordStrength(password: string): PasswordStrength {
   return "strong";
 }
 
-function getStrengthColor(strength: PasswordStrength): string {
-  const COLORS = {
-    weak: "bg-destructive",
-    medium: "bg-yellow-600",
-    strong: "bg-green-600",
-  } as const;
+function getStrengthBarStyle(strength: PasswordStrength): React.CSSProperties {
+  const COLORS: Record<PasswordStrength, string> = {
+    weak:   'var(--ps-error)',
+    medium: 'var(--ps-warning)',
+    strong: 'var(--ps-success)',
+  };
+  const WIDTHS: Record<PasswordStrength, string> = {
+    weak:   '33%',
+    medium: '66%',
+    strong: '100%',
+  };
+  return {
+    height: '100%',
+    transition: 'all 0.3s',
+    background: COLORS[strength],
+    width: WIDTHS[strength],
+  };
+}
 
-  return COLORS[strength];
+function getStrengthTextStyle(strength: PasswordStrength): React.CSSProperties {
+  const COLORS: Record<PasswordStrength, string> = {
+    weak:   'var(--ps-error)',
+    medium: 'var(--ps-warning)',
+    strong: 'var(--ps-success)',
+  };
+  return { fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: COLORS[strength] };
 }
 
 function getStrengthText(strength: PasswordStrength): string {
-  const TEXTS = {
-    weak: "Weak",
-    medium: "Medium",
-    strong: "Strong",
-  } as const;
-
+  const TEXTS: Record<PasswordStrength, string> = {
+    weak:   "Débil",
+    medium: "Media",
+    strong: "Fuerte",
+  };
   return TEXTS[strength];
 }
 
@@ -279,30 +296,15 @@ export function PasswordInput({
         <div
           id={strengthId}
           data-testid="password-strength"
-          className="flex items-center gap-2"
+          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
         >
           {/* Strength bar */}
-          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className={cn(
-                "h-full transition-all duration-300",
-                getStrengthColor(strength),
-                strength === "weak" && "w-1/3",
-                strength === "medium" && "w-2/3",
-                strength === "strong" && "w-full",
-              )}
-            />
+          <div style={{ flex: 1, height: 6, background: 'var(--ps-bg-elevated)', borderRadius: 99, overflow: 'hidden' }}>
+            <div style={getStrengthBarStyle(strength)} />
           </div>
 
           {/* Strength text */}
-          <span
-            className={cn(
-              "text-xs font-medium uppercase",
-              strength === "weak" && "text-destructive",
-              strength === "medium" && "text-yellow-600",
-              strength === "strong" && "text-green-600",
-            )}
-          >
+          <span style={getStrengthTextStyle(strength)}>
             {getStrengthText(strength)}
           </span>
         </div>

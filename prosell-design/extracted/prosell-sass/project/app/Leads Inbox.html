@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProSell — Leads</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  height: 100vh;
+  overflow: hidden;
+}
+a { color: inherit; text-decoration: none; }
+
+/* ===== App shell ===== */
+.app {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  height: 100vh;
+}
+
+/* ===== Sidebar (shared) ===== */
+.sidebar {
+  background: #040A1A;
+  border-right: 1px solid rgba(77,184,255,0.06);
+  display: flex; flex-direction: column;
+  padding: 20px 0 16px;
+  height: 100vh;
+  overflow: hidden;
+}
+.sb-top { padding: 0 16px 16px; border-bottom: 1px solid rgba(77,184,255,0.06); display: flex; flex-direction: column; gap: 14px; }
+.sb-logo { display: inline-flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); }
+.sb-logo img { height: 26px; width: auto; }
+.workspace { display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 10px; background: rgba(77,184,255,0.06); border: 1px solid var(--border-subtle); border-radius: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+.workspace span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+.sb-nav { flex: 1; display: flex; flex-direction: column; padding: 16px 8px; gap: 2px; overflow: auto; }
+.sb-nav .group-divider { height: 1px; background: rgba(77,184,255,0.06); margin: 12px 8px; }
+.nav-item { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 8px; color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: background 180ms, color 180ms; }
+.nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
+.nav-item [data-lucide] { width: 18px; height: 18px; stroke-width: 2; flex-shrink: 0; }
+.nav-item .label { flex: 1; }
+.nav-item .badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 100px; background: rgba(77,184,255,0.14); color: var(--cyan); }
+.nav-item.active { background: rgba(77,184,255,0.08); color: var(--text-primary); font-weight: 600; border-right: 2px solid var(--cyan); border-radius: 8px 0 0 8px; }
+.nav-item.active [data-lucide] { color: var(--cyan); }
+.sb-user { display: flex; align-items: center; gap: 10px; margin: 0 12px; padding: 10px 12px; background: rgba(13,27,62,0.6); border: 1px solid var(--border-subtle); border-radius: 10px; cursor: pointer; }
+.sb-user .av { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--bg-base); background: linear-gradient(135deg, #4DB8FF, #1E5FD4); flex-shrink: 0; }
+.sb-user .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.sb-user .meta b { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.sb-user .plan { display: inline-flex; align-self: flex-start; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 100px; background: rgba(77,184,255,0.14); color: var(--cyan); letter-spacing: 0.04em; text-transform: uppercase; }
+.sb-user [data-lucide] { width: 14px; height: 14px; color: var(--text-secondary); }
+
+/* ===== Inbox 3-panel ===== */
+.inbox {
+  display: grid;
+  grid-template-columns: 300px 1fr 320px;
+  height: 100vh;
+}
+
+/* ===== Panel 1: Lead list ===== */
+.lead-panel {
+  background: rgba(6,13,36,0.6);
+  border-right: 1px solid var(--border-subtle);
+  display: flex; flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+.lp-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 20px 14px;
+}
+.lp-head h2 { font-size: 18px; font-weight: 700; margin: 0; }
+.icon-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 180ms;
+}
+.icon-btn:hover { color: var(--text-primary); background: rgba(77,184,255,0.06); border-color: var(--border-subtle); }
+.icon-btn [data-lucide] { width: 16px; height: 16px; stroke-width: 2; }
+
+.search {
+  position: relative;
+  margin: 0 16px 12px;
+}
+.search [data-lucide] {
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  left: 12px;
+  width: 14px; height: 14px;
+  color: var(--text-secondary);
+  stroke-width: 2;
+  pointer-events: none;
+}
+.search input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px 0 32px;
+  background: rgba(13,27,62,0.8);
+  border: 1px solid rgba(77,184,255,0.1);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 180ms, box-shadow 180ms;
+}
+.search input::placeholder { color: var(--text-disabled); }
+.search input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(77,184,255,0.08); }
+
+.filter-tabs {
+  display: flex; gap: 4px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  overflow: auto;
+  scrollbar-width: none;
+}
+.filter-tabs::-webkit-scrollbar { display: none; }
+.filter-tab {
+  flex-shrink: 0;
+  padding: 10px 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 180ms, border-color 180ms;
+  margin-bottom: -1px;
+}
+.filter-tab:hover { color: var(--text-primary); }
+.filter-tab.active { color: var(--text-primary); border-color: var(--cyan); font-weight: 600; }
+.filter-tab .count { color: var(--text-disabled); font-weight: 500; margin-left: 4px; font-family: var(--font-mono); }
+.filter-tab.active .count { color: var(--cyan); }
+
+.lead-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.lead-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 180ms;
+  border-left: 2px solid transparent;
+  align-items: center;
+}
+.lead-item:hover { background: rgba(77,184,255,0.04); }
+.lead-item.active {
+  background: rgba(77,184,255,0.06);
+  border-left-color: var(--cyan);
+}
+.lead-item .av {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  color: var(--bg-base);
+  letter-spacing: 0.02em;
+}
+.lead-item .body { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.lead-item .row1 { display: flex; align-items: center; gap: 8px; }
+.lead-item .name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.lead-item .src {
+  font-size: 9.5px; font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+.lead-item .src.fb { background: rgba(77,184,255,0.15); color: var(--cyan); }
+.lead-item .src.at { background: rgba(245,166,35,0.15); color: var(--warning); }
+.lead-item .src.dir { background: rgba(138,155,191,0.18); color: var(--text-secondary); }
+.lead-item .preview {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lead-item.unread .preview { color: var(--text-primary); }
+.lead-item .meta { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.lead-item .time { font-size: 10.5px; color: var(--text-disabled); font-family: var(--font-mono); }
+.lead-item .dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+}
+.lead-item .dot.unread { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+.lead-item .dot.pending { background: var(--warning); }
+.lead-item .dot.placeholder { background: transparent; }
+
+/* ===== Panel 2: Conversation ===== */
+.conv-panel {
+  display: flex; flex-direction: column;
+  height: 100vh;
+  background: var(--bg-base);
+  position: relative;
+}
+.conv-head {
+  display: flex; align-items: center;
+  gap: 14px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(6,13,36,0.8);
+}
+.conv-head .av {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+  color: var(--bg-base);
+  background: linear-gradient(135deg, #4DB8FF, #1E5FD4);
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+.conv-head .who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.conv-head .name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.conv-head .src-pill {
+  display: inline-flex; align-self: flex-start; align-items: center; gap: 5px;
+  padding: 2px 9px;
+  border-radius: 100px;
+  background: rgba(77,184,255,0.10);
+  border: 1px solid rgba(77,184,255,0.18);
+  color: var(--cyan);
+  font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.conv-head .src-pill .d { width: 5px; height: 5px; border-radius: 50%; background: var(--cyan); }
+.conv-head .actions { display: flex; gap: 4px; }
+
+.conv-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+  display: flex; flex-direction: column;
+  gap: 18px;
+}
+.day-sep {
+  align-self: center;
+  font-size: 11px;
+  color: var(--text-disabled);
+  letter-spacing: 0.06em;
+  padding: 4px 0;
+}
+.msg-row {
+  display: flex; align-items: flex-end;
+  gap: 10px;
+  max-width: 75%;
+}
+.msg-row.me { align-self: flex-end; flex-direction: row-reverse; }
+.msg-row .av {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10.5px; font-weight: 700;
+  color: var(--bg-base);
+  background: linear-gradient(135deg, #4DB8FF, #1E5FD4);
+  letter-spacing: 0.02em;
+}
+.msg-row.me .av {
+  background: linear-gradient(135deg, #22D3A0, #1E5FD4);
+}
+.bubble-wrap { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.bubble {
+  background: rgba(26,45,90,0.8);
+  border: 1px solid rgba(77,184,255,0.08);
+  border-radius: 12px 12px 12px 4px;
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  max-width: 100%;
+  word-wrap: break-word;
+}
+.msg-row.me .bubble {
+  background: linear-gradient(135deg, #1E5FD4, #0D1B6E);
+  border: 1px solid rgba(77,184,255,0.25);
+  border-radius: 12px 12px 4px 12px;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(6,13,36,0.4);
+}
+.msg-foot {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 10.5px;
+  color: var(--text-disabled);
+  font-family: var(--font-mono);
+  padding: 0 6px;
+}
+.msg-row.me .msg-foot { justify-content: flex-end; }
+.msg-foot .ai-tag {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(77,184,255,0.18);
+  color: var(--cyan);
+}
+
+/* Typing */
+.typing-bubble {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 14px 16px;
+  background: rgba(26,45,90,0.8);
+  border: 1px solid rgba(77,184,255,0.08);
+  border-radius: 12px 12px 12px 4px;
+}
+.typing-bubble .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  animation: typing 1.4s infinite ease-in-out;
+}
+.typing-bubble .dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-bubble .dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+/* AI suggestion + input */
+.composer {
+  padding: 14px 24px 20px;
+  background: rgba(6,13,36,0.9);
+  border-top: 1px solid var(--border-subtle);
+}
+.ai-suggest {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  background: rgba(77,184,255,0.06);
+  border: 1px solid rgba(77,184,255,0.12);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.ai-suggest .ico {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: rgba(77,184,255,0.12);
+  color: var(--cyan);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.ai-suggest .ico [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+.ai-suggest .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ai-suggest .label {
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+.ai-suggest .text { font-size: 13px; color: var(--text-primary); line-height: 1.4; }
+.ai-suggest .acts { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.btn-use {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: var(--cyan);
+  color: var(--bg-base);
+  border: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 180ms;
+}
+.btn-use:hover { background: var(--cyan-hover); }
+.btn-use [data-lucide] { width: 12px; height: 12px; stroke-width: 2.5; }
+.btn-dismiss {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  background: transparent; border: 0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.btn-dismiss:hover { color: var(--text-primary); }
+.btn-dismiss [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+
+.input-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 8px 6px 12px;
+  background: rgba(13,27,62,0.8);
+  border: 1px solid rgba(77,184,255,0.15);
+  border-radius: 12px;
+  transition: border-color 180ms;
+}
+.input-row:focus-within { border-color: var(--cyan); }
+.input-row .icons { display: flex; gap: 2px; }
+.input-row .icons button {
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  background: transparent; border: 0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.input-row .icons button:hover { color: var(--text-primary); }
+.input-row .icons [data-lucide] { width: 16px; height: 16px; stroke-width: 2; }
+.input-row input {
+  flex: 1;
+  background: transparent;
+  border: 0; outline: 0;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 8px 0;
+}
+.input-row input::placeholder { color: var(--text-disabled); }
+.send {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--cyan);
+  color: var(--bg-base);
+  border: 0;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 180ms, transform 180ms;
+}
+.send:hover { background: var(--cyan-hover); transform: scale(1.05); }
+.send [data-lucide] { width: 16px; height: 16px; stroke-width: 2.5; }
+
+/* ===== Panel 3: Detail ===== */
+.detail-panel {
+  background: rgba(6,13,36,0.6);
+  border-left: 1px solid var(--border-subtle);
+  height: 100vh;
+  overflow-y: auto;
+  padding: 20px 20px 32px;
+}
+.dp-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 16px;
+}
+
+.contact-card {
+  display: flex; flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.contact-card .av {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 700;
+  color: var(--bg-base);
+  background: linear-gradient(135deg, #4DB8FF, #1E5FD4);
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+}
+.contact-card .name { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.contact-card .meta { font-size: 12px; color: var(--text-secondary); }
+.contact-actions {
+  display: flex; gap: 8px;
+  margin-top: 10px;
+}
+.contact-actions a {
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(13,27,62,0.6);
+  border: 1px solid var(--border-subtle);
+  transition: all 180ms;
+}
+.contact-actions a:hover { transform: translateY(-1px); }
+.contact-actions a.phone { color: var(--cyan); }
+.contact-actions a.mail  { color: var(--warning); }
+.contact-actions a.wa    { color: var(--success); }
+.contact-actions [data-lucide] { width: 16px; height: 16px; stroke-width: 2; }
+
+.info-rows {
+  display: flex; flex-direction: column;
+  gap: 10px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.info-row {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+.info-row .lbl { color: var(--text-secondary); }
+.info-row .val { color: var(--text-primary); font-weight: 500; }
+.pill-fb {
+  display: inline-flex; align-items: center;
+  padding: 3px 9px;
+  border-radius: 100px;
+  background: rgba(77,184,255,0.14);
+  color: var(--cyan);
+  font-size: 11px;
+  font-weight: 600;
+}
+.pill-green {
+  display: inline-flex; align-items: center;
+  padding: 3px 9px;
+  border-radius: 100px;
+  background: rgba(34,211,160,0.14);
+  color: var(--success);
+  font-size: 11px;
+  font-weight: 600;
+}
+.info-row .val.success { color: var(--success); font-weight: 600; }
+
+.section-title {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 18px 0 12px;
+}
+
+/* Timeline */
+.timeline {
+  display: flex; flex-direction: column;
+  gap: 10px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.tl-row {
+  display: flex; align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.tl-ico {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.tl-ico [data-lucide] { width: 11px; height: 11px; stroke-width: 2.5; }
+.tl-ico.green { background: rgba(34,211,160,0.14); color: var(--success); }
+.tl-ico.cyan { background: rgba(77,184,255,0.14); color: var(--cyan); }
+.tl-ico.muted { background: rgba(138,155,191,0.14); color: var(--text-secondary); }
+.tl-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tl-text { font-weight: 500; }
+.tl-time { font-size: 11px; color: var(--text-disabled); font-family: var(--font-mono); }
+
+/* Assignee / Stage controls */
+.dp-select {
+  display: flex; align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  background: rgba(13,27,62,0.8);
+  border: 1px solid rgba(77,184,255,0.15);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 180ms;
+}
+.dp-select:hover { border-color: rgba(77,184,255,0.3); }
+.dp-select .av {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9.5px; font-weight: 700;
+  color: var(--bg-base);
+  background: linear-gradient(135deg, #4DB8FF, #1E5FD4);
+  flex-shrink: 0;
+}
+.dp-select .val { flex: 1; }
+.dp-select [data-lucide] { width: 14px; height: 14px; color: var(--text-secondary); }
+
+/* Stage stepper */
+.stage-stepper {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 4px;
+  background: rgba(13,27,62,0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+.stg {
+  height: 32px;
+  border: 0; background: transparent;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 180ms;
+}
+.stg:hover:not(.active) { color: var(--text-primary); }
+.stg.active {
+  background: var(--cyan);
+  color: var(--bg-base);
+}
+
+/* Notes */
+.notes-area {
+  width: 100%;
+  background: rgba(13,27,62,0.8);
+  border: 1px solid rgba(77,184,255,0.15);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  resize: vertical;
+  min-height: 76px;
+  transition: border-color 180ms;
+}
+.notes-area:focus { border-color: var(--cyan); }
+.notes-area::placeholder { color: var(--text-disabled); }
+.btn-note {
+  margin-top: 8px;
+  height: 32px;
+  padding: 0 14px;
+  background: transparent;
+  border: 1px solid rgba(77,184,255,0.25);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 180ms;
+}
+.btn-note:hover { border-color: var(--cyan); }
+
+/* ===== Responsive ===== */
+@media (max-width: 1280px) {
+  .inbox { grid-template-columns: 280px 1fr 300px; }
+}
+@media (max-width: 1100px) {
+  .inbox { grid-template-columns: 280px 1fr; }
+  .detail-panel { display: none; }
+}
+@media (max-width: 880px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .inbox { grid-template-columns: 1fr; }
+  .lead-panel { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sb-top">
+      <a class="sb-logo" href="#"><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a>
+      <button class="workspace" type="button">
+        <span>Automotores del Norte</span>
+        <i data-lucide="chevron-down"></i>
+      </button>
+    </div>
+    <nav class="sb-nav">
+      <a class="nav-item" href="Dashboard.html">
+        <i data-lucide="layout-dashboard"></i>
+        <span class="label">Dashboard</span>
+      </a>
+      <a class="nav-item active" href="#">
+        <i data-lucide="inbox"></i>
+        <span class="label">Leads</span>
+        <span class="badge">12</span>
+      </a>
+      <a class="nav-item" href="#">
+        <i data-lucide="git-branch"></i>
+        <span class="label">Pipeline</span>
+      </a>
+      <a class="nav-item" href="Inventario.html">
+        <i data-lucide="package"></i>
+        <span class="label">Inventario</span>
+        <span class="badge">38</span>
+      </a>
+      <a class="nav-item" href="#">
+        <i data-lucide="megaphone"></i>
+        <span class="label">Publicaciones</span>
+      </a>
+      <a class="nav-item" href="#">
+        <i data-lucide="bar-chart-3"></i>
+        <span class="label">Analytics</span>
+      </a>
+      <div class="group-divider"></div>
+      <a class="nav-item" href="#">
+        <i data-lucide="settings"></i>
+        <span class="label">Configuración</span>
+      </a>
+      <a class="nav-item" href="#">
+        <i data-lucide="help-circle"></i>
+        <span class="label">Ayuda</span>
+      </a>
+    </nav>
+    <div class="sb-user">
+      <span class="av">MR</span>
+      <span class="meta">
+        <b>Martín R.</b>
+        <span class="plan">Crecimiento</span>
+      </span>
+      <i data-lucide="chevron-right"></i>
+    </div>
+  </aside>
+
+  <!-- Inbox 3-panel -->
+  <section class="inbox">
+    <!-- ===== Panel 1: Lead list ===== -->
+    <aside class="lead-panel">
+      <div class="lp-head">
+        <h2>Leads</h2>
+        <button class="icon-btn" type="button" aria-label="Filtros"><i data-lucide="sliders-horizontal"></i></button>
+      </div>
+      <div class="search">
+        <i data-lucide="search"></i>
+        <input type="text" placeholder="Buscar lead..." />
+      </div>
+      <div class="filter-tabs">
+        <div class="filter-tab active">Todos <span class="count">47</span></div>
+        <div class="filter-tab">Nuevos <span class="count">12</span></div>
+        <div class="filter-tab">Pendientes <span class="count">8</span></div>
+        <div class="filter-tab">Cerrados</div>
+      </div>
+      <div class="lead-list">
+        <div class="lead-item active unread">
+          <span class="av" style="background: linear-gradient(135deg,#4DB8FF,#1E5FD4)">MR</span>
+          <div class="body">
+            <div class="row1"><span class="name">Martín Rivas</span><span class="src fb">FB</span></div>
+            <span class="preview">Hola, me interesa el Corolla...</span>
+          </div>
+          <div class="meta">
+            <span class="time">2 min</span>
+            <span class="dot unread"></span>
+          </div>
+        </div>
+        <div class="lead-item">
+          <span class="av" style="background: linear-gradient(135deg,#22D3A0,#1E5FD4)">JC</span>
+          <div class="body">
+            <div class="row1"><span class="name">Julieta Castro</span><span class="src at">AT</span></div>
+            <span class="preview">¿Está disponible para ver?</span>
+          </div>
+          <div class="meta"><span class="time">15 min</span><span class="dot placeholder"></span></div>
+        </div>
+        <div class="lead-item">
+          <span class="av" style="background: linear-gradient(135deg,#F5A623,#F04438)">SP</span>
+          <div class="body">
+            <div class="row1"><span class="name">Sofía Paz</span><span class="src dir">Directo</span></div>
+            <span class="preview">Necesito financiación...</span>
+          </div>
+          <div class="meta"><span class="time">1 h</span><span class="dot pending"></span></div>
+        </div>
+        <div class="lead-item">
+          <span class="av" style="background: linear-gradient(135deg,#7DCEFF,#4DB8FF)">AL</span>
+          <div class="body">
+            <div class="row1"><span class="name">Andrés López</span><span class="src fb">FB</span></div>
+            <span class="preview">¿Hacen permuta?</span>
+          </div>
+          <div class="meta"><span class="time">2 h</span><span class="dot placeholder"></span></div>
+        </div>
+        <div class="lead-item">
+          <span class="av" style="background: linear-gradient(135deg,#0D1B6E,#1E5FD4)">CR</span>
+          <div class="body">
+            <div class="row1"><span class="name">Carlos Ríos</span><span class="src at">AT</span></div>
+            <span class="preview">Precio final?</span>
+          </div>
+          <div class="meta"><span class="time">3 h</span><span class="dot placeholder"></span></div>
+        </div>
+        <div class="lead-item">
+          <span class="av" style="background: linear-gradient(135deg,#F5A623,#1E5FD4)">VM</span>
+          <div class="body">
+            <div class="row1"><span class="name">Valeria Méndez</span><span class="src fb">FB</span></div>
+            <span class="preview">Me pueden llamar?</span>
+          </div>
+          <div class="meta"><span class="time">ayer</span><span class="dot placeholder"></span></div>
+        </div>
+        <div class="lead-item">
+          <span class="av" style="background: linear-gradient(135deg,#22D3A0,#4DB8FF)">DT</span>
+          <div class="body">
+            <div class="row1"><span class="name">Diego Torres</span><span class="src dir">Directo</span></div>
+            <span class="preview">Quiero agendar una visita</span>
+          </div>
+          <div class="meta"><span class="time">ayer</span><span class="dot placeholder"></span></div>
+        </div>
+        <div class="lead-item">
+          <span class="av" style="background: linear-gradient(135deg,#7DCEFF,#0D1B6E)">LV</span>
+          <div class="body">
+            <div class="row1"><span class="name">Laura Vega</span><span class="src at">AT</span></div>
+            <span class="preview">Tienen más colores?</span>
+          </div>
+          <div class="meta"><span class="time">2 d</span><span class="dot placeholder"></span></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== Panel 2: Conversation ===== -->
+    <main class="conv-panel">
+      <header class="conv-head">
+        <span class="av">MR</span>
+        <div class="who">
+          <span class="name">Martín Rivas</span>
+          <span class="src-pill"><span class="d"></span>Facebook Marketplace</span>
+        </div>
+        <div class="actions">
+          <button class="icon-btn" type="button" aria-label="Llamar"><i data-lucide="phone"></i></button>
+          <button class="icon-btn" type="button" aria-label="Videollamada"><i data-lucide="video"></i></button>
+          <button class="icon-btn" type="button" aria-label="Más"><i data-lucide="more-horizontal"></i></button>
+        </div>
+      </header>
+
+      <div class="conv-thread">
+        <div class="day-sep">Hoy · 15 de mayo</div>
+
+        <div class="msg-row">
+          <span class="av">MR</span>
+          <div class="bubble-wrap">
+            <div class="bubble">¡Hola! Vi el Toyota Corolla 2024 en Facebook. ¿Sigue disponible? ¿Cuál es el precio final?</div>
+            <div class="msg-foot">10:24 AM</div>
+          </div>
+        </div>
+
+        <div class="msg-row me">
+          <span class="av">MR</span>
+          <div class="bubble-wrap">
+            <div class="bubble">¡Hola Martín! Sí, el Corolla está disponible. El precio publicado es $28.500. ¿Te gustaría coordinar una visita para verlo?</div>
+            <div class="msg-foot"><span class="ai-tag">IA</span>10:25 AM</div>
+          </div>
+        </div>
+
+        <div class="msg-row">
+          <span class="av">MR</span>
+          <div class="bubble-wrap">
+            <div class="bubble">¡Perfecto! Sí me interesa verlo. ¿Tienen disponibilidad esta semana?</div>
+            <div class="msg-foot">10:31 AM</div>
+          </div>
+        </div>
+
+        <div class="msg-row">
+          <span class="av">MR</span>
+          <div class="typing-bubble">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="composer">
+        <div class="ai-suggest">
+          <span class="ico"><i data-lucide="sparkles"></i></span>
+          <div class="body">
+            <span class="label">Sugerencia IA</span>
+            <span class="text">Tenemos disponibilidad martes y jueves de 10 a 18hs. ¿Qué día te queda mejor?</span>
+          </div>
+          <div class="acts">
+            <button class="btn-use" type="button">Usar <i data-lucide="arrow-right"></i></button>
+            <button class="btn-dismiss" type="button" aria-label="Descartar"><i data-lucide="x"></i></button>
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="icons">
+            <button type="button" aria-label="Adjuntar"><i data-lucide="paperclip"></i></button>
+            <button type="button" aria-label="Imagen"><i data-lucide="image"></i></button>
+          </div>
+          <input type="text" placeholder="Escribí un mensaje..." />
+          <button class="send" type="button" aria-label="Enviar"><i data-lucide="send"></i></button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ===== Panel 3: Detail ===== -->
+    <aside class="detail-panel">
+      <h3 class="dp-head">Detalle del lead</h3>
+
+      <div class="contact-card">
+        <span class="av">MR</span>
+        <span class="name">Martín Rivas</span>
+        <span class="meta">martin.rivas@gmail.com</span>
+        <span class="meta">+54 11 4567-8901</span>
+        <div class="contact-actions">
+          <a class="phone" href="#" aria-label="Llamar"><i data-lucide="phone"></i></a>
+          <a class="mail" href="#" aria-label="Email"><i data-lucide="mail"></i></a>
+          <a class="wa" href="#" aria-label="WhatsApp"><i data-lucide="message-circle"></i></a>
+        </div>
+      </div>
+
+      <div class="info-rows">
+        <div class="info-row">
+          <span class="lbl">Origen</span>
+          <span class="val"><span class="pill-fb">Facebook Marketplace</span></span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Producto</span>
+          <span class="val">Toyota Corolla 2024</span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Precio</span>
+          <span class="val">$28.500</span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Interés</span>
+          <span class="val"><span class="pill-green">Alto</span></span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Primer contacto</span>
+          <span class="val">hace 7 min</span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Respuesta</span>
+          <span class="val success">&lt; 60s</span>
+        </div>
+      </div>
+
+      <h4 class="section-title">Timeline</h4>
+      <div class="timeline">
+        <div class="tl-row">
+          <span class="tl-ico green"><i data-lucide="user-plus"></i></span>
+          <div class="tl-body">
+            <span class="tl-text">Lead recibido · Facebook</span>
+            <span class="tl-time">10:24 AM</span>
+          </div>
+        </div>
+        <div class="tl-row">
+          <span class="tl-ico cyan"><i data-lucide="zap"></i></span>
+          <div class="tl-body">
+            <span class="tl-text">Respondido por IA</span>
+            <span class="tl-time">10:25 AM</span>
+          </div>
+        </div>
+        <div class="tl-row">
+          <span class="tl-ico muted"><i data-lucide="eye"></i></span>
+          <div class="tl-body">
+            <span class="tl-text">Visto por Martín R.</span>
+            <span class="tl-time">10:26 AM</span>
+          </div>
+        </div>
+      </div>
+
+      <h4 class="section-title">Asignado a</h4>
+      <div class="dp-select">
+        <span class="av">MR</span>
+        <span class="val">Martín R.</span>
+        <i data-lucide="chevron-down"></i>
+      </div>
+
+      <h4 class="section-title">Etapa del pipeline</h4>
+      <div class="stage-stepper" role="radiogroup">
+        <button class="stg" type="button">Nuevo</button>
+        <button class="stg active" type="button">Contactado</button>
+        <button class="stg" type="button">Demo</button>
+        <button class="stg" type="button">Cierre</button>
+      </div>
+
+      <h4 class="section-title">Notas internas</h4>
+      <textarea class="notes-area" rows="3" placeholder="Agregar nota..."></textarea>
+      <div>
+        <button class="btn-note" type="button">Guardar nota</button>
+      </div>
+    </aside>
+  </section>
+</div>
+
+<script>
+  lucide.createIcons();
+
+  // Filter tabs
+  document.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+    });
+  });
+
+  // Lead selection
+  document.querySelectorAll('.lead-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.lead-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+
+  // Stage stepper
+  document.querySelectorAll('.stg').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.stg').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

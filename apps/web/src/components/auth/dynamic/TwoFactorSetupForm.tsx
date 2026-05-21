@@ -72,26 +72,40 @@ type FormState = {
 
 export function TwoFactorSetupSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card>
-          <CardContent className="pt-8">
-            <div className="text-center py-12">
-              <div
-                className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                role="status"
-                aria-label="Loading"
-              >
-                <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-                  Loading...
-                </span>
-              </div>
-              <h2 className="mt-4 text-xl font-semibold text-foreground">
-                Loading Security Features...
-              </h2>
-            </div>
-          </CardContent>
-        </Card>
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--ps-bg-base)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 16,
+    }}>
+      <style>{`@keyframes twoFaSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <div style={{ width: '100%', maxWidth: 448 }}>
+        <div style={{
+          background: 'var(--ps-bg-surface)',
+          border: '1px solid var(--ps-border-default)',
+          borderRadius: 14,
+          padding: '32px 28px',
+          textAlign: 'center',
+        }}>
+          <div
+            role="status"
+            aria-label="Cargando"
+            style={{
+              display: 'inline-block',
+              width: 40,
+              height: 40,
+              border: '3px solid var(--ps-border-default)',
+              borderTopColor: 'var(--ps-cyan)',
+              borderRadius: '50%',
+              animation: 'twoFaSpin 0.8s linear infinite',
+            }}
+          />
+          <h2 style={{ margin: '16px 0 0', fontSize: 18, fontWeight: 600, color: 'var(--ps-text-primary)' }}>
+            Cargando funciones de seguridad...
+          </h2>
+        </div>
       </div>
     </div>
   );
@@ -321,10 +335,10 @@ export function TwoFactorSetupForm({
                   </span>
                 </div>
                 <h2 className="mt-4 text-xl font-semibold text-foreground">
-                  Setting Up Two-Factor Authentication
+                  Configurando autenticación de dos factores
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Please wait while we generate your QR code...
+                  Aguardá mientras generamos tu código QR...
                 </p>
               </div>
             </CardContent>
@@ -335,11 +349,11 @@ export function TwoFactorSetupForm({
             <>
               <CardHeader>
                 <CardTitle className="text-2xl flex items-center gap-2">
-                  <ShieldIcon className="w-6 h-6 text-blue-600" />
-                  Set Up Two-Factor Authentication
+                  <ShieldIcon className="w-6 h-6" style={{ color: 'var(--ps-cyan)' }} />
+                  Configurar autenticación de dos factores
                 </CardTitle>
                 <CardDescription>
-                  Scan the QR code with your authenticator app
+                  Escaneá el código QR con tu app de autenticación
                 </CardDescription>
               </CardHeader>
 
@@ -358,20 +372,15 @@ export function TwoFactorSetupForm({
                 </div>
 
                 {/* Instructions */}
-                <div className="bg-primary/10 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-primary mb-2">
-                    Instructions:
+                <div style={{ background: 'var(--ps-info-bg)', borderRadius: 8, padding: 16 }}>
+                  <h3 style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: 'var(--ps-cyan)' }}>
+                    Instrucciones:
                   </h3>
-                  <ol className="text-sm text-primary space-y-1 list-decimal list-inside">
-                    <li>
-                      Open your authenticator app (Google Authenticator, Authy,
-                      etc.)
-                    </li>
-                    <li>Scan the QR code above</li>
-                    <li>Enter the 6-digit code below</li>
-                    <li>
-                      Click &quot;Verify and Enable&quot; to complete setup
-                    </li>
+                  <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: 'var(--ps-cyan)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <li>Abrí tu app de autenticación (Google Authenticator, Authy, etc.)</li>
+                    <li>Escaneá el código QR de arriba</li>
+                    <li>Ingresá el código de 6 dígitos abajo</li>
+                    <li>Hacé click en "Verificar y activar" para completar la configuración</li>
                   </ol>
                 </div>
 
@@ -381,7 +390,7 @@ export function TwoFactorSetupForm({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-semibold text-foreground">
-                      Backup Codes
+                      Códigos de respaldo
                     </h3>
                     <Button
                       type="button"
@@ -389,12 +398,12 @@ export function TwoFactorSetupForm({
                       onClick={handleDownloadBackupCodes}
                       className="text-sm"
                     >
-                      Download Backup Codes
+                      Descargar códigos
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mb-2">
-                    Save these codes in a safe place. You can use them to access
-                    your account if you lose your authenticator device.
+                    Guardá estos códigos en un lugar seguro. Podés usarlos para acceder
+                    a tu cuenta si perdés tu dispositivo de autenticación.
                   </p>
                   {formState.backupCodes.length > 0 ? (
                     <div className="grid grid-cols-2 gap-2 bg-muted rounded-lg p-4">
@@ -409,7 +418,7 @@ export function TwoFactorSetupForm({
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      No backup codes available
+                      No hay códigos de respaldo disponibles
                     </p>
                   )}
                 </div>
@@ -437,7 +446,7 @@ export function TwoFactorSetupForm({
                   }
                   className="w-full"
                 >
-                  Verify and Enable
+                  Verificar y activar
                 </Button>
 
                 {/* Error Message */}
@@ -469,10 +478,10 @@ export function TwoFactorSetupForm({
                   </span>
                 </div>
                 <h2 className="mt-4 text-xl font-semibold text-foreground">
-                  Verifying...
+                  Verificando...
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Please wait while we verify your code
+                  Aguardá mientras verificamos tu código
                 </p>
               </div>
             </CardContent>
@@ -482,32 +491,27 @@ export function TwoFactorSetupForm({
           {formState.state === "enabled" && (
             <CardContent className="pt-8">
               <div className="text-center py-12 space-y-6">
-                <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
+                <div style={{ display: 'inline-flex', width: 80, height: 80, alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'var(--ps-success-bg)' }}>
                   <svg
-                    className="h-10 w-10 text-green-600 dark:text-green-400"
+                    style={{ width: 40, height: 40, color: 'var(--ps-success)' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                    <ShieldIcon className="w-6 h-6 text-green-600" />
-                    Two-Factor Authentication Enabled
+                    <ShieldIcon className="w-6 h-6" style={{ color: 'var(--ps-success)' }} />
+                    Autenticación de dos factores activada
                   </h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Your account is now protected with two-factor authentication
+                    Tu cuenta ahora está protegida con autenticación de dos factores
                   </p>
                 </div>
                 <Button onClick={handleDone} className="w-full">
-                  Done
+                  Listo
                 </Button>
               </div>
             </CardContent>
@@ -518,30 +522,29 @@ export function TwoFactorSetupForm({
             <>
               <CardHeader>
                 <CardTitle className="text-2xl flex items-center gap-2">
-                  <ShieldIcon className="w-6 h-6 text-green-600" />
-                  Two-Factor Authentication is Enabled
+                  <ShieldIcon className="w-6 h-6" style={{ color: 'var(--ps-success)' }} />
+                  Autenticación de dos factores activada
                 </CardTitle>
                 <CardDescription>
-                  Your account is currently protected with two-factor
-                  authentication
+                  Tu cuenta está protegida actualmente con autenticación de dos factores
                 </CardDescription>
               </CardHeader>
 
               <CardContent className="space-y-6">
                 <div className="text-center">
-                  <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20 mb-4">
-                    <ShieldIcon className="h-8 w-8 text-green-600 dark:text-green-400" />
+                  <div style={{ display: 'inline-flex', width: 64, height: 64, alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'var(--ps-success-bg)', marginBottom: 16 }}>
+                    <ShieldIcon className="h-8 w-8" style={{ color: 'var(--ps-success)' }} />
                   </div>
                 </div>
 
-                {/* Warning */}
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-yellow-600 dark:text-yellow-600 mb-2">
-                    Warning:
+                {/* Advertencia */}
+                <div style={{ background: 'var(--ps-warning-bg)', border: '1px solid var(--ps-warning)', borderRadius: 8, padding: 16 }}>
+                  <h3 style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: 'var(--ps-warning)' }}>
+                    Advertencia:
                   </h3>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-500">
-                    Disabling two-factor authentication will make your account
-                    less secure. We recommend keeping it enabled.
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--ps-warning)' }}>
+                    Desactivar la autenticación de dos factores hace tu cuenta menos segura.
+                    Recomendamos mantenerla activada.
                   </p>
                 </div>
 
@@ -579,7 +582,7 @@ export function TwoFactorSetupForm({
                   className="w-full"
                   disabled={!canVerify}
                 >
-                  Disable 2FA
+                  Desactivar 2FA
                 </Button>
               </CardContent>
             </>
@@ -599,10 +602,10 @@ export function TwoFactorSetupForm({
                   </span>
                 </div>
                 <h2 className="mt-4 text-xl font-semibold text-foreground">
-                  Disabling...
+                  Desactivando...
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Please wait while we disable two-factor authentication
+                  Aguardá mientras desactivamos la autenticación de dos factores
                 </p>
               </div>
             </CardContent>
@@ -612,31 +615,26 @@ export function TwoFactorSetupForm({
           {formState.state === "disabled" && (
             <CardContent className="pt-8">
               <div className="text-center py-12 space-y-6">
-                <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
+                <div style={{ display: 'inline-flex', width: 80, height: 80, alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'var(--ps-warning-bg)' }}>
                   <svg
-                    className="h-10 w-10 text-green-600 dark:text-green-400"
+                    style={{ width: 40, height: 40, color: 'var(--ps-warning)' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-foreground">
-                    Two-Factor Authentication Disabled
+                    Autenticación de dos factores desactivada
                   </h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Two-factor authentication has been disabled for your account
+                    La autenticación de dos factores fue desactivada para tu cuenta
                   </p>
                 </div>
                 <Button onClick={handleDone} className="w-full">
-                  Done
+                  Listo
                 </Button>
               </div>
             </CardContent>
@@ -646,25 +644,20 @@ export function TwoFactorSetupForm({
           {formState.state === "error" && (
             <CardContent className="pt-8">
               <div className="text-center py-12 space-y-6">
-                <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                <div style={{ display: 'inline-flex', width: 80, height: 80, alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'var(--ps-error-bg)' }}>
                   <svg
-                    className="h-10 w-10 text-red-600 dark:text-red-400"
+                    style={{ width: 40, height: 40, color: 'var(--ps-error)' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-foreground">Error</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {formState.error || "An error occurred"}
+                    {formState.error || "Ocurrió un error inesperado"}
                   </p>
                 </div>
                 <Button
@@ -675,7 +668,7 @@ export function TwoFactorSetupForm({
                   }
                   className="w-full"
                 >
-                  {is2FAEnabled ? "Back to Profile" : "Try Again"}
+                  {is2FAEnabled ? "Volver al perfil" : "Intentar de nuevo"}
                 </Button>
               </div>
             </CardContent>

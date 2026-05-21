@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Shadows</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 32px 24px; background: var(--bg-base); font-family: var(--font-sans); color: var(--text-primary); }
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .box { width: 86px; height: 64px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-lg); }
+  .name { font-family: var(--font-mono); font-size: 10px; color: var(--text-secondary); text-align: center; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="item"><div class="box" style="box-shadow: 0 2px 8px rgba(6,13,36,0.4);"></div><div class="name">sm</div></div>
+    <div class="item"><div class="box" style="box-shadow: 0 8px 24px rgba(6,13,36,0.5);"></div><div class="name">md</div></div>
+    <div class="item"><div class="box" style="box-shadow: 0 16px 48px rgba(6,13,36,0.55);"></div><div class="name">lg</div></div>
+    <div class="item"><div class="box" style="box-shadow: 0 32px 80px rgba(6,13,36,0.6);"></div><div class="name">xl</div></div>
+    <div class="item"><div class="box" style="box-shadow: 0 8px 32px rgba(77,184,255,0.35); background: var(--cyan);"></div><div class="name">glow-cyan</div></div>
+  </div>
+</body>
+</html>

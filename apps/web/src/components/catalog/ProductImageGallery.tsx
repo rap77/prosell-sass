@@ -1,60 +1,81 @@
-'use client';
+'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import Image from 'next/image';
-import type { ProductImage } from '@/types/product-image';
-import { ChevronLeft, ChevronRight } from '@/components/icons/chevron';
+/**
+ * ProductImageGallery — ProSell image viewer for catalog detail.
+ *
+ * Features:
+ *   - Main image (aspect-video) with keyboard navigation (←/→)
+ *   - Previous/Next arrow buttons (semi-transparent surface overlay)
+ *   - Counter badge (bottom-right)
+ *   - Thumbnail strip for quick selection
+ *
+ * All colors via var(--ps-*) tokens — dark/light automatic.
+ */
+
+import { useState, useCallback, useEffect, useRef } from 'react'
+import Image from 'next/image'
+import type { ProductImage } from '@/types/product-image'
+import { ChevronLeft, ChevronRight } from '@/components/icons/chevron'
 
 interface ProductImageGalleryProps {
-  images: ProductImage[];
-  className?: string;
+  images: ProductImage[]
+  className?: string
 }
 
 export function ProductImageGallery({ images, className = '' }: ProductImageGalleryProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const galleryRef = useRef<HTMLDivElement>(null)
 
-  // All hooks must be called unconditionally — before any early return
-  const galleryRef = useRef<HTMLDivElement>(null);
-
-  const hasPrevious = currentIndex > 0;
-  const hasNext = currentIndex < images.length - 1;
+  const hasPrevious = currentIndex > 0
+  const hasNext     = currentIndex < images.length - 1
 
   const goToPrevious = useCallback(() => {
-    if (hasPrevious) setCurrentIndex((prev) => prev - 1);
-  }, [hasPrevious]);
+    if (hasPrevious) setCurrentIndex((prev) => prev - 1)
+  }, [hasPrevious])
 
   const goToNext = useCallback(() => {
-    if (hasNext) setCurrentIndex((prev) => prev + 1);
-  }, [hasNext]);
+    if (hasNext) setCurrentIndex((prev) => prev + 1)
+  }, [hasNext])
 
   const selectImage = useCallback((index: number) => {
-    setCurrentIndex(index);
-  }, []);
+    setCurrentIndex(index)
+  }, [])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowLeft') goToPrevious();
-    else if (e.key === 'ArrowRight') goToNext();
-  }, [goToPrevious, goToNext]);
+    if (e.key === 'ArrowLeft') goToPrevious()
+    else if (e.key === 'ArrowRight') goToNext()
+  }, [goToPrevious, goToNext])
 
   useEffect(() => {
-    if (galleryRef.current) galleryRef.current.focus();
-  }, []);
+    galleryRef.current?.focus()
+  }, [])
 
-  // Early return after all hooks
+  // Empty state
   if (!images || images.length === 0) {
     return (
       <div
         data-testid="image-gallery"
         role="region"
         aria-label="Product image gallery"
-        className={`flex items-center justify-center bg-gray-100 rounded-lg ${className}`}
+        className={className}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          aspectRatio: '16/9',
+          borderRadius: 12,
+          background: 'var(--ps-bg-elevated)',
+          border: '1px dashed var(--ps-border-subtle)',
+        }}
       >
-        <p className="text-gray-500">No images available</p>
+        <p style={{ fontSize: 13, color: 'var(--ps-text-disabled)' }}>
+          Sin imágenes disponibles
+        </p>
       </div>
-    );
+    )
   }
 
-  const currentImage = images[currentIndex];
+  const currentImage = images[currentIndex]
 
   return (
     <div
@@ -64,74 +85,153 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
       aria-label="Product image gallery"
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className={`flex flex-col gap-4 ${className}`}
+      className={className}
+      style={{ display: 'flex', flexDirection: 'column', gap: 12, outline: 'none' }}
     >
-      {/* Main Image */}
-      <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+      {/* Main image */}
+      <div style={{
+        position: 'relative',
+        aspectRatio: '16/9',
+        borderRadius: 12,
+        overflow: 'hidden',
+        background: 'var(--ps-bg-elevated)',
+      }}>
         <Image
           src={currentImage.url}
-          alt={currentImage.alt_text || ''}
+          alt={currentImage.alt_text ?? ''}
           fill
-          className="object-contain"
+          style={{ objectFit: 'contain' }}
           sizes="(max-width: 768px) 100vw, 50vw"
         />
 
         {images.length > 1 && (
           <>
+            {/* Prev arrow */}
             <button
               onClick={goToPrevious}
               disabled={!hasPrevious}
-              aria-label="Previous image"
-              className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              aria-label="Imagen anterior"
+              style={{
+                position: 'absolute',
+                left: 10,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(6,13,36,0.55)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(4px)',
+                color: '#fff',
+                cursor: hasPrevious ? 'pointer' : 'default',
+                opacity: hasPrevious ? 1 : 0.35,
+                transition: 'opacity 150ms, background 150ms',
+              }}
+              onMouseEnter={(e) => { if (hasPrevious) e.currentTarget.style.background = 'rgba(6,13,36,0.85)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(6,13,36,0.55)' }}
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
 
+            {/* Next arrow */}
             <button
               onClick={goToNext}
               disabled={!hasNext}
-              aria-label="Next image"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              aria-label="Imagen siguiente"
+              style={{
+                position: 'absolute',
+                right: 10,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(6,13,36,0.55)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(4px)',
+                color: '#fff',
+                cursor: hasNext ? 'pointer' : 'default',
+                opacity: hasNext ? 1 : 0.35,
+                transition: 'opacity 150ms, background 150ms',
+              }}
+              onMouseEnter={(e) => { if (hasNext) e.currentTarget.style.background = 'rgba(6,13,36,0.85)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(6,13,36,0.55)' }}
             >
-              <ChevronRight className="w-6 h-6" />
+              <ChevronRight className="w-5 h-5" />
             </button>
 
-            <div className="absolute bottom-2 right-2 px-3 py-1 bg-black/70 text-white text-sm rounded-full">
+            {/* Counter badge */}
+            <div style={{
+              position: 'absolute',
+              bottom: 10,
+              right: 12,
+              padding: '3px 10px',
+              borderRadius: 99,
+              background: 'rgba(6,13,36,0.7)',
+              backdropFilter: 'blur(4px)',
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'rgba(255,255,255,0.9)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}>
               {currentIndex + 1} / {images.length}
             </div>
           </>
         )}
       </div>
 
-      {/* Thumbnails */}
+      {/* Thumbnail strip */}
       {images.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {images.map((image, index) => (
-            <button
-              key={image.id}
-              onClick={() => selectImage(index)}
-              aria-label={`View image ${index + 1}${image.alt_text ? `: ${image.alt_text}` : ''}`}
-              aria-current={index === currentIndex ? 'true' : undefined}
-              className={`
-                flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden relative
-                transition-all ring-2 ring-offset-2
-                ${index === currentIndex
-                  ? 'ring-blue-500 scale-105'
-                  : 'ring-transparent hover:ring-gray-300'
-                }
-              `}
-            >
-              <Image
-                src={image.thumbnail_url || image.url}
-                alt={image.alt_text || ''}
-                fill
-                className="object-cover"
-                sizes="80px"
-              />
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+          {images.map((image, index) => {
+            const isActive = index === currentIndex
+            return (
+              <button
+                key={image.id}
+                onClick={() => selectImage(index)}
+                aria-label={`Ver imagen ${index + 1}${image.alt_text ? `: ${image.alt_text}` : ''}`}
+                aria-current={isActive ? 'true' : undefined}
+                style={{
+                  flexShrink: 0,
+                  width: 76,
+                  height: 76,
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  position: 'relative',
+                  background: 'var(--ps-bg-elevated)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  outline: isActive ? '2px solid var(--ps-cyan)' : '2px solid transparent',
+                  outlineOffset: 2,
+                  transform: isActive ? 'scale(1.04)' : 'scale(1)',
+                  transition: 'outline 150ms, transform 150ms',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) e.currentTarget.style.outline = '2px solid var(--ps-border-medium)'
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) e.currentTarget.style.outline = '2px solid transparent'
+                }}
+              >
+                <Image
+                  src={image.thumbnail_url ?? image.url}
+                  alt={image.alt_text ?? ''}
+                  fill
+                  style={{ objectFit: 'cover' }}
+                  sizes="76px"
+                />
+              </button>
+            )
+          })}
         </div>
       )}
     </div>
-  );
+  )
 }

@@ -16,6 +16,16 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning data-scroll-behavior="smooth">
+      {/* Anti-flash script: applies saved theme before first paint.
+           Dark is ProSell default → always adds "dark" class.
+           Light mode → removes "dark", adds data-theme="light". */}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('prosell-theme');var h=document.documentElement;if(t==='light'){h.setAttribute('data-theme','light');}else{h.classList.add('dark');}}catch(e){document.documentElement.classList.add('dark');}`,
+          }}
+        />
+      </head>
       <body className="antialiased">
         <ReactQueryProvider>
           <AuthProvider>

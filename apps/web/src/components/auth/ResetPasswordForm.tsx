@@ -1,10 +1,13 @@
 "use client";
 
 /**
- * ResetPasswordForm Component
+ * ResetPasswordForm Component (Legacy)
  *
- * Handles password reset flow with token from URL.
- * Uses chadcn/ui components.
+ * NOTA: Este componente es legacy. La implementación activa está en
+ * app/auth/reset-password/ResetPasswordPageContent.tsx
+ *
+ * Migrado a ProSell design tokens — sin colores hardcodeados.
+ * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 
 import { useState, useEffect } from "react";
@@ -15,23 +18,19 @@ import { z } from "zod";
 import { authApi } from "@/lib/api/authApi";
 import { getErrorMessage } from "@/lib/utils/error";
 import { PasswordInput } from "./PasswordInput";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { CheckCircle2, AlertTriangle, AlertCircle } from "lucide-react";
 
-// Zod schema for form validation
+// ============================================
+// SCHEMA & TYPES
+// ============================================
+
 const resetPasswordSchema = z
   .object({
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
+    message: "Las contraseñas no coinciden",
     path: ["confirmPassword"],
   });
 
@@ -42,6 +41,30 @@ type FormState = "idle" | "loading" | "success" | "error";
 interface ResetPasswordFormProps {
   token?: string;
 }
+
+// ============================================
+// STYLES
+// ============================================
+
+const pageStyle: React.CSSProperties = {
+  minHeight: '100vh',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'var(--ps-bg-base)',
+  padding: '16px',
+};
+
+const cardStyle: React.CSSProperties = {
+  background: 'var(--ps-bg-surface)',
+  border: '1px solid var(--ps-border-default)',
+  borderRadius: 14,
+  padding: 32,
+};
+
+// ============================================
+// COMPONENT
+// ============================================
 
 export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   const [formState, setFormState] = useState<FormState>("idle");
@@ -55,13 +78,10 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   } = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
     mode: "onTouched",
-    defaultValues: {
-      password: "",
-      confirmPassword: "",
-    },
+    defaultValues: { password: "", confirmPassword: "" },
   });
 
-  // Validate token on mount
+  // Validar token al montar
   useEffect(() => {
     if (!token || token.trim() === "") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -70,7 +90,6 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   }, [token]);
 
   const onSubmit = async (data: ResetPasswordFormValues) => {
-    // Check token validity
     if (!token || token.trim() === "") {
       setTokenError(true);
       return;
@@ -85,195 +104,244 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     } catch (err) {
       setFormState("error");
       setErrorMessage(
-        getErrorMessage(err, "Unable to reset password. Please try again."),
+        getErrorMessage(err, "No pudimos restablecer tu contraseña. Intentá de nuevo."),
       );
     }
   };
 
-  // Token error state
+  // ── Token inválido ─────────────────────────────────────────────────────────
+
   if (tokenError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full">
-          <Card>
-            <CardContent className="pt-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg
-                    className="w-8 h-8 text-red-600 dark:text-red-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                </div>
-
-                {/* Use h2 for proper heading order after h1 (sr-only) */}
-                <h2 className="text-3xl font-semibold leading-none tracking-tight mb-2">
-                  Invalid Reset Link
-                </h2>
-
-                <CardDescription className="mb-8">
-                  The password reset link is invalid or has expired. Please
-                  request a new one.
-                </CardDescription>
-
-                <div className="flex flex-col gap-4">
-                  <Button asChild>
-                    <Link href="/auth/forgot-password">
-                      Request New Reset Link
-                    </Link>
-                  </Button>
-
-                  <Button variant="outline" asChild>
-                    <Link href="/auth/login">Back to Login</Link>
-                  </Button>
-                </div>
+      <div style={pageStyle}>
+        <div style={{ width: '100%', maxWidth: 440 }}>
+          <div style={cardStyle}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                background: 'var(--ps-error-bg)',
+                border: '1px solid rgba(240,68,56,0.25)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 20,
+              }}>
+                <AlertTriangle size={28} strokeWidth={1.8} style={{ color: 'var(--ps-error)' }} />
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
-  // Success state
-  if (formState === "success") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full">
-          <Card>
-            <CardContent className="pt-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg
-                    className="w-8 h-8 text-green-600 dark:text-green-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
+              <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>
+                Enlace inválido
+              </h2>
+              <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--ps-text-secondary)', lineHeight: 1.6 }}>
+                El enlace de recuperación no es válido o expiró. Solicitá uno nuevo.
+              </p>
 
-                {/* Use h2 for proper heading order after h1 (sr-only) */}
-                <h2 className="text-3xl font-semibold leading-none tracking-tight mb-2">
-                  Password Reset Successful
-                </h2>
-
-                <CardDescription className="mb-8">
-                  Your password has been successfully reset. You can now sign in
-                  with your new password.
-                </CardDescription>
-
-                <Button asChild className="w-full">
-                  <Link href="/auth/login">Continue to Login</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // Form state
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-muted px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
-        <Card>
-          <CardHeader>
-            {/* Use h2 for proper heading order after h1 (sr-only) */}
-            <h2 className="text-3xl font-semibold leading-none tracking-tight">
-              Reset Your Password
-            </h2>
-            <CardDescription>Enter your new password below.</CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            {/* Error message */}
-            {formState === "error" && errorMessage && (
-              <div
-                className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-md"
-                role="alert"
-              >
-                <p className="text-sm text-destructive">{errorMessage}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* Password input */}
-              <Controller
-                name="password"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <PasswordInput
-                    label="New Password"
-                    name="password"
-                    placeholder="Enter your new password"
-                    value={field.value}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    error={fieldState.error?.message || null}
-                    disabled={isSubmitting || formState === "loading"}
-                    required
-                  />
-                )}
-              />
-
-              {/* Confirm password input */}
-              <Controller
-                name="confirmPassword"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <PasswordInput
-                    label="Confirm New Password"
-                    name="confirmPassword"
-                    placeholder="Confirm your new password"
-                    value={field.value}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    error={fieldState.error?.message || null}
-                    disabled={isSubmitting || formState === "loading"}
-                    required
-                  />
-                )}
-              />
-
-              {/* Submit button */}
-              <Button
-                type="submit"
-                disabled={isSubmitting || formState === "loading"}
-                className="w-full"
-              >
-                {formState === "loading" ? "Resetting..." : "Reset Password"}
-              </Button>
-
-              {/* Back to login link */}
-              <div className="text-center">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <Link
+                  href="/auth/forgot-password"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: 44,
+                    background: 'var(--ps-cyan)',
+                    color: 'var(--ps-bg-base)',
+                    border: 0,
+                    borderRadius: 8,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Solicitar nuevo enlace
+                </Link>
                 <Link
                   href="/auth/login"
-                  className="text-sm font-medium text-primary hover:underline"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: 44,
+                    background: 'transparent',
+                    color: 'var(--ps-text-secondary)',
+                    border: '1px solid var(--ps-border-default)',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                  }}
                 >
-                  Back to Login
+                  Volver al inicio de sesión
                 </Link>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Success ────────────────────────────────────────────────────────────────
+
+  if (formState === "success") {
+    return (
+      <div style={pageStyle}>
+        <div style={{ width: '100%', maxWidth: 440 }}>
+          <div style={cardStyle}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                background: 'var(--ps-success-bg)',
+                border: '1px solid rgba(34,211,160,0.25)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 20,
+              }}>
+                <CheckCircle2 size={28} strokeWidth={1.8} style={{ color: 'var(--ps-success)' }} />
+              </div>
+
+              <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>
+                ¡Contraseña actualizada!
+              </h2>
+              <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--ps-text-secondary)', lineHeight: 1.6 }}>
+                Tu contraseña se actualizó correctamente. Ya podés iniciar sesión.
+              </p>
+
+              <Link
+                href="/auth/login"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 44,
+                  width: '100%',
+                  background: 'var(--ps-cyan)',
+                  color: 'var(--ps-bg-base)',
+                  border: 0,
+                  borderRadius: 8,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                Iniciar sesión
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Form ───────────────────────────────────────────────────────────────────
+
+  const isDisabled = isSubmitting || formState === "loading";
+
+  return (
+    <div style={pageStyle}>
+      <div style={{ width: '100%', maxWidth: 440 }}>
+        <div style={cardStyle}>
+          <h2 style={{ margin: '0 0 6px', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>
+            Nueva contraseña
+          </h2>
+          <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--ps-text-secondary)', lineHeight: 1.5 }}>
+            Elegí una contraseña segura para tu cuenta.
+          </p>
+
+          {formState === "error" && errorMessage && (
+            <div
+              role="alert"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 14px',
+                borderRadius: 8,
+                marginBottom: 16,
+                background: 'var(--ps-error-bg)',
+                border: '1px solid rgba(240,68,56,0.25)',
+              }}
+            >
+              <AlertCircle size={14} style={{ color: 'var(--ps-error)', flexShrink: 0 }} strokeWidth={2.5} />
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--ps-error)' }}>{errorMessage}</p>
+            </div>
+          )}
+
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+          >
+            <Controller
+              name="password"
+              control={control}
+              render={({ field, fieldState }) => (
+                <PasswordInput
+                  label="Nueva contraseña"
+                  name="password"
+                  placeholder="Ingresá tu nueva contraseña"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  error={fieldState.error?.message || null}
+                  disabled={isDisabled}
+                  required
+                />
+              )}
+            />
+
+            <Controller
+              name="confirmPassword"
+              control={control}
+              render={({ field, fieldState }) => (
+                <PasswordInput
+                  label="Confirmá la contraseña"
+                  name="confirmPassword"
+                  placeholder="Confirmá tu nueva contraseña"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  error={fieldState.error?.message || null}
+                  disabled={isDisabled}
+                  required
+                />
+              )}
+            />
+
+            <button
+              type="submit"
+              disabled={isDisabled}
+              style={{
+                marginTop: 8,
+                width: '100%',
+                height: 44,
+                background: isDisabled ? 'rgba(77,184,255,0.4)' : 'var(--ps-cyan)',
+                color: 'var(--ps-bg-base)',
+                border: 0,
+                borderRadius: 8,
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                transition: 'background 180ms',
+              }}
+            >
+              {formState === "loading" ? "Restableciendo..." : "Restablecer contraseña"}
+            </button>
+
+            <div style={{ textAlign: 'center' }}>
+              <Link
+                href="/auth/login"
+                style={{ fontSize: 13, color: 'var(--ps-text-secondary)', textDecoration: 'none', fontWeight: 500 }}
+              >
+                Volver al inicio de sesión
+              </Link>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

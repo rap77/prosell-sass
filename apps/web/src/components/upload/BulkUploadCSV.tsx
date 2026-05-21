@@ -1,10 +1,57 @@
 "use client"
 
+/**
+ * BulkUploadCSV — carga masiva de vehículos en ProSell.
+ *
+ * Permite subir múltiples vehículos desde un archivo CSV con:
+ * - Drag & drop / click para seleccionar
+ * - Preview de las primeras filas con validación
+ * - Descarga de plantilla CSV
+ * - Lógica de negocio preservada exactamente.
+ *
+ * All colors via var(--ps-*) tokens — dark/light automatic.
+ */
+
 import { useState } from "react"
 import { useDropzone } from "react-dropzone"
 import { toast } from "sonner"
 import { Upload, FileText, X, CheckCircle2, AlertCircle, Download } from "lucide-react"
 import { useBulkUploadProducts } from "@/lib/api/vehicles"
+
+// ============================================
+// STYLES
+// ============================================
+
+const TABLE_STYLES = `
+  .ps-bulk-table {
+    width: 100%;
+    font-size: 12px;
+    border-collapse: collapse;
+  }
+  .ps-bulk-table th {
+    padding: 8px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ps-text-disabled);
+    background: var(--ps-bg-elevated);
+    border-bottom: 1px solid var(--ps-border-default);
+  }
+  .ps-bulk-table td {
+    padding: 10px 14px;
+    color: var(--ps-text-secondary);
+    border-bottom: 1px solid var(--ps-border-subtle);
+  }
+  .ps-bulk-table tr:last-child td {
+    border-bottom: none;
+  }
+`
+
+// ============================================
+// TYPES
+// ============================================
 
 interface CSVRecord {
   vin?: string
@@ -44,13 +91,16 @@ interface BulkUploadCSVProps {
   onCancel?: () => void
 }
 
-export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVProps) {
+// ============================================
+// COMPONENT
+// ============================================
+
+export function BulkUploadCSV({ onUpload: _onUpload, onSuccess, onCancel }: BulkUploadCSVProps) {
   const [file, setFile] = useState<File | null>(null)
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [previewRows, setPreviewRows] = useState<ParsedRow[]>([])
 
-  // Use the new products bulk upload hook
   const bulkUpload = useBulkUploadProducts()
 
   const onDrop = (acceptedFiles: File[]) => {
@@ -58,7 +108,7 @@ export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVPr
     if (!selectedFile) return
 
     if (!selectedFile.name.endsWith(".csv")) {
-      toast.error("Only CSV files are allowed")
+      toast.error("Solo se permiten archivos CSV")
       return
     }
 
@@ -77,14 +127,13 @@ export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVPr
     reader.onload = (e) => {
       const text = e.target?.result as string
       try {
-        // Simple CSV parser for preview
         const lines = text.split("\n").filter((line) => line.trim())
         const headers = lines[0].split(",").map((h) => h.trim())
 
         const rows: ParsedRow[] = lines.slice(1).map((line, index) => {
           const values = line.split(",").map((v) => v.trim())
           const row: ParsedRow = {
-            rowNumber: index + 2, // +2 for header (row 1) and 0-based index
+            rowNumber: index + 2, // +2: fila 1 = encabezado, índice 0-based
             vin: "",
           }
 
@@ -94,17 +143,17 @@ export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVPr
           return row
         })
 
-        // Basic validation
+        // Validación básica
         rows.forEach((row) => {
           if (!row.vin || row.vin.length !== 17) {
-            row.error = "VIN must be exactly 17 characters"
+            row.error = "El VIN debe tener exactamente 17 caracteres"
           }
         })
 
         setParsedRows(rows)
-        setPreviewRows(rows.slice(0, 5)) // Show first 5 rows
+        setPreviewRows(rows.slice(0, 5)) // Mostrar primeras 5 filas
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to parse CSV")
+        toast.error(error instanceof Error ? error.message : "Error al parsear el CSV")
       }
     }
     reader.readAsText(file)
@@ -115,11 +164,9 @@ export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVPr
 
     setIsUploading(true)
     try {
-      // Use the new products bulk upload hook
       const result = await bulkUpload.mutateAsync(file)
 
       if (result.errors.length > 0) {
-        // Mark rows with errors
         const rowsWithErrors = parsedRows.map((row) => {
           const error = result.errors.find((e) => e.row_number === row.rowNumber)
           return { ...row, error: error?.error }
@@ -127,14 +174,14 @@ export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVPr
         setParsedRows(rowsWithErrors)
         setPreviewRows(rowsWithErrors.slice(0, 5))
       } else {
-        toast.success(`Successfully uploaded ${result.created_count} vehicles`)
+        toast.success(`Se cargaron ${result.created_count} vehículos correctamente`)
         onSuccess?.(result.created_count)
         setFile(null)
         setParsedRows([])
         setPreviewRows([])
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to upload CSV")
+      toast.error(error instanceof Error ? error.message : "Error al subir el CSV")
     } finally {
       setIsUploading(false)
     }
@@ -155,127 +202,210 @@ export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVPr
     URL.revokeObjectURL(url)
   }
 
+  const clearFile = () => {
+    setFile(null)
+    setParsedRows([])
+    setPreviewRows([])
+  }
+
+  const outlineBtn: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    height: 38,
+    padding: '0 16px',
+    borderRadius: 8,
+    background: 'var(--ps-bg-elevated)',
+    border: '1px solid var(--ps-border-default)',
+    color: 'var(--ps-text-secondary)',
+    fontSize: 13,
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'opacity 0.15s',
+  }
+
+  const primaryBtn: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    height: 38,
+    padding: '0 18px',
+    borderRadius: 8,
+    background: 'var(--ps-cyan)',
+    border: 'none',
+    color: 'var(--ps-bg-base)',
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: 'pointer',
+    transition: 'opacity 0.15s',
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <style>{TABLE_STYLES}</style>
+
+      {/* ── Encabezado ── */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
         <div>
-          <h2 className="text-2xl font-bold">Bulk Upload Vehicles</h2>
-          <p className="text-sm text-muted-foreground">
-            Upload multiple vehicles from a CSV file
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>
+            Carga masiva de vehículos
+          </h2>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ps-text-secondary)' }}>
+            Cargá múltiples vehículos desde un archivo CSV
           </p>
         </div>
         {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-md border border-input bg-background px-4 py-2 text-sm hover:bg-accent"
-          >
-            Cancel
+          <button type="button" onClick={onCancel} style={outlineBtn}>
+            Cancelar
           </button>
         )}
       </div>
 
-      {/* Template Download */}
-      <div className="flex items-center justify-between rounded-lg border p-4">
-        <div className="flex items-center gap-3">
-          <FileText className="h-5 w-5 text-muted-foreground" />
+      {/* ── Descarga de plantilla ── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '16px 20px',
+        background: 'var(--ps-bg-surface)',
+        border: '1px solid var(--ps-border-default)',
+        borderRadius: 10,
+        gap: 12,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <FileText size={18} strokeWidth={2} style={{ color: 'var(--ps-text-secondary)', flexShrink: 0 }} />
           <div>
-            <p className="font-medium">CSV Template</p>
-            <p className="text-sm text-muted-foreground">
-              Download a template with the correct format
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--ps-text-primary)' }}>
+              Plantilla CSV
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--ps-text-secondary)' }}>
+              Descargá la plantilla con el formato correcto
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={downloadTemplate}
-          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          <Download className="h-4 w-4" />
-          Download Template
+        <button type="button" onClick={downloadTemplate} style={primaryBtn}>
+          <Download size={14} strokeWidth={2} />
+          Descargar plantilla
         </button>
       </div>
 
-      {/* Drop Zone */}
+      {/* ── Drop zone ── */}
       {!file && (
         <div
           {...getRootProps()}
-          className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-colors ${
-            isDragActive
-              ? "border-primary bg-primary/5"
-              : "border-muted-foreground/25 hover:border-muted-foreground/50"
-          }`}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 10,
+            border: isDragActive
+              ? '2px dashed var(--ps-cyan)'
+              : '2px dashed var(--ps-border-default)',
+            background: isDragActive
+              ? 'rgba(77,184,255,0.04)'
+              : 'transparent',
+            padding: '48px 24px',
+            cursor: 'pointer',
+            transition: 'border-color 0.15s, background 0.15s',
+          }}
         >
           <input {...getInputProps()} />
-          <Upload className="mb-4 h-12 w-12 text-muted-foreground" />
-          <p className="mb-2 text-lg font-medium">
-            {isDragActive ? "Drop CSV file here" : "Drag & drop CSV file here"}
+          <Upload size={40} strokeWidth={1.5} style={{ color: 'var(--ps-text-disabled)', marginBottom: 16 }} />
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--ps-text-primary)' }}>
+            {isDragActive ? "Soltá el archivo CSV acá" : "Arrastrá y soltá el archivo CSV acá"}
           </p>
-          <p className="text-sm text-muted-foreground">or click to browse</p>
+          <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--ps-text-secondary)' }}>
+            o hacé click para buscar
+          </p>
         </div>
       )}
 
-      {/* File Preview */}
+      {/* ── Preview del archivo ── */}
       {file && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="flex items-center gap-3">
-              <FileText className="h-8 w-8 text-primary" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Info del archivo */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '14px 16px',
+            background: 'var(--ps-bg-surface)',
+            border: '1px solid var(--ps-border-default)',
+            borderRadius: 10,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <FileText size={28} strokeWidth={1.5} style={{ color: 'var(--ps-cyan)', flexShrink: 0 }} />
               <div>
-                <p className="font-medium">{file.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {parsedRows.length} rows • {(file.size / 1024).toFixed(2)} KB
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--ps-text-primary)' }}>
+                  {file.name}
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--ps-text-secondary)' }}>
+                  {parsedRows.length} filas · {(file.size / 1024).toFixed(2)} KB
                 </p>
               </div>
             </div>
             <button
               type="button"
-              onClick={() => {
-                setFile(null)
-                setParsedRows([])
-                setPreviewRows([])
+              onClick={clearFile}
+              aria-label="Eliminar archivo"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 32,
+                height: 32,
+                borderRadius: 6,
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--ps-text-secondary)',
+                cursor: 'pointer',
               }}
-              className="rounded-md p-2 hover:bg-accent"
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--ps-bg-elevated)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
             >
-              <X className="h-5 w-5" />
+              <X size={16} strokeWidth={2} />
             </button>
           </div>
 
-          {/* Preview Table */}
+          {/* Tabla de preview */}
           {previewRows.length > 0 && (
-            <div className="overflow-x-auto rounded-lg border">
-              <table className="w-full text-sm">
-                <thead className="bg-muted">
+            <div style={{
+              overflowX: 'auto',
+              borderRadius: 10,
+              border: '1px solid var(--ps-border-default)',
+            }}>
+              <table className="ps-bulk-table">
+                <thead>
                   <tr>
-                    <th className="px-4 py-2 text-left font-medium">Row</th>
-                    <th className="px-4 py-2 text-left font-medium">VIN</th>
-                    <th className="px-4 py-2 text-left font-medium">Year</th>
-                    <th className="px-4 py-2 text-left font-medium">Make</th>
-                    <th className="px-4 py-2 text-left font-medium">Model</th>
-                    <th className="px-4 py-2 text-left font-medium">Price</th>
-                    <th className="px-4 py-2 text-left font-medium">Status</th>
+                    <th>Fila</th>
+                    <th>VIN</th>
+                    <th>Año</th>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Precio</th>
+                    <th>Estado</th>
                   </tr>
                 </thead>
                 <tbody>
                   {previewRows.map((row) => (
-                    <tr key={row.rowNumber} className="border-t">
-                      <td className="px-4 py-2">{row.rowNumber}</td>
-                      <td className="px-4 py-2 font-mono text-xs">{row.vin}</td>
-                      <td className="px-4 py-2">{row.year || "-"}</td>
-                      <td className="px-4 py-2">{row.make || "-"}</td>
-                      <td className="px-4 py-2">{row.model || "-"}</td>
-                      <td className="px-4 py-2">{row.price || "-"}</td>
-                      <td className="px-4 py-2">
+                    <tr key={row.rowNumber}>
+                      <td style={{ color: 'var(--ps-text-disabled)' }}>{row.rowNumber}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: 11 }}>{row.vin}</td>
+                      <td>{row.year ?? "-"}</td>
+                      <td>{row.make ?? "-"}</td>
+                      <td>{row.model ?? "-"}</td>
+                      <td>{row.price ?? "-"}</td>
+                      <td>
                         {row.error ? (
-                          <div className="flex items-center gap-1 text-destructive">
-                            <AlertCircle className="h-3 w-3" />
-                            <span className="text-xs">{row.error}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--ps-error)' }}>
+                            <AlertCircle size={12} strokeWidth={2} />
+                            <span style={{ fontSize: 11 }}>{row.error}</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="h-3 w-3" />
-                            <span className="text-xs">Valid</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--ps-success)' }}>
+                            <CheckCircle2 size={12} strokeWidth={2} />
+                            <span style={{ fontSize: 11 }}>Válido</span>
                           </div>
                         )}
                       </td>
@@ -286,26 +416,22 @@ export function BulkUploadCSV({ onUpload, onSuccess, onCancel }: BulkUploadCSVPr
             </div>
           )}
 
-          {/* Upload Button */}
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setFile(null)
-                setParsedRows([])
-                setPreviewRows([])
-              }}
-              className="rounded-md border border-input bg-background px-4 py-2 text-sm hover:bg-accent"
-            >
-              Clear
+          {/* Botones de acción */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <button type="button" onClick={clearFile} style={outlineBtn}>
+              Limpiar
             </button>
             <button
               type="button"
-              onClick={handleUpload}
+              onClick={() => void handleUpload()}
               disabled={isUploading || parsedRows.some((row) => row.error)}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+              style={{
+                ...primaryBtn,
+                opacity: isUploading || parsedRows.some((row) => row.error) ? 0.5 : 1,
+                cursor: isUploading || parsedRows.some((row) => row.error) ? 'not-allowed' : 'pointer',
+              }}
             >
-              {isUploading ? "Uploading..." : `Upload ${parsedRows.length} Vehicles`}
+              {isUploading ? "Subiendo..." : `Subir ${parsedRows.length} vehículos`}
             </button>
           </div>
         </div>

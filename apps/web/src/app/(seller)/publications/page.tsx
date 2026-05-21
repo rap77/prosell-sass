@@ -1,413 +1,493 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import Link from "next/link";
-import { Plus, Rocket, RefreshCcw } from "lucide-react";
-import { PublishModal } from "@/components/publisher/PublishModal";
-import { PublicationStatus } from "@/components/publisher/PublicationStatus";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  useFacebookPages,
-  type PublicationResponse,
-} from "@/lib/api/publisherApi";
-import { useProducts } from "@/lib/api/products";
-import type { Product, ProductWithVehicle } from "@/types/product";
-import { isVehicleProduct } from "@/types/product";
+/**
+ * PublicationsPage — ProSell Publications screen.
+ *
+ * Two view modes: Lista (table, default) + Grilla (cards).
+ * All business logic preserved (optimistic rows, FB pages warning, modal).
+ * All colors via var(--ps-*) tokens.
+ */
 
-type PublicationListStatus =
-  | "pending"
-  | "publishing"
-  | "published"
-  | "failed"
-  | "expired"
-  | "sold";
+import { useState } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { Plus, Rocket, RefreshCcw, LayoutGrid, TableIcon, AlertTriangle, AlertCircle, Facebook } from 'lucide-react'
+import { PublishModal }      from '@/components/publisher/PublishModal'
+import { PublicationStatus } from '@/components/publisher/PublicationStatus'
+import { useFacebookPages, type PublicationResponse } from '@/lib/api/publisherApi'
+import { useProducts } from '@/lib/api/products'
+import type { Product, ProductWithVehicle } from '@/types/product'
+import { isVehicleProduct } from '@/types/product'
+
+// ─── Domain types (unchanged) ─────────────────────────────────────────────────
+
+type PublicationListStatus = 'pending' | 'publishing' | 'published' | 'failed' | 'expired' | 'sold'
 
 interface PublicationRow {
-  id: string;
-  productId: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  platform: "Facebook Marketplace";
-  status: PublicationListStatus;
+  id: string; productId: string; title: string
+  createdAt: string; updatedAt: string
+  platform: 'Facebook Marketplace'; status: PublicationListStatus
 }
 
 interface PublishableVehicleData {
-  id: string;
-  title: string;
-  description?: string;
-  price_cents: number;
-  zip_code: string;
-  image_urls: string[];
-  tenant_id: string;
-  year?: number;
-  make?: string;
-  model?: string;
-  mileage?: number;
-  body_style?: string;
-  exterior_color?: string;
-  interior_color?: string;
-  vehicle_condition?: string;
-  fuel_type?: string;
-  transmission?: string;
-  clean_title?: boolean;
-  vin?: string;
-  vehicle_type?: string;
+  id: string; title: string; description?: string
+  price_cents: number; zip_code: string; image_urls: string[]
+  tenant_id: string; year?: number; make?: string; model?: string
+  mileage?: number; body_style?: string; exterior_color?: string
+  interior_color?: string; vehicle_condition?: string; fuel_type?: string
+  transmission?: string; clean_title?: boolean; vin?: string; vehicle_type?: string
 }
 
-function isPublicationListStatus(value: string): value is PublicationListStatus {
-  return (
-    value === "pending" ||
-    value === "publishing" ||
-    value === "published" ||
-    value === "failed" ||
-    value === "expired" ||
-    value === "sold"
-  );
+// ─── View mode ────────────────────────────────────────────────────────────────
+
+type ViewMode = 'lista' | 'grilla'
+
+const VIEW_TABS: { id: ViewMode; label: string; icon: React.ElementType }[] = [
+  { id: 'lista',  label: 'Lista',  icon: TableIcon   },
+  { id: 'grilla', label: 'Grilla', icon: LayoutGrid  },
+]
+
+// ─── Pure helpers (unchanged logic) ──────────────────────────────────────────
+
+function isPublicationListStatus(v: string): v is PublicationListStatus {
+  return ['pending','publishing','published','failed','expired','sold'].includes(v)
 }
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null
 }
-
-function getStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.filter(
-    (item): item is string => typeof item === "string" && item.length > 0,
-  );
+function getStringArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return []
+  return v.filter((x): x is string => typeof x === 'string' && x.length > 0)
 }
-
 function getProductImageUrls(product: Product): string[] {
-  const productLevelUrls = isRecord(product)
-    ? getStringArray(product.image_urls)
-    : [];
-  const attrs = product.attributes;
-  const attributeLevelUrls = isRecord(attrs)
-    ? getStringArray(attrs.image_urls)
-    : [];
-  const rawImages =
-    isRecord(attrs) && Array.isArray(attrs.images) ? attrs.images : [];
-
-  const normalizedImages = rawImages.flatMap((image) => {
-    if (!isRecord(image) || typeof image.url !== "string" || image.url.length === 0) {
-      return [];
-    }
-
-    return [image.url];
-  });
-
-  if (normalizedImages.length > 0) {
-    return normalizedImages;
-  }
-
-  return productLevelUrls.length > 0 ? productLevelUrls : attributeLevelUrls;
+  const pl = isRecord(product) ? getStringArray(product.image_urls) : []
+  const attrs = product.attributes
+  const al = isRecord(attrs) ? getStringArray(attrs.image_urls) : []
+  const raw = isRecord(attrs) && Array.isArray(attrs.images) ? attrs.images : []
+  const normalized = raw.flatMap((img) =>
+    isRecord(img) && typeof img.url === 'string' && img.url.length > 0 ? [img.url] : []
+  )
+  return normalized.length > 0 ? normalized : pl.length > 0 ? pl : al
 }
-
-function mapProductStatusToPublicationStatus(
-  product: Product,
-): PublicationListStatus | null {
+function mapProductStatusToPublicationStatus(product: Product): PublicationListStatus | null {
   switch (product.status) {
-    case "pending":
-      return "pending";
-    case "published":
-      return "published";
-    case "sold":
-      return "sold";
-    case "rejected":
-      return "failed";
-    case "archived":
-      return "expired";
-    default:
-      return null;
+    case 'pending':  return 'pending'
+    case 'published':return 'published'
+    case 'sold':     return 'sold'
+    case 'rejected': return 'failed'
+    case 'archived': return 'expired'
+    default:         return null
   }
 }
-
 function toPublishableVehicleData(product: ProductWithVehicle): PublishableVehicleData {
-  const attrs = product.attributes;
-
+  const a = product.attributes
   return {
-    id: product.id,
-    title: product.title,
-    description: product.description,
-    price_cents: product.price_cents,
-    zip_code: product.location_zip ?? "",
-    image_urls: getProductImageUrls(product),
-    tenant_id: product.tenant_id,
-    year: attrs.year,
-    make: attrs.make,
-    model: attrs.model,
-    mileage: attrs.mileage,
-    body_style: attrs.body_type,
-    exterior_color: attrs.exterior_color,
-    interior_color: attrs.interior_color,
-    vehicle_condition: product.condition,
-    fuel_type: attrs.fuel_type,
-    transmission: attrs.transmission,
-    clean_title: true,
-    vin: attrs.vin,
-    vehicle_type: "car_truck",
-  };
+    id: product.id, title: product.title, description: product.description,
+    price_cents: product.price_cents, zip_code: product.location_zip ?? '',
+    image_urls: getProductImageUrls(product), tenant_id: product.tenant_id,
+    year: a.year, make: a.make, model: a.model, mileage: a.mileage,
+    body_style: a.body_type, exterior_color: a.exterior_color, interior_color: a.interior_color,
+    vehicle_condition: product.condition, fuel_type: a.fuel_type, transmission: a.transmission,
+    clean_title: true, vin: a.vin, vehicle_type: 'car_truck',
+  }
 }
-
 function buildPublicationRows(products: Product[]): PublicationRow[] {
   return products.flatMap((product) => {
-    const status = mapProductStatusToPublicationStatus(product);
-
-    if (!status || !isVehicleProduct(product)) {
-      return [];
-    }
-
-    return [
-      {
-        id: product.id,
-        productId: product.id,
-        title: product.title,
-        createdAt: product.created_at,
-        updatedAt: product.updated_at,
-        platform: "Facebook Marketplace",
-        status,
-      },
-    ];
-  });
+    const status = mapProductStatusToPublicationStatus(product)
+    if (!status || !isVehicleProduct(product)) return []
+    return [{ id: product.id, productId: product.id, title: product.title,
+      createdAt: product.created_at, updatedAt: product.updated_at,
+      platform: 'Facebook Marketplace', status }]
+  })
+}
+function formatDate(v: string): string {
+  return new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(v))
 }
 
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("es-VE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
+// ─── Facebook platform badge ──────────────────────────────────────────────────
 
-function EmptyState({
-  canPublish,
-  onOpenModal,
-}: {
-  canPublish: boolean;
-  onOpenModal: () => void;
-}) {
+function FbBadge() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center">
-      <div className="rounded-full bg-primary/10 p-4 text-primary">
-        <Rocket className="h-8 w-8" />
-      </div>
-      <h2 className="mt-6 text-2xl font-semibold text-foreground">
-        Todavía no tienes publicaciones
-      </h2>
-      <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-        Cuando publiques un vehículo en Facebook Marketplace aparecerá aquí con su estado más reciente.
-      </p>
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-        <Button
-          type="button"
-          className="gap-2"
-          disabled={!canPublish}
-          onClick={onOpenModal}
-        >
-          <Plus className="h-4 w-4" />
-          Nueva publicación
-        </Button>
-        <Button asChild type="button" variant="outline">
-          <Link href="/catalog">Ir al catálogo</Link>
-        </Button>
-      </div>
-    </div>
-  );
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--ps-text-secondary)' }}>
+      <span style={{ width: 16, height: 16, borderRadius: 4, background: '#1877F2', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Facebook size={10} strokeWidth={2.5} style={{ color: '#fff' }} />
+      </span>
+      Facebook Marketplace
+    </span>
+  )
+}
+
+// ─── Loading skeleton ─────────────────────────────────────────────────────────
+
+function PulseBox({ w, h, radius = 8 }: { w: string | number; h: number; radius?: number }) {
+  return (
+    <div style={{
+      width: w, height: h, borderRadius: radius,
+      background: 'var(--ps-bg-elevated)',
+      animation: 'psSkel 1.4s ease-in-out infinite',
+    }} />
+  )
 }
 
 function PublicationsPageSkeleton() {
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-72" />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <style>{`@keyframes psSkel { 0%,100%{opacity:1} 50%{opacity:.45} }`}</style>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <PulseBox w={180} h={28} />
+          <PulseBox w={300} h={16} />
         </div>
-        <Skeleton className="h-10 w-40" />
+        <PulseBox w={160} h={36} />
       </div>
-      <Skeleton className="h-[420px] w-full rounded-2xl" />
+      <PulseBox w="100%" h={380} radius={12} />
     </div>
-  );
+  )
 }
 
+// ─── Empty state ──────────────────────────────────────────────────────────────
+
+function EmptyState({ canPublish, onOpenModal }: { canPublish: boolean; onOpenModal: () => void }) {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      gap: 16, padding: '56px 24px', textAlign: 'center',
+      background: 'var(--ps-bg-surface)',
+      border: '1px dashed var(--ps-border-medium)',
+      borderRadius: 16,
+    }}>
+      <div style={{
+        width: 64, height: 64, borderRadius: '50%',
+        background: 'var(--ps-info-bg)',
+        border: '1px solid rgba(77,184,255,0.25)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Rocket size={28} style={{ color: 'var(--ps-cyan)' }} strokeWidth={1.8} />
+      </div>
+      <div style={{ maxWidth: 400 }}>
+        <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>
+          Todavía no tenés publicaciones
+        </h2>
+        <p style={{ margin: 0, fontSize: 14, color: 'var(--ps-text-secondary)', lineHeight: 1.6 }}>
+          Cuando publiques un vehículo en Facebook Marketplace aparecerá aquí con su estado más reciente.
+        </p>
+      </div>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <button
+          type="button"
+          disabled={!canPublish}
+          onClick={onOpenModal}
+          style={{
+            height: 38, padding: '0 18px',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: canPublish ? 'var(--ps-cyan)' : 'rgba(77,184,255,0.35)',
+            color: 'var(--ps-bg-base)',
+            border: 0, borderRadius: 8,
+            fontSize: 13, fontWeight: 600,
+            cursor: canPublish ? 'pointer' : 'not-allowed',
+          }}
+        >
+          <Plus size={14} strokeWidth={2.5} />
+          Nueva publicación
+        </button>
+        <Link
+          href="/catalog"
+          style={{
+            height: 38, padding: '0 18px',
+            display: 'inline-flex', alignItems: 'center',
+            background: 'transparent',
+            border: '1px solid var(--ps-input-border)',
+            borderRadius: 8,
+            fontSize: 13, fontWeight: 500,
+            color: 'var(--ps-text-secondary)',
+            textDecoration: 'none',
+          }}
+        >
+          Ir al catálogo
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+// ─── Card (grilla view) ───────────────────────────────────────────────────────
+
+function PublicationCard({ pub, image }: { pub: PublicationRow; image?: string }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <article
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: 'var(--ps-bg-surface)',
+        border: `1px solid ${hovered ? 'var(--ps-border-medium)' : 'var(--ps-border-default)'}`,
+        borderRadius: 12, overflow: 'hidden',
+        transition: 'border-color 180ms, box-shadow 180ms',
+        boxShadow: hovered ? '0 4px 20px rgba(6,13,36,0.35)' : 'none',
+        display: 'flex', flexDirection: 'column',
+      }}
+    >
+      {/* Image */}
+      <div style={{ position: 'relative', aspectRatio: '16/9', background: 'var(--ps-bg-elevated)' }}>
+        {image ? (
+          <Image src={image} alt={pub.title} fill style={{ objectFit: 'cover' }} unoptimized />
+        ) : (
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Rocket size={28} style={{ color: 'var(--ps-text-disabled)' }} strokeWidth={1.5} />
+          </div>
+        )}
+        <div style={{ position: 'absolute', top: 10, left: 10 }}>
+          <PublicationStatus status={pub.status} />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--ps-text-primary)', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {pub.title}
+        </p>
+        <FbBadge />
+        <p style={{ margin: 0, fontSize: 11, color: 'var(--ps-text-disabled)' }}>
+          {formatDate(pub.updatedAt)}
+        </p>
+      </div>
+    </article>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function PublicationsPage() {
-  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
-  const [optimisticPublications, setOptimisticPublications] = useState<PublicationRow[]>([]);
-  const { data: products, isLoading, error, refetch } = useProducts();
-  const {
-    data: facebookPages,
-    isLoading: isLoadingFacebookPages,
-  } = useFacebookPages();
+  const [isPublishModalOpen, setIsPublishModalOpen]         = useState(false)
+  const [optimisticPublications, setOptimisticPublications] = useState<PublicationRow[]>([])
+  const [viewMode, setViewMode]                             = useState<ViewMode>('lista')
 
-  const productList = products ?? [];
-  const publishableVehicles = productList.flatMap((product) => {
-    if (!isVehicleProduct(product)) {
-      return [];
-    }
+  const { data: products, isLoading, error, refetch } = useProducts()
+  const { data: facebookPages, isLoading: isLoadingFacebookPages } = useFacebookPages()
 
-    if (product.status === "archived" || product.status === "sold") {
-      return [];
-    }
-
-    return [toPublishableVehicleData(product)];
-  });
+  const productList = products ?? []
+  const publishableVehicles = productList.flatMap((p) => {
+    if (!isVehicleProduct(p)) return []
+    if (p.status === 'archived' || p.status === 'sold') return []
+    return [toPublishableVehicleData(p)]
+  })
 
   const publicationRows = [...optimisticPublications, ...buildPublicationRows(productList)]
-    .toSorted(
-      (left, right) =>
-        new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
-    );
+    .toSorted((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
 
-  const canCreatePublication =
-    publishableVehicles.length > 0 && !isLoadingFacebookPages;
+  const canCreatePublication = publishableVehicles.length > 0 && !isLoadingFacebookPages
 
-  const handlePublished = (
-    publication: PublicationResponse,
-    vehicleData: PublishableVehicleData,
-  ) => {
-    setOptimisticPublications((current) => {
-      const remaining = current.filter((item) => item.id !== publication.id);
-
-      return [
-        {
-          id: publication.id,
-          productId: publication.product_id,
-          title: vehicleData.title,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          platform: "Facebook Marketplace",
-          status: isPublicationListStatus(publication.status)
-            ? publication.status
-            : "pending",
-        },
-        ...remaining,
-      ];
-    });
-  };
-
-  if (isLoading) {
-    return <PublicationsPageSkeleton />;
+  const handlePublished = (publication: PublicationResponse, vehicleData: PublishableVehicleData) => {
+    setOptimisticPublications((cur) => {
+      const rest = cur.filter((x) => x.id !== publication.id)
+      return [{
+        id: publication.id, productId: publication.product_id,
+        title: vehicleData.title,
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+        platform: 'Facebook Marketplace',
+        status: isPublicationListStatus(publication.status) ? publication.status : 'pending',
+      }, ...rest]
+    })
   }
 
+  // ── Loading ────────────────────────────────────────────────────────────────
+  if (isLoading) return <PublicationsPageSkeleton />
+
+  // ── Error ──────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center p-6">
-        <div className="max-w-lg rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
-          <h1 className="text-2xl font-semibold text-foreground">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{
+          maxWidth: 480, width: '100%', padding: 40, textAlign: 'center',
+          background: 'var(--ps-bg-surface)',
+          border: '1px solid var(--ps-border-default)',
+          borderRadius: 16,
+        }}>
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--ps-error-bg)', border: '1px solid rgba(240,68,56,0.25)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+            <AlertCircle size={26} style={{ color: 'var(--ps-error)' }} strokeWidth={1.8} />
+          </div>
+          <h1 style={{ margin: '0 0 10px', fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>
             No pudimos cargar las publicaciones
           </h1>
-          <p className="mt-3 text-sm text-muted-foreground">
-            {error.message}
+          <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--ps-text-secondary)', lineHeight: 1.6 }}>
+            {(error as Error).message}
           </p>
-          <div className="mt-6 flex items-center justify-center gap-3">
-            <Button type="button" variant="outline" onClick={() => refetch()}>
-              <RefreshCcw className="mr-2 h-4 w-4" />
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              style={{ height: 38, padding: '0 16px', display: 'inline-flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px solid var(--ps-input-border)', borderRadius: 8, fontSize: 13, fontWeight: 500, color: 'var(--ps-text-secondary)', cursor: 'pointer' }}
+            >
+              <RefreshCcw size={14} strokeWidth={2} />
               Reintentar
-            </Button>
-            <Button asChild type="button">
-              <Link href="/catalog">Volver al catálogo</Link>
-            </Button>
+            </button>
+            <Link
+              href="/catalog"
+              style={{ height: 38, padding: '0 16px', display: 'inline-flex', alignItems: 'center', background: 'var(--ps-cyan)', color: 'var(--ps-bg-base)', border: 0, borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}
+            >
+              Volver al catálogo
+            </Link>
           </div>
         </div>
       </div>
-    );
+    )
   }
 
+  // ── Main ───────────────────────────────────────────────────────────────────
   return (
     <>
-      <div className="space-y-6 p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 1200, margin: '0 auto' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)', lineHeight: 1.2 }}>
               Publicaciones
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Administra tus publicaciones de Facebook Marketplace y lanza nuevas desde el catálogo.
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ps-text-secondary)' }}>
+              Administrá tus publicaciones de Facebook Marketplace y lanzá nuevas desde el catálogo.
             </p>
           </div>
 
-          <Button
-            type="button"
-            className="gap-2"
-            disabled={!canCreatePublication}
-            onClick={() => setIsPublishModalOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Nueva publicación
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* View mode toggle */}
+            {publicationRows.length > 0 && (
+              <div style={{ display: 'flex', gap: 2, background: 'var(--ps-bg-elevated)', border: '1px solid var(--ps-border-default)', borderRadius: 8, padding: 3 }}>
+                {VIEW_TABS.map(({ id, label, icon: Icon }) => {
+                  const active = viewMode === id
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setViewMode(id)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                        height: 28, padding: '0 10px',
+                        background: active ? 'var(--ps-bg-surface)' : 'transparent',
+                        border: 0, borderRadius: 6,
+                        fontSize: 12, fontWeight: active ? 600 : 400,
+                        color: active ? 'var(--ps-cyan)' : 'var(--ps-text-secondary)',
+                        cursor: 'pointer',
+                        boxShadow: active ? '0 1px 4px rgba(6,13,36,0.3)' : 'none',
+                        transition: 'all 150ms',
+                      }}
+                    >
+                      <Icon size={13} strokeWidth={active ? 2.5 : 2} />
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            <button
+              type="button"
+              disabled={!canCreatePublication}
+              onClick={() => setIsPublishModalOpen(true)}
+              style={{
+                height: 36, padding: '0 14px',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: canCreatePublication ? 'var(--ps-cyan)' : 'rgba(77,184,255,0.35)',
+                color: 'var(--ps-bg-base)',
+                border: 0, borderRadius: 8,
+                fontSize: 13, fontWeight: 600,
+                cursor: canCreatePublication ? 'pointer' : 'not-allowed',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <Plus size={14} strokeWidth={2.5} />
+              Nueva publicación
+            </button>
+          </div>
         </div>
 
-        {facebookPages && facebookPages.length === 0 ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            No hay páginas de Facebook conectadas todavía. Puedes abrir el modal, pero necesitarás conectar una página antes de publicar.
+        {/* Facebook pages warning */}
+        {facebookPages && facebookPages.length === 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 10,
+            padding: '12px 16px', borderRadius: 10,
+            background: 'var(--ps-warning-bg)',
+            border: '1px solid rgba(245,166,35,0.25)',
+          }}>
+            <AlertTriangle size={15} style={{ color: 'var(--ps-warning)', flexShrink: 0, marginTop: 1 }} strokeWidth={2} />
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--ps-warning)', lineHeight: 1.5 }}>
+              No hay páginas de Facebook conectadas. Podés abrir el modal, pero necesitás conectar una página antes de publicar.
+            </p>
           </div>
-        ) : null}
+        )}
 
+        {/* Content */}
         {publicationRows.length === 0 ? (
-          <EmptyState
-            canPublish={canCreatePublication}
-            onOpenModal={() => setIsPublishModalOpen(true)}
-          />
-        ) : (
-          <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-            <table className="min-w-full divide-y divide-border">
-              <thead className="bg-muted/40">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Vehículo
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Plataforma
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Estado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Última actualización
-                  </th>
+          <EmptyState canPublish={canCreatePublication} onOpenModal={() => setIsPublishModalOpen(true)} />
+        ) : viewMode === 'lista' ? (
+
+          /* ── TABLE VIEW ────────────────────────────────────────────────── */
+          <div style={{ background: 'var(--ps-bg-surface)', border: '1px solid var(--ps-border-default)', borderRadius: 12, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'var(--ps-bg-elevated)', borderBottom: '1px solid var(--ps-border-subtle)' }}>
+                  {['Vehículo', 'Plataforma', 'Estado', 'Última actualización'].map((h) => (
+                    <th key={h} style={{ padding: '10px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ps-text-disabled)', whiteSpace: 'nowrap' }}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
-                {publicationRows.map((publication) => (
-                  <tr key={publication.id} className="hover:bg-muted/20">
-                    <td className="px-6 py-4 align-top">
-                      <div className="space-y-1">
-                        <p className="font-medium text-foreground">
-                          {publication.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          ID producto: {publication.productId}
-                        </p>
-                      </div>
+              <tbody>
+                {publicationRows.map((pub) => (
+                  <tr
+                    key={pub.id}
+                    style={{ borderBottom: '1px solid var(--ps-table-divider)', transition: 'background 150ms' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--ps-table-row-hover)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    {/* Vehicle */}
+                    <td style={{ padding: '14px 20px', verticalAlign: 'top' }}>
+                      <p style={{ margin: '0 0 3px', fontSize: 14, fontWeight: 600, color: 'var(--ps-text-primary)' }}>
+                        {pub.title}
+                      </p>
+                      <p style={{ margin: 0, fontSize: 11, color: 'var(--ps-text-disabled)', fontFamily: 'monospace' }}>
+                        {pub.productId}
+                      </p>
                     </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
-                      {publication.platform}
+                    {/* Platform */}
+                    <td style={{ padding: '14px 20px' }}>
+                      <FbBadge />
                     </td>
-                    <td className="px-6 py-4">
-                      <PublicationStatus status={publication.status} />
+                    {/* Status */}
+                    <td style={{ padding: '14px 20px' }}>
+                      <PublicationStatus status={pub.status} />
                     </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
-                      {formatDate(publication.updatedAt)}
+                    {/* Updated */}
+                    <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--ps-text-secondary)', whiteSpace: 'nowrap' }}>
+                      {formatDate(pub.updatedAt)}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+        ) : (
+
+          /* ── GRID VIEW ─────────────────────────────────────────────────── */
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
+            {publicationRows.map((pub) => (
+              <PublicationCard key={pub.id} pub={pub} />
+            ))}
+          </div>
         )}
       </div>
 
+      {/* Publish modal */}
       <PublishModal
-        vehicleId={isPublishModalOpen ? "catalog-selector" : null}
-        mode={isPublishModalOpen ? "publish" : null}
+        vehicleId={isPublishModalOpen ? 'catalog-selector' : null}
+        mode={isPublishModalOpen ? 'publish' : null}
         facebookPages={facebookPages}
         vehicleOptions={publishableVehicles}
         onClose={() => setIsPublishModalOpen(false)}
         onPublished={handlePublished}
       />
     </>
-  );
+  )
 }

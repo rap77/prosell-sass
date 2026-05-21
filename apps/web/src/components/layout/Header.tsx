@@ -17,6 +17,7 @@ import { Search, User, Settings, LogOut, Building2, ChevronRight } from 'lucide-
 import { useAuth } from '@/hooks/useAuth'
 import { TeamSwitcher } from '@/components/teams/TeamSwitcher'
 import { NotificationBell } from '@/components/layout/NotificationBell'
+import { ThemeToggle } from '@/components/layout/ThemeToggle'
 
 /**
  * Props for Header component.
@@ -203,6 +204,9 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
             tenantId={tenantId}
           />
         )}
+
+        {/* Theme toggle */}
+        <ThemeToggle />
 
         {/* Notification bell */}
         <NotificationBell />

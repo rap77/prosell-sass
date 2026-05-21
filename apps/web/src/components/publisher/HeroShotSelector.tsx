@@ -1,7 +1,15 @@
 "use client";
 
+/**
+ * HeroShotSelector — ProSell publisher.
+ *
+ * Click any thumbnail to promote it to hero (index 0).
+ * Selected thumbnail shows a cyan PORTADA badge + outline.
+ * All colors via var(--ps-*) tokens — dark/light automatic.
+ */
+
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 // ============================================
 // TYPES
@@ -21,54 +29,85 @@ interface HeroShotSelectorProps {
  * HeroShotSelector — click any image to move it to index 0 (hero shot).
  *
  * UX decision (locked in CONTEXT.md): simple click = hero, NOT drag & drop.
- * The selected image shows a "PORTADA" badge with a blue border ring.
+ * The selected image shows a "PORTADA" badge with a cyan outline.
  */
 export function HeroShotSelector({
   images,
   heroIndex,
   onHeroChange,
 }: HeroShotSelectorProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
   if (images.length === 0) {
     return (
-      <p className="text-sm text-slate-500 italic">
+      <p style={{ fontSize: 13, color: 'var(--ps-text-secondary)', fontStyle: 'italic' }}>
         No hay fotos disponibles.
       </p>
     );
   }
 
   return (
-    <div className="grid grid-cols-4 gap-2">
-      {images.map((url, index) => (
-        <button
-          key={url}
-          type="button"
-          onClick={() => onHeroChange(index)}
-          className={cn(
-            "relative aspect-square rounded-lg overflow-hidden border-2 transition-all",
-            index === heroIndex
-              ? "border-blue-500 ring-2 ring-blue-300"
-              : "border-transparent hover:border-slate-300",
-          )}
-          aria-label={
-            index === heroIndex
-              ? `Foto ${index + 1} — portada seleccionada`
-              : `Seleccionar foto ${index + 1} como portada`
-          }
-        >
-          <Image
-            src={url}
-            alt={`Foto ${index + 1}`}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 25vw, 150px"
-          />
-          {index === heroIndex && (
-            <span className="absolute top-1 left-1 bg-blue-600 text-white text-xs font-bold px-1.5 py-0.5 rounded">
-              PORTADA
-            </span>
-          )}
-        </button>
-      ))}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+      {images.map((url, index) => {
+        const isSelected = index === heroIndex;
+        const isHovered = hoveredIndex === index;
+
+        return (
+          <button
+            key={url}
+            type="button"
+            onClick={() => onHeroChange(index)}
+            onMouseEnter={() => setHoveredIndex(index)}
+            onMouseLeave={() => setHoveredIndex(null)}
+            aria-label={
+              isSelected
+                ? `Foto ${index + 1} — portada seleccionada`
+                : `Seleccionar foto ${index + 1} como portada`
+            }
+            style={{
+              position: 'relative',
+              aspectRatio: '1 / 1',
+              borderRadius: 8,
+              overflow: 'hidden',
+              border: isSelected
+                ? '2px solid var(--ps-cyan)'
+                : isHovered
+                  ? '2px solid var(--ps-border-medium)'
+                  : '2px solid transparent',
+              outline: isSelected ? '2px solid var(--ps-cyan)' : 'none',
+              outlineOffset: isSelected ? 2 : 0,
+              background: 'var(--ps-bg-elevated)',
+              cursor: 'pointer',
+              padding: 0,
+              transition: 'border-color 0.15s',
+            }}
+          >
+            <Image
+              src={url}
+              alt={`Foto ${index + 1}`}
+              fill
+              style={{ objectFit: 'cover' }}
+              sizes="(max-width: 768px) 25vw, 150px"
+            />
+            {isSelected && (
+              <span style={{
+                position: 'absolute',
+                top: 4,
+                left: 4,
+                background: 'var(--ps-cyan)',
+                color: 'var(--ps-bg-base)',
+                fontSize: 9,
+                fontWeight: 800,
+                letterSpacing: '0.08em',
+                padding: '2px 6px',
+                borderRadius: 4,
+              }}>
+                PORTADA
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }

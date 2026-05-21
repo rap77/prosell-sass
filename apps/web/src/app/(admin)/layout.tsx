@@ -22,7 +22,7 @@ export default function AdminLayout({
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar - hidden on mobile */}
       <div className="hidden md:block">
-        <Sidebar groups={['inventario', 'ventas', 'configuración']} />
+        <Sidebar groups={['general', 'inventario', 'ventas', 'configuración']} />
       </div>
 
       {/* Main content area */}

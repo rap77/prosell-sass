@@ -1,54 +1,80 @@
-"use client";
-
-import { LeadStatus } from "@/lib/api/leads";
-
-interface LeadStatusBadgeProps {
-  status: LeadStatus;
-  className?: string;
-}
+'use client'
 
 /**
- * LeadStatusBadge - Displays lead status with color coding
- *
- * Maps the 5-state lead lifecycle to visual badges:
- * - new: Blue (fresh lead)
- * - contacted: Yellow (in progress)
- * - qualified: Green (potential buyer)
- * - appointment_set: Purple (scheduled)
- * - lost: Gray (no longer interested)
+ * LeadStatusBadge — ProSell design system badge for lead lifecycle status.
+ * Uses var(--ps-*) tokens so dark/light theme works automatically.
+ * Labels in Spanish (Rioplatense).
  */
-export function LeadStatusBadge({ status, className = "" }: LeadStatusBadgeProps) {
-  const statusConfig: Record<LeadStatus, { label: string; className: string }> = {
-    [LeadStatus.NEW]: {
-      label: "New",
-      className: "bg-blue-100 text-blue-800 border-blue-200",
-    },
-    [LeadStatus.CONTACTED]: {
-      label: "Contacted",
-      className: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    },
-    [LeadStatus.QUALIFIED]: {
-      label: "Qualified",
-      className: "bg-green-100 text-green-800 border-green-200",
-    },
-    [LeadStatus.APPOINTMENT_SET]: {
-      label: "Appointment Set",
-      className: "bg-purple-100 text-purple-800 border-purple-200",
-    },
-    [LeadStatus.LOST]: {
-      label: "Lost",
-      className: "bg-gray-100 text-gray-800 border-gray-200",
-    },
-  };
 
-  const config = statusConfig[status];
+import { LeadStatus } from '@/lib/api/leads'
+
+interface LeadStatusBadgeProps {
+  status: LeadStatus
+  className?: string
+}
+
+type StatusConfig = {
+  label:  string
+  bg:     string
+  color:  string
+  dot:    string
+}
+
+const STATUS_CONFIG: Record<LeadStatus, StatusConfig> = {
+  [LeadStatus.NEW]: {
+    label: 'Nuevo',
+    bg:    'var(--ps-info-bg)',
+    color: 'var(--ps-cyan)',
+    dot:   'var(--ps-cyan)',
+  },
+  [LeadStatus.CONTACTED]: {
+    label: 'Contactado',
+    bg:    'var(--ps-warning-bg)',
+    color: 'var(--ps-warning)',
+    dot:   'var(--ps-warning)',
+  },
+  [LeadStatus.QUALIFIED]: {
+    label: 'Calificado',
+    bg:    'var(--ps-success-bg)',
+    color: 'var(--ps-success)',
+    dot:   'var(--ps-success)',
+  },
+  [LeadStatus.APPOINTMENT_SET]: {
+    label: 'Cita agendada',
+    bg:    'rgba(139,92,246,0.12)',
+    color: '#a78bfa',
+    dot:   '#a78bfa',
+  },
+  [LeadStatus.LOST]: {
+    label: 'Perdido',
+    bg:    'rgba(138,155,191,0.10)',
+    color: 'var(--ps-text-secondary)',
+    dot:   'var(--ps-text-disabled)',
+  },
+}
+
+export function LeadStatusBadge({ status, className = '' }: LeadStatusBadgeProps) {
+  const { label, bg, color, dot } = STATUS_CONFIG[status]
 
   return (
     <span
       data-testid="status-badge"
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${config.className} ${className}`}
+      className={className}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '3px 10px',
+        borderRadius: 20,
+        background: bg,
+        color,
+        fontSize: 12,
+        fontWeight: 500,
+        whiteSpace: 'nowrap',
+      }}
     >
-      {config.label}
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: dot, flexShrink: 0 }} />
+      {label}
     </span>
-  );
+  )
 }

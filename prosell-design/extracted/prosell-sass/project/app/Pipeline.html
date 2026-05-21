@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProSell — Pipeline</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  height: 100vh;
+  overflow: hidden;
+}
+a { color: inherit; text-decoration: none; }
+
+/* ===== App shell ===== */
+.app {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  height: 100vh;
+}
+
+/* ===== Sidebar (shared) ===== */
+.sidebar {
+  background: #040A1A;
+  border-right: 1px solid rgba(77,184,255,0.06);
+  display: flex; flex-direction: column;
+  padding: 20px 0 16px;
+  height: 100vh;
+}
+.sb-top { padding: 0 16px 16px; border-bottom: 1px solid rgba(77,184,255,0.06); display: flex; flex-direction: column; gap: 14px; }
+.sb-logo { display: inline-flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; color: var(--text-primary); }
+.sb-logo img { height: 26px; width: auto; }
+.workspace { display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 10px; background: rgba(77,184,255,0.06); border: 1px solid var(--border-subtle); border-radius: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+.workspace span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+.sb-nav { flex: 1; display: flex; flex-direction: column; padding: 16px 8px; gap: 2px; }
+.sb-nav .group-divider { height: 1px; background: rgba(77,184,255,0.06); margin: 12px 8px; }
+.nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 8px; color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: background 180ms, color 180ms; }
+.nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
+.nav-item [data-lucide] { width: 18px; height: 18px; stroke-width: 2; }
+.nav-item .label { flex: 1; }
+.nav-item .badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 100px; background: rgba(77,184,255,0.14); color: var(--cyan); }
+.nav-item.active { background: rgba(77,184,255,0.08); color: var(--text-primary); font-weight: 600; border-right: 2px solid var(--cyan); border-radius: 8px 0 0 8px; }
+.nav-item.active [data-lucide] { color: var(--cyan); }
+.sb-user { display: flex; align-items: center; gap: 10px; margin: 0 12px; padding: 10px 12px; background: rgba(13,27,62,0.6); border: 1px solid var(--border-subtle); border-radius: 10px; cursor: pointer; }
+.sb-user .av { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--bg-base); background: linear-gradient(135deg, #4DB8FF, #1E5FD4); }
+.sb-user .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.sb-user .meta b { font-size: 13px; font-weight: 600; }
+.sb-user .plan { display: inline-flex; align-self: flex-start; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 100px; background: rgba(77,184,255,0.14); color: var(--cyan); letter-spacing: 0.04em; text-transform: uppercase; }
+.sb-user [data-lucide] { width: 14px; height: 14px; color: var(--text-secondary); }
+
+/* ===== Main ===== */
+.main {
+  display: flex; flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ===== Top bar ===== */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24px;
+  padding: 24px 32px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.title h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; margin: 0 0 4px; }
+.title p { font-size: 13px; color: var(--text-secondary); margin: 0; }
+.title p b { color: var(--text-primary); font-weight: 600; }
+
+.top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tb-search { position: relative; }
+.tb-search [data-lucide] {
+  position: absolute; top: 50%; left: 12px;
+  transform: translateY(-50%);
+  width: 14px; height: 14px;
+  color: var(--text-secondary);
+}
+.tb-search input {
+  width: 200px;
+  height: 36px;
+  padding: 0 12px 0 32px;
+  background: rgba(13,27,62,0.8);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 180ms, box-shadow 180ms;
+}
+.tb-search input::placeholder { color: var(--text-disabled); }
+.tb-search input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(77,184,255,0.08); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 180ms;
+}
+.btn [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border-default);
+  color: var(--text-secondary);
+}
+.btn-ghost:hover { border-color: var(--cyan); color: var(--text-primary); }
+.btn-primary {
+  background: var(--cyan);
+  color: var(--bg-base);
+}
+.btn-primary:hover { background: var(--cyan-hover); box-shadow: 0 6px 20px rgba(77,184,255,0.3); }
+.btn-primary [data-lucide] { stroke-width: 2.75; }
+
+/* ===== Kanban ===== */
+.board-wrap {
+  flex: 1;
+  overflow: auto;
+  padding: 22px 32px 32px;
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(4, 296px);
+  gap: 16px;
+  min-height: 100%;
+}
+
+.col {
+  display: flex; flex-direction: column;
+  background: rgba(6,13,36,0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 14px;
+  gap: 10px;
+}
+.col-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.col-name {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 700;
+  color: var(--text-primary);
+}
+.col-name .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.col-name.nuevo .dot { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+.col-name.contactado .dot { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+.col-name.demo .dot { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+.col-name.cierre .dot { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.col-total {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
+}
+.col-count {
+  display: inline-flex; align-items: center;
+  padding: 2px 9px;
+  border-radius: 100px;
+  background: rgba(77,184,255,0.10);
+  color: var(--cyan);
+  font-size: 11.5px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.cards {
+  display: flex; flex-direction: column;
+  gap: 8px;
+}
+
+.deal {
+  position: relative;
+  background: rgba(13,27,62,0.8);
+  border: 1px solid rgba(77,184,255,0.08);
+  border-radius: 10px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 180ms;
+  display: flex; flex-direction: column;
+  gap: 8px;
+}
+.deal:hover {
+  border-color: rgba(77,184,255,0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(6,13,36,0.5);
+}
+.deal:hover .drag { opacity: 1; }
+.deal.warn {
+  border: 1px solid rgba(245,166,35,0.3);
+  background: rgba(245,166,35,0.04);
+}
+.deal.win {
+  border: 1px solid rgba(34,211,160,0.3);
+  background: rgba(34,211,160,0.04);
+}
+.deal.selected {
+  border: 2px solid var(--cyan);
+  padding: 13px;
+}
+.drag {
+  position: absolute;
+  top: 12px; left: -2px;
+  width: 16px; height: 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-disabled);
+  opacity: 0;
+  transition: opacity 180ms;
+  pointer-events: none;
+}
+.drag [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+
+.deal-row1 {
+  display: flex; align-items: center; gap: 8px;
+}
+.deal-av {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800;
+  color: var(--bg-base);
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+.deal-name {
+  flex: 1; min-width: 0;
+  font-size: 13px; font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.src-mini {
+  font-size: 9px; font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.src-mini.fb { background: rgba(77,184,255,0.15); color: var(--cyan); }
+.src-mini.at { background: rgba(245,166,35,0.15); color: var(--warning); }
+.src-mini.dir { background: rgba(138,155,191,0.18); color: var(--text-secondary); }
+.src-mini.web { background: rgba(34,211,160,0.15); color: var(--success); }
+
+.deal-product {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+.deal-amount {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.deal-foot {
+  display: flex; align-items: center; gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 2px;
+}
+.deal-foot .av {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700;
+  color: var(--bg-base);
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+.deal-foot .person {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.deal-foot .time {
+  flex: 1;
+  text-align: right;
+  font-size: 10.5px;
+  color: var(--text-disabled);
+  font-family: var(--font-mono);
+}
+.deal-foot .prio {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.deal-foot .prio.high { background: var(--success); }
+.deal-foot .prio.med { background: var(--warning); }
+.deal-foot .prio.urgent { background: var(--error); box-shadow: 0 0 6px var(--error); }
+
+.deal-badge {
+  position: absolute;
+  top: 10px; right: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 100px;
+  letter-spacing: 0.02em;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.deal-badge.warn {
+  background: rgba(245,166,35,0.15);
+  color: var(--warning);
+  border: 1px solid rgba(245,166,35,0.25);
+}
+.deal-badge.win {
+  background: rgba(34,211,160,0.15);
+  color: var(--success);
+  border: 1px solid rgba(34,211,160,0.25);
+}
+.deal-badge .pulse {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.add-deal {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1.5px dashed rgba(77,184,255,0.15);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 180ms;
+  margin-top: 4px;
+}
+.add-deal:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: rgba(77,184,255,0.04);
+}
+.add-deal [data-lucide] { width: 13px; height: 13px; stroke-width: 2.5; }
+
+/* ===== Detail drawer ===== */
+.drawer-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(6,13,36,0.5);
+  backdrop-filter: blur(2px);
+  z-index: 30;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms var(--ease-out);
+}
+.drawer-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.drawer {
+  position: fixed;
+  right: 0; top: 0;
+  width: 380px;
+  max-width: 90vw;
+  height: 100vh;
+  background: #0A1530;
+  border-left: 1px solid rgba(77,184,255,0.15);
+  z-index: 40;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 260ms var(--ease-out);
+  box-shadow: -16px 0 48px rgba(6,13,36,0.6);
+}
+.drawer.open { transform: translateX(0); }
+
+.dr-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky; top: 0;
+  background: #0A1530;
+  z-index: 1;
+}
+.dr-title {
+  font-size: 18px; font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+.dr-close {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: 0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 180ms;
+}
+.dr-close:hover { background: rgba(77,184,255,0.06); color: var(--text-primary); }
+.dr-close [data-lucide] { width: 16px; height: 16px; stroke-width: 2; }
+
+.dr-body {
+  padding: 20px 24px 24px;
+  display: flex; flex-direction: column;
+  gap: 22px;
+}
+
+/* Stage stepper visual */
+.dr-stepper {
+  display: flex; align-items: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dr-stepper .step {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 10px;
+  border-radius: 100px;
+  background: rgba(13,27,62,0.6);
+  border: 1px solid var(--border-subtle);
+}
+.dr-stepper .step.past { color: var(--text-primary); }
+.dr-stepper .step.active {
+  background: rgba(34,211,160,0.14);
+  border-color: rgba(34,211,160,0.3);
+  color: var(--success);
+}
+.dr-stepper .step [data-lucide] { width: 11px; height: 11px; stroke-width: 3; }
+.dr-stepper .sep {
+  width: 14px; height: 1px;
+  background: var(--border-subtle);
+}
+
+.dr-section {
+  display: flex; flex-direction: column; gap: 8px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.dr-section:last-child { border-bottom: 0; padding-bottom: 0; }
+.dr-section h4 {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 4px;
+}
+.value-row {
+  display: flex; align-items: baseline; gap: 8px;
+}
+.value-amount {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--success);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.prob-bar {
+  height: 8px; border-radius: 100px;
+  background: rgba(77,184,255,0.10);
+  overflow: hidden;
+  margin-top: 4px;
+}
+.prob-fill {
+  height: 100%; width: 85%;
+  border-radius: 100px;
+  background: linear-gradient(90deg, var(--success), #5BE6BC);
+  box-shadow: 0 0 12px rgba(34,211,160,0.5);
+}
+.prob-label {
+  display: flex; justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  margin-top: 4px;
+}
+.prob-label .ok { color: var(--success); font-weight: 600; }
+
+.dr-grid {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px 12px;
+  font-size: 13px;
+}
+.dr-grid .l { color: var(--text-secondary); }
+.dr-grid .v { color: var(--text-primary); font-weight: 500; }
+.contact-line {
+  display: flex; align-items: center; gap: 6px;
+}
+.contact-line .ic {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(77,184,255,0.10);
+  color: var(--cyan);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.contact-line .ic [data-lucide] { width: 11px; height: 11px; stroke-width: 2; }
+.assignee {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.assignee .av {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9.5px; font-weight: 700;
+  color: var(--bg-base);
+  background: linear-gradient(135deg, #22D3A0, #1E5FD4);
+  letter-spacing: 0.02em;
+}
+.next-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  background: rgba(245,166,35,0.14);
+  color: var(--warning);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.next-pill [data-lucide] { width: 11px; height: 11px; stroke-width: 2; }
+
+/* Activity log */
+.act-log {
+  display: flex; flex-direction: column;
+  gap: 10px;
+}
+.act-item {
+  display: flex; align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.act-item .ic {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.act-item .ic [data-lucide] { width: 11px; height: 11px; stroke-width: 2.5; }
+.act-item .ic.green { background: rgba(34,211,160,0.14); color: var(--success); }
+.act-item .ic.cyan { background: rgba(77,184,255,0.14); color: var(--cyan); }
+.act-item .ic.muted { background: rgba(138,155,191,0.14); color: var(--text-secondary); }
+.act-item .body { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.act-item .time { font-size: 11px; color: var(--text-disabled); font-family: var(--font-mono); }
+
+/* CTAs */
+.dr-cta {
+  display: flex; flex-direction: column;
+  gap: 8px;
+}
+.btn-win {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  background: var(--success);
+  color: var(--bg-base);
+  border: 0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 180ms;
+}
+.btn-win:hover {
+  background: #5BE6BC;
+  box-shadow: 0 8px 24px rgba(34,211,160,0.35);
+  transform: translateY(-1px);
+}
+.btn-win [data-lucide] { width: 16px; height: 16px; stroke-width: 2.5; }
+.btn-lose {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 40px;
+  background: transparent;
+  color: var(--error);
+  border: 1px solid rgba(240,68,56,0.3);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 180ms;
+}
+.btn-lose:hover { background: rgba(240,68,56,0.06); border-color: var(--error); }
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .topbar { flex-direction: column; align-items: flex-start; }
+  .top-actions { width: 100%; flex-wrap: wrap; }
+  .tb-search input { width: 100%; }
+}
+@media (max-width: 880px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .topbar { padding: 18px 18px 14px; }
+  .board-wrap { padding: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sb-top">
+      <a class="sb-logo" href="#"><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a>
+      <button class="workspace" type="button">
+        <span>Automotores del Norte</span>
+        <i data-lucide="chevron-down"></i>
+      </button>
+    </div>
+    <nav class="sb-nav">
+      <a class="nav-item" href="Dashboard.html">
+        <i data-lucide="layout-dashboard"></i>
+        <span class="label">Dashboard</span>
+      </a>
+      <a class="nav-item" href="Leads Inbox.html">
+        <i data-lucide="inbox"></i>
+        <span class="label">Leads</span>
+        <span class="badge">12</span>
+      </a>
+      <a class="nav-item active" href="#">
+        <i data-lucide="git-branch"></i>
+        <span class="label">Pipeline</span>
+      </a>
+      <a class="nav-item" href="Inventario.html">
+        <i data-lucide="package"></i>
+        <span class="label">Inventario</span>
+        <span class="badge">38</span>
+      </a>
+      <a class="nav-item" href="#">
+        <i data-lucide="megaphone"></i>
+        <span class="label">Publicaciones</span>
+      </a>
+      <a class="nav-item" href="#">
+        <i data-lucide="bar-chart-3"></i>
+        <span class="label">Analytics</span>
+      </a>
+      <div class="group-divider"></div>
+      <a class="nav-item" href="#">
+        <i data-lucide="settings"></i>
+        <span class="label">Configuración</span>
+      </a>
+      <a class="nav-item" href="#">
+        <i data-lucide="help-circle"></i>
+        <span class="label">Ayuda</span>
+      </a>
+    </nav>
+    <div class="sb-user">
+      <span class="av">MR</span>
+      <span class="meta"><b>Martín R.</b><span class="plan">Crecimiento</span></span>
+      <i data-lucide="chevron-right"></i>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="title">
+        <h1>Pipeline</h1>
+        <p><b>47 deals</b> activos · Mayo 2026</p>
+      </div>
+      <div class="top-actions">
+        <div class="tb-search">
+          <i data-lucide="search"></i>
+          <input type="text" placeholder="Buscar deal..." />
+        </div>
+        <button class="btn btn-ghost" type="button">
+          <i data-lucide="sliders-horizontal"></i> Filtros
+        </button>
+        <button class="btn btn-ghost" type="button">
+          <i data-lucide="layout-grid"></i> Vista: Kanban <i data-lucide="chevron-down"></i>
+        </button>
+        <button class="btn btn-primary" type="button">
+          <i data-lucide="plus"></i> Nuevo deal
+        </button>
+      </div>
+    </header>
+
+    <!-- Kanban -->
+    <div class="board-wrap">
+      <div class="board">
+
+        <!-- Col 1: Nuevo -->
+        <section class="col">
+          <header class="col-head">
+            <div>
+              <div class="col-name nuevo"><span class="dot"></span>Nuevo</div>
+              <div class="col-total">$284K total</div>
+            </div>
+            <span class="col-count">18</span>
+          </header>
+          <div class="cards">
+            <article class="deal">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#4DB8FF,#1E5FD4)">A</span>
+                <span class="deal-name">Acme Tech</span>
+                <span class="src-mini fb">FB</span>
+              </div>
+              <div class="deal-product">Toyota Corolla 2024</div>
+              <div class="deal-amount">$28.500</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#4DB8FF,#1E5FD4)">MR</span>
+                <span class="person">Martín R.</span>
+                <span class="time">hace 1 día</span>
+                <span class="prio high" title="Alta prioridad"></span>
+              </div>
+            </article>
+
+            <article class="deal">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#22D3A0,#1E5FD4)">N</span>
+                <span class="deal-name">Nova Automotores</span>
+                <span class="src-mini at">AT</span>
+              </div>
+              <div class="deal-product">Ford Ranger 2023</div>
+              <div class="deal-amount">$42.000</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#F5A623,#F04438)">SG</span>
+                <span class="person">Sofía G.</span>
+                <span class="time">hace 2 d</span>
+                <span class="prio med"></span>
+              </div>
+            </article>
+
+            <article class="deal">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#7DCEFF,#0D1B6E)">G</span>
+                <span class="deal-name">Grupo Méndez</span>
+                <span class="src-mini dir">DIR</span>
+              </div>
+              <div class="deal-product">VW Amarok 2024</div>
+              <div class="deal-amount">$65.000</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#7DCEFF,#4DB8FF)">LT</span>
+                <span class="person">Luis T.</span>
+                <span class="time">hace 3 d</span>
+                <span class="prio high"></span>
+              </div>
+            </article>
+
+            <article class="deal">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#F5A623,#1E5FD4)">F</span>
+                <span class="deal-name">Flota Express</span>
+                <span class="src-mini web">WEB</span>
+              </div>
+              <div class="deal-product">10× Etios</div>
+              <div class="deal-amount">$180.000</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#4DB8FF,#1E5FD4)">MR</span>
+                <span class="person">Martín R.</span>
+                <span class="time">hace 1 d</span>
+                <span class="prio urgent"></span>
+              </div>
+            </article>
+          </div>
+          <button class="add-deal" type="button"><i data-lucide="plus"></i>Agregar deal</button>
+        </section>
+
+        <!-- Col 2: Contactado -->
+        <section class="col">
+          <header class="col-head">
+            <div>
+              <div class="col-name contactado"><span class="dot"></span>Contactado</div>
+              <div class="col-total">$198K total</div>
+            </div>
+            <span class="col-count">14</span>
+          </header>
+          <div class="cards">
+            <article class="deal">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#4DB8FF,#0D1B6E)">A</span>
+                <span class="deal-name">Acme Tech</span>
+                <span class="src-mini fb">FB</span>
+              </div>
+              <div class="deal-product">Toyota Hilux 2023</div>
+              <div class="deal-amount">$58.000</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#22D3A0,#1E5FD4)">JM</span>
+                <span class="person">Julia M.</span>
+                <span class="time">hace 4 d</span>
+                <span class="prio high"></span>
+              </div>
+            </article>
+
+            <article class="deal">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#22D3A0,#4DB8FF)">R</span>
+                <span class="deal-name">Ríos Hnos</span>
+                <span class="src-mini at">AT</span>
+              </div>
+              <div class="deal-product">Corolla Cross</div>
+              <div class="deal-amount">$35.000</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#F5A623,#F04438)">SG</span>
+                <span class="person">Sofía G.</span>
+                <span class="time">hace 5 d</span>
+                <span class="prio med"></span>
+              </div>
+            </article>
+
+            <article class="deal">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#F5A623,#22D3A0)">M</span>
+                <span class="deal-name">Martina V.</span>
+                <span class="src-mini dir">DIR</span>
+              </div>
+              <div class="deal-product">Honda Civic 2022</div>
+              <div class="deal-amount">$22.000</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#4DB8FF,#1E5FD4)">MR</span>
+                <span class="person">Martín R.</span>
+                <span class="time">hace 6 d</span>
+                <span class="prio high"></span>
+              </div>
+            </article>
+
+            <article class="deal">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#0D1B6E,#1E5FD4)">L</span>
+                <span class="deal-name">LogiTrans</span>
+                <span class="src-mini web">WEB</span>
+              </div>
+              <div class="deal-product">3× Sprinter</div>
+              <div class="deal-amount">$120.000</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#7DCEFF,#4DB8FF)">LT</span>
+                <span class="person">Luis T.</span>
+                <span class="time">hace 7 d</span>
+                <span class="prio urgent"></span>
+              </div>
+            </article>
+          </div>
+          <button class="add-deal" type="button"><i data-lucide="plus"></i>Agregar deal</button>
+        </section>
+
+        <!-- Col 3: Demo -->
+        <section class="col">
+          <header class="col-head">
+            <div>
+              <div class="col-name demo"><span class="dot"></span>Demo</div>
+              <div class="col-total">$142K total</div>
+            </div>
+            <span class="col-count">9</span>
+          </header>
+          <div class="cards">
+            <article class="deal warn">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <span class="deal-badge warn"><span class="pulse"></span>Hoy 15:00</span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#F5A623,#0D1B6E)">P</span>
+                <span class="deal-name">Premium Autos</span>
+                <span class="src-mini at">AT</span>
+              </div>
+              <div class="deal-product">BMW 320i</div>
+              <div class="deal-amount">$48.000</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#F5A623,#F04438)">SG</span>
+                <span class="person">Sofía G.</span>
+                <span class="time">hace 9 d</span>
+                <span class="prio high"></span>
+              </div>
+            </article>
+
+            <article class="deal">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#22D3A0,#0D1B6E)">S</span>
+                <span class="deal-name">Stellar Motors</span>
+                <span class="src-mini fb">FB</span>
+              </div>
+              <div class="deal-product">VW Tiguan 2024</div>
+              <div class="deal-amount">$52.000</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#4DB8FF,#1E5FD4)">MR</span>
+                <span class="person">Martín R.</span>
+                <span class="time">hace 8 d</span>
+                <span class="prio med"></span>
+              </div>
+            </article>
+
+            <article class="deal">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#7DCEFF,#22D3A0)">C</span>
+                <span class="deal-name">City Cars</span>
+                <span class="src-mini dir">DIR</span>
+              </div>
+              <div class="deal-product">VW Polo 2023</div>
+              <div class="deal-amount">$18.000</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#22D3A0,#1E5FD4)">JM</span>
+                <span class="person">Julia M.</span>
+                <span class="time">hace 10 d</span>
+                <span class="prio high"></span>
+              </div>
+            </article>
+          </div>
+          <button class="add-deal" type="button"><i data-lucide="plus"></i>Agregar deal</button>
+        </section>
+
+        <!-- Col 4: Cierre -->
+        <section class="col">
+          <header class="col-head">
+            <div>
+              <div class="col-name cierre"><span class="dot"></span>Cierre</div>
+              <div class="col-total">$284K total</div>
+            </div>
+            <span class="col-count">6</span>
+          </header>
+          <div class="cards">
+            <article class="deal win selected" data-deal="automotores-norte">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <span class="deal-badge win"><span class="pulse"></span>Listo para cerrar</span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#22D3A0,#1E5FD4)">A</span>
+                <span class="deal-name">Automotores Norte</span>
+                <span class="src-mini fb">FB</span>
+              </div>
+              <div class="deal-product">Toyota Corolla 2024</div>
+              <div class="deal-amount">$48.000</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#F5A623,#F04438)">SG</span>
+                <span class="person">Sofía G.</span>
+                <span class="time">hace 12 d</span>
+                <span class="prio high"></span>
+              </div>
+            </article>
+
+            <article class="deal">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#4DB8FF,#0D1B6E)">T</span>
+                <span class="deal-name">TurboFleet</span>
+                <span class="src-mini at">AT</span>
+              </div>
+              <div class="deal-product">5× Kangoo</div>
+              <div class="deal-amount">$95.000</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#22D3A0,#4DB8FF)">LT</span>
+                <span class="person">Luis T.</span>
+                <span class="time">hace 14 d</span>
+                <span class="prio high"></span>
+              </div>
+            </article>
+
+            <article class="deal">
+              <span class="drag"><i data-lucide="grip-vertical"></i></span>
+              <div class="deal-row1">
+                <span class="deal-av" style="background: linear-gradient(135deg,#0D1B6E,#22D3A0)">I</span>
+                <span class="deal-name">Inversiones RM</span>
+                <span class="src-mini dir">DIR</span>
+              </div>
+              <div class="deal-product">Porsche Cayenne 2023</div>
+              <div class="deal-amount">$180.000</div>
+              <div class="deal-foot">
+                <span class="av" style="background: linear-gradient(135deg,#4DB8FF,#1E5FD4)">MR</span>
+                <span class="person">Martín R.</span>
+                <span class="time">hace 18 d</span>
+                <span class="prio urgent"></span>
+              </div>
+            </article>
+          </div>
+          <button class="add-deal" type="button"><i data-lucide="plus"></i>Agregar deal</button>
+        </section>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Detail drawer (open) -->
+<div class="drawer-backdrop open" id="backdrop"></div>
+<aside class="drawer open" id="drawer">
+  <header class="dr-head">
+    <h2 class="dr-title">Automotores Norte</h2>
+    <button class="dr-close" type="button" aria-label="Cerrar"><i data-lucide="x"></i></button>
+  </header>
+
+  <div class="dr-body">
+    <!-- Stepper -->
+    <div class="dr-stepper">
+      <span class="step past">Nuevo</span>
+      <span class="sep"></span>
+      <span class="step past">Contactado</span>
+      <span class="sep"></span>
+      <span class="step past">Demo</span>
+      <span class="sep"></span>
+      <span class="step active"><i data-lucide="check"></i>Cierre</span>
+    </div>
+
+    <!-- Value -->
+    <section class="dr-section">
+      <h4>Valor del deal</h4>
+      <div class="value-row">
+        <span class="value-amount">$48.000</span>
+      </div>
+    </section>
+
+    <!-- Probability -->
+    <section class="dr-section">
+      <h4>Probabilidad de cierre</h4>
+      <div class="prob-bar"><div class="prob-fill"></div></div>
+      <div class="prob-label"><span>0%</span><span class="ok">85%</span></div>
+    </section>
+
+    <!-- Details -->
+    <section class="dr-section">
+      <h4>Detalles</h4>
+      <div class="dr-grid">
+        <span class="l">Producto</span>
+        <span class="v">Toyota Corolla 2024</span>
+        <span class="l">Contacto</span>
+        <span class="v">
+          Martín Rodríguez
+          <span class="contact-line">
+            <span class="ic"><i data-lucide="phone"></i></span>
+            <span class="ic"><i data-lucide="mail"></i></span>
+          </span>
+        </span>
+        <span class="l">Asignado a</span>
+        <span class="v assignee"><span class="av">SG</span>Sofía G.</span>
+        <span class="l">Días en pipeline</span>
+        <span class="v">12 días</span>
+        <span class="l">Próxima acción</span>
+        <span class="v"><span class="next-pill"><i data-lucide="alert-circle"></i>Enviar contrato</span></span>
+      </div>
+    </section>
+
+    <!-- Activity log -->
+    <section class="dr-section">
+      <h4>Actividad reciente</h4>
+      <div class="act-log">
+        <div class="act-item">
+          <span class="ic cyan"><i data-lucide="message-circle"></i></span>
+          <div class="body">
+            <span>Demo completada · todo OK</span>
+            <span class="time">hace 2 días</span>
+          </div>
+        </div>
+        <div class="act-item">
+          <span class="ic green"><i data-lucide="file-text"></i></span>
+          <div class="body">
+            <span>Propuesta enviada</span>
+            <span class="time">hace 4 días</span>
+          </div>
+        </div>
+        <div class="act-item">
+          <span class="ic muted"><i data-lucide="user-plus"></i></span>
+          <div class="body">
+            <span>Sofía G. asignada al deal</span>
+            <span class="time">hace 12 días</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTAs -->
+    <div class="dr-cta">
+      <button class="btn-win" type="button"><i data-lucide="check"></i>Marcar como ganado</button>
+      <button class="btn-lose" type="button">Marcar como perdido</button>
+    </div>
+  </div>
+</aside>
+
+<script>
+  lucide.createIcons();
+
+  const drawer = document.getElementById('drawer');
+  const backdrop = document.getElementById('backdrop');
+
+  document.querySelector('.dr-close').addEventListener('click', () => {
+    drawer.classList.remove('open');
+    backdrop.classList.remove('open');
+    document.querySelectorAll('.deal.selected').forEach(d => d.classList.remove('selected'));
+  });
+  backdrop.addEventListener('click', () => {
+    drawer.classList.remove('open');
+    backdrop.classList.remove('open');
+    document.querySelectorAll('.deal.selected').forEach(d => d.classList.remove('selected'));
+  });
+
+  document.querySelectorAll('.deal').forEach(deal => {
+    deal.addEventListener('click', () => {
+      document.querySelectorAll('.deal').forEach(d => d.classList.remove('selected'));
+      deal.classList.add('selected');
+      drawer.classList.add('open');
+      backdrop.classList.add('open');
+    });
+  });
+</script>
+</body>
+</html>

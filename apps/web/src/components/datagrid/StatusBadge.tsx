@@ -1,3 +1,8 @@
+/**
+ * StatusBadge — ProSell design system badge for vehicle status.
+ * Uses var(--ps-*) tokens so dark/light theme works automatically.
+ */
+
 import {
   CheckCircle2,
   Clock,
@@ -5,58 +10,53 @@ import {
   File,
   Globe,
   CheckCircle,
-} from "lucide-react";
+} from 'lucide-react'
+
+export type VehicleStatus = 'published' | 'pending' | 'failed' | 'draft' | 'expired' | 'online' | 'sold'
 
 interface StatusBadgeProps {
-  status: "published" | "pending" | "failed" | "draft" | "expired" | "online" | "sold";
+  status: VehicleStatus
+}
+
+type StatusConfig = {
+  bg: string
+  color: string
+  icon: React.ElementType
+  label: string
+}
+
+const STATUS_CONFIG: Record<VehicleStatus, StatusConfig> = {
+  published: { bg: 'var(--ps-success-bg)', color: 'var(--ps-success)',  icon: CheckCircle2, label: 'Publicado'  },
+  online:    { bg: 'var(--ps-info-bg)',    color: 'var(--ps-cyan)',     icon: Globe,        label: 'Online'     },
+  pending:   { bg: 'var(--ps-warning-bg)', color: 'var(--ps-warning)', icon: Clock,        label: 'Pendiente'  },
+  draft:     { bg: 'rgba(138,155,191,0.12)', color: 'var(--ps-text-secondary)', icon: File, label: 'Borrador' },
+  expired:   { bg: 'rgba(138,155,191,0.12)', color: 'var(--ps-text-secondary)', icon: Clock, label: 'Expirado' },
+  failed:    { bg: 'var(--ps-error-bg)',   color: 'var(--ps-error)',   icon: XCircle,      label: 'Fallido'    },
+  sold:      { bg: 'rgba(139,92,246,0.12)', color: '#a78bfa',          icon: CheckCircle,  label: 'Vendido'    },
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const config = {
-    published: {
-      color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      icon: CheckCircle2,
-      label: "Published",
-    },
-    pending: {
-      color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-      icon: Clock,
-      label: "Pending",
-    },
-    failed: {
-      color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      icon: XCircle,
-      label: "Failed",
-    },
-    draft: {
-      color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-      icon: File,
-      label: "Draft",
-    },
-    expired: {
-      color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-      icon: Clock,
-      label: "Expired",
-    },
-    online: {
-      color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      icon: Globe,
-      label: "Online",
-    },
-    sold: {
-      color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-      icon: CheckCircle,
-      label: "Sold",
-    },
-  } as const;
-
-  const { color, icon: Icon, label } = config[status];
+  const { bg, color, icon: Icon, label } = STATUS_CONFIG[status]
 
   return (
-    <span data-testid="vehicle-status" className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${color}`}>
-      <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+    <span
+      data-testid="vehicle-status"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        padding: '3px 10px',
+        borderRadius: 20,
+        background: bg,
+        color,
+        fontSize: 12,
+        fontWeight: 500,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <Icon size={12} strokeWidth={2.5} aria-hidden="true" />
       <span className="sr-only">{status}:</span>
       {label}
     </span>
-  );
+  )
 }

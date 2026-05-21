@@ -1,105 +1,170 @@
-"use client";
+'use client'
 
-import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
-import { formatDistanceToNow } from "date-fns";
-import { es } from "date-fns/locale";
-import { Car, Clock, User, XCircle } from "lucide-react";
-import { LeadStatus, useUpdateLeadStatus, type Lead } from "@/lib/api/leads";
-import { Button } from "@/components/ui/button";
+/**
+ * LeadCard — ProSell-styled draggable kanban card.
+ *
+ * Displays lead summary inside a kanban column.
+ * Uses var(--ps-*) tokens — drag ghost via DragOverlay keeps same styles.
+ *
+ * Interactions:
+ *   - Drag to move between columns (dnd-kit PointerSensor, distance: 8px)
+ *   - "Marcar como perdido" button (onPointerDown stops drag propagation)
+ */
+
+import { useDraggable } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
+import { formatDistanceToNow } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { Car, Clock, User, XCircle } from 'lucide-react'
+import { LeadStatus, useUpdateLeadStatus, type Lead } from '@/lib/api/leads'
 
 interface LeadCardProps {
-  lead: Lead;
+  lead: Lead
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(' ')
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  return name.substring(0, 2).toUpperCase()
 }
 
 export function LeadCard({ lead }: LeadCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     data: { lead },
-  });
+  })
 
-  const markLost = useUpdateLeadStatus(lead.id);
+  const markLost = useUpdateLeadStatus(lead.id)
 
-  const style = transform
-    ? { transform: CSS.Translate.toString(transform) }
-    : undefined;
+  const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined
 
   const vehicleLabel = lead.product
-    ? [
-        lead.product.attributes.year,
-        lead.product.attributes.make,
-        lead.product.attributes.model,
-      ]
-        .filter(Boolean)
-        .join(" ") || lead.product.title
-    : null;
+    ? (
+        [lead.product.attributes.year, lead.product.attributes.make, lead.product.attributes.model]
+          .filter(Boolean)
+          .join(' ')
+      ) || lead.product.title
+    : null
 
-  const timeInStage = formatDistanceToNow(new Date(lead.updated_at), {
-    addSuffix: false,
-    locale: es,
-  });
+  const timeInStage = formatDistanceToNow(new Date(lead.updated_at), { addSuffix: false, locale: es })
+
+  const priceLabel = lead.product
+    ? new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: lead.product.currency,
+        maximumFractionDigits: 0,
+      }).format(lead.product.price_cents / 100)
+    : null
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        background: 'var(--ps-bg-elevated)',
+        border: '1px solid var(--ps-border-default)',
+        borderRadius: 10,
+        padding: '10px 12px',
+        cursor: 'grab',
+        userSelect: 'none',
+        opacity: isDragging ? 0.35 : 1,
+        boxShadow: isDragging ? 'none' : '0 1px 4px rgba(6,13,36,0.25)',
+        transition: 'opacity 150ms, box-shadow 150ms, border-color 150ms',
+      }}
+      onMouseEnter={(e) => {
+        if (!isDragging) e.currentTarget.style.borderColor = 'var(--ps-border-medium)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = 'var(--ps-border-default)'
+      }}
       {...listeners}
       {...attributes}
-      className={`rounded-lg border bg-background p-3 shadow-sm cursor-grab active:cursor-grabbing select-none transition-opacity ${
-        isDragging ? "opacity-40" : "opacity-100"
-      }`}
     >
-      {/* Buyer name */}
-      <p className="text-sm font-medium leading-tight line-clamp-1">{lead.buyer_name}</p>
+      {/* Buyer row: avatar + name */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{
+          width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+          background: 'linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 10, fontWeight: 700, color: 'var(--ps-bg-base)',
+        }}>
+          {getInitials(lead.buyer_name)}
+        </div>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--ps-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+          {lead.buyer_name}
+        </p>
+      </div>
 
-      {/* Vehicle interest */}
+      {/* Vehicle */}
       {vehicleLabel && (
-        <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Car className="h-3 w-3 shrink-0" />
-          <span className="line-clamp-1">{vehicleLabel}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
+          <Car size={11} strokeWidth={2} style={{ color: 'var(--ps-text-disabled)', flexShrink: 0 }} />
+          <span style={{ fontSize: 11, color: 'var(--ps-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {vehicleLabel}
+          </span>
         </div>
       )}
 
       {/* Price */}
-      {lead.product && (
-        <p className="mt-0.5 text-xs font-medium text-primary">
-          {new Intl.NumberFormat("es-AR", {
-            style: "currency",
-            currency: lead.product.currency,
-            maximumFractionDigits: 0,
-          }).format(lead.product.price_cents / 100)}
+      {priceLabel && (
+        <p style={{ margin: '2px 0 0', fontSize: 13, fontWeight: 700, color: 'var(--ps-cyan)', letterSpacing: '-0.01em' }}>
+          {priceLabel}
         </p>
       )}
 
-      {/* Footer: time in stage + vendedor + lost action */}
-      <div className="mt-2 flex items-center justify-between">
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <Clock className="h-3 w-3" />
-          <span>{timeInStage}</span>
+      {/* Footer: time in stage + vendedor avatar + mark-lost button */}
+      <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Clock size={10} strokeWidth={2} style={{ color: 'var(--ps-text-disabled)' }} />
+          <span style={{ fontSize: 10, color: 'var(--ps-text-disabled)' }}>{timeInStage}</span>
         </div>
-        <div className="flex items-center gap-1">
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {/* Vendedor avatar pill */}
           {lead.vendedor_id && (
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-muted">
-              <User className="h-3 w-3 text-muted-foreground" />
+            <div style={{
+              width: 18, height: 18, borderRadius: '50%',
+              background: 'var(--ps-bg-surface)',
+              border: '1px solid var(--ps-border-default)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <User size={10} strokeWidth={2} style={{ color: 'var(--ps-text-secondary)' }} />
             </div>
           )}
-          {/* Stop drag propagation so the button click doesn't trigger a drag */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 text-muted-foreground hover:text-destructive"
+
+          {/* Mark as lost — stops drag propagation so click fires cleanly */}
+          <button
+            type="button"
             title="Marcar como perdido"
             disabled={markLost.isPending}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
-              e.stopPropagation();
-              markLost.mutate({ status: LeadStatus.LOST });
+              e.stopPropagation()
+              markLost.mutate({ status: LeadStatus.LOST })
+            }}
+            style={{
+              width: 22, height: 22,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent',
+              border: 0, borderRadius: 6,
+              color: 'var(--ps-text-disabled)',
+              cursor: 'pointer',
+              transition: 'color 150ms, background 150ms',
+              opacity: markLost.isPending ? 0.5 : 1,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--ps-error)'
+              e.currentTarget.style.background = 'var(--ps-danger-hover-bg)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--ps-text-disabled)'
+              e.currentTarget.style.background = 'transparent'
             }}
           >
-            <XCircle className="h-3.5 w-3.5" />
-          </Button>
+            <XCircle size={14} strokeWidth={2} />
+          </button>
         </div>
       </div>
     </div>
-  );
+  )
 }
