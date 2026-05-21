@@ -5,6 +5,7 @@ import { useLayoutStore } from '@/lib/stores/layoutStore'
 import { useAuth } from '@/hooks/useAuth'
 import { usePathname } from 'next/navigation'
 import { LucideIcon } from 'lucide-react'
+import Image from 'next/image'
 import {
   LayoutDashboard,
   Package,
@@ -137,6 +138,7 @@ export function Sidebar({ groups }: SidebarProps) {
               className="flex items-center gap-2 text-[17px] font-bold tracking-tight"
               style={{ color: 'var(--ps-text-primary)' }}
             >
+              <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 26, width: 'auto', flexShrink: 0 }} />
               ProSell
             </span>
           )}

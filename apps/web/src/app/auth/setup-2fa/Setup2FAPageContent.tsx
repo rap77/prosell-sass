@@ -7,6 +7,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { TwoFactorSetupSkeleton } from "@/components/auth/dynamic/TwoFactorSetupForm";
@@ -48,7 +49,7 @@ export function Setup2FAPageContent({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 8,
+              gap: 10,
               fontSize: 22,
               fontWeight: 800,
               letterSpacing: '-0.02em',
@@ -56,6 +57,7 @@ export function Setup2FAPageContent({
               textDecoration: 'none',
             }}
           >
+            <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 32, width: 'auto', flexShrink: 0 }} />
             ProSell
           </Link>
         </div>

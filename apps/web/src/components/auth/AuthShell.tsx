@@ -9,6 +9,8 @@
  * Responsive: left panel hides on mobile (via .ps-auth-split CSS rule in globals.css).
  */
 
+import Image from 'next/image'
+
 // ─── Brand panel (left side) ──────────────────────────────────────────────────
 
 function AuthBrandPanel() {
@@ -53,14 +55,7 @@ function AuthBrandPanel() {
             color: '#fff', textDecoration: 'none',
           }}
         >
-          <span style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: 'rgba(77,184,255,0.20)',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, fontWeight: 900, color: '#4DB8FF',
-          }}>
-            P
-          </span>
+          <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 34, width: 'auto', flexShrink: 0 }} />
           ProSell
         </a>
 
