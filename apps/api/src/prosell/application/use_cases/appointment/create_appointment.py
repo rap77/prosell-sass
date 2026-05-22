@@ -1,13 +1,17 @@
 """CreateAppointmentUseCase — validates time, checks conflicts, updates lead status."""
 
 from contextlib import suppress
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from prosell.application.dto.appointment.request import CreateAppointmentRequest
 from prosell.application.dto.appointment.response import AppointmentResponse
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 from prosell.domain.entities.lead import LeadStatus
-from prosell.domain.exceptions.appointment_exceptions import AppointmentConflictException
+from prosell.domain.exceptions.appointment_exceptions import (
+    AppointmentConflictException,
+    AppointmentTimeValidationException,
+)
 from prosell.domain.repositories.appointment_repository import AbstractAppointmentRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.services.appointment_conflict_detector import AppointmentConflictDetector
@@ -52,7 +56,14 @@ class CreateAppointmentUseCase:
             AppointmentTimeValidationException: If time outside business hours
             AppointmentConflictException: If branch has conflicting appointment
         """
-        # 0. Validate time before any DB queries — past dates and bad hours fail fast
+        # 0. Reject past dates before any DB queries — fast fail
+        scheduled_utc = request.scheduled_at
+        if scheduled_utc.tzinfo is None:
+            scheduled_utc = scheduled_utc.replace(tzinfo=UTC)
+        if scheduled_utc <= datetime.now(UTC):
+            raise AppointmentTimeValidationException("Appointments must be scheduled in the future")
+
+        # Validate business hours (weekday + 9am-6pm)
         Appointment._validate_business_hours(request.scheduled_at)
 
         # 1. Get existing appointments for conflict detection

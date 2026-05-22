@@ -137,10 +137,6 @@ class Appointment(DomainModel):
         if scheduled_at.tzinfo is None:
             scheduled_at = scheduled_at.replace(tzinfo=UTC)
 
-        # Appointments must be scheduled in the future
-        if scheduled_at <= datetime.now(UTC):
-            raise AppointmentTimeValidationException("Appointments must be scheduled in the future")
-
         # Check if weekend (Saturday=5, Sunday=6)
         weekday = scheduled_at.weekday()
         if weekday >= 5:  # Saturday or Sunday
