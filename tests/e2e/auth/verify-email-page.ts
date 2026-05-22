@@ -16,19 +16,16 @@ export class VerifyEmailPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    // Buttons - verification is automatic, page has continue and/or resend buttons
-    this.continueButton = page.getByRole("button", {
-      name: /continue|sign in/i,
-    });
-    this.resendButton = page.getByRole("button", {
-      name: /resend|send again/i,
-    });
+    // Verification is automatic — the page shows loading → success/error
+    // CTA links (not buttons) vary by state
+    this.continueButton = page.getByRole("link", { name: /iniciar sesión/i });
+    this.resendButton = page.getByRole("link", { name: /volver al registro/i });
 
-    // Links
-    this.signInLink = page.getByRole("link", { name: /sign in/i });
+    // Links — success state shows "Iniciar sesión"
+    this.signInLink = page.getByRole("link", { name: /iniciar sesión/i });
 
-    // Heading
-    this.heading = page.getByRole("heading", { name: /verify your email/i });
+    // Heading is always an h1: "Verificando tu email...", "¡Email verificado!", or error variant
+    this.heading = page.locator("h1").first();
   }
 
   /**
@@ -59,9 +56,8 @@ export class VerifyEmailPage extends BasePage {
    * Verify success message is displayed
    */
   async verifySuccessMessage(): Promise<void> {
-    const successMessage = this.page.getByText(
-      /email verified|verification successful/i,
-    );
+    // Spanish success heading: "¡Email verificado!"
+    const successMessage = this.page.locator("h1").filter({ hasText: /email verificado/i });
     await expect(successMessage).toBeVisible();
   }
 

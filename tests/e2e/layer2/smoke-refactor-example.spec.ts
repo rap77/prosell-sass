@@ -104,32 +104,35 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
       await expect(page.locator(`text=${uniqueLead.buyer_name}`)).toBeVisible();
       await expect(page.locator(`text=${uniqueLead.buyer_email}`)).toBeVisible();
 
-      // Verify status badge
+      // Verify status badge (UI uses Spanish: "Nuevo")
       const statusBadge = page.locator("[data-testid='lead-item']").first()
         .locator("[data-testid='status-badge']");
       await expect(statusBadge).toBeVisible();
-      await expect(statusBadge).toContainText('New');
+      await expect(statusBadge).toContainText('Nuevo');
     });
 
     test('should update lead status with independent data', async ({ page }) => {
       // Generate unique lead for this test
       const uniqueLead = leadFactory.createWithStatus('new');
 
-      // Mock API
+      // Track current status across GET/PUT calls
+      let currentStatus = uniqueLead.status;
+
+      // Mock API — GET returns current status, PUT updates it
       await page.route('**/api/v1/leads**', async (route) => {
         if (route.request().method() === 'GET') {
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-              items: [uniqueLead],
+              items: [{ ...uniqueLead, status: currentStatus }],
               total: 1,
               limit: 50,
               offset: 0,
             }),
           });
         } else if (route.request().method() === 'PUT') {
-          // Mock status update
+          currentStatus = 'contacted';
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -149,29 +152,27 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
       // Find the first lead
       const firstLead = page.locator("[data-testid='lead-item']").first();
 
-      // Verify initial status
+      // Verify initial status (UI uses Spanish: "Nuevo")
       const statusBadge = firstLead.locator("[data-testid='status-badge']");
-      await expect(statusBadge).toContainText('New');
+      await expect(statusBadge).toContainText('Nuevo');
 
-      // Click the status dropdown
+      // Click the status dropdown trigger
       await firstLead.locator("[data-testid='status-dropdown']").click();
       await page.waitForTimeout(200);
 
-      // Click on "Contacted" status
-      const contactedOption = page.locator("[role='menuitem']").filter({ hasText: 'Contacted' });
+      // Click on "Contactado" status (Spanish)
+      const contactedOption = page.locator("[role='menuitem']").filter({ hasText: 'Contactado' });
       await contactedOption.click();
 
-      // Wait for the update
+      // Wait for the update then reload to see new status from mock
       await page.waitForLoadState('networkidle');
-
-      // Reload to see updated status
       await page.reload();
       await page.waitForLoadState('networkidle');
 
-      // Verify the status was updated
+      // After reload, GET returns updated status "Contactado"
       const reloadedBadge = page.locator("[data-testid='lead-item']").first()
         .locator("[data-testid='status-badge']");
-      await expect(reloadedBadge).toContainText('Contacted');
+      await expect(reloadedBadge).toContainText('Contactado');
     });
 
     test('should search leads with independent data', async ({ page }) => {
@@ -213,8 +214,8 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
       await page.goto('/vendedor/leads');
       await page.waitForLoadState('networkidle');
 
-      // Type in search box
-      const searchInput = page.locator("input[placeholder*='Search']");
+      // Type in search box (UI placeholder is in Spanish: "Buscar por comprador...")
+      const searchInput = page.locator("input[placeholder*='Buscar']");
       await searchInput.fill('Alice');
 
       // Wait for search results
@@ -269,19 +270,12 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
       await page.goto('/vendedor/leads');
       await page.waitForLoadState('networkidle');
 
-      // Click status filter dropdown
-      const statusFilter = page.locator("[data-testid='status-filter']");
-      await statusFilter.click();
-      await page.waitForTimeout(200);
-
-      // Select "New" status
-      await page.locator("[role='option']").filter({ hasText: 'New' }).click();
+      // Click the "Nuevos" status pill button (LeadList uses pill filters, not a dropdown)
+      const nuevosPill = page.locator("button").filter({ hasText: 'Nuevos' });
+      await nuevosPill.click();
 
       // Wait for filter to apply
       await page.waitForTimeout(500);
-
-      // Verify filter was applied
-      await expect(statusFilter).toContainText('New');
 
       // Verify only "new" leads are displayed
       const leadItems = page.locator("[data-testid='lead-item']");
@@ -289,7 +283,7 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
 
       if (count > 0) {
         const firstBadge = leadItems.first().locator("[data-testid='status-badge']");
-        await expect(firstBadge).toContainText('New');
+        await expect(firstBadge).toContainText('Nuevo'); // Spanish
       }
     });
   });

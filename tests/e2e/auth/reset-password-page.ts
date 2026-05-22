@@ -17,19 +17,19 @@ export class ResetPasswordPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    // Form inputs - Use specific IDs
-    this.newPasswordInput = page.locator("#password-password");
-    this.confirmPasswordInput = page.locator("#password-confirmPassword");
+    // Form inputs — match current IDs in ResetPasswordPageContent.tsx
+    this.newPasswordInput = page.locator("#reset-password");
+    this.confirmPasswordInput = page.locator("#reset-confirm-password");
 
-    // Buttons - Case-sensitive match
-    this.submitButton = page.getByRole("button", { name: "Reset Password" });
+    // Button text: "Restablecer contraseña" (Spanish)
+    this.submitButton = page.getByRole("button", { name: /restablecer contraseña/i });
 
-    // Links - "Back to Login" instead of "sign in"
-    this.signInLink = page.getByRole("link", { name: "Back to Login" });
+    // Link text: "Volver al inicio de sesión" (Spanish)
+    this.signInLink = page.getByRole("link", { name: /volver al inicio de sesión/i });
 
-    // Heading - Use .first() because of sr-only h1
+    // Heading: "Nueva contraseña" (form state) or "Enlace inválido" (invalid token)
     this.heading = page
-      .getByRole("heading", { name: /reset your password/i })
+      .locator("h1")
       .first();
   }
 
@@ -91,10 +91,8 @@ export class ResetPasswordPage extends BasePage {
    * Verify success message is displayed
    */
   async verifySuccessMessage(): Promise<void> {
-    // Look for "Password Reset Successful" heading
-    const successMessage = this.page.getByRole("heading", {
-      name: "Password Reset Successful",
-    });
+    // Spanish success heading: "¡Contraseña actualizada!"
+    const successMessage = this.page.locator("h1").filter({ hasText: /contraseña actualizada/i });
     await expect(successMessage).toBeVisible();
   }
 

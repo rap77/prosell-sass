@@ -46,9 +46,10 @@ function AuthBrandPanel() {
 
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
 
-        {/* Logo */}
+        {/* Logo — tabIndex -1 because the aside is aria-hidden, making this link unreachable by keyboard */}
         <a
           href="/"
+          tabIndex={-1}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 12,
             fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em',
