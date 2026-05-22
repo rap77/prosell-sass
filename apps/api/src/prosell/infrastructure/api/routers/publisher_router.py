@@ -38,7 +38,7 @@ async def get_task_dispatcher() -> ITaskDispatcher:
 )
 @rate_limit(API_LIMIT)
 async def publish_vehicle(
-    _request: Request,
+    request: Request,  # noqa: ARG001 — required by slowapi rate-limit introspection
     product_id: UUID,
     body: PublishProductRequest,
     _current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],

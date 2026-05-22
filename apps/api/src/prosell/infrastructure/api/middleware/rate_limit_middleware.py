@@ -14,8 +14,8 @@ from prosell.core.config import settings
 
 
 def is_test_environment() -> bool:
-    """Check if current environment is a testing environment."""
-    return settings.environment in ["testing", "test"]
+    """Check if current environment is a non-production environment."""
+    return settings.environment in ["testing", "test", "development"]
 
 
 def is_rate_limit_exempt(request: Request) -> bool:

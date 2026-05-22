@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserResponse(BaseModel):
@@ -62,10 +62,9 @@ class AuthStateUserResponse(BaseModel):
 class AuthStateResponse(BaseModel):
     """Auth state response model."""
 
-    is_authenticated: bool = Field(
-        serialization_alias="isAuthenticated",
-        validation_alias="isAuthenticated",
-    )
+    model_config = ConfigDict(populate_by_name=True)
+
+    is_authenticated: bool = Field(alias="isAuthenticated")
     user: AuthStateUserResponse | None = None
 
 

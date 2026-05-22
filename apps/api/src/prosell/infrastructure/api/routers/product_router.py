@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.product import (
@@ -145,7 +145,7 @@ async def bulk_upload_products(
 async def list_products(
     organization_id: UUID | None = None,
     category_id: UUID | None = None,
-    product_status: str | None = None,
+    product_status: str | None = Query(default=None, alias="status"),
     condition: str | None = None,
     is_featured: bool | None = None,
     search: str | None = None,

@@ -46,7 +46,7 @@ async def get_category_repository(session: AsyncSession) -> AbstractCategoryRepo
 @router.get("", response_model=CategoryListResponse)
 @smart_rate_limit("api")
 async def list_categories(
-    _request: Request,
+    request: Request,  # noqa: ARG001 — required by slowapi rate-limit introspection
     parent_id: UUID | None = None,
     is_active: bool | None = None,
     skip: int = 0,

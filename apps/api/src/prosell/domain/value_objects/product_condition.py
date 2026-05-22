@@ -15,6 +15,7 @@ class ProductCondition(StrEnum):
 
     NEW = "new"
     USED = "used"
+    CERTIFIED_PRE_OWNED = "certified_pre_owned"
     REFURBISHED = "refurbished"
     FOR_PARTS = "for_parts"
 

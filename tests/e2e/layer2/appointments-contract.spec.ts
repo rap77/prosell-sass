@@ -88,14 +88,19 @@ test.describe('Layer 2: Appointment Flow - Contract Validation', () => {
     return await response.json();
   }
 
-  // Helper: Get a valid Monday 10am datetime for appointment creation
-  function getNextMondayAt10(): string {
-    const now = new Date();
-    const daysUntilMonday = (1 - now.getDay() + 7) % 7 || 7;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + daysUntilMonday);
-    monday.setHours(10, 0, 0, 0);
-    return monday.toISOString();
+  // Generates a random far-future (2030-2099) weekday at 10am UTC.
+  // Using Math.random() ensures uniqueness across parallel workers and test runs,
+  // avoiding 409 conflicts with appointments already in the DB.
+  function getUniqueBusinessSlot(): string {
+    const year = 2030 + Math.floor(Math.random() * 70); // 2030–2099
+    const month = Math.floor(Math.random() * 12);       // 0–11
+    const day = Math.floor(Math.random() * 28) + 1;     // 1–28 (safe for all months)
+    const d = new Date(Date.UTC(year, month, day, 10, 0, 0));
+    // Shift to Monday if Saturday or Sunday
+    const dow = d.getUTCDay();
+    if (dow === 0) d.setUTCDate(d.getUTCDate() + 1);    // Sun → Mon
+    if (dow === 6) d.setUTCDate(d.getUTCDate() + 2);    // Sat → Mon
+    return d.toISOString();
   }
 
   // ============================================
@@ -109,7 +114,7 @@ test.describe('Layer 2: Appointment Flow - Contract Validation', () => {
         return;
       }
 
-      const scheduledAt = getNextMondayAt10();
+      const scheduledAt = getUniqueBusinessSlot();
       const response = await request.post('/api/v1/appointments', {
         data: {
           lead_id: lead.id,
@@ -171,7 +176,7 @@ test.describe('Layer 2: Appointment Flow - Contract Validation', () => {
           lead_id: 'not-a-uuid',
           user_id: currentUserId || aptData.dealer_id,
           product_id: testProductId || aptData.vehicle_id,
-          scheduled_at: getNextMondayAt10(),
+          scheduled_at: getUniqueBusinessSlot(),
           notes: 'test',
         },
       });
@@ -185,7 +190,7 @@ test.describe('Layer 2: Appointment Flow - Contract Validation', () => {
         data: {
           user_id: currentUserId || aptFactory.generateId('user'),
           product_id: testProductId || aptFactory.generateId('prod'),
-          scheduled_at: getNextMondayAt10(),
+          scheduled_at: getUniqueBusinessSlot(),
         },
       });
       expect(response.status()).toBe(422);
@@ -200,14 +205,15 @@ test.describe('Layer 2: Appointment Flow - Contract Validation', () => {
         return;
       }
 
-      const scheduledAt = getNextMondayAt10();
+      // Random far-future business slot — each run picks a unique date
+      const scheduledAt = getUniqueBusinessSlot();
       const response = await request.post('/api/v1/appointments', {
         data: {
           lead_id: lead.id,
           user_id: currentUserId,
           product_id: testProductId,
           scheduled_at: scheduledAt,
-          notes: 'Monday 10am appointment',
+          notes: 'Business-hours appointment',
         },
       });
 
@@ -215,8 +221,11 @@ test.describe('Layer 2: Appointment Flow - Contract Validation', () => {
       const body = await response.json();
       expect(body.status).toBe('scheduled');
 
+      // Verify the slot is a weekday (Mon-Fri) at business hours
       const scheduledDate = new Date(body.scheduled_at);
-      expect(scheduledDate.getDay()).toBe(1); // Monday
+      const dow = scheduledDate.getUTCDay();
+      expect(dow).toBeGreaterThanOrEqual(1); // Not Sunday
+      expect(dow).toBeLessThanOrEqual(5);    // Not Saturday
     });
 
     test('L2-APT-08: should accept appointment without notes', async ({ request }) => {
@@ -231,7 +240,7 @@ test.describe('Layer 2: Appointment Flow - Contract Validation', () => {
           lead_id: lead.id,
           user_id: currentUserId,
           product_id: testProductId,
-          scheduled_at: getNextMondayAt10(),
+          scheduled_at: getUniqueBusinessSlot(),
         },
       });
 
@@ -253,7 +262,7 @@ test.describe('Layer 2: Appointment Flow - Contract Validation', () => {
           lead_id: lead.id,
           user_id: currentUserId,
           product_id: testProductId,
-          scheduled_at: getNextMondayAt10(),
+          scheduled_at: getUniqueBusinessSlot(),
           notes: specialNotes,
         },
       });
@@ -346,7 +355,7 @@ test.describe('Layer 2: Appointment Flow - Contract Validation', () => {
           lead_id: lead.id,
           user_id: currentUserId,
           product_id: testProductId,
-          scheduled_at: getNextMondayAt10(),
+          scheduled_at: getUniqueBusinessSlot(),
           notes: 'Details test',
         },
       });
@@ -404,7 +413,7 @@ test.describe('Layer 2: Appointment Flow - Contract Validation', () => {
           lead_id: lead.id,
           user_id: currentUserId,
           product_id: testProductId,
-          scheduled_at: getNextMondayAt10(),
+          scheduled_at: getUniqueBusinessSlot(),
           notes: 'Status update test',
         },
       });
@@ -449,7 +458,7 @@ test.describe('Layer 2: Appointment Flow - Contract Validation', () => {
           lead_id: lead.id,
           user_id: currentUserId,
           product_id: testProductId,
-          scheduled_at: getNextMondayAt10(),
+          scheduled_at: getUniqueBusinessSlot(),
         },
       });
 
@@ -528,7 +537,7 @@ test.describe('Layer 2: Appointment Flow - Contract Validation', () => {
           lead_id: lead.id,
           user_id: currentUserId,
           product_id: testProductId,
-          scheduled_at: getNextMondayAt10(),
+          scheduled_at: getUniqueBusinessSlot(),
           notes: 'A'.repeat(2000),
         },
       });
@@ -550,7 +559,7 @@ test.describe('Layer 2: Appointment Flow - Contract Validation', () => {
           lead_id: lead.id,
           user_id: currentUserId,
           product_id: testProductId,
-          scheduled_at: getNextMondayAt10(),
+          scheduled_at: getUniqueBusinessSlot(),
           notes: 'A'.repeat(2001),
         },
       });

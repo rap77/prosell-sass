@@ -112,7 +112,10 @@ test.describe('Layer 2: Vehicle Catalog (C3 Model) - Contract Validation', () =>
     test('L2-VEH-06: should handle VIN decode with cached result', async ({ request }) => {
       const vin = '2GNALBEK8H1615946';
 
-      // Second call — should be served from in-memory cache
+      // First call — populates the cache (may already be cached from L2-VEH-01)
+      await request.post('/api/v1/vehicles/decode-vin', { data: { vin } });
+
+      // Second call — must be served from in-memory cache
       const response = await request.post('/api/v1/vehicles/decode-vin', {
         data: { vin },
       });
