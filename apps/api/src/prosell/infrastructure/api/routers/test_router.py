@@ -181,9 +181,17 @@ async def cleanup_test_data(
             deleted_counts["products"] = result.rowcount  # type: ignore[attr-defined]
         await db.commit()
 
-        # 4. Categories
+        # 4. Categories — first purge any residual products referencing these categories
+        # (products from previous test runs that weren't cleaned up) to avoid FK violations
         if use_specific_ids:
             if request.category_ids:
+                await db.execute(
+                    delete(ProductModel).where(
+                        ProductModel.category_id.in_(request.category_ids),
+                        ProductModel.tenant_id == tenant_id,
+                    )
+                )
+                await db.commit()
                 result = await db.execute(
                     delete(CategoryModel).where(
                         CategoryModel.id.in_(request.category_ids),

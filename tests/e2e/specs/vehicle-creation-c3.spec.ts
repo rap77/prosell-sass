@@ -108,12 +108,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       // Step 2: Fill VIN and decode
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946"); // Chevrolet Equinox 2017
       await vehiclesPage.decodeVinButton.click();
-      await page.waitForLoadState("load");
-      // Wait for decode to complete and form to update (VIN decode makes API call)
-      await page.waitForTimeout(3000);
-
-      // The model input should be auto-populated with the decoded value
-      await expect(vehiclesPage.modelInput).toHaveValue(/equinox/i);
+      // Wait reactively for the model input to be populated — NHTSA cold-start can take 15s+.
+      // Using toHaveValue with a long timeout is more reliable than a fixed waitForTimeout.
+      await expect(vehiclesPage.modelInput).toHaveValue(/equinox/i, { timeout: 20000 });
 
       // For Select fields (Radix UI), verify decode completed by checking button is enabled
       await expect(vehiclesPage.decodeVinButton).toBeEnabled();
@@ -147,8 +144,8 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       // Fill required fields
       await vehiclesPage.vinInput.fill("1HGCM82633A123456"); // Honda Accord 2003 (valid 17-char VIN)
       await vehiclesPage.decodeVinButton.click();
-      await page.waitForLoadState("load");
-      await page.waitForTimeout(3000); // Wait for decode to complete
+      // Wait for decode to finish — button re-enables when done (up to 20s for NHTSA cold start)
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
 
       await vehiclesPage.priceInput.fill("8500");
 
@@ -220,15 +217,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       // Fill and decode VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
       await vehiclesPage.decodeVinButton.click();
-      await page.waitForLoadState("load");
 
-      // Wait longer for decode to complete and form to update
-      // VIN decode makes API call, processes response, updates form state
-      await page.waitForTimeout(3000);
-
-      // Verify auto-populated fields
-      // For model input (text field), check value directly
-      await expect(vehiclesPage.modelInput).toHaveValue(/equinox/i);
+      // Wait reactively — model populated = decode complete (up to 20s for NHTSA cold start)
+      await expect(vehiclesPage.modelInput).toHaveValue(/equinox/i, { timeout: 20000 });
 
       // For trim input (text field), check it's not empty
       const trimValue = await vehiclesPage.trimInput.inputValue();
@@ -243,8 +234,7 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       // Decode VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
       await vehiclesPage.decodeVinButton.click();
-      await page.waitForLoadState("load");
-      await page.waitForTimeout(3000); // Wait for decode to complete
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
 
       // Manually override make field
       await vehiclesPage.makeSelect.click();
@@ -264,8 +254,7 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await page.keyboard.press("Escape"); // Ensure dropdown closed
       await vehiclesPage.vinInput.fill("1G1PE5SB6G7175794"); // Valid 17-char VIN
       await vehiclesPage.decodeVinButton.click();
-      await page.waitForLoadState("load");
-      await page.waitForTimeout(2000); // Increased wait for decode
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
 
       await vehiclesPage.priceInput.fill("10000");
       await vehiclesPage.mileageInput.fill("75000");
@@ -324,8 +313,7 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await page.keyboard.press("Escape"); // Ensure dropdown closed
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946"); // Valid 17-char VIN
       await vehiclesPage.decodeVinButton.click();
-      await page.waitForLoadState("load");
-      await page.waitForTimeout(2000); // Increased wait for decode
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
       await vehiclesPage.priceInput.fill("15000");
 
       // Submit
@@ -343,8 +331,7 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await page.keyboard.press("Escape"); // Ensure dropdown closed
       await vehiclesPage.vinInput.fill("KMHHU6KH9AU020511"); // Valid 17-char VIN
       await vehiclesPage.decodeVinButton.click();
-      await page.waitForLoadState("load");
-      await page.waitForTimeout(2000); // Increased wait for decode
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
       await vehiclesPage.priceInput.fill("12000");
 
       await vehiclesPage.submitButton.scrollIntoViewIfNeeded();
@@ -465,8 +452,7 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await page.keyboard.press("Escape"); // Ensure dropdown closed
       await vehiclesPage.vinInput.fill("KNAFX4A65E5134820"); // Valid 17-char VIN
       await vehiclesPage.decodeVinButton.click();
-      await page.waitForLoadState("load");
-      await page.waitForTimeout(2000); // Increased wait
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
 
       await vehiclesPage.priceInput.fill("10000");
 
@@ -478,20 +464,15 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       // CRITICAL: After navigation, we need to ensure categories are freshly loaded
       // The simplest solution: reload the page to force a fresh API call
       await page.goto("/catalog/create");
-      await page.waitForLoadState("networkidle"); // Wait for all network activity to settle
+      await page.waitForLoadState("networkidle");
 
-      // Additional wait to ensure categories are loaded
-      await page.waitForTimeout(3000); // Increased wait for categories
-
-      // Now select category (which should be in the dropdown now)
-      // Add explicit wait for category dropdown to be ready
-      await page.waitForTimeout(1000);
+      // Wait for category selector to be visible before interacting
+      await vehiclesPage.categorySelect.waitFor({ state: "visible", timeout: 10000 });
       await vehiclesPage.selectCategory(testCategoryName);
 
       await vehiclesPage.vinInput.fill("KNAFX4A65E5134820"); // Same VIN - duplicate
       await vehiclesPage.decodeVinButton.click();
-      await page.waitForLoadState("load");
-      await page.waitForTimeout(2000); // Increased wait
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
 
       await vehiclesPage.priceInput.fill("12000");
       await vehiclesPage.submitButton.click();
@@ -513,8 +494,7 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       // Fill VIN and decode
       await vehiclesPage.vinInput.fill("KNDJP3A5XF7227448"); // Valid 17-char VIN (extra)
       await vehiclesPage.decodeVinButton.click();
-      await page.waitForLoadState("load");
-      await page.waitForTimeout(2000); // Increased wait
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
 
       // Manually enter model with special characters (make is Select, can't type special chars)
       await vehiclesPage.modelInput.fill("Civic Édition Spéciale");
