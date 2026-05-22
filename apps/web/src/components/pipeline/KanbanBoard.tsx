@@ -1,5 +1,4 @@
 'use client'
-
 /**
  * KanbanBoard — ProSell pipeline board.
  *

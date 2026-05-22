@@ -36,5 +36,9 @@
     "patchedDependencies": {
       "@radix-ui/react-select": "patches/@radix-ui__react-select.patch"
     }
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/utilities": "^3.2.2"
   }
 }
