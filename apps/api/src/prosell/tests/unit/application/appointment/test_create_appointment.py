@@ -68,7 +68,7 @@ class TestCreateAppointmentConflictDetection:
             "lead_id": uuid4(),
             "user_id": uuid4(),
             "product_id": uuid4(),
-            "scheduled_at": datetime(2026, 5, 19, 10, 0, tzinfo=UTC),
+            "scheduled_at": datetime(2035, 5, 22, 10, 0, tzinfo=UTC),  # far future — past-date check
             "notes": "Test appointment",
         }
 
@@ -144,7 +144,7 @@ class TestCreateAppointmentConflictDetection:
             lead_id=uuid4(),
             user_id=valid_request_data["user_id"],
             product_id=valid_request_data["product_id"],
-            scheduled_at=datetime(2026, 5, 19, 9, 30, tzinfo=UTC),  # Overlaps
+            scheduled_at=datetime(2035, 5, 22, 9, 30, tzinfo=UTC),  # Overlaps
             status=AppointmentStatus.SCHEDULED,
         )
 
@@ -154,7 +154,7 @@ class TestCreateAppointmentConflictDetection:
             lead_id=uuid4(),
             user_id=valid_request_data["user_id"],
             product_id=valid_request_data["product_id"],
-            scheduled_at=datetime(2026, 5, 19, 10, 30, tzinfo=UTC),  # Overlaps
+            scheduled_at=datetime(2035, 5, 22, 10, 30, tzinfo=UTC),  # Overlaps
             status=AppointmentStatus.SCHEDULED,
         )
 

@@ -87,7 +87,7 @@ class TestCreateAppointmentUseCase:
         lead_id = uuid4()
         user_id = uuid4()
         product_id = uuid4()
-        scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)  # Tuesday 10am
+        scheduled_at = datetime(2035, 5, 22, 10, 0, 0, tzinfo=UTC)  # Tuesday 10am
 
         # Mock lead repository to return existing lead
         mock_lead_repository.get_by_id.return_value = sample_lead
@@ -143,7 +143,7 @@ class TestCreateAppointmentUseCase:
         lead_id = uuid4()
         user_id = uuid4()
         product_id = uuid4()
-        scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)
+        scheduled_at = datetime(2035, 5, 22, 10, 0, 0, tzinfo=UTC)
 
         # Mock existing conflicting appointment
         existing_appointment = Appointment.create(
@@ -194,7 +194,7 @@ class TestCreateAppointmentUseCase:
         lead_id = uuid4()
         user_id = uuid4()
         product_id = uuid4()
-        scheduled_at = datetime(2026, 5, 3, 10, 0, 0, tzinfo=UTC)  # Saturday
+        scheduled_at = datetime(2035, 5, 5, 10, 0, 0, tzinfo=UTC)  # Saturday
 
         # Mock repositories
         mock_appointment_repository.check_conflicts.return_value = []
@@ -232,7 +232,7 @@ class TestCreateAppointmentUseCase:
         lead_id = uuid4()
         user_id = uuid4()
         product_id = uuid4()
-        scheduled_at = datetime(2026, 4, 29, 8, 0, 0, tzinfo=UTC)  # Tuesday 8am
+        scheduled_at = datetime(2035, 5, 22, 8, 0, 0, tzinfo=UTC)  # Tuesday 8am
 
         # Mock repositories
         mock_appointment_repository.check_conflicts.return_value = []
@@ -265,7 +265,7 @@ class TestCreateAppointmentUseCase:
         lead_id = uuid4()
         user_id = uuid4()
         product_id = uuid4()
-        scheduled_at = datetime(2026, 4, 29, 19, 0, 0, tzinfo=UTC)  # Tuesday 7pm
+        scheduled_at = datetime(2035, 5, 22, 19, 0, 0, tzinfo=UTC)  # Tuesday 7pm
 
         # Mock repositories
         mock_appointment_repository.check_conflicts.return_value = []
@@ -294,7 +294,7 @@ class TestCreateAppointmentUseCase:
         lead_id = uuid4()
         user_id = uuid4()
         product_id = uuid4()
-        scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)
+        scheduled_at = datetime(2035, 5, 22, 10, 0, 0, tzinfo=UTC)
 
         # Mock lead not found
         mock_lead_repository.get_by_id.return_value = None
@@ -332,7 +332,7 @@ class TestCreateAppointmentUseCase:
         lead_id = uuid4()
         user_id = uuid4()
         product_id = uuid4()
-        scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)
+        scheduled_at = datetime(2035, 5, 22, 10, 0, 0, tzinfo=UTC)
 
         # Create a mock lead with status already appointment_set
         lead_with_appointment = Mock()
@@ -380,7 +380,7 @@ class TestCreateAppointmentUseCase:
         lead_id = uuid4()
         user_id = uuid4()
         product_id = uuid4()
-        scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)
+        scheduled_at = datetime(2035, 5, 22, 10, 0, 0, tzinfo=UTC)
         notes = "Customer wants to test drive the vehicle"
 
         # Mock repositories
@@ -423,7 +423,7 @@ class TestCreateAppointmentUseCase:
         lead_id = uuid4()
         user_id = uuid4()
         product_id = uuid4()
-        scheduled_at = datetime(2026, 4, 29, 10, 0, 0, tzinfo=UTC)
+        scheduled_at = datetime(2035, 5, 22, 10, 0, 0, tzinfo=UTC)
 
         # Mock repositories
         mock_appointment_repository.check_conflicts.return_value = []

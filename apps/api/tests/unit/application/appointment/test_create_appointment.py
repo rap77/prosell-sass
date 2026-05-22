@@ -70,7 +70,7 @@ def lead() -> Lead:
 @pytest.fixture
 def base_time() -> datetime:
     """Base time for testing (Tuesday, 2 PM UTC)."""
-    return datetime(2026, 5, 19, 14, 0, tzinfo=UTC)  # Tuesday
+    return datetime(2035, 5, 22, 14, 0, tzinfo=UTC)  # Tuesday — far future so past-date check passes
 
 
 class TestCreateAppointmentWithConflictDetection:
