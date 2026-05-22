@@ -22,6 +22,7 @@ from prosell.application.use_cases.product.list_products import (
     ProductListResponse,
 )
 from prosell.domain.entities.user import User
+from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.csv_product_parser import CSVProductParser
@@ -75,6 +76,8 @@ async def create_product(
 
     try:
         return await use_case.execute(request)
+    except CategoryNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 

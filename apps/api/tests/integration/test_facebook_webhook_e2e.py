@@ -34,11 +34,22 @@ async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient]:
     """
     from prosell.infrastructure.api.routers.webhook_router import get_facebook_app_secret
 
+    from unittest.mock import MagicMock
+    from prosell.domain.ports.i_encryption_service import IEncryptionService
+    from prosell.infrastructure.api.di import get_encryption_service
+
     # Override the get_facebook_app_secret dependency
     async def override_get_facebook_app_secret() -> str:
         return "test_app_secret_123"
 
+    # Override encryption service with a mock (avoids 32-byte key requirement)
+    def override_get_encryption_service() -> IEncryptionService:
+        svc = MagicMock(spec=IEncryptionService)
+        svc.decrypt.return_value = "mock_access_token"
+        return svc
+
     app.dependency_overrides[get_facebook_app_secret] = override_get_facebook_app_secret
+    app.dependency_overrides[get_encryption_service] = override_get_encryption_service
 
     async with AsyncClient(
         transport=ASGITransport(app=app),
@@ -192,11 +203,17 @@ class TestFacebookWebhookUseCasePhase2Behavior:
         publication_repo = SqlAlchemyPublicationRepository(db_session)
         facebook_client = FacebookGraphApiClient()
         create_lead_use_case = CreateLeadUseCase(lead_repo)
-        use_case = ProcessFacebookWebhookUseCase(  # type: ignore[call-arg]
+        from unittest.mock import AsyncMock, MagicMock
+        from prosell.domain.ports.i_encryption_service import IEncryptionService
+        from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
+
+        use_case = ProcessFacebookWebhookUseCase(
             lead_repository=lead_repo,
             publication_repository=publication_repo,
+            facebook_page_repository=AsyncMock(spec=IFacebookPageRepository),
             facebook_client=facebook_client,
             create_lead_use_case=create_lead_use_case,
+            encryption_service=MagicMock(spec=IEncryptionService),
         )
 
         # Arrange: Webhook payload (no buyer email/phone available)

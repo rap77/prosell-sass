@@ -18,6 +18,7 @@ from prosell.application.dto.appointment.response import AppointmentResponse
 from prosell.application.use_cases.appointment.create_appointment import CreateAppointmentUseCase
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 from prosell.domain.entities.lead import Lead, LeadStatus
+from prosell.domain.value_objects.lead_source import LeadSource
 from prosell.domain.exceptions.appointment_exceptions import (
     AppointmentConflictException,
     AppointmentTimeValidationException,
@@ -52,7 +53,7 @@ def sample_lead():
         buyer_name="John Doe",
         buyer_email="john@example.com",
         buyer_phone="+1234567890",
-        source="facebook_marketplace",
+        source=LeadSource.FACEBOOK,
         tenant_id=uuid4(),
     )
     # Manually set to QUALIFIED status so it can transition to APPOINTMENT_SET

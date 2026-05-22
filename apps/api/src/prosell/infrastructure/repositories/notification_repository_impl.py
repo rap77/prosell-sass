@@ -60,10 +60,15 @@ class SqlAlchemyNotificationRepository(AbstractNotificationRepository):
     # ------------------------------------------------------------------
 
     async def create(self, notification: Notification) -> Notification:
-        """Persist a new notification and return the saved entity."""
-        model = self._to_model(notification)
-        self.session.add(model)
-        await self.session.flush()
+        """Persist a new notification inside a savepoint.
+
+        Using begin_nested() ensures that if this write fails (e.g. FK violation),
+        only the savepoint is rolled back — the outer transaction stays valid.
+        """
+        async with self.session.begin_nested():
+            model = self._to_model(notification)
+            self.session.add(model)
+            await self.session.flush()
         return self._to_entity(model)
 
     async def get_by_id(self, notification_id: UUID, tenant_id: UUID) -> Notification | None:

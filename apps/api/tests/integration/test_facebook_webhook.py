@@ -31,11 +31,21 @@ async def async_client(db_session):
     """
     from prosell.infrastructure.api.routers.webhook_router import get_facebook_app_secret
 
+    from unittest.mock import MagicMock
+    from prosell.domain.ports.i_encryption_service import IEncryptionService
+    from prosell.infrastructure.api.di import get_encryption_service
+
     # Override the get_facebook_app_secret dependency
     async def override_get_facebook_app_secret() -> str:
         return "test_app_secret_123"
 
+    def override_get_encryption_service() -> IEncryptionService:
+        svc = MagicMock(spec=IEncryptionService)
+        svc.decrypt.return_value = "mock_access_token"
+        return svc
+
     app.dependency_overrides[get_facebook_app_secret] = override_get_facebook_app_secret
+    app.dependency_overrides[get_encryption_service] = override_get_encryption_service
 
     async with AsyncClient(
         transport=ASGITransport(app=app),

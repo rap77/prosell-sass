@@ -8,7 +8,10 @@ import pytest
 from prosell.application.use_cases.facebook_webhook_use_case import ProcessFacebookWebhookUseCase
 from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
 from prosell.domain.entities.lead import Lead
+from prosell.domain.value_objects.lead_source import LeadSource
 from prosell.domain.entities.publication import Publication, PublicationStatus
+from prosell.domain.ports.i_encryption_service import IEncryptionService
+from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.publication_repository import IPublicationRepository
 from prosell.infrastructure.services.facebook_graph_api_client import (
@@ -43,6 +46,18 @@ def mock_create_lead_use_case():
     """Mock CreateLeadUseCase."""
     use_case = AsyncMock(spec=CreateLeadUseCase)
     return use_case
+
+
+@pytest.fixture
+def mock_facebook_page_repository():
+    """Mock IFacebookPageRepository."""
+    return AsyncMock(spec=IFacebookPageRepository)
+
+
+@pytest.fixture
+def mock_encryption_service():
+    """Mock IEncryptionService."""
+    return MagicMock(spec=IEncryptionService)
 
 
 @pytest.fixture
@@ -112,6 +127,8 @@ async def test_process_webhook_success(
     mock_publication_repository,
     mock_facebook_client,
     mock_create_lead_use_case,
+    mock_facebook_page_repository,
+    mock_encryption_service,
     tenant_id,
     vendedor_id,
     product_id,
@@ -131,11 +148,13 @@ async def test_process_webhook_success(
     )
 
     # Create use case
-    use_case = ProcessFacebookWebhookUseCase(  # type: ignore[call-arg]
+    use_case = ProcessFacebookWebhookUseCase(
         lead_repository=mock_lead_repository,
         publication_repository=mock_publication_repository,
+        facebook_page_repository=mock_facebook_page_repository,
         facebook_client=mock_facebook_client,
         create_lead_use_case=mock_create_lead_use_case,
+        encryption_service=mock_encryption_service,
     )
 
     # Execute
@@ -165,6 +184,8 @@ async def test_process_webhook_duplicate_lead(
     mock_publication_repository,
     mock_facebook_client,
     mock_create_lead_use_case,
+    mock_facebook_page_repository,
+    mock_encryption_service,
     tenant_id,
 ):
     """Test webhook processing with duplicate lead detection."""
@@ -180,15 +201,17 @@ async def test_process_webhook_duplicate_lead(
         product_id=sample_publication.product_id,
         vendedor_id=sample_publication.seller_user_id,
         message="Previous message",
-        source="facebook",
+        source=LeadSource.FACEBOOK,
     )
 
     # Create use case
-    use_case = ProcessFacebookWebhookUseCase(  # type: ignore[call-arg]
+    use_case = ProcessFacebookWebhookUseCase(
         lead_repository=mock_lead_repository,
         publication_repository=mock_publication_repository,
+        facebook_page_repository=mock_facebook_page_repository,
         facebook_client=mock_facebook_client,
         create_lead_use_case=mock_create_lead_use_case,
+        encryption_service=mock_encryption_service,
     )
 
     # Execute
@@ -205,6 +228,8 @@ async def test_process_webhook_publication_not_found(
     mock_publication_repository,
     mock_facebook_client,
     mock_create_lead_use_case,
+    mock_facebook_page_repository,
+    mock_encryption_service,
     tenant_id,
 ):
     """Test webhook processing when publication not found."""
@@ -212,11 +237,13 @@ async def test_process_webhook_publication_not_found(
     mock_publication_repository.get_by_fb_listing_id.return_value = None
 
     # Create use case
-    use_case = ProcessFacebookWebhookUseCase(  # type: ignore[call-arg]
+    use_case = ProcessFacebookWebhookUseCase(
         lead_repository=mock_lead_repository,
         publication_repository=mock_publication_repository,
+        facebook_page_repository=mock_facebook_page_repository,
         facebook_client=mock_facebook_client,
         create_lead_use_case=mock_create_lead_use_case,
+        encryption_service=mock_encryption_service,
     )
 
     # Execute (should not raise, just log and return)

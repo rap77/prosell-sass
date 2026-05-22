@@ -1,6 +1,6 @@
 """Integration tests for Organization API endpoints."""
 
-from unittest.mock import AsyncMock
+from unittest.mock import ANY, AsyncMock
 from uuid import uuid4
 
 import pytest
@@ -287,7 +287,7 @@ class TestListOrganizations:
 
         # Verify repo was called with correct params
         mock_org_repo.get_all.assert_awaited_once_with(
-            tenant_id=None,
+            tenant_id=ANY,  # tenant_id comes from authenticated user
             skip=10,
             limit=5,
         )

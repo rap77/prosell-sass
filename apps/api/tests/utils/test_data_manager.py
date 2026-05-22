@@ -236,7 +236,7 @@ class TestDataSeeder:
 
 
 @asynccontextmanager
-async def test_data_manager(session: AsyncSession) -> AsyncGenerator[TestDataCleaner]:
+async def test_data_manager(session: AsyncSession) -> AsyncGenerator[TestDataCleaner]:  # noqa: PT001
     """
     Context manager for managing test data lifecycle.
 
@@ -255,8 +255,11 @@ async def test_data_manager(session: AsyncSession) -> AsyncGenerator[TestDataCle
         await cleaner.close()
 
 
+test_data_manager.__test__ = False  # Not a pytest test — context manager utility
+
+
 @asynccontextmanager
-async def test_transaction(session: AsyncSession) -> AsyncGenerator[AsyncSession]:
+async def test_transaction(session: AsyncSession) -> AsyncGenerator[AsyncSession]:  # noqa: PT001
     """
     Context manager for test transactions with automatic rollback.
 
@@ -267,6 +270,9 @@ async def test_transaction(session: AsyncSession) -> AsyncGenerator[AsyncSession
     """
     async with session.begin():
         yield session
+
+
+test_transaction.__test__ = False  # Not a pytest test — context manager utility
 
 
 class TestDatabaseManager:
