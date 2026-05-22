@@ -52,6 +52,9 @@ class CreateAppointmentUseCase:
             AppointmentTimeValidationException: If time outside business hours
             AppointmentConflictException: If branch has conflicting appointment
         """
+        # 0. Validate time before any DB queries — past dates and bad hours fail fast
+        Appointment._validate_business_hours(request.scheduled_at)
+
         # 1. Get existing appointments for conflict detection
         existing_appointments = await self.appointment_repository.check_conflicts(
             user_id=request.user_id,
