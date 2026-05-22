@@ -29,25 +29,26 @@ export class RegisterPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    // Use .first() because there are 2 "Create your account" headings (one in PageContent, one in form)
+    // Spanish heading: "Creá tu cuenta"
     this.heading = page
-      .getByRole("heading", { name: /create your account/i })
+      .locator("h1")
       .first();
 
-    // Form inputs - Use specific IDs to avoid ambiguity
+    // Form inputs — match actual IDs in RegisterPageContent.tsx
     this.fullNameInput = page.locator("#fullName");
-    this.emailInput = page.locator("#email");
-    this.passwordInput = page.locator("#password-password");
-    this.confirmPasswordInput = page.locator("#password-confirmPassword");
-    this.acceptTermsCheckbox = page.locator("#acceptTerms");
+    this.emailInput = page.locator("#reg-email");
+    this.passwordInput = page.locator("#reg-password");
+    this.confirmPasswordInput = page.locator("#reg-confirm-password");
+    // Checkbox has no ID — select by type inside the terms section
+    this.acceptTermsCheckbox = page.locator('input[type="checkbox"]').first();
 
-    // Buttons
-    this.submitButton = page.getByRole("button", { name: "Create account" });
+    // Spanish button: "Crear cuenta"
+    this.submitButton = page.getByRole("button", { name: /crear cuenta/i });
     this.googleButton = page.getByRole("button", { name: /google/i });
     this.githubButton = page.getByRole("button", { name: /github/i });
 
-    // Link to login - Use .first() because there are 2 "Sign in" links
-    this.loginLink = page.getByRole("link", { name: /sign in/i }).first();
+    // Spanish link: "Iniciar sesión →"
+    this.loginLink = page.getByRole("link", { name: /iniciar sesión/i }).first();
   }
 
   async goto(): Promise<void> {
