@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 export function LandingNav() {
   return (
@@ -27,6 +28,7 @@ export function LandingNav() {
         </nav>
 
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
+          <ThemeToggle />
           <Link href="/auth/login" className="ps-btn-ghost" style={{ padding: "9px 16px", fontSize: 13 }}>Iniciar sesión</Link>
           <Link href="/auth/register" className="ps-btn-primary" style={{ padding: "9px 16px", fontSize: 13 }}>Empezar gratis</Link>
         </div>

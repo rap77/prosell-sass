@@ -29,9 +29,9 @@ export default function HomePage() {
       <div style={{ minHeight: "100vh", background: "var(--ps-bg-base)", color: "var(--ps-text-primary)", overflowX: "hidden" }}>
 
         {/* Fixed background decoration */}
-        <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", backgroundImage: "linear-gradient(rgba(77,184,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(77,184,255,0.04) 1px, transparent 1px)", backgroundSize: "56px 56px", maskImage: "radial-gradient(ellipse at center, black 30%, transparent 80%)", WebkitMaskImage: "radial-gradient(ellipse at center, black 30%, transparent 80%)" }} />
-        <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: "radial-gradient(ellipse 60% 50% at 80% 20%, rgba(30,95,212,0.35), transparent 60%)" }} />
-        <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: "radial-gradient(ellipse 50% 40% at 10% 80%, rgba(13,27,110,0.4), transparent 60%)" }} />
+        <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", backgroundImage: "linear-gradient(var(--ps-landing-grid) 1px, transparent 1px), linear-gradient(90deg, var(--ps-landing-grid) 1px, transparent 1px)", backgroundSize: "56px 56px", maskImage: "radial-gradient(ellipse at center, black 30%, transparent 80%)", WebkitMaskImage: "radial-gradient(ellipse at center, black 30%, transparent 80%)" }} />
+        <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: "radial-gradient(ellipse 60% 50% at 80% 20%, var(--ps-landing-glow-1), transparent 60%)" }} />
+        <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: "radial-gradient(ellipse 50% 40% at 10% 80%, var(--ps-landing-glow-2), transparent 60%)" }} />
 
         <div style={{ position: "relative", zIndex: 1 }}>
           <LandingNav />

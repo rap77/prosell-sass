@@ -111,6 +111,11 @@
     /* Navigation */
     --ps-nav-bg: rgba(6, 13, 36, 0.72);
 
+    /* Landing decorative glows */
+    --ps-landing-grid:   rgba(77, 184, 255, 0.04);
+    --ps-landing-glow-1: rgba(30, 95, 212, 0.35);
+    --ps-landing-glow-2: rgba(13, 27, 110, 0.40);
+
     /* Violet (sold status) */
     --ps-violet-bg: rgba(139, 92, 246, 0.12);
     --ps-violet:    #a78bfa;
@@ -237,6 +242,11 @@
 
     /* Navigation */
     --ps-nav-bg: rgba(248, 249, 252, 0.85);
+
+    /* Landing decorative glows — subtle in light mode */
+    --ps-landing-grid:   rgba(30, 95, 212, 0.04);
+    --ps-landing-glow-1: rgba(30, 95, 212, 0.08);
+    --ps-landing-glow-2: rgba(30, 95, 212, 0.05);
 
     /* Violet (sold status) */
     --ps-violet-bg: rgba(109, 40, 217, 0.08);
