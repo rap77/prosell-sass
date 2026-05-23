@@ -1,10 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 
 export function LandingHero() {
   return (
     <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
               <div className="ps-hero" style={{ display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: 80, alignItems: "center", minHeight: "calc(100vh - 72px)", padding: "60px 0 100px" }}>
 
                 {/* Copy */}
@@ -61,13 +59,13 @@ export function LandingHero() {
                 <div className="ps-mockup-col" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 600 }}>
                   <div aria-hidden="true" style={{ position: "absolute", inset: "-20%", background: "radial-gradient(ellipse at center, rgba(77,184,255,0.18) 0%, rgba(30,95,212,0.12) 30%, transparent 60%)", filter: "blur(40px)", pointerEvents: "none" }} />
 
-                  <div style={{ position: "relative", width: "100%", maxWidth: 520, background: "rgba(13,27,62,0.75)", border: "1px solid rgba(77,184,255,0.18)", borderRadius: 20, backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", boxShadow: "0 32px 80px rgba(6,13,36,0.6), inset 0 1px 0 rgba(255,255,255,0.06)", padding: 22, animation: "ps-float 6s ease-in-out infinite" }}>
+                  <div style={{ position: "relative", width: "100%", maxWidth: 520, background: "rgba(13,27,62,0.75)", border: "1px solid rgba(77,184,255,0.18)", borderRadius: 20, backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", boxShadow: "0 32px 80px rgba(6,13,36,0.6), inset 0 1px 0 rgba(255,255,255,0.06)", padding: 22, animation: "ps-float 6s ease-in-out infinite", color: "#F0F4FF" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
                       <span style={{ fontSize: 15, fontWeight: 600 }}>Pipeline Q2 2026</span>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 100, background: "rgba(34,211,160,0.12)", color: "var(--ps-success)", fontSize: 11, fontWeight: 600 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 100, background: "rgba(34,211,160,0.12)", color: "#22D3A0", fontSize: 11, fontWeight: 600 }}>
                         <span style={{ position: "relative", width: 6, height: 6, display: "inline-block" }}>
-                          <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "var(--ps-success)" }} />
-                          <span style={{ position: "absolute", inset: -2, borderRadius: "50%", background: "var(--ps-success)", opacity: 0.4, animation: "ps-pulse 1.8s cubic-bezier(0.16,1,0.3,1) infinite" }} />
+                          <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "#22D3A0" }} />
+                          <span style={{ position: "absolute", inset: -2, borderRadius: "50%", background: "#22D3A0", opacity: 0.4, animation: "ps-pulse 1.8s cubic-bezier(0.16,1,0.3,1) infinite" }} />
                         </span>
                         En vivo
                       </span>
@@ -80,16 +78,16 @@ export function LandingHero() {
                         { label: "Win rate", value: "68%", delta: "+5.2%" },
                       ].map((m) => (
                         <div key={m.label} style={{ background: "rgba(6,13,36,0.5)", border: "1px solid rgba(77,184,255,0.08)", borderRadius: 8, padding: "12px 14px" }}>
-                          <div style={{ fontSize: 10.5, color: "var(--ps-text-secondary)", marginBottom: 4, letterSpacing: "0.04em" }}>{m.label}</div>
+                          <div style={{ fontSize: 10.5, color: "#8A9BBF", marginBottom: 4, letterSpacing: "0.04em" }}>{m.label}</div>
                           <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{m.value}</div>
-                          <div style={{ fontSize: 10.5, color: "var(--ps-success)", fontWeight: 600, marginTop: 3 }}>{m.delta}</div>
+                          <div style={{ fontSize: 10.5, color: "#22D3A0", fontWeight: 600, marginTop: 3 }}>{m.delta}</div>
                         </div>
                       ))}
                     </div>
 
                     <div style={{ marginBottom: 18 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ps-text-secondary)", letterSpacing: "0.04em" }}>DEALS CERRADOS / SEMANA</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "#8A9BBF", letterSpacing: "0.04em" }}>DEALS CERRADOS / SEMANA</span>
                         <span style={{ fontSize: 10.5, color: "var(--ps-text-disabled)" }}>S1 — S8</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 64, padding: "0 2px" }}>
@@ -106,7 +104,7 @@ export function LandingHero() {
 
                     <div style={{ display: "flex", flexDirection: "column", gap: 1, background: "rgba(77,184,255,0.06)", borderRadius: 8, overflow: "hidden" }}>
                       {[
-                        { av: "A", name: "Acme Tech",       amount: "$48K", stage: "Cierre",    sc: "var(--ps-success)", sb: "rgba(34,211,160,0.14)", bg: "linear-gradient(135deg,#4DB8FF,#1E5FD4)" },
+                        { av: "A", name: "Acme Tech",       amount: "$48K", stage: "Cierre",    sc: "#22D3A0", sb: "rgba(34,211,160,0.14)", bg: "linear-gradient(135deg,#4DB8FF,#1E5FD4)" },
                         { av: "N", name: "Northwind Labs",  amount: "$32K", stage: "Demo",      sc: "var(--ps-cyan)",    sb: "rgba(77,184,255,0.14)",  bg: "linear-gradient(135deg,#22D3A0,#1E5FD4)" },
                         { av: "G", name: "Globex SA",       amount: "$76K", stage: "Propuesta", sc: "var(--ps-warning)",  sb: "var(--ps-warning-bg)",   bg: "linear-gradient(135deg,#F5A623,#F04438)" },
                       ].map((d) => (
@@ -121,29 +119,28 @@ export function LandingHero() {
                   </div>
 
                   {/* Floating badge top */}
-                  <div className="ps-float-badge" style={{ position: "absolute", top: -28, left: -56, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "rgba(13,27,62,0.92)", border: "1px solid rgba(77,184,255,0.25)", borderRadius: 8, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 16px 48px rgba(6,13,36,0.55)", fontSize: 12.5, fontWeight: 500, whiteSpace: "nowrap", zIndex: 2, animation: "ps-float-badge-1 7s ease-in-out infinite" }}>
-                    <div style={{ width: 26, height: 26, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(34,211,160,0.15)", color: "var(--ps-success)" }}>
+                  <div className="ps-float-badge" style={{ position: "absolute", top: -28, left: -56, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "rgba(13,27,62,0.92)", border: "1px solid rgba(77,184,255,0.25)", borderRadius: 8, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 16px 48px rgba(6,13,36,0.55)", fontSize: 12.5, fontWeight: 500, whiteSpace: "nowrap", zIndex: 2, animation: "ps-float-badge-1 7s ease-in-out infinite", color: "#F0F4FF" }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(34,211,160,0.15)", color: "#22D3A0" }}>
                       <svg style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
                     </div>
                     <div>
                       <b style={{ display: "block", fontWeight: 600, fontSize: 12.5 }}>Conversión este mes</b>
-                      <span style={{ fontSize: 10.5, color: "var(--ps-text-secondary)" }}>+34% vs anterior</span>
+                      <span style={{ fontSize: 10.5, color: "#8A9BBF" }}>+34% vs anterior</span>
                     </div>
                   </div>
 
                   {/* Floating badge bottom */}
-                  <div className="ps-float-badge" style={{ position: "absolute", bottom: -28, right: -56, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "rgba(13,27,62,0.92)", border: "1px solid rgba(77,184,255,0.25)", borderRadius: 8, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 16px 48px rgba(6,13,36,0.55)", fontSize: 12.5, fontWeight: 500, whiteSpace: "nowrap", zIndex: 2, animation: "ps-float-badge-2 7s ease-in-out infinite" }}>
+                  <div className="ps-float-badge" style={{ position: "absolute", bottom: -28, right: -56, display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "rgba(13,27,62,0.92)", border: "1px solid rgba(77,184,255,0.25)", borderRadius: 8, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 16px 48px rgba(6,13,36,0.55)", fontSize: 12.5, fontWeight: 500, whiteSpace: "nowrap", zIndex: 2, animation: "ps-float-badge-2 7s ease-in-out infinite", color: "#F0F4FF" }}>
                     <div style={{ width: 26, height: 26, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(77,184,255,0.15)", color: "var(--ps-cyan)" }}>
                       <svg style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
                     </div>
                     <div>
                       <b style={{ display: "block", fontWeight: 600, fontSize: 12.5 }}>Deal cerrado · $48K</b>
-                      <span style={{ fontSize: 10.5, color: "var(--ps-text-secondary)" }}>Acme Tech</span>
+                      <span style={{ fontSize: 10.5, color: "#8A9BBF" }}>Acme Tech</span>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
     </div>
   );
 }
