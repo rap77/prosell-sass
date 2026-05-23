@@ -257,7 +257,7 @@ export function PublishModal({
           background: 'var(--ps-bg-surface)',
           border: '1px solid var(--ps-border-default)',
           borderRadius: 14,
-          boxShadow: '0 24px 48px rgba(6,13,36,0.4)',
+          boxShadow: '0 24px 48px var(--ps-shadow-overlay)',
           zIndex: 50,
           maxHeight: '85vh',
           display: 'flex',

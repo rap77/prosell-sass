@@ -25,8 +25,8 @@ const STATUS_CONFIG: Record<PublicationStatusType, StatusConfig> = {
   publishing: { label: 'Publicando…',  bg: 'var(--ps-info-bg)',    color: 'var(--ps-cyan)',    dot: 'var(--ps-cyan)',  pulse: true },
   published:  { label: 'Publicado',    bg: 'var(--ps-success-bg)', color: 'var(--ps-success)', dot: 'var(--ps-success)'          },
   failed:     { label: 'Error',        bg: 'var(--ps-error-bg)',   color: 'var(--ps-error)',   dot: 'var(--ps-error)'            },
-  expired:    { label: 'Expirado',     bg: 'rgba(138,155,191,0.10)', color: 'var(--ps-text-secondary)', dot: 'var(--ps-text-disabled)' },
-  sold:       { label: 'Vendido',      bg: 'rgba(139,92,246,0.12)', color: '#a78bfa',           dot: '#a78bfa'                   },
+  expired:    { label: 'Expirado',     bg: 'var(--ps-chip-bg)',     color: 'var(--ps-text-secondary)', dot: 'var(--ps-text-disabled)' },
+  sold:       { label: 'Vendido',      bg: 'var(--ps-violet-bg)',   color: 'var(--ps-violet)',  dot: 'var(--ps-violet)'          },
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────

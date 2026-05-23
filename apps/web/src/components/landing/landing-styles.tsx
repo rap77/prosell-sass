@@ -36,7 +36,7 @@ export function LandingStyles() {
                     box-shadow 220ms cubic-bezier(0.16,1,0.3,1);
       }
       .ps-btn-primary:hover {
-        background: #7DCEFF;
+        background: var(--ps-cyan-hover);
         transform: translateY(-2px);
         box-shadow: 0 8px 32px rgba(77,184,255,0.35);
       }
@@ -46,57 +46,60 @@ export function LandingStyles() {
         font-size: 14px; font-weight: 600; line-height: 1;
         text-decoration: none; cursor: pointer;
         background: transparent; color: var(--ps-text-primary);
-        border: 1px solid rgba(77,184,255,0.2);
+        border: 1px solid var(--ps-border-default);
         transition: border-color 200ms cubic-bezier(0.16,1,0.3,1);
       }
-      .ps-btn-ghost:hover { border-color: var(--ps-cyan); }
+      .ps-btn-ghost:hover { border-color: var(--ps-border-active); }
 
       .ps-sol-card {
-        background: rgba(13,27,62,0.7);
-        border: 1px solid rgba(77,184,255,0.12);
+        background: var(--ps-bg-surface);
+        border: 1px solid var(--ps-border-subtle);
         border-radius: 16px; backdrop-filter: blur(20px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         padding: 28px; display: flex; flex-direction: column;
         transition: border-color 220ms cubic-bezier(0.16,1,0.3,1),
                     transform 220ms cubic-bezier(0.16,1,0.3,1);
       }
-      .ps-sol-card:hover { border-color: rgba(77,184,255,0.3); transform: translateY(-4px); }
+      .ps-sol-card:hover { border-color: var(--ps-border-strong); transform: translateY(-4px); }
 
       .ps-pr-card {
         position: relative;
-        background: rgba(13,27,62,0.7);
-        border: 1px solid rgba(77,184,255,0.10);
+        background: var(--ps-bg-surface);
+        border: 1px solid var(--ps-border-subtle);
         border-radius: 18px; backdrop-filter: blur(20px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         padding: 32px 28px; display: flex; flex-direction: column;
         transition: border-color 220ms cubic-bezier(0.16,1,0.3,1);
       }
-      .ps-pr-card:hover { border-color: rgba(77,184,255,0.25); }
+      .ps-pr-card:hover { border-color: var(--ps-border-medium); }
       .ps-pr-card-featured {
-        background: rgba(13,27,62,0.95);
-        border-color: rgba(77,184,255,0.4) !important;
+        background: var(--ps-bg-elevated);
+        border-color: var(--ps-border-active) !important;
         box-shadow: 0 0 60px rgba(77,184,255,0.12), inset 0 1px 0 rgba(255,255,255,0.04);
         transform: translateY(-6px);
       }
 
       .ps-hw-step {
         position: relative;
-        background: rgba(13,27,62,0.5);
-        border: 1px solid rgba(77,184,255,0.10);
+        background: var(--ps-bg-surface);
+        border: 1px solid var(--ps-border-subtle);
         border-radius: 16px; padding: 44px 28px 32px;
         transition: border-color 220ms cubic-bezier(0.16,1,0.3,1);
       }
-      .ps-hw-step:hover { border-color: rgba(77,184,255,0.25); }
+      .ps-hw-step:hover { border-color: var(--ps-border-medium); }
 
       .ps-tm-card {
-        background: rgba(13,27,62,0.7);
-        border: 1px solid rgba(77,184,255,0.10);
+        background: var(--ps-bg-surface);
+        border: 1px solid var(--ps-border-subtle);
         border-radius: 16px; backdrop-filter: blur(20px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         padding: 28px; display: flex; flex-direction: column;
         transition: border-color 220ms cubic-bezier(0.16,1,0.3,1),
                     transform 220ms cubic-bezier(0.16,1,0.3,1);
       }
-      .ps-tm-card:hover { border-color: rgba(77,184,255,0.25); transform: translateY(-3px); }
+      .ps-tm-card:hover { border-color: var(--ps-border-medium); transform: translateY(-3px); }
 
-      .ps-faq-item { border-bottom: 1px solid rgba(77,184,255,0.08); }
+      .ps-faq-item { border-bottom: 1px solid var(--ps-border-subtle); }
       .ps-faq-q {
         display: flex; align-items: center; justify-content: space-between;
         padding: 18px 0; cursor: pointer; list-style: none;

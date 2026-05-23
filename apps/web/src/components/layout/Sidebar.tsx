@@ -121,7 +121,7 @@ export function Sidebar({ groups }: SidebarProps) {
       )}
       style={{
         background: 'var(--ps-bg-sidebar)',
-        borderRight: '1px solid rgba(77,184,255,0.06)',
+        borderRight: '1px solid var(--ps-border-subtle)',
       }}
     >
       <div className="flex h-full flex-col">
@@ -131,7 +131,7 @@ export function Sidebar({ groups }: SidebarProps) {
             'flex items-center border-b px-4',
             sidebarCollapsed ? 'h-16 justify-center' : 'h-16 justify-between'
           )}
-          style={{ borderBottomColor: 'rgba(77,184,255,0.06)' }}
+          style={{ borderBottomColor: 'var(--ps-border-subtle)' }}
         >
           {!sidebarCollapsed && (
             <span
@@ -208,7 +208,7 @@ Sidebar.Nav = function SidebarNav({
           {groupIdx > 0 && (
             <div
               className="my-3"
-              style={{ height: 1, background: 'rgba(77,184,255,0.06)', margin: '12px 8px' }}
+              style={{ height: 1, background: 'var(--ps-border-subtle)', margin: '12px 8px' }}
             />
           )}
 
@@ -245,7 +245,7 @@ Sidebar.Nav = function SidebarNav({
                     }}
                     onMouseEnter={(e) => {
                       if (!isActive) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
+                        e.currentTarget.style.background = 'var(--ps-hover-bg-xs)'
                         e.currentTarget.style.color = 'var(--ps-text-primary)'
                       }
                     }}
@@ -298,7 +298,7 @@ Sidebar.Footer = function SidebarFooter({ collapsed }: { collapsed: boolean }) {
   return (
     <div
       className="p-3"
-      style={{ borderTop: '1px solid rgba(77,184,255,0.06)' }}
+      style={{ borderTop: '1px solid var(--ps-border-subtle)' }}
     >
       <div
         className={cn(

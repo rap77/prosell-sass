@@ -1,6 +1,6 @@
 export function LandingFeatures() {
   return (
-    <section id="producto" style={{ position: "relative", padding: "120px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
+    <section id="producto" style={{ position: "relative", padding: "120px 32px", borderTop: "1px solid var(--ps-border-subtle)", overflow: "hidden" }}>
               <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 40% 30% at 10% 30%, rgba(77,184,255,0.06), transparent 60%), radial-gradient(ellipse 40% 30% at 90% 70%, rgba(30,95,212,0.10), transparent 60%)" }} />
 
               <div style={{ position: "relative", zIndex: 1, maxWidth: 1280, margin: "0 auto" }}>
@@ -16,7 +16,7 @@ export function LandingFeatures() {
                 {/* Row 1: Distribución */}
                 <div className="ps-ft-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center", marginBottom: 100 }}>
                   <div className="ps-ft-text" style={{ maxWidth: 520 }}>
-                    <span style={{ display: "inline-block", padding: "5px 12px", borderRadius: 100, background: "rgba(77,184,255,0.10)", border: "1px solid rgba(77,184,255,0.25)", color: "var(--ps-cyan)", fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 20 }}>Distribución</span>
+                    <span style={{ display: "inline-block", padding: "5px 12px", borderRadius: 100, background: "var(--ps-badge-bg)", border: "1px solid var(--ps-border-medium)", color: "var(--ps-cyan)", fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 20 }}>Distribución</span>
                     <h3 className="ps-ft-h3" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-0.022em", margin: "0 0 18px" }}>Publicá en todos los canales en 2 minutos</h3>
                     <p style={{ fontSize: 16, lineHeight: 1.7, color: "var(--ps-text-secondary)", margin: "0 0 24px" }}>
                       Cargás el producto una sola vez y ProSell lo distribuye automáticamente a todos los portales y redes activas para tu nicho. Sin copiar, sin pegar, sin errores.
@@ -24,7 +24,7 @@ export function LandingFeatures() {
                     <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
                       {["Facebook Marketplace, AutoTrader, Cars.com y más", "Fotos, precio y descripción sincronizados automáticamente", "Alertas si algún canal falla en la publicación"].map((b) => (
                         <li key={b} style={{ display: "flex", alignItems: "flex-start", gap: 12, fontSize: 14.5, lineHeight: 1.5 }}>
-                          <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(77,184,255,0.12)", border: "1px solid rgba(77,184,255,0.3)", color: "var(--ps-cyan)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
+                          <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "var(--ps-badge-bg)", border: "1px solid var(--ps-border-medium)", color: "var(--ps-cyan)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
                             <svg style={{ width: 12, height: 12 }} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                           </span>
                           {b}
@@ -61,10 +61,10 @@ export function LandingFeatures() {
                           { swatch: "#22D3A0", label: "CarGurus",      abbr: "CG" },
                         ].map((ch) => (
                           <div key={ch.label} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 10, border: "1px solid rgba(77,184,255,0.08)", background: "rgba(6,13,36,0.4)", fontSize: 12, fontWeight: 600 }}>
-                            <span style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff", background: ch.swatch }}>{ch.abbr}</span>
+                            <span style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--ps-bg-base)", background: ch.swatch }}>{ch.abbr}</span>
                             <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ch.label}</span>
                             <span style={{ width: 18, height: 18, borderRadius: "50%", background: "var(--ps-success)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              <svg style={{ width: 11, height: 11, color: "#060D24" }} fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                              <svg style={{ width: 11, height: 11, color: "var(--ps-bg-base)" }} fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                             </span>
                           </div>
                         ))}
@@ -100,7 +100,7 @@ export function LandingFeatures() {
                           { av: "SP", bg: "linear-gradient(135deg,#F5A623,#F04438)", name: "Sofía Paz",     src: "Directo", srcC: "var(--ps-success)", srcBg: "rgba(34,211,160,0.15)", time: "hace 1 hora", status: "Pendiente",         ok: false },
                         ].map((l) => (
                           <div key={l.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 12px", background: "rgba(6,13,36,0.5)" }}>
-                            <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#060D24", background: l.bg }}>{l.av}</div>
+                            <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "var(--ps-bg-base)", background: l.bg }}>{l.av}</div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                                 {l.name}
@@ -120,13 +120,13 @@ export function LandingFeatures() {
                         <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", padding: "2px 6px", borderRadius: 4, background: "rgba(77,184,255,0.15)", color: "var(--ps-cyan)" }}>IA</span>
                         <span style={{ flex: 1, fontSize: 13, color: "var(--ps-text-secondary)" }}>Responder con IA…</span>
                         <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--ps-cyan)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <svg style={{ width: 14, height: 14, color: "#060D24" }} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                          <svg style={{ width: 14, height: 14, color: "var(--ps-bg-base)" }} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
                         </div>
                       </div>
                     </div>
                   </div>
                   <div className="ps-ft-text" style={{ maxWidth: 520 }}>
-                    <span style={{ display: "inline-block", padding: "5px 12px", borderRadius: 100, background: "rgba(77,184,255,0.10)", border: "1px solid rgba(77,184,255,0.25)", color: "var(--ps-cyan)", fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 20 }}>Leads</span>
+                    <span style={{ display: "inline-block", padding: "5px 12px", borderRadius: 100, background: "var(--ps-badge-bg)", border: "1px solid var(--ps-border-medium)", color: "var(--ps-cyan)", fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 20 }}>Leads</span>
                     <h3 className="ps-ft-h3" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-0.022em", margin: "0 0 18px" }}>Todos tus leads, respondidos antes que tu competencia</h3>
                     <p style={{ fontSize: 16, lineHeight: 1.7, color: "var(--ps-text-secondary)", margin: "0 0 24px" }}>
                       Sin importar de qué canal venga — Facebook, portal, formulario web — todos llegan al mismo inbox inteligente. Respondés en segundos, no en horas.
@@ -134,7 +134,7 @@ export function LandingFeatures() {
                     <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
                       {["Inbox unificado multi-canal y multi-nicho", "Respuesta asistida por IA con contexto del lead", "Alertas automáticas si un lead lleva más de 60s sin respuesta"].map((b) => (
                         <li key={b} style={{ display: "flex", alignItems: "flex-start", gap: 12, fontSize: 14.5, lineHeight: 1.5 }}>
-                          <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(77,184,255,0.12)", border: "1px solid rgba(77,184,255,0.3)", color: "var(--ps-cyan)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
+                          <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "var(--ps-badge-bg)", border: "1px solid var(--ps-border-medium)", color: "var(--ps-cyan)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
                             <svg style={{ width: 12, height: 12 }} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                           </span>
                           {b}
@@ -147,7 +147,7 @@ export function LandingFeatures() {
                 {/* Row 3: Inteligencia */}
                 <div className="ps-ft-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }}>
                   <div className="ps-ft-text" style={{ maxWidth: 520 }}>
-                    <span style={{ display: "inline-block", padding: "5px 12px", borderRadius: 100, background: "rgba(77,184,255,0.10)", border: "1px solid rgba(77,184,255,0.25)", color: "var(--ps-cyan)", fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 20 }}>Inteligencia</span>
+                    <span style={{ display: "inline-block", padding: "5px 12px", borderRadius: 100, background: "var(--ps-badge-bg)", border: "1px solid var(--ps-border-medium)", color: "var(--ps-cyan)", fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 20 }}>Inteligencia</span>
                     <h3 className="ps-ft-h3" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-0.022em", margin: "0 0 18px" }}>Sabé exactamente qué canal cierra más</h3>
                     <p style={{ fontSize: 16, lineHeight: 1.7, color: "var(--ps-text-secondary)", margin: "0 0 24px" }}>
                       ProSell rastrea cada lead desde el origen hasta el cierre. Sabés cuánto gastás por lead, qué canal convierte mejor y qué vendedor necesita soporte — todo en tiempo real.
@@ -155,7 +155,7 @@ export function LandingFeatures() {
                     <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
                       {["Attribution completa por canal y por vendedor", "Pricing dinámico: alertas cuando el stock se mueve lento", "Dashboard de ROI: costo por lead vs revenue cerrado"].map((b) => (
                         <li key={b} style={{ display: "flex", alignItems: "flex-start", gap: 12, fontSize: 14.5, lineHeight: 1.5 }}>
-                          <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(77,184,255,0.12)", border: "1px solid rgba(77,184,255,0.3)", color: "var(--ps-cyan)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
+                          <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "var(--ps-badge-bg)", border: "1px solid var(--ps-border-medium)", color: "var(--ps-cyan)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
                             <svg style={{ width: 12, height: 12 }} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                           </span>
                           {b}

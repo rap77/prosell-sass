@@ -2,17 +2,17 @@ import Link from "next/link";
 
 export function LandingProblemSolution() {
   return (
-    <section id="soluciones" style={{ position: "relative", padding: "100px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
+    <section id="soluciones" style={{ position: "relative", padding: "100px 32px", borderTop: "1px solid var(--ps-border-subtle)", overflow: "hidden" }}>
               <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 50% 35% at 20% 0%, rgba(240,67,56,0.08), transparent 60%), radial-gradient(ellipse 50% 40% at 85% 100%, rgba(77,184,255,0.10), transparent 60%)" }} />
 
               <div style={{ position: "relative", zIndex: 1, maxWidth: 1280, margin: "0 auto" }}>
 
                 {/* Part A: Problem */}
                 <div style={{ maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
-                  <span style={{ display: "inline-block", fontSize: 12, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "#F04438", marginBottom: 18 }}>El problema</span>
+                  <span style={{ display: "inline-block", fontSize: 12, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ps-error)", marginBottom: 18 }}>El problema</span>
                   <h2 style={{ fontSize: 48, fontWeight: 800, lineHeight: 1.08, letterSpacing: "-0.025em", margin: "0 0 22px" }}>
                     Publicás en mil lados.<br />
-                    <span style={{ background: "linear-gradient(135deg, #F04438 0%, #F5A623 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>
+                    <span style={{ background: "linear-gradient(135deg, var(--ps-error) 0%, var(--ps-warning) 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>
                       Cerrás en ninguno.
                     </span>
                   </h2>
@@ -27,8 +27,8 @@ export function LandingProblemSolution() {
                       { num: "65–80%", lbl: "usan sistemas desconectados" },
                       { num: "+8 hs",  lbl: "tiempo promedio de respuesta" },
                     ].map((c) => (
-                      <div key={c.num} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(240,67,56,0.08)", border: "1px solid rgba(240,67,56,0.2)", borderRadius: 10, padding: "16px 20px" }}>
-                        <span style={{ fontSize: 24, fontWeight: 700, color: "#F04438", letterSpacing: "-0.02em" }}>{c.num}</span>
+                      <div key={c.num} style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--ps-error-bg)", border: "1px solid var(--ps-danger-hover-border)", borderRadius: 10, padding: "16px 20px" }}>
+                        <span style={{ fontSize: 24, fontWeight: 700, color: "var(--ps-error)", letterSpacing: "-0.02em" }}>{c.num}</span>
                         <span style={{ fontSize: 12, color: "var(--ps-text-secondary)", lineHeight: 1.35, textAlign: "left", maxWidth: 140 }}>{c.lbl}</span>
                       </div>
                     ))}
@@ -49,7 +49,7 @@ export function LandingProblemSolution() {
                   <span style={{ display: "inline-block", fontSize: 12, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ps-cyan)", marginBottom: 18 }}>La solución</span>
                   <h2 style={{ fontSize: 40, fontWeight: 700, lineHeight: 1.12, letterSpacing: "-0.022em", margin: "0 0 18px" }}>
                     Un sistema. Cualquier nicho.<br />
-                    <span style={{ background: "linear-gradient(135deg, #4DB8FF 0%, #1E5FD4 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>
+                    <span style={{ background: "linear-gradient(135deg, var(--ps-cyan) 0%, var(--ps-blue) 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>
                       Todo el pipeline.
                     </span>
                   </h2>
@@ -84,7 +84,7 @@ export function LandingProblemSolution() {
                     },
                   ].map((c) => (
                     <div key={c.title} className="ps-sol-card">
-                      <div style={{ width: 44, height: 44, borderRadius: 12, marginBottom: 22, background: "rgba(77,184,255,0.10)", border: "1px solid rgba(77,184,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ps-cyan)" }}>{c.icon}</div>
+                      <div style={{ width: 44, height: 44, borderRadius: 12, marginBottom: 22, background: "var(--ps-badge-bg)", border: "1px solid var(--ps-border-medium)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ps-cyan)" }}>{c.icon}</div>
                       <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ps-text-disabled)", marginBottom: 10 }}>{c.kicker}</div>
                       <h3 style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.3, margin: "0 0 12px" }}>{c.title}</h3>
                       <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--ps-text-secondary)", margin: "0 0 24px", flex: 1 }}>{c.desc}</p>

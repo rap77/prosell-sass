@@ -107,6 +107,16 @@
     --ps-input-border:       rgba(77, 184, 255, 0.15);
     --ps-input-focus-shadow: rgba(77, 184, 255, 0.10);
     --ps-input-error-shadow: rgba(240, 68, 56, 0.12);
+
+    /* Navigation */
+    --ps-nav-bg: rgba(6, 13, 36, 0.72);
+
+    /* Violet (sold status) */
+    --ps-violet-bg: rgba(139, 92, 246, 0.12);
+    --ps-violet:    #a78bfa;
+
+    /* Shadow overlay (modals) */
+    --ps-shadow-overlay: rgba(6, 13, 36, 0.40);
   }
 
   /* .dark mirrors :root — ensures Tailwind dark: utilities see the dark palette
@@ -224,6 +234,16 @@
     --ps-input-border:       #D5DCEA;
     --ps-input-focus-shadow: rgba(30, 95, 212, 0.10);
     --ps-input-error-shadow: rgba(208, 58, 47, 0.12);
+
+    /* Navigation */
+    --ps-nav-bg: rgba(248, 249, 252, 0.85);
+
+    /* Violet (sold status) */
+    --ps-violet-bg: rgba(109, 40, 217, 0.08);
+    --ps-violet:    #5B21B6;
+
+    /* Shadow overlay (modals) */
+    --ps-shadow-overlay: rgba(14, 23, 48, 0.12);
   }
 }
 

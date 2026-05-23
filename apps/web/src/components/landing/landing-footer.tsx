@@ -45,7 +45,7 @@ function InstagramIcon() {
 
 export function LandingFooter() {
   return (
-    <footer style={{ position: "relative", background: "rgb(4,10,26)", borderTop: "1px solid rgba(77,184,255,0.06)", padding: "64px 32px 0", zIndex: 1 }}>
+    <footer style={{ position: "relative", background: "var(--ps-bg-sidebar)", borderTop: "1px solid var(--ps-border-subtle)", padding: "64px 32px 0", zIndex: 1 }}>
       <div style={{ maxWidth: 1280, margin: "0 auto" }}>
 
         {/* 4-column grid */}
@@ -91,7 +91,7 @@ export function LandingFooter() {
         </div>
 
         {/* Footer bar */}
-        <div style={{ borderTop: "1px solid rgba(77,184,255,0.06)", padding: "24px 0", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div style={{ borderTop: "1px solid var(--ps-border-subtle)", padding: "24px 0", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <span style={{ fontSize: 12, color: "var(--ps-text-disabled)" }}>
             © {new Date().getFullYear()} ProSell. Todos los derechos reservados.
           </span>

@@ -6,9 +6,9 @@ export function LandingNav() {
     <header style={{
       position: "sticky", top: 0, zIndex: 50, height: 72,
       display: "flex", alignItems: "center",
-      background: "rgba(6,13,36,0.72)",
+      background: "var(--ps-nav-bg)",
       backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-      borderBottom: "1px solid rgba(77,184,255,0.08)",
+      borderBottom: "1px solid var(--ps-border-subtle)",
     }}>
       <div style={{
         display: "flex", alignItems: "center", gap: 40,

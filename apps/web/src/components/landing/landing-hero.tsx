@@ -9,7 +9,7 @@ export function LandingHero() {
 
                 {/* Copy */}
                 <div>
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px 6px 12px", background: "rgba(77,184,255,0.08)", border: "1px solid rgba(77,184,255,0.18)", borderRadius: 100, fontSize: 12.5, fontWeight: 500, marginBottom: 24 }}>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px 6px 12px", background: "var(--ps-badge-bg)", border: "1px solid var(--ps-border-default)", borderRadius: 100, fontSize: 12.5, fontWeight: 500, marginBottom: 24 }}>
                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--ps-cyan)", display: "inline-block", position: "relative", flexShrink: 0 }}>
                       <span style={{ position: "absolute", inset: -4, borderRadius: "50%", background: "var(--ps-cyan)", opacity: 0.5, animation: "ps-pulse 1.8s cubic-bezier(0.16,1,0.3,1) infinite" }} />
                     </span>
@@ -18,7 +18,7 @@ export function LandingHero() {
 
                   <h1 className="ps-hero-h1" style={{ fontSize: 64, fontWeight: 800, lineHeight: 1.04, letterSpacing: "-0.03em", margin: "0 0 24px" }}>
                     Tu equipo de ventas,{" "}
-                    <span style={{ background: "linear-gradient(135deg, #4DB8FF 0%, #1E5FD4 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>
+                    <span style={{ background: "linear-gradient(135deg, var(--ps-cyan) 0%, var(--ps-blue) 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>
                       sin fricción.
                     </span>
                   </h1>
@@ -41,13 +41,13 @@ export function LandingHero() {
                         { i: "AL", bg: "linear-gradient(135deg,#7DCEFF,#4DB8FF)" },
                         { i: "SP", bg: "linear-gradient(135deg,#F5A623,#F04438)" },
                       ].map(({ i, bg }, idx) => (
-                        <div key={i} style={{ width: 34, height: 34, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 11, color: "#060D24", border: "2px solid var(--ps-bg-base)", marginLeft: idx === 0 ? 0 : -8, background: bg, flexShrink: 0 }}>{i}</div>
+                        <div key={i} style={{ width: 34, height: 34, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 11, color: "var(--ps-bg-base)", border: "2px solid var(--ps-bg-base)", marginLeft: idx === 0 ? 0 : -8, background: bg, flexShrink: 0 }}>{i}</div>
                       ))}
                     </div>
                     <div>
                       <div style={{ display: "flex", gap: 2, marginBottom: 4 }}>
                         {[0,1,2,3,4].map((s) => (
-                          <svg key={s} style={{ width: 12, height: 12, color: "#F5A623" }} fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                          <svg key={s} style={{ width: 12, height: 12, color: "var(--ps-warning)" }} fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
                         ))}
                       </div>
                       <p style={{ fontSize: 13, color: "var(--ps-text-secondary)", margin: 0 }}>
@@ -96,8 +96,8 @@ export function LandingHero() {
                         {[38, 52, 44, 64, 58, 72, 80, 96].map((h, idx) => {
                           const active = idx === 7;
                           return (
-                            <div key={idx} style={{ flex: 1, borderRadius: "3px 3px 0 0", height: `${h}%`, background: active ? "linear-gradient(to top, #4DB8FF, #7DCEFF)" : "rgba(77,184,255,0.15)", boxShadow: active ? "0 0 18px rgba(77,184,255,0.45)" : "none", position: "relative" }}>
-                              {active && <div style={{ position: "absolute", top: -5, left: "50%", transform: "translateX(-50%)", width: 6, height: 6, borderRadius: "50%", background: "#7DCEFF", boxShadow: "0 0 8px #7DCEFF" }} />}
+                            <div key={idx} style={{ flex: 1, borderRadius: "3px 3px 0 0", height: `${h}%`, background: active ? "linear-gradient(to top, var(--ps-cyan), var(--ps-cyan-hover))" : "rgba(77,184,255,0.15)", boxShadow: active ? "0 0 18px rgba(77,184,255,0.45)" : "none", position: "relative" }}>
+                              {active && <div style={{ position: "absolute", top: -5, left: "50%", transform: "translateX(-50%)", width: 6, height: 6, borderRadius: "50%", background: "var(--ps-cyan-hover)", boxShadow: "0 0 8px var(--ps-cyan-hover)" }} />}
                             </div>
                           );
                         })}
@@ -108,10 +108,10 @@ export function LandingHero() {
                       {[
                         { av: "A", name: "Acme Tech",       amount: "$48K", stage: "Cierre",    sc: "var(--ps-success)", sb: "rgba(34,211,160,0.14)", bg: "linear-gradient(135deg,#4DB8FF,#1E5FD4)" },
                         { av: "N", name: "Northwind Labs",  amount: "$32K", stage: "Demo",      sc: "var(--ps-cyan)",    sb: "rgba(77,184,255,0.14)",  bg: "linear-gradient(135deg,#22D3A0,#1E5FD4)" },
-                        { av: "G", name: "Globex SA",       amount: "$76K", stage: "Propuesta", sc: "#F5A623",           sb: "rgba(245,166,35,0.14)",  bg: "linear-gradient(135deg,#F5A623,#F04438)" },
+                        { av: "G", name: "Globex SA",       amount: "$76K", stage: "Propuesta", sc: "var(--ps-warning)",  sb: "var(--ps-warning-bg)",   bg: "linear-gradient(135deg,#F5A623,#F04438)" },
                       ].map((d) => (
                         <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", background: "rgba(6,13,36,0.5)" }}>
-                          <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#060D24", background: d.bg }}>{d.av}</div>
+                          <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "var(--ps-bg-base)", background: d.bg }}>{d.av}</div>
                           <span style={{ flex: 1, fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
                           <span style={{ fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{d.amount}</span>
                           <span style={{ fontSize: 10.5, fontWeight: 600, padding: "3px 9px", borderRadius: 100, color: d.sc, background: d.sb, flexShrink: 0 }}>{d.stage}</span>

@@ -7,7 +7,7 @@ const STATS = [
 
 export function LandingMetrics() {
   return (
-    <section style={{ position: "relative", padding: "100px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
+    <section style={{ position: "relative", padding: "100px 32px", borderTop: "1px solid var(--ps-border-subtle)", overflow: "hidden" }}>
       <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "linear-gradient(135deg, #060D24, #0D1B6E, #1E5FD4)", opacity: 0.1 }} />
       <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(50% 40% at 30% 0%, rgba(77,184,255,0.10), transparent 60%), radial-gradient(50% 40% at 70% 100%, rgba(34,211,160,0.06), transparent 60%)" }} />
 
@@ -37,7 +37,7 @@ export function LandingMetrics() {
             Antes perdíamos el 40% de los leads por tiempo de respuesta. Con ProSell respondemos en menos de un minuto y cerramos el doble en el mismo tiempo.
           </blockquote>
           <figcaption style={{ display: "inline-flex", alignItems: "center", gap: 14, flexWrap: "wrap", justifyContent: "center" }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", background: "linear-gradient(135deg, #0D1B6E, #1E5FD4)", border: "1px solid rgba(77,184,255,0.25)", flexShrink: 0 }}>MR</div>
+            <div style={{ width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "var(--ps-bg-base)", background: "linear-gradient(135deg, #0D1B6E, #1E5FD4)", border: "1px solid rgba(77,184,255,0.25)", flexShrink: 0 }}>MR</div>
             <div style={{ textAlign: "left" }}>
               <div style={{ fontSize: 15, fontWeight: 600 }}>Martín Rodríguez</div>
               <div style={{ fontSize: 13, color: "var(--ps-text-secondary)" }}>Gerente Comercial · Automotores del Norte</div>

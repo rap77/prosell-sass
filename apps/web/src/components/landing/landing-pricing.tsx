@@ -9,7 +9,7 @@ const CheckIcon = () => (
 
 export function LandingPricing() {
   return (
-    <section id="precios" style={{ position: "relative", padding: "100px 32px", borderTop: "1px solid rgba(77,184,255,0.08)", overflow: "hidden" }}>
+    <section id="precios" style={{ position: "relative", padding: "100px 32px", borderTop: "1px solid var(--ps-border-subtle)", overflow: "hidden" }}>
       <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(50% 35% at 50% 0%, rgba(77,184,255,0.08), transparent 60%), radial-gradient(60% 40% at 50% 100%, rgba(30,95,212,0.10), transparent 60%)" }} />
 
       <div style={{ position: "relative", zIndex: 1, maxWidth: 1280, margin: "0 auto" }}>
@@ -23,7 +23,7 @@ export function LandingPricing() {
 
         {/* Toggle */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18, flexWrap: "wrap", marginBottom: 48 }}>
-          <div style={{ display: "inline-flex", padding: 4, borderRadius: 100, background: "rgba(6,13,36,0.6)", border: "1px solid rgba(77,184,255,0.08)", gap: 2 }}>
+          <div style={{ display: "inline-flex", padding: 4, borderRadius: 100, background: "var(--ps-bg-elevated)", border: "1px solid var(--ps-border-subtle)", gap: 2 }}>
             {["Mensual", "Por comisión"].map((label, idx) => (
               <span key={label} style={{ padding: "9px 20px", borderRadius: 100, fontSize: 13.5, fontWeight: 600, background: idx === 1 ? "var(--ps-cyan)" : "transparent", color: idx === 1 ? "var(--ps-bg-base)" : "var(--ps-text-secondary)", boxShadow: idx === 1 ? "0 0 16px rgba(77,184,255,0.25)" : "none" }}>
                 {label}
@@ -31,7 +31,7 @@ export function LandingPricing() {
             ))}
           </div>
           <span style={{ fontSize: 12.5, color: "var(--ps-text-secondary)", display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <span style={{ color: "#F5A623" }}>⚡</span>Recomendado — pagás cuando vendés
+            <span style={{ color: "var(--ps-warning)" }}>⚡</span>Recomendado — pagás cuando vendés
           </span>
         </div>
 
