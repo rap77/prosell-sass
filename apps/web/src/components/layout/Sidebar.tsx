@@ -124,41 +124,49 @@ export function Sidebar({ groups }: SidebarProps) {
         borderRight: '1px solid var(--ps-border-subtle)',
       }}
     >
+      {/* Toggle button — floats at right edge of sidebar */}
+      <button
+        onClick={toggleSidebar}
+        className="absolute -right-3 top-[22px] z-50 flex h-6 w-6 items-center justify-center rounded-full border transition-colors"
+        style={{
+          background: 'var(--ps-bg-sidebar)',
+          borderColor: 'var(--ps-border-subtle)',
+          color: 'var(--ps-text-secondary)',
+        }}
+        aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'var(--ps-border-medium)'
+          e.currentTarget.style.color = 'var(--ps-text-primary)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = 'var(--ps-border-subtle)'
+          e.currentTarget.style.color = 'var(--ps-text-secondary)'
+        }}
+      >
+        <svg
+          width="12" height="12" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round"
+          className={cn('transition-transform duration-300', sidebarCollapsed ? 'rotate-180' : 'rotate-0')}
+        >
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+      </button>
+
       <div className="flex h-full flex-col">
-        {/* Logo + collapse toggle */}
+        {/* Logo */}
         <div
-          className={cn(
-            'flex items-center border-b px-4',
-            sidebarCollapsed ? 'h-16 justify-center' : 'h-16 justify-between'
-          )}
+          className="flex h-16 items-center justify-center border-b px-4"
           style={{ borderBottomColor: 'var(--ps-border-subtle)' }}
         >
-          {!sidebarCollapsed && (
-            <span
-              className="flex items-center gap-2 text-[17px] font-bold tracking-tight"
-              style={{ color: 'var(--ps-text-primary)' }}
-            >
+          {sidebarCollapsed ? (
+            <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 26, width: 'auto' }} />
+          ) : (
+            <span className="flex w-full items-center gap-2 text-[17px] font-bold tracking-tight" style={{ color: 'var(--ps-text-primary)' }}>
               <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 26, width: 'auto', flexShrink: 0 }} />
               ProSell
             </span>
           )}
-          <button
-            onClick={toggleSidebar}
-            className="rounded-md p-2 transition-colors"
-            style={{ color: 'var(--ps-text-secondary)' }}
-            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ps-text-primary)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ps-text-secondary)')}
-          >
-            <svg
-              width="16" height="16" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round"
-              className={cn('transition-transform duration-300', sidebarCollapsed ? 'rotate-180' : 'rotate-0')}
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </button>
         </div>
 
         {/* Navigation */}
@@ -238,27 +246,20 @@ Sidebar.Nav = function SidebarNav({
                     style={{
                       borderRadius: isActive ? '8px 0 0 8px' : 8,
                       background: isActive ? 'var(--ps-nav-active-bg)' : 'transparent',
-                      color: isActive ? 'var(--ps-text-primary)' : 'var(--ps-text-secondary)',
-                      fontWeight: isActive ? 600 : 500,
+                      color: 'var(--ps-text-primary)',
                       borderRight: isActive ? '2px solid var(--ps-cyan)' : '2px solid transparent',
                       textDecoration: 'none',
                     }}
                     onMouseEnter={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.background = 'var(--ps-hover-bg-xs)'
-                        e.currentTarget.style.color = 'var(--ps-text-primary)'
-                      }
+                      if (!isActive) e.currentTarget.style.background = 'var(--ps-hover-bg-xs)'
                     }}
                     onMouseLeave={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.background = 'transparent'
-                        e.currentTarget.style.color = 'var(--ps-text-secondary)'
-                      }
+                      if (!isActive) e.currentTarget.style.background = 'transparent'
                     }}
                   >
                     <Icon
                       className="h-[18px] w-[18px] flex-shrink-0"
-                      style={{ strokeWidth: 2, color: isActive ? 'var(--ps-cyan)' : 'inherit' }}
+                      style={{ strokeWidth: 2, color: isActive ? 'var(--ps-cyan)' : 'var(--ps-text-secondary)' }}
                     />
                     {!collapsed && <span className="flex-1">{item.label}</span>}
                   </a>

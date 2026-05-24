@@ -1,6 +1,7 @@
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { MobileNav } from '@/components/layout/MobileNav'
+import { MainContentWrapper } from '@/components/layout/MainContentWrapper'
 
 /**
  * Manager layout — team oversight and performance.
@@ -17,7 +18,7 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
       </div>
 
       {/* Main content */}
-      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
+      <MainContentWrapper>
         <Header />
         <main style={{
           position: 'relative',
@@ -29,7 +30,7 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
         }}>
           {children}
         </main>
-      </div>
+      </MainContentWrapper>
 
       <MobileNav />
     </div>

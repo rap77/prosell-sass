@@ -1,6 +1,7 @@
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { MobileNav } from '@/components/layout/MobileNav'
+import { MainContentWrapper } from '@/components/layout/MainContentWrapper'
 
 /**
  * Admin-specific layout with full system access.
@@ -26,13 +27,13 @@ export default function AdminLayout({
       </div>
 
       {/* Main content area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <MainContentWrapper>
         <Header />
         {/* FIXED: Added relative z-50 to create stacking context above sidebar (z-40) */}
         <main className="relative z-50 flex-1 overflow-y-auto bg-muted/20 p-6">
           {children}
         </main>
-      </div>
+      </MainContentWrapper>
 
       {/* Mobile bottom navigation - visible only on mobile */}
       <MobileNav />

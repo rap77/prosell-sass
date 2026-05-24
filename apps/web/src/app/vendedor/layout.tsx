@@ -1,6 +1,7 @@
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { MobileNav } from '@/components/layout/MobileNav'
+import { MainContentWrapper } from '@/components/layout/MainContentWrapper'
 
 /**
  * Vendedor layout — wraps all /vendedor/* routes with the ProSell app shell.
@@ -14,12 +15,12 @@ export default function VendedorLayout({ children }: { children: React.ReactNode
         <Sidebar groups={['general', 'ventas']} />
       </div>
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <MainContentWrapper>
         <Header />
         <main className="relative z-50 flex-1 overflow-y-auto bg-muted/20 p-6">
           {children}
         </main>
-      </div>
+      </MainContentWrapper>
 
       <MobileNav />
     </div>

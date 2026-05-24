@@ -1,6 +1,7 @@
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { MobileNav } from '@/components/layout/MobileNav'
+import { MainContentWrapper } from '@/components/layout/MainContentWrapper'
 
 /**
  * Seller-specific layout with role-based navigation access.
@@ -26,14 +27,14 @@ export default function SellerLayout({
       </div>
 
       {/* Main content area */}
-      <div className="flex flex-1 flex-col overflow-hidden md:ml-64">
+      <MainContentWrapper>
         <Header />
         {/* FIXED: Added relative z-50 to create stacking context above sidebar (z-40) */}
         {/* This ensures calendar events and all interactive elements are clickable */}
         <main className="relative z-50 flex-1 overflow-y-auto bg-muted/20 p-6">
           {children}
         </main>
-      </div>
+      </MainContentWrapper>
 
       {/* Mobile bottom navigation - visible only on mobile */}
       <MobileNav />
