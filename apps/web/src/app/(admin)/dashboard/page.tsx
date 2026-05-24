@@ -1,29 +1,16 @@
 'use client'
 
-/**
- * ProSell Dashboard — Seller view
- *
- * KPI row · Leads recientes · Pipeline · Canales · Actividad reciente
- * All design tokens via var(--ps-*) → instant dark/light theme switching.
- *
- * TODO: Add role-based split (seller vs. admin) via middleware once auth flow
- *       is fully wired.  Admin-specific stats live at /admin for now.
- */
-
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
+import { useLeads, useTeamMetrics, LeadStatus } from '@/lib/api/leads'
 import {
   Inbox,
-  Zap,
   Briefcase,
   TrendingUp,
-  Flag,
+  BarChart3,
   Plus,
   ChevronRight,
-  UserPlus,
-  CheckCircle2,
-  Megaphone,
-  User,
 } from 'lucide-react'
 
 // ─── Greeting ─────────────────────────────────────────────────────────────────
@@ -35,102 +22,80 @@ function getGreeting(): string {
   return 'Buenas noches'
 }
 
-// ─── Static sample data ───────────────────────────────────────────────────────
-// TODO: replace with real API calls once /api/v1/dashboard/summary is ready
+// ─── Utilities ────────────────────────────────────────────────────────────────
 
-const KPIS = [
-  { label: 'Leads hoy',         value: '12',   delta: '+4 vs ayer',         trend: 'up',   Icon: Inbox },
-  { label: 'Respondidos < 60s', value: '91%',  delta: '+3pp esta semana',   trend: 'up',   Icon: Zap },
-  { label: 'Deals abiertos',    value: '47',   delta: '8 en cierre',        trend: 'warn', Icon: Briefcase },
-  { label: 'Revenue este mes',  value: '$84K', delta: '+12.4% vs mes ant.', trend: 'up',   Icon: TrendingUp },
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return name.substring(0, 2).toUpperCase()
+}
+
+function formatRelativeTime(dateStr: string): string {
+  const diffMin = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000)
+  if (diffMin < 1) return 'ahora'
+  if (diffMin < 60) return `hace ${diffMin} min`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `hace ${diffHr} hora${diffHr > 1 ? 's' : ''}`
+  const diffDays = Math.floor(diffHr / 24)
+  if (diffDays === 1) return 'ayer'
+  return `hace ${diffDays} días`
+}
+
+const AVATAR_GRADIENTS: [string, string][] = [
+  ['#4DB8FF', '#1E5FD4'],
+  ['#22D3A0', '#1E5FD4'],
+  ['#F5A623', '#F04438'],
+  ['#7DCEFF', '#4DB8FF'],
+  ['#9C5CF7', '#1E5FD4'],
+  ['#0D1B6E', '#4DB8FF'],
+]
+
+function getAvatarGradient(id: string): [string, string] {
+  const code = id.charCodeAt(0) + (id.charCodeAt(id.length - 1) || 0)
+  return AVATAR_GRADIENTS[code % AVATAR_GRADIENTS.length]
+}
+
+function getSourceStyle(source: string): { bg: string; color: string; label: string } {
+  const s = source.toLowerCase()
+  if (s.includes('facebook') || s === 'fb')
+    return { bg: 'rgba(77,184,255,0.15)', color: 'var(--ps-cyan)', label: 'FB' }
+  if (s.includes('autotrader') || s === 'at')
+    return { bg: 'rgba(245,166,35,0.15)', color: 'var(--ps-warning)', label: 'AT' }
+  const label = source.length > 3 ? source.substring(0, 2).toUpperCase() : source.toUpperCase()
+  return { bg: 'rgba(34,211,160,0.15)', color: 'var(--ps-success)', label }
+}
+
+const STATUS_BADGE: Record<LeadStatus, { bg: string; color: string; label: string }> = {
+  [LeadStatus.NEW]:             { bg: 'rgba(77,184,255,0.14)',  color: 'var(--ps-cyan)',             label: 'Nuevo' },
+  [LeadStatus.CONTACTED]:       { bg: 'rgba(245,166,35,0.12)',  color: 'var(--ps-warning)',          label: 'Contactado' },
+  [LeadStatus.QUALIFIED]:       { bg: 'rgba(34,211,160,0.12)',  color: 'var(--ps-success)',          label: 'Calificado' },
+  [LeadStatus.APPOINTMENT_SET]: { bg: 'rgba(34,211,160,0.18)',  color: 'var(--ps-success)',          label: 'Con cita' },
+  [LeadStatus.LOST]:            { bg: 'rgba(138,155,191,0.12)', color: 'var(--ps-text-secondary)',   label: 'Perdido' },
+}
+
+const PIPELINE_STAGES = [
+  { status: LeadStatus.NEW,             label: 'Nuevo',      fill: 'linear-gradient(90deg, var(--ps-navy), var(--ps-blue))' },
+  { status: LeadStatus.CONTACTED,       label: 'Contactado', fill: 'linear-gradient(90deg, var(--ps-blue), var(--ps-cyan))' },
+  { status: LeadStatus.QUALIFIED,       label: 'Calificado', fill: 'linear-gradient(90deg, var(--ps-cyan), var(--ps-cyan-hover))', glow: 'rgba(77,184,255,0.4)' },
+  { status: LeadStatus.APPOINTMENT_SET, label: 'Con cita',   fill: 'linear-gradient(90deg, var(--ps-success), #5BE6BC)',          glow: 'rgba(34,211,160,0.4)' },
 ] as const
-
-const LEADS = [
-  { initials: 'MR', grad: ['#4DB8FF','#1E5FD4'], name: 'Martín Rivas',   src: 'FB',      time: 'hace 2 min',  status: 'new',  label: 'Nuevo' },
-  { initials: 'JC', grad: ['#22D3A0','#1E5FD4'], name: 'Julieta Castro', src: 'AT',      time: 'hace 12 min', status: 'ok',   label: 'Respondido' },
-  { initials: 'SP', grad: ['#F5A623','#F04438'], name: 'Sofía Paz',      src: 'Directo', time: 'hace 28 min', status: 'pend', label: 'Pendiente' },
-  { initials: 'AL', grad: ['#7DCEFF','#4DB8FF'], name: 'Andrés López',   src: 'FB',      time: 'hace 47 min', status: 'ok',   label: 'Respondido' },
-  { initials: 'CR', grad: ['#0D1B6E','#1E5FD4'], name: 'Carlos Ríos',    src: 'AT',      time: 'hace 1 hora', status: 'pend', label: 'Pendiente' },
-]
-
-const PIPELINE = [
-  { stage: 'Nuevo',      count: 18, pct: 50, fill: 'linear-gradient(90deg, var(--ps-navy), var(--ps-blue))', glow: false },
-  { stage: 'Contactado', count: 14, pct: 75, fill: 'linear-gradient(90deg, var(--ps-blue), var(--ps-cyan))', glow: false },
-  { stage: 'Demo',       count: 9,  pct: 50, fill: 'linear-gradient(90deg, var(--ps-cyan), var(--ps-cyan-hover))', glow: true, glowColor: 'rgba(77,184,255,0.4)' },
-  { stage: 'Cierre',     count: 6,  pct: 25, fill: 'linear-gradient(90deg, var(--ps-success), #5BE6BC)', glow: true, glowColor: 'rgba(34,211,160,0.4)' },
-]
-
-const CHANNELS = [
-  { name: 'Facebook',   count: '8 leads', active: true,  logoBg: '#1877F2',            logoColor: '#fff',              label: 'f' },
-  { name: 'AutoTrader', count: '3 leads', active: true,  logoBg: '#FF6600',            logoColor: '#fff',              label: 'AT' },
-  { name: 'Sitio web',  count: '1 lead',  active: false, logoBg: 'var(--ps-navy)',     logoColor: 'var(--ps-cyan)',     label: '◈' },
-]
-
-const ACTIVITY = [
-  { Icon: UserPlus,     color: { bg: 'rgba(34,211,160,0.12)',  fg: 'var(--ps-success)' },           text: 'Nuevo lead de Facebook',           meta: '· Toyota Hilux 2023',  time: 'hace 5 min' },
-  { Icon: Zap,          color: { bg: 'rgba(77,184,255,0.12)',  fg: 'var(--ps-cyan)' },              text: 'Respondido automáticamente',        meta: '· Juliana C.',          time: 'hace 12 min' },
-  { Icon: CheckCircle2, color: { bg: 'rgba(34,211,160,0.16)',  fg: 'var(--ps-success)' },           text: 'Deal cerrado · $28.500',            meta: '· Acme Motors',         time: 'hace 1 hora' },
-  { Icon: Megaphone,    color: { bg: 'rgba(30,95,212,0.18)',   fg: 'var(--ps-cyan-hover)' },        text: 'Publicación activa en 4 canales',   meta: '· Corolla 2024',        time: 'hace 2 horas' },
-  { Icon: User,         color: { bg: 'rgba(138,155,191,0.12)', fg: 'var(--ps-text-secondary)' },    text: 'Martín R.',                          meta: 'invitado al equipo',    time: 'ayer' },
-]
-
-// ─── Badge lookup maps ─────────────────────────────────────────────────────────
-
-const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  new:  { bg: 'rgba(77,184,255,0.14)',  color: 'var(--ps-cyan)' },
-  ok:   { bg: 'rgba(34,211,160,0.12)',  color: 'var(--ps-success)' },
-  pend: { bg: 'rgba(245,166,35,0.12)',  color: 'var(--ps-warning)' },
-}
-
-const SRC_STYLE: Record<string, { bg: string; color: string }> = {
-  FB:      { bg: 'rgba(77,184,255,0.15)',  color: 'var(--ps-cyan)' },
-  AT:      { bg: 'rgba(245,166,35,0.15)',  color: 'var(--ps-warning)' },
-  Directo: { bg: 'rgba(34,211,160,0.15)',  color: 'var(--ps-success)' },
-}
 
 // ─── Card wrapper ──────────────────────────────────────────────────────────────
 
-function Card({
-  children,
-  style,
-}: {
-  children: React.ReactNode
-  style?: React.CSSProperties
-}) {
+function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <section
-      style={{
-        background: 'var(--ps-bg-surface)',
-        border: '1px solid var(--ps-border-subtle)',
-        borderRadius: 12,
-        padding: 20,
-        ...style,
-      }}
-    >
+    <section style={{ background: 'var(--ps-bg-surface)', border: '1px solid var(--ps-border-subtle)', borderRadius: 12, padding: 20, ...style }}>
       {children}
     </section>
   )
 }
 
-function CardHead({
-  title,
-  linkLabel,
-  linkHref,
-}: {
-  title: string
-  linkLabel?: string
-  linkHref?: string
-}) {
+function CardHead({ title, linkLabel, linkHref }: { title: string; linkLabel?: string; linkHref?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-      <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--ps-text-primary)' }}>
-        {title}
-      </h3>
+      <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--ps-text-primary)' }}>{title}</h3>
       {linkLabel && linkHref && (
-        <Link
-          href={linkHref}
-          style={{ fontSize: 12, color: 'var(--ps-cyan)', fontWeight: 500, textDecoration: 'none' }}
-        >
+        <Link href={linkHref} style={{ fontSize: 12, color: 'var(--ps-cyan)', fontWeight: 500, textDecoration: 'none' }}>
           {linkLabel}
         </Link>
       )}
@@ -145,53 +110,68 @@ export default function DashboardPage() {
   const firstName = user?.first_name ?? 'Vendedor'
   const greeting  = getGreeting()
 
+  const { data: allLeads = [], isLoading: leadsLoading } = useLeads(undefined, 500)
+  const { data: metrics,        isLoading: metricsLoading } = useTeamMetrics()
+
+  const isLoading = leadsLoading || metricsLoading
+
+  const recentLeads = useMemo(
+    () =>
+      [...allLeads]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5),
+    [allLeads]
+  )
+
+  const pipelineCounts = useMemo(() => {
+    const counts: Record<LeadStatus, number> = {
+      [LeadStatus.NEW]: 0, [LeadStatus.CONTACTED]: 0,
+      [LeadStatus.QUALIFIED]: 0, [LeadStatus.APPOINTMENT_SET]: 0, [LeadStatus.LOST]: 0,
+    }
+    for (const l of allLeads) counts[l.status]++
+    return counts
+  }, [allLeads])
+
+  const activeLeads      = allLeads.filter(l => l.status !== LeadStatus.LOST).length
+  const maxPipelineCount = Math.max(...PIPELINE_STAGES.map(s => pipelineCounts[s.status]), 1)
+  const newLeadsToday    = metrics?.new_leads_last_24h ?? 0
+  const totalLeads       = metrics?.total_leads ?? allLeads.length
+  const conversionPct    = metrics ? `${(metrics.conversion_rate * 100).toFixed(0)}%` : '—'
+
+  const KPIS = [
+    { label: 'Leads hoy',     value: isLoading ? '—' : String(newLeadsToday), delta: 'últimas 24 horas',   trend: 'up'   as const, Icon: Inbox },
+    { label: 'Conversión',    value: isLoading ? '—' : conversionPct,          delta: 'nuevo → cita',       trend: 'up'   as const, Icon: TrendingUp },
+    { label: 'Leads activos', value: isLoading ? '—' : String(activeLeads),   delta: 'en pipeline activo', trend: 'warn' as const, Icon: Briefcase },
+    { label: 'Total leads',   value: isLoading ? '—' : String(totalLeads),    delta: 'desde el inicio',    trend: 'up'   as const, Icon: BarChart3 },
+  ]
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       {/* ── Top bar ───────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
         <div>
-          <h1 style={{
-            margin: '0 0 4px',
-            fontSize: 22,
-            fontWeight: 700,
-            letterSpacing: '-0.015em',
-            color: 'var(--ps-text-primary)',
-          }}>
+          <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, letterSpacing: '-0.015em', color: 'var(--ps-text-primary)' }}>
             {greeting}, {firstName}
           </h1>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--ps-text-secondary)' }}>
             Hoy ·{' '}
-            <b style={{ color: 'var(--ps-text-primary)', fontWeight: 600 }}>3 leads nuevos</b>
+            <b style={{ color: 'var(--ps-text-primary)', fontWeight: 600 }}>
+              {isLoading ? '…' : `${newLeadsToday} lead${newLeadsToday !== 1 ? 's' : ''} nuevo${newLeadsToday !== 1 ? 's' : ''}`}
+            </b>
           </p>
         </div>
 
         <Link
-          href="/publications/create"
+          href="/publications"
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            background: 'var(--ps-cyan)',
-            color: 'var(--ps-bg-base)',
-            padding: '9px 16px',
-            borderRadius: 8,
-            fontSize: 13.5,
-            fontWeight: 600,
-            textDecoration: 'none',
-            transition: 'all 180ms cubic-bezier(0.16,1,0.3,1)',
-            flexShrink: 0,
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: 'var(--ps-cyan)', color: 'var(--ps-bg-base)',
+            padding: '9px 16px', borderRadius: 8, fontSize: 13.5, fontWeight: 600,
+            textDecoration: 'none', transition: 'all 180ms cubic-bezier(0.16,1,0.3,1)', flexShrink: 0,
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--ps-cyan-hover)'
-            e.currentTarget.style.boxShadow  = '0 6px 20px rgba(77,184,255,0.3)'
-            e.currentTarget.style.transform  = 'translateY(-1px)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'var(--ps-cyan)'
-            e.currentTarget.style.boxShadow  = ''
-            e.currentTarget.style.transform  = ''
-          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--ps-cyan-hover)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(77,184,255,0.3)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--ps-cyan)'; e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = '' }}
         >
           <Plus size={14} strokeWidth={2.5} />
           Nueva publicación
@@ -204,53 +184,26 @@ export default function DashboardPage() {
           <div
             key={label}
             style={{
-              position: 'relative',
-              background: 'var(--ps-bg-surface)',
-              border: '1px solid var(--ps-border-subtle)',
-              borderRadius: 12,
-              padding: 20,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
+              position: 'relative', background: 'var(--ps-bg-surface)',
+              border: '1px solid var(--ps-border-subtle)', borderRadius: 12,
+              padding: 20, display: 'flex', flexDirection: 'column', gap: 6,
               transition: 'border-color 200ms',
             }}
             onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--ps-border-medium)')}
             onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--ps-border-subtle)')}
           >
-            {/* Icon badge */}
             <div style={{
-              position: 'absolute', top: 18, right: 18,
-              width: 32, height: 32, borderRadius: 8,
-              background: 'rgba(77,184,255,0.10)',
-              border: '1px solid rgba(77,184,255,0.18)',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--ps-cyan)',
+              position: 'absolute', top: 18, right: 18, width: 32, height: 32, borderRadius: 8,
+              background: 'rgba(77,184,255,0.10)', border: '1px solid rgba(77,184,255,0.18)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ps-cyan)',
             }}>
               <Icon size={16} strokeWidth={2} />
             </div>
-
             <span style={{ fontSize: 13, color: 'var(--ps-text-secondary)' }}>{label}</span>
-
-            <span style={{
-              fontSize: 36,
-              fontWeight: 800,
-              letterSpacing: '-0.03em',
-              lineHeight: 1,
-              color: 'var(--ps-text-primary)',
-              margin: '2px 0 4px',
-              fontVariantNumeric: 'tabular-nums',
-            }}>
+            <span style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1, color: 'var(--ps-text-primary)', margin: '2px 0 4px', fontVariantNumeric: 'tabular-nums' }}>
               {value}
             </span>
-
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontSize: 12, fontWeight: 600,
-              color: trend === 'up' ? 'var(--ps-success)' : 'var(--ps-warning)',
-            }}>
-              {trend === 'up'
-                ? <TrendingUp size={12} strokeWidth={2.5} />
-                : <Flag size={12} strokeWidth={2.5} />}
+            <span style={{ fontSize: 12, fontWeight: 600, color: trend === 'up' ? 'var(--ps-success)' : 'var(--ps-warning)' }}>
               {delta}
             </span>
           </div>
@@ -258,204 +211,128 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Two-column section ────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', gap: 16 }}>
 
         {/* Leads recientes */}
         <Card>
-          <CardHead title="Leads recientes" linkLabel="Ver todos →" linkHref="/leads" />
+          <CardHead title="Leads recientes" linkLabel="Ver todos →" linkHref="/vendedor/leads" />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {LEADS.map((lead, i) => {
-              const ss = STATUS_STYLE[lead.status]
-              const src = SRC_STYLE[lead.src] ?? SRC_STYLE['Directo']
-              return (
-                <a
-                  key={i}
-                  href="/leads"
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    textDecoration: 'none',
-                    transition: 'background 180ms',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--ps-table-row-hover)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                >
-                  {/* Avatar */}
-                  <div style={{
-                    width: 36, height: 36, borderRadius: '50%',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 12, fontWeight: 700, letterSpacing: '0.02em',
-                    color: 'var(--ps-bg-base)',
-                    flexShrink: 0,
-                    background: `linear-gradient(135deg, ${lead.grad[0]}, ${lead.grad[1]})`,
-                  }}>
-                    {lead.initials}
-                  </div>
-
-                  {/* Name + time */}
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, fontWeight: 600, color: 'var(--ps-text-primary)' }}>
-                      {lead.name}
-                      <span style={{
-                        fontSize: 9.5, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                        letterSpacing: '0.04em',
-                        background: src.bg, color: src.color,
-                      }}>
-                        {lead.src}
+          {isLoading ? (
+            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--ps-text-secondary)', fontSize: 13 }}>
+              Cargando…
+            </div>
+          ) : recentLeads.length === 0 ? (
+            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--ps-text-secondary)', fontSize: 13 }}>
+              No hay leads aún
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {recentLeads.map((lead) => {
+                const ss  = STATUS_BADGE[lead.status]
+                const src = getSourceStyle(lead.source)
+                const [g1, g2] = getAvatarGradient(lead.id)
+                return (
+                  <a
+                    key={lead.id}
+                    href="/vendedor/leads"
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 8, textDecoration: 'none', transition: 'background 180ms', minWidth: 0 }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--ps-table-row-hover)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, letterSpacing: '0.02em', color: 'var(--ps-bg-base)', flexShrink: 0, background: `linear-gradient(135deg, ${g1}, ${g2})` }}>
+                      {getInitials(lead.buyer_name)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, fontWeight: 600, color: 'var(--ps-text-primary)', minWidth: 0 }}>
+                        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.buyer_name}</span>
+                        <span style={{ fontSize: 9.5, fontWeight: 700, padding: '2px 6px', borderRadius: 4, letterSpacing: '0.04em', background: src.bg, color: src.color, flexShrink: 0 }}>
+                          {src.label}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 11.5, color: 'var(--ps-text-disabled)', fontFamily: 'ui-monospace, monospace' }}>
+                        {formatRelativeTime(lead.created_at)}
                       </span>
                     </div>
-                    <span style={{ fontSize: 11.5, color: 'var(--ps-text-disabled)', fontFamily: 'ui-monospace, monospace' }}>
-                      {lead.time}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 600, padding: '4px 10px', borderRadius: 100, whiteSpace: 'nowrap', background: ss.bg, color: ss.color }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+                      {ss.label}
                     </span>
-                  </div>
+                    <span style={{ color: 'var(--ps-text-disabled)', display: 'inline-flex' }}>
+                      <ChevronRight size={16} strokeWidth={2} />
+                    </span>
+                  </a>
+                )
+              })}
+            </div>
+          )}
 
-                  {/* Status badge */}
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 5,
-                    fontSize: 11.5, fontWeight: 600,
-                    padding: '4px 10px', borderRadius: 100,
-                    whiteSpace: 'nowrap',
-                    background: ss.bg, color: ss.color,
-                  }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
-                    {lead.label}
-                  </span>
-
-                  {/* Arrow */}
-                  <span style={{ color: 'var(--ps-text-disabled)', display: 'inline-flex' }}>
-                    <ChevronRight size={16} strokeWidth={2} />
-                  </span>
-                </a>
-              )
-            })}
-          </div>
-
-          <div style={{
-            textAlign: 'center', paddingTop: 12, marginTop: 8,
-            borderTop: '1px solid var(--ps-border-subtle)',
-          }}>
-            <Link href="/leads" style={{ fontSize: 13, color: 'var(--ps-cyan)', fontWeight: 500, textDecoration: 'none' }}>
-              Ver los 12 leads de hoy →
+          <div style={{ textAlign: 'center', paddingTop: 12, marginTop: 8, borderTop: '1px solid var(--ps-border-subtle)' }}>
+            <Link href="/vendedor/leads" style={{ fontSize: 13, color: 'var(--ps-cyan)', fontWeight: 500, textDecoration: 'none' }}>
+              Ver todos los leads →
             </Link>
           </div>
         </Card>
 
-        {/* Right column: Pipeline + Canales */}
+        {/* Right column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Pipeline */}
           <Card>
             <CardHead title="Pipeline" linkLabel="Ver completo →" linkHref="/pipeline" />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {PIPELINE.map((row) => (
-                <div key={row.stage} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 44px', gap: 12, alignItems: 'center' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ps-text-primary)' }}>
-                    {row.stage}
-                  </span>
-                  <div style={{ height: 8, borderRadius: 100, background: 'rgba(77,184,255,0.08)', overflow: 'hidden' }}>
-                    <div style={{
-                      height: '100%', borderRadius: 100,
-                      width: `${row.pct}%`,
-                      background: row.fill,
-                      boxShadow: row.glow ? `0 0 10px ${row.glowColor}` : 'none',
-                    }} />
+              {PIPELINE_STAGES.map((stage) => {
+                const count = pipelineCounts[stage.status]
+                const pct   = Math.round((count / maxPipelineCount) * 100)
+                return (
+                  <div key={stage.status} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 44px', gap: 12, alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ps-text-primary)' }}>{stage.label}</span>
+                    <div style={{ height: 8, borderRadius: 100, background: 'rgba(77,184,255,0.08)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: 100, width: `${pct}%`, background: stage.fill, boxShadow: 'glow' in stage ? `0 0 10px ${stage.glow}` : 'none' }} />
+                    </div>
+                    <span style={{ textAlign: 'right', fontSize: 12.5, fontWeight: 700, fontFamily: 'ui-monospace, monospace', color: 'var(--ps-text-primary)', letterSpacing: '-0.01em' }}>
+                      {isLoading ? '—' : count}
+                    </span>
                   </div>
-                  <span style={{
-                    textAlign: 'right', fontSize: 12.5, fontWeight: 700,
-                    fontFamily: 'ui-monospace, monospace',
-                    color: 'var(--ps-text-primary)',
-                    letterSpacing: '-0.01em',
-                  }}>
-                    {row.count}
-                  </span>
-                </div>
-              ))}
+                )
+              })}
             </div>
-            <div style={{
-              marginTop: 12, paddingTop: 12,
-              borderTop: '1px solid var(--ps-border-subtle)',
-              fontSize: 12, color: 'var(--ps-text-secondary)',
-            }}>
-              <b style={{ color: 'var(--ps-text-primary)', fontWeight: 600 }}>47 deals</b> activos
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--ps-border-subtle)', fontSize: 12, color: 'var(--ps-text-secondary)' }}>
+              <b style={{ color: 'var(--ps-text-primary)', fontWeight: 600 }}>
+                {isLoading ? '—' : activeLeads} lead{activeLeads !== 1 ? 's' : ''}
+              </b>{' '}activos
             </div>
           </Card>
 
-          {/* Canales */}
+          {/* Equipo */}
           <Card>
-            <CardHead title="Canales · Hoy" />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {CHANNELS.map((ch) => (
-                <div key={ch.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 4px' }}>
-                  <div style={{
-                    flexShrink: 0, width: 30, height: 30, borderRadius: 8,
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 13, fontWeight: 800, letterSpacing: '-0.02em',
-                    background: ch.logoBg, color: ch.logoColor,
-                  }}>
-                    {ch.label}
-                  </div>
-                  <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500, color: 'var(--ps-text-primary)' }}>
-                    {ch.name}
-                  </span>
-                  <span style={{ fontSize: 12.5, fontFamily: 'ui-monospace, monospace', color: 'var(--ps-text-secondary)' }}>
-                    {ch.count}
-                  </span>
-                  <div style={{
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: ch.active ? 'var(--ps-success)' : 'var(--ps-text-disabled)',
-                    boxShadow: ch.active ? '0 0 6px var(--ps-success)' : 'none',
-                  }} />
-                </div>
-              ))}
-            </div>
+            <CardHead title="Equipo · Leads" />
+            {isLoading ? (
+              <div style={{ padding: '12px 0', textAlign: 'center', color: 'var(--ps-text-secondary)', fontSize: 13 }}>Cargando…</div>
+            ) : !metrics?.vendedor_breakdown?.length ? (
+              <div style={{ padding: '12px 0', textAlign: 'center', color: 'var(--ps-text-secondary)', fontSize: 13 }}>Sin vendedores asignados</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {metrics.vendedor_breakdown.slice(0, 5).map((v) => {
+                  const [g1, g2] = getAvatarGradient(v.vendedor_id)
+                  return (
+                    <div key={v.vendedor_id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 4px' }}>
+                      <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, background: `linear-gradient(135deg, ${g1}, ${g2})`, color: 'var(--ps-bg-base)' }}>
+                        {getInitials(v.vendedor_name)}
+                      </div>
+                      <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--ps-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {v.vendedor_name}
+                      </span>
+                      <span style={{ fontSize: 12.5, fontFamily: 'ui-monospace, monospace', color: 'var(--ps-text-secondary)', flexShrink: 0 }}>
+                        {v.total_leads} lead{v.total_leads !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </Card>
         </div>
       </div>
-
-      {/* ── Actividad reciente ────────────────────────────────────────────── */}
-      <Card>
-        <CardHead title="Actividad reciente" linkLabel="Ver todo →" linkHref="#" />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {ACTIVITY.map(({ Icon, color, text, meta, time }, i) => (
-            <div
-              key={i}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 14,
-                padding: '10px 12px', borderRadius: 8,
-                transition: 'background 180ms',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--ps-table-row-hover)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-            >
-              {/* Icon badge */}
-              <div style={{
-                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: color.bg, color: color.fg,
-              }}>
-                <Icon size={15} strokeWidth={2} />
-              </div>
-
-              {/* Text */}
-              <div style={{ flex: 1, minWidth: 0, fontSize: 13, color: 'var(--ps-text-primary)', lineHeight: 1.45 }}>
-                <b style={{ fontWeight: 600 }}>{text}</b>
-                {' '}
-                <span style={{ color: 'var(--ps-text-secondary)', fontWeight: 400 }}>{meta}</span>
-              </div>
-
-              {/* Timestamp */}
-              <span style={{
-                fontSize: 11, color: 'var(--ps-text-disabled)',
-                fontFamily: 'ui-monospace, monospace', whiteSpace: 'nowrap',
-              }}>
-                {time}
-              </span>
-            </div>
-          ))}
-        </div>
-      </Card>
 
     </div>
   )

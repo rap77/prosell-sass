@@ -5,6 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { fetchWithAuth } from "@/lib/api/fetchWithAuth";
 
 /**
  * Audit log entry for a lead status change.
@@ -146,7 +147,7 @@ export interface CreateLeadRequest {
  * Request payload for updating lead status
  */
 export interface UpdateLeadStatusRequest {
-  status: LeadStatus;
+  new_status: LeadStatus;
   reason?: string | null;
 }
 
@@ -254,9 +255,7 @@ export function useLeads(filters?: LeadFilters, limit: number = 50, offset: numb
       if (filters?.search) queryParams.append("search", filters.search);
       if (filters?.vendedor_id) queryParams.append("vendedor_id", filters.vendedor_id);
 
-      const res = await fetch(`/api/v1/leads?${queryParams.toString()}`, {
-        credentials: "include",
-      });
+      const res = await fetchWithAuth(`/api/v1/leads?${queryParams.toString()}`);
 
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: "Failed to fetch leads" }));
@@ -281,9 +280,7 @@ export function useLeads(filters?: LeadFilters, limit: number = 50, offset: numb
  * Audit logs are returned newest-first by the backend.
  */
 export async function getLeadAuditTrail(leadId: string): Promise<LeadAuditLogEntry[]> {
-  const res = await fetch(`/api/v1/leads/${leadId}`, {
-    credentials: "include",
-  });
+  const res = await fetchWithAuth(`/api/v1/leads/${leadId}`);
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Failed to fetch lead audit trail" }));
@@ -295,7 +292,7 @@ export async function getLeadAuditTrail(leadId: string): Promise<LeadAuditLogEnt
 }
 
 async function fetchLeadDetail(leadId: string): Promise<BackendLeadDetailResponse> {
-  const res = await fetch(`/api/v1/leads/${leadId}`, { credentials: "include" });
+  const res = await fetchWithAuth(`/api/v1/leads/${leadId}`);
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Failed to fetch lead" }));
     throw new Error(error.message || "Failed to fetch lead");
@@ -339,10 +336,9 @@ export function useUpdateLeadStatus(leadId: string) {
 
   return useMutation({
     mutationFn: async (request: UpdateLeadStatusRequest) => {
-      const res = await fetch(`/api/v1/leads/${leadId}/status`, {
+      const res = await fetchWithAuth(`/api/v1/leads/${leadId}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(request),
       });
 
@@ -370,10 +366,9 @@ export function useReassignLead(leadId: string) {
 
   return useMutation({
     mutationFn: async (request: ReassignLeadRequest) => {
-      const res = await fetch(`/api/v1/leads/${leadId}/assign`, {
+      const res = await fetchWithAuth(`/api/v1/leads/${leadId}/assign`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(request),
       });
 
@@ -400,9 +395,7 @@ export function useTeamMetrics(): UseQueryResult<TeamMetricsResponse, Error> {
   return useQuery({
     queryKey: ["team-metrics"],
     queryFn: async () => {
-      const res = await fetch("/api/v1/leads/metrics", {
-        credentials: "include",
-      });
+      const res = await fetchWithAuth("/api/v1/leads/metrics");
 
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: "Failed to fetch team metrics" }));
@@ -430,9 +423,7 @@ export function useLeadDuplicates(
   return useQuery({
     queryKey: ["lead-duplicates", leadId],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/leads/${leadId}/duplicates`, {
-        credentials: "include",
-      });
+      const res = await fetchWithAuth(`/api/v1/leads/${leadId}/duplicates`);
 
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: "Failed to fetch duplicates" }));

@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
+import { fetchWithAuth } from "@/lib/api/fetchWithAuth";
 
 // =============================================================================
 // SCHEMAS
@@ -41,9 +42,7 @@ export function useNotifications() {
   return useQuery({
     queryKey: NOTIFICATIONS_QUERY_KEY,
     queryFn: async (): Promise<NotificationList> => {
-      const response = await fetch("/api/v1/notifications", {
-        credentials: "include",
-      });
+      const response = await fetchWithAuth("/api/v1/notifications");
       if (!response.ok) {
         throw new Error("Failed to fetch notifications");
       }
@@ -61,12 +60,9 @@ export function useMarkNotificationRead() {
 
   return useMutation({
     mutationFn: async (notificationId: string): Promise<Notification> => {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         `/api/v1/notifications/${notificationId}/read`,
-        {
-          method: "PUT",
-          credentials: "include",
-        }
+        { method: "PUT" }
       );
       if (!response.ok) {
         throw new Error("Failed to mark notification as read");
@@ -85,9 +81,8 @@ export function useMarkAllNotificationsRead() {
 
   return useMutation({
     mutationFn: async (): Promise<void> => {
-      const response = await fetch("/api/v1/notifications/read-all", {
+      const response = await fetchWithAuth("/api/v1/notifications/read-all", {
         method: "PUT",
-        credentials: "include",
       });
       if (!response.ok) {
         throw new Error("Failed to mark all notifications as read");

@@ -151,7 +151,7 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const { API_BASE_URL } = await import("@/lib/config");
-          const response = await fetch(`${API_BASE_URL}/api/auth/state`, {
+          const response = await fetch(`${API_BASE_URL}/api/v1/auth/state`, {
             credentials: "include", // CRITICAL: Sends httpOnly cookies
           });
           const authState = await response.json();
@@ -223,7 +223,7 @@ export const useAuthStore = create<AuthState>()(
             user: response.user,
             isAuthenticated: true,
             isLoading: false,
-            initialized: true, // Auth is initialized after login/register
+            initialized: false,
             error: null,
           });
         } catch (unknownError) {

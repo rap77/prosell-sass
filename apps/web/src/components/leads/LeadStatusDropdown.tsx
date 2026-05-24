@@ -50,7 +50,7 @@ export function LeadStatusDropdown({
     setOptimisticStatus(newStatus);
 
     try {
-      await updateLeadStatus.mutateAsync({ status: newStatus });
+      await updateLeadStatus.mutateAsync({ new_status: newStatus });
       onStatusUpdated?.(newStatus);
       setIsOpen(false);
       // Clear optimistic status on success

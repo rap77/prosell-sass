@@ -252,24 +252,7 @@ export default async function middleware(req: NextRequest) {
     // Route groups are organizational, not URL-based
   }
 
-  // 9. Smart redirect for /dashboard based on user role
-  if (isAuthenticated && userData && pathname === "/dashboard") {
-    const url = req.nextUrl.clone();
-
-    // Redirect to role-specific home page
-    const roleHomes: Record<string, string> = {
-      admin: "/admin/dashboard",
-      seller: "/catalog",
-      branch: "/branch/reports",
-      manager: "/manager/team",
-    };
-    const roleHome = roleHomes[userData.role] || "/catalog"; // Default fallback
-
-    url.pathname = roleHome;
-    return NextResponse.redirect(url);
-  }
-
-  // 10. Proceed to the requested route
+  // 9. Proceed to the requested route
   return NextResponse.next();
 }
 

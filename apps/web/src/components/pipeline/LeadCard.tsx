@@ -12,7 +12,6 @@
  */
 
 import { useDraggable } from '@dnd-kit/core'
-import { CSS } from '@dnd-kit/utilities'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Car, Clock, User, XCircle } from 'lucide-react'
@@ -29,14 +28,12 @@ function getInitials(name: string): string {
 }
 
 export function LeadCard({ lead }: LeadCardProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: lead.id,
     data: { lead },
   })
 
   const markLost = useUpdateLeadStatus(lead.id)
-
-  const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined
 
   const vehicleLabel = lead.product
     ? (
@@ -60,16 +57,15 @@ export function LeadCard({ lead }: LeadCardProps) {
     <div
       ref={setNodeRef}
       style={{
-        ...style,
         background: 'var(--ps-bg-elevated)',
         border: '1px solid var(--ps-border-default)',
         borderRadius: 10,
         padding: '10px 12px',
         cursor: 'grab',
         userSelect: 'none',
-        opacity: isDragging ? 0.35 : 1,
+        opacity: isDragging ? 0 : 1,
         boxShadow: isDragging ? 'none' : '0 1px 4px rgba(6,13,36,0.25)',
-        transition: 'opacity 150ms, box-shadow 150ms, border-color 150ms',
+        transition: isDragging ? 'none' : 'opacity 150ms, box-shadow 150ms, border-color 150ms',
       }}
       onMouseEnter={(e) => {
         if (!isDragging) e.currentTarget.style.borderColor = 'var(--ps-border-medium)'
@@ -140,7 +136,7 @@ export function LeadCard({ lead }: LeadCardProps) {
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation()
-              markLost.mutate({ status: LeadStatus.LOST })
+              markLost.mutate({ new_status: LeadStatus.LOST })
             }}
             style={{
               width: 22, height: 22,

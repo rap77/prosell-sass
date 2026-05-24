@@ -8,7 +8,7 @@
  * All colors via var(--ps-*) tokens.
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   DndContext,
   DragEndEvent,
@@ -48,6 +48,14 @@ function isValidTransition(from: LeadStatus, to: LeadStatus): boolean {
   return (VALID_TRANSITIONS[from] ?? []).includes(to)
 }
 
+const COLUMN_LABELS: Record<LeadStatus, string> = {
+  [LeadStatus.NEW]:             'Nuevo',
+  [LeadStatus.CONTACTED]:       'Contactado',
+  [LeadStatus.QUALIFIED]:       'Calificado',
+  [LeadStatus.APPOINTMENT_SET]: 'Cita agendada',
+  [LeadStatus.LOST]:            'Perdido',
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function KanbanBoard() {
@@ -55,11 +63,28 @@ export function KanbanBoard() {
   const [activeLead, setActiveLead]         = useState<Lead | null>(null)
   const queryClient = useQueryClient()
 
-  const { data: leads = [], isLoading } = useLeads(
+  const pendingMutations = useRef<Map<string, {
+    fromStatus: LeadStatus
+    toStatus:   LeadStatus
+    toastId:    string | number
+  }>>(new Map())
+
+  // On unmount, dismiss pending toasts — onDismiss commits the mutations
+  useEffect(() => {
+    const pending = pendingMutations.current
+    return () => { pending.forEach(({ toastId }) => toast.dismiss(toastId)) }
+  }, [])
+
+  const { data: leadsFromServer = [], isLoading } = useLeads(
     vendedorFilter ? { vendedor_id: vendedorFilter } : undefined,
     200
   )
   const { data: vendedores = [] } = useVendedores()
+
+  // Local mirror — source of truth for the board UI.
+  // Drag updates this synchronously; server data syncs back via useEffect after invalidation.
+  const [localLeads, setLocalLeads] = useState<Lead[]>(leadsFromServer)
+  useEffect(() => { setLocalLeads(leadsFromServer) }, [leadsFromServer])
 
   const updateStatus = useMutation({
     mutationFn: async ({ leadId, status }: { leadId: string; status: LeadStatus }) => {
@@ -67,32 +92,31 @@ export function KanbanBoard() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ new_status: status }),
       })
       if (!res.ok) throw new Error('Failed to update lead status')
       return res.json()
     },
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['leads'] }),
-    onError:   () => toast.error('No se pudo actualizar el estado del lead'),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: ['leads'] }),
   })
 
-  // Group leads by status column
+  // Group leads by status column — from local state, not from query cache
   const columnLeads = useMemo(
     () =>
       KANBAN_COLUMNS.reduce<Record<LeadStatus, Lead[]>>(
         (acc, status) => {
-          acc[status] = leads.filter((l) => l.status === status)
+          acc[status] = localLeads.filter((l) => l.status === status)
           return acc
         },
         {} as Record<LeadStatus, Lead[]>
       ),
-    [leads]
+    [localLeads]
   )
 
   // Only show vendedores who have leads in the current board
   const activeVendedorIds = useMemo(
-    () => new Set(leads.map((l) => l.vendedor_id).filter(Boolean) as string[]),
-    [leads]
+    () => new Set(localLeads.map((l) => l.vendedor_id).filter(Boolean) as string[]),
+    [localLeads]
   )
 
   const sensors = useSensors(
@@ -105,25 +129,67 @@ export function KanbanBoard() {
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    setActiveLead(null)
     const { active, over } = event
-    if (!over) return
+
+    if (!over) { setActiveLead(null); return }
 
     const lead = active.data.current?.lead as Lead | undefined
-    if (!lead) return
-    if (!KANBAN_COLUMNS.includes(over.id as LeadStatus)) return
+    if (!lead) { setActiveLead(null); return }
+    if (!KANBAN_COLUMNS.includes(over.id as LeadStatus)) { setActiveLead(null); return }
 
     const targetStatus = over.id as LeadStatus
-    if (lead.status === targetStatus) return
+    if (lead.status === targetStatus) { setActiveLead(null); return }
 
     if (!isValidTransition(lead.status, targetStatus)) {
+      setActiveLead(null)
       toast.error('Transición inválida', {
-        description: `No podés mover directamente de "${lead.status}" a "${targetStatus}".`,
+        description: `No podés mover de "${COLUMN_LABELS[lead.status]}" a "${COLUMN_LABELS[targetStatus]}".`,
       })
       return
     }
 
-    updateStatus.mutate({ leadId: lead.id, status: targetStatus })
+    // If this lead already has a pending mutation, ignore the new drag
+    if (pendingMutations.current.has(lead.id)) {
+      setActiveLead(null)
+      return
+    }
+
+    const fromStatus = lead.status
+    const toStatus   = targetStatus
+
+    // Optimistic update + clear overlay — single React batch, zero flash
+    setLocalLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: toStatus } : l))
+    setActiveLead(null)
+
+    // Called by onAutoClose (5s timeout) and onDismiss (manual close / unmount)
+    const commitMutation = () => {
+      if (!pendingMutations.current.has(lead.id)) return
+      pendingMutations.current.delete(lead.id)
+      updateStatus.mutate(
+        { leadId: lead.id, status: toStatus },
+        {
+          onError: () => {
+            setLocalLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: fromStatus } : l))
+            toast.error('No se pudo actualizar el estado del lead')
+          },
+        }
+      )
+    }
+
+    const toastId = toast(`Lead movido a "${COLUMN_LABELS[toStatus]}"`, {
+      duration: 5000,
+      action: {
+        label: 'Deshacer',
+        onClick: () => {
+          pendingMutations.current.delete(lead.id)
+          setLocalLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: fromStatus } : l))
+        },
+      },
+      onAutoClose: commitMutation,
+      onDismiss:   commitMutation,
+    })
+
+    pendingMutations.current.set(lead.id, { fromStatus, toStatus, toastId })
   }
 
   // ── Loading ────────────────────────────────────────────────────────────────
