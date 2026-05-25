@@ -1,6 +1,6 @@
 """Get team metrics use case."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import ClassVar
 from uuid import UUID
 
@@ -67,7 +67,7 @@ class GetTeamMetricsUseCase:
         total_leads = len(leads)
 
         # New leads in last 24 hours
-        cutoff_time = datetime.utcnow() - timedelta(days=1)
+        cutoff_time = datetime.now(UTC) - timedelta(days=1)
         new_leads_last_24h = len([lead for lead in leads if lead.created_at >= cutoff_time])
 
         # Conversion rate: leads that reached appointment_set status

@@ -627,18 +627,18 @@ async def get_auth_state(
     Returns user data and authentication status based on cookies.
     """
     if not current_user:
-        return AuthStateResponse(is_authenticated=False, user=None)
+        return AuthStateResponse(isAuthenticated=False, user=None)
 
     user = await user_repository.get_by_id(UUID(current_user["sub"]))
     if not user:
-        return AuthStateResponse(is_authenticated=False, user=None)
+        return AuthStateResponse(isAuthenticated=False, user=None)
 
     name_parts = user.full_name.split(" ", 1)
     first_name = name_parts[0]
     last_name = name_parts[1] if len(name_parts) > 1 else ""
 
     return AuthStateResponse(
-        is_authenticated=True,
+        isAuthenticated=True,
         user=AuthStateUserResponse(
             id=current_user["sub"],
             email=user.email,

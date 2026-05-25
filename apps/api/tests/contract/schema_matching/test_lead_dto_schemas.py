@@ -43,7 +43,7 @@ def make_lead_entity(**kwargs) -> Lead:
         product_id=kwargs.get("product_id", uuid4()),
         vendedor_id=kwargs.get("vendedor_id", uuid4()),
         message=kwargs.get("message"),
-        source=kwargs.get("source", "manual"),
+        source=kwargs.get("source", LeadSource.MANUAL),
         status=kwargs.get("status", LeadStatus.NEW),
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),

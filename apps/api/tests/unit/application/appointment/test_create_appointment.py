@@ -1,10 +1,9 @@
-from typing import cast
-from uuid import UUID
-
 """Unit tests for CreateAppointmentUseCase with conflict detection."""
 
 from datetime import UTC, datetime, timedelta
+from typing import cast
 from unittest.mock import AsyncMock
+from uuid import UUID
 
 import pytest
 
@@ -20,6 +19,7 @@ from prosell.domain.services.appointment_conflict_detector import (
     AppointmentConflictDetector,
     ConflictType,
 )
+from prosell.domain.value_objects.lead_source import LeadSource
 
 
 @pytest.fixture
@@ -60,7 +60,7 @@ def lead() -> Lead:
         product_id=uuid4(),
         vendedor_id=uuid4(),
         message="Interested in this vehicle",
-        source="manual",
+        source=LeadSource.MANUAL,
         status=LeadStatus.QUALIFIED,  # QUALIFIED can transition to APPOINTMENT_SET
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
@@ -70,7 +70,9 @@ def lead() -> Lead:
 @pytest.fixture
 def base_time() -> datetime:
     """Base time for testing (Tuesday, 2 PM UTC)."""
-    return datetime(2035, 5, 22, 14, 0, tzinfo=UTC)  # Tuesday — far future so past-date check passes
+    return datetime(
+        2035, 5, 22, 14, 0, tzinfo=UTC
+    )  # Tuesday — far future so past-date check passes
 
 
 class TestCreateAppointmentWithConflictDetection:

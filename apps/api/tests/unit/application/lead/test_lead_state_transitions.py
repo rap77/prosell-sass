@@ -28,6 +28,7 @@ from prosell.domain.exceptions.lead_exceptions import (
     LeadNotFoundException,
     LeadStateTransitionException,
 )
+from prosell.domain.value_objects.lead_source import LeadSource
 
 # =============================================================================
 # HELPERS
@@ -50,7 +51,7 @@ def make_lead(
         product_id=uuid4(),
         vendedor_id=vendedor_id or uuid4(),
         message="Interested",
-        source="manual",
+        source=LeadSource.MANUAL,
         status=status,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),

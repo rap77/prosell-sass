@@ -7,6 +7,7 @@ import pytest
 
 from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.exceptions import LeadStateTransitionException
+from prosell.domain.value_objects.lead_source import LeadSource
 
 
 class TestLeadStatus:
@@ -43,7 +44,7 @@ class TestLeadEntity:
             product_id=uuid4(),
             vendedor_id=uuid4(),
             message="Estoy interesado en este vehículo",
-            source="facebook",
+            source=LeadSource.FACEBOOK,
             status=LeadStatus.NEW,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
@@ -97,7 +98,7 @@ class TestLeadEntity:
             product_id=uuid4(),
             vendedor_id=uuid4(),
             message="Interesado",
-            source="facebook",
+            source=LeadSource.FACEBOOK,
             status=LeadStatus.NEW,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
@@ -121,7 +122,7 @@ class TestLeadEntity:
             product_id=uuid4(),
             vendedor_id=uuid4(),
             message="Interesado",
-            source="facebook",
+            source=LeadSource.FACEBOOK,
             status=LeadStatus.CONTACTED,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
@@ -145,7 +146,7 @@ class TestLeadEntity:
             product_id=uuid4(),
             vendedor_id=uuid4(),
             message="Interesado",
-            source="facebook",
+            source=LeadSource.FACEBOOK,
             status=LeadStatus.NEW,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),

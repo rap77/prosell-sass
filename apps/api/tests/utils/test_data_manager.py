@@ -8,23 +8,30 @@ This module provides:
 4. Database state management
 """
 
-import logging
-import urllib.parse
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from logging import getLogger
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy import text as sa_text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import NullPool
 
-# Base model for testing
-Base = declarative_base()
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import TextClause
 
 
-logger = logging.getLogger(__name__)
+# Base model for testing - SQLAlchemy 2.0 style
+class Base(DeclarativeBase):
+    """Base class for test models using SQLAlchemy 2.0 style."""
+
+    pass
+
+
+logger = getLogger(__name__)
 
 
 class TestDataCleaner:
@@ -39,13 +46,13 @@ class TestDataCleaner:
     4. Managing test-specific data
     """
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession) -> None:
         self.session = session
         self.created_records: set[str] = set()
         self.created_tables: set[str] = set()
-        self.test_start_time = datetime.utcnow()
+        self.test_start_time = datetime.now(UTC)
 
-    async def clean_all_test_data(self):
+    async def clean_all_test_data(self) -> None:
         """Clean up all test data created during the test run."""
         logger.info("🧹 Starting cleanup of all test data...")
 
@@ -61,65 +68,77 @@ class TestDataCleaner:
 
         logger.info("✅ Test data cleanup completed")
 
-    async def _clean_test_tables(self):
+    async def _clean_test_tables(self) -> None:
         """Clean tables that contain test-specific data."""
         test_tables = [
             "test_temp_data",
-            "audit_logs",  # Often contains test audit records
-            "user_sessions",  # Test sessions
-            "rate_limit_buckets",  # Test rate limiting
-            "webhook_events",  # Test webhook calls
+            "audit_logs",
+            "user_sessions",
+            "rate_limit_buckets",
+            "webhook_events",
         ]
+
+        # Literal SQL statements for each table (no f-strings for security)
+        table_delete_stmts: dict[str, TextClause] = {
+            "test_temp_data": sa_text("DELETE FROM test_temp_data"),
+            "audit_logs": sa_text("DELETE FROM audit_logs"),
+            "user_sessions": sa_text("DELETE FROM user_sessions"),
+            "rate_limit_buckets": sa_text("DELETE FROM rate_limit_buckets"),
+            "webhook_events": sa_text("DELETE FROM webhook_events"),
+        }
 
         for table_name in test_tables:
             try:
                 # Check if table exists
                 result = await self.session.execute(
-                    text(
-                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = :table_name)"
+                    sa_text(
+                        "SELECT EXISTS ("
+                        "SELECT FROM information_schema.tables "
+                        "WHERE table_name = :table_name"
+                        ")"
                     ),
                     {"table_name": table_name},
                 )
                 table_exists = result.scalar()
 
-                if table_exists:
-                    await self.session.execute(text(f"DELETE FROM {table_name}"))
+                if table_exists and table_name in table_delete_stmts:
+                    await self.session.execute(table_delete_stmts[table_name])
                     logger.debug(f"Cleaned table: {table_name}")
 
             except Exception as e:
                 logger.warning(f"Failed to clean table {table_name}: {e}")
 
-    async def _clean_orphaned_records(self):
+    async def _clean_orphaned_records(self) -> None:
         """Clean records that were created during testing but may not have been tracked."""
         # Clean old user sessions (older than 1 hour)
-        cutoff_time = datetime.utcnow() - timedelta(hours=1)
+        cutoff_time = datetime.now(UTC) - timedelta(hours=1)
 
         await self.session.execute(
-            text("DELETE FROM user_sessions WHERE created_at < :cutoff_time"),
+            sa_text("DELETE FROM user_sessions WHERE created_at < :cutoff_time"),
             {"cutoff_time": cutoff_time},
         )
 
         # Clean old rate limit buckets (older than 1 day)
-        cutoff_time = datetime.utcnow() - timedelta(days=1)
+        cutoff_time = datetime.now(UTC) - timedelta(days=1)
 
         await self.session.execute(
-            text("DELETE FROM rate_limit_buckets WHERE created_at < :cutoff_time"),
+            sa_text("DELETE FROM rate_limit_buckets " "WHERE created_at < :cutoff_time"),
             {"cutoff_time": cutoff_time},
         )
 
         logger.debug("Cleaned orphaned records")
 
-    async def track_created_record(self, table_name: str, record_id: str):
+    async def track_created_record(self, table_name: str, record_id: str) -> None:
         """Track a created record for cleanup."""
         self.created_records.add(f"{table_name}:{record_id}")
         logger.debug(f"Tracking created record: {table_name}:{record_id}")
 
-    async def track_created_table(self, table_name: str):
+    async def track_created_table(self, table_name: str) -> None:
         """Track a created table for cleanup."""
         self.created_tables.add(table_name)
         logger.debug(f"Tracking created table: {table_name}")
 
-    async def rollback_transaction(self):
+    async def rollback_transaction(self) -> None:
         """Rollback the current transaction to clean up test data."""
         try:
             await self.session.rollback()
@@ -128,7 +147,7 @@ class TestDataCleaner:
             logger.error(f"Failed to rollback transaction: {e}")
             raise
 
-    async def close(self):
+    async def close(self) -> None:
         """Clean up resources."""
         try:
             await self.clean_all_test_data()
@@ -144,27 +163,27 @@ class TestDataSeeder:
     Provides methods to create test data that will be automatically cleaned up.
     """
 
-    def __init__(self, session: AsyncSession, cleaner: TestDataCleaner):
+    def __init__(self, session: AsyncSession, cleaner: TestDataCleaner) -> None:
         self.session = session
         self.cleaner = cleaner
 
-    async def create_test_organization(self, **kwargs) -> dict:
+    async def create_test_organization(self, **kwargs: Any) -> dict[str, Any]:
         """Create a test organization with cleanup tracking."""
         org_data = {
-            "name": f"Test Organization {datetime.utcnow().timestamp()}",
+            "name": (f"Test Organization {datetime.now(UTC).timestamp()}"),
             "description": "Test organization for E2E testing",
-            "owner_email": f"test-owner-{datetime.utcnow().timestamp()}@example.com",
+            "owner_email": (f"test-owner-{datetime.now(UTC).timestamp()}@example.com"),
             **kwargs,
         }
 
         # Insert organization (assuming this is the actual database model)
-        # This is a simplified example - adjust based on actual models
         result = await self.session.execute(
-            text("""
-                INSERT INTO organizations (name, description, owner_email, created_at, updated_at)
-                VALUES (:name, :description, :owner_email, NOW(), NOW())
-                RETURNING id
-            """),
+            sa_text(
+                "INSERT INTO organizations "
+                "(name, description, owner_email, created_at, updated_at) "
+                "VALUES (:name, :description, :owner_email, NOW(), NOW()) "
+                "RETURNING id"
+            ),
             org_data,
         )
 
@@ -177,11 +196,11 @@ class TestDataSeeder:
         logger.info(f"Created test organization: {org_id}")
         return org_data
 
-    async def create_test_user(self, organization_id: int, **kwargs) -> dict:
+    async def create_test_user(self, organization_id: int, **kwargs: Any) -> dict[str, Any]:
         """Create a test user with cleanup tracking."""
         user_data = {
-            "email": f"test-user-{datetime.utcnow().timestamp()}@example.com",
-            "password_hash": "hashed_test_password",  # In real implementation, use proper hashing
+            "email": f"test-user-{datetime.now(UTC).timestamp()}@example.com",
+            "password_hash": "hashed_test_password",
             "first_name": "Test",
             "last_name": "User",
             "organization_id": organization_id,
@@ -190,11 +209,14 @@ class TestDataSeeder:
         }
 
         result = await self.session.execute(
-            text("""
-                INSERT INTO users (email, password_hash, first_name, last_name, organization_id, role, created_at, updated_at)
-                VALUES (:email, :password_hash, :first_name, :last_name, :organization_id, :role, NOW(), NOW())
-                RETURNING id
-            """),
+            sa_text(
+                "INSERT INTO users "
+                "(email, password_hash, first_name, last_name, "
+                "organization_id, role, created_at, updated_at) "
+                "VALUES (:email, :password_hash, :first_name, :last_name, "
+                ":organization_id, :role, NOW(), NOW()) "
+                "RETURNING id"
+            ),
             user_data,
         )
 
@@ -207,21 +229,22 @@ class TestDataSeeder:
         logger.info(f"Created test user: {user_id}")
         return user_data
 
-    async def create_test_category(self, organization_id: int, **kwargs) -> dict:
+    async def create_test_category(self, organization_id: int, **kwargs: Any) -> dict[str, Any]:
         """Create a test category with cleanup tracking."""
         category_data = {
-            "name": f"Test Category {datetime.utcnow().timestamp()}",
+            "name": f"Test Category {datetime.now(UTC).timestamp()}",
             "organization_id": organization_id,
             "description": "Test category for E2E testing",
             **kwargs,
         }
 
         result = await self.session.execute(
-            text("""
-                INSERT INTO categories (name, organization_id, description, created_at, updated_at)
-                VALUES (:name, :organization_id, :description, NOW(), NOW())
-                RETURNING id
-            """),
+            sa_text(
+                "INSERT INTO categories "
+                "(name, organization_id, description, created_at, updated_at) "
+                "VALUES (:name, :organization_id, :description, NOW(), NOW()) "
+                "RETURNING id"
+            ),
             category_data,
         )
 
@@ -236,7 +259,9 @@ class TestDataSeeder:
 
 
 @asynccontextmanager
-async def test_data_manager(session: AsyncSession) -> AsyncGenerator[TestDataCleaner]:  # noqa: PT001
+async def test_data_manager(
+    session: AsyncSession,
+) -> AsyncGenerator[TestDataCleaner]:
     """
     Context manager for managing test data lifecycle.
 
@@ -255,11 +280,10 @@ async def test_data_manager(session: AsyncSession) -> AsyncGenerator[TestDataCle
         await cleaner.close()
 
 
-test_data_manager.__test__ = False  # Not a pytest test — context manager utility
-
-
 @asynccontextmanager
-async def test_transaction(session: AsyncSession) -> AsyncGenerator[AsyncSession]:  # noqa: PT001
+async def test_transaction(
+    session: AsyncSession,
+) -> AsyncGenerator[AsyncSession]:
     """
     Context manager for test transactions with automatic rollback.
 
@@ -270,9 +294,6 @@ async def test_transaction(session: AsyncSession) -> AsyncGenerator[AsyncSession
     """
     async with session.begin():
         yield session
-
-
-test_transaction.__test__ = False  # Not a pytest test — context manager utility
 
 
 class TestDatabaseManager:
@@ -287,35 +308,38 @@ class TestDatabaseManager:
     - Test environment setup/teardown
     """
 
-    def __init__(self, database_url: str):
+    def __init__(self, database_url: str) -> None:
         self.database_url = database_url
         self.test_database_url = self._generate_test_database_url()
 
     def _generate_test_database_url(self) -> str:
         """Generate a unique test database URL."""
         import urllib.parse
-        from datetime import datetime
 
         parsed = urllib.parse.urlparse(self.database_url)
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         test_db_name = f"prosell_test_{timestamp}"
 
         return parsed._replace(database=test_db_name, path=f"/{test_db_name}").geturl()
 
     async def setup_test_database(self) -> str:
         """Set up a test database with migrations."""
+        import urllib.parse
+
         logger.info(f"🗄️ Setting up test database: {self.test_database_url}")
 
         # Extract base URL for database creation
         parsed = urllib.parse.urlparse(self.test_database_url)
         postgres_url = parsed._replace(database="postgres", path="/postgres").geturl()
 
-        # Create test database
+        # Create test database - dynamic table name via string interpolation
+        # (safe because timestamp is generated internally)
         engine = create_engine(postgres_url, poolclass=NullPool)
         with engine.connect() as conn:
             conn.execution_options(isolation_level="AUTOCOMMIT")
-            conn.execute(sa_text(f"DROP DATABASE IF EXISTS {parsed.path[1:]}"))
-            conn.execute(sa_text(f"CREATE DATABASE {parsed.path[1:]}"))
+            db_name = parsed.path[1:]
+            conn.execute(sa_text(f"DROP DATABASE IF EXISTS {db_name}"))
+            conn.execute(sa_text(f"CREATE DATABASE {db_name}"))
 
         # Run migrations (in real implementation, use Alembic)
         async_engine = create_async_engine(self.test_database_url)
@@ -325,8 +349,10 @@ class TestDatabaseManager:
         logger.info("✅ Test database setup completed")
         return self.test_database_url
 
-    async def cleanup_test_database(self):
+    async def cleanup_test_database(self) -> None:
         """Clean up the test database."""
+        import urllib.parse
+
         logger.info(f"🧹 Cleaning up test database: {self.test_database_url}")
 
         parsed = urllib.parse.urlparse(self.test_database_url)
@@ -335,7 +361,8 @@ class TestDatabaseManager:
         engine = create_engine(postgres_url, poolclass=NullPool)
         with engine.connect() as conn:
             conn.execution_options(isolation_level="AUTOCOMMIT")
-            conn.execute(sa_text(f"DROP DATABASE IF EXISTS {parsed.path[1:]}"))
+            db_name = parsed.path[1:]
+            conn.execute(sa_text(f"DROP DATABASE IF EXISTS {db_name}"))
 
         logger.info("✅ Test database cleanup completed")
 

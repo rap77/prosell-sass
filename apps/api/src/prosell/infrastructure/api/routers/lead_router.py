@@ -185,7 +185,7 @@ async def create_lead(
 async def list_leads(
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     use_case: Annotated[ListLeadsUseCase, Depends(get_list_leads_use_case)],
-    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    limit: Annotated[int, Query(ge=1, le=500)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
     lead_status: LeadStatus | None = Query(default=None, alias="status"),
     vendedor_id: UUID | None = Query(
@@ -214,6 +214,41 @@ async def list_leads(
     return await use_case.execute(user=current_user, request=list_request)
 
 
+@router.get(
+    "/metrics",
+    response_model=TeamMetricsResponse,
+    summary="Get team lead metrics",
+)
+async def get_team_metrics(
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    use_case: Annotated[GetTeamMetricsUseCase, Depends(get_team_metrics_use_case)],
+) -> TeamMetricsResponse:
+    """
+    Get team lead metrics (managers and admins only).
+
+    Returns aggregated metrics including:
+    - Total leads count
+    - New leads in last 24 hours
+    - Conversion rate (leads → appointment_set)
+    - Breakdown by vendedor with individual stats
+
+    Returns 403 if user is not a manager or admin.
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No organization associated with account.",
+        )
+    try:
+        return await use_case.execute(
+            tenant_id=current_user.tenant_id,
+            user=current_user,
+        )
+    except PermissionError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e),
+        ) from None
 
 
 @router.get(
@@ -390,40 +425,3 @@ async def get_lead_duplicates(
         ],
         count=len(duplicates),
     )
-
-
-@router.get(
-    "/metrics",
-    response_model=TeamMetricsResponse,
-    summary="Get team lead metrics",
-)
-async def get_team_metrics(
-    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
-    use_case: Annotated[GetTeamMetricsUseCase, Depends(get_team_metrics_use_case)],
-) -> TeamMetricsResponse:
-    """
-    Get team lead metrics (managers and admins only).
-
-    Returns aggregated metrics including:
-    - Total leads count
-    - New leads in last 24 hours
-    - Conversion rate (leads → appointment_set)
-    - Breakdown by vendedor with individual stats
-
-    Returns 403 if user is not a manager or admin.
-    """
-    if current_user.tenant_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No organization associated with account.",
-        )
-    try:
-        return await use_case.execute(
-            tenant_id=current_user.tenant_id,
-            user=current_user,
-        )
-    except PermissionError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e),
-        ) from None

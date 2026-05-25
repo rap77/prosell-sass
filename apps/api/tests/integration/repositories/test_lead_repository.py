@@ -11,6 +11,7 @@ from prosell.domain.entities.lead import Lead, LeadStatus
 from prosell.domain.exceptions.lead_exceptions import (
     LeadNotFoundException,
 )
+from prosell.domain.value_objects.lead_source import LeadSource
 from prosell.infrastructure.repositories.lead_repository_impl import SqlAlchemyLeadRepository
 
 # =============================================================================
@@ -18,7 +19,7 @@ from prosell.infrastructure.repositories.lead_repository_impl import SqlAlchemyL
 # =============================================================================
 
 
-def make_lead(tenant_id=None, vendedor_id=None, status=LeadStatus.NEW, **kwargs) -> Lead:
+def make_lead(tenant_id=None, vendedor_id=None, **kwargs) -> Lead:
     """Create a Lead entity for testing."""
     tid = tenant_id or uuid4()
     return Lead.create(
@@ -29,7 +30,7 @@ def make_lead(tenant_id=None, vendedor_id=None, status=LeadStatus.NEW, **kwargs)
         product_id=kwargs.get("product_id", uuid4()),
         vendedor_id=vendedor_id,
         message="Integration test message",
-        source="manual",
+        source=LeadSource.MANUAL,
     )
 
 
@@ -269,7 +270,7 @@ class TestLeadRepositoryList:
         for uid in [test_user.id, test_seller_user.id, None]:
             await repo.create(make_lead(tenant_id=tenant_id, vendedor_id=uid))
 
-        leads, total = await repo.list_by_manager(tenant_id=tenant_id)
+        _, total = await repo.list_by_manager(tenant_id=tenant_id)
 
         assert total >= 3
 
@@ -323,7 +324,7 @@ class TestLeadRepositoryList:
         await repo.create(contacted_lead)
         await repo.update_status(contacted_lead.id, tenant_id, LeadStatus.CONTACTED)
 
-        new_leads, new_total = await repo.list_by_vendedor(
+        new_leads, _ = await repo.list_by_vendedor(
             tenant_id=tenant_id,
             vendedor_id=vendedor_id,
             status=LeadStatus.NEW,
