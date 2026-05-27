@@ -6,9 +6,6 @@ WORKDIR /app
 # Enable corepack for pnpm
 RUN corepack enable pnpm
 
-# Install pnpm globally if not available
-RUN npm install -g pnpm
-
 # Build argument for API URL
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
