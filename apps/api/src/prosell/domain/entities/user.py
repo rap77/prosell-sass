@@ -4,9 +4,7 @@ from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from pydantic import Field, field_validator
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field
 
 # Import Role for Pydantic forward reference evaluation
 from prosell.domain.entities.role import Role
@@ -41,8 +39,8 @@ class User(DomainModel):
 
     # Required fields
     id: UUID
-    email: str = Field(..., min_length=1)
-    full_name: str = Field(..., min_length=1, max_length=100)
+    email: str
+    full_name: str
 
     # Optional fields with defaults (must come after required)
     password_hash: str | None = None  # None for OAuth-only users
@@ -63,30 +61,6 @@ class User(DomainModel):
 
     # Lazy loaded relationships (not in __init__)
     roles: list["Role"] | None = None
-
-    @field_validator("backup_codes", mode="before")
-    @classmethod
-    def parse_backup_codes(cls, v: list[str] | str | None) -> list[str] | None:
-        """
-        Parse backup_codes from JSON string or list.
-
-        When loading from SQLAlchemy ORM, backup_codes comes as JSON string.
-        This validator converts it to list[str] automatically.
-
-        NOTE: JSON parsing is done here for convenience.
-        Ideally, this should be in the infrastructure layer (repository/mapper).
-        """
-        if v is None:
-            return None
-        if isinstance(v, list):
-            return v
-        # JSON string path: only reached if the repository mapper did not pre-deserialize.
-        # Kept as a safety net — normal path is handled by the repository.
-        import json  # noqa: PLC0415 — intentional late import, infrastructure concern
-
-        from typing import cast
-
-        return cast(list[str], json.loads(v))
 
     @classmethod
     def create(

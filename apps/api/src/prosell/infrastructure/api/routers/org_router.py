@@ -1,9 +1,9 @@
 """Organization router for ProSell SaaS API."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.org import (
@@ -26,6 +26,7 @@ from prosell.application.use_cases.org import (
     UpdateOrganizationUseCase,
     VerifyOrganizationUseCase,
 )
+from prosell.domain.base import DomainModel
 from prosell.domain.entities.role import Permission, RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.org_exceptions import (
@@ -61,14 +62,14 @@ router = APIRouter()
 
 
 def get_org_repository(
-    session: AsyncSession = Depends(get_async_session),
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> SqlAlchemyOrganizationRepository:
     """Get organization repository instance."""
     return SqlAlchemyOrganizationRepository(session)
 
 
 def get_wallet_repository(
-    session: AsyncSession = Depends(get_async_session),
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> SqlAlchemyWalletRepository:
     """Get wallet repository instance."""
     return SqlAlchemyWalletRepository(session)
@@ -87,9 +88,9 @@ def get_wallet_repository(
 )
 async def create_organization(
     request: CreateOrganizationRequest,
-    _current_user: User = Depends(require_permission(Permission.ORG_CREATE)),
-    org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
-    wallet_repo: SqlAlchemyWalletRepository = Depends(get_wallet_repository),
+    _current_user: Annotated[User, Depends(require_permission(Permission.ORG_CREATE))],
+    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
+    wallet_repo: Annotated[SqlAlchemyWalletRepository, Depends(get_wallet_repository)],
 ) -> OrganizationResponse:
     """
     Create a new organization (MASTER/SUPER_ADMIN only).
@@ -114,21 +115,19 @@ async def create_organization(
     summary="List organizations",
 )
 async def list_organizations(
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
     skip: int = 0,
     limit: int = 100,
-    tenant_id: UUID | None = None,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
 ) -> OrganizationListResponse:
     """
     List organizations.
 
-    - SUPER_ADMIN: can pass tenant_id=None to see all orgs
-    - ORG_ADMIN: only sees their own org (enforce tenant_id in middleware)
+    - SUPER_ADMIN/ADMIN: sees all orgs (no tenant filter)
+    - Others: only see their own org
     """
-    # Non-SUPER_ADMIN users are scoped to their own tenant
     is_admin = current_user.has_role(["super_admin", "admin"])
-    effective_tenant = tenant_id if is_admin else current_user.tenant_id
+    effective_tenant = None if is_admin else current_user.tenant_id
     use_case = ListOrganizationsUseCase(org_repository=org_repo)
     return await use_case.execute(tenant_id=effective_tenant, skip=skip, limit=limit)
 
@@ -139,8 +138,8 @@ async def list_organizations(
     summary="Get current user's organization",
 )
 async def get_my_organization(
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Get the organization associated with the authenticated user's tenant."""
     if not current_user.tenant_id:
@@ -156,7 +155,7 @@ async def get_my_organization(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
 
 
-class CompleteSetupRequest(BaseModel):
+class CompleteSetupRequest(DomainModel):
     """Request body for completing onboarding setup."""
 
     setup_complete: bool = True
@@ -169,8 +168,8 @@ class CompleteSetupRequest(BaseModel):
 )
 async def complete_org_setup(
     request: CompleteSetupRequest,
-    current_user: User = Depends(require_role(RoleType.MANAGER)),
-    org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
+    current_user: Annotated[User, Depends(require_role(RoleType.MANAGER))],
+    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Mark the current organization's onboarding wizard as complete or skip.
 
@@ -198,8 +197,8 @@ async def complete_org_setup(
 )
 async def get_organization(
     org_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Get organization by ID (with tenant isolation)."""
     if not current_user.tenant_id:
@@ -223,8 +222,8 @@ async def get_organization(
 async def update_organization(
     org_id: UUID,
     request: UpdateOrganizationRequest,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Update organization basic info, logo, banner, or settings."""
     if not current_user.tenant_id:
@@ -257,9 +256,9 @@ async def update_organization(
 async def get_upload_url(
     org_id: UUID,
     request: UploadUrlRequest,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
-    spaces: IDOSpacesService = Depends(get_spaces_service),
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
+    spaces: Annotated[IDOSpacesService, Depends(get_spaces_service)],
 ) -> UploadUrlResponse:
     """
     Generate a presigned PUT URL for uploading org logo or banner directly to DO Spaces.
@@ -281,11 +280,11 @@ async def get_upload_url(
     except OrganizationNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message) from e
 
-    _ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
-    if request.content_type not in _ALLOWED_CONTENT_TYPES:
+    allowed_content_types = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+    if request.content_type not in allowed_content_types:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"content_type must be one of: {', '.join(sorted(_ALLOWED_CONTENT_TYPES))}",
+            detail=f"content_type must be one of: {', '.join(sorted(allowed_content_types))}",
         )
 
     if request.file_type == "logo":
@@ -312,8 +311,8 @@ async def get_upload_url(
 )
 async def verify_organization(
     org_id: UUID,
-    current_user: User = Depends(require_role(RoleType.SUPER_ADMIN)),
-    org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
+    current_user: Annotated[User, Depends(require_role(RoleType.SUPER_ADMIN))],
+    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Approve organization verification (SUPER_ADMIN only)."""
     use_case = VerifyOrganizationUseCase(org_repository=org_repo)
@@ -338,8 +337,8 @@ async def verify_organization(
 )
 async def reject_organization(
     org_id: UUID,
-    current_user: User = Depends(require_role(RoleType.SUPER_ADMIN)),
-    org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
+    current_user: Annotated[User, Depends(require_role(RoleType.SUPER_ADMIN))],
+    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Reject organization verification (SUPER_ADMIN only)."""
     use_case = RejectOrganizationUseCase(org_repository=org_repo)
@@ -364,8 +363,8 @@ async def reject_organization(
 )
 async def suspend_organization(
     org_id: UUID,
-    current_user: User = Depends(require_role(RoleType.SUPER_ADMIN)),
-    org_repo: SqlAlchemyOrganizationRepository = Depends(get_org_repository),
+    current_user: Annotated[User, Depends(require_role(RoleType.SUPER_ADMIN))],
+    org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
 ) -> OrganizationResponse:
     """Suspend organization (SUPER_ADMIN only)."""
     if not current_user.tenant_id:

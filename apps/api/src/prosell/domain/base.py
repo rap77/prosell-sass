@@ -2,14 +2,15 @@
 
 from datetime import UTC, datetime
 
-from pydantic import (  # type: ignore[attr-defined]
+from pydantic import (
     BaseModel,
     ConfigDict,
-    EmailStr,
+    EmailStr,  # type: ignore[attr-defined]
     Field,
+    field_validator,
 )
 
-__all__ = ["DomainEvent", "DomainModel", "EmailStr", "Field", "ValueObject"]
+__all__ = ["DomainEvent", "DomainModel", "EmailStr", "Field", "ValueObject", "field_validator"]
 
 
 class DomainModel(BaseModel):
