@@ -2,16 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## AUTO-ACTIVATE SERENA (MANDATORY)
-
-**CRITICAL**: At the START of EVERY session in this project, you MUST:
-
-1. Activate Serena: `mcp__serena__activate_project` with `project: "/home/rpadron/proy/prosell-sass"`
-2. List memories: `mcp__serena__list_memories`
-3. Read relevant memories based on the task
-
-This is NON-NEGOTIABLE. Do it BEFORE responding to the user's first message.
-
 ## Project Overview
 
 ProSell SaaS is a **vehicle market analysis platform** that combines:
