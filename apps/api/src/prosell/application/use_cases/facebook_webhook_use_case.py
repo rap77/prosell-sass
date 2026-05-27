@@ -1,7 +1,7 @@
 """ProcessFacebookWebhookUseCase — processes Facebook lead webhooks."""
 
 import logging
-from typing import Any
+from collections.abc import Mapping
 from uuid import UUID
 
 from prosell.application.dto.lead.request import CreateLeadRequest
@@ -9,10 +9,11 @@ from prosell.application.ports.facebook_buyer_profile_service import (
     AbstractFacebookBuyerProfileService,
 )
 from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
+from prosell.domain.ports.i_encryption_service import IEncryptionService
 from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.publication_repository import IPublicationRepository
-from prosell.domain.ports.i_encryption_service import IEncryptionService
+from prosell.domain.value_objects.lead_source import LeadSource
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ class ProcessFacebookWebhookUseCase:
         self.create_lead_use_case = create_lead_use_case
         self.encryption_service = encryption_service
 
-    async def execute(self, payload: dict[str, Any], tenant_id: UUID) -> None:
+    async def execute(self, payload: Mapping[str, object], tenant_id: UUID) -> None:
         """
         Process Facebook webhook payload and create lead.
 
@@ -166,7 +167,7 @@ class ProcessFacebookWebhookUseCase:
                 product_id=publication.product_id,
                 vendedor_id=publication.seller_user_id,
                 message=str(message) if message else "",
-                source="facebook",  # type: ignore[arg-type]
+                source=LeadSource.FACEBOOK,
             )
 
             await self.create_lead_use_case.execute(request=create_request, tenant_id=tenant_id)
