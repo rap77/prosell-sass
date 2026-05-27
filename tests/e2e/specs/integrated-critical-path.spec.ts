@@ -122,9 +122,18 @@ test.describe("Integrated Critical Path", () => {
     console.log("[STEP 2] ✓ Product visible in products list");
 
     // ========================================
-    // Step 3: Simulate Facebook publish via API
+    // Step 3: Submit product for approval → then publish
     // ========================================
-    console.log("[STEP 3] Simulating Facebook publish via API...");
+    console.log("[STEP 3] Submitting product for approval...");
+
+    const submitResp = await request.post(`${apiBase}/api/v1/products/${productId}/submit`, {
+      headers: { Cookie: `access_token=${accessToken}` },
+    });
+    expect(submitResp.ok()).toBeTruthy();
+    console.log("[STEP 3] ✓ Product submitted for approval");
+
+    // Now publish (admin skips approval)
+    console.log("[STEP 3b] Publishing product...");
 
     const publishResp = await request.post(`${apiBase}/api/v1/products/${productId}/publish`, {
       headers: { Cookie: `access_token=${accessToken}` },
@@ -134,7 +143,7 @@ test.describe("Integrated Critical Path", () => {
     const publishStatus = publishResp.status();
     // Facebook publish requires external credentials — accept any response (200/404/500)
     // The important thing is the webhook lead capture in Step 4 still runs
-    console.log(`[STEP 3] ✓ Facebook publish attempted (status: ${publishStatus} — credentials may not be configured)`);
+    console.log(`[STEP 3b] ✓ Facebook publish attempted (status: ${publishStatus} — credentials may not be configured)`);
 
     // ========================================
     // Step 4: Create lead via API (simulates webhook lead capture result)
@@ -177,8 +186,8 @@ test.describe("Integrated Critical Path", () => {
     await expect(leadRow).toBeVisible({ timeout: 10000 });
     console.log("[STEP 5] ✓ Lead visible in vendedor list");
 
-    // Verify "New" status badge is visible somewhere on the page
-    await expect(page.locator('text=New').first()).toBeVisible();
+    // Verify "Nuevo" status badge is visible (UI uses Spanish labels)
+    await expect(page.locator('text=Nuevo').first()).toBeVisible();
     console.log("[STEP 5] ✓ Lead status badge visible");
 
     // ========================================
