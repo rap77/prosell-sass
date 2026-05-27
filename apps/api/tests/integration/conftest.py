@@ -3,8 +3,8 @@
 PHASE 1 FIX: Session-scoped system roles to prevent unique constraint violations.
 """
 
+import socket
 from collections.abc import AsyncGenerator
-from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
@@ -17,7 +17,29 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from prosell.infrastructure.models.role_model import RoleModel
+from prosell.infrastructure.models.category_model import CategoryModel
+from prosell.infrastructure.models.organization_model import OrganizationModel
+from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
+from prosell.infrastructure.models.user_model import UserModel
+
+
+def _db_available() -> bool:
+    try:
+        s = socket.create_connection(("localhost", 5433), timeout=1)
+        s.close()
+        return True
+    except OSError:
+        return False
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    if _db_available():
+        return
+    skip = pytest.mark.skip(reason="Integration test DB (localhost:5433) not available")
+    for item in items:
+        if "/tests/integration/" in str(item.fspath) or "/integration/" in str(item.nodeid):
+            item.add_marker(skip)
+
 
 TEST_DB_URL = "postgresql+asyncpg://prosell:prosell_test_password@localhost:5433/prosell_test"
 
@@ -27,7 +49,7 @@ TEST_DB_URL = "postgresql+asyncpg://prosell:prosell_test_password@localhost:5433
 
 
 @pytest_asyncio.fixture(scope="session")
-async def _session_engine() -> AsyncGenerator[Any]:
+async def _session_engine() -> AsyncGenerator[AsyncEngine]:
     """Create engine for session-scoped fixtures."""
     engine: AsyncEngine = create_async_engine(TEST_DB_URL, echo=False)
     yield engine
@@ -35,7 +57,7 @@ async def _session_engine() -> AsyncGenerator[Any]:
 
 
 @pytest_asyncio.fixture(scope="session")
-async def system_roles(_session_engine) -> dict[str, RoleModel]:
+async def system_roles(_session_engine: AsyncEngine) -> dict[str, RoleModel]:
     """
     Create system roles ONCE per test session.
     These roles are committed to the database and persist across all tests.
@@ -151,11 +173,6 @@ async def db_session() -> AsyncGenerator[AsyncSession]:
 # =============================================================================
 # TEST DATA FIXTURES - Use system_roles instead of creating new ones
 # =============================================================================
-
-from prosell.infrastructure.models.category_model import CategoryModel
-from prosell.infrastructure.models.organization_model import OrganizationModel
-from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
-from prosell.infrastructure.models.user_model import UserModel
 
 
 @pytest_asyncio.fixture
@@ -336,7 +353,7 @@ def disable_rate_limiting(monkeypatch: pytest.MonkeyPatch) -> None:
             monkeypatch.setattr(limiter, "enabled", False)
         else:
 
-            def mock_check(*_args: Any, **_kwargs: Any) -> None:
+            def mock_check(*_args: object, **_kwargs: object) -> None:
                 return None
 
             monkeypatch.setattr(limiter, "_check_rate_limit", mock_check)

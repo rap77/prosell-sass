@@ -8,20 +8,21 @@ This module provides:
 4. Database state management
 """
 
+import asyncio
+import re
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
-from typing import TYPE_CHECKING, Any
+from typing import Any
+from uuid import UUID
 
-from sqlalchemy import create_engine
+from sqlalchemy import TextClause, create_engine
 from sqlalchemy import text as sa_text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import NullPool
-
-if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import TextClause
 
 
 # Base model for testing - SQLAlchemy 2.0 style
@@ -31,7 +32,18 @@ class Base(DeclarativeBase):
     pass
 
 
-logger = getLogger(__name__)
+LOGGER = getLogger(__name__)
+
+_DB_IDENT_RE = re.compile(r"^[a-z][a-z0-9_]{0,62}$")
+_TEST_DB_PREFIX = "prosell_test_"
+
+
+def _validate_db_identifier(name: str) -> None:
+    """Reject database names that don't match a safe lowercase identifier pattern."""
+    if not name.startswith(_TEST_DB_PREFIX):
+        raise ValueError(f"Test DB name must start with '{_TEST_DB_PREFIX}': {name!r}")
+    if not _DB_IDENT_RE.match(name):
+        raise ValueError(f"Unsafe database identifier: {name!r}")
 
 
 class TestDataCleaner:
@@ -54,7 +66,7 @@ class TestDataCleaner:
 
     async def clean_all_test_data(self) -> None:
         """Clean up all test data created during the test run."""
-        logger.info("🧹 Starting cleanup of all test data...")
+        LOGGER.info("🧹 Starting cleanup of all test data...")
 
         # Clean specific tables first
         await self._clean_test_tables()
@@ -66,7 +78,7 @@ class TestDataCleaner:
         self.created_records.clear()
         self.created_tables.clear()
 
-        logger.info("✅ Test data cleanup completed")
+        LOGGER.info("✅ Test data cleanup completed")
 
     async def _clean_test_tables(self) -> None:
         """Clean tables that contain test-specific data."""
@@ -103,10 +115,10 @@ class TestDataCleaner:
 
                 if table_exists and table_name in table_delete_stmts:
                     await self.session.execute(table_delete_stmts[table_name])
-                    logger.debug(f"Cleaned table: {table_name}")
+                    LOGGER.debug(f"Cleaned table: {table_name}")
 
-            except Exception as e:
-                logger.warning(f"Failed to clean table {table_name}: {e}")
+            except SQLAlchemyError as e:
+                LOGGER.warning(f"Failed to clean table {table_name}: {e}")
 
     async def _clean_orphaned_records(self) -> None:
         """Clean records that were created during testing but may not have been tracked."""
@@ -126,33 +138,33 @@ class TestDataCleaner:
             {"cutoff_time": cutoff_time},
         )
 
-        logger.debug("Cleaned orphaned records")
+        LOGGER.debug("Cleaned orphaned records")
 
     async def track_created_record(self, table_name: str, record_id: str) -> None:
         """Track a created record for cleanup."""
         self.created_records.add(f"{table_name}:{record_id}")
-        logger.debug(f"Tracking created record: {table_name}:{record_id}")
+        LOGGER.debug(f"Tracking created record: {table_name}:{record_id}")
 
     async def track_created_table(self, table_name: str) -> None:
         """Track a created table for cleanup."""
         self.created_tables.add(table_name)
-        logger.debug(f"Tracking created table: {table_name}")
+        LOGGER.debug(f"Tracking created table: {table_name}")
 
     async def rollback_transaction(self) -> None:
         """Rollback the current transaction to clean up test data."""
         try:
             await self.session.rollback()
-            logger.info("🔄 Transaction rolled back successfully")
-        except Exception as e:
-            logger.error(f"Failed to rollback transaction: {e}")
+            LOGGER.info("🔄 Transaction rolled back successfully")
+        except SQLAlchemyError as e:
+            LOGGER.error(f"Failed to rollback transaction: {e}")
             raise
 
     async def close(self) -> None:
         """Clean up resources."""
         try:
             await self.clean_all_test_data()
-        except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
+        except SQLAlchemyError as e:
+            LOGGER.error(f"Error during cleanup: {e}")
 
 
 class TestDataSeeder:
@@ -167,7 +179,7 @@ class TestDataSeeder:
         self.session = session
         self.cleaner = cleaner
 
-    async def create_test_organization(self, **kwargs: Any) -> dict[str, Any]:
+    async def create_test_organization(self, **kwargs: Any) -> dict[str, Any]:  # type: ignore[misc] # flexible test helper
         """Create a test organization with cleanup tracking."""
         org_data = {
             "name": (f"Test Organization {datetime.now(UTC).timestamp()}"),
@@ -193,10 +205,10 @@ class TestDataSeeder:
         # Track for cleanup
         await self.cleaner.track_created_record("organizations", str(org_id))
 
-        logger.info(f"Created test organization: {org_id}")
+        LOGGER.info(f"Created test organization: {org_id}")
         return org_data
 
-    async def create_test_user(self, organization_id: int, **kwargs: Any) -> dict[str, Any]:
+    async def create_test_user(self, organization_id: UUID, **kwargs: Any) -> dict[str, Any]:  # type: ignore[misc] # flexible test helper
         """Create a test user with cleanup tracking."""
         user_data = {
             "email": f"test-user-{datetime.now(UTC).timestamp()}@example.com",
@@ -226,10 +238,10 @@ class TestDataSeeder:
         # Track for cleanup
         await self.cleaner.track_created_record("users", str(user_id))
 
-        logger.info(f"Created test user: {user_id}")
+        LOGGER.info(f"Created test user: {user_id}")
         return user_data
 
-    async def create_test_category(self, organization_id: int, **kwargs: Any) -> dict[str, Any]:
+    async def create_test_category(self, organization_id: UUID, **kwargs: Any) -> dict[str, Any]:  # type: ignore[misc] # flexible test helper
         """Create a test category with cleanup tracking."""
         category_data = {
             "name": f"Test Category {datetime.now(UTC).timestamp()}",
@@ -254,19 +266,19 @@ class TestDataSeeder:
         # Track for cleanup
         await self.cleaner.track_created_record("categories", str(category_id))
 
-        logger.info(f"Created test category: {category_id}")
+        LOGGER.info(f"Created test category: {category_id}")
         return category_data
 
 
 @asynccontextmanager
-async def test_data_manager(
+async def data_manager_ctx(
     session: AsyncSession,
 ) -> AsyncGenerator[TestDataCleaner]:
     """
     Context manager for managing test data lifecycle.
 
     Usage:
-        async with test_data_manager(session) as cleaner:
+        async with data_manager_ctx(session) as cleaner:
             # Create test data here
             await cleaner.create_test_organization()
             # Test code here
@@ -281,14 +293,14 @@ async def test_data_manager(
 
 
 @asynccontextmanager
-async def test_transaction(
+async def transaction_ctx(
     session: AsyncSession,
 ) -> AsyncGenerator[AsyncSession]:
     """
     Context manager for test transactions with automatic rollback.
 
     Usage:
-        async with test_transaction(session) as test_session:
+        async with transaction_ctx(session) as test_session:
             # Test code here
             # Changes will be rolled back automatically
     """
@@ -326,45 +338,53 @@ class TestDatabaseManager:
         """Set up a test database with migrations."""
         import urllib.parse
 
-        logger.info(f"🗄️ Setting up test database: {self.test_database_url}")
+        LOGGER.info(f"🗄️ Setting up test database: {self.test_database_url}")
 
-        # Extract base URL for database creation
         parsed = urllib.parse.urlparse(self.test_database_url)
         postgres_url = parsed._replace(database="postgres", path="/postgres").geturl()
+        db_name = parsed.path[1:]
+        _validate_db_identifier(db_name)  # raises ValueError if name is unsafe
 
-        # Create test database - dynamic table name via string interpolation
-        # (safe because timestamp is generated internally)
-        engine = create_engine(postgres_url, poolclass=NullPool)
-        with engine.connect() as conn:
-            conn.execution_options(isolation_level="AUTOCOMMIT")
-            db_name = parsed.path[1:]
-            conn.execute(sa_text(f"DROP DATABASE IF EXISTS {db_name}"))
-            conn.execute(sa_text(f"CREATE DATABASE {db_name}"))
+        def _sync_create(pg_url: str, name: str) -> None:
+            engine = create_engine(pg_url, poolclass=NullPool)
+            with engine.connect() as conn:
+                conn.execution_options(isolation_level="AUTOCOMMIT")
+                # SECURITY-APPROVED-DDL: name validated by _validate_db_identifier() above
+                conn.execute(sa_text(f"DROP DATABASE IF EXISTS {name}"))
+                conn.execute(sa_text(f"CREATE DATABASE {name}"))
+            engine.dispose()
 
-        # Run migrations (in real implementation, use Alembic)
+        await asyncio.to_thread(_sync_create, postgres_url, db_name)
+
         async_engine = create_async_engine(self.test_database_url)
         async with async_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-        logger.info("✅ Test database setup completed")
+        LOGGER.info("✅ Test database setup completed")
         return self.test_database_url
 
     async def cleanup_test_database(self) -> None:
         """Clean up the test database."""
         import urllib.parse
 
-        logger.info(f"🧹 Cleaning up test database: {self.test_database_url}")
+        LOGGER.info(f"🧹 Cleaning up test database: {self.test_database_url}")
 
         parsed = urllib.parse.urlparse(self.test_database_url)
         postgres_url = parsed._replace(database="postgres", path="/postgres").geturl()
+        db_name = parsed.path[1:]
+        _validate_db_identifier(db_name)  # raises ValueError if name is unsafe
 
-        engine = create_engine(postgres_url, poolclass=NullPool)
-        with engine.connect() as conn:
-            conn.execution_options(isolation_level="AUTOCOMMIT")
-            db_name = parsed.path[1:]
-            conn.execute(sa_text(f"DROP DATABASE IF EXISTS {db_name}"))
+        def _sync_drop(pg_url: str, name: str) -> None:
+            engine = create_engine(pg_url, poolclass=NullPool)
+            with engine.connect() as conn:
+                conn.execution_options(isolation_level="AUTOCOMMIT")
+                # SECURITY-APPROVED-DDL: name validated by _validate_db_identifier() above
+                conn.execute(sa_text(f"DROP DATABASE IF EXISTS {name}"))
+            engine.dispose()
 
-        logger.info("✅ Test database cleanup completed")
+        await asyncio.to_thread(_sync_drop, postgres_url, db_name)
+
+        LOGGER.info("✅ Test database cleanup completed")
 
 
 # Global test database manager instance
