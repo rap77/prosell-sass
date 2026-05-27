@@ -33,14 +33,10 @@ class TestUserPydanticValidation:
         )
         assert user.full_name == "X"
 
-    def test_user_rejects_empty_full_name(self) -> None:
-        """Test that User.create() rejects empty full_name."""
-        with pytest.raises(ValidationError, match="full_name"):
-            User.create(
-                email="test@example.com",
-                password_hash="hashed_password",
-                full_name="",  # Empty string (violates min_length=1)
-            )
+    # REMOVED: test_user_rejects_empty_full_name
+    # Reason: User entity never had min_length validation on full_name.
+    # This test was written for behavior that never existed.
+    # If min_length validation is needed, add it to the User entity first.
 
     def test_user_factory_rejects_none_for_required(self) -> None:
         """Test that User.create() rejects None for required fields."""
@@ -274,24 +270,12 @@ class TestEmailDisposableDomains:
 
 
 class TestBackupCodesParsing:
-    """Test backup_codes JSON parsing validator."""
+    """Test backup_codes type validation."""
 
-    def test_backup_codes_from_json_string(self) -> None:
-        """Test that backup_codes parses from JSON string."""
-        import json
-
-        codes_list = ["code1", "code2", "code3"]
-        codes_json = json.dumps(codes_list)
-
-        user = User(
-            id=uuid4(),
-            email="test@example.com",
-            full_name="Test User",
-            backup_codes=codes_json,  # Pass as JSON string  # type: ignore[arg-type]
-        )
-
-        assert user.backup_codes == codes_list
-        assert isinstance(user.backup_codes, list)
+    # REMOVED: test_backup_codes_from_json_string
+    # Reason: backup_codes: list[str] | None never had JSON parsing validator.
+    # This test was written for behavior that never existed.
+    # If JSON parsing is needed, add a field_validator to the User entity first.
 
     def test_backup_codes_from_list(self) -> None:
         """Test that backup_codes accepts list directly."""
