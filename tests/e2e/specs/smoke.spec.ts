@@ -628,7 +628,7 @@ test.describe("Smoke Tests - Critical Path", () => {
     ];
 
     const MOCK_LEAD_DETAIL = {
-      ...MOCK_LEADS[0],
+      lead: MOCK_LEADS[0],
       audit_logs: [],
     };
 
@@ -798,18 +798,20 @@ test.describe("Smoke Tests - Critical Path", () => {
           status: 200,
           contentType: "application/json",
           body: JSON.stringify({
-            id: "lead-smoke-b1-1",
-            buyer_name: "B1 Test Customer",
-            buyer_email: "b1-smoke@example.com",
-            buyer_phone: "+1-555-1234",
-            product_id: null,
-            product: null,
-            vendedor_id: null,
-            message: null,
-            status: "new",
-            source: "facebook",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            lead: {
+              id: "lead-smoke-b1-1",
+              buyer_name: "B1 Test Customer",
+              buyer_email: "b1-smoke@example.com",
+              buyer_phone: "+1-555-1234",
+              product_id: null,
+              product: null,
+              vendedor_id: null,
+              message: null,
+              status: "new",
+              source: "facebook",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
             audit_logs: [],
           }),
         });

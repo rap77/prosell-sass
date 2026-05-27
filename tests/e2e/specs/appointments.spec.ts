@@ -106,7 +106,7 @@ async function setupAppointmentMocks(page: Page) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(MOCK_LEAD),
+        body: JSON.stringify({ lead: MOCK_LEAD, audit_logs: [] }),
       });
       return;
     }
@@ -280,7 +280,7 @@ test.describe("Appointment Creation Accessibility", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(MOCK_LEAD),
+          body: JSON.stringify({ lead: MOCK_LEAD, audit_logs: [] }),
         });
         return;
       }
@@ -372,7 +372,7 @@ test.describe("Appointment Creation - E2E Verification (A7)", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(MOCK_LEAD),
+          body: JSON.stringify({ lead: MOCK_LEAD, audit_logs: [] }),
         });
         return;
       }

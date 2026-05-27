@@ -201,7 +201,7 @@ test.describe("Dealer Calendar - Advanced Interactions (B2.4)", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(mockLeads[leadId ?? "lead-1"] ?? mockLeads["lead-1"]),
+          body: JSON.stringify({ lead: mockLeads[leadId ?? "lead-1"] ?? mockLeads["lead-1"], audit_logs: [] }),
         });
       }
     });
@@ -497,31 +497,33 @@ test.describe("Dealer Calendar - Interaction Plugin Features (B2.4)", () => {
     // Mock leads API endpoint
     await page.route("**/api/v1/leads/*", async (route) => {
       if (route.request().method() === "GET") {
+        const leadMock = {
+          id: "lead-1",
+          buyer_name: "John Doe",
+          buyer_email: "john@example.com",
+          buyer_phone: "+1-555-0101",
+          product_id: "prod-1",
+          product: {
+            id: "prod-1",
+            title: "Toyota Camry",
+            price_cents: 2000000,
+            currency: "USD",
+            status: "active",
+            attributes: { category: "vehicle", year: 2024, make: "Toyota", model: "Camry" },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          message: "Interested in this vehicle",
+          status: "appointment_set",
+          source: "marketplace",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({
-            id: "lead-1",
-            buyer_name: "John Doe",
-            buyer_email: "john@example.com",
-            buyer_phone: "+1-555-0101",
-            product_id: "prod-1",
-            product: {
-              id: "prod-1",
-              title: "Toyota Camry",
-              price_cents: 2000000,
-              currency: "USD",
-              status: "active",
-              attributes: { category: "vehicle", year: 2024, make: "Toyota", model: "Camry" },
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            message: "Interested in this vehicle",
-            status: "appointment_set",
-            source: "marketplace",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }),
+          body: JSON.stringify({ lead: leadMock, audit_logs: [] }),
         });
       }
     });

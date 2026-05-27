@@ -190,7 +190,7 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(mockLeadData["lead-1"]),
+          body: JSON.stringify({ lead: mockLeadData["lead-1"], audit_logs: [] }),
         });
       } else {
         await route.fallback();
@@ -202,7 +202,7 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(mockLeadData["lead-2"]),
+          body: JSON.stringify({ lead: mockLeadData["lead-2"], audit_logs: [] }),
         });
       } else {
         await route.fallback();
@@ -219,7 +219,7 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(mockLead),
+          body: JSON.stringify({ lead: mockLead, audit_logs: [] }),
         });
       } else {
         await route.fallback();
@@ -569,7 +569,7 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(mockLeadData["lead-1"]),
+          body: JSON.stringify({ lead: mockLeadData["lead-1"], audit_logs: [] }),
         });
       } else {
         await route.fallback();
@@ -581,7 +581,7 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(mockLeadData["lead-2"]),
+          body: JSON.stringify({ lead: mockLeadData["lead-2"], audit_logs: [] }),
         });
       } else {
         await route.fallback();
@@ -598,7 +598,7 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(mockLead),
+          body: JSON.stringify({ lead: mockLead, audit_logs: [] }),
         });
       } else {
         await route.fallback();
