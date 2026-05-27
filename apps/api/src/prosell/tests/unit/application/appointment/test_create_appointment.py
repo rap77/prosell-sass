@@ -5,8 +5,9 @@ conflict detection service, including force override functionality.
 """
 
 from datetime import UTC, datetime
+from typing import TypedDict
 from unittest.mock import AsyncMock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -24,6 +25,14 @@ from prosell.domain.services.appointment_conflict_detector import (
 )
 
 
+class AppointmentRequestData(TypedDict):
+    lead_id: UUID
+    user_id: UUID
+    product_id: UUID
+    scheduled_at: datetime
+    notes: str
+
+
 class TestCreateAppointmentConflictDetection:
     """Test suite for appointment creation with conflict detection.
 
@@ -32,7 +41,7 @@ class TestCreateAppointmentConflictDetection:
     """
 
     @pytest.fixture
-    def mock_appointment_repo(self):
+    def mock_appointment_repo(self) -> AsyncMock:
         """Create mock appointment repository."""
         repo = AsyncMock()
         repo.create = AsyncMock()
@@ -40,7 +49,7 @@ class TestCreateAppointmentConflictDetection:
         return repo
 
     @pytest.fixture
-    def mock_lead_repo(self):
+    def mock_lead_repo(self) -> AsyncMock:
         """Create mock lead repository."""
         repo = AsyncMock()
         repo.get_by_id = AsyncMock(return_value=None)
@@ -48,12 +57,17 @@ class TestCreateAppointmentConflictDetection:
         return repo
 
     @pytest.fixture
-    def conflict_detector(self):
+    def conflict_detector(self) -> AppointmentConflictDetector:
         """Create real conflict detector (not mocked)."""
         return AppointmentConflictDetector()
 
     @pytest.fixture
-    def use_case(self, mock_appointment_repo, mock_lead_repo, conflict_detector):
+    def use_case(
+        self,
+        mock_appointment_repo: AsyncMock,
+        mock_lead_repo: AsyncMock,
+        conflict_detector: AppointmentConflictDetector,
+    ) -> CreateAppointmentUseCase:
         """Create use case with mocked repositories."""
         return CreateAppointmentUseCase(
             appointment_repository=mock_appointment_repo,
@@ -62,19 +76,24 @@ class TestCreateAppointmentConflictDetection:
         )
 
     @pytest.fixture
-    def valid_request_data(self):
+    def valid_request_data(self) -> AppointmentRequestData:
         """Create valid appointment request data."""
         return {
             "lead_id": uuid4(),
             "user_id": uuid4(),
             "product_id": uuid4(),
-            "scheduled_at": datetime(2035, 5, 22, 10, 0, tzinfo=UTC),  # far future — past-date check
+            "scheduled_at": datetime(
+                2035, 5, 22, 10, 0, tzinfo=UTC
+            ),  # far future — past-date check
             "notes": "Test appointment",
         }
 
     async def test_create_appointment_no_conflicts_success(
-        self, use_case, mock_appointment_repo, mock_lead_repo, valid_request_data
-    ):
+        self,
+        use_case: CreateAppointmentUseCase,
+        mock_appointment_repo: AsyncMock,
+        valid_request_data: AppointmentRequestData,
+    ) -> None:
         """Test successful appointment creation when no conflicts exist."""
         # Setup: No existing appointments
         mock_appointment_repo.check_conflicts.return_value = []
@@ -105,8 +124,11 @@ class TestCreateAppointmentConflictDetection:
         # (if lead doesn't exist or can't transition, update is skipped gracefully)
 
     async def test_create_appointment_with_conflicts_returns_error(
-        self, use_case, mock_appointment_repo, valid_request_data
-    ):
+        self,
+        use_case: CreateAppointmentUseCase,
+        mock_appointment_repo: AsyncMock,
+        valid_request_data: AppointmentRequestData,
+    ) -> None:
         """Test that conflicts raise AppointmentConflictException."""
         # Setup: Create conflicting appointment
         conflicting_appointment = Appointment(
@@ -134,8 +156,11 @@ class TestCreateAppointmentConflictDetection:
         assert exception.conflicts[0].type == ConflictType.DEALER_UNAVAILABLE
 
     async def test_create_appointment_multiple_conflicts(
-        self, use_case, mock_appointment_repo, valid_request_data
-    ):
+        self,
+        use_case: CreateAppointmentUseCase,
+        mock_appointment_repo: AsyncMock,
+        valid_request_data: AppointmentRequestData,
+    ) -> None:
         """Test detection of multiple conflicts."""
         # Setup: Create multiple conflicting appointments
         conflict1 = Appointment(
@@ -172,8 +197,11 @@ class TestCreateAppointmentConflictDetection:
         assert len(exception.conflicts) == 2
 
     async def test_create_appointment_cancelled_no_conflict(
-        self, use_case, mock_appointment_repo, mock_lead_repo, valid_request_data
-    ):
+        self,
+        use_case: CreateAppointmentUseCase,
+        mock_appointment_repo: AsyncMock,
+        valid_request_data: AppointmentRequestData,
+    ) -> None:
         """Test that cancelled appointments don't cause conflicts."""
         # Setup: Create cancelled appointment (should not conflict)
         cancelled_appointment = Appointment(
@@ -212,8 +240,11 @@ class TestCreateAppointmentConflictDetection:
         # Note: update_status may or may not be called depending on lead state
 
     async def test_create_appointment_with_force_override(
-        self, use_case, mock_appointment_repo, mock_lead_repo, valid_request_data
-    ):
+        self,
+        use_case: CreateAppointmentUseCase,
+        mock_appointment_repo: AsyncMock,
+        valid_request_data: AppointmentRequestData,
+    ) -> None:
         """Test that force=True overrides conflict detection."""
         # Setup: Create conflicting appointment
         conflicting_appointment = Appointment(
