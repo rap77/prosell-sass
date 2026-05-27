@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "c3schema_cleanup"
-down_revision: str | Sequence[str] | None = "20260505_0805"
+down_revision: str | Sequence[str] | None = "20260428_1625"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -28,7 +28,7 @@ def upgrade() -> None:
     # Drop the vehicles table
     # NOTE: This assumes all vehicles have been migrated to products.attributes
     # with category: "vehicle" in a previous migration step
-    op.drop_table("vehicles", if_exists=True)
+    op.execute("DROP TABLE IF EXISTS vehicles")
 
     # Drop any orphaned sequences if they exist
     op.execute("DROP SEQUENCE IF EXISTS vehicles_id_seq CASCADE")

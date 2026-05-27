@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "094a57cf7b48"
-down_revision: str | Sequence[str] | None = "b1c2d3e4f5a6"
+down_revision: str | Sequence[str] | None = "abc123def456"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -132,14 +132,7 @@ def upgrade() -> None:
         ),
     )
 
-    # Indexes for products
-    op.create_index("ix_products_tenant_id", "products", ["tenant_id"])
-    op.create_index("ix_products_organization_id", "products", ["organization_id"])
-    op.create_index("ix_products_category_id", "products", ["category_id"])
-    op.create_index("ix_products_slug", "products", ["slug"])
-    op.create_index("ix_products_status", "products", ["status"])
-    op.create_index("ix_products_condition", "products", ["condition"])
-    op.create_index("ix_products_is_featured", "products", ["is_featured"])
+    # Indexes are auto-created by index=True in Column definitions
 
     # =========================================================================
     # PRODUCT IMAGES TABLE
@@ -318,12 +311,15 @@ def upgrade() -> None:
         sa.Column("status", sa.String(50), server_default="active", nullable=False, index=True),
         sa.Column("refresh_failure_count", sa.Integer, server_default="0", nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(timezone=True),
-            default=sa.text("now()"),
+            server_default=sa.text("now()"),
             onupdate=sa.text("now()"),
             nullable=False,
         ),
@@ -349,12 +345,15 @@ def upgrade() -> None:
         sa.Column("picture_url", sa.String(500), nullable=True),
         sa.Column("is_default", sa.Boolean, server_default="false", nullable=False, index=True),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(timezone=True),
-            default=sa.text("now()"),
+            server_default=sa.text("now()"),
             onupdate=sa.text("now()"),
             nullable=False,
         ),
@@ -363,14 +362,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema - Drop all created tables."""
-    # Drop indexes first
-    op.drop_index("ix_products_is_featured", table_name="products")
-    op.drop_index("ix_products_condition", table_name="products")
-    op.drop_index("ix_products_status", table_name="products")
-    op.drop_index("ix_products_slug", table_name="products")
-    op.drop_index("ix_products_category_id", table_name="products")
-    op.drop_index("ix_products_organization_id", table_name="products")
-    op.drop_index("ix_products_tenant_id", table_name="products")
+    # All indexes are auto-dropped with tables
 
     # Drop tables in reverse dependency order
     op.drop_table("facebook_pages")
