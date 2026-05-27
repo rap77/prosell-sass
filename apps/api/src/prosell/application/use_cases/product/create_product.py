@@ -42,7 +42,8 @@ class CreateProductUseCase:
         if not category:
             raise CategoryNotFoundError(f"Category not found: {request.category_id}")
 
-        # 1b. Validate attributes against category schema (raises ValueError on type/required mismatch)
+        # 1b. Validate attributes against category schema
+        # (raises ValueError on type/required mismatch)
         category.validate_attributes(request.attributes or {})
 
         # 2. Validate tenant_id and organization_id

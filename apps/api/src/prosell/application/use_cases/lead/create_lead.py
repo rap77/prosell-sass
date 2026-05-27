@@ -1,11 +1,11 @@
 """CreateLeadUseCase — validates input and persists new lead."""
 
+import logging
 from uuid import UUID, uuid4
 
 from prosell.application.dto.lead.request import CreateLeadRequest
 from prosell.application.dto.lead.response import LeadResponse
 from prosell.domain.entities.lead import Lead
-from prosell.domain.value_objects.lead_source import LeadSource
 from prosell.domain.entities.notification import Notification, NotificationType
 from prosell.domain.exceptions.lead_exceptions import DuplicateLeadException
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
@@ -22,6 +22,9 @@ from prosell.domain.services.lead_assignment_rules_engine import (
     LeadAssignmentRulesEngine,
 )
 from prosell.domain.services.lead_duplicate_detector import LeadDuplicateDetector
+from prosell.domain.value_objects.lead_source import LeadSource
+
+logger = logging.getLogger(__name__)
 
 
 class CreateLeadUseCase:
@@ -166,8 +169,8 @@ class CreateLeadUseCase:
                     resource_id=created.id,
                 )
                 await self.notification_repository.create(notification)
-            except Exception:
-                pass  # Notification failure must never block lead creation
+            except Exception as e:
+                logger.warning("Notification delivery failed, lead creation proceeds: %s", e)
 
         return LeadResponse.from_entity(created)
 
@@ -285,7 +288,6 @@ class CreateLeadUseCase:
 
             return None
 
-        except Exception:
-            # Fail gracefully - don't block lead creation if assignment fails
-            # TODO: Log this error for monitoring
+        except Exception as e:
+            logger.warning("Auto-assignment failed, lead creation proceeds unassigned: %s", e)
             return None
