@@ -8,11 +8,11 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.lead import Lead, LeadStatus
-from prosell.domain.value_objects.lead_source import LeadSource
 from prosell.domain.entities.lead_audit_log import LeadAuditLog
 from prosell.domain.exceptions import LeadNotFoundException
 from prosell.domain.exceptions.lead_exceptions import LeadStateTransitionException
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
+from prosell.domain.value_objects.lead_source import LeadSource
 from prosell.infrastructure.models.lead_model import LeadAuditLogModel, LeadModel
 from prosell.infrastructure.models.product_model import ProductModel
 
@@ -424,8 +424,6 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         within_hours: int = 24,
     ) -> list[Lead]:
         """Find leads by buyer email (exact match) within time window."""
-        from prosell.infrastructure.models.lead_model import LeadModel
-
         cutoff_time = datetime.now(UTC) - timedelta(hours=within_hours)
         stmt = (
             select(LeadModel)
@@ -445,8 +443,6 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         within_hours: int = 24,
     ) -> list[Lead]:
         """Find leads by buyer phone (normalized match) within time window."""
-        from prosell.infrastructure.models.lead_model import LeadModel
-
         cutoff_time = datetime.now(UTC) - timedelta(hours=within_hours)
         stmt = (
             select(LeadModel)
@@ -467,9 +463,7 @@ class SqlAlchemyLeadRepository(AbstractLeadRepository):
         within_hours: int = 24,
     ) -> list[Lead]:
         """Find potential duplicate leads by email or phone within time window."""
-        from prosell.infrastructure.models.lead_model import LeadModel
-
-        conditions: list[Any] = []
+        conditions: list[Any] = []  # type: ignore[misc]  # SQLAlchemy column expressions lack a common sealed base
         if email:
             conditions.append(LeadModel.buyer_email == email)
         if phone:

@@ -2,13 +2,12 @@
 
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
-
+from prosell.domain.base import DomainModel, EmailStr, Field
 from prosell.domain.entities.lead import LeadStatus
 from prosell.domain.value_objects.lead_source import LeadSource
 
 
-class CreateLeadRequest(BaseModel):
+class CreateLeadRequest(DomainModel):
     """DTO for creating a new lead."""
 
     buyer_name: str = Field(..., min_length=1, max_length=255)
@@ -19,20 +18,18 @@ class CreateLeadRequest(BaseModel):
     message: str | None = Field(default=None, max_length=2000)
     source: LeadSource = Field(default=LeadSource.MANUAL)
 
-    model_config = {"str_strip_whitespace": True}
 
-
-class UpdateLeadStatusRequest(BaseModel):
+class UpdateLeadStatusRequest(DomainModel):
     """DTO for updating lead status."""
 
     new_status: LeadStatus
     reason: str | None = Field(default=None, max_length=500)
 
 
-class ListLeadsRequest(BaseModel):
+class ListLeadsRequest(DomainModel):
     """DTO for listing leads with pagination."""
 
-    limit: int = Field(default=50, ge=1, le=500)
+    limit: int = Field(default=50, ge=1, le=100)
     offset: int = Field(default=0, ge=0)
     status: LeadStatus | None = None
     vendedor_id: UUID | None = Field(
@@ -40,7 +37,7 @@ class ListLeadsRequest(BaseModel):
     )
 
 
-class AssignLeadRequest(BaseModel):
+class AssignLeadRequest(DomainModel):
     """DTO for assigning a lead to a vendedor."""
 
     vendedor_id: UUID | None = Field(..., description="New vendedor ID (null to unassign)")
