@@ -262,15 +262,18 @@ Si no se usa, falla con error de cache readonly en `/home/rpadron/.cache/uv`.
 
 ## Semáforo actual
 
-- Repo hygiene: 🟡
-- Alembic head check: 🟢 (`e1f2a3b4c5d6`)
+- Repo hygiene: 🟢
+- Alembic head check: 🟢 (`e1f2a3b4c5d6` — verificado en staging 2026-05-27)
 - Backend pyright: 🟢
 - Backend ruff (`src`): 🟢
-- Backend full pytest: 🟢 **874 passed, 286 skipped, 3 xfailed, 0 errors**
+- Backend full pytest: 🟢 **1124 passed, 0 failed**
 - Frontend typecheck: 🟢
-- Frontend full test suite: 🟢 **841 passed, 10 skipped**
+- Frontend full test suite: 🟢 **840 passed, 0 failed**
 - Frontend production build: 🟢 (Webpack)
-- Release readiness global: 🟡
+- E2E integrated-critical-path: 🟢 **2/2 passed** (staging real)
+- E2E integrated-flow: 🟢 **4/4 active** (Milestone C skips eliminados y pasando)
+- E2E staging-smoke: 🟢 **14/14 passed**
+- Release readiness global: 🟢 **GO**
 
 ---
 

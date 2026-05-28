@@ -23,7 +23,7 @@ from httpx import ASGITransport, AsyncClient
 
 from prosell.application.dto.appointment.request import CreateAppointmentRequest
 from prosell.application.dto.appointment.response import AppointmentResponse
-from prosell.domain.entities.appointment import AppointmentStatus
+from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 from prosell.domain.entities.user import User, UserStatus
 from prosell.domain.exceptions.appointment_exceptions import (
     AppointmentConflictException,
@@ -101,13 +101,11 @@ async def async_client() -> AsyncGenerator[AsyncClient]:
             status: AppointmentStatus | None = None,
             limit: int = 50,
             offset: int = 0,
-        ) -> tuple[list[AppointmentResponse], int]:
+        ) -> tuple[list[Appointment], int]:
             del tenant_id, user_id, start_date, end_date, status, limit, offset
             return [], 0
 
-        async def get_by_id(
-            self, appointment_id: UUID, tenant_id: UUID
-        ) -> AppointmentResponse | None:
+        async def get_by_id(self, appointment_id: UUID, tenant_id: UUID) -> Appointment | None:
             del appointment_id, tenant_id
             return None
 
@@ -372,7 +370,7 @@ class TestUpdateAppointmentStatusEndpoint:
 
         response = await async_client.put(
             f"/api/v1/appointments/{appointment_id}/status",
-            params={"new_status": "cancelled"},
+            json={"new_status": "cancelled"},
             headers=auth_headers,
         )
 
@@ -386,16 +384,16 @@ class TestUpdateAppointmentStatusEndpoint:
         """Test updating appointment status with invalid transition."""
         appointment_id = uuid4()
 
-        # Note: The current endpoint only supports cancellation
-        # This test verifies the endpoint rejects unsupported status changes
+        # Note: The current endpoint only supports cancellation and completion
+        # This test verifies the endpoint rejects unsupported status values
         response = await async_client.put(
             f"/api/v1/appointments/{appointment_id}/status",
-            params={"new_status": "completed"},  # Not supported via this endpoint
+            json={"new_status": "scheduled"},  # Not supported via this endpoint
             headers=auth_headers,
         )
 
-        # Expected: 400 Bad Request (only cancellation supported) or 401/403/404
-        assert response.status_code in [400, 401, 403, 404]
+        # Expected: 400 Bad Request (only cancellation/completion supported) or 401/403/422
+        assert response.status_code in [400, 401, 403, 422]
 
     @pytest.mark.asyncio
     async def test_update_appointment_status_not_found(
@@ -406,7 +404,7 @@ class TestUpdateAppointmentStatusEndpoint:
 
         response = await async_client.put(
             f"/api/v1/appointments/{appointment_id}/status",
-            params={"new_status": "cancelled"},
+            json={"new_status": "cancelled"},
             headers=auth_headers,
         )
 

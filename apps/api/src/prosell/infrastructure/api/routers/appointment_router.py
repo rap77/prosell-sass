@@ -5,11 +5,17 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from prosell.application.dto.appointment.request import CreateAppointmentRequest
-from prosell.application.dto.appointment.response import AppointmentResponse
+from prosell.application.dto.appointment.request import (
+    CreateAppointmentRequest,
+    UpdateAppointmentRequest,
+    UpdateAppointmentStatusRequest,
+)
+from prosell.application.dto.appointment.response import (
+    AppointmentListResponse,
+    AppointmentResponse,
+)
 from prosell.application.ports.email_service import AbstractEmailService
 from prosell.application.use_cases.appointment.cancel_appointment import CancelAppointmentUseCase
 from prosell.application.use_cases.appointment.confirm_appointment import ConfirmAppointmentUseCase
@@ -35,27 +41,6 @@ from prosell.infrastructure.repositories.product_repository_impl import SqlAlche
 from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
 
 router = APIRouter()
-
-
-# =============================================================================
-# REQUEST / RESPONSE MODELS
-# =============================================================================
-
-
-class UpdateAppointmentRequest(BaseModel):
-    """Request body for updating an appointment's status and/or notes."""
-
-    status: str | None = None
-    notes: str | None = Field(None, max_length=2000)
-
-
-class AppointmentListResponse(BaseModel):
-    """Paginated appointment list response."""
-
-    items: list[AppointmentResponse]
-    total: int
-    limit: int
-    offset: int
 
 
 # =============================================================================
@@ -186,8 +171,10 @@ async def list_appointments(
         SqlAlchemyAppointmentRepository, Depends(get_appointment_repository)
     ],
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
-    start_date: Annotated[str | None, Query(description="Start date filter (ISO 8601)")] = None,
-    end_date: Annotated[str | None, Query(description="End date filter (ISO 8601)")] = None,
+    start_date: Annotated[
+        datetime | None, Query(description="Start date filter (ISO 8601)")
+    ] = None,
+    end_date: Annotated[datetime | None, Query(description="End date filter (ISO 8601)")] = None,
     status_filter: Annotated[
         AppointmentStatus | None,
         Query(alias="status", description="Filter by appointment status"),
@@ -209,14 +196,11 @@ async def list_appointments(
             detail="No organization associated with account.",
         )
 
-    start_dt = datetime.fromisoformat(start_date) if start_date else None
-    end_dt = datetime.fromisoformat(end_date) if end_date else None
-
     appointments, total = await appointment_repo.list_all(
         tenant_id=current_user.tenant_id,
         user_id=dealer_id,
-        start_date=start_dt,
-        end_date=end_dt,
+        start_date=start_date,
+        end_date=end_date,
         status=status_filter,
         limit=limit,
         offset=offset,
@@ -275,21 +259,11 @@ async def update_appointment(
             detail="No organization associated with account.",
         )
 
-    new_status: AppointmentStatus | None = None
-    if request.status is not None:
-        try:
-            new_status = AppointmentStatus(request.status)
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Invalid status: '{request.status}'. Valid values: {[s.value for s in AppointmentStatus]}",  # noqa: E501
-            ) from None
-
     try:
         appointment = await appointment_repo.update_appointment(
             appointment_id=appointment_id,
             tenant_id=current_user.tenant_id,
-            new_status=new_status,
+            new_status=request.status,
             notes=request.notes,
         )
     except AppointmentNotFoundException as e:
@@ -305,7 +279,7 @@ async def update_appointment(
 )
 async def update_appointment_status(
     appointment_id: UUID,
-    new_status: AppointmentStatus,
+    request: UpdateAppointmentStatusRequest,
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     cancel_use_case: Annotated[CancelAppointmentUseCase, Depends(get_cancel_appointment_use_case)],
     confirm_use_case: Annotated[
@@ -316,6 +290,8 @@ async def update_appointment_status(
     Update via domain use cases (sends email notifications).
     Only COMPLETED and CANCELLED are supported here.
     For other status updates use PUT /{id} with body.
+
+    Body: { "new_status": "completed" | "cancelled" }
     """
     if current_user.tenant_id is None:
         raise HTTPException(
@@ -324,12 +300,12 @@ async def update_appointment_status(
         )
 
     try:
-        if new_status == AppointmentStatus.COMPLETED:
+        if request.new_status == AppointmentStatus.COMPLETED:
             return await confirm_use_case.execute(
                 appointment_id=appointment_id,
                 tenant_id=current_user.tenant_id,
             )
-        elif new_status == AppointmentStatus.CANCELLED:
+        elif request.new_status == AppointmentStatus.CANCELLED:
             return await cancel_use_case.execute(
                 appointment_id=appointment_id,
                 tenant_id=current_user.tenant_id,
@@ -337,7 +313,7 @@ async def update_appointment_status(
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Use PUT /{appointment_id} for status '{new_status.value}'.",
+                detail=f"Use PUT /{appointment_id} for status '{request.new_status.value}'.",
             )
     except AppointmentNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from None

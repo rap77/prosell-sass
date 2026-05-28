@@ -6,8 +6,7 @@
  * Coverage:
  *   ✅ API integration path  — all backend endpoints verified end-to-end
  *   ✅ Browser UI path       — catalog list, leads list, appointments page
- *   ⏳ PENDING Milestone C   — catalog detail, publications, pipeline kanban
- *                              (see test.skip blocks at the bottom of this file)
+ *   ✅ Milestone C            — catalog detail, publications, pipeline kanban
  *
  * Run with: pnpm test tests/e2e/specs/integrated-flow.spec.ts
  *
@@ -327,44 +326,60 @@ testWithFixtures.describe("Integrated Flow: Catalog → Lead → Appointment", (
 });
 
 // ============================================================================
-// PENDING: Milestone C UI pages — activate each skip when the task completes
-// See tasks/todo.md for the corresponding task IDs
+// ============================================================================
+// Milestone C — UI pages (implemented)
 // ============================================================================
 
-test.describe("Pending Milestone C — UI pages (skipped until implemented)", () => {
-  test.skip(true, "Activate when M2 (catalog detail page) is complete");
-  test("UI: /catalog/{id} — product detail view (M2)", async ({ page, request }) => {
-    // Prerequisites: main integrated flow must have run and created a vehicle
-    // Steps to implement when M2 is done:
-    //   1. authenticateAsAdmin(page, request)
-    //   2. page.goto(`${webBaseUrl}/catalog`)
-    //   3. page.getByText("Chevrolet Equinox").click()
-    //   4. expect(page.url()).toContain("/catalog/")
-    //   5. expect(page.getByText("2GNALCEK1H1615946")).toBeVisible()  // VIN visible
-    //   6. expect(page.getByRole("link", { name: "Editar" })).toBeVisible()
+testWithFixtures.describe("Milestone C — Catalog detail page", () => {
+  testWithFixtures("UI: /catalog/{id} — product detail view", async ({ page, request }) => {
+    await authenticateAsAdmin(page, request);
+    const dataBuilder = new TestDataBuilder(page);
+    const webBaseUrl = process.env.WEB_BASE_URL || "http://localhost:3000";
+
+    const categoryId = await dataBuilder.createCategory("Detail Test Category");
+    const vehicleId = await dataBuilder.createVehicle(categoryId, {
+      vin: "1HGCM82633A004321",
+      year: 2021,
+      make: "Honda",
+      model: "Accord",
+      trim: "EX",
+      mileage: 30000,
+      price: 24000,
+      status: "available",
+    });
+    await dataBuilder.publishVehicle(vehicleId);
+
+    await page.goto(`${webBaseUrl}/catalog/${vehicleId}`);
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText("1HGCM82633A004321")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("link", { name: /editar/i })).toBeVisible();
+    console.log(`✅ Catalog detail page renders with VIN and Edit link`);
   });
 });
 
-test.describe("Pending Milestone C — Publications page (skipped until implemented)", () => {
-  test.skip(true, "Activate when M1 (publications route) is complete");
-  test("UI: /publications — publications list page (M1)", async ({ page, request }) => {
-    // Steps to implement when M1 is done:
-    //   1. authenticateAsAdmin(page, request)
-    //   2. page.goto(`${webBaseUrl}/publications`)
-    //   3. expect(page.getByRole("button", { name: /nueva publicación/i })).toBeVisible()
-    //   4. Verify published vehicle appears in list with correct status badge
+test.describe("Milestone C — Publications page", () => {
+  test("UI: /publications — publications list renders", async ({ page, request }) => {
+    await authenticateAsAdmin(page, request);
+    const webBaseUrl = process.env.WEB_BASE_URL || "http://localhost:3000";
+
+    await page.goto(`${webBaseUrl}/publications`);
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("button", { name: /nueva publicación/i })).toBeVisible({ timeout: 10000 });
+    console.log(`✅ Publications page renders with Nueva publicación button`);
   });
 });
 
-test.describe("Pending Milestone C — Pipeline kanban (skipped until implemented)", () => {
-  test.skip(true, "Activate when C1 (pipeline/kanban) is complete");
-  test("UI: /pipeline — kanban board with lead columns (C1)", async ({ page, request }) => {
-    // Steps to implement when C1 is done:
-    //   1. authenticateAsAdmin(page, request)
-    //   2. page.goto(`${webBaseUrl}/pipeline`)
-    //   3. expect(page.getByText("New")).toBeVisible()        // kanban column
-    //   4. expect(page.getByText("Contacted")).toBeVisible()  // kanban column
-    //   5. expect(page.getByText("John Doe")).toBeVisible()   // lead card
-    //   6. Drag lead card from "Contacted" to "Qualified" and verify API call
+test.describe("Milestone C — Pipeline kanban", () => {
+  test("UI: /pipeline — kanban board renders with columns", async ({ page, request }) => {
+    await authenticateAsAdmin(page, request);
+    const webBaseUrl = process.env.WEB_BASE_URL || "http://localhost:3000";
+
+    await page.goto(`${webBaseUrl}/pipeline`);
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("heading", { name: /pipeline/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Nuevos")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Contactados")).toBeVisible();
+    await expect(page.getByText("Calificados")).toBeVisible();
+    console.log(`✅ Pipeline kanban renders with all lead status columns`);
   });
 });

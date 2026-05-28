@@ -3,10 +3,11 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from prosell.domain.base import DomainModel, Field
+from prosell.domain.entities.appointment import AppointmentStatus
 
 
-class CreateAppointmentRequest(BaseModel):
+class CreateAppointmentRequest(DomainModel):
     """DTO for creating an appointment."""
 
     lead_id: UUID = Field(..., description="Lead ID to schedule appointment for")
@@ -18,4 +19,15 @@ class CreateAppointmentRequest(BaseModel):
     notes: str | None = Field(default=None, max_length=2000)
     force: bool = False
 
-    model_config = {"from_attributes": True}
+
+class UpdateAppointmentRequest(DomainModel):
+    """Request body for updating an appointment's status and/or notes."""
+
+    status: AppointmentStatus | None = None
+    notes: str | None = Field(None, max_length=2000)
+
+
+class UpdateAppointmentStatusRequest(DomainModel):
+    """DTO for updating appointment status via domain use cases."""
+
+    new_status: AppointmentStatus = Field(..., description="New status: 'completed' or 'cancelled'")

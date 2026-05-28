@@ -3,12 +3,11 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
-
+from prosell.domain.base import DomainModel
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 
 
-class AppointmentResponse(BaseModel):
+class AppointmentResponse(DomainModel):
     """DTO for a single appointment."""
 
     id: UUID
@@ -21,8 +20,6 @@ class AppointmentResponse(BaseModel):
     notes: str | None
     created_at: datetime
     updated_at: datetime
-
-    model_config = {"from_attributes": True}
 
     @classmethod
     def from_entity(cls, appointment: Appointment) -> "AppointmentResponse":
@@ -39,3 +36,12 @@ class AppointmentResponse(BaseModel):
             created_at=appointment.created_at,
             updated_at=appointment.updated_at,
         )
+
+
+class AppointmentListResponse(DomainModel):
+    """Paginated appointment list response."""
+
+    items: list[AppointmentResponse]
+    total: int
+    limit: int
+    offset: int

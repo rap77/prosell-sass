@@ -46,7 +46,7 @@ export interface CreateAppointmentRequest {
  * Request payload for updating appointment status
  */
 export interface UpdateAppointmentStatusRequest {
-  status: AppointmentStatus;
+  new_status: AppointmentStatus;
 }
 
 export interface UpdateAppointmentStatusVariables extends UpdateAppointmentStatusRequest {

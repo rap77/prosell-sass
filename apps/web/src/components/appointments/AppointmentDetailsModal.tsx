@@ -80,7 +80,7 @@ export function AppointmentDetailsModal({
     if (!appointment) return;
 
     updateStatusMutation.mutate(
-      { appointmentId: appointment.id, status: newStatus },
+      { appointmentId: appointment.id, new_status: newStatus },
       {
         onSuccess: () => {
           onOpenChange(false);

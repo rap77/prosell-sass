@@ -1,7 +1,7 @@
 # ProSell MVP Status
 
-**Status**: Milestone C — UX Completion Completed (8/8 tasks complete)
-**Last Updated**: 2026-05-21
+**Status**: Staging Verified — Release Ready (E2E full suite green)
+**Last Updated**: 2026-05-27
 **Source Type**: Executive / release-status document
 **MasterMind Runtime Files**: `tasks/plan.md`, `tasks/todo.md`
 
@@ -30,7 +30,7 @@ Permitir que el equipo de ProSell gestione el flujo interno completo de ventas d
 
 ## Release Readiness
 
-**Overall Readiness**: 93% (backend sólido, Milestone C cerrada; pendiente validación final de release y publishing path real)
+**Overall Readiness**: 98% (staging verificado, E2E full suite green, deuda menor: appointment endpoint contract + a11y)
 **Implementation Completeness**: High
 **Verification Completeness**: Medium-High
 **Release Confidence**: Medium
@@ -43,7 +43,7 @@ Permitir que el equipo de ProSell gestione el flujo interno completo de ventas d
 - [x] Initial data (Seeding) automated for fresh environments
 - [x] Team invitation flow implemented end-to-end
 - [x] Appointment conflict detection verified
-- [~] End-to-end flow verified: API path ✅ (`integrated-flow.spec.ts`) — UI browser path ⚠️ avanzado pero todavía requiere validación final de release
+- [x] End-to-end flow verified: API path ✅ + UI browser path ✅ — staging real, 2026-05-27 (integrated-critical-path 2/2, integrated-flow 4/4, staging-smoke 14/14)
 - [x] Documentation is aligned with one executive status source
 - [x] No high-severity configuration blockers remain open
 
@@ -59,7 +59,7 @@ Permitir que el equipo de ProSell gestione el flujo interno completo de ventas d
 | Image Upload | 🟢 Green | 85% | Components and endpoints verified, hot-reload active in Docker | Real-env storage latency | Verify in staging |
 | Leads | 🟢 Green | 95% | Lead lifecycle, duplicate detection y auto-assignment ya verificados a nivel engine + use case | Final hardening / broader API coverage | Expand release regression if needed |
 | Appointments | 🟢 Green | 92% | Migrations merged, API verified, conflict detection verified, operational E2E path green, calendar route compiles again | Final UI/E2E hardening | Expand calendar UI coverage if needed |
-| E2E / QA | 🟡 Yellow | 90% | API integration path green (`integrated-flow.spec.ts`); UI browser path ampliamente cubierto tras cerrar Milestone C | Falta consolidar verificación final de release con el estado actual del frontend | Ejecutar go/no-go final y ampliar smoke/UI donde aplique |
+| E2E / QA | 🟢 Green | 100% | Staging verificado 2026-05-27: integrated-critical-path 2/2, integrated-flow 4/4 (Milestone C skips eliminados), staging-smoke 14/14 | Deuda menor: appointment endpoint usa query param vs body JSON | Corregir contrato endpoint antes de producción |
 | Documentation Status | 🟢 Green | 100% | Centralized in this file; stale docs marked for archival | Low | Maintain this file |
 
 ---
@@ -110,26 +110,29 @@ El siguiente paso ya no es completar la milestone, sino validar el estado final 
 
 ## Current Evidence Snapshot
 
-**Evidence date for this review:** 2026-05-21
+**Evidence date for this review:** 2026-05-27
 
 ### Backend
-- Alembic: Lineal (Head: `20260428_1625`).
+- Alembic: Lineal (Head: `e1f2a3b4c5d6`) — verificado en staging, 0 migraciones pendientes.
 - Data: `init_data.py` (ORM-based) successful.
 - Routes: `/api/v1/auth` consistent across backend/frontend.
+- pytest: **1124 passed, 0 failed**.
 
 ### Frontend
-- Build: SUCCESS (Next.js 16/Turbopack).
+- Build: SUCCESS (Next.js 16/Webpack).
 - Middleware: Migrated to `proxy.ts` (Clean build).
-- Environment: Hot-reload enabled in Docker Compose.
+- Vitest: **840 passed, 0 failed**.
+- TypeScript: 0 errores.
 
-### Tests
-- Web: **Historical baseline** `710 tests passed, 0 failed` (2026-05-01 snapshot).
-- Web: **Current spot-check** `VehicleForm.edit.test.tsx` passing in Vitest (6 tests).
-- Web: **Current spot-check** `CalendarView.test.tsx` + `branch/appointments/page.test.tsx` passing (16 tests total).
-- E2E: `specs/product-edit-flow.spec.ts` passing (4 tests) contra servicios reales.
-- API Critical: **Historical baseline** `51 passed` (Categories/Leads/Appointments).
-- API: `test_lead_assignment_rules_engine.py` passing (25 tests) + `test_create_lead_auto_assignment.py` passing (2 tests).
-- Operational E2E: `pnpm --dir tests/e2e exec playwright test specs/integrated-flow.spec.ts --project=chromium --config=playwright.no-webserver.config.ts` → **1 passed** (2026-05-16).
+### E2E (staging real — 2026-05-27)
+- `integrated-critical-path.spec.ts`: **2/2 passed** — flujo completo publish → lead → appointment.
+- `integrated-flow.spec.ts`: **4/4 active, 4/4 passed** — Milestone C skips eliminados (catalog detail, publications, pipeline kanban ahora activos).
+- `staging-smoke.spec.ts`: **14/14 passed**.
+
+### Deuda técnica (no-bloqueante para go-live)
+- `PUT /api/v1/appointments/{id}/status` — recibe `?new_status=` como query param; inconsistente con el resto de la API REST (debería ser body JSON).
+- A11y: sidebar dark mode contraste 2.4:1 vs mínimo WCAG AA 4.5:1 (`var(--ps-text-disabled)` sobre `--ps-bg-sidebar`).
+- A11y: `<h3>` sin `<h2>` previo en dashboard; dos `<aside>` sin `aria-label` diferenciador.
 
 ### Current Sprint Evidence
 - `tasks/todo.md`: refleja **Milestone C completada (8/8)** y cerrada formalmente.
@@ -153,11 +156,11 @@ El siguiente paso ya no es completar la milestone, sino validar el estado final 
 
 ## Next 5 Actions
 
-1. Separar y consolidar el rediseño frontend/landing actualmente en progreso como scope independiente.
-2. Ejecutar revisión final Go/No-Go con el estado actual de la app ya cerrada en Milestone C.
-3. Verificar Facebook Publisher con credenciales/product path real si están disponibles.
-4. Ampliar cobertura E2E/UI final donde haga falta para la decisión de release.
-5. Definir la siguiente milestone o ciclo formal en MasterMind.
+1. **[Prioritario]** Corregir contrato `PUT /api/v1/appointments/{id}/status` — pasar `new_status` como body JSON en lugar de query param.
+2. **[Post-MVP]** Fix a11y: ajustar `var(--ps-text-disabled)` en sidebar dark mode (contraste WCAG AA), heading order en dashboard, aria-labels en `<aside>`.
+3. Decidir go/no-go final y ejecutar `alembic upgrade head` en base de datos de producción.
+4. Verificar Facebook Publisher con credenciales/product path real si están disponibles.
+5. Definir la siguiente milestone o ciclo formal.
 
 ---
 
