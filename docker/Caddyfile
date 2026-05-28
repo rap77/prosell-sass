@@ -1,0 +1,19 @@
+# =============================================================================
+# Caddyfile — ProSell SaaS production reverse proxy
+# SSL automático vía Let's Encrypt
+# =============================================================================
+
+# Frontend: prosell.com
+prosellweb.com {
+    reverse_proxy web:3000
+}
+
+# www → non-www redirect
+www.prosellweb.com {
+    redir https://prosellweb.com{uri} permanent
+}
+
+# API: api.prosellweb.com
+api.prosellweb.com {
+    reverse_proxy api:8000
+}

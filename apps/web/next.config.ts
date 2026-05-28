@@ -1,3 +1,4 @@
+import path from "path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -29,6 +30,8 @@ const nextConfig: NextConfig = {
   // Bundle size optimization: Optimize imports from packages with barrel files
   // This prevents the bundler from loading the entire barrel file when importing specific exports
   // See: https://vercel.com/blog/how-we-optimized-package-imports-in-next-js
+  outputFileTracingRoot: path.join(__dirname, "../../"),
+
   experimental: {
     optimizePackageImports: [
       "lucide-react", // Icon library used in chadcn/ui components
