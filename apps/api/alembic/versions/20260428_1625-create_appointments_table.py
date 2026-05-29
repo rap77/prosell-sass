@@ -47,12 +47,14 @@ def upgrade() -> None:
     )
     op.execute(
         sa.text(
-            "CREATE INDEX IF NOT EXISTS ix_appointments_tenant_id_dealer_id ON appointments(tenant_id, dealer_id);"
+            "CREATE INDEX IF NOT EXISTS ix_appointments_tenant_id_dealer_id"
+            " ON appointments(tenant_id, dealer_id);"
         )
     )
     op.execute(
         sa.text(
-            "CREATE INDEX IF NOT EXISTS ix_appointments_tenant_id_dealer_id_scheduled_at ON appointments(tenant_id, dealer_id, scheduled_at);"
+            "CREATE INDEX IF NOT EXISTS ix_appointments_tenant_id_dealer_id_scheduled_at"
+            " ON appointments(tenant_id, dealer_id, scheduled_at);"
         )
     )
 

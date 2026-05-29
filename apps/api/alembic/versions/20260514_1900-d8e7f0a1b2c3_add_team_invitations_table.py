@@ -43,11 +43,25 @@ def upgrade() -> None:
 
     # Create indexes for performance
     op.create_index(
-        op.f("ix_team_invitations_team_id"), "team_invitations", ["team_id"], unique=False
+        op.f("ix_team_invitations_team_id"),
+        "team_invitations",
+        ["team_id"],
+        unique=False,
+        if_not_exists=True,
     )
-    op.create_index(op.f("ix_team_invitations_email"), "team_invitations", ["email"], unique=False)
     op.create_index(
-        op.f("ix_team_invitations_tenant_id"), "team_invitations", ["tenant_id"], unique=False
+        op.f("ix_team_invitations_email"),
+        "team_invitations",
+        ["email"],
+        unique=False,
+        if_not_exists=True,
+    )
+    op.create_index(
+        op.f("ix_team_invitations_tenant_id"),
+        "team_invitations",
+        ["tenant_id"],
+        unique=False,
+        if_not_exists=True,
     )
 
 

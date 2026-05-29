@@ -86,13 +86,15 @@ def downgrade() -> None:
     )
 
     # Create indexes
-    op.create_index("ix_vehicles_tenant_id", "vehicles", ["tenant_id"])
-    op.create_index("ix_vehicles_organization_id", "vehicles", ["organization_id"])
-    op.create_index("ix_vehicles_dealer_id", "vehicles", ["dealer_id"])
-    op.create_index("ix_vehicles_vin", "vehicles", ["vin"], unique=True)
-    op.create_index("ix_vehicles_make", "vehicles", ["make"])
-    op.create_index("ix_vehicles_model", "vehicles", ["model"])
-    op.create_index("ix_vehicles_status", "vehicles", ["status"])
+    op.create_index("ix_vehicles_tenant_id", "vehicles", ["tenant_id"], if_not_exists=True)
+    op.create_index(
+        "ix_vehicles_organization_id", "vehicles", ["organization_id"], if_not_exists=True
+    )
+    op.create_index("ix_vehicles_dealer_id", "vehicles", ["dealer_id"], if_not_exists=True)
+    op.create_index("ix_vehicles_vin", "vehicles", ["vin"], unique=True, if_not_exists=True)
+    op.create_index("ix_vehicles_make", "vehicles", ["make"], if_not_exists=True)
+    op.create_index("ix_vehicles_model", "vehicles", ["model"], if_not_exists=True)
+    op.create_index("ix_vehicles_status", "vehicles", ["status"], if_not_exists=True)
 
     # Recreate foreign key constraints
     op.create_foreign_key(

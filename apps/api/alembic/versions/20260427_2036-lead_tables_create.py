@@ -50,7 +50,8 @@ def upgrade() -> None:
     )
     op.execute(
         sa.text(
-            "CREATE INDEX IF NOT EXISTS ix_leads_tenant_id_created_at ON leads(tenant_id, created_at DESC);"
+            "CREATE INDEX IF NOT EXISTS ix_leads_tenant_id_created_at"
+            " ON leads(tenant_id, created_at DESC);"
         )
     )
     op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_leads_vendedor_id ON leads(vendedor_id);"))
@@ -86,7 +87,8 @@ def upgrade() -> None:
     )
     op.execute(
         sa.text(
-            "CREATE INDEX IF NOT EXISTS ix_lead_audit_log_tenant_id_created_at ON lead_audit_log(tenant_id, created_at DESC);"
+            "CREATE INDEX IF NOT EXISTS ix_lead_audit_log_tenant_id_created_at"
+            " ON lead_audit_log(tenant_id, created_at DESC);"
         )
     )
 

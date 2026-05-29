@@ -46,7 +46,7 @@ def upgrade() -> None:
     # Step 2: Upgrade products.attributes JSON -> JSONB
     # lossless: all valid JSON is valid JSONB
     op.execute(
-        "ALTER TABLE products ALTER COLUMN attributes TYPE JSONB " "USING attributes::text::jsonb"
+        "ALTER TABLE products ALTER COLUMN attributes TYPE JSONB USING attributes::text::jsonb"
     )
 
     # Step 3: Upgrade categories.field_config JSON -> JSONB
@@ -62,7 +62,7 @@ def upgrade() -> None:
         "ON categories USING gin(attribute_schema)"
     )
     op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_products_attributes_gin " "ON products USING gin(attributes)"
+        "CREATE INDEX IF NOT EXISTS ix_products_attributes_gin ON products USING gin(attributes)"
     )
 
 
@@ -74,11 +74,10 @@ def downgrade() -> None:
 
     # Revert JSONB -> JSON (lossless roundtrip)
     op.execute(
-        "ALTER TABLE products ALTER COLUMN attributes TYPE JSON " "USING attributes::text::json"
+        "ALTER TABLE products ALTER COLUMN attributes TYPE JSON USING attributes::text::json"
     )
     op.execute(
-        "ALTER TABLE categories ALTER COLUMN field_config TYPE JSON "
-        "USING field_config::text::json"
+        "ALTER TABLE categories ALTER COLUMN field_config TYPE JSON USING field_config::text::json"
     )
 
     # Drop attribute_schema column

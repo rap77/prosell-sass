@@ -57,12 +57,16 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_user_dealers_user_id", "user_dealers", ["user_id"])
-    op.create_index("ix_user_dealers_dealer_id", "user_dealers", ["dealer_id"])
+    op.create_index("ix_user_dealers_user_id", "user_dealers", ["user_id"], if_not_exists=True)
+    op.create_index("ix_user_dealers_dealer_id", "user_dealers", ["dealer_id"], if_not_exists=True)
     op.create_index(
-        "ix_user_dealers_user_dealer", "user_dealers", ["user_id", "dealer_id"], unique=True
+        "ix_user_dealers_user_dealer",
+        "user_dealers",
+        ["user_id", "dealer_id"],
+        unique=True,
+        if_not_exists=True,
     )
-    op.create_index("ix_user_dealers_tenant", "user_dealers", ["tenant_id"])
+    op.create_index("ix_user_dealers_tenant", "user_dealers", ["tenant_id"], if_not_exists=True)
 
 
 def downgrade() -> None:

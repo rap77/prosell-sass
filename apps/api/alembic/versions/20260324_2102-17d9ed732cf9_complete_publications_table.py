@@ -48,20 +48,32 @@ def upgrade() -> None:
         )
     """)
 
-    # Create indexes for performance
-    op.create_index("ix_publications_seller_user_id", "publications", ["seller_user_id"])
-    op.create_index("ix_publications_facebook_page_id", "publications", ["facebook_page_id"])
-    op.create_index("ix_publications_expires_at", "publications", ["expires_at"])
-
-    # Create foreign key to users table (AFTER creating table)
-    op.create_foreign_key(
-        "publications_seller_user_id_fkey",
-        "publications",
-        "users",
-        ["seller_user_id"],
-        ["id"],
-        ondelete="SET NULL",
+    # Create indexes for performance (IF NOT EXISTS — create_all may have run first)
+    op.create_index(
+        "ix_publications_seller_user_id", "publications", ["seller_user_id"], if_not_exists=True
     )
+    op.create_index(
+        "ix_publications_facebook_page_id", "publications", ["facebook_page_id"], if_not_exists=True
+    )
+    op.create_index(
+        "ix_publications_expires_at", "publications", ["expires_at"], if_not_exists=True
+    )
+
+    # Create foreign key to users table only if it does not exist
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint
+                WHERE conname = 'publications_seller_user_id_fkey'
+            ) THEN
+                ALTER TABLE publications
+                ADD CONSTRAINT publications_seller_user_id_fkey
+                FOREIGN KEY (seller_user_id) REFERENCES users(id) ON DELETE SET NULL;
+            END IF;
+        END
+        $$;
+    """)
 
 
 def downgrade() -> None:
