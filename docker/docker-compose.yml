@@ -99,6 +99,9 @@ services:
       # OAUTH - Facebook (opcional)
       - FACEBOOK_OAUTH_APP_ID=${FACEBOOK_OAUTH_APP_ID:-}
       - FACEBOOK_OAUTH_APP_SECRET=${FACEBOOK_OAUTH_APP_SECRET:-}
+      # ADMIN SEED
+      - ADMIN_EMAIL=admin@prosellweb.com
+      - ADMIN_PASSWORD=Admin123!
       # EMAIL (Mock)
       - USE_MOCK_EMAIL=true
     depends_on:

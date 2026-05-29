@@ -27,15 +27,12 @@ from prosell.infrastructure.models import (
     UserRoleModel,
 )
 
-# Load database URL from environment or use default
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/prosell_dev"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://localhost:5432/prosell_dev")
 
 
-async def init_data():
+async def init_data() -> None:
     """Initialize minimal data for MVP using ORM models."""
-    print(f"🚀 Initializing MVP data on {DATABASE_URL}...")
+    print(f"Starting MVP data initialization on {DATABASE_URL}...")
 
     async with async_session_maker() as session:
         # 1. Create Default Organization
@@ -51,10 +48,9 @@ async def init_data():
             )
             session.add(org)
             await session.flush()
-            print(f"✅ Created Organization: {org_name}")
+            print(f"Created Organization: {org_name}")
         else:
-            org_id = org.id  # Use existing org ID
-            print(f"ℹ️  Organization {org_name} already exists")
+            print(f"Organization {org_name} already exists")
 
         # 2. Create 'Vehicles' Category
         cat_slug = "vehicles"
@@ -79,10 +75,9 @@ async def init_data():
             )
             session.add(cat)
             await session.flush()
-            print(f"✅ Created Category: {cat_slug}")
+            print(f"Created Category: {cat_slug}")
         else:
-            cat_id = cat.id  # Use existing cat ID
-            print(f"ℹ️  Category {cat_slug} already exists")
+            print(f"Category {cat_slug} already exists")
 
         # 3. Ensure System Roles Exist
         roles_data = [
@@ -104,20 +99,15 @@ async def init_data():
                     is_system_role=True,
                 )
                 session.add(role)
-                print(f"✅ Created Role: {r_type}")
+                print(f"Created Role: {r_type}")
 
         # 4. Create or Update Admin User
-        admin_email = os.getenv("ADMIN_EMAIL", "admin@prosell.saas")
-        admin_pass = os.getenv("ADMIN_PASSWORD", "Admin123!")
+        admin_email = os.environ["ADMIN_EMAIL"]
+        admin_pass = os.environ["ADMIN_PASSWORD"]
 
-        # Generate a fresh password hash
         password_hash = bcrypt.hashpw(admin_pass.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
-        print(
-            f"Generated password hash for admin ({admin_email}): {password_hash}"
-        )  # Log generated hash
-
-        # Check if user exists and delete it to ensure a fresh creation with the new hash
+        # Delete existing admin to recreate with a fresh hash on every run
         delete_stmt = select(UserModel).where(UserModel.email == admin_email)
         result = await session.execute(delete_stmt)
         user_to_delete = result.scalar_one_or_none()
@@ -125,25 +115,23 @@ async def init_data():
         if user_to_delete:
             await session.delete(user_to_delete)
             await session.flush()
-            print(f"ℹ️  Deleted existing admin user: {admin_email}")
+            print(f"Deleted existing admin user: {admin_email}")
 
-        # Create new user with the fresh hash
         user_id = uuid4()
         user = UserModel(
             id=user_id,
             email=admin_email,
             password_hash=password_hash,
             full_name="Admin MVP",
-            status=UserStatus.ACTIVE,  # Set to active directly
-            email_verified=True,  # Mark as verified
-            is_2fa_enabled=False,  # Ensure 2FA is off by default
+            status=UserStatus.ACTIVE,
+            email_verified=True,
+            is_2fa_enabled=False,
             tenant_id=org.id,
             failed_login_attempts=0,
         )
         session.add(user)
         await session.flush()
 
-        # Assign super_admin role
         stmt = select(RoleModel).where(RoleModel.role_type == "super_admin")
         result = await session.execute(stmt)
         role = result.scalar_one_or_none()
@@ -152,11 +140,11 @@ async def init_data():
             user_role = UserRoleModel(id=uuid4(), user_id=user.id, role_id=role.id)
             session.add(user_role)
 
-        print(f"✅ Created Admin User: {admin_email} with new hash.")
+        print(f"Created Admin User: {admin_email}")
 
         await session.commit()
 
 
-print("\n✨ MVP Initialization complete!")
 if __name__ == "__main__":
     asyncio.run(init_data())
+    print("\nMVP Initialization complete!")
