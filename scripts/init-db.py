@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Initialize database with tables and default roles."""
+"""Seed database with default roles. Schema is managed exclusively by Alembic."""
 
 import asyncio
 import sys
@@ -7,23 +7,18 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "apps" / "api" / "src"))
+# Resolve src path for both local dev and Docker container
+_root = Path(__file__).parent.parent
+_local_src = _root / "apps" / "api" / "src"
+_docker_src = _root / "src"
+sys.path.insert(0, str(_local_src if _local_src.exists() else _docker_src))
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
 
-from prosell.domain.entities.role import RoleType
-from prosell.infrastructure.database.base import Base
-from prosell.infrastructure.database.session import async_session_maker, engine
-from prosell.infrastructure.models.role_model import RoleModel
-
-
-async def create_tables() -> None:
-    """Create all database tables."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    print("✅ Database tables created successfully")
+from prosell.domain.entities.role import RoleType  # noqa: E402
+from prosell.infrastructure.database.session import async_session_maker  # noqa: E402
+from prosell.infrastructure.models.role_model import RoleModel  # noqa: E402
 
 
 async def seed_roles(session: AsyncSession) -> None:
@@ -43,11 +38,9 @@ async def seed_roles(session: AsyncSession) -> None:
     ]
 
     for role in roles_to_create:
-        # Check if role already exists
         stmt = select(RoleModel).where(RoleModel.role_type == role.role_type)
         result = await session.execute(stmt)
         existing = result.scalar_one_or_none()
-
         if not existing:
             session.add(role)
 
@@ -56,17 +49,10 @@ async def seed_roles(session: AsyncSession) -> None:
 
 
 async def main() -> None:
-    """Main initialization function."""
-    print("🔧 Initializing ProSell SaaS database...")
-
-    # Create tables
-    await create_tables()
-
-    # Seed roles
+    print("🔧 Seeding ProSell SaaS database...")
     async with async_session_maker() as session:
         await seed_roles(session)
-
-    print("\n✨ Database initialization complete!")
+    print("\n✨ Seeding complete!")
 
 
 if __name__ == "__main__":
