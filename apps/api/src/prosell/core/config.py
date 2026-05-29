@@ -47,6 +47,7 @@ class Settings(BaseSettings):
         default=None,
         description="CORS allowed origins (raw comma-separated string)",
         exclude=True,
+        alias="allowed_origins",
     )
 
     @property
