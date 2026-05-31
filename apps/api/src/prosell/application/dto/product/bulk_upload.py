@@ -1,6 +1,6 @@
 """Bulk upload DTOs for preview and with-images endpoints."""
 
-from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -12,7 +12,7 @@ class PreviewRowResponse(BaseModel):
     vin: str = Field(description="VIN extracted from the row")
     title: str = Field(description="Title/cod_dealer from the row")
     importable: bool = Field(description="Whether this row can be imported")
-    mapped_fields: dict[str, Any] = Field(
+    mapped_fields: dict[str, str | int | float | bool | list] = Field(
         default_factory=dict,
         description="Fields that were successfully mapped to the ProSell model",
     )
@@ -55,8 +55,34 @@ class BulkUploadPreviewResponse(BaseModel):
     )
 
 
+class VehicleImportRowResponse(BaseModel):
+    """Response DTO for a single vehicle import row."""
+
+    row_number: int = Field(description="Row number in the CSV")
+    vin: str = Field(description="VIN of the imported vehicle")
+    product_id: UUID | None = Field(description="UUID of the created/updated product")
+    images_uploaded: int = Field(description="Number of images uploaded")
+    status: str = Field(description="Status: imported, updated, or failed")
+    errors: list[str] = Field(default_factory=list, description="Error messages if failed")
+
+
+class BulkUploadVehiclesResponse(BaseModel):
+    """Response DTO for the bulk upload with-images endpoint."""
+
+    total_rows: int = Field(description="Total number of data rows in the CSV")
+    imported_count: int = Field(description="Number of newly imported vehicles")
+    updated_count: int = Field(description="Number of updated vehicles")
+    failed_count: int = Field(description="Number of failed rows")
+    results: list[VehicleImportRowResponse] = Field(
+        default_factory=list,
+        description="Per-row results",
+    )
+
+
 __all__ = [
     "BulkUploadPreviewResponse",
+    "BulkUploadVehiclesResponse",
     "PreviewRowResponse",
     "PreviewSummaryResponse",
+    "VehicleImportRowResponse",
 ]

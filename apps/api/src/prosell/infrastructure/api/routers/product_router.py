@@ -2,14 +2,16 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.product import (
     BulkUploadPreviewResponse,
+    BulkUploadVehiclesResponse,
     CreateProductRequest,
     ProductResponse,
     UpdateProductRequest,
+    VehicleImportRowResponse,
 )
 from prosell.application.use_cases.product.approve_product import ApproveProductUseCase
 from prosell.application.use_cases.product.bulk_upload_preview import (
@@ -18,6 +20,9 @@ from prosell.application.use_cases.product.bulk_upload_preview import (
 from prosell.application.use_cases.product.bulk_upload_products import (
     BulkUploadProductsUseCase,
     BulkUploadResult,
+)
+from prosell.application.use_cases.product.bulk_upload_vehicles import (
+    BulkUploadVehiclesUseCase,
 )
 from prosell.application.use_cases.product.create_product import CreateProductUseCase
 from prosell.application.use_cases.product.delete_product import DeleteProductUseCase
@@ -581,4 +586,87 @@ async def bulk_upload_preview(
         total_rows=result.total_rows,
         rows=result.rows,
         summary=result.summary,
+    )
+
+
+@router.post("/bulk-upload/with-images", response_model=BulkUploadVehiclesResponse)
+async def bulk_upload_with_images(
+    csv_file: UploadFile = File(..., description="CSV file (semicolon-delimited, client format)"),
+    images_zip: UploadFile | None = File(None, description="Optional ZIP file with vehicle images"),
+    organization_id: UUID = Form(..., description="Organization ID for the products"),
+    category_id: UUID = Form(..., description="Category ID for vehicles"),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
+    db: AsyncSession = Depends(get_async_session),
+) -> BulkUploadVehiclesResponse:
+    """
+    Bulk upload vehicles from CSV with optional image ZIP.
+
+    This endpoint:
+    - Parses CSV (semicolon-delimited, 23 columns from client)
+    - Maps images from ZIP file using path matching
+    - Upserts products by VIN (update if exists, create if not)
+    - Associates images with products in DO Spaces
+
+    CSV format (client):
+    ```
+    id;title;price;category;type;location;year;make;model;mileage;body_style;
+    exterior_color;interior_color;clean_title;state;fuel_type;transmission;
+    option;description;path;groups;label;publicado;VIN
+    ```
+
+    Requires:
+    - Valid JWT authentication
+    - organization_id and category_id as form fields
+    - Optional ZIP file with images organized by path
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    # Validate CSV file
+    if not csv_file.filename or not csv_file.filename.endswith(".csv"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Only CSV files are supported"
+        )
+
+    # Read CSV content
+    csv_content = await csv_file.read()
+    csv_content_str = csv_content.decode("utf-8")
+
+    # Read ZIP if provided
+    zip_bytes: bytes | None = None
+    if images_zip and images_zip.filename and images_zip.filename.endswith(".zip"):
+        zip_bytes = await images_zip.read()
+
+    # Execute use case
+    product_repo = SqlAlchemyProductRepository(db)
+    category_repo = SqlAlchemyCategoryRepository(db)
+    use_case = BulkUploadVehiclesUseCase(
+        product_repository=product_repo,
+        category_repository=category_repo,
+    )
+
+    result = await use_case.execute(
+        csv_content=csv_content_str,
+        tenant_id=current_user.tenant_id,
+        organization_id=organization_id,
+        category_id=category_id,
+        zip_bytes=zip_bytes,
+    )
+
+    return BulkUploadVehiclesResponse(
+        total_rows=result.total_rows,
+        imported_count=result.imported_count,
+        updated_count=result.updated_count,
+        failed_count=result.failed_count,
+        results=[
+            VehicleImportRowResponse(
+                row_number=r.row_number,
+                vin=r.vin,
+                product_id=r.product_id,
+                images_uploaded=r.images_uploaded,
+                status=r.status,
+                errors=r.errors,
+            )
+            for r in result.results
+        ],
     )

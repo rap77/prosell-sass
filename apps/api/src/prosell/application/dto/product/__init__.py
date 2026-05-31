@@ -12,8 +12,10 @@ from prosell.application.dto.product.attributes import (
 )
 from prosell.application.dto.product.bulk_upload import (
     BulkUploadPreviewResponse,
+    BulkUploadVehiclesResponse,
     PreviewRowResponse,
     PreviewSummaryResponse,
+    VehicleImportRowResponse,
 )
 from prosell.application.dto.product.create import CreateProductRequest
 from prosell.application.dto.product.response import ProductListResponse, ProductResponse
@@ -22,7 +24,9 @@ from prosell.application.dto.product.update import UpdateProductRequest
 __all__ = [
     # Request/Response models
     "BulkUploadPreviewResponse",
+    "BulkUploadVehiclesResponse",
     "CreateProductRequest",
+    # Attribute models
     "GenericProductAttributes",
     "PreviewRowResponse",
     "PreviewSummaryResponse",
@@ -31,8 +35,8 @@ __all__ = [
     "ProductResponse",
     "RealEstateAttributes",
     "UpdateProductRequest",
-    # Attribute models
     "VehicleAttributes",
+    "VehicleImportRowResponse",
     "product_attributes_adapter",
     "validate_generic_attributes",
     "validate_real_estate_attributes",
