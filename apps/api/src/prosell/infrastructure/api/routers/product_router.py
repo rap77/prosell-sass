@@ -40,6 +40,9 @@ from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
 )
+from prosell.infrastructure.repositories.organization_repository_impl import (
+    SqlAlchemyOrganizationRepository,
+)
 from prosell.infrastructure.repositories.product_repository_impl import SqlAlchemyProductRepository
 
 router = APIRouter()
@@ -621,6 +624,15 @@ async def bulk_upload_with_images(
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    # IDOR prevention: verify organization belongs to user's tenant
+    org_repo = SqlAlchemyOrganizationRepository(db)
+    org = await org_repo.get_by_id(org_id=organization_id, tenant_id=current_user.tenant_id)
+    if org is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Organization not found or access denied",
+        )
 
     # Validate CSV file
     if not csv_file.filename or not csv_file.filename.endswith(".csv"):
