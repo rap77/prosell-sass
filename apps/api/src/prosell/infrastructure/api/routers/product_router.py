@@ -6,11 +6,15 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.product import (
+    BulkUploadPreviewResponse,
     CreateProductRequest,
     ProductResponse,
     UpdateProductRequest,
 )
 from prosell.application.use_cases.product.approve_product import ApproveProductUseCase
+from prosell.application.use_cases.product.bulk_upload_preview import (
+    BulkUploadPreviewUseCase,
+)
 from prosell.application.use_cases.product.bulk_upload_products import (
     BulkUploadProductsUseCase,
     BulkUploadResult,
@@ -528,3 +532,53 @@ async def get_featured_products(
     products = await repo.get_featured(tenant_id, limit)
 
     return [ProductResponse.from_entity(p) for p in products]
+
+
+@router.post("/bulk-upload/preview", response_model=BulkUploadPreviewResponse)
+async def bulk_upload_preview(
+    csv_file: UploadFile = File(..., description="CSV file (semicolon-delimited, client format)"),
+    current_user: User = Depends(get_current_auth_user_from_cookie),
+) -> BulkUploadPreviewResponse:
+    """
+       Preview bulk upload — dry-run analysis of a client-format CSV.
+
+       This endpoint:
+       - Reads the CSV (semicolon-delimited, 23 columns from client)
+       - Maps each row using CSVFieldMapper
+       - Returns per-row analysis WITHOUT modifying the database
+       - Shows mapped fields, missing fields, unmapped columns, and images found
+
+       CSV format (client):
+    ```
+       id;title;price;category;type;location;year;make;model;mileage;body_style;
+       exterior_color;interior_color;clean_title;state;fuel_type;transmission;
+       option;description;path;groups;label;publicado;VIN
+       ```
+
+       Unlike the standard bulk-upload, this endpoint:
+       - Does NOT require category_id or organization_id
+       - Does NOT write anything to the database
+       - Supports the client CSV format automatically (semicolon delimiter)
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    # Validate CSV file
+    if not csv_file.filename or not csv_file.filename.endswith(".csv"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Only CSV files are supported"
+        )
+
+    # Read CSV content
+    content = await csv_file.read()
+    csv_content = content.decode("utf-8")
+
+    # Execute preview use case
+    use_case = BulkUploadPreviewUseCase()
+    result = await use_case.execute(csv_content)
+
+    return BulkUploadPreviewResponse(
+        total_rows=result.total_rows,
+        rows=result.rows,
+        summary=result.summary,
+    )
