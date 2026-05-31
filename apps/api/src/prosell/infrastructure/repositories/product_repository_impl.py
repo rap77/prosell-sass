@@ -80,6 +80,21 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
+    async def get_by_vin(self, vin: str, tenant_id: UUID) -> Product | None:
+        """Get product by VIN for upsert operations.
+
+        Searches in product attributes JSONB column where VIN is stored.
+        """
+        # VIN is stored in attributes->>'vin'
+
+        stmt = select(ProductModel).where(
+            func.jsonb_extract_path_text(ProductModel.attributes, "vin") == vin,
+            ProductModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
     async def get_all(
         self,
         tenant_id: UUID,

@@ -299,6 +299,12 @@ class StubProductRepository(AbstractProductRepository):
         del slug, tenant_id
         return None
 
+    async def get_by_vin(self, vin: str, tenant_id: UUID) -> Product | None:
+        for product in self.products.values():
+            if product.tenant_id == tenant_id and product.attributes.get("vin") == vin:
+                return product
+        return None
+
     async def get_all(
         self,
         tenant_id: UUID,

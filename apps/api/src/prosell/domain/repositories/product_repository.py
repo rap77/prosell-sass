@@ -317,3 +317,17 @@ class AbstractProductRepository(ABC):
             True if successful, False if product/image not found
         """
         pass
+
+    @abstractmethod
+    async def get_by_vin(self, vin: str, tenant_id: UUID) -> Product | None:
+        """
+        Get product by VIN (for upsert operations).
+
+        Args:
+            vin: Vehicle Identification Number (17 characters)
+            tenant_id: Tenant UUID for isolation
+
+        Returns:
+            Product entity or None if not found
+        """
+        pass
