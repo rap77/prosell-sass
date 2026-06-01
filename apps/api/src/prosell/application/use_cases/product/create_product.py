@@ -46,7 +46,14 @@ class CreateProductUseCase:
         # (raises ValueError on type/required mismatch)
         category.validate_attributes(request.attributes or {})
 
-        # 2. Validate tenant_id and organization_id
+        # 1c. Auto-generate stock_number from VIN if not provided
+        attrs: dict[str, object] = request.attributes or {}
+        vin_str = attrs.get("vin")
+        if isinstance(vin_str, str) and len(vin_str) >= 6 and "stock_number" not in attrs:
+            attrs["stock_number"] = vin_str[-6:].upper()
+            request = request.model_copy(update={"attributes": attrs})
+
+        # 2. Create product entity
         tenant_id = request.tenant_id or category.tenant_id
         organization_id = request.organization_id or tenant_id
 

@@ -1,6 +1,7 @@
 """Product response DTOs."""
 
 from datetime import datetime
+from typing import cast
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -36,6 +37,7 @@ class ProductResponse(BaseModel):
     condition: str
     status: str
     attributes: dict[str, object] = {}
+    stock_number: str | None = None
     location_city: str | None = None
     location_state: str | None = None
     location_zip: str | None = None
@@ -74,6 +76,9 @@ class ProductResponse(BaseModel):
             condition=product.condition.value,
             status=product.status.value,
             attributes=product.attributes,
+            stock_number=cast(str | None, product.attributes.get("stock_number"))
+            if product.attributes
+            else None,
             location_city=product.location_city,
             location_state=product.location_state,
             location_zip=product.location_zip,

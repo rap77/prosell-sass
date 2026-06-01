@@ -343,5 +343,7 @@ class BulkUploadVehiclesUseCase:
         # Always include VIN
         if mapped_row.vin:
             attributes["vin"] = mapped_row.vin
+            # Auto-generate stock_number from last 6 digits of VIN
+            attributes["stock_number"] = mapped_row.vin[-6:].upper()
 
         return attributes
