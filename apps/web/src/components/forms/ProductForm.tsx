@@ -152,6 +152,7 @@ export function ProductForm({
     setValue,
     watch,
     reset,
+    trigger,
   } = useForm<ProductFormValues>({
     resolver: zodResolver(vehicleSchema),
     mode: "onSubmit",
@@ -267,9 +268,11 @@ export function ProductForm({
     const vin = watch("vin");
     if (vin && vin.length === 17) {
       const last6 = vin.slice(-6).toUpperCase();
-      setValue("stock_number", last6, { shouldDirty: true });
+      setValue("stock_number", last6, { shouldDirty: true, shouldValidate: true });
+      // Trigger re-render of the field so user sees it immediately
+      trigger("stock_number");
     }
-  }, [watch("vin"), setValue]);
+  }, [watch("vin"), setValue, trigger]);
 
   /**
    * Decode VIN and auto-populate fields
