@@ -41,4 +41,4 @@ ENV PYTHONPATH=/app/src
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "alembic upgrade head && python /app/scripts/init-db.py && uvicorn prosell.infrastructure.api.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head && python /app/scripts/init-db.py && python /app/scripts/init_data.py && uvicorn prosell.infrastructure.api.main:app --host 0.0.0.0 --port 8000"]
