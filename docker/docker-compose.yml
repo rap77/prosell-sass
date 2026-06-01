@@ -67,8 +67,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # DATABASE
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/prosell_dev
+      # DATABASE — value comes from .env or env_file, no hardcode here
       # REDIS
       - REDIS_URL=redis://redis:6379/0
       # JWT

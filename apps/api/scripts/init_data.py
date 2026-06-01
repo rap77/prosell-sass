@@ -17,6 +17,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 import bcrypt
 from sqlalchemy import select
 
+# Use settings from the app — no hardcoded DATABASE_URL
+from prosell.core.config import settings
 from prosell.domain.entities.user import UserStatus  # Import UserStatus
 from prosell.infrastructure.database.session import async_session_maker
 from prosell.infrastructure.models import (
@@ -27,12 +29,10 @@ from prosell.infrastructure.models import (
     UserRoleModel,
 )
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://localhost:5432/prosell_dev")
-
 
 async def init_data() -> None:
     """Initialize minimal data for MVP using ORM models."""
-    print(f"Starting MVP data initialization on {DATABASE_URL}...")
+    print(f"Starting MVP data initialization on {settings.database_url}...")
 
     async with async_session_maker() as session:
         # 1. Create Default Organization
