@@ -31,7 +31,7 @@ COPY apps/api/alembic.ini ./alembic.ini
 COPY apps/api/alembic ./alembic
 
 # Copy scripts and keys
-COPY scripts ./scripts
+COPY apps/api/scripts ./scripts
 COPY apps/api/keys ./keys
 
 # Set environment variables
