@@ -29,7 +29,7 @@ class UpdateLeadStatusRequest(DomainModel):
 class ListLeadsRequest(DomainModel):
     """DTO for listing leads with pagination."""
 
-    limit: int = Field(default=50, ge=1, le=100)
+    limit: int = Field(default=50, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
     status: LeadStatus | None = None
     vendedor_id: UUID | None = Field(
