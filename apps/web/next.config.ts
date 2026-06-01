@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
+      {
+        protocol: "https",
+        hostname: "prosell-assets.atl1.digitaloceanspaces.com",
+      },
     ],
   },
 
