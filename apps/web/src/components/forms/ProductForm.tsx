@@ -261,6 +261,17 @@ export function ProductForm({
   }, [mode, existingProduct, reset]);
 
   /**
+   * Auto-populate stock_number from last 6 characters of VIN
+   */
+  useEffect(() => {
+    const vin = watch("vin");
+    if (vin && vin.length === 17) {
+      const last6 = vin.slice(-6).toUpperCase();
+      setValue("stock_number", last6, { shouldDirty: true });
+    }
+  }, [watch("vin"), setValue]);
+
+  /**
    * Decode VIN and auto-populate fields
    * Brain #7 Condition #6: Wait for categories to load before auto-selecting
    */
@@ -664,7 +675,6 @@ export function ProductForm({
               {...register("stock_number")}
               id="stock_number"
               type="text"
-              placeholder="12345"
               disabled={isDisabled}
             />
           </div>
