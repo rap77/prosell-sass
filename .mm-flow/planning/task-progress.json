@@ -1,0 +1,42 @@
+{
+  "task_id": "T6",
+  "source_mode": "objective",
+  "objective_slug": "bulk-upload-csv-import",
+  "plan_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/tasks.md",
+  "todo_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/todo.md",
+  "session_id": "sess-20260531-192056",
+  "started_at": "2026-05-31T19:20:56.379839",
+  "phase": 19,
+  "subtasks": {
+    "T6.1": {
+      "description": "Importar `docs/data39.csv` completo (39 filas)",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-31T19:21:18.446213",
+      "completed_at": "2026-05-31T19:25:37.877659",
+      "duration_seconds": 259.43,
+      "updated_at": "2026-05-31T19:25:37.877659"
+    },
+    "T6.2": {
+      "description": "Verificar todos los campos mapeados en DB",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-31T19:25:52.694369",
+      "completed_at": "2026-05-31T19:26:55.150639",
+      "duration_seconds": 62.46,
+      "updated_at": "2026-05-31T19:26:55.150639"
+    },
+    "T6.3": {
+      "description": "Verificar que preview muestra diferencias correctas",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-05-31T19:27:01.642304",
+      "completed_at": "2026-05-31T19:27:30.023329",
+      "duration_seconds": 28.38,
+      "updated_at": "2026-05-31T19:27:30.023329"
+    }
+  },
+  "last_checkpoint": "T6.3",
+  "context_budget_exit": null,
+  "completion_notified_at": "2026-05-31T19:27:35.773111"
+}

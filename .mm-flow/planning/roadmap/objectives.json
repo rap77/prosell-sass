@@ -1,0 +1,187 @@
+{
+  "version": "1.0",
+  "generated": "2026-05-30T22:05:06Z",
+  "project": "prosell-sass",
+  "status_summary": {
+    "active": 2,
+    "planned": 5,
+    "done": 12
+  },
+  "objectives": [
+    {
+      "id": "production-deploy",
+      "title": "Production Deploy",
+      "status": "active",
+      "priority": "critical",
+      "ready_now": true,
+      "mvp": true,
+      "dependencies": [],
+      "why_it_matters": "The entire MVP is verified green (1124 Python tests, 840 frontend tests, E2E 20/20) but sitting in staging. Production deploy is the single remaining step to deliver value to real users.",
+      "evidence": "docs/mvp-status.md (98% release ready, staging verified 2026-05-27), DEPLOY.md, HANDOFF-RELEASE.md (semaphore all green)"
+    },
+    {
+      "id": "a11y-hardening",
+      "title": "A11y Hardening (WCAG AA)",
+      "status": "active",
+      "priority": "high",
+      "ready_now": true,
+      "mvp": false,
+      "dependencies": [],
+      "why_it_matters": "Sidebar dark mode contrast is 2.4:1 (WCAG AA minimum is 4.5:1). Legal/accessibility risk. Additional issues: h3 without preceding h2 in dashboard, two aside elements lack differentiating aria-label.",
+      "evidence": "docs/mvp-status.md (deuda técnica section)"
+    },
+    {
+      "id": "phase-3-scraping",
+      "title": "Phase 3: Scraping",
+      "status": "planned",
+      "priority": "high",
+      "ready_now": false,
+      "mvp": false,
+      "dependencies": ["phase-1-hybrid-publisher", "phase-2-catalog-roles"],
+      "why_it_matters": "Automated dealer website sync + CarGurus market price extraction. Addresses 'muerte por exito' problem — without scraping, cannot scale beyond ~10 dealers manually.",
+      "evidence": "docs/PRPs/sprint-7-phase4-scraping-prp.md, ROADMAP.md Phase 3"
+    },
+    {
+      "id": "phase-4-leads-appointments",
+      "title": "Phase 4: Leads & Appointments",
+      "status": "planned",
+      "priority": "high",
+      "ready_now": false,
+      "mvp": true,
+      "dependencies": ["phase-1-hybrid-publisher"],
+      "why_it_matters": "Core MVP flow verified in E2E but needs broader API coverage hardening and SendGrid wiring for email notifications.",
+      "evidence": "docs/mvp-status.md (Leads 95%, Appointments 92%)"
+    },
+    {
+      "id": "phase-5-dashboards",
+      "title": "Phase 5: Dashboards",
+      "status": "planned",
+      "priority": "medium",
+      "ready_now": false,
+      "mvp": false,
+      "dependencies": ["phase-4-leads-appointments"],
+      "why_it_matters": "Role-based dashboards (Admin, Manager, Vendedor, Dealer) with focused metrics per role. Currently no dashboards exist.",
+      "evidence": "docs/PRPs/sprint-7-phase5-dashboards-prp.md, ROADMAP.md Phase 5"
+    },
+    {
+      "id": "phase-6-market-intelligence",
+      "title": "Phase 6: Market Intelligence",
+      "status": "planned",
+      "priority": "medium",
+      "ready_now": false,
+      "mvp": false,
+      "dependencies": ["phase-3-scraping"],
+      "why_it_matters": "Price benchmarking (own vs. market), segmented price history, market position indicators — the core value proposition for dealers.",
+      "evidence": "ROADMAP.md Phase 6"
+    },
+    {
+      "id": "phase-7-visibility",
+      "title": "Phase 7: Visibility",
+      "status": "planned",
+      "priority": "medium",
+      "ready_now": false,
+      "mvp": false,
+      "dependencies": ["phase-2-catalog-roles"],
+      "why_it_matters": "Public catalog for SEO distribution, AI-generated listing titles, social sharing. First external-facing surface after internal operational panel.",
+      "evidence": "ROADMAP.md Phase 7"
+    },
+    {
+      "id": "facebook-oauth-graph-api",
+      "title": "Facebook OAuth + Graph API Integration",
+      "status": "planned",
+      "priority": "high",
+      "ready_now": false,
+      "mvp": false,
+      "dependencies": ["phase-1-hybrid-publisher", "meta-app-review"],
+      "why_it_matters": "Graph API is the sustainable publishing path. Playwright is the bridge until Graph API is approved.",
+      "evidence": "docs/PRPs/sprint-7-phase2-facebook-oauth-prp.md, docs/PRPs/sprint-7-phase3-graphapi-playwright-prp.md"
+    },
+    {
+      "id": "ai-assistant",
+      "title": "AI Assistant (Claude Integration)",
+      "status": "planned",
+      "priority": "low",
+      "ready_now": false,
+      "mvp": false,
+      "dependencies": ["phase-6-market-intelligence", "claude-api-key"],
+      "why_it_matters": "Conversational AI agent for price recommendations and market analysis. Requires sufficient market data first.",
+      "evidence": "docs/PRPs/sprint-7-phase6-ai-assistant-prp.md"
+    }
+  ],
+  "done_objectives": [
+    {
+      "id": "phase-1-hybrid-publisher",
+      "title": "Phase 1: Hybrid Publisher",
+      "completed": "2026-03-15",
+      "evidence": "8/8 plans complete"
+    },
+    {
+      "id": "phase-2-catalog-roles",
+      "title": "Phase 2: Catalog & Roles",
+      "completed": "2026-03-30",
+      "evidence": "8/8 plans complete"
+    },
+    {
+      "id": "phase-8-layout-shell",
+      "title": "Phase 8: Layout Shell + Vehicle Management",
+      "completed": "2026-03-27",
+      "evidence": "5/5 plans complete"
+    },
+    {
+      "id": "phase-9-anti-patterns",
+      "title": "Phase 9: Anti-patterns Fix",
+      "completed": "2026-03-29",
+      "evidence": "1/1 plans complete"
+    },
+    {
+      "id": "phase-10-contract-testing",
+      "title": "Phase 10: Contract Testing Skill",
+      "completed": "2026-03-31",
+      "evidence": "1/1 plans complete"
+    },
+    {
+      "id": "phase-11-db-migration",
+      "title": "Phase 11: DB Migration — C3 Schema",
+      "completed": "2026-04-10",
+      "evidence": "2/2 plans complete"
+    },
+    {
+      "id": "phase-12-backend-api",
+      "title": "Phase 12: Backend API — Categories/Products/Vehicles",
+      "completed": "2026-04-10",
+      "evidence": "5/5 plans complete"
+    },
+    {
+      "id": "phase-13-frontend",
+      "title": "Phase 13: Frontend — Vehicle Form, DataGrid, CSV Upload",
+      "completed": "2026-04-26",
+      "evidence": "6/6 plans complete"
+    },
+    {
+      "id": "milestone-c",
+      "title": "Milestone C: UX Completion",
+      "completed": "2026-05-21",
+      "evidence": "8/8 tasks complete (M3, M2, M1, A1, A2, A3, A4, C1)"
+    },
+    {
+      "id": "auth-system",
+      "title": "Auth System (JWT, OAuth, 2FA, dynamic cookies)",
+      "completed": "2026-05-28",
+      "evidence": "95% verified, 1124 pytest passing"
+    },
+    {
+      "id": "organizations-teams",
+      "title": "Organizations & Teams",
+      "completed": "2026-05-28",
+      "evidence": "95% verified, seeding + invitations working"
+    },
+    {
+      "id": "e2e-verification",
+      "title": "E2E Verification",
+      "completed": "2026-05-27",
+      "evidence": "20/20 tests passing (integrated-critical-path 2/2, integrated-flow 4/4, staging-smoke 14/14)"
+    }
+  ],
+  "recommended_next": "a11y-hardening",
+  "recommended_next_reason": "No dependencies, can start immediately, clear WCAG AA success criteria. After A11y is started, Production Deploy is the critical path."
+}

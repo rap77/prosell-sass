@@ -1,0 +1,215 @@
+{
+  "objective_slug": "bulk-upload-csv-import",
+  "plan_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/tasks.md",
+  "todo_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/todo.md",
+  "tasks": {
+    "T1": {
+      "status": "completed",
+      "subtasks": {
+        "T1.1": {
+          "description": "Leer canonical doc `F01-bulk-upload-csv-import.md` y entender mapeo",
+          "status": "completed",
+          "started_at": "2026-05-31T07:39:21.443374",
+          "completed_at": "2026-05-31T07:47:30.134407",
+          "duration_seconds": 488.69,
+          "updated_at": "2026-05-31T07:47:30.134407"
+        },
+        "T1.2": {
+          "description": "Leer parser actual `csv_product_parser.py`",
+          "status": "completed",
+          "started_at": "2026-05-31T07:39:28.039652",
+          "completed_at": "2026-05-31T07:47:30.244442",
+          "duration_seconds": 482.2,
+          "updated_at": "2026-05-31T07:47:30.244442"
+        },
+        "T1.3": {
+          "description": "Extender `ParsedProductRow` con campos nuevos",
+          "status": "completed",
+          "started_at": "2026-05-31T07:39:32.149475",
+          "completed_at": "2026-05-31T07:39:40.939945",
+          "duration_seconds": 8.79,
+          "updated_at": "2026-05-31T07:39:40.939945"
+        },
+        "T1.4": {
+          "description": "Crear `csv_field_mapper.py` con conversiones",
+          "status": "completed",
+          "started_at": "2026-05-31T07:39:42.587714",
+          "completed_at": "2026-05-31T07:47:30.367228",
+          "duration_seconds": 467.78,
+          "updated_at": "2026-05-31T07:47:30.367228"
+        },
+        "T1.5": {
+          "description": "Tests unitarios pasan",
+          "status": "completed",
+          "started_at": null,
+          "completed_at": "2026-05-31T08:19:32.000000",
+          "duration_seconds": 0,
+          "updated_at": "2026-05-31T08:47:12.612649"
+        }
+      },
+      "started_at": "2026-05-31T07:39:21.443374",
+      "completed_at": "2026-05-31T08:19:32.000000",
+      "plan_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/tasks.md",
+      "todo_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/todo.md"
+    },
+    "T2": {
+      "status": "completed",
+      "subtasks": {
+        "T2.1": {
+          "description": "Agregar `title_status`, `title_state`, `facebook_groups`, `label`, `publicado` a `VehicleAttributes`",
+          "status": "completed",
+          "started_at": "2026-05-31T09:29:22.576215",
+          "completed_at": "2026-05-31T09:31:33.908488",
+          "duration_seconds": 131.33,
+          "updated_at": "2026-05-31T09:31:33.908488"
+        },
+        "T2.2": {
+          "description": "Validar con ruff + pyright",
+          "status": "completed",
+          "started_at": "2026-05-31T09:31:50.447215",
+          "completed_at": "2026-05-31T09:32:03.422778",
+          "duration_seconds": 12.98,
+          "updated_at": "2026-05-31T09:32:03.422778"
+        }
+      },
+      "started_at": "2026-05-31T09:29:22.576215",
+      "completed_at": "2026-05-31T09:32:03.422778",
+      "plan_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/tasks.md",
+      "todo_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/todo.md"
+    },
+    "T3": {
+      "status": "completed",
+      "subtasks": {
+        "T3.1": {
+          "description": "Crear DTOs de request/response en `bulk_upload.py`",
+          "status": "completed",
+          "started_at": "2026-05-31T09:39:27.938687",
+          "completed_at": "2026-05-31T10:17:50.017147",
+          "duration_seconds": 2302.08,
+          "updated_at": "2026-05-31T10:17:50.017147"
+        },
+        "T3.2": {
+          "description": "Implementar endpoint `POST /products/bulk-upload/preview`",
+          "status": "completed",
+          "started_at": "2026-05-31T10:33:30.181750",
+          "completed_at": "2026-05-31T10:36:12.725678",
+          "duration_seconds": 162.54,
+          "updated_at": "2026-05-31T10:36:12.725678"
+        },
+        "T3.3": {
+          "description": "Tests de integraci\u00f3n",
+          "status": "completed",
+          "started_at": null,
+          "completed_at": null,
+          "duration_seconds": 0,
+          "updated_at": "2026-05-31T10:36:23.282130"
+        }
+      },
+      "started_at": "2026-05-31T09:39:27.938687",
+      "completed_at": "2026-05-31T10:36:12.725678",
+      "plan_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/tasks.md",
+      "todo_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/todo.md"
+    },
+    "T4": {
+      "status": "completed",
+      "subtasks": {
+        "T4.1": {
+          "description": "Crear `csv_image_mapper.py`",
+          "status": "completed",
+          "started_at": "2026-05-31T10:39:01",
+          "completed_at": "2026-05-31T10:39:01",
+          "duration_seconds": 0,
+          "updated_at": "2026-05-31T12:56:52.570842"
+        },
+        "T4.2": {
+          "description": "Implementar matching path \u2192 archivo ZIP",
+          "status": "completed",
+          "started_at": "2026-05-31T11:28:43.682023",
+          "completed_at": "2026-05-31T12:56:52.480237",
+          "duration_seconds": 5288.8,
+          "updated_at": "2026-05-31T12:56:52.480237"
+        },
+        "T4.3": {
+          "description": "Tests unitarios",
+          "status": "completed",
+          "started_at": null,
+          "completed_at": null,
+          "duration_seconds": 0,
+          "updated_at": "2026-05-31T12:56:52.522824"
+        }
+      },
+      "started_at": "2026-05-31T10:39:01.626993",
+      "completed_at": "2026-05-31T12:56:52.480237",
+      "plan_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/tasks.md",
+      "todo_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/todo.md"
+    },
+    "T5": {
+      "status": "completed",
+      "subtasks": {
+        "T5.1": {
+          "description": "Crear `BulkUploadVehiclesUseCase`",
+          "status": "completed",
+          "started_at": null,
+          "completed_at": null,
+          "duration_seconds": 0,
+          "updated_at": "2026-05-31T19:09:22.625155"
+        },
+        "T5.2": {
+          "description": "Integrar parser + image mapper en endpoint",
+          "status": "completed",
+          "started_at": null,
+          "completed_at": null,
+          "duration_seconds": 0,
+          "updated_at": "2026-05-31T19:09:22.662267"
+        },
+        "T5.3": {
+          "description": "Tests de integraci\u00f3n",
+          "status": "completed",
+          "started_at": null,
+          "completed_at": null,
+          "duration_seconds": 0,
+          "updated_at": "2026-05-31T19:09:22.701538"
+        }
+      },
+      "started_at": "2026-05-31T16:09:10.668121",
+      "completed_at": "2026-05-31T19:09:22.744353",
+      "plan_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/tasks.md",
+      "todo_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/todo.md"
+    },
+    "T6": {
+      "status": "completed",
+      "subtasks": {
+        "T6.1": {
+          "description": "Importar `docs/data39.csv` completo (39 filas)",
+          "status": "completed",
+          "started_at": "2026-05-31T19:21:18.446213",
+          "completed_at": "2026-05-31T19:25:37.877659",
+          "duration_seconds": 259.43,
+          "updated_at": "2026-05-31T19:25:37.877659"
+        },
+        "T6.2": {
+          "description": "Verificar todos los campos mapeados en DB",
+          "status": "completed",
+          "started_at": "2026-05-31T19:25:52.694369",
+          "completed_at": "2026-05-31T19:26:55.150639",
+          "duration_seconds": 62.46,
+          "updated_at": "2026-05-31T19:26:55.150639"
+        },
+        "T6.3": {
+          "description": "Verificar que preview muestra diferencias correctas",
+          "status": "completed",
+          "started_at": "2026-05-31T19:27:01.642304",
+          "completed_at": "2026-05-31T19:27:30.023329",
+          "duration_seconds": 28.38,
+          "updated_at": "2026-05-31T19:27:30.023329"
+        }
+      },
+      "started_at": "2026-05-31T19:21:18.446213",
+      "completed_at": "2026-05-31T19:27:30.023329",
+      "plan_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/tasks.md",
+      "todo_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/bulk-upload-csv-import/todo.md"
+    }
+  },
+  "updated_at": "2026-05-31T19:27:30.023329",
+  "bootstrapped_from_artifacts": true
+}

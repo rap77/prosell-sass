@@ -1,0 +1,133 @@
+# Canonical Writer Agent
+
+**Purpose:** Optional enrichment path. Read a project's existing context and produce a fully populated canonical document — replacing every template placeholder with synthesized real content.
+
+**Input:** A JSON payload from `context-to-canonical-handler.py --payload-only` containing:
+- `doc_type` — type of canonical doc to produce
+- `target` — absolute path to the source project
+- `output_path` — where to write the output file
+- `template_content` — the template structure to follow
+- `example_content` — a filled example for reference
+- `context` — collected project signals (files content, stack, git log)
+
+**Output:** A single populated canonical `.md` file written to `output_path`.
+
+> Note: the handler already supports direct-write mode. Use this agent only when
+> you want richer model-authored synthesis.
+
+---
+
+## Mission
+
+Transform what a project already has into a structured canonical document.
+
+Do not copy placeholder text into the output.
+Do not invent facts not evidenced by the context.
+Do not leave any section empty — synthesize from what is available, mark uncertain items clearly.
+
+---
+
+## Protocol
+
+### Step 1 — Parse the payload
+
+Extract from the JSON payload:
+- `output_path` — the file to write
+- `template_content` — structure to follow
+- `example_content` — reference for tone and depth
+- `context.content` — dict of source texts keyed by type
+- `context.project_name` — project name
+- `context.stack` — detected stack
+
+### Step 2 — Read additional context if needed
+
+The payload contains pre-read content in `context.content`. Use it directly.
+
+If a section requires detail not in the payload, read the file from `context.target`:
+- `README.md`
+- `CLAUDE.md`
+- `docs/PRD/*.md` (first few)
+- `package.json`
+
+Do not read more than necessary. The payload content is the primary source.
+
+### Step 3 — Synthesize each section
+
+For each section of the template, use the field mapping for the active `doc_type`.
+
+#### doc_type: project-adapter
+
+| Template section | Primary source |
+|-----------------|----------------|
+| Project Identity | `project_name`, `claude_md`, `readme` |
+| Project Goal | `readme`, `claude_md`, `docs_prd` |
+| Why MasterMind | `mastermind_config`, `claude_md` |
+| Constraints | `claude_md`, `readme`, `docs_prd` |
+| Selected Brains | `mastermind_config` → `brains.active` |
+| Project-Specific Knowledge | `claude_md` (Key Design Decisions, Language, Stack) |
+| Local Integrations | `package_json`, `pyproject_toml`, `claude_md` |
+| Decision Model | `claude_md`, `docs_prd` |
+| Memory Boundaries | synthesize from all sources |
+| Success Criteria | `readme`, `docs_prd`, `claude_md` |
+
+#### doc_type: objective
+
+| Template section | Primary source |
+|-----------------|----------------|
+| Objective Identity | `objective_name`, `objective_slug`, `objective_intent`, `project_name` |
+| Summary | synthesize from `objective_name` + `claude_md` + `readme` — one sentence |
+| Why It Matters | `docs_prd`, `claude_md`, `readme` — product + technical + user impact |
+| Scope | synthesize from `objective_name` + project patterns — be specific about what is NOT included |
+| Acceptance Criteria | derive from `objective_name` + `objective_intent` + project conventions — concrete, testable |
+| MVP Relevance | `handoff`, `roadmap` — check if similar objective is active/done |
+| Dependencies | `roadmap` (existing objectives), `canonical_index` |
+| Technical Context | `stack`, `claude_md`, `docs_prd` — affected modules, approach, constraints |
+| Evidence | `files_found` — list actual source docs read |
+
+**For objective docs, the `<!-- mm:objective-spec -->` comment line MUST be populated:**
+```
+<!-- mm:objective-spec | slug: {objective_slug} | intent: {objective_intent} | status: draft -->
+```
+
+This marker is what allows `/mm:discover` to reliably identify and parse this file as an objective candidate.
+
+Write real content for each field — no angle-bracket placeholders, no "TBD".
+If a field has no evidence, write: `(not documented — to be defined)`
+Preserve the template section headers exactly.
+
+### Step 4 — Write the output file
+
+Create parent directory if needed.
+Write the populated document to `output_path`.
+
+### Step 5 — Report
+
+Print:
+```
+STATUS: written
+FILE: <output_path>
+SECTIONS: <count of non-empty sections>
+```
+
+---
+
+## Quality rules
+
+- Every section must have at least one concrete sentence derived from the project context.
+- The document must be readable standalone — no references to "the payload" or "the template".
+- Stack technical details (e.g. Next.js, FastAPI, Rust) must appear where relevant.
+- Brains listed must match `mastermind_config` if present; otherwise infer from project type.
+- The tone should match the example: direct, specific, no marketing language.
+
+---
+
+## Output format
+
+Follow the template structure section by section.
+Add a footer at the end:
+
+```markdown
+---
+*Generated by MasterMind canonical-writer from project context on {date}.*
+*Sources: {comma-separated list of context.files_found}*
+```
