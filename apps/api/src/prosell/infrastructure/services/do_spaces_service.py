@@ -1,9 +1,11 @@
 """DigitalOcean Spaces integration for file storage."""
 
+import asyncio
 from uuid import uuid4
 
 import boto3
 from botocore.client import Config
+from botocore.exceptions import ClientError
 
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.core.config import settings
@@ -64,16 +66,18 @@ class DOSpacesService(IDOSpacesService):
 
         key = file_path
 
-        # Generate presigned URL for PUT operation
-        url = self.s3_client.generate_presigned_url(
-            "put_object",
-            Params={
-                "Bucket": self.bucket,
-                "Key": key,
-                "ContentType": content_type,
-            },
-            ExpiresIn=3600,  # 1 hour
-            HttpMethod="PUT",
+        # Generate presigned URL for PUT operation (run sync boto3 call in thread pool)
+        url = await asyncio.to_thread(
+            lambda: self.s3_client.generate_presigned_url(
+                "put_object",
+                Params={
+                    "Bucket": self.bucket,
+                    "Key": key,
+                    "ContentType": content_type,
+                },
+                ExpiresIn=3600,  # 1 hour
+                HttpMethod="PUT",
+            )
         )
 
         public_url = f"{self.endpoint}/{self.bucket}/{key}"
@@ -96,12 +100,13 @@ class DOSpacesService(IDOSpacesService):
             True if deleted, False otherwise
         """
         try:
-            self.s3_client.delete_object(
+            await asyncio.to_thread(
+                self.s3_client.delete_object,
                 Bucket=self.bucket,
                 Key=key,
             )
             return True
-        except Exception:
+        except ClientError:
             return False
 
     async def check_file_exists(self, key: str) -> bool:
@@ -115,14 +120,13 @@ class DOSpacesService(IDOSpacesService):
             True if file exists, False otherwise
         """
         try:
-            self.s3_client.head_object(
+            await asyncio.to_thread(
+                self.s3_client.head_object,
                 Bucket=self.bucket,
                 Key=key,
             )
             return True
-        except self.s3_client.exceptions.ClientError:
-            return False
-        except Exception:
+        except ClientError:
             return False
 
     async def upload_file(
@@ -144,17 +148,42 @@ class DOSpacesService(IDOSpacesService):
         """
         key = file_path
 
-        # Upload file to Spaces
-        self.s3_client.put_object(
-            Bucket=self.bucket,
-            Key=key,
-            Body=file_bytes,
-            ContentType=content_type,
+        # Upload file to Spaces (run sync boto3 call in thread pool)
+        await asyncio.to_thread(
+            lambda: self.s3_client.put_object(
+                Bucket=self.bucket,
+                Key=key,
+                Body=file_bytes,
+                ContentType=content_type,
+            )
         )
 
         # Return public URL
         public_url = f"{self.endpoint}/{self.bucket}/{key}"
         return public_url
+
+    async def generate_download_url(self, key: str, expires_in: int = 3600) -> str:
+        """
+        Generate a presigned URL for downloading a private file.
+
+        Args:
+            key: Storage key (e.g., "orgs/{org_id}/vehicles/file.jpg")
+            expires_in: Seconds until URL expires (default 1 hour)
+
+        Returns:
+            Presigned URL valid for downloading the file
+        """
+        url = await asyncio.to_thread(
+            lambda: self.s3_client.generate_presigned_url(
+                "get_object",
+                Params={
+                    "Bucket": self.bucket,
+                    "Key": key,
+                },
+                ExpiresIn=expires_in,
+            )
+        )
+        return url
 
 
 # =============================================================================

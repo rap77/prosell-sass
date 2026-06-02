@@ -79,3 +79,17 @@ class IDOSpacesService(ABC):
             Public URL of the uploaded file
         """
         pass
+
+    @abstractmethod
+    async def generate_download_url(self, key: str, expires_in: int = 3600) -> str:
+        """
+        Generate a presigned URL for downloading a private file.
+
+        Args:
+            key: Storage key (e.g., "orgs/{org_id}/vehicles/file.jpg")
+            expires_in: Seconds until URL expires (default 1 hour)
+
+        Returns:
+            Presigned URL valid for downloading the file
+        """
+        pass

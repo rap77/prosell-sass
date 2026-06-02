@@ -6,8 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.domain.entities.user import User
-from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+from prosell.infrastructure.api.dependencies import (
+    get_current_auth_user_from_cookie,
+    get_spaces_service,
+)
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.services.nhtsa_normalizer import normalize_nhtsa_value
 from prosell.infrastructure.services.nhtsa_vin_service import NHTSAVinService
@@ -48,15 +52,26 @@ class VINDecodeResponse(BaseModel):
     raw_data: dict[str, Any] = Field(default_factory=dict, description="Raw NHTSA response data")
 
 
-@router.get("", status_code=status.HTTP_200_OK)
+class VehicleListItem(BaseModel):
+    """Single vehicle in list response."""
+
+    items: list[dict[str, Any]] = Field(..., description="List of vehicle products")
+    total: int = Field(..., description="Total number of vehicles")
+    limit: int = Field(..., description="Page size limit")
+    offset: int = Field(..., description="Number of items skipped")
+    next_cursor: None = Field(None, description="Cursor for next page (not implemented)")
+    has_more: bool = Field(False, description="Whether more vehicles exist")
+
+
+@router.get("", response_model=VehicleListItem, status_code=status.HTTP_200_OK)
 async def list_vehicles(
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
     db: Annotated[AsyncSession, Depends(get_async_session)],
+    spaces: Annotated[IDOSpacesService, Depends(get_spaces_service)],
     skip: Annotated[int, Query(alias="offset", ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     status_filter: Annotated[str | None, Query(alias="status")] = None,
     search: Annotated[str | None, Query()] = None,
-    _make: Annotated[str | None, Query()] = None,
 ) -> dict[str, Any]:
     """
     List vehicles (delegates to product catalog with auth).
@@ -84,8 +99,25 @@ async def list_vehicles(
         limit=limit,
     )
 
+    # Transform photo_url to signed download URLs
+    items = []
+    for p in result.products:
+        item = p.model_dump()
+        if item.get("photo_url"):
+            # Extract DO Spaces key from URL
+            # URL format: https://{bucket}.{region}.digitaloceanspaces.com/{key}
+            photo_url = item["photo_url"]
+            try:
+                # Extract key after bucket name
+                key = photo_url.split(f"{spaces.bucket}/", 1)[1]
+                item["photo_url"] = await spaces.generate_download_url(key)
+            except (IndexError, AttributeError):
+                # If URL parsing fails, keep original
+                pass
+        items.append(item)
+
     return {
-        "items": [p.model_dump() for p in result.products],
+        "items": items,
         "total": result.total,
         "limit": limit,
         "offset": skip,
