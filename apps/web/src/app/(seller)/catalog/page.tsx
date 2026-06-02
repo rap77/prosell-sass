@@ -99,11 +99,9 @@ function VehicleCard({
       {/* Image */}
       <div style={{ position: 'relative', aspectRatio: '16/9', background: 'var(--ps-bg-elevated)', overflow: 'hidden' }}>
         {vehicle.photo_url ? (
-          <Image src={vehicle.photo_url} alt={vehicle.title} fill style={{ objectFit: 'cover' }} unoptimized />
+          <Image src={vehicle.photo_url} alt={vehicle.title} fill style={{ objectFit: 'cover' }} />
         ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Car size={32} style={{ color: 'var(--ps-text-disabled)' }} strokeWidth={1.5} />
-          </div>
+          <Image src="/placeholders/placeholder-vehicles.png" alt="Sin imagen" fill style={{ objectFit: 'cover' }} />
         )}
         {/* Status badge overlay */}
         <div style={{ position: 'absolute', top: 10, left: 10 }}>
@@ -307,10 +305,9 @@ export default function CatalogPage() {
   }
 
   // ── Grouped by status (estado view) ─────────────────────────────────────
-  const vehiclesByStatus = STATUS_ORDER.reduce<Record<VehicleStatus, ApiVehicle[]>>(
-    (acc, s) => { acc[s] = vehicles.filter((v) => v.status === s); return acc },
-    {} as Record<VehicleStatus, ApiVehicle[]>
-  )
+  const vehiclesByStatus = Object.fromEntries(
+    STATUS_ORDER.map((s) => [s, vehicles.filter((v) => v.status === s)])
+  ) as Record<VehicleStatus, ApiVehicle[]>
 
   return (
     <CatalogErrorBoundary>
@@ -347,6 +344,7 @@ export default function CatalogPage() {
                     placeholder="Buscar vehículo..."
                     value={filters.search}
                     onChange={(e) => setFilter('search', e.target.value)}
+                    className="focus:border-ps-cyan focus:shadow-[0_0_0_3px_var(--ps-input-focus-shadow)]"
                     style={{
                       height: 36, width: 220, paddingLeft: 32, paddingRight: 12,
                       background: 'var(--ps-input-bg)',
@@ -355,14 +353,6 @@ export default function CatalogPage() {
                       color: 'var(--ps-text-primary)',
                       fontSize: 13, outline: 'none',
                       boxSizing: 'border-box',
-                    }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--ps-cyan)'
-                      e.currentTarget.style.boxShadow = '0 0 0 3px var(--ps-input-focus-shadow)'
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--ps-input-border)'
-                      e.currentTarget.style.boxShadow = 'none'
                     }}
                   />
                 </div>
@@ -434,7 +424,7 @@ export default function CatalogPage() {
                 {isLoading && <DataGridSkeleton />}
 
                 {!isLoading && error && (
-                  <ErrorState message={(error as Error).message || 'Error inesperado.'} />
+                  <ErrorState message={error instanceof Error ? error.message : 'Error inesperado.'} />
                 )}
 
                 {!isLoading && !error && vehicles.length === 0 && (
@@ -545,9 +535,7 @@ export default function CatalogPage() {
           productCount={selectedVehicleIds.length}
         />
 
-        {/* Spinner keyframe */}
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-      </div>
+              </div>
     </CatalogErrorBoundary>
   )
 }
