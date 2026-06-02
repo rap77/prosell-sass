@@ -20,6 +20,10 @@ RUN pnpm install --frozen-lockfile
 
 COPY apps/web ./apps/web
 
+# Limit Node.js memory to prevent OOM during build
+# Turbopack can consume excessive memory; cap it to leave room for the OS
+ENV NODE_OPTIONS="--max-old-space-size=2048"
+
 RUN pnpm --filter @prosell/web build
 
 # ---- Runner -----------------------------------------------------------------

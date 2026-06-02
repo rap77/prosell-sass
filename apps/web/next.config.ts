@@ -33,6 +33,10 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+
+  // Disable SWC minification — it consumes excessive memory/CPU during build
+  // This is the main cause of 100% CPU + OOM during docker builds
+  swcMinify: false,
   env: {
     // Backend API URL - must be http://localhost:8000 for OAuth to work
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
