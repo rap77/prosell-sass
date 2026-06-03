@@ -75,9 +75,10 @@ export function KanbanBoard() {
     return () => { pending.forEach(({ toastId }) => toast.dismiss(toastId)) }
   }, [])
 
+  // Cap at 100 to stay within ListLeadsRequest DTO limit (le=100)
   const { data: leadsFromServer = [], isLoading } = useLeads(
     vendedorFilter ? { vendedor_id: vendedorFilter } : undefined,
-    200
+    100
   )
   const { data: vendedores = [] } = useVendedores()
 

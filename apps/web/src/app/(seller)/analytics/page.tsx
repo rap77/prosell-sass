@@ -312,7 +312,8 @@ function AnalyticsSkeleton() {
 
 export default function AnalyticsPage() {
   const { data: metrics, isLoading: metricsLoading, error: metricsError } = useTeamMetrics()
-  const { data: leads = [], isLoading: leadsLoading } = useLeads(undefined, 500)
+  // Cap at 100 to stay within ListLeadsRequest DTO limit (le=100)
+  const { data: leads = [], isLoading: leadsLoading } = useLeads(undefined, 100)
 
   const isLoading = metricsLoading || leadsLoading
 

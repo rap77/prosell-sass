@@ -110,7 +110,8 @@ export default function DashboardPage() {
   const firstName = user?.first_name ?? 'Vendedor'
   const greeting  = getGreeting()
 
-  const { data: allLeads = [], isLoading: leadsLoading } = useLeads(undefined, 500)
+  // Cap at 100 to stay within ListLeadsRequest DTO limit (le=100)
+  const { data: allLeads = [], isLoading: leadsLoading } = useLeads(undefined, 100)
   const { data: metrics,        isLoading: metricsLoading } = useTeamMetrics()
 
   const isLoading = leadsLoading || metricsLoading
