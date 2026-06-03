@@ -18,6 +18,10 @@ from prosell.application.dto.product.bulk_upload import (
     VehicleImportRowResponse,
 )
 from prosell.application.dto.product.create import CreateProductRequest
+from prosell.application.dto.product.image_urls_response import (
+    ProductImageUrlResponse,
+    ProductImageUrlsResponse,
+)
 from prosell.application.dto.product.response import ProductListResponse, ProductResponse
 from prosell.application.dto.product.update import UpdateProductRequest
 
@@ -31,6 +35,8 @@ __all__ = [
     "PreviewRowResponse",
     "PreviewSummaryResponse",
     "ProductAttributes",
+    "ProductImageUrlResponse",
+    "ProductImageUrlsResponse",
     "ProductListResponse",
     "ProductResponse",
     "RealEstateAttributes",

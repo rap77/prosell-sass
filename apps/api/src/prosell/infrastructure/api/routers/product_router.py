@@ -9,6 +9,8 @@ from prosell.application.dto.product import (
     BulkUploadPreviewResponse,
     BulkUploadVehiclesResponse,
     CreateProductRequest,
+    ProductImageUrlResponse,
+    ProductImageUrlsResponse,
     ProductResponse,
     UpdateProductRequest,
     VehicleImportRowResponse,
@@ -35,7 +37,7 @@ from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.csv_product_parser import CSVProductParser
-from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
+from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie, get_spaces_service
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
@@ -235,6 +237,38 @@ async def get_product(
         await repo.increment_view_count(product_id, tenant_id)
 
     return ProductResponse.from_entity(product)
+
+
+@router.get("/{product_id}/image-urls", response_model=ProductImageUrlsResponse)
+async def get_product_image_urls(
+    product_id: UUID,
+    current_user: User = Depends(get_current_auth_user_from_cookie),
+    db: AsyncSession = Depends(get_async_session),
+) -> ProductImageUrlsResponse:
+    """Get signed URLs for product images.
+
+    DO Spaces is private (403 on direct URLs), so this endpoint generates
+    time-limited signed download URLs for each image key stored in
+    product.image_urls.
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    repo = SqlAlchemyProductRepository(db)
+    product = await repo.get_by_id(product_id, current_user.tenant_id)
+
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    spaces = get_spaces_service()
+    image_keys = product.image_urls or []
+
+    images = [
+        ProductImageUrlResponse(key=key, url=await spaces.generate_download_url(key), expires_in=3600)
+        for key in image_keys
+    ]
+
+    return ProductImageUrlsResponse(product_id=product_id, images=images)
 
 
 @router.patch("/{product_id}", response_model=ProductResponse)

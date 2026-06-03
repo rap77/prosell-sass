@@ -18,7 +18,7 @@ import { ArrowLeft, PencilLine, Send, AlertCircle } from 'lucide-react'
 import { StatusBadge } from '@/components/datagrid/StatusBadge'
 import type { Vehicle } from '@/components/datagrid/DataGrid'
 import { PublishModal } from '@/components/publisher/PublishModal'
-import { useProduct } from '@/lib/api/products'
+import { useProduct, useProductImageUrls } from '@/lib/api/products'
 import type { Product } from '@/types/product'
 import type { ProductImage } from '@/types/product-image'
 import { isVehicleAttributes, type VehicleAttributes } from '@/types/vehicle'
@@ -58,7 +58,10 @@ function formatMileage(attrs: VehicleAttributes): string | null {
   return `${attrs.mileage.toLocaleString('es-AR')} ${unit}`
 }
 
-function getProductImages(product: Product): ProductImage[] {
+function getProductImages(
+  product: Product,
+  signedUrlMap?: Map<string, string>,
+): ProductImage[] {
   const productLevelUrls = isRecord(product) ? getStringArray(product.image_urls) : []
   const attrs = product.attributes
   const attributeLevelUrls = isRecord(attrs) ? getStringArray(attrs.image_urls) : []
@@ -69,8 +72,10 @@ function getProductImages(product: Product): ProductImage[] {
     return [{
       id:            typeof image.id === 'string' ? image.id : `${product.id}-image-${index}`,
       product_id:    product.id,
-      url:           image.url,
-      thumbnail_url: typeof image.thumbnail_url === 'string' ? image.thumbnail_url : null,
+      url:           signedUrlMap?.get(image.url) ?? image.url,
+      thumbnail_url: typeof image.thumbnail_url === 'string'
+        ? (signedUrlMap?.get(image.thumbnail_url) ?? image.thumbnail_url)
+        : null,
       sort_order:    typeof image.sort_order === 'number' ? image.sort_order : index,
       is_primary:    Boolean(image.is_primary),
       alt_text:      typeof image.alt_text === 'string' ? image.alt_text : null,
@@ -87,8 +92,8 @@ function getProductImages(product: Product): ProductImage[] {
   return fallbackUrls.map((url, index) => ({
     id:            `${product.id}-fallback-image-${index}`,
     product_id:    product.id,
-    url,
-    thumbnail_url: url,
+    url:           signedUrlMap?.get(url) ?? url,
+    thumbnail_url: signedUrlMap?.get(url) ?? url,
     sort_order:    index,
     is_primary:    index === 0,
     alt_text:      `${product.title} image ${index + 1}`,
@@ -180,6 +185,12 @@ interface CatalogDetailViewProps {
 export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false)
   const { data: product, error, isLoading, refetch } = useProduct(productId, { internal: true })
+  const { data: signedUrls } = useProductImageUrls(productId)
+
+  // Build map of key → signed URL for O(1) lookup
+  const signedUrlMap = new Map<string, string>(
+    signedUrls?.images.map((img) => [img.key, img.url]) ?? []
+  )
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoading) return <DetailPageSkeleton />
@@ -242,7 +253,7 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
   }
 
   // ── Data prep ──────────────────────────────────────────────────────────────
-  const productImages      = getProductImages(product)
+  const productImages      = getProductImages(product, signedUrlMap)
   const vehicleAttributes  = isVehicleAttributes(product.attributes) ? product.attributes : null
   const mileage            = vehicleAttributes ? formatMileage(vehicleAttributes) : null
 
