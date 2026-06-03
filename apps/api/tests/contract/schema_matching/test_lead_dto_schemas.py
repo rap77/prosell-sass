@@ -181,6 +181,25 @@ class TestListLeadsRequestSchema:
         with pytest.raises(ValidationError):
             ListLeadsRequest(limit=101)
 
+    def test_limit_boundary_inclusive(self):
+        """limit=1 and limit=100 (boundary) must be accepted (le=100 inclusive)."""
+        # Lower boundary
+        req = ListLeadsRequest(limit=1)
+        assert req.limit == 1
+        # Upper boundary (the cap)
+        req = ListLeadsRequest(limit=100)
+        assert req.limit == 100
+
+    def test_limit_prod_bug_value_rejected(self):
+        """Regression: prod 422 loop sent limit=500 — must raise ValidationError.
+
+        Reproduces the exact value the analytics + admin dashboard + KanbanBoard
+        used before the fix (500/500/200). All three now use 100 (within cap).
+        """
+        for value in (200, 500):
+            with pytest.raises(ValidationError):
+                ListLeadsRequest(limit=value)
+
     def test_offset_non_negative(self):
         """offset must be >= 0."""
         with pytest.raises(ValidationError):
