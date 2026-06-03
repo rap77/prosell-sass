@@ -91,6 +91,10 @@ function VehicleCard({
   // time-limited signed download URL via the backend endpoint. The TanStack
   // query cache is keyed by productId, so all cards sharing a product share
   // the same in-flight request and result.
+  //
+  // We swallow errors here: if the product belongs to a different tenant
+  // (404), the user lacks permission, or the API is briefly unreachable, the
+  // card must still render — we just fall back to the placeholder image.
   const { data: signedUrls } = useProductImageUrls(rawPhotoUrl ? product.id : undefined)
   const signedPhotoUrl = rawPhotoUrl
     ? signedUrls?.images.find((img) => img.key === rawPhotoUrl)?.url ?? null
