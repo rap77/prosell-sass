@@ -363,6 +363,10 @@ export function useProductImageUrls(productId: string | undefined) {
     },
     enabled: !!productId,
     staleTime: 5 * 60 * 1000,
+    // The signed URL endpoint will 404 for products the user can't see
+    // (different tenant) and the card already falls back to the placeholder
+    // in that case. We only retry once to absorb transient network blips.
+    retry: 1,
   })
 }
 
