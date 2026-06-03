@@ -17,6 +17,25 @@ vi.mock("@/components/datagrid/ActionMenu", () => ({
   ),
 }));
 
+// Mock signed-URL hook so the photo cell renders deterministically without a QueryClient.
+// Returns a signed URL for whatever key was passed in (matches the cell's lookup by key).
+vi.mock("@/lib/api/products", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/api/products")>("@/lib/api/products");
+  return {
+    ...actual,
+    useProductImageUrls: (rawKey: string | undefined) => ({
+      data: rawKey
+        ? {
+            product_id: "mock",
+            images: [{ key: rawKey, url: rawKey.replace("https://example.com/", "https://signed.example.com/"), expires_in: 3600 }],
+          }
+        : undefined,
+      isLoading: false,
+      error: null,
+    }),
+  };
+});
+
 describe("DataGrid", () => {
   const mockVehicles: Vehicle[] = [
     {
