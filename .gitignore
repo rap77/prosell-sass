@@ -80,6 +80,7 @@ mvp-e2e-validation/
 .env.development
 .env.test
 .env.production
+zai.sh
 
 # OS
 .DS_Store
