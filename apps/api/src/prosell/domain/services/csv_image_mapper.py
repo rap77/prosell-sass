@@ -129,7 +129,11 @@ class CSVImageMapper:
         unmatched: list[UnmatchedPath] = []
 
         for row in parsed_rows:
-            csv_path = row.get("path", "")
+            # `asdict(MappedCSVRow)` produces `image_path` (the dataclass
+            # field name set in `csv_field_mapper.py:355`). Fall back to
+            # `path` for backwards compatibility with callers that hand
+            # the mapper a raw CSV row dict instead of a mapped one.
+            csv_path = row.get("image_path") or row.get("path", "")
             vin = row.get("vin", "")
 
             # Skip rows without a usable path
