@@ -233,7 +233,7 @@ export default function DashboardPage() {
                 const src = getSourceStyle(lead.source)
                 const [g1, g2] = getAvatarGradient(lead.id)
                 return (
-                  <a
+                  <Link
                     key={lead.id}
                     href="/vendedor/leads"
                     style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 8, textDecoration: 'none', transition: 'background 180ms', minWidth: 0 }}
@@ -261,7 +261,7 @@ export default function DashboardPage() {
                     <span style={{ color: 'var(--ps-text-disabled)', display: 'inline-flex' }}>
                       <ChevronRight size={16} strokeWidth={2} />
                     </span>
-                  </a>
+                  </Link>
                 )
               })}
             </div>
