@@ -262,17 +262,25 @@ export function ProductForm({
   }, [mode, existingProduct, reset]);
 
   /**
-   * Auto-populate stock_number from last 6 characters of VIN
+   * Auto-populate stock_number from last 6 characters of VIN.
+   *
+   * Only fires in `create` mode or when the current `stock_number` is empty
+   * (the typical "user just typed a VIN" flow). In `edit` mode we never
+   * overwrite a stock number that already has a real value — that's an
+   * authoritative data point the user/seller set explicitly.
    */
   useEffect(() => {
     const vin = watch("vin");
-    if (vin && vin.length === 17) {
-      const last6 = vin.slice(-6).toUpperCase();
-      setValue("stock_number", last6, { shouldDirty: true, shouldValidate: true });
-      // Trigger re-render of the field so user sees it immediately
-      trigger("stock_number");
-    }
-  }, [watch("vin"), setValue, trigger]);
+    if (!vin || vin.length !== 17) return;
+
+    const currentStock = watch("stock_number");
+    if (mode === "edit" && currentStock && currentStock.length > 0) return;
+
+    const last6 = vin.slice(-6).toUpperCase();
+    setValue("stock_number", last6, { shouldDirty: true, shouldValidate: true });
+    // Trigger re-render of the field so user sees it immediately
+    trigger("stock_number");
+  }, [watch("vin"), watch("stock_number"), mode, setValue, trigger]);
 
   /**
    * Decode VIN and auto-populate fields
