@@ -33,6 +33,9 @@ export interface Product {
   // Flexible attributes (category-specific)
   attributes: ProductAttributes;
 
+  // Image URLs at product level (moved from VehicleAttributes)
+  image_urls?: string[];
+
   // Location
   location_city?: string;
   location_state?: string;

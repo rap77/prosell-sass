@@ -35,6 +35,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             condition=product.condition.value,
             status=product.status.value,
             attributes=product.attributes,
+            image_urls=product.image_urls,
             location_city=product.location_city,
             location_state=product.location_state,
             location_zip=product.location_zip,
@@ -249,6 +250,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model.condition = product.condition.value
         model.status = product.status.value
         model.attributes = product.attributes
+        model.image_urls = product.image_urls
         model.location_city = product.location_city
         model.location_state = product.location_state
         model.location_zip = product.location_zip

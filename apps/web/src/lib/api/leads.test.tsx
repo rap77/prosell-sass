@@ -204,7 +204,7 @@ describe("useUpdateLeadStatus", () => {
       wrapper: createWrapper(),
     });
 
-    await result.current.mutateAsync({ status: LeadStatus.CONTACTED });
+    await result.current.mutateAsync({ new_status: LeadStatus.CONTACTED });
 
     expect(global.fetch).toHaveBeenCalledWith(
       "/api/v1/leads/lead-1/status",
@@ -232,7 +232,7 @@ describe("useUpdateLeadStatus", () => {
     });
 
     try {
-      await result.current.mutateAsync({ status: LeadStatus.LOST });
+      await result.current.mutateAsync({ new_status: LeadStatus.LOST });
     } catch (error) {
       // Expected error
     }

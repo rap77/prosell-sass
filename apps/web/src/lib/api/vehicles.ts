@@ -51,13 +51,18 @@ export interface CatalogResponse {
  * Extracts vehicle data from product.attributes
  */
 export function transformProductToVehicle(product: ProductWithVehicle): Vehicle {
-  const attrs = product.attributes;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const attrs = product.attributes as any;
+  // Try product-level image_urls first, fall back to attrs.image_urls for backward compat
+  const imageUrls = Array.isArray(product.image_urls)
+    ? product.image_urls
+    : (Array.isArray(attrs?.image_urls) ? attrs.image_urls : []);
   return {
     id: product.id,
     title: product.title,
     price: product.price_cents / 100,
     status: product.status as Vehicle["status"],
-    photo_url: undefined, // TODO: Add from product_images table
+    photo_url: imageUrls[0] ?? undefined,
     year: attrs.year,
     make: attrs.make,
     model: attrs.model,

@@ -42,6 +42,9 @@ class Product(DomainModel):
     # e.g., {"year": 2020, "make": "Toyota", "model": "Camry"}
     attributes: dict[str, object] = Field(default_factory=dict)
 
+    # Image URLs at product level (moved from VehicleAttributes)
+    image_urls: list[str] = Field(default_factory=list)
+
     # Location (for shipping/pickup)
     location_city: str | None = None
     location_state: str | None = None

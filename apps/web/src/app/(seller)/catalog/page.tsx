@@ -33,11 +33,9 @@ import { BulkBranchAssign } from '@/components/branches/BulkBranchAssign'
 import { CatalogErrorBoundary } from '@/components/catalog/CatalogErrorBoundary'
 import { StatusBadge, type VehicleStatus } from '@/components/datagrid/StatusBadge'
 import { useVehicleFilters } from '@/lib/hooks/useVehicleFilters'
-import {
-  useInfiniteVehicles,
-  useDeleteVehicle,
-  type Vehicle as ApiVehicle,
-} from '@/lib/api/vehicles'
+import { useInfiniteProducts, useDeleteProduct, transformProductToVehicle } from '@/lib/api/products'
+import { isVehicleProduct } from '@/types/product'
+import type { Product } from '@/types/product'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,8 +54,8 @@ const STATUS_ORDER: VehicleStatus[] = ['published', 'online', 'pending', 'draft'
 
 const VALID_STATUSES = new Set<string>(['published', 'pending', 'failed', 'draft', 'expired', 'online', 'sold'])
 
-function getApiStatus(s: string | undefined): ApiVehicle['status'] | undefined {
-  return s && VALID_STATUSES.has(s) ? (s as ApiVehicle['status']) : undefined
+function getApiStatus(s: string | undefined): "published" | "pending" | "failed" | "draft" | "expired" | "online" | "sold" | undefined {
+  return s && VALID_STATUSES.has(s) ? (s as "published" | "pending" | "failed" | "draft" | "expired" | "online" | "sold") : undefined
 }
 
 function formatPrice(price: number) {
@@ -67,17 +65,26 @@ function formatPrice(price: number) {
 // ─── Vehicle card (grid view) ─────────────────────────────────────────────────
 
 function VehicleCard({
-  vehicle,
+  product,
   onView,
   onEdit,
   onDelete,
 }: {
-  vehicle: ApiVehicle
+  product: Product
   onView: () => void
   onEdit: () => void
   onDelete: () => void
 }) {
   const [hovered, setHovered] = useState(false)
+
+  const vehicle = isVehicleProduct(product) ? transformProductToVehicle(product) : null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const attrs = product.attributes as any
+  // Product-level image_urls (migrated from attrs.image_urls)
+  const imageUrls = Array.isArray(product.image_urls)
+    ? product.image_urls
+    : (Array.isArray(attrs?.image_urls) ? attrs.image_urls : [])
+  const photo_url = imageUrls[0]
 
   return (
     <article
@@ -98,27 +105,27 @@ function VehicleCard({
     >
       {/* Image */}
       <div style={{ position: 'relative', aspectRatio: '16/9', background: 'var(--ps-bg-elevated)', overflow: 'hidden' }}>
-        {vehicle.photo_url ? (
-          <Image src={vehicle.photo_url} alt={vehicle.title} fill style={{ objectFit: 'cover' }} />
+        {photo_url ? (
+          <Image src={photo_url} alt={product.title} fill style={{ objectFit: 'cover' }} />
         ) : (
           <Image src="/placeholders/placeholder-vehicles.png" alt="Sin imagen" fill style={{ objectFit: 'cover' }} />
         )}
         {/* Status badge overlay */}
         <div style={{ position: 'absolute', top: 10, left: 10 }}>
-          <StatusBadge status={vehicle.status} />
+          <StatusBadge status={vehicle?.status ?? 'draft'} />
         </div>
       </div>
 
       {/* Content */}
       <div style={{ padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
         <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--ps-text-primary)', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-          {vehicle.title}
+          {product.title}
         </p>
         <p style={{ margin: 0, fontSize: 12, color: 'var(--ps-text-secondary)' }}>
-          {[vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' · ')}
+          {vehicle ? [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' · ') : ''}
         </p>
         <p style={{ margin: '4px 0 0', fontSize: 16, fontWeight: 700, color: 'var(--ps-cyan)', letterSpacing: '-0.02em' }}>
-          {formatPrice(vehicle.price)}
+          {formatPrice(product.price_cents / 100)}
         </p>
       </div>
 
@@ -250,7 +257,7 @@ function ErrorState({ message }: { message: string }) {
 export default function CatalogPage() {
   const router = useRouter()
   const { filters, setFilter } = useVehicleFilters()
-  const deleteVehicle = useDeleteVehicle()
+  const deleteProduct = useDeleteProduct()
   const [viewMode, setViewMode]           = useState<ViewMode>('grilla')
   const [showBulkBranchAssign, setShowBulkBranchAssign] = useState(false)
   const [selectedVehicleIds, setSelectedVehicleIds]     = useState<string[]>([])
@@ -264,14 +271,16 @@ export default function CatalogPage() {
   }
 
   const { data, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useInfiniteVehicles(apiFilters, 50)
+    useInfiniteProducts(apiFilters, 50)
 
-  const vehicles = data?.pages.flatMap((p) => p.items) ?? []
+  const products = data?.pages[0]?.items.filter(isVehicleProduct) ?? []
+  // Transform to vehicle-like for views that need it
+  const vehicles = products.map(transformProductToVehicle)
   const hasFilters = !!(filters.search || filters.status.length > 0 || filters.brand.length > 0)
 
   const handleEdit   = (id: string) => router.push(`/catalog/${id}/edit`)
   const handleView   = (id: string) => router.push(`/catalog/${id}`)
-  const handleDelete = (id: string) => deleteVehicle.mutate(id)
+  const handleDelete = (id: string) => deleteProduct.mutate(id)
   const handlePublish = (_id: string) => toast.info('Publicación múltiple disponible en la Fase 4.')
 
   const handleBulkAssignBranch = (ids: string[]) => {
@@ -306,8 +315,8 @@ export default function CatalogPage() {
 
   // ── Grouped by status (estado view) ─────────────────────────────────────
   const vehiclesByStatus = Object.fromEntries(
-    STATUS_ORDER.map((s) => [s, vehicles.filter((v) => v.status === s)])
-  ) as Record<VehicleStatus, ApiVehicle[]>
+    STATUS_ORDER.map((s) => [s, products.filter((p) => transformProductToVehicle(p).status === s)])
+  )
 
   return (
     <CatalogErrorBoundary>
@@ -440,13 +449,13 @@ export default function CatalogPage() {
                     {/* GRILLA */}
                     {viewMode === 'grilla' && (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-                        {vehicles.map((v) => (
+                        {products.map((p) => (
                           <VehicleCard
-                            key={v.id}
-                            vehicle={v}
-                            onView={() => handleView(v.id)}
-                            onEdit={() => handleEdit(v.id)}
-                            onDelete={() => handleDelete(v.id)}
+                            key={p.id}
+                            product={p}
+                            onView={() => handleView(p.id)}
+                            onEdit={() => handleEdit(p.id)}
+                            onDelete={() => handleDelete(p.id)}
                           />
                         ))}
                       </div>
@@ -481,13 +490,13 @@ export default function CatalogPage() {
                             </div>
                             {/* Grid of cards */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-                              {vehiclesByStatus[status].map((v) => (
+                              {vehiclesByStatus[status].map((p) => (
                                 <VehicleCard
-                                  key={v.id}
-                                  vehicle={v}
-                                  onView={() => handleView(v.id)}
-                                  onEdit={() => handleEdit(v.id)}
-                                  onDelete={() => handleDelete(v.id)}
+                                  key={p.id}
+                                  product={p}
+                                  onView={() => handleView(p.id)}
+                                  onEdit={() => handleEdit(p.id)}
+                                  onDelete={() => handleDelete(p.id)}
                                 />
                               ))}
                             </div>
@@ -521,11 +530,7 @@ export default function CatalogPage() {
         </div>
 
         {/* Command palette */}
-        <CommandPalette vehicles={vehicles.map((v) => ({
-          id: v.id, title: v.title, make: v.make,
-          model: v.model, price: v.price,
-          status: v.status, photo_url: v.photo_url,
-        }))} />
+        <CommandPalette vehicles={vehicles} />
 
         {/* Bulk Branch Assign modal */}
         <BulkBranchAssign

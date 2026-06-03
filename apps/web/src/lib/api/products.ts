@@ -1,6 +1,8 @@
-import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useInfiniteQuery, type UseMutationResult, type UseQueryResult, type UseInfiniteQueryResult } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { CreateProductRequest, Product, ProductListResponse, ProductAttributes } from "@/types/product";
+import type { VehicleAttributes } from "@/types/vehicle";
+import { isVehicleProduct } from "@/types/product";
 
 interface BackendProductResponse {
   id: string;
@@ -278,5 +280,167 @@ export function useUpdateProduct(): UseMutationResult<
     onError: (err) => {
       toast.error(err.message || "Failed to update product");
     },
+  });
+}
+
+/**
+ * Delete product
+ */
+export function useDeleteProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/v1/products/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: "Failed to delete product" }));
+        throw new Error(error.message || "Failed to delete product");
+      }
+
+      return id;
+    },
+
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["products"] });
+
+      const previousProducts = queryClient.getQueryData<Product[]>(["products"]);
+
+      queryClient.setQueryData<Product[]>(["products"], (old) =>
+        old?.filter((p) => p.id !== id)
+      );
+
+      return { previousProducts };
+    },
+
+    onError: (err, _id, context) => {
+      if (context?.previousProducts) {
+        queryClient.setQueryData(["products"], context.previousProducts);
+      }
+
+      toast.error(err.message || "Failed to delete product");
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+// ─── Vehicle-specific helpers (catalog page) ─────────────────────────────────
+
+/**
+ * Transform Product to vehicle-like object for catalog display.
+ * Extracts vehicle data from product.attributes.
+ */
+export function transformProductToVehicle(product: Product): {
+  id: string
+  title: string
+  price: number
+  status: "published" | "pending" | "failed" | "draft" | "expired" | "online" | "sold"
+  photo_url?: string
+  year?: number
+  make?: string
+  model?: string
+  created_at: string
+  updated_at: string
+} {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const attrs = product.attributes as any;
+  // Try product-level image_urls first, fall back to attrs.image_urls for backward compat
+  const imageUrls = Array.isArray(product.image_urls)
+    ? product.image_urls
+    : (Array.isArray(attrs?.image_urls) ? attrs.image_urls : []);
+  return {
+    id: product.id,
+    title: product.title,
+    price: product.price_cents / 100,
+    // Map product status to vehicle status (product.status is more granular)
+    status: mapProductStatusToVehicleStatus(product.status),
+    photo_url: imageUrls[0] ?? undefined,
+    year: attrs.year,
+    make: attrs.make,
+    model: attrs.model,
+    created_at: product.created_at,
+    updated_at: product.updated_at,
+  };
+}
+
+/**
+ * Map product status to vehicle status enum.
+ * Product uses: draft | pending | published | paused | reserved | sold | rejected | archived
+ * Vehicle uses: published | pending | failed | draft | expired | online | sold
+ */
+function mapProductStatusToVehicleStatus(
+  status: Product["status"]
+): "published" | "pending" | "failed" | "draft" | "expired" | "online" | "sold" {
+  switch (status) {
+    case "published": return "published";
+    case "pending": return "pending";
+    case "rejected": return "failed";
+    case "draft": return "draft";
+    case "archived": return "expired";
+    case "sold": return "sold";
+    case "paused": return "online";
+    case "reserved": return "online";
+    default: return "draft";
+  }
+}
+
+export interface VehicleFilters {
+  status?: "published" | "pending" | "failed" | "draft" | "expired" | "online" | "sold"
+  search?: string
+  make?: string
+  model?: string
+  year_min?: number
+  year_max?: number
+}
+
+/**
+ * Infinite scroll for vehicle products (products with category: 'vehicle')
+ * Note: Does NOT filter by isVehicleProduct — caller should filter if needed.
+ *       Currently catalog page needs all products returned and filters via isVehicleProduct.
+ */
+export function useInfiniteProducts(filters?: VehicleFilters, limit: number = 50) {
+  const queryParams = new URLSearchParams();
+  if (filters?.status) queryParams.append("status", filters.status);
+  if (filters?.search) queryParams.append("search", filters.search);
+  if (filters?.make) queryParams.append("make", filters.make);
+  if (filters?.model) queryParams.append("model", filters.model);
+  if (filters?.year_min) queryParams.append("year_min", filters.year_min.toString());
+  if (filters?.year_max) queryParams.append("year_max", filters.year_max.toString());
+  queryParams.append("limit", limit.toString());
+
+  return useInfiniteQuery({
+    queryKey: ["products", "infinite", filters, limit],
+    queryFn: async ({ pageParam }: { pageParam: string | null }) => {
+      const params = new URLSearchParams(queryParams);
+      if (pageParam) {
+        params.append("cursor", pageParam);
+      }
+
+      const res = await fetch(`/api/v1/products?${params.toString()}`, {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: "Failed to fetch products" }));
+        throw new Error(error.message || "Failed to fetch products");
+      }
+
+      const data = await res.json() as ProductListResponse;
+
+      return {
+        items: data.products,
+        next_cursor: null, // TODO: Add cursor pagination support
+        has_more: data.products.length === limit,
+      } as const;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
+    staleTime: 60 * 1000, // 1 minute
   });
 }

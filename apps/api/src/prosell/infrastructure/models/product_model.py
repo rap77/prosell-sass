@@ -54,6 +54,13 @@ class ProductModel(Base):
         nullable=False,
     )
 
+    # Image URLs at product level (moved from VehicleAttributes)
+    image_urls: Mapped[list[str] | None] = mapped_column(
+        JSONB,
+        default=[],
+        nullable=True,
+    )
+
     # Location
     location_city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     location_state: Mapped[str | None] = mapped_column(String(100), nullable=True)

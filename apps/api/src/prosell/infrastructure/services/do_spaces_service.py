@@ -106,7 +106,7 @@ class DOSpacesService(IDOSpacesService):
                 Key=key,
             )
             return True
-        except ClientError:
+        except Exception:
             return False
 
     async def check_file_exists(self, key: str) -> bool:
