@@ -15,8 +15,42 @@ import { Building2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useProductImageUrls } from "@/lib/api/products";
 import { StatusBadge } from "./StatusBadge";
 import { ActionMenu } from "./ActionMenu";
+
+/**
+ * Renders a product thumbnail using a time-limited signed DO Spaces URL.
+ *
+ * DO Spaces is private (403 on direct URLs), so the raw key from the
+ * vehicle row must be resolved through the backend signed-URL endpoint.
+ * Cache is shared with the catalog card view via TanStack query keys.
+ */
+function SignedPhotoCell({ productId, rawKey }: { productId: string; rawKey?: string }) {
+  const { data } = useProductImageUrls(rawKey ? productId : undefined)
+  const signedUrl = rawKey
+    ? data?.images.find((img) => img.key === rawKey)?.url
+    : undefined
+
+  if (!signedUrl) {
+    return (
+      <div className="w-15 h-15 rounded-md bg-muted flex items-center justify-center">
+        <span className="text-xs text-muted-foreground">No photo</span>
+      </div>
+    )
+  }
+
+  return (
+    <Image
+      src={signedUrl}
+      alt=""
+      width={60}
+      height={60}
+      className="w-15 h-15 rounded-md object-cover"
+      unoptimized
+    />
+  )
+}
 
 export interface Vehicle {
   id: string;
@@ -108,23 +142,12 @@ export function DataGrid({
       {
         accessorKey: "photo_url",
         header: "Photo",
-        cell: ({ row }) => {
-          const photoUrl = row.original.photo_url;
-          return photoUrl ? (
-            <Image
-              src={photoUrl}
-              alt=""
-              width={60}
-              height={60}
-              className="w-15 h-15 rounded-md object-cover"
-              unoptimized
-            />
-          ) : (
-            <div className="w-15 h-15 rounded-md bg-muted flex items-center justify-center">
-              <span className="text-xs text-muted-foreground">No photo</span>
-            </div>
-          );
-        },
+        cell: ({ row }) => (
+          <SignedPhotoCell
+            productId={row.original.id}
+            rawKey={row.original.photo_url}
+          />
+        ),
       },
       {
         accessorKey: "title",

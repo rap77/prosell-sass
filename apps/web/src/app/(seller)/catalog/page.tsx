@@ -17,6 +17,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   LayoutGrid, TableIcon, Layers, Upload,
@@ -33,7 +34,7 @@ import { BulkBranchAssign } from '@/components/branches/BulkBranchAssign'
 import { CatalogErrorBoundary } from '@/components/catalog/CatalogErrorBoundary'
 import { StatusBadge, type VehicleStatus } from '@/components/datagrid/StatusBadge'
 import { useVehicleFilters } from '@/lib/hooks/useVehicleFilters'
-import { useInfiniteProducts, useDeleteProduct, transformProductToVehicle } from '@/lib/api/products'
+import { useInfiniteProducts, useDeleteProduct, transformProductToVehicle, useProductImageUrls } from '@/lib/api/products'
 import { isVehicleProduct } from '@/types/product'
 import type { Product } from '@/types/product'
 
@@ -84,7 +85,17 @@ function VehicleCard({
   const imageUrls = Array.isArray(product.image_urls)
     ? product.image_urls
     : (Array.isArray(attrs?.image_urls) ? attrs.image_urls : [])
-  const photo_url = imageUrls[0]
+  const rawPhotoUrl = imageUrls[0]
+
+  // DO Spaces is private (403 on direct URLs). Resolve the first image to a
+  // time-limited signed download URL via the backend endpoint. The TanStack
+  // query cache is keyed by productId, so all cards sharing a product share
+  // the same in-flight request and result.
+  const { data: signedUrls } = useProductImageUrls(rawPhotoUrl ? product.id : undefined)
+  const signedPhotoUrl = rawPhotoUrl
+    ? signedUrls?.images.find((img) => img.key === rawPhotoUrl)?.url ?? null
+    : null
+  const photo_url = signedPhotoUrl || undefined
 
   return (
     <article
