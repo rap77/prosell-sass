@@ -214,7 +214,7 @@ describe("useUpdateLeadStatus", () => {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: expect.stringContaining('"status":"contacted"'),
+        body: expect.stringContaining('"new_status":"contacted"'),
       })
     );
 
