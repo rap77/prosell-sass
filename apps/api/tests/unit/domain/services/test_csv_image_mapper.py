@@ -231,6 +231,36 @@ class TestMapImages:
         assert result.matched_rows == 0
         assert result.unmatched_rows == 1
 
+    def test_matches_image_path_key_from_mapped_csv_row(self) -> None:
+        """RED test (T8a): the mapper must read `image_path` (what
+        `asdict(MappedCSVRow)` produces at `csv_field_mapper.py:355`)
+        instead of the bare `path` key.
+
+        This reproduces the production bug: the bulk-upload use case
+        passes `[asdict(row) for row in parsed_rows]` to
+        `csv_image_mapper.map_images(...)`. The dict carries
+        `image_path` (the dataclass field name), but the mapper looks
+        for `path` and always returns unmatched. Result: ZIP folders
+        never get associated with CSV rows in production.
+        """
+        zip_bytes = make_zip(
+            {
+                "Ford/Explorer/2020/img1.jpg": b"data1",
+                "Ford/Explorer/2020/img2.jpg": b"data2",
+            }
+        )
+        # Row dict as produced by `asdict(MappedCSVRow)` — uses `image_path`, NOT `path`
+        rows = [{"vin": "VIN001", "image_path": "Ford/Explorer/2020"}]
+        mapper = CSVImageMapper()
+        result = mapper.map_images(zip_bytes, rows, uuid4(), uuid4())
+
+        assert result.matched_rows == 1, (
+            f"Expected 1 matched row, got {result.matched_rows}. "
+            "The mapper is looking for `path` but the row dict has `image_path`."
+        )
+        assert result.unmatched_rows == 0
+        assert result.total_images == 2
+
 
 class TestImageMappingResult:
     """Tests for ImageMappingResult properties."""
