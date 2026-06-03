@@ -16,6 +16,7 @@ class UpdateProductRequest(BaseModel):
     category_id: UUID | None = None
     condition: ProductCondition | None = None
     attributes: dict[str, object] | None = None
+    image_urls: list[str] | None = None
     location_city: str | None = None
     location_state: str | None = None
     location_zip: str | None = None

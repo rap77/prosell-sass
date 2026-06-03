@@ -20,6 +20,7 @@ class CreateProductRequest(BaseModel):
     currency: str = Field(default="USD", min_length=3, max_length=3)
     condition: ProductCondition = ProductCondition.USED
     attributes: dict[str, object] = Field(default_factory=dict)
+    image_urls: list[str] = Field(default_factory=list)
     location_city: str | None = None
     location_state: str | None = None
     location_zip: str | None = None

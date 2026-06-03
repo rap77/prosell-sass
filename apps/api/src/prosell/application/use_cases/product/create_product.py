@@ -69,6 +69,7 @@ class CreateProductUseCase:
             description=request.description,
             currency=request.currency,
             attributes=request.attributes,
+            image_urls=request.image_urls,
             location_city=request.location_city,
             location_state=request.location_state,
             location_zip=request.location_zip,

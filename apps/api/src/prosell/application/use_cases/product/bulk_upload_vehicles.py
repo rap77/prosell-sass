@@ -259,6 +259,14 @@ class BulkUploadVehiclesUseCase:
             existing.location_city = request.location_city
             existing.location_state = request.location_state
 
+            # Forward image_urls from the ZIP mapping (filled in below)
+            if image_mapping and vin:
+                existing.image_urls = [
+                    m.do_spaces_key
+                    for m in image_mapping.mapped
+                    if m.vin == vin
+                ]
+
             await self.product_repository.update(existing)
         else:
             # Create new product
@@ -273,6 +281,13 @@ class BulkUploadVehiclesUseCase:
                 attributes=request.attributes,
                 location_city=request.location_city,
                 location_state=request.location_state,
+                # Forward image_urls from the ZIP mapping (filled in below
+                # — we re-derive here to keep both branches colocated).
+                image_urls=(
+                    [m.do_spaces_key for m in image_mapping.mapped if m.vin == vin]
+                    if image_mapping and vin
+                    else []
+                ),
             )
 
             created = await self.product_repository.create(product)
@@ -283,8 +298,6 @@ class BulkUploadVehiclesUseCase:
         if image_mapping and vin:
             vin_images = [m for m in image_mapping.mapped if m.vin == vin]
             images_uploaded = len(vin_images)
-            # TODO: Register images in product_images table
-            # This would require creating ProductImage entities and saving them
 
         return VehicleImportRowResult(
             row_number=mapped_row.row_number,

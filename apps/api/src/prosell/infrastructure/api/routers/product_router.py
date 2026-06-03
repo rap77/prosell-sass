@@ -306,6 +306,8 @@ async def update_product(
         product.condition = request.condition
     if request.attributes is not None:
         product.attributes = request.attributes
+    if request.image_urls is not None:
+        product.image_urls = request.image_urls
     if request.location_city is not None:
         product.location_city = request.location_city
     if request.location_state is not None:
