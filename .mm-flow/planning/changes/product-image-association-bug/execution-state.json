@@ -1,0 +1,40 @@
+{
+  "task_id": "T1-T20",
+  "source_mode": "objective",
+  "objective_slug": "product-image-association-bug",
+  "plan_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/product-image-association-bug/tasks.md",
+  "todo_path": "/home/rpadron/proy/prosell-sass/.mm-flow/planning/changes/product-image-association-bug/todo.md",
+  "session_id": "sess-20260603-prod-image-bug",
+  "started_at": "2026-06-03T00:00:00",
+  "phase": 0,
+  "subtasks": {
+    "T1": {
+      "description": "Write requirements.md and design.md",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-06-03T00:00:00",
+      "completed_at": "2026-06-03T00:00:00",
+      "duration_seconds": 0,
+      "updated_at": "2026-06-03T00:00:00"
+    },
+    "T2": {
+      "description": "Scaffold remaining artifacts",
+      "status": "completed",
+      "retries": 0,
+      "started_at": "2026-06-03T00:00:00",
+      "completed_at": "2026-06-03T00:00:00",
+      "duration_seconds": 0,
+      "updated_at": "2026-06-03T00:00:00"
+    }
+  },
+  "last_checkpoint": "T2",
+  "context_budget_exit": "2026-06-03T00:00:00",
+  "completion_notified_at": null,
+  "metadata": {
+    "priority": "critical",
+    "p0_incident": true,
+    "production_domain": "prosellweb.com",
+    "deploy_sequence": "local -> staging -> prod (maintenance window)",
+    "workflow": "mm-flow scaffolding + TDD implementation"
+  }
+}

@@ -7,8 +7,11 @@ _Generated: 2026-05-30_
 | Category | Count |
 |----------|-------:|
 | Active | 2 |
+| Paused | 1 |
 | Planned | 5 |
 | Done | 12 |
+
+_Updated: 2026-06-03 — `a11y-hardening` demoted to paused while P0 incident `product-image-association-bug` is open._
 
 ---
 
@@ -34,10 +37,32 @@ _Generated: 2026-05-30_
 
 ---
 
-#### 2. A11y Hardening (WCAG AA)
+#### 2. Product Image Association Bug (P0 prod incident)
 | | |
 |---|---|
 | **Status** | `active` |
+| **Priority** | `critical` |
+| **Ready Now** | YES (root cause identified, plan approved) |
+| **MVP** | YES (blocks user-visible functionality in production) |
+| **Dependencies** | None (independent of all other objectives) |
+| **Why it matters** | Products created via drag-and-drop in `/catalog/create` upload images to DO Spaces successfully, but the catalog grid shows a placeholder instead. Root cause: frontend sends `image_urls` nested in `attributes` JSONB; backend signed-URL endpoint reads from top-level `products.image_urls` column which is never populated. Three inconsistent storage locations coexist (top-level column, nested attributes, dead `product_images` table). |
+| **Evidence** | `.mm-flow/planning/changes/product-image-association-bug/{requirements,design}.md` (root cause + plan), engram observation id 1579 |
+
+**Actionable plans:**
+- TDD RED: 3 failing tests (create_persists_image_urls, get_image_urls_returns_signed, bulk_upload_persists_image_urls)
+- TDD GREEN: modify `CreateProductRequest` DTO + `create_product.py` + `create/page.tsx:59` + `bulk_upload_vehicles.py`
+- Alembic backfill migration: copy `attributes->>'image_urls'` → `products.image_urls` for existing rows
+- Alembic drop migration: remove `product_images` legacy table
+- Deploy: local → staging (manual smoke test) → prod (maintenance window with `alembic upgrade head` + API restart)
+
+---
+
+### ⏸ Paused Objectives
+
+#### 3. A11y Hardening (WCAG AA)
+| | |
+|---|---|
+| **Status** | `paused` (was `active`, demoted 2026-06-03 while P0 incident is open) |
 | **Priority** | `high` |
 | **Ready Now** | YES (independent work, no dependencies) |
 | **MVP** | NO (non-blocking technical debt) |
@@ -45,7 +70,9 @@ _Generated: 2026-05-30_
 | **Why it matters** | Sidebar dark mode contrast is 2.4:1 (minimum WCAG AA is 4.5:1). This is a legal/accessibility risk for public-facing software. Additionally, dashboard has `<h3>` without preceding `<h2>`, and two `<aside>` elements lack differentiating `aria-label`. |
 | **Evidence** | `docs/mvp-status.md` (deuda técnica section) |
 
-**Actionable plans:**
+**Why paused:** P0 production incident `product-image-association-bug` is taking precedence. Resume when image-bug is shipped to prod.
+
+**Actionable plans (when resumed):**
 - Fix `--ps-text-disabled` / `--ps-bg-sidebar` contrast ratio in dark mode
 - Add proper heading hierarchy (h2 before h3) in dashboard
 - Add `aria-label` to `<aside>` elements
@@ -54,7 +81,7 @@ _Generated: 2026-05-30_
 
 ### 📋 Planned Objectives (Blocked on Production)
 
-#### 3. Phase 3: Scraping
+#### 4. Phase 3: Scraping
 | | |
 |---|---|
 | **Status** | `planned` |
@@ -74,7 +101,7 @@ _Generated: 2026-05-30_
 
 ---
 
-#### 4. Phase 4: Leads & Appointments UI Polish
+#### 5. Phase 4: Leads & Appointments UI Polish
 | | |
 |---|---|
 | **Status** | `planned` |
@@ -94,7 +121,7 @@ _Generated: 2026-05-30_
 
 ---
 
-#### 5. Phase 5: Dashboards
+#### 6. Phase 5: Dashboards
 | | |
 |---|---|
 | **Status** | `planned` |
@@ -113,7 +140,7 @@ _Generated: 2026-05-30_
 
 ---
 
-#### 6. Phase 6: Market Intelligence
+#### 7. Phase 6: Market Intelligence
 | | |
 |---|---|
 | **Status** | `planned` |
@@ -132,7 +159,7 @@ _Generated: 2026-05-30_
 
 ---
 
-#### 7. Phase 7: Visibility (Public Catalog + Landing + AI Titles)
+#### 8. Phase 7: Visibility (Public Catalog + Landing + AI Titles)
 | | |
 |---|---|
 | **Status** | `planned` |
@@ -151,7 +178,7 @@ _Generated: 2026-05-30_
 
 ---
 
-#### 8. Facebook OAuth + Graph API Integration
+#### 9. Facebook OAuth + Graph API Integration
 | | |
 |---|---|
 | **Status** | `planned` |
@@ -164,7 +191,7 @@ _Generated: 2026-05-30_
 
 ---
 
-#### 9. AI Assistant (Claude Integration)
+#### 10. AI Assistant (Claude Integration)
 | | |
 |---|---|
 | **Status** | `planned` |
@@ -220,12 +247,13 @@ _Generated: 2026-05-30_
 ## Dependency Graph
 
 ```
-[Production Deploy] (critical path)
+[Production Deploy] (critical path) ✓ deployed 2026-05-27
+       │
+       ├──► [Product Image Bug] (P0 incident, no deps)  ← ACTIVE
+       │
+       ├──► [A11y Hardening] ← PAUSED
        │
        ▼
-[A11y Hardening] ──────────────────────────────────────────────────┐
-       │                                                          │
-       ▼                                                          │
 [Phase 3: Scraping] ─────────────────────────────────────────► [Phase 6: Market Intelligence]
        │                                                          │
        ▼                                                          │
@@ -248,10 +276,9 @@ _Generated: 2026-05-30_
 
 ## Recommended Next Active Objective
 
-**`A11y Hardening`** — Why:
-1. No dependencies (can start immediately)
-2. Clear success criteria (WCAG AA contrast, heading hierarchy, aria-labels)
-3. Non-blocking for production deploy but a legal risk
-4. Estimated work: 2-4 hours
-
-After A11y is started: **Production Deploy** should be the top priority.
+**`product-image-association-bug`** — Why:
+1. **P0 in production** — real users cannot see product images, blocking the core catalog use case
+2. No dependencies (can ship independently of everything else)
+3. Root cause already identified, plan approved, 9 ACs defined
+4. Estimated work: ~2.5 hours end-to-end (TDD + deploy)
+5. After shipping: resume `A11y Hardening` (was paused to make room)

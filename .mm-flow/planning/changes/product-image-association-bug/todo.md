@@ -1,0 +1,22 @@
+# Todo — Product Image Association Bug
+
+- [x] T1. Write requirements + design
+- [ ] T2. Scaffold tasks.md, todo.md, execution-state.json, HANDOFF-CURRENT.md
+- [ ] T3. RED: 3 failing tests
+- [ ] T4. GREEN: CreateProductRequest DTO
+- [ ] T5. GREEN: create_product.py
+- [ ] T6. GREEN: UpdateProductRequest DTO
+- [ ] T7. GREEN: update_product.py
+- [ ] T8. GREEN: bulk_upload_vehicles.py
+- [ ] T9. GREEN: frontend create/page.tsx:59
+- [ ] T10. rg sweep frontend
+- [ ] T11. Alembic: backfill migration
+- [ ] T12. rg sweep for product_images
+- [ ] T13. Alembic: drop product_images
+- [ ] T14. Local test suite green
+- [ ] T15. Deploy to staging
+- [ ] T16. Manual smoke test staging
+- [ ] T17. Schedule prod window
+- [ ] T18. Deploy to prod
+- [ ] T19. Manual smoke test prod
+- [ ] T20. Archive objective
