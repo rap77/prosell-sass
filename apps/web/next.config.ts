@@ -4,6 +4,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
 
+  // React Compiler is the canonical optimization for React 19 in Next 16+
+  // It memoizes components/hooks automatically, eliminating the need for manual
+  // useMemo/useCallback in most cases. The Babel plugin is provided by Next 16
+  // and runs in the SWC/Turbopack pipeline.
+  reactCompiler: true,
+
   // Allow next/image to load images from external domains used in the catalog.
   // Unsplash is used for mock data; real vehicle images come from self-hosted storage.
   images: {
