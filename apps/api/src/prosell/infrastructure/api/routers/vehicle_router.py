@@ -12,6 +12,7 @@ from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
     get_spaces_service,
 )
+from prosell.infrastructure.api.routers.image_router import sign_image_urls
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.services.nhtsa_normalizer import normalize_nhtsa_value
 from prosell.infrastructure.services.nhtsa_vin_service import NHTSAVinService
@@ -114,6 +115,10 @@ async def list_vehicles(
             except (IndexError, AttributeError):
                 # If URL parsing fails, keep original
                 pass
+        # Same fix for image_urls[]: each entry is a raw internal URL, must be signed
+        # before the browser can fetch it from the private bucket.
+        if item.get("image_urls"):
+            item["image_urls"] = await sign_image_urls(item["image_urls"], spaces)
         items.append(item)
 
     return {

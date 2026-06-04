@@ -43,6 +43,37 @@ class ImageStatusResponse(BaseModel):
     url: str | None = None
 
 
+async def sign_image_urls(
+    image_urls: list[str],
+    spaces: IDOSpacesService,
+) -> list[str]:
+    """Replace each raw storage URL in `image_urls` with a presigned download URL.
+
+    The DB stores raw internal-endpoint URLs (e.g. http://minio:9000/...
+    in dev, or https://{bucket}.{region}.digitaloceanspaces.com/... in prod).
+    Browsers cannot fetch objects from the private bucket without a valid
+    signature, and the signature is host-bound — it must be issued by the
+    signer that points at the host the browser will use (the public endpoint).
+
+    The signer inside DOSpacesService handles the host binding: when
+    `s3_public_endpoint_url` is set, generate_download_url signs against that
+    public host, so the returned URL is valid for the browser.
+
+    URLs that don't contain the bucket name (already signed, or external)
+    are left as-is to avoid double-signing or breaking cross-origin images.
+    """
+    signed: list[str] = []
+    for url in image_urls:
+        try:
+            key = url.split(f"{spaces.bucket}/", 1)[1]
+            signed.append(await spaces.generate_download_url(key))
+        except (IndexError, AttributeError):
+            # Can't extract the key: keep the original URL. This preserves
+            # any pre-signed or external URLs (e.g. CDN).
+            signed.append(url)
+    return signed
+
+
 @router.post(
     "/upload-url",
     response_model=ImageUploadUrlResponse,
@@ -110,9 +141,14 @@ async def get_image_status(
     for ext in _IMAGE_EXTENSIONS.values():
         key = f"orgs/{current_user.tenant_id}/vehicles/{file_id}{ext}"
         if await spaces.check_file_exists(key):
+            # Return a presigned URL so the browser can fetch the object from the
+            # private bucket. The signer inside DOSpacesService uses the public
+            # endpoint (e.g. http://localhost:9000) so the signature matches the
+            # host the browser will use.
+            signed_url = await spaces.generate_download_url(key)
             return ImageStatusResponse(
                 status="complete",
-                url=f"{spaces.endpoint}/{spaces.bucket}/{key}",
+                url=signed_url,
             )
 
     return ImageStatusResponse(status="pending")
@@ -258,7 +294,7 @@ async def upload_image(
 
     # Upload to DO Spaces
     try:
-        public_url = await spaces.upload_file(
+        await spaces.upload_file(
             file_path=file_path,
             file_bytes=optimized_bytes,
             content_type="image/jpeg",
@@ -269,4 +305,10 @@ async def upload_image(
             detail=f"Failed to upload to storage: {e!s}",
         ) from e
 
-    return ImageUploadResponse(url=public_url)
+    # Return a presigned URL so the browser can fetch the just-uploaded object
+    # from the private bucket. The signer inside DOSpacesService uses the public
+    # endpoint (e.g. http://localhost:9000) so the signature matches the host
+    # the browser will use.
+    signed_url = await spaces.generate_download_url(file_path)
+
+    return ImageUploadResponse(url=signed_url)

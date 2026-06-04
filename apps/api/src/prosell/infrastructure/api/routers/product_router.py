@@ -32,12 +32,14 @@ from prosell.application.use_cases.product.list_products import (
     ListProductsUseCase,
     ProductListResponse,
 )
+from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.csv_product_parser import CSVProductParser
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie, get_spaces_service
+from prosell.infrastructure.api.routers.image_router import sign_image_urls
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
@@ -172,6 +174,7 @@ async def list_products(
     limit: int = 100,
     current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
+    spaces: IDOSpacesService = Depends(get_spaces_service),
 ) -> ProductListResponse:
     """
     List products with optional filters.
@@ -194,7 +197,7 @@ async def list_products(
     repo = SqlAlchemyProductRepository(db)
     use_case = ListProductsUseCase(repo)
 
-    return await use_case.execute(
+    result = await use_case.execute(
         tenant_id=tenant_id,
         organization_id=organization_id,
         category_id=category_id,
@@ -208,6 +211,16 @@ async def list_products(
         limit=limit,
     )
 
+    # Sign each product's image_urls[] so the browser can fetch from the private
+    # bucket. The signer inside DOSpacesService uses the public endpoint
+    # (e.g. http://localhost:9000) so the signature matches the host the
+    # browser will actually use.
+    for product in result.products:
+        if product.image_urls:
+            product.image_urls = await sign_image_urls(product.image_urls, spaces)
+
+    return result
+
 
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(
@@ -215,6 +228,7 @@ async def get_product(
     internal: bool = False,
     current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
+    spaces: IDOSpacesService = Depends(get_spaces_service),
 ) -> ProductResponse:
     """Get a product by ID.
 
@@ -236,7 +250,13 @@ async def get_product(
     if not internal:
         await repo.increment_view_count(product_id, tenant_id)
 
-    return ProductResponse.from_entity(product)
+    response = ProductResponse.from_entity(product)
+
+    # Sign each image_url so the browser can fetch from the private bucket.
+    if response.image_urls:
+        response.image_urls = await sign_image_urls(response.image_urls, spaces)
+
+    return response
 
 
 @router.get("/{product_id}/image-urls", response_model=ProductImageUrlsResponse)
