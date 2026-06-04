@@ -223,6 +223,17 @@ class Settings(BaseSettings):
         description="Optional CDN endpoint for Spaces assets",
     )
 
+    # S3-compatible endpoint override (use MinIO in dev, leave None for DO Spaces in prod)
+    s3_endpoint_url: str | None = Field(
+        default=None,
+        description="Override S3 endpoint URL (use MinIO http://minio:9000 in dev, "
+        "leave None for DO Spaces in prod)",
+    )
+    s3_force_path_style: bool = Field(
+        default=True,
+        description="Use path-style addressing (required for MinIO, optional for DO Spaces)",
+    )
+
     # =============================================================================
     # STRIPE (Payments)
     # =============================================================================
