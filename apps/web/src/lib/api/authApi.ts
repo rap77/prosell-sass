@@ -58,12 +58,11 @@ interface Enable2FAResponse {
 // API CLIENT CONFIGURATION
 // ============================================
 
-// Use relative URLs for E2E testing (mock endpoints in Next.js)
-// For vitest tests, use absolute URL with localhost
-// Falls back to localhost:8000 for production/development with real backend
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.NODE_ENV === "test" ? "http://localhost:8000" : "http://localhost:8000");
+// Use relative URLs so Next.js rewrites (configured in next.config.ts) proxy
+// /api/:path* to the backend container. Absolute URLs (e.g. localhost:8000)
+// break in deployed environments where the browser cannot reach the host's
+// localhost. See PR #3 (initializeAuth) and PR #4 (rest of lib/api/*) for context.
+export const API_BASE_URL = "";
 
 // ============================================
 // IMPORTS & SETUP

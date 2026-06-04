@@ -1,7 +1,8 @@
 import { z } from "zod";
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Relative URL — Next.js rewrites proxy /api/:path* to the backend container.
+// See apps/web/next.config.ts and PR #3 for context.
+const BACKEND_URL = "";
 
 const ENABLE_TWO_FACTOR_RESPONSE_SCHEMA = z.object({
   qr_code_uri: z.string().min(1),
