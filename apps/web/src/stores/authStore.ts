@@ -150,8 +150,11 @@ export const useAuthStore = create<AuthState>()(
         markPerformance("auth-init-start");
 
         try {
-          const { API_BASE_URL } = await import("@/lib/config");
-          const response = await fetch(`${API_BASE_URL}/api/v1/auth/state`, {
+          // Use relative URL so Next.js rewrites proxy to the backend.
+          // Hardcoded absolute URLs (NEXT_PUBLIC_API_URL) break in deployed
+          // environments where the browser can't reach the host's localhost.
+          // See next.config.ts rewrites() for the proxy configuration.
+          const response = await fetch("/api/v1/auth/state", {
             credentials: "include", // CRITICAL: Sends httpOnly cookies
           });
           const authState = await response.json();
@@ -373,8 +376,11 @@ export const useAuthStore = create<AuthState>()(
 
         // Delete httpOnly cookies via API — awaited so callers can sequence navigation after this
         try {
-          const { API_BASE_URL } = await import("@/lib/config");
-          await fetch(`${API_BASE_URL}/api/auth/state`, {
+          // Use relative URL so Next.js rewrites proxy to the backend.
+          // TODO(pre-existing bug): this hits DELETE /api/auth/state which
+          // returns 404 — the actual logout endpoint is POST /api/v1/auth/logout
+          // (see auth_router.py). Tracked separately to keep this fix surgical.
+          await fetch("/api/auth/state", {
             method: "DELETE",
             credentials: "include",
           });
