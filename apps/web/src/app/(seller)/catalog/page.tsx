@@ -121,9 +121,22 @@ function VehicleCard({
       {/* Image */}
       <div style={{ position: 'relative', aspectRatio: '16/9', background: 'var(--ps-bg-elevated)', overflow: 'hidden' }}>
         {photo_url ? (
-          <Image src={photo_url} alt={product.title} fill style={{ objectFit: 'cover' }} />
+          <Image
+            src={photo_url}
+            alt={product.title}
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            style={{ objectFit: 'cover' }}
+          />
         ) : (
-          <Image src="/placeholders/placeholder-vehicles.png" alt="Sin imagen" fill style={{ objectFit: 'cover' }} />
+          <Image
+            src="/placeholders/placeholder-vehicles.png"
+            alt="Sin imagen"
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            priority
+            style={{ objectFit: 'cover' }}
+          />
         )}
         {/* Status badge overlay */}
         <div style={{ position: 'absolute', top: 10, left: 10 }}>

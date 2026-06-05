@@ -58,7 +58,7 @@ function formatMileage(attrs: VehicleAttributes): string | null {
   return `${attrs.mileage.toLocaleString('es-AR')} ${unit}`
 }
 
-function getProductImages(
+export function getProductImages(
   product: Product,
   signedUrlMap?: Map<string, string>,
 ): ProductImage[] {
@@ -69,12 +69,18 @@ function getProductImages(
 
   const normalizedImages = rawImages.flatMap((image, index) => {
     if (!isRecord(image) || typeof image.url !== 'string' || image.url.length === 0) return []
+    // SECURITY: never echo the raw internal-endpoint URL when no signed match
+    // is found. The browser cannot fetch objects from the private bucket via
+    // raw URLs (e.g. http://minio:9000/...) and the Next.js image allowlist
+    // rejects unknown hostnames. Use `null` so the gallery shows its empty
+    // state instead of feeding an unreachable URL to <Image>.
+    const signed = signedUrlMap?.get(image.url)
     return [{
       id:            typeof image.id === 'string' ? image.id : `${product.id}-image-${index}`,
       product_id:    product.id,
-      url:           signedUrlMap?.get(image.url) ?? image.url,
+      url:           signed ?? null,
       thumbnail_url: typeof image.thumbnail_url === 'string'
-        ? (signedUrlMap?.get(image.thumbnail_url) ?? image.thumbnail_url)
+        ? (signedUrlMap?.get(image.thumbnail_url) ?? null)
         : null,
       sort_order:    typeof image.sort_order === 'number' ? image.sort_order : index,
       is_primary:    Boolean(image.is_primary),
@@ -89,17 +95,21 @@ function getProductImages(
   }
 
   const fallbackUrls = productLevelUrls.length > 0 ? productLevelUrls : attributeLevelUrls
-  return fallbackUrls.map((url, index) => ({
-    id:            `${product.id}-fallback-image-${index}`,
-    product_id:    product.id,
-    url:           signedUrlMap?.get(url) ?? url,
-    thumbnail_url: signedUrlMap?.get(url) ?? url,
-    sort_order:    index,
-    is_primary:    index === 0,
-    alt_text:      `${product.title} image ${index + 1}`,
-    created_at:    product.created_at,
-    updated_at:    product.updated_at,
-  }))
+  return fallbackUrls.map((url, index) => {
+    const signed = signedUrlMap?.get(url)
+    return {
+      id:            `${product.id}-fallback-image-${index}`,
+      product_id:    product.id,
+      // SECURITY: see note above — null when no signed match.
+      url:           signed ?? null,
+      thumbnail_url: signed ?? null,
+      sort_order:    index,
+      is_primary:    index === 0,
+      alt_text:      `${product.title} image ${index + 1}`,
+      created_at:    product.created_at,
+      updated_at:    product.updated_at,
+    }
+  })
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────

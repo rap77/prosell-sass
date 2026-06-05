@@ -346,13 +346,38 @@ async def get_product_image_urls(
         raise HTTPException(status_code=404, detail="Product not found")
 
     tenant_prefix = f"orgs/{tenant_id}/"
-    image_keys = product.image_urls or []
+
+    # Merge URL candidates from BOTH sources. Legacy data lives in
+    # `product.attributes.image_urls` (the pre-migration location); newer
+    # products populate the top-level `product.image_urls` column. The endpoint
+    # must sign entries from both so that legacy products render their photos.
+    # Deduped (order-preserving) so an URL in both sources is signed once.
+    raw_urls: list[str] = list(product.image_urls or [])
+    attributes = product.attributes or {}
+    if isinstance(attributes, dict):
+        attr_urls = attributes.get("image_urls")
+        if isinstance(attr_urls, list):
+            raw_urls.extend(u for u in attr_urls if isinstance(u, str))
+    seen: set[str] = set()
+    merged_urls: list[str] = []
+    for url in raw_urls:
+        if url in seen:
+            continue
+        seen.add(url)
+        merged_urls.append(url)
+
     signed_images: list[ProductImageUrlResponse] = []
-    for key in image_keys:
-        # Drop cross-tenant keys (fail-closed). The keys in this DB column
-        # SHOULD always be under the caller's tenant since the product itself
-        # is tenant-scoped, but the explicit check defends against any future
-        # code path that copies keys from elsewhere.
+    for url in merged_urls:
+        # Extract the storage key by stripping the `<bucket>/` marker. If the
+        # URL doesn't contain the bucket, it's malformed / external — drop it
+        # (fail-closed, never echo an unsigned URL to the response).
+        try:
+            key = url.split(f"{spaces.bucket}/", 1)[1]
+        except (IndexError, AttributeError):
+            continue
+        # Defense in depth: only sign keys under the caller's tenant. The
+        # product itself is tenant-scoped, but its `attributes` JSONB column
+        # is attacker-influenceable in some flows, so we re-verify here.
         if not key.startswith(tenant_prefix):
             continue
         signed_images.append(
