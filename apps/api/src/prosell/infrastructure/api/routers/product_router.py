@@ -43,7 +43,6 @@ from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
     get_spaces_service,
 )
-from prosell.infrastructure.api.routers.image_router import sign_image_urls
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
@@ -226,7 +225,6 @@ async def list_products(
     limit: int = 100,
     current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
-    spaces: IDOSpacesService = Depends(get_spaces_service),
 ) -> ProductListResponse:
     """
     List products with optional filters.
@@ -249,7 +247,9 @@ async def list_products(
     repo = SqlAlchemyProductRepository(db)
     use_case = ListProductsUseCase(repo)
 
-    result = await use_case.execute(
+    # image_urls are returned as bare storage keys. The browser fetches
+    # signed URLs on demand from GET /api/v1/products/{id}/image-urls.
+    return await use_case.execute(
         tenant_id=tenant_id,
         organization_id=organization_id,
         category_id=category_id,
@@ -263,20 +263,6 @@ async def list_products(
         limit=limit,
     )
 
-    # Sign each product's image_urls[] so the browser can fetch from the private
-    # bucket. Scope to the caller's tenant so an attacker controlling image_urls
-    # (e.g. via UpdateProductRequest) cannot mint presigned URLs for another
-    # tenant's objects.
-    for product in result.products:
-        if product.image_urls:
-            product.image_urls = await sign_image_urls(
-                product.image_urls,
-                spaces,
-                tenant_id=tenant_id,
-            )
-
-    return result
-
 
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(
@@ -284,7 +270,6 @@ async def get_product(
     internal: bool = False,
     current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
-    spaces: IDOSpacesService = Depends(get_spaces_service),
 ) -> ProductResponse:
     """Get a product by ID.
 
@@ -306,18 +291,9 @@ async def get_product(
     if not internal:
         await repo.increment_view_count(product_id, tenant_id)
 
-    response = ProductResponse.from_entity(product)
-
-    # Sign each image_url so the browser can fetch from the private bucket.
-    # Scope to the caller's tenant to prevent cross-tenant presigned-URL minting.
-    if response.image_urls:
-        response.image_urls = await sign_image_urls(
-            response.image_urls,
-            spaces,
-            tenant_id=tenant_id,
-        )
-
-    return response
+    # image_urls are returned as bare storage keys. The browser fetches
+    # signed URLs on demand from GET /api/v1/products/{id}/image-urls.
+    return ProductResponse.from_entity(product)
 
 
 @router.get("/{product_id}/image-urls", response_model=ProductImageUrlsResponse)

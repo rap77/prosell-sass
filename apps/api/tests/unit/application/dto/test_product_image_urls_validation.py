@@ -78,6 +78,41 @@ class TestCreateProductRequestImageUrlsValidation:
             self._valid_create([bad_url])
         assert "image_urls" in str(exc.value)
 
+    # ─── Storage key acceptance (canonical form post-migration) ────────────
+    #
+    # After the migration from signed URLs in DB to raw S3 keys, the system
+    # persists keys like `orgs/<tenant-uuid>/vehicles/<file>.jpg` and signs
+    # them on read via the dedicated /image-urls endpoint. The DTO must
+    # accept this canonical form so that the edit form (which already
+    # extracts keys from signed URLs) can round-trip them through PATCH.
+
+    def test_raw_storage_key_is_accepted(self) -> None:
+        """A bare storage key (orgs/<uuid>/vehicles/<file>) passes."""
+        key = "orgs/11111111-1111-1111-1111-111111111111/vehicles/abc.jpg"
+        request = self._valid_create([key])
+        assert request.image_urls == [key]
+
+    def test_raw_storage_key_with_subfolder_is_accepted(self) -> None:
+        """A bare key with nested subfolders is accepted."""
+        key = "orgs/11111111-1111-1111-1111-111111111111/vehicles/2025/01/abc.webp"
+        request = self._valid_create([key])
+        assert request.image_urls == [key]
+
+    @pytest.mark.parametrize(
+        "bad_key",
+        [
+            "vehicles/abc.jpg",  # missing orgs/<uuid>/ prefix
+            "orgs/not-a-uuid/vehicles/abc.jpg",  # tenant segment not a UUID
+            "orgs/11111111-1111-1111-1111-111111111111/../etc/passwd",  # traversal
+            "/orgs/11111111-1111-1111-1111-111111111111/vehicles/abc.jpg",  # leading slash
+        ],
+    )
+    def test_malformed_storage_key_is_rejected(self, bad_key: str) -> None:
+        """A string that looks key-like but is malformed is rejected."""
+        with pytest.raises(ValidationError) as exc:
+            self._valid_create([bad_key])
+        assert "image_urls" in str(exc.value)
+
 
 class TestUpdateProductRequestImageUrlsValidation:
     """UpdateProductRequest.image_urls must be a list of valid http(s) URLs."""
@@ -113,4 +148,35 @@ class TestUpdateProductRequestImageUrlsValidation:
     def test_non_url_or_dangerous_scheme_is_rejected(self, bad_url: str) -> None:
         with pytest.raises(ValidationError) as exc:
             self._valid_update([bad_url])
+        assert "image_urls" in str(exc.value)
+
+    # ─── Storage key acceptance (canonical form post-migration) ────────────
+    #
+    # Mirrors the Create tests above. Update must accept the same canonical
+    # form so the edit form can round-trip keys without converting them to
+    # signed URLs (which would expire in 1h and trigger the data corruption
+    # bug we just fixed).
+
+    def test_raw_storage_key_is_accepted(self) -> None:
+        key = "orgs/11111111-1111-1111-1111-111111111111/vehicles/abc.jpg"
+        request = self._valid_update([key])
+        assert request.image_urls == [key]
+
+    def test_raw_storage_key_with_subfolder_is_accepted(self) -> None:
+        key = "orgs/11111111-1111-1111-1111-111111111111/vehicles/2025/01/abc.webp"
+        request = self._valid_update([key])
+        assert request.image_urls == [key]
+
+    @pytest.mark.parametrize(
+        "bad_key",
+        [
+            "vehicles/abc.jpg",
+            "orgs/not-a-uuid/vehicles/abc.jpg",
+            "orgs/11111111-1111-1111-1111-111111111111/../etc/passwd",
+            "/orgs/11111111-1111-1111-1111-111111111111/vehicles/abc.jpg",
+        ],
+    )
+    def test_malformed_storage_key_is_rejected(self, bad_key: str) -> None:
+        with pytest.raises(ValidationError) as exc:
+            self._valid_update([bad_key])
         assert "image_urls" in str(exc.value)
