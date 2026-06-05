@@ -78,15 +78,17 @@ interface VerifyEmailPageContentProps {
 }
 
 export function VerifyEmailPageContent({ token }: VerifyEmailPageContentProps) {
-  const [state, setState] = useState<VerifyState>('loading')
-  const [errorMsg, setErrorMsg]  = useState<string | null>(null)
+  const [state, setState] = useState<VerifyState>(() =>
+    token && token.trim() !== '' ? 'loading' : 'error',
+  )
+  const [errorMsg, setErrorMsg]  = useState<string | null>(() =>
+    token && token.trim() !== '' ? null : 'El enlace de verificación no es válido.',
+  )
   const [notFound, setNotFound]  = useState(false)
 
   useEffect(() => {
-    // No token → immediate error
+    // No token → already initialized to error state, skip async work
     if (!token || token.trim() === '') {
-      setState('error')
-      setErrorMsg('El enlace de verificación no es válido.')
       return
     }
 

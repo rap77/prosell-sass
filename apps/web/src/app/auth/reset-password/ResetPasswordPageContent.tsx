@@ -173,13 +173,8 @@ interface ResetPasswordPageContentProps {
 
 export function ResetPasswordPageContent({ token }: ResetPasswordPageContentProps) {
   const [success, setSuccess]     = useState(false)
-  const [tokenInvalid, setTokenInvalid] = useState(false)
+  const [tokenInvalid] = useState(() => !token || token.trim() === '')
   const [apiError, setApiError]   = useState<string | null>(null)
-
-  // Validate token presence on mount
-  useEffect(() => {
-    if (!token || token.trim() === '') setTokenInvalid(true)
-  }, [token])
 
   const {
     control,

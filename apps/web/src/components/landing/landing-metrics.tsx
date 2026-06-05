@@ -32,7 +32,7 @@ export function LandingMetrics() {
         </div>
 
         <figure style={{ maxWidth: 760, margin: "0 auto", textAlign: "center", padding: "0 24px" }}>
-          <span style={{ display: "block", fontFamily: "Georgia, serif", fontSize: 96, lineHeight: 0.6, color: "var(--ps-cyan)", opacity: 0.85, marginBottom: 8 }}>"</span>
+          <span style={{ display: "block", fontFamily: "Georgia, serif", fontSize: 96, lineHeight: 0.6, color: "var(--ps-cyan)", opacity: 0.85, marginBottom: 8 }}>&quot;</span>
           <blockquote style={{ fontSize: 20, fontWeight: 500, fontStyle: "italic", lineHeight: 1.55, maxWidth: 640, margin: "0 auto 28px", letterSpacing: "-0.01em" }}>
             Antes perdíamos el 40% de los leads por tiempo de respuesta. Con ProSell respondemos en menos de un minuto y cerramos el doble en el mismo tiempo.
           </blockquote>

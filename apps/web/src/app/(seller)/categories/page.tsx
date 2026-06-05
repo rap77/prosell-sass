@@ -321,7 +321,10 @@ function NicheCard({
             flexShrink: 0,
           }}
         >
-          <Icon size={26} strokeWidth={1.75} />
+          {
+            // eslint-disable-next-line react-hooks/static-components -- lucide icons are stateless; resolving per render is intentional and cheap
+            <Icon size={26} strokeWidth={1.75} />
+          }
         </span>
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>

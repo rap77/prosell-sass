@@ -380,7 +380,7 @@ export function TwoFactorSetupForm({
                     <li>Abrí tu app de autenticación (Google Authenticator, Authy, etc.)</li>
                     <li>Escaneá el código QR de arriba</li>
                     <li>Ingresá el código de 6 dígitos abajo</li>
-                    <li>Hacé click en "Verificar y activar" para completar la configuración</li>
+                    <li>Hacé click en &quot;Verificar y activar&quot; para completar la configuración</li>
                   </ol>
                 </div>
 
