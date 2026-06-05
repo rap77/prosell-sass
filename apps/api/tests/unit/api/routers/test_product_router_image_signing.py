@@ -33,25 +33,27 @@ from prosell.infrastructure.api.dependencies import (
 from prosell.infrastructure.api.main import app
 
 
-# Sample signed URL with X-Amz-Signature (what the browser will receive)
-SIGNED_URL_1 = (
-    "http://localhost:9000/prosell-assets/orgs/tenant-1/vehicles/key1.jpg"
-    "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=deadbeef1"
-)
-SIGNED_URL_2 = (
-    "http://localhost:9000/prosell-assets/orgs/tenant-1/vehicles/key2.jpg"
-    "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=deadbeef2"
-)
-
-# Raw URLs as they would come from the DB (internal endpoint, NOT signed)
-RAW_URL_1 = "http://minio:9000/prosell-assets/orgs/tenant-1/vehicles/key1.jpg"
-RAW_URL_2 = "http://minio:9000/prosell-assets/orgs/tenant-1/vehicles/key2.jpg"
-
 TEST_TENANT_ID = UUID("11111111-1111-1111-1111-111111111111")
 TEST_USER_ID = UUID("22222222-2222-2222-2222-222222222222")
 TEST_ORG_ID = UUID("33333333-3333-3333-3333-333333333333")
 TEST_CATEGORY_ID = UUID("44444444-4444-4444-4444-444444444444")
 TEST_PRODUCT_ID = UUID("55555555-5555-5555-5555-555555555555")
+
+
+# Sample signed URL with X-Amz-Signature (what the browser will receive)
+SIGNED_URL_1 = (
+    f"http://localhost:9000/prosell-assets/orgs/{TEST_TENANT_ID}/vehicles/key1.jpg"
+    "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=deadbeef1"
+)
+SIGNED_URL_2 = (
+    f"http://localhost:9000/prosell-assets/orgs/{TEST_TENANT_ID}/vehicles/key2.jpg"
+    "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=deadbeef2"
+)
+
+# Raw URLs as they would come from the DB (internal endpoint, NOT signed).
+# Must use the tenant's UUID so the sign_image_urls tenant-prefix check accepts them.
+RAW_URL_1 = f"http://minio:9000/prosell-assets/orgs/{TEST_TENANT_ID}/vehicles/key1.jpg"
+RAW_URL_2 = f"http://minio:9000/prosell-assets/orgs/{TEST_TENANT_ID}/vehicles/key2.jpg"
 
 
 def _make_user() -> User:
@@ -72,8 +74,8 @@ def _make_spaces() -> AsyncMock:
     spaces = AsyncMock()
     # key (after split) -> signed URL
     key_to_signed = {
-        "orgs/tenant-1/vehicles/key1.jpg": SIGNED_URL_1,
-        "orgs/tenant-1/vehicles/key2.jpg": SIGNED_URL_2,
+        f"orgs/{TEST_TENANT_ID}/vehicles/key1.jpg": SIGNED_URL_1,
+        f"orgs/{TEST_TENANT_ID}/vehicles/key2.jpg": SIGNED_URL_2,
     }
     spaces.generate_download_url = AsyncMock(side_effect=lambda key: key_to_signed[key])
     spaces.bucket = "prosell-assets"

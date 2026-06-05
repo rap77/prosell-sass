@@ -6,7 +6,7 @@ server-side processing status.
 
 import logging
 from typing import Annotated
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel
@@ -46,6 +46,7 @@ class ImageStatusResponse(BaseModel):
 async def sign_image_urls(
     image_urls: list[str],
     spaces: IDOSpacesService,
+    tenant_id: UUID | None = None,
 ) -> list[str]:
     """Replace each raw storage URL in `image_urls` with a presigned download URL.
 
@@ -59,18 +60,28 @@ async def sign_image_urls(
     `s3_public_endpoint_url` is set, generate_download_url signs against that
     public host, so the returned URL is valid for the browser.
 
-    URLs that don't contain the bucket name (already signed, or external)
-    are left as-is to avoid double-signing or breaking cross-origin images.
+    SECURITY: When `tenant_id` is provided, every extracted key MUST start
+    with `orgs/{tenant_id}/` — otherwise the entry is dropped. This prevents
+    a caller from minting presigned URLs for another tenant's objects
+    (which would be a cross-tenant data exposure if `image_urls` is
+    attacker-controllable, e.g. via UpdateProductRequest).
+
+    Unparseable URLs (those that don't contain the bucket name) are also
+    dropped, not echoed back. This fail-closed behavior blocks an attacker
+    from smuggling external URLs through the response.
     """
     signed: list[str] = []
+    tenant_prefix = f"orgs/{tenant_id}/" if tenant_id is not None else None
     for url in image_urls:
         try:
             key = url.split(f"{spaces.bucket}/", 1)[1]
-            signed.append(await spaces.generate_download_url(key))
         except (IndexError, AttributeError):
-            # Can't extract the key: keep the original URL. This preserves
-            # any pre-signed or external URLs (e.g. CDN).
-            signed.append(url)
+            # Fail-closed: drop the entry. Don't echo the original URL.
+            continue
+        if tenant_prefix is not None and not key.startswith(tenant_prefix):
+            # Cross-tenant key: drop, never sign.
+            continue
+        signed.append(await spaces.generate_download_url(key))
     return signed
 
 
@@ -141,10 +152,10 @@ async def get_image_status(
     for ext in _IMAGE_EXTENSIONS.values():
         key = f"orgs/{current_user.tenant_id}/vehicles/{file_id}{ext}"
         if await spaces.check_file_exists(key):
-            # Return a presigned URL so the browser can fetch the object from the
-            # private bucket. The signer inside DOSpacesService uses the public
-            # endpoint (e.g. http://localhost:9000) so the signature matches the
-            # host the browser will use.
+            # Return a presigned URL so the browser can fetch from the private
+            # bucket. The signer inside DOSpacesService uses the public endpoint
+            # (e.g. http://localhost:9000) so the signature matches the host
+            # the browser will use.
             signed_url = await spaces.generate_download_url(key)
             return ImageStatusResponse(
                 status="complete",

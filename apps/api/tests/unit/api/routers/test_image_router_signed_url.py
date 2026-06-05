@@ -53,6 +53,8 @@ def _make_spaces() -> MagicMock:
 
     upload_file returns a KEY (not a URL) — this is the new contract that
     forces the router to call generate_download_url after uploading.
+    generate_download_url returns a presigned URL for any key (the upload
+    path uses the router-generated file_path, not the upload_file result).
     """
     spaces = MagicMock()
     spaces.upload_file = AsyncMock(

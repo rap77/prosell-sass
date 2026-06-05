@@ -100,25 +100,30 @@ async def list_vehicles(
         limit=limit,
     )
 
-    # Transform photo_url to signed download URLs
+    # Transform photo_url and image_urls[] to signed download URLs.
+    # SECURITY: scope all signed URLs to the caller's tenant to prevent
+    # cross-tenant data exposure via attacker-controlled image_urls.
     items = []
     for p in result.products:
         item = p.model_dump()
         if item.get("photo_url"):
-            # Extract DO Spaces key from URL
-            # URL format: https://{bucket}.{region}.digitaloceanspaces.com/{key}
+            # Extract DO Spaces key from URL and scope to caller's tenant.
+            # If the key is not under the caller's tenant prefix, drop the
+            # photo_url entirely (fail-closed).
             photo_url = item["photo_url"]
+            tenant_prefix = f"orgs/{current_user.tenant_id}/"
             try:
-                # Extract key after bucket name
                 key = photo_url.split(f"{spaces.bucket}/", 1)[1]
-                item["photo_url"] = await spaces.generate_download_url(key)
+                if key.startswith(tenant_prefix):
+                    item["photo_url"] = await spaces.generate_download_url(key)
+                else:
+                    item["photo_url"] = None
             except (IndexError, AttributeError):
-                # If URL parsing fails, keep original
-                pass
-        # Same fix for image_urls[]: each entry is a raw internal URL, must be signed
-        # before the browser can fetch it from the private bucket.
+                item["photo_url"] = None
         if item.get("image_urls"):
-            item["image_urls"] = await sign_image_urls(item["image_urls"], spaces)
+            item["image_urls"] = await sign_image_urls(
+                item["image_urls"], spaces, tenant_id=current_user.tenant_id,
+            )
         items.append(item)
 
     return {

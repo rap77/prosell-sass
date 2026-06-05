@@ -212,12 +212,14 @@ async def list_products(
     )
 
     # Sign each product's image_urls[] so the browser can fetch from the private
-    # bucket. The signer inside DOSpacesService uses the public endpoint
-    # (e.g. http://localhost:9000) so the signature matches the host the
-    # browser will actually use.
+    # bucket. Scope to the caller's tenant so an attacker controlling image_urls
+    # (e.g. via UpdateProductRequest) cannot mint presigned URLs for another
+    # tenant's objects.
     for product in result.products:
         if product.image_urls:
-            product.image_urls = await sign_image_urls(product.image_urls, spaces)
+            product.image_urls = await sign_image_urls(
+                product.image_urls, spaces, tenant_id=tenant_id,
+            )
 
     return result
 
@@ -253,8 +255,11 @@ async def get_product(
     response = ProductResponse.from_entity(product)
 
     # Sign each image_url so the browser can fetch from the private bucket.
+    # Scope to the caller's tenant to prevent cross-tenant presigned-URL minting.
     if response.image_urls:
-        response.image_urls = await sign_image_urls(response.image_urls, spaces)
+        response.image_urls = await sign_image_urls(
+            response.image_urls, spaces, tenant_id=tenant_id,
+        )
 
     return response
 
@@ -264,31 +269,45 @@ async def get_product_image_urls(
     product_id: UUID,
     current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
+    spaces: IDOSpacesService = Depends(get_spaces_service),
 ) -> ProductImageUrlsResponse:
     """Get signed URLs for product images.
 
     DO Spaces is private (403 on direct URLs), so this endpoint generates
     time-limited signed download URLs for each image key stored in
     product.image_urls.
+
+    SECURITY: only keys under the caller's tenant prefix are signed.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyProductRepository(db)
-    product = await repo.get_by_id(product_id, current_user.tenant_id)
+    product = await repo.get_by_id(product_id, tenant_id)
 
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    spaces = get_spaces_service()
+    tenant_prefix = f"orgs/{tenant_id}/"
     image_keys = product.image_urls or []
+    signed_images: list[ProductImageUrlResponse] = []
+    for key in image_keys:
+        # Drop cross-tenant keys (fail-closed). The keys in this DB column
+        # SHOULD always be under the caller's tenant since the product itself
+        # is tenant-scoped, but the explicit check defends against any future
+        # code path that copies keys from elsewhere.
+        if not key.startswith(tenant_prefix):
+            continue
+        signed_images.append(
+            ProductImageUrlResponse(
+                key=key,
+                url=await spaces.generate_download_url(key),
+                expires_in=3600,
+            )
+        )
 
-    images = [
-        ProductImageUrlResponse(key=key, url=await spaces.generate_download_url(key), expires_in=3600)
-        for key in image_keys
-    ]
-
-    return ProductImageUrlsResponse(product_id=product_id, images=images)
+    return ProductImageUrlsResponse(product_id=product_id, images=signed_images)
 
 
 @router.patch("/{product_id}", response_model=ProductResponse)
