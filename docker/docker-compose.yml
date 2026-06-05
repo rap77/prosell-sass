@@ -148,6 +148,11 @@ services:
       - USE_MOCK_EMAIL=true
       # FILE STORAGE (MinIO in dev, DO Spaces in prod)
       - S3_ENDPOINT_URL=http://minio:9000
+      # S3_PUBLIC_ENDPOINT_URL is the host the BROWSER uses to fetch presigned
+      # URLs. Distinct from the internal docker network endpoint above because
+      # the browser can't resolve `minio` as a hostname. Leave unset in prod
+      # where DO Spaces' public endpoint matches the internal one.
+      - S3_PUBLIC_ENDPOINT_URL=http://localhost:9000
       - S3_FORCE_PATH_STYLE=true
       - DO_BUCKET_NAME=${DO_BUCKET_NAME:-prosell-assets}
       - DO_ACCESS_KEY_ID=${MINIO_ROOT_USER:-minioadmin}

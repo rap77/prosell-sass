@@ -22,6 +22,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "atl1.digitaloceanspaces.com",
       },
+      // MinIO local dev: the API signs presigned URLs against the public
+      // endpoint (http://localhost:9000), so the browser needs to be able to
+      // fetch from there. The signed signature is host-bound.
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "9000",
+      },
     ],
   },
 

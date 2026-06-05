@@ -2,8 +2,9 @@
 
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
+from prosell.application.dto.product.create import _validate_image_urls_format
 from prosell.domain.value_objects.product_condition import ProductCondition
 
 
@@ -20,3 +21,8 @@ class UpdateProductRequest(BaseModel):
     location_city: str | None = None
     location_state: str | None = None
     location_zip: str | None = None
+
+    # Reuse the format validator from create.py. None means
+    # "do not change this field" (PATCH semantics); an empty list means
+    # "clear all image_urls".
+    _validate_image_urls = field_validator("image_urls")(_validate_image_urls_format)

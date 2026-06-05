@@ -22,6 +22,7 @@ class DOSpacesService(IDOSpacesService):
         access_key: str | None = None,
         secret_key: str | None = None,
         endpoint_url: str | None = None,
+        public_endpoint_url: str | None = None,
         force_path_style: bool | None = None,
     ) -> None:
         self.region = region or settings.do_region
@@ -32,6 +33,11 @@ class DOSpacesService(IDOSpacesService):
         # Allow explicit override via constructor (used in tests) or env var
         # (used in docker-compose for MinIO). Defaults to the DO Spaces endpoint.
         override_endpoint = endpoint_url if endpoint_url is not None else settings.s3_endpoint_url
+        override_public_endpoint = (
+            public_endpoint_url
+            if public_endpoint_url is not None
+            else settings.s3_public_endpoint_url
+        )
         use_path_style = (
             force_path_style if force_path_style is not None else settings.s3_force_path_style
         )
@@ -45,13 +51,30 @@ class DOSpacesService(IDOSpacesService):
         if use_path_style:
             boto_config_kwargs["s3"] = {"addressing_style": "path"}
 
+        boto_config = Config(**boto_config_kwargs)
+
         self.s3_client = boto3.client(
             "s3",
             endpoint_url=self.endpoint,
             aws_access_key_id=access_key_id,
             aws_secret_access_key=secret_access_key,
-            config=Config(**boto_config_kwargs),
+            config=boto_config,
         )
+
+        # Signer client: signs presigned URLs against the host the browser will use
+        # (the PUBLIC endpoint), not the internal docker network endpoint. In dev
+        # with MinIO these differ (http://minio:9000 vs http://localhost:9000); in
+        # prod with DO Spaces they're the same, so we reuse the same client.
+        if override_public_endpoint and override_public_endpoint != self.endpoint:
+            self.s3_signer = boto3.client(
+                "s3",
+                endpoint_url=override_public_endpoint,
+                aws_access_key_id=access_key_id,
+                aws_secret_access_key=secret_access_key,
+                config=boto_config,
+            )
+        else:
+            self.s3_signer = self.s3_client
 
     async def generate_presigned_url(
         self,
@@ -85,7 +108,7 @@ class DOSpacesService(IDOSpacesService):
 
         # Generate presigned URL for PUT operation (run sync boto3 call in thread pool)
         url = await asyncio.to_thread(
-            lambda: self.s3_client.generate_presigned_url(
+            lambda: self.s3_signer.generate_presigned_url(
                 "put_object",
                 Params={
                     "Bucket": self.bucket,
@@ -191,7 +214,7 @@ class DOSpacesService(IDOSpacesService):
             Presigned URL valid for downloading the file
         """
         url = await asyncio.to_thread(
-            lambda: self.s3_client.generate_presigned_url(
+            lambda: self.s3_signer.generate_presigned_url(
                 "get_object",
                 Params={
                     "Bucket": self.bucket,

@@ -229,6 +229,13 @@ class Settings(BaseSettings):
         description="Override S3 endpoint URL (use MinIO http://minio:9000 in dev, "
         "leave None for DO Spaces in prod)",
     )
+    s3_public_endpoint_url: str | None = Field(
+        default=None,
+        description="Public-facing endpoint URL used to sign presigned URLs. In dev with "
+        "MinIO this is the host the browser uses (e.g., http://localhost:9000), "
+        "distinct from the internal docker network endpoint (http://minio:9000). "
+        "Leave None when both endpoints are the same (e.g., DO Spaces in prod).",
+    )
     s3_force_path_style: bool = Field(
         default=True,
         description="Use path-style addressing (required for MinIO, optional for DO Spaces)",
