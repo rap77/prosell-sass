@@ -95,10 +95,18 @@ async def create_category(
     """
     Create a new category.
 
-    Only users with MASTER role can create categories.
+    Only users with `super_admin` or `admin` role can create categories.
+    Sellers / sales agents are denied — the product niche is fixed at
+    seed time, and the catalog is read-only for them.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    if not current_user.has_role(["super_admin", "admin"]):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can create categories",
+        )
 
     repo = SqlAlchemyCategoryRepository(db)
     use_case = CreateCategoryUseCase(repo)
