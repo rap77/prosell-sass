@@ -82,6 +82,13 @@ export interface CreateProductRequest {
   location_city?: string;
   location_state?: string;
   location_zip?: string;
+  /**
+   * Image storage KEYS (raw S3 paths, e.g. `orgs/{tenant}/vehicles/{uuid}.jpg`).
+   * Do NOT pass signed URLs here — they expire in 1h and the image-urls
+   * signer will produce malformed URLs. The image-urls endpoint re-signs
+   * the keys on every read.
+   */
+  image_urls?: string[];
 }
 
 /**

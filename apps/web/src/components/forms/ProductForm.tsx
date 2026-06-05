@@ -34,10 +34,9 @@ import { useDecodeVin } from "@/lib/api/vehicles";
 import { useCreateProduct, useUpdateProduct, useProduct } from "@/lib/api/products";
 import { useAuthStore } from "@/stores/authStore";
 import { ProductFormAttributes } from "./ProductFormAttributes";
-import { ProductImageGallery } from "@/components/catalog/ProductImageGallery";
+import { VehicleImageManager } from "./VehicleImageManager";
 import type { Category } from "@/types/category";
 import type { VehicleAttributes } from "@/types/vehicle";
-import type { ProductImage } from "@/types/product-image";
 
 // ============================================
 // TYPES
@@ -112,9 +111,17 @@ export interface ProductFormProps {
   productId?: string;
   initialData?: Partial<ProductFormValues>;
   onSuccess?: () => void;
+  /**
+   * @deprecated Use `initialImageKeys` instead. Kept for backward
+   * compatibility with the create page (which uploads via the older flow).
+   * Will be removed once the create page is migrated to use the
+   * in-form VehicleImageManager.
+   */
   imageUrls?: string[];
+  /** Initial list of image storage keys (e.g. product.image_urls). */
+  initialImageKeys?: string[];
   /** Custom submit handler. If provided, overrides default fetch logic. */
-  onSubmit?: (data: ProductFormValues, imageUrls: string[]) => Promise<void>;
+  onSubmit?: (data: ProductFormValues, imageKeys: string[]) => Promise<void>;
 }
 
 // ============================================
@@ -136,12 +143,19 @@ export function ProductForm({
   productId,
   initialData,
   onSuccess,
-  imageUrls = [],
+  imageUrls: deprecatedImageUrls = [],
+  initialImageKeys,
   onSubmit: customOnSubmit,
 }: ProductFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isDecodingVin, setIsDecodingVin] = useState(false);
+  // The current list of image storage keys, managed by the
+  // VehicleImageManager and sent on submit. The legacy `imageUrls` prop
+  // (still used by the create page) is treated as the initial value.
+  const [imageKeys, setImageKeys] = useState<string[]>(
+    initialImageKeys ?? deprecatedImageUrls,
+  );
 
   // React Hook Form setup
   const {
@@ -228,6 +242,36 @@ export function ProductForm({
     if (mode === "edit" && existingProduct) {
       const attrs = existingProduct.attributes as VehicleAttributes;
 
+      // Pre-populate the image manager with the product's current image
+      // keys. Read BOTH the top-level column (preferred) and the legacy
+      // attributes.image_urls (defense for pre-migration data) — deduped,
+      // order-preserving. Strip any leading `?X-Amz-...` query strings
+      // (the runtime signer already does this, but we want the displayed
+      // list to be clean too).
+      const seen = new Set<string>();
+      const seedKeys: string[] = []
+      const topLevel = Array.isArray(existingProduct.image_urls)
+        ? existingProduct.image_urls
+        : []
+      const attrLevel =
+        attrs && Array.isArray((attrs as unknown as Record<string, unknown>).image_urls)
+          ? ((attrs as unknown as Record<string, unknown>).image_urls as string[])
+          : []
+      for (const raw of [...topLevel, ...attrLevel]) {
+        if (typeof raw !== "string" || raw.length === 0) continue
+        const clean = raw.split("?")[0]
+        // strip optional bucket prefix
+        const after = clean.includes("://")
+          ? clean.split("://", 2)[1].split("/", 2)[1] ?? clean
+          : clean.replace(/^[^/]+\//, "")
+        if (!after || seen.has(after)) continue
+        seen.add(after)
+        seedKeys.push(after)
+      }
+      if (seedKeys.length > 0 && initialImageKeys === undefined) {
+        setImageKeys(seedKeys)
+      }
+
       reset({
         category_id: existingProduct.category_id,
         vin: attrs.vin || "",
@@ -259,7 +303,7 @@ export function ProductForm({
         description: existingProduct.description || "",
       });
     }
-  }, [mode, existingProduct, reset]);
+  }, [mode, existingProduct, reset, initialImageKeys]);
 
   /**
    * Auto-populate stock_number from last 6 characters of VIN.
@@ -434,9 +478,12 @@ export function ProductForm({
     // The disabled state on button prevents double-clicks, not this handler
 
     try {
-      // If custom submit handler is provided, use it
+      // If custom submit handler is provided, use it. Pass the current
+      // list of image KEYS (not signed URLs — the create page uploads
+      // via the optimized hook, which returns `{url, key}`; we pass
+      // the keys so they can be persisted in product.image_urls).
       if (customOnSubmit) {
-        await customOnSubmit(data, imageUrls);
+        await customOnSubmit(data, imageKeys);
         return;
       }
 
@@ -489,6 +536,10 @@ export function ProductForm({
           category_id: data.category_id ?? "",
           description: data.description,
           attributes: vehicleAttributes,
+          // The create page passes `customOnSubmit`, so this default
+          // branch only fires for direct ProductForm usages (e.g. tests).
+          // Still: include the keys if we have them.
+          ...(imageKeys.length > 0 ? { image_urls: imageKeys } : {}),
         });
 
         logger.debug("✅ Product created successfully:", product);
@@ -543,6 +594,9 @@ export function ProductForm({
             category_id: data.category_id ?? "",
             description: data.description,
             attributes: vehicleAttributes,
+            // Always send the current image keys (may be the same as
+            // initial, may have additions/deletions).
+            image_urls: imageKeys,
           },
         });
 
@@ -570,19 +624,6 @@ export function ProductForm({
   // ============================================
   // RENDER
   // ============================================
-
-  // Convert imageUrls to ProductImage format for ProductImageGallery
-  const productImages: ProductImage[] = (imageUrls || []).map((url, index) => ({
-    id: `img-${index}`,
-    product_id: productId || '',
-    url,
-    thumbnail_url: url, // Use same URL for thumbnail (backend will generate thumbnails)
-    sort_order: index,
-    is_primary: index === 0,
-    alt_text: `Image ${index + 1}`,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  }));
 
   return (
     <form
@@ -630,17 +671,13 @@ export function ProductForm({
       noValidate
     >
       {/* ========================================
-          IMAGE GALLERY (Edit Mode Only)
+          IMAGE MANAGER (create and edit)
           ======================================== */}
-      {mode === "edit" && productImages.length > 0 && (
-        <section className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold">Imágenes Actuales</h2>
-          <ProductImageGallery images={productImages} />
-          <p className="text-sm text-muted-foreground">
-            Estas son las imágenes actuales del vehículo. Para agregar o reemplazar imágenes, usá el componente de carga de imágenes abajo.
-          </p>
-        </section>
-      )}
+      <VehicleImageManager
+        initialKeys={imageKeys}
+        onChange={setImageKeys}
+        disabled={isDisabled}
+      />
 
       {/* ========================================
           SECTION 1: VIN & Decoding

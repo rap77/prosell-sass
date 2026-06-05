@@ -6,7 +6,8 @@ import { useUploadStore } from '@/lib/stores/uploadStore'
 // Mock the API functions
 vi.mock('@/lib/api/images', () => ({
   uploadImageDirect: vi.fn(() => Promise.resolve({
-    url: 'https://optimized-cloud-url.com/image.jpg',
+    url: 'https://optimized-cloud-url.com/image.jpg?X-Amz-Signature=stale',
+    key: 'orgs/tenant-1/vehicles/abc-uuid.jpg',
   })),
 }))
 
@@ -52,7 +53,11 @@ describe('useImageUploadOptimized', () => {
     // Should show completion at 100%
     expect(mockSetUploading).toHaveBeenCalledWith('test-file-id', 100)
     // Should mark as complete with URL
-    expect(mockUpdateFileStatus).toHaveBeenCalledWith('test-file-id', 'complete', 'https://optimized-cloud-url.com/image.jpg')
+    expect(mockUpdateFileStatus).toHaveBeenCalledWith(
+      'test-file-id',
+      'complete',
+      'https://optimized-cloud-url.com/image.jpg?X-Amz-Signature=stale',
+    )
   })
 
   it('handles multiple images in parallel chunks', async () => {
@@ -65,12 +70,12 @@ describe('useImageUploadOptimized', () => {
       { id: 'file-4', file: new File(['test4'], 'test4.jpg', { type: 'image/jpeg' }) },
     ]
 
-    const urls = await act(async () => {
+    const results = await act(async () => {
       return await result.current.uploadImages(files)
     })
 
-    // Should return 4 URLs
-    expect(urls).toHaveLength(4)
+    // Should return 4 records
+    expect(results).toHaveLength(4)
   })
 
   it('uploads in chunks of 3 images', async () => {
@@ -81,12 +86,12 @@ describe('useImageUploadOptimized', () => {
       file: new File([`test${i}`], `test${i}.jpg`, { type: 'image/jpeg' }),
     }))
 
-    const urls = await act(async () => {
+    const results = await act(async () => {
       return await result.current.uploadImages(files)
     })
 
-    // Should return 7 URLs
-    expect(urls).toHaveLength(7)
+    // Should return 7 records
+    expect(results).toHaveLength(7)
   })
 
   it('rolls back on upload error', async () => {
@@ -116,15 +121,20 @@ describe('useImageUploadOptimized', () => {
     expect(mockUpdateFileStatus).toHaveBeenCalledWith('test-file-id', 'error')
   })
 
-  it('returns final optimized URL after successful upload', async () => {
+  it('returns both url and key after successful upload', async () => {
     const { result } = renderHook(() => useImageUploadOptimized())
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
 
-    const url = await act(async () => {
+    const uploaded = await act(async () => {
       return await result.current.uploadImage(file, 'test-file-id')
     })
 
-    expect(url).toBe('https://optimized-cloud-url.com/image.jpg')
+    // The hook returns BOTH the presigned URL (preview) AND the raw key
+    // (which MUST be persisted into product.image_urls).
+    expect(uploaded).toEqual({
+      url: 'https://optimized-cloud-url.com/image.jpg?X-Amz-Signature=stale',
+      key: 'orgs/tenant-1/vehicles/abc-uuid.jpg',
+    })
   })
 
   it('simpler flow: no polling needed (single API call)', async () => {
@@ -145,5 +155,67 @@ describe('useImageUploadOptimized', () => {
     expect(mockUpdateFileStatus).toHaveBeenCalledWith('test-file-id', 'uploading')
     expect(mockUpdateFileStatus).toHaveBeenCalledWith('test-file-id', 'complete', expect.any(String))
     expect(mockUpdateFileStatus).not.toHaveBeenCalledWith('test-file-id', 'processing')
+  })
+
+  describe('regression: must return storage key (not signed URL) for image_urls', () => {
+    /**
+     * Bug: previously the hook only returned the signed URL. The create page
+     * stored that into product.image_urls, which then expired in 1h and
+     * caused the image-urls signer to produce malformed URLs (signed against
+     * a key that already contained `?X-Amz-...`).
+     *
+     * The fix: the hook returns `{url, key}` and callers persist `key`.
+     */
+    it('uploaded.key is a raw S3 path (no query string)', async () => {
+      const { result } = renderHook(() => useImageUploadOptimized())
+      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
+
+      const uploaded = await act(async () => {
+        return await result.current.uploadImage(file, 'test-file-id')
+      })
+
+      expect('key' in uploaded).toBe(true)
+      expect(typeof uploaded.key).toBe('string')
+      // The key MUST be a raw path, not a signed URL.
+      expect(uploaded.key).not.toContain('?')
+      expect(uploaded.key).not.toContain('X-Amz-')
+      expect(uploaded.key).toMatch(/^orgs\/.+\/vehicles\/.+\.jpg$/)
+    })
+
+    it('uploadImages returns key for every file (preserves order)', async () => {
+      // Override the mock to return a distinct key per call
+      const { uploadImageDirect } = await import('@/lib/api/images')
+      let counter = 0
+      vi.mocked(uploadImageDirect).mockImplementation(async () => {
+        const i = counter++
+        return {
+          url: `https://signed.example.com/file-${i}?X-Amz-Signature=stale`,
+          key: `orgs/tenant-1/vehicles/file-${i}.jpg`,
+        }
+      })
+
+      const { result } = renderHook(() => useImageUploadOptimized())
+      const files = [
+        { id: 'f1', file: new File(['a'], 'a.jpg', { type: 'image/jpeg' }) },
+        { id: 'f2', file: new File(['b'], 'b.jpg', { type: 'image/jpeg' }) },
+        { id: 'f3', file: new File(['c'], 'c.jpg', { type: 'image/jpeg' }) },
+      ]
+
+      const uploaded = await act(async () => {
+        return await result.current.uploadImages(files)
+      })
+
+      // The order of returned records must match the order of input files.
+      expect(uploaded.map((u) => u.key)).toEqual([
+        'orgs/tenant-1/vehicles/file-0.jpg',
+        'orgs/tenant-1/vehicles/file-1.jpg',
+        'orgs/tenant-1/vehicles/file-2.jpg',
+      ])
+      // The URLs (signed, expiring) MUST be distinct from the keys.
+      for (const u of uploaded) {
+        expect(u.key).not.toBe(u.url)
+        expect(u.key).not.toContain('?')
+      }
+    })
   })
 })

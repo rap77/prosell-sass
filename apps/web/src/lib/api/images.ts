@@ -104,11 +104,14 @@ export async function pollProcessingStatus(fileId: string): Promise<{ url: strin
 
 /**
  * Upload image directly to backend with optimization
- * Backend will: optimize image, upload to DO Spaces, return public URL
+ * Backend will: optimize image, upload to DO Spaces, return presigned URL + key
  * @param file - File to upload
- * @returns Public URL of optimized image
+ * @returns `url` (presigned, expires in 1h — for browser preview only) and
+ *          `key` (raw storage path — persist this in `product.image_urls`).
  */
-export async function uploadImageDirect(file: File): Promise<{ url: string }> {
+export async function uploadImageDirect(
+  file: File
+): Promise<{ url: string; key: string }> {
   const formData = new FormData()
   formData.append('file', file)
 

@@ -26,10 +26,13 @@ export default function CreateVehiclePage() {
   const handleSubmit = async (data: ProductFormValues, _imageUrls: string[]) => {
     setIsUploading(true)
     try {
-      // Upload images first, then create vehicle
-      const uploadedUrls = uploadedFiles.length > 0
+      // Upload images first, then create vehicle. Persist STORAGE KEYS, not
+      // signed URLs, into product.image_urls — signed URLs expire in 1h.
+      // The image-urls endpoint signs the key on every read.
+      const uploaded = uploadedFiles.length > 0
         ? await uploadImages(uploadedFiles.map((f) => ({ id: f.id, file: f.file })))
         : []
+      const uploadedKeys = uploaded.map((u) => u.key)
 
       const response = await fetch('/api/v1/products', {
         method:  'POST',
@@ -56,7 +59,7 @@ export default function CreateVehiclePage() {
             has_navigation:    data.has_navigation,
             has_backup_camera: data.has_backup_camera,
             description:       data.description,
-            image_urls:        uploadedUrls,
+            image_urls:        uploadedKeys,
           },
         }),
       })
