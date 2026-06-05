@@ -357,3 +357,122 @@ class TestGetProductImageUrlsEmpty:
             "product_id": str(TEST_PRODUCT_ID),
             "images": [],
         }
+
+
+class TestGetProductImageUrlsStripsQueryString:
+    """A URL whose value already contains a `?X-Amz-...` query string (e.g.
+    a previous, expired presigned URL mistakenly stored in the DB column
+    instead of the raw S3 key) MUST be normalized to the bare key before
+    signing — otherwise the SIGN call receives a key like
+    `orgs/.../vehicles/x.jpg?X-Amz-Algorithm=...` and mints a new signature
+    against the wrong (compound) key, producing a URL the browser can't load.
+
+    This is the data-corruption safety net: even if a buggy writer persists
+    a signed URL into `image_urls`, the read-side signer MUST extract just
+    the path portion (key) and ignore the trailing query string.
+    """
+
+    @pytest.mark.asyncio
+    async def test_strips_query_string_from_top_level_image_url(
+        self, async_client_with_spaces: tuple[AsyncClient, AsyncMock]
+    ) -> None:
+        """A corrupted top-level URL with `?X-Amz-...` MUST be normalized."""
+        client, spaces = async_client_with_spaces
+        key = f"orgs/{TEST_TENANT_ID}/vehicles/corrupted1.jpg"
+        corrupted_url = (
+            f"http://minio:9000/{BUCKET}/{key}"
+            "?X-Amz-Algorithm=AWS4-HMAC-SHA256"
+            "&X-Amz-SignedHeaders=host"
+            "&X-Amz-Signature=this-will-expire"
+        )
+        product = _make_product_entity(image_urls=[corrupted_url], attributes={})
+
+        with patch(
+            "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+        ) as mock_repo_cls:
+            mock_repo_cls.return_value.get_by_id = AsyncMock(return_value=product)
+
+            response = await client.get(f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls")
+
+        assert response.status_code == status.HTTP_200_OK, response.text
+        body = response.json()
+        assert len(body["images"]) == 1, (
+            f"Expected 1 normalized image, got: {body['images']!r}"
+        )
+        signed = body["images"][0]
+        # The returned key MUST be the bare storage key (no query string).
+        assert signed["key"] == key, (
+            f"Query string was not stripped from the key: {signed['key']!r}"
+        )
+        # And the signer was called with the bare key, not the corrupted one.
+        spaces.generate_download_url.assert_awaited_once_with(key)
+
+    @pytest.mark.asyncio
+    async def test_strips_query_string_from_attributes_image_url(
+        self, async_client_with_spaces: tuple[AsyncClient, AsyncMock]
+    ) -> None:
+        """Same normalization for the legacy `attributes.image_urls` source."""
+        client, spaces = async_client_with_spaces
+        key = f"orgs/{TEST_TENANT_ID}/vehicles/legacy-corrupted.jpg"
+        corrupted_url = (
+            f"http://minio:9000/{BUCKET}/{key}"
+            "?X-Amz-Algorithm=AWS4-HMAC-SHA256"
+            "&X-Amz-Signature=stale-signature"
+        )
+        product = _make_product_entity(
+            image_urls=[],
+            attributes={"image_urls": [corrupted_url]},
+        )
+
+        with patch(
+            "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+        ) as mock_repo_cls:
+            mock_repo_cls.return_value.get_by_id = AsyncMock(return_value=product)
+
+            response = await client.get(f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls")
+
+        assert response.status_code == status.HTTP_200_OK, response.text
+        body = response.json()
+        assert len(body["images"]) == 1
+        signed = body["images"][0]
+        assert signed["key"] == key, (
+            f"Query string was not stripped from attributes URL: {signed['key']!r}"
+        )
+        spaces.generate_download_url.assert_awaited_once_with(key)
+
+    @pytest.mark.asyncio
+    async def test_mixed_corrupted_and_clean_urls_all_normalized(
+        self, async_client_with_spaces: tuple[AsyncClient, AsyncMock]
+    ) -> None:
+        """When the row mixes clean and corrupted URLs, both end up as bare keys."""
+        client, spaces = async_client_with_spaces
+        clean_key = f"orgs/{TEST_TENANT_ID}/vehicles/clean.jpg"
+        corrupt_key = f"orgs/{TEST_TENANT_ID}/vehicles/corrupt.jpg"
+        clean_url = f"http://minio:9000/{BUCKET}/{clean_key}"
+        corrupt_url = (
+            f"http://minio:9000/{BUCKET}/{corrupt_key}"
+            "?X-Amz-Algorithm=AWS4-HMAC-SHA256"
+            "&X-Amz-Signature=stale"
+        )
+        product = _make_product_entity(
+            image_urls=[clean_url, corrupt_url], attributes={}
+        )
+
+        with patch(
+            "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+        ) as mock_repo_cls:
+            mock_repo_cls.return_value.get_by_id = AsyncMock(return_value=product)
+
+            response = await client.get(f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls")
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        keys = [img["key"] for img in body["images"]]
+        assert keys == [clean_key, corrupt_key], (
+            f"Both URLs must end up as bare keys; got: {keys!r}"
+        )
+        # The signer must have been called with bare keys, never with
+        # `?X-Amz-...` suffixes.
+        called_keys = [c.args[0] for c in spaces.generate_download_url.await_args_list]
+        for k in called_keys:
+            assert "?" not in k, f"Signer was called with a query string: {k!r}"

@@ -368,11 +368,15 @@ async def get_product_image_urls(
 
     signed_images: list[ProductImageUrlResponse] = []
     for url in merged_urls:
+        # Normalize: a stored value may be a signed URL whose `key` portion
+        # is followed by `?X-Amz-...`. We want ONLY the storage key, so
+        # split off the query string first. A bare key (no `?`) is also fine.
+        bare = url.split("?", 1)[0] if isinstance(url, str) else ""
         # Extract the storage key by stripping the `<bucket>/` marker. If the
         # URL doesn't contain the bucket, it's malformed / external — drop it
         # (fail-closed, never echo an unsigned URL to the response).
         try:
-            key = url.split(f"{spaces.bucket}/", 1)[1]
+            key = bare.split(f"{spaces.bucket}/", 1)[1]
         except (IndexError, AttributeError):
             continue
         # Defense in depth: only sign keys under the caller's tenant. The

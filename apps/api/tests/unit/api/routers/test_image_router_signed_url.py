@@ -152,3 +152,45 @@ class TestImageStatusReturnsSignedURL:
         assert "minio:9000" not in url, (
             f"URL leaked internal endpoint (minio:9000), got: {url!r}"
         )
+
+
+class TestImageUploadReturnsStorageKey:
+    """POST /api/v1/images/upload MUST return BOTH:
+      - `url`  : a presigned URL (signed against the public endpoint so the
+                 browser can fetch the just-uploaded object from the private
+                 bucket during the current session)
+      - `key`  : the raw S3 storage path, e.g. `orgs/{tenant}/vehicles/{uuid}.jpg`
+
+    The frontend MUST persist the `key` into `product.image_urls` (the storage
+    layer is opaque to the rest of the system). If the create form persists
+    the `url` instead, the row stores an expiring signed URL — images break
+    1h later, and re-signing the malformed key produces a URL the browser
+    cannot load (signature is calculated against a key that already contains
+    `?X-Amz-...`).
+    """
+
+    @pytest.mark.asyncio
+    async def test_upload_response_includes_storage_key(
+        self, async_client: AsyncClient
+    ) -> None:
+        """The response MUST include a `key` field with the raw storage path."""
+        response = await async_client.post(
+            "/api/v1/images/upload",
+            files={"file": ("test.jpg", _sample_jpeg_bytes(), "image/jpeg")},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert "key" in body, f"Response missing `key` field; got: {body!r}"
+        key = body["key"]
+        # The key MUST be the raw S3 path — no signature query string.
+        assert "?" not in key, (
+            f"key contains a query string (signed URL leaked): {key!r}"
+        )
+        # And it MUST start with the tenant prefix.
+        assert key.startswith(f"orgs/{TEST_TENANT_ID}/vehicles/"), (
+            f"key does not match expected tenant prefix: {key!r}"
+        )
+        # The signed `url` should still be returned (for browser preview).
+        assert "url" in body
+        assert "X-Amz-Signature=" in body["url"]
