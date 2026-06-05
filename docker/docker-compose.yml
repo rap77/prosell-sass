@@ -37,6 +37,45 @@ services:
       retries: 5
 
   # =============================================================================
+  # MINIO (S3-compatible local object storage — dev only)
+  # =============================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: prosell-minio
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    volumes:
+      - minio_data:/data
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
+  # MINIO INIT — create bucket + set public-read policy on startup
+  # =============================================================================
+  minio-init:
+    image: minio/mc:latest
+    container_name: prosell-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin} &&
+      mc mb local/${DO_BUCKET_NAME:-prosell-assets} --ignore-existing &&
+      mc anonymous set download local/${DO_BUCKET_NAME:-prosell-assets} &&
+      echo 'MinIO bucket ${DO_BUCKET_NAME:-prosell-assets} ready with anonymous read access'
+      "
+    restart: "no"
+
+  # =============================================================================
   # POSTGRESQL 17 - TEST DATABASE
   # =============================================================================
   postgres-test:
@@ -64,11 +103,15 @@ services:
       context: ..
       dockerfile: docker/api.Dockerfile
     container_name: prosell-api
+    # Load .env from the repo root so DATABASE_URL, REDIS_URL, ADMIN_*, OAuth,
+    # SendGrid, etc. are available inside the container.
+    # Anything listed in `environment:` below overrides the value from .env.
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     environment:
-      # DATABASE — value comes from .env or env_file, no hardcode here
-      # REDIS
+      # REDIS (in-container network name; explicit override for safety)
       - REDIS_URL=redis://redis:6379/0
       # JWT
       - JWT_PRIVATE_KEY_PATH=/app/keys/private.pem
@@ -103,11 +146,21 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       # EMAIL (Mock)
       - USE_MOCK_EMAIL=true
+      # FILE STORAGE (MinIO in dev, DO Spaces in prod)
+      - S3_ENDPOINT_URL=http://minio:9000
+      - S3_FORCE_PATH_STYLE=true
+      - DO_BUCKET_NAME=${DO_BUCKET_NAME:-prosell-assets}
+      - DO_ACCESS_KEY_ID=${MINIO_ROOT_USER:-minioadmin}
+      - DO_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     volumes:
       # Mount source code for hot-reload (dev only)
       - ../apps/api/src:/app/src:ro
@@ -168,4 +221,6 @@ volumes:
   redis_data:
     driver: local
   postgres_test_data:
+    driver: local
+  minio_data:
     driver: local

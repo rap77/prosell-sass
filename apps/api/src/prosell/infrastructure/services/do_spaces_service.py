@@ -1,6 +1,7 @@
 """DigitalOcean Spaces integration for file storage."""
 
 import asyncio
+from typing import Any
 from uuid import uuid4
 
 import boto3
@@ -20,20 +21,36 @@ class DOSpacesService(IDOSpacesService):
         bucket_name: str | None = None,
         access_key: str | None = None,
         secret_key: str | None = None,
+        endpoint_url: str | None = None,
+        force_path_style: bool | None = None,
     ) -> None:
         self.region = region or settings.do_region
         self.bucket = bucket_name or settings.do_bucket_name
         access_key_id = access_key or settings.do_access_key_id
         secret_access_key = secret_key or settings.do_secret_access_key
 
-        self.endpoint = f"https://{self.region}.digitaloceanspaces.com"
+        # Allow explicit override via constructor (used in tests) or env var
+        # (used in docker-compose for MinIO). Defaults to the DO Spaces endpoint.
+        override_endpoint = endpoint_url if endpoint_url is not None else settings.s3_endpoint_url
+        use_path_style = (
+            force_path_style if force_path_style is not None else settings.s3_force_path_style
+        )
+
+        if override_endpoint:
+            self.endpoint = override_endpoint
+        else:
+            self.endpoint = f"https://{self.region}.digitaloceanspaces.com"
+
+        boto_config_kwargs: dict[str, Any] = {"signature_version": "s3v4"}
+        if use_path_style:
+            boto_config_kwargs["s3"] = {"addressing_style": "path"}
 
         self.s3_client = boto3.client(
             "s3",
             endpoint_url=self.endpoint,
             aws_access_key_id=access_key_id,
             aws_secret_access_key=secret_access_key,
-            config=Config(signature_version="s3v4"),
+            config=Config(**boto_config_kwargs),
         )
 
     async def generate_presigned_url(

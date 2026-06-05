@@ -79,8 +79,9 @@ export interface TeamListResponse {
 // API CLIENT CONFIGURATION
 // ============================================
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" ? "" : "http://localhost:3000");
+// Relative URL — Next.js rewrites proxy /api/:path* to the backend container.
+// See apps/web/next.config.ts and PR #3 for context.
+const API_BASE_URL = "";
 
 // ============================================
 // ERROR HANDLING
