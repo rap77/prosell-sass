@@ -1,5 +1,6 @@
 """Product router."""
 
+from urllib.parse import urlparse
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
@@ -15,6 +16,7 @@ from prosell.application.dto.product import (
     UpdateProductRequest,
     VehicleImportRowResponse,
 )
+from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.use_cases.product.approve_product import ApproveProductUseCase
 from prosell.application.use_cases.product.bulk_upload_preview import (
     BulkUploadPreviewUseCase,
@@ -32,13 +34,15 @@ from prosell.application.use_cases.product.list_products import (
     ListProductsUseCase,
     ProductListResponse,
 )
-from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.csv_product_parser import CSVProductParser
-from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie, get_spaces_service
+from prosell.infrastructure.api.dependencies import (
+    get_current_auth_user_from_cookie,
+    get_spaces_service,
+)
 from prosell.infrastructure.api.routers.image_router import sign_image_urls
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.category_repository_impl import (
@@ -50,6 +54,49 @@ from prosell.infrastructure.repositories.organization_repository_impl import (
 from prosell.infrastructure.repositories.product_repository_impl import SqlAlchemyProductRepository
 
 router = APIRouter()
+
+
+def validate_image_urls_for_tenant(
+    image_urls: list[str] | None,
+    tenant_id: UUID,
+) -> None:
+    """Reject image_urls whose storage key is not under the caller's tenant.
+
+    Defense in depth — second layer (DTO format is the first, signer
+    fail-closed is the third). Ensures cross-tenant image URLs never
+    reach the DB in the first place.
+
+    URL format produced by the system: `scheme://host/<bucket>/<key>`
+    where `<key>` starts with `orgs/{tenant_id}/`. We strip the first
+    path segment (the bucket) and verify the rest starts with the
+    caller's tenant prefix. The bucket name is intentionally not
+    compared — the substring `orgs/{tenant_id}/` is the security
+    boundary that matters.
+
+    Raises HTTPException(422) if any URL fails the check. Empty/None
+    input is a no-op (no images to validate).
+    """
+    if not image_urls:
+        return
+
+    expected_prefix = f"orgs/{tenant_id}/"
+    for url in image_urls:
+        parsed = urlparse(url)
+        # Strip leading "/" and split off the first segment (the bucket).
+        path = parsed.path.lstrip("/")
+        if not path:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"image_urls entry has no storage path: {url!r}",
+            )
+        _, _, key = path.partition("/")
+        if not key.startswith(expected_prefix):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"image_urls entry is not under the caller's tenant ({tenant_id}): {url!r}"
+                ),
+            )
 
 
 async def get_product_repository(session: AsyncSession) -> AbstractProductRepository:
@@ -84,6 +131,11 @@ async def create_product(
             "organization_id": current_user.tenant_id,
         }
     )
+
+    # Defense in depth: reject image_urls not under the caller's tenant
+    # before they reach the use case / DB. The DTO format check has
+    # already filtered out malformed URLs and non-http(s) schemes.
+    validate_image_urls_for_tenant(request.image_urls, current_user.tenant_id)
 
     # Execute use case
     product_repo = SqlAlchemyProductRepository(db)
@@ -218,7 +270,9 @@ async def list_products(
     for product in result.products:
         if product.image_urls:
             product.image_urls = await sign_image_urls(
-                product.image_urls, spaces, tenant_id=tenant_id,
+                product.image_urls,
+                spaces,
+                tenant_id=tenant_id,
             )
 
     return result
@@ -258,7 +312,9 @@ async def get_product(
     # Scope to the caller's tenant to prevent cross-tenant presigned-URL minting.
     if response.image_urls:
         response.image_urls = await sign_image_urls(
-            response.image_urls, spaces, tenant_id=tenant_id,
+            response.image_urls,
+            spaces,
+            tenant_id=tenant_id,
         )
 
     return response
@@ -325,6 +381,12 @@ async def update_product(
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     tenant_id = current_user.tenant_id
+
+    # Defense in depth: reject image_urls not under the caller's tenant
+    # before they reach the DB. The DTO format check has already filtered
+    # out malformed URLs and non-http(s) schemes.
+    if request.image_urls is not None:
+        validate_image_urls_for_tenant(request.image_urls, tenant_id)
 
     repo = SqlAlchemyProductRepository(db)
     product = await repo.get_by_id(product_id, tenant_id)
