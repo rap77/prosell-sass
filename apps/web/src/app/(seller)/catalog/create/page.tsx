@@ -12,7 +12,7 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ImageDropzone } from '@/components/upload/ImageDropzone'
-import { ImageGallery } from '@/components/upload/ImageGallery'
+import { ProductCoverPicker } from '@/components/forms/ProductCoverPicker'
 import { ProductForm, type ProductFormValues } from '@/components/forms/ProductForm'
 import { useImageUploadOptimized } from '@/lib/hooks/useImageUploadOptimized'
 import { useUploadStore } from '@/lib/stores/uploadStore'
@@ -20,7 +20,7 @@ import { useUploadStore } from '@/lib/stores/uploadStore'
 export default function CreateVehiclePage() {
   const router = useRouter()
   const { uploadImages }         = useImageUploadOptimized()
-  const { uploadedFiles, clearAll } = useUploadStore()
+  const { uploadedFiles, coverImageId, clearAll } = useUploadStore()
   const [isUploading, setIsUploading] = useState(false)
 
   const handleSubmit = async (data: ProductFormValues, _imageUrls: string[]) => {
@@ -34,6 +34,21 @@ export default function CreateVehiclePage() {
         : []
       const uploadedKeys = uploaded.map((u) => u.key)
 
+      // Translate the in-flight cover pick (a file id from the
+      // uploadStore) to the resulting storage key. The picker writes
+      // a file id; the backend wants a key; the upload hook's
+      // `UploadedImage` does not echo back the file id, so we build
+      // an id→key map from the input order (the hook returns results
+      // in submission order). If the seller never picked a cover,
+      // fall back to null (no cover).
+      const idToKey = new Map<string, string>()
+      for (let i = 0; i < uploadedFiles.length; i++) {
+        idToKey.set(uploadedFiles[i].id, uploaded[i]?.key ?? '')
+      }
+      const coverKey = coverImageId
+        ? idToKey.get(coverImageId) ?? null
+        : null
+
       const response = await fetch('/api/v1/products', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -41,6 +56,12 @@ export default function CreateVehiclePage() {
           title:       `${data.year} ${data.make} ${data.model}`,
           price_cents: Math.round((data.price || 0) * 100),
           category_id: data.category_id,
+          // First-class cover pointer (top-level, NOT inside
+          // attributes — that's the canonical location after the
+          // cover_image_key migration). The backend DTO validator
+          // rejects a cover that is not in image_urls, so we send
+          // both as a pair.
+          cover_image_key: coverKey,
           attributes: {
             vin:               data.vin,
             category:          'vehicle',
@@ -115,7 +136,16 @@ export default function CreateVehiclePage() {
           Fotos
         </h2>
         <ImageDropzone />
-        <ImageGallery />
+        {/*
+          The cover picker is the SINGLE source of truth for the
+          "pick which image is the cover" UX across create AND edit.
+          In create mode it reads from the uploadStore (no server
+          PATCH — the product doesn't exist yet). The page's
+          submit handler reads coverImageId and translates it to a
+          storage key for the cover_image_key field in the POST
+          body. Replaces the older standalone ImageGallery wrapper.
+        */}
+        <ProductCoverPicker mode="create" />
       </section>
 
       {/* Vehicle form */}

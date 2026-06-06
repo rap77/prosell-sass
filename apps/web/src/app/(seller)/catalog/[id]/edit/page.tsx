@@ -63,23 +63,13 @@ export default function EditVehiclePage() {
         </div>
       </div>
 
-      {/* Edit form */}
-      <ProductForm
-        mode="edit"
-        productId={productId}
-        onSuccess={() => {
-          router.push('/catalog')
-          router.refresh()
-        }}
-      />
-
-      {/* Cover picker — the seller picks which existing image is the
-          product cover. Sits BELOW the form (which owns the list of
-          storage keys) because the picker reads them from the server
-          (the source of truth) rather than from local form state. */}
+      {/* Cover picker — sits ABOVE the form so the seller sees
+          it first and doesn't have to scroll past a long form to
+          find it. PATCHes the cover immediately on click, so it's
+          an independent operation from the form submit below. */}
       {productId && (
         <section
-          style={{ marginTop: 32 }}
+          style={{ marginBottom: 32 }}
           data-testid="product-cover-picker-section"
         >
           <h2 style={{
@@ -90,9 +80,19 @@ export default function EditVehiclePage() {
           }}>
             Imagen de portada
           </h2>
-          <ProductCoverPicker productId={productId} />
+          <ProductCoverPicker mode="edit" productId={productId} />
         </section>
       )}
+
+      {/* Edit form */}
+      <ProductForm
+        mode="edit"
+        productId={productId}
+        onSuccess={() => {
+          router.push('/catalog')
+          router.refresh()
+        }}
+      />
 
     </div>
   )
