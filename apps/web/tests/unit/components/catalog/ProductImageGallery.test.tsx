@@ -12,11 +12,28 @@ import { render, screen } from '@testing-library/react'
 import { ProductImageGallery } from '@/components/catalog/ProductImageGallery'
 import type { ProductImage } from '@/types/product-image'
 
-// Stub next/image so we don't need to mock the full image optimizer pipeline
+// Stub next/image so we don't need to mock the full image optimizer pipeline.
+// We forward `unoptimized` as a data attribute so tests can assert that
+// the gallery passes `unoptimized={true}` to <Image> when rendering signed
+// URLs — this is the regression guard for the `_next/image 400` issue
+// (see the regression note below in the new test block).
 vi.mock('next/image', () => ({
-  default: ({ src, alt }: { src: string; alt: string }) => (
+  default: ({
+    src,
+    alt,
+    unoptimized,
+  }: {
+    src: string
+    alt: string
+    unoptimized?: boolean
+  }) => (
     // eslint-disable-next-line @next/next/no-img-element
-    <img data-testid="next-image" src={src} alt={alt} />
+    <img
+      data-testid="next-image"
+      src={src}
+      alt={alt}
+      data-unoptimized={unoptimized ? 'true' : 'false'}
+    />
   ),
 }))
 
@@ -90,5 +107,46 @@ describe('ProductImageGallery — null URL handling', () => {
     expect(screen.queryByText(/Sin imágenes disponibles/i)).not.toBeInTheDocument()
     // 1 main + 2 thumbnails
     expect(screen.queryAllByTestId('next-image')).toHaveLength(3)
+  })
+
+  // ── Regression: `/_next/image 400` on MinIO signed URLs ────────────────────
+  // The gallery renders URLs that come from the backend's `/image-urls`
+  // endpoint — they are MinIO presigned URLs, host-bound to
+  // `S3_PUBLIC_ENDPOINT_URL` (e.g. `http://localhost:9000`). The Next.js
+  // Image Optimization proxy runs server-side, inside the Docker `web`
+  // container, where `localhost:9000` does NOT resolve to MinIO — so the
+  // proxy 400s on every image. The fix is to pass `unoptimized={true}` to
+  // `<Image>`: the browser fetches the signed URL directly and the proxy
+  // is never involved. Both the main image and every thumbnail must opt
+  // out. This block guards that — if a future change drops the prop from
+  // either spot, the `_next/image 400` comes back.
+  describe('unoptimized prop on signed URLs (catalog image regression)', () => {
+    const SIGNED_URL = 'http://localhost:9000/prosell-assets/orgs/abc/vehicles/abc.jpg'
+
+    it('passes unoptimized={true} to the main <Image>', () => {
+      render(<ProductImageGallery images={[makeImage({ url: SIGNED_URL })]} />)
+
+      const imgs = screen.queryAllByTestId('next-image')
+      // Only one image → only the main <Image>, no thumbnails
+      expect(imgs).toHaveLength(1)
+      expect(imgs[0].getAttribute('data-unoptimized')).toBe('true')
+    })
+
+    it('passes unoptimized={true} to every thumbnail <Image>', () => {
+      // 3 renderable images → 1 main + 3 thumbnails = 4 <Image> instances
+      const images: ProductImage[] = [
+        makeImage({ id: 'a', url: SIGNED_URL, sort_order: 0 }),
+        makeImage({ id: 'b', url: SIGNED_URL + '?shot=2', sort_order: 1 }),
+        makeImage({ id: 'c', url: SIGNED_URL + '?shot=3', sort_order: 2 }),
+      ]
+
+      render(<ProductImageGallery images={images} />)
+
+      const imgs = screen.queryAllByTestId('next-image')
+      expect(imgs).toHaveLength(4)
+      for (const img of imgs) {
+        expect(img.getAttribute('data-unoptimized')).toBe('true')
+      }
+    })
   })
 })

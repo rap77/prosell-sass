@@ -1,9 +1,10 @@
 """Product creation DTOs."""
 
 import re
+from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 from pydantic import ValidationError as PydanticValidationError
 
 from prosell.domain.value_objects.product_condition import ProductCondition
@@ -98,8 +99,38 @@ class CreateProductRequest(BaseModel):
     condition: ProductCondition = ProductCondition.USED
     attributes: dict[str, object] = Field(default_factory=dict)
     image_urls: list[str] = Field(default_factory=list)
+    # First-class pointer to the cover image. Optional at creation time
+    # (a product with no images has no cover). When provided, must
+    # reference an entry in `image_urls` — enforced by the
+    # cross-field invariant below, symmetric with
+    # `UpdateProductRequest._check_cover_in_images`.
+    cover_image_key: str | None = None
     location_city: str | None = None
     location_state: str | None = None
     location_zip: str | None = None
 
     _validate_image_urls = field_validator("image_urls")(_validate_image_urls_format)
+
+    @model_validator(mode="after")
+    def _check_cover_in_images(self) -> Self:
+        """Cross-field invariant: cover_image_key must reference a real image.
+
+        At creation time `image_urls` is always present (defaults to
+        `[]`), so the check can be done fully here without deferring to
+        the use case. A cover with no images is rejected — there is
+        nothing for it to point to.
+        """
+        if self.cover_image_key is None:
+            return self
+        if not self.image_urls:
+            raise ValueError(
+                "cover_image_key cannot be set when image_urls is empty: "
+                "a product with no images has no cover"
+            )
+        if self.cover_image_key not in self.image_urls:
+            raise ValueError(
+                f"cover_image_key {self.cover_image_key!r} is not in image_urls. "
+                f"Set cover_image_key to one of the existing image keys, "
+                f"or add the new key to image_urls first."
+            )
+        return self

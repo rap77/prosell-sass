@@ -119,6 +119,12 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
           fill
           style={{ objectFit: 'contain' }}
           sizes="(max-width: 768px) 100vw, 50vw"
+          // Bypass the `/_next/image` proxy: the URL is a MinIO presigned URL
+          // host-bound to `S3_PUBLIC_ENDPOINT_URL`, which the server-side proxy
+          // (running inside the Docker `web` container) cannot reach. The
+          // browser fetches the signed URL directly. See `image-loader` history
+          // and `tests/unit/components/catalog/ProductImageGallery.test.tsx`.
+          unoptimized
         />
 
         {renderableImages.length > 1 && (
@@ -243,6 +249,9 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
                   fill
                   style={{ objectFit: 'cover' }}
                   sizes="76px"
+                  // Same signed-URL bypass as the main image above — see the
+                  // regression comment in the main <Image> for the rationale.
+                  unoptimized
                 />
               </button>
             )

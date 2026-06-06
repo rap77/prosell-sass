@@ -54,11 +54,22 @@ class ProductModel(Base):
         nullable=False,
     )
 
-    # Image URLs at product level (moved from VehicleAttributes)
+    # Image URLs at product level (moved from VehicleAttributes).
+    # `image_urls` is the ordered list of all images, used for the gallery.
+    # `cover_image_key` is the SINGLE source of truth for which one is the
+    # cover (the image shown in catalog cards, detail hero, etc.). It is
+    # settable independently from upload order so the seller can pick any
+    # image as the cover. Nullable: a product with no images has no cover,
+    # and a cover must reference an entry that exists in `image_urls`
+    # (enforced in the DTO validator). See migration
+    # `20260606_0000-add_cover_image_key_to_product.py`.
     image_urls: Mapped[list[str] | None] = mapped_column(
         JSONB,
         default=[],
         nullable=True,
+    )
+    cover_image_key: Mapped[str | None] = mapped_column(
+        String(500), nullable=True
     )
 
     # Location

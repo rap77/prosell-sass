@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import type { CreateProductRequest, Product, ProductListResponse, ProductAttributes } from "@/types/product";
 import type { VehicleAttributes } from "@/types/vehicle";
 import { isVehicleProduct } from "@/types/product";
+import { getCoverImageKey, getProductImageKeys } from "./productImages";
 
 interface BackendProductResponse {
   id: string;
@@ -370,6 +371,79 @@ export function useProductImageUrls(productId: string | undefined) {
   })
 }
 
+// ─── Set the product cover ─────────────────────────────────────────────────────
+
+/**
+ * PATCH the product to set (or clear) its cover image. Pure
+ * fetcher — the `useSetProductCover` hook below wraps it in a
+ * TanStack Query mutation with invalidation and toast.
+ *
+ * Contract:
+ *   - `key === null`  → clear the cover (body is `{ cover_image_key: null }`).
+ *   - `key === "..."` → set the cover to that storage key. The
+ *                       backend validator rejects keys that are not
+ *                       in the product's current `image_urls` list.
+ *
+ * The `key` MUST be the storage key (e.g. `orgs/<uuid>/vehicles/<file>.jpg`),
+ * NOT a signed URL — the backend stores the raw key, and the cover
+ * lookup uses the same key as the gallery.
+ */
+export async function setProductCover(
+  productId: string,
+  key: string | null,
+): Promise<Product> {
+  const res = await fetch(`/api/v1/products/${productId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ cover_image_key: key }),
+  })
+
+  if (!res.ok) {
+    // Surface the backend's message verbatim — the validator
+    // returns a 422 with a descriptive `detail` ("cover_image_key
+    // 'X' is not in the product's current image list") that the UI
+    // shows to the user. Falling back to a generic message would
+    // hide a useful diagnostic.
+    const err = await res.json().catch(() => ({ message: "Failed to set cover" }))
+    const detail = (err as { detail?: string; message?: string }).detail
+      ?? (err as { message?: string }).message
+      ?? "Failed to set cover"
+    throw new Error(detail)
+  }
+
+  return res.json() as Promise<Product>
+}
+
+/**
+ * Mutation hook: set (or clear) the product's cover image.
+ *
+ * On success, invalidates the product's query so the catalog grid,
+ * detail view, and any other consumer re-fetch and pick up the new
+ * cover. On error, shows a toast with the backend's message.
+ */
+export function useSetProductCover() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ productId, key }: { productId: string; key: string | null }) =>
+      setProductCover(productId, key),
+
+    onSuccess: (_data, { productId }) => {
+      // Invalidate every product-related query so the catalog grid,
+      // detail view, CommandPalette thumbnail, etc. all see the
+      // new cover on next render.
+      queryClient.invalidateQueries({ queryKey: ["products"] })
+      queryClient.invalidateQueries({ queryKey: ["products", productId] })
+      toast.success("Cover updated")
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Failed to update cover")
+    },
+  })
+}
+
 // ─── Vehicle-specific helpers (catalog page) ─────────────────────────────────
 
 /**
@@ -390,17 +464,24 @@ export function transformProductToVehicle(product: Product): {
 } {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const attrs = product.attributes as any;
-  // Try product-level image_urls first, fall back to attrs.image_urls for backward compat
-  const imageUrls = Array.isArray(product.image_urls)
-    ? product.image_urls
-    : (Array.isArray(attrs?.image_urls) ? attrs.image_urls : []);
+  // Use the shared image-key resolver. It handles both post-migration
+  // (`product.image_urls`) and legacy (`attrs.image_urls`) sources —
+  // the naive `Array.isArray(product.image_urls) ? … : …` short-circuit
+  // missed the case where the backend returns `[]` for the top-level
+  // field and the actual keys live in `attrs.image_urls` (the create
+  // form persists there). See `productImages.ts` for the regression
+  // context.
+  // The cover is now an explicit field on the product — see
+  // `getCoverImageKey` for the priority rules. Falls back to the
+  // first image when no cover is set (legacy / pre-migration data).
+  const coverKey = getCoverImageKey(product);
   return {
     id: product.id,
     title: product.title,
     price: product.price_cents / 100,
     // Map product status to vehicle status (product.status is more granular)
     status: mapProductStatusToVehicleStatus(product.status),
-    photo_url: imageUrls[0] ?? undefined,
+    photo_url: coverKey,
     year: attrs.year,
     make: attrs.make,
     model: attrs.model,

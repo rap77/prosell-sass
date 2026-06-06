@@ -22,6 +22,7 @@ import { useProduct, useProductImageUrls } from '@/lib/api/products'
 import type { Product } from '@/types/product'
 import type { ProductImage } from '@/types/product-image'
 import { isVehicleAttributes, type VehicleAttributes } from '@/types/vehicle'
+import { getCoverImageKey, getProductImageKeys } from '@/lib/api/productImages'
 import { ProductImageGallery } from './ProductImageGallery'
 
 // ─── Helpers (preserved verbatim) ─────────────────────────────────────────────
@@ -35,11 +36,6 @@ const SUPPORTED_STATUS = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
-}
-
-function getStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return []
-  return value.filter((item): item is string => typeof item === 'string' && item.length > 0)
 }
 
 function isGridStatus(
@@ -62,9 +58,15 @@ export function getProductImages(
   product: Product,
   signedUrlMap?: Map<string, string>,
 ): ProductImage[] {
-  const productLevelUrls = isRecord(product) ? getStringArray(product.image_urls) : []
+  // Use the shared image-key resolver. Same merge contract as the
+  // card, DataGrid, and backend `/image-urls` endpoint — single
+  // source of truth for "the list of signable keys for this product".
+  // See `lib/api/productImages.ts` for the regression context.
+  const fallbackUrls = getProductImageKeys(product)
+  // The cover key is the explicit source of truth; if it is missing
+  // we fall back to the first image (handled by the helper).
+  const coverKey = getCoverImageKey(product)
   const attrs = product.attributes
-  const attributeLevelUrls = isRecord(attrs) ? getStringArray(attrs.image_urls) : []
   const rawImages = isRecord(attrs) && Array.isArray(attrs.images) ? attrs.images : []
 
   const normalizedImages = rawImages.flatMap((image, index) => {
@@ -94,7 +96,6 @@ export function getProductImages(
     return normalizedImages.toSorted((l, r) => l.sort_order - r.sort_order)
   }
 
-  const fallbackUrls = productLevelUrls.length > 0 ? productLevelUrls : attributeLevelUrls
   return fallbackUrls.map((url, index) => {
     const signed = signedUrlMap?.get(url)
     return {
@@ -104,7 +105,11 @@ export function getProductImages(
       url:           signed ?? null,
       thumbnail_url: signed ?? null,
       sort_order:    index,
-      is_primary:    index === 0,
+      // The cover is the explicit `cover_image_key` (or the first
+      // image when the cover is not set). The previous implementation
+      // hard-coded `is_primary: index === 0` which is wrong once
+      // the seller can pick a different cover.
+      is_primary:    url === coverKey,
       alt_text:      `${product.title} image ${index + 1}`,
       created_at:    product.created_at,
       updated_at:    product.updated_at,

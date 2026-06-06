@@ -439,6 +439,42 @@ async def update_product(
         product.attributes = request.attributes
     if request.image_urls is not None:
         product.image_urls = request.image_urls
+    # `cover_image_key` is a first-class pointer to the cover image.
+    # Two cross-field checks the DTO cannot enforce on its own:
+    #
+    # 1. If the request sets `cover_image_key` but not `image_urls`
+    #    (PATCH semantics: image list unchanged), the cover must
+    #    reference an entry in the product's CURRENT image list.
+    #    The DTO defers this to the router, where the entity is
+    #    loaded. A cover pointing to a non-existent image would
+    #    404 on every catalog render.
+    #
+    # 2. If the request clears `image_urls` to `[]`, the cover
+    #    must also be cleared — a product with no images has no
+    #    cover. Leaving a stale `cover_image_key` would point to
+    #    a non-existent image and break the catalog.
+    #
+    # Both checks run BEFORE the entity is mutated, so a rejection
+    # leaves the product untouched.
+    if request.cover_image_key is not None:
+        current_images = product.image_urls or []
+        if request.cover_image_key not in current_images:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"cover_image_key {request.cover_image_key!r} is not in "
+                    f"the product's current image list. Add the new key to "
+                    f"image_urls first, or set cover_image_key to one of the "
+                    f"existing image keys."
+                ),
+            )
+        product.cover_image_key = request.cover_image_key
+    if request.image_urls is not None and not request.image_urls:
+        # Image list was cleared — drop the cover too. A product with
+        # no images has no cover. The DTO rejects setting a non-null
+        # cover on an empty list, but we still need to drop a cover
+        # that was set before the clear.
+        product.cover_image_key = None
     if request.location_city is not None:
         product.location_city = request.location_city
     if request.location_state is not None:

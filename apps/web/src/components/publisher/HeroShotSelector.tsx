@@ -88,6 +88,12 @@ export function HeroShotSelector({
               fill
               style={{ objectFit: 'cover' }}
               sizes="(max-width: 768px) 25vw, 150px"
+              // Bypass the `/_next/image` proxy: `url` is a MinIO presigned
+              // URL host-bound to `S3_PUBLIC_ENDPOINT_URL`, which the
+              // server-side proxy (running inside the Docker `web` container)
+              // cannot reach. The browser fetches the signed URL directly.
+              // Regression guard: tests/unit/components/publisher/HeroShotSelector.test.tsx
+              unoptimized
             />
             {isSelected && (
               <span style={{

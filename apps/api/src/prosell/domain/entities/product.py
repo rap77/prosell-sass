@@ -42,8 +42,15 @@ class Product(DomainModel):
     # e.g., {"year": 2020, "make": "Toyota", "model": "Camry"}
     attributes: dict[str, object] = Field(default_factory=dict)
 
-    # Image URLs at product level (moved from VehicleAttributes)
+    # Image URLs at product level (moved from VehicleAttributes). The
+    # ordered list, used for the gallery view. `cover_image_key` (below) is
+    # the SINGLE source of truth for which entry is the cover — settable
+    # independently from upload order.
     image_urls: list[str] = Field(default_factory=list)
+    # Storage key of the cover image. Must reference an entry in
+    # `image_urls`; the DTO layer enforces this invariant. Nullable: a
+    # product with no images has no cover.
+    cover_image_key: str | None = None
 
     # Location (for shipping/pickup)
     location_city: str | None = None

@@ -33,8 +33,16 @@ export interface Product {
   // Flexible attributes (category-specific)
   attributes: ProductAttributes;
 
-  // Image URLs at product level (moved from VehicleAttributes)
+  // Image URLs at product level (moved from VehicleAttributes). The
+  // ordered list — used for the gallery view.
   image_urls?: string[];
+  // First-class pointer to the cover image. Single source of truth
+  // for "which image is the cover" — settable independently from
+  // upload order so the seller can pick any image as the cover.
+  // Nullable: a product with no images has no cover. The renderer
+  // falls back to `image_urls[0]` when this is null/undefined (see
+  // `getCoverImageKey` in `lib/api/productImages.ts`).
+  cover_image_key?: string | null;
 
   // Location
   location_city?: string;

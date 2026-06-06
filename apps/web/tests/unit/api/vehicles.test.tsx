@@ -1,7 +1,15 @@
 /**
  * Vehicles API tests
  *
- * Tests for vehicle API client hooks including useDecodeVin
+ * Tests for the production hooks in `lib/api/vehicles.ts`:
+ *   - `useDecodeVin` (POST /api/v1/vehicles/decode-vin)
+ *   - `useBulkUploadProducts` (POST /api/v1/products/bulk)
+ *
+ * The list/get/create/update/delete hooks used to live in this file
+ * (`useVehicles`, `useInfiniteVehicles`, `useVehicle`,
+ * `useFeaturedVehicles`, `useUpdateVehicle`, `useDeleteVehicle`,
+ * `useCreateVehicle`, `useBulkUploadVehicles`) but have been removed
+ * — the production app uses the equivalents in `lib/api/products.ts`.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -9,7 +17,7 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as React from "react";
 import { toast } from "sonner";
-import { useDecodeVin, useInfiniteVehicles, transformVehicleWithProduct, useBulkUploadProducts } from "@/lib/api/vehicles";
+import { useDecodeVin, useBulkUploadProducts } from "@/lib/api/vehicles";
 
 // Mock toast
 vi.mock("sonner", () => ({
@@ -184,156 +192,6 @@ describe("useDecodeVin", () => {
     });
 
     expect(toast.error).toHaveBeenCalledWith("Invalid VIN");
-  });
-});
-
-describe("transformVehicleWithProduct", () => {
-  let queryClient: QueryClient;
-  let wrapper: React.FC<{ children: React.ReactNode }>;
-
-  beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-      },
-    });
-
-    wrapper = ({ children }) => (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-  });
-
-  it("should extract title from product.title", async () => {
-    const backendItem = {
-      id: "product-uuid",
-      tenant_id: "tenant-uuid",
-      organization_id: "org-uuid",
-      category_id: "category-uuid",
-      title: "2020 Honda Civic LX",
-      price_cents: 2500000,
-      currency: "USD",
-      condition: "used" as const,
-      status: "active" as const,
-      created_at: "2024-01-01T00:00:00Z",
-      updated_at: "2024-01-01T00:00:00Z",
-      attributes: { category: "vehicle", year: 2020, make: "Honda", model: "Civic", trim: "LX" },
-    };
-
-    const result = transformVehicleWithProduct(backendItem as any);
-
-    expect(result.title).toBe("2020 Honda Civic LX");
-  });
-
-  it("should extract price from product.price_cents", async () => {
-    const backendItem = {
-      id: "product-uuid",
-      tenant_id: "tenant-uuid",
-      organization_id: "org-uuid",
-      category_id: "category-uuid",
-      title: "2020 Honda Civic",
-      price_cents: 1850000,
-      currency: "USD",
-      condition: "used" as const,
-      status: "active" as const,
-      created_at: "2024-01-01T00:00:00Z",
-      updated_at: "2024-01-01T00:00:00Z",
-      attributes: { category: "vehicle", year: 2020, make: "Honda", model: "Civic" },
-    };
-
-    const result = transformVehicleWithProduct(backendItem as any);
-
-    expect(result.price).toBe(18500);
-  });
-
-  it("should extract status from product.status", async () => {
-    const backendItem = {
-      id: "product-uuid",
-      tenant_id: "tenant-uuid",
-      organization_id: "org-uuid",
-      category_id: "category-uuid",
-      title: "2020 Honda Civic",
-      price_cents: 1850000,
-      currency: "USD",
-      condition: "used" as const,
-      status: "draft" as const,
-      created_at: "2024-01-01T00:00:00Z",
-      updated_at: "2024-01-01T00:00:00Z",
-      attributes: { category: "vehicle", year: 2020, make: "Honda", model: "Civic" },
-    };
-
-    const result = transformVehicleWithProduct(backendItem as any);
-
-    expect(result.status).toBe("draft");
-  });
-
-  it("should preserve vehicle attribute fields", async () => {
-    const backendItem = {
-      id: "product-uuid",
-      tenant_id: "tenant-uuid",
-      organization_id: "org-uuid",
-      category_id: "category-uuid",
-      title: "2020 Honda Civic LX",
-      price_cents: 1850000,
-      currency: "USD",
-      condition: "used" as const,
-      status: "active" as const,
-      created_at: "2024-01-01T00:00:00Z",
-      updated_at: "2024-01-01T00:00:00Z",
-      attributes: {
-        category: "vehicle",
-        year: 2020,
-        make: "Honda",
-        model: "Civic",
-        trim: "LX",
-        mileage: 50000,
-      },
-    };
-
-    const result = transformVehicleWithProduct(backendItem as any);
-
-    expect(result.year).toBe(2020);
-    expect(result.make).toBe("Honda");
-    expect(result.model).toBe("Civic");
-  });
-
-  it("should useInfiniteVehicles use new transform function", async () => {
-    const mockResponse: any = {
-      products: [
-        {
-          id: "product-uuid",
-          tenant_id: "tenant-uuid",
-          organization_id: "org-uuid",
-          category_id: "category-uuid",
-          title: "2020 Honda Civic",
-          price_cents: 1850000,
-          currency: "USD",
-          condition: "used",
-          status: "active",
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-          attributes: { category: "vehicle", year: 2020, make: "Honda", model: "Civic" },
-        },
-      ],
-      next_cursor: "next-cursor",
-      has_more: true,
-    };
-
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    } as Response);
-
-    const { result } = renderHook(() => useInfiniteVehicles(), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    const vehicles = result.current.data?.pages[0]?.items;
-    expect(vehicles?.[0].title).toBe("2020 Honda Civic");
-    expect(vehicles?.[0].price).toBe(18500);
-    expect(vehicles?.[0].status).toBe("active");
   });
 });
 

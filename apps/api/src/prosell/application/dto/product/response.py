@@ -39,6 +39,13 @@ class ProductResponse(BaseModel):
     attributes: dict[str, object] = {}
     # Image URLs at product level (moved from VehicleAttributes)
     image_urls: list[str] = []
+    # First-class pointer to the cover image. Single source of truth
+    # for "which image is the cover" — used by the catalog grid, the
+    # detail view hero, and any thumbnail surface. Settable
+    # independently from upload order so the seller can pick any
+    # image as the cover. Nullable: a product with no images has no
+    # cover (the renderer falls back to the placeholder).
+    cover_image_key: str | None = None
     stock_number: str | None = None
     location_city: str | None = None
     location_state: str | None = None
@@ -79,6 +86,7 @@ class ProductResponse(BaseModel):
             status=product.status.value,
             attributes=product.attributes,
             image_urls=product.image_urls,
+            cover_image_key=product.cover_image_key,
             stock_number=cast(str | None, product.attributes.get("stock_number"))
             if product.attributes
             else None,
