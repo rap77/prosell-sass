@@ -21,6 +21,12 @@ const SIGNED_URL =
   '?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=deadbeef'
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
+  // The test fixtures use partial `attributes` objects that only define the
+  // fields relevant to each test (e.g. just `image_urls`). `ProductAttributes`
+  // is a discriminated union requiring category-specific fields (vin, make,
+  // model, year, mileage for vehicles), so we cast through `unknown` — the
+  // helper under test (`getProductImages`) only reads `image_urls` and
+  // `images` from attributes and does not branch on `category`.
   return {
     id: 'prod-1',
     tenant_id: '11111111-1111-1111-1111-111111111111',
@@ -31,7 +37,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     currency: 'USD',
     condition: 'used',
     status: 'published',
-    attributes: {},
+    attributes: {} as unknown as Product['attributes'],
     image_urls: [],
     is_featured: false,
     view_count: 0,
@@ -46,7 +52,7 @@ describe('getProductImages — signed URL resolution', () => {
   describe('when image_urls come from product.attributes.image_urls (legacy fallback)', () => {
     it('returns the signed URL when the key matches the map', () => {
       const product = makeProduct({
-        attributes: { image_urls: [RAW_URL] } as Product['attributes'],
+        attributes: { image_urls: [RAW_URL] } as unknown as Product['attributes'],
       })
       const signedUrlMap = new Map<string, string>([[RAW_URL, SIGNED_URL]])
 
@@ -61,7 +67,7 @@ describe('getProductImages — signed URL resolution', () => {
       // This is the bug: previously the helper echoed the raw internal-endpoint
       // URL back to the UI, and the browser couldn't fetch it.
       const product = makeProduct({
-        attributes: { image_urls: [RAW_URL] } as Product['attributes'],
+        attributes: { image_urls: [RAW_URL] } as unknown as Product['attributes'],
       })
       // Signed-URL map with a different key — no match for RAW_URL
       const signedUrlMap = new Map<string, string>([
@@ -81,7 +87,7 @@ describe('getProductImages — signed URL resolution', () => {
 
     it('returns null for every image when the map is empty', () => {
       const product = makeProduct({
-        attributes: { image_urls: [RAW_URL, RAW_URL + '2'] } as Product['attributes'],
+        attributes: { image_urls: [RAW_URL, RAW_URL + '2'] } as unknown as Product['attributes'],
       })
 
       const images = getProductImages(product, new Map())
@@ -153,7 +159,7 @@ describe('getProductImages — signed URL resolution', () => {
     it('the result never contains a raw internal-endpoint URL', () => {
       const product = makeProduct({
         image_urls: [RAW_URL],
-        attributes: { image_urls: [RAW_URL] } as Product['attributes'],
+        attributes: { image_urls: [RAW_URL] } as unknown as Product['attributes'],
       })
 
       const images = getProductImages(product, new Map())

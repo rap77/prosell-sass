@@ -11,8 +11,13 @@ export interface ProductImage {
   id: string;
   product_id: string;
 
-  // Image URLs
-  url: string; // Public URL of the image
+  // Image URLs. `url` is `string | null` (not just `string`) because the
+  // gallery helper (`getProductImages`) returns `null` when no signed URL
+  // is available for a stored key — i.e. the underlying object exists in
+  // the DB but its presigned URL was not resolved. `null` is the signal
+  // for the gallery to render its empty state instead of feeding an
+  // unreachable URL to `<Image>`.
+  url: string | null;
   thumbnail_url?: string | null; // Smaller thumbnail version
 
   // Ordering and display
@@ -35,9 +40,12 @@ export interface ProductImage {
 }
 
 /**
- * Helper to get display URL (prefer thumbnail for thumbnails, full URL otherwise)
+ * Helper to get display URL (prefer thumbnail for thumbnails, full URL otherwise).
+ * Returns `null` when no resolved URL is available — callers should treat that
+ * as a signal to render the empty state rather than feeding an unreachable
+ * URL to `<Image>`.
  */
-export function getDisplayUrl(image: ProductImage, useThumbnail = false): string {
+export function getDisplayUrl(image: ProductImage, useThumbnail = false): string | null {
   if (useThumbnail && image.thumbnail_url) {
     return image.thumbnail_url;
   }
@@ -53,11 +61,12 @@ export function hasDimensions(image: ProductImage): boolean {
 }
 
 /**
- * Helper to calculate aspect ratio
+ * Helper to calculate aspect ratio. Returns `null` when dimensions are
+ * missing or height is zero (avoids divide-by-zero).
  */
 export function getAspectRatio(image: ProductImage): number | null {
   if (!hasDimensions(image) || !image.height || image.height === 0) {
     return null;
   }
-  return image.width! / image.height;
+  return (image.width ?? 0) / image.height;
 }

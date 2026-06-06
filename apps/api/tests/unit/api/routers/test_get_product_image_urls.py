@@ -476,3 +476,114 @@ class TestGetProductImageUrlsStripsQueryString:
         called_keys = [c.args[0] for c in spaces.generate_download_url.await_args_list]
         for k in called_keys:
             assert "?" not in k, f"Signer was called with a query string: {k!r}"
+
+
+class TestGetProductImageUrlsAcceptsBareKeys:
+    """Regression: the endpoint must sign BARE storage keys, not only URLs.
+
+    The previous implementation did `bare.split(f'{bucket}/', 1)[1]` which
+    only works on URL form (where the bucket is a path segment). A bare key
+    like `orgs/<uuid>/vehicles/file.jpg` has NO bucket prefix, so the split
+    raised IndexError and the entry was silently dropped — returning
+    `images: []` for newly created products. The frontend then had no signed
+    URL to display.
+    """
+
+    @pytest.mark.asyncio
+    async def test_signs_bare_key_from_top_level(
+        self, async_client_with_spaces: tuple[AsyncClient, AsyncMock]
+    ) -> None:
+        """A bare key in `image_urls` MUST be signed (post-migration flow)."""
+        client, spaces = async_client_with_spaces
+        key = f"orgs/{TEST_TENANT_ID}/vehicles/bare-key.jpg"
+        product = _make_product_entity(image_urls=[key], attributes={})
+
+        with patch(
+            "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+        ) as mock_repo_cls:
+            mock_repo_cls.return_value.get_by_id = AsyncMock(return_value=product)
+
+            response = await client.get(f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls")
+
+        assert response.status_code == status.HTTP_200_OK, response.text
+        body = response.json()
+        assert len(body["images"]) == 1, (
+            f"Bare key was not signed (regression); got: {body['images']!r}"
+        )
+        signed = body["images"][0]
+        assert signed["key"] == key
+        assert "X-Amz-Signature=" in signed["url"]
+        # The signer MUST be called with the bare key, verbatim — no
+        # bucket-prefix mangling.
+        spaces.generate_download_url.assert_awaited_once_with(key)
+
+    @pytest.mark.asyncio
+    async def test_signs_bare_key_from_attributes(
+        self, async_client_with_spaces: tuple[AsyncClient, AsyncMock]
+    ) -> None:
+        """Same for legacy data that uses bare keys in attributes.image_urls."""
+        client, spaces = async_client_with_spaces
+        key = f"orgs/{TEST_TENANT_ID}/vehicles/legacy-bare.jpg"
+        product = _make_product_entity(
+            image_urls=[], attributes={"image_urls": [key]}
+        )
+
+        with patch(
+            "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+        ) as mock_repo_cls:
+            mock_repo_cls.return_value.get_by_id = AsyncMock(return_value=product)
+
+            response = await client.get(f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls")
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert len(body["images"]) == 1
+        assert body["images"][0]["key"] == key
+        # The signer must be called with the bare key, not bucket-mangled.
+        spaces.generate_download_url.assert_awaited_once_with(key)
+
+    @pytest.mark.asyncio
+    async def test_drops_cross_tenant_bare_key(
+        self, async_client_with_spaces: tuple[AsyncClient, AsyncMock]
+    ) -> None:
+        """A bare key under a different tenant is dropped (defense in depth)."""
+        _, _ = async_client_with_spaces
+        spaces = _make_spaces(
+            sign_map={
+                f"orgs/{TEST_TENANT_ID}/vehicles/mine.jpg": (
+                    f"http://localhost:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/vehicles/mine.jpg"
+                    "?X-Amz-Signature=ok"
+                )
+            }
+        )
+        app.dependency_overrides[get_spaces_service] = lambda: spaces
+
+        product = _make_product_entity(
+            image_urls=[
+                f"orgs/{TEST_TENANT_ID}/vehicles/mine.jpg",
+                f"orgs/{TEST_OTHER_TENANT_ID}/vehicles/secret.jpg",
+            ],
+            attributes={},
+        )
+
+        try:
+            with patch(
+                "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+            ) as mock_repo_cls:
+                mock_repo_cls.return_value.get_by_id = AsyncMock(return_value=product)
+                transport = ASGITransport(app=app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    response = await client.get(
+                        f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls"
+                    )
+        finally:
+            app.dependency_overrides.pop(get_spaces_service, None)
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        keys = [img["key"] for img in body["images"]]
+        assert keys == [f"orgs/{TEST_TENANT_ID}/vehicles/mine.jpg"], (
+            f"Cross-tenant bare key leaked; got: {keys!r}"
+        )
+        # Signer called exactly once — only the caller's tenant key.
+        assert spaces.generate_download_url.await_count == 1

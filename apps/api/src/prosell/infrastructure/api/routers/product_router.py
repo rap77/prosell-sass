@@ -55,6 +55,38 @@ from prosell.infrastructure.repositories.product_repository_impl import SqlAlche
 router = APIRouter()
 
 
+def _extract_storage_key_from_value(value: str) -> str | None:
+    """Extract the storage key from a value that may be a URL, a signed URL,
+    or a bare key. Returns None if the value is malformed (no usable key).
+
+    Two accepted shapes:
+      1. **URL** (legacy / external form): `scheme://host/<bucket>/<key>`.
+         The bucket is the first path segment; everything after `<bucket>/`
+         is the storage key.
+      2. **Bare key** (canonical, post-migration form):
+         `orgs/<tenant-uuid>/<rest>`. The whole value is the key.
+
+    For URLs we also drop any `?X-Amz-...` query string (signed URLs) so the
+    extraction works for the legacy buggy data too.
+    """
+    if not value or not isinstance(value, str):
+        return None
+    # Drop query string (signed URLs embed their signature there).
+    without_query = value.split("?", 1)[0]
+    # Heuristic: bare keys start with `orgs/` and contain no scheme. URLs
+    # always have a scheme separator (`://`).
+    if "://" in without_query:
+        parsed = urlparse(without_query)
+        path = parsed.path.lstrip("/")
+        if not path:
+            return None
+        # Strip the first path segment (the bucket) — what remains is the key.
+        _, _, key = path.partition("/")
+        return key or None
+    # Bare key form: the whole (querystripped) value is the key.
+    return without_query or None
+
+
 def validate_image_urls_for_tenant(
     image_urls: list[str] | None,
     tenant_id: UUID,
@@ -65,14 +97,14 @@ def validate_image_urls_for_tenant(
     fail-closed is the third). Ensures cross-tenant image URLs never
     reach the DB in the first place.
 
-    URL format produced by the system: `scheme://host/<bucket>/<key>`
-    where `<key>` starts with `orgs/{tenant_id}/`. We strip the first
-    path segment (the bucket) and verify the rest starts with the
-    caller's tenant prefix. The bucket name is intentionally not
-    compared — the substring `orgs/{tenant_id}/` is the security
-    boundary that matters.
+    Accepts both shapes (see `_extract_storage_key_from_value`):
+      - URL: `scheme://host/<bucket>/<key>` where `<key>` starts with
+        `orgs/{tenant_id}/`. The bucket name is intentionally not
+        compared — the substring `orgs/{tenant_id}/` is the security
+        boundary that matters.
+      - Bare key: `orgs/{tenant_id}/<rest>`.
 
-    Raises HTTPException(422) if any URL fails the check. Empty/None
+    Raises HTTPException(422) if any entry fails the check. Empty/None
     input is a no-op (no images to validate).
     """
     if not image_urls:
@@ -80,15 +112,12 @@ def validate_image_urls_for_tenant(
 
     expected_prefix = f"orgs/{tenant_id}/"
     for url in image_urls:
-        parsed = urlparse(url)
-        # Strip leading "/" and split off the first segment (the bucket).
-        path = parsed.path.lstrip("/")
-        if not path:
+        key = _extract_storage_key_from_value(url)
+        if not key:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"image_urls entry has no storage path: {url!r}",
             )
-        _, _, key = path.partition("/")
         if not key.startswith(expected_prefix):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -344,16 +373,12 @@ async def get_product_image_urls(
 
     signed_images: list[ProductImageUrlResponse] = []
     for url in merged_urls:
-        # Normalize: a stored value may be a signed URL whose `key` portion
-        # is followed by `?X-Amz-...`. We want ONLY the storage key, so
-        # split off the query string first. A bare key (no `?`) is also fine.
-        bare = url.split("?", 1)[0] if isinstance(url, str) else ""
-        # Extract the storage key by stripping the `<bucket>/` marker. If the
-        # URL doesn't contain the bucket, it's malformed / external — drop it
-        # (fail-closed, never echo an unsigned URL to the response).
-        try:
-            key = bare.split(f"{spaces.bucket}/", 1)[1]
-        except (IndexError, AttributeError):
+        # Extract the storage key. Accepts both URL form (legacy/signed URLs,
+        # `scheme://host/<bucket>/<key>`) and bare-key form (post-migration,
+        # `orgs/<tenant>/<rest>`). Anything that doesn't reduce to a usable
+        # key is dropped — fail-closed, never echo an unsigned URL.
+        key = _extract_storage_key_from_value(url) if isinstance(url, str) else None
+        if not key:
             continue
         # Defense in depth: only sign keys under the caller's tenant. The
         # product itself is tenant-scoped, but its `attributes` JSONB column

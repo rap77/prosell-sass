@@ -273,7 +273,7 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
     description:      product.description,
     price_cents:      product.price_cents,
     zip_code:         product.location_zip ?? '',
-    image_urls:       productImages.map((img) => img.url),
+    image_urls:       productImages.flatMap((img) => (img.url ? [img.url] : [])),
     tenant_id:        product.tenant_id,
     year:             vehicleAttributes.year,
     make:             vehicleAttributes.make,
