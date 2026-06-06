@@ -34,6 +34,7 @@ from prosell.application.use_cases.product.list_products import (
     ListProductsUseCase,
     ProductListResponse,
 )
+from prosell.domain.entities.product import Product
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
@@ -135,6 +136,43 @@ async def get_product_repository(session: AsyncSession) -> AbstractProductReposi
 async def get_category_repository(session: AsyncSession) -> AbstractCategoryRepository:
     """Get category repository instance."""
     return SqlAlchemyCategoryRepository(session)
+
+
+def _merged_image_url_candidates(product: Product) -> list[str]:
+    """Return the merged, deduped list of image URLs for a product.
+
+    Pre-migration, image URLs lived in `product.attributes.image_urls`
+    (the legacy nested field). Post-migration, they live in the
+    top-level `product.image_urls` column. Both endpoints that operate
+    on a product's image set — the sign endpoint AND the PATCH
+    cover-validator — must read from BOTH sources so that:
+
+      - Legacy products (no top-level entries) still display their
+        images and still accept a cover change.
+      - Modern products (with top-level entries) keep working
+        unchanged.
+      - A URL in both sources is counted ONCE (order-preserving dedupe
+        so the cover pick is stable across reads).
+
+    Mirrors the merge performed by the frontend
+    `getProductImageKeys(product)` helper in
+    `apps/web/src/lib/api/productImages.ts` — the two layers must
+    agree on "what images does this product have".
+    """
+    raw_urls: list[str] = list(product.image_urls or [])
+    attributes = product.attributes or {}
+    if isinstance(attributes, dict):
+        attr_urls = attributes.get("image_urls")
+        if isinstance(attr_urls, list):
+            raw_urls.extend(u for u in attr_urls if isinstance(u, str))
+    seen: set[str] = set()
+    merged: list[str] = []
+    for url in raw_urls:
+        if url in seen:
+            continue
+        seen.add(url)
+        merged.append(url)
+    return merged
 
 
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
@@ -357,19 +395,7 @@ async def get_product_image_urls(
     # products populate the top-level `product.image_urls` column. The endpoint
     # must sign entries from both so that legacy products render their photos.
     # Deduped (order-preserving) so an URL in both sources is signed once.
-    raw_urls: list[str] = list(product.image_urls or [])
-    attributes = product.attributes or {}
-    if isinstance(attributes, dict):
-        attr_urls = attributes.get("image_urls")
-        if isinstance(attr_urls, list):
-            raw_urls.extend(u for u in attr_urls if isinstance(u, str))
-    seen: set[str] = set()
-    merged_urls: list[str] = []
-    for url in raw_urls:
-        if url in seen:
-            continue
-        seen.add(url)
-        merged_urls.append(url)
+    merged_urls = _merged_image_url_candidates(product)
 
     signed_images: list[ProductImageUrlResponse] = []
     for url in merged_urls:
@@ -456,8 +482,15 @@ async def update_product(
     #
     # Both checks run BEFORE the entity is mutated, so a rejection
     # leaves the product untouched.
+    #
+    # Legacy data note: the "current image list" merges the
+    # top-level `image_urls` column AND the legacy
+    # `attributes.image_urls` field (mirrors the sign endpoint's
+    # merge — see `_merged_image_url_candidates`). Without this,
+    # a product whose images live only in the legacy attribute
+    # column would 422 on every cover change.
     if request.cover_image_key is not None:
-        current_images = product.image_urls or []
+        current_images = _merged_image_url_candidates(product)
         if request.cover_image_key not in current_images:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
