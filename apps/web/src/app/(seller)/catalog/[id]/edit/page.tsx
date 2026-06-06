@@ -13,6 +13,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { ProductForm } from '@/components/forms/ProductForm'
+import { ProductCoverPicker } from '@/components/forms/ProductCoverPicker'
 
 export default function EditVehiclePage() {
   const router   = useRouter()
@@ -71,6 +72,27 @@ export default function EditVehiclePage() {
           router.refresh()
         }}
       />
+
+      {/* Cover picker — the seller picks which existing image is the
+          product cover. Sits BELOW the form (which owns the list of
+          storage keys) because the picker reads them from the server
+          (the source of truth) rather than from local form state. */}
+      {productId && (
+        <section
+          style={{ marginTop: 32 }}
+          data-testid="product-cover-picker-section"
+        >
+          <h2 style={{
+            margin: '0 0 14px',
+            fontSize: 14,
+            fontWeight: 600,
+            color: 'var(--ps-text-primary)',
+          }}>
+            Imagen de portada
+          </h2>
+          <ProductCoverPicker productId={productId} />
+        </section>
+      )}
 
     </div>
   )
