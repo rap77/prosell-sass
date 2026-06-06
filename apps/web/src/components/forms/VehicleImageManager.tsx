@@ -26,6 +26,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Trash2, Upload, Loader2 } from 'lucide-react'
 import { useImageUploadOptimized } from '@/lib/hooks/useImageUploadOptimized'
+import { useClipboardPasteImage } from '@/lib/hooks/useClipboardPasteImage'
 import { cn } from '@/lib/utils'
 
 export interface VehicleImageManagerProps {
@@ -67,14 +68,12 @@ export function VehicleImageManager({
     setKeys((prev) => prev.filter((k) => k !== key))
   }, [])
 
-  const handleFileChange = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0]
-      // Always clear the input so the same file can be re-selected later
-      // (e.g. after an error).
-      if (event.target) event.target.value = ''
-      if (!file) return
-
+  // Single source of truth for "upload this File and append its key
+  // to the list". Used by the file-input handler AND the paste
+  // handler — they differ only in how the File arrives, not in what
+  // we do with it.
+  const uploadAndAdd = useCallback(
+    async (file: File) => {
       setIsUploading(true)
       setUploadError(null)
       try {
@@ -93,6 +92,25 @@ export function VehicleImageManager({
     },
     [uploadImage],
   )
+
+  const handleFileChange = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      // Always clear the input so the same file can be re-selected later
+      // (e.g. after an error).
+      if (event.target) event.target.value = ''
+      if (!file) return
+      await uploadAndAdd(file)
+    },
+    [uploadAndAdd],
+  )
+
+  // Paste-to-upload: a user with a screenshot in their clipboard can
+  // press Ctrl/Cmd+V anywhere on the page and the image uploads into
+  // the form's image list. Gated by `disabled` (form submitting) and
+  // `isUploading` (a previous upload is still in flight) to match
+  // the file-input behavior.
+  useClipboardPasteImage(uploadAndAdd, { enabled: !disabled && !isUploading })
 
   // Memoize the row data so the rendered list is stable.
   const rows = useMemo(
@@ -201,6 +219,13 @@ export function VehicleImageManager({
             </>
           )}
         </button>
+
+        <p
+          className="text-xs text-[var(--ps-text-secondary)]"
+          data-testid="vehicle-image-paste-hint"
+        >
+          También podés pegar una imagen con Ctrl/⌘+V
+        </p>
 
         {uploadError && (
           <p

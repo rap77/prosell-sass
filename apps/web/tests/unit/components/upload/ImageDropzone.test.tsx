@@ -168,4 +168,56 @@ describe('ImageDropzone', () => {
       })
     )
   })
+
+  // ── Paste-to-upload ───────────────────────────────────────────────
+  //
+  // The dropzone accepts files via three entry points: drop, file
+  // input, and paste. The drop and file-input paths are covered
+  // above; the paste path is wired through
+  // `useClipboardPasteImage` (unit-tested at the hook level). The
+  // tests below verify the INTEGRATION: the hook is plugged in,
+  // the file lands in the store, and text clipboard data is
+  // ignored.
+
+  function dispatchPaste(items: Array<{ kind: string; type: string; getAsFile: () => File | null }>): void {
+    const event = new Event('paste', { bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'clipboardData', {
+      value: { items },
+    })
+    window.dispatchEvent(event)
+  }
+
+  it('adds a pasted image to the upload store (same path as drop / file-input)', () => {
+    // The user copied a screenshot and pressed Ctrl/⌘+V. The
+    // dropzone should add it to the upload preview exactly the way
+    // a dropped file would.
+    const { unmount } = render(<ImageDropzone />)
+
+    const file = new File(['binary'], 'pasted.png', { type: 'image/png' })
+    dispatchPaste([{ kind: 'file', type: 'image/png', getAsFile: () => file }])
+
+    expect(mockAddUploadedFile).toHaveBeenCalledTimes(1)
+    expect(mockAddUploadedFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        file,
+        preview: expect.stringMatching(/^blob:/),
+        status: 'pending',
+        progress: 0,
+      }),
+    )
+
+    unmount()
+  })
+
+  it('does NOT add a pasted text string to the upload store', () => {
+    // A user pasting "hello" into a form field (e.g. the description
+    // textarea) should not phantom-upload an image.
+    const { unmount } = render(<ImageDropzone />)
+
+    dispatchPaste([{ kind: 'string', type: 'text/plain', getAsFile: () => null }])
+
+    expect(mockAddUploadedFile).not.toHaveBeenCalled()
+
+    unmount()
+  })
 })
