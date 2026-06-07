@@ -165,4 +165,4 @@ Branch: `feat/category-presentation-foundation`.
 - `title` optional in the create DTO → subsystem A (only needed once the frontend stops sending a client-composed title).
 - §3.1/§3.4 global-ization + filterable, §3.4 `organization_vertical` M2M, §5 read-API, subtitle → Plan 2.
 
-**Also still open (image feature, belongs on `fix/catalog-image-perf`, NOT this branch):** `CreateProductUseCase` does not pass `cover_image_key` to `Product.create`, so a cover set at creation time is dropped. Repo persistence was fixed (`3fc7da8`) but the use-case passthrough is missing.
+**Resolved on `fix/catalog-image-perf` (reaches this branch when that PR merges):** `CreateProductUseCase` now forwards `cover_image_key` to `Product.create` (commit `37bcfe0`) — the cover was being dropped on create even after the repo persistence fix (`3fc7da8`).
