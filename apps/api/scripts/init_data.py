@@ -20,9 +20,9 @@ from sqlalchemy import select
 # Use settings from the app — no hardcoded DATABASE_URL
 from prosell.core.config import settings
 from prosell.domain.entities.user import UserStatus  # Import UserStatus
+from prosell.infrastructure.database.seed_categories import seed_vehicles_vertical
 from prosell.infrastructure.database.session import async_session_maker
 from prosell.infrastructure.models import (
-    CategoryModel,
     OrganizationModel,
     RoleModel,
     UserModel,
@@ -52,32 +52,11 @@ async def init_data() -> None:
         else:
             print(f"Organization {org_name} already exists")
 
-        # 2. Create 'Vehicles' Category
-        cat_slug = "vehicles"
-        stmt = select(CategoryModel).where(
-            CategoryModel.slug == cat_slug, CategoryModel.tenant_id == org.id
-        )
-        result = await session.execute(stmt)
-        cat = result.scalar_one_or_none()
-
-        if not cat:
-            cat_id = uuid4()
-            cat = CategoryModel(
-                id=cat_id,
-                name="Vehicles",
-                slug=cat_slug,
-                tenant_id=org.id,
-                level=0,
-                is_active=True,
-                sort_order=0,
-                field_config=[],
-                attribute_schema={},
-            )
-            session.add(cat)
-            await session.flush()
-            print(f"Created Category: {cat_slug}")
-        else:
-            print(f"Category {cat_slug} already exists")
+        # 2. Seed the GLOBAL category taxonomy (Plan 2). Categories are
+        # platform-managed global templates (tenant NULL), not per-org. The
+        # 'Vehículos y Transporte' vertical is seeded idempotently here.
+        await seed_vehicles_vertical(session)
+        print("Seeded global Vehículos taxonomy")
 
         # 3. Ensure System Roles Exist
         roles_data = [
