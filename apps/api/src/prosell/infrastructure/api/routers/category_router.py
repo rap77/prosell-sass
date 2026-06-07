@@ -164,7 +164,9 @@ async def update_category(
     repo = SqlAlchemyCategoryRepository(db)
     use_case = UpdateCategoryUseCase(repo)
 
-    return await use_case.execute(category_id, tenant_id, request)
+    return await use_case.execute(
+        category_id, tenant_id, request, is_platform_admin=True
+    )
 
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -186,7 +188,7 @@ async def delete_category(
     repo = SqlAlchemyCategoryRepository(db)
     use_case = DeleteCategoryUseCase(repo)
 
-    await use_case.execute(category_id, tenant_id)
+    await use_case.execute(category_id, tenant_id, is_platform_admin=True)
 
 
 @router.patch("/{category_id}/attribute-schema", response_model=CategoryResponse)
@@ -211,7 +213,9 @@ async def update_category_attribute_schema(
     repo = SqlAlchemyCategoryRepository(db)
     use_case = UpdateCategoryAttributeSchemaUseCase(repo)
 
-    return await use_case.execute(category_id, tenant_id, request.attribute_schema)
+    return await use_case.execute(
+        category_id, tenant_id, request.attribute_schema, is_platform_admin=True
+    )
 
 
 @router.get("/.*", response_model=dict[str, Any])
