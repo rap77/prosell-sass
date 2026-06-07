@@ -147,11 +147,14 @@ class AbstractCategoryRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_ancestor_ids(self, category_id: UUID, tenant_id: UUID) -> list[UUID]:
+    async def get_ancestor_ids(
+        self, category_id: UUID, tenant_id: UUID | None
+    ) -> list[UUID]:
         """
         Get all ancestor category IDs (up the tree to root).
 
-        Used for circular reference validation.
+        Used for circular reference validation. ``tenant_id=None`` scopes the
+        traversal to GLOBAL templates (tenant IS NULL).
 
         Args:
             category_id: Category UUID
@@ -204,14 +207,14 @@ class AbstractCategoryRepository(ABC):
 
     @abstractmethod
     async def exists_by_name(
-        self, name: str, tenant_id: UUID, parent_id: UUID | None = None
+        self, name: str, tenant_id: UUID | None, parent_id: UUID | None = None
     ) -> bool:
         """
         Check if category with given name exists (for uniqueness validation).
 
         Args:
             name: Category name
-            tenant_id: Tenant UUID
+            tenant_id: Tenant UUID, or None for GLOBAL templates (tenant IS NULL)
             parent_id: Parent category ID (None = check root level)
 
         Returns:
@@ -220,13 +223,13 @@ class AbstractCategoryRepository(ABC):
         pass
 
     @abstractmethod
-    async def exists_by_slug(self, slug: str, tenant_id: UUID) -> bool:
+    async def exists_by_slug(self, slug: str, tenant_id: UUID | None) -> bool:
         """
         Check if category with given slug exists.
 
         Args:
             slug: Category slug
-            tenant_id: Tenant UUID
+            tenant_id: Tenant UUID, or None for GLOBAL templates (tenant IS NULL)
 
         Returns:
             True if exists, False otherwise

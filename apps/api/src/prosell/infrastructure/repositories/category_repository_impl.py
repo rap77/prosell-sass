@@ -144,15 +144,25 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
-    async def get_ancestor_ids(self, category_id: UUID, tenant_id: UUID) -> list[UUID]:
-        """Get all ancestor category IDs (up the tree to root)."""
+    async def get_ancestor_ids(
+        self, category_id: UUID, tenant_id: UUID | None
+    ) -> list[UUID]:
+        """Get all ancestor category IDs (up the tree to root).
+
+        ``tenant_id=None`` traverses GLOBAL templates (tenant IS NULL).
+        """
+        tenant_filter = (
+            CategoryModel.tenant_id.is_(None)
+            if tenant_id is None
+            else CategoryModel.tenant_id == tenant_id
+        )
         ancestor_ids: list[UUID] = []
         current_id: UUID | None = category_id
 
         while current_id is not None:
             stmt = select(CategoryModel.parent_id).where(
                 CategoryModel.id == current_id,
-                CategoryModel.tenant_id == tenant_id,
+                tenant_filter,
             )
             result = await self.session.execute(stmt)
             parent_id = result.scalar_one_or_none()
@@ -223,12 +233,17 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         return True
 
     async def exists_by_name(
-        self, name: str, tenant_id: UUID, parent_id: UUID | None = None
+        self, name: str, tenant_id: UUID | None, parent_id: UUID | None = None
     ) -> bool:
-        """Check if category with name exists."""
+        """Check if category with name exists (tenant_id=None → global scope)."""
+        tenant_filter = (
+            CategoryModel.tenant_id.is_(None)
+            if tenant_id is None
+            else CategoryModel.tenant_id == tenant_id
+        )
         stmt = select(func.count(CategoryModel.id)).where(
             CategoryModel.name == name,
-            CategoryModel.tenant_id == tenant_id,
+            tenant_filter,
         )
 
         if parent_id is not None:
@@ -241,11 +256,16 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         count: int = result.scalar() or 0
         return count > 0
 
-    async def exists_by_slug(self, slug: str, tenant_id: UUID) -> bool:
-        """Check if category with slug exists."""
+    async def exists_by_slug(self, slug: str, tenant_id: UUID | None) -> bool:
+        """Check if category with slug exists (tenant_id=None → global scope)."""
+        tenant_filter = (
+            CategoryModel.tenant_id.is_(None)
+            if tenant_id is None
+            else CategoryModel.tenant_id == tenant_id
+        )
         stmt = select(func.count(CategoryModel.id)).where(
             CategoryModel.slug == slug,
-            CategoryModel.tenant_id == tenant_id,
+            tenant_filter,
         )
         result = await self.session.execute(stmt)
         count: int = result.scalar() or 0

@@ -26,7 +26,10 @@ class CreateCategoryRequest(BaseModel):
             )
         return normalized
 
-    tenant_id: UUID
+    # Deprecated/ignored: the category taxonomy is a GLOBAL, platform-managed
+    # template tree (Plan 2). Created categories are always global (tenant
+    # NULL); any value sent here is ignored. Kept optional for back-compat.
+    tenant_id: UUID | None = None
     parent_id: UUID | None = None
     description: str | None = None
     icon: str | None = None
