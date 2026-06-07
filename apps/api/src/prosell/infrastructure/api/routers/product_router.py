@@ -515,6 +515,12 @@ async def update_product(
     if request.location_zip is not None:
         product.location_zip = request.location_zip
 
+    # NOTE: server-side title recomposition on UPDATE is deferred to
+    # Foundation Plan 2 (it needs the category loaded — best done via a
+    # dedicated UpdateProductUseCase rather than an extra DB call inline
+    # here). On edit the client still composes the title, so this is
+    # backward-compatible until Plan 2.
+
     product = await repo.update(product)
 
     return ProductResponse.from_entity(product)

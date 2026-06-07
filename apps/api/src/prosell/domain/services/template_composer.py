@@ -38,3 +38,26 @@ def compose_from_template(template: str, attributes: Mapping[str, object]) -> st
         end = match.end()
     parts.append(template[end:])  # trailing literal after the last placeholder
     return re.sub(r"\s+", " ", "".join(parts)).strip()
+
+
+def resolve_title(
+    presentation: Mapping[str, object] | None,
+    attributes: Mapping[str, object],
+    fallback: str | None,
+) -> str | None:
+    """Resolve a product title from a category presentation contract.
+
+    Used by BOTH the create use case and the PATCH handler so the rule
+    lives in one place:
+
+      - If the category declares a ``title_template`` AND composing it
+        yields a non-empty string, that wins.
+      - Otherwise keep ``fallback`` (the request-provided title) —
+        backward-compatible for categories without a contract.
+    """
+    template = (presentation or {}).get("title_template")
+    if isinstance(template, str) and template:
+        composed = compose_from_template(template, attributes)
+        if composed:
+            return composed
+    return fallback

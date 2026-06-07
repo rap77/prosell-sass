@@ -7,6 +7,7 @@ from prosell.domain.entities.product import Product
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
+from prosell.domain.services.template_composer import resolve_title
 
 
 class CreateProductUseCase:
@@ -57,9 +58,14 @@ class CreateProductUseCase:
         tenant_id = request.tenant_id or category.tenant_id
         organization_id = request.organization_id or tenant_id
 
+        # 2b. Compose the title from the category's presentation template
+        # when it declares one; otherwise keep the request-provided title
+        # (backward-compatible fallback). Shared with the PATCH handler.
+        title = resolve_title(category.presentation, attrs, fallback=request.title)
+
         # 3. Create product entity
         product = Product.create(
-            title=request.title,
+            title=title,
             price_cents=request.price_cents,
             tenant_id=tenant_id,
             organization_id=organization_id,
