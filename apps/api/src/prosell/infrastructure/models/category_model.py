@@ -17,9 +17,13 @@ class CategoryModel(Base):
 
     # Primary fields
     id: Mapped[UUID] = mapped_column(primary_key=True)
-    tenant_id: Mapped[UUID] = mapped_column(
+    # Nullable since Plan 2: root verticals (level 0) are global templates
+    # shared by every organization. Tenant-scoped categories still carry
+    # their tenant_id. Index kept — every per-tenant query still filters
+    # by it, and the few global rows sit in the same B-tree.
+    tenant_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("organizations.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)

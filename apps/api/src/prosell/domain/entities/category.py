@@ -19,7 +19,11 @@ class Category(DomainModel):
 
     # Required fields
     id: UUID
-    tenant_id: UUID  # For multi-tenant isolation
+    # Tenant isolation. NULL marks a global template (root vertical, e.g.
+    # "Vehicles") shared across all organizations (Plan 2). Tenant-scoped
+    # categories still carry their tenant_id; only level-0 templates are
+    # allowed to be global.
+    tenant_id: UUID | None = None
     name: str = Field(..., min_length=1, max_length=255)
     slug: str = Field(..., min_length=1, max_length=255)
 
@@ -72,7 +76,7 @@ class Category(DomainModel):
         cls,
         name: str,
         slug: str,
-        tenant_id: UUID,
+        tenant_id: UUID | None,
         parent_id: UUID | None = None,
         level: int = 0,
         **kwargs: Any,
@@ -83,7 +87,8 @@ class Category(DomainModel):
         Args:
             name: Category name
             slug: URL-friendly slug
-            tenant_id: Unique tenant identifier
+            tenant_id: Unique tenant identifier, or None for a global
+                template (Plan 2: root verticals shared across orgs).
             parent_id: Parent category ID (for hierarchy)
             level: Nesting level (0 = root)
             **kwargs: Additional optional fields
