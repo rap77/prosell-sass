@@ -79,8 +79,12 @@ export interface Product {
 export interface CreateProductRequest {
   title: string;
   price_cents: number;
-  tenant_id: string;
-  organization_id: string;
+  // tenant_id / organization_id are injected by the backend from the
+  // authenticated JWT context (see product_router.create_product) and
+  // must NOT be sent from the client (IDOR prevention). Optional here
+  // only so internal/test callers can set them; the prod flow omits them.
+  tenant_id?: string;
+  organization_id?: string;
   category_id: string;
   slug?: string;
   description?: string;
@@ -97,6 +101,13 @@ export interface CreateProductRequest {
    * the keys on every read.
    */
   image_urls?: string[];
+  /**
+   * First-class pointer to the cover image (a storage KEY that must
+   * also appear in `image_urls`). Null/omitted means "no cover" — the
+   * renderer falls back to `image_urls[0]`. Backend enforces the
+   * cross-field invariant (cover must be in image_urls).
+   */
+  cover_image_key?: string | null;
 }
 
 /**

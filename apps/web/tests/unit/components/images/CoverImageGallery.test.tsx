@@ -4,20 +4,16 @@
  * UX.
  *
  * Why this component exists (single source of truth):
- *   The same "pick which image is the cover" UX is needed in two
- *   places that share no state:
- *     1. The bulk-upload flow (`upload/ImageGallery.tsx`),
- *        connected to a Zustand `uploadStore`.
- *     2. The product create/edit form (`forms/VehicleImageManager.tsx`),
- *        connected to a server-side mutation that PATCHes the
- *        product with the new `cover_image_key`.
+ *   The "pick which image is the cover" UX is consumed by
+ *   `forms/ProductCoverPicker.tsx`, the single store-backed picker
+ *   ProductForm mounts for BOTH create and edit. The picker reads the
+ *   unified image list (in-flight + seeded) from the Zustand
+ *   `uploadStore` and renders it through this gallery.
  *
- *   Before this component existed, the same UI (star overlay, hover
- *   "Set as Cover", click handler) was duplicated — with subtle
- *   differences in styling — in both consumers. `CoverImageGallery`
- *   is the single source of truth for that UX: it knows how to
- *   render the grid and how to call back when a cover is picked.
- *   Consumers bring their own data source and click handler.
+ *   `CoverImageGallery` is PURE: it knows how to render the grid (star
+ *   overlay, hover "Set as Cover", remove button) and how to call back
+ *   when a cover is picked or an image removed. It owns no data source,
+ *   so any future consumer reuses the exact same UX.
  *
  *   The component is intentionally PURE: no Zustand, no fetch, no
  *   router. That makes it cheap to test, easy to reuse in any new

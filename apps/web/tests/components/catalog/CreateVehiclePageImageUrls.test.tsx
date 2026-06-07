@@ -1,224 +1,157 @@
 /**
- * Regression: CreateVehiclePage must persist STORAGE KEYS (not signed URLs)
- * into product.image_urls.
+ * Regression: creating a vehicle must persist STORAGE KEYS (not signed
+ * URLs) into product.image_urls, and the cover must be a storage key.
  *
- * Bug: previously the create page took the value returned by
- * `useImageUploadOptimized().uploadImages(...)` and put it directly into the
- * `image_urls` field of the create request. That return value was a signed
- * URL (`http://minio:9000/.../x.jpg?X-Amz-...`) which:
- *   1. expires after 1h, breaking the image silently;
- *   2. when re-fed to the image-urls signer, produces a malformed URL the
- *      browser cannot load (the signer treats the full path+query as the
- *      key, then mints a new signature on top of the old query string).
+ * Bug history: the create flow once took the signed URL returned by the
+ * upload and put it into `image_urls`. Signed URLs expire in 1h and,
+ * when re-fed to the image-urls signer, produce malformed URLs.
  *
- * Fix: the hook now returns `{url, key}` and the create page persists
- * `key`. This test pins that contract end-to-end on the page.
+ * After the single-store refactor the flow is: ImageDropzone → store →
+ * ProductForm.submit() uploads in-flight entries (the hook writes the
+ * raw `storageKey` back to the store) → the form reads `storageKey`
+ * (NEVER the preview url) for `image_urls` + `cover_image_key`. This
+ * test pins that end-to-end through the real ProductForm, the real
+ * upload store, and the real upload hook — only the network call
+ * (`uploadImageDirect`) is mocked.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor, cleanup, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, waitFor, act } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ReactElement } from 'react'
 
 // ---------- Mocks ----------------------------------------------------------
 
-const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush, refresh: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), back: vi.fn(), refresh: vi.fn() }),
   useParams: () => ({}),
 }))
 
-// Mock the upload store: one file in the dropzone, no previews fetched.
-const mockUploadedFile = {
-  id: 'upload-1',
-  file: new File(['img-bytes'], 'photo.jpg', { type: 'image/jpeg' }),
-  preview: 'blob:http://test/preview',
-  progress: 0,
-  status: 'pending' as const,
-}
-vi.mock('@/lib/stores/uploadStore', () => ({
-  useUploadStore: vi.fn(() => ({
-    uploadedFiles: [mockUploadedFile],
-    clearAll: vi.fn(),
-    addUploadedFile: vi.fn(),
-    setUploading: vi.fn(),
-    updateFileStatus: vi.fn(),
-    removeUploadedFile: vi.fn(),
-    setCoverImage: vi.fn(),
-  })),
-}))
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
-// Mock the upload hook to return a SIGNED URL and a STORAGE KEY.
-const SIGNED_URL =
-  'http://minio:9000/bucket/orgs/tenant-1/vehicles/upload-1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=stale'
-const STORAGE_KEY = 'orgs/tenant-1/vehicles/upload-1.jpg'
+vi.mock('@/lib/logger', () => ({ logger: { debug: vi.fn(), error: vi.fn() } }))
 
-const capturedOnSubmit: { fn: ((d: unknown, urls: string[]) => Promise<void>) | null } = {
-  fn: null,
-}
-vi.mock('@/components/forms/ProductForm', () => ({
-  ProductForm: (props: { onSubmit?: (d: unknown, urls: string[]) => Promise<void> }) => {
-    // Capture the onSubmit the page passed so we can invoke it directly.
-    if (props.onSubmit) capturedOnSubmit.fn = props.onSubmit
-    return (
-      <div data-testid="mock-product-form">
-        <button
-          type="button"
-          data-testid="mock-submit"
-          onClick={() =>
-            props.onSubmit?.(
-              {
-                vin: '1HGCM82633A123456',
-                price: 10000,
-                year: 2020,
-                make: 'Honda',
-                model: 'Civic',
-                category_id: 'cat-1',
-                description: 'Test',
-                trim: '',
-                body_type: '',
-                drivetrain: '',
-                transmission: '',
-                engine: '',
-                fuel_type: '',
-                mileage: 0,
-                mileage_unit: 'mi',
-                exterior_color: '',
-                interior_color: '',
-                has_sunroof: false,
-                has_navigation: false,
-                has_leather: false,
-                has_backup_camera: false,
-                has_bluetooth: false,
-                has_remote_start: false,
-                seat_material: '',
-                stock_number: '',
-              },
-              [],
-            )
-          }
-        >
-          Submit
-        </button>
-      </div>
-    )
-  },
-}))
-
-vi.mock('@/lib/hooks/useImageUploadOptimized', () => ({
-  useImageUploadOptimized: vi.fn(() => ({
-    uploadImages: vi.fn(async () => [{ url: SIGNED_URL, key: STORAGE_KEY }]),
-    uploadImage: vi.fn(),
-  })),
-}))
-
-// Mock the auth store.
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn((selector: any) =>
-    selector({ user: { id: 'user-1', organization_id: 'org-1' } }),
+vi.mock('next/image', () => ({
+  default: ({ src }: { src: string }) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img data-testid="cover-image-img" src={src} />
   ),
 }))
 
-// Mock the upload UI components to avoid drag/drop and gallery logic.
-vi.mock('@/components/upload/ImageDropzone', () => ({
-  ImageDropzone: () => null,
+const mockCreateMutate = vi.fn(async (_payload: unknown) => ({ id: 'product-1', title: 'Test', status: 'draft' }))
+vi.mock('@/lib/api/products', () => ({
+  useCreateProduct: () => ({ mutateAsync: mockCreateMutate, isPending: false }),
+  useUpdateProduct: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useProduct: () => ({ data: undefined, isLoading: false, error: null }),
+  useProductImageUrls: () => ({ data: undefined }),
 }))
-vi.mock('@/components/upload/ImageGallery', () => ({
-  ImageGallery: () => null,
+
+vi.mock('@/lib/api/categories', () => ({
+  useCategories: () => ({
+    data: [{ id: 'cat-1', name: 'Sedans', slug: 'sedans' }],
+    isLoading: false,
+  }),
+  useCategoryOptions: () => ({ data: [{ value: 'cat-1', label: 'Sedans' }] }),
 }))
 
-// Capture the fetch body so we can assert what was sent to /api/v1/products.
-const mockFetch = vi.fn(async (url: string, init?: RequestInit) => {
-  if (url === '/api/v1/products' && init?.method === 'POST') {
-    return new Response(
-      JSON.stringify({ id: 'product-1', title: 'Test', status: 'draft' }),
-      { status: 201, headers: { 'Content-Type': 'application/json' } },
-    )
-  }
-  return new Response('{}', { status: 200 })
-})
-// @ts-expect-error — global fetch mock for jsdom
-global.fetch = mockFetch
+vi.mock('@/lib/api/vehicles', () => ({
+  useDecodeVin: () => ({ mutateAsync: vi.fn() }),
+}))
 
-// ---------- Test -----------------------------------------------------------
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: (selector: (s: unknown) => unknown) =>
+    selector({ user: { id: 'user-1', organization_id: 'org-1' } }),
+}))
 
-import CreateVehiclePage from '@/app/(seller)/catalog/create/page'
+// The ONLY network mock: the raw upload call. Returns a stale SIGNED
+// URL and the raw STORAGE KEY — the contract under test is that the
+// key (not the url) ends up in image_urls.
+const SIGNED_URL =
+  'http://minio:9000/bucket/orgs/tenant-1/vehicles/up-1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=stale'
+const STORAGE_KEY = 'orgs/tenant-1/vehicles/up-1.jpg'
+vi.mock('@/lib/api/images', () => ({
+  uploadImageDirect: vi.fn(async () => ({ url: SIGNED_URL, key: STORAGE_KEY })),
+}))
 
-function renderWithQuery(ui: React.ReactNode) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+// ---------- SUT ------------------------------------------------------------
+
+import { ProductForm } from '@/components/forms/ProductForm'
+import { useUploadStore } from '@/lib/stores/uploadStore'
+
+function renderWithQuery(ui: ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
 }
 
-describe('CreateVehiclePage — image_urls must be STORAGE KEYS, not signed URLs', () => {
+describe('Create vehicle — image_urls must be STORAGE KEYS, not signed URLs', () => {
   beforeEach(() => {
-    mockFetch.mockClear()
-    capturedOnSubmit.fn = null
+    vi.clearAllMocks()
+    useUploadStore.setState({ images: [], coverImageId: null })
   })
 
-  afterEach(() => {
-    cleanup()
-  })
-
-  it('sends image_urls with the storage KEY, not the signed URL', async () => {
-    renderWithQuery(<CreateVehiclePage />)
-
-    // The page rendered; the mock ProductForm captured the onSubmit callback.
-    expect(capturedOnSubmit.fn).toBeTruthy()
-
-    // Invoke the submit handler as the form would.
-    await capturedOnSubmit.fn!(
-      {
-        vin: '1HGCM82633A123456',
-        price: 10000,
-        year: 2020,
-        make: 'Honda',
-        model: 'Civic',
-        category_id: 'cat-1',
-        description: 'Test',
-        trim: '',
-        body_type: '',
-        drivetrain: '',
-        transmission: '',
-        engine: '',
-        fuel_type: '',
-        mileage: 0,
-        mileage_unit: 'mi',
-        exterior_color: '',
-        interior_color: '',
-        has_sunroof: false,
-        has_navigation: false,
-        has_leather: false,
-        has_backup_camera: false,
-        has_bluetooth: false,
-        has_remote_start: false,
-        seat_material: '',
-        stock_number: '',
-      },
-      [],
+  it('sends image_urls and cover_image_key with the storage KEY, never the signed URL', async () => {
+    // initialData lets the form pass zod validation without driving the
+    // Radix category select by hand.
+    renderWithQuery(
+      <ProductForm
+        mode="create"
+        initialData={{
+          category_id: 'cat-1',
+          vin: '1HGCM82633A123456',
+          price: 10000,
+          year: 2020,
+          make: 'Honda',
+          model: 'Civic',
+          mileage_unit: 'mi',
+        }}
+      />,
     )
 
-    // Wait for fetch to be called
-    await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalled()
+    // Seed an in-flight image AFTER mount (the create-mode mount effect
+    // clears the store). This simulates the seller having dropped a file
+    // into the dropzone.
+    act(() => {
+      useUploadStore.setState({
+        images: [
+          {
+            id: 'up-1',
+            file: new File(['bytes'], 'photo.jpg', { type: 'image/jpeg' }),
+            preview: 'blob:http://test/preview',
+            status: 'pending',
+          },
+        ],
+        coverImageId: 'up-1',
+      })
     })
 
-    // Find the POST to /api/v1/products
-    const postCall = mockFetch.mock.calls.find(
-      (call) => call[0] === '/api/v1/products' && call[1]?.method === 'POST',
-    )
-    expect(postCall, 'POST /api/v1/products was not called').toBeDefined()
+    await userEvent.click(screen.getByRole('button', { name: /create vehicle/i }))
 
-    const init = postCall![1] as RequestInit
-    const body = JSON.parse(init.body as string)
-    const imageUrls: string[] = body?.attributes?.image_urls ?? []
+    await waitFor(() => {
+      expect(mockCreateMutate).toHaveBeenCalled()
+    })
 
-    // The array MUST contain the STORAGE KEY (raw S3 path).
-    expect(imageUrls).toContain(STORAGE_KEY)
-    // And MUST NOT contain the signed URL.
-    expect(imageUrls).not.toContain(SIGNED_URL)
-    // Sanity: the key is a raw path, no query string.
-    for (const u of imageUrls) {
+    const payload = mockCreateMutate.mock.calls[0][0] as {
+      image_urls?: string[]
+      cover_image_key?: string | null
+      tenant_id?: string
+      organization_id?: string
+    }
+
+    // tenant_id / organization_id must NOT be sent from the client — the
+    // backend injects them from the JWT. Sending an empty string (when
+    // the user has no organization_id) caused a 422 on UUID parsing.
+    expect(payload.tenant_id).toBeUndefined()
+    expect(payload.organization_id).toBeUndefined()
+
+    // image_urls carries the raw KEY, never the signed URL.
+    expect(payload.image_urls).toEqual([STORAGE_KEY])
+    expect(payload.image_urls).not.toContain(SIGNED_URL)
+    // The cover is the same storage key (satisfies the backend's
+    // "cover ∈ image_urls" invariant).
+    expect(payload.cover_image_key).toBe(STORAGE_KEY)
+    // Sanity: nothing that looks like a signed URL leaked through.
+    for (const u of payload.image_urls ?? []) {
       expect(u).not.toMatch(/\?X-Amz-/)
       expect(u).not.toMatch(/^https?:\/\//)
     }

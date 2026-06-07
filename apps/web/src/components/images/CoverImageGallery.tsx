@@ -4,15 +4,10 @@
  * CoverImageGallery — single source of truth for the "grid of images
  * with click-to-set cover" UX.
  *
- * Used in two flows today, and the place to extend when a third one
- * comes:
- *
- *   1. Bulk upload preview  → `upload/ImageGallery.tsx` is a thin
- *      wrapper that connects the gallery to a Zustand `uploadStore`.
- *
- *   2. Product create/edit  → `forms/VehicleImageManager.tsx` is a
- *      thin wrapper that connects the gallery to a server-side
- *      mutation (PATCH `/products/{id}` with `cover_image_key`).
+ * Consumed today by `forms/ProductCoverPicker.tsx`, the single
+ * store-backed picker used by ProductForm for BOTH create and edit.
+ * The picker reads the unified image list (in-flight + seeded) from
+ * the Zustand `uploadStore` and renders it through this gallery.
  *
  * The component is PURE: it does not know about stores, fetch, or
  * router. It takes data in and emits cover-pick events out. That keeps

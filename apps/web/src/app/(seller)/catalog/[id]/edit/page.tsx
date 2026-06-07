@@ -13,7 +13,6 @@ import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { ProductForm } from '@/components/forms/ProductForm'
-import { ProductCoverPicker } from '@/components/forms/ProductCoverPicker'
 
 export default function EditVehiclePage() {
   const router   = useRouter()
@@ -63,28 +62,9 @@ export default function EditVehiclePage() {
         </div>
       </div>
 
-      {/* Cover picker — sits ABOVE the form so the seller sees
-          it first and doesn't have to scroll past a long form to
-          find it. PATCHes the cover immediately on click, so it's
-          an independent operation from the form submit below. */}
-      {productId && (
-        <section
-          style={{ marginBottom: 32 }}
-          data-testid="product-cover-picker-section"
-        >
-          <h2 style={{
-            margin: '0 0 14px',
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'var(--ps-text-primary)',
-          }}>
-            Imagen de portada
-          </h2>
-          <ProductCoverPicker mode="edit" productId={productId} />
-        </section>
-      )}
-
-      {/* Edit form */}
+      {/* Edit form — owns images (dropzone + cover picker) internally.
+          The cover is persisted on submit as part of the PATCH, not as
+          a separate immediate operation. */}
       <ProductForm
         mode="edit"
         productId={productId}

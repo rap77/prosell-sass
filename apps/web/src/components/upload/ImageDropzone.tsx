@@ -1,41 +1,39 @@
 'use client'
 
-import { useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload } from 'lucide-react'
-import { useUploadStore, type UploadedFile } from '@/lib/stores/uploadStore'
+import { useUploadStore } from '@/lib/stores/uploadStore'
 import { useClipboardPasteImage } from '@/lib/hooks/useClipboardPasteImage'
 
+/**
+ * ImageDropzone — entry point for new uploads.
+ *
+ * Single source of truth for "the user added a new File". Three
+ * entry points funnel into the same store action:
+ *
+ *   1. Drag & drop    — `onDrop` from react-dropzone.
+ *   2. File picker    — the visible <input type="file">.
+ *   3. Clipboard paste — `useClipboardPasteImage` window listener.
+ *
+ * All three call `addFile(file)` from the upload store. The store
+ * generates the id, builds the blob: preview, and (if no cover is
+ * set yet) auto-picks the first file as the cover. The picker
+ * (separate component) renders the store state.
+ */
 export function ImageDropzone() {
-  const { addUploadedFile } = useUploadStore()
-
-  // Single source of truth for "add this File to the upload preview".
-  // The drop handler, the file-input handler, and the paste handler
-  // all funnel through this — they differ only in HOW the File
-  // arrives, not in WHAT we do with it.
-  const addFile = useCallback(
-    (file: File) => {
-      const fileId = crypto.randomUUID()
-      const uploadedFile: UploadedFile = {
-        id: fileId,
-        file,
-        preview: URL.createObjectURL(file), // Immediate preview
-        progress: 0,
-        status: 'pending',
-      }
-      addUploadedFile(uploadedFile)
-    },
-    [addUploadedFile],
-  )
+  const { addFile } = useUploadStore()
 
   const onDrop = (acceptedFiles: File[]) => {
-    acceptedFiles.forEach(addFile)
+    // Wrap so `addFile` gets ONLY the File — `forEach` would otherwise
+    // pass (file, index, array), and the store action takes a single
+    // File. Keeps the contract identical to the paste path below.
+    acceptedFiles.forEach((file) => addFile(file))
   }
 
   // Paste-to-upload: a user with a screenshot in their clipboard can
   // press Ctrl/Cmd+V anywhere on the page and the file lands in the
-  // upload preview. The hook owns the window listener and the
-  // image-only filter; this component just hands the File off.
+  // store. The hook owns the window listener and the image-only
+  // filter; this component just hands the File off.
   useClipboardPasteImage(addFile)
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

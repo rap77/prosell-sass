@@ -5,18 +5,13 @@
  * `onImage(file)` for each image pasted from the clipboard.
  *
  * Why a hook (not a utility, not a component prop):
- *   The same paste-to-upload behavior is needed in two flows that
- *   don't share any state:
- *     1. The bulk upload flow (`upload/ImageDropzone.tsx`) — adds
- *        pasted files to the Zustand `uploadStore` as a preview.
- *     2. The in-form upload flow (`forms/VehicleImageManager.tsx`) —
- *        uploads the file immediately and appends the storage key
- *        to the form's image list.
- *
- *   Both flows ask the same question: "what do I do with this File?"
- *   The hook owns the clipboard plumbing (parsing, filtering, listener
- *   lifecycle); each consumer provides its own `onImage` callback.
- *   No duplication, no regression risk if the contract changes.
+ *   Paste-to-upload is wired into `upload/ImageDropzone.tsx`, which
+ *   hands each pasted image File to the Zustand `uploadStore` via
+ *   `addFile` — the same entry point as drag-and-drop and the file
+ *   picker. Keeping the clipboard plumbing in a hook means the
+ *   dropzone just provides an `onImage` callback; the hook owns the
+ *   parsing, filtering, and listener lifecycle. If a future consumer
+ *   needs paste-to-upload, it reuses the hook the same way.
  *
  * Why a window listener (not a per-element handler):
  *   The `paste` event bubbles up from the focused element. Listening

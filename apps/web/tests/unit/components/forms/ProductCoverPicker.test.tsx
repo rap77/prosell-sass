@@ -2,27 +2,28 @@
  * Unit tests for `ProductCoverPicker` — the single source of truth
  * for the seller-facing "pick which image is the cover" UX.
  *
- * The component is polymorphic on `mode`:
+ * The component is store-backed: it reads from the Zustand
+ * `uploadStore` (the unified `images` array) and writes cover/remove
+ * events back to the store. Both create and edit flows use the same
+ * component — the difference between them lives in how the FLOW
+ * seeds the store (create: empty, then user adds files; edit:
+ * preloaded from the product's existing image list), not in the
+ * component itself.
  *
- *   - `mode="edit"`   — server-backed. Reads the product's existing
- *     image URLs from the API, PATCHes `cover_image_key` immediately
- *     on click. Used on the catalog edit page.
- *
- *   - `mode="create"` — store-backed. Reads `uploadedFiles` +
- *     `coverImageId` from the Zustand `uploadStore` (the seller has
- *     just dropped/pasted the images but the product doesn't exist
- *     yet). A click writes the new cover to the store; the create
- *     page's submit handler reads it and translates the file ID to
- *     a storage key for the `POST /products` body.
- *
- * Both modes render the same `CoverImageGallery` UX — only the data
- * source and the cover-change handler differ. That keeps the user
- * experience consistent across create and edit.
+ * Contract:
+ *   - Reads `images` + `coverImageId` from the store.
+ *   - On cover click: `setCoverImage(entryId)` — covers are
+ *     identified by entry id, NOT storage key. In-flight entries
+ *     don't have a storage key yet; the form's submit handler
+ *     translates the picked id to a key at submit time.
+ *   - On remove click (X): `removeEntry(entryId)`.
+ *   - Renders nothing when `images` is empty.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ProductCoverPicker } from '@/components/forms/ProductCoverPicker'
+import { useUploadStore, type ImageEntry } from '@/lib/stores/uploadStore'
 
 // ─── next/image mock ──────────────────────────────────────────────────
 // Same pattern as the rest of the suite. Forwards src so the test
@@ -38,157 +39,142 @@ vi.mock('next/image', () => ({
   ),
 }))
 
-// ─── uploadStore mock (create mode) ───────────────────────────────────
-// The create mode reads from the Zustand store. We expose the bare
-// state + actions the picker needs; everything else falls through to
-// the real (default) state.
-const mockStoreState = {
-  uploadedFiles: [] as Array<{ id: string; preview: string }>,
+// ─── uploadStore mock ────────────────────────────────────────────────
+// The picker reads from a single source of truth (the store) and
+// writes cover/remove events back. We expose the bare state +
+// actions the picker needs; the rest of the store falls through.
+const mockStore = {
+  images: [] as ImageEntry[],
   coverImageId: null as string | null,
   setCoverImage: vi.fn(),
-  removeUploadedFile: vi.fn(),
+  removeEntry: vi.fn(),
 }
 
 vi.mock('@/lib/stores/uploadStore', () => ({
-  useUploadStore: (selector?: (s: typeof mockStoreState) => unknown) =>
-    selector ? selector(mockStoreState) : mockStoreState,
-}))
-
-// ─── API hooks mock (edit mode) ───────────────────────────────────────
-const mockProduct = { id: 'prod-1', cover_image_key: null as string | null }
-const mockSigned = {
-  images: [
-    { key: 'orgs/t1/vehicles/a.jpg', url: 'https://signed/a' },
-    { key: 'orgs/t1/vehicles/b.jpg', url: 'https://signed/b' },
-  ],
-}
-const mockSetCover = { mutate: vi.fn(), isPending: false }
-
-vi.mock('@/lib/api/products', () => ({
-  useProduct: () => ({ data: mockProduct }),
-  useProductImageUrls: () => ({ data: mockSigned }),
-  useSetProductCover: () => mockSetCover,
+  useUploadStore: (selector?: (s: typeof mockStore) => unknown) =>
+    selector ? selector(mockStore) : mockStore,
+  // Re-export the ImageEntry type so the test can type its fixtures
+  // against the real store shape. The actual type is also re-exported
+  // from the real module; this lets the test compile without
+  // importing the (mocked) module body.
+  __esModule: true,
 }))
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockStoreState.uploadedFiles = []
-  mockStoreState.coverImageId = null
-  mockProduct.cover_image_key = null
+  mockStore.images = []
+  mockStore.coverImageId = null
 })
 
-describe('ProductCoverPicker — mode="create" (store-backed)', () => {
-  it('renders one tile per file in the upload store, using the blob preview as src', () => {
-    // The seller has dropped two files — the picker should show both
-    // as tiles, with the blob: URL the store produces. This is the
-    // same UX as the edit mode, just sourced from a different place.
-    mockStoreState.uploadedFiles = [
-      { id: 'file-a', preview: 'blob:preview-a' },
-      { id: 'file-b', preview: 'blob:preview-b' },
+describe('ProductCoverPicker — render', () => {
+  it('renders one tile per image in the store', () => {
+    // Two entries: one in-flight (blob preview, no storage key yet),
+    // one seeded from an existing product (signed URL, has storage
+    // key). The picker doesn't care which is which — both are
+    // images, both get a tile.
+    mockStore.images = [
+      { id: 'file-a', preview: 'blob:preview-a', status: 'pending' },
+      {
+        id: 'seeded-1',
+        preview: 'https://signed/existing',
+        status: 'complete',
+        storageKey: 'orgs/t1/vehicles/existing.jpg',
+      },
     ]
-    mockStoreState.coverImageId = 'file-a'
 
-    render(<ProductCoverPicker mode="create" />)
+    render(<ProductCoverPicker />)
 
     const imgs = screen.queryAllByTestId('cover-image-img')
     expect(imgs).toHaveLength(2)
     expect(imgs[0]).toHaveAttribute('src', 'blob:preview-a')
-    expect(imgs[1]).toHaveAttribute('src', 'blob:preview-b')
+    expect(imgs[1]).toHaveAttribute('src', 'https://signed/existing')
   })
 
   it('marks the tile whose id matches coverImageId as the cover', () => {
-    mockStoreState.uploadedFiles = [
-      { id: 'file-a', preview: 'blob:preview-a' },
-      { id: 'file-b', preview: 'blob:preview-b' },
+    // The cover is identified by the ENTRY id (not the storage key).
+    // This is the contract: a click writes the entry's id to the
+    // store, and the picker matches on id. The form's submit
+    // handler later translates the picked id to a storage key.
+    mockStore.images = [
+      { id: 'a', preview: 'blob:a', status: 'pending' },
+      { id: 'b', preview: 'blob:b', status: 'pending' },
     ]
-    mockStoreState.coverImageId = 'file-b' // second file is the cover
+    mockStore.coverImageId = 'b'
 
-    render(<ProductCoverPicker mode="create" />)
+    render(<ProductCoverPicker />)
 
-    // The cover badge is rendered as part of the CoverImageGallery
-    // when the tile's `key` matches the current `coverKey`. The
-    // picker's `key` per tile IS the file id in create mode (the
-    // storage key doesn't exist yet — it only exists after the
-    // upload completes on submit).
     const badges = screen.queryAllByTestId('cover-badge')
     expect(badges).toHaveLength(1)
   })
 
-  it('writes the picked file id to the upload store on click', () => {
-    // This is the WRITE side of the create flow: a click here does
-    // NOT PATCH the server (the product doesn't exist yet). It just
-    // updates the store. The create page's submit handler reads
-    // coverImageId, looks up the matching upload's storage key, and
-    // sends it in the POST body.
-    mockStoreState.uploadedFiles = [
-      { id: 'file-a', preview: 'blob:preview-a' },
-      { id: 'file-b', preview: 'blob:preview-b' },
-    ]
-    mockStoreState.coverImageId = 'file-a'
+  it('renders nothing when the store has no images', () => {
+    // Same UX as before — the picker is invisible until at least
+    // one image exists. The seller has to add an image first.
+    mockStore.images = []
+    mockStore.coverImageId = null
 
-    render(<ProductCoverPicker mode="create" />)
-
-    // Target the tile by its data-testid (the gallery uses
-    // `data-testid="cover-image-tile-{id}"` per tile). Using
-    // getAllByRole('button') would also pick up the per-tile
-    // remove (X) buttons, which call onRemove, not onCoverChange.
-    const tileB = screen.getByTestId('cover-image-tile-file-b')
-    fireEvent.click(tileB)
-
-    expect(mockStoreState.setCoverImage).toHaveBeenCalledTimes(1)
-    expect(mockStoreState.setCoverImage).toHaveBeenCalledWith('file-b')
-  })
-
-  it('renders nothing when the upload store is empty', () => {
-    // Same UX as the edit mode (which also returns null when no
-    // images are present) — the picker is invisible until the seller
-    // has at least one image to choose from.
-    mockStoreState.uploadedFiles = []
-    mockStoreState.coverImageId = null
-
-    render(<ProductCoverPicker mode="create" />)
+    render(<ProductCoverPicker />)
 
     expect(screen.queryAllByTestId('cover-image-img')).toHaveLength(0)
   })
 })
 
-describe('ProductCoverPicker — mode="edit" (server-backed)', () => {
-  it('renders one tile per signed image URL returned by the API', () => {
-    mockProduct.cover_image_key = 'orgs/t1/vehicles/a.jpg'
+describe('ProductCoverPicker — interaction', () => {
+  it('writes the picked entry id to the store on cover click', () => {
+    // The WRITE side of the contract. A click here does NOT PATCH
+    // the server, does NOT call any mutation hook — it just
+    // updates the store. The form's submit handler (in either
+    // create or edit) reads coverImageId and sends the resolved
+    // storage key in the request body.
+    mockStore.images = [
+      { id: 'a', preview: 'blob:a', status: 'pending' },
+      { id: 'b', preview: 'blob:b', status: 'pending' },
+    ]
 
-    render(<ProductCoverPicker mode="edit" productId="prod-1" />)
+    render(<ProductCoverPicker />)
 
-    const imgs = screen.queryAllByTestId('cover-image-img')
-    expect(imgs).toHaveLength(2)
-    expect(imgs[0]).toHaveAttribute('src', 'https://signed/a')
-    expect(imgs[1]).toHaveAttribute('src', 'https://signed/b')
+    // Target the tile by data-testid — `getAllByRole('button')`
+    // would also pick up the per-tile remove (X) buttons, which
+    // call removeEntry, not setCoverImage.
+    const tileB = screen.getByTestId('cover-image-tile-b')
+    fireEvent.click(tileB)
+
+    expect(mockStore.setCoverImage).toHaveBeenCalledTimes(1)
+    expect(mockStore.setCoverImage).toHaveBeenCalledWith('b')
   })
 
-  it('PATCHes the server with the picked key on click', () => {
-    mockProduct.cover_image_key = 'orgs/t1/vehicles/a.jpg'
+  it('writes the picked entry id to the store even when clicking the already-cover tile', () => {
+    // The contract is "every click emits" — keeps the consumer
+    // (the form's submit) simple. The store's setCoverImage is
+    // idempotent (same id, no-op).
+    mockStore.images = [
+      { id: 'a', preview: 'blob:a', status: 'pending' },
+      { id: 'b', preview: 'blob:b', status: 'pending' },
+    ]
+    mockStore.coverImageId = 'a'
 
-    render(<ProductCoverPicker mode="edit" productId="prod-1" />)
+    render(<ProductCoverPicker />)
 
-    // Click the second tile — should fire the mutation with key=b.
-    const tiles = screen.getAllByRole('button')
-    fireEvent.click(tiles[1])
+    fireEvent.click(screen.getByTestId('cover-image-tile-a'))
 
-    expect(mockSetCover.mutate).toHaveBeenCalledTimes(1)
-    expect(mockSetCover.mutate).toHaveBeenCalledWith({
-      productId: 'prod-1',
-      key: 'orgs/t1/vehicles/b.jpg',
-    })
+    expect(mockStore.setCoverImage).toHaveBeenCalledWith('a')
   })
 
-  it('uses the product\'s cover_image_key from the server as the initial cover', () => {
-    // The seller already set the cover in a previous session — the
-    // picker should mark THAT tile as the cover, not fall back to
-    // the first image.
-    mockProduct.cover_image_key = 'orgs/t1/vehicles/b.jpg'
+  it('calls removeEntry when the X button is clicked', () => {
+    // Each tile gets a remove button (X). The picker delegates
+    // removal to the store; the store decides whether to also
+    // clear the cover if the removed entry was the cover.
+    mockStore.images = [
+      { id: 'a', preview: 'blob:a', status: 'pending' },
+      { id: 'b', preview: 'blob:b', status: 'pending' },
+    ]
 
-    render(<ProductCoverPicker mode="edit" productId="prod-1" />)
+    render(<ProductCoverPicker />)
 
-    const badges = screen.queryAllByTestId('cover-badge')
-    expect(badges).toHaveLength(1)
+    const removeA = screen.getByTestId('cover-image-remove-a')
+    fireEvent.click(removeA)
+
+    expect(mockStore.removeEntry).toHaveBeenCalledTimes(1)
+    expect(mockStore.removeEntry).toHaveBeenCalledWith('a')
   })
 })

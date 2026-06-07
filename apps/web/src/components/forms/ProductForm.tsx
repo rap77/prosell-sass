@@ -31,10 +31,18 @@ import {
 } from "@/lib/constants/fbVehicleOptions";
 import { useCategories, useCategoryOptions } from "@/lib/api/categories";
 import { useDecodeVin } from "@/lib/api/vehicles";
-import { useCreateProduct, useUpdateProduct, useProduct } from "@/lib/api/products";
-import { useAuthStore } from "@/stores/authStore";
+import {
+  useCreateProduct,
+  useUpdateProduct,
+  useProduct,
+  useProductImageUrls,
+} from "@/lib/api/products";
+import { getCoverImageKey } from "@/lib/api/productImages";
+import { useUploadStore, type ImageEntry } from "@/lib/stores/uploadStore";
+import { useImageUploadOptimized } from "@/lib/hooks/useImageUploadOptimized";
 import { ProductFormAttributes } from "./ProductFormAttributes";
-import { VehicleImageManager } from "./VehicleImageManager";
+import { ImageDropzone } from "@/components/upload/ImageDropzone";
+import { ProductCoverPicker } from "@/components/forms/ProductCoverPicker";
 import type { Category } from "@/types/category";
 import type { VehicleAttributes } from "@/types/vehicle";
 
@@ -111,17 +119,6 @@ export interface ProductFormProps {
   productId?: string;
   initialData?: Partial<ProductFormValues>;
   onSuccess?: () => void;
-  /**
-   * @deprecated Use `initialImageKeys` instead. Kept for backward
-   * compatibility with the create page (which uploads via the older flow).
-   * Will be removed once the create page is migrated to use the
-   * in-form VehicleImageManager.
-   */
-  imageUrls?: string[];
-  /** Initial list of image storage keys (e.g. product.image_urls). */
-  initialImageKeys?: string[];
-  /** Custom submit handler. If provided, overrides default fetch logic. */
-  onSubmit?: (data: ProductFormValues, imageKeys: string[]) => Promise<void>;
 }
 
 // ============================================
@@ -143,19 +140,21 @@ export function ProductForm({
   productId,
   initialData,
   onSuccess,
-  imageUrls: deprecatedImageUrls = [],
-  initialImageKeys,
-  onSubmit: customOnSubmit,
 }: ProductFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isDecodingVin, setIsDecodingVin] = useState(false);
-  // The current list of image storage keys, managed by the
-  // VehicleImageManager and sent on submit. The legacy `imageUrls` prop
-  // (still used by the create page) is treated as the initial value.
-  const [imageKeys, setImageKeys] = useState<string[]>(
-    initialImageKeys ?? deprecatedImageUrls,
-  );
+
+  // ── Image flow (single source of truth) ────────────────────────────
+  // Images are owned entirely by the Zustand `uploadStore`: the
+  // <ImageDropzone /> adds in-flight files, the <ProductCoverPicker />
+  // renders the unified list and the cover pick. On submit we upload
+  // any in-flight entries, then read the final storage keys + cover
+  // straight from the store. There is no parallel `imageKeys` state and
+  // no VehicleImageManager — one path for create AND edit.
+  const { seedImages, setCoverImage, clearAll: clearUploadStore } =
+    useUploadStore();
+  const { uploadImages } = useImageUploadOptimized();
 
   // React Hook Form setup
   const {
@@ -202,9 +201,6 @@ export function ProductForm({
     },
   });
 
-  // Auth context for tenant/org IDs
-  const user = useAuthStore((state) => state.user);
-
   // Category API integration
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: categoryOptions } = useCategoryOptions();
@@ -232,8 +228,48 @@ export function ProductForm({
     { internal: true }
   );
 
+  // Signed URLs for the product's existing images (edit only). The
+  // backend returns `{ key, url }` per image — the `key` is what we
+  // persist, the `url` is the short-lived preview the picker renders.
+  const { data: signedImages } = useProductImageUrls(
+    mode === "edit" ? productId : undefined
+  );
+
   // Derived state
   const isDisabled = isSubmitting || isPending || isLoadingProduct;
+
+  // Reset the upload store on mount (create starts empty) and ALWAYS
+  // clear it on unmount. The store is a global singleton — without the
+  // unmount cleanup, navigating from edit→create (or product A→B) would
+  // leak the previous product's images into the next form.
+  useEffect(() => {
+    if (mode === "create") clearUploadStore();
+    return () => clearUploadStore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Seed the store with the product's existing images (edit only) once
+  // the signed URLs resolve. Each seeded entry's `id` IS its storage
+  // key, so the cover (identified by id in the store) stays consistent
+  // whether it's a seeded image or a freshly uploaded one.
+  useEffect(() => {
+    if (mode !== "edit") return;
+    const imgs = signedImages?.images ?? [];
+    if (imgs.length === 0) return;
+    const entries: ImageEntry[] = imgs.map(({ key, url }) => ({
+      id: key,
+      preview: url,
+      status: "complete",
+      storageKey: key,
+    }));
+    seedImages(entries);
+    // Preserve the product's existing cover when it points at a seeded
+    // key; otherwise seedImages' default (first image) stands.
+    const cover = existingProduct ? getCoverImageKey(existingProduct) : null;
+    if (cover && entries.some((e) => e.storageKey === cover)) {
+      setCoverImage(cover);
+    }
+  }, [mode, signedImages, existingProduct, seedImages, setCoverImage]);
 
   /**
    * Pre-fill form with existing product data in edit mode
@@ -242,35 +278,9 @@ export function ProductForm({
     if (mode === "edit" && existingProduct) {
       const attrs = existingProduct.attributes as VehicleAttributes;
 
-      // Pre-populate the image manager with the product's current image
-      // keys. Read BOTH the top-level column (preferred) and the legacy
-      // attributes.image_urls (defense for pre-migration data) — deduped,
-      // order-preserving. Strip any leading `?X-Amz-...` query strings
-      // (the runtime signer already does this, but we want the displayed
-      // list to be clean too).
-      const seen = new Set<string>();
-      const seedKeys: string[] = []
-      const topLevel = Array.isArray(existingProduct.image_urls)
-        ? existingProduct.image_urls
-        : []
-      const attrLevel =
-        attrs && Array.isArray((attrs as unknown as Record<string, unknown>).image_urls)
-          ? ((attrs as unknown as Record<string, unknown>).image_urls as string[])
-          : []
-      for (const raw of [...topLevel, ...attrLevel]) {
-        if (typeof raw !== "string" || raw.length === 0) continue
-        const clean = raw.split("?")[0]
-        // strip optional bucket prefix
-        const after = clean.includes("://")
-          ? clean.split("://", 2)[1].split("/", 2)[1] ?? clean
-          : clean.replace(/^[^/]+\//, "")
-        if (!after || seen.has(after)) continue
-        seen.add(after)
-        seedKeys.push(after)
-      }
-      if (seedKeys.length > 0 && initialImageKeys === undefined) {
-        setImageKeys(seedKeys)
-      }
+      // NOTE: image seeding lives in its own effect (driven by the
+      // signed-URL query), not here — this effect only resets the
+      // scalar form fields from the product's attributes.
 
       reset({
         category_id: existingProduct.category_id,
@@ -303,7 +313,7 @@ export function ProductForm({
         description: existingProduct.description || "",
       });
     }
-  }, [mode, existingProduct, reset, initialImageKeys]);
+  }, [mode, existingProduct, reset]);
 
   /**
    * Auto-populate stock_number from last 6 characters of VIN.
@@ -478,14 +488,19 @@ export function ProductForm({
     // The disabled state on button prevents double-clicks, not this handler
 
     try {
-      // If custom submit handler is provided, use it. Pass the current
-      // list of image KEYS (not signed URLs — the create page uploads
-      // via the optimized hook, which returns `{url, key}`; we pass
-      // the keys so they can be persisted in product.image_urls).
-      if (customOnSubmit) {
-        await customOnSubmit(data, imageKeys);
-        return;
-      }
+      // Upload any in-flight images (entries with a File) and read the
+      // final state from the store. After `uploadImages()`, every
+      // surviving entry has a `storageKey` (seeded entries already had
+      // one). The cover is identified by entry id in the store; we map
+      // it back to its storage key for the request body.
+      await uploadImages();
+      const { images, coverImageId } = useUploadStore.getState();
+      const imageKeys = images
+        .map((e) => e.storageKey)
+        .filter((k): k is string => Boolean(k));
+      const coverKey = coverImageId
+        ? images.find((e) => e.id === coverImageId)?.storageKey ?? null
+        : null;
 
       if (mode === "create") {
         logger.debug("🚀 MODE: CREATE - Starting product creation");
@@ -531,16 +546,20 @@ export function ProductForm({
         const product = await createProduct.mutateAsync({
           title: `${data.year ?? ""} ${data.make ?? ""} ${data.model ?? ""}`.trim(),
           price_cents: Math.round((data.price ?? 0) * 100), // Convert dollars to cents
-          tenant_id: user?.id ?? "",
-          organization_id: user?.organization_id ?? "",
+          // tenant_id / organization_id intentionally omitted — the
+          // backend injects them from the JWT (sending an empty string
+          // here when the user has no organization_id caused a 422 on
+          // UUID parsing, and trusting them from the client is an IDOR risk).
           category_id: data.category_id ?? "",
           description: data.description,
           attributes: vehicleAttributes,
-          // The create page passes `customOnSubmit`, so this default
-          // branch only fires for direct ProductForm usages (e.g. tests).
-          // Still: include the keys if we have them.
-          ...(imageKeys.length > 0 ? { image_urls: imageKeys } : {}),
+          // Persist storage KEYS top-level (canonical, post-migration)
+          // plus the cover pointer. Backend enforces cover ∈ image_urls.
+          image_urls: imageKeys,
+          ...(coverKey ? { cover_image_key: coverKey } : {}),
         });
+
+        clearUploadStore();
 
         logger.debug("✅ Product created successfully:", product);
         logger.debug("🎯 Success - calling onSuccess or redirecting to /catalog");
@@ -594,11 +613,14 @@ export function ProductForm({
             category_id: data.category_id ?? "",
             description: data.description,
             attributes: vehicleAttributes,
-            // Always send the current image keys (may be the same as
-            // initial, may have additions/deletions).
+            // Always send the current image keys (seeded + newly
+            // uploaded, minus any removed) plus the cover pointer.
             image_urls: imageKeys,
+            cover_image_key: coverKey,
           },
         });
+
+        clearUploadStore();
 
         logger.debug("✅ Product updated successfully:", updatedProduct);
 
@@ -671,13 +693,13 @@ export function ProductForm({
       noValidate
     >
       {/* ========================================
-          IMAGE MANAGER (create and edit)
+          IMAGES (create and edit) — single store-backed flow
           ======================================== */}
-      <VehicleImageManager
-        initialKeys={imageKeys}
-        onChange={setImageKeys}
-        disabled={isDisabled}
-      />
+      <section className="flex flex-col gap-4" data-testid="product-images-section">
+        <h2 className="text-lg font-semibold">Imágenes del Vehículo</h2>
+        <ImageDropzone />
+        <ProductCoverPicker />
+      </section>
 
       {/* ========================================
           SECTION 1: VIN & Decoding

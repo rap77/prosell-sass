@@ -4,16 +4,12 @@
  * upload flows.
  *
  * Why a hook (not a utility / not a component prop):
- *   The same paste-to-upload behavior is needed in two flows that
- *   don't share any state:
- *     1. The bulk upload flow (`upload/ImageDropzone.tsx`) — adds
- *        pasted files to the Zustand `uploadStore`.
- *     2. The in-form upload flow (`forms/VehicleImageManager.tsx`) —
- *        uploads the file immediately and returns a storage key.
- *
- *   Both flows ask the same question: "what do I do with this File?"
- *   The hook owns the clipboard plumbing; each consumer provides
- *   its own `onImage` callback. No duplication, no regression risk.
+ *   Paste-to-upload is wired into `upload/ImageDropzone.tsx`, which
+ *   hands each pasted image File to the Zustand `uploadStore` via
+ *   `addFile` — the same entry point as drag-and-drop and the file
+ *   picker. The hook owns the clipboard plumbing; the consumer
+ *   provides its own `onImage` callback, so any future consumer
+ *   reuses it the same way. No duplication, no regression risk.
  *
  * Scope:
  *   - Pastes an image → calls `onImage` with a File.
