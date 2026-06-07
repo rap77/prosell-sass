@@ -56,14 +56,18 @@ class CreateProductUseCase:
             attrs["stock_number"] = vin_str[-6:].upper()
             request = request.model_copy(update={"attributes": attrs})
 
-        # 2. Create product entity
+        # 2. Resolve the owning tenant. A global category (tenant_id=NULL)
+        # carries no tenant, so the request MUST supply one — a product always
+        # belongs to a tenant. (Via the router this is the auth context.)
         tenant_id = request.tenant_id or category.tenant_id
+        if tenant_id is None:
+            raise ValueError("Cannot create a product without a tenant: tenant_id is required")
         organization_id = request.organization_id or tenant_id
 
         # 2b. Compose the title from the category's presentation template
         # when it declares one; otherwise keep the request-provided title
         # (backward-compatible fallback). Shared with the PATCH handler.
-        title = resolve_title(category.presentation, attrs, fallback=request.title)
+        title = resolve_title(category.presentation, attrs, fallback=request.title) or request.title
 
         # 3. Create product entity
         product = Product.create(
