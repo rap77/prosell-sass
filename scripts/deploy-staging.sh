@@ -83,7 +83,10 @@ check_file_exists() {
 
 check_env_var() {
   local var_name=$1
-  local var_value=${!var_name}
+  # `:-` yields an empty string when the variable is unset, so indirect
+  # expansion does not trip `set -u`. The emptiness check below is what
+  # actually reports a missing/placeholder value.
+  local var_value=${!var_name:-}
 
   if [[ -z "$var_value" ]] || [[ "$var_value" == "CHANGE_ME_"* ]]; then
     log_warning "Environment variable $var_name is not set or still has placeholder value"
