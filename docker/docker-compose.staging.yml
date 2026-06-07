@@ -134,7 +134,12 @@ services:
       - MINIO_ROOT_PASSWORD=minioadmin
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      # `mc ready local` is unreliable here — the `local` alias is only
+      # configured inside the minio-init container, not in this one. Hit the
+      # HTTP health endpoint that minio itself exposes instead. The minio
+      # image ships `curl` but not `wget`, so use the same `curl -f` pattern
+      # the API healthcheck already uses.
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 5s
       timeout: 5s
       retries: 5
