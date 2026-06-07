@@ -66,14 +66,184 @@ _CAR_SCHEMA: dict = {
 }
 
 
-def _car_leaf(name: str, slug: str) -> _Node:
-    """A 'Carros y Camionetas' leaf carrying the shared automotive spec."""
+def _f(
+    type_: str,
+    *,
+    required: bool = False,
+    filterable: bool = True,
+    filter_type: str = "text",
+    options: list[str] | None = None,
+) -> dict:
+    """Compact attribute-schema field builder."""
+    entry: dict = {
+        "type": type_,
+        "required": required,
+        "filterable": filterable,
+        "filter_type": filter_type,
+    }
+    if options is not None:
+        entry["options"] = options
+    return entry
+
+
+def _leaf(name: str, slug: str, schema: dict, presentation: dict) -> _Node:
+    """A leaf category carrying its attribute_schema + presentation."""
     return {
         "name": name,
         "slug": slug,
-        "attribute_schema": _CAR_SCHEMA,
-        "presentation": _CAR_PRESENTATION,
+        "attribute_schema": schema,
+        "presentation": presentation,
     }
+
+
+def _car_leaf(name: str, slug: str) -> _Node:
+    """A 'Carros y Camionetas' leaf carrying the shared automotive spec."""
+    return _leaf(name, slug, _CAR_SCHEMA, _CAR_PRESENTATION)
+
+
+# ── Other vehicle branches ───────────────────────────────────────────────────
+_VEHICLE_PRESENTATION: dict = {
+    "title_template": "{year} {make} {model}",
+    "card_fields": ["price"],
+}
+_MOTO_SCHEMA: dict = {
+    "make": _f("string", required=True, filter_type="select"),
+    "model": _f("string", required=True),
+    "year": _f("number", required=True, filter_type="range"),
+    "engine_cc": _f("number", filter_type="range"),
+    "mileage": _f("number", filter_type="range"),
+    "color": _f("string", filter_type="select"),
+}
+_HEAVY_SCHEMA: dict = {
+    "make": _f("string", required=True, filter_type="select"),
+    "model": _f("string", required=True),
+    "year": _f("number", required=True, filter_type="range"),
+    "mileage": _f("number", filter_type="range"),
+    "transmission": _f("string", filter_type="select", options=["Manual", "Automática"]),
+    "fuel_type": _f(
+        "string", filter_type="select", options=["Diésel", "Gasolina", "Eléctrico", "GLP"]
+    ),
+    "load_capacity_kg": _f("number", filter_type="range"),
+}
+_BOAT_SCHEMA: dict = {
+    "make": _f("string", required=True, filter_type="select"),
+    "model": _f("string", required=True),
+    "year": _f("number", required=True, filter_type="range"),
+    "length_ft": _f("number", filter_type="range"),
+    "fuel_type": _f("string", filter_type="select", options=["Gasolina", "Diésel", "Eléctrico"]),
+}
+_WATERCRAFT_SCHEMA: dict = {
+    "make": _f("string", required=True, filter_type="select"),
+    "model": _f("string", required=True),
+    "year": _f("number", required=True, filter_type="range"),
+    "engine_hours": _f("number", filter_type="range"),
+}
+
+# ── Real estate ──────────────────────────────────────────────────────────────
+_OPERATION = _f("string", required=True, filter_type="select", options=["Venta", "Alquiler"])
+_HOUSE_PRESENTATION: dict = {
+    "title_template": "{operation} · {bedrooms} hab · {area_m2} m²",
+    "card_fields": ["price", "area_m2"],
+}
+_COMMERCIAL_PRESENTATION: dict = {
+    "title_template": "{operation} · {area_m2} m²",
+    "card_fields": ["price", "area_m2"],
+}
+_LAND_PRESENTATION: dict = {
+    "title_template": "{operation} · {land_area_m2} m²",
+    "card_fields": ["price", "land_area_m2"],
+}
+_HOUSE_SCHEMA: dict = {
+    "operation": _OPERATION,
+    "area_m2": _f("number", required=True, filter_type="range"),
+    "land_area_m2": _f("number", filter_type="range"),
+    "bedrooms": _f("number", required=True, filter_type="range"),
+    "bathrooms": _f("number", required=True, filter_type="range"),
+    "parking": _f("number", filter_type="range"),
+}
+# Casa de Campo o Quinta: land surface is mandatory (per platform strategy).
+_COUNTRY_HOUSE_SCHEMA: dict = {
+    **_HOUSE_SCHEMA,
+    "land_area_m2": _f("number", required=True, filter_type="range"),
+}
+_APARTMENT_SCHEMA: dict = {
+    "operation": _OPERATION,
+    "area_m2": _f("number", required=True, filter_type="range"),
+    "bedrooms": _f("number", required=True, filter_type="range"),
+    "bathrooms": _f("number", required=True, filter_type="range"),
+    "floor": _f("number", filter_type="range"),
+    "parking": _f("number", filter_type="range"),
+}
+_OFFICE_SCHEMA: dict = {
+    "operation": _OPERATION,
+    "area_m2": _f("number", required=True, filter_type="range"),
+    "bathrooms": _f("number", filter_type="range"),
+    "parking": _f("number", filter_type="range"),
+    "capacity": _f("number", filter_type="range"),
+}
+_LOCAL_SCHEMA: dict = {
+    "operation": _OPERATION,
+    "area_m2": _f("number", required=True, filter_type="range"),
+    "bathrooms": _f("number", filter_type="range"),
+    "parking": _f("number", filter_type="range"),
+}
+_LAND_SCHEMA: dict = {
+    "operation": _OPERATION,
+    "land_area_m2": _f("number", required=True, filter_type="range"),
+}
+
+# ── Artículos (general goods) ────────────────────────────────────────────────
+_CONDITION = _f(
+    "string", required=True, filter_type="select", options=["Nuevo", "Usado", "Reacondicionado"]
+)
+_ARTICLE_PRESENTATION: dict = {
+    "title_template": "{brand} {model}",
+    "card_fields": ["price"],
+}
+_CLOTHING_PRESENTATION: dict = {
+    "title_template": "{brand} talla {size}",
+    "card_fields": ["price"],
+}
+_COMPUTER_SCHEMA: dict = {
+    "brand": _f("string", required=True, filter_type="select"),
+    "model": _f("string"),
+    "condition": _CONDITION,
+    "ram_gb": _f("number", filter_type="range"),
+    "storage": _f("string", filter_type="select"),
+}
+_PHONE_SCHEMA: dict = {
+    "brand": _f("string", required=True, filter_type="select"),
+    "model": _f("string"),
+    "condition": _CONDITION,
+    "storage_gb": _f("number", filter_type="range"),
+    "color": _f("string", filter_type="select"),
+}
+_APPLIANCE_SCHEMA: dict = {
+    "brand": _f("string", required=True, filter_type="select"),
+    "model": _f("string"),
+    "condition": _CONDITION,
+    "color": _f("string", filter_type="select"),
+}
+_CLOTHING_SCHEMA: dict = {
+    "brand": _f("string", filter_type="select"),
+    "size": _f(
+        "string", required=True, filter_type="select", options=["XS", "S", "M", "L", "XL", "XXL"]
+    ),
+    "color": _f("string", filter_type="select"),
+    "gender": _f(
+        "string", filter_type="select", options=["Hombre", "Mujer", "Unisex", "Niño", "Niña"]
+    ),
+    "condition": _f("string", filter_type="select", options=["Nuevo", "Usado"]),
+}
+_SHOE_SCHEMA: dict = {
+    "brand": _f("string", filter_type="select"),
+    "size": _f("number", required=True, filter_type="range"),
+    "color": _f("string", filter_type="select"),
+    "gender": _f(
+        "string", filter_type="select", options=["Hombre", "Mujer", "Unisex", "Niño", "Niña"]
+    ),
+    "condition": _f("string", filter_type="select", options=["Nuevo", "Usado"]),
+}
 
 
 # Niche 1: Vehículos y Transporte — root vertical (level 0), 3 levels below.
@@ -100,20 +270,39 @@ VEHICLES_VERTICAL: _Node = {
                     "name": "Motos",
                     "slug": "motos",
                     "children": [
-                        {"name": "Scooters y Urbanas", "slug": "scooters-y-urbanas"},
-                        {"name": "Deportivas", "slug": "deportivas"},
-                        {"name": "Enduro y Cross", "slug": "enduro-y-cross"},
-                        {"name": "Chopper", "slug": "chopper"},
+                        _leaf(
+                            "Scooters y Urbanas",
+                            "scooters-y-urbanas",
+                            _MOTO_SCHEMA,
+                            _VEHICLE_PRESENTATION,
+                        ),
+                        _leaf("Deportivas", "deportivas", _MOTO_SCHEMA, _VEHICLE_PRESENTATION),
+                        _leaf(
+                            "Enduro y Cross", "enduro-y-cross", _MOTO_SCHEMA, _VEHICLE_PRESENTATION
+                        ),
+                        _leaf("Chopper", "chopper", _MOTO_SCHEMA, _VEHICLE_PRESENTATION),
                     ],
                 },
                 {
                     "name": "Vehículos Pesados y Comerciales",
                     "slug": "vehiculos-pesados-y-comerciales",
                     "children": [
-                        {"name": "Camiones de Carga", "slug": "camiones-de-carga"},
-                        {"name": "Tractocamiones", "slug": "tractocamiones"},
-                        {"name": "Autobuses", "slug": "autobuses"},
-                        {"name": "Vans de Reparto", "slug": "vans-de-reparto"},
+                        _leaf(
+                            "Camiones de Carga",
+                            "camiones-de-carga",
+                            _HEAVY_SCHEMA,
+                            _VEHICLE_PRESENTATION,
+                        ),
+                        _leaf(
+                            "Tractocamiones", "tractocamiones", _HEAVY_SCHEMA, _VEHICLE_PRESENTATION
+                        ),
+                        _leaf("Autobuses", "autobuses", _HEAVY_SCHEMA, _VEHICLE_PRESENTATION),
+                        _leaf(
+                            "Vans de Reparto",
+                            "vans-de-reparto",
+                            _HEAVY_SCHEMA,
+                            _VEHICLE_PRESENTATION,
+                        ),
                     ],
                 },
             ],
@@ -126,16 +315,21 @@ VEHICLES_VERTICAL: _Node = {
                     "name": "Embarcaciones de Recreo",
                     "slug": "embarcaciones-de-recreo",
                     "children": [
-                        {"name": "Yates", "slug": "yates"},
-                        {"name": "Lanchas", "slug": "lanchas"},
-                        {"name": "Veleros", "slug": "veleros"},
+                        _leaf("Yates", "yates", _BOAT_SCHEMA, _VEHICLE_PRESENTATION),
+                        _leaf("Lanchas", "lanchas", _BOAT_SCHEMA, _VEHICLE_PRESENTATION),
+                        _leaf("Veleros", "veleros", _BOAT_SCHEMA, _VEHICLE_PRESENTATION),
                     ],
                 },
                 {
                     "name": "Vehículos Personales",
                     "slug": "vehiculos-personales",
                     "children": [
-                        {"name": "Motos de Agua (Jet Skis)", "slug": "motos-de-agua-jet-skis"},
+                        _leaf(
+                            "Motos de Agua (Jet Skis)",
+                            "motos-de-agua-jet-skis",
+                            _WATERCRAFT_SCHEMA,
+                            _VEHICLE_PRESENTATION,
+                        ),
                     ],
                 },
             ],
@@ -157,18 +351,40 @@ BIENES_RAICES_VERTICAL: _Node = {
                     "name": "Casas",
                     "slug": "casas",
                     "children": [
-                        {"name": "Casa de Ciudad", "slug": "casa-de-ciudad"},
-                        {"name": "Casa de Campo o Quinta", "slug": "casa-de-campo-o-quinta"},
-                        {"name": "Casa en Condominio", "slug": "casa-en-condominio"},
+                        _leaf(
+                            "Casa de Ciudad", "casa-de-ciudad", _HOUSE_SCHEMA, _HOUSE_PRESENTATION
+                        ),
+                        _leaf(
+                            "Casa de Campo o Quinta",
+                            "casa-de-campo-o-quinta",
+                            _COUNTRY_HOUSE_SCHEMA,
+                            _HOUSE_PRESENTATION,
+                        ),
+                        _leaf(
+                            "Casa en Condominio",
+                            "casa-en-condominio",
+                            _HOUSE_SCHEMA,
+                            _HOUSE_PRESENTATION,
+                        ),
                     ],
                 },
                 {
                     "name": "Apartamentos",
                     "slug": "apartamentos",
                     "children": [
-                        {"name": "Apartamento Estándar", "slug": "apartamento-estandar"},
-                        {"name": "Loft o Estudio", "slug": "loft-o-estudio"},
-                        {"name": "Penthouse", "slug": "penthouse"},
+                        _leaf(
+                            "Apartamento Estándar",
+                            "apartamento-estandar",
+                            _APARTMENT_SCHEMA,
+                            _HOUSE_PRESENTATION,
+                        ),
+                        _leaf(
+                            "Loft o Estudio",
+                            "loft-o-estudio",
+                            _APARTMENT_SCHEMA,
+                            _HOUSE_PRESENTATION,
+                        ),
+                        _leaf("Penthouse", "penthouse", _APARTMENT_SCHEMA, _HOUSE_PRESENTATION),
                     ],
                 },
             ],
@@ -181,16 +397,36 @@ BIENES_RAICES_VERTICAL: _Node = {
                     "name": "Oficinas",
                     "slug": "oficinas",
                     "children": [
-                        {"name": "Oficina Corporativa", "slug": "oficina-corporativa"},
-                        {"name": "Espacio de Co-working", "slug": "espacio-de-co-working"},
+                        _leaf(
+                            "Oficina Corporativa",
+                            "oficina-corporativa",
+                            _OFFICE_SCHEMA,
+                            _COMMERCIAL_PRESENTATION,
+                        ),
+                        _leaf(
+                            "Espacio de Co-working",
+                            "espacio-de-co-working",
+                            _OFFICE_SCHEMA,
+                            _COMMERCIAL_PRESENTATION,
+                        ),
                     ],
                 },
                 {
                     "name": "Locales Comerciales",
                     "slug": "locales-comerciales",
                     "children": [
-                        {"name": "Local en Centro Comercial", "slug": "local-en-centro-comercial"},
-                        {"name": "Local a Pie de Calle", "slug": "local-a-pie-de-calle"},
+                        _leaf(
+                            "Local en Centro Comercial",
+                            "local-en-centro-comercial",
+                            _LOCAL_SCHEMA,
+                            _COMMERCIAL_PRESENTATION,
+                        ),
+                        _leaf(
+                            "Local a Pie de Calle",
+                            "local-a-pie-de-calle",
+                            _LOCAL_SCHEMA,
+                            _COMMERCIAL_PRESENTATION,
+                        ),
                     ],
                 },
             ],
@@ -203,16 +439,26 @@ BIENES_RAICES_VERTICAL: _Node = {
                     "name": "Lotes Urbanos",
                     "slug": "lotes-urbanos",
                     "children": [
-                        {"name": "Residencial", "slug": "residencial"},
-                        {"name": "Comercial", "slug": "comercial"},
+                        _leaf("Residencial", "residencial", _LAND_SCHEMA, _LAND_PRESENTATION),
+                        _leaf("Comercial", "comercial", _LAND_SCHEMA, _LAND_PRESENTATION),
                     ],
                 },
                 {
                     "name": "Terrenos Rurales",
                     "slug": "terrenos-rurales",
                     "children": [
-                        {"name": "Agrícola o Productivo", "slug": "agricola-o-productivo"},
-                        {"name": "Terreno de Descanso", "slug": "terreno-de-descanso"},
+                        _leaf(
+                            "Agrícola o Productivo",
+                            "agricola-o-productivo",
+                            _LAND_SCHEMA,
+                            _LAND_PRESENTATION,
+                        ),
+                        _leaf(
+                            "Terreno de Descanso",
+                            "terreno-de-descanso",
+                            _LAND_SCHEMA,
+                            _LAND_PRESENTATION,
+                        ),
                     ],
                 },
             ],
@@ -234,21 +480,28 @@ ARTICULOS_VERTICAL: _Node = {
                     "name": "Computación",
                     "slug": "computacion",
                     "children": [
-                        {"name": "Laptops", "slug": "laptops"},
-                        {
-                            "name": "Computadoras de Escritorio",
-                            "slug": "computadoras-de-escritorio",
-                        },
-                        {"name": "Componentes y Piezas", "slug": "componentes-y-piezas"},
+                        _leaf("Laptops", "laptops", _COMPUTER_SCHEMA, _ARTICLE_PRESENTATION),
+                        _leaf(
+                            "Computadoras de Escritorio",
+                            "computadoras-de-escritorio",
+                            _COMPUTER_SCHEMA,
+                            _ARTICLE_PRESENTATION,
+                        ),
+                        _leaf(
+                            "Componentes y Piezas",
+                            "componentes-y-piezas",
+                            _COMPUTER_SCHEMA,
+                            _ARTICLE_PRESENTATION,
+                        ),
                     ],
                 },
                 {
                     "name": "Celulares y Teléfonos",
                     "slug": "celulares-y-telefonos",
                     "children": [
-                        {"name": "Smartphones", "slug": "smartphones"},
-                        {"name": "Smartwatches", "slug": "smartwatches"},
-                        {"name": "Accesorios", "slug": "accesorios"},
+                        _leaf("Smartphones", "smartphones", _PHONE_SCHEMA, _ARTICLE_PRESENTATION),
+                        _leaf("Smartwatches", "smartwatches", _PHONE_SCHEMA, _ARTICLE_PRESENTATION),
+                        _leaf("Accesorios", "accesorios", _PHONE_SCHEMA, _ARTICLE_PRESENTATION),
                     ],
                 },
             ],
@@ -261,18 +514,38 @@ ARTICULOS_VERTICAL: _Node = {
                     "name": "Grandes Electrodomésticos (Línea Blanca)",
                     "slug": "grandes-electrodomesticos-linea-blanca",
                     "children": [
-                        {"name": "Refrigeradores", "slug": "refrigeradores"},
-                        {"name": "Lavadoras y Secadoras", "slug": "lavadoras-y-secadoras"},
-                        {"name": "Estufas y Hornos", "slug": "estufas-y-hornos"},
+                        _leaf(
+                            "Refrigeradores",
+                            "refrigeradores",
+                            _APPLIANCE_SCHEMA,
+                            _ARTICLE_PRESENTATION,
+                        ),
+                        _leaf(
+                            "Lavadoras y Secadoras",
+                            "lavadoras-y-secadoras",
+                            _APPLIANCE_SCHEMA,
+                            _ARTICLE_PRESENTATION,
+                        ),
+                        _leaf(
+                            "Estufas y Hornos",
+                            "estufas-y-hornos",
+                            _APPLIANCE_SCHEMA,
+                            _ARTICLE_PRESENTATION,
+                        ),
                     ],
                 },
                 {
                     "name": "Pequeños Electrodomésticos",
                     "slug": "pequenos-electrodomesticos",
                     "children": [
-                        {"name": "Microondas", "slug": "microondas"},
-                        {"name": "Licuadoras y Batidoras", "slug": "licuadoras-y-batidoras"},
-                        {"name": "Cafeteras", "slug": "cafeteras"},
+                        _leaf("Microondas", "microondas", _APPLIANCE_SCHEMA, _ARTICLE_PRESENTATION),
+                        _leaf(
+                            "Licuadoras y Batidoras",
+                            "licuadoras-y-batidoras",
+                            _APPLIANCE_SCHEMA,
+                            _ARTICLE_PRESENTATION,
+                        ),
+                        _leaf("Cafeteras", "cafeteras", _APPLIANCE_SCHEMA, _ARTICLE_PRESENTATION),
                     ],
                 },
             ],
@@ -285,20 +558,45 @@ ARTICULOS_VERTICAL: _Node = {
                     "name": "Ropa y Vestimenta",
                     "slug": "ropa-y-vestimenta",
                     "children": [
-                        {"name": "Camisas y Camisetas", "slug": "camisas-y-camisetas"},
-                        {"name": "Pantalones y Jeans", "slug": "pantalones-y-jeans"},
-                        {"name": "Vestidos", "slug": "vestidos"},
-                        {"name": "Chaquetas y Abrigos", "slug": "chaquetas-y-abrigos"},
+                        _leaf(
+                            "Camisas y Camisetas",
+                            "camisas-y-camisetas",
+                            _CLOTHING_SCHEMA,
+                            _CLOTHING_PRESENTATION,
+                        ),
+                        _leaf(
+                            "Pantalones y Jeans",
+                            "pantalones-y-jeans",
+                            _CLOTHING_SCHEMA,
+                            _CLOTHING_PRESENTATION,
+                        ),
+                        _leaf("Vestidos", "vestidos", _CLOTHING_SCHEMA, _CLOTHING_PRESENTATION),
+                        _leaf(
+                            "Chaquetas y Abrigos",
+                            "chaquetas-y-abrigos",
+                            _CLOTHING_SCHEMA,
+                            _CLOTHING_PRESENTATION,
+                        ),
                     ],
                 },
                 {
                     "name": "Calzado",
                     "slug": "calzado",
                     "children": [
-                        {"name": "Tenis Deportivos", "slug": "tenis-deportivos"},
-                        {"name": "Zapatos Formales", "slug": "zapatos-formales"},
-                        {"name": "Botas", "slug": "botas"},
-                        {"name": "Sandalias", "slug": "sandalias"},
+                        _leaf(
+                            "Tenis Deportivos",
+                            "tenis-deportivos",
+                            _SHOE_SCHEMA,
+                            _CLOTHING_PRESENTATION,
+                        ),
+                        _leaf(
+                            "Zapatos Formales",
+                            "zapatos-formales",
+                            _SHOE_SCHEMA,
+                            _CLOTHING_PRESENTATION,
+                        ),
+                        _leaf("Botas", "botas", _SHOE_SCHEMA, _CLOTHING_PRESENTATION),
+                        _leaf("Sandalias", "sandalias", _SHOE_SCHEMA, _CLOTHING_PRESENTATION),
                     ],
                 },
             ],
