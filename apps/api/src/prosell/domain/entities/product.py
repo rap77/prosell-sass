@@ -419,6 +419,39 @@ class Product(DomainModel):
         self.is_featured = featured
         self.updated_at = datetime.now(UTC)
 
+    def merged_image_keys(self) -> list[str]:
+        """Return the merged, order-preserving, deduped list of image keys.
+
+        Pre-migration, image URLs lived in the legacy nested
+        ``attributes.image_urls`` field. Post-migration, they live in the
+        top-level ``image_urls`` column. Both surfaces that operate on a
+        product's image set — the sign endpoint AND the cover-image
+        validator — must read from BOTH sources so that:
+
+          - Legacy products (no top-level entries) still display their
+            images and still accept a cover change.
+          - Modern products keep working unchanged.
+          - A key present in both sources is counted ONCE (order-preserving
+            dedupe so the cover pick is stable across reads).
+
+        Mirrors the frontend ``getProductImageKeys(product)`` helper so the
+        two layers agree on "what images does this product have".
+        """
+        raw_keys: list[str] = list(self.image_urls or [])
+        attributes = self.attributes or {}
+        if isinstance(attributes, dict):
+            attr_keys = attributes.get("image_urls")
+            if isinstance(attr_keys, list):
+                raw_keys.extend(k for k in attr_keys if isinstance(k, str))
+        seen: set[str] = set()
+        merged: list[str] = []
+        for key in raw_keys:
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(key)
+        return merged
+
     # ==================== Properties ====================
 
     @property

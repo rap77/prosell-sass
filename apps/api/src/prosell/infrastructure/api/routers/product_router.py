@@ -34,9 +34,11 @@ from prosell.application.use_cases.product.list_products import (
     ListProductsUseCase,
     ProductListResponse,
 )
+from prosell.application.use_cases.product.update_product import UpdateProductUseCase
 from prosell.domain.entities.product import Product
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
+from prosell.domain.exceptions.product_exceptions import ProductNotFoundError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.csv_product_parser import CSVProductParser
@@ -139,40 +141,14 @@ async def get_category_repository(session: AsyncSession) -> AbstractCategoryRepo
 
 
 def _merged_image_url_candidates(product: Product) -> list[str]:
-    """Return the merged, deduped list of image URLs for a product.
+    """Return the merged, deduped list of image keys for a product.
 
-    Pre-migration, image URLs lived in `product.attributes.image_urls`
-    (the legacy nested field). Post-migration, they live in the
-    top-level `product.image_urls` column. Both endpoints that operate
-    on a product's image set — the sign endpoint AND the PATCH
-    cover-validator — must read from BOTH sources so that:
-
-      - Legacy products (no top-level entries) still display their
-        images and still accept a cover change.
-      - Modern products (with top-level entries) keep working
-        unchanged.
-      - A URL in both sources is counted ONCE (order-preserving dedupe
-        so the cover pick is stable across reads).
-
-    Mirrors the merge performed by the frontend
-    `getProductImageKeys(product)` helper in
-    `apps/web/src/lib/api/productImages.ts` — the two layers must
-    agree on "what images does this product have".
+    Thin boundary wrapper over the domain rule
+    (:meth:`Product.merged_image_keys`) so the sign endpoint keeps a
+    local name. The PATCH cover-validator now lives in
+    :class:`UpdateProductUseCase`, which calls the entity method directly.
     """
-    raw_urls: list[str] = list(product.image_urls or [])
-    attributes = product.attributes or {}
-    if isinstance(attributes, dict):
-        attr_urls = attributes.get("image_urls")
-        if isinstance(attr_urls, list):
-            raw_urls.extend(u for u in attr_urls if isinstance(u, str))
-    seen: set[str] = set()
-    merged: list[str] = []
-    for url in raw_urls:
-        if url in seen:
-            continue
-        seen.add(url)
-        merged.append(url)
-    return merged
+    return product.merged_image_keys()
 
 
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
@@ -439,91 +415,25 @@ async def update_product(
     tenant_id = current_user.tenant_id
 
     # Defense in depth: reject image_urls not under the caller's tenant
-    # before they reach the DB. The DTO format check has already filtered
-    # out malformed URLs and non-http(s) schemes.
+    # before they reach the use case / DB. The DTO format check has already
+    # filtered out malformed URLs and non-http(s) schemes. Kept at the
+    # router boundary (it depends on the auth context, not the entity).
     if request.image_urls is not None:
         validate_image_urls_for_tenant(request.image_urls, tenant_id)
 
-    repo = SqlAlchemyProductRepository(db)
-    product = await repo.get_by_id(product_id, tenant_id)
+    # All field application, the cover cross-field checks, and server-side
+    # title recomposition live in the use case (it needs both the product
+    # AND the category loaded — see UpdateProductUseCase).
+    product_repo = SqlAlchemyProductRepository(db)
+    category_repo = SqlAlchemyCategoryRepository(db)
+    use_case = UpdateProductUseCase(product_repo, category_repo)
 
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-
-    # Update basic fields
-    if request.title is not None:
-        product.title = request.title
-    if request.description is not None:
-        product.description = request.description
-    if request.price_cents is not None:
-        product.price_cents = request.price_cents
-    if request.category_id is not None:
-        product.category_id = request.category_id
-    if request.condition is not None:
-        product.condition = request.condition
-    if request.attributes is not None:
-        product.attributes = request.attributes
-    if request.image_urls is not None:
-        product.image_urls = request.image_urls
-    # `cover_image_key` is a first-class pointer to the cover image.
-    # Two cross-field checks the DTO cannot enforce on its own:
-    #
-    # 1. If the request sets `cover_image_key` but not `image_urls`
-    #    (PATCH semantics: image list unchanged), the cover must
-    #    reference an entry in the product's CURRENT image list.
-    #    The DTO defers this to the router, where the entity is
-    #    loaded. A cover pointing to a non-existent image would
-    #    404 on every catalog render.
-    #
-    # 2. If the request clears `image_urls` to `[]`, the cover
-    #    must also be cleared — a product with no images has no
-    #    cover. Leaving a stale `cover_image_key` would point to
-    #    a non-existent image and break the catalog.
-    #
-    # Both checks run BEFORE the entity is mutated, so a rejection
-    # leaves the product untouched.
-    #
-    # Legacy data note: the "current image list" merges the
-    # top-level `image_urls` column AND the legacy
-    # `attributes.image_urls` field (mirrors the sign endpoint's
-    # merge — see `_merged_image_url_candidates`). Without this,
-    # a product whose images live only in the legacy attribute
-    # column would 422 on every cover change.
-    if request.cover_image_key is not None:
-        current_images = _merged_image_url_candidates(product)
-        if request.cover_image_key not in current_images:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=(
-                    f"cover_image_key {request.cover_image_key!r} is not in "
-                    f"the product's current image list. Add the new key to "
-                    f"image_urls first, or set cover_image_key to one of the "
-                    f"existing image keys."
-                ),
-            )
-        product.cover_image_key = request.cover_image_key
-    if request.image_urls is not None and not request.image_urls:
-        # Image list was cleared — drop the cover too. A product with
-        # no images has no cover. The DTO rejects setting a non-null
-        # cover on an empty list, but we still need to drop a cover
-        # that was set before the clear.
-        product.cover_image_key = None
-    if request.location_city is not None:
-        product.location_city = request.location_city
-    if request.location_state is not None:
-        product.location_state = request.location_state
-    if request.location_zip is not None:
-        product.location_zip = request.location_zip
-
-    # NOTE: server-side title recomposition on UPDATE is deferred to
-    # Foundation Plan 2 (it needs the category loaded — best done via a
-    # dedicated UpdateProductUseCase rather than an extra DB call inline
-    # here). On edit the client still composes the title, so this is
-    # backward-compatible until Plan 2.
-
-    product = await repo.update(product)
-
-    return ProductResponse.from_entity(product)
+    try:
+        return await use_case.execute(product_id, tenant_id, request)
+    except ProductNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
 
 @router.post("/{product_id}/submit", response_model=ProductResponse)

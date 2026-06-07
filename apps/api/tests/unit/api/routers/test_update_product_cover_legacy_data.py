@@ -25,6 +25,7 @@ canonical order) and use it in the router's cover check.
 
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 from uuid import UUID
 
@@ -47,6 +48,17 @@ TEST_ORG_ID = UUID("33333333-3333-3333-3333-333333333333")
 TEST_CATEGORY_ID = UUID("44444444-4444-4444-4444-444444444444")
 TEST_PRODUCT_ID = UUID("9d977fb6-6802-4789-8ba7-cbf5bac7f23b")
 LEGACY_KEY = f"orgs/{TEST_TENANT_ID}/vehicles/legacy-cover.jpg"
+
+
+def _category_without_template() -> SimpleNamespace:
+    """A category whose presentation declares no title template.
+
+    The PATCH now delegates to ``UpdateProductUseCase``, which loads the
+    category to recompose the title. With ``presentation=None`` the
+    recomposition is a no-op (falls back to the existing title), so these
+    cover-validation tests assert on cover behavior alone.
+    """
+    return SimpleNamespace(presentation=None)
 
 
 def _make_user() -> User:
@@ -115,12 +127,20 @@ class TestUpdateProductCoverAcceptsLegacyKeys:
             attributes={"image_urls": [LEGACY_KEY]},
         )
 
-        with patch(
-            "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
-        ) as mock_repo_cls:
+        with (
+            patch(
+                "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+            ) as mock_repo_cls,
+            patch(
+                "prosell.infrastructure.api.routers.product_router.SqlAlchemyCategoryRepository"
+            ) as mock_cat_cls,
+        ):
             mock_repo = mock_repo_cls.return_value
             mock_repo.get_by_id = AsyncMock(return_value=product)
             mock_repo.update = AsyncMock(return_value=product)
+            mock_cat_cls.return_value.get_by_id = AsyncMock(
+                return_value=_category_without_template()
+            )
 
             response = await async_client_with_auth.patch(
                 f"/api/v1/products/{TEST_PRODUCT_ID}",
@@ -152,12 +172,20 @@ class TestUpdateProductCoverAcceptsLegacyKeys:
             attributes={},
         )
 
-        with patch(
-            "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
-        ) as mock_repo_cls:
+        with (
+            patch(
+                "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+            ) as mock_repo_cls,
+            patch(
+                "prosell.infrastructure.api.routers.product_router.SqlAlchemyCategoryRepository"
+            ) as mock_cat_cls,
+        ):
             mock_repo = mock_repo_cls.return_value
             mock_repo.get_by_id = AsyncMock(return_value=product)
             mock_repo.update = AsyncMock(return_value=product)
+            mock_cat_cls.return_value.get_by_id = AsyncMock(
+                return_value=_category_without_template()
+            )
 
             response = await async_client_with_auth.patch(
                 f"/api/v1/products/{TEST_PRODUCT_ID}",
@@ -179,12 +207,20 @@ class TestUpdateProductCoverAcceptsLegacyKeys:
             attributes={"image_urls": [shared]},
         )
 
-        with patch(
-            "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
-        ) as mock_repo_cls:
+        with (
+            patch(
+                "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+            ) as mock_repo_cls,
+            patch(
+                "prosell.infrastructure.api.routers.product_router.SqlAlchemyCategoryRepository"
+            ) as mock_cat_cls,
+        ):
             mock_repo = mock_repo_cls.return_value
             mock_repo.get_by_id = AsyncMock(return_value=product)
             mock_repo.update = AsyncMock(return_value=product)
+            mock_cat_cls.return_value.get_by_id = AsyncMock(
+                return_value=_category_without_template()
+            )
 
             response = await async_client_with_auth.patch(
                 f"/api/v1/products/{TEST_PRODUCT_ID}",
@@ -207,12 +243,20 @@ class TestUpdateProductCoverAcceptsLegacyKeys:
             attributes={"image_urls": [LEGACY_KEY]},
         )
 
-        with patch(
-            "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
-        ) as mock_repo_cls:
+        with (
+            patch(
+                "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
+            ) as mock_repo_cls,
+            patch(
+                "prosell.infrastructure.api.routers.product_router.SqlAlchemyCategoryRepository"
+            ) as mock_cat_cls,
+        ):
             mock_repo = mock_repo_cls.return_value
             mock_repo.get_by_id = AsyncMock(return_value=product)
             mock_repo.update = AsyncMock(return_value=product)
+            mock_cat_cls.return_value.get_by_id = AsyncMock(
+                return_value=_category_without_template()
+            )
 
             response = await async_client_with_auth.patch(
                 f"/api/v1/products/{TEST_PRODUCT_ID}",
