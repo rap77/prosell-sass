@@ -89,6 +89,40 @@ class AbstractCategoryRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_by_id_any_tenant(self, category_id: UUID) -> Category | None:
+        """
+        Get a category by ID without tenant filtering.
+
+        Use ONLY for global template reads (Plan 2): root verticals and their
+        children have tenant_id=NULL and are shared across organizations.
+        Per-tenant reads must still go through ``get_by_id``.
+
+        Args:
+            category_id: Category UUID
+
+        Returns:
+            Category entity or None if not found
+        """
+        pass
+
+    @abstractmethod
+    async def get_children_any_tenant(self, parent_id: UUID) -> list[Category]:
+        """
+        Get direct children of a parent category without tenant filtering.
+
+        Use ONLY for global template reads (Plan 2): children of a global
+        root also have tenant_id=NULL. Per-tenant reads must still go
+        through ``get_children``.
+
+        Args:
+            parent_id: Parent category UUID
+
+        Returns:
+            List of child categories
+        """
+        pass
+
+    @abstractmethod
     async def get_ancestor_ids(self, category_id: UUID, tenant_id: UUID) -> list[UUID]:
         """
         Get all ancestor category IDs (up the tree to root).

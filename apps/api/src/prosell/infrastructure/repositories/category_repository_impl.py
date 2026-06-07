@@ -101,6 +101,24 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
+    async def get_by_id_any_tenant(self, category_id: UUID) -> Category | None:
+        """Get a category by ID without tenant filtering (global templates)."""
+        stmt = select(CategoryModel).where(CategoryModel.id == category_id)
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
+    async def get_children_any_tenant(self, parent_id: UUID) -> list[Category]:
+        """Get direct children of a parent without tenant filtering (global templates)."""
+        stmt = (
+            select(CategoryModel)
+            .where(CategoryModel.parent_id == parent_id)
+            .order_by(CategoryModel.sort_order, CategoryModel.name)
+        )
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
     async def get_ancestor_ids(self, category_id: UUID, tenant_id: UUID) -> list[UUID]:
         """Get all ancestor category IDs (up the tree to root)."""
         ancestor_ids: list[UUID] = []
