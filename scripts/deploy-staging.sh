@@ -24,25 +24,19 @@ ENV_FILE="$PROJECT_ROOT/.env.staging"
 COMPOSE_FILE="$DOCKER_DIR/docker-compose.staging.yml"
 
 # Flags
-SKIP_MIGRATIONS=false
 SKIP_BUILD=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --skip-migrations)
-      SKIP_MIGRATIONS=true
-      shift
-      ;;
     --skip-build)
       SKIP_BUILD=true
       shift
       ;;
     -h|--help)
-      echo "Usage: $0 [--skip-migrations] [--skip-build]"
+      echo "Usage: $0 [--skip-build]"
       echo ""
       echo "Options:"
-      echo "  --skip-migrations  Skip database migrations"
       echo "  --skip-build       Skip Docker image build"
       echo "  -h, --help        Show this help message"
       exit 0
@@ -157,26 +151,19 @@ fi
 if [[ "$SKIP_BUILD" == false ]]; then
   log_info "Building Docker images..."
 
-  cd "$PROJECT_ROOT"
-
-  # Build API image
-  log_info "Building API image..."
-  docker build -f docker/api.Dockerfile -t prosell-api:staging . || {
-    log_error "Failed to build API image"
+  # Build via docker-compose so the running containers use exactly what we
+  # build — single source of truth. Building by hand with
+  # `docker build -t prosell-*:staging` produced images the compose file never
+  # referenced (it has its own `build:`), so containers ran a stale image while
+  # migrations were applied against the fresh one. The web API URL build-arg
+  # now comes from the compose file (http://localhost:8000), which is the
+  # correct value for this local-host staging.
+  cd "$DOCKER_DIR"
+  docker-compose -f docker-compose.staging.yml build || {
+    log_error "Failed to build Docker images"
     exit 1
   }
-  log_success "API image built successfully"
-
-  # Build Web image
-  log_info "Building Web image..."
-  docker build \
-    -f docker/web.Dockerfile \
-    --build-arg NEXT_PUBLIC_API_URL=https://staging.prosell.com \
-    -t prosell-web:staging . || {
-    log_error "Failed to build Web image"
-    exit 1
-  }
-  log_success "Web image built successfully"
+  log_success "Docker images built successfully"
 else
   log_warning "Skipping Docker image build (--skip-build flag set)"
 fi
@@ -229,47 +216,13 @@ for i in {1..30}; do
 done
 
 # =============================================================================
-# RUN DATABASE MIGRATIONS
-# =============================================================================
-
-if [[ "$SKIP_MIGRATIONS" == false ]]; then
-  log_info "Running database migrations..."
-
-  # Reuse POSTGRES_PASSWORD already loaded via `source "$ENV_FILE"` above.
-  # Parsing it by hand with `cut -d '=' -f2` truncated base64 passwords that
-  # end in '=' (padding), producing a wrong password and auth failures.
-  DB_PASSWORD="${POSTGRES_PASSWORD}"
-
-  # Run migrations in a temporary container
-  docker run --rm \
-    --network host \
-    -e DATABASE_URL="postgresql+asyncpg://postgres:${DB_PASSWORD}@localhost:5432/prosell_staging" \
-    -e PYTHONPATH=/app/src \
-    prosell-api:staging \
-    alembic upgrade head || {
-    log_error "Database migrations failed"
-    log_info "You can retry migrations manually with:"
-    log_info "  docker run --rm --network host -e DATABASE_URL=... prosell-api:staging alembic upgrade head"
-    exit 1
-  }
-
-  log_success "Database migrations completed"
-
-  # Show current migration version
-  log_info "Current migration version:"
-  docker run --rm \
-    --network host \
-    -e DATABASE_URL="postgresql+asyncpg://postgres:${DB_PASSWORD}@localhost:5432/prosell_staging" \
-    -e PYTHONPATH=/app/src \
-    prosell-api:staging \
-    alembic current
-else
-  log_warning "Skipping database migrations (--skip-migrations flag set)"
-fi
-
-# =============================================================================
 # START APPLICATION SERVICES
 # =============================================================================
+# Migrations run inside the API container on startup: its CMD is
+# `alembic upgrade head && init-db.py && init_data.py && uvicorn` (see
+# docker/api.Dockerfile). Running them here too — against a separately built
+# image — was both redundant and the source of image/DB drift, so it was
+# removed. The container is the single place migrations and seeding happen.
 
 log_info "Starting application services (API, Web)..."
 docker-compose -f docker-compose.staging.yml up -d
