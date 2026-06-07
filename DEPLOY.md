@@ -149,6 +149,23 @@ Deberías ver:
 
 ## Deploys posteriores (actualización de código)
 
+**Usá el script automatizado** — tiene pre-flight checks, backup de DB, detección de migraciones pendientes, health checks por dominio público, y muestra el plan de rollback al final:
+
+```bash
+cd /opt/prosell
+./scripts/deploy-production.sh
+```
+
+El script exige que tipees literalmente `deploy-prod` para confirmar. Flags útiles:
+
+| Flag | Cuándo |
+|------|--------|
+| `--skip-build` | Solo reiniciar containers (ej: cambiar config de Caddy sin código nuevo) |
+| `--branch <name>` | Deploy desde otra branch (default: `main`) |
+| `--no-backup` | Saltar backup de DB — **NO recomendado** |
+
+**Deploy manual** (si el script no aplica a tu caso):
+
 ```bash
 cd /opt/prosell
 
