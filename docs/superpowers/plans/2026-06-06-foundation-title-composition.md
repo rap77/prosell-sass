@@ -8,6 +8,17 @@
 
 **Tech Stack:** Python 3.13, Pydantic v2 domain entities, SQLAlchemy 2.0 (`Mapped`, JSONB), Alembic, pytest (unit + integration on test DB `localhost:5433`).
 
+## Progress (branch `feat/category-presentation-foundation`)
+
+- [x] **Task 1** — template composer domain service — commit `52e0d14`
+- [x] **Task 2** — `presentation` field on Category entity + model — commit `bf40fa9`
+- [x] **Task 3** — Alembic migration for `presentation` column — commit `95823e5`
+- [x] **Task 4 (CREATE only)** — server-side title composition on create, via shared `resolve_title` helper. Plus a bug fix found en route: `CategoryModel.updated_at` `onupdate` was the literal string `"now()"` (broke every category UPDATE) → fixed to `func.now()`.
+- [ ] **Task 4 (UPDATE)** — DEFERRED to Plan 2: recomposing the title on PATCH needs the category loaded; doing it inline in the router added a real DB call that broke unit tests that mock only the product repo. The clean fix is a dedicated `UpdateProductUseCase` (Plan 2). Backward-compatible: the edit form still composes the title client-side meanwhile.
+- [ ] **Task 5** — `title` optional in create DTO — DEFERRED to subsystem A (only needed once the frontend stops sending a client-composed title; YAGNI until then).
+
+---
+
 **Scope note:** This is Plan **1 of 2** for the Foundation spec (`docs/superpowers/specs/2026-06-06-category-presentation-foundation-design.md`). Plan 2 covers `Category` global-ization (`tenant_id` nullable), the `organization_vertical` M2M table, and the `GET /organizations/{id}/verticals` read-API. Subtitle composition (not stored) is deferred to the read-API in Plan 2 / subsystem A, since this plan only needs the stored `title`.
 
 ---
