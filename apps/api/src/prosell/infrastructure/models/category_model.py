@@ -58,6 +58,14 @@ class CategoryModel(Base):
         nullable=False,
     )
 
+    # Presentation contract (display templates + card fields). Nullable —
+    # categories without one inherit from an ancestor or fall back to the
+    # request title. See Category entity + template_composer.
+    presentation: Mapped[dict | None] = mapped_column(
+        JSONB,
+        nullable=True,
+    )
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

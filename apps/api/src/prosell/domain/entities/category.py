@@ -45,6 +45,13 @@ class Category(DomainModel):
     # Different from field_config (UI renderer) — this drives data validation
     attribute_schema: dict[str, Any] = Field(default_factory=dict)
 
+    # Presentation contract — how products in this category are displayed.
+    # Inherited down the tree (a child without its own falls back to the
+    # nearest ancestor; inheritance is resolved by the read layer, Plan 2).
+    # Shape: {"title_template": "{year} {make} {model}",
+    #         "subtitle_template": "{trim}", "card_fields": ["price"]}
+    presentation: dict[str, Any] | None = None
+
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
