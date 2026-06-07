@@ -3,7 +3,7 @@
 # ProSell SaaS - Staging Deployment Script
 # =============================================================================
 # This script automates the staging deployment process
-# Usage: ./scripts/deploy-staging.sh [--skip-migrations] [--skip-build]
+# Usage: ./scripts/deploy-staging.sh [--skip-build]
 # =============================================================================
 
 set -e  # Exit on error
@@ -96,6 +96,13 @@ check_env_var() {
 log_info "Starting ProSell SaaS Staging Deployment..."
 log_info "Project root: $PROJECT_ROOT"
 
+# Make sure Docker daemon is up — otherwise the first docker compose call
+# fails with a cryptic "Cannot connect to the Docker daemon" error.
+if ! docker info &>/dev/null; then
+  log_error "Docker daemon is not running"
+  exit 1
+fi
+
 # Check required files
 log_info "Checking required files..."
 check_file_exists "$ENV_FILE"
@@ -151,7 +158,7 @@ fi
 if [[ "$SKIP_BUILD" == false ]]; then
   log_info "Building Docker images..."
 
-  # Build via docker-compose so the running containers use exactly what we
+  # Build via docker compose so the running containers use exactly what we
   # build — single source of truth. Building by hand with
   # `docker build -t prosell-*:staging` produced images the compose file never
   # referenced (it has its own `build:`), so containers ran a stale image while
@@ -159,7 +166,7 @@ if [[ "$SKIP_BUILD" == false ]]; then
   # now comes from the compose file (http://localhost:8000), which is the
   # correct value for this local-host staging.
   cd "$DOCKER_DIR"
-  docker-compose -f docker-compose.staging.yml build || {
+  docker compose -f docker-compose.staging.yml build || {
     log_error "Failed to build Docker images"
     exit 1
   }
@@ -174,14 +181,14 @@ fi
 
 log_info "Stopping existing services..."
 cd "$DOCKER_DIR"
-docker-compose -f docker-compose.staging.yml down || true
+docker compose -f docker-compose.staging.yml down || true
 
 # =============================================================================
 # START INFRASTRUCTURE SERVICES
 # =============================================================================
 
 log_info "Starting infrastructure services (DB, Redis)..."
-docker-compose -f docker-compose.staging.yml up -d db redis
+docker compose -f docker-compose.staging.yml up -d db redis
 
 # Wait for DB to be ready
 log_info "Waiting for database to be ready..."
@@ -225,7 +232,27 @@ done
 # removed. The container is the single place migrations and seeding happen.
 
 log_info "Starting application services (API, Web)..."
-docker-compose -f docker-compose.staging.yml up -d
+docker compose -f docker-compose.staging.yml up -d
+
+# Wait for MinIO bucket prosell-assets to be ready (depends on minio-init
+# creating it on startup). We probe via the host-mapped port (9002) so we
+# don't need mc configured in any container — the bucket has anonymous-read
+# policy so a plain GET is enough.
+log_info "Waiting for MinIO bucket prosell-assets to be ready..."
+for i in {1..30}; do
+  if curl -sf http://localhost:9002/prosell-assets/ -o /dev/null; then
+    log_success "MinIO bucket prosell-assets is ready"
+    break
+  fi
+
+  if [[ $i -eq 30 ]]; then
+    log_error "MinIO bucket failed to become ready after 30 seconds"
+    log_info "Check logs with: docker logs prosell-staging-minio-init"
+    exit 1
+  fi
+
+  sleep 1
+done
 
 # =============================================================================
 # WAIT FOR SERVICES TO BE HEALTHY
@@ -271,17 +298,20 @@ done
 
 log_info "Running post-deployment verification..."
 
-# Check all containers are running
-RUNNING_CONTAINERS=$(docker-compose -f docker-compose.staging.yml ps -q | wc -l)
-if [[ $RUNNING_CONTAINERS -eq 4 ]]; then
-  log_success "All 4 containers are running (db, redis, api, web)"
+# Check all containers are running. With MinIO added, the long-running
+# services are db, redis, api, web, minio (5). minio-init is restart:"no"
+# and exits after setting up the bucket, so it isn't counted here.
+EXPECTED_RUNNING=5
+RUNNING_CONTAINERS=$(docker compose -f docker-compose.staging.yml ps -q | wc -l)
+if [[ $RUNNING_CONTAINERS -eq $EXPECTED_RUNNING ]]; then
+  log_success "All $EXPECTED_RUNNING containers are running (db, redis, api, web, minio)"
 else
-  log_warning "Expected 4 running containers, found $RUNNING_CONTAINERS"
+  log_warning "Expected $EXPECTED_RUNNING running containers, found $RUNNING_CONTAINERS"
 fi
 
 # Show container status
 log_info "Container status:"
-docker-compose -f docker-compose.staging.yml ps
+docker compose -f docker-compose.staging.yml ps
 
 # =============================================================================
 # DEPLOYMENT COMPLETE
@@ -301,7 +331,7 @@ log_info "Logs:"
 log_info "  API:  docker logs prosell-staging-api -f"
 log_info "  Web:  docker logs prosell-staging-web -f"
 log_info "  DB:   docker logs prosell-staging-db"
-log_info "  All:  docker-compose -f docker-compose.staging.yml logs -f"
+log_info "  All:  docker compose -f docker-compose.staging.yml logs -f"
 echo ""
 log_info "Next steps:"
 log_info "  1. Run smoke tests from checklist:"
