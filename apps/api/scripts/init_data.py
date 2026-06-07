@@ -20,7 +20,7 @@ from sqlalchemy import select
 # Use settings from the app — no hardcoded DATABASE_URL
 from prosell.core.config import settings
 from prosell.domain.entities.user import UserStatus  # Import UserStatus
-from prosell.infrastructure.database.seed_categories import seed_vehicles_vertical
+from prosell.infrastructure.database.seed_categories import seed_global_taxonomy
 from prosell.infrastructure.database.session import async_session_maker
 from prosell.infrastructure.models import (
     OrganizationModel,
@@ -53,10 +53,11 @@ async def init_data() -> None:
             print(f"Organization {org_name} already exists")
 
         # 2. Seed the GLOBAL category taxonomy (Plan 2). Categories are
-        # platform-managed global templates (tenant NULL), not per-org. The
-        # 'Vehículos y Transporte' vertical is seeded idempotently here.
-        await seed_vehicles_vertical(session)
-        print("Seeded global Vehículos taxonomy")
+        # platform-managed global templates (tenant NULL), not per-org. All
+        # niche verticals (Vehículos, Bienes Raíces, Artículos) are seeded
+        # idempotently here.
+        await seed_global_taxonomy(session)
+        print("Seeded global category taxonomy (3 niches)")
 
         # 3. Ensure System Roles Exist
         roles_data = [

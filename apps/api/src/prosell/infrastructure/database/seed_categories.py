@@ -93,6 +93,177 @@ VEHICLES_VERTICAL: _Node = {
 }
 
 
+# Niche 2: Bienes Raíces — root vertical (level 0), 3 levels below.
+BIENES_RAICES_VERTICAL: _Node = {
+    "name": "Bienes Raíces",
+    "slug": "bienes-raices",
+    "children": [
+        {
+            "name": "Propiedades Residenciales",
+            "slug": "propiedades-residenciales",
+            "children": [
+                {
+                    "name": "Casas",
+                    "slug": "casas",
+                    "children": [
+                        {"name": "Casa de Ciudad", "slug": "casa-de-ciudad"},
+                        {"name": "Casa de Campo o Quinta", "slug": "casa-de-campo-o-quinta"},
+                        {"name": "Casa en Condominio", "slug": "casa-en-condominio"},
+                    ],
+                },
+                {
+                    "name": "Apartamentos",
+                    "slug": "apartamentos",
+                    "children": [
+                        {"name": "Apartamento Estándar", "slug": "apartamento-estandar"},
+                        {"name": "Loft o Estudio", "slug": "loft-o-estudio"},
+                        {"name": "Penthouse", "slug": "penthouse"},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "Propiedades Comerciales e Industriales",
+            "slug": "propiedades-comerciales-e-industriales",
+            "children": [
+                {
+                    "name": "Oficinas",
+                    "slug": "oficinas",
+                    "children": [
+                        {"name": "Oficina Corporativa", "slug": "oficina-corporativa"},
+                        {"name": "Espacio de Co-working", "slug": "espacio-de-co-working"},
+                    ],
+                },
+                {
+                    "name": "Locales Comerciales",
+                    "slug": "locales-comerciales",
+                    "children": [
+                        {"name": "Local en Centro Comercial", "slug": "local-en-centro-comercial"},
+                        {"name": "Local a Pie de Calle", "slug": "local-a-pie-de-calle"},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "Terrenos y Lotes",
+            "slug": "terrenos-y-lotes",
+            "children": [
+                {
+                    "name": "Lotes Urbanos",
+                    "slug": "lotes-urbanos",
+                    "children": [
+                        {"name": "Residencial", "slug": "residencial"},
+                        {"name": "Comercial", "slug": "comercial"},
+                    ],
+                },
+                {
+                    "name": "Terrenos Rurales",
+                    "slug": "terrenos-rurales",
+                    "children": [
+                        {"name": "Agrícola o Productivo", "slug": "agricola-o-productivo"},
+                        {"name": "Terreno de Descanso", "slug": "terreno-de-descanso"},
+                    ],
+                },
+            ],
+        },
+    ],
+}
+
+
+# Niche 3: Artículos (Mundillo General) — root vertical (level 0), 3 levels below.
+ARTICULOS_VERTICAL: _Node = {
+    "name": "Artículos",
+    "slug": "articulos",
+    "children": [
+        {
+            "name": "Tecnología y Electrónica",
+            "slug": "tecnologia-y-electronica",
+            "children": [
+                {
+                    "name": "Computación",
+                    "slug": "computacion",
+                    "children": [
+                        {"name": "Laptops", "slug": "laptops"},
+                        {
+                            "name": "Computadoras de Escritorio",
+                            "slug": "computadoras-de-escritorio",
+                        },
+                        {"name": "Componentes y Piezas", "slug": "componentes-y-piezas"},
+                    ],
+                },
+                {
+                    "name": "Celulares y Teléfonos",
+                    "slug": "celulares-y-telefonos",
+                    "children": [
+                        {"name": "Smartphones", "slug": "smartphones"},
+                        {"name": "Smartwatches", "slug": "smartwatches"},
+                        {"name": "Accesorios", "slug": "accesorios"},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "Hogar y Electrodomésticos",
+            "slug": "hogar-y-electrodomesticos",
+            "children": [
+                {
+                    "name": "Grandes Electrodomésticos (Línea Blanca)",
+                    "slug": "grandes-electrodomesticos-linea-blanca",
+                    "children": [
+                        {"name": "Refrigeradores", "slug": "refrigeradores"},
+                        {"name": "Lavadoras y Secadoras", "slug": "lavadoras-y-secadoras"},
+                        {"name": "Estufas y Hornos", "slug": "estufas-y-hornos"},
+                    ],
+                },
+                {
+                    "name": "Pequeños Electrodomésticos",
+                    "slug": "pequenos-electrodomesticos",
+                    "children": [
+                        {"name": "Microondas", "slug": "microondas"},
+                        {"name": "Licuadoras y Batidoras", "slug": "licuadoras-y-batidoras"},
+                        {"name": "Cafeteras", "slug": "cafeteras"},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "Moda y Calzado",
+            "slug": "moda-y-calzado",
+            "children": [
+                {
+                    "name": "Ropa y Vestimenta",
+                    "slug": "ropa-y-vestimenta",
+                    "children": [
+                        {"name": "Camisas y Camisetas", "slug": "camisas-y-camisetas"},
+                        {"name": "Pantalones y Jeans", "slug": "pantalones-y-jeans"},
+                        {"name": "Vestidos", "slug": "vestidos"},
+                        {"name": "Chaquetas y Abrigos", "slug": "chaquetas-y-abrigos"},
+                    ],
+                },
+                {
+                    "name": "Calzado",
+                    "slug": "calzado",
+                    "children": [
+                        {"name": "Tenis Deportivos", "slug": "tenis-deportivos"},
+                        {"name": "Zapatos Formales", "slug": "zapatos-formales"},
+                        {"name": "Botas", "slug": "botas"},
+                        {"name": "Sandalias", "slug": "sandalias"},
+                    ],
+                },
+            ],
+        },
+    ],
+}
+
+
+# All global verticals, seeded together by seed_global_taxonomy.
+ALL_VERTICALS: list[_Node] = [
+    VEHICLES_VERTICAL,
+    BIENES_RAICES_VERTICAL,
+    ARTICULOS_VERTICAL,
+]
+
+
 async def _seed_node(
     session: AsyncSession,
     node: _Node,
@@ -130,3 +301,13 @@ async def _seed_node(
 async def seed_vehicles_vertical(session: AsyncSession) -> None:
     """Seed the global 'Vehículos y Transporte' vertical (idempotent)."""
     await _seed_node(session, VEHICLES_VERTICAL, parent_id=None, level=0)
+
+
+async def seed_global_taxonomy(session: AsyncSession) -> None:
+    """Seed every global niche vertical (Vehículos, Bienes Raíces, Artículos).
+
+    Idempotent — re-running never duplicates nodes. Slugs are globally unique
+    across niches.
+    """
+    for vertical in ALL_VERTICALS:
+        await _seed_node(session, vertical, parent_id=None, level=0)
