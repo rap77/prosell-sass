@@ -35,7 +35,8 @@ class UpdateCategoryUseCase:
         Raises:
             HTTPException 404: If category not found
         """
-        category = await self.repo.get_by_id(category_id, tenant_id)
+        # Global templates (tenant NULL) + caller's own. Router gates to super_admin.
+        category = await self.repo.get_by_id_or_global(category_id, tenant_id)
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")
 

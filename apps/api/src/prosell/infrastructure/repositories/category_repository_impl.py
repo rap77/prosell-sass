@@ -67,8 +67,15 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         skip: int = 0,
         limit: int = 100,
     ) -> list[Category]:
-        """Get all categories with optional filters."""
-        stmt = select(CategoryModel).where(CategoryModel.tenant_id == tenant_id)
+        """Get all categories with optional filters.
+
+        Includes GLOBAL templates (tenant_id IS NULL) alongside the caller's
+        own categories, so tenants see the shared, platform-managed taxonomy
+        they classify products against (Plan 2).
+        """
+        stmt = select(CategoryModel).where(
+            (CategoryModel.tenant_id == tenant_id) | (CategoryModel.tenant_id.is_(None))
+        )
 
         if parent_id is not None:
             stmt = stmt.where(CategoryModel.parent_id == parent_id)
@@ -245,9 +252,9 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         return count > 0
 
     async def count(self, tenant_id: UUID, is_active: bool | None = None) -> int:
-        """Count total categories."""
+        """Count total categories (caller's own + global templates)."""
         stmt = select(func.count(CategoryModel.id)).where(
-            CategoryModel.tenant_id == tenant_id,
+            (CategoryModel.tenant_id == tenant_id) | (CategoryModel.tenant_id.is_(None))
         )
 
         if is_active is not None:

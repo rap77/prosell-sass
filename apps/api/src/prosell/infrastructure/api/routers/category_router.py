@@ -140,7 +140,7 @@ async def get_category(
     tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
-    category = await repo.get_by_id(category_id, tenant_id)
+    category = await repo.get_by_id_or_global(category_id, tenant_id)
 
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -226,7 +226,7 @@ async def get_category_fields(
     tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
-    category = await repo.get_by_id(category_id, tenant_id)
+    category = await repo.get_by_id_or_global(category_id, tenant_id)
 
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")

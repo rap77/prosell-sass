@@ -17,7 +17,8 @@ class UpdateCategoryAttributeSchemaUseCase:
     """
     Replace the attribute_schema on a category.
 
-    Tenant isolation is enforced here via repo.get_by_id(id, tenant_id).
+    Resolves the category via repo.get_by_id_or_global (global templates +
+    caller's own); the router gates this to the ProSell super_admin.
     Logs a warning when replacing a non-empty schema to alert about
     potential attribute invalidation on existing products.
     """
@@ -36,8 +37,8 @@ class UpdateCategoryAttributeSchemaUseCase:
 
         Args:
             category_id: UUID of category to update
-            tenant_id: Tenant UUID — get_by_id filters by both id AND tenant_id,
-                       so a None return means either not found OR wrong tenant (access denied).
+            tenant_id: Caller's tenant — resolves global templates + own
+                       categories; another tenant's private category is denied.
             attribute_schema: New schema to set (REPLACE semantics, not merge)
 
         Returns:
@@ -46,8 +47,7 @@ class UpdateCategoryAttributeSchemaUseCase:
         Raises:
             HTTPException 404: If category not found or access denied
         """
-        # tenant_id enforced here: get_by_id already filters by tenant_id
-        category = await self.repo.get_by_id(category_id, tenant_id)
+        category = await self.repo.get_by_id_or_global(category_id, tenant_id)
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")
 
