@@ -235,8 +235,10 @@ done
 if [[ "$SKIP_MIGRATIONS" == false ]]; then
   log_info "Running database migrations..."
 
-  # Get DB password from env
-  DB_PASSWORD=$(grep "POSTGRES_PASSWORD=" "$ENV_FILE" | cut -d '=' -f2)
+  # Reuse POSTGRES_PASSWORD already loaded via `source "$ENV_FILE"` above.
+  # Parsing it by hand with `cut -d '=' -f2` truncated base64 passwords that
+  # end in '=' (padding), producing a wrong password and auth failures.
+  DB_PASSWORD="${POSTGRES_PASSWORD}"
 
   # Run migrations in a temporary container
   docker run --rm \
