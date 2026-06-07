@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -75,7 +75,11 @@ class CategoryModel(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default="now()",
-        onupdate="now()",
+        # Use the SQL function clause, NOT the string "now()". A plain
+        # string is bound as a literal value, so asyncpg receives the
+        # text "now()" where a datetime is expected and raises DataError
+        # on every category UPDATE. `func.now()` emits real SQL.
+        onupdate=func.now(),
         nullable=False,
     )
 
