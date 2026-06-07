@@ -23,6 +23,57 @@ class _Node(TypedDict):
     name: str
     slug: str
     children: NotRequired[list["_Node"]]
+    # Optional per-leaf data. attribute_schema drives product validation +
+    # catalog filters; presentation drives server-side title composition.
+    attribute_schema: NotRequired[dict]
+    presentation: NotRequired[dict]
+
+
+# ---------------------------------------------------------------------------
+# Attribute specs (initial set). attribute_schema entry shape:
+#   {"type": "string"|"number"|"boolean", "required": bool,
+#    "filterable": bool, "filter_type": str, "options": [...]}
+# Attached to LEAF categories (where products are classified). Brand/model are
+# indexed ATTRIBUTES, never categories (per platform strategy).
+# ---------------------------------------------------------------------------
+
+_CAR_PRESENTATION: dict = {
+    "title_template": "{year} {make} {model}",
+    "subtitle_template": "{transmission} · {fuel_type}",
+    "card_fields": ["price", "mileage"],
+}
+
+_CAR_SCHEMA: dict = {
+    "make": {"type": "string", "required": True, "filterable": True, "filter_type": "select"},
+    "model": {"type": "string", "required": True, "filterable": True, "filter_type": "text"},
+    "year": {"type": "number", "required": True, "filterable": True, "filter_type": "range"},
+    "mileage": {"type": "number", "required": False, "filterable": True, "filter_type": "range"},
+    "transmission": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "options": ["Manual", "Automática"],
+    },
+    "fuel_type": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "options": ["Gasolina", "Diésel", "Híbrido", "Eléctrico", "GLP"],
+    },
+    "color": {"type": "string", "required": False, "filterable": True, "filter_type": "select"},
+}
+
+
+def _car_leaf(name: str, slug: str) -> _Node:
+    """A 'Carros y Camionetas' leaf carrying the shared automotive spec."""
+    return {
+        "name": name,
+        "slug": slug,
+        "attribute_schema": _CAR_SCHEMA,
+        "presentation": _CAR_PRESENTATION,
+    }
 
 
 # Niche 1: Vehículos y Transporte — root vertical (level 0), 3 levels below.
@@ -38,11 +89,11 @@ VEHICLES_VERTICAL: _Node = {
                     "name": "Carros y Camionetas",
                     "slug": "carros-y-camionetas",
                     "children": [
-                        {"name": "Sedán", "slug": "sedan"},
-                        {"name": "Hatchback", "slug": "hatchback"},
-                        {"name": "SUVs", "slug": "suvs"},
-                        {"name": "Pick-ups", "slug": "pick-ups"},
-                        {"name": "Coupé", "slug": "coupe"},
+                        _car_leaf("Sedán", "sedan"),
+                        _car_leaf("Hatchback", "hatchback"),
+                        _car_leaf("SUVs", "suvs"),
+                        _car_leaf("Pick-ups", "pick-ups"),
+                        _car_leaf("Coupé", "coupe"),
                     ],
                 },
                 {
@@ -278,6 +329,9 @@ async def _seed_node(
     )
     existing = (await session.execute(stmt)).scalar_one_or_none()
 
+    node_schema = node.get("attribute_schema", {})
+    node_presentation = node.get("presentation")
+
     if existing is None:
         existing = CategoryModel(
             id=uuid4(),
@@ -289,10 +343,24 @@ async def _seed_node(
             is_active=True,
             sort_order=0,
             field_config=[],
-            attribute_schema={},
+            attribute_schema=node_schema,
+            presentation=node_presentation,
         )
         session.add(existing)
         await session.flush()
+    else:
+        # Fill template fields ONLY when currently unset — never clobber edits
+        # the ProSell admin made via the API. Lets a structure-only seed gain
+        # its attribute_schema/presentation on a later run.
+        changed = False
+        if node_schema and not existing.attribute_schema:
+            existing.attribute_schema = node_schema
+            changed = True
+        if node_presentation and existing.presentation is None:
+            existing.presentation = node_presentation
+            changed = True
+        if changed:
+            await session.flush()
 
     for child in node.get("children", []):
         await _seed_node(session, child, parent_id=existing.id, level=level + 1)
