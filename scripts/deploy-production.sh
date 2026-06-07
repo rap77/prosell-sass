@@ -165,8 +165,15 @@ if [[ $MISSING -gt 0 ]]; then
   exit 1
 fi
 
-# JWT keys
+# JWT keys. .env.prod's JWT_*_KEY_PATH point INSIDE the container
+# (/app/keys/...) because that's where the API process reads them at runtime.
+# For this HOST-side check we have to use the source of the docker volume
+# mount declared in docker-compose.prod.yml
+# (`../apps/api/keys -> /app/keys`).
 log_info "Checking JWT keys..."
+JWT_PRIVATE_KEY_PATH="$PROJECT_ROOT/apps/api/keys/private.pem"
+JWT_PUBLIC_KEY_PATH="$PROJECT_ROOT/apps/api/keys/public.pem"
+
 if [[ ! -f "$JWT_PRIVATE_KEY_PATH" ]] || [[ ! -f "$JWT_PUBLIC_KEY_PATH" ]]; then
   log_error "JWT keys not found at:"
   log_error "  private: $JWT_PRIVATE_KEY_PATH"
