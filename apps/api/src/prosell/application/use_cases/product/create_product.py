@@ -35,10 +35,12 @@ class CreateProductUseCase:
             CategoryNotFoundError: If category does not exist
             ValueError: If validation fails
         """
-        # 1. Validate category exists
-        category = await self.category_repository.get_by_id(
+        # 1. Validate category exists. A product may reference the tenant's
+        # OWN category OR a GLOBAL template (Plan 2) — get_by_id_or_global
+        # returns both while still denying other tenants' private categories.
+        category = await self.category_repository.get_by_id_or_global(
             request.category_id,
-            request.tenant_id or UUID(int=0),  # Skip tenant filter if None
+            request.tenant_id or UUID(int=0),
         )
         if not category:
             raise CategoryNotFoundError(f"Category not found: {request.category_id}")

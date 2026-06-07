@@ -101,7 +101,7 @@ class UpdateProductUseCase:
         # Recompose the title from the category's presentation template when
         # it declares one; otherwise keep the current title (the request's
         # title if it set one, else the original). Shared rule with create.
-        category = await self.category_repository.get_by_id(
+        category = await self.category_repository.get_by_id_or_global(
             product.category_id, tenant_id
         )
         presentation = category.presentation if category else None

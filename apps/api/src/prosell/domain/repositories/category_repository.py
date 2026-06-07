@@ -106,6 +106,30 @@ class AbstractCategoryRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_by_id_or_global(
+        self, category_id: UUID, tenant_id: UUID
+    ) -> Category | None:
+        """
+        Get a category visible to a tenant: the tenant's OWN category OR a
+        GLOBAL template (``tenant_id IS NULL``).
+
+        Use for the product create/update path (Plan 2): a product may
+        reference a global vertical template the org opted into, while still
+        being denied access to OTHER tenants' private categories. This is
+        intentionally narrower than ``get_by_id_any_tenant`` (no cross-tenant
+        leak) and broader than ``get_by_id`` (which gates MUTATIONS and must
+        stay strict).
+
+        Args:
+            category_id: Category UUID
+            tenant_id: Caller's tenant UUID
+
+        Returns:
+            Category entity if owned by the tenant or global, else None
+        """
+        pass
+
+    @abstractmethod
     async def get_children_any_tenant(self, parent_id: UUID) -> list[Category]:
         """
         Get direct children of a parent category without tenant filtering.

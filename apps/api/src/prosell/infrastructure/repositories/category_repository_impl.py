@@ -108,6 +108,24 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
+    async def get_by_id_or_global(
+        self, category_id: UUID, tenant_id: UUID
+    ) -> Category | None:
+        """Get a category owned by the tenant OR a global (NULL-tenant) template.
+
+        Used by the product create/update path so products can reference
+        global vertical templates without leaking other tenants' private
+        categories. The strict ``get_by_id`` (mutation gate) is left untouched.
+        """
+        stmt = select(CategoryModel).where(
+            CategoryModel.id == category_id,
+            (CategoryModel.tenant_id == tenant_id)
+            | (CategoryModel.tenant_id.is_(None)),
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
     async def get_children_any_tenant(self, parent_id: UUID) -> list[Category]:
         """Get direct children of a parent without tenant filtering (global templates)."""
         stmt = (

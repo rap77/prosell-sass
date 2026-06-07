@@ -138,7 +138,7 @@ class TestUpdateProductCoverAcceptsLegacyKeys:
             mock_repo = mock_repo_cls.return_value
             mock_repo.get_by_id = AsyncMock(return_value=product)
             mock_repo.update = AsyncMock(return_value=product)
-            mock_cat_cls.return_value.get_by_id = AsyncMock(
+            mock_cat_cls.return_value.get_by_id_or_global = AsyncMock(
                 return_value=_category_without_template()
             )
 
@@ -183,7 +183,7 @@ class TestUpdateProductCoverAcceptsLegacyKeys:
             mock_repo = mock_repo_cls.return_value
             mock_repo.get_by_id = AsyncMock(return_value=product)
             mock_repo.update = AsyncMock(return_value=product)
-            mock_cat_cls.return_value.get_by_id = AsyncMock(
+            mock_cat_cls.return_value.get_by_id_or_global = AsyncMock(
                 return_value=_category_without_template()
             )
 
@@ -218,7 +218,7 @@ class TestUpdateProductCoverAcceptsLegacyKeys:
             mock_repo = mock_repo_cls.return_value
             mock_repo.get_by_id = AsyncMock(return_value=product)
             mock_repo.update = AsyncMock(return_value=product)
-            mock_cat_cls.return_value.get_by_id = AsyncMock(
+            mock_cat_cls.return_value.get_by_id_or_global = AsyncMock(
                 return_value=_category_without_template()
             )
 
@@ -254,7 +254,7 @@ class TestUpdateProductCoverAcceptsLegacyKeys:
             mock_repo = mock_repo_cls.return_value
             mock_repo.get_by_id = AsyncMock(return_value=product)
             mock_repo.update = AsyncMock(return_value=product)
-            mock_cat_cls.return_value.get_by_id = AsyncMock(
+            mock_cat_cls.return_value.get_by_id_or_global = AsyncMock(
                 return_value=_category_without_template()
             )
 
