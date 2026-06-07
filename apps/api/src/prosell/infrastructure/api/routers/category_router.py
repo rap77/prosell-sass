@@ -43,6 +43,22 @@ async def get_category_repository(session: AsyncSession) -> AbstractCategoryRepo
     return SqlAlchemyCategoryRepository(session)
 
 
+def _require_platform_admin(user: User) -> None:
+    """Gate category mutations to the ProSell platform admin (super_admin).
+
+    The category taxonomy is GENERAL and platform-managed: only the ProSell
+    admin defines/maintains it (including multi-level niches). Tenants — org
+    admins and sales agents alike — may READ categories to classify their own
+    products, but never create/update/soft-delete them. An organization admin
+    (role ``admin``) is intentionally NOT enough.
+    """
+    if not user.has_role("super_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the ProSell platform admin can manage categories",
+        )
+
+
 @router.get("", response_model=CategoryListResponse)
 @smart_rate_limit("api")
 async def list_categories(
@@ -95,10 +111,11 @@ async def create_category(
     """
     Create a new category.
 
-    Only users with MASTER role can create categories.
+    Only the ProSell platform admin (super_admin) can create categories.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    _require_platform_admin(current_user)
 
     repo = SqlAlchemyCategoryRepository(db)
     use_case = CreateCategoryUseCase(repo)
@@ -141,6 +158,7 @@ async def update_category(
     """Update category basic information."""
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    _require_platform_admin(current_user)
     tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
@@ -162,6 +180,7 @@ async def delete_category(
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    _require_platform_admin(current_user)
     tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
@@ -186,6 +205,7 @@ async def update_category_attribute_schema(
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    _require_platform_admin(current_user)
     tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
