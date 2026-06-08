@@ -146,6 +146,12 @@ def _normalize_type(type_str: str) -> str:
     return s
 
 
+def _is_temporal(col_type: Any) -> bool:
+    """True if the column type is a timestamp/datetime variant."""
+    s = str(col_type).lower()
+    return "timestamp" in s or "datetime" in s
+
+
 def _format_value(v: Any) -> str:
     if v is None:
         return "—"
@@ -207,6 +213,30 @@ def _compare_columns(
                     ),
                 )
             )
+
+        # Timezone awareness: `_normalize_type` collapses naive and aware
+        # timestamps to one canonical name, so a `timestamp` vs `timestamptz`
+        # drift slips past type_mismatch. Compare the tz flag explicitly — a
+        # naive column rejects the tz-aware datetimes the domain produces
+        # (asyncpg raises DataError on insert).
+        if _is_temporal(col.type) and _is_temporal(db_col["type"]):
+            orm_tz = bool(getattr(col.type, "timezone", False))
+            db_tz = bool(getattr(db_col["type"], "timezone", False))
+            if orm_tz != db_tz:
+                findings.append(
+                    Finding(
+                        table=table_name,
+                        column=col_name,
+                        drift="timezone_awareness_mismatch",
+                        orm_value=f"tz_aware={orm_tz}",
+                        db_value=f"tz_aware={db_tz}",
+                        severity="critical",
+                        note=(
+                            "Naive/aware timestamp mismatch — asyncpg raises "
+                            "DataError when persisting tz-aware datetimes"
+                        ),
+                    )
+                )
 
     for col_name in db_columns:
         if col_name not in orm_columns:
@@ -366,7 +396,7 @@ def main() -> int:
     # Identify which model classes from __init__.py are actually registered
     # (catches the symptom where __init__ doesn't re-export a model file
     # that defines a real ORM class).
-    from prosell.infrastructure.models import __all__ as exported  # noqa: PLC0415
+    from prosell.infrastructure.models import __all__ as exported
 
     reexported_tables = set()
     for name in exported:
@@ -388,9 +418,7 @@ def main() -> int:
     )
 
     if unreexported:
-        print(
-            f"\n## ⚠️  ORM classes not re-exported by `infrastructure.models.__init__`"
-        )
+        print("\n## ⚠️  ORM classes not re-exported by `infrastructure.models.__init__`")
         print("These models are loaded by the auditor (explicit imports) but")
         print("NOT picked up by `from prosell.infrastructure.models import *`,")
         print("which means they are invisible to Alembic autogenerate and to")
