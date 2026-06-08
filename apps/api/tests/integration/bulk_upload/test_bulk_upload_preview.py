@@ -1,19 +1,14 @@
 """Integration tests for bulk upload preview endpoint.
 
 Tests POST /api/v1/products/bulk-upload/preview dry-run endpoint.
-Requires a running PostgreSQL test database (TEST_DB_RUNNING=true).
-"""
 
-import os
+The shared `tests/integration/conftest.py` already skips integration tests
+automatically when localhost:5433 is unreachable, so this file no longer
+needs its own gate.
+"""
 
 import pytest
 from httpx import AsyncClient
-
-# Skip all tests in this module if test database is not running
-if os.getenv("TEST_DB_RUNNING", "false").lower() != "true":
-    pytestmark = pytest.mark.skip(
-        reason="Test database not running. Set TEST_DB_RUNNING=true to enable."
-    )
 
 
 # =============================================================================
@@ -23,14 +18,18 @@ if os.getenv("TEST_DB_RUNNING", "false").lower() != "true":
 
 @pytest.fixture
 def client_csv_valid() -> str:
-    """Valid client-format CSV with semicolon delimiter."""
+    """Valid client-format CSV with semicolon delimiter.
+
+    Prices are expressed in dollars; the mapper multiplies by 100 to get cents
+    (e.g. `25000` -> `2500000` cents).
+    """
     return (
         "id;title;price;category;type;location;year;make;model;mileage;body_style;"
         "exterior_color;interior_color;clean_title;state;fuel_type;transmission;"
         "option;description;path;groups;label;publicado;VIN\n"
-        "1;DJ;2500000;Vehiculos;Sedan;Orlando florida;2020;Ford;Explorer;70000;SUV;"
+        "1;DJ;25000;Vehiculos;Sedan;Orlando florida;2020;Ford;Explorer;70000;SUV;"
         "Gris;Negro;1;FL;Gas;Automatic;;;IMG/Vehiculos/MF/2020-EXPLORER;1,2;01/01/25;1;1FMSK7DH7LGA77418\n"
-        "2;RM;1800000;Vehiculos;Sedan;Miami florida;2019;Toyota;Camry;45000;Sedan;"
+        "2;RM;18000;Vehiculos;Sedan;Miami florida;2019;Toyota;Camry;45000;Sedan;"
         "Blanco;Gris;0;FL;Gas;Automatic;;;IMG/Vehiculos/MF/2019-CAMRY;1;01/02/25;0;2T1BURHE0LC123456\n"
     )
 
@@ -42,9 +41,9 @@ def client_csv_missing_vin() -> str:
         "id;title;price;category;type;location;year;make;model;mileage;body_style;"
         "exterior_color;interior_color;clean_title;state;fuel_type;transmission;"
         "option;description;path;groups;label;publicado;VIN\n"
-        "1;DJ;2500000;Vehiculos;Sedan;Orlando florida;2020;Ford;Explorer;70000;SUV;"
+        "1;DJ;25000;Vehiculos;Sedan;Orlando florida;2020;Ford;Explorer;70000;SUV;"
         "Gris;Negro;1;FL;Gas;Automatic;;;IMG/Vehiculos/MF/2020-EXPLORER;1,2;01/01/25;1;1FMSK7DH7LGA77418\n"
-        "2;RM;1800000;Vehiculos;Sedan;Miami florida;2019;Toyota;Camry;45000;Sedan;"
+        "2;RM;18000;Vehiculos;Sedan;Miami florida;2019;Toyota;Camry;45000;Sedan;"
         "Blanco;Gris;0;FL;Gas;Automatic;;;IMG/Vehiculos/MF/2019-CAMRY;1;01/02/25;0;\n"
     )
 
@@ -56,7 +55,7 @@ def client_csv_missing_price() -> str:
         "id;title;price;category;type;location;year;make;model;mileage;body_style;"
         "exterior_color;interior_color;clean_title;state;fuel_type;transmission;"
         "option;description;path;groups;label;publicado;VIN\n"
-        "1;DJ;2500000;Vehiculos;Sedan;Orlando florida;2020;Ford;Explorer;70000;SUV;"
+        "1;DJ;25000;Vehiculos;Sedan;Orlando florida;2020;Ford;Explorer;70000;SUV;"
         "Gris;Negro;1;FL;Gas;Automatic;;;IMG/Vehiculos/MF/2020-EXPLORER;1,2;01/01/25;1;1FMSK7DH7LGA77418\n"
         "2;RM;;Vehiculos;Sedan;Miami florida;2019;Toyota;Camry;45000;Sedan;"
         "Blanco;Gris;0;FL;Gas;Automatic;;;IMG/Vehiculos/MF/2019-CAMRY;1;01/02/25;0;2T1BURHE0LC123456\n"
@@ -70,11 +69,11 @@ def client_csv_all_valid() -> str:
         "id;title;price;category;type;location;year;make;model;mileage;body_style;"
         "exterior_color;interior_color;clean_title;state;fuel_type;transmission;"
         "option;description;path;groups;label;publicado;VIN\n"
-        "1;DJ;2500000;Vehiculos;Sedan;Orlando florida;2020;Ford;Explorer;70000;SUV;"
+        "1;DJ;25000;Vehiculos;Sedan;Orlando florida;2020;Ford;Explorer;70000;SUV;"
         "Gris;Negro;1;FL;Gas;Automatic;;;IMG/Vehiculos/MF/2020-EXPLORER;1,2;01/01/25;1;1FMSK7DH7LGA77418\n"
-        "2;RM;1800000;Vehiculos;Sedan;Miami florida;2019;Toyota;Camry;45000;Sedan;"
+        "2;RM;18000;Vehiculos;Sedan;Miami florida;2019;Toyota;Camry;45000;Sedan;"
         "Blanco;Gris;0;FL;Gas;Automatic;;;IMG/Vehiculos/MF/2019-CAMRY;1;01/02/25;0;2T1BURHE0LC123456\n"
-        "3;AB;3200000;Vehiculos;Sedan;Orlando florida;2021;Honda;Accord;30000;Sedan;"
+        "3;AB;32000;Vehiculos;Sedan;Orlando florida;2021;Honda;Accord;30000;Sedan;"
         "Rojo;Negro;1;FL;Gas;Automatic;;;IMG/Vehiculos/MF/2021-ACCORD;2;01/03/25;1;3FMSK7DH7LGA77419\n"
     )
 
@@ -239,7 +238,12 @@ class TestBulkUploadPreview:
         auth_headers: dict[str, str],
         client_csv_missing_price: str,
     ) -> None:
-        """Row with missing price is marked importable=false."""
+        """Row with missing price is marked importable=false.
+
+        Empty price raises in `CSVFieldMapper.map_row`, so the use case captures
+        the exception and returns the row with the error message in `errors`
+        (not `missing_fields`).
+        """
         response = await async_client.post(
             "/api/v1/products/bulk-upload/preview",
             files={"csv_file": ("client.csv", client_csv_missing_price, "text/csv")},
@@ -252,7 +256,7 @@ class TestBulkUploadPreview:
         rows = data["rows"]
         row2 = rows[1]
         assert row2["importable"] is False
-        assert "price" in row2["missing_fields"]
+        assert any("price" in err.lower() for err in row2["errors"])
 
     async def test_preview_summary_counts(
         self,

@@ -211,6 +211,9 @@ async def test_attribute_schema_default_is_empty_object(
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+@pytest.mark.xfail(
+    reason="vehicles table was dropped in c3schema_cleanup migration — table no longer exists"
+)
 @pytest.mark.asyncio
 async def test_product_delete_cascades_to_vehicle(db_session: AsyncSession) -> None:
     """SC-4: DELETE products row cascades to delete related vehicle row."""
