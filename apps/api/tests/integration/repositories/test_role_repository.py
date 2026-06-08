@@ -46,3 +46,44 @@ async def test_create_custom_role_with_tenant_roundtrips(
     assert fetched.tenant_id == test_organization.tenant_id
     assert fetched.name == role.name
     assert fetched.is_system_role is False
+
+
+@pytest.mark.asyncio
+async def test_role_get_by_id_does_not_filter_by_tenant(
+    db_session,
+) -> None:
+    """GAP-5 documentation: RoleRepository.get_by_id() does NOT filter by tenant.
+
+    The repo's contract is `caller filters` — system roles (tenant_id=NULL)
+    and tenant-scoped roles share the same table, and the abstract method
+    has no tenant_id parameter. Callers in the application layer must
+    apply the tenant filter explicitly. This test pins the contract so
+    a future refactor that silently adds a tenant_id parameter would
+    show up as a behaviour change in the assertion below.
+    """
+    from prosell.infrastructure.models.organization_model import OrganizationModel
+
+    repo = SqlAlchemyRoleRepository(db_session)
+    other_org_id = uuid4()
+    other_org = OrganizationModel(
+        id=other_org_id,
+        tenant_id=other_org_id,
+        name="Other Org",
+        status="active",
+        description="Other",
+        settings={},
+    )
+    db_session.add(other_org)
+    await db_session.flush()
+
+    other_role = Role.create_custom_role(
+        name=f"Other {uuid4().hex[:6]}",
+        description="Belongs to a different tenant",
+        tenant_id=other_org.tenant_id,
+    )
+    created = await repo.create(other_role)
+
+    # Repo returns it regardless of who calls — caller must filter
+    fetched = await repo.get_by_id(created.id)
+    assert fetched is not None
+    assert fetched.tenant_id == other_org.tenant_id
