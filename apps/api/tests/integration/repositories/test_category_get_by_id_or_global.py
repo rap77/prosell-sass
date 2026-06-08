@@ -56,9 +56,7 @@ async def _add_category(db_session, *, tenant_id, name="Cat"):
 
 
 @pytest.mark.asyncio
-async def test_get_by_id_or_global_returns_global_for_any_tenant(
-    db_session, test_organization
-):
+async def test_get_by_id_or_global_returns_global_for_any_tenant(db_session, test_organization):
     """A global (NULL-tenant) template is visible to any tenant."""
     global_cat = await _add_category(db_session, tenant_id=None, name="Global")
     repo = SqlAlchemyCategoryRepository(db_session)
@@ -70,13 +68,9 @@ async def test_get_by_id_or_global_returns_global_for_any_tenant(
 
 
 @pytest.mark.asyncio
-async def test_get_by_id_or_global_returns_own_tenant_category(
-    db_session, test_organization
-):
+async def test_get_by_id_or_global_returns_own_tenant_category(db_session, test_organization):
     """A tenant's own private category is still visible to it."""
-    own = await _add_category(
-        db_session, tenant_id=test_organization.tenant_id, name="Own"
-    )
+    own = await _add_category(db_session, tenant_id=test_organization.tenant_id, name="Own")
     repo = SqlAlchemyCategoryRepository(db_session)
 
     found = await repo.get_by_id_or_global(own.id, test_organization.tenant_id)
@@ -93,9 +87,7 @@ async def test_get_by_id_or_global_denies_other_tenants_private_category(
     leak — this is why we don't reuse get_by_id_any_tenant for the product
     path)."""
     other_org = await _add_organization(db_session)
-    other = await _add_category(
-        db_session, tenant_id=other_org.tenant_id, name="Other"
-    )
+    other = await _add_category(db_session, tenant_id=other_org.tenant_id, name="Other")
     repo = SqlAlchemyCategoryRepository(db_session)
 
     found = await repo.get_by_id_or_global(other.id, test_organization.tenant_id)
@@ -104,9 +96,7 @@ async def test_get_by_id_or_global_denies_other_tenants_private_category(
 
 
 @pytest.mark.asyncio
-async def test_get_by_id_stays_strict_and_excludes_global(
-    db_session, test_organization
-):
+async def test_get_by_id_stays_strict_and_excludes_global(db_session, test_organization):
     """Regression guard: the shared get_by_id (mutation gate) must NOT return
     global templates — otherwise a tenant could load+delete/edit a global
     template via UpdateCategory/DeleteCategory use cases."""

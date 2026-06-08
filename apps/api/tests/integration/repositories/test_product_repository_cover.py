@@ -83,6 +83,4 @@ async def test_update_persists_cover_image_key(db_session, test_organization, te
 
     fetched = await repo.get_by_id(product.id, tenant_id)
     assert fetched is not None
-    assert fetched.cover_image_key == key_b, (
-        "the new cover must survive the round-trip to the DB"
-    )
+    assert fetched.cover_image_key == key_b, "the new cover must survive the round-trip to the DB"
