@@ -97,6 +97,80 @@ export interface AuthError {
 }
 
 // ============================================
+// SHAPE ADAPTER
+// ============================================
+//
+// Backend responses (LoginUserResponse.user, /auth/state) may use either:
+//   - New shape: { full_name, roles: string[] }
+//   - Legacy shape: { first_name, last_name, role: string }
+//
+// The authStore User type requires the legacy shape. This adapter handles
+// BOTH and applies sensible fallbacks so the header, profile page, and
+// settings page don't show "??" / "Seller" / empty fields right after a
+// fresh login.
+
+/**
+ * Map an API user payload (either shape) to the authStore User shape.
+ *
+ * - Splits `full_name` into `first_name` and `last_name` when needed.
+ * - Takes `roles[0]` as `role` when roles is an array; falls back to
+ *   `role` field if present; defaults to "Seller".
+ * - Defaults `is_email_verified` to true and `is_2fa_enabled` to false
+ *   when the backend doesn't send them.
+ * - Maps `tenant_id` → `organization_id`.
+ */
+export function mapApiUserToStoreUser(apiUser: unknown): User {
+  const u = (apiUser ?? {}) as Record<string, unknown>;
+
+  // Derive first/last name from either full_name OR first_name+last_name
+  let firstName = "";
+  let lastName = "";
+  if (typeof u.full_name === "string" && u.full_name.trim()) {
+    const parts = u.full_name.trim().split(/\s+/);
+    firstName = parts[0] ?? "";
+    lastName = parts.slice(1).join(" ");
+  } else {
+    firstName = (u.first_name as string) ?? "";
+    lastName = (u.last_name as string) ?? "";
+  }
+
+  // Fallback for first name when nothing was derived
+  if (!firstName && typeof u.email === "string") {
+    firstName = u.email.split("@")[0] ?? "User";
+  }
+  if (!firstName) {
+    firstName = "User";
+  }
+
+  // Derive role from either roles[0] or role field
+  let role = "";
+  if (Array.isArray(u.roles) && u.roles.length > 0) {
+    role = String(u.roles[0]);
+  } else if (typeof u.role === "string") {
+    role = u.role;
+  }
+  if (!role) {
+    role = "Seller";
+  }
+
+  return {
+    id: String(u.id ?? ""),
+    email: String(u.email ?? ""),
+    first_name: firstName,
+    last_name: lastName,
+    role,
+    is_email_verified:
+      typeof u.is_email_verified === "boolean" ? u.is_email_verified : true,
+    is_2fa_enabled:
+      typeof u.is_2fa_enabled === "boolean" ? u.is_2fa_enabled : false,
+    organization_id:
+      (u.tenant_id as string | null | undefined) ??
+      (u.organization_id as string | null | undefined) ??
+      null,
+  };
+}
+
+// ============================================
 // STORE INTERFACE
 // ============================================
 
@@ -173,7 +247,7 @@ export const useAuthStore = create<AuthState>()(
 
           // Authenticated - set user state
           set({
-            user: authState.user,
+            user: mapApiUserToStoreUser(authState.user),
             isAuthenticated: true,
             isLoading: false,
             initialized: true, // Successfully initialized
@@ -223,7 +297,7 @@ export const useAuthStore = create<AuthState>()(
 
           // Update state - tokens are handled by httpOnly cookies
           set({
-            user: response.user,
+            user: mapApiUserToStoreUser(response.user),
             isAuthenticated: true,
             isLoading: false,
             initialized: false,
