@@ -309,7 +309,8 @@ class TestPollFacebookLeadsTaskLogic:
 
 __all__ = [
     "TestPollFacebookLeadsTask",
-    "TestPollFacebookLeadsTaskRateLimiting",
-    "TestPollFacebookLeadsTaskRetryLogic",
+    "TestPollFacebookLeadsTaskConfiguration",
+    "TestPollFacebookLeadsTaskDeduplication",
+    "TestPollFacebookLeadsTaskLogic",
     "TestPollFacebookLeadsTaskStructure",
 ]

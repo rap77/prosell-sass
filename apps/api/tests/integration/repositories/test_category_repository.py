@@ -67,6 +67,7 @@ async def test_create_update_delete_category_roundtrip(
     updated = await repo.update(fetched)
     assert updated.name == "Sedanes Premium"
     assert updated.description == "Luxury sedans"
+    assert updated.presentation is not None
     assert updated.presentation.get("title_template") == "{year} {make} {model} Premium"
 
     # delete() removes the row (returns True for the owning tenant).

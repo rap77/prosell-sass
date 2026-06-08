@@ -28,7 +28,6 @@ from prosell.infrastructure.api.dependencies import (
 )
 from prosell.infrastructure.api.main import app
 
-
 # Sample signed URL with X-Amz-Signature (what the browser will receive)
 SIGNED_URL = (
     "http://localhost:9000/prosell-assets/orgs/tenant-1/vehicles/abc.jpg"

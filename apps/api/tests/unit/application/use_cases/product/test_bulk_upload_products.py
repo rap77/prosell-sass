@@ -99,7 +99,7 @@ class TestBulkUploadProductsUseCase:
         mock_category.id = category_id
         mock_category.tenant_id = tenant_id
 
-        async def get_by_id(cat_id, tenant_id_param):
+        async def get_by_id(cat_id, _tenant_id_param):
             if cat_id == category_id:
                 return mock_category
             return None

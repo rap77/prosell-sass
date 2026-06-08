@@ -124,7 +124,10 @@ async def test_existing_categories_rows_preserved(db_session: AsyncSession) -> N
 
     await db_session.execute(
         text("""
-            INSERT INTO categories (id, tenant_id, name, slug, level, sort_order, is_active, field_config, attribute_schema)
+            INSERT INTO categories (
+                id, tenant_id, name, slug, level, sort_order, is_active,
+                field_config, attribute_schema
+            )
             VALUES (
                 :id, :tenant_id, 'Test Category Migration', 'test-category-migration', 0, 0, true,
                 '[]'::jsonb, '{}'::jsonb
@@ -163,8 +166,13 @@ async def test_attribute_schema_default_is_empty_object(
     # Insert WITHOUT specifying attribute_schema — should use DEFAULT '{}'
     await db_session.execute(
         text("""
-            INSERT INTO categories (id, tenant_id, name, slug, level, sort_order, is_active, field_config)
-            VALUES (:id, :tenant_id, 'Default Schema Test', 'default-schema-test-c3', 0, 0, true, '[]'::jsonb)
+            INSERT INTO categories (
+                id, tenant_id, name, slug, level, sort_order, is_active, field_config
+            )
+            VALUES (
+                :id, :tenant_id, 'Default Schema Test', 'default-schema-test-c3', 0, 0, true,
+                '[]'::jsonb
+            )
         """),
         {"id": cat_id, "tenant_id": org_row.id},
     )
@@ -198,7 +206,10 @@ async def test_jsonb_containment_operator_on_attribute_schema(
     cat_id = uuid4()
     await db_session.execute(
         text("""
-            INSERT INTO categories (id, tenant_id, name, slug, level, sort_order, is_active, field_config, attribute_schema)
+            INSERT INTO categories (
+                id, tenant_id, name, slug, level, sort_order, is_active,
+                field_config, attribute_schema
+            )
             VALUES (
                 :id, :tenant_id, 'JSONB Test', 'jsonb-operator-test-c3', 0, 0, true, '[]'::jsonb,
                 '{"year": {"type": "number", "required": true}}'::jsonb

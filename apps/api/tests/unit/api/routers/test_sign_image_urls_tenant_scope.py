@@ -16,11 +16,11 @@ Two invariants pinned here (security-critical — see security review):
 """
 
 from unittest.mock import AsyncMock
+from uuid import UUID
 
 import pytest
 
 from prosell.infrastructure.api.routers.image_router import sign_image_urls
-from uuid import UUID
 
 CALLER_TENANT = UUID("11111111-1111-1111-1111-111111111111")
 OTHER_TENANT = UUID("99999999-9999-9999-9999-999999999999")

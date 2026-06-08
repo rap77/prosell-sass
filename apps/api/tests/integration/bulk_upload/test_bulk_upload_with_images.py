@@ -15,7 +15,6 @@ from httpx import AsyncClient
 from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
 
-
 # =============================================================================
 # FIXTURES
 # =============================================================================

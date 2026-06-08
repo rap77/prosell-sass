@@ -143,10 +143,10 @@ class TestLeadTenantIsolation:
     async def test_user_cannot_access_other_tenant_leads(
         self,
         tenant_a_id: UUID,
-        tenant_b_id: UUID,
+        tenant_b_id: UUID,  # noqa: ARG002
         lead_tenant_a: Lead,
         lead_tenant_b: Lead,
-        mock_auth_user_tenant_a: User,
+        mock_auth_user_tenant_a: User,  # noqa: ARG002
     ) -> None:
         """User from Tenant A cannot access leads from Tenant B."""
         # Setup mock repository
@@ -173,7 +173,7 @@ class TestLeadTenantIsolation:
         self,
         tenant_a_id: UUID,
         lead_tenant_a: Lead,
-        mock_auth_user_tenant_a: User,
+        mock_auth_user_tenant_a: User,  # noqa: ARG002
     ) -> None:
         """Verify repository queries include tenant_id in filters."""
         # Removed unused import
@@ -206,7 +206,7 @@ class TestProductTenantIsolation:
         tenant_a_id: UUID,
         product_tenant_a: Product,
         product_tenant_b: Product,
-        mock_auth_user_tenant_a: User,
+        mock_auth_user_tenant_a: User,  # noqa: ARG002
     ) -> None:
         """User from Tenant A cannot access products from Tenant B."""
         # Removed unused import
@@ -235,8 +235,8 @@ class TestWebhookTenantContext:
         tenant_a_id: UUID,
         tenant_b_id: UUID,
         lead_tenant_a: Lead,
-        lead_tenant_b: Lead,
-        mock_auth_user_tenant_a: User,
+        lead_tenant_b: Lead,  # noqa: ARG002
+        mock_auth_user_tenant_a: User,  # noqa: ARG002
     ) -> None:
         """Webhook creates leads in correct tenant context."""
         # Removed unused import
@@ -267,7 +267,7 @@ class TestSQLInjectionPrevention:
     async def test_sql_injection_in_email_blocked(
         self,
         tenant_a_id: UUID,
-        mock_auth_user_tenant_a: User,
+        mock_auth_user_tenant_a: User,  # noqa: ARG002
     ) -> None:
         """SQL injection attempts in email parameter are blocked."""
         # Removed unused import
@@ -290,7 +290,7 @@ class TestSQLInjectionPrevention:
     async def test_sql_injection_in_search_blocked(
         self,
         tenant_a_id: UUID,
-        mock_auth_user_tenant_a: User,
+        mock_auth_user_tenant_a: User,  # noqa: ARG002
     ) -> None:
         """SQL injection attempts in search parameters are blocked."""
         # Removed unused import
@@ -315,10 +315,10 @@ class TestIDORPrevention:
     async def test_user_cannot_access_lead_by_id_from_other_tenant(
         self,
         tenant_a_id: UUID,
-        tenant_b_id: UUID,
+        tenant_b_id: UUID,  # noqa: ARG002
         lead_tenant_a: Lead,
         lead_tenant_b: Lead,
-        mock_auth_user_tenant_a: User,
+        mock_auth_user_tenant_a: User,  # noqa: ARG002
     ) -> None:
         """User cannot access lead by ID from another tenant (IDOR prevention)."""
         from unittest.mock import AsyncMock, MagicMock
@@ -326,7 +326,7 @@ class TestIDORPrevention:
         mock_repo = MagicMock()
         # Repository returns None for lead from other tenant
         mock_repo.get_by_id = AsyncMock(
-            side_effect=lambda lead_id, tenant_id: lead_tenant_a  # type: ignore
+            side_effect=lambda lead_id, **_kwargs: lead_tenant_a  # type: ignore
             if lead_id == lead_tenant_a.id
             else None
         )
@@ -339,10 +339,10 @@ class TestIDORPrevention:
 
     async def test_user_cannot_update_product_from_other_tenant(
         self,
-        tenant_a_id: UUID,
+        tenant_a_id: UUID,  # noqa: ARG002
         product_tenant_a: Product,
         product_tenant_b: Product,
-        mock_auth_user_tenant_a: User,
+        mock_auth_user_tenant_a: User,  # noqa: ARG002
     ) -> None:
         """User cannot update product from another tenant."""
         from unittest.mock import AsyncMock, MagicMock

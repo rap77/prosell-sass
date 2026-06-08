@@ -8,12 +8,12 @@ import pytest
 from prosell.application.use_cases.facebook_webhook_use_case import ProcessFacebookWebhookUseCase
 from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
 from prosell.domain.entities.lead import Lead
-from prosell.domain.value_objects.lead_source import LeadSource
 from prosell.domain.entities.publication import Publication, PublicationStatus
 from prosell.domain.ports.i_encryption_service import IEncryptionService
 from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
 from prosell.domain.repositories.lead_repository import AbstractLeadRepository
 from prosell.domain.repositories.publication_repository import IPublicationRepository
+from prosell.domain.value_objects.lead_source import LeadSource
 from prosell.infrastructure.services.facebook_graph_api_client import (
     FacebookBuyerProfile,
     FacebookGraphApiClient,
@@ -79,7 +79,7 @@ def product_id():
 
 
 @pytest.fixture
-def sample_webhook_payload(product_id):
+def sample_webhook_payload(product_id):  # noqa: ARG001
     """Sample Facebook webhook payload."""
     return {
         "leadgen_id": "123456789",

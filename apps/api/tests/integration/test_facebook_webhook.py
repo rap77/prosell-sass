@@ -24,16 +24,16 @@ def webhook_app_secret() -> str:
 
 
 @pytest.fixture
-async def async_client(db_session):
+async def async_client(db_session):  # noqa: ARG001
     """
     AsyncClient for webhook tests (no auth required).
     Overrides settings.facebook_app_secret for signature verification.
     """
-    from prosell.infrastructure.api.routers.webhook_router import get_facebook_app_secret
-
     from unittest.mock import MagicMock
+
     from prosell.domain.ports.i_encryption_service import IEncryptionService
     from prosell.infrastructure.api.di import get_encryption_service
+    from prosell.infrastructure.api.routers.webhook_router import get_facebook_app_secret
 
     # Override the get_facebook_app_secret dependency
     async def override_get_facebook_app_secret() -> str:

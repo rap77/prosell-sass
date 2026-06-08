@@ -10,7 +10,6 @@ needs its own gate.
 import pytest
 from httpx import AsyncClient
 
-
 # =============================================================================
 # FIXTURES — Client-format CSV (semicolon-delimited, 23 columns)
 # =============================================================================

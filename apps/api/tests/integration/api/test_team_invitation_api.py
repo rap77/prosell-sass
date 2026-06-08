@@ -153,12 +153,12 @@ def sample_team(sample_org):
 
 @pytest.mark.asyncio
 async def test_invite_team_member_success(
-    with_admin_role,
+    with_admin_role,  # noqa: ARG001
     mock_team_repo,
     sample_team,
     mock_invitation_repo,
     mock_email_service,
-    mock_auth_user,
+    mock_auth_user,  # noqa: ARG001
 ):
     """Test successful team member invitation."""
     from prosell.domain.entities.team_invitation import TeamInvitation
@@ -208,7 +208,7 @@ async def test_invite_team_member_success(
 
 @pytest.mark.asyncio
 async def test_invite_team_member_team_not_found(
-    with_admin_role,
+    with_admin_role,  # noqa: ARG001
     mock_team_repo,
     mock_invitation_repo,
     mock_email_service,
@@ -241,7 +241,7 @@ async def test_invite_team_member_team_not_found(
 
 @pytest.mark.asyncio
 async def test_invite_team_member_invalid_email(
-    with_admin_role,
+    with_admin_role,  # noqa: ARG001
     mock_team_repo,
     sample_team,
     mock_invitation_repo,
@@ -283,7 +283,7 @@ async def test_accept_team_invitation_success(
     sample_team,
     mock_team_member_repo,
     mock_invitation_repo,
-    mock_auth_user,
+    mock_auth_user,  # noqa: ARG001
 ):
     """Test successful team invitation acceptance."""
     from prosell.infrastructure.api.routers.team_router import (

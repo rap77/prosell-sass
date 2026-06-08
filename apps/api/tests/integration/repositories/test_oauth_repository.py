@@ -47,4 +47,7 @@ async def test_link_and_get_oauth_provider_roundtrips(db_session, test_user) -> 
     assert entry["provider_email"] == "ext-user@example.com"
     # created_at is tz-aware (DateTime(timezone=True) on the column)
     assert entry["created_at"] is not None
-    assert entry["created_at"].tzinfo is not None
+    # The repo returns dict[str, object]; narrow created_at to datetime
+    # via a local variable so pyright sees the tzinfo attribute.
+    created_at: datetime = entry["created_at"]  # type: ignore[assignment]
+    assert created_at.tzinfo is not None

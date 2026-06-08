@@ -146,7 +146,10 @@ class TestUpdateLeadStatusUseCaseIntegration:
 
     @pytest.mark.asyncio
     async def test_update_status_full_lifecycle(self, db_session, test_organization):
-        """Should advance lead through full lifecycle: new→contacted→qualified→appointment_set→lost."""
+        """Should advance lead through full lifecycle.
+
+        Stages: new -> contacted -> qualified -> appointment_set -> lost.
+        """
         repo = SqlAlchemyLeadRepository(db_session)
         use_case = CreateLeadUseCase(repo)
         update_uc = UpdateLeadStatusUseCase(repo)

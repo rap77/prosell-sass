@@ -484,7 +484,7 @@ class TestViewerPermissions:
 
 
 class TestAllRoleCombinations:
-    """B2.5.g: Exhaustive parametric tests for every role × permission pair."""
+    """B2.5.g: Exhaustive parametric tests for every role x permission pair."""
 
     @pytest.mark.parametrize(
         "role_name,perm_str,expected",
@@ -645,7 +645,7 @@ class TestAPILayerAuthorization:
         user_dict: dict[str, Any] = {"roles": ["viewer"]}
 
         @RBACMiddleware.require_roles("admin", "super_admin")
-        async def _endpoint(current_user: dict[str, Any]) -> str:
+        async def _endpoint(_current_user: dict[str, Any]) -> str:
             return "ok"
 
         import asyncio
@@ -662,7 +662,7 @@ class TestAPILayerAuthorization:
         user_dict: dict[str, Any] = {"roles": []}
 
         @RBACMiddleware.require_roles("admin")
-        async def _endpoint(current_user: dict[str, Any]) -> str:
+        async def _endpoint(_current_user: dict[str, Any]) -> str:
             return "ok"
 
         import asyncio
@@ -711,7 +711,7 @@ class TestAPILayerAuthorization:
         user_dict: dict[str, Any] = {"roles": ["viewer"]}
 
         @RBACMiddleware.require_permissions("vehicle:create")
-        async def _endpoint(current_user: dict[str, Any]) -> str:
+        async def _endpoint(_current_user: dict[str, Any]) -> str:
             return "ok"
 
         import asyncio
@@ -728,7 +728,7 @@ class TestAPILayerAuthorization:
         user_dict: dict[str, Any] = {"roles": ["viewer"]}
 
         @RBACMiddleware.require_permissions("user:delete")
-        async def _endpoint(current_user: dict[str, Any]) -> str:
+        async def _endpoint(_current_user: dict[str, Any]) -> str:
             return "ok"
 
         import asyncio
@@ -913,7 +913,7 @@ class TestRoleEscalationBlocked:
         viewer_dict: dict[str, Any] = {"roles": ["viewer"]}
 
         @RBACMiddleware.require_roles("admin")
-        async def _admin_endpoint(current_user: dict[str, Any]) -> str:
+        async def _admin_endpoint(_current_user: dict[str, Any]) -> str:
             return "admin data"
 
         import asyncio
@@ -930,7 +930,7 @@ class TestRoleEscalationBlocked:
         viewer_dict: dict[str, Any] = {"roles": ["viewer"]}
 
         @RBACMiddleware.require_permissions("user:create")
-        async def _create_user_endpoint(current_user: dict[str, Any]) -> str:
+        async def _create_user_endpoint(_current_user: dict[str, Any]) -> str:
             return "user created"
 
         import asyncio
@@ -950,7 +950,7 @@ class TestRoleEscalationBlocked:
         fake_role_dict: dict[str, Any] = {"roles": ["super_hacker"]}
 
         @RBACMiddleware.require_permissions("vehicle:create")
-        async def _endpoint(current_user: dict[str, Any]) -> str:
+        async def _endpoint(_current_user: dict[str, Any]) -> str:
             return "ok"
 
         import asyncio
@@ -996,7 +996,7 @@ class TestPermissionMatrixDocumentation:
         assert len(_perms_for(RoleType.SUPER_ADMIN)) == len(Permission)
 
     def test_doc_admin_has_12_permissions(self) -> None:
-        """ADMIN has 12 permissions (user R+U, no role mgmt, org R+U, vehicle CRUD, analytics, settings)."""
+        """ADMIN has 12 perms: user R+U, no role mgmt, org R+U, vehicle CRUD, analytics."""
         assert len(_perms_for(RoleType.ADMIN)) == 12
 
     def test_doc_manager_has_9_permissions(self) -> None:

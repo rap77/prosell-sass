@@ -82,21 +82,33 @@ async def auth_headers(test_user: UserModel) -> dict[str, str]:
 @pytest.fixture
 def sample_csv_content() -> str:
     """Sample CSV content with valid vehicle data."""
-    return """vin,year,make,model,trim,mileage,price,condition,exterior_color,interior_color,transmission,fuel_type,body_style,drivetrain,engine,cylinders,description
-1HGCM82633A123456,2020,Honda,Civic,EX,35000,18500,excellent,Black,Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Well maintained Honda Civic
-1HGCM82633A004521,2021,Honda,Accord,LX,30000,22000,excellent,Silver,Gray,Automatic,Gas,Sedan,FWD,1.5L 4-Cylinder,4,Clean Honda Accord
-2T1BURHE0FC123456,2019,Toyota,Camry,SE,40000,19500,good,White,Black,Automatic,Gas,Sedan,FWD,2.5L 4-Cylinder,4,Reliable sedan
-"""
+    return (
+        "vin,year,make,model,trim,mileage,price,condition,exterior_color,"
+        "interior_color,transmission,fuel_type,body_style,drivetrain,engine,"
+        "cylinders,description\n"
+        "1HGCM82633A123456,2020,Honda,Civic,EX,35000,18500,excellent,Black,"
+        "Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Well maintained Honda Civic\n"
+        "1HGCM82633A004521,2021,Honda,Accord,LX,30000,22000,excellent,Silver,"
+        "Gray,Automatic,Gas,Sedan,FWD,1.5L 4-Cylinder,4,Clean Honda Accord\n"
+        "2T1BURHE0FC123456,2019,Toyota,Camry,SE,40000,19500,good,White,Black,"
+        "Automatic,Gas,Sedan,FWD,2.5L 4-Cylinder,4,Reliable sedan\n"
+    )
 
 
 @pytest.fixture
 def sample_csv_with_errors() -> str:
     """Sample CSV content with some invalid rows."""
-    return """vin,year,make,model,trim,mileage,price,condition,exterior_color,interior_color,transmission,fuel_type,body_style,drivetrain,engine,cylinders,description
-1HGCM82633A123456,2020,Honda,Civic,EX,35000,18500,excellent,Black,Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Valid vehicle
-INVALID_VIN,2020,Toyota,Corolla,LE,40000,18000,good,White,Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Invalid VIN
-1HGCM82633A004521,2021,Honda,Accord,LX,30000,22000,excellent,Silver,Gray,Automatic,Gas,Sedan,FWD,1.5L 4-Cylinder,4,Another valid vehicle
-"""
+    return (
+        "vin,year,make,model,trim,mileage,price,condition,exterior_color,"
+        "interior_color,transmission,fuel_type,body_style,drivetrain,engine,"
+        "cylinders,description\n"
+        "1HGCM82633A123456,2020,Honda,Civic,EX,35000,18500,excellent,Black,"
+        "Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Valid vehicle\n"
+        "INVALID_VIN,2020,Toyota,Corolla,LE,40000,18000,good,White,Black,"
+        "Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Invalid VIN\n"
+        "1HGCM82633A004521,2021,Honda,Accord,LX,30000,22000,excellent,Silver,"
+        "Gray,Automatic,Gas,Sedan,FWD,1.5L 4-Cylinder,4,Another valid vehicle\n"
+    )
 
 
 @pytest.fixture
@@ -120,10 +132,15 @@ def csv_missing_columns() -> str:
 @pytest.fixture
 def csv_duplicate_vins() -> str:
     """CSV with duplicate VINs."""
-    return """vin,year,make,model,trim,mileage,price,condition,exterior_color,interior_color,transmission,fuel_type,body_style,drivetrain,engine,cylinders,description
-1HGCM82633A123456,2020,Honda,Civic,EX,35000,18500,excellent,Black,Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,First occurrence
-1HGCM82633A123456,2021,Honda,Accord,LX,40000,21000,good,White,Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Duplicate VIN
-"""
+    return (
+        "vin,year,make,model,trim,mileage,price,condition,exterior_color,"
+        "interior_color,transmission,fuel_type,body_style,drivetrain,engine,"
+        "cylinders,description\n"
+        "1HGCM82633A123456,2020,Honda,Civic,EX,35000,18500,excellent,Black,"
+        "Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,First occurrence\n"
+        "1HGCM82633A123456,2021,Honda,Accord,LX,40000,21000,good,White,Black,"
+        "Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Duplicate VIN\n"
+    )
 
 
 # NOTE: The conditional skip based on `_is_test_db_available()` was removed.

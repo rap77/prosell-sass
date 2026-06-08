@@ -32,15 +32,16 @@ from prosell.application.dto.product.update import UpdateProductRequest
 from prosell.domain.entities.product import Product
 from prosell.domain.value_objects.product_condition import ProductCondition
 
-
 # Sample keys (storage-key shape, post-migration).
 KEY_A = "orgs/00000000-0000-0000-0000-000000000001/vehicles/a.jpg"
 KEY_B = "orgs/00000000-0000-0000-0000-000000000001/vehicles/b.jpg"
 KEY_C = "orgs/00000000-0000-0000-0000-000000000001/vehicles/c.jpg"
 
 
-def _new_product(image_urls: list[str] = []) -> Product:
+def _new_product(image_urls: list[str] | None = None) -> Product:
     """Build a fresh DRAFT product with the given image list."""
+    if image_urls is None:
+        image_urls = []
     return Product.create(
         title="2017 Toyota Camry",
         price_cents=1_850_000,
