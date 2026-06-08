@@ -187,10 +187,23 @@ chmod 600 "$JWT_PRIVATE_KEY_PATH" 2>/dev/null || true
 # touch the tree is this script. A dirty tree usually means a half-finished
 # previous deploy or someone editing on the server — both worth investigating.
 log_info "Checking working tree..."
-if ! git diff --quiet HEAD 2>/dev/null; then
-  log_error "Working tree has uncommitted changes:"
-  git status --short
-  log_error "Commit or stash them before deploying."
+# Some paths are EXPECTED to differ between the repo and the droplet:
+#   - apps/api/keys/   : production keys are generated locally on the server
+#                        and never committed in real form. The versions in
+#                        the repo are placeholders, so a diff here is normal.
+#   - .env.prod        : holds production secrets, intentionally untracked.
+#   - backups/         : created by the pg_dump step in this script.
+#   - deploys.log      : this script's own deploy audit log.
+# Anything else dirty is a real concern (half-finished previous deploy,
+# someone editing on the server) and must be investigated.
+DIRTY=$(git status --short \
+  | grep -vE '^\?\? (apps/api/keys|\.env\.prod|backups/|deploys\.log)' \
+  | grep -vE '^.. apps/api/keys/' || true)
+if [[ -n "$DIRTY" ]]; then
+  log_error "Working tree has uncommitted changes outside the allow-list:"
+  echo "$DIRTY" | sed 's/^/  /'
+  log_error "Allowed exceptions: apps/api/keys/, .env.prod, backups/, deploys.log"
+  log_error "Commit or stash the rest before deploying."
   exit 1
 fi
 
