@@ -23,10 +23,14 @@ class SqlAlchemyOrganizationVerticalRepository:
         self.session = session
 
     async def enable(self, organization_id: UUID, root_category_id: UUID) -> None:
-        stmt = pg_insert(OrganizationVerticalModel).values(
-            organization_id=organization_id,
-            root_category_id=root_category_id,
-        ).on_conflict_do_nothing()
+        stmt = (
+            pg_insert(OrganizationVerticalModel)
+            .values(
+                organization_id=organization_id,
+                root_category_id=root_category_id,
+            )
+            .on_conflict_do_nothing()
+        )
         await self.session.execute(stmt)
         await self.session.flush()
 
