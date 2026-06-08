@@ -466,9 +466,12 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps
 # Detect first deploy: if the admin user is missing, this is a fresh DB.
 # We don't auto-run init_data.py because it's not designed to be re-run
 # safely and the operator should know they're initializing.
+# Use $ADMIN_EMAIL (loaded from .env.prod) — different per env:
+#   prod: admin@prosellweb.com
+#   staging: admin@prosell.saas
 if ! docker exec prosell-prod-db \
      psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc \
-     "SELECT 1 FROM users WHERE email = 'admin@prosell.saas' LIMIT 1;" 2>/dev/null \
+     "SELECT 1 FROM users WHERE email = '$ADMIN_EMAIL' LIMIT 1;" 2>/dev/null \
      | grep -q '^1$'; then
   log_warning "==========================================="
   log_warning "FIRST DEPLOY DETECTED — admin user is missing"
