@@ -82,6 +82,9 @@ class SqlAlchemyWalletRepository(AbstractWalletRepository):
         model.balance_cents = wallet.balance_cents
         model.is_active = wallet.is_active
         model.currency = wallet.currency
+        # Set updated_at explicitly from domain entity — onupdate="now()" string is not a valid
+        # asyncpg value. The domain entity already sets updated_at = datetime.now(UTC).
+        model.updated_at = wallet.updated_at
 
         await self.session.flush()
         return self._to_entity(model)
