@@ -262,9 +262,7 @@ class BulkUploadVehiclesUseCase:
             # Forward image_urls from the ZIP mapping (filled in below)
             if image_mapping and vin:
                 existing.image_urls = [
-                    m.do_spaces_key
-                    for m in image_mapping.mapped
-                    if m.vin == vin
+                    m.do_spaces_key for m in image_mapping.mapped if m.vin == vin
                 ]
 
             await self.product_repository.update(existing)

@@ -41,7 +41,7 @@ class Notification(DomainModel):
 
     # Optional resource link (for navigation on click)
     resource_type: str | None = None  # e.g., "lead", "appointment"
-    resource_id: UUID | None = None   # e.g., the lead's UUID
+    resource_id: UUID | None = None  # e.g., the lead's UUID
 
     # Read state
     is_read: bool = False

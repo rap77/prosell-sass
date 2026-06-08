@@ -338,8 +338,9 @@ async def retry_with_exponential_backoff(
             if not is_transient_error(e):
                 # Not transient, don't retry
                 logger.warning(
-                    f"Page {page_id}: Non-transient error (attempt {attempt + 1}/{max_retries +
-                    1}): {e}"
+                    f"Page {page_id}: Non-transient error (attempt {attempt + 1}/{
+                        max_retries + 1
+                    }): {e}"
                 )
                 raise
 

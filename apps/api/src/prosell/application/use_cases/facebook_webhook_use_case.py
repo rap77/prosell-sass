@@ -95,7 +95,7 @@ class ProcessFacebookWebhookUseCase:
         # 3. Get page access token from FacebookPage
         if not publication.facebook_page_id:
             logger.warning(
-                f"Publication {publication.id} has no facebook_page_id. " f"Skipping lead creation."
+                f"Publication {publication.id} has no facebook_page_id. Skipping lead creation."
             )
             return
 
