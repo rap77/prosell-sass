@@ -406,11 +406,19 @@ async def get_login_user_use_case(
     user_repository: Annotated[AbstractUserRepository, Depends(get_user_repository)],
     password_service: Annotated[IPasswordService, Depends(get_password_service)],
     jwt_service: Annotated[IJWTService, Depends(get_jwt_service)],
+    session_repository: Annotated[AbstractSessionRepository, Depends(get_session_repository)],
+    token_hasher: Annotated[ITokenHasher, Depends(get_token_hasher)],
 ) -> LoginUserUseCase:
     """Get LoginUser use case instance."""
     from prosell.application.use_cases.auth.login_user import LoginUserUseCase
 
-    return LoginUserUseCase(user_repository, password_service, jwt_service)
+    return LoginUserUseCase(
+        user_repository,
+        password_service,
+        jwt_service,
+        session_repository,
+        token_hasher,
+    )
 
 
 async def get_refresh_token_use_case(
