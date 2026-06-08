@@ -310,6 +310,42 @@ def _compare_fk_targets(
     return findings
 
 
+def _compare_indexes(
+    table_name: str,
+    orm_table: Any,
+    db_indexes: list[dict[str, Any]],
+) -> list[Finding]:
+    """Flag ORM-declared indexes with no covering DB index.
+
+    An ORM index is considered covered when some DB index contains all its
+    columns (subset match) — this treats a renamed index (same columns,
+    legacy name) and a wider composite index as covering, so only a genuine
+    performance gap (no index on those columns at all) is reported.
+    """
+    findings: list[Finding] = []
+    db_colsets = [set(ix.get("column_names") or []) for ix in db_indexes]
+
+    for ix in orm_table.indexes:
+        orm_cols = {c.name for c in ix.columns}
+        if not orm_cols:
+            continue
+        covered = any(orm_cols <= db_set for db_set in db_colsets)
+        if not covered:
+            findings.append(
+                Finding(
+                    table=table_name,
+                    column=",".join(sorted(orm_cols)),
+                    drift="index_in_orm_missing_in_db",
+                    orm_value=ix.name,
+                    db_value=None,
+                    severity="warning",
+                    note="Declared index has no covering DB index — queries scan these columns",
+                )
+            )
+
+    return findings
+
+
 def audit(orm_tables: dict[str, Any], inspector: Inspector) -> list[Finding]:
     all_findings: list[Finding] = []
 
@@ -344,6 +380,12 @@ def audit(orm_tables: dict[str, Any], inspector: Inspector) -> list[Finding]:
             [dict(fk) for fk in inspector.get_foreign_keys(table_name)],
         )
         all_findings.extend(_compare_fk_targets(table_name, orm_table, db_fks))
+
+        db_indexes = cast(
+            list[dict[str, Any]],
+            [dict(ix) for ix in inspector.get_indexes(table_name)],
+        )
+        all_findings.extend(_compare_indexes(table_name, orm_table, db_indexes))
 
     # Tables in DB not in ORM (skip alembic_version)
     for table_name in inspector.get_table_names():
