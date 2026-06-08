@@ -102,32 +102,6 @@ async def test_categories_field_config_is_jsonb(db_session: AsyncSession) -> Non
     assert row.data_type == "jsonb", f"Expected jsonb, got {row.data_type}"
 
 
-@pytest.mark.xfail(
-    reason="vehicles table was dropped in c3schema_cleanup migration — FK no longer exists"
-)
-@pytest.mark.asyncio
-async def test_vehicles_product_id_fk_exists(db_session: AsyncSession) -> None:
-    """SC-4: vehicles table had product_id FK -> products ON DELETE CASCADE (table now dropped)."""
-    result = await db_session.execute(
-        text("""
-            SELECT
-                kcu.column_name,
-                rc.delete_rule
-            FROM information_schema.table_constraints tc
-            JOIN information_schema.key_column_usage kcu
-                ON tc.constraint_name = kcu.constraint_name
-            JOIN information_schema.referential_constraints rc
-                ON tc.constraint_name = rc.constraint_name
-            WHERE tc.table_name = 'vehicles'
-              AND tc.constraint_type = 'FOREIGN KEY'
-              AND kcu.column_name = 'product_id'
-        """)
-    )
-    row = result.fetchone()
-    assert row is not None, "vehicles.product_id FK not found"
-    assert row.delete_rule == "CASCADE", f"Expected CASCADE, got {row.delete_rule}"
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Data Preservation Tests (SC-2, SC-3)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -204,81 +178,6 @@ async def test_attribute_schema_default_is_empty_object(
     assert row is not None
     assert row.attribute_schema == {}, f"Expected {{}}, got {row.attribute_schema}"
     assert isinstance(row.attribute_schema, dict), "attribute_schema must be a dict (object)"
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# CASCADE DELETE Test (SC-4)
-# ─────────────────────────────────────────────────────────────────────────────
-
-
-@pytest.mark.xfail(
-    reason="vehicles table was dropped in c3schema_cleanup migration — table no longer exists"
-)
-@pytest.mark.asyncio
-async def test_product_delete_cascades_to_vehicle(db_session: AsyncSession) -> None:
-    """SC-4: DELETE products row cascades to delete related vehicle row."""
-    result = await db_session.execute(text("SELECT id FROM organizations LIMIT 1"))
-    org_row = result.fetchone()
-    if org_row is None:
-        pytest.skip("No organizations in test DB")
-
-    # Insert category
-    cat_id = uuid4()
-    await db_session.execute(
-        text("""
-            INSERT INTO categories (id, tenant_id, name, slug, level, sort_order, is_active, field_config)
-            VALUES (:id, :tenant_id, 'Cascade Test Cat', 'cascade-test-cat-c3', 0, 0, true, '[]'::jsonb)
-        """),
-        {"id": cat_id, "tenant_id": org_row.id},
-    )
-
-    # Insert product
-    prod_id = uuid4()
-    await db_session.execute(
-        text("""
-            INSERT INTO products (id, tenant_id, organization_id, category_id, title, price_cents, currency, condition, status, attributes, is_featured, view_count, favorite_count)
-            VALUES (:id, :tenant_id, :org_id, :cat_id, 'Test Product Cascade', 1500000, 'USD', 'used', 'draft', '{}'::jsonb, false, 0, 0)
-        """),
-        {
-            "id": prod_id,
-            "tenant_id": org_row.id,
-            "org_id": org_row.id,
-            "cat_id": cat_id,
-        },
-    )
-
-    # Insert vehicle linked to product (with all NOT NULL fields)
-    veh_id = uuid4()
-    await db_session.execute(
-        text("""
-            INSERT INTO vehicles (
-                id, product_id, vin,
-                mileage_unit,
-                has_sunroof, has_navigation, has_leather, has_backup_camera,
-                has_bluetooth, has_remote_start,
-                vin_decoded_data, vin_verified
-            )
-            VALUES (
-                :id, :product_id, '1HGBH41JXMN109187',
-                'mi',
-                false, false, false, false,
-                false, false,
-                '{}'::jsonb, false
-            )
-        """),
-        {"id": veh_id, "product_id": prod_id},
-    )
-    await db_session.flush()
-
-    # Delete the product — vehicle should cascade
-    await db_session.execute(text("DELETE FROM products WHERE id = :id"), {"id": prod_id})
-    await db_session.flush()
-
-    # Vehicle should be gone (CASCADE)
-    result = await db_session.execute(
-        text("SELECT id FROM vehicles WHERE id = :id"), {"id": veh_id}
-    )
-    assert result.fetchone() is None, "Vehicle should have been cascade-deleted with product"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
