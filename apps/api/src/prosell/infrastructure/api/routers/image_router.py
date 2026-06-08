@@ -322,4 +322,7 @@ async def upload_image(
     # the browser will use.
     signed_url = await spaces.generate_download_url(file_path)
 
-    return ImageUploadResponse(url=signed_url)
+    # Also return the raw storage key so the frontend can persist it in
+    # `product.image_urls` (the storage layer is opaque; the DB stores
+    # bare keys, the browser receives signed URLs derived from those keys).
+    return ImageUploadResponse(url=signed_url, key=file_path)

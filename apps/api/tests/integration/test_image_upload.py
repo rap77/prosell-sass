@@ -45,6 +45,11 @@ def mock_spaces() -> MagicMock:
     spaces.upload_file = AsyncMock(
         return_value="https://region.digitaloceanspaces.com/bucket/orgs/123/vehicles/uuid.jpg"
     )
+    # The router signs a download URL after upload (await spaces.generate_download_url).
+    # Must be an AsyncMock or `await` on it fails with "MagicMock can't be awaited".
+    spaces.generate_download_url = AsyncMock(
+        return_value="https://region.digitaloceanspaces.com/bucket/orgs/123/vehicles/uuid.jpg?signed=1"
+    )
     spaces.endpoint = "https://region.digitaloceanspaces.com"
     spaces.bucket = "test-bucket"
     _mock_spaces = spaces

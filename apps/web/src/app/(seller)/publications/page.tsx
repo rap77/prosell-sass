@@ -16,6 +16,7 @@ import { PublishModal }      from '@/components/publisher/PublishModal'
 import { PublicationStatus } from '@/components/publisher/PublicationStatus'
 import { useFacebookPages, type PublicationResponse } from '@/lib/api/publisherApi'
 import { useProducts } from '@/lib/api/products'
+import { getProductImageKeys } from '@/lib/api/productImages'
 import type { Product, ProductWithVehicle } from '@/types/product'
 import { isVehicleProduct } from '@/types/product'
 
@@ -55,19 +56,20 @@ function isPublicationListStatus(v: string): v is PublicationListStatus {
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null
 }
-function getStringArray(v: unknown): string[] {
-  if (!Array.isArray(v)) return []
-  return v.filter((x): x is string => typeof x === 'string' && x.length > 0)
-}
 function getProductImageUrls(product: Product): string[] {
-  const pl = isRecord(product) ? getStringArray(product.image_urls) : []
+  // Structured `attrs.images[]` (rich ProductImage objects) takes
+  // priority — preserved from the original logic. The flat-key
+  // fallback is delegated to the shared resolver so the
+  // `Array.isArray(x) ? x : …` short-circuit bug doesn't reappear
+  // here either. See `lib/api/productImages.ts` for the merge
+  // contract and the regression context.
   const attrs = product.attributes
-  const al = isRecord(attrs) ? getStringArray(attrs.image_urls) : []
   const raw = isRecord(attrs) && Array.isArray(attrs.images) ? attrs.images : []
-  const normalized = raw.flatMap((img) =>
+  const structured = raw.flatMap((img) =>
     isRecord(img) && typeof img.url === 'string' && img.url.length > 0 ? [img.url] : []
   )
-  return normalized.length > 0 ? normalized : pl.length > 0 ? pl : al
+  if (structured.length > 0) return structured
+  return getProductImageKeys(product)
 }
 function mapProductStatusToPublicationStatus(product: Product): PublicationListStatus | null {
   switch (product.status) {

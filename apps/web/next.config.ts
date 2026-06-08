@@ -12,6 +12,16 @@ const nextConfig: NextConfig = {
 
   // Allow next/image to load images from external domains used in the catalog.
   // Unsplash is used for mock data; real vehicle images come from self-hosted storage.
+  //
+  // Signed MinIO URLs are NOT in `remotePatterns` on purpose: the S3 signature
+  // is host-bound to `S3_PUBLIC_ENDPOINT_URL` (e.g. `http://localhost:9000` in
+  // dev), so the BROWSER can fetch them, but the server-side `/_next/image`
+  // fetch runs inside the Docker `web` container where `localhost:9000` does
+  // NOT resolve to MinIO. Components that render a signed URL must therefore
+  // pass `unoptimized={true}` to `<Image>` — see `VehicleCard`,
+  // `ProductImageGallery`, `HeroShotSelector`, and `CommandPalette`. The
+  // `remotePatterns` below cover the OTHER case: external CDNs / image
+  // services that Next.js CAN safely fetch server-side.
   images: {
     remotePatterns: [
       {

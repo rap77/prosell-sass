@@ -577,3 +577,96 @@ describe("authStore - initialized Flag", () => {
     expect(stored).not.toContain('"initialized"');
   });
 });
+
+// =============================================================================
+// mapApiUserToStoreUser — shape adapter
+// =============================================================================
+//
+// Regression: backend LoginUserResponse.user and /auth/state return either
+// { full_name, roles[] } or { first_name, last_name, role }. The authStore
+// User type requires { first_name, last_name, role, is_email_verified, ... }.
+// The mapper must handle BOTH shapes and apply sensible fallbacks so the
+// header, profile page, and settings page don't show "??" / "Seller" / empty
+// fields right after a fresh login.
+
+describe("mapApiUserToStoreUser", () => {
+  it("should split full_name into first_name and last_name", async () => {
+    const { mapApiUserToStoreUser } = await import("@/stores/authStore");
+    const result = mapApiUserToStoreUser({
+      id: "u1",
+      email: "admin@prosellweb.com",
+      full_name: "Admin MVP",
+    });
+    expect(result.first_name).toBe("Admin");
+    expect(result.last_name).toBe("MVP");
+  });
+
+  it("should use roles[0] as role when roles is an array", async () => {
+    const { mapApiUserToStoreUser } = await import("@/stores/authStore");
+    const result = mapApiUserToStoreUser({
+      id: "u2",
+      email: "x@y.com",
+      full_name: "Test User",
+      roles: ["super_admin"],
+    });
+    expect(result.role).toBe("super_admin");
+  });
+
+  it("should pass-through first_name/last_name/role when backend returns them directly", async () => {
+    // /auth/state may already return the legacy shape — make sure the
+    // mapper doesn't double-process it.
+    const { mapApiUserToStoreUser } = await import("@/stores/authStore");
+    const result = mapApiUserToStoreUser({
+      id: "u3",
+      email: "legacy@x.com",
+      first_name: "Legacy",
+      last_name: "User",
+      role: "admin",
+    });
+    expect(result.first_name).toBe("Legacy");
+    expect(result.last_name).toBe("User");
+    expect(result.role).toBe("admin");
+  });
+
+  it("should fall back to email prefix when full_name is empty", async () => {
+    const { mapApiUserToStoreUser } = await import("@/stores/authStore");
+    const result = mapApiUserToStoreUser({
+      id: "u4",
+      email: "fallback@prosellweb.com",
+      full_name: "",
+    });
+    expect(result.first_name).toBe("fallback");
+  });
+
+  it("should default role to 'Seller' when no roles or role provided", async () => {
+    const { mapApiUserToStoreUser } = await import("@/stores/authStore");
+    const result = mapApiUserToStoreUser({
+      id: "u5",
+      email: "noroles@x.com",
+      full_name: "No Roles User",
+    });
+    expect(result.role).toBe("Seller");
+  });
+
+  it("should default is_email_verified to true and is_2fa_enabled to false", async () => {
+    const { mapApiUserToStoreUser } = await import("@/stores/authStore");
+    const result = mapApiUserToStoreUser({
+      id: "u6",
+      email: "x@y.com",
+      full_name: "X Y",
+    });
+    expect(result.is_email_verified).toBe(true);
+    expect(result.is_2fa_enabled).toBe(false);
+  });
+
+  it("should preserve tenant_id as organization_id", async () => {
+    const { mapApiUserToStoreUser } = await import("@/stores/authStore");
+    const result = mapApiUserToStoreUser({
+      id: "u7",
+      email: "x@y.com",
+      full_name: "X Y",
+      tenant_id: "tenant-123",
+    });
+    expect(result.organization_id).toBe("tenant-123");
+  });
+});

@@ -33,8 +33,16 @@ export interface Product {
   // Flexible attributes (category-specific)
   attributes: ProductAttributes;
 
-  // Image URLs at product level (moved from VehicleAttributes)
+  // Image URLs at product level (moved from VehicleAttributes). The
+  // ordered list — used for the gallery view.
   image_urls?: string[];
+  // First-class pointer to the cover image. Single source of truth
+  // for "which image is the cover" — settable independently from
+  // upload order so the seller can pick any image as the cover.
+  // Nullable: a product with no images has no cover. The renderer
+  // falls back to `image_urls[0]` when this is null/undefined (see
+  // `getCoverImageKey` in `lib/api/productImages.ts`).
+  cover_image_key?: string | null;
 
   // Location
   location_city?: string;
@@ -71,8 +79,12 @@ export interface Product {
 export interface CreateProductRequest {
   title: string;
   price_cents: number;
-  tenant_id: string;
-  organization_id: string;
+  // tenant_id / organization_id are injected by the backend from the
+  // authenticated JWT context (see product_router.create_product) and
+  // must NOT be sent from the client (IDOR prevention). Optional here
+  // only so internal/test callers can set them; the prod flow omits them.
+  tenant_id?: string;
+  organization_id?: string;
   category_id: string;
   slug?: string;
   description?: string;
@@ -82,6 +94,20 @@ export interface CreateProductRequest {
   location_city?: string;
   location_state?: string;
   location_zip?: string;
+  /**
+   * Image storage KEYS (raw S3 paths, e.g. `orgs/{tenant}/vehicles/{uuid}.jpg`).
+   * Do NOT pass signed URLs here — they expire in 1h and the image-urls
+   * signer will produce malformed URLs. The image-urls endpoint re-signs
+   * the keys on every read.
+   */
+  image_urls?: string[];
+  /**
+   * First-class pointer to the cover image (a storage KEY that must
+   * also appear in `image_urls`). Null/omitted means "no cover" — the
+   * renderer falls back to `image_urls[0]`. Backend enforces the
+   * cross-field invariant (cover must be in image_urls).
+   */
+  cover_image_key?: string | null;
 }
 
 /**

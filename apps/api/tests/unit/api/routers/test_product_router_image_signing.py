@@ -1,13 +1,16 @@
-"""Unit tests for product router returning signed (presigned) image URLs.
+"""Unit tests for product router — image_urls are returned as bare keys.
 
-Regression for the bug where image_urls[] in list/detail responses leaked the
-internal docker network endpoint (e.g. http://minio:9000/...) which the browser
-cannot resolve. The router must sign each URL via spaces.generate_download_url()
-so the browser can fetch the object from the private bucket.
+The DB stores raw S3 storage keys (e.g. `orgs/<tenant>/vehicles/<file>.jpg`).
+After the migration to keys-only-on-disk, the list and detail endpoints
+return the keys verbatim — signing happens ONLY on the dedicated
+`GET /api/v1/products/{id}/image-urls` endpoint, where the browser fetches
+a fresh signed URL on demand.
 
-The use case and repo are mocked: we simulate that the DB returned
-image_urls[] with raw internal-endpoint URLs, and verify the router transforms
-each one into a presigned URL before responding.
+This file pins the contract:
+  - GET /products            → image_urls contains bare keys (no scheme, no ?X-Amz-)
+  - GET /products/{id}       → image_urls contains bare keys (no scheme, no ?X-Amz-)
+  - GET /products/{id}/image-urls is the single signing path (covered in
+    test_get_product_image_urls.py and test_image_router_signed_url.py).
 """
 
 from collections.abc import AsyncGenerator
@@ -28,7 +31,6 @@ from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
-    get_spaces_service,
 )
 from prosell.infrastructure.api.main import app
 
@@ -39,21 +41,9 @@ TEST_ORG_ID = UUID("33333333-3333-3333-3333-333333333333")
 TEST_CATEGORY_ID = UUID("44444444-4444-4444-4444-444444444444")
 TEST_PRODUCT_ID = UUID("55555555-5555-5555-5555-555555555555")
 
-
-# Sample signed URL with X-Amz-Signature (what the browser will receive)
-SIGNED_URL_1 = (
-    f"http://localhost:9000/prosell-assets/orgs/{TEST_TENANT_ID}/vehicles/key1.jpg"
-    "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=deadbeef1"
-)
-SIGNED_URL_2 = (
-    f"http://localhost:9000/prosell-assets/orgs/{TEST_TENANT_ID}/vehicles/key2.jpg"
-    "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=deadbeef2"
-)
-
-# Raw URLs as they would come from the DB (internal endpoint, NOT signed).
-# Must use the tenant's UUID so the sign_image_urls tenant-prefix check accepts them.
-RAW_URL_1 = f"http://minio:9000/prosell-assets/orgs/{TEST_TENANT_ID}/vehicles/key1.jpg"
-RAW_URL_2 = f"http://minio:9000/prosell-assets/orgs/{TEST_TENANT_ID}/vehicles/key2.jpg"
+# Raw storage keys as they are stored in the DB (no scheme, no query string).
+BARE_KEY_1 = f"orgs/{TEST_TENANT_ID}/vehicles/key1.jpg"
+BARE_KEY_2 = f"orgs/{TEST_TENANT_ID}/vehicles/key2.jpg"
 
 
 def _make_user() -> User:
@@ -63,24 +53,6 @@ def _make_user() -> User:
         full_name="Test User",
         tenant_id=TEST_TENANT_ID,
     )
-
-
-def _make_spaces() -> AsyncMock:
-    """Spaces service that signs each key it receives.
-
-    The router extracts the key from each raw URL (split on `bucket/`) and
-    calls `generate_download_url(key)`. The mock maps each KEY to a signed URL.
-    """
-    spaces = AsyncMock()
-    # key (after split) -> signed URL
-    key_to_signed = {
-        f"orgs/{TEST_TENANT_ID}/vehicles/key1.jpg": SIGNED_URL_1,
-        f"orgs/{TEST_TENANT_ID}/vehicles/key2.jpg": SIGNED_URL_2,
-    }
-    spaces.generate_download_url = AsyncMock(side_effect=lambda key: key_to_signed[key])
-    spaces.bucket = "prosell-assets"
-    spaces.endpoint = "http://minio:9000"
-    return spaces
 
 
 def _make_product(image_urls: list[str]) -> ProductResponse:
@@ -106,36 +78,38 @@ def _make_product(image_urls: list[str]) -> ProductResponse:
 
 @pytest.fixture
 async def async_client() -> AsyncGenerator[AsyncClient]:
-    """Async client with auth and spaces overridden."""
+    """Async client with auth overridden (no spaces service needed post-fix)."""
     user = _make_user()
-    spaces = _make_spaces()
 
     app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: user
-    app.dependency_overrides[get_spaces_service] = lambda: spaces
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 
     app.dependency_overrides.pop(get_current_auth_user_from_cookie, None)
-    app.dependency_overrides.pop(get_spaces_service, None)
 
 
-class TestListProductsSignsImageURLs:
-    """GET /api/v1/products must sign every URL in image_urls[]."""
+def _assert_bare_key(url: str) -> None:
+    """A bare storage key has no scheme and no query string."""
+    assert "://" not in url, f"Expected bare key (no scheme), got: {url!r}"
+    assert "?" not in url, f"Expected bare key (no query), got: {url!r}"
+    assert "X-Amz-" not in url, f"Expected bare key (no AWS sig), got: {url!r}"
+
+
+class TestListProductsReturnsBareKeys:
+    """GET /api/v1/products must return image_urls as bare storage keys."""
 
     @pytest.mark.asyncio
-    async def test_list_products_image_urls_are_presigned(
+    async def test_list_products_image_urls_are_bare_keys(
         self, async_client: AsyncClient
     ) -> None:
-        """The list response has each image_urls entry presigned.
+        """The list response contains the storage keys verbatim.
 
-        Mocked use case returns a product with two RAW internal-endpoint URLs.
-        The router must sign each one (call spaces.generate_download_url per key)
-        before returning. If it doesn't, the browser will fail to resolve
-        minio:9000 and the image won't render.
+        The DB has bare keys. The router must NOT sign them here —
+        signing happens only on the dedicated /image-urls endpoint.
         """
-        raw_product = _make_product(image_urls=[RAW_URL_1, RAW_URL_2])
+        raw_product = _make_product(image_urls=[BARE_KEY_1, BARE_KEY_2])
         mocked_response = ProductListResponse(
             products=[raw_product],
             total=1,
@@ -156,37 +130,25 @@ class TestListProductsSignsImageURLs:
         body = response.json()
         assert "products" in body
         assert len(body["products"]) == 1
-        signed_urls = body["products"][0]["image_urls"]
-        assert len(signed_urls) == 2
-        # Every URL must be presigned (have X-Amz-Signature)
-        for url in signed_urls:
-            assert "X-Amz-Signature=" in url, (
-                f"Expected presigned URL with X-Amz-Signature, got: {url!r}"
-            )
-            # And must NOT leak the internal docker network endpoint
-            assert "minio:9000" not in url, (
-                f"URL leaked internal endpoint, got: {url!r}"
-            )
+        returned_urls = body["products"][0]["image_urls"]
+        assert returned_urls == [BARE_KEY_1, BARE_KEY_2], (
+            f"List should return bare keys verbatim, got: {returned_urls!r}"
+        )
+        for url in returned_urls:
+            _assert_bare_key(url)
 
 
-class TestGetProductSignsImageURLs:
-    """GET /api/v1/products/{id} must sign every URL in image_urls[]."""
+class TestGetProductReturnsBareKeys:
+    """GET /api/v1/products/{id} must return image_urls as bare storage keys."""
 
     @pytest.mark.asyncio
-    async def test_get_product_image_urls_are_presigned(
+    async def test_get_product_image_urls_are_bare_keys(
         self, async_client: AsyncClient
     ) -> None:
-        """The detail response has each image_urls entry presigned.
-
-        Mocked repo returns a Product with RAW internal-endpoint URLs.
-        The router must sign each one before returning.
-        """
-        raw_product = _make_product(image_urls=[RAW_URL_1, RAW_URL_2])
+        """The detail response contains the storage keys verbatim."""
+        raw_product = _make_product(image_urls=[BARE_KEY_1, BARE_KEY_2])
         product_entity = _to_product_entity(raw_product)
 
-        # Patch the repo class the router uses. The router does
-        # `SqlAlchemyProductRepository(db)` and then `.get_by_id(...)`; we
-        # intercept the class so the instance it creates has our async mock.
         with patch(
             "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
         ) as mock_repo_cls:
@@ -201,15 +163,12 @@ class TestGetProductSignsImageURLs:
 
         assert response.status_code == status.HTTP_200_OK
         body = response.json()
-        signed_urls = body["image_urls"]
-        assert len(signed_urls) == 2
-        for url in signed_urls:
-            assert "X-Amz-Signature=" in url, (
-                f"Expected presigned URL with X-Amz-Signature, got: {url!r}"
-            )
-            assert "minio:9000" not in url, (
-                f"URL leaked internal endpoint, got: {url!r}"
-            )
+        returned_urls = body["image_urls"]
+        assert returned_urls == [BARE_KEY_1, BARE_KEY_2], (
+            f"Detail should return bare keys verbatim, got: {returned_urls!r}"
+        )
+        for url in returned_urls:
+            _assert_bare_key(url)
 
 
 def _to_product_entity(response: ProductResponse) -> Product:

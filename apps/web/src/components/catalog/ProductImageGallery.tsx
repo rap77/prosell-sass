@@ -12,7 +12,7 @@
  * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import Image from 'next/image'
 import type { ProductImage } from '@/types/product-image'
 import { ChevronLeft, ChevronRight } from '@/components/icons/chevron'
@@ -26,8 +26,17 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
   const [currentIndex, setCurrentIndex] = useState(0)
   const galleryRef = useRef<HTMLDivElement>(null)
 
+  // SECURITY: filter out images whose URL is null/missing. `getProductImages`
+  // returns `url: null` when the backend didn't have a signed URL for that key
+  // (e.g. raw internal-endpoint URLs that the browser can't fetch). Showing
+  // them would feed an unreachable URL to <Image> and break the allowlist.
+  const renderableImages = useMemo(
+    () => (images ?? []).filter((img): img is ProductImage & { url: string } => typeof img.url === 'string' && img.url.length > 0),
+    [images],
+  )
+
   const hasPrevious = currentIndex > 0
-  const hasNext     = currentIndex < images.length - 1
+  const hasNext     = currentIndex < renderableImages.length - 1
 
   const goToPrevious = useCallback(() => {
     if (hasPrevious) setCurrentIndex((prev) => prev - 1)
@@ -50,8 +59,16 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
     galleryRef.current?.focus()
   }, [])
 
-  // Empty state
-  if (!images || images.length === 0) {
+  // Reset selection if the active image is no longer renderable
+  useEffect(() => {
+    if (currentIndex >= renderableImages.length) {
+      setCurrentIndex(0)
+    }
+  }, [renderableImages.length, currentIndex])
+
+  // Empty state — shown when there are no images OR every image was filtered
+  // out for having no signed URL.
+  if (renderableImages.length === 0) {
     return (
       <div
         data-testid="image-gallery"
@@ -75,7 +92,7 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
     )
   }
 
-  const currentImage = images[currentIndex]
+  const currentImage = renderableImages[currentIndex]
 
   return (
     <div
@@ -102,9 +119,15 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
           fill
           style={{ objectFit: 'contain' }}
           sizes="(max-width: 768px) 100vw, 50vw"
+          // Bypass the `/_next/image` proxy: the URL is a MinIO presigned URL
+          // host-bound to `S3_PUBLIC_ENDPOINT_URL`, which the server-side proxy
+          // (running inside the Docker `web` container) cannot reach. The
+          // browser fetches the signed URL directly. See `image-loader` history
+          // and `tests/unit/components/catalog/ProductImageGallery.test.tsx`.
+          unoptimized
         />
 
-        {images.length > 1 && (
+        {renderableImages.length > 1 && (
           <>
             {/* Prev arrow */}
             <button
@@ -180,16 +203,16 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
               color: 'rgba(255,255,255,0.9)',
               border: '1px solid rgba(255,255,255,0.1)',
             }}>
-              {currentIndex + 1} / {images.length}
+              {currentIndex + 1} / {renderableImages.length}
             </div>
           </>
         )}
       </div>
 
       {/* Thumbnail strip */}
-      {images.length > 1 && (
+      {renderableImages.length > 1 && (
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-          {images.map((image, index) => {
+          {renderableImages.map((image, index) => {
             const isActive = index === currentIndex
             return (
               <button
@@ -226,6 +249,9 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
                   fill
                   style={{ objectFit: 'cover' }}
                   sizes="76px"
+                  // Same signed-URL bypass as the main image above — see the
+                  // regression comment in the main <Image> for the rationale.
+                  unoptimized
                 />
               </button>
             )

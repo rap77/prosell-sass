@@ -1,25 +1,71 @@
 """Product creation DTOs."""
 
+import re
+from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 from pydantic import ValidationError as PydanticValidationError
 
 from prosell.domain.value_objects.product_condition import ProductCondition
 
 _ALLOWED_IMAGE_URL_SCHEMES = frozenset({"http", "https"})
 
+# Canonical storage key shape: `orgs/<tenant-uuid>/<rest of path>`.
+# The tenant segment is a UUID-shaped string (not strictly version-validated
+# here — the router layer enforces real tenant scope via
+# `validate_image_urls_for_tenant`). The rest of the path permits alphanum,
+# dot, underscore, dash, and forward slash (so filenames like
+# `image_v1.0.jpg` are still valid). Anchored to the start, no leading
+# slash. The `_has_no_traversal_segment` helper separately rejects `..`
+# segments to block path-traversal attempts that the dot char allows.
+_STORAGE_KEY_PATTERN = re.compile(r"^orgs/[0-9a-fA-F-]{36}/[A-Za-z0-9._/\-]+$")
+
+
+def _has_no_traversal_segment(value: str) -> bool:
+    """True iff no path segment in `value` is `..` or `.`.
+
+    Defense against path traversal: a key like `orgs/<uuid>/../etc/passwd`
+    passes the regex (dots are allowed for filenames) but is not a valid
+    storage key — it would let a caller reference objects outside the
+    tenant prefix.
+    """
+    return all(segment not in {"..", "."} for segment in value.split("/"))
+
+
+def _is_storage_key(value: str) -> bool:
+    """True iff `value` looks like a raw S3 storage key (post-migration form)."""
+    return bool(_STORAGE_KEY_PATTERN.match(value)) and _has_no_traversal_segment(value)
+
+
+def _is_valid_image_url(value: str) -> bool:
+    """True iff `value` parses as an http(s) URL.
+
+    http is allowed in addition to https because local dev uses
+    http://minio:9000/. Production uses https only via DO Spaces.
+    """
+    try:
+        parsed = HttpUrl(value)
+    except PydanticValidationError:
+        return False
+    return parsed.scheme in _ALLOWED_IMAGE_URL_SCHEMES
+
 
 def _validate_image_urls_format(v: list[str] | None) -> list[str] | None:
-    """Reject malformed or non-http(s) image URLs at the DTO boundary.
+    """Accept either a raw storage key or an http(s) URL per entry.
 
     Defense in depth: the signer (infrastructure) and the router-level
     `validate_image_urls_for_tenant` (authorization) are the primary
     defenses. This layer rejects obvious bad input early so the use case
-    and infrastructure layers can assume well-formed URLs.
+    and infrastructure layers can assume well-formed entries.
 
-    http is allowed in addition to https because local dev uses
-    http://minio:9000/. Production uses https only via DO Spaces.
+    Two valid shapes are accepted:
+      1. **Raw storage key** (canonical, post-migration form):
+         `orgs/<tenant-uuid>/vehicles/<file>`. The DB stores these and
+         the `/image-urls` endpoint signs them on read.
+      2. **http(s) URL** (legacy / external form): full URL with scheme.
+         Kept for backward compatibility with bulk-upload flows and any
+         pre-migration payloads still in flight.
 
     Tenant scope (orgs/{tenant_id}/ prefix) is NOT checked here because
     the DTO is parsed before the auth context (current_user.tenant_id)
@@ -28,16 +74,13 @@ def _validate_image_urls_format(v: list[str] | None) -> list[str] | None:
     """
     if v is None:
         return v
-    for url in v:
-        if not isinstance(url, str) or not url.strip():
-            raise ValueError(f"image_urls entry is empty: {url!r}")
-        try:
-            parsed = HttpUrl(url)
-        except PydanticValidationError as exc:
-            raise ValueError(f"image_urls entry is not a valid URL: {url!r}") from exc
-        if parsed.scheme not in _ALLOWED_IMAGE_URL_SCHEMES:
+    for entry in v:
+        if not isinstance(entry, str) or not entry.strip():
+            raise ValueError(f"image_urls entry is empty: {entry!r}")
+        if not (_is_storage_key(entry) or _is_valid_image_url(entry)):
             raise ValueError(
-                f"image_urls entry must use http or https scheme, got {parsed.scheme!r}: {url!r}"
+                f"image_urls entry must be a storage key (orgs/<uuid>/...) "
+                f"or an http(s) URL: {entry!r}"
             )
     return v
 
@@ -56,8 +99,38 @@ class CreateProductRequest(BaseModel):
     condition: ProductCondition = ProductCondition.USED
     attributes: dict[str, object] = Field(default_factory=dict)
     image_urls: list[str] = Field(default_factory=list)
+    # First-class pointer to the cover image. Optional at creation time
+    # (a product with no images has no cover). When provided, must
+    # reference an entry in `image_urls` — enforced by the
+    # cross-field invariant below, symmetric with
+    # `UpdateProductRequest._check_cover_in_images`.
+    cover_image_key: str | None = None
     location_city: str | None = None
     location_state: str | None = None
     location_zip: str | None = None
 
     _validate_image_urls = field_validator("image_urls")(_validate_image_urls_format)
+
+    @model_validator(mode="after")
+    def _check_cover_in_images(self) -> Self:
+        """Cross-field invariant: cover_image_key must reference a real image.
+
+        At creation time `image_urls` is always present (defaults to
+        `[]`), so the check can be done fully here without deferring to
+        the use case. A cover with no images is rejected — there is
+        nothing for it to point to.
+        """
+        if self.cover_image_key is None:
+            return self
+        if not self.image_urls:
+            raise ValueError(
+                "cover_image_key cannot be set when image_urls is empty: "
+                "a product with no images has no cover"
+            )
+        if self.cover_image_key not in self.image_urls:
+            raise ValueError(
+                f"cover_image_key {self.cover_image_key!r} is not in image_urls. "
+                f"Set cover_image_key to one of the existing image keys, "
+                f"or add the new key to image_urls first."
+            )
+        return self

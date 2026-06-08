@@ -34,6 +34,7 @@ from prosell.application.use_cases.product.list_products import (
     ListProductsUseCase,
     ProductListResponse,
 )
+from prosell.domain.entities.product import Product
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
@@ -43,7 +44,6 @@ from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
     get_spaces_service,
 )
-from prosell.infrastructure.api.routers.image_router import sign_image_urls
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
@@ -56,6 +56,38 @@ from prosell.infrastructure.repositories.product_repository_impl import SqlAlche
 router = APIRouter()
 
 
+def _extract_storage_key_from_value(value: str) -> str | None:
+    """Extract the storage key from a value that may be a URL, a signed URL,
+    or a bare key. Returns None if the value is malformed (no usable key).
+
+    Two accepted shapes:
+      1. **URL** (legacy / external form): `scheme://host/<bucket>/<key>`.
+         The bucket is the first path segment; everything after `<bucket>/`
+         is the storage key.
+      2. **Bare key** (canonical, post-migration form):
+         `orgs/<tenant-uuid>/<rest>`. The whole value is the key.
+
+    For URLs we also drop any `?X-Amz-...` query string (signed URLs) so the
+    extraction works for the legacy buggy data too.
+    """
+    if not value or not isinstance(value, str):
+        return None
+    # Drop query string (signed URLs embed their signature there).
+    without_query = value.split("?", 1)[0]
+    # Heuristic: bare keys start with `orgs/` and contain no scheme. URLs
+    # always have a scheme separator (`://`).
+    if "://" in without_query:
+        parsed = urlparse(without_query)
+        path = parsed.path.lstrip("/")
+        if not path:
+            return None
+        # Strip the first path segment (the bucket) — what remains is the key.
+        _, _, key = path.partition("/")
+        return key or None
+    # Bare key form: the whole (querystripped) value is the key.
+    return without_query or None
+
+
 def validate_image_urls_for_tenant(
     image_urls: list[str] | None,
     tenant_id: UUID,
@@ -66,14 +98,14 @@ def validate_image_urls_for_tenant(
     fail-closed is the third). Ensures cross-tenant image URLs never
     reach the DB in the first place.
 
-    URL format produced by the system: `scheme://host/<bucket>/<key>`
-    where `<key>` starts with `orgs/{tenant_id}/`. We strip the first
-    path segment (the bucket) and verify the rest starts with the
-    caller's tenant prefix. The bucket name is intentionally not
-    compared — the substring `orgs/{tenant_id}/` is the security
-    boundary that matters.
+    Accepts both shapes (see `_extract_storage_key_from_value`):
+      - URL: `scheme://host/<bucket>/<key>` where `<key>` starts with
+        `orgs/{tenant_id}/`. The bucket name is intentionally not
+        compared — the substring `orgs/{tenant_id}/` is the security
+        boundary that matters.
+      - Bare key: `orgs/{tenant_id}/<rest>`.
 
-    Raises HTTPException(422) if any URL fails the check. Empty/None
+    Raises HTTPException(422) if any entry fails the check. Empty/None
     input is a no-op (no images to validate).
     """
     if not image_urls:
@@ -81,15 +113,12 @@ def validate_image_urls_for_tenant(
 
     expected_prefix = f"orgs/{tenant_id}/"
     for url in image_urls:
-        parsed = urlparse(url)
-        # Strip leading "/" and split off the first segment (the bucket).
-        path = parsed.path.lstrip("/")
-        if not path:
+        key = _extract_storage_key_from_value(url)
+        if not key:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"image_urls entry has no storage path: {url!r}",
             )
-        _, _, key = path.partition("/")
         if not key.startswith(expected_prefix):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -107,6 +136,43 @@ async def get_product_repository(session: AsyncSession) -> AbstractProductReposi
 async def get_category_repository(session: AsyncSession) -> AbstractCategoryRepository:
     """Get category repository instance."""
     return SqlAlchemyCategoryRepository(session)
+
+
+def _merged_image_url_candidates(product: Product) -> list[str]:
+    """Return the merged, deduped list of image URLs for a product.
+
+    Pre-migration, image URLs lived in `product.attributes.image_urls`
+    (the legacy nested field). Post-migration, they live in the
+    top-level `product.image_urls` column. Both endpoints that operate
+    on a product's image set — the sign endpoint AND the PATCH
+    cover-validator — must read from BOTH sources so that:
+
+      - Legacy products (no top-level entries) still display their
+        images and still accept a cover change.
+      - Modern products (with top-level entries) keep working
+        unchanged.
+      - A URL in both sources is counted ONCE (order-preserving dedupe
+        so the cover pick is stable across reads).
+
+    Mirrors the merge performed by the frontend
+    `getProductImageKeys(product)` helper in
+    `apps/web/src/lib/api/productImages.ts` — the two layers must
+    agree on "what images does this product have".
+    """
+    raw_urls: list[str] = list(product.image_urls or [])
+    attributes = product.attributes or {}
+    if isinstance(attributes, dict):
+        attr_urls = attributes.get("image_urls")
+        if isinstance(attr_urls, list):
+            raw_urls.extend(u for u in attr_urls if isinstance(u, str))
+    seen: set[str] = set()
+    merged: list[str] = []
+    for url in raw_urls:
+        if url in seen:
+            continue
+        seen.add(url)
+        merged.append(url)
+    return merged
 
 
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
@@ -226,7 +292,6 @@ async def list_products(
     limit: int = 100,
     current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
-    spaces: IDOSpacesService = Depends(get_spaces_service),
 ) -> ProductListResponse:
     """
     List products with optional filters.
@@ -249,7 +314,9 @@ async def list_products(
     repo = SqlAlchemyProductRepository(db)
     use_case = ListProductsUseCase(repo)
 
-    result = await use_case.execute(
+    # image_urls are returned as bare storage keys. The browser fetches
+    # signed URLs on demand from GET /api/v1/products/{id}/image-urls.
+    return await use_case.execute(
         tenant_id=tenant_id,
         organization_id=organization_id,
         category_id=category_id,
@@ -263,20 +330,6 @@ async def list_products(
         limit=limit,
     )
 
-    # Sign each product's image_urls[] so the browser can fetch from the private
-    # bucket. Scope to the caller's tenant so an attacker controlling image_urls
-    # (e.g. via UpdateProductRequest) cannot mint presigned URLs for another
-    # tenant's objects.
-    for product in result.products:
-        if product.image_urls:
-            product.image_urls = await sign_image_urls(
-                product.image_urls,
-                spaces,
-                tenant_id=tenant_id,
-            )
-
-    return result
-
 
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(
@@ -284,7 +337,6 @@ async def get_product(
     internal: bool = False,
     current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
-    spaces: IDOSpacesService = Depends(get_spaces_service),
 ) -> ProductResponse:
     """Get a product by ID.
 
@@ -306,18 +358,9 @@ async def get_product(
     if not internal:
         await repo.increment_view_count(product_id, tenant_id)
 
-    response = ProductResponse.from_entity(product)
-
-    # Sign each image_url so the browser can fetch from the private bucket.
-    # Scope to the caller's tenant to prevent cross-tenant presigned-URL minting.
-    if response.image_urls:
-        response.image_urls = await sign_image_urls(
-            response.image_urls,
-            spaces,
-            tenant_id=tenant_id,
-        )
-
-    return response
+    # image_urls are returned as bare storage keys. The browser fetches
+    # signed URLs on demand from GET /api/v1/products/{id}/image-urls.
+    return ProductResponse.from_entity(product)
 
 
 @router.get("/{product_id}/image-urls", response_model=ProductImageUrlsResponse)
@@ -346,13 +389,26 @@ async def get_product_image_urls(
         raise HTTPException(status_code=404, detail="Product not found")
 
     tenant_prefix = f"orgs/{tenant_id}/"
-    image_keys = product.image_urls or []
+
+    # Merge URL candidates from BOTH sources. Legacy data lives in
+    # `product.attributes.image_urls` (the pre-migration location); newer
+    # products populate the top-level `product.image_urls` column. The endpoint
+    # must sign entries from both so that legacy products render their photos.
+    # Deduped (order-preserving) so an URL in both sources is signed once.
+    merged_urls = _merged_image_url_candidates(product)
+
     signed_images: list[ProductImageUrlResponse] = []
-    for key in image_keys:
-        # Drop cross-tenant keys (fail-closed). The keys in this DB column
-        # SHOULD always be under the caller's tenant since the product itself
-        # is tenant-scoped, but the explicit check defends against any future
-        # code path that copies keys from elsewhere.
+    for url in merged_urls:
+        # Extract the storage key. Accepts both URL form (legacy/signed URLs,
+        # `scheme://host/<bucket>/<key>`) and bare-key form (post-migration,
+        # `orgs/<tenant>/<rest>`). Anything that doesn't reduce to a usable
+        # key is dropped — fail-closed, never echo an unsigned URL.
+        key = _extract_storage_key_from_value(url) if isinstance(url, str) else None
+        if not key:
+            continue
+        # Defense in depth: only sign keys under the caller's tenant. The
+        # product itself is tenant-scoped, but its `attributes` JSONB column
+        # is attacker-influenceable in some flows, so we re-verify here.
         if not key.startswith(tenant_prefix):
             continue
         signed_images.append(
@@ -409,6 +465,49 @@ async def update_product(
         product.attributes = request.attributes
     if request.image_urls is not None:
         product.image_urls = request.image_urls
+    # `cover_image_key` is a first-class pointer to the cover image.
+    # Two cross-field checks the DTO cannot enforce on its own:
+    #
+    # 1. If the request sets `cover_image_key` but not `image_urls`
+    #    (PATCH semantics: image list unchanged), the cover must
+    #    reference an entry in the product's CURRENT image list.
+    #    The DTO defers this to the router, where the entity is
+    #    loaded. A cover pointing to a non-existent image would
+    #    404 on every catalog render.
+    #
+    # 2. If the request clears `image_urls` to `[]`, the cover
+    #    must also be cleared — a product with no images has no
+    #    cover. Leaving a stale `cover_image_key` would point to
+    #    a non-existent image and break the catalog.
+    #
+    # Both checks run BEFORE the entity is mutated, so a rejection
+    # leaves the product untouched.
+    #
+    # Legacy data note: the "current image list" merges the
+    # top-level `image_urls` column AND the legacy
+    # `attributes.image_urls` field (mirrors the sign endpoint's
+    # merge — see `_merged_image_url_candidates`). Without this,
+    # a product whose images live only in the legacy attribute
+    # column would 422 on every cover change.
+    if request.cover_image_key is not None:
+        current_images = _merged_image_url_candidates(product)
+        if request.cover_image_key not in current_images:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"cover_image_key {request.cover_image_key!r} is not in "
+                    f"the product's current image list. Add the new key to "
+                    f"image_urls first, or set cover_image_key to one of the "
+                    f"existing image keys."
+                ),
+            )
+        product.cover_image_key = request.cover_image_key
+    if request.image_urls is not None and not request.image_urls:
+        # Image list was cleared — drop the cover too. A product with
+        # no images has no cover. The DTO rejects setting a non-null
+        # cover on an empty list, but we still need to drop a cover
+        # that was set before the clear.
+        product.cover_image_key = None
     if request.location_city is not None:
         product.location_city = request.location_city
     if request.location_state is not None:

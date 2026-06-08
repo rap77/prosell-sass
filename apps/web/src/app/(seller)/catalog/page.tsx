@@ -35,6 +35,7 @@ import { CatalogErrorBoundary } from '@/components/catalog/CatalogErrorBoundary'
 import { StatusBadge, type VehicleStatus } from '@/components/datagrid/StatusBadge'
 import { useVehicleFilters } from '@/lib/hooks/useVehicleFilters'
 import { useInfiniteProducts, useDeleteProduct, transformProductToVehicle, useProductImageUrls } from '@/lib/api/products'
+import { getCoverImageKey, getProductImageKeys } from '@/lib/api/productImages'
 import { isVehicleProduct } from '@/types/product'
 import type { Product } from '@/types/product'
 
@@ -79,13 +80,11 @@ function VehicleCard({
   const [hovered, setHovered] = useState(false)
 
   const vehicle = isVehicleProduct(product) ? transformProductToVehicle(product) : null
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const attrs = product.attributes as any
-  // Product-level image_urls (migrated from attrs.image_urls)
-  const imageUrls = Array.isArray(product.image_urls)
-    ? product.image_urls
-    : (Array.isArray(attrs?.image_urls) ? attrs.image_urls : [])
-  const rawPhotoUrl = imageUrls[0]
+  // Pick the cover image. Priority: explicit `cover_image_key` set by
+  // the seller, then the first key of the merged list as a fallback.
+  // See `getCoverImageKey` for the full contract (including the
+  // stale-cover-key defensive fallback).
+  const rawPhotoUrl = getCoverImageKey(product)
 
   // DO Spaces is private (403 on direct URLs). Resolve the first image to a
   // time-limited signed download URL via the backend endpoint. The TanStack
@@ -121,9 +120,31 @@ function VehicleCard({
       {/* Image */}
       <div style={{ position: 'relative', aspectRatio: '16/9', background: 'var(--ps-bg-elevated)', overflow: 'hidden' }}>
         {photo_url ? (
-          <Image src={photo_url} alt={product.title} fill style={{ objectFit: 'cover' }} />
+          <Image
+            src={photo_url}
+            alt={product.title}
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            style={{ objectFit: 'cover' }}
+            // Bypass the `/_next/image` proxy: `photo_url` is a MinIO
+            // presigned URL host-bound to `S3_PUBLIC_ENDPOINT_URL`, which
+            // the server-side proxy (running inside the Docker `web`
+            // container) cannot reach. The browser fetches the signed URL
+            // directly. Same reason as ProductImageGallery and
+            // HeroShotSelector — the catalog card has no unit test for
+            // this prop because VehicleCard is an internal function of
+            // this page (not exported). Verified visually after the fix.
+            unoptimized
+          />
         ) : (
-          <Image src="/placeholders/placeholder-vehicles.png" alt="Sin imagen" fill style={{ objectFit: 'cover' }} />
+          <Image
+            src="/placeholders/placeholder-vehicles.png"
+            alt="Sin imagen"
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            priority
+            style={{ objectFit: 'cover' }}
+          />
         )}
         {/* Status badge overlay */}
         <div style={{ position: 'absolute', top: 10, left: 10 }}>

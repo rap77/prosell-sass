@@ -62,7 +62,9 @@ export default function EditVehiclePage() {
         </div>
       </div>
 
-      {/* Edit form */}
+      {/* Edit form — owns images (dropzone + cover picker) internally.
+          The cover is persisted on submit as part of the PATCH, not as
+          a separate immediate operation. */}
       <ProductForm
         mode="edit"
         productId={productId}

@@ -20,6 +20,15 @@ class ImageUploadUrlResponse(BaseModel):
 
 
 class ImageUploadResponse(BaseModel):
-    """Response for direct image upload with optimization."""
+    """Response for direct image upload with optimization.
 
-    url: str  # Public URL of the optimized image
+    IMPORTANT: `key` is the raw storage path (e.g.
+    `orgs/{tenant_id}/vehicles/{uuid}.jpg`). Callers MUST persist `key`
+    into any persistent field that names a storage object (e.g.
+    `product.image_urls`). The `url` is a presigned URL that expires in
+    1 hour and MUST NOT be stored — it is provided only for the browser
+    to preview the just-uploaded object during the current session.
+    """
+
+    url: str  # Presigned URL of the optimized image (1h expiry, do not persist)
+    key: str  # Raw storage path; persist this into product.image_urls

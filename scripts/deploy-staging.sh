@@ -3,7 +3,7 @@
 # ProSell SaaS - Staging Deployment Script
 # =============================================================================
 # This script automates the staging deployment process
-# Usage: ./scripts/deploy-staging.sh [--skip-migrations] [--skip-build]
+# Usage: ./scripts/deploy-staging.sh [--skip-build]
 # =============================================================================
 
 set -e  # Exit on error
@@ -24,25 +24,19 @@ ENV_FILE="$PROJECT_ROOT/.env.staging"
 COMPOSE_FILE="$DOCKER_DIR/docker-compose.staging.yml"
 
 # Flags
-SKIP_MIGRATIONS=false
 SKIP_BUILD=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --skip-migrations)
-      SKIP_MIGRATIONS=true
-      shift
-      ;;
     --skip-build)
       SKIP_BUILD=true
       shift
       ;;
     -h|--help)
-      echo "Usage: $0 [--skip-migrations] [--skip-build]"
+      echo "Usage: $0 [--skip-build]"
       echo ""
       echo "Options:"
-      echo "  --skip-migrations  Skip database migrations"
       echo "  --skip-build       Skip Docker image build"
       echo "  -h, --help        Show this help message"
       exit 0
@@ -83,7 +77,10 @@ check_file_exists() {
 
 check_env_var() {
   local var_name=$1
-  local var_value=${!var_name}
+  # `:-` yields an empty string when the variable is unset, so indirect
+  # expansion does not trip `set -u`. The emptiness check below is what
+  # actually reports a missing/placeholder value.
+  local var_value=${!var_name:-}
 
   if [[ -z "$var_value" ]] || [[ "$var_value" == "CHANGE_ME_"* ]]; then
     log_warning "Environment variable $var_name is not set or still has placeholder value"
@@ -98,6 +95,13 @@ check_env_var() {
 
 log_info "Starting ProSell SaaS Staging Deployment..."
 log_info "Project root: $PROJECT_ROOT"
+
+# Make sure Docker daemon is up — otherwise the first docker compose call
+# fails with a cryptic "Cannot connect to the Docker daemon" error.
+if ! docker info &>/dev/null; then
+  log_error "Docker daemon is not running"
+  exit 1
+fi
 
 # Check required files
 log_info "Checking required files..."
@@ -154,26 +158,19 @@ fi
 if [[ "$SKIP_BUILD" == false ]]; then
   log_info "Building Docker images..."
 
-  cd "$PROJECT_ROOT"
-
-  # Build API image
-  log_info "Building API image..."
-  docker build -f docker/api.Dockerfile -t prosell-api:staging . || {
-    log_error "Failed to build API image"
+  # Build via docker compose so the running containers use exactly what we
+  # build — single source of truth. Building by hand with
+  # `docker build -t prosell-*:staging` produced images the compose file never
+  # referenced (it has its own `build:`), so containers ran a stale image while
+  # migrations were applied against the fresh one. The web API URL build-arg
+  # now comes from the compose file (http://localhost:8000), which is the
+  # correct value for this local-host staging.
+  cd "$DOCKER_DIR"
+  docker compose -f docker-compose.staging.yml build || {
+    log_error "Failed to build Docker images"
     exit 1
   }
-  log_success "API image built successfully"
-
-  # Build Web image
-  log_info "Building Web image..."
-  docker build \
-    -f docker/web.Dockerfile \
-    --build-arg NEXT_PUBLIC_API_URL=https://staging.prosell.com \
-    -t prosell-web:staging . || {
-    log_error "Failed to build Web image"
-    exit 1
-  }
-  log_success "Web image built successfully"
+  log_success "Docker images built successfully"
 else
   log_warning "Skipping Docker image build (--skip-build flag set)"
 fi
@@ -184,14 +181,14 @@ fi
 
 log_info "Stopping existing services..."
 cd "$DOCKER_DIR"
-docker-compose -f docker-compose.staging.yml down || true
+docker compose -f docker-compose.staging.yml down || true
 
 # =============================================================================
 # START INFRASTRUCTURE SERVICES
 # =============================================================================
 
 log_info "Starting infrastructure services (DB, Redis)..."
-docker-compose -f docker-compose.staging.yml up -d db redis
+docker compose -f docker-compose.staging.yml up -d db redis
 
 # Wait for DB to be ready
 log_info "Waiting for database to be ready..."
@@ -226,48 +223,36 @@ for i in {1..30}; do
 done
 
 # =============================================================================
-# RUN DATABASE MIGRATIONS
-# =============================================================================
-
-if [[ "$SKIP_MIGRATIONS" == false ]]; then
-  log_info "Running database migrations..."
-
-  # Get DB password from env
-  DB_PASSWORD=$(grep "POSTGRES_PASSWORD=" "$ENV_FILE" | cut -d '=' -f2)
-
-  # Run migrations in a temporary container
-  docker run --rm \
-    --network host \
-    -e DATABASE_URL="postgresql+asyncpg://postgres:${DB_PASSWORD}@localhost:5432/prosell_staging" \
-    -e PYTHONPATH=/app/src \
-    prosell-api:staging \
-    alembic upgrade head || {
-    log_error "Database migrations failed"
-    log_info "You can retry migrations manually with:"
-    log_info "  docker run --rm --network host -e DATABASE_URL=... prosell-api:staging alembic upgrade head"
-    exit 1
-  }
-
-  log_success "Database migrations completed"
-
-  # Show current migration version
-  log_info "Current migration version:"
-  docker run --rm \
-    --network host \
-    -e DATABASE_URL="postgresql+asyncpg://postgres:${DB_PASSWORD}@localhost:5432/prosell_staging" \
-    -e PYTHONPATH=/app/src \
-    prosell-api:staging \
-    alembic current
-else
-  log_warning "Skipping database migrations (--skip-migrations flag set)"
-fi
-
-# =============================================================================
 # START APPLICATION SERVICES
 # =============================================================================
+# Migrations run inside the API container on startup: its CMD is
+# `alembic upgrade head && init-db.py && init_data.py && uvicorn` (see
+# docker/api.Dockerfile). Running them here too — against a separately built
+# image — was both redundant and the source of image/DB drift, so it was
+# removed. The container is the single place migrations and seeding happen.
 
 log_info "Starting application services (API, Web)..."
-docker-compose -f docker-compose.staging.yml up -d
+docker compose -f docker-compose.staging.yml up -d
+
+# Wait for MinIO bucket prosell-assets to be ready (depends on minio-init
+# creating it on startup). We probe via the host-mapped port (9002) so we
+# don't need mc configured in any container — the bucket has anonymous-read
+# policy so a plain GET is enough.
+log_info "Waiting for MinIO bucket prosell-assets to be ready..."
+for i in {1..30}; do
+  if curl -sf http://localhost:9002/prosell-assets/ -o /dev/null; then
+    log_success "MinIO bucket prosell-assets is ready"
+    break
+  fi
+
+  if [[ $i -eq 30 ]]; then
+    log_error "MinIO bucket failed to become ready after 30 seconds"
+    log_info "Check logs with: docker logs prosell-staging-minio-init"
+    exit 1
+  fi
+
+  sleep 1
+done
 
 # =============================================================================
 # WAIT FOR SERVICES TO BE HEALTHY
@@ -313,17 +298,20 @@ done
 
 log_info "Running post-deployment verification..."
 
-# Check all containers are running
-RUNNING_CONTAINERS=$(docker-compose -f docker-compose.staging.yml ps -q | wc -l)
-if [[ $RUNNING_CONTAINERS -eq 4 ]]; then
-  log_success "All 4 containers are running (db, redis, api, web)"
+# Check all containers are running. With MinIO added, the long-running
+# services are db, redis, api, web, minio (5). minio-init is restart:"no"
+# and exits after setting up the bucket, so it isn't counted here.
+EXPECTED_RUNNING=5
+RUNNING_CONTAINERS=$(docker compose -f docker-compose.staging.yml ps -q | wc -l)
+if [[ $RUNNING_CONTAINERS -eq $EXPECTED_RUNNING ]]; then
+  log_success "All $EXPECTED_RUNNING containers are running (db, redis, api, web, minio)"
 else
-  log_warning "Expected 4 running containers, found $RUNNING_CONTAINERS"
+  log_warning "Expected $EXPECTED_RUNNING running containers, found $RUNNING_CONTAINERS"
 fi
 
 # Show container status
 log_info "Container status:"
-docker-compose -f docker-compose.staging.yml ps
+docker compose -f docker-compose.staging.yml ps
 
 # =============================================================================
 # DEPLOYMENT COMPLETE
@@ -343,7 +331,7 @@ log_info "Logs:"
 log_info "  API:  docker logs prosell-staging-api -f"
 log_info "  Web:  docker logs prosell-staging-web -f"
 log_info "  DB:   docker logs prosell-staging-db"
-log_info "  All:  docker-compose -f docker-compose.staging.yml logs -f"
+log_info "  All:  docker compose -f docker-compose.staging.yml logs -f"
 echo ""
 log_info "Next steps:"
 log_info "  1. Run smoke tests from checklist:"

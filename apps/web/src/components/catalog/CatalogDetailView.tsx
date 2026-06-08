@@ -22,6 +22,7 @@ import { useProduct, useProductImageUrls } from '@/lib/api/products'
 import type { Product } from '@/types/product'
 import type { ProductImage } from '@/types/product-image'
 import { isVehicleAttributes, type VehicleAttributes } from '@/types/vehicle'
+import { getCoverImageKey, getProductImageKeys } from '@/lib/api/productImages'
 import { ProductImageGallery } from './ProductImageGallery'
 
 // ─── Helpers (preserved verbatim) ─────────────────────────────────────────────
@@ -35,11 +36,6 @@ const SUPPORTED_STATUS = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
-}
-
-function getStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return []
-  return value.filter((item): item is string => typeof item === 'string' && item.length > 0)
 }
 
 function isGridStatus(
@@ -58,23 +54,35 @@ function formatMileage(attrs: VehicleAttributes): string | null {
   return `${attrs.mileage.toLocaleString('es-AR')} ${unit}`
 }
 
-function getProductImages(
+export function getProductImages(
   product: Product,
   signedUrlMap?: Map<string, string>,
 ): ProductImage[] {
-  const productLevelUrls = isRecord(product) ? getStringArray(product.image_urls) : []
+  // Use the shared image-key resolver. Same merge contract as the
+  // card, DataGrid, and backend `/image-urls` endpoint — single
+  // source of truth for "the list of signable keys for this product".
+  // See `lib/api/productImages.ts` for the regression context.
+  const fallbackUrls = getProductImageKeys(product)
+  // The cover key is the explicit source of truth; if it is missing
+  // we fall back to the first image (handled by the helper).
+  const coverKey = getCoverImageKey(product)
   const attrs = product.attributes
-  const attributeLevelUrls = isRecord(attrs) ? getStringArray(attrs.image_urls) : []
   const rawImages = isRecord(attrs) && Array.isArray(attrs.images) ? attrs.images : []
 
   const normalizedImages = rawImages.flatMap((image, index) => {
     if (!isRecord(image) || typeof image.url !== 'string' || image.url.length === 0) return []
+    // SECURITY: never echo the raw internal-endpoint URL when no signed match
+    // is found. The browser cannot fetch objects from the private bucket via
+    // raw URLs (e.g. http://minio:9000/...) and the Next.js image allowlist
+    // rejects unknown hostnames. Use `null` so the gallery shows its empty
+    // state instead of feeding an unreachable URL to <Image>.
+    const signed = signedUrlMap?.get(image.url)
     return [{
       id:            typeof image.id === 'string' ? image.id : `${product.id}-image-${index}`,
       product_id:    product.id,
-      url:           signedUrlMap?.get(image.url) ?? image.url,
+      url:           signed ?? null,
       thumbnail_url: typeof image.thumbnail_url === 'string'
-        ? (signedUrlMap?.get(image.thumbnail_url) ?? image.thumbnail_url)
+        ? (signedUrlMap?.get(image.thumbnail_url) ?? null)
         : null,
       sort_order:    typeof image.sort_order === 'number' ? image.sort_order : index,
       is_primary:    Boolean(image.is_primary),
@@ -88,18 +96,25 @@ function getProductImages(
     return normalizedImages.toSorted((l, r) => l.sort_order - r.sort_order)
   }
 
-  const fallbackUrls = productLevelUrls.length > 0 ? productLevelUrls : attributeLevelUrls
-  return fallbackUrls.map((url, index) => ({
-    id:            `${product.id}-fallback-image-${index}`,
-    product_id:    product.id,
-    url:           signedUrlMap?.get(url) ?? url,
-    thumbnail_url: signedUrlMap?.get(url) ?? url,
-    sort_order:    index,
-    is_primary:    index === 0,
-    alt_text:      `${product.title} image ${index + 1}`,
-    created_at:    product.created_at,
-    updated_at:    product.updated_at,
-  }))
+  return fallbackUrls.map((url, index) => {
+    const signed = signedUrlMap?.get(url)
+    return {
+      id:            `${product.id}-fallback-image-${index}`,
+      product_id:    product.id,
+      // SECURITY: see note above — null when no signed match.
+      url:           signed ?? null,
+      thumbnail_url: signed ?? null,
+      sort_order:    index,
+      // The cover is the explicit `cover_image_key` (or the first
+      // image when the cover is not set). The previous implementation
+      // hard-coded `is_primary: index === 0` which is wrong once
+      // the seller can pick a different cover.
+      is_primary:    url === coverKey,
+      alt_text:      `${product.title} image ${index + 1}`,
+      created_at:    product.created_at,
+      updated_at:    product.updated_at,
+    }
+  })
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
@@ -263,7 +278,7 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
     description:      product.description,
     price_cents:      product.price_cents,
     zip_code:         product.location_zip ?? '',
-    image_urls:       productImages.map((img) => img.url),
+    image_urls:       productImages.flatMap((img) => (img.url ? [img.url] : [])),
     tenant_id:        product.tenant_id,
     year:             vehicleAttributes.year,
     make:             vehicleAttributes.make,

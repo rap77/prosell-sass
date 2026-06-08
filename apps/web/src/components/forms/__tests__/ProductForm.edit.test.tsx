@@ -59,6 +59,10 @@ vi.mock("@/lib/api/products", () => ({
     mutateAsync: vi.fn(),
     isPending: false,
   })),
+  // The form reads the product's existing images via this hook (edit
+  // flow) to seed the upload store. These tests don't exercise images,
+  // so an empty response keeps the store empty.
+  useProductImageUrls: vi.fn(() => ({ data: undefined })),
 }));
 
 vi.mock("@/lib/api/categories", () => ({

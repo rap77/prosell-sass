@@ -83,6 +83,16 @@ export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {
                         width={40}
                         height={40}
                         className="w-10 h-10 rounded object-cover"
+                        // Bypass the `/_next/image` proxy: `vehicle.photo_url`
+                        // is a MinIO presigned URL host-bound to
+                        // `S3_PUBLIC_ENDPOINT_URL`, which the server-side
+                        // proxy (running inside the Docker `web` container)
+                        // cannot reach. The browser fetches the signed URL
+                        // directly. Same reason as the catalog card and
+                        // ProductImageGallery. The command palette is not
+                        // unit-tested for this prop (low-value test surface
+                        // for a one-line prop) — verified visually.
+                        unoptimized
                       />
                     ) : (
                       <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">

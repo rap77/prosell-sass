@@ -4,12 +4,14 @@ import logging
 import secrets
 
 from prosell.application.dto.auth import LoginUserRequest, LoginUserResponse, UserInfo
+from prosell.domain.entities.session import Session
 from prosell.domain.exceptions.auth_exceptions import (
     AccountLockedException,
     EmailNotVerifiedException,
     InvalidCredentialsException,
 )
-from prosell.domain.ports import IJWTService, IPasswordService
+from prosell.domain.ports import IJWTService, IPasswordService, ITokenHasher
+from prosell.domain.repositories.session_repository import AbstractSessionRepository
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 
 # Get logger instance
@@ -24,10 +26,14 @@ class LoginUserUseCase:
         user_repository: AbstractUserRepository,
         password_service: IPasswordService,
         jwt_service: IJWTService,
+        session_repository: AbstractSessionRepository,
+        token_hasher: ITokenHasher,
     ) -> None:
         self.user_repository = user_repository
         self.password_service = password_service
         self.jwt_service = jwt_service
+        self.session_repository = session_repository
+        self.token_hasher = token_hasher
 
     async def execute(self, request: LoginUserRequest) -> LoginUserResponse:
         """
@@ -155,6 +161,19 @@ class LoginUserUseCase:
         )
         refresh_token = self.jwt_service.generate_refresh_token(user.id)
         logger.debug("JWT access and refresh tokens generated.")
+
+        # 10. Persist session so /auth/refresh can find it later.
+        # Parity with verify_2fa.py — without this, every refresh on a
+        # non-2FA login returned 500 "Invalid or expired session".
+        token_hash = self.token_hasher.hash(refresh_token)
+        session = Session.create(
+            user_id=user.id,
+            token_hash=token_hash,
+            user_agent=request.user_agent,
+            ip_address=request.ip_address,
+        )
+        await self.session_repository.create(session)
+        logger.debug(f"Session created for user {user.id}")
 
         logger.info(f"Login successful for user: {request.email}")
         return LoginUserResponse(
