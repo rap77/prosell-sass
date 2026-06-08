@@ -101,46 +101,52 @@ async def init_data() -> None:
                 session.add(role)
                 print(f"Created Role: {r_type}")
 
-        # 4. Create or Update Admin User
+        # 4. Create Admin User (IDEMPOTENT — never destroy existing data)
+        # The api.Dockerfile runs this on every container start, so it must
+        # NOT delete the admin on each run. Doing so would:
+        #   - Invalidate all live JWTs (user_id changes)
+        #   - Wipe profile edits, password changes, avatar, etc.
+        # ADMIN_PASSWORD in env is only consulted on FIRST creation. For
+        # password rotation, use the change_password endpoint or rotate
+        # directly in the DB.
         admin_email = os.environ["ADMIN_EMAIL"]
-        admin_pass = os.environ["ADMIN_PASSWORD"]
 
-        password_hash = bcrypt.hashpw(admin_pass.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-
-        # Delete existing admin to recreate with a fresh hash on every run
-        delete_stmt = select(UserModel).where(UserModel.email == admin_email)
-        result = await session.execute(delete_stmt)
-        user_to_delete = result.scalar_one_or_none()
-
-        if user_to_delete:
-            await session.delete(user_to_delete)
-            await session.flush()
-            print(f"Deleted existing admin user: {admin_email}")
-
-        user_id = uuid4()
-        user = UserModel(
-            id=user_id,
-            email=admin_email,
-            password_hash=password_hash,
-            full_name="Admin MVP",
-            status=UserStatus.ACTIVE,
-            email_verified=True,
-            is_2fa_enabled=False,
-            tenant_id=org.id,
-            failed_login_attempts=0,
-        )
-        session.add(user)
-        await session.flush()
-
-        stmt = select(RoleModel).where(RoleModel.role_type == "super_admin")
+        stmt = select(UserModel).where(UserModel.email == admin_email)
         result = await session.execute(stmt)
-        role = result.scalar_one_or_none()
+        existing_admin = result.scalar_one_or_none()
 
-        if role:
-            user_role = UserRoleModel(id=uuid4(), user_id=user.id, role_id=role.id)
-            session.add(user_role)
+        if existing_admin:
+            print(f"Admin user {admin_email} already exists — skipping (idempotent)")
+        else:
+            admin_pass = os.environ["ADMIN_PASSWORD"]
+            password_hash = bcrypt.hashpw(
+                admin_pass.encode("utf-8"), bcrypt.gensalt()
+            ).decode("utf-8")
 
-        print(f"Created Admin User: {admin_email}")
+            user_id = uuid4()
+            user = UserModel(
+                id=user_id,
+                email=admin_email,
+                password_hash=password_hash,
+                full_name="Admin MVP",
+                status=UserStatus.ACTIVE,
+                email_verified=True,
+                is_2fa_enabled=False,
+                tenant_id=org.id,
+                failed_login_attempts=0,
+            )
+            session.add(user)
+            await session.flush()
+
+            stmt = select(RoleModel).where(RoleModel.role_type == "super_admin")
+            result = await session.execute(stmt)
+            role = result.scalar_one_or_none()
+
+            if role:
+                user_role = UserRoleModel(id=uuid4(), user_id=user.id, role_id=role.id)
+                session.add(user_role)
+
+            print(f"Created Admin User: {admin_email}")
 
         await session.commit()
 
