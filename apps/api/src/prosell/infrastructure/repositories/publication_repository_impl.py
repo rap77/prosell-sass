@@ -28,8 +28,33 @@ class SqlAlchemyPublicationRepository(IPublicationRepository):
         await self.session.flush()
         return self._to_entity(model)
 
-    async def get_by_id(self, publication_id: UUID) -> Publication | None:
-        """Get publication by primary key."""
+    async def get_by_id(
+        self,
+        publication_id: UUID,
+        tenant_id: UUID,
+    ) -> Publication | None:
+        """Get publication by primary key, scoped to a tenant.
+
+        The tenant_id filter is mandatory — returning a publication from
+        another tenant would be a cross-tenant data leak (IDOR). The
+        caller is responsible for sourcing the tenant_id from their auth
+        context (JWT or session), never from the request body.
+        """
+        stmt = select(PublicationModel).where(
+            PublicationModel.id == publication_id,
+            PublicationModel.tenant_id == tenant_id,
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
+    async def get_by_id_admin(self, publication_id: UUID) -> Publication | None:
+        """Background-task / admin lookup that bypasses tenant isolation.
+
+        The loaded publication's `tenant_id` field is the source of truth
+        for downstream tenant-scoped operations. NEVER call this from a
+        request handler.
+        """
         stmt = select(PublicationModel).where(PublicationModel.id == publication_id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()

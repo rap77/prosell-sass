@@ -18,6 +18,9 @@ class UpdateListingRequest(DomainModel):
     title: str | None = None
     description: str | None = None
     price_cents: int | None = Field(default=None, gt=0)
+    # Tenant context — required for cross-tenant isolation. Sourced from
+    # the caller's auth context (JWT/session), NEVER from the request body.
+    tenant_id: UUID | None = None
 
 
 class UpdateListingUseCase:
@@ -36,7 +39,13 @@ class UpdateListingUseCase:
         self._task_dispatcher = task_dispatcher
 
     async def execute(self, request: UpdateListingRequest) -> PublicationResponse:
-        publication = await self._repo.get_by_id(request.publication_id)
+        if request.tenant_id is None:
+            msg = "tenant_id is required for UpdateListingUseCase"
+            raise ValueError(msg)
+        publication = await self._repo.get_by_id(
+            request.publication_id,
+            tenant_id=request.tenant_id,
+        )
         if not publication:
             raise ValueError(f"Publication {request.publication_id} not found")
         if publication.status.value != "published":

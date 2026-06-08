@@ -46,7 +46,7 @@ async def update_listing_task(publication_id: str) -> dict[str, Any]:
         pub_repo = SqlAlchemyPublicationRepository(session)
         page_repo = SqlAlchemyFacebookPageRepository(session)
 
-        publication = await pub_repo.get_by_id(pub_id)
+        publication = await pub_repo.get_by_id_admin(pub_id)
         if not publication:
             return {"error": f"Publication {publication_id} not found"}
 

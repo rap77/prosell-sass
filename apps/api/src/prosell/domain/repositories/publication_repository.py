@@ -29,14 +29,34 @@ class IPublicationRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_id(self, publication_id: UUID) -> Publication | None:
-        """Get publication by primary key.
+    async def get_by_id(
+        self,
+        publication_id: UUID,
+        tenant_id: UUID,
+    ) -> Publication | None:
+        """Get publication by primary key, scoped to a tenant.
 
         Args:
             publication_id: Publication UUID
+            tenant_id: Tenant UUID. REQUIRED — every publication has a
+                tenant_id column, and the repo must enforce the boundary.
+                A query with the wrong tenant_id returns None (not raises),
+                so callers can treat it the same as "not found".
 
         Returns:
-            Publication entity or None if not found
+            Publication entity or None if not found / wrong tenant
+        """
+        pass
+
+    @abstractmethod
+    async def get_by_id_admin(self, publication_id: UUID) -> Publication | None:
+        """Get publication by primary key, bypassing tenant isolation.
+
+        Reserved for background tasks and admin/internal operations that
+        have legitimate reason to cross tenant boundaries (e.g., async
+        tasks dispatched from a tenant-scoped API call need to load the
+        publication they were dispatched for, even after the original
+        request context is gone). MUST NOT be called from request handlers.
         """
         pass
 
