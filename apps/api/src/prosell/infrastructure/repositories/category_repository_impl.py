@@ -32,6 +32,7 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
             is_active=category.is_active,
             field_config=category.field_config,
             attribute_schema=category.attribute_schema,
+            presentation=category.presentation,
             created_at=category.created_at,
             updated_at=category.updated_at,
         )
@@ -115,9 +116,7 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def get_by_id_or_global(
-        self, category_id: UUID, tenant_id: UUID
-    ) -> Category | None:
+    async def get_by_id_or_global(self, category_id: UUID, tenant_id: UUID) -> Category | None:
         """Get a category owned by the tenant OR a global (NULL-tenant) template.
 
         Used by the product create/update path so products can reference
@@ -126,8 +125,7 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         """
         stmt = select(CategoryModel).where(
             CategoryModel.id == category_id,
-            (CategoryModel.tenant_id == tenant_id)
-            | (CategoryModel.tenant_id.is_(None)),
+            (CategoryModel.tenant_id == tenant_id) | (CategoryModel.tenant_id.is_(None)),
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -144,9 +142,7 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
-    async def get_ancestor_ids(
-        self, category_id: UUID, tenant_id: UUID | None
-    ) -> list[UUID]:
+    async def get_ancestor_ids(self, category_id: UUID, tenant_id: UUID | None) -> list[UUID]:
         """Get all ancestor category IDs (up the tree to root).
 
         ``tenant_id=None`` traverses GLOBAL templates (tenant IS NULL).
@@ -209,6 +205,7 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         model.is_active = category.is_active
         model.field_config = category.field_config
         model.attribute_schema = category.attribute_schema
+        model.presentation = category.presentation
         # Set updated_at explicitly from domain entity — onupdate="now()" string is not a valid
         # asyncpg value. The domain entity already sets updated_at = datetime.now(UTC).
         model.updated_at = category.updated_at
