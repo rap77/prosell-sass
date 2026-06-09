@@ -105,9 +105,7 @@ class UpdateProductUseCase:
             product.category_id, tenant_id
         )
         presentation = category.presentation if category else None
-        new_title = resolve_title(
-            presentation, product.attributes or {}, fallback=product.title
-        )
+        new_title = resolve_title(presentation, product.attributes or {}, fallback=product.title)
         if new_title:
             product.title = new_title
 

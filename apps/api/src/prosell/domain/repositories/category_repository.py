@@ -106,9 +106,7 @@ class AbstractCategoryRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_id_or_global(
-        self, category_id: UUID, tenant_id: UUID
-    ) -> Category | None:
+    async def get_by_id_or_global(self, category_id: UUID, tenant_id: UUID) -> Category | None:
         """
         Get a category visible to a tenant: the tenant's OWN category OR a
         GLOBAL template (``tenant_id IS NULL``).
@@ -147,9 +145,7 @@ class AbstractCategoryRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_ancestor_ids(
-        self, category_id: UUID, tenant_id: UUID | None
-    ) -> list[UUID]:
+    async def get_ancestor_ids(self, category_id: UUID, tenant_id: UUID | None) -> list[UUID]:
         """
         Get all ancestor category IDs (up the tree to root).
 

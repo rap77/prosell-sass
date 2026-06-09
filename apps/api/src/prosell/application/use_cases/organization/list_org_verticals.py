@@ -92,4 +92,3 @@ class ListOrgVerticalsUseCase:
             )
 
         return OrgVerticalsResponse(verticals=verticals)
-

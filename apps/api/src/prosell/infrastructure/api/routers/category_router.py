@@ -164,9 +164,7 @@ async def update_category(
     repo = SqlAlchemyCategoryRepository(db)
     use_case = UpdateCategoryUseCase(repo)
 
-    return await use_case.execute(
-        category_id, tenant_id, request, is_platform_admin=True
-    )
+    return await use_case.execute(category_id, tenant_id, request, is_platform_admin=True)
 
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
