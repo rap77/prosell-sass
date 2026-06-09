@@ -293,7 +293,8 @@ export function ResetPasswordPageContent({
 
   const onSubmit = async (data: ResetValues) => {
     if (!token || token.trim() === "") {
-      setTokenInvalid(true);
+      // The component already renders the invalid-token panel when
+      // tokenInvalid is true, so a re-submit is a no-op.
       return;
     }
     setApiError(null);
