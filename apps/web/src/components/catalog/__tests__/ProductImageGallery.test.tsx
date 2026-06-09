@@ -10,6 +10,8 @@ import { ProductImageGallery } from "../ProductImageGallery";
 import type { ProductImage } from "@/types/product-image";
 
 vi.mock("next/image", () => ({
+  // Intentional plain <img> stub for next/image; alt is forwarded via props.
+  // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
   default: (props: Record<string, unknown>) => <img {...props} />,
 }));
 

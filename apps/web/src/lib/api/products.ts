@@ -511,8 +511,11 @@ export function transformProductToVehicle(product: Product): {
   created_at: string;
   updated_at: string;
 } {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const attrs = product.attributes as any;
+  const attrs = product.attributes as {
+    year?: number;
+    make?: string;
+    model?: string;
+  };
   // Use the shared image-key resolver. It handles both post-migration
   // (`product.image_urls`) and legacy (`attrs.image_urls`) sources —
   // the naive `Array.isArray(product.image_urls) ? … : …` short-circuit

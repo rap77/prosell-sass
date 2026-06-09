@@ -339,21 +339,26 @@ export function ProductForm({
    * overwrite a stock number that already has a real value — that's an
    * authoritative data point the user/seller set explicitly.
    */
+  // Extract the watched values so the dependency array holds plain values
+  // (not `watch(...)` calls), which ESLint can statically verify. Same
+  // subscription/behavior as before — `watch` re-renders on field change.
+  const watchedVin = watch("vin");
+  const watchedStockNumber = watch("stock_number");
+
   useEffect(() => {
-    const vin = watch("vin");
-    if (!vin || vin.length !== 17) return;
+    if (!watchedVin || watchedVin.length !== 17) return;
 
-    const currentStock = watch("stock_number");
-    if (mode === "edit" && currentStock && currentStock.length > 0) return;
+    if (mode === "edit" && watchedStockNumber && watchedStockNumber.length > 0)
+      return;
 
-    const last6 = vin.slice(-6).toUpperCase();
+    const last6 = watchedVin.slice(-6).toUpperCase();
     setValue("stock_number", last6, {
       shouldDirty: true,
       shouldValidate: true,
     });
     // Trigger re-render of the field so user sees it immediately
     trigger("stock_number");
-  }, [watch("vin"), watch("stock_number"), mode, setValue, trigger]);
+  }, [watchedVin, watchedStockNumber, mode, setValue, trigger]);
 
   /**
    * Decode VIN and auto-populate fields
