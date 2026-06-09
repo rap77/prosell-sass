@@ -125,6 +125,7 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
     if (asChild && React.isValidElement(children)) {
       return React.cloneElement(children, {
         "data-testid": "dropdown-item",
+        role: "menuitem",
         className,
       } as React.HTMLAttributes<HTMLElement>);
     }
@@ -146,12 +147,14 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
 }));
 
 import { Header } from "./Header";
+import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
 
 const SAMPLE_UUID = "B878d633-e2d6-4064-84c2-74a63dfed92a";
 
 describe("Header — breadcrumb humanization", () => {
   beforeEach(() => {
     mockUsePathname.mockReset();
+    useBreadcrumbStore.setState({ labels: {} });
   });
 
   it("renders only 'Inicio' on the dashboard root", () => {
@@ -205,6 +208,34 @@ describe("Header — breadcrumb humanization", () => {
     expect(within(nav).getByText("Detalle")).toBeInTheDocument();
     expect(within(nav).getByText("Editar")).toBeInTheDocument();
   });
+
+  it("prefers a breadcrumb override (real entity name) over generic 'Detalle'", () => {
+    mockUsePathname.mockReturnValue(`/dashboard/catalog/${SAMPLE_UUID}`);
+    // A detail page registers the real product title for the id segment.
+    useBreadcrumbStore.getState().setLabel(SAMPLE_UUID, "Toyota Corolla 2020");
+
+    const { container } = render(<Header />);
+
+    const nav = screen.getByRole("navigation");
+    expect(within(nav).getByText("Toyota Corolla 2020")).toBeInTheDocument();
+    // The generic fallback must NOT be used when an override exists.
+    expect(within(nav).queryByText("Detalle")).not.toBeInTheDocument();
+    // And the raw UUID must never leak.
+    expect(container.textContent).not.toContain(SAMPLE_UUID);
+  });
+
+  it("shows the real entity name then 'Editar' on the edit route", () => {
+    mockUsePathname.mockReturnValue(`/dashboard/catalog/${SAMPLE_UUID}/edit`);
+    useBreadcrumbStore.getState().setLabel(SAMPLE_UUID, "Toyota Corolla 2020");
+
+    const { container } = render(<Header />);
+
+    const nav = screen.getByRole("navigation");
+    expect(within(nav).getByText("Toyota Corolla 2020")).toBeInTheDocument();
+    expect(within(nav).getByText("Editar")).toBeInTheDocument();
+    expect(within(nav).queryByText("Detalle")).not.toBeInTheDocument();
+    expect(container.textContent).not.toContain(SAMPLE_UUID);
+  });
 });
 
 describe("Header — user menu navigation", () => {
@@ -212,6 +243,7 @@ describe("Header — user menu navigation", () => {
     mockUsePathname.mockReset();
     mockUsePathname.mockReturnValue("/dashboard");
     mockPush.mockReset();
+    useBreadcrumbStore.setState({ labels: {} });
   });
 
   it("renders the user menu trigger button", () => {
