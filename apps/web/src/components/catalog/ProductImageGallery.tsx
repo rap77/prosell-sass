@@ -62,13 +62,15 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
   // Reset selection if the active image is no longer renderable.
   // The setState is conditional and only fires when currentIndex has fallen
   // out of range, so the cascading-render concern from the rule does not
-  // apply here.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  // apply here. Block-disable (not next-line) because the rule fires on the
+  // setState call inside the effect body, not on the useEffect line itself.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (currentIndex >= renderableImages.length) {
       setCurrentIndex(0)
     }
   }, [renderableImages.length, currentIndex])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Empty state — shown when there are no images OR every image was filtered
   // out for having no signed URL.
