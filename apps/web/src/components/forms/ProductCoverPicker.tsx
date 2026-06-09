@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 /**
  * ProductCoverPicker — the single source of truth for the
@@ -33,14 +33,14 @@
  * and edit" design is what this file actually implements.
  */
 
-import { useUploadStore } from '@/lib/stores/uploadStore'
+import { useUploadStore } from "@/lib/stores/uploadStore";
 import {
   CoverImageGallery,
   type CoverImageItem,
-} from '@/components/images/CoverImageGallery'
+} from "@/components/images/CoverImageGallery";
 
 export function ProductCoverPicker() {
-  const { images, coverImageId, setCoverImage, removeEntry } = useUploadStore()
+  const { images, coverImageId, setCoverImage, removeEntry } = useUploadStore();
 
   // Map the unified `ImageEntry` shape to the gallery's generic
   // shape. The gallery's `key` is what the form's submit handler
@@ -53,9 +53,9 @@ export function ProductCoverPicker() {
     id: entry.id,
     key: entry.storageKey ?? entry.id,
     url: entry.preview,
-  }))
+  }));
 
-  if (items.length === 0) return null
+  if (items.length === 0) return null;
 
   return (
     <CoverImageGallery
@@ -64,5 +64,5 @@ export function ProductCoverPicker() {
       onCoverChange={setCoverImage}
       onRemove={removeEntry}
     />
-  )
+  );
 }

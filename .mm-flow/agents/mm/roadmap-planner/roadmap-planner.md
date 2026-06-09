@@ -5,6 +5,7 @@
 **Input:** Existing project context, planning state, canonical docs, decision history, implementation reality.
 
 **Output:**
+
 - `.planning/roadmap/objectives.md`
 - `.planning/roadmap/dependency-graph.md`
 - optional `.planning/roadmap/objectives.json`
@@ -29,6 +30,7 @@ Do not generate an archaeology roadmap from code alone.
 ## Required source priority
 
 ### Tier 1 — Explicit intent
+
 - `PROJECT.md`
 - `README.md`
 - `docs/PRD/**`
@@ -36,6 +38,7 @@ Do not generate an archaeology roadmap from code alone.
 - `.planning/SOURCE-OF-TRUTH.md`
 
 ### Tier 2 — Planning state
+
 - `.planning/roadmap/objectives.md`
 - `.planning/changes/<objective>/tasks.md`
 - `.planning/changes/**`
@@ -44,9 +47,11 @@ Do not generate an archaeology roadmap from code alone.
 - `.planning/task-progress.json`
 
 ### Tier 3 — Decisions
+
 - `docs/canonical/decision-records/**`
 
 ### Tier 4 — Code reality
+
 - backend/frontend modules
 - tests
 - migrations
@@ -59,6 +64,7 @@ Do not generate an archaeology roadmap from code alone.
 ## Mandatory output rules
 
 For each objective include:
+
 - ID
 - objective name
 - summary
@@ -76,6 +82,7 @@ Only produce the roadmap and dependency order.
 ## Handoff rule
 
 If the roadmap changes the recommended active workstream, update `.planning/HANDOFF-CURRENT.md` with:
+
 - current objective
 - why this objective is next
 - exact next recommended objective package to generate

@@ -38,6 +38,7 @@ python3 .claude/commands/mm/complete-task-handler.py <task-id> [options]
 ### Step 2: Parse Handler Output
 
 Capture stdout and look for:
+
 - `MODEL_BRIEF_START` ... `MODEL_BRIEF_END` → Extract everything between these markers as `model_brief`
 - `LAUNCH: task-executor` → Agent launch requested
 - `PAYLOAD: {...}` → JSON payload for agent
@@ -88,6 +89,7 @@ When the background agent completes and you receive its result:
 ```
 
 If `NEXT_COMMAND` is missing from the result, run `python3 .claude/commands/mm/complete-task-handler.py --status` to determine it yourself using the same logic:
+
 - Subtask still pending → `/mm:complete-task <task_id> --continue`
 - Next task pending → `/mm:complete-task <next_task_id>`
 - All tasks done → `/mm:archive-objective <objective_slug>`
@@ -105,9 +107,11 @@ If `NEXT_COMMAND` is missing from the result, run `python3 .claude/commands/mm/c
 **Handler ERROR**: Show error to user, suggest next steps.
 
 **Agent returns with subtask stuck `in_progress`**: This means the agent ran out of context or failed mid-subtask before calling `--mark-done`. The ONLY valid recovery path is:
+
 ```bash
 /mm:complete-task <task_id> --continue
 ```
+
 **NEVER manually edit `execution-state.json`, `todo.md`, `task-progress.json`, or `HANDOFF-CURRENT.md`.** These files are handler-managed — manual edits break checkpoint integrity, corrupt the single-writer invariant, and skip notification triggers. If `--continue` also fails repeatedly, escalate to the user. Never bypass the handler.
 
 ## What Happens

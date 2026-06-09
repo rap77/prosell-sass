@@ -1,6 +1,5 @@
 # prosell-sass
 
-
 ---
 
 ## 🧠 MasterMind Framework
@@ -115,6 +114,7 @@ from cli.commands import execute_mm_flow_command
 ### Monitoring & Debugging
 
 **Ver tokens de todos los backends:**
+
 ```sql
 SELECT backend, tokens_used, tokens_limit, is_active, next_reset_time, depletion_timestamp
 FROM backend_sessions
@@ -123,6 +123,7 @@ ORDER BY tokens_available DESC;
 ```
 
 **Ver historial de checkpoints:**
+
 ```sql
 SELECT phase, reason, created_at, tokens_at_checkpoint
 FROM context_checkpoints
@@ -132,6 +133,7 @@ LIMIT 10;
 ```
 
 **Ver cambios de backend:**
+
 ```sql
 SELECT from_backend, to_backend, created_at
 FROM context_checkpoints

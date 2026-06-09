@@ -69,7 +69,9 @@ const MOCK_LEAD_DETAIL_EMPTY_AUDIT = {
 test.describe("Lead Audit Trail — B4.4.10", () => {
   test.describe.configure({ mode: "serial" });
 
-  test("shows 'Status History' section on lead detail page", async ({ page }) => {
+  test("shows 'Status History' section on lead detail page", async ({
+    page,
+  }) => {
     // Mock GET /api/v1/leads/{id} to return lead with audit logs
     await page.route(`**/api/v1/leads/${LEAD_ID}`, async (route) => {
       if (route.request().method() === "GET") {
@@ -96,10 +98,14 @@ test.describe("Lead Audit Trail — B4.4.10", () => {
     await page.waitForLoadState("networkidle");
 
     // Assert: Status History heading is visible
-    await expect(page.getByRole("heading", { name: /Status History/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /Status History/i }),
+    ).toBeVisible();
 
     // Assert: audit trail section is present
-    await expect(page.getByRole("region", { name: /lead audit trail/i })).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: /lead audit trail/i }),
+    ).toBeVisible();
   });
 
   test("renders audit entries in newest-first order", async ({ page }) => {
@@ -132,13 +138,21 @@ test.describe("Lead Audit Trail — B4.4.10", () => {
 
     // First entry (newest) should be the contacted→qualified change
     const firstEntry = entries.nth(0);
-    await expect(firstEntry.getByTestId("audit-status-change")).toContainText("Contacted");
-    await expect(firstEntry.getByTestId("audit-status-change")).toContainText("Qualified");
+    await expect(firstEntry.getByTestId("audit-status-change")).toContainText(
+      "Contacted",
+    );
+    await expect(firstEntry.getByTestId("audit-status-change")).toContainText(
+      "Qualified",
+    );
 
     // Second entry (older) should be the new→contacted change
     const secondEntry = entries.nth(1);
-    await expect(secondEntry.getByTestId("audit-status-change")).toContainText("New");
-    await expect(secondEntry.getByTestId("audit-status-change")).toContainText("Contacted");
+    await expect(secondEntry.getByTestId("audit-status-change")).toContainText(
+      "New",
+    );
+    await expect(secondEntry.getByTestId("audit-status-change")).toContainText(
+      "Contacted",
+    );
   });
 
   test("shows reasons for each status change", async ({ page }) => {
@@ -169,12 +183,12 @@ test.describe("Lead Audit Trail — B4.4.10", () => {
 
     // First entry: reason for qualified
     await expect(entries.nth(0).getByTestId("audit-reason")).toContainText(
-      "Buyer confirmed budget and timeline"
+      "Buyer confirmed budget and timeline",
     );
 
     // Second entry: reason for contacted
     await expect(entries.nth(1).getByTestId("audit-reason")).toContainText(
-      "Called buyer, left voicemail"
+      "Called buyer, left voicemail",
     );
   });
 
@@ -238,6 +252,8 @@ test.describe("Lead Audit Trail — B4.4.10", () => {
 
     // Assert: empty state message
     await expect(page.getByTestId("audit-empty")).toBeVisible();
-    await expect(page.getByText(/no status changes recorded yet/i)).toBeVisible();
+    await expect(
+      page.getByText(/no status changes recorded yet/i),
+    ).toBeVisible();
   });
 });

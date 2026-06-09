@@ -30,7 +30,9 @@ const createWrapper = () => {
   });
 
   function Wrapper({ children }: { children: React.ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
   }
   return Wrapper;
 };
@@ -145,7 +147,7 @@ describe("Categories API Client - useCategories", () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     expect(result.current.error).toEqual(
-      new Error("Database connection failed")
+      new Error("Database connection failed"),
     );
   });
 
@@ -169,11 +171,16 @@ describe("Categories API Client - useCategories", () => {
             () =>
               resolve({
                 ok: true,
-                json: async () => ({ categories: [], total: 0, page: 1, page_size: 50 }),
+                json: async () => ({
+                  categories: [],
+                  total: 0,
+                  page: 1,
+                  page_size: 50,
+                }),
               } as Response),
-            100
-          )
-        )
+            100,
+          ),
+        ),
     );
 
     const { result } = renderHook(() => useCategories(), {

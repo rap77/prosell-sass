@@ -20,14 +20,14 @@ Perfecto. Voy a entregarte el **estudio completo**, ya estructurado, con datos a
 **Pricing:**
 
 - $300–$1,500 USD/mes por dealer (según inventario)
-    **Ventajas:**
+  **Ventajas:**
 - Marca consolidada
 - Alto tráfico orgánico
 - Herramientas de analytics para dealers
-    **Desventajas:**
+  **Desventajas:**
 - No cobra por performance (dealers asumen riesgo)
 - Saturación de inventario
-    **Market share:** Uno de los líderes en EE.UU. junto con Cars.com
+  **Market share:** Uno de los líderes en EE.UU. junto con Cars.com
 
 ---
 
@@ -37,10 +37,10 @@ Perfecto. Voy a entregarte el **estudio completo**, ya estructurado, con datos a
 **Pricing:**
 
 - $400–$2,500 USD/mes
-    **Ventajas:**
+  **Ventajas:**
 - CRM integrado
 - Alta penetración en concesionarias
-    **Desventajas:**
+  **Desventajas:**
 - Costoso
 - Modelo no basado en performance
 
@@ -53,12 +53,12 @@ Perfecto. Voy a entregarte el **estudio completo**, ya estructurado, con datos a
 
 - Base gratis
 - $299–$1,200 USD/mes por visibilidad premium
-    **Ventajas:**
+  **Ventajas:**
 - Transparencia de precios
 - UX fuerte para consumidores
-    **Desventajas:**
+  **Desventajas:**
 - Alta competencia entre dealers
-    **Ingresos 2024:** ~$900M USD
+  **Ingresos 2024:** ~$900M USD
 
 ---
 
@@ -70,7 +70,7 @@ Perfecto. Voy a entregarte el **estudio completo**, ya estructurado, con datos a
 
 - Tráfico masivo
 - Costo cero
-    **Desventajas:**
+  **Desventajas:**
 - Leads poco calificados
 - Sin control de calidad
 
@@ -96,12 +96,12 @@ Desventaja: Riesgo financiero alto
 
 ## 🔵 Modelos de Comisión en Industria
 
-|Modelo|Comisión típica|
-|---|---|
-|Marketplace inmobiliario|3–6%|
-|Venta autos consignación|2–5%|
-|Leads calificados|$20–$150 USD por lead|
-|Cierre gestionado externo|5–10%|
+| Modelo                    | Comisión típica       |
+| ------------------------- | --------------------- |
+| Marketplace inmobiliario  | 3–6%                  |
+| Venta autos consignación  | 2–5%                  |
+| Leads calificados         | $20–$150 USD por lead |
+| Cierre gestionado externo | 5–10%                 |
 
 👉 En automotriz, **2–5% por unidad vendida** es considerado razonable si el marketplace gestiona el lead hasta cierre.
 
@@ -125,7 +125,7 @@ Según datos 2024:
 
 - 15.5M autos nuevos vendidos
 - 38M autos usados vendidos
-    Valor promedio:
+  Valor promedio:
 - Nuevo: $48,000
 - Usado: $28,000
 
@@ -186,11 +186,11 @@ Ingresos anuales:
 
 ### 💰 Qué pagan hoy
 
-|Canal|Costo mensual|
-|---|---|
-|Marketplace premium|$1k–$3k|
-|Google Ads|$2k–$10k|
-|CRM|$300–$1k|
+| Canal               | Costo mensual |
+| ------------------- | ------------- |
+| Marketplace premium | $1k–$3k       |
+| Google Ads          | $2k–$10k      |
+| CRM                 | $300–$1k      |
 
 Un dealer promedio puede gastar **$5k–$15k/mes en marketing.**
 
@@ -321,6 +321,7 @@ La ejecución lo es todo.
 ---
 
 ## Aclaraciones
+
 me gusta la respuesta 2 pero de la 1 veo que la 2 no tiene conclusión estratégica ni mi veredicto final, y la idea no es competir con las bigtech si no utilizarlas como herramientas de publicacion, como hacemos en ese caso?
 
 Excelente. Ese cambio estratégico es **muy importante**.
@@ -529,7 +530,7 @@ Entonces sí puedes lanzar marketplace propio vertical.
 
 ---
 
-el uso de las bigtech no seran como fuente de de inventarios cada dealer tiene su inventario, y vamos a publicar el inventario de los dealers en esas bigtech, les prestamos servicios de publicacion, manejo de leads y cierres de ventas,  ahora si como fuente de demanda para captar leads, y ademas utilizar sus publicaciones como estudio de mercado variaciones de precios, data analitics
+el uso de las bigtech no seran como fuente de de inventarios cada dealer tiene su inventario, y vamos a publicar el inventario de los dealers en esas bigtech, les prestamos servicios de publicacion, manejo de leads y cierres de ventas, ahora si como fuente de demanda para captar leads, y ademas utilizar sus publicaciones como estudio de mercado variaciones de precios, data analitics
 
 Perfecto.
 Ahora el modelo está **mucho más claro y más potente**.
@@ -598,12 +599,12 @@ Aquí está tu ventaja real.
 
 Comparación real:
 
-|Modelo|Qué vende|Riesgo dealer|Diferenciación|
-|---|---|---|---|
-|AutoTrader|Espacio publicitario|Alto|Tráfico|
-|Facebook Marketplace|Publicación|Bajo|Alcance|
-|CRM tradicional|Software|Medio|Gestión|
-|**ProSell**|Incremento de ventas|Bajo|Performance + Data|
+| Modelo               | Qué vende            | Riesgo dealer | Diferenciación     |
+| -------------------- | -------------------- | ------------- | ------------------ |
+| AutoTrader           | Espacio publicitario | Alto          | Tráfico            |
+| Facebook Marketplace | Publicación          | Bajo          | Alcance            |
+| CRM tradicional      | Software             | Medio         | Gestión            |
+| **ProSell**          | Incremento de ventas | Bajo          | Performance + Data |
 
 Tú vendes:
 

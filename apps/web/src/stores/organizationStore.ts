@@ -13,7 +13,13 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { orgApi, ApiError, Organization, CreateOrganizationRequest, UpdateOrganizationRequest } from "@/lib/api/orgApi";
+import {
+  orgApi,
+  ApiError,
+  Organization,
+  CreateOrganizationRequest,
+  UpdateOrganizationRequest,
+} from "@/lib/api/orgApi";
 import { logger } from "@/lib/logger";
 
 // ============================================
@@ -51,10 +57,19 @@ export interface OrganizationState {
   fetchOrganizations: (params?: OrganizationListParams) => Promise<void>;
   fetchMyOrganization: (tenantId: string) => Promise<void>;
   fetchOrganizationById: (id: string, tenantId: string) => Promise<void>;
-  createOrganization: (data: CreateOrganizationRequest) => Promise<Organization>;
-  updateOrganization: (id: string, data: UpdateOrganizationRequest) => Promise<void>;
+  createOrganization: (
+    data: CreateOrganizationRequest,
+  ) => Promise<Organization>;
+  updateOrganization: (
+    id: string,
+    data: UpdateOrganizationRequest,
+  ) => Promise<void>;
   verifyOrganization: (id: string, verifierId: string) => Promise<void>;
-  rejectOrganization: (id: string, verifierId: string, reason?: string) => Promise<void>;
+  rejectOrganization: (
+    id: string,
+    verifierId: string,
+    reason?: string,
+  ) => Promise<void>;
   suspendOrganization: (id: string) => Promise<void>;
   setCurrentOrg: (org: Organization | null) => void;
   clearError: () => void;

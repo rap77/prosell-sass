@@ -2,9 +2,9 @@
  * Chevron icons for navigation
  */
 
-import type { SVGProps } from 'react';
+import type { SVGProps } from "react";
 
-export function ChevronLeft({ className = '' }: SVGProps<SVGSVGElement>) {
+export function ChevronLeft({ className = "" }: SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -21,7 +21,7 @@ export function ChevronLeft({ className = '' }: SVGProps<SVGSVGElement>) {
   );
 }
 
-export function ChevronRight({ className = '' }: SVGProps<SVGSVGElement>) {
+export function ChevronRight({ className = "" }: SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

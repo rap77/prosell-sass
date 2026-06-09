@@ -1,10 +1,10 @@
-'use client' // Required for useState and usePathname hooks
+"use client"; // Required for useState and usePathname hooks
 
-import { useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,12 +12,19 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Search, User, Settings, LogOut, Building2, ChevronRight } from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
-import { TeamSwitcher } from '@/components/teams/TeamSwitcher'
-import { NotificationBell } from '@/components/layout/NotificationBell'
-import { ThemeToggle } from '@/components/layout/ThemeToggle'
+} from "@/components/ui/dropdown-menu";
+import {
+  Search,
+  User,
+  Settings,
+  LogOut,
+  Building2,
+  ChevronRight,
+} from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { TeamSwitcher } from "@/components/teams/TeamSwitcher";
+import { NotificationBell } from "@/components/layout/NotificationBell";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 /**
  * Props for Header component.
@@ -25,18 +32,18 @@ import { ThemeToggle } from '@/components/layout/ThemeToggle'
 interface HeaderProps {
   /** User data from auth context */
   user?: {
-    name?: string
-    email?: string
-    role?: string
-    initials?: string
-  }
+    name?: string;
+    email?: string;
+    role?: string;
+    initials?: string;
+  };
   /** Organization data - placeholder for Phase 5 multi-brancheship */
   organization?: {
-    id?: string
-    name?: string
-  }
+    id?: string;
+    name?: string;
+  };
   /** Tenant ID for multi-tenancy */
-  tenantId?: string
+  tenantId?: string;
 }
 
 /**
@@ -50,57 +57,62 @@ interface HeaderProps {
  * - Logout functionality
  */
 export function Header({ user, organization, tenantId }: HeaderProps) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const { logout, user: authUser } = useAuth()
-  const [searchQuery, setSearchQuery] = useState('')
+  const pathname = usePathname();
+  const router = useRouter();
+  const { logout, user: authUser } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Helper function to get user initials from name
   const getInitials = (firstName?: string, lastName?: string): string => {
     if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase()
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
     }
     if (firstName) {
-      return firstName.substring(0, 2).toUpperCase()
+      return firstName.substring(0, 2).toUpperCase();
     }
-    return '??'
-  }
+    return "??";
+  };
 
   // Use real user data from auth context, fallback to placeholder
-  const userData = user || (authUser ? {
-    name: authUser.first_name && authUser.last_name
-      ? `${authUser.first_name} ${authUser.last_name}`
-      : authUser.email?.split('@')[0] || 'User',
-    email: authUser.email,
-    role: authUser.role || 'Seller',
-    initials: getInitials(authUser.first_name, authUser.last_name),
-  } : {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    role: 'Seller',
-    initials: 'JD',
-  })
+  const userData =
+    user ||
+    (authUser
+      ? {
+          name:
+            authUser.first_name && authUser.last_name
+              ? `${authUser.first_name} ${authUser.last_name}`
+              : authUser.email?.split("@")[0] || "User",
+          email: authUser.email,
+          role: authUser.role || "Seller",
+          initials: getInitials(authUser.first_name, authUser.last_name),
+        }
+      : {
+          name: "John Doe",
+          email: "john.doe@example.com",
+          role: "Seller",
+          initials: "JD",
+        });
 
   // TODO: Replace with real org data from user context
   const orgData = organization || {
-    name: 'ProSell Brancheship',
-  }
+    name: "ProSell Brancheship",
+  };
 
   // Handle logout
   const handleLogout = async () => {
-    await logout()
-    router.push('/auth/login')
-  }
+    await logout();
+    router.push("/auth/login");
+  };
 
   // Generate breadcrumbs from pathname
   const breadcrumbs = pathname
-    .split('/')
+    .split("/")
     .filter(Boolean)
     .map((segment, index, array) => {
-      const href = '/' + array.slice(0, index + 1).join('/')
-      const label = segment.charAt(0).toUpperCase() + segment.slice(1)
-      return { label, href }
-    })
+      const href = "/" + array.slice(0, index + 1).join("/");
+      const label = segment.charAt(0).toUpperCase() + segment.slice(1);
+      return { label, href };
+    });
 
   return (
     <header className="sticky top-0 z-30 h-16 border-b bg-background">
@@ -141,7 +153,9 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
             <div key={crumb.href} className="flex items-center gap-2">
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
               {index === breadcrumbs.length - 1 ? (
-                <span className="font-medium text-foreground">{crumb.label}</span>
+                <span className="font-medium text-foreground">
+                  {crumb.label}
+                </span>
               ) : (
                 <a
                   href={crumb.href}
@@ -199,10 +213,7 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
 
         {/* Team switcher */}
         {organization?.id && tenantId && (
-          <TeamSwitcher
-            organizationId={organization.id}
-            tenantId={tenantId}
-          />
+          <TeamSwitcher organizationId={organization.id} tenantId={tenantId} />
         )}
 
         {/* Theme toggle */}
@@ -243,7 +254,10 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={handleLogout}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               <span>Logout</span>
             </DropdownMenuItem>
@@ -251,5 +265,5 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
         </DropdownMenu>
       </div>
     </header>
-  )
+  );
 }

@@ -41,9 +41,12 @@ test.describe("API: Categories", () => {
     if (!authToken) return;
 
     // Get tenant_id from existing categories (the list response includes tenant_id per item).
-    const categoriesResponse = await request.get(`${API_BASE}/api/v1/categories`, {
-      headers: { Cookie: `access_token=${authToken}` },
-    });
+    const categoriesResponse = await request.get(
+      `${API_BASE}/api/v1/categories`,
+      {
+        headers: { Cookie: `access_token=${authToken}` },
+      },
+    );
     if (categoriesResponse.ok()) {
       const categoriesData = await categoriesResponse.json();
       const firstCategory = categoriesData.categories?.[0];
@@ -53,7 +56,9 @@ test.describe("API: Categories", () => {
     }
   });
 
-  test("@smoke GET /api/v1/categories - should list categories", async ({ request }) => {
+  test("@smoke GET /api/v1/categories - should list categories", async ({
+    request,
+  }) => {
     // Pass JWT as Cookie header (FastAPI requires Cookie, not Bearer)
     const response = await request.get(`${API_BASE}/api/v1/categories`, {
       headers: {
@@ -67,7 +72,9 @@ test.describe("API: Categories", () => {
     expect(Array.isArray(data.categories)).toBeTruthy();
   });
 
-  test("@smoke POST /api/v1/categories - should create category", async ({ request }) => {
+  test("@smoke POST /api/v1/categories - should create category", async ({
+    request,
+  }) => {
     // tenant_id is required by CreateCategoryRequest
     const response = await request.post(`${API_BASE}/api/v1/categories`, {
       headers: {
@@ -88,7 +95,9 @@ test.describe("API: Categories", () => {
     expect(data).toHaveProperty("name");
   });
 
-  test("POST /api/v1/categories - should validate slug format", async ({ request }) => {
+  test("POST /api/v1/categories - should validate slug format", async ({
+    request,
+  }) => {
     const response = await request.post(`${API_BASE}/api/v1/categories`, {
       headers: {
         Cookie: `access_token=${authToken}`,
@@ -133,9 +142,12 @@ test.describe("API: Products", () => {
 
     // Get tenant_id from existing categories list (the response includes tenant_id per item).
     // tenant_id == organization_id (single org per user in this project).
-    const categoriesResponse = await request.get(`${API_BASE}/api/v1/categories`, {
-      headers: { Cookie: `access_token=${authToken}` },
-    });
+    const categoriesResponse = await request.get(
+      `${API_BASE}/api/v1/categories`,
+      {
+        headers: { Cookie: `access_token=${authToken}` },
+      },
+    );
     if (categoriesResponse.ok()) {
       const categoriesData = await categoriesResponse.json();
       const firstCategory = categoriesData.categories?.[0];
@@ -147,17 +159,20 @@ test.describe("API: Products", () => {
 
     // Create a test category (pass JWT as Cookie, not Bearer).
     // tenant_id is required by CreateCategoryRequest.
-    const categoryResponse = await request.post(`${API_BASE}/api/v1/categories`, {
-      headers: {
-        Cookie: `access_token=${authToken}`,
-        "Content-Type": "application/json",
+    const categoryResponse = await request.post(
+      `${API_BASE}/api/v1/categories`,
+      {
+        headers: {
+          Cookie: `access_token=${authToken}`,
+          "Content-Type": "application/json",
+        },
+        data: {
+          name: `Test Category ${Date.now()}`,
+          slug: `test-${Date.now()}`,
+          tenant_id: tenantId,
+        },
       },
-      data: {
-        name: `Test Category ${Date.now()}`,
-        slug: `test-${Date.now()}`,
-        tenant_id: tenantId,
-      },
-    });
+    );
 
     if (categoryResponse.ok()) {
       const categoryData = await categoryResponse.json();
@@ -165,7 +180,9 @@ test.describe("API: Products", () => {
     }
   });
 
-  test("@smoke GET /api/v1/products - should list products", async ({ request }) => {
+  test("@smoke GET /api/v1/products - should list products", async ({
+    request,
+  }) => {
     const response = await request.get(`${API_BASE}/api/v1/products`, {
       headers: {
         Cookie: `access_token=${authToken}`,
@@ -178,7 +195,9 @@ test.describe("API: Products", () => {
     expect(Array.isArray(data.products)).toBeTruthy();
   });
 
-  test("@smoke POST /api/v1/products - should create product", async ({ request }) => {
+  test("@smoke POST /api/v1/products - should create product", async ({
+    request,
+  }) => {
     const response = await request.post(`${API_BASE}/api/v1/products`, {
       headers: {
         Cookie: `access_token=${authToken}`,
@@ -205,7 +224,9 @@ test.describe("API: Products", () => {
     expect(data.title).toMatch(/API Test Product/);
   });
 
-  test("POST /api/v1/products - should validate title is required", async ({ request }) => {
+  test("POST /api/v1/products - should validate title is required", async ({
+    request,
+  }) => {
     // Auth required: FastAPI returns 401 before running validation if cookie is missing.
     // Pass cookie so FastAPI can reach the body validation step (which returns 422).
     const response = await request.post(`${API_BASE}/api/v1/products`, {
@@ -227,15 +248,20 @@ test.describe("API: Products", () => {
 });
 
 test.describe("API: Vehicles", () => {
-  test("@smoke POST /api/v1/vehicles/decode-vin - should decode valid VIN", async ({ request }) => {
-    const response = await request.post(`${API_BASE}/api/v1/vehicles/decode-vin`, {
-      headers: {
-        "Content-Type": "application/json",
+  test("@smoke POST /api/v1/vehicles/decode-vin - should decode valid VIN", async ({
+    request,
+  }) => {
+    const response = await request.post(
+      `${API_BASE}/api/v1/vehicles/decode-vin`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: {
+          vin: "1HGCM826712345678", // Valid checksum
+        },
       },
-      data: {
-        vin: "1HGCM826712345678", // Valid checksum
-      },
-    });
+    );
 
     expect(response.ok()).toBeTruthy();
     const data = await response.json();
@@ -245,29 +271,39 @@ test.describe("API: Vehicles", () => {
     expect(data.vehicle).toHaveProperty("model");
   });
 
-  test("POST /api/v1/vehicles/decode-vin - should reject invalid VIN length", async ({ request }) => {
-    const response = await request.post(`${API_BASE}/api/v1/vehicles/decode-vin`, {
-      headers: {
-        "Content-Type": "application/json",
+  test("POST /api/v1/vehicles/decode-vin - should reject invalid VIN length", async ({
+    request,
+  }) => {
+    const response = await request.post(
+      `${API_BASE}/api/v1/vehicles/decode-vin`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: {
+          vin: "123", // Too short
+        },
       },
-      data: {
-        vin: "123", // Too short
-      },
-    });
+    );
 
     expect(response.ok()).toBeFalsy();
     expect(response.status()).toBe(422);
   });
 
-  test("POST /api/v1/vehicles/decode-vin - should reject invalid characters", async ({ request }) => {
-    const response = await request.post(`${API_BASE}/api/v1/vehicles/decode-vin`, {
-      headers: {
-        "Content-Type": "application/json",
+  test("POST /api/v1/vehicles/decode-vin - should reject invalid characters", async ({
+    request,
+  }) => {
+    const response = await request.post(
+      `${API_BASE}/api/v1/vehicles/decode-vin`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: {
+          vin: "1HGCM82633A12345I", // Contains I
+        },
       },
-      data: {
-        vin: "1HGCM82633A12345I", // Contains I
-      },
-    });
+    );
 
     expect(response.ok()).toBeFalsy();
     expect(response.status()).toBe(422);
@@ -276,15 +312,20 @@ test.describe("API: Vehicles", () => {
   // NOTE: Backend does NOT validate VIN checksums at HTTP level.
   // Invalid checksums are passed through to NHTSA API, which returns error details in raw_data.
   // This test validates the actual backend behavior (pass-through to NHTSA).
-  test("POST /api/v1/vehicles/decode-vin - should validate checksum", async ({ request }) => {
-    const response = await request.post(`${API_BASE}/api/v1/vehicles/decode-vin`, {
-      headers: {
-        "Content-Type": "application/json",
+  test("POST /api/v1/vehicles/decode-vin - should validate checksum", async ({
+    request,
+  }) => {
+    const response = await request.post(
+      `${API_BASE}/api/v1/vehicles/decode-vin`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: {
+          vin: "1HGCM826012345678", // Invalid checksum
+        },
       },
-      data: {
-        vin: "1HGCM826012345678", // Invalid checksum
-      },
-    });
+    );
 
     // Backend returns 200 (NHTSA accepts invalid checksums and returns error in response)
     expect(response.ok()).toBeTruthy();
@@ -306,16 +347,21 @@ test.describe("API: Vehicles", () => {
 
   // NOTE: Backend DOES implement caching (24-hour cache per VIN).
   // This test validates the caching behavior by checking the `cached` field.
-  test("POST /api/v1/vehicles/decode-vin - should cache results", async ({ request }) => {
+  test("POST /api/v1/vehicles/decode-vin - should cache results", async ({
+    request,
+  }) => {
     const vin = "1HGCM82633A004351"; // Valid VIN checksum
 
     // First request should NOT be cached
-    const response1 = await request.post(`${API_BASE}/api/v1/vehicles/decode-vin`, {
-      headers: {
-        "Content-Type": "application/json",
+    const response1 = await request.post(
+      `${API_BASE}/api/v1/vehicles/decode-vin`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: { vin },
       },
-      data: { vin },
-    });
+    );
 
     expect(response1.ok()).toBeTruthy();
     const data1 = await response1.json();
@@ -324,12 +370,15 @@ test.describe("API: Vehicles", () => {
     expect(data1.cached).toBe(false);
 
     // Second request should be cached (if VIN exists in DB)
-    const response2 = await request.post(`${API_BASE}/api/v1/vehicles/decode-vin`, {
-      headers: {
-        "Content-Type": "application/json",
+    const response2 = await request.post(
+      `${API_BASE}/api/v1/vehicles/decode-vin`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: { vin },
       },
-      data: { vin },
-    });
+    );
 
     expect(response2.ok()).toBeTruthy();
     const data2 = await response2.json();

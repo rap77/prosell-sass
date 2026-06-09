@@ -54,13 +54,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Simulate network delay for E2E tests to verify loading states
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Validate required fields
     if (!body.name || body.name.length < 2) {
       return NextResponse.json(
         { detail: "Name must be at least 2 characters" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       } catch {
         return NextResponse.json(
           { detail: "Invalid website URL" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json(
       { detail: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

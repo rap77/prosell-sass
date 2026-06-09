@@ -7,14 +7,23 @@ import { BasePage } from "../base-page";
 
 export class ProductsPage extends BasePage {
   // Locators
-  readonly newProductButton = this.page.getByRole("button", { name: /new product|crear producto/i });
+  readonly newProductButton = this.page.getByRole("button", {
+    name: /new product|crear producto/i,
+  });
   readonly productTitleInput = this.page.getByLabel(/title|título/i);
-  readonly productDescriptionInput = this.page.getByLabel(/description|descripción/i);
+  readonly productDescriptionInput = this.page.getByLabel(
+    /description|descripción/i,
+  );
   readonly productPriceInput = this.page.getByLabel(/price|precio/i);
-  readonly productConditionSelect = this.page.getByLabel(/condition|condición/i);
+  readonly productConditionSelect =
+    this.page.getByLabel(/condition|condición/i);
   readonly productCategorySelect = this.page.getByLabel(/category|categoría/i);
-  readonly saveButton = this.page.getByRole("button", { name: /save|guardar/i });
-  readonly submitForApprovalButton = this.page.getByRole("button", { name: /submit|enviar/i });
+  readonly saveButton = this.page.getByRole("button", {
+    name: /save|guardar/i,
+  });
+  readonly submitForApprovalButton = this.page.getByRole("button", {
+    name: /submit|enviar/i,
+  });
 
   constructor(page: Page) {
     super(page);

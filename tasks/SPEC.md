@@ -12,6 +12,7 @@
 ### 1.1 The Problem
 
 Dealerships struggle to efficiently manage vehicle sales across multiple channels:
+
 - **Manual listing management**: Sales staff spend hours manually posting vehicles to Facebook Marketplace
 - **Lost leads**: Facebook messages go untracked, leading to missed opportunities
 - **Appointment chaos**: No centralized system to schedule and track buyer appointments with dealers
@@ -20,6 +21,7 @@ Dealerships struggle to efficiently manage vehicle sales across multiple channel
 ### 1.2 The Solution
 
 ProSell provides a unified platform that:
+
 1. **Publishes vehicles to Facebook Marketplace** with one click (Phase 1 — COMPLETE ✅)
 2. **Captures leads automatically** from Facebook messages (Phase 4 — IN SCOPE)
 3. **Schedules appointments** between buyers and dealers (Phase 4 — IN SCOPE)
@@ -41,6 +43,7 @@ ProSell provides a unified platform that:
 **Profile**: Sales staff at a dealership, 5-50 vehicles under active management
 
 **Jobs-to-be-Done**:
+
 - Publish vehicles to Facebook Marketplace quickly
 - Respond to leads from Facebook messages
 - Schedule appointments for interested buyers
@@ -48,6 +51,7 @@ ProSell provides a unified platform that:
 - Update vehicle details (price, description, photos)
 
 **Pain Points**:
+
 - Copy-pasting vehicle data to Facebook is tedious
 - Missing Facebook messages means lost sales
 - No visibility into which vehicles are performing best
@@ -60,12 +64,14 @@ ProSell provides a unified platform that:
 **Profile**: Sales team lead, manages 3-10 vendedores
 
 **Jobs-to-be-Done**:
+
 - View team performance (leads per vendedor, conversion rates)
 - Assign leads to team members
 - Monitor publication status across team inventory
 - Approve bulk actions (e.g., price updates, mass publications)
 
 **Pain Points**:
+
 - No visibility into individual vendedor performance
 - Difficult to reassign leads when vendedor is absent
 - Manual tracking of team KPIs in spreadsheets
@@ -77,12 +83,14 @@ ProSell provides a unified platform that:
 **Profile**: Business owner, owns inventory but may not sell directly
 
 **Jobs-to-be-Done**:
+
 - View their inventory and publication status
 - Receive appointment notifications with buyer details
 - Access vehicle performance reports (leads, views)
 - Manage dealership settings
 
 **Pain Points**:
+
 - No direct visibility into inventory status
 - Miss appointments due to poor communication
 - Don't know which vehicles are generating leads
@@ -94,12 +102,14 @@ ProSell provides a unified platform that:
 **Profile**: System administrator, manages organizations and users
 
 **Jobs-to-be-Done**:
+
 - Create and manage organizations (dealerships)
 - Add/remove users and assign roles
 - Configure system settings (Facebook OAuth, email providers)
 - Monitor system health and API integrations
 
 **Pain Points**:
+
 - Manual user management is error-prone
 - Difficult to troubleshoot integration issues
 - No visibility into system-wide metrics
@@ -115,26 +125,31 @@ ProSell provides a unified platform that:
 #### Phase 13 Completion (Frontend C3 Integration)
 
 **FE-01**: As a **Vendedor**, I want to add a vehicle using the new C3 schema so that I can publish it to Facebook
+
 - Acceptance: VehicleForm uses `/api/v1/products` endpoint with VIN auto-creating vehicle
 - Acceptance: Category dropdown loads from `/api/v1/categories` with 5-min cache
 - Acceptance: Form validates required fields before submission
 
 **FE-02**: As a **Vendedor**, I want to see my inventory in the DataGrid so that I can manage my vehicles
+
 - Acceptance: DataGrid loads vehicles from `/api/v1/vehicles` with cursor pagination
 - Acceptance: Each row shows vehicle photo, title, price, status, actions
 - Acceptance: Virtualization handles 1000+ vehicles at 60fps
 
 **FE-03**: As a **Vendedor**, I want to upload vehicle images in bulk so that I can list vehicles faster
+
 - Acceptance: Drag-drop zone accepts up to 20 images
 - Acceptance: Parallel upload (3-4 concurrent) with progress bars
 - Acceptance: Images are processed (thumbnails, WebP, EXIF stripped) on backend
 
 **FE-04**: As a **Vendedor**, I want to search and filter vehicles so that I can find specific vehicles quickly
+
 - Acceptance: Client-side instant search for title/ID/make/model
 - Acceptance: Filter sidebar with faceted navigation (Brand, Status, Price, Year)
 - Acceptance: Command palette (Cmd+K) for quick vehicle search
 
 **FE-05**: As a **System**, I want all E2E tests passing so that the C3 integration is verified
+
 - Acceptance: Smoke test suite (20 critical path tests) passes
 - Acceptance: VehicleForm E2E tests pass with products API
 - Acceptance: Category E2E tests pass with API integration
@@ -144,45 +159,53 @@ ProSell provides a unified platform that:
 #### Phase 4 Implementation (Leads & Appointments)
 
 **LEAD-01**: As a **System**, I want to capture leads from Facebook webhooks so that no lead is lost
+
 - Acceptance: Facebook webhook endpoint receives lead messages within 5 minutes
 - Acceptance: Lead is created with listing_id, buyer_name, message_text, timestamp
 - Acceptance: Fallback polling runs every 10 minutes if webhook fails
 - Acceptance: Duplicate detection prevents duplicate leads (same buyer + listing)
 
 **LEAD-02**: As a **Vendedor**, I want to see incoming leads so that I can follow up
+
 - Acceptance: Leads list page shows all leads assigned to me
 - Acceptance: Each lead shows buyer name, vehicle, message, timestamp, status
 - Acceptance: Unread leads are highlighted
 - Acceptance: Real-time updates via WebSocket or polling
 
 **LEAD-03**: As a **Vendedor**, I want to update lead status so that I can track progress
+
 - Acceptance: Lead lifecycle: new → contacted → qualified → appointment_set → lost
 - Acceptance: Status change triggers notification to Manager
 - Acceptance: Lost leads require reason selection (price, location, not interested)
 
 **LEAD-04**: As a **Vendedor**, I want to create an appointment so that the buyer can visit the dealership
+
 - Acceptance: Appointment form links Lead + Vehicle + Dealer + date/time
 - Acceptance: Dealer receives email notification with appointment details
 - Acceptance: Appointment appears in dealer's calendar view
 - Acceptance: Confirmation is sent to buyer (optional)
 
 **LEAD-05**: As a **Dealer**, I want to receive appointment emails so that I can prepare for the visit
+
 - Acceptance: Email includes buyer name, contact, vehicle, date/time
 - Acceptance: Email is sent via SendGrid immediately after appointment creation
 - Acceptance: Dealer can accept/decline appointment from email link
 
 **LEAD-06**: As a **Manager**, I want to view team leads so that I can assign and monitor
+
 - Acceptance: Team leads view shows all leads across team members
 - Acceptance: Filter by vendedor, status, date range
 - Acceptance: Reassign lead to different vendedor
 - Acceptance: Export leads to CSV for reporting
 
 **LEAD-07**: As a **Vendedor**, I want to manually add a lead so that I can track walk-in or phone leads
+
 - Acceptance: Manual lead form captures name, contact, vehicle, source
 - Acceptance: Source options: Facebook, Phone, Walk-in, Referral, Other
 - Acceptance: Manual leads appear in the same leads list
 
 **LEAD-08**: As a **System**, I want lead data integrity so that reports are accurate
+
 - Acceptance: Lead cannot be deleted (soft delete only)
 - Acceptance: Lead audit log tracks all status changes
 - Acceptance: Lead is linked to organization (tenant_id)
@@ -210,27 +233,29 @@ ProSell provides a unified platform that:
 ### Principle: One Task = One Complete Feature
 
 **Old Approach (Horizontal Slicing)**: Tasks divided by technical layers
+
 - 4-01: Domain entities only
 - 4-02: Repository + use cases only
 - 4-07: Frontend types only
 - **Problem**: After 4 tasks, still no usable feature
 
 **New Approach (Vertical Slicing)**: Each task delivers ONE complete user-facing feature
+
 - A1: Lead Capture Foundation (domain + repo + API + tests)
 - A3: Vendedor Leads List (API + frontend + E2E)
 - **Benefit**: After A3, vendedor can use the feature
 
 ### Phase 4 Vertical Slices (A1-A7)
 
-| Task | Feature | User Stories | Layers Included |
-|------|---------|--------------|-----------------|
-| **A1** | Lead Capture Foundation | LEAD-08, LEAD-03 (partial) | Domain, DB, Repo, Use Cases, API, Tests |
-| **A2** | Facebook Lead Webhook | LEAD-01 | Webhook, GraphAPI, Background Tasks |
-| **A3** | Vendedor Leads List | LEAD-02, LEAD-03 | Frontend Types, API Client, Components, Pages, E2E |
-| **A4** | Appointment Scheduling | LEAD-04, LEAD-05 | Domain, DB, Repo, Use Cases, SendGrid, API, Frontend, Tests |
-| **A5** | Manager Team View | LEAD-06 | API Extensions, Frontend, E2E |
-| **A6** | Dealer Calendar | (Implied) | Frontend, E2E |
-| **A7** | E2E Verification | All | E2E Tests, Smoke Tests |
+| Task   | Feature                 | User Stories               | Layers Included                                             |
+| ------ | ----------------------- | -------------------------- | ----------------------------------------------------------- |
+| **A1** | Lead Capture Foundation | LEAD-08, LEAD-03 (partial) | Domain, DB, Repo, Use Cases, API, Tests                     |
+| **A2** | Facebook Lead Webhook   | LEAD-01                    | Webhook, GraphAPI, Background Tasks                         |
+| **A3** | Vendedor Leads List     | LEAD-02, LEAD-03           | Frontend Types, API Client, Components, Pages, E2E          |
+| **A4** | Appointment Scheduling  | LEAD-04, LEAD-05           | Domain, DB, Repo, Use Cases, SendGrid, API, Frontend, Tests |
+| **A5** | Manager Team View       | LEAD-06                    | API Extensions, Frontend, E2E                               |
+| **A6** | Dealer Calendar         | (Implied)                  | Frontend, E2E                                               |
+| **A7** | E2E Verification        | All                        | E2E Tests, Smoke Tests                                      |
 
 ### Dependency Graph
 
@@ -255,6 +280,7 @@ A1: Lead Capture Foundation (backend complete)
 ### Acceptance Criteria per Vertical Slice
 
 **A1 (Lead Capture Foundation)**:
+
 - Lead entity with 5-state lifecycle (new → contacted → qualified → appointment_set → lost)
 - LeadAuditLog tracks all status changes
 - POST /api/v1/leads creates manual lead
@@ -263,6 +289,7 @@ A1: Lead Capture Foundation (backend complete)
 - Integration tests for use cases pass
 
 **A2 (Facebook Lead Webhook)**:
+
 - POST /api/v1/webhooks/facebook receives lead messages
 - Webhook signature verification (X-Hub-Signature)
 - Lead created from Facebook payload within 5 seconds
@@ -271,6 +298,7 @@ A1: Lead Capture Foundation (backend complete)
 - Integration test passes
 
 **A3 (Vendedor Leads List)**:
+
 - Vendedor views assigned leads at /vendedor/leads
 - Status update dropdown works
 - Search by buyer name/vehicle
@@ -280,6 +308,7 @@ A1: Lead Capture Foundation (backend complete)
 - E2E test passes
 
 **A4 (Appointment Scheduling)**:
+
 - Vendedor creates appointment from lead details
 - AppointmentForm with date-time picker
 - Time validation (business hours, conflicts)
@@ -288,6 +317,7 @@ A1: Lead Capture Foundation (backend complete)
 - E2E test passes
 
 **A5 (Manager Team View)**:
+
 - Manager views all team leads at /manager/team/leads
 - Filter by vendedor dropdown
 - Reassign lead to different vendedor
@@ -296,6 +326,7 @@ A1: Lead Capture Foundation (backend complete)
 - E2E test passes
 
 **A6 (Dealer Calendar)**:
+
 - Dealer views appointments at /dealer/appointments
 - Calendar view (day/week/month)
 - Confirm/cancel appointment buttons
@@ -303,6 +334,7 @@ A1: Lead Capture Foundation (backend complete)
 - E2E test passes
 
 **A7 (E2E Verification)**:
+
 - Facebook webhook → lead → appointment flow verified
 - All E2E tests pass
 - Smoke tests updated with 5 critical lead tests
@@ -316,11 +348,13 @@ A1: Lead Capture Foundation (backend complete)
 
 **Primary Actor**: Vendedor
 **Preconditions**:
+
 - Vendedor is logged in
 - Vendedor has access to at least one dealership
 - Vehicle exists in inventory with valid VIN, photos, price
 
 **Main Flow**:
+
 1. Vendedor navigates to Catalog page
 2. Vendedor clicks "Publicar" button on a vehicle row
 3. System opens PublishModal with vehicle details pre-populated
@@ -336,11 +370,13 @@ A1: Lead Capture Foundation (backend complete)
 13. System schedules auto-republish for 7 days later
 
 **Alternative Flows**:
+
 - **5a. Facebook token expired**: System refreshes token via OAuth flow
 - **8a. Publication fails**: System sets status to "failed", shows error message, allows retry
 - **8b. Rate limit exceeded**: System queues publication for retry with exponential backoff
 
 **Postconditions**:
+
 - Vehicle appears on Facebook Marketplace within 2 minutes
 - Publication record has status "published" or "failed"
 - Auto-republish task is scheduled
@@ -351,11 +387,13 @@ A1: Lead Capture Foundation (backend complete)
 
 **Primary Actor**: System (background task)
 **Preconditions**:
+
 - Facebook page is connected via OAuth
 - Webhook endpoint is registered with Facebook
 - At least one vehicle is published on Facebook
 
 **Main Flow**:
+
 1. Buyer sends message to Facebook listing
 2. Facebook sends webhook event to ProSell endpoint
 3. System verifies webhook signature (X-Hub-Signature)
@@ -369,12 +407,14 @@ A1: Lead Capture Foundation (backend complete)
 11. System increments lead count metrics
 
 **Alternative Flows**:
+
 - **4a. Webhook verification fails**: System returns 403, logs security event
 - **5a. Vehicle not found**: System creates lead with null vehicle, logs error
 - **7a. Duplicate lead detected**: System updates existing lead's timestamp, doesn't create duplicate
 - **10a. Vendedor offline**: System queues notification for next login
 
 **Postconditions**:
+
 - Lead record exists in database
 - Assigned vendedor receives notification
 - Lead appears in vendedor's leads list
@@ -385,12 +425,14 @@ A1: Lead Capture Foundation (backend complete)
 
 **Primary Actor**: Vendedor
 **Preconditions**:
+
 - Vendedor is logged in
 - Lead exists with status "qualified" or "new"
 - Vehicle is linked to lead
 - Dealer is assigned to vehicle
 
 **Main Flow**:
+
 1. Vendedor opens Leads page
 2. Vendedor clicks on a lead to view details
 3. Vendedor clicks "Agendar Cita" button
@@ -407,11 +449,13 @@ A1: Lead Capture Foundation (backend complete)
 14. System shows success confirmation to vendedor
 
 **Alternative Flows**:
+
 - **6a. Time outside business hours**: System shows warning, allows override
 - **9a. Dealer has conflicting appointment**: System shows conflict, allows double-book
 - **12a. SendGrid API fails**: System logs error, retries with exponential backoff
 
 **Postconditions**:
+
 - Appointment record exists with status "scheduled"
 - Lead status is "appointment_set"
 - Dealer receives email notification
@@ -423,10 +467,12 @@ A1: Lead Capture Foundation (backend complete)
 
 **Primary Actor**: Vendedor
 **Preconditions**:
+
 - Vendedor is logged in
 - Lead exists and is assigned to vendedor
 
 **Main Flow**:
+
 1. Vendedor opens Leads page
 2. Vendedor clicks on a lead to view details
 3. Vendedor clicks "Status" dropdown
@@ -440,6 +486,7 @@ A1: Lead Capture Foundation (backend complete)
 11. System updates lead metrics in dashboard
 
 **Postconditions**:
+
 - Lead status is updated
 - Audit log entry exists
 - Manager receives notification (if applicable)
@@ -450,11 +497,13 @@ A1: Lead Capture Foundation (backend complete)
 
 **Primary Actor**: Vendedor
 **Preconditions**:
+
 - Vendedor is logged in
 - Vendedor has access to at least one dealership
 - Categories are loaded in system
 
 **Main Flow**:
+
 1. Vendedor navigates to Catalog page
 2. Vendedor clicks "Nuevo Vehículo" button
 3. System opens VehicleForm
@@ -476,12 +525,14 @@ A1: Lead Capture Foundation (backend complete)
 19. System shows success toast notification
 
 **Alternative Flows**:
+
 - **4a. VIN decode fails**: System shows error, allows manual entry
 - **7a. Category not selected**: System disables "Guardar" button
 - **11a. Image upload fails**: System shows error for failed image, allows retry
 - **15a. Transaction fails**: System rolls back Product, shows error message
 
 **Postconditions**:
+
 - Product record exists in database
 - Vehicle record exists (linked to Product via product_id)
 - Photos are uploaded and processed
@@ -693,6 +744,7 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 #### E2E Tests (Playwright)
 
 **File**: `tests/e2e/smoke.spec.ts` (NEW — 20 critical path tests)
+
 - Auth flow: Login, logout, protected route redirect
 - Vehicle form: VIN decode, category select, form submit, validation
 - DataGrid: Load vehicles, pagination, filtering, sorting
@@ -700,22 +752,26 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 - Publish flow: Publish modal, Facebook connection, status update
 
 **File**: `tests/e2e/specs/vehicle-form-vin.spec.ts` (UPDATE)
+
 - Test against `/api/v1/products` endpoint (not mocks)
 - Verify VIN decode populates correct fields
 - Verify category selection loads from API
 - Verify form submit creates product + vehicle
 
 **File**: `tests/e2e/specs/categories.spec.ts` (NEW)
+
 - Test category dropdown loads from `/api/v1/categories`
 - Test category selection triggers attribute_schema fields
 - Test role-based filtering (admin vs. vendedor)
 
 **File**: `tests/e2e/specs/vehicles.spec.ts` (UPDATE)
+
 - Test DataGrid loads from `/api/v1/vehicles`
 - Test cursor pagination (load more, scroll)
 - Test C3 join data (product + vehicle fields displayed)
 
 **File**: `tests/e2e/specs/bulk-upload.spec.ts` (UPDATE)
+
 - Test CSV upload creates products via API
 - Test image upload uses presigned URLs
 - Test progress bar updates correctly
@@ -723,16 +779,19 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 #### Integration Tests (Backend)
 
 **File**: `apps/api/tests/integration/api/test_product_c3.py` (EXISTING)
+
 - Test product creation with VIN creates vehicle
 - Test product creation without VIN creates product only
 - Test category validation
 
 **File**: `apps/api/tests/integration/api/test_vehicle_api.py` (EXISTING)
+
 - Test vehicle CRUD operations
 - Test C3 join queries (product + vehicle)
 - Test role-based filtering (tenant_id)
 
 **File**: `apps/api/tests/integration/api/test_category_api.py` (EXISTING)
+
 - Test category CRUD
 - Test attribute_schema validation
 - Test role-based access control
@@ -740,11 +799,13 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 #### Unit Tests (Frontend)
 
 **File**: `apps/web/tests/unit/api/categories.test.ts` (EXISTING)
+
 - Test `useCategories` hook
 - Test `useCategoryOptions` transformation
 - Test 5-min cache behavior
 
 **File**: `apps/web/tests/unit/api/products.test.ts` (NEW)
+
 - Test `useCreateProduct` mutation
 - Test query invalidation on success
 - Test error handling
@@ -754,6 +815,7 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 #### E2E Tests (Playwright)
 
 **File**: `tests/e2e/specs/leads.spec.ts` (NEW)
+
 - Test lead list loads from API
 - Test lead status update
 - Test lead details view
@@ -761,12 +823,14 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 - Test real-time lead notification (mocked WebSocket)
 
 **File**: `tests/e2e/specs/appointments.spec.ts` (NEW)
+
 - Test appointment creation from lead
 - Test appointment form validation
 - Test dealer calendar view
 - Test appointment status update
 
 **File**: `tests/e2e/specs/facebook-webhook.spec.ts` (NEW)
+
 - Test webhook endpoint receives Facebook payload
 - Test lead creation from webhook
 - Test duplicate lead detection
@@ -775,18 +839,21 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 #### Integration Tests (Backend)
 
 **File**: `apps/api/tests/integration/test_facebook_lead_webhook.py` (NEW)
+
 - Test webhook endpoint creates lead
 - Test webhook verification (X-Hub-Signature)
 - Test duplicate lead detection
 - Test vendedor assignment logic
 
 **File**: `apps/api/tests/integration/test_lead_usecases.py` (NEW)
+
 - Test `CreateLeadUseCase`
 - Test `UpdateLeadStatusUseCase`
 - Test lead audit log creation
 - Test lead filtering by tenant_id
 
 **File**: `apps/api/tests/integration/test_appointment_usecases.py` (NEW)
+
 - Test `CreateAppointmentUseCase`
 - Test appointment time validation
 - Test lead status update to "appointment_set"
@@ -795,11 +862,13 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 #### Unit Tests (Backend)
 
 **File**: `apps/api/tests/unit/domain/test_lead_entity.py` (NEW)
+
 - Test lead lifecycle state machine
 - Test lead status transitions
 - Test lead validation rules
 
 **File**: `apps/api/tests/unit/domain/test_appointment_entity.py` (NEW)
+
 - Test appointment validation
 - Test appointment status transitions
 - Test appointment-dealer relationship
@@ -807,11 +876,13 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 #### Contract Tests
 
 **File**: `tests/contract/openapi/test_leads_schema.py` (NEW)
+
 - Test lead DTO matches OpenAPI schema
 - Test lead list response schema
 - Test lead creation request schema
 
 **File**: `tests/contract/openapi/test_appointments_schema.py` (NEW)
+
 - Test appointment DTO matches OpenAPI schema
 - Test appointment creation request schema
 
@@ -822,6 +893,7 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 ### 7.1 Phase 13 Completion (C3 Frontend Integration)
 
 **FE-01**: VehicleForm uses C3 API
+
 - [ ] VehicleForm calls `POST /api/v1/products` on submit
 - [ ] VIN in attributes triggers auto-creation of vehicle record
 - [ ] Category dropdown loads from `/api/v1/categories` with 5-min cache
@@ -829,24 +901,28 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 - [ ] Success toast shows on creation, redirects to catalog
 
 **FE-02**: DataGrid uses C3 API
+
 - [ ] DataGrid loads vehicles from `/api/v1/vehicles` with cursor pagination
 - [ ] Each row displays product + vehicle fields (title, price, VIN, status)
 - [ ] Virtualization maintains 60fps with 1000+ vehicles
 - [ ] Search/filter works with real data (not mocks)
 
 **FE-03**: Image Upload works
+
 - [ ] Drag-drop zone accepts up to 20 images
 - [ ] Images upload in parallel (3-4 concurrent) via presigned URLs
 - [ ] Progress bars show 0-100% per file
 - [ ] Backend processes images (thumbnails, WebP, EXIF strip)
 
 **FE-04**: Search & Filters work
+
 - [ ] Client-side instant search for title/ID/make/model
 - [ ] Filter sidebar with Brand, Status, Price, Year filters
 - [ ] Command palette (Cmd+K) opens with fuzzy search
 - [ ] URL state sync (shareable filtered links)
 
 **FE-05**: E2E Tests Pass
+
 - [ ] Smoke test suite (20 tests) passes in < 2 minutes
 - [ ] VehicleForm E2E tests pass with `/api/v1/products`
 - [ ] Category E2E tests pass with `/api/v1/categories`
@@ -857,6 +933,7 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 ### 7.2 Phase 4 Implementation (Leads & Appointments)
 
 **LEAD-01**: Facebook Lead Capture
+
 - [ ] Webhook endpoint `POST /api/v1/webhooks/facebook` exists
 - [ ] Webhook signature verification implemented
 - [ ] Lead created from Facebook message within 5 minutes
@@ -864,40 +941,47 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 - [ ] Fallback polling runs every 10 minutes if webhook fails
 
 **LEAD-02**: Leads List View
+
 - [ ] Vendedor can view assigned leads
 - [ ] Each lead shows buyer name, vehicle, message, status
 - [ ] Unread leads are highlighted
 - [ ] Real-time updates (WebSocket or polling)
 
 **LEAD-03**: Lead Status Update
+
 - [ ] Lead lifecycle: new → contacted → qualified → appointment_set → lost
 - [ ] Status change creates audit log entry
 - [ ] Manager receives notification on critical status changes
 
 **LEAD-04**: Appointment Creation
+
 - [ ] Appointment form links Lead + Vehicle + Dealer + date/time
 - [ ] Appointment time validation (business hours, conflicts)
 - [ ] Lead status updates to "appointment_set"
 - [ ] Dealer receives email notification via SendGrid
 
 **LEAD-05**: Dealer Email Notifications
+
 - [ ] SendGrid email sent immediately after appointment creation
 - [ ] Email includes buyer name, contact, vehicle, date/time
 - [ ] Email has accept/decline action links
 - [ ] Email delivery confirmed (not in spam folder)
 
 **LEAD-06**: Manager Team Leads View
+
 - [ ] Manager can view all team leads
 - [ ] Filter by vendedor, status, date range
 - [ ] Reassign lead to different vendedor
 - [ ] Export leads to CSV
 
 **LEAD-07**: Manual Lead Creation
+
 - [ ] Manual lead form captures name, contact, vehicle, source
 - [ ] Source options: Facebook, Phone, Walk-in, Referral, Other
 - [ ] Manual leads appear in same leads list
 
 **LEAD-08**: Lead Data Integrity
+
 - [ ] Soft delete only (no hard delete)
 - [ ] Audit log tracks all status changes
 - [ ] All leads have tenant_id
@@ -906,29 +990,34 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 ### 7.3 System-Wide Acceptance Criteria
 
 **SEC-01**: Authentication & Authorization
+
 - [ ] All endpoints require valid JWT token
 - [ ] Role-based access control enforced (vendedor, manager, admin, dealer)
 - [ ] Tenant isolation enforced (tenant_id in all queries)
 - [ ] OAuth flow works for Facebook, Google
 
 **SEC-02**: Data Validation
+
 - [ ] All user inputs sanitized (SQL injection, XSS prevention)
 - [ ] File uploads validated (type, size, dimensions)
 - [ ] API rate limiting enforced
 - [ ] Webhook signature verification
 
 **PERF-01**: Performance
+
 - [ ] Vehicle list page loads in < 2 seconds (1000 vehicles)
 - [ ] VIN decode completes in < 3 seconds
 - [ ] Lead webhook processes in < 1 second
 - [ ] Email notification sends in < 5 seconds
 
 **PERF-02**: Scalability
+
 - [ ] DataGrid virtualization handles 10,000+ vehicles
 - [ ] Background task queue processes 100+ publications/hour
 - [ ] Webhook endpoint handles 100+ concurrent requests
 
 **REL-01**: Reliability
+
 - [ ] Auto-republish schedules 7 days before expiry
 - [ ] Failed publications retry with exponential backoff
 - [ ] Email notifications retry on failure
@@ -941,30 +1030,35 @@ facebook_accounts (id, user_id, page_id, page_name, access_token, token_expires_
 Explicitly **OUT OF SCOPE** for this milestone:
 
 ### Phase 3: Scraping
+
 - Automated dealer website sync
 - CarGurus price extraction
 - Scraping anti-detection measures
 - Duplicate vehicle detection from scraping
 
 ### Phase 5: Dashboards
+
 - Admin dashboard with global metrics
 - Manager dashboard with team performance
 - Vendedor dashboard with personal KPIs
 - Dealer dashboard with inventory views
 
 ### Phase 6: Market Intelligence
+
 - Price benchmarking vs. market
 - Market position indicators
 - Price trend analysis
 - Outlier price detection
 
 ### Phase 7: Visibility
+
 - Public-facing catalog
 - SEO-friendly URLs
 - Landing page optimization
 - AI-generated listing titles
 
 ### Nice-to-Have Features (Future)
+
 - WhatsApp integration for lead responses
 - Automated follow-up reminders
 - AI lead scoring
@@ -977,18 +1071,21 @@ Explicitly **OUT OF SCOPE** for this milestone:
 ## 9. Dependencies
 
 ### Technical Dependencies
+
 - **SendGrid Account**: Required for appointment email notifications (Phase 4)
 - **Facebook Graph API**: App Review approval pending (Playwright fallback available)
 - **Redis**: Required for background task queue (Taskiq)
 - **PostgreSQL 17**: Required for C3 schema (already installed)
 
 ### Phase Dependencies
+
 - **Phase 13 must complete before Phase 4**: C3 integration provides the foundation
 - **Phase 1 must be complete**: Already complete ✅
 - **Phase 2 must be complete**: Already complete ✅
 - **Phase 8 must be complete**: Already complete ✅
 
 ### External Services
+
 - **NHTSA VIN API**: Free, no API key required
 - **Facebook OAuth**: Requires Facebook Developer account
 - **SendGrid**: Requires account with API key
@@ -999,26 +1096,31 @@ Explicitly **OUT OF SCOPE** for this milestone:
 ## 10. Risks & Mitigations
 
 ### Risk 1: Facebook Graph API Approval Pending
+
 **Impact**: HIGH — Can't use Graph API for publishing
 **Mitigation**: Playwright fallback is already implemented and tested
 **Contingency**: Continue with Playwright until App Review approved
 
 ### Risk 2: SendGrid Not Wired
+
 **Impact**: HIGH — Dealers won't receive appointment notifications
 **Mitigation**: Wire SendGrid in Phase 4, implementation task
 **Contingency**: Use console.log fallback for development
 
 ### Risk 3: Lead Webhook Delay
+
 **Impact**: MEDIUM — Leads not captured in real-time
 **Mitigation**: Implement polling fallback (every 10 minutes)
 **Contingency**: Manual lead entry as backup
 
 ### Risk 4: Phase 13 Test Flakiness
+
 **Impact**: MEDIUM — Blocks Phase 4 development
 **Mitigation**: Smoke test suite runs fast (2 min), catch regressions early
 **Contingency**: Manual testing if E2E tests unstable
 
 ### Risk 5: Email Deliverability
+
 **Impact**: LOW — Dealers might not see appointment emails
 **Mitigation**: Use SendGrid with SPF/DKIM records
 **Contingency**: In-app notification center
@@ -1028,6 +1130,7 @@ Explicitly **OUT OF SCOPE** for this milestone:
 ## 11. Success Metrics
 
 ### Phase 13 Success
+
 - [ ] All E2E tests passing (smoke suite + feature-specific tests)
 - [ ] VehicleForm creates products + vehicles via API
 - [ ] DataGrid loads 1000+ vehicles at 60fps
@@ -1035,6 +1138,7 @@ Explicitly **OUT OF SCOPE** for this milestone:
 - [ ] No regressions in existing functionality
 
 ### Phase 4 Success
+
 - [ ] Vendedor can publish vehicle → capture lead → create appointment (end-to-end flow)
 - [ ] Lead webhook captures Facebook messages within 5 minutes
 - [ ] Dealer receives appointment email within 10 seconds
@@ -1042,6 +1146,7 @@ Explicitly **OUT OF SCOPE** for this milestone:
 - [ ] All E2E tests passing for lead/appointment flows
 
 ### MVP Complete
+
 - [ ] Vendedor can complete full sales cycle: Publish → Lead → Appointment
 - [ ] All Phase 13 acceptance criteria met
 - [ ] All Phase 4 Must Have user stories implemented

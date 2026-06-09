@@ -26,17 +26,23 @@ export class OrganizationsListPage extends BasePage {
     this.heading = page.getByRole("heading", { name: /organizations/i });
 
     // Buttons
-    this.createOrgButton = page.getByRole("button", { name: /create organization/i });
+    this.createOrgButton = page.getByRole("button", {
+      name: /create organization/i,
+    });
 
     // Organization cards - use links that point to org detail pages
     // Matches the pattern /dashboard/org/{uuid} without sub-paths like /edit, /wallet
     this.orgCards = page.locator('a[href^="/dashboard/org/"]').filter({
-      hasNot: page.locator('[href$="/edit"], [href$="/wallet"], [href$="/members"], [href$="/teams"]'),
+      hasNot: page.locator(
+        '[href$="/edit"], [href$="/wallet"], [href$="/members"], [href$="/teams"]',
+      ),
     });
 
     // States
-    this.emptyStateMessage = page.getByText(/you don't have any organizations yet/i);
-    this.loadingSpinner = page.locator('.animate-spin');
+    this.emptyStateMessage = page.getByText(
+      /you don't have any organizations yet/i,
+    );
+    this.loadingSpinner = page.locator(".animate-spin");
 
     // Pagination
     this.paginationInfo = page.getByText(/showing \d+ of \d+ organizations/i);
@@ -60,7 +66,9 @@ export class OrganizationsListPage extends BasePage {
     // Verify the heading is visible with increased timeout
     await expect(this.heading).toBeVisible({ timeout: 10000 });
     // Wait for loading spinner to disappear (indicates data fetch completed)
-    await this.page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 5000 }).catch(() => {});
+    await this.page
+      .waitForSelector(".animate-spin", { state: "hidden", timeout: 5000 })
+      .catch(() => {});
     // Brief pause to ensure re-render completes
     await this.page.waitForTimeout(100);
   }
@@ -96,7 +104,11 @@ export class OrganizationsListPage extends BasePage {
   getViewButton(name: string): Locator {
     // Find the org link, navigate to parent container, then find View button
     const orgLink = this.page.getByRole("link", { name });
-    const cardContainer = orgLink.locator('..').locator('..').locator('..').locator('..');
+    const cardContainer = orgLink
+      .locator("..")
+      .locator("..")
+      .locator("..")
+      .locator("..");
     return cardContainer.getByRole("button", { name: /view/i });
   }
 
@@ -116,7 +128,9 @@ export class OrganizationsListPage extends BasePage {
    */
   async clickFirstViewButton(): Promise<void> {
     // Get the first View button in the list
-    const firstViewButton = this.page.getByRole("button", { name: /view/i }).first();
+    const firstViewButton = this.page
+      .getByRole("button", { name: /view/i })
+      .first();
     await firstViewButton.click({ force: true });
     // Wait for navigation to complete
     await this.page.waitForLoadState("domcontentloaded");

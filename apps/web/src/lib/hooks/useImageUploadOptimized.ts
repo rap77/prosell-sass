@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { useUploadStore } from '@/lib/stores/uploadStore'
-import { uploadImageDirect } from '@/lib/api/images'
+import { useUploadStore } from "@/lib/stores/uploadStore";
+import { uploadImageDirect } from "@/lib/api/images";
 
 /**
  * Result of uploading a single image to the backend.
@@ -15,8 +15,8 @@ import { uploadImageDirect } from '@/lib/api/images'
  *           column (e.g. `product.image_urls`).
  */
 export interface UploadedImage {
-  url: string
-  key: string
+  url: string;
+  key: string;
 }
 
 /**
@@ -29,7 +29,7 @@ export interface UploadedImage {
  * skipped — they're already in MinIO, no upload needed.
  */
 export function useImageUploadOptimized() {
-  const { updateEntry } = useUploadStore()
+  const { updateEntry } = useUploadStore();
 
   /**
    * Upload a single image using the optimized server-side flow.
@@ -39,24 +39,31 @@ export function useImageUploadOptimized() {
    * @returns The signed `url` (preview, expires in 1h) AND the raw storage `key`
    *          (persist this in `product.image_urls`).
    */
-  async function uploadImage(file: File, fileId: string): Promise<UploadedImage> {
+  async function uploadImage(
+    file: File,
+    fileId: string,
+  ): Promise<UploadedImage> {
     try {
-      updateEntry(fileId, { status: 'uploading' })
+      updateEntry(fileId, { status: "uploading" });
 
       // Upload to backend (optimizes + uploads to cloud)
-      const { url, key } = await uploadImageDirect(file)
+      const { url, key } = await uploadImageDirect(file);
 
       // Mark complete with the real storage key. The picker's tile
       // and the form's submit handler now both have a real key to
       // work with. The signed `url` becomes the entry's `preview`
       // (ImageEntry has no separate `url` field — preview is what the
       // gallery renders).
-      updateEntry(fileId, { status: 'complete', storageKey: key, preview: url })
+      updateEntry(fileId, {
+        status: "complete",
+        storageKey: key,
+        preview: url,
+      });
 
-      return { url, key }
+      return { url, key };
     } catch (error) {
-      updateEntry(fileId, { status: 'error' })
-      throw error
+      updateEntry(fileId, { status: "error" });
+      throw error;
     }
   }
 
@@ -71,34 +78,37 @@ export function useImageUploadOptimized() {
    *
    * @returns Array of `{id, key}` records, one per in-flight entry.
    */
-  async function uploadImages(): Promise<Array<{ id: string; key: string; url: string }>> {
-    const { images } = useUploadStore.getState()
-    const inFlight = images.filter((e) => e.file)
-    if (inFlight.length === 0) return []
+  async function uploadImages(): Promise<
+    Array<{ id: string; key: string; url: string }>
+  > {
+    const { images } = useUploadStore.getState();
+    const inFlight = images.filter((e) => e.file);
+    if (inFlight.length === 0) return [];
 
     // Chunked concurrency: browsers cap parallel requests at ~6;
     // 3 keeps us well under that and gives the network breathing room.
-    const chunkSize = 3
-    const results: Array<{ id: string; key: string; url: string }> = []
+    const chunkSize = 3;
+    const results: Array<{ id: string; key: string; url: string }> = [];
     for (let i = 0; i < inFlight.length; i += chunkSize) {
-      const chunk = inFlight.slice(i, i + chunkSize)
+      const chunk = inFlight.slice(i, i + chunkSize);
       const chunkResults = await Promise.all(
         chunk.map(({ id, file }) => {
-          if (!file) throw new Error(`In-flight entry ${id} is missing its file`)
-          return uploadImage(file, id)
+          if (!file)
+            throw new Error(`In-flight entry ${id} is missing its file`);
+          return uploadImage(file, id);
         }),
-      )
+      );
       for (const r of chunkResults) {
         // We don't have the id from the upload return — the
         // upload hook is called with the id, and the result is
         // for that id. The Promise.all preserves order, so we
         // can match by index in the chunk.
-        const entry = chunk[chunkResults.indexOf(r)]
-        results.push({ id: entry.id, key: r.key, url: r.url })
+        const entry = chunk[chunkResults.indexOf(r)];
+        results.push({ id: entry.id, key: r.key, url: r.url });
       }
     }
-    return results
+    return results;
   }
 
-  return { uploadImage, uploadImages }
+  return { uploadImage, uploadImages };
 }

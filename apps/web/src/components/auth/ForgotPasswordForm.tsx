@@ -24,7 +24,10 @@ import { CheckCircle2, AlertCircle } from "lucide-react";
 // ============================================
 
 const forgotPasswordSchema = z.object({
-  email: z.string().min(1, "El email es requerido").email("El email no es válido"),
+  email: z
+    .string()
+    .min(1, "El email es requerido")
+    .email("El email no es válido"),
 });
 
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
@@ -36,17 +39,17 @@ type FormState = "idle" | "loading" | "success" | "error";
 // ============================================
 
 const pageStyle: React.CSSProperties = {
-  minHeight: '100vh',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'var(--ps-bg-base)',
-  padding: '16px',
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "var(--ps-bg-base)",
+  padding: "16px",
 };
 
 const cardStyle: React.CSSProperties = {
-  background: 'var(--ps-bg-surface)',
-  border: '1px solid var(--ps-border-default)',
+  background: "var(--ps-bg-surface)",
+  border: "1px solid var(--ps-border-default)",
   borderRadius: 14,
   padding: 32,
 };
@@ -90,51 +93,84 @@ export function ForgotPasswordForm() {
   if (formState === "success" && submittedEmail) {
     return (
       <div style={pageStyle}>
-        <div style={{ width: '100%', maxWidth: 440 }}>
+        <div style={{ width: "100%", maxWidth: 440 }}>
           <div style={cardStyle}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                width: 64,
-                height: 64,
-                borderRadius: '50%',
-                background: 'var(--ps-success-bg)',
-                border: '1px solid rgba(34,211,160,0.25)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 20,
-              }}>
-                <CheckCircle2 size={28} strokeWidth={1.8} style={{ color: 'var(--ps-success)' }} />
+            <div style={{ textAlign: "center" }}>
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "var(--ps-success-bg)",
+                  border: "1px solid rgba(34,211,160,0.25)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 20,
+                }}
+              >
+                <CheckCircle2
+                  size={28}
+                  strokeWidth={1.8}
+                  style={{ color: "var(--ps-success)" }}
+                />
               </div>
 
-              <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>
+              <h2
+                style={{
+                  margin: "0 0 8px",
+                  fontSize: 22,
+                  fontWeight: 700,
+                  letterSpacing: "-0.02em",
+                  color: "var(--ps-text-primary)",
+                }}
+              >
                 Revisá tu email
               </h2>
-              <p style={{ margin: '0 0 6px', fontSize: 14, color: 'var(--ps-text-secondary)', lineHeight: 1.6 }}>
-                Te enviamos un enlace de recuperación a{' '}
-                <span style={{ color: 'var(--ps-text-primary)', fontWeight: 600 }}>
+              <p
+                style={{
+                  margin: "0 0 6px",
+                  fontSize: 14,
+                  color: "var(--ps-text-secondary)",
+                  lineHeight: 1.6,
+                }}
+              >
+                Te enviamos un enlace de recuperación a{" "}
+                <span
+                  style={{ color: "var(--ps-text-primary)", fontWeight: 600 }}
+                >
                   {submittedEmail}
-                </span>.
+                </span>
+                .
               </p>
-              <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--ps-text-disabled)', lineHeight: 1.6 }}>
+              <p
+                style={{
+                  margin: "0 0 24px",
+                  fontSize: 13,
+                  color: "var(--ps-text-disabled)",
+                  lineHeight: 1.6,
+                }}
+              >
                 El enlace expira en 24 horas.
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+              >
                 <Link
                   href="/auth/login"
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                     height: 44,
-                    background: 'var(--ps-cyan)',
-                    color: 'var(--ps-bg-base)',
+                    background: "var(--ps-cyan)",
+                    color: "var(--ps-bg-base)",
                     border: 0,
                     borderRadius: 8,
                     fontSize: 15,
                     fontWeight: 600,
-                    textDecoration: 'none',
+                    textDecoration: "none",
                   }}
                 >
                   Volver al inicio de sesión
@@ -147,13 +183,13 @@ export function ForgotPasswordForm() {
                   }}
                   style={{
                     height: 44,
-                    background: 'transparent',
-                    border: '1px solid var(--ps-border-default)',
+                    background: "transparent",
+                    border: "1px solid var(--ps-border-default)",
                     borderRadius: 8,
-                    color: 'var(--ps-text-secondary)',
+                    color: "var(--ps-text-secondary)",
                     fontSize: 14,
                     fontWeight: 500,
-                    cursor: 'pointer',
+                    cursor: "pointer",
                   }}
                 >
                   Reenviar email
@@ -172,12 +208,27 @@ export function ForgotPasswordForm() {
 
   return (
     <div style={pageStyle}>
-      <div style={{ width: '100%', maxWidth: 440 }}>
+      <div style={{ width: "100%", maxWidth: 440 }}>
         <div style={cardStyle}>
-          <h2 style={{ margin: '0 0 6px', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>
+          <h2
+            style={{
+              margin: "0 0 6px",
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              color: "var(--ps-text-primary)",
+            }}
+          >
             ¿Olvidaste tu contraseña?
           </h2>
-          <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--ps-text-secondary)', lineHeight: 1.5 }}>
+          <p
+            style={{
+              margin: "0 0 24px",
+              fontSize: 14,
+              color: "var(--ps-text-secondary)",
+              lineHeight: 1.5,
+            }}
+          >
             Ingresá tu email y te mandamos un enlace para recuperarla.
           </p>
 
@@ -185,31 +236,41 @@ export function ForgotPasswordForm() {
             <div
               role="alert"
               style={{
-                display: 'flex',
-                alignItems: 'center',
+                display: "flex",
+                alignItems: "center",
                 gap: 8,
-                padding: '10px 14px',
+                padding: "10px 14px",
                 borderRadius: 8,
                 marginBottom: 16,
-                background: 'var(--ps-error-bg)',
-                border: '1px solid rgba(240,68,56,0.25)',
+                background: "var(--ps-error-bg)",
+                border: "1px solid rgba(240,68,56,0.25)",
               }}
             >
-              <AlertCircle size={14} style={{ color: 'var(--ps-error)', flexShrink: 0 }} strokeWidth={2.5} />
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--ps-error)' }}>{errorMessage}</p>
+              <AlertCircle
+                size={14}
+                style={{ color: "var(--ps-error)", flexShrink: 0 }}
+                strokeWidth={2.5}
+              />
+              <p style={{ margin: 0, fontSize: 13, color: "var(--ps-error)" }}>
+                {errorMessage}
+              </p>
             </div>
           )}
 
           <form
             onSubmit={handleSubmit(onSubmit)}
-            style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+            style={{ display: "flex", flexDirection: "column", gap: 16 }}
             noValidate
           >
             {/* Email field */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label
                 htmlFor="forgot-email"
-                style={{ fontSize: 13, fontWeight: 500, color: 'var(--ps-text-secondary)' }}
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "var(--ps-text-secondary)",
+                }}
               >
                 Dirección de email
               </label>
@@ -221,19 +282,21 @@ export function ForgotPasswordForm() {
                 placeholder="vos@empresa.com"
                 disabled={isDisabled}
                 aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? "forgot-email-error" : undefined}
+                aria-describedby={
+                  errors.email ? "forgot-email-error" : undefined
+                }
                 style={{
                   height: 44,
-                  padding: '0 14px',
-                  background: 'var(--ps-input-bg)',
-                  border: `1px solid ${errors.email ? 'var(--ps-error)' : 'var(--ps-input-border)'}`,
+                  padding: "0 14px",
+                  background: "var(--ps-input-bg)",
+                  border: `1px solid ${errors.email ? "var(--ps-error)" : "var(--ps-input-border)"}`,
                   borderRadius: 8,
-                  color: 'var(--ps-text-primary)',
+                  color: "var(--ps-text-primary)",
                   fontSize: 15,
-                  outline: 'none',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  transition: 'border-color 180ms',
+                  outline: "none",
+                  width: "100%",
+                  boxSizing: "border-box",
+                  transition: "border-color 180ms",
                   opacity: isDisabled ? 0.6 : 1,
                 }}
               />
@@ -241,7 +304,7 @@ export function ForgotPasswordForm() {
                 <span
                   id="forgot-email-error"
                   role="alert"
-                  style={{ fontSize: 12, color: 'var(--ps-error)' }}
+                  style={{ fontSize: 12, color: "var(--ps-error)" }}
                 >
                   {errors.email.message}
                 </span>
@@ -254,26 +317,35 @@ export function ForgotPasswordForm() {
               disabled={isDisabled}
               style={{
                 marginTop: 8,
-                width: '100%',
+                width: "100%",
                 height: 44,
-                background: isDisabled ? 'rgba(77,184,255,0.4)' : 'var(--ps-cyan)',
-                color: 'var(--ps-bg-base)',
+                background: isDisabled
+                  ? "rgba(77,184,255,0.4)"
+                  : "var(--ps-cyan)",
+                color: "var(--ps-bg-base)",
                 border: 0,
                 borderRadius: 8,
                 fontSize: 15,
                 fontWeight: 600,
-                cursor: isDisabled ? 'not-allowed' : 'pointer',
-                transition: 'background 180ms',
+                cursor: isDisabled ? "not-allowed" : "pointer",
+                transition: "background 180ms",
               }}
             >
-              {formState === "loading" ? "Enviando..." : "Enviar enlace de recuperación"}
+              {formState === "loading"
+                ? "Enviando..."
+                : "Enviar enlace de recuperación"}
             </button>
 
             {/* Back link */}
-            <div style={{ textAlign: 'center' }}>
+            <div style={{ textAlign: "center" }}>
               <Link
                 href="/auth/login"
-                style={{ fontSize: 13, color: 'var(--ps-text-secondary)', textDecoration: 'none', fontWeight: 500 }}
+                style={{
+                  fontSize: 13,
+                  color: "var(--ps-text-secondary)",
+                  textDecoration: "none",
+                  fontWeight: 500,
+                }}
               >
                 Volver al inicio de sesión
               </Link>

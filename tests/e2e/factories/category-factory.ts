@@ -11,7 +11,7 @@
  * - is_active: required, boolean
  */
 
-import { BaseFactory } from './base-factory';
+import { BaseFactory } from "./base-factory";
 
 export interface CategoryData {
   id: string;
@@ -29,7 +29,7 @@ export class CategoryFactory extends BaseFactory<CategoryData> {
    * Each call generates different ID, name, slug.
    */
   create(overrides?: Partial<CategoryData>): CategoryData {
-    const id = this.generateId('cat');
+    const id = this.generateId("cat");
     const name = `Test Category ${this.counter}`;
     const slug = `test-category-${this.counter}`;
     const now = this.generateDateTime();
@@ -66,13 +66,13 @@ export class CategoryFactory extends BaseFactory<CategoryData> {
    */
   createInvalid(): CategoryData {
     return {
-      id: '', // Invalid: empty ID
-      name: '', // Invalid: empty name
-      slug: 'INVALID SLUG!!!', // Invalid: not URL-safe
+      id: "", // Invalid: empty ID
+      name: "", // Invalid: empty name
+      slug: "INVALID SLUG!!!", // Invalid: not URL-safe
       attribute_schema: {}, // Invalid: empty schema
       is_active: false,
-      created_at: 'not-a-date',
-      updated_at: 'not-a-date',
+      created_at: "not-a-date",
+      updated_at: "not-a-date",
     };
   }
 
@@ -81,13 +81,13 @@ export class CategoryFactory extends BaseFactory<CategoryData> {
    * Tests special characters, maximum lengths, etc.
    */
   createEdgeCase(): CategoryData {
-    const id = this.generateId('cat');
+    const id = this.generateId("cat");
     const now = this.generateDateTime();
 
     return {
       id,
-      name: 'Ñoño García-López Category 123', // Special chars, spaces, numbers
-      slug: 'ono-garca-lopez-category-123', // Normalized slug (lowercase, hyphens)
+      name: "Ñoño García-López Category 123", // Special chars, spaces, numbers
+      slug: "ono-garca-lopez-category-123", // Normalized slug (lowercase, hyphens)
       attribute_schema: {
         year: true,
         make: true,
@@ -113,13 +113,24 @@ export class CategoryFactory extends BaseFactory<CategoryData> {
    * Create multiple categories with different names.
    * Useful for testing category list views.
    */
-  createBatch(count: number, overrides?: Partial<CategoryData>): CategoryData[] {
+  createBatch(
+    count: number,
+    overrides?: Partial<CategoryData>,
+  ): CategoryData[] {
     const categories: CategoryData[] = [];
-    const categoryTypes = ['SUVs', 'Sedans', 'Trucks', 'Vans', 'Coupes', 'Convertibles'];
+    const categoryTypes = [
+      "SUVs",
+      "Sedans",
+      "Trucks",
+      "Vans",
+      "Coupes",
+      "Convertibles",
+    ];
 
     for (let i = 0; i < count; i++) {
-      const name = categoryTypes[i % categoryTypes.length] || `Category ${i + 1}`;
-      const slug = name.toLowerCase().replace(/\s+/g, '-');
+      const name =
+        categoryTypes[i % categoryTypes.length] || `Category ${i + 1}`;
+      const slug = name.toLowerCase().replace(/\s+/g, "-");
 
       const category = this.create({
         ...overrides,
@@ -139,8 +150,8 @@ export class CategoryFactory extends BaseFactory<CategoryData> {
   createSUV(overrides?: Partial<CategoryData>): CategoryData {
     return this.create({
       ...overrides,
-      name: 'SUVs',
-      slug: 'suvs',
+      name: "SUVs",
+      slug: "suvs",
       attribute_schema: {
         year: true,
         make: true,
@@ -166,8 +177,8 @@ export class CategoryFactory extends BaseFactory<CategoryData> {
   createSedan(overrides?: Partial<CategoryData>): CategoryData {
     return this.create({
       ...overrides,
-      name: 'Sedans',
-      slug: 'sedans',
+      name: "Sedans",
+      slug: "sedans",
       attribute_schema: {
         year: true,
         make: true,
@@ -193,8 +204,8 @@ export class CategoryFactory extends BaseFactory<CategoryData> {
   createPickup(overrides?: Partial<CategoryData>): CategoryData {
     return this.create({
       ...overrides,
-      name: 'Pickup Trucks',
-      slug: 'pickup-trucks',
+      name: "Pickup Trucks",
+      slug: "pickup-trucks",
       attribute_schema: {
         year: true,
         make: true,

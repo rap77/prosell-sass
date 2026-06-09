@@ -17,18 +17,18 @@ The root cause is **systemic**: pytest fixtures lack type annotations, and this 
 
 ### TL;DR - Priority Matrix
 
-| Priority | Category | Errors | Impact | Effort | Recommendation |
-|----------|----------|--------|--------|--------|----------------|
-| P0 | Production: Missing type args on `dict`/`list` | 16 | HIGH | LOW | Annotate `dict[str, Any]` and `list[...]` |
-| P0 | Production: `UUID | None` passed where `UUID` expected | 12 | HIGH | LOW | Add None-guard assertions |
-| P0 | Production: Task imports (`async_session_factory`) | 8 | HIGH | LOW | Fix import paths |
-| P1 | Production: Unused imports in `domain/base.py` | 3 | LOW | TRIVIAL | Remove unused imports |
-| P1 | Production: SQLAlchemy `select()` with UUID | 4 | MEDIUM | LOW | Use `column == value` instead of `select(UUID)` |
-| P1 | Production: Library stub issues (Pillow LANCZOS) | 4 | LOW | TRIVIAL | Use `Image.Resampling.LANCZOS` |
-| P2 | Tests: Fixture parameter annotations | 521 | LOW | MEDIUM | Add type hints to all fixtures |
-| P2 | Tests: Propagated unknown types | 1,058+ | LOW | HIGH | Fix fixtures, propagation auto-resolves |
-| P3 | Tests: Files with 80+ errors | ~900 | LOW | TRIVIAL | Add to pyright exclude list |
-| P3 | Config: pythonVersion mismatch | 0 | MEDIUM | TRIVIAL | Align pyrightconfig to 3.12 |
+| Priority | Category                                           | Errors                           | Impact | Effort  | Recommendation                                  |
+| -------- | -------------------------------------------------- | -------------------------------- | ------ | ------- | ----------------------------------------------- | ------------------------- |
+| P0       | Production: Missing type args on `dict`/`list`     | 16                               | HIGH   | LOW     | Annotate `dict[str, Any]` and `list[...]`       |
+| P0       | Production: `UUID                                  | None`passed where`UUID` expected | 12     | HIGH    | LOW                                             | Add None-guard assertions |
+| P0       | Production: Task imports (`async_session_factory`) | 8                                | HIGH   | LOW     | Fix import paths                                |
+| P1       | Production: Unused imports in `domain/base.py`     | 3                                | LOW    | TRIVIAL | Remove unused imports                           |
+| P1       | Production: SQLAlchemy `select()` with UUID        | 4                                | MEDIUM | LOW     | Use `column == value` instead of `select(UUID)` |
+| P1       | Production: Library stub issues (Pillow LANCZOS)   | 4                                | LOW    | TRIVIAL | Use `Image.Resampling.LANCZOS`                  |
+| P2       | Tests: Fixture parameter annotations               | 521                              | LOW    | MEDIUM  | Add type hints to all fixtures                  |
+| P2       | Tests: Propagated unknown types                    | 1,058+                           | LOW    | HIGH    | Fix fixtures, propagation auto-resolves         |
+| P3       | Tests: Files with 80+ errors                       | ~900                             | LOW    | TRIVIAL | Add to pyright exclude list                     |
+| P3       | Config: pythonVersion mismatch                     | 0                                | MEDIUM | TRIVIAL | Align pyrightconfig to 3.12                     |
 
 ---
 
@@ -36,25 +36,25 @@ The root cause is **systemic**: pytest fixtures lack type annotations, and this 
 
 ### Top Error Types (all 2,635 errors)
 
-| # | Error Type | Count | % | Production | Tests |
-|---|-----------|-------|---|------------|-------|
-| 1 | `reportUnknownMemberType` | 613 | 23.3% | 16 | 597 |
-| 2 | `reportUnknownParameterType` | 532 | 20.2% | 4 | 528 |
-| 3 | `reportMissingParameterType` | 521 | 19.8% | 0 | 521 |
-| 4 | `reportUnknownVariableType` | 197 | 7.5% | 27 | 170 |
-| 5 | `reportUnknownLambdaType` | 38 | 1.4% | 2 | 36 |
-| 6 | `reportMissingTypeArgument` | 31 | 1.2% | 9 | 22 |
-| 7 | `reportCallIssue` | 29 | 1.1% | 4 | 25 |
-| 8 | `reportUnusedVariable` | 9 | 0.3% | 0 | 9 |
-| 9 | `reportPrivateUsage` | 9 | 0.3% | 0 | 9 |
-| 10 | `reportUnusedImport` | 7 | 0.3% | 7 | 0 |
-| 11 | `reportUnusedFunction` | 3 | 0.1% | 0 | 3 |
-| 12 | `reportAttributeAccessIssue` | 3 | 0.1% | 3 | 0 |
-| 13 | `reportUnnecessaryIsInstance` | 2 | 0.1% | 2 | 0 |
-| 14 | `reportUnnecessaryComparison` | 1 | <0.1% | 1 | 0 |
-| 15 | `reportOptionalOperand` | 1 | <0.1% | 0 | 1 |
-| 16 | `reportOptionalMemberAccess` | 1 | <0.1% | 1 | 0 |
-| 17 | `reportUnusedClass` | 1 | <0.1% | 0 | 1 |
+| #   | Error Type                    | Count | %     | Production | Tests |
+| --- | ----------------------------- | ----- | ----- | ---------- | ----- |
+| 1   | `reportUnknownMemberType`     | 613   | 23.3% | 16         | 597   |
+| 2   | `reportUnknownParameterType`  | 532   | 20.2% | 4          | 528   |
+| 3   | `reportMissingParameterType`  | 521   | 19.8% | 0          | 521   |
+| 4   | `reportUnknownVariableType`   | 197   | 7.5%  | 27         | 170   |
+| 5   | `reportUnknownLambdaType`     | 38    | 1.4%  | 2          | 36    |
+| 6   | `reportMissingTypeArgument`   | 31    | 1.2%  | 9          | 22    |
+| 7   | `reportCallIssue`             | 29    | 1.1%  | 4          | 25    |
+| 8   | `reportUnusedVariable`        | 9     | 0.3%  | 0          | 9     |
+| 9   | `reportPrivateUsage`          | 9     | 0.3%  | 0          | 9     |
+| 10  | `reportUnusedImport`          | 7     | 0.3%  | 7          | 0     |
+| 11  | `reportUnusedFunction`        | 3     | 0.1%  | 0          | 3     |
+| 12  | `reportAttributeAccessIssue`  | 3     | 0.1%  | 3          | 0     |
+| 13  | `reportUnnecessaryIsInstance` | 2     | 0.1%  | 2          | 0     |
+| 14  | `reportUnnecessaryComparison` | 1     | <0.1% | 1          | 0     |
+| 15  | `reportOptionalOperand`       | 1     | <0.1% | 0          | 1     |
+| 16  | `reportOptionalMemberAccess`  | 1     | <0.1% | 1          | 0     |
+| 17  | `reportUnusedClass`           | 1     | <0.1% | 0          | 1     |
 
 ### What Each Error Type Means
 
@@ -76,19 +76,19 @@ The root cause is **systemic**: pytest fixtures lack type annotations, and this 
 
 ### Production Code (168 errors, 6.4%)
 
-| Layer | Errors | Files | Key Issues |
-|-------|--------|-------|------------|
-| `infrastructure/` | 103 | 22 | Task imports, SQLAlchemy, Pillow stubs |
-| `application/` | 61 | 5 | Dict typing, optional UUID, repository returns |
-| `domain/` | 4 | 2 | Unused imports, type narrowing |
+| Layer             | Errors | Files | Key Issues                                     |
+| ----------------- | ------ | ----- | ---------------------------------------------- |
+| `infrastructure/` | 103    | 22    | Task imports, SQLAlchemy, Pillow stubs         |
+| `application/`    | 61     | 5     | Dict typing, optional UUID, repository returns |
+| `domain/`         | 4      | 2     | Unused imports, type narrowing                 |
 
 ### Test Code (2,467 errors, 93.6%)
 
-| Section | Errors | Files | Key Issues |
-|---------|--------|-------|------------|
-| `tests/integration/` | 1,849 | 26 | Fixture types, propagated unknowns |
-| `tests/unit/` | 532 | 24 | Fixture types, mock attribute access |
-| `tests/contract/` | 86 | 3 | Schema matching kwargs |
+| Section              | Errors | Files | Key Issues                           |
+| -------------------- | ------ | ----- | ------------------------------------ |
+| `tests/integration/` | 1,849  | 26    | Fixture types, propagated unknowns   |
+| `tests/unit/`        | 532    | 24    | Fixture types, mock attribute access |
+| `tests/contract/`    | 86     | 3     | Schema matching kwargs               |
 
 ### Already Excluded (in pyproject.toml, ~1,800 errors)
 
@@ -103,6 +103,7 @@ The root cause is **systemic**: pytest fixtures lack type annotations, and this 
 **The Problem**: pytest-asyncio fixtures defined in `conftest.py` files do not have parameter type annotations. When pyright runs in strict mode, every fixture parameter without a type annotation becomes `Unknown`.
 
 **Example from `tests/integration/api/conftest.py`**:
+
 ```python
 # PROBLEM - no type annotations
 @pytest_asyncio.fixture
@@ -116,6 +117,7 @@ async def admin_user(test_user):  # test_user: Unknown
 ```
 
 **Fix**:
+
 ```python
 # FIXED - explicit type annotations
 from prosell.infrastructure.models.user_model import UserModel
@@ -163,6 +165,7 @@ product = await repo.get_by_id(product.tenant_id)  # Error!
 ```
 
 **Fix**: Add guard assertions in use cases:
+
 ```python
 assert product.tenant_id is not None, "Product must have tenant_id"
 result = await repo.get_by_id(product.tenant_id)  # Now UUID
@@ -200,6 +203,7 @@ The runtime is Python 3.12.3, but `pyproject.toml` specifies 3.13. The root conf
 The task worker modules have the highest density of errors in production code. Root causes:
 
 1. **Missing type args on task handler return types** (14 errors):
+
    ```python
    # Current
    async def publish_product(context: dict) -> dict:
@@ -208,6 +212,7 @@ The task worker modules have the highest density of errors in production code. R
    ```
 
 2. **Broken import**: `async_session_factory` is imported from `prosell.infrastructure.database.session` but does not exist at that path (8 errors):
+
    ```python
    # Current (broken)
    from prosell.infrastructure.database.session import async_session_factory
@@ -249,33 +254,34 @@ The task worker modules have the highest density of errors in production code. R
 
 **Root fixtures without type annotations** (from `tests/integration/conftest.py`):
 
-| Fixture | Parameter | Missing Annotation |
-|---------|-----------|-------------------|
-| `test_user` | `db_session` | `AsyncSession` |
-| `test_user` | `test_organization` | `OrganizationModel` |
-| `test_user` | `test_role` | `RoleModel` |
-| `test_seller_user` | `db_session` | `AsyncSession` |
+| Fixture            | Parameter           | Missing Annotation  |
+| ------------------ | ------------------- | ------------------- |
+| `test_user`        | `db_session`        | `AsyncSession`      |
+| `test_user`        | `test_organization` | `OrganizationModel` |
+| `test_user`        | `test_role`         | `RoleModel`         |
+| `test_seller_user` | `db_session`        | `AsyncSession`      |
 | `test_seller_user` | `test_organization` | `OrganizationModel` |
-| `test_seller_user` | `test_seller_role` | `RoleModel` |
-| `test_category` | `db_session` | `AsyncSession` |
-| `test_category` | `test_organization` | `OrganizationModel` |
+| `test_seller_user` | `test_seller_role`  | `RoleModel`         |
+| `test_category`    | `db_session`        | `AsyncSession`      |
+| `test_category`    | `test_organization` | `OrganizationModel` |
 
 **Child fixtures in `tests/integration/api/conftest.py`**:
 
-| Fixture | Parameter | Missing Annotation |
-|---------|-----------|-------------------|
-| `admin_user` | `test_user` | `UserModel` |
-| `seller_user` | `test_seller_user` | `UserModel` |
-| `async_client_as_admin` | `admin_user` | `User` |
-| `async_client_as_admin` | `db_session` | `AsyncSession` |
-| `async_client_as_seller` | `seller_user` | `User` |
-| `async_client_as_seller` | `db_session` | `AsyncSession` |
+| Fixture                  | Parameter          | Missing Annotation |
+| ------------------------ | ------------------ | ------------------ |
+| `admin_user`             | `test_user`        | `UserModel`        |
+| `seller_user`            | `test_seller_user` | `UserModel`        |
+| `async_client_as_admin`  | `admin_user`       | `User`             |
+| `async_client_as_admin`  | `db_session`       | `AsyncSession`     |
+| `async_client_as_seller` | `seller_user`      | `User`             |
+| `async_client_as_seller` | `db_session`       | `AsyncSession`     |
 
 **Impact**: Each untyped fixture generates 3-15 downstream errors in every test function that receives it.
 
 ### Pattern 2: Mock Attribute Access (200+ errors)
 
 When fixtures create `MagicMock` or `AsyncMock` objects, pyright cannot determine mock attributes:
+
 ```python
 mock_lead_repository.get_by_id.return_value = lead
 #                      ^^^^^^^ Unknown member
@@ -288,6 +294,7 @@ Tests access private methods like `_normalize_phone` and `_cache` directly, whic
 ### Pattern 4: Lambda Sorting (38 errors)
 
 Sorting with untyped lambda parameters:
+
 ```python
 metrics.sort(key=lambda x: x.total_leads, reverse=True)
 #                   ^ Unknown, ^ Unknown member
@@ -321,18 +328,18 @@ The API-level config is more correct (excludes problematic test files), but the 
 
 ### Missing Type Stubs
 
-| Library | Has Stubs | Impact |
-|---------|-----------|--------|
-| SQLAlchemy 2.0 | Yes (bundled) | Good |
-| FastAPI | Yes (bundled) | Good |
-| Pydantic 2 | Yes (bundled) | Good |
-| Pillow | Partial | `LANCZOS` deprecated attribute |
-| pytest-asyncio | `py.typed` only | No `.pyi` stubs for fixtures |
-| taskiq | No | Worker/broker types unknown |
-| sendgrid | No | All types unknown |
-| facebook-sdk | No | All types unknown |
-| httpx | Yes (bundled) | Good |
-| boto3 | Via `types-boto3` | Installed |
+| Library        | Has Stubs         | Impact                         |
+| -------------- | ----------------- | ------------------------------ |
+| SQLAlchemy 2.0 | Yes (bundled)     | Good                           |
+| FastAPI        | Yes (bundled)     | Good                           |
+| Pydantic 2     | Yes (bundled)     | Good                           |
+| Pillow         | Partial           | `LANCZOS` deprecated attribute |
+| pytest-asyncio | `py.typed` only   | No `.pyi` stubs for fixtures   |
+| taskiq         | No                | Worker/broker types unknown    |
+| sendgrid       | No                | All types unknown              |
+| facebook-sdk   | No                | All types unknown              |
+| httpx          | Yes (bundled)     | Good                           |
+| boto3          | Via `types-boto3` | Installed                      |
 
 ---
 
@@ -382,6 +389,7 @@ The API-level config is more correct (excludes problematic test files), but the 
 ### Phase 4: Exclusion Strategy (30 minutes, reduces visible errors by ~900)
 
 Add high-error test files to `pyproject.toml` pyright exclude list:
+
 ```toml
 [tool.pyright]
 exclude = [
@@ -411,20 +419,24 @@ exclude = [
 ## 8. Recommended Strategy
 
 ### Immediate (This Session)
+
 - Fix Phase 1 quick wins (50 production errors)
 - Align config: `pythonVersion: "3.12"` in pyproject.toml
 - Result: Production code drops from 168 to ~120 errors
 
 ### Short Term (Next 1-2 Sessions)
+
 - Fix Phase 2 medium-effort production errors
 - Add Phase 4 exclusions for test files
 - Result: Production code at ~50 errors, visible test errors at ~1,500
 
 ### Medium Term (Dedicated Session)
+
 - Execute Phase 3: Type all test fixtures
 - Result: Test errors drop from 2,467 to ~200 (protected access, library stubs)
 
 ### Long Term
+
 - Separate pyright configs for `src/` (strict) and `tests/` (basic)
 - Add custom type stubs for `taskiq`, `sendgrid`, `facebook-sdk`
 - Target: 0 production errors, <50 test warnings
@@ -435,65 +447,65 @@ exclude = [
 
 ### Production Code (168 errors)
 
-| Errors | File |
-|--------|------|
-| 25 | `src/prosell/application/use_cases/lead/get_lead_details.py` |
-| 17 | `src/prosell/application/use_cases/facebook_webhook_use_case.py` |
-| 16 | `src/prosell/infrastructure/tasks/use_cases/update_listing_task.py` |
-| 13 | `src/prosell/infrastructure/tasks/use_cases/delete_listing_task.py` |
-| 11 | `src/prosell/infrastructure/tasks/use_cases/publish_product_task.py` |
-| 8 | `src/prosell/infrastructure/api/routers/user_branch_router.py` |
-| 8 | `src/prosell/infrastructure/tasks/worker.py` |
-| 7 | `src/prosell/application/use_cases/lead/get_team_metrics.py` |
-| 7 | `src/prosell/application/use_cases/lead/update_lead_status.py` |
-| 7 | `src/prosell/infrastructure/api/routers/admin_router.py` |
-| 6 | `src/prosell/infrastructure/tasks/use_cases/poll_facebook_leads_task.py` |
-| 5 | `src/prosell/application/use_cases/product/create_product.py` |
-| 4 | `src/prosell/infrastructure/services/image_pipeline.py` |
-| 4 | `src/prosell/infrastructure/api/routers/product_router.py` |
-| 3 | `src/prosell/domain/base.py` |
-| 3 | `src/prosell/infrastructure/webhook/facebook_webhook_processor.py` |
-| 3 | `src/prosell/infrastructure/tasks/taskiq_task_dispatcher.py` |
-| 3 | `src/prosell/infrastructure/services/facebook_marketplace_oauth_service.py` |
-| 2 | `src/prosell/infrastructure/services/token_encryption_service.py` |
-| 2 | `src/prosell/infrastructure/repositories/publication_repository_impl.py` |
-| 2 | `src/prosell/infrastructure/repositories/facebook_account_repository_impl.py` |
-| 2 | `src/prosell/infrastructure/tasks/use_cases/auto_republish_task.py` |
-| 2 | `src/prosell/infrastructure/api/routers/appointment_router.py` |
-| 1 | `src/prosell/infrastructure/repositories/product_repository_impl.py` |
-| 1 | `src/prosell/infrastructure/repositories/category_repository_impl.py` |
-| 1 | `src/prosell/infrastructure/repositories/branch_repository_impl.py` |
-| 1 | `src/prosell/infrastructure/models/publication_model.py` |
-| 1 | `src/prosell/infrastructure/images/image_optimizer.py` |
-| 1 | `src/prosell/infrastructure/i18n/translator.py` |
-| 1 | `src/prosell/infrastructure/api/routers/webhook_router.py` |
-| 1 | `src/prosell/infrastructure/api/routers/health_router.py` |
-| 1 | `src/prosell/infrastructure/api/middleware/exception_handlers.py` |
-| 1 | `src/prosell/domain/exceptions/facebook_exceptions.py` |
+| Errors | File                                                                          |
+| ------ | ----------------------------------------------------------------------------- |
+| 25     | `src/prosell/application/use_cases/lead/get_lead_details.py`                  |
+| 17     | `src/prosell/application/use_cases/facebook_webhook_use_case.py`              |
+| 16     | `src/prosell/infrastructure/tasks/use_cases/update_listing_task.py`           |
+| 13     | `src/prosell/infrastructure/tasks/use_cases/delete_listing_task.py`           |
+| 11     | `src/prosell/infrastructure/tasks/use_cases/publish_product_task.py`          |
+| 8      | `src/prosell/infrastructure/api/routers/user_branch_router.py`                |
+| 8      | `src/prosell/infrastructure/tasks/worker.py`                                  |
+| 7      | `src/prosell/application/use_cases/lead/get_team_metrics.py`                  |
+| 7      | `src/prosell/application/use_cases/lead/update_lead_status.py`                |
+| 7      | `src/prosell/infrastructure/api/routers/admin_router.py`                      |
+| 6      | `src/prosell/infrastructure/tasks/use_cases/poll_facebook_leads_task.py`      |
+| 5      | `src/prosell/application/use_cases/product/create_product.py`                 |
+| 4      | `src/prosell/infrastructure/services/image_pipeline.py`                       |
+| 4      | `src/prosell/infrastructure/api/routers/product_router.py`                    |
+| 3      | `src/prosell/domain/base.py`                                                  |
+| 3      | `src/prosell/infrastructure/webhook/facebook_webhook_processor.py`            |
+| 3      | `src/prosell/infrastructure/tasks/taskiq_task_dispatcher.py`                  |
+| 3      | `src/prosell/infrastructure/services/facebook_marketplace_oauth_service.py`   |
+| 2      | `src/prosell/infrastructure/services/token_encryption_service.py`             |
+| 2      | `src/prosell/infrastructure/repositories/publication_repository_impl.py`      |
+| 2      | `src/prosell/infrastructure/repositories/facebook_account_repository_impl.py` |
+| 2      | `src/prosell/infrastructure/tasks/use_cases/auto_republish_task.py`           |
+| 2      | `src/prosell/infrastructure/api/routers/appointment_router.py`                |
+| 1      | `src/prosell/infrastructure/repositories/product_repository_impl.py`          |
+| 1      | `src/prosell/infrastructure/repositories/category_repository_impl.py`         |
+| 1      | `src/prosell/infrastructure/repositories/branch_repository_impl.py`           |
+| 1      | `src/prosell/infrastructure/models/publication_model.py`                      |
+| 1      | `src/prosell/infrastructure/images/image_optimizer.py`                        |
+| 1      | `src/prosell/infrastructure/i18n/translator.py`                               |
+| 1      | `src/prosell/infrastructure/api/routers/webhook_router.py`                    |
+| 1      | `src/prosell/infrastructure/api/routers/health_router.py`                     |
+| 1      | `src/prosell/infrastructure/api/middleware/exception_handlers.py`             |
+| 1      | `src/prosell/domain/exceptions/facebook_exceptions.py`                        |
 
 ### Test Code (2,467 errors) - Top 20 Files
 
-| Errors | File |
-|--------|------|
-| 213 | `tests/integration/api/test_lead_api.py` |
-| 192 | `tests/integration/repositories/test_lead_repository.py` |
-| 168 | `tests/integration/test_organization_api.py` |
-| 139 | `tests/integration/use_cases/test_create_appointment_use_case.py` |
-| 116 | `tests/integration/use_cases/test_confirm_appointment_use_case.py` |
-| 116 | `tests/integration/use_cases/test_cancel_appointment_use_case.py` |
-| 102 | `tests/integration/api/test_user_branch_api.py` |
-| 101 | `tests/integration/use_cases/test_facebook_webhook_use_case.py` |
-| 98 | `tests/integration/use_cases/test_lead_use_cases.py` |
-| 96 | `tests/integration/api/test_appointment_api.py` |
-| 87 | `tests/unit/services/test_lead_duplicate_detector.py` |
-| 85 | `tests/integration/api/test_product_c3.py` |
-| 85 | `tests/integration/api/test_branch_endpoints.py` |
-| 77 | `tests/unit/services/test_appointment_status_email.py` |
-| 64 | `tests/integration/use_cases/test_assign_lead_use_case.py` |
-| 61 | `tests/integration/repositories/test_publication_repository.py` |
-| 56 | `tests/unit/services/test_email_service.py` |
-| 55 | `tests/unit/infrastructure/images/test_image_optimizer.py` |
-| 52 | `tests/unit/infrastructure/services/test_facebook_graph_api_client.py` |
-| 49 | `tests/contract/schema_matching/test_vehicle_dto_matching.py` |
+| Errors | File                                                                   |
+| ------ | ---------------------------------------------------------------------- |
+| 213    | `tests/integration/api/test_lead_api.py`                               |
+| 192    | `tests/integration/repositories/test_lead_repository.py`               |
+| 168    | `tests/integration/test_organization_api.py`                           |
+| 139    | `tests/integration/use_cases/test_create_appointment_use_case.py`      |
+| 116    | `tests/integration/use_cases/test_confirm_appointment_use_case.py`     |
+| 116    | `tests/integration/use_cases/test_cancel_appointment_use_case.py`      |
+| 102    | `tests/integration/api/test_user_branch_api.py`                        |
+| 101    | `tests/integration/use_cases/test_facebook_webhook_use_case.py`        |
+| 98     | `tests/integration/use_cases/test_lead_use_cases.py`                   |
+| 96     | `tests/integration/api/test_appointment_api.py`                        |
+| 87     | `tests/unit/services/test_lead_duplicate_detector.py`                  |
+| 85     | `tests/integration/api/test_product_c3.py`                             |
+| 85     | `tests/integration/api/test_branch_endpoints.py`                       |
+| 77     | `tests/unit/services/test_appointment_status_email.py`                 |
+| 64     | `tests/integration/use_cases/test_assign_lead_use_case.py`             |
+| 61     | `tests/integration/repositories/test_publication_repository.py`        |
+| 56     | `tests/unit/services/test_email_service.py`                            |
+| 55     | `tests/unit/infrastructure/images/test_image_optimizer.py`             |
+| 52     | `tests/unit/infrastructure/services/test_facebook_graph_api_client.py` |
+| 49     | `tests/contract/schema_matching/test_vehicle_dto_matching.py`          |
 
-*(33 more test files with fewer errors)*
+_(33 more test files with fewer errors)_

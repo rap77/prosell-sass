@@ -11,6 +11,7 @@
 Completar el sistema OAuth 2.0 backend agregando los endpoints de autorización y callback para Google y Facebook. Actualmente existe el `OAuthLoginUseCase` pero faltan los endpoints que implementan el flujo OAuth 2.0 completo (Authorization Code Flow).
 
 **Estado Actual**: 100% completado (Código listo - configuración externa pendiente por el usuario)
+
 - ✅ OAuthLoginUseCase implementado
 - ✅ OAuthRepository (domain + infrastructure) implementado
 - ✅ OAuthAccount model implementado
@@ -648,11 +649,13 @@ export function OAuthLoginButton({ provider, icon, label }: OAuthLoginButtonProp
 ## Checklist de Implementación
 
 ### Phase 1: Domain Layer
+
 - [x] Crear `domain/ports/i_oauth_service.py` - Interface IOAuthService
 - [x] Agregar OAuthSettings a `core/config.py`
 - [x] Crear DTOs OAuthAuthorizeResult, OAuthCallbackResult, OAuthUserInfo
 
 ### Phase 2: Infrastructure Layer
+
 - [x] Crear `infrastructure/services/oauth_service_impl.py` - Implementación IOAuthService
 - [x] Implementar `_initiate_google_authorization()` - Generar URL de Google OAuth
 - [x] Implementar `_initiate_facebook_authorization()` - Generar URL de Facebook OAuth
@@ -661,6 +664,7 @@ export function OAuthLoginButton({ provider, icon, label }: OAuthLoginButtonProp
 - [x] Implementar `validate_state()` - Validar state token (CSRF protection)
 
 ### Phase 3: API Layer
+
 - [x] Agregar `get_oauth_service()` a `infrastructure/api/dependencies.py`
 - [x] Agregar `GET /auth/oauth/{provider}/authorize` endpoint
 - [x] Agregar `GET /auth/oauth/{provider}/callback` endpoint
@@ -668,18 +672,21 @@ export function OAuthLoginButton({ provider, icon, label }: OAuthLoginButtonProp
 - [x] Manejo de errores con redirect a frontend
 
 ### Phase 4: Frontend Integration
+
 - [x] `OAuthButtons` refactorizado para redirect al backend
 - [x] Verificar integración en `/auth/login` page
 - [x] Redirect exitoso configurado en settings
 - [x] Redirect con error configurado en settings
 
 ### Phase 5: Configuration
+
 - [x] Agregar OAuthSettings a `.env.oauth.example`
 - [x] Documentar cómo obtener credenciales de Google OAuth
 - [x] Documentar cómo obtener credenciales de Facebook OAuth
 - [x] Actualizar `docs/technical-debt/oauth-external-setup.md`
 
 ### Phase 6: Testing
+
 - [x] Unit tests para `OAuthServiceImpl` (22/22 passing)
 - [x] Integration tests para endpoints authorize/callback (11/11 passing)
 - [x] Unit tests para rate limiting (2/2 passing, 1 skipped)
@@ -688,6 +695,7 @@ export function OAuthLoginButton({ provider, icon, label }: OAuthLoginButtonProp
 - [ ] Manual testing con Facebook OAuth playground (requiere credenciales externas)
 
 ### Phase 7: Security & Polish
+
 - [x] Validar state token para CSRF protection
 - [x] Implementar expiración de state tokens (10 min)
 - [x] Rate limiting en `/authorize` endpoint (AUTH_LIMIT: 5 req/min)
@@ -888,13 +896,13 @@ class TestOAuthCallback:
 
 ## Manejo de Errores
 
-| Error | Causa | Solución |
-|-------|-------|----------|
-| `invalid_client` | Client ID/Secret incorrectos | Verificar `.env` y Google Cloud Console |
-| `redirect_uri_mismatch` | Redirect URI no coincide | Verificar URI configurada en Google/Facebook |
-| `invalid_state` | State token inválido o expirado | Reiniciar flow, generar nuevo state |
-| `access_denied` | Usuario denegó permisos | Redirect a login con mensaje de error |
-| `exchange_failed` | Error intercambiando code por token | Retry o mostrar error genérico |
+| Error                   | Causa                               | Solución                                     |
+| ----------------------- | ----------------------------------- | -------------------------------------------- |
+| `invalid_client`        | Client ID/Secret incorrectos        | Verificar `.env` y Google Cloud Console      |
+| `redirect_uri_mismatch` | Redirect URI no coincide            | Verificar URI configurada en Google/Facebook |
+| `invalid_state`         | State token inválido o expirado     | Reiniciar flow, generar nuevo state          |
+| `access_denied`         | Usuario denegó permisos             | Redirect a login con mensaje de error        |
+| `exchange_failed`       | Error intercambiando code por token | Retry o mostrar error genérico               |
 
 ## Seguridad
 
@@ -908,16 +916,16 @@ class TestOAuthCallback:
 
 ## Cronograma Estimado
 
-| Tarea | Tiempo Estimado |
-|-------|-----------------|
-| Phase 1: Domain Layer | 1 hora |
-| Phase 2: Infrastructure | 3 horas |
-| Phase 3: API Layer | 2 horas |
-| Phase 4: Frontend Integration | 1 hora |
-| Phase 5: Configuration | 1 hora |
-| Phase 6: Testing | 3 horas |
-| Phase 7: Security & Polish | 1 hora |
-| **Total** | **12 horas** |
+| Tarea                         | Tiempo Estimado |
+| ----------------------------- | --------------- |
+| Phase 1: Domain Layer         | 1 hora          |
+| Phase 2: Infrastructure       | 3 horas         |
+| Phase 3: API Layer            | 2 horas         |
+| Phase 4: Frontend Integration | 1 hora          |
+| Phase 5: Configuration        | 1 hora          |
+| Phase 6: Testing              | 3 horas         |
+| Phase 7: Security & Polish    | 1 hora          |
+| **Total**                     | **12 horas**    |
 
 ## Referencias Útiles
 

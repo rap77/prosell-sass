@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { create } from "zustand";
 
 /**
  * One entry in the unified image list managed by the upload store.
@@ -24,44 +24,44 @@ import { create } from 'zustand'
  * this or just send the key".
  */
 export interface ImageEntry {
-  id: string
+  id: string;
   /** Underlying File — only present for in-flight entries. */
-  file?: File
+  file?: File;
   /**
    * URL the picker renders into the <Image> tag. For in-flight
    * entries this is a blob: preview; for seeded entries it's the
    * signed URL the catalog uses.
    */
-  preview: string
-  status: 'pending' | 'uploading' | 'complete' | 'error'
+  preview: string;
+  status: "pending" | "uploading" | "complete" | "error";
   /**
    * Storage key (`orgs/<uuid>/vehicles/<file>.jpg`). Populated
    * once the entry is `complete` — either by the upload hook
    * finishing, or by the entry being seeded from an existing
    * product (no upload needed in that case).
    */
-  storageKey?: string
+  storageKey?: string;
 }
 
 interface UploadStore {
   /** Unified image list — replaces the old `uploadedFiles`. */
-  images: ImageEntry[]
+  images: ImageEntry[];
   /**
    * Id of the entry that is the cover. Identified by ENTRY id,
    * not storage key, because in-flight entries don't have a
    * storage key yet. The form's submit handler maps the picked
    * id back to a key.
    */
-  coverImageId: string | null
+  coverImageId: string | null;
 
   /** Add a newly dropped / pasted / picked file as a pending entry. */
-  addFile: (file: File) => string
+  addFile: (file: File) => string;
   /** Patch an entry's status / storageKey / preview. */
-  updateEntry: (id: string, patch: Partial<ImageEntry>) => void
+  updateEntry: (id: string, patch: Partial<ImageEntry>) => void;
   /** Remove an entry. If it was the cover, the cover resets. */
-  removeEntry: (id: string) => void
+  removeEntry: (id: string) => void;
   /** Set the cover (by entry id). */
-  setCoverImage: (id: string) => void
+  setCoverImage: (id: string) => void;
   /**
    * Seed the store with entries loaded from an existing product
    * (edit flow). Each entry MUST have a `storageKey` and a
@@ -69,9 +69,9 @@ interface UploadStore {
    * bytes are already in MinIO. Clears any existing state first
    * (the form should re-seed on remount, not append).
    */
-  seedImages: (entries: ImageEntry[]) => void
+  seedImages: (entries: ImageEntry[]) => void;
   /** Clear everything — used on successful submit. */
-  clearAll: () => void
+  clearAll: () => void;
 }
 
 export const useUploadStore = create<UploadStore>((set) => ({
@@ -79,7 +79,7 @@ export const useUploadStore = create<UploadStore>((set) => ({
   coverImageId: null,
 
   addFile: (file) => {
-    const id = crypto.randomUUID()
+    const id = crypto.randomUUID();
     set((state) => ({
       images: [
         ...state.images,
@@ -87,7 +87,7 @@ export const useUploadStore = create<UploadStore>((set) => ({
           id,
           file,
           preview: URL.createObjectURL(file),
-          status: 'pending',
+          status: "pending",
         },
       ],
       // Auto-pick the first image as cover if none set yet. Same
@@ -95,8 +95,8 @@ export const useUploadStore = create<UploadStore>((set) => ({
       // immediately. This avoids a "no cover" flash for the
       // first image added.
       coverImageId: state.coverImageId ?? id,
-    }))
-    return id
+    }));
+    return id;
   },
 
   updateEntry: (id, patch) =>
@@ -106,13 +106,13 @@ export const useUploadStore = create<UploadStore>((set) => ({
 
   removeEntry: (id) =>
     set((state) => {
-      const remaining = state.images.filter((e) => e.id !== id)
+      const remaining = state.images.filter((e) => e.id !== id);
       // If the removed entry was the cover, reset the cover to
       // null (the form will pick a sensible default, e.g. the
       // first remaining image, or the seller will pick one).
       const coverImageId =
-        state.coverImageId === id ? null : state.coverImageId
-      return { images: remaining, coverImageId }
+        state.coverImageId === id ? null : state.coverImageId;
+      return { images: remaining, coverImageId };
     }),
 
   setCoverImage: (id) => set({ coverImageId: id }),
@@ -128,4 +128,4 @@ export const useUploadStore = create<UploadStore>((set) => ({
     }),
 
   clearAll: () => set({ images: [], coverImageId: null }),
-}))
+}));

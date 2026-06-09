@@ -6,7 +6,10 @@ interface KeyboardShortcuts {
   [key: string]: () => void;
 }
 
-export function useKeyboardShortcuts(shortcuts: KeyboardShortcuts, enabled = true) {
+export function useKeyboardShortcuts(
+  shortcuts: KeyboardShortcuts,
+  enabled = true,
+) {
   useEffect(() => {
     if (!enabled) return;
 
@@ -14,7 +17,8 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcuts, enabled = tru
       const key = event.key.toLowerCase();
 
       // Check for modifier keys
-      const hasModifier = event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
+      const hasModifier =
+        event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
 
       // Build the shortcut key string (e.g., "cmd+k", "escape", "mod+s")
       let shortcutKey = key;

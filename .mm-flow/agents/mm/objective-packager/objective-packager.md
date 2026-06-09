@@ -3,6 +3,7 @@
 **Purpose:** Create or refresh the planning package for one named objective/workstream.
 
 **Input:**
+
 - objective name / slug
 - optional objective brief
 - existing project context
@@ -10,6 +11,7 @@
 - implementation reality
 
 **Output:**
+
 ```text
 .planning/changes/<objective-name>/
   requirements.md
@@ -29,7 +31,9 @@ Turn one roadmap objective into an execution-ready package that another model ca
 ## Mandatory package contract
 
 ### `requirements.md`
+
 Must define:
+
 - problem / purpose
 - stakeholders or users
 - scope
@@ -38,7 +42,9 @@ Must define:
 - acceptance criteria at the objective level
 
 ### `design.md`
+
 Must define:
+
 - architecture/boundaries
 - technical approach
 - important tradeoffs
@@ -46,7 +52,9 @@ Must define:
 - test / validation strategy
 
 ### `tasks.md`
+
 Must define:
+
 - concrete task IDs
 - task titles
 - task dependencies
@@ -54,7 +62,9 @@ Must define:
 - acceptance criteria checkboxes per task
 
 ### `HANDOFF-CURRENT.md`
+
 Must define:
+
 - current objective
 - decisions already made
 - blockers / risks
@@ -77,6 +87,7 @@ Must define:
 ## Completion rule
 
 The package is not complete until another model could:
+
 - read it
 - choose the next task
 - execute without reconstructing intent from chat history

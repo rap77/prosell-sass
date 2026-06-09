@@ -47,7 +47,7 @@ export function BulkBranchAssign({
           setSelectedBranchId("");
           onOpenChange(false);
         },
-      }
+      },
     );
   };
 
@@ -60,8 +60,9 @@ export function BulkBranchAssign({
             Assign Products to Branch
           </DialogTitle>
           <DialogDescription>
-            Assign {productCount} product{productCount !== 1 ? "s" : ""} to a branch.
-            This will update the branch assignment for all selected vehicles.
+            Assign {productCount} product{productCount !== 1 ? "s" : ""} to a
+            branch. This will update the branch assignment for all selected
+            vehicles.
           </DialogDescription>
         </DialogHeader>
 
@@ -80,8 +81,8 @@ export function BulkBranchAssign({
           {selectedBranchId && (
             <div className="rounded-lg bg-muted p-3">
               <p className="text-sm text-muted-foreground">
-                {productCount} product{productCount !== 1 ? "s will" : " will"} be
-                assigned to the selected branch.
+                {productCount} product{productCount !== 1 ? "s will" : " will"}{" "}
+                be assigned to the selected branch.
               </p>
             </div>
           )}

@@ -2,7 +2,12 @@
  * Branch API hooks and types
  */
 
-import { useQuery, useMutation, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 
 // Types
@@ -46,7 +51,9 @@ async function fetchBranches(): Promise<BranchListResponse> {
   const response = await fetch(BRANCHES_BASE_URL);
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Failed to fetch branches" }));
+    const error = await response
+      .json()
+      .catch(() => ({ message: "Failed to fetch branches" }));
     throw new Error(error.message || "Failed to fetch branches");
   }
 
@@ -57,14 +64,19 @@ async function fetchBranchStats(branchId: string): Promise<BranchStats> {
   const response = await fetch(`${BRANCHES_BASE_URL}/${branchId}/stats`);
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Failed to fetch branch stats" }));
+    const error = await response
+      .json()
+      .catch(() => ({ message: "Failed to fetch branch stats" }));
     throw new Error(error.message || "Failed to fetch branch stats");
   }
 
   return response.json();
 }
 
-async function assignProductToBranch(productId: string, branchId: string): Promise<void> {
+async function assignProductToBranch(
+  productId: string,
+  branchId: string,
+): Promise<void> {
   const response = await fetch(`/api/v1/products/${productId}/branch`, {
     method: "PATCH",
     headers: {
@@ -74,12 +86,17 @@ async function assignProductToBranch(productId: string, branchId: string): Promi
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Failed to assign product to branch" }));
+    const error = await response
+      .json()
+      .catch(() => ({ message: "Failed to assign product to branch" }));
     throw new Error(error.message || "Failed to assign product to branch");
   }
 }
 
-async function bulkAssignProductsToBranch(productIds: string[], branchId: string): Promise<void> {
+async function bulkAssignProductsToBranch(
+  productIds: string[],
+  branchId: string,
+): Promise<void> {
   const response = await fetch(`/api/v1/products/bulk-assign-branch`, {
     method: "PATCH",
     headers: {
@@ -89,7 +106,9 @@ async function bulkAssignProductsToBranch(productIds: string[], branchId: string
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Failed to bulk assign products" }));
+    const error = await response
+      .json()
+      .catch(() => ({ message: "Failed to bulk assign products" }));
     throw new Error(error.message || "Failed to bulk assign products");
   }
 }
@@ -103,7 +122,9 @@ export function useBranches(): UseQueryResult<BranchListResponse, Error> {
   });
 }
 
-export function useBranchStats(branchId: string): UseQueryResult<BranchStats, Error> {
+export function useBranchStats(
+  branchId: string,
+): UseQueryResult<BranchStats, Error> {
   return useQuery({
     queryKey: ["branch-stats", branchId],
     queryFn: () => fetchBranchStats(branchId),
@@ -116,13 +137,22 @@ export function useAssignProductToBranch() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ productId, branchId }: { productId: string; branchId: string }) =>
-      assignProductToBranch(productId, branchId),
+    mutationFn: ({
+      productId,
+      branchId,
+    }: {
+      productId: string;
+      branchId: string;
+    }) => assignProductToBranch(productId, branchId),
     onSuccess: (_, variables) => {
       // Invalidate vehicles query to refresh the list
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["product", variables.productId] });
-      queryClient.invalidateQueries({ queryKey: ["branch-stats", variables.branchId] });
+      queryClient.invalidateQueries({
+        queryKey: ["product", variables.productId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["branch-stats", variables.branchId],
+      });
 
       toast.success("Vehicle assigned to branch", {
         description: "The vehicle has been successfully assigned.",
@@ -140,12 +170,19 @@ export function useBulkAssignProductsToBranch() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ productIds, branchId }: { productIds: string[]; branchId: string }) =>
-      bulkAssignProductsToBranch(productIds, branchId),
+    mutationFn: ({
+      productIds,
+      branchId,
+    }: {
+      productIds: string[];
+      branchId: string;
+    }) => bulkAssignProductsToBranch(productIds, branchId),
     onSuccess: (_, variables) => {
       // Invalidate vehicles query
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["branch-stats", variables.branchId] });
+      queryClient.invalidateQueries({
+        queryKey: ["branch-stats", variables.branchId],
+      });
 
       toast.success(`${variables.productIds.length} products assigned`, {
         description: "All selected vehicles have been assigned to the branch.",

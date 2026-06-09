@@ -4,7 +4,7 @@
  * Matches: apps/api/src/prosell/application/dto/product/
  */
 
-import type { ProductAttributes, VehicleAttributes } from './vehicle';
+import type { ProductAttributes, VehicleAttributes } from "./vehicle";
 
 /**
  * Product entity with status workflow
@@ -27,8 +27,16 @@ export interface Product {
   currency: string; // default: "USD"
 
   // Condition and status
-  condition: 'new' | 'used' | 'refurbished';
-  status: 'draft' | 'pending' | 'published' | 'paused' | 'reserved' | 'sold' | 'rejected' | 'archived';
+  condition: "new" | "used" | "refurbished";
+  status:
+    | "draft"
+    | "pending"
+    | "published"
+    | "paused"
+    | "reserved"
+    | "sold"
+    | "rejected"
+    | "archived";
 
   // Flexible attributes (category-specific)
   attributes: ProductAttributes;
@@ -89,7 +97,7 @@ export interface CreateProductRequest {
   slug?: string;
   description?: string;
   currency?: string;
-  condition?: 'new' | 'used' | 'refurbished';
+  condition?: "new" | "used" | "refurbished";
   attributes: ProductAttributes;
   location_city?: string;
   location_state?: string;
@@ -117,7 +125,7 @@ export interface UpdateProductRequest {
   title?: string;
   description?: string;
   price_cents?: number;
-  condition?: 'new' | 'used' | 'refurbished';
+  condition?: "new" | "used" | "refurbished";
   attributes?: ProductAttributes;
   location_city?: string;
   location_state?: string;
@@ -145,9 +153,11 @@ export interface ProductWithVehicle extends Product {
 /**
  * Type guard to check if product is a vehicle
  */
-export function isVehicleProduct(product: Product): product is ProductWithVehicle {
-  return product.attributes.category === 'vehicle';
+export function isVehicleProduct(
+  product: Product,
+): product is ProductWithVehicle {
+  return product.attributes.category === "vehicle";
 }
 
 // Re-export ProductAttributes for convenience
-export type { ProductAttributes, VehicleAttributes } from './vehicle';
+export type { ProductAttributes, VehicleAttributes } from "./vehicle";

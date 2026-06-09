@@ -13,11 +13,11 @@ Products created via drag-and-drop in `/catalog/create` upload their images succ
 
 There are **three inconsistent storage locations** for product image associations. None of them align with each other:
 
-| Location | Type | Written by | Read by |
-|---|---|---|---|
-| `products.image_urls` (top-level JSONB column) | canonical | **NOBODY** | `GET /api/v1/products/{id}/image-urls` |
-| `products.attributes->>'image_urls'` (nested JSONB) | orphan data | frontend `create/page.tsx:59` | NOBODY |
-| `product_images` (legacy table, 0 rows) | dead schema | NOBODY (bulk upload has TODO) | NOBODY |
+| Location                                            | Type        | Written by                    | Read by                                |
+| --------------------------------------------------- | ----------- | ----------------------------- | -------------------------------------- |
+| `products.image_urls` (top-level JSONB column)      | canonical   | **NOBODY**                    | `GET /api/v1/products/{id}/image-urls` |
+| `products.attributes->>'image_urls'` (nested JSONB) | orphan data | frontend `create/page.tsx:59` | NOBODY                                 |
+| `product_images` (legacy table, 0 rows)             | dead schema | NOBODY (bulk upload has TODO) | NOBODY                                 |
 
 The frontend sends images to `attributes.image_urls` (line 59 of `create/page.tsx`); no backend use case copies them to the top-level column. The signed-URL endpoint reads the always-empty top-level column → returns `images: []` → frontend shows placeholder.
 
@@ -26,6 +26,7 @@ The 8+ previous commits were symptom-fixes (placeholder fallback, retry logic, s
 ## What must be TRUE (acceptance criteria)
 
 ### Functional
+
 1. **AC-1**: A product created via drag-and-drop in `/catalog/create` shows its images in the catalog grid (no placeholder).
 2. **AC-2**: A product updated via PATCH `/api/v1/products/{id}` with new `image_urls` shows the new images after the next refetch.
 3. **AC-3**: A product created/updated via bulk CSV upload (with associated images in the ZIP) shows its images in the catalog grid.
@@ -33,6 +34,7 @@ The 8+ previous commits were symptom-fixes (placeholder fallback, retry logic, s
 5. **AC-5**: The `product_images` legacy table is dropped (zero references, no regressions).
 
 ### Non-functional
+
 6. **AC-6**: All existing tests pass (`pnpm test` + `pytest`).
 7. **AC-7**: 3 new failing-then-passing tests cover the bug (RED → GREEN cycle documented in commit history).
 8. **AC-8**: The fix is deployed to staging, manually verified via drag-and-drop, BEFORE prod window.

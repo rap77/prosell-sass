@@ -41,7 +41,21 @@ describe("TeamLeadList", () => {
       buyer_email: "john@example.com",
       buyer_phone: "555-1234",
       product_id: "p1",
-      product: { id: "p1", title: "2020 Toyota Camry", price_cents: 2000000, currency: "USD", status: "active", attributes: { category: "vehicle", year: 2020, make: "Toyota", model: "Camry" }, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+      product: {
+        id: "p1",
+        title: "2020 Toyota Camry",
+        price_cents: 2000000,
+        currency: "USD",
+        status: "active",
+        attributes: {
+          category: "vehicle",
+          year: 2020,
+          make: "Toyota",
+          model: "Camry",
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
       message: "Interested in this vehicle",
       status: LeadStatus.NEW,
       source: "facebook",
@@ -54,7 +68,21 @@ describe("TeamLeadList", () => {
       buyer_email: "jane@example.com",
       buyer_phone: "555-5678",
       product_id: "p2",
-      product: { id: "p2", title: "2021 Honda Accord", price_cents: 2200000, currency: "USD", status: "active", attributes: { category: "vehicle", year: 2021, make: "Honda", model: "Accord" }, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+      product: {
+        id: "p2",
+        title: "2021 Honda Accord",
+        price_cents: 2200000,
+        currency: "USD",
+        status: "active",
+        attributes: {
+          category: "vehicle",
+          year: 2021,
+          make: "Honda",
+          model: "Accord",
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
       message: "Is this still available?",
       status: LeadStatus.CONTACTED,
       source: "website",
@@ -64,8 +92,18 @@ describe("TeamLeadList", () => {
   ];
 
   const mockVendedores = [
-    { id: "v1", name: "John Seller", email: "john@branch.com", role: "vendedor" },
-    { id: "v2", name: "Jane Seller", email: "jane@branch.com", role: "vendedor" },
+    {
+      id: "v1",
+      name: "John Seller",
+      email: "john@branch.com",
+      role: "vendedor",
+    },
+    {
+      id: "v2",
+      name: "Jane Seller",
+      email: "jane@branch.com",
+      role: "vendedor",
+    },
   ];
 
   beforeEach(() => {
@@ -102,7 +140,7 @@ describe("TeamLeadList", () => {
     return render(
       <QueryClientProvider client={queryClient}>
         {component}
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
   };
 
@@ -163,11 +201,15 @@ describe("TeamLeadList", () => {
     renderWithQueryClient(<TeamLeadList />);
 
     // John Doe (2 minutes ago) should be highlighted with blue border
-    const johnDoeRow = screen.getByText("John Doe").closest('[data-testid="lead-item"]');
+    const johnDoeRow = screen
+      .getByText("John Doe")
+      .closest('[data-testid="lead-item"]');
     expect(johnDoeRow).toBeTruthy();
 
     // Jane Smith (10 minutes ago) should not be highlighted
-    const janeSmithRow = screen.getByText("Jane Smith").closest('[data-testid="lead-item"]');
+    const janeSmithRow = screen
+      .getByText("Jane Smith")
+      .closest('[data-testid="lead-item"]');
     expect(janeSmithRow).toBeTruthy();
   });
 
@@ -211,7 +253,7 @@ describe("TeamLeadList", () => {
 
     // Simulate user typing
     searchInput.value = "John";
-    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new Event("input", { bubbles: true }));
 
     expect(searchInput.value).toBe("John");
   });

@@ -1,4 +1,5 @@
 # ⚛️ Frontend Implementation Patterns - Sprint 5-6
+
 **Fuente:** MasterMind Framework - Cerebro #4 (Frontend Development)
 **Fecha:** 2026-03-04
 **NotebookLM ID:** 85e47142-0a65-41d9-9848-49b8b5d2db33
@@ -52,12 +53,12 @@ src/
 ```tsx
 // app/(dashboard)/products/new/page.tsx (SERVER)
 export default async function NewProductPage() {
-  const categories = await getCategories() // Server fetch
-  return <ProductForm categories={categories} /> // Pass to client
+  const categories = await getCategories(); // Server fetch
+  return <ProductForm categories={categories} />; // Pass to client
 }
 
 // components/features/inventory/ProductForm.tsx (CLIENT)
-'use client'
+("use client");
 export function ProductForm({ categories }) {
   // React Hook Form + VIN decoder + UI interactivity
 }
@@ -67,7 +68,7 @@ export function ProductForm({ categories }) {
 
 ```typescript
 // lib/schemas.ts
-import { z } from 'zod'
+import { z } from "zod";
 
 export const carSchema = z.object({
   vin: z.string().length(17),
@@ -75,18 +76,18 @@ export const carSchema = z.object({
   model: z.string(),
   year: z.number().min(1900).max(2025),
   price: z.number().positive(),
-})
+});
 
 // services/inventory-actions.ts
-'use server'
+("use server");
 export async function saveCar(formData: FormData) {
-  const data = Object.fromEntries(formData)
-  const validated = carSchema.safeParse(data) // Server validation
+  const data = Object.fromEntries(formData);
+  const validated = carSchema.safeParse(data); // Server validation
 
-  if (!validated.success) return { error: validated.error.format() }
+  if (!validated.success) return { error: validated.error.format() };
 
   // Save to DB...
-  revalidatePath('/dashboard/products') // Invalidate cache
+  revalidatePath("/dashboard/products"); // Invalidate cache
 }
 ```
 
@@ -96,11 +97,11 @@ export async function saveCar(formData: FormData) {
 
 ### Separar Server State vs Client State
 
-| Tipo de Estado | Solución | Uso |
-|----------------|----------|-----|
-| **Server State** (DB data) | TanStack Query | Listado de productos, categorías |
-| **UI State** (ephemeral) | Zustand | Filtros, progreso upload, modales |
-| **Local State** (form) | React Hook Form | Campos del formulario |
+| Tipo de Estado             | Solución        | Uso                               |
+| -------------------------- | --------------- | --------------------------------- |
+| **Server State** (DB data) | TanStack Query  | Listado de productos, categorías  |
+| **UI State** (ephemeral)   | Zustand         | Filtros, progreso upload, modales |
+| **Local State** (form)     | React Hook Form | Campos del formulario             |
 
 ### NO duplicar estado
 
@@ -108,13 +109,13 @@ export async function saveCar(formData: FormData) {
 // ❌ MAL - Server state duplicado en Zustand
 const store = create((set) => ({
   products: [], // Esto lo maneja TanStack Query
-}))
+}));
 
 // ✅ BIEN - Zustand solo para UI state
 const store = create((set) => ({
-  filters: { status: 'all', category: null },
+  filters: { status: "all", category: null },
   uploadProgress: {},
-}))
+}));
 ```
 
 ---
@@ -125,35 +126,35 @@ const store = create((set) => ({
 
 ```tsx
 // 1. Client requests presigned URL
-const response = await fetch('/api/upload-url', {
-  method: 'POST',
+const response = await fetch("/api/upload-url", {
+  method: "POST",
   body: JSON.stringify({ filename, contentType }),
-})
-const { uploadUrl, publicUrl, key } = await response.json()
+});
+const { uploadUrl, publicUrl, key } = await response.json();
 
 // 2. Upload directly to DO Spaces
 await axios.put(uploadUrl, file, {
   onUploadProgress: (e) => setProgress(e.loaded / e.total),
-})
+});
 
 // 3. Notify server (optional)
-await fetch('/api/upload-complete', {
-  method: 'POST',
+await fetch("/api/upload-complete", {
+  method: "POST",
   body: JSON.stringify({ key, publicUrl }),
-})
+});
 ```
 
 ### Progreso con XMLHttpRequest
 
 ```tsx
 // Como fetch no soporta upload progress nativamente
-const xhr = new XMLHttpRequest()
-xhr.upload.addEventListener('progress', (e) => {
-  const progress = e.loaded / e.total
-  setProgress(index, progress)
-})
-xhr.open('PUT', uploadUrl)
-xhr.send(file)
+const xhr = new XMLHttpRequest();
+xhr.upload.addEventListener("progress", (e) => {
+  const progress = e.loaded / e.total;
+  setProgress(index, progress);
+});
+xhr.open("PUT", uploadUrl);
+xhr.send(file);
 ```
 
 ---
@@ -162,34 +163,29 @@ xhr.send(file)
 
 ```tsx
 // components/features/inventory/ProductForm.tsx
-'use client'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+"use client";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export function ProductForm() {
   const { setValue, trigger } = useForm({
     resolver: zodResolver(carSchema),
-    mode: 'onBlur', // Validación al salir del campo
-  })
+    mode: "onBlur", // Validación al salir del campo
+  });
 
   const handleVinBlur = async (vin: string) => {
-    if (vin.length !== 17) return
+    if (vin.length !== 17) return;
 
-    const decoded = await decodeVin(vin) // NHTSA API
-    setValue('make', decoded.Make)
-    setValue('model', decoded.Model)
-    setValue('year', parseInt(decoded.ModelYear))
+    const decoded = await decodeVin(vin); // NHTSA API
+    setValue("make", decoded.Make);
+    setValue("model", decoded.Model);
+    setValue("year", parseInt(decoded.ModelYear));
 
     // Trigger validation para actualizar errores
-    trigger('vin')
-  }
+    trigger("vin");
+  };
 
-  return (
-    <Input
-      name="vin"
-      onBlur={(e) => handleVinBlur(e.target.value)}
-    />
-  )
+  return <Input name="vin" onBlur={(e) => handleVinBlur(e.target.value)} />;
 }
 ```
 
@@ -199,26 +195,28 @@ export function ProductForm() {
 
 ```tsx
 // components/features/inventory/SocialPreview.tsx
-'use client'
-import { useTransition } from 'react'
+"use client";
+import { useTransition } from "react";
 
 export function SocialPreview({ data }) {
-  const [isPending, startTransition] = useTransition()
+  const [isPending, startTransition] = useTransition();
 
   // Actualización no-bloqueante de la preview
   const updatePreview = (newData) => {
     startTransition(() => {
       // Cálculo pesado de renderizado
-      setPreviewData(newData)
-    })
-  }
+      setPreviewData(newData);
+    });
+  };
 
   return (
     <div className={isPending ? "opacity-50" : ""}>
-      <h3>{data.brand} {data.model}</h3>
+      <h3>
+        {data.brand} {data.model}
+      </h3>
       <p className="text-2xl font-bold">${data.price}</p>
     </div>
-  )
+  );
 }
 ```
 
@@ -228,25 +226,25 @@ export function SocialPreview({ data }) {
 
 ```tsx
 // app/(dashboard)/products/page.tsx
-'use client'
-import { useQuery } from '@tanstack/react-query'
+"use client";
+import { useQuery } from "@tanstack/react-query";
 
 export function ProductsList() {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['products'],
+    queryKey: ["products"],
     queryFn: getProducts,
-  })
+  });
 
-  if (isLoading) return <Skeleton />
-  if (error) return <ErrorState />
+  if (isLoading) return <Skeleton />;
+  if (error) return <ErrorState />;
 
   return (
     <div>
-      {data.map(product => (
+      {data.map((product) => (
         <ProductCard key={product.id} product={product} />
       ))}
     </div>
-  )
+  );
 }
 ```
 
@@ -254,12 +252,12 @@ export function ProductsList() {
 
 ```tsx
 // En el Server Action
-import { revalidatePath } from 'next/cache'
+import { revalidatePath } from "next/cache";
 
 export async function saveCar(formData: FormData) {
   // ... save logic
 
-  revalidatePath('/dashboard/products') // TanStack Query auto-refetch
+  revalidatePath("/dashboard/products"); // TanStack Query auto-refetch
 }
 ```
 
@@ -269,39 +267,39 @@ export async function saveCar(formData: FormData) {
 
 ```tsx
 // components/shared/ErrorBoundary.tsx
-'use client'
-import { Component, ReactNode } from 'react'
+"use client";
+import { Component, ReactNode } from "react";
 
 export class ErrorBoundary extends Component {
-  state = { hasError: false }
+  state = { hasError: false };
 
   static getDerivedStateFromError(error) {
-    return { hasError: true }
+    return { hasError: true };
   }
 
   render() {
     if (this.state.hasError) {
-      return <FallbackUI />
+      return <FallbackUI />;
     }
-    return this.props.children
+    return this.props.children;
   }
 }
 
 // Usar en el listado
 <ErrorBoundary>
   <ProductsList />
-</ErrorBoundary>
+</ErrorBoundary>;
 ```
 
 ---
 
 ## 9. ACCESSIBILITY CHECKLIST
 
-| Patrón | Implementación |
-|--------|----------------|
-| **Foco visible** | `:focus-visible` con anillo prominente |
-| **Zonas de toque** | Mínimo 44x44px en móvil |
-| **Aria labels** | Botones con solo ícono necesitan `aria-label` |
+| Patrón             | Implementación                                      |
+| ------------------ | --------------------------------------------------- |
+| **Foco visible**   | `:focus-visible` con anillo prominente              |
+| **Zonas de toque** | Mínimo 44x44px en móvil                             |
+| **Aria labels**    | Botones con solo ícono necesitan `aria-label`       |
 | **Inputs nativos** | `type="number"` para precio, `type="text"` para VIN |
 
 ---
@@ -343,7 +341,7 @@ export class ErrorBoundary extends Component {
 
 ```tsx
 // ❌ MAL - Tokens en localStorage
-localStorage.setItem('token', userToken)
+localStorage.setItem("token", userToken);
 
 // ✅ BIEN - Cookies HttpOnly (Next.js default)
 // Cookies son manejadas automáticamente por el browser
@@ -355,16 +353,16 @@ localStorage.setItem('token', userToken)
 
 ```tsx
 // components/features/inventory/ProductForm.tsx
-'use client'
+"use client";
 
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { carSchema } from '@/lib/schemas'
-import { saveCar } from '@/services/inventory-actions'
-import { useTransition } from 'react'
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { carSchema } from "@/lib/schemas";
+import { saveCar } from "@/services/inventory-actions";
+import { useTransition } from "react";
 
 export function ProductForm({ initialData }) {
-  const [isPending, startTransition] = useTransition()
+  const [isPending, startTransition] = useTransition();
 
   const {
     register,
@@ -374,26 +372,26 @@ export function ProductForm({ initialData }) {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(carSchema),
-    mode: 'onBlur', // Validación inline
+    mode: "onBlur", // Validación inline
     defaultValues: initialData,
-  })
+  });
 
   const onSubmit = async (data) => {
     startTransition(async () => {
-      const formData = new FormData()
+      const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
-        formData.append(key, value)
-      })
+        formData.append(key, value);
+      });
 
-      const result = await saveCar(formData)
+      const result = await saveCar(formData);
 
       if (result.error) {
         // Handle server errors
       } else {
         // Success - redirect or show confirmation
       }
-    })
-  }
+    });
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -401,24 +399,26 @@ export function ProductForm({ initialData }) {
       <div>
         <label>VIN</label>
         <Input
-          {...register('vin')}
+          {...register("vin")}
           onBlur={(e) => handleVinDecode(e.target.value)}
         />
-        {errors.vin && <span className="text-red-500">{errors.vin.message}</span>}
+        {errors.vin && (
+          <span className="text-red-500">{errors.vin.message}</span>
+        )}
       </div>
 
       {/* Price */}
       <div>
         <label>Precio</label>
-        <Input type="number" {...register('price')} />
+        <Input type="number" {...register("price")} />
       </div>
 
       {/* Submit */}
       <Button type="submit" disabled={isSubmitting || isPending}>
-        {isSubmitting ? 'Publicando...' : 'Publicar'}
+        {isSubmitting ? "Publicando..." : "Publicar"}
       </Button>
     </form>
-  )
+  );
 }
 ```
 
@@ -438,4 +438,4 @@ export function ProductForm({ initialData }) {
 
 ---
 
-*Generado por MasterMind Framework v1.0 - Cerebro #4 (Frontend Development)*
+_Generado por MasterMind Framework v1.0 - Cerebro #4 (Frontend Development)_

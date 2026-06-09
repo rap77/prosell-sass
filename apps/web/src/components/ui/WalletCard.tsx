@@ -15,7 +15,13 @@
 import { useEffect, useState } from "react";
 import { useWalletStore } from "@/stores";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useAuthStore } from "@/stores";
 import { Plus, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -65,13 +71,7 @@ export function WalletCard({
   const tenantId = user?.id || ""; // Use user ID as tenant_id for now
 
   // Get wallet store
-  const {
-    wallet,
-    isLoading,
-    error,
-    fetchBalance,
-    credit,
-  } = useWalletStore();
+  const { wallet, isLoading, error, fetchBalance, credit } = useWalletStore();
 
   // Fetch balance on mount
   useEffect(() => {
@@ -107,18 +107,16 @@ export function WalletCard({
 
   return (
     <Card className={cn("", className)}>
-      <CardHeader className={cn(
-        "flex flex-row items-center justify-between space-y-0 pb-2",
-        !showTitle && "justify-end"
-      )}>
+      <CardHeader
+        className={cn(
+          "flex flex-row items-center justify-between space-y-0 pb-2",
+          !showTitle && "justify-end",
+        )}
+      >
         {showTitle && (
           <div>
-            <CardTitle className="text-sm font-medium">
-              Token Balance
-            </CardTitle>
-            <CardDescription>
-              Available tokens for listings
-            </CardDescription>
+            <CardTitle className="text-sm font-medium">Token Balance</CardTitle>
+            <CardDescription>Available tokens for listings</CardDescription>
           </div>
         )}
         {showRefreshButton && (
@@ -130,12 +128,7 @@ export function WalletCard({
             className="h-8 w-8"
             aria-label="Refresh balance"
           >
-            <RefreshCw
-              className={cn(
-                "h-4 w-4",
-                isLoading && "animate-spin",
-              )}
-            />
+            <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
           </Button>
         )}
       </CardHeader>
@@ -145,9 +138,7 @@ export function WalletCard({
             <div className="text-2xl font-bold">
               {isLoading ? "..." : formattedBalance}
             </div>
-            <div className="text-xs text-muted-foreground">
-              tokens
-            </div>
+            <div className="text-xs text-muted-foreground">tokens</div>
           </div>
           <Button
             onClick={() => setShowRechargeDialog(true)}

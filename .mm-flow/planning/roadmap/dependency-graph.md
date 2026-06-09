@@ -90,12 +90,12 @@
 
 ## External Dependencies (not in this graph)
 
-| Dependency | Type | Status |
-|------------|------|--------|
-| Meta App Review | External | Pending — required for Graph API publishing |
-| Claude API Key | External | Not yet acquired — needed for AI Assistant |
-| Stripe Account | External | Not yet configured — needed for v1 wallet |
-| SendGrid API Key | External | Partially configured in staging |
+| Dependency       | Type     | Status                                      |
+| ---------------- | -------- | ------------------------------------------- |
+| Meta App Review  | External | Pending — required for Graph API publishing |
+| Claude API Key   | External | Not yet acquired — needed for AI Assistant  |
+| Stripe Account   | External | Not yet configured — needed for v1 wallet   |
+| SendGrid API Key | External | Partially configured in staging             |
 
 ## Recommended next active objective
 

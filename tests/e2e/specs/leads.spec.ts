@@ -25,7 +25,12 @@ const MOCK_LEADS = [
       price_cents: 2000000,
       currency: "USD",
       status: "active",
-      attributes: { category: "vehicle", year: 2020, make: "Toyota", model: "Camry" },
+      attributes: {
+        category: "vehicle",
+        year: 2020,
+        make: "Toyota",
+        model: "Camry",
+      },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
@@ -47,7 +52,12 @@ const MOCK_LEADS = [
       price_cents: 2200000,
       currency: "USD",
       status: "active",
-      attributes: { category: "vehicle", year: 2021, make: "Honda", model: "Accord" },
+      attributes: {
+        category: "vehicle",
+        year: 2021,
+        make: "Honda",
+        model: "Accord",
+      },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
@@ -103,7 +113,9 @@ test.describe("Leads List View", () => {
     await expect(leadList).toBeVisible();
 
     // Check for filters
-    await expect(page.locator("input[placeholder*='buyer name']")).toBeVisible();
+    await expect(
+      page.locator("input[placeholder*='buyer name']"),
+    ).toBeVisible();
     await expect(page.locator("[data-testid='status-filter']")).toBeVisible();
   });
 
@@ -160,7 +172,9 @@ test.describe("Leads List View", () => {
     await page.waitForTimeout(200);
 
     // Verify that the "Contacted" option is visible in the dropdown
-    const contactedOption = page.locator("[role='menuitem']").filter({ hasText: "Contacted" });
+    const contactedOption = page
+      .locator("[role='menuitem']")
+      .filter({ hasText: "Contacted" });
     await expect(contactedOption).toBeVisible();
 
     // Select "Contacted" status
@@ -176,11 +190,13 @@ test.describe("Leads List View", () => {
 
   test("should show unread lead highlight", async ({ page }) => {
     // Check for unread highlight (blue left border)
-    const unreadLead = page.locator("[data-testid='lead-item'].border-l-blue-500");
+    const unreadLead = page.locator(
+      "[data-testid='lead-item'].border-l-blue-500",
+    );
 
     // Unread leads should have blue highlight
     // This test assumes there's a lead created < 5 min ago
-    if (await unreadLead.count() > 0) {
+    if ((await unreadLead.count()) > 0) {
       await expect(unreadLead.first()).toHaveClass(/border-l-blue-500/);
     }
   });
@@ -238,7 +254,9 @@ test.describe("Leads List View - E2E Verification (A7)", () => {
         let filteredLeads = [...MOCK_LEADS];
 
         if (status) {
-          filteredLeads = filteredLeads.filter((lead) => lead.status === status);
+          filteredLeads = filteredLeads.filter(
+            (lead) => lead.status === status,
+          );
         }
 
         if (search) {
@@ -247,7 +265,7 @@ test.describe("Leads List View - E2E Verification (A7)", () => {
             (lead) =>
               lead.buyer_name.toLowerCase().includes(searchLower) ||
               lead.buyer_email.toLowerCase().includes(searchLower) ||
-              (lead.product?.title ?? "").toLowerCase().includes(searchLower)
+              (lead.product?.title ?? "").toLowerCase().includes(searchLower),
           );
         }
 
@@ -273,7 +291,7 @@ test.describe("Leads List View - E2E Verification (A7)", () => {
         const leadId = urlParts[urlParts.length - 2]; // Second to last part is lead ID
 
         // Update MOCK_LEADS to reflect the status change
-        const leadIndex = MOCK_LEADS.findIndex(l => l.id === leadId);
+        const leadIndex = MOCK_LEADS.findIndex((l) => l.id === leadId);
 
         if (leadIndex !== -1) {
           MOCK_LEADS[leadIndex].status = updateData.status || "contacted";
@@ -318,10 +336,19 @@ test.describe("Leads List View - E2E Verification (A7)", () => {
     // The buyer name is in the first w-48 column; vehicle title is in the second w-48 column
     const firstLead = leadItems.first();
     // Buyer name: the flex-shrink-0.w-48 buyer column contains span.font-medium
-    await expect(firstLead.locator(".flex-shrink-0.w-48").first().locator("span.font-medium")).toContainText("John Doe");
-    await expect(firstLead.locator("span.truncate")).toContainText("john@example.com");
+    await expect(
+      firstLead
+        .locator(".flex-shrink-0.w-48")
+        .first()
+        .locator("span.font-medium"),
+    ).toContainText("John Doe");
+    await expect(firstLead.locator("span.truncate")).toContainText(
+      "john@example.com",
+    );
     // Vehicle title: the second w-48 column has div.font-medium for title
-    await expect(firstLead.locator("div.font-medium").first()).toContainText("2020 Toyota Camry");
+    await expect(firstLead.locator("div.font-medium").first()).toContainText(
+      "2020 Toyota Camry",
+    );
   });
 
   test("A7.7: should update lead status", async ({ page }) => {
@@ -335,12 +362,18 @@ test.describe("Leads List View - E2E Verification (A7)", () => {
     await page.waitForTimeout(200);
 
     // Click on "Contacted" status
-    const contactedOption = page.locator("[role='menuitem']").filter({ hasText: "Contacted" });
+    const contactedOption = page
+      .locator("[role='menuitem']")
+      .filter({ hasText: "Contacted" });
     await contactedOption.click();
 
     // Wait for the update to complete
     // The status badge should update to show "Contacted"
-    await expect(firstLead.locator("[data-testid='status-badge']").filter({ hasText: "Contacted" })).toBeVisible({ timeout: 5000 });
+    await expect(
+      firstLead
+        .locator("[data-testid='status-badge']")
+        .filter({ hasText: "Contacted" }),
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("A7.8: should search leads by buyer name", async ({ page }) => {
@@ -360,7 +393,13 @@ test.describe("Leads List View - E2E Verification (A7)", () => {
 
     if (count > 0) {
       // Scope to buyer column first span.font-medium to avoid status badge collision
-      await expect(leadItems.first().locator(".flex-shrink-0.w-48").first().locator("span.font-medium")).toContainText("John Doe");
+      await expect(
+        leadItems
+          .first()
+          .locator(".flex-shrink-0.w-48")
+          .first()
+          .locator("span.font-medium"),
+      ).toContainText("John Doe");
     }
   });
 
@@ -380,7 +419,9 @@ test.describe("Leads List View - E2E Verification (A7)", () => {
     const count = await leadItems.count();
 
     if (count > 0) {
-      await expect(leadItems.first().locator("div.font-medium").first()).toContainText("Toyota Camry");
+      await expect(
+        leadItems.first().locator("div.font-medium").first(),
+      ).toContainText("Toyota Camry");
     }
   });
 
@@ -417,7 +458,10 @@ test.describe("Leads List View - E2E Verification (A7)", () => {
     await page.waitForTimeout(200);
 
     // Select "Contacted" status
-    await page.locator("[role='option']").filter({ hasText: "Contacted" }).click();
+    await page
+      .locator("[role='option']")
+      .filter({ hasText: "Contacted" })
+      .click();
 
     // Wait for filter to apply
     await page.waitForTimeout(500);
@@ -456,7 +500,13 @@ test.describe("Leads List View - E2E Verification (A7)", () => {
     if (count > 0) {
       // Should show leads that are BOTH "new" AND match "John"
       // Scope to buyer column first span.font-medium to avoid status badge collision
-      await expect(leadItems.first().locator(".flex-shrink-0.w-48").first().locator("span.font-medium")).toContainText("John");
+      await expect(
+        leadItems
+          .first()
+          .locator(".flex-shrink-0.w-48")
+          .first()
+          .locator("span.font-medium"),
+      ).toContainText("John");
       await expect(leadItems.first().locator("text=New")).toBeVisible();
     }
   });
@@ -468,14 +518,22 @@ test.describe("Leads List View - E2E Verification (A7)", () => {
     // Check buyer information — scope to buyer column to avoid strict-mode violations
     // (status badge also has span.font-medium; sidebar may show same user name)
     const buyerColumn = firstLead.locator(".flex-shrink-0.w-48").first();
-    await expect(buyerColumn.locator("span.font-medium")).toContainText("John Doe");
-    await expect(firstLead.locator("span.truncate")).toContainText("john@example.com");
+    await expect(buyerColumn.locator("span.font-medium")).toContainText(
+      "John Doe",
+    );
+    await expect(firstLead.locator("span.truncate")).toContainText(
+      "john@example.com",
+    );
 
     // Check vehicle title specifically (the font-medium div in the vehicle column)
-    await expect(firstLead.locator("div.font-medium").first()).toContainText("2020 Toyota Camry");
+    await expect(firstLead.locator("div.font-medium").first()).toContainText(
+      "2020 Toyota Camry",
+    );
 
     // Check message
-    await expect(firstLead.locator("text=Is this vehicle still available?")).toBeVisible();
+    await expect(
+      firstLead.locator("text=Is this vehicle still available?"),
+    ).toBeVisible();
 
     // Check status badge (lead-1 starts as "new" but A7.7 may have mutated to "contacted")
     // Assert any valid status badge is visible

@@ -51,6 +51,7 @@ You receive a JSON payload in the prompt:
 ## Stub Prohibition
 
 NEVER create stubs. A stub is any code that:
+
 - Returns hardcoded values (`"pending"`, `{}`, `[]`, `None`, `pass`)
 - Has real logic commented out
 - Contains `TODO(phase-N)` deferral comments

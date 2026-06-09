@@ -59,30 +59,30 @@ transmission | option | description | path | groups | label | publicado | VIN
 
 ## Mapeo CSV → ProSell
 
-| Campo CSV | Mapa a | Conversión |
-|----------|--------|-----------|
-| `title` | `title` | Directa (es `cod_dealer`) |
-| `price` | `price_cents` | `float × 100` |
-| `description` | `description` | Directa |
-| `year` | `attributes.year` | `int` |
-| `make` | `attributes.make` | Directa |
-| `model` | `attributes.model` | Directa |
-| `mileage` | `attributes.mileage` | `float`, asumir `miles` |
-| `exterior_color` | `attributes.exterior_color` | Directa |
-| `interior_color` | `attributes.interior_color` | Directa |
-| `fuel_type` | `attributes.fuel_type` | Directa |
-| `transmission` | `attributes.transmission` | Directa |
-| `VIN` | `attributes.vin` | Validado 17 chars |
-| `location` | `location_city` + `location_state` | Parsear `"Ciudad State"` |
-| `clean_title` | `attributes.title_status` | `"1"`→clean, `"0"`→rebuilt |
-| `state` | `attributes.title_state` | Directa |
-| `groups` | `attributes.facebook_groups` | `split(",")` → JSON array |
-| `label` | `attributes.label` | String (formatos variados) |
-| `publicado` | `attributes.publicado` | `"1"`→true, else false |
-| `option` | — | Ignorado |
-| `type` | — | Ignorado |
-| `id` | — | Ignorado |
-| `path` | IMAGENES | Mapeo a DO Spaces |
+| Campo CSV        | Mapa a                             | Conversión                 |
+| ---------------- | ---------------------------------- | -------------------------- |
+| `title`          | `title`                            | Directa (es `cod_dealer`)  |
+| `price`          | `price_cents`                      | `float × 100`              |
+| `description`    | `description`                      | Directa                    |
+| `year`           | `attributes.year`                  | `int`                      |
+| `make`           | `attributes.make`                  | Directa                    |
+| `model`          | `attributes.model`                 | Directa                    |
+| `mileage`        | `attributes.mileage`               | `float`, asumir `miles`    |
+| `exterior_color` | `attributes.exterior_color`        | Directa                    |
+| `interior_color` | `attributes.interior_color`        | Directa                    |
+| `fuel_type`      | `attributes.fuel_type`             | Directa                    |
+| `transmission`   | `attributes.transmission`          | Directa                    |
+| `VIN`            | `attributes.vin`                   | Validado 17 chars          |
+| `location`       | `location_city` + `location_state` | Parsear `"Ciudad State"`   |
+| `clean_title`    | `attributes.title_status`          | `"1"`→clean, `"0"`→rebuilt |
+| `state`          | `attributes.title_state`           | Directa                    |
+| `groups`         | `attributes.facebook_groups`       | `split(",")` → JSON array  |
+| `label`          | `attributes.label`                 | String (formatos variados) |
+| `publicado`      | `attributes.publicado`             | `"1"`→true, else false     |
+| `option`         | —                                  | Ignorado                   |
+| `type`           | —                                  | Ignorado                   |
+| `id`             | —                                  | Ignorado                   |
+| `path`           | IMAGENES                           | Mapeo a DO Spaces          |
 
 ## Campos nuevos en VehicleAttributes
 

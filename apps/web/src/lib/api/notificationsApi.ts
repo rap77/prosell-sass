@@ -62,7 +62,7 @@ export function useMarkNotificationRead() {
     mutationFn: async (notificationId: string): Promise<Notification> => {
       const response = await fetchWithAuth(
         `/api/v1/notifications/${notificationId}/read`,
-        { method: "PUT" }
+        { method: "PUT" },
       );
       if (!response.ok) {
         throw new Error("Failed to mark notification as read");

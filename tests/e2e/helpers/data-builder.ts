@@ -104,25 +104,32 @@ export class TestDataBuilder {
     } else {
       // Try to read from file saved by globalSetup
       try {
-        const fs = require('fs');
-        const path = require('path');
-        const tenantIdPath = path.join(__dirname, '.auth', 'tenant-id.txt');
+        const fs = require("fs");
+        const path = require("path");
+        const tenantIdPath = path.join(__dirname, ".auth", "tenant-id.txt");
         if (fs.existsSync(tenantIdPath)) {
-          this.tenantId = fs.readFileSync(tenantIdPath, 'utf-8').trim();
-          console.log('[TestDataBuilder] Read tenant_id from file:', this.tenantId);
+          this.tenantId = fs.readFileSync(tenantIdPath, "utf-8").trim();
+          console.log(
+            "[TestDataBuilder] Read tenant_id from file:",
+            this.tenantId,
+          );
         } else {
           throw new Error(
-            '[TestDataBuilder] tenant-id.txt not found and TEST_TENANT_ID env var not set. ' +
-            'Run Playwright globalSetup first or set TEST_TENANT_ID.'
+            "[TestDataBuilder] tenant-id.txt not found and TEST_TENANT_ID env var not set. " +
+              "Run Playwright globalSetup first or set TEST_TENANT_ID.",
           );
         }
       } catch (error) {
-        if (error instanceof Error && error.message.includes('[TestDataBuilder]')) {
+        if (
+          error instanceof Error &&
+          error.message.includes("[TestDataBuilder]")
+        ) {
           throw error;
         }
         throw new Error(
-          '[TestDataBuilder] Failed to read tenant-id.txt. ' +
-          'Ensure globalSetup ran successfully. Original error: ' + String(error)
+          "[TestDataBuilder] Failed to read tenant-id.txt. " +
+            "Ensure globalSetup ran successfully. Original error: " +
+            String(error),
         );
       }
     }
@@ -163,10 +170,14 @@ export class TestDataBuilder {
 
     // Only add uniqueness suffix to generic test category names
     // Keep specific names like "SUVs", "Sedans" unchanged for UI tests
-    const isGenericName = name.toLowerCase().includes("test") || name.toLowerCase().includes("catalog");
+    const isGenericName =
+      name.toLowerCase().includes("test") ||
+      name.toLowerCase().includes("catalog");
     const uniqueSuffix = `-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const uniqueName = isGenericName ? `${name}${uniqueSuffix}` : name;
-    const slug = name.toLowerCase().replace(/\s+/g, "-") + (isGenericName ? uniqueSuffix : "");
+    const slug =
+      name.toLowerCase().replace(/\s+/g, "-") +
+      (isGenericName ? uniqueSuffix : "");
     const url = `${this.baseUrl}/api/v1/categories`;
 
     const response = await this.request.post(url, {
@@ -189,7 +200,9 @@ export class TestDataBuilder {
         const listUrl = `${this.baseUrl}/api/v1/categories`;
         const listResponse = await this.request.get(listUrl);
         if (listResponse.ok()) {
-          const response = (await listResponse.json()) as { categories: { id: string; name: string }[] };
+          const response = (await listResponse.json()) as {
+            categories: { id: string; name: string }[];
+          };
           const existing = response.categories.find((c) => c.name === name);
           if (existing) {
             this.categoryIds.push(existing.id);
@@ -212,7 +225,7 @@ export class TestDataBuilder {
     }
 
     // Wait for DB transaction to commit
-    if (this.page && typeof this.page.waitForTimeout === 'function') {
+    if (this.page && typeof this.page.waitForTimeout === "function") {
       await this.page.waitForTimeout(300);
     }
 
@@ -235,16 +248,16 @@ export class TestDataBuilder {
 
     // Pool of real 17-char VINs for test data (validated format)
     const TEST_VIN_POOL = [
-      "1G1PE5SB6G7175794",  // 2016 Chevrolet Cruze
-      "1HGCM82633A123456",  // 2003 Honda Accord
-      "2GNALCEK1H1615946",  // 2017 Chevrolet Equinox
-      "KMHHU6KH9AU020511",  // 2010 Hyundai Genesis
-      "KNAFX4A65E5134820",  // 2014 Kia Forte
-      "KNDJP3A5XF7227448",  // 2015 Kia Soul
-      "4T1BF1FK2GU203567",  // Toyota
-      "1HGCV1F31KA012345",  // 2019 Honda Civic
-      "2T1BURHE1GC123456",  // Toyota Corolla
-      "1NXBR32E87Z123456",  // Toyota
+      "1G1PE5SB6G7175794", // 2016 Chevrolet Cruze
+      "1HGCM82633A123456", // 2003 Honda Accord
+      "2GNALCEK1H1615946", // 2017 Chevrolet Equinox
+      "KMHHU6KH9AU020511", // 2010 Hyundai Genesis
+      "KNAFX4A65E5134820", // 2014 Kia Forte
+      "KNDJP3A5XF7227448", // 2015 Kia Soul
+      "4T1BF1FK2GU203567", // Toyota
+      "1HGCV1F31KA012345", // 2019 Honda Civic
+      "2T1BURHE1GC123456", // Toyota Corolla
+      "1NXBR32E87Z123456", // Toyota
     ];
     // Use a different VIN per vehicle using counter modulo pool size
     const vinIndex = this.vehicleIds.length % TEST_VIN_POOL.length;
@@ -264,12 +277,13 @@ export class TestDataBuilder {
 
     const response = await this.request.post(url, {
       data: {
-        title: `${vehicleData.year} ${vehicleData.make} ${vehicleData.model}`.trim(),
+        title:
+          `${vehicleData.year} ${vehicleData.make} ${vehicleData.model}`.trim(),
         price_cents: Math.round((vehicleData.price || 0) * 100),
         category_id: categoryId,
-        condition: 'used',
+        condition: "used",
         attributes: {
-          category: 'vehicle',
+          category: "vehicle",
           vin: vehicleData.vin,
           year: vehicleData.year,
           make: vehicleData.make,
@@ -331,7 +345,10 @@ export class TestDataBuilder {
    * @param overrides - Optional lead data overrides
    * @returns Promise<string> - Lead ID
    */
-  async createLead(vehicleId: string, overrides?: Partial<LeadData>): Promise<string> {
+  async createLead(
+    vehicleId: string,
+    overrides?: Partial<LeadData>,
+  ): Promise<string> {
     const url = `${this.baseUrl}/api/v1/leads`;
 
     // Default lead data

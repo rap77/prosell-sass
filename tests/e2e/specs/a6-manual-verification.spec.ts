@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from "@playwright/test";
 
 /**
  * Manual Functional Verification of Phase A6 Criteria
@@ -23,7 +23,7 @@ async function setDealerRoleCookie(page: Page) {
           role: "branch",
           name: "Test Branch",
           tenant_id: process.env.TEST_TENANT_ID || "default-tenant-id",
-        })
+        }),
       ),
       domain: "localhost",
       path: "/",
@@ -32,7 +32,7 @@ async function setDealerRoleCookie(page: Page) {
   ]);
 }
 
-test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
+test.describe("Phase A6 - Dealer Calendar: Functional Verification", () => {
   test.describe.configure({ mode: "serial" });
 
   test.beforeEach(async ({ page }) => {
@@ -68,7 +68,9 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
     }
   });
 
-  test('CRITERION 1: Dealer can view appointments at /branch/appointments', async ({ page }) => {
+  test("CRITERION 1: Dealer can view appointments at /branch/appointments", async ({
+    page,
+  }) => {
     await test.step("Navigate to dealer appointments page", async () => {
       await page.goto("/branch/appointments");
       await page.waitForLoadState("load");
@@ -76,7 +78,9 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
 
     await test.step("Verify page loads without errors", async () => {
       // Take screenshot
-      await page.screenshot({ path: 'test-results/a6-c1-dealer-appointments-page.png' });
+      await page.screenshot({
+        path: "test-results/a6-c1-dealer-appointments-page.png",
+      });
 
       // Check that we're on the correct page
       await expect(page).toHaveURL(/\/branch\/appointments/);
@@ -90,12 +94,14 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
     });
   });
 
-  test('CRITERION 2: Calendar view shows day/week/month toggle', async ({ page }) => {
+  test("CRITERION 2: Calendar view shows day/week/month toggle", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("load");
 
     await test.step("Verify view toggle buttons are present", async () => {
-      await page.screenshot({ path: 'test-results/a6-c2-calendar-view.png' });
+      await page.screenshot({ path: "test-results/a6-c2-calendar-view.png" });
 
       // FullCalendar renders buttons with specific classes
       // Look for the header toolbar with view buttons
@@ -117,7 +123,7 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
     });
   });
 
-  test('CRITERION 3: Appointment cards show buyer info', async ({ page }) => {
+  test("CRITERION 3: Appointment cards show buyer info", async ({ page }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("load");
 
@@ -129,7 +135,9 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
       const eventCount = await page.locator(".fc-event").count();
       console.log(`Found ${eventCount} appointment events`);
 
-      await page.screenshot({ path: 'test-results/a6-c3-appointment-cards.png' });
+      await page.screenshot({
+        path: "test-results/a6-c3-appointment-cards.png",
+      });
 
       if (eventCount > 0) {
         await test.step("Verify appointment shows buyer information", async () => {
@@ -144,17 +152,21 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
 
           // Check that buyer information section exists
           // Look for User icon (buyer name is near it)
-          const buyerSection = modal.locator("svg").filter({ hasText: /user/i });
+          const buyerSection = modal
+            .locator("svg")
+            .filter({ hasText: /user/i });
           await expect(buyerSection).toBeVisible();
 
           // Check for buyer name (should be near the user icon)
           const buyerInfo = modal.locator("text=/Buyer|Customer|Client/i");
-          const hasBuyerInfo = await buyerInfo.count() > 0;
+          const hasBuyerInfo = (await buyerInfo.count()) > 0;
 
           if (hasBuyerInfo) {
             console.log("✓ Buyer information is displayed in modal");
           } else {
-            console.log("⚠ Buyer info section exists but no specific buyer text found");
+            console.log(
+              "⚠ Buyer info section exists but no specific buyer text found",
+            );
             // Still pass - the component structure is correct
           }
 
@@ -169,13 +181,13 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
         // Mark as passed - the calendar UI is working, just no data
         test.info().annotations.push({
           type: "info",
-          description: "No appointments in database to test buyer info display"
+          description: "No appointments in database to test buyer info display",
         });
       }
     });
   });
 
-  test('CRITERION 4: Confirm/cancel buttons work', async ({ page }) => {
+  test("CRITERION 4: Confirm/cancel buttons work", async ({ page }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("load");
 
@@ -195,26 +207,46 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
           const modal = page.locator('[role="dialog"]');
           await expect(modal).toBeVisible({ timeout: 3000 });
 
-          await page.screenshot({ path: 'test-results/a6-c4-confirm-cancel-buttons.png' });
+          await page.screenshot({
+            path: "test-results/a6-c4-confirm-cancel-buttons.png",
+          });
 
           // Check for action buttons
-          const confirmButton = modal.locator('button[data-testid="confirm-button"]');
-          const cancelButton = modal.locator('button[data-testid="cancel-button"]');
+          const confirmButton = modal.locator(
+            'button[data-testid="confirm-button"]',
+          );
+          const cancelButton = modal.locator(
+            'button[data-testid="cancel-button"]',
+          );
 
           const confirmButtonCount = await confirmButton.count();
           const cancelButtonCount = await cancelButton.count();
 
           if (confirmButtonCount > 0 && cancelButtonCount > 0) {
-            console.log("✓ Confirm and cancel buttons exist for scheduled appointment");
+            console.log(
+              "✓ Confirm and cancel buttons exist for scheduled appointment",
+            );
 
             // Verify button colors (green for confirm, red for cancel)
-            await expect(confirmButton).toHaveCSS("background-color", /rgb\(22,\s*163,\s*74\)/);
-            await expect(cancelButton).toHaveCSS("background-color", /rgb\(220,\s*38,\s*38\)/);
+            await expect(confirmButton).toHaveCSS(
+              "background-color",
+              /rgb\(22,\s*163,\s*74\)/,
+            );
+            await expect(cancelButton).toHaveCSS(
+              "background-color",
+              /rgb\(220,\s*38,\s*38\)/,
+            );
 
-            console.log("✓ Button colors are correct (green/confirm, red/cancel)");
+            console.log(
+              "✓ Button colors are correct (green/confirm, red/cancel)",
+            );
           } else {
-            console.log("⚠ Action buttons not present - appointment may not be in 'scheduled' status");
-            console.log("This is OK - we're verifying the UI component structure");
+            console.log(
+              "⚠ Action buttons not present - appointment may not be in 'scheduled' status",
+            );
+            console.log(
+              "This is OK - we're verifying the UI component structure",
+            );
 
             // Check if status badge shows completed/cancelled
             const statusBadge = modal.locator('[class*="rounded-full"]');
@@ -229,13 +261,15 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
         console.log("⚠ No appointments found to test action buttons");
         test.info().annotations.push({
           type: "info",
-          description: "No appointments in database to test action buttons"
+          description: "No appointments in database to test action buttons",
         });
       }
     });
   });
 
-  test('CRITERION 5: Appointment details modal shows full info', async ({ page }) => {
+  test("CRITERION 5: Appointment details modal shows full info", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("load");
 
@@ -252,10 +286,14 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
           const modal = page.locator('[role="dialog"]');
           await expect(modal).toBeVisible({ timeout: 3000 });
 
-          await page.screenshot({ path: 'test-results/a6-c5-appointment-modal.png' });
+          await page.screenshot({
+            path: "test-results/a6-c5-appointment-modal.png",
+          });
 
           // Check modal title
-          const title = modal.locator("h2").filter({ hasText: "Appointment Details" });
+          const title = modal
+            .locator("h2")
+            .filter({ hasText: "Appointment Details" });
           await expect(title).toBeVisible();
           console.log("✓ Modal title is visible");
 
@@ -263,7 +301,9 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
           const sections = {
             "Status badge": modal.locator('[class*="rounded-full"]'),
             "Date/time": modal.locator("svg").filter({ hasText: /calendar/i }),
-            "Contact info": modal.locator("svg").filter({ hasText: /user|mail|phone/i }),
+            "Contact info": modal
+              .locator("svg")
+              .filter({ hasText: /user|mail|phone/i }),
           };
 
           for (const [name, locator] of Object.entries(sections)) {
@@ -283,13 +323,13 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
         console.log("⚠ No appointments found to test modal details");
         test.info().annotations.push({
           type: "info",
-          description: "No appointments in database to test modal details"
+          description: "No appointments in database to test modal details",
         });
       }
     });
   });
 
-  test('CRITERION 6: Today\'s appointments badge exists', async ({ page }) => {
+  test("CRITERION 6: Today's appointments badge exists", async ({ page }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("load");
 
@@ -298,7 +338,7 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
       const badge = page.locator('[data-testid="today-badge"]');
       const badgeCount = await badge.count();
 
-      await page.screenshot({ path: 'test-results/a6-c6-today-badge.png' });
+      await page.screenshot({ path: "test-results/a6-c6-today-badge.png" });
 
       if (badgeCount > 0) {
         console.log("✓ Today's appointments badge component exists");
@@ -319,7 +359,10 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
         }
 
         // Verify badge styling
-        await expect(badge).toHaveCSS("background-color", /rgb\(219,\s*234,\s*254\)/); // blue-100
+        await expect(badge).toHaveCSS(
+          "background-color",
+          /rgb\(219,\s*234,\s*254\)/,
+        ); // blue-100
         console.log("✓ Badge has correct blue background");
 
         // Check for calendar icon
@@ -338,7 +381,9 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
         const isVisible = await badgeHidden.isVisible().catch(() => false);
 
         if (!isVisible) {
-          console.log("✓ Badge component exists in DOM (conditionally rendered)");
+          console.log(
+            "✓ Badge component exists in DOM (conditionally rendered)",
+          );
         } else {
           console.log("⚠ Badge component not found in DOM");
         }
@@ -346,7 +391,8 @@ test.describe('Phase A6 - Dealer Calendar: Functional Verification', () => {
         // This is still a pass - we verified the UI structure
         test.info().annotations.push({
           type: "info",
-          description: "Badge exists but conditionally rendered (only shows when there are today's appointments)"
+          description:
+            "Badge exists but conditionally rendered (only shows when there are today's appointments)",
         });
       }
     });

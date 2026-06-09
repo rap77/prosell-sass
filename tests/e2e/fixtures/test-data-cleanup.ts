@@ -8,9 +8,9 @@
  * 4. Cleanup of uploaded files
  */
 
-import { test as base, APIRequestContext } from '@playwright/test';
-import { writeFileSync, mkdirSync, existsSync, rmSync } from 'fs';
-import { join } from 'path';
+import { test as base, APIRequestContext } from "@playwright/test";
+import { writeFileSync, mkdirSync, existsSync, rmSync } from "fs";
+import { join } from "path";
 
 export { test };
 
@@ -52,21 +52,21 @@ const test = base.extend<{
    */
   clearTestDatabase: async ({ api }, use) => {
     const clearDatabase = async () => {
-      console.log('[CLEANUP] Clearing test database...');
+      console.log("[CLEANUP] Clearing test database...");
 
       try {
         // Clear categories
-        await api.delete('/api/v1/categories/clear-test-data');
+        await api.delete("/api/v1/categories/clear-test-data");
 
         // Clear leads
-        await api.delete('/api/v1/leads/clear-test-data');
+        await api.delete("/api/v1/leads/clear-test-data");
 
         // Clear appointments
-        await api.delete('/api/v1/appointments/clear-test-data');
+        await api.delete("/api/v1/appointments/clear-test-data");
 
-        console.log('[CLEANUP] Test database cleared successfully');
+        console.log("[CLEANUP] Test database cleared successfully");
       } catch (error) {
-        console.warn('[CLEANUP] Failed to clear test database:', error);
+        console.warn("[CLEANUP] Failed to clear test database:", error);
       }
     };
 
@@ -80,14 +80,14 @@ const test = base.extend<{
     const tempDirs: string[] = [];
     const tempFiles: string[] = [];
 
-    const createTempDir = (prefix: string = 'test_') => {
+    const createTempDir = (prefix: string = "test_") => {
       const dir = `/tmp/${prefix}${Date.now()}`;
       mkdirSync(dir, { recursive: true });
       tempDirs.push(dir);
       return dir;
     };
 
-    const createTempFile = (content: string, extension: string = '.tmp') => {
+    const createTempFile = (content: string, extension: string = ".tmp") => {
       const filePath = `/tmp/test_${Date.now()}${extension}`;
       writeFileSync(filePath, content);
       tempFiles.push(filePath);
@@ -100,7 +100,7 @@ const test = base.extend<{
     });
 
     // Cleanup all temp files and directories
-    console.log('[CLEANUP] Cleaning up temporary files...');
+    console.log("[CLEANUP] Cleaning up temporary files...");
 
     for (const file of tempFiles) {
       if (existsSync(file)) {
@@ -114,7 +114,7 @@ const test = base.extend<{
       }
     }
 
-    console.log('[CLEANUP] Temporary files cleaned up');
+    console.log("[CLEANUP] Temporary files cleaned up");
   },
 });
 
@@ -147,39 +147,46 @@ class TestDataCleanup {
 
     try {
       // Reverse order of creation (LIFO)
-      const cleanupPromises = Array.from(this.createdData).reverse().map(async (identifier) => {
-        const [type, id] = identifier.split(':');
+      const cleanupPromises = Array.from(this.createdData)
+        .reverse()
+        .map(async (identifier) => {
+          const [type, id] = identifier.split(":");
 
-        try {
-          switch (type) {
-            case 'category':
-              await this.cleanupCategory(id);
-              break;
-            case 'lead':
-              await this.cleanupLead(id);
-              break;
-            case 'appointment':
-              await this.cleanupAppointment(id);
-              break;
-            case 'user':
-              await this.cleanupUser(id);
-              break;
-            case 'organization':
-              await this.cleanupOrganization(id);
-              break;
-            default:
-              console.warn(`[CLEANUP] Unknown cleanup type: ${type}`);
+          try {
+            switch (type) {
+              case "category":
+                await this.cleanupCategory(id);
+                break;
+              case "lead":
+                await this.cleanupLead(id);
+                break;
+              case "appointment":
+                await this.cleanupAppointment(id);
+                break;
+              case "user":
+                await this.cleanupUser(id);
+                break;
+              case "organization":
+                await this.cleanupOrganization(id);
+                break;
+              default:
+                console.warn(`[CLEANUP] Unknown cleanup type: ${type}`);
+            }
+          } catch (error) {
+            console.warn(`[CLEANUP] Failed to cleanup ${identifier}:`, error);
           }
-        } catch (error) {
-          console.warn(`[CLEANUP] Failed to cleanup ${identifier}:`, error);
-        }
-      });
+        });
 
       await Promise.allSettled(cleanupPromises);
 
-      console.log(`[CLEANUP] Cleanup completed for test run: ${this.testRunId}`);
+      console.log(
+        `[CLEANUP] Cleanup completed for test run: ${this.testRunId}`,
+      );
     } catch (error) {
-      console.error(`[CLEANUP] Cleanup failed for test run: ${this.testRunId}`, error);
+      console.error(
+        `[CLEANUP] Cleanup failed for test run: ${this.testRunId}`,
+        error,
+      );
     }
   }
 
@@ -266,52 +273,64 @@ class TestDataCleanup {
    * Create test data with automatic cleanup tracking
    */
   async createTestOrganization(data: any) {
-    const response = await this.api.post('/api/v1/organizations', {
+    const response = await this.api.post("/api/v1/organizations", {
       data,
     });
 
     const orgId = (await response.json()).data.id;
-    this.trackCreatedData('organization', orgId);
+    this.trackCreatedData("organization", orgId);
     return orgId;
   }
 
   async createTestUser(orgId: string, data: any) {
-    const response = await this.api.post(`/api/v1/organizations/${orgId}/users`, {
-      data,
-    });
+    const response = await this.api.post(
+      `/api/v1/organizations/${orgId}/users`,
+      {
+        data,
+      },
+    );
 
     const userId = (await response.json()).data.id;
-    this.trackCreatedData('user', userId);
+    this.trackCreatedData("user", userId);
     return userId;
   }
 
   async createTestCategory(orgId: string, data: any) {
-    const response = await this.api.post(`/api/v1/organizations/${orgId}/categories`, {
-      data,
-    });
+    const response = await this.api.post(
+      `/api/v1/organizations/${orgId}/categories`,
+      {
+        data,
+      },
+    );
 
     const categoryId = (await response.json()).data.id;
-    this.trackCreatedData('category', categoryId);
+    this.trackCreatedData("category", categoryId);
     return categoryId;
   }
 
   async createTestLead(orgId: string, data: any) {
-    const response = await this.api.post(`/api/v1/organizations/${orgId}/leads`, {
-      data,
-    });
+    const response = await this.api.post(
+      `/api/v1/organizations/${orgId}/leads`,
+      {
+        data,
+      },
+    );
 
     const leadId = (await response.json()).data.id;
-    this.trackCreatedData('lead', leadId);
+    this.trackCreatedData("lead", leadId);
     return leadId;
   }
 
   async createTestAppointment(orgId: string, leadId: string, data: any) {
-    const response = await this.api.post(`/api/v1/organizations/${orgId}/leads/${leadId}/appointments`, {
-      data,
-    });
+    const response = await this.api.post(
+      `/api/v1/organizations/${orgId}/leads/${leadId}/appointments`,
+      {
+        data,
+      },
+    );
 
     const appointmentId = (await response.json()).data.id;
-    this.trackCreatedData('appointment', appointmentId);
+    this.trackCreatedData("appointment", appointmentId);
     return appointmentId;
   }
 }

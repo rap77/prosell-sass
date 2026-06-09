@@ -1,10 +1,14 @@
-'use client'
+"use client";
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Filter } from "lucide-react";
-import { useProducts, useCreateProduct, useUpdateProductStatus } from "@/lib/api/products";
+import {
+  useProducts,
+  useCreateProduct,
+  useUpdateProductStatus,
+} from "@/lib/api/products";
 import { useCategoryOptions } from "@/lib/api/categories";
 import type { Product } from "@/types/product";
 import { formatCurrency } from "@/lib/utils/format";
@@ -26,7 +30,7 @@ export default function ProductsPage() {
   const updateStatus = useUpdateProductStatus();
 
   const filteredProducts = products?.filter(
-    (p: Product) => statusFilter === "all" || p.status === statusFilter
+    (p: Product) => statusFilter === "all" || p.status === statusFilter,
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,7 +55,13 @@ export default function ProductsPage() {
         },
       });
       setShowForm(false);
-      setFormData({ title: "", description: "", price: "", condition: "", category_id: "" });
+      setFormData({
+        title: "",
+        description: "",
+        price: "",
+        condition: "",
+        category_id: "",
+      });
     } catch (err) {
       // Error is handled by the mutation hook
     }
@@ -108,7 +118,10 @@ export default function ProductsPage() {
       </div>
 
       {/* Status Filter */}
-      <nav className="mb-4 flex items-center gap-2" aria-label="Product status filter">
+      <nav
+        className="mb-4 flex items-center gap-2"
+        aria-label="Product status filter"
+      >
         <Filter className="h-4 w-4 text-muted-foreground" />
         <select
           value={statusFilter}
@@ -135,20 +148,30 @@ export default function ProductsPage() {
                 type="text"
                 required
                 value={formData.title}
-                onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, title: e.target.value }))
+                }
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 placeholder="Product title"
               />
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium mb-1">
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium mb-1"
+              >
                 Description
               </label>
               <textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 placeholder="Product description"
                 rows={3}
@@ -165,20 +188,30 @@ export default function ProductsPage() {
                 min="0"
                 required
                 value={formData.price}
-                onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, price: e.target.value }))
+                }
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 placeholder="0.00"
               />
             </div>
 
             <div>
-              <label htmlFor="condition" className="block text-sm font-medium mb-1">
+              <label
+                htmlFor="condition"
+                className="block text-sm font-medium mb-1"
+              >
                 Condition
               </label>
               <select
                 id="condition"
                 value={formData.condition}
-                onChange={(e) => setFormData((prev) => ({ ...prev, condition: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    condition: e.target.value,
+                  }))
+                }
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 aria-label="Condition"
               >
@@ -192,14 +225,22 @@ export default function ProductsPage() {
             </div>
 
             <div>
-              <label htmlFor="category" className="block text-sm font-medium mb-1">
+              <label
+                htmlFor="category"
+                className="block text-sm font-medium mb-1"
+              >
                 Category
               </label>
               <select
                 id="category"
                 required
                 value={formData.category_id}
-                onChange={(e) => setFormData((prev) => ({ ...prev, category_id: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    category_id: e.target.value,
+                  }))
+                }
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 aria-label="Category"
               >
@@ -242,31 +283,32 @@ export default function ProductsPage() {
         <>
           <h2 className="sr-only">Products List</h2>
           <ul className="space-y-2">
-          {filteredProducts.map((product: Product) => (
-            <li
-              key={product.id}
-              className="p-4 border rounded-lg bg-card flex items-center justify-between"
-            >
-              <div>
-                <h3 className="font-medium">{product.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {formatCurrency(product.price_cents / 100)} • {product.status}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                {product.status === "draft" && (
-                  <button
-                    onClick={() => handleSubmitForApproval(product.id)}
-                    disabled={updateStatus.isPending}
-                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                    aria-label={`Submit product ${product.title} for approval`}
-                  >
-                    Submit
-                  </button>
-                )}
-              </div>
-            </li>
-          ))}
+            {filteredProducts.map((product: Product) => (
+              <li
+                key={product.id}
+                className="p-4 border rounded-lg bg-card flex items-center justify-between"
+              >
+                <div>
+                  <h3 className="font-medium">{product.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {formatCurrency(product.price_cents / 100)} •{" "}
+                    {product.status}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  {product.status === "draft" && (
+                    <button
+                      onClick={() => handleSubmitForApproval(product.id)}
+                      disabled={updateStatus.isPending}
+                      className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                      aria-label={`Submit product ${product.title} for approval`}
+                    >
+                      Submit
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
           </ul>
         </>
       ) : (

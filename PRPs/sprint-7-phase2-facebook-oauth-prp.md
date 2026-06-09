@@ -40,6 +40,7 @@ Implement Facebook OAuth 2.0 integration to allow ProSell vendedores to connect 
 **So that** I can publish Marketplace listings automatically
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Vendedor connects Facebook account
   GIVEN the vendedor is logged in
@@ -62,6 +63,7 @@ Scenario: Connection persists across sessions
 **So that** vendedores don't need to re-authorize
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Token refreshes 48h before expiry
   GIVEN a token expires in less than 48 hours
@@ -84,6 +86,7 @@ Scenario: Token refresh fails permanently
 **So that** I can choose which page to publish from
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Vendedor views available pages
   GIVEN a vendedor has connected their Facebook account
@@ -99,6 +102,7 @@ Scenario: Vendedor views available pages
 **So that** we know when permissions are revoked
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Facebook sends permission revocation webhook
   GIVEN Facebook sends a webhook for revoked permissions
@@ -140,13 +144,13 @@ Scenario: Facebook sends permission revocation webhook
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|-----------|---------|-------|
-| OAuth | Facebook OAuth 2.0 | Latest | Server-side flow |
-| Token Storage | PostgreSQL (encrypted) | 17 | AES-256 encryption |
-| State Storage | Redis | 7.4+ | Temporary state tokens |
-| HTTP Client | httpx | 0.28+ | Async HTTP client |
-| Scheduler | Taskiq (from PRP 1) | Latest | For token refresh tasks |
+| Component     | Technology             | Version | Notes                   |
+| ------------- | ---------------------- | ------- | ----------------------- |
+| OAuth         | Facebook OAuth 2.0     | Latest  | Server-side flow        |
+| Token Storage | PostgreSQL (encrypted) | 17      | AES-256 encryption      |
+| State Storage | Redis                  | 7.4+    | Temporary state tokens  |
+| HTTP Client   | httpx                  | 0.28+   | Async HTTP client       |
+| Scheduler     | Taskiq (from PRP 1)    | Latest  | For token refresh tasks |
 
 ### 3.2 Key Libraries
 
@@ -161,11 +165,13 @@ Scenario: Facebook sends permission revocation webhook
 ### 3.3 External Documentation
 
 **Facebook OAuth**:
+
 - Manual Flow: https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow
 - Permissions: https://developers.facebook.com/docs/permissions/reference/
 - Access Tokens: https://developers.facebook.com/docs/facebook-login/guides/access-tokens
 
 **Required Permissions**:
+
 - `pages_manage_posts` - Create and manage posts
 - `pages_read_engagement` - Read engagement data
 - `pages_manage_metadata` - Manage page metadata
@@ -173,6 +179,7 @@ Scenario: Facebook sends permission revocation webhook
 - `pages_manage_engagement` - Manage engagement
 
 **Graph API Endpoints**:
+
 - OAuth Dialog: `https://www.facebook.com/v19.0/dialog/oauth`
 - Access Token: `https://graph.facebook.com/v19.0/oauth/access_token`
 - User Pages: `https://graph.facebook.com/v19.0/me/accounts`
@@ -213,6 +220,7 @@ sequenceDiagram
 **Objective**: Validate Facebook OAuth flow works end-to-end
 
 **Tasks**:
+
 1. Create Facebook App in Developers Console
 2. Configure OAuth redirect URI
 3. Request required permissions
@@ -224,6 +232,7 @@ sequenceDiagram
 9. Document any permission issues or app review requirements
 
 **Success Criteria**:
+
 - ✅ OAuth flow completes successfully
 - ✅ Long-lived token (60-day) obtained
 - ✅ User pages retrieved
@@ -236,6 +245,7 @@ sequenceDiagram
 #### Step 1: Domain Layer - Entities and Value Objects
 
 **Files to create**:
+
 - `apps/api/src/prosell/domain/entities/facebook_account.py` - Facebook account entity
 - `apps/api/src/prosell/domain/entities/facebook_page.py` - Facebook page entity
 - `apps/api/src/prosell/domain/value_objects/facebook_permissions.py` - Permissions value object
@@ -340,6 +350,7 @@ class FacebookPage(DomainModel):
 ```
 
 **Gotchas**:
+
 - Access tokens MUST be encrypted at rest (AES-256)
 - Use `seller_user_id` to link to ProSell vendedor (can be extended for multi-tenancy)
 - Store both user access token AND page access tokens
@@ -347,6 +358,7 @@ class FacebookPage(DomainModel):
 #### Step 2: Infrastructure Layer - OAuth Service
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/services/facebook_oauth_service.py` - OAuth service
 - `apps/api/src/prosell/infrastructure/services/token_encryption_service.py` - Token encryption
 
@@ -542,6 +554,7 @@ class TokenEncryptionService(IEncryptionService):
 ```
 
 **Gotchas**:
+
 - Always exchange short-lived token for long-lived token (60-day expiry)
 - Page access tokens are separate from user tokens
 - Store both user token AND page tokens (page tokens don't expire as quickly)
@@ -549,6 +562,7 @@ class TokenEncryptionService(IEncryptionService):
 #### Step 3: Application Layer - Use Cases
 
 **Files to create**:
+
 - `apps/api/src/prosell/application/use_cases/facebook/authorize_account.py` - OAuth flow use case
 - `apps/api/src/prosell/application/use_cases/facebook/disconnect_account.py` - Disconnect use case
 - `apps/api/src/prosell/application/use_cases/facebook/refresh_token.py` - Token refresh use case
@@ -696,6 +710,7 @@ class OAuthCallbackUseCase:
 ```
 
 **Gotchas**:
+
 - ALWAYS verify state token to prevent CSRF attacks
 - Delete state token after verification (one-time use)
 - Encrypt tokens BEFORE storing in database
@@ -703,6 +718,7 @@ class OAuthCallbackUseCase:
 #### Step 4: API Layer - Endpoints
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/api/routers/facebook_router.py` - Facebook API router
 
 **Implementation notes**:
@@ -778,6 +794,7 @@ async def disconnect_facebook_account(
 ```
 
 **Gotchas**:
+
 - OAuth endpoint must be in API router (not frontend)
 - Frontend redirects to `/api/facebook/authorize` to start flow
 - Facebook redirects to `/api/facebook/callback` after authorization
@@ -785,6 +802,7 @@ async def disconnect_facebook_account(
 #### Step 5: Scheduler - Token Refresh Task
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/tasks/use_cases/refresh_facebook_tokens.py` - Token refresh task
 
 **Implementation notes**:
@@ -850,12 +868,14 @@ async def refresh_account_token(account: FacebookAccount):
 ```
 
 **Gotchas**:
+
 - Schedule this task to run every 6 hours (cron: `0 */6 * * *`)
 - Use circuit breaker to prevent cascade failures if Facebook API is down
 
 #### Step 6: Configuration - Settings
 
 **Files to modify**:
+
 - `apps/api/src/prosell/core/config.py` - Add Facebook OAuth settings
 
 **Implementation notes**:
@@ -897,6 +917,7 @@ def validate_encryption_key(cls, v: str) -> str:
 ```
 
 **Gotchas**:
+
 - Encryption key MUST be 32 bytes (Fernet requirement)
 - Store encryption key in environment variable, NOT in code
 
@@ -1001,34 +1022,40 @@ cd apps/api && uv run pytest tests/integration/facebook/ -v
 ### 7.1 Unit Tests
 
 **OAuth Service Tests**:
+
 - Test `get_authorization_url()` generates correct URL
 - Test `exchange_code_for_token()` parses response
 - Test `exchange_for_long_lived_token()` calculates expiry
 - Test `get_user_pages()` returns page list
 
 **Encryption Service Tests**:
+
 - Test `encrypt()` produces encrypted string
 - Test `decrypt()` reverses encryption
 - Test encrypted token is NOT plain text
 
 **Entity Tests**:
+
 - Test `is_expired()` returns True for expired tokens
 - Test `should_refresh()` returns True for tokens expiring < 48h
 
 ### 7.2 Integration Tests
 
 **OAuth Flow Integration**:
+
 - Test complete flow: authorize → callback → account created
 - Test state token verification prevents CSRF
 - Test expired state token is rejected
 
 **Token Refresh Integration**:
+
 - Test token refresh updates expiry
 - Test failed refresh marks account as expired
 
 ### 7.3 E2E Tests
 
 **Critical Path**:
+
 ```gherkin
 Scenario: Complete OAuth flow
   GIVEN vendedor is logged in
@@ -1106,7 +1133,6 @@ If implementation fails:
 
 ---
 
-
 ---
 
 ## 11. Completion Gates (VERIFIABLE)
@@ -1168,7 +1194,6 @@ grep -q "^## 11. Completion Gates" {prp_file}
 - [ ] Code review completado
 - [ ] E2E tests pasan (si aplica)
 
-
 ## Confidence Score
 
 **Score**: 7/10
@@ -1176,18 +1201,21 @@ grep -q "^## 11. Completion Gates" {prp_file}
 **Reasoning**:
 
 **Positive factors**:
+
 - OAuth 2.0 is a well-established standard
 - Facebook has excellent documentation
 - Similar OAuth flow already exists for Google (can reuse patterns)
 - httpx is battle-tested for async HTTP
 
 **Risk factors**:
+
 - Facebook App Review can take 14-30 days (or be rejected)
 - Permission requirements may change
 - Token refresh edge cases (page tokens vs user tokens)
 - Need to handle webhook signature verification
 
 **Mitigation**:
+
 - Spike validates OAuth flow before full implementation
 - PRP 3 (Playwright) provides fallback if App Review fails
 - Circuit breaker prevents cascade failures

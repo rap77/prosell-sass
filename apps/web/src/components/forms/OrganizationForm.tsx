@@ -43,7 +43,11 @@ const organizationSchema = z.object({
     .min(2, "Name must be at least 2 characters")
     .max(255, "Name must be less than 255 characters")
     .trim(),
-  description: z.string().max(1000, "Description must be less than 1000 characters").optional().or(z.literal("")),
+  description: z
+    .string()
+    .max(1000, "Description must be less than 1000 characters")
+    .optional()
+    .or(z.literal("")),
   website: z.string().url("Invalid URL").optional().or(z.literal("")),
   phone: z.string().optional(),
 });
@@ -294,11 +298,7 @@ export function OrganizationForm({
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button
-          type="submit"
-          disabled={isDisabled}
-          className="flex-1"
-        >
+        <Button type="submit" disabled={isDisabled} className="flex-1">
           {isLoading || isPending
             ? mode === "create"
               ? "Creating..."

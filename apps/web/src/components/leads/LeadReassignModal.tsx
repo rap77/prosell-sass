@@ -47,13 +47,18 @@ export function LeadReassignModal({
   onClose,
   onSuccess,
 }: LeadReassignModalProps) {
-  const [selectedVendedorId, setSelectedVendedorId] = useState<string | null>(null);
+  const [selectedVendedorId, setSelectedVendedorId] = useState<string | null>(
+    null,
+  );
 
   // Fetch vendedores for dropdown
-  const { data: vendedores = [], isLoading: isLoadingVendedores } = useVendedores();
+  const { data: vendedores = [], isLoading: isLoadingVendedores } =
+    useVendedores();
 
   // Reassign lead mutation
-  const { mutate: reassignLead, isPending: isReassigning } = useReassignLead(lead?.id || "");
+  const { mutate: reassignLead, isPending: isReassigning } = useReassignLead(
+    lead?.id || "",
+  );
 
   const handleReassign = () => {
     if (!lead || !selectedVendedorId) return;
@@ -70,7 +75,7 @@ export function LeadReassignModal({
         onError: (error) => {
           toast.error(error.message || "Failed to reassign lead");
         },
-      }
+      },
     );
   };
 
@@ -94,11 +99,15 @@ export function LeadReassignModal({
         <div className="py-4 space-y-4">
           {/* Lead Information */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-muted-foreground">Lead Details</Label>
+            <Label className="text-sm font-medium text-muted-foreground">
+              Lead Details
+            </Label>
             <div className="p-3 bg-muted/50 rounded-md space-y-1">
               <p className="text-sm font-medium">{lead.buyer_name}</p>
               {lead.product && (
-                <p className="text-sm text-muted-foreground">{lead.product.title}</p>
+                <p className="text-sm text-muted-foreground">
+                  {lead.product.title}
+                </p>
               )}
             </div>
           </div>

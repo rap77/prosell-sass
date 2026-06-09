@@ -59,9 +59,9 @@ export class LoginPage extends BasePage {
    * Fill login form and submit
    */
   async login(data: LoginData): Promise<void> {
-    await this.emailInput.waitFor({ state: 'visible', timeout: 5000 });
+    await this.emailInput.waitFor({ state: "visible", timeout: 5000 });
     await this.emailInput.fill(data.email);
-    await this.passwordInput.waitFor({ state: 'visible', timeout: 5000 });
+    await this.passwordInput.waitFor({ state: "visible", timeout: 5000 });
     await this.passwordInput.fill(data.password);
     await this.submitButton.click();
   }

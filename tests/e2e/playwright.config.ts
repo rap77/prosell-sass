@@ -70,7 +70,8 @@ export default defineConfig({
   // Backend runs on port 8000, frontend on port 3000
   webServer: [
     {
-      command: "cd ../../apps/api && ./.venv/bin/python3 -m fastapi dev src/prosell/infrastructure/api/main.py --port 8000",
+      command:
+        "cd ../../apps/api && ./.venv/bin/python3 -m fastapi dev src/prosell/infrastructure/api/main.py --port 8000",
       url: "http://localhost:8000",
       timeout: 120 * 1000, // 2 minutes - backend can take time to start
       reuseExistingServer: !process.env.CI,

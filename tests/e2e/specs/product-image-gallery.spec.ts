@@ -67,11 +67,15 @@ test.describe("ProductImageGallery E2E", () => {
 
   test("should highlight selected thumbnail", async ({ page }) => {
     // First thumbnail should have ring-blue-500 class
-    const firstThumbnail = page.locator("button").filter({ hasText: "View image 1" });
+    const firstThumbnail = page
+      .locator("button")
+      .filter({ hasText: "View image 1" });
     await expect(firstThumbnail).toHaveClass(/ring-blue-500/);
   });
 
-  test("should navigate to next image when next button is clicked", async ({ page }) => {
+  test("should navigate to next image when next button is clicked", async ({
+    page,
+  }) => {
     const nextButton = page.getByLabel("Next image");
     const mainImage = page.locator('[data-testid="image-gallery"] img').first();
 
@@ -85,7 +89,9 @@ test.describe("ProductImageGallery E2E", () => {
     await expect(mainImage).toHaveAttribute("alt", "Side view");
   });
 
-  test("should navigate to previous image when previous button is clicked", async ({ page }) => {
+  test("should navigate to previous image when previous button is clicked", async ({
+    page,
+  }) => {
     const nextButton = page.getByLabel("Next image");
     const prevButton = page.getByLabel("Previous image");
     const mainImage = page.locator('[data-testid="image-gallery"] img').first();
@@ -115,7 +121,9 @@ test.describe("ProductImageGallery E2E", () => {
     await expect(nextButton).toBeDisabled();
   });
 
-  test("should update main image when thumbnail is clicked", async ({ page }) => {
+  test("should update main image when thumbnail is clicked", async ({
+    page,
+  }) => {
     const thirdThumbnail = page.getByLabel("View image 3: Rear view");
     const mainImage = page.locator('[data-testid="image-gallery"] img').first();
 
@@ -126,7 +134,9 @@ test.describe("ProductImageGallery E2E", () => {
     await expect(mainImage).toHaveAttribute("alt", "Rear view");
   });
 
-  test("should support keyboard navigation with arrow keys", async ({ page }) => {
+  test("should support keyboard navigation with arrow keys", async ({
+    page,
+  }) => {
     const gallery = page.getByTestId("image-gallery");
     const mainImage = page.locator('[data-testid="image-gallery"] img').first();
 
@@ -143,7 +153,9 @@ test.describe("ProductImageGallery E2E", () => {
   });
 
   test("should show image counter", async ({ page }) => {
-    const counter = page.locator('[data-testid="image-gallery"]').getByText(/1 \/ 3/);
+    const counter = page
+      .locator('[data-testid="image-gallery"]')
+      .getByText(/1 \/ 3/);
     await expect(counter).toBeVisible();
   });
 

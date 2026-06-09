@@ -42,10 +42,10 @@ test.describe("Registration", () => {
       { tag: ["@e2e", "@register", "@a11y", "@REGISTER-E2E-002"] },
       async ({ page }) => {
         const accessibilityScanResults = await new AxeBuilder({ page })
-          .disableRules(['color-contrast'])
+          .disableRules(["color-contrast"])
           .analyze();
         const critical = accessibilityScanResults.violations.filter(
-          (v) => v.impact === 'critical' || v.impact === 'serious',
+          (v) => v.impact === "critical" || v.impact === "serious",
         );
         expect(critical).toHaveLength(0);
       },

@@ -61,7 +61,9 @@ describe("MemberForm", () => {
     render(<MemberForm teamId="team-123" />);
     expect(screen.getByLabelText(/user id/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/role/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /add member/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /add member/i }),
+    ).toBeInTheDocument();
   });
 
   it("shows validation error when user_id is empty", async () => {
@@ -84,7 +86,7 @@ describe("MemberForm", () => {
     await waitFor(() => {
       expect(mockAddMember).toHaveBeenCalledWith(
         "team-123",
-        expect.objectContaining({ user_id: "user-456", role: "vendor" })
+        expect.objectContaining({ user_id: "user-456", role: "vendor" }),
       );
     });
   });

@@ -29,7 +29,9 @@ describe("AppointmentForm - Time Validation (A4.32)", () => {
     vehicleId: "vehicle-123",
   };
 
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it("should render date input with min attribute set to today", () => {
     render(<AppointmentForm {...defaultProps} />);

@@ -13,7 +13,7 @@
  * - notes: optional, string, 0-2000 chars
  */
 
-import { BaseFactory } from './base-factory';
+import { BaseFactory } from "./base-factory";
 
 export interface AppointmentData {
   id: string;
@@ -21,7 +21,7 @@ export interface AppointmentData {
   dealer_id: string;
   vehicle_id: string;
   scheduled_at: string;
-  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  status: "scheduled" | "completed" | "cancelled" | "no_show";
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -33,10 +33,10 @@ export class AppointmentFactory extends BaseFactory<AppointmentData> {
    * Each call generates unique IDs and future datetime.
    */
   create(overrides?: Partial<AppointmentData>): AppointmentData {
-    const id = this.generateId('apt');
-    const leadId = this.generateId('lead');
-    const dealerId = this.generateId('dealer');
-    const vehicleId = this.generateId('veh');
+    const id = this.generateId("apt");
+    const leadId = this.generateId("lead");
+    const dealerId = this.generateId("dealer");
+    const vehicleId = this.generateId("veh");
     const now = this.generateDateTime();
     const tomorrow = this.generateDateTime(24 * 60); // 24 hours from now
 
@@ -46,8 +46,8 @@ export class AppointmentFactory extends BaseFactory<AppointmentData> {
       dealer_id: dealerId,
       vehicle_id: vehicleId,
       scheduled_at: tomorrow,
-      status: 'scheduled',
-      notes: 'Test appointment',
+      status: "scheduled",
+      notes: "Test appointment",
       created_at: now,
       updated_at: now,
       ...overrides,
@@ -62,15 +62,15 @@ export class AppointmentFactory extends BaseFactory<AppointmentData> {
     const yesterday = this.generateDateTime(-24 * 60); // 24 hours ago
 
     return {
-      id: '', // Invalid: empty ID
-      lead_id: 'not-a-uuid', // Invalid: bad UUID format
-      dealer_id: '', // Invalid: empty dealer ID
-      vehicle_id: 'also-not-a-uuid', // Invalid: bad UUID format
+      id: "", // Invalid: empty ID
+      lead_id: "not-a-uuid", // Invalid: bad UUID format
+      dealer_id: "", // Invalid: empty dealer ID
+      vehicle_id: "also-not-a-uuid", // Invalid: bad UUID format
       scheduled_at: yesterday, // Invalid: appointment in past
-      status: 'invalid' as any, // Invalid: not in enum
-      notes: 'x'.repeat(2001), // Invalid: exceeds 2000 char limit
-      created_at: 'not-a-date',
-      updated_at: 'not-a-date',
+      status: "invalid" as any, // Invalid: not in enum
+      notes: "x".repeat(2001), // Invalid: exceeds 2000 char limit
+      created_at: "not-a-date",
+      updated_at: "not-a-date",
     };
   }
 
@@ -79,19 +79,19 @@ export class AppointmentFactory extends BaseFactory<AppointmentData> {
    * Tests minimum datetime, special characters, etc.
    */
   createEdgeCase(): AppointmentData {
-    const id = this.generateId('apt');
+    const id = this.generateId("apt");
     const now = new Date();
     // Appointment exactly 1 minute in future (minimum valid time)
     const oneMinuteFromNow = new Date(now.getTime() + 60 * 1000);
 
     return {
       id,
-      lead_id: this.generateId('lead'),
-      dealer_id: this.generateId('dealer'),
-      vehicle_id: this.generateId('veh'),
+      lead_id: this.generateId("lead"),
+      dealer_id: this.generateId("dealer"),
+      vehicle_id: this.generateId("veh"),
       scheduled_at: oneMinuteFromNow.toISOString(),
-      status: 'scheduled',
-      notes: 'Test with special chars: ñ é ü \nNewlines and \t tabs', // Special chars, whitespace
+      status: "scheduled",
+      notes: "Test with special chars: ñ é ü \nNewlines and \t tabs", // Special chars, whitespace
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
     };
@@ -101,7 +101,10 @@ export class AppointmentFactory extends BaseFactory<AppointmentData> {
    * Create multiple appointments with sequential datetimes.
    * Useful for testing calendar views and time slot logic.
    */
-  createBatch(count: number, overrides?: Partial<AppointmentData>): AppointmentData[] {
+  createBatch(
+    count: number,
+    overrides?: Partial<AppointmentData>,
+  ): AppointmentData[] {
     const appointments: AppointmentData[] = [];
     const now = new Date();
 
@@ -122,8 +125,8 @@ export class AppointmentFactory extends BaseFactory<AppointmentData> {
    * Convenience method for status-based filtering tests.
    */
   createWithStatus(
-    status: AppointmentData['status'],
-    overrides?: Partial<AppointmentData>
+    status: AppointmentData["status"],
+    overrides?: Partial<AppointmentData>,
   ): AppointmentData {
     return this.create({ ...overrides, status });
   }
@@ -134,11 +137,10 @@ export class AppointmentFactory extends BaseFactory<AppointmentData> {
    */
   createAt(
     scheduledAt: Date | string,
-    overrides?: Partial<AppointmentData>
+    overrides?: Partial<AppointmentData>,
   ): AppointmentData {
-    const datetime = typeof scheduledAt === 'string'
-      ? scheduledAt
-      : scheduledAt.toISOString();
+    const datetime =
+      typeof scheduledAt === "string" ? scheduledAt : scheduledAt.toISOString();
 
     return this.create({
       ...overrides,
@@ -153,7 +155,7 @@ export class AppointmentFactory extends BaseFactory<AppointmentData> {
   createOnWeekday(
     weekday: 0 | 1 | 2 | 3 | 4 | 5 | 6, // 0 = Sunday, 1 = Monday, etc.
     hour: number = 10, // 10 AM default
-    overrides?: Partial<AppointmentData>
+    overrides?: Partial<AppointmentData>,
   ): AppointmentData {
     const now = new Date();
     const targetDate = new Date(now);
@@ -187,7 +189,7 @@ export class AppointmentFactory extends BaseFactory<AppointmentData> {
     return this.create({
       ...overrides,
       scheduled_at: yesterday,
-      status: 'scheduled', // Still marked as scheduled but in past
+      status: "scheduled", // Still marked as scheduled but in past
     });
   }
 
@@ -199,7 +201,7 @@ export class AppointmentFactory extends BaseFactory<AppointmentData> {
     leadId: string,
     dealerId: string,
     vehicleId: string,
-    overrides?: Partial<AppointmentData>
+    overrides?: Partial<AppointmentData>,
   ): AppointmentData {
     return this.create({
       ...overrides,
@@ -216,8 +218,8 @@ export class AppointmentFactory extends BaseFactory<AppointmentData> {
   createCompleted(overrides?: Partial<AppointmentData>): AppointmentData {
     return this.create({
       ...overrides,
-      status: 'completed',
-      notes: 'Customer arrived on time. Test drive completed.',
+      status: "completed",
+      notes: "Customer arrived on time. Test drive completed.",
     });
   }
 
@@ -228,8 +230,8 @@ export class AppointmentFactory extends BaseFactory<AppointmentData> {
   createCancelled(overrides?: Partial<AppointmentData>): AppointmentData {
     return this.create({
       ...overrides,
-      status: 'cancelled',
-      notes: 'Customer cancelled: vehicle sold elsewhere.',
+      status: "cancelled",
+      notes: "Customer cancelled: vehicle sold elsewhere.",
     });
   }
 }

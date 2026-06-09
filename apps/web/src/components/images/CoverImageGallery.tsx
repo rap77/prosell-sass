@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 /**
  * CoverImageGallery — single source of truth for the "grid of images
@@ -23,9 +23,9 @@
  * from the proxy.
  */
 
-import Image from 'next/image'
-import { Star, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import Image from "next/image";
+import { Star, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * One tile in the gallery.
@@ -41,25 +41,25 @@ import { cn } from '@/lib/utils'
  *   to `<Image>` verbatim.
  */
 export interface CoverImageItem {
-  id: string
-  key: string
-  url: string
+  id: string;
+  key: string;
+  url: string;
 }
 
 export interface CoverImageGalleryProps {
-  images: CoverImageItem[]
+  images: CoverImageItem[];
   /** Storage key of the current cover, or null when none. */
-  coverKey: string | null
+  coverKey: string | null;
   /** Emitted with the picked key when the user clicks a non-cover tile. */
-  onCoverChange: (key: string) => void
+  onCoverChange: (key: string) => void;
   /**
    * Optional. When provided, each tile gets a remove button (X) and
    * `onRemove(id)` is emitted on click. Read-only consumers (e.g. the
    * detail view) omit this and get a clean grid with no X buttons.
    */
-  onRemove?: (id: string) => void
+  onRemove?: (id: string) => void;
   /** Locks interaction while a mutation is in flight. */
-  disabled?: boolean
+  disabled?: boolean;
 }
 
 export function CoverImageGallery({
@@ -69,7 +69,7 @@ export function CoverImageGallery({
   onRemove,
   disabled = false,
 }: CoverImageGalleryProps) {
-  if (images.length === 0) return null
+  if (images.length === 0) return null;
 
   return (
     <div
@@ -77,7 +77,7 @@ export function CoverImageGallery({
       className="grid grid-cols-2 md:grid-cols-4 gap-4"
     >
       {images.map((image, index) => {
-        const isCover = image.key === coverKey
+        const isCover = image.key === coverKey;
 
         return (
           <div
@@ -85,31 +85,31 @@ export function CoverImageGallery({
             data-testid={`cover-image-tile-${image.id}`}
             role="button"
             tabIndex={disabled ? -1 : 0}
-            aria-label={`Set ${image.key.split('/').pop()} as cover`}
+            aria-label={`Set ${image.key.split("/").pop()} as cover`}
             aria-pressed={isCover}
             aria-disabled={disabled || undefined}
             className={cn(
-              'relative group aspect-square rounded-lg overflow-hidden border cursor-pointer transition-all',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-              isCover && 'ring-2 ring-primary ring-offset-2',
-              disabled && 'opacity-50 cursor-not-allowed',
+              "relative group aspect-square rounded-lg overflow-hidden border cursor-pointer transition-all",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              isCover && "ring-2 ring-primary ring-offset-2",
+              disabled && "opacity-50 cursor-not-allowed",
             )}
             // The whole tile is the click target for "set as cover".
             // The remove button stops propagation so clicking X
             // doesn't also fire a cover change.
             onClick={() => {
-              if (disabled) return
-              onCoverChange(image.key)
+              if (disabled) return;
+              onCoverChange(image.key);
             }}
             // Keyboard accessibility — Enter/Space do the same as
             // click. The role="button" + tabIndex make this discoverable
             // to screen readers; the keydown handler makes it actually
             // operable for keyboard users.
             onKeyDown={(e) => {
-              if (disabled) return
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                onCoverChange(image.key)
+              if (disabled) return;
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onCoverChange(image.key);
               }
             }}
           >
@@ -147,9 +147,9 @@ export function CoverImageGallery({
               <button
                 type="button"
                 onClick={(e) => {
-                  e.stopPropagation()
-                  if (disabled) return
-                  onRemove(image.id)
+                  e.stopPropagation();
+                  if (disabled) return;
+                  onRemove(image.id);
                 }}
                 disabled={disabled}
                 aria-label={`Remove image ${index + 1}`}
@@ -160,8 +160,8 @@ export function CoverImageGallery({
               </button>
             )}
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

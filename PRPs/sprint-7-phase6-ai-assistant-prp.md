@@ -12,12 +12,14 @@
 Implement an AI-powered vendor assistant that converses with leads via WhatsApp/Messenger, qualifies them, and forwards qualified leads to Odoo CRM via n8n workflows. The AI assistant handles initial lead qualification, offers similar products, and only forwards high-intent leads to human vendors.
 
 **Why this matters**: Without AI automation, vendors must manually respond to every lead message, 24/7. This creates:
+
 - Delayed response times (lost sales)
 - Vendor burnout (interrupted sleep, constant notifications)
 - Inconsistent lead qualification
 - Lost follow-up opportunities
 
 **With AI Assistant**:
+
 - Instant responses (24/7)
 - Consistent qualification (AI scoring)
 - Vendor only handles qualified leads
@@ -52,6 +54,7 @@ Implement an AI-powered vendor assistant that converses with leads via WhatsApp/
 **So that** I don't have to wait for a human vendor
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Lead sends first message
   GIVEN a lead sends "Hola, me interesa el Toyota Corolla"
@@ -75,6 +78,7 @@ Scenario: Lead asks about alternatives
 **So that** I only spend time on high-intent leads
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: AI qualifies lead as high-intent
   GIVEN a lead responds positively to qualification questions
@@ -98,6 +102,7 @@ Scenario: AI qualifies lead as low-intent
 **So that** vendors can manage leads in their CRM
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Qualified lead syncs to Odoo
   GIVEN a lead is qualified (score > 0.7)
@@ -121,6 +126,7 @@ Scenario: Lead updates sync to Odoo
 **So that** I can provide personalized service
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Vendor takes over conversation
   GIVEN a vendor sees a lead in their dashboard
@@ -169,14 +175,14 @@ Scenario: Vendor sets away message
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|-----------|---------|-------|
-| AI Provider | OpenAI GPT-4 | Latest | Or Anthropic Claude |
-| WhatsApp | Meta Graph API | v19.0 | Webhooks |
-| Messenger | Meta Graph API | v19.0 | Webhooks |
-| Workflow | n8n | Latest | Self-hosted or cloud |
-| CRM | Odoo | 17.0 | Lead management |
-| Backend | FastAPI | 0.115+ | Webhook receivers |
+| Component   | Technology     | Version | Notes                |
+| ----------- | -------------- | ------- | -------------------- |
+| AI Provider | OpenAI GPT-4   | Latest  | Or Anthropic Claude  |
+| WhatsApp    | Meta Graph API | v19.0   | Webhooks             |
+| Messenger   | Meta Graph API | v19.0   | Webhooks             |
+| Workflow    | n8n            | Latest  | Self-hosted or cloud |
+| CRM         | Odoo           | 17.0    | Lead management      |
+| Backend     | FastAPI        | 0.115+  | Webhook receivers    |
 
 ### 3.2 Key Libraries
 
@@ -192,23 +198,28 @@ uv add httpx                            # Async HTTP for webhooks
 ### 3.3 External Documentation
 
 **OpenAI API**:
+
 - Docs: https://platform.openai.com/docs/api-reference
 - Chat: https://platform.openai.com/docs/api-reference/chat
 - Streaming: https://platform.openai.com/docs/api-reference/streaming
 
 **Anthropic Claude**:
+
 - Docs: https://docs.anthropic.com/claude/reference/messages
 - Streaming: https://docs.anthropic.com/claude/docs/streaming
 
 **WhatsApp Business API**:
+
 - Docs: https://developers.facebook.com/docs/whatsapp/cloud-api
 - Webhooks: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks
 
 **n8n**:
+
 - Docs: https://docs.n8n.io/
 - Webhooks: https://docs.n8n.io/workflows/webhooks/
 
 **Odoo API**:
+
 - REST API: https://www.odoo.com/documentation/17.0/webservices/rest.html
 - RPC API: https://www.odoo.com/documentation/17.0/webservices/odoo.html
 
@@ -249,6 +260,7 @@ flowchart TD
 **Objective**: Validate LLM + WhatsApp + n8n integration
 
 **Tasks**:
+
 1. Create minimal FastAPI webhook receiver
 2. Connect to OpenAI GPT-4 (or Claude)
 3. Test AI conversation with sample lead messages
@@ -258,6 +270,7 @@ flowchart TD
 7. Calculate cost per 100 conversations
 
 **Success Criteria**:
+
 - ✅ AI responds intelligently to vehicle queries
 - ✅ WhatsApp webhook receives messages
 - ✅ n8n creates lead in Odoo
@@ -271,6 +284,7 @@ flowchart TD
 #### Step 1: Domain Layer - Conversation Entities
 
 **Files to create**:
+
 - `apps/api/src/prosell/domain/entities/conversation.py` - Conversation entity
 - `apps/api/src/prosell/domain/entities/message.py` - Message entity
 - `apps/api/src/prosell/domain/value_objects/qualification_score.py` - Qualification score value object
@@ -426,6 +440,7 @@ class QualificationScore:
 #### Step 2: Infrastructure Layer - LLM Provider
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/ai/openai_provider.py` - OpenAI implementation
 - `apps/api/src/prosell/infrastructure/ai/anthropic_provider.py` - Anthropic implementation
 - `apps/api/src/prosell/infrastructure/ai/conversation_service.py` - AI conversation service
@@ -655,6 +670,7 @@ indicate this in your response so they can be forwarded to a human vendor."""
 #### Step 3: Infrastructure Layer - WhatsApp/Messenger Webhooks
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/api/routers/webhooks_router.py` - Webhook endpoints
 - `apps/api/src/prosell/infrastructure/api/webhooks/whatsapp_handler.py` - WhatsApp webhook handler
 - `apps/api/src/prosell/infrastructure/api/webhooks/messenger_handler.py` - Messenger webhook handler
@@ -778,6 +794,7 @@ async def send_whatsapp_message(phone_number: str, text: str):
 #### Step 4: Infrastructure Layer - n8n Integration
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/n8n/client.py` - n8n webhook client
 
 **Implementation notes**:
@@ -968,20 +985,24 @@ cd apps/api && uv run pytest tests/integration/webhooks/ -v
 ### 7.1 Unit Tests
 
 **LLM Provider**:
+
 - Test chat() returns response
 - Test qualify_lead() returns score
 
 **Conversation Service**:
+
 - Test handle_incoming_message() creates conversation
 - Test conversation mode switching
 
 **Webhook Handlers**:
+
 - Test signature verification
 - Test message extraction
 
 ### 7.2 Integration Tests
 
 **End-to-end flow**:
+
 1. Mock WhatsApp webhook
 2. Verify AI responds
 3. Verify conversation saved to DB
@@ -990,6 +1011,7 @@ cd apps/api && uv run pytest tests/integration/webhooks/ -v
 ### 7.3 E2E Tests (Manual)
 
 **WhatsApp Sandbox**:
+
 1. Send message to WhatsApp test number
 2. Verify AI response < 5 seconds
 3. Ask qualifying questions
@@ -1005,6 +1027,7 @@ cd apps/api && uv run pytest tests/integration/webhooks/ -v
 **Problem**: AI makes up vehicle details not in inventory.
 
 **Solution**:
+
 - Restrict AI to product info provided
 - Add instruction: "Only mention vehicles from the provided list"
 - Validate AI responses against inventory
@@ -1014,6 +1037,7 @@ cd apps/api && uv run pytest tests/integration/webhooks/ -v
 **Problem**: Long conversations exceed LLM context.
 
 **Solution**:
+
 - Summarize old messages (keep key points)
 - Limit conversation history to last 20 messages
 - Use separate summary field
@@ -1023,6 +1047,7 @@ cd apps/api && uv run pytest tests/integration/webhooks/ -v
 **Problem**: Too many messages trigger rate limiting.
 
 **Solution**:
+
 - Respect WhatsApp rate limits (1 msg/sec)
 - Use queue for outbound messages
 - Implement exponential backoff
@@ -1032,6 +1057,7 @@ cd apps/api && uv run pytest tests/integration/webhooks/ -v
 **Problem**: Webhook fails when n8n/Odoo is down.
 
 **Solution**:
+
 - Retry logic with exponential backoff
 - Dead letter queue for failed webhooks
 - Alert admin on repeated failures
@@ -1048,6 +1074,7 @@ If implementation fails:
 4. **AI quality poor**: Add more examples to prompt, fine-tune model
 
 **Rollback steps**:
+
 1. Disable AI auto-response
 2. Route messages to human vendors directly
 3. Keep conversation logging (can be reused)
@@ -1078,7 +1105,6 @@ If implementation fails:
 19. ✅ Monitor AI quality (human review)
 
 ---
-
 
 ---
 
@@ -1141,7 +1167,6 @@ grep -q "^## 11. Completion Gates" {prp_file}
 - [ ] Code review completado
 - [ ] E2E tests pasan (si aplica)
 
-
 ## Confidence Score
 
 **Score**: 6/10
@@ -1149,12 +1174,14 @@ grep -q "^## 11. Completion Gates" {prp_file}
 **Reasoning**:
 
 **Positive factors**:
+
 - LLM APIs are mature and well-documented
 - WhatsApp Business API is standard
 - n8n has good Odoo integration
 - FastAPI async is perfect for webhooks
 
 **Risk factors**:
+
 - **Spike required** to validate LLM quality for Spanish
 - WhatsApp Business API approval process (14-30 days)
 - n8n/Odoo integration complexity
@@ -1170,6 +1197,7 @@ grep -q "^## 11. Completion Gates" {prp_file}
 **Objective**: Validate end-to-end AI conversation flow
 
 **Tasks**:
+
 1. Create OpenAI account + API key
 2. Create minimal FastAPI webhook
 3. Connect to WhatsApp Business API sandbox
@@ -1180,6 +1208,7 @@ grep -q "^## 11. Completion Gates" {prp_file}
 8. Benchmark: latency, cost per conversation
 
 **Success Criteria**:
+
 - ✅ AI responds naturally in Spanish
 - ✅ Qualification accuracy > 80%
 - ✅ End-to-end latency < 10 seconds

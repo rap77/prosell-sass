@@ -34,23 +34,27 @@ El flujo actual es un **"MVP Conserje"** que ha funcionado por 6 meses:
 ## 😰 PAIN POINTS IDENTIFICADOS
 
 ### 1. Latencia de Publicación
+
 - **Problema**: Desfase temporal entre envío y publicación
 - **Impacto**: Ansiedad del dealer, incertidumbre sobre estado
 - **Severidad**: Media-Alta
 
 ### 2. Falta de Visibilidad (Ansiedad del Usuario)
+
 - **Problema**: No hay dashboard en tiempo real
 - **Impacto**: Dealer depende de comunicación humana
 - **Severidad**: Alta
 - **Cita**: "El dealer no tiene un dashboard en tiempo real para ver el estado de sus publicaciones"
 
 ### 3. Riesgo de Error Humano
+
 - **Problema**: Con 75-225 publicaciones diarias, calidad degrada
 - **Impacto**: Conversión del dealer se ve afectada
 - **Severidad**: Alta
 - **Contexto**: Títulos/descripciones pierden calidad bajo estrés
 
 ### 4. Escalabilidad Bloqueada
+
 - **Problema**: "Muerte por éxito" - modelo humano colapsa
 - **Impacto**: No puede aceptar más dealers
 - **Severidad**: CRÍTICA
@@ -63,6 +67,7 @@ El flujo actual es un **"MVP Conserje"** que ha funcionado por 6 meses:
 ### Catálogo Público (Sprint 7-8)
 
 **Qué es desde UX:**
+
 - Una página web para el dealer
 - Lista de inventario con filtros
 - SEO y visibilidad orgánica
@@ -82,6 +87,7 @@ El flujo actual es un **"MVP Conserje"** que ha funcionado por 6 meses:
 ### Marketplace Automation (Facebook Graph API)
 
 **Qué es desde UX:**
+
 - Elimina intermediario humano
 - Publicación instantánea
 - Re-publicación automática (posts vencen 7 días)
@@ -104,6 +110,7 @@ El flujo actual es un **"MVP Conserje"** que ha funcionado por 6 meses:
 ### Prioridad 0: Dashboard de Estado
 
 **Qué es:**
+
 ```
 ┌─────────────────────────────────────┐
 │ MIS PUBLICACIONES                   │
@@ -116,6 +123,7 @@ El flujo actual es un **"MVP Conserje"** que ha funcionado por 6 meses:
 ```
 
 **Impacto:**
+
 - Elimina ansiedad del dealer
 - Da transparencia inmediata
 - Usa entidad `Product` ya implementada
@@ -127,6 +135,7 @@ El flujo actual es un **"MVP Conserje"** que ha funcionado por 6 meses:
 ### Prioridad 1: VIN Decoder en Frontend
 
 **Qué es:**
+
 ```
 [ Ingresar VIN ] → [ Auto-completar mágicamente ]
      ↓
@@ -138,6 +147,7 @@ El flujo actual es un **"MVP Conserje"** que ha funcionado por 6 meses:
 ```
 
 **Impacto:**
+
 - Sensación de "magia"
 - Ahorro de tiempo inmediato
 - Reduce errores de data entry
@@ -149,6 +159,7 @@ El flujo actual es un **"MVP Conserje"** que ha funcionado por 6 meses:
 ### Prioridad 2: Generador de Títulos con IA
 
 **Qué es:**
+
 ```
 VIN ingresado → IA genera título → [Editar si quieres]
 
@@ -156,6 +167,7 @@ VIN ingresado → IA genera título → [Editar si quieres]
 ```
 
 **Impacto:**
+
 - Reduce esfuerzo cognitivo
 - Mejora CTR en Marketplace
 - Calidad consistente
@@ -169,6 +181,7 @@ VIN ingresado → IA genera título → [Editar si quieres]
 ### Estado Actual: Manual por WhatsApp
 
 **Problema:**
+
 - No es escalable
 - Dependencia de humano
 - Experiencia inconsistente
@@ -191,6 +204,7 @@ VIN ingresado → IA genera título → [Editar si quieres]
 ```
 
 **Quick wins:**
+
 - **Carga masiva inicial**: Importa inventario actual (valor inmediato día 1)
 - **Categorías jerárquicas**: Usa `field_config` (Sprint 5-6) para pedir solo datos necesarios
 - **Configuración guiada**: Asistente paso-a-paso para conectar Facebook
@@ -201,21 +215,21 @@ VIN ingresado → IA genera título → [Editar si quieres]
 
 ### Para Catálogo Público:
 
-| Métrica | Impacto | Time to Value |
-|---------|---------|---------------|
-| SEO visibility | +30% (6 meses) | Lento |
-| Brand awareness | +20% | Lento |
-| Leads orgánicos | +10% | Lento |
-| Esfuerzo dealer | +5 (más trabajo) | Inmediato |
+| Métrica         | Impacto          | Time to Value |
+| --------------- | ---------------- | ------------- |
+| SEO visibility  | +30% (6 meses)   | Lento         |
+| Brand awareness | +20%             | Lento         |
+| Leads orgánicos | +10%             | Lento         |
+| Esfuerzo dealer | +5 (más trabajo) | Inmediato     |
 
 ### Para Marketplace Automation:
 
-| Métrica | Impacto | Time to Value |
-|---------|---------|---------------|
-| Latencia publicación | -95% | Inmediato |
-| Ansiedad dealer | -80% | Inmediato |
-| Capacidad dealers | ×10 (5→50) | 6 semanas |
-| Retención | +40% | 6 semanas |
+| Métrica              | Impacto    | Time to Value |
+| -------------------- | ---------- | ------------- |
+| Latencia publicación | -95%       | Inmediato     |
+| Ansiedad dealer      | -80%       | Inmediato     |
+| Capacidad dealers    | ×10 (5→50) | 6 semanas     |
+| Retención            | +40%       | 6 semanas     |
 
 ---
 
@@ -247,21 +261,25 @@ VIN ingresado → IA genera título → [Editar si quieres]
 ### Sprint 7+: Marketplace UX (Semanas 1-4)
 
 **Semana 1: Dashboard de Estado**
+
 - Widget de conectividad Facebook
 - Lista de publicaciones con badges
 - Activity logs visuales
 
 **Semana 2: VIN Decoder Frontend**
+
 - Input VIN → Auto-completar
 - Preview de datos del vehículo
 - Botón "Confirmar"
 
 **Semana 3: IA Title Generator**
+
 - Sugerencia de título automática
 - Edición opcional
 - Guardar como preferencia
 
 **Semana 4: Bulk Actions**
+
 - Seleccionar 20 vehículos
 - "Publicar todos" en un click
 - Mitiga colapso operativo
@@ -269,6 +287,7 @@ VIN ingresado → IA genera título → [Editar si quieres]
 ### Sprint 9: Catálogo Público (Semanas 9-10)
 
 **Solo cuando:**
+
 - Capacidad operativa está resuelta
 - Dealers están retenidos
 - Hay tiempo para construir "nice-to-have"

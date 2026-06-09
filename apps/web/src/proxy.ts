@@ -234,14 +234,22 @@ export default async function middleware(req: NextRequest) {
 
     // Branch routes - only branch/super_admin role can access
     const isSuperAdmin = userData.role === "super_admin";
-    if (pathname.startsWith("/branch") && userData.role !== "branch" && !isSuperAdmin) {
+    if (
+      pathname.startsWith("/branch") &&
+      userData.role !== "branch" &&
+      !isSuperAdmin
+    ) {
       const url = req.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
 
     // Manager routes - only manager/super_admin role can access
-    if (pathname.startsWith("/manager") && userData.role !== "manager" && !isSuperAdmin) {
+    if (
+      pathname.startsWith("/manager") &&
+      userData.role !== "manager" &&
+      !isSuperAdmin
+    ) {
       const url = req.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);

@@ -22,15 +22,17 @@ export class ResetPasswordPage extends BasePage {
     this.confirmPasswordInput = page.locator("#reset-confirm-password");
 
     // Button text: "Restablecer contraseña" (Spanish)
-    this.submitButton = page.getByRole("button", { name: /restablecer contraseña/i });
+    this.submitButton = page.getByRole("button", {
+      name: /restablecer contraseña/i,
+    });
 
     // Link text: "Volver al inicio de sesión" (Spanish)
-    this.signInLink = page.getByRole("link", { name: /volver al inicio de sesión/i });
+    this.signInLink = page.getByRole("link", {
+      name: /volver al inicio de sesión/i,
+    });
 
     // Heading: "Nueva contraseña" (form state) or "Enlace inválido" (invalid token)
-    this.heading = page
-      .locator("h1")
-      .first();
+    this.heading = page.locator("h1").first();
   }
 
   /**
@@ -92,7 +94,9 @@ export class ResetPasswordPage extends BasePage {
    */
   async verifySuccessMessage(): Promise<void> {
     // Spanish success heading: "¡Contraseña actualizada!"
-    const successMessage = this.page.locator("h1").filter({ hasText: /contraseña actualizada/i });
+    const successMessage = this.page
+      .locator("h1")
+      .filter({ hasText: /contraseña actualizada/i });
     await expect(successMessage).toBeVisible();
   }
 

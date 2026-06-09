@@ -24,6 +24,7 @@ These 4 patterns apply across ALL brain domains. Source: Brain #6 consultation (
 **UX-specific examples:** Suggesting FullStory, Hotjar, or UserTesting integrations that aren't in `pnpm-lock.yaml`. Recommending a CSS animation library not in the stack. Proposing Storybook without verifying it's installed.
 
 **Rejection format:**
+
 ```
 Rejected: [library name] is not declared in root pnpm-lock.yaml.
 Source: global-protocol.md > Stack Hard-Lock | brain-02-ux/warnings.md > Stack Hallucination
@@ -40,6 +41,7 @@ Source: global-protocol.md > Stack Hard-Lock | brain-02-ux/warnings.md > Stack H
 **UX-specific examples:** "Manually update the copy in the database." "Edit the CSS file directly to change the theme." "Have a designer create new assets for each release."
 
 **Rejection format:**
+
 ```
 Rejected: [manual step] requires manual production access.
 Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-02-ux/warnings.md > Toil-Inducer
@@ -54,6 +56,7 @@ Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-02-ux/warnings.m
 **Rule:** `BLOCKER: Never suggest hardcoded credentials, not even in test examples.`
 
 **Rejection format:**
+
 ```
 Rejected: hardcoded credentials violates Security Bypass rule.
 Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-02-ux/warnings.md > Security Bypass
@@ -70,6 +73,7 @@ Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-02-ux/warnings.m
 **UX-specific examples:** Proposing a navigation redesign without addressing existing E2E tests that depend on current nav structure. Recommending component renaming without updating component test files.
 
 **Rejection format:**
+
 ```
 Rejected: [proposal] invalidates existing test contracts without migration plan.
 Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-02-ux/warnings.md > Legacy Drift
@@ -90,6 +94,7 @@ Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-02-ux/warnings.m
 **Detection:** Any recommendation justified by "it looks better," "it's cleaner," or "it feels more modern" without a cognitive load measurement = Aesthetic Override.
 
 **Rejection format:**
+
 ```
 Rejected: visual simplification without cognitive load justification = Aesthetic Override.
 Source: brain-02-ux/warnings.md > Aesthetic Override
@@ -106,15 +111,18 @@ Source: brain-02-ux/warnings.md > Aesthetic Override
 **Why:** Animation in developer tools must earn its place. Orientation animations (helping users understand where content came from/went) are highest priority. Feedback animations (confirming action completed) are second. Delight animations (making the tool enjoyable) are acceptable only when the first two categories are fully satisfied and the animation adds no latency.
 
 **Examples of animation that should be rejected:**
+
 - Fade-in on page load when users already know they navigated there
 - Slide transitions between panels that add 300ms to every navigation
 - Hover animations on data tables where the data itself communicates state
 
 **Valid animation (do not reject):**
+
 - BrainNode pulse to indicate active processing (feedback — tells user something is happening)
 - Graph edges drawing in sequence after dagre layout (orientation — shows the structure forming)
 
 **Rejection format:**
+
 ```
 Rejected: animation without stated orientation/feedback purpose = Animation Inflation.
 Source: brain-02-ux/warnings.md > Animation Inflation
@@ -129,6 +137,7 @@ Source: brain-02-ux/warnings.md > Animation Inflation
 **Rule:** `PROHIBITED: Desktop-first always. Mobile patterns in the War Room are architectural contamination.`
 
 **Prohibited patterns:**
+
 - Bottom navigation bars (mobile-native, inverts desktop mental model)
 - Hamburger menus (hides navigation — anathema on desktop where screen space is available)
 - Swipe gestures (no touch input assumed — keyboard and mouse only)
@@ -138,6 +147,7 @@ Source: brain-02-ux/warnings.md > Animation Inflation
 **Why this is PROHIBITED (not just anti-pattern):** Mobile-first patterns contaminate the information architecture. A developer tool with a hamburger menu communicates "I was built for mobile first" and immediately signals it wasn't designed for the actual use case.
 
 **Rejection format:**
+
 ```
 Rejected: [mobile pattern] violates desktop-first constraint.
 Source: global-protocol.md > Stack Hard-Lock | brain-02-ux/warnings.md > Mobile-First Contamination
@@ -152,12 +162,14 @@ Source: global-protocol.md > Stack Hard-Lock | brain-02-ux/warnings.md > Mobile-
 **Rule:** `BLOCKER for Rating >= 3. Users are developers who built this tool — assume expert mental models.`
 
 **Why:** The primary user of the War Room is the developer/architect who built it. They have expert mental models for IDEs, terminals, dashboards, and developer tools. They do not need:
+
 - Tooltips explaining what a button does (they'll figure it out or read the docs)
 - Onboarding flows (they deployed the tool)
 - Simplified "beginner mode" options
 - Progressive disclosure of features they already know exist
 
 What they DO need:
+
 - Keyboard shortcuts for every frequent action
 - Information density over whitespace
 - State that persists between sessions
@@ -166,6 +178,7 @@ What they DO need:
 **Detection:** Any recommendation that starts with "users might not understand..." or "first-time users need..." = Generic Persona Assumption for the War Room.
 
 **Rejection format:**
+
 ```
 Rejected: generic persona assumption — War Room users are expert developers.
 Source: brain-02-ux/warnings.md > Generic Persona Assumption

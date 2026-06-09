@@ -10,13 +10,13 @@
 
 ### Estado Actual: Sólido pero insuficiente para marketplace
 
-| Suite | Tests | Status | Gap |
-|-------|-------|--------|-----|
-| **Backend** | 325/325 ✅ | 100% passing | Falta: Facebook API mocks |
-| **Frontend** | 358/358 ✅ | 100% passing | Falta: Contract tests |
-| **E2E** | 33/33 ✅ | 91% passing (8/10 Vehicle) | Falta: Webhook tests |
-| **Pyright** | 0 errores ✅ | Type safe | - |
-| **Pre-commit** | GGA + linters ✅ | Automatizado | - |
+| Suite          | Tests            | Status                     | Gap                       |
+| -------------- | ---------------- | -------------------------- | ------------------------- |
+| **Backend**    | 325/325 ✅       | 100% passing               | Falta: Facebook API mocks |
+| **Frontend**   | 358/358 ✅       | 100% passing               | Falta: Contract tests     |
+| **E2E**        | 33/33 ✅         | 91% passing (8/10 Vehicle) | Falta: Webhook tests      |
+| **Pyright**    | 0 errores ✅     | Type safe                  | -                         |
+| **Pre-commit** | GGA + linters ✅ | Automatizado               | -                         |
 
 **Conclusión**: Base excelente, pero marketplace integration requiere nuevos tipos de tests.
 
@@ -27,6 +27,7 @@
 ### 1. Unit Tests (ya tenemos cobertura, extender)
 
 **Qué necesitamos:**
+
 ```python
 # Tests nuevos requeridos
 def test_facebook_oauth_flow():
@@ -52,6 +53,7 @@ def test_webhook_processing():
 ### 2. Contract Tests (NUEVO - crítico)
 
 **Qué son:**
+
 ```python
 # Pruebas de contrato con API externa
 def test_facebook_api_contract():
@@ -64,6 +66,7 @@ def test_facebook_api_contract():
 ```
 
 **Por qué son CRÍTICOS:**
+
 - Facebook puede cambiar API sin warning
 - Queremos saber antes de producción
 - Previene roturas de producción
@@ -75,6 +78,7 @@ def test_facebook_api_contract():
 ### 3. Integration Tests (Webhooks)
 
 **Qué necesitamos:**
+
 ```python
 # Tests de integración asíncrona
 async def test_publication_lifecycle():
@@ -88,6 +92,7 @@ async def test_publication_lifecycle():
 ```
 
 **Por qué son necesarios:**
+
 - Publicación es asíncrona
 - Necesitamos testear el ciclo completo
 - No basta con unit tests
@@ -105,6 +110,7 @@ async def test_publication_lifecycle():
 #### 1. Circuit Breakers
 
 **Qué es:**
+
 ```python
 class FacebookCircuitBreaker:
     def __init__(self):
@@ -127,6 +133,7 @@ class FacebookCircuitBreaker:
 ```
 
 **Por qué es CRÍTICO:**
+
 - Si Facebook API falla repetidamente, abrimos el circuito
 - Evita que nuestras colas colapsen el sistema
 - Permite recuperación gradual (half-open)
@@ -138,6 +145,7 @@ class FacebookCircuitBreaker:
 #### 2. Tracing Distribuido
 
 **Qué es:**
+
 ```python
 # Rastrear ciclo de vida de publicación
 Dealer click → [FastAPI] → [Queue] → [Facebook API]
@@ -146,11 +154,13 @@ Dashboard      DB           Webhook confirmation
 ```
 
 **Herramientas:**
+
 - OpenTelemetry (tracing)
 - Jaeger (visualization)
 - Prometheus (metrics)
 
 **Por qué es necesario:**
+
 - No podemos ver qué pasa dentro de Facebook
 - Necesitamos saber dónde falla
 - Debugging de producción
@@ -162,6 +172,7 @@ Dashboard      DB           Webhook confirmation
 #### 3. Health Checks de Integración
 
 **Qué es:**
+
 ```python
 @app.get("/health/integrations")
 async def health_check():
@@ -176,6 +187,7 @@ async def health_check():
 ```
 
 **Por qué es necesario:**
+
 - Dashboard en tiempo real para ops
 - Proactive monitoring (antes que falle)
 - Dealer visibility (transparencia)
@@ -189,6 +201,7 @@ async def health_check():
 ### 1. Rate Limit Alert
 
 **Qué es:**
+
 ```yaml
 alert: RateLimitThreshold
 condition: facebook_api_usage > 80%
@@ -196,6 +209,7 @@ action: Notify team + Throttle queue
 ```
 
 **Por qué es CRÍTICO:**
+
 - Si llegamos al 100%, Facebook nos banea
 - 80% nos da tiempo de reaccionar
 - Previene bloqueos de producción
@@ -207,6 +221,7 @@ action: Notify team + Throttle queue
 ### 2. Queue Depth Alert
 
 **Qué es:**
+
 ```yaml
 alert: QueueDepthExplosion
 condition: queue_size > 150
@@ -214,6 +229,7 @@ action: Scale workers + Notify ops
 ```
 
 **Por qué es CRÍTICO:**
+
 - Queue creciendo exponencialmente = workers fallando
 - 150 es 2× el volumen normal (75 pubs/día)
 - Previene colapso de memoria
@@ -225,6 +241,7 @@ action: Scale workers + Notify ops
 ### 3. Token Expiration Alert
 
 **Qué es:**
+
 ```yaml
 alert: TokenExpiringSoon
 condition: token_expires < 48h
@@ -232,6 +249,7 @@ action: Auto-refresh + Notify dealer
 ```
 
 **Por qué es CRÍTICO:**
+
 - Token expirado = dealer sin servicio
 - 48hs da tiempo de refresh manual
 - Previene interrupción de servicio
@@ -243,6 +261,7 @@ action: Auto-refresh + Notify dealer
 ### 4. Error Rate Alert
 
 **Qué es:**
+
 ```yaml
 alert: HighErrorRate
 condition: error_rate > 5%
@@ -250,7 +269,8 @@ action: Investigate + Scale down
 ```
 
 **Por qué es CRÍTICO:**
-- >5% errores indica problema sistémico
+
+- > 5% errores indica problema sistémico
 - Puede ser Facebook API issue
 - Previene cascade failures
 
@@ -265,12 +285,14 @@ action: Investigate + Scale down
 **Nivel de Riesgo**: BAJO
 
 **Por qué:**
+
 - Es principalmente una capa de LECTURA
 - No hay estado mutable complejo
 - Errores no impactan negocio directamente
 - SEO y caching son problemas de performance, no de corrección
 
 **Estrategia de deploy:**
+
 - Blue-green deployment (Vercel)
 - Feature flags por tenant
 - Rollback instantáneo
@@ -284,6 +306,7 @@ action: Investigate + Scale down
 **Nivel de Riesgo**: ALTO
 
 **Por qué:**
+
 - Es una capa de ESCRITURA con dependencias externas
 - Errores impactan negocio directamente (dealers no pueden publicar)
 - Facebook API puede cambiar sin warning
@@ -291,6 +314,7 @@ action: Investigate + Scale down
 - Gestión de estado multi-dealer
 
 **Riesgos específicos:**
+
 1. **Facebook API changes**: Cambio en API rompe integración
 2. **Rate limiting**: Excedemos límites y nos bloquean
 3. **Token issues**: Expiración o revocación masiva
@@ -298,6 +322,7 @@ action: Investigate + Scale down
 5. **Data inconsistency**: Estado desincronizado entre DB y Facebook
 
 **Estrategia de deploy:**
+
 - **Canary Deployment** (CRÍTICO)
   - Dealer 1 primero (48h monitoreo)
   - Dealer 2-3 (72h monitoreo)
@@ -321,24 +346,28 @@ action: Investigate + Scale down
 ### Sprint 7+: Marketplace QA (Semanas 1-6)
 
 **Semana 1-2: Infraestructura**
+
 - [ ] Configurar Task Queue en CI/CD
 - [ ] Setup staging environment
 - [ ] Implementar Circuit Breakers
 - [ ] Setup health checks
 
 **Semana 3-4: Tests**
+
 - [ ] Contract Tests suite
 - [ ] Facebook API mocks
 - [ ] Unit tests de OAuth flow
 - [ ] Unit tests de webhooks
 
 **Semana 5: Deployment**
+
 - [ ] Canary Deployment setup
 - [ ] Monitoring + alerts
 - [ ] Tracing distribuido
 - [ ] Error tracking (Sentry)
 
 **Semana 6: Production**
+
 - [ ] Deploy to 1 dealer (48h monitoreo)
 - [ ] Deploy to 3 dealers (72h monitoreo)
 - [ ] Deploy to all 5 dealers
@@ -376,6 +405,7 @@ action: Investigate + Scale down
 ### Para Marketplace Integration:
 
 **Tests:**
+
 - [ ] Contract Tests suite
 - [ ] Facebook API mocks (todos los escenarios)
 - [ ] Webhook integration tests
@@ -384,6 +414,7 @@ action: Investigate + Scale down
 - [ ] End-to-end publication tests
 
 **Monitoring:**
+
 - [ ] Circuit Breakers implementation
 - [ ] Tracing distribuido (OpenTelemetry)
 - [ ] Health checks endpoint
@@ -391,6 +422,7 @@ action: Investigate + Scale down
 - [ ] Error tracking (Sentry)
 
 **Alerts:**
+
 - [ ] Rate Limit Alert (80% threshold)
 - [ ] Queue Depth Alert (>150 items)
 - [ ] Token Expiration Alert (48h before)
@@ -398,6 +430,7 @@ action: Investigate + Scale down
 - [ ] API Success Rate (<99.9%)
 
 **Deployment:**
+
 - [ ] Canary Deployment setup
 - [ ] Feature flags por dealer
 - [ ] Rollback procedure
@@ -407,17 +440,20 @@ action: Investigate + Scale down
 ### Para Catálogo Público:
 
 **Tests:**
+
 - [ ] SEO metadata tests
 - [ ] Cache invalidation tests
 - [ ] Performance tests (LCP < 2.5s)
 - [ ] Accessibility tests (WCAG AA)
 
 **Monitoring:**
+
 - [ ] Pageviews tracking
 - [ ] SEO rankings monitoring
 - [ ] Core Web Vitals monitoring
 
 **Alerts:**
+
 - [ ] Error rate alert
 - [ ] Performance degradation alert
 

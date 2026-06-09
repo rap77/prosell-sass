@@ -5,18 +5,18 @@
  * All tests are marked as skip until implementation.
  */
 
-import { describe, it } from 'vitest'
+import { describe, it } from "vitest";
 
-describe.skip('UserBranchAssignment', () => {
-  it('test_multi_select_branchs', () => {
+describe.skip("UserBranchAssignment", () => {
+  it("test_multi_select_branchs", () => {
     // Component renders dropdown for branch selection
-  })
+  });
 
-  it('test_assign_multiple_branchs', () => {
+  it("test_assign_multiple_branchs", () => {
     // Multiple branchs can be assigned to user
-  })
+  });
 
-  it('test_remove_branch_assignment', () => {
+  it("test_remove_branch_assignment", () => {
     // Branch assignment can be removed
-  })
-})
+  });
+});

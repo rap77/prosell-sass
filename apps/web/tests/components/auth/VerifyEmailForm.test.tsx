@@ -74,7 +74,9 @@ describe("VerifyEmailForm Component", () => {
         expect(screen.getByText(/Verificación fallida/i)).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/enlace de verificación no es válido/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/enlace de verificación no es válido/i),
+      ).toBeInTheDocument();
     });
   });
 
@@ -92,14 +94,10 @@ describe("VerifyEmailForm Component", () => {
       render(<VerifyEmailForm token={mockToken} />);
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/Email verificado/i),
-        ).toBeInTheDocument();
+        expect(screen.getByText(/Email verificado/i)).toBeInTheDocument();
       });
 
-      expect(
-        screen.getByText(/Email verificado/i),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Email verificado/i)).toBeInTheDocument();
       expect(
         screen.getByRole("link", { name: /Iniciar sesión/i }),
       ).toBeInTheDocument();
@@ -128,9 +126,7 @@ describe("VerifyEmailForm Component", () => {
 
       await waitFor(() => {
         // Check that the heading shows "Enlace no encontrado"
-        expect(
-          screen.getByText("Enlace no encontrado"),
-        ).toBeInTheDocument();
+        expect(screen.getByText("Enlace no encontrado")).toBeInTheDocument();
       });
     });
 
@@ -150,9 +146,7 @@ describe("VerifyEmailForm Component", () => {
       render(<VerifyEmailForm token={mockToken} />);
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/Email verificado/i),
-        ).toBeInTheDocument();
+        expect(screen.getByText(/Email verificado/i)).toBeInTheDocument();
       });
 
       const continueButton = screen.getByRole("link", {

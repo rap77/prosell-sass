@@ -18,12 +18,12 @@ After applying fixes across 3 phases (Accessibility, Validation, Integration), t
 
 ### Comparison with Previous Run
 
-| Metric | Previous | Current | Change |
-|--------|----------|---------|--------|
-| **Passing** | 233 | 200 | **-33** ⚠️ |
-| **Failing** | 152 | 124 | **-28** ✅ |
-| **Total** | 385 | 344 | -41 |
-| **Pass Rate** | 60.5% | 58.1% | -2.4% |
+| Metric        | Previous | Current | Change     |
+| ------------- | -------- | ------- | ---------- |
+| **Passing**   | 233      | 200     | **-33** ⚠️ |
+| **Failing**   | 152      | 124     | **-28** ✅ |
+| **Total**     | 385      | 344     | -41        |
+| **Pass Rate** | 60.5%    | 58.1%   | -2.4%      |
 
 **Key Insight**: Mixed results - 28 fewer total failures, but 33 tests regressed from passing to failing.
 
@@ -32,6 +32,7 @@ After applying fixes across 3 phases (Accessibility, Validation, Integration), t
 ## Phase 1: Accessibility Fixes ✅
 
 ### Changes Applied
+
 1. **CalendarView.tsx**
    - Changed red color from `#ef4444` (red-500) to `#dc2626` (red-600)
    - Improved contrast ratio for accessibility compliance
@@ -41,6 +42,7 @@ After applying fixes across 3 phases (Accessibility, Validation, Integration), t
    - Enhanced readability for error messages
 
 ### Expected Impact
+
 - Fix accessibility test failures related to color contrast
 - Improve WCAG AA compliance
 
@@ -51,6 +53,7 @@ After applying fixes across 3 phases (Accessibility, Validation, Integration), t
 ## Phase 2: Validation Fixes ✅
 
 ### Changes Applied
+
 1. **Playwright Strict Mode Violations**
    - Added `.or()` fallback selectors to prevent strict mode crashes
    - Pattern: `locator(...).or(locator(...))`
@@ -64,6 +67,7 @@ After applying fixes across 3 phases (Accessibility, Validation, Integration), t
    - Fixed: `tests/e2e/specs/vehicle-creation-c3.spec.ts`
 
 ### Expected Impact
+
 - Fix flaky tests due to locator issues
 - Stabilize validation test suites
 
@@ -74,6 +78,7 @@ After applying fixes across 3 phases (Accessibility, Validation, Integration), t
 ## Phase 3: Integration Fixes ✅
 
 ### Changes Applied
+
 1. **Route Mismatches**
    - Fixed: `/vehicles` → `/catalog`
    - Updated navigation paths to match actual Next.js routes
@@ -87,6 +92,7 @@ After applying fixes across 3 phases (Accessibility, Validation, Integration), t
    - Improved reliability of element location
 
 ### Expected Impact
+
 - Fix integration test failures
 - Improve stability of async operations
 
@@ -99,6 +105,7 @@ After applying fixes across 3 phases (Accessibility, Validation, Integration), t
 ### Concern: 33 Tests Regressed
 
 **Possible Causes**:
+
 1. **Test Environment Changes**
    - Browser version updates
    - Network latency variations
@@ -116,6 +123,7 @@ After applying fixes across 3 phases (Accessibility, Validation, Integration), t
 ### Positive: 28 Fewer Failures
 
 Despite the regression in passing tests, the total number of failures decreased by 28, indicating:
+
 - Many previously failing tests are now passing
 - Overall test stability improved in some areas
 
@@ -157,6 +165,7 @@ Based on error patterns observed:
 ### Immediate Actions
 
 1. **Investigate Regressed Tests**
+
    ```bash
    # Identify which 33 tests changed from passing to failing
    npx playwright test --grep="@smoke" --reporter=list
@@ -215,6 +224,7 @@ Based on error patterns observed:
 ## Appendix: Test Execution Details
 
 **Command Run**:
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 npx playwright test --reporter=line
@@ -233,6 +243,7 @@ npx playwright test --reporter=line
 ## Conclusion
 
 The 3-phase fix effort achieved mixed results:
+
 - ✅ **28 failures resolved** (positive)
 - ⚠️ **33 tests regressed** (needs investigation)
 - 📊 **Pass rate: 58.1%** (slight decrease)
@@ -243,5 +254,5 @@ The 3-phase fix effort achieved mixed results:
 
 ---
 
-*Report generated: 2026-05-01*
-*Author: Claude Code (E2E Test Verification)*
+_Report generated: 2026-05-01_
+_Author: Claude Code (E2E Test Verification)_

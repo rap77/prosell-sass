@@ -33,7 +33,9 @@ const createWrapper = () => {
   });
 
   function Wrapper({ children }: { children: React.ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
   }
   return Wrapper;
 };
@@ -242,8 +244,8 @@ describe("Products API Client - createProductWithVehicle", () => {
         organization_id: "org-1",
         category_id: "cat-123",
         attributes: {
-        category: "generic" as const,
-      },
+          category: "generic" as const,
+        },
       }),
     ).rejects.toThrow("Network error");
   });
@@ -263,8 +265,8 @@ describe("Products API Client - createProductWithVehicle", () => {
         organization_id: "org-1",
         category_id: "cat-123",
         attributes: {
-        category: "generic" as const,
-      },
+          category: "generic" as const,
+        },
       }),
     ).rejects.toThrow("Failed to create product");
   });
@@ -413,8 +415,8 @@ describe("Products API Client - useCreateProduct", () => {
         organization_id: "org-1",
         category_id: "cat-123",
         attributes: {
-        category: "generic" as const,
-      },
+          category: "generic" as const,
+        },
       });
     });
 
@@ -492,8 +494,8 @@ describe("Products API Client - useCreateProduct", () => {
         organization_id: "org-1",
         category_id: "cat-123",
         attributes: {
-        category: "generic" as const,
-      },
+          category: "generic" as const,
+        },
         status: "draft" as const,
         created_at: "2024-01-01T00:00:00Z",
         updated_at: "2024-01-01T00:00:00Z",

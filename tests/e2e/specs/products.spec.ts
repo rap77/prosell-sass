@@ -36,7 +36,12 @@ const MOCK_PRODUCTS = [
     title: "2023 Honda Civic",
     price_cents: 2500000,
     category_id: "cat-1",
-    attributes: { condition: "used", year: 2023, make: "Honda", model: "Civic" },
+    attributes: {
+      condition: "used",
+      year: 2023,
+      make: "Honda",
+      model: "Civic",
+    },
     status: "active",
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
@@ -134,7 +139,9 @@ test.describe("Products", () => {
 
   test("should display products page", async ({ page }) => {
     await expect(page).toHaveURL(/.*products/);
-    await expect(page.getByRole("heading", { name: "Products", level: 1 })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Products", level: 1 }),
+    ).toBeVisible();
   });
 
   test("should display existing products from API", async ({ page }) => {
@@ -163,7 +170,9 @@ test.describe("Products", () => {
     await page.getByRole("button", { name: /^save$/i }).click();
 
     // Should show success toast
-    await expect(page.getByText(/product created/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/product created/i)).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("should validate product title is required", async ({ page }) => {
@@ -176,7 +185,9 @@ test.describe("Products", () => {
 
   test("should filter products by status", async ({ page }) => {
     // The products page has a status filter dropdown
-    const statusFilter = page.getByRole("combobox", { name: "Filter by status" });
+    const statusFilter = page.getByRole("combobox", {
+      name: "Filter by status",
+    });
     await statusFilter.selectOption("draft");
 
     // Should show only draft products

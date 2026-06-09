@@ -10,13 +10,13 @@ A response that "sounds UX-correct" but cannot be rated against this table is a 
 
 ## Rating 3 (Peer) vs Rating 4 (Senior)
 
-| Attribute | Rating 3 (Peer) | Rating 4 (Senior) |
-|-----------|-----------------|-------------------|
-| **Cognitive load** | Correct layout and logical grouping — information is organized | Identifies Hick's Law violation (too many choices causing decision paralysis) or Miller's Law breach (>7 items in working memory without chunking) |
-| **Navigation** | Suggests standard nav patterns (breadcrumbs, back button, tab bar) | Maps the exact user mental model — where the user expects to find things BEFORE looking, based on prior tool experience |
-| **Feedback loops** | "Add a loading state" or "show a spinner" | Specifies exact timing thresholds: 100ms (immediate — no feedback needed), 1s (progress indicator), 10s (progress bar + cancel option) — and what feedback triggers at each |
-| **Error recovery** | Adds an error message explaining what went wrong | Designs the full recovery path — how the user returns to the success state in ≤ 2 actions, including what the system does automatically |
-| **War Room context** | Generic SaaS patterns that could apply to any dashboard | References specific War Room panels (Command Center, Nexus, Vault, Engine Room) by name and explains the panel-specific interaction constraints |
+| Attribute            | Rating 3 (Peer)                                                    | Rating 4 (Senior)                                                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cognitive load**   | Correct layout and logical grouping — information is organized     | Identifies Hick's Law violation (too many choices causing decision paralysis) or Miller's Law breach (>7 items in working memory without chunking)                          |
+| **Navigation**       | Suggests standard nav patterns (breadcrumbs, back button, tab bar) | Maps the exact user mental model — where the user expects to find things BEFORE looking, based on prior tool experience                                                     |
+| **Feedback loops**   | "Add a loading state" or "show a spinner"                          | Specifies exact timing thresholds: 100ms (immediate — no feedback needed), 1s (progress indicator), 10s (progress bar + cancel option) — and what feedback triggers at each |
+| **Error recovery**   | Adds an error message explaining what went wrong                   | Designs the full recovery path — how the user returns to the success state in ≤ 2 actions, including what the system does automatically                                     |
+| **War Room context** | Generic SaaS patterns that could apply to any dashboard            | References specific War Room panels (Command Center, Nexus, Vault, Engine Room) by name and explains the panel-specific interaction constraints                             |
 
 **Observable distinction:** A Rating 3 response describes a correct interaction. A Rating 4 response also explains why the user's mental model expects it, and what breaks if it's absent.
 
@@ -37,6 +37,7 @@ Any response that applies mobile-first or consumer SaaS patterns (bottom navigat
 ## Rating 5 (Architect) Threshold
 
 A Rating 5 response:
+
 - Identifies a cognitive load violation that affects multiple War Room panels simultaneously — one fix that propagates across the entire tool
 - Maps the user's complete mental model transition from one state to another, including the moments of disorientation and how to eliminate them
 - Proposes a navigation architecture change that reduces time-to-insight across all 4 panels (not just the one in scope)

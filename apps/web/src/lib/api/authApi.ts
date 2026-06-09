@@ -356,13 +356,16 @@ export const authApi = {
     }
 
     // Mutations must NOT be cached — triggers email send on every call
-    const response = await fetch(`${API_BASE_URL}/api/v1/auth/forgot-password`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/auth/forgot-password`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
       },
-      body: JSON.stringify({ email }),
-    });
+    );
 
     return handleResponse<MessageResponse>(response);
   },

@@ -10,15 +10,15 @@
 
 ### Stack Confirmado (Sólido)
 
-| Tecnología | Versión | Propósito | Estado |
-|------------|---------|-----------|--------|
-| **Next.js** | 16.1 (Turbopack) | Framework | ✅ Producción |
-| **React** | 19.2 | UI Library | ✅ Producción |
-| **TypeScript** | 5.5 strict | Type safety | ✅ Producción |
-| **TailwindCSS** | 4.0 | Styling | ✅ Producción |
-| **Zustand** | 5.x | State management | ✅ Producción |
-| **TanStack Query** | v5 | Data fetching | ✅ Producción |
-| **Tests** | 358 passing | Coverage | ✅ 95%+ |
+| Tecnología         | Versión          | Propósito        | Estado        |
+| ------------------ | ---------------- | ---------------- | ------------- |
+| **Next.js**        | 16.1 (Turbopack) | Framework        | ✅ Producción |
+| **React**          | 19.2             | UI Library       | ✅ Producción |
+| **TypeScript**     | 5.5 strict       | Type safety      | ✅ Producción |
+| **TailwindCSS**    | 4.0              | Styling          | ✅ Producción |
+| **Zustand**        | 5.x              | State management | ✅ Producción |
+| **TanStack Query** | v5               | Data fetching    | ✅ Producción |
+| **Tests**          | 358 passing      | Coverage         | ✅ 95%+       |
 
 **Conclusión**: Base técnica sólida para escalar a cualquiera de las dos opciones.
 
@@ -31,13 +31,22 @@
 #### 1. Rutas Dinámicas por Tenant
 
 **Qué requiere:**
+
 ```typescript
 // Estructura de rutas
-/app/catalog/[tenant_id]/page.tsx
-/app/catalog/[tenant_id]/vehicles/[slug]/page.tsx
+/app/aacglot /
+  [tenant_id] /
+  page.tsx /
+  app /
+  catalog /
+  [tenant_id] /
+  vehicles /
+  [slug] /
+  page.tsx;
 ```
 
 **Por qué es necesario:**
+
 - SEO multi-tenant (cada dealer tiene su catálogo)
 - Branding por organización
 - Subdominios o paths personalizados
@@ -50,6 +59,7 @@
 #### 2. Shared Layouts Anidados
 
 **Qué requiere:**
+
 ```typescript
 // Layouts jerárquicos
 app/layout.tsx (root)
@@ -58,6 +68,7 @@ app/layout.tsx (root)
 ```
 
 **Por qué es necesario:**
+
 - Mantener branding del dealer
 - Header/Footer consistentes
 - Filters persistentes en navegación
@@ -70,15 +81,17 @@ app/layout.tsx (root)
 #### 3. Edge Caching
 
 **Qué requiere:**
+
 ```typescript
 // Next.js fetch con ISR
 export const revalidate = 3600; // 1 hora
 
 // O stale-while-revalidate
-fetch(url, { next: { revalidate: 3600 } })
+fetch(url, { next: { revalidate: 3600 } });
 ```
 
 **Por qué es necesario:**
+
 - Performance crítica para SEO
 - LCP (Largest Contentful Paint) < 2.5s
 - Usuarios móviles necesitan carga rápida
@@ -93,17 +106,19 @@ fetch(url, { next: { revalidate: 3600 } })
 #### 1. State Machine de Publicación
 
 **Qué requiere:**
+
 ```typescript
 // Zustand store para publicación
 interface PublicationStore {
-  status: 'draft' | 'syncing' | 'published' | 'error' | 'retrying'
-  publications: Map<string, PublicationState>
-  publish: (productId: string) => Promise<void>
-  retry: (productId: string) => Promise<void>
+  status: "draft" | "syncing" | "published" | "error" | "retrying";
+  publications: Map<string, PublicationState>;
+  publish: (productId: string) => Promise<void>;
+  retry: (productId: string) => Promise<void>;
 }
 ```
 
 **Por qué es necesario:**
+
 - Publicación es asíncrona (5-30 segundos)
 - Dealer necesita ver estado en tiempo real
 - Reintentos automáticos por fallas
@@ -116,12 +131,10 @@ interface PublicationStore {
 #### 2. Server Actions Intensivos
 
 **Qué requiere:**
+
 ```typescript
 // useActionState para Facebook integration
-const [state, formAction] = useActionState(
-  publishToFacebook,
-  initialState
-);
+const [state, formAction] = useActionState(publishToFacebook, initialState);
 
 // Server action
 async function publishToFacebook(formData) {
@@ -133,6 +146,7 @@ async function publishToFacebook(formData) {
 ```
 
 **Por qué es necesario:**
+
 - Conexión OAuth con Facebook
 - Subida de imágenes
 - Manejo de errores y reintentos
@@ -145,19 +159,21 @@ async function publishToFacebook(formData) {
 #### 3. Polling/Webhooks
 
 **Qué requiere:**
+
 ```typescript
 // TanStack Query para polling
 useQuery({
-  queryKey: ['publication-status', productId],
+  queryKey: ["publication-status", productId],
   queryFn: () => fetchStatus(productId),
   refetchInterval: 5000, // Poll cada 5s
-})
+});
 
 // O WebSocket para webhooks
-useWebSocket('ws://api/publication-updates')
+useWebSocket("ws://api/publication-updates");
 ```
 
 **Por qué es necesario:**
+
 - Facebook API es asíncrona
 - Dealer necesita updates en tiempo real
 - Webhooks para confirmación de publicación
@@ -173,12 +189,12 @@ useWebSocket('ws://api/publication-updates')
 
 **Impacto POSITIVO para usuario final:**
 
-| Métrica | Impacto | Por qué |
-|---------|---------|--------|
-| **LCP** | -40% | Server-side rendering |
-| **JS Bundle** | -60% | Client-side mínimo |
-| **TTI** | -50% | Menos hydration |
-| **SEO** | +100% | Server components + metadata |
+| Métrica       | Impacto | Por qué                      |
+| ------------- | ------- | ---------------------------- |
+| **LCP**       | -40%    | Server-side rendering        |
+| **JS Bundle** | -60%    | Client-side mínimo           |
+| **TTI**       | -50%    | Menos hydration              |
+| **SEO**       | +100%   | Server components + metadata |
 
 **Conclusión**: Ideal para usuarios móviles buscando autos.
 
@@ -188,14 +204,15 @@ useWebSocket('ws://api/publication-updates')
 
 **Impacto MIXTO:**
 
-| Métrica | Impacto | Por qué |
-|---------|---------|--------|
-| **LCP** | +10% | Más JS client-side |
-| **JS Bundle** | +30% | Interactividad compleja |
-| **TTI** | +20% | Más hydration |
-| **UX** | +500% | Dealer puede operar solo |
+| Métrica       | Impacto | Por qué                  |
+| ------------- | ------- | ------------------------ |
+| **LCP**       | +10%    | Más JS client-side       |
+| **JS Bundle** | +30%    | Interactividad compleja  |
+| **TTI**       | +20%    | Más hydration            |
+| **UX**        | +500%   | Dealer puede operar solo |
 
 **Mitigación:**
+
 - `React.lazy` para componentes pesados
 - Code splitting por ruta
 - Suspense boundaries para carga progresiva
@@ -209,6 +226,7 @@ useWebSocket('ws://api/publication-updates')
 ### 1. useOptimistic (Opción B - Crítico)
 
 **Qué es:**
+
 ```typescript
 import { useOptimistic } from 'react';
 
@@ -228,6 +246,7 @@ function PublishButton({ productId }) {
 ```
 
 **Por qué es CRÍTICO:**
+
 - Dealer siente que la publicación fue instantánea
 - Mientras backend habla con Facebook API
 - Reduce percepción de latencia
@@ -239,6 +258,7 @@ function PublishButton({ productId }) {
 ### 2. useFormStatus
 
 **Qué es:**
+
 ```typescript
 import { useFormStatus } from 'react-dom';
 
@@ -254,6 +274,7 @@ function PublishForm() {
 ```
 
 **Por qué es necesario:**
+
 - Estados de carga automáticos
 - Sin duplicar lógica de estado
 - Integrado con Server Actions
@@ -265,12 +286,11 @@ function PublishForm() {
 ### 3. Metadata API (Opción A)
 
 **Qué es:**
-```typescript
-import { Metadata } from 'next';
 
-export async function generateMetadata({
-  params
-}): Promise<Metadata> {
+```typescript
+import { Metadata } from "next";
+
+export async function generateMetadata({ params }): Promise<Metadata> {
   const product = await getProduct(params.id);
 
   return {
@@ -284,6 +304,7 @@ export async function generateMetadata({
 ```
 
 **Por qué es necesario:**
+
 - SEO dinámico por producto
 - OpenGraph para compartir en redes sociales
 - Cada vehículo tiene sus propios tags
@@ -297,14 +318,17 @@ export async function generateMetadata({
 ### 1. Fix Vehicle API Tests
 
 **Problema:**
+
 - 8/10 tests de Vehicle API passing
 - 20% de casos tienen fallos de integridad
 
 **Impacto:**
+
 - No podemos automatizar hacia Facebook si la base de datos tiene errores
 - Datos corruptos se propagan a Facebook
 
 **Solución:**
+
 ```typescript
 // Tests fallan en:
 - VIN validation edge cases
@@ -321,20 +345,23 @@ export async function generateMetadata({
 ### 2. Tipado de field_config
 
 **Problema:**
+
 - Categorías usan `field_config` dinámico
 - Frontend necesita ser Type-safe
 - Errores en runtime sin validación
 
 **Impacto:**
+
 - Errores en tiempo de ejecución
 - UI puede romperse con configs inválidas
 
 **Solución:**
+
 ```typescript
 // Definir tipos estrictos
 interface FieldConfig {
   name: string;
-  type: 'text' | 'number' | 'select' | 'multiselect';
+  type: "text" | "number" | "select" | "multiselect";
   required: boolean;
   validation?: ZodSchema;
 }
@@ -351,29 +378,29 @@ const safeConfig = FieldConfigSchema.parse(rawConfig);
 
 ### Opción A: Catálogo Público
 
-| Tarea | Estimado | Dependencias |
-|------|----------|--------------|
-| Rutas dinámicas por tenant | 3 días | - |
-| Shared layouts anidados | 2 días | - |
-| Edge caching | 2 días | - |
-| SEO metadata | 3 días | - |
-| Filtros y búsqueda | 5 días | - |
-| Paginación | 2 días | - |
-| **TOTAL** | **~2-3 semanas** | |
+| Tarea                      | Estimado         | Dependencias |
+| -------------------------- | ---------------- | ------------ |
+| Rutas dinámicas por tenant | 3 días           | -            |
+| Shared layouts anidados    | 2 días           | -            |
+| Edge caching               | 2 días           | -            |
+| SEO metadata               | 3 días           | -            |
+| Filtros y búsqueda         | 5 días           | -            |
+| Paginación                 | 2 días           | -            |
+| **TOTAL**                  | **~2-3 semanas** |              |
 
 ### Opción B: Facebook Publishing UI
 
-| Tarea | Estimado | Dependencias |
-|------|----------|--------------|
-| State machine publicación | 1 semana | Zustand |
-| Server Actions (OAuth) | 1 semana | Next.js 16 |
-| Polling/Webhooks | 1 semana | TanStack Query |
-| Preview component | 3 días | - |
-| AI Prompt interface | 3 días | GPT-4 |
-| Scheduler component | 1 semana | - |
-| Bulk actions | 3 días | - |
-| **Deuda técnica (tests)** | 3 días | - |
-| **TOTAL** | **~4-5 semanas** | |
+| Tarea                     | Estimado         | Dependencias   |
+| ------------------------- | ---------------- | -------------- |
+| State machine publicación | 1 semana         | Zustand        |
+| Server Actions (OAuth)    | 1 semana         | Next.js 16     |
+| Polling/Webhooks          | 1 semana         | TanStack Query |
+| Preview component         | 3 días           | -              |
+| AI Prompt interface       | 3 días           | GPT-4          |
+| Scheduler component       | 1 semana         | -              |
+| Bulk actions              | 3 días           | -              |
+| **Deuda técnica (tests)** | 3 días           | -              |
+| **TOTAL**                 | **~4-5 semanas** |                |
 
 ---
 
@@ -406,21 +433,25 @@ const safeConfig = FieldConfigSchema.parse(rawConfig);
 ### Sprint 7+: Marketplace FE (Semanas 1-4)
 
 **Semana 1: Foundation**
+
 - Fix Vehicle API tests (deuda técnica)
 - State machine de publicación (Zustand)
 - Setup polling/webhooks
 
 **Semana 2: Server Actions**
+
 - OAuth Facebook integration
 - Upload de imágenes
 - Manejo de errores y reintentos
 
 **Semana 3: UI Components**
+
 - Preview component
 - AI Prompt interface
 - Optimistic UI (useOptimistic)
 
 **Semana 4: Advanced Features**
+
 - Bulk actions
 - Scheduler component
 - Dashboard de monitoreo
@@ -428,6 +459,7 @@ const safeConfig = FieldConfigSchema.parse(rawConfig);
 ### Sprint 9: Catálogo Público (Semanas 9-10)
 
 **Solo cuando:**
+
 - Marketplace automation está estable
 - Dealers están retenidos
 - Hay tiempo para "nice-to-haves"

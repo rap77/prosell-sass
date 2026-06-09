@@ -8,6 +8,7 @@
 ## 📋 Resumen Rápido
 
 ### ¿Qué hicimos?
+
 1. ✅ Creamos guía modular de tests E2E (7 módulos)
 2. ✅ Arreglamos tests de OAuth que se colgaban
 3. ✅ Corregimos puerto: **Web = 3000** (nunca 3999)
@@ -29,15 +30,18 @@ cd /home/rpadron/prosell-sass/tests/e2e
 ## 📁 Archivos Creados/Modificados
 
 ### Scripts (Todos corregidos a puerto 3000)
+
 - ✅ `run-modules.sh` - Ejecuta todos los módulos o módulos individuales
 - ✅ `run-oauth-only.sh` - SOLO tests de OAuth (10 tests)
 - ✅ `run-single-test.sh` - Un solo test para debugging
 - ✅ `run-staging-tests.sh` - Tests de staging
 
 ### Tests
+
 - ✅ `specs/oauth-fixed.spec.ts` - Tests OAuth arreglados (NO hanging)
 
 ### Documentación
+
 - ✅ `MODULAR-TEST-GUIDE.md` - Guía completa modular
 - ✅ `QUICK-REFERENCE.md` - Comandos rápidos
 - ✅ `OAUTH-FIX-SUMMARY.md` - Explicación del fix de OAuth
@@ -65,6 +69,7 @@ curl http://localhost:3000
 ## 🚀 Comandos Útiles
 
 ### Ejecutar Tests
+
 ```bash
 cd /home/rpadron/prosell-sass/tests/e2e
 
@@ -91,6 +96,7 @@ pnpm test --grep @smoke
 ```
 
 ### Ver Reportes
+
 ```bash
 cd /home/rpadron/prosell-sass/tests/e2e
 pnpm report  # Abre playwright-report/index.html
@@ -101,12 +107,14 @@ pnpm report  # Abre playwright-report/index.html
 ## 🔥 Reglas Críticas
 
 ### ✅ HACER
+
 - Usar puerto **3000** para web server
 - Usar `oauth-fixed.spec.ts` para tests OAuth
 - Verificar servers antes de ejecutar tests
 - Ejecutar tests por módulos en orden
 
 ### ❌ NO HACER
+
 - Usar puerto **3999** (incorrecto)
 - Usar `oauth.spec.ts` original (se cuelga)
 - Ejecutar todos los tests sin verificar servers
@@ -120,6 +128,7 @@ pnpm report  # Abre playwright-report/index.html
 **Próximo paso**: Ejecutar verificación E2E del flujo completo
 
 **Módulos E2E**:
+
 1. ✅ Auth (OAuth) - Listo para probar
 2. ⏳ Catálogo C3
 3. ⏳ VIN Decode
@@ -143,6 +152,7 @@ pnpm report  # Abre playwright-report/index.html
 ## 📝 Memoria Guardada
 
 Todo el contexto está guardado en:
+
 - ✅ Engram memory (persistente)
 - ✅ MEMORY.md (proyecto)
 - ✅ Session summaries

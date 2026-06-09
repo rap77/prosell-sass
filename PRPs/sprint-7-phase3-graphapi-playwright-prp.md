@@ -10,6 +10,7 @@
 ### 1.1 Summary
 
 Implement a HYBRID Facebook Marketplace publisher with TWO strategies:
+
 1. **Playwright** (PRIMARY during Sprint 7) - Browser automation with anti-detection
 2. **Graph API** (SECONDARY post-sprint) - Official API after App Review
 
@@ -45,6 +46,7 @@ This hybrid approach allows us to START PUBLISHING IMMEDIATELY without waiting f
 **So that** I don't have to manually copy-paste product details
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Product published successfully
   GIVEN a product is ready to publish
@@ -69,6 +71,7 @@ Scenario: Publication fails with retry
 **So that** Facebook doesn't ban the account for bot activity
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Playwright uses realistic timing
   GIVEN a product is being published
@@ -92,6 +95,7 @@ Scenario: Playwright uses realistic browser
 **So that** publishing continues even if Playwright is detected
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Graph API available, Playwright fails
   GIVEN Graph API is enabled
@@ -114,6 +118,7 @@ Scenario: Both strategies available
 **So that** they don't expire and disappear from Marketplace
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Listing expires soon
   GIVEN a publication is 7 days old
@@ -157,13 +162,13 @@ Scenario: Listing expires soon
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|-----------|---------|-------|
-| Browser Automation | Playwright | Latest | Async, Python 3.13 compatible |
-| API Client | httpx | 0.28+ | For Graph API calls |
-| Rate Limiting | Token Bucket algorithm | Custom | For API abuse prevention |
-| Task Queue | Taskiq (from PRP 1) | Latest | For async publishing |
-| Fingerprints | playwright-extra-plugin-stealth | Latest | Anti-detection |
+| Component          | Technology                      | Version | Notes                         |
+| ------------------ | ------------------------------- | ------- | ----------------------------- |
+| Browser Automation | Playwright                      | Latest  | Async, Python 3.13 compatible |
+| API Client         | httpx                           | 0.28+   | For Graph API calls           |
+| Rate Limiting      | Token Bucket algorithm          | Custom  | For API abuse prevention      |
+| Task Queue         | Taskiq (from PRP 1)             | Latest  | For async publishing          |
+| Fingerprints       | playwright-extra-plugin-stealth | Latest  | Anti-detection                |
 
 ### 3.2 Key Libraries
 
@@ -179,16 +184,19 @@ playwright install chromium
 ### 3.3 External Documentation
 
 **Playwright**:
+
 - Docs: https://playwright.dev/python/
 - Anti-detection: https://github.com/geometry-dashboard/Playwright-CLO
 - Browser contexts: https://playwright.dev/python/docs/api/class-browser
 
 **Facebook Graph API**:
+
 - Marketplace: https://developers.facebook.com/docs/marketplace/
 - Listing Create: https://developers.facebook.com/docs/graph-api/reference/page/feed
 - Photos Upload: https://developers.facebook.com/docs/graph-api/reference/photo
 
 **Facebook Marketplace Fields**:
+
 - Vehicles: https://developers.facebook.com/docs/facebook-login/marketplace/vehicles
 
 ---
@@ -218,6 +226,7 @@ flowchart TD
 **Objective**: Validate Playwright can publish to Facebook Marketplace without being banned
 
 **Tasks**:
+
 1. Create minimal Playwright script
 2. Navigate to facebook.com/marketplace/create
 3. Fill out listing form (title, price, photos)
@@ -228,6 +237,7 @@ flowchart TD
 8. Document any CAPTCHA challenges or bans
 
 **Success Criteria**:
+
 - ✅ Listing published successfully
 - ✅ No CAPTCHA challenges
 - ✅ No account ban/warning
@@ -241,6 +251,7 @@ flowchart TD
 #### Step 1: Domain Layer - Publication Entities
 
 **Files to create**:
+
 - `apps/api/src/prosell/domain/entities/publication.py` - Publication entity
 - `apps/api/src/prosell/domain/value_objects/publication_status.py` - Publication status enum
 - `apps/api/src/prosell/domain/repositories/publication_repository.py` - Repository interface
@@ -336,6 +347,7 @@ class PublicationModel(Base):
 ```
 
 **Gotchas**:
+
 - Store `marketplace_id` (Facebook listing ID) for tracking
 - Track `republish_count` to monitor freshness
 - Listings expire after 7 days (Facebook policy)
@@ -343,6 +355,7 @@ class PublicationModel(Base):
 #### Step 2: Infrastructure Layer - Playwright Publisher
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/publishing/playwright_publisher.py` - Playwright publisher
 - `apps/api/src/prosell/infrastructure/publishing/anti_detection.py` - Anti-detection utilities
 
@@ -576,6 +589,7 @@ class AntiDetectionMixin:
 ```
 
 **Gotchas**:
+
 - Always use human-like delays (2-5 seconds between actions)
 - Use `headless=False` during development, `xvfb` in production
 - Save/load session to avoid repeated logins
@@ -584,6 +598,7 @@ class AntiDetectionMixin:
 #### Step 3: Infrastructure Layer - Graph API Client
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/publishing/graph_api_client.py` - Graph API client
 - `apps/api/src/prosell/infrastructure/publishing/rate_limiter.py` - Rate limiter
 
@@ -741,6 +756,7 @@ class TokenBucketRateLimiter:
 ```
 
 **Gotchas**:
+
 - Graph API has strict rate limits (200 calls/hour per page)
 - Use rate limiter to avoid being banned
 - Upload photos BEFORE creating post (attached_media)
@@ -748,6 +764,7 @@ class TokenBucketRateLimiter:
 #### Step 4: Infrastructure Layer - Hybrid Publisher
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/publishing/hybrid_publisher.py` - Hybrid publisher
 
 **Implementation notes**:
@@ -841,6 +858,7 @@ class HybridFacebookPublisher:
 ```
 
 **Gotchas**:
+
 - Feature flag `USE_GRAPH_API` controls strategy
 - Circuit breaker prevents trying Graph API repeatedly if it's down
 - Always log fallbacks for monitoring
@@ -848,6 +866,7 @@ class HybridFacebookPublisher:
 #### Step 5: Application Layer - Use Cases
 
 **Files to create**:
+
 - `apps/api/src/prosell/application/use_cases/publishing/publish_product.py` - Publish use case
 - `apps/api/src/prosell/application/use_cases/publishing/republish_listing.py` - Republish use case
 
@@ -966,6 +985,7 @@ async def publish_product_task(publication_id: str) -> dict:
 ```
 
 **Gotchas**:
+
 - Use async tasks for publishing (don't block API response)
 - Store publication record BEFORE enqueueing task
 - Update publication record with result
@@ -973,6 +993,7 @@ async def publish_product_task(publication_id: str) -> dict:
 #### Step 6: Scheduler - Republish Task
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/tasks/use_cases/republish_tasks.py` - Republish scheduled task
 
 **Implementation notes**:
@@ -1022,6 +1043,7 @@ async def republish_single_listing(publication_id: str) -> dict:
 ```
 
 **Gotchas**:
+
 - Schedule for 9 AM daily (before listings expire)
 - Increment `republish_count` each time
 - Create NEW publication record for each republish
@@ -1029,6 +1051,7 @@ async def republish_single_listing(publication_id: str) -> dict:
 #### Step 7: Configuration - Settings
 
 **Files to modify**:
+
 - `apps/api/src/prosell/core/config.py` - Add feature flags
 
 **Implementation notes**:
@@ -1078,6 +1101,7 @@ graph_api_rate_window: int = Field(
 ```
 
 **Gotchas**:
+
 - Start with `USE_GRAPH_API=false`, `USE_PLAYWRIGHT=true`
 - After App Review: switch to `USE_GRAPH_API=true`, `USE_PLAYWRIGHT=true` (fallback)
 
@@ -1178,16 +1202,19 @@ cd apps/api && uv run pytest tests/integration/publishing/playwright/ -v
 ### 7.1 Unit Tests
 
 **Playwright Publisher Tests**:
+
 - Test `_human_type()` adds delays between characters
 - Test `_human_click()` moves mouse in Bezier curves
 - Test `_extract_marketplace_id()` parses URL correctly
 
 **Graph API Client Tests**:
+
 - Test rate limiter blocks when tokens exhausted
 - Test `publish_marketplace_listing()` formats request correctly
 - Test photo upload returns photo IDs
 
 **Hybrid Publisher Tests**:
+
 - Test Graph API tried first when enabled
 - Test fallback to Playwright on Graph API failure
 - Test circuit breaker prevents repeated calls
@@ -1195,17 +1222,20 @@ cd apps/api && uv run pytest tests/integration/publishing/playwright/ -v
 ### 7.2 Integration Tests
 
 **Playwright Integration**:
+
 - Test complete flow (browser → Facebook → listing created)
 - Test session persistence (cookies saved/loaded)
 - Test anti-detection (no CAPTCHA)
 
 **Graph API Integration**:
+
 - Test API call succeeds with valid token
 - Test rate limiter enforces limits
 
 ### 7.3 E2E Tests
 
 **Critical Path**:
+
 ```gherkin
 Scenario: Product published successfully
   GIVEN a product exists
@@ -1284,7 +1314,6 @@ If implementation fails:
 
 ---
 
-
 ---
 
 ## 11. Completion Gates (VERIFIABLE)
@@ -1346,7 +1375,6 @@ grep -q "^## 11. Completion Gates" {prp_file}
 - [ ] Code review completado
 - [ ] E2E tests pasan (si aplica)
 
-
 ## Confidence Score
 
 **Score**: 7/10
@@ -1354,18 +1382,21 @@ grep -q "^## 11. Completion Gates" {prp_file}
 **Reasoning**:
 
 **Positive factors**:
+
 - Playwright is well-documented and reliable
 - Hybrid approach provides fallback strategy
 - Similar patterns exist in codebase (OAuth from PRP 2)
 - Rate limiter and circuit breaker proven patterns
 
 **Risk factors**:
+
 - Facebook may detect Playwright as bot (anti-detection is cat-and-mouse)
 - Graph API App Review uncertain (but Playwright unblocks us)
 - Session persistence may fail (Facebook changes cookie behavior)
 - Playwright requires heavy dependencies (Chromium ~300MB)
 
 **Mitigation**:
+
 - Spike validates anti-detection measures
 - Hybrid strategy means we're not blocked on App Review
 - Circuit breaker prevents cascade failures

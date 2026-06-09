@@ -12,12 +12,14 @@
 Comprehensive integration testing, E2E testing, load testing, and canary deployment for Sprint 7+. This PRP validates that all previous PRPs work together correctly and the system is production-ready.
 
 **Why this matters**: Without proper testing, we risk:
+
 - Breaking existing functionality (regression)
 - Production failures (no monitoring)
 - Performance issues under load
 - Inability to rollback quickly
 
 **This PRP ensures**:
+
 - All PRPs integrate correctly
 - System handles production load
 - Quick rollback if needed
@@ -50,6 +52,7 @@ Comprehensive integration testing, E2E testing, load testing, and canary deploym
 **So that** I know components work together correctly
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: All integration tests pass
   GIVEN all PRPs are implemented
@@ -65,6 +68,7 @@ Scenario: All integration tests pass
 **So that** I can catch integration issues
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: E2E test for publishing flow
   GIVEN a vendor publishes a product
@@ -86,6 +90,7 @@ Scenario: E2E test for scraping flow
 **So that** I know the system can handle 100 dealers
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: System handles 100 concurrent users
   GIVEN 100 concurrent users access dashboards
@@ -109,6 +114,7 @@ Scenario: System handles 1000 publications/hour
 **So that** I can catch issues before full rollout
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Canary deployment to 10% of users
   GIVEN canary is deployed to 10% of traffic
@@ -156,15 +162,15 @@ Scenario: Rollback if canary fails
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|-----------|---------|-------|
-| Testing | pytest | Latest | Backend unit/integration |
-| Testing | Vitest | Latest | Frontend unit/integration |
-| E2E | Playwright | Latest | E2E testing |
-| Load Testing | k6 | Latest | Load testing |
-| Monitoring | Prometheus + Grafana | Latest | Metrics + dashboards |
-| Logging | ELK Stack | Latest | Logs + search |
-| Deployment | Docker + Railway | Latest | Container + deployment |
+| Component    | Technology           | Version | Notes                     |
+| ------------ | -------------------- | ------- | ------------------------- |
+| Testing      | pytest               | Latest  | Backend unit/integration  |
+| Testing      | Vitest               | Latest  | Frontend unit/integration |
+| E2E          | Playwright           | Latest  | E2E testing               |
+| Load Testing | k6                   | Latest  | Load testing              |
+| Monitoring   | Prometheus + Grafana | Latest  | Metrics + dashboards      |
+| Logging      | ELK Stack            | Latest  | Logs + search             |
+| Deployment   | Docker + Railway     | Latest  | Container + deployment    |
 
 ### 3.2 Key Libraries
 
@@ -186,14 +192,17 @@ brew install k6  # or download from https://k6.io/
 ### 3.3 External Documentation
 
 **Pytest**:
+
 - Docs: https://docs.pytest.org/en/stable/
 - Async: https://docs.pytest.org/en/stable/how-to/async.html
 
 **Playwright**:
+
 - Docs: https://playwright.dev/python/
 - Best Practices: https://playwright.dev/docs/best-practices
 
 **k6**:
+
 - Docs: https://k6.io/docs/
 - thresholds: https://k6.io/docs/using-k6/thresholds/
 
@@ -224,6 +233,7 @@ flowchart TD
 ### 4.2 Integration Tests
 
 **Files to create**:
+
 - `apps/api/tests/integration/prp/task_queue_integration.py` - Task Queue integration
 - `apps/api/tests/integration/prp/facebook_oauth_integration.py` - OAuth integration
 - `apps/api/tests/integration/prp/scraping_integration.py` - Scraping integration
@@ -288,6 +298,7 @@ async def test_facebook_oauth_flow():
 ### 4.3 E2E Tests
 
 **Files to create**:
+
 - `tests/e2e/publishing-flow.spec.ts` - Publishing E2E
 - `tests/e2e/scraping-flow.spec.ts` - Scraping E2E
 - `tests/e2e/dashboard-flow.spec.ts` - Dashboard E2E
@@ -296,68 +307,69 @@ async def test_facebook_oauth_flow():
 
 ```typescript
 // e2e/publishing-flow.spec.ts
-import { test, expect } from "@playwright/test"
+import { test, expect } from "@playwright/test";
 
 test.describe("Publishing Flow", () => {
   test("vendor can publish product to Facebook", async ({ page }) => {
     // Login as vendor
-    await page.goto("http://localhost:3000/auth/login")
-    await page.fill('input[name="email"]', "vendor@prosell.com")
-    await page.fill('input[name="password"]', "password123")
-    await page.click('button[type="submit"]')
+    await page.goto("http://localhost:3000/auth/login");
+    await page.fill('input[name="email"]', "vendor@prosell.com");
+    await page.fill('input[name="password"]', "password123");
+    await page.click('button[type="submit"]');
 
     // Navigate to products
-    await page.goto("http://localhost:3000/dashboard/vendor/products")
+    await page.goto("http://localhost:3000/dashboard/vendor/products");
 
     // Click publish on first product
-    await page.click('[data-testid="publish-button-0"]')
+    await page.click('[data-testid="publish-button-0"]');
 
     // Select Facebook account
-    await page.selectOption('select[name="facebook_account"]', "Test Account")
+    await page.selectOption('select[name="facebook_account"]', "Test Account");
 
     // Confirm publication
-    await page.click('button:has-text("Publish")')
+    await page.click('button:has-text("Publish")');
 
     // Verify success message
-    await expect(page.locator('text=Publication successful')).toBeVisible()
+    await expect(page.locator("text=Publication successful")).toBeVisible();
 
     // Verify in dashboard
-    await page.goto("http://localhost:3000/dashboard/vendor")
-    await expect(page.locator('text=Publications: 1')).toBeVisible()
-  })
-})
+    await page.goto("http://localhost:3000/dashboard/vendor");
+    await expect(page.locator("text=Publications: 1")).toBeVisible();
+  });
+});
 ```
 
 ```typescript
 // e2e/scraping-flow.spec.ts
-import { test, expect } from "@playwright/test"
+import { test, expect } from "@playwright/test";
 
 test.describe("Scraping Flow", () => {
   test("scraping creates new products", async ({ page }) => {
     // Login as admin
-    await page.goto("http://localhost:3000/auth/login")
-    await page.fill('input[name="email"]', "admin@prosell.com")
-    await page.fill('input[name="password"]', "admin123")
-    await page.click('button[type="submit"]')
+    await page.goto("http://localhost:3000/auth/login");
+    await page.fill('input[name="email"]', "admin@prosell.com");
+    await page.fill('input[name="password"]', "admin123");
+    await page.click('button[type="submit"]');
 
     // Navigate to scraping
-    await page.goto("http://localhost:3000/dashboard/admin/scraping")
+    await page.goto("http://localhost:3000/dashboard/admin/scraping");
 
     // Trigger scraping for test dealer
-    await page.click('button:has-text("Scrape Now")')
+    await page.click('button:has-text("Scrape Now")');
 
     // Wait for completion
-    await page.waitForSelector('text=Scraping completed', { timeout: 60000 })
+    await page.waitForSelector("text=Scraping completed", { timeout: 60000 });
 
     // Verify products created
-    await expect(page.locator('text=Products found: 3')).toBeVisible()
-  })
-})
+    await expect(page.locator("text=Products found: 3")).toBeVisible();
+  });
+});
 ```
 
 ### 4.4 Load Tests
 
 **Files to create**:
+
 - `tests/load/api-load-test.js` - API load test (k6)
 - `tests/load/dashboard-load-test.js` - Dashboard load test
 
@@ -375,13 +387,13 @@ const BASE_URL = __ENV.API_URL || "http://localhost:8000";
 
 export const options = {
   stages: [
-    { duration: "5m", target: 100 },  // Ramp up to 100 users
+    { duration: "5m", target: 100 }, // Ramp up to 100 users
     { duration: "10m", target: 100 }, // Stay at 100 users
-    { duration: "5m", target: 0 },    // Ramp down
+    { duration: "5m", target: 0 }, // Ramp down
   ],
   thresholds: {
-    http_req_duration: ["p(95)<500"],  // P95 < 500ms
-    http_req_failed: ["rate<0.01"],   // Error rate < 1%
+    http_req_duration: ["p(95)<500"], // P95 < 500ms
+    http_req_failed: ["rate<0.01"], // Error rate < 1%
     errors: ["rate<0.01"],
   },
 };
@@ -397,7 +409,7 @@ export default function () {
 
   errorRate.add(!isOk);
 
-  sleep(1);  // Wait 1 second between requests
+  sleep(1); // Wait 1 second between requests
 }
 ```
 
@@ -422,6 +434,7 @@ export default function () {
 ### 4.5 Monitoring Setup
 
 **Files to create**:
+
 - `docker/monitoring/docker-compose.yml` - Prometheus + Grafana
 - `docker/monitoring/prometheus.yml` - Prometheus config
 - `docker/monitoring/grafana/dashboards/prosell-dashboard.json` - Grafana dashboard
@@ -440,7 +453,7 @@ services:
     ports:
       - "9090:9090"
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
+      - "--config.file=/etc/prometheus/prometheus.yml"
 
   grafana:
     image: grafana/grafana:latest
@@ -460,22 +473,23 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: 'fastapi'
+  - job_name: "fastapi"
     static_configs:
-      - targets: ['api:8000']
+      - targets: ["api:8000"]
 
-  - job_name: 'postgres'
+  - job_name: "postgres"
     static_configs:
-      - targets: ['postgres_exporter:9187']
+      - targets: ["postgres_exporter:9187"]
 
-  - job_name: 'redis'
+  - job_name: "redis"
     static_configs:
-      - targets: ['redis_exporter:9121']
+      - targets: ["redis_exporter:9121"]
 ```
 
 ### 4.6 Canary Deployment
 
 **Files to create**:
+
 - `.github/workflows/canary-deployment.yml` - GitHub Actions workflow
 - `deployment/canary.sh` - Canary deployment script
 - `deployment/rollback.sh` - Rollback script
@@ -555,30 +569,30 @@ echo "Rollback complete"
 
 ### 5.1 Integration Test Plan
 
-| Component | Tests | Coverage Target |
-|-----------|-------|-----------------|
-| Task Queue | Enqueue, execute, retry | > 70% |
-| Facebook OAuth | Flow, token refresh | > 70% |
-| Scraping | Extract, deduplicate | > 70% |
-| AI Assistant | Qualify, respond | > 70% |
-| Dashboards | Metrics, RBAC | > 70% |
+| Component      | Tests                   | Coverage Target |
+| -------------- | ----------------------- | --------------- |
+| Task Queue     | Enqueue, execute, retry | > 70%           |
+| Facebook OAuth | Flow, token refresh     | > 70%           |
+| Scraping       | Extract, deduplicate    | > 70%           |
+| AI Assistant   | Qualify, respond        | > 70%           |
+| Dashboards     | Metrics, RBAC           | > 70%           |
 
 ### 5.2 E2E Test Plan
 
-| Critical Path | Test | Priority |
-|---------------|------|----------|
-| Publish product | Vendor publishes → Facebook appears | P0 |
-| Scrape website | Scraper runs → Products created | P0 |
-| View dashboard | Vendor sees their metrics | P0 |
-| Manage leads | Vendor views leads | P1 |
+| Critical Path   | Test                                | Priority |
+| --------------- | ----------------------------------- | -------- |
+| Publish product | Vendor publishes → Facebook appears | P0       |
+| Scrape website  | Scraper runs → Products created     | P0       |
+| View dashboard  | Vendor sees their metrics           | P0       |
+| Manage leads    | Vendor views leads                  | P1       |
 
 ### 5.3 Load Test Plan
 
-| Scenario | Concurrent Users | Duration | Success Criteria |
-|----------|-----------------|----------|-------------------|
-| Dashboard load | 100 | 30 min | P95 < 500ms |
-| API requests | 1000 req/s | 30 min | P95 < 200ms |
-| Publishing | 100 pubs/min | 30 min | All complete |
+| Scenario       | Concurrent Users | Duration | Success Criteria |
+| -------------- | ---------------- | -------- | ---------------- |
+| Dashboard load | 100              | 30 min   | P95 < 500ms      |
+| API requests   | 1000 req/s       | 30 min   | P95 < 200ms      |
+| Publishing     | 100 pubs/min     | 30 min   | All complete     |
 
 ---
 
@@ -589,6 +603,7 @@ echo "Rollback complete"
 **Problem**: Tests pass sometimes, fail sometimes.
 
 **Solution**:
+
 - Use explicit waits (not sleep)
 - Avoid hard-coded timeouts
 - Use test IDs (not CSS selectors)
@@ -599,6 +614,7 @@ echo "Rollback complete"
 **Problem**: Tests modify real data.
 
 **Solution**:
+
 - Use separate test database
 - Rollback transactions after tests
 - Use factory fixtures with test data
@@ -608,6 +624,7 @@ echo "Rollback complete"
 **Problem**: Canary passes but production fails.
 
 **Solution**:
+
 - Monitor canary for 24-48 hours (not 1 hour)
 - Monitor multiple metrics (error rate, latency, business metrics)
 - Test with real user traffic (not synthetic)
@@ -624,6 +641,7 @@ If testing/canary fails:
 4. **Canary fails**: Immediate rollback, investigate
 
 **Rollback steps**:
+
 1. Execute `./deployment/rollback.sh`
 2. Verify previous version is working
 3. Create incident report
@@ -654,7 +672,6 @@ If testing/canary fails:
 18. ✅ Mark Sprint 7+ COMPLETE 🎉
 
 ---
-
 
 ---
 
@@ -717,7 +734,6 @@ grep -q "^## 11. Completion Gates" {prp_file}
 - [ ] Code review completado
 - [ ] E2E tests pasan (si aplica)
 
-
 ## Confidence Score
 
 **Score**: 9/10
@@ -725,12 +741,14 @@ grep -q "^## 11. Completion Gates" {prp_file}
 **Reasoning**:
 
 **Positive factors**:
+
 - Testing patterns are well-established
 - Playwright, pytest, k6 are mature
 - Canary deployment is standard practice
 - Monitoring tools are robust
 
 **Risk factors**:
+
 - E2E tests may be flaky (need careful maintenance)
 - Load tests may not reflect real traffic patterns
 - Canary deployment requires load balancer support

@@ -14,22 +14,23 @@
 
 ## File structure
 
-| File | Responsibility | Action |
-|------|----------------|--------|
-| `src/prosell/domain/services/template_composer.py` | Pure `{field}` template → string composer | Create |
-| `apps/api/tests/unit/domain/services/test_template_composer.py` | Composer unit tests | Create |
-| `src/prosell/domain/entities/category.py` | Add `presentation` field | Modify |
-| `src/prosell/infrastructure/models/category_model.py` | Add `presentation` column | Modify |
-| `apps/api/alembic/versions/<rev>_add_category_presentation.py` | DB migration | Create |
-| `src/prosell/application/use_cases/product/create_product.py` | Compose title on create | Modify |
-| `src/prosell/application/use_cases/product/update_product.py` (or the PATCH router path) | Compose title on update | Modify |
-| `apps/api/tests/integration/...` | Integration test: title composed from category template | Create |
+| File                                                                                     | Responsibility                                          | Action |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------ |
+| `src/prosell/domain/services/template_composer.py`                                       | Pure `{field}` template → string composer               | Create |
+| `apps/api/tests/unit/domain/services/test_template_composer.py`                          | Composer unit tests                                     | Create |
+| `src/prosell/domain/entities/category.py`                                                | Add `presentation` field                                | Modify |
+| `src/prosell/infrastructure/models/category_model.py`                                    | Add `presentation` column                               | Modify |
+| `apps/api/alembic/versions/<rev>_add_category_presentation.py`                           | DB migration                                            | Create |
+| `src/prosell/application/use_cases/product/create_product.py`                            | Compose title on create                                 | Modify |
+| `src/prosell/application/use_cases/product/update_product.py` (or the PATCH router path) | Compose title on update                                 | Modify |
+| `apps/api/tests/integration/...`                                                         | Integration test: title composed from category template | Create |
 
 ---
 
 ## Task 1: Template composer domain service (pure)
 
 **Files:**
+
 - Create: `apps/api/src/prosell/domain/services/template_composer.py`
 - Test: `apps/api/tests/unit/domain/services/test_template_composer.py`
 
@@ -152,6 +153,7 @@ git commit -m "feat(api): add {field} template composer domain service"
 ## Task 2: Add `presentation` to the Category entity and model
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/domain/entities/category.py` (after `attribute_schema`, ~line 46)
 - Modify: `apps/api/src/prosell/infrastructure/models/category_model.py` (after the `attribute_schema` column, ~line 59)
 - Test: `apps/api/tests/unit/domain/entities/test_category_presentation.py`
@@ -228,6 +230,7 @@ git commit -m "feat(api): add presentation contract field to Category"
 ## Task 3: Alembic migration for the `presentation` column
 
 **Files:**
+
 - Create: `apps/api/alembic/versions/<rev>_add_category_presentation.py`
 
 - [ ] **Step 1: Generate the revision skeleton**
@@ -277,6 +280,7 @@ git commit -m "feat(api): migration — add categories.presentation column"
 ## Task 4: Compose the product title server-side on create and update
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/application/use_cases/product/create_product.py`
 - Modify: the product update path — `apps/api/src/prosell/application/use_cases/product/update_product.py` if it exists, else the PATCH handler in `apps/api/src/prosell/infrastructure/api/routers/product_router.py` (the field-by-field copy around line 453).
 - Test: `apps/api/tests/integration/use_cases/test_product_title_composition.py`
@@ -454,6 +458,7 @@ git commit -m "feat(api): compose product title from category template (create +
 ## Task 5: Make `title` optional in the create DTO (client no longer authoritative)
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/application/dto/product/create.py` (the `title` field, line ~91)
 - Test: `apps/api/tests/unit/application/dto/product/test_create_dto.py` (extend)
 

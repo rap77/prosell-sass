@@ -22,8 +22,11 @@ import { loginUser } from "../../helpers";
 import type { Page } from "@playwright/test";
 
 function makeMockId(): string {
-  const hex = () => Math.floor(Math.random() * 0xffffffff).toString(16).padStart(8, "0");
-  return `${hex().slice(0,8)}-${hex().slice(0,4)}-${hex().slice(0,4)}-${hex().slice(0,4)}-${hex()}${hex().slice(0,4)}`;
+  const hex = () =>
+    Math.floor(Math.random() * 0xffffffff)
+      .toString(16)
+      .padStart(8, "0");
+  return `${hex().slice(0, 8)}-${hex().slice(0, 4)}-${hex().slice(0, 4)}-${hex().slice(0, 4)}-${hex()}${hex().slice(0, 4)}`;
 }
 
 async function setupTeamsApiMocks(page: Page) {
@@ -40,7 +43,11 @@ async function setupTeamsApiMocks(page: Page) {
     if (orgId) {
       if (method === "GET") {
         const org = orgStore[orgId];
-        await route.fulfill({ status: org ? 200 : 404, contentType: "application/json", body: JSON.stringify(org ?? { detail: "Not found" }) });
+        await route.fulfill({
+          status: org ? 200 : 404,
+          contentType: "application/json",
+          body: JSON.stringify(org ?? { detail: "Not found" }),
+        });
       } else {
         await route.continue();
       }
@@ -49,16 +56,39 @@ async function setupTeamsApiMocks(page: Page) {
       const id = makeMockId();
       const now = new Date().toISOString();
       const org = {
-        id, name: body.name, tenant_id: "test-user-123", status: "pending_verification",
-        description: body.description ?? null, website: body.website ?? null, phone: body.phone ?? null,
-        logo_url: null, banner_url: null, wallet_id: null,
-        created_at: now, updated_at: now, verified_at: null, verified_by: null,
+        id,
+        name: body.name,
+        tenant_id: "test-user-123",
+        status: "pending_verification",
+        description: body.description ?? null,
+        website: body.website ?? null,
+        phone: body.phone ?? null,
+        logo_url: null,
+        banner_url: null,
+        wallet_id: null,
+        created_at: now,
+        updated_at: now,
+        verified_at: null,
+        verified_by: null,
       };
       orgStore[id] = org;
-      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(org) });
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify(org),
+      });
     } else {
       const orgs = Object.values(orgStore);
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ organizations: orgs, total: orgs.length, page: 1, page_size: 100 }) });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          organizations: orgs,
+          total: orgs.length,
+          page: 1,
+          page_size: 100,
+        }),
+      });
     }
   });
 
@@ -73,27 +103,61 @@ async function setupTeamsApiMocks(page: Page) {
       const id = makeMockId();
       const now = new Date().toISOString();
       const team = {
-        id, name: body.name, tenant_id: "test-user-123", organization_id: body.organization_id,
-        created_at: now, updated_at: now, members: [], member_count: 0,
+        id,
+        name: body.name,
+        tenant_id: "test-user-123",
+        organization_id: body.organization_id,
+        created_at: now,
+        updated_at: now,
+        members: [],
+        member_count: 0,
       };
       teamStore[id] = team;
-      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(team) });
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify(team),
+      });
     } else if (url.match(/\/api\/v1\/teams\/org\/([^/?]+)/)) {
       // GET /api/v1/teams/org/{orgId} - list teams by org
       const pathMatch = url.match(/\/api\/v1\/teams\/org\/([^/?]+)/);
       const orgId = pathMatch ? pathMatch[1] : null;
-      const teams = Object.values(teamStore).filter((t: any) => !orgId || t.organization_id === orgId);
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ teams, total: teams.length, skip: 0, limit: 100 }) });
+      const teams = Object.values(teamStore).filter(
+        (t: any) => !orgId || t.organization_id === orgId,
+      );
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          teams,
+          total: teams.length,
+          skip: 0,
+          limit: 100,
+        }),
+      });
     } else if (url.match(/\/api\/v1\/teams\/([^/?]+)/)) {
       // GET/PATCH /api/v1/teams/{teamId}
       const pathMatch = url.match(/\/api\/v1\/teams\/([^/?]+)/);
       const teamId = pathMatch ? pathMatch[1] : null;
       const team = teamId ? teamStore[teamId] : null;
-      await route.fulfill({ status: team ? 200 : 404, contentType: "application/json", body: JSON.stringify(team ?? { detail: "Not found" }) });
+      await route.fulfill({
+        status: team ? 200 : 404,
+        contentType: "application/json",
+        body: JSON.stringify(team ?? { detail: "Not found" }),
+      });
     } else {
       // GET /api/v1/teams - list all
       const teams = Object.values(teamStore);
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ teams, total: teams.length, page: 1, page_size: 100 }) });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          teams,
+          total: teams.length,
+          page: 1,
+          page_size: 100,
+        }),
+      });
     }
   });
 }
@@ -426,7 +490,9 @@ test.describe("Teams", () => {
         await teamsListPage.verifyPageLoaded();
 
         // Get member count (should be 0 for new team)
-        const memberCount = await teamsListPage.getTeamMemberCount(testTeam.name);
+        const memberCount = await teamsListPage.getTeamMemberCount(
+          testTeam.name,
+        );
         expect(memberCount).toContain("0 members");
       },
     );

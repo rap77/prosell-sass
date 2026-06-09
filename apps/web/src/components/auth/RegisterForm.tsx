@@ -25,7 +25,10 @@ import { useEffect } from "react";
 const validationCache = new Map<string, boolean>();
 
 // Module-level cache for name splitting — persists across renders
-const nameSplitCache = new Map<string, { firstName: string; lastName: string }>();
+const nameSplitCache = new Map<
+  string,
+  { firstName: string; lastName: string }
+>();
 
 function splitName(fullName: string): { firstName: string; lastName: string } {
   const cached = nameSplitCache.get(fullName);
@@ -33,7 +36,10 @@ function splitName(fullName: string): { firstName: string; lastName: string } {
 
   const trimmed = fullName.trim();
   const parts = trimmed.split(" ");
-  const result = { firstName: parts[0] ?? "", lastName: parts.slice(1).join(" ") };
+  const result = {
+    firstName: parts[0] ?? "",
+    lastName: parts.slice(1).join(" "),
+  };
   nameSplitCache.set(fullName, result);
   return result;
 }
@@ -147,7 +153,7 @@ const registerSchema = z
       .min(8, "Password must be at least 8 characters")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        "Password must contain uppercase, lowercase, number, and special character (@$!%*?&)"
+        "Password must contain uppercase, lowercase, number, and special character (@$!%*?&)",
       ),
     confirmPassword: z.string().min(1, "Confirm password is required"),
     acceptTerms: z.boolean().refine((val) => val === true, {

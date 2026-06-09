@@ -212,9 +212,7 @@ describe("ResetPasswordForm Component", () => {
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/contrase.*actualizada/i),
-        ).toBeInTheDocument();
+        expect(screen.getByText(/contrase.*actualizada/i)).toBeInTheDocument();
       });
     });
 

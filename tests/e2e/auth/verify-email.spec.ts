@@ -35,11 +35,11 @@ test.describe("Verify Email", () => {
         await verifyEmailPage.goto("test-verify-token-456");
 
         const accessibilityScanResults = await new AxeBuilder({ page })
-          .disableRules(['color-contrast'])
+          .disableRules(["color-contrast"])
           .analyze();
         // Only block on critical and serious violations
         const critical = accessibilityScanResults.violations.filter(
-          (v) => v.impact === 'critical' || v.impact === 'serious',
+          (v) => v.impact === "critical" || v.impact === "serious",
         );
         expect(critical).toHaveLength(0);
       },
@@ -81,9 +81,9 @@ test.describe("Verify Email", () => {
         await verifyEmailPage.goto("test-verify-token-456");
 
         // Should show some kind of loading indicator (may appear and disappear very quickly)
-        const loader = verifyEmailPage.page.getByText(
-          /verifying|loading|please wait/i,
-        ).first();
+        const loader = verifyEmailPage.page
+          .getByText(/verifying|loading|please wait/i)
+          .first();
 
         // Use a soft check - loader is timing-dependent and may vanish before assertion runs.
         // We just verify that at some point (now or recently) a loading indicator existed.

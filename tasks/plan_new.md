@@ -12,6 +12,7 @@
 This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend integration) and implementing **Phase 4** (Leads & Appointments). The milestone delivers a complete sales cycle: vendedores can publish vehicles to Facebook, capture leads from messages, and schedule buyer appointments with dealers.
 
 **Phase Status**:
+
 - ✅ Phase 1: Hybrid Publisher (COMPLETE)
 - ✅ Phase 2: Catalog & Roles (COMPLETE)
 - ✅ Phase 8: Layout Shell (COMPLETE)
@@ -36,6 +37,7 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 **Objective**: Create API client infrastructure for categories and products with the new C3 schema.
 
 **Acceptance Criteria**:
+
 - [x] Category API client fetches from `/api/v1/categories` with 5-minute cache
 - [x] Product API client creates products via `POST /api/v1/products` with vehicle auto-creation
 - [x] TypeScript types match backend DTOs (CategoryResponse, ProductResponse)
@@ -52,6 +54,7 @@ This plan implements the ProSell MVP by completing **Phase 13** (C3 frontend int
 **Objective**: Update DataGrid to use the new C3 schema vehicles endpoint with product join data and cursor-based infinite scroll.
 
 **Acceptance Criteria**:
+
 - [x] DataGrid loads vehicles from GET /api/v1/vehicles with C3 join data
 - [x] Vehicle titles display from product.title (not constructed)
 - [x] Prices display correctly from product.price_cents

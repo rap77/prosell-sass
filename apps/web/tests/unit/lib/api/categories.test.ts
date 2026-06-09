@@ -30,7 +30,11 @@ function createWrapper() {
   });
 
   function Wrapper({ children }: { children: React.ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children);
+    return createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      children,
+    );
   }
   return Wrapper;
 }
@@ -55,7 +59,12 @@ describe("useCategories", () => {
         id: "cat-2",
         name: "SUVs",
         slug: "suvs",
-        attribute_schema: { year: true, make: true, model: true, drivetrain: true },
+        attribute_schema: {
+          year: true,
+          make: true,
+          model: true,
+          drivetrain: true,
+        },
         is_active: true,
         created_at: "2026-04-26T00:00:00Z",
         updated_at: "2026-04-26T00:00:00Z",
@@ -90,7 +99,7 @@ describe("useCategories", () => {
       "/api/v1/categories",
       expect.objectContaining({
         credentials: "include",
-      })
+      }),
     );
   });
 
@@ -148,7 +157,7 @@ describe("useCategories", () => {
     expect(result.current.error).toEqual(
       expect.objectContaining({
         message: "Unauthorized access",
-      })
+      }),
     );
   });
 

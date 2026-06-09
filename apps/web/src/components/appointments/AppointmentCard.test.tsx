@@ -29,7 +29,12 @@ describe("AppointmentCard", () => {
       price_cents: 2100000,
       currency: "USD",
       status: "active",
-      attributes: { category: "vehicle", year: 2021, make: "Toyota", model: "Camry" },
+      attributes: {
+        category: "vehicle",
+        year: 2021,
+        make: "Toyota",
+        model: "Camry",
+      },
       created_at: "2026-04-29T09:00:00Z",
       updated_at: "2026-04-29T09:00:00Z",
     },
@@ -67,7 +72,7 @@ describe("AppointmentCard", () => {
 
   it("should display formatted scheduled time", () => {
     const { container } = render(
-      <AppointmentCard appointment={mockAppointment} lead={mockLead} />
+      <AppointmentCard appointment={mockAppointment} lead={mockLead} />,
     );
 
     // Should show time with Clock icon
@@ -92,10 +97,12 @@ describe("AppointmentCard", () => {
         appointment={mockAppointment}
         lead={mockLead}
         onClick={handleClick}
-      />
+      />,
     );
 
-    const card = container.querySelector('[data-testid="appointment-card"]') as HTMLElement;
+    const card = container.querySelector(
+      '[data-testid="appointment-card"]',
+    ) as HTMLElement;
     card?.click();
 
     expect(handleClick).toHaveBeenCalledTimes(1);
@@ -108,7 +115,7 @@ describe("AppointmentCard", () => {
     };
 
     render(
-      <AppointmentCard appointment={completedAppointment} lead={mockLead} />
+      <AppointmentCard appointment={completedAppointment} lead={mockLead} />,
     );
 
     expect(screen.getByText("Completado")).toBeInTheDocument();
@@ -121,7 +128,7 @@ describe("AppointmentCard", () => {
     };
 
     render(
-      <AppointmentCard appointment={cancelledAppointment} lead={mockLead} />
+      <AppointmentCard appointment={cancelledAppointment} lead={mockLead} />,
     );
 
     expect(screen.getByText("Cancelado")).toBeInTheDocument();
@@ -134,7 +141,10 @@ describe("AppointmentCard", () => {
     };
 
     render(
-      <AppointmentCard appointment={mockAppointment} lead={leadWithoutVehicle} />
+      <AppointmentCard
+        appointment={mockAppointment}
+        lead={leadWithoutVehicle}
+      />,
     );
 
     expect(screen.getByText("Vehículo no disponible")).toBeInTheDocument();
@@ -142,7 +152,7 @@ describe("AppointmentCard", () => {
 
   it("should apply responsive design classes", () => {
     const { container } = render(
-      <AppointmentCard appointment={mockAppointment} lead={mockLead} />
+      <AppointmentCard appointment={mockAppointment} lead={mockLead} />,
     );
 
     const card = container.querySelector('[data-testid="appointment-card"]');
@@ -160,7 +170,7 @@ describe("AppointmentCard", () => {
         lead={mockLead}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
-      />
+      />,
     );
 
     expect(screen.getByText("Confirmar")).toBeInTheDocument();
@@ -181,7 +191,7 @@ describe("AppointmentCard", () => {
         lead={mockLead}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
-      />
+      />,
     );
 
     expect(screen.queryByText("Confirmar")).not.toBeInTheDocument();
@@ -202,7 +212,7 @@ describe("AppointmentCard", () => {
         lead={mockLead}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
-      />
+      />,
     );
 
     expect(screen.queryByText("Confirmar")).not.toBeInTheDocument();
@@ -218,7 +228,7 @@ describe("AppointmentCard", () => {
         appointment={mockAppointment}
         lead={mockLead}
         onConfirm={handleConfirm}
-      />
+      />,
     );
 
     const confirmButton = screen.getByText("Confirmar");
@@ -235,7 +245,7 @@ describe("AppointmentCard", () => {
         appointment={mockAppointment}
         lead={mockLead}
         onCancel={handleCancel}
-      />
+      />,
     );
 
     const cancelButton = screen.getByText("Cancelar");
@@ -254,7 +264,7 @@ describe("AppointmentCard", () => {
         lead={mockLead}
         onClick={handleCardClick}
         onConfirm={handleConfirm}
-      />
+      />,
     );
 
     const confirmButton = screen.getByText("Confirmar");

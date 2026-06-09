@@ -40,8 +40,14 @@ describe("OrganizationForm", () => {
   });
 
   beforeEach(() => {
-    mockCreateOrganization.mockResolvedValue({ id: "org-123", name: "Test Org" });
-    mockUpdateOrganization.mockResolvedValue({ id: "org-123", name: "Updated Org" });
+    mockCreateOrganization.mockResolvedValue({
+      id: "org-123",
+      name: "Test Org",
+    });
+    mockUpdateOrganization.mockResolvedValue({
+      id: "org-123",
+      name: "Updated Org",
+    });
     (useOrganizationStore as any).mockReturnValue({
       createOrganization: mockCreateOrganization,
       updateOrganization: mockUpdateOrganization,
@@ -58,15 +64,21 @@ describe("OrganizationForm", () => {
       expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/website/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/phone/i)).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /create organization/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /create organization/i }),
+      ).toBeInTheDocument();
     });
 
     it("shows validation error when name is empty", async () => {
       const user = userEvent.setup();
       render(<OrganizationForm mode="create" />);
-      await user.click(screen.getByRole("button", { name: /create organization/i }));
+      await user.click(
+        screen.getByRole("button", { name: /create organization/i }),
+      );
       await waitFor(() => {
-        expect(screen.getByText(/organization name is required/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/organization name is required/i),
+        ).toBeInTheDocument();
       });
     });
 
@@ -74,13 +86,21 @@ describe("OrganizationForm", () => {
       const user = userEvent.setup();
       render(<OrganizationForm mode="create" />);
 
-      await user.type(screen.getByLabelText(/organization name/i), "My Company");
+      await user.type(
+        screen.getByLabelText(/organization name/i),
+        "My Company",
+      );
       await user.type(screen.getByLabelText(/description/i), "A great company");
-      await user.click(screen.getByRole("button", { name: /create organization/i }));
+      await user.click(
+        screen.getByRole("button", { name: /create organization/i }),
+      );
 
       await waitFor(() => {
         expect(mockCreateOrganization).toHaveBeenCalledWith(
-          expect.objectContaining({ name: "My Company", description: "A great company" })
+          expect.objectContaining({
+            name: "My Company",
+            description: "A great company",
+          }),
         );
       });
     });
@@ -88,8 +108,13 @@ describe("OrganizationForm", () => {
     it("navigates to org detail after successful creation", async () => {
       const user = userEvent.setup();
       render(<OrganizationForm mode="create" />);
-      await user.type(screen.getByLabelText(/organization name/i), "My Company");
-      await user.click(screen.getByRole("button", { name: /create organization/i }));
+      await user.type(
+        screen.getByLabelText(/organization name/i),
+        "My Company",
+      );
+      await user.click(
+        screen.getByRole("button", { name: /create organization/i }),
+      );
 
       await waitFor(() => {
         expect(mockPush).toHaveBeenCalledWith("/dashboard/org/org-123");
@@ -100,8 +125,13 @@ describe("OrganizationForm", () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
       render(<OrganizationForm mode="create" onSuccess={onSuccess} />);
-      await user.type(screen.getByLabelText(/organization name/i), "My Company");
-      await user.click(screen.getByRole("button", { name: /create organization/i }));
+      await user.type(
+        screen.getByLabelText(/organization name/i),
+        "My Company",
+      );
+      await user.click(
+        screen.getByRole("button", { name: /create organization/i }),
+      );
 
       await waitFor(() => {
         expect(onSuccess).toHaveBeenCalled();
@@ -113,7 +143,9 @@ describe("OrganizationForm", () => {
   describe("Edit mode", () => {
     it("renders edit form with Save Changes button", () => {
       render(<OrganizationForm mode="edit" organizationId="org-123" />);
-      expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /save changes/i }),
+      ).toBeInTheDocument();
     });
 
     it("populates form with initialData", () => {
@@ -122,15 +154,21 @@ describe("OrganizationForm", () => {
           mode="edit"
           organizationId="org-123"
           initialData={{ name: "Existing Org", description: "Existing desc" }}
-        />
+        />,
       );
-      expect(screen.getByLabelText(/organization name/i)).toHaveValue("Existing Org");
+      expect(screen.getByLabelText(/organization name/i)).toHaveValue(
+        "Existing Org",
+      );
     });
 
     it("calls updateOrganization on submit in edit mode", async () => {
       const user = userEvent.setup();
       render(
-        <OrganizationForm mode="edit" organizationId="org-123" initialData={{ name: "Old Name" }} />
+        <OrganizationForm
+          mode="edit"
+          organizationId="org-123"
+          initialData={{ name: "Old Name" }}
+        />,
       );
       const nameInput = screen.getByLabelText(/organization name/i);
       await user.clear(nameInput);
@@ -140,7 +178,7 @@ describe("OrganizationForm", () => {
       await waitFor(() => {
         expect(mockUpdateOrganization).toHaveBeenCalledWith(
           "org-123",
-          expect.objectContaining({ name: "New Name" })
+          expect.objectContaining({ name: "New Name" }),
         );
       });
     });
@@ -170,7 +208,9 @@ describe("OrganizationForm", () => {
         clearError: mockClearError,
       });
       render(<OrganizationForm mode="create" />);
-      expect(screen.getByText(/organization already exists/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/organization already exists/i),
+      ).toBeInTheDocument();
     });
   });
 });

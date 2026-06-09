@@ -94,6 +94,7 @@ class CSVImageMapper:
 ```
 
 **Matching strategy:**
+
 1. Normalizar el `path` del CSV (remover `Users/juanl/proy/facebook-auto-post/`)
 2. Buscar en el ZIP entries que empiecen con ese prefijo
 3. Si no hay match exacto, hacer fuzzy match por nombre de carpeta (`2020-EXPLORER-XLT-70K-GRIS`)
@@ -125,13 +126,13 @@ class VehicleAttributes(BaseModel):
 
 ## Dependencias
 
-| Servicio | Depende de | Notas |
-|----------|-----------|-------|
-| CSVProductParser | — | Extiende, no reemplaza |
-| CSVFieldMapper | — | Nuevo, puro Python |
-| CSVImageMapper | ZIP handling | Nuevo |
-| BulkUploadPreviewUseCase | CSVProductParser + CSVFieldMapper | Nuevo |
-| BulkUploadVehiclesUseCase | CSVProductParser + CSVImageMapper + ProductRepo | Nuevo |
+| Servicio                  | Depende de                                      | Notas                  |
+| ------------------------- | ----------------------------------------------- | ---------------------- |
+| CSVProductParser          | —                                               | Extiende, no reemplaza |
+| CSVFieldMapper            | —                                               | Nuevo, puro Python     |
+| CSVImageMapper            | ZIP handling                                    | Nuevo                  |
+| BulkUploadPreviewUseCase  | CSVProductParser + CSVFieldMapper               | Nuevo                  |
+| BulkUploadVehiclesUseCase | CSVProductParser + CSVImageMapper + ProductRepo | Nuevo                  |
 
 ## Boundary: qué NO cruza la frontera del dominio
 

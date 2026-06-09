@@ -111,7 +111,9 @@ describe("BranchAppointmentsPage", () => {
   ];
 
   it("should render page header with title and description", () => {
-    vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({ user: mockUser } as any);
+    vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({
+      user: mockUser,
+    } as any);
     vi.spyOn(appointmentsApi, "useAppointments").mockReturnValue({
       data: [],
       isLoading: false,
@@ -121,17 +123,19 @@ describe("BranchAppointmentsPage", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <BranchAppointmentsPage />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByText("Citas")).toBeInTheDocument();
     expect(
-      screen.getByText("Agenda y seguimiento de citas de la sucursal.")
+      screen.getByText("Agenda y seguimiento de citas de la sucursal."),
     ).toBeInTheDocument();
   });
 
   it("should render calendar view with branch appointments", async () => {
-    vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({ user: mockUser } as any);
+    vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({
+      user: mockUser,
+    } as any);
     vi.spyOn(appointmentsApi, "useAppointments").mockReturnValue({
       data: mockAppointments,
       isLoading: false,
@@ -141,7 +145,7 @@ describe("BranchAppointmentsPage", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <BranchAppointmentsPage />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
@@ -167,7 +171,9 @@ describe("BranchAppointmentsPage", () => {
       },
     ];
 
-    vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({ user: mockUser } as any);
+    vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({
+      user: mockUser,
+    } as any);
     vi.spyOn(appointmentsApi, "useAppointments").mockReturnValue({
       data: todayAppointments,
       isLoading: false,
@@ -177,7 +183,7 @@ describe("BranchAppointmentsPage", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <BranchAppointmentsPage />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
@@ -188,7 +194,9 @@ describe("BranchAppointmentsPage", () => {
   });
 
   it("should handle loading state", () => {
-    vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({ user: mockUser } as any);
+    vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({
+      user: mockUser,
+    } as any);
     vi.spyOn(appointmentsApi, "useAppointments").mockReturnValue({
       data: undefined,
       isLoading: true,
@@ -198,14 +206,16 @@ describe("BranchAppointmentsPage", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <BranchAppointmentsPage />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByTestId("calendar-loading")).toBeInTheDocument();
   });
 
   it("should handle error state", () => {
-    vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({ user: mockUser } as any);
+    vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({
+      user: mockUser,
+    } as any);
     vi.spyOn(appointmentsApi, "useAppointments").mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -215,17 +225,23 @@ describe("BranchAppointmentsPage", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <BranchAppointmentsPage />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(
-      screen.getByText((content) => content.includes("Error al cargar las citas"))
+      screen.getByText((content) =>
+        content.includes("Error al cargar las citas"),
+      ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Reintentar/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Reintentar/i }),
+    ).toBeInTheDocument();
   });
 
   it("should handle appointment click", async () => {
-    vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({ user: mockUser } as any);
+    vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({
+      user: mockUser,
+    } as any);
     vi.spyOn(appointmentsApi, "useAppointments").mockReturnValue({
       data: mockAppointments,
       isLoading: false,
@@ -235,7 +251,7 @@ describe("BranchAppointmentsPage", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <BranchAppointmentsPage />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
@@ -266,7 +282,7 @@ describe("BranchAppointmentsPage", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <BranchAppointmentsPage />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
@@ -277,7 +293,7 @@ describe("BranchAppointmentsPage", () => {
     expect(appointmentsApi.useAppointments).toHaveBeenCalledWith(
       { user_id: userId },
       50,
-      0
+      0,
     );
   });
 });

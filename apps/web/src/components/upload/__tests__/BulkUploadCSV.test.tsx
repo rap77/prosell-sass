@@ -29,7 +29,7 @@ vi.mock("@/lib/api/vehicles", () => ({
 // Mock File.text() method for jsdom environment
 Object.defineProperty(File.prototype, "text", {
   writable: true,
-  value: function(this: File) {
+  value: function (this: File) {
     return new Promise<string>((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
@@ -81,7 +81,9 @@ describe("BulkUploadCSV", () => {
     render(<BulkUploadCSV onUpload={mockOnUpload} />, { wrapper });
 
     expect(screen.getByText("Carga masiva de vehículos")).toBeInTheDocument();
-    expect(screen.getByText(/Arrastrá y soltá el archivo CSV acá/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Arrastrá y soltá el archivo CSV acá/i),
+    ).toBeInTheDocument();
     expect(screen.getByText("Plantilla CSV")).toBeInTheDocument();
   });
 
@@ -94,7 +96,9 @@ describe("BulkUploadCSV", () => {
 
     const file = new File([csvContent], "test.csv", { type: "text/csv" });
 
-    const input = screen.getByRole("presentation").querySelector('input[type="file"]') as HTMLElement;
+    const input = screen
+      .getByRole("presentation")
+      .querySelector('input[type="file"]') as HTMLElement;
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
@@ -111,7 +115,9 @@ describe("BulkUploadCSV", () => {
 
     const file = new File([csvContent], "test.csv", { type: "text/csv" });
 
-    const input = screen.getByRole("presentation").querySelector('input[type="file"]') as HTMLElement;
+    const input = screen
+      .getByRole("presentation")
+      .querySelector('input[type="file"]') as HTMLElement;
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
@@ -140,7 +146,9 @@ describe("BulkUploadCSV", () => {
 
     const file = new File([csvContent], "test.csv", { type: "text/csv" });
 
-    const input = screen.getByRole("presentation").querySelector('input[type="file"]') as HTMLElement;
+    const input = screen
+      .getByRole("presentation")
+      .querySelector('input[type="file"]') as HTMLElement;
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
@@ -177,7 +185,9 @@ describe("BulkUploadCSV", () => {
 
     const file = new File([csvContent], "test.csv", { type: "text/csv" });
 
-    const input = screen.getByRole("presentation").querySelector('input[type="file"]') as HTMLElement;
+    const input = screen
+      .getByRole("presentation")
+      .querySelector('input[type="file"]') as HTMLElement;
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
@@ -200,11 +210,15 @@ SHORT,2020,Honda,Civic,18500`;
 
     const file = new File([csvContent], "test.csv", { type: "text/csv" });
 
-    const input = screen.getByRole("presentation").querySelector('input[type="file"]') as HTMLElement;
+    const input = screen
+      .getByRole("presentation")
+      .querySelector('input[type="file"]') as HTMLElement;
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText(/El VIN debe tener exactamente 17 caracteres/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/El VIN debe tener exactamente 17 caracteres/),
+      ).toBeInTheDocument();
     });
   });
 
@@ -213,12 +227,14 @@ SHORT,2020,Honda,Civic,18500`;
 
     const downloadButton = screen.getByText("Descargar plantilla");
     const clickSpy = vi.fn();
-    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue({
-      href: "",
-      download: "",
-      click: clickSpy,
-      style: {},
-    } as any);
+    const createElementSpy = vi
+      .spyOn(document, "createElement")
+      .mockReturnValue({
+        href: "",
+        download: "",
+        click: clickSpy,
+        style: {},
+      } as any);
 
     fireEvent.click(downloadButton);
 
@@ -236,7 +252,9 @@ SHORT,2020,Honda,Civic,18500`;
 
     const file = new File([csvContent], "test.csv", { type: "text/csv" });
 
-    const input = screen.getByRole("presentation").querySelector('input[type="file"]') as HTMLElement;
+    const input = screen
+      .getByRole("presentation")
+      .querySelector('input[type="file"]') as HTMLElement;
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
@@ -253,7 +271,9 @@ SHORT,2020,Honda,Civic,18500`;
 
     const file = new File([csvContent], "test.csv", { type: "text/csv" });
 
-    const input = screen.getByRole("presentation").querySelector('input[type="file"]') as HTMLElement;
+    const input = screen
+      .getByRole("presentation")
+      .querySelector('input[type="file"]') as HTMLElement;
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
@@ -265,14 +285,19 @@ SHORT,2020,Honda,Civic,18500`;
 
     await waitFor(() => {
       expect(screen.queryByText("test.csv")).not.toBeInTheDocument();
-      expect(screen.getByText(/Arrastrá y soltá el archivo CSV acá/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Arrastrá y soltá el archivo CSV acá/i),
+      ).toBeInTheDocument();
     });
   });
 
   it("should show success toast when upload succeeds", async () => {
     const mockOnSuccess = vi.fn();
 
-    render(<BulkUploadCSV onUpload={mockOnUpload} onSuccess={mockOnSuccess} />, { wrapper });
+    render(
+      <BulkUploadCSV onUpload={mockOnUpload} onSuccess={mockOnSuccess} />,
+      { wrapper },
+    );
 
     const csvContent = `vin,year,make,model,price
 1HGCM82633A123456,2020,Honda,Civic,18500
@@ -280,7 +305,9 @@ SHORT,2020,Honda,Civic,18500`;
 
     const file = new File([csvContent], "test.csv", { type: "text/csv" });
 
-    const input = screen.getByRole("presentation").querySelector('input[type="file"]') as HTMLElement;
+    const input = screen
+      .getByRole("presentation")
+      .querySelector('input[type="file"]') as HTMLElement;
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
@@ -291,7 +318,9 @@ SHORT,2020,Honda,Civic,18500`;
     fireEvent.click(uploadButton);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Se cargaron 2 vehículos correctamente");
+      expect(toast.success).toHaveBeenCalledWith(
+        "Se cargaron 2 vehículos correctamente",
+      );
       expect(mockOnSuccess).toHaveBeenCalledWith(2);
     });
   });

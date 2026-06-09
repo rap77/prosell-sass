@@ -63,7 +63,8 @@ export const TESTIMONIALS_3 = [
   {
     av: "MR",
     avBg: "linear-gradient(135deg,#0D1B6E,#1E5FD4)",
-    quote: '"En el primer mes recuperamos el 40% de los leads que antes se perdían por falta de seguimiento. El inbox unificado cambió todo para nuestro equipo."',
+    quote:
+      '"En el primer mes recuperamos el 40% de los leads que antes se perdían por falta de seguimiento. El inbox unificado cambió todo para nuestro equipo."',
     name: "Martín Rodríguez",
     role: "Gerente Comercial · Automotores del Norte",
     niche: "🚗 Vehículos",
@@ -71,7 +72,8 @@ export const TESTIMONIALS_3 = [
   {
     av: "SG",
     avBg: "linear-gradient(135deg,#1E5FD4,#4DB8FF)",
-    quote: '"Publicamos en 6 portales a la vez sin tocar nada. Antes nos llevaba 2 horas por unidad. Ahora son 2 minutos y sin errores."',
+    quote:
+      '"Publicamos en 6 portales a la vez sin tocar nada. Antes nos llevaba 2 horas por unidad. Ahora son 2 minutos y sin errores."',
     name: "Sofía García",
     role: "Directora de Operaciones · Grupo Motores SA",
     niche: "🚗 Vehículos",
@@ -79,7 +81,8 @@ export const TESTIMONIALS_3 = [
   {
     av: "LT",
     avBg: "linear-gradient(135deg,#4DB8FF,#0D1B6E)",
-    quote: '"El dashboard de analytics nos mostró que Facebook convertía 2x más que AutoTrader. Movimos el presupuesto y el ROI se triplicó en 6 semanas."',
+    quote:
+      '"El dashboard de analytics nos mostró que Facebook convertía 2x más que AutoTrader. Movimos el presupuesto y el ROI se triplicó en 6 semanas."',
     name: "Lucas Torres",
     role: "CEO · TurboAutos",
     niche: "🚗 Vehículos",
@@ -90,7 +93,8 @@ export const TESTIMONIALS_2 = [
   {
     av: "CP",
     avBg: "linear-gradient(135deg,#22D3A0,#1E5FD4)",
-    quote: '"Teníamos 3 personas respondiendo leads manualmente desde 4 plataformas distintas. Con ProSell son 2 personas, respuesta en menos de 60 segundos y el doble de cierres. No entiendo cómo trabajábamos antes."',
+    quote:
+      '"Teníamos 3 personas respondiendo leads manualmente desde 4 plataformas distintas. Con ProSell son 2 personas, respuesta en menos de 60 segundos y el doble de cierres. No entiendo cómo trabajábamos antes."',
     name: "Carolina Pérez",
     role: "Coordinadora Comercial · AutoSelect",
     niche: "🚗 Vehículos",
@@ -98,7 +102,8 @@ export const TESTIMONIALS_2 = [
   {
     av: "JM",
     avBg: "linear-gradient(135deg,#F5A623,#1E5FD4)",
-    quote: '"La visibilidad de pipeline que nos da ProSell es incomparable. Antes era todo en Excel y WhatsApp. Hoy sé exactamente dónde está cada deal, cuánto tiempo lleva en cada etapa y qué hacer para cerrarlo."',
+    quote:
+      '"La visibilidad de pipeline que nos da ProSell es incomparable. Antes era todo en Excel y WhatsApp. Hoy sé exactamente dónde está cada deal, cuánto tiempo lleva en cada etapa y qué hacer para cerrarlo."',
     name: "Javier Molina",
     role: "Director General · Concesionaria Molina e Hijos",
     niche: "🚗 Vehículos",

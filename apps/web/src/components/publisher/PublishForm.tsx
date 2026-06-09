@@ -70,7 +70,7 @@ const FORM_STYLES = `
     accent-color: var(--ps-cyan);
     cursor: pointer;
   }
-`
+`;
 
 // ============================================
 // VALIDATION SCHEMA
@@ -88,9 +88,7 @@ const publishSchema = z.object({
   facebook_page_id: z.string().min(1, "Seleccioná una página de Facebook"),
   hero_shot_index: z.number().int().min(0),
   zip_code: z.string().min(5, "ZIP code mínimo 5 caracteres").max(10),
-  image_urls: z
-    .array(z.string().url())
-    .min(1, "Necesitás al menos una foto"),
+  image_urls: z.array(z.string().url()).min(1, "Necesitás al menos una foto"),
 
   // Vehicle fields (required by Facebook Marketplace)
   vehicle_type: z.string().min(1, "Seleccioná el tipo de vehículo"),
@@ -115,7 +113,7 @@ type PublishFormValues = z.infer<typeof publishSchema>;
 // ============================================
 
 export interface VehicleData {
-  id: string;  // Vehicle UUID for publish API
+  id: string; // Vehicle UUID for publish API
   title: string;
   description?: string;
   price_cents: number;
@@ -159,22 +157,22 @@ interface PublishFormProps {
 // ============================================
 
 const labelStyle: React.CSSProperties = {
-  display: 'block',
+  display: "block",
   fontSize: 13,
   fontWeight: 500,
-  color: 'var(--ps-text-primary)',
+  color: "var(--ps-text-primary)",
   marginBottom: 4,
-}
+};
 
 const errorStyle: React.CSSProperties = {
   marginTop: 4,
   fontSize: 11,
-  color: 'var(--ps-error)',
-}
+  color: "var(--ps-error)",
+};
 
 const requiredMark = (
-  <span style={{ color: 'var(--ps-error)', marginLeft: 3 }}>*</span>
-)
+  <span style={{ color: "var(--ps-error)", marginLeft: 3 }}>*</span>
+);
 
 function SelectField({
   id,
@@ -193,7 +191,8 @@ function SelectField({
   return (
     <div>
       <label htmlFor={id} style={labelStyle}>
-        {label}{required && requiredMark}
+        {label}
+        {required && requiredMark}
       </label>
       <select id={id} {...props} className="ps-pub-select">
         <option value="">Seleccioná...</option>
@@ -223,7 +222,8 @@ function InputField({
   return (
     <div>
       <label htmlFor={id} style={labelStyle}>
-        {label}{required && requiredMark}
+        {label}
+        {required && requiredMark}
       </label>
       <input id={id} {...props} className="ps-pub-input" />
       {error && <p style={errorStyle}>{error}</p>}
@@ -323,27 +323,27 @@ export function PublishForm({
   };
 
   const sectionDivider: React.CSSProperties = {
-    borderTop: '1px solid var(--ps-border-subtle)',
+    borderTop: "1px solid var(--ps-border-subtle)",
     paddingTop: 16,
-    display: 'flex',
-    flexDirection: 'column',
+    display: "flex",
+    flexDirection: "column",
     gap: 16,
-  }
+  };
 
   const sectionLabel: React.CSSProperties = {
     fontSize: 11,
     fontWeight: 700,
-    textTransform: 'uppercase',
-    letterSpacing: '0.12em',
-    color: 'var(--ps-text-disabled)',
+    textTransform: "uppercase",
+    letterSpacing: "0.12em",
+    color: "var(--ps-text-disabled)",
     marginBottom: 0,
-  }
+  };
 
   const grid2: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
     gap: 16,
-  }
+  };
 
   return (
     <>
@@ -351,14 +351,19 @@ export function PublishForm({
 
       <form
         onSubmit={handleSubmit(handleFormSubmit)}
-        style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
+        style={{ display: "flex", flexDirection: "column", gap: 20 }}
       >
-
         {/* ── FOTOS ── */}
         <div>
           <p style={{ ...labelStyle, marginBottom: 8 }}>
             Fotos{requiredMark}
-            <span style={{ fontWeight: 400, color: 'var(--ps-text-disabled)', marginLeft: 6 }}>
+            <span
+              style={{
+                fontWeight: 400,
+                color: "var(--ps-text-disabled)",
+                marginLeft: 6,
+              }}
+            >
               — click para elegir portada
             </span>
           </p>
@@ -387,15 +392,19 @@ export function PublishForm({
 
           <div>
             <label htmlFor="description" style={labelStyle}>
-              Descripción{' '}
-              <span style={{ fontWeight: 400, color: 'var(--ps-text-disabled)' }}>(opcional)</span>
+              Descripción{" "}
+              <span
+                style={{ fontWeight: 400, color: "var(--ps-text-disabled)" }}
+              >
+                (opcional)
+              </span>
             </label>
             <textarea
               id="description"
               rows={3}
               {...register("description")}
               className="ps-pub-textarea"
-              style={{ resize: 'none' }}
+              style={{ resize: "none" }}
             />
             {errors.description && (
               <p style={errorStyle}>{errors.description.message}</p>
@@ -449,7 +458,9 @@ export function PublishForm({
               >
                 <option value="">Seleccioná...</option>
                 {FB_YEARS.map((y) => (
-                  <option key={y} value={y}>{y}</option>
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
                 ))}
               </select>
               {errors.year && <p style={errorStyle}>{errors.year.message}</p>}
@@ -549,20 +560,32 @@ export function PublishForm({
             />
           </div>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+            }}
+          >
             <input
               type="checkbox"
               {...register("clean_title")}
               className="ps-pub-checkbox"
             />
-            <span style={{ fontSize: 13, color: 'var(--ps-text-primary)' }}>
+            <span style={{ fontSize: 13, color: "var(--ps-text-primary)" }}>
               Título limpio (Clean Title)
             </span>
           </label>
         </div>
 
         {/* ── FACEBOOK ── */}
-        <div style={{ borderTop: '1px solid var(--ps-border-subtle)', paddingTop: 16 }}>
+        <div
+          style={{
+            borderTop: "1px solid var(--ps-border-subtle)",
+            paddingTop: 16,
+          }}
+        >
           <p style={{ ...sectionLabel, marginBottom: 16 }}>Facebook</p>
 
           <div>
@@ -588,13 +611,15 @@ export function PublishForm({
         </div>
 
         {/* ── BOTONES ── */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingTop: 8,
-          borderTop: '1px solid var(--ps-border-subtle)',
-        }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingTop: 8,
+            borderTop: "1px solid var(--ps-border-subtle)",
+          }}
+        >
           {mode === "update" && onDelete && (
             <button
               type="button"
@@ -602,16 +627,16 @@ export function PublishForm({
               disabled={isDeleting || isSubmitting}
               style={{
                 height: 38,
-                padding: '0 16px',
+                padding: "0 16px",
                 fontSize: 13,
                 fontWeight: 500,
-                color: 'var(--ps-error)',
-                background: 'transparent',
-                border: '1px solid var(--ps-error)',
+                color: "var(--ps-error)",
+                background: "transparent",
+                border: "1px solid var(--ps-error)",
                 borderRadius: 8,
-                cursor: 'pointer',
+                cursor: "pointer",
                 opacity: isDeleting || isSubmitting ? 0.5 : 1,
-                transition: 'opacity 0.15s',
+                transition: "opacity 0.15s",
               }}
             >
               {isDeleting ? "Eliminando..." : "Eliminar / Finalizar"}
@@ -622,18 +647,18 @@ export function PublishForm({
             type="submit"
             disabled={isSubmitting || isDeleting}
             style={{
-              marginLeft: 'auto',
+              marginLeft: "auto",
               height: 38,
-              padding: '0 20px',
+              padding: "0 20px",
               fontSize: 13,
               fontWeight: 700,
-              color: 'var(--ps-bg-base)',
-              background: 'var(--ps-cyan)',
-              border: 'none',
+              color: "var(--ps-bg-base)",
+              background: "var(--ps-cyan)",
+              border: "none",
               borderRadius: 8,
-              cursor: 'pointer',
+              cursor: "pointer",
               opacity: isSubmitting || isDeleting ? 0.5 : 1,
-              transition: 'opacity 0.15s',
+              transition: "opacity 0.15s",
             }}
           >
             {isSubmitting

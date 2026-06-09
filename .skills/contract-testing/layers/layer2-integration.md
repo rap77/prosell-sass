@@ -14,6 +14,7 @@ Full format validation for endpoints with external APIs or data normalization. V
 ## Implementation
 
 Combines:
+
 1. **Pydantic validation** - Structure validation (via `model_validate`)
 2. **Contract validation** - Format checks (lowercase, UPPERCASE, specific values)
 3. **Multiple test cases** - Different scenarios (valid VIN, invalid VIN, edge cases)
@@ -51,9 +52,9 @@ contract_fields = [
 
 ## Difference from Layer 1
 
-| Layer 1 (OpenAPI) | Layer 2 (Integration) |
-|-------------------|----------------------|
-| Structure only | Structure + Business Rules |
-| Auto-generated schema | Manual contract validation |
-| Fast validation | Slower, comprehensive |
-| Simple CRUD | External APIs, normalization |
+| Layer 1 (OpenAPI)     | Layer 2 (Integration)        |
+| --------------------- | ---------------------------- |
+| Structure only        | Structure + Business Rules   |
+| Auto-generated schema | Manual contract validation   |
+| Fast validation       | Slower, comprehensive        |
+| Simple CRUD           | External APIs, normalization |

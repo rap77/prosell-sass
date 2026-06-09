@@ -1,10 +1,7 @@
 {
   "pythonVersion": "3.13",
   "typeCheckingMode": "standard",
-  "include": [
-    "apps/api/src",
-    "apps/api/tests"
-  ],
+  "include": ["apps/api/src", "apps/api/tests"],
   "exclude": [
     "**/__pycache__",
     "**/node_modules",
@@ -14,8 +11,6 @@
   ],
   "venvPath": "apps/api",
   "venv": ".venv",
-  "extraPaths": [
-    "apps/api/src"
-  ],
+  "extraPaths": ["apps/api/src"],
   "stubPath": "apps/api/tests/stubs"
 }

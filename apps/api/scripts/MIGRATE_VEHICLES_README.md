@@ -54,11 +54,13 @@ uv run python scripts/migrate_vehicles_to_product_attributes.py \
 ## What the Script Does
 
 ### 1. Data Analysis
+
 - Counts total vehicles in the database
 - Counts products that have corresponding vehicles
 - Reports any discrepancies
 
 ### 2. Data Transformation
+
 Transforms each `VehicleModel` record to `VehicleAttributes` schema:
 
 ```python
@@ -89,17 +91,21 @@ Transforms each `VehicleModel` record to `VehicleAttributes` schema:
 ```
 
 ### 3. Validation
+
 - **VIN validation**: Must be exactly 17 characters
 - **Pydantic validation**: All fields validated against `VehicleAttributes` schema
 - **Type safety**: Ensures correct data types (e.g., mileage as float)
 
 ### 4. Migration
+
 - Updates `products.attributes` JSONB column with transformed data
 - Processes in batches to avoid memory issues
 - Commits each batch independently
 
 ### 5. Verification
+
 After migration, verifies:
+
 - Products with `category: "vehicle"` in attributes
 - Products missing category discriminator
 - Products with invalid VIN (not 17 characters)
@@ -154,60 +160,68 @@ Example error output:
 ## Safety Features
 
 ### 1. Dry Run Mode
+
 ```bash
 --dry-run
 ```
+
 Shows what would be migrated without making any changes. **Always run this first!**
 
 ### 2. Backup Table
+
 ```bash
 --backup
 ```
+
 Creates a timestamped backup table before migration:
+
 ```sql
 products_backup_20260505_143022
 ```
 
 ### 3. Batch Processing
+
 Processes records in configurable batches (default: 50) to:
+
 - Avoid memory issues with large datasets
 - Allow progress tracking
 - Enable partial recovery if migration fails
 
 ### 4. Rollback SQL
+
 The script includes commented rollback SQL at the bottom for recovery if needed.
 
 ## Field Mapping
 
-| VehicleModel Field | ProductModel.attributes Field | Notes |
-|--------------------|-------------------------------|-------|
-| `vin` | `vin` | Required, 17 chars, uppercased |
-| `year` | `year` | Required, defaults to 2020 if missing |
-| `make` | `make` | Required, defaults to "Unknown" if missing |
-| `model` | `model` | Required, defaults to "Unknown" if missing |
-| `trim` | `trim` | Optional |
-| `body_type` | `body_type` | Optional |
-| `drivetrain` | `drivetrain` | Optional |
-| `transmission` | `transmission` | Optional |
-| `engine` | `engine` | Optional |
-| `fuel_type` | `fuel_type` | Optional |
-| `mpg_city` | `mpg_city` | Optional |
-| `mpg_highway` | `mpg_highway` | Optional |
-| `mpg_combined` | `mpg_combined` | Optional |
-| `mileage` | `mileage` | Required, converted to float, defaults to 0 |
-| `mileage_unit` | `mileage_unit` | Optional, validated as "miles" or "km" |
-| `exterior_color` | `exterior_color` | Optional |
-| `interior_color` | `interior_color` | Optional |
-| `has_sunroof` | `has_sunroof` | Optional, defaults to false |
-| `has_navigation` | `has_navigation` | Optional, defaults to false |
-| `has_leather` | `has_leather` | Optional, defaults to false |
-| `has_backup_camera` | `has_backup_camera` | Optional, defaults to false |
-| `has_bluetooth` | `has_bluetooth` | Optional, defaults to false |
-| `has_remote_start` | `has_remote_start` | Optional, defaults to false |
-| `seat_material` | `seat_material` | Optional |
-| `stock_number` | `stock_number` | Optional |
-| `vin_verified` | `vin_verified` | Optional, defaults to false |
-| *(added)* | `category` | Always set to "vehicle" |
+| VehicleModel Field  | ProductModel.attributes Field | Notes                                       |
+| ------------------- | ----------------------------- | ------------------------------------------- |
+| `vin`               | `vin`                         | Required, 17 chars, uppercased              |
+| `year`              | `year`                        | Required, defaults to 2020 if missing       |
+| `make`              | `make`                        | Required, defaults to "Unknown" if missing  |
+| `model`             | `model`                       | Required, defaults to "Unknown" if missing  |
+| `trim`              | `trim`                        | Optional                                    |
+| `body_type`         | `body_type`                   | Optional                                    |
+| `drivetrain`        | `drivetrain`                  | Optional                                    |
+| `transmission`      | `transmission`                | Optional                                    |
+| `engine`            | `engine`                      | Optional                                    |
+| `fuel_type`         | `fuel_type`                   | Optional                                    |
+| `mpg_city`          | `mpg_city`                    | Optional                                    |
+| `mpg_highway`       | `mpg_highway`                 | Optional                                    |
+| `mpg_combined`      | `mpg_combined`                | Optional                                    |
+| `mileage`           | `mileage`                     | Required, converted to float, defaults to 0 |
+| `mileage_unit`      | `mileage_unit`                | Optional, validated as "miles" or "km"      |
+| `exterior_color`    | `exterior_color`              | Optional                                    |
+| `interior_color`    | `interior_color`              | Optional                                    |
+| `has_sunroof`       | `has_sunroof`                 | Optional, defaults to false                 |
+| `has_navigation`    | `has_navigation`              | Optional, defaults to false                 |
+| `has_leather`       | `has_leather`                 | Optional, defaults to false                 |
+| `has_backup_camera` | `has_backup_camera`           | Optional, defaults to false                 |
+| `has_bluetooth`     | `has_bluetooth`               | Optional, defaults to false                 |
+| `has_remote_start`  | `has_remote_start`            | Optional, defaults to false                 |
+| `seat_material`     | `seat_material`               | Optional                                    |
+| `stock_number`      | `stock_number`                | Optional                                    |
+| `vin_verified`      | `vin_verified`                | Optional, defaults to false                 |
+| _(added)_           | `category`                    | Always set to "vehicle"                     |
 
 ## Rollback Procedure
 
@@ -254,19 +268,24 @@ WHERE attributes->>'category' = 'vehicle';
 ## Troubleshooting
 
 ### Issue: "No vehicles found to migrate"
+
 **Cause**: The `vehicles` table is empty.
 **Solution**: Verify vehicles exist: `SELECT COUNT(*) FROM vehicles;`
 
 ### Issue: "Invalid VIN: must be 17 characters"
+
 **Cause**: VIN in database is not 17 characters.
 **Solution**:
+
 1. Run dry-run to see which vehicles have invalid VINs
 2. Fix VINs in database: `UPDATE vehicles SET vin = '...' WHERE id = '...';`
 3. Re-run migration
 
 ### Issue: "Required field 'make' is missing"
+
 **Cause**: Vehicle has NULL make/model.
 **Solution**: The script defaults to "Unknown", but if you want real data:
+
 ```sql
 UPDATE vehicles
 SET make = 'Unknown', model = 'Unknown'
@@ -274,8 +293,10 @@ WHERE make IS NULL OR model IS NULL;
 ```
 
 ### Issue: Migration is slow
+
 **Cause**: Large dataset or small batch size.
 **Solution**: Increase batch size:
+
 ```bash
 --batch-size 200  # or higher
 ```
@@ -317,22 +338,29 @@ LIMIT 5;
 ## Architecture Notes
 
 ### Async Processing
+
 The script uses `asyncio` for all database operations, following the project's async-first pattern. No Celery or other task queues are used.
 
 ### Batch Processing
+
 Vehicles are fetched and processed in batches to:
+
 - Keep memory usage constant
 - Provide progress feedback
 - Allow partial recovery on failure
 
 ### Type Safety
+
 All transformations use Pydantic v2 `VehicleAttributes` schema with strict validation:
+
 ```python
 VehicleAttributes.model_validate(attrs)
 ```
 
 ### Error Handling
+
 Individual vehicle failures don't stop the migration. All errors are:
+
 - Logged with vehicle_id and product_id
 - Tracked in MigrationStats
 - Reported in final summary
@@ -347,6 +375,7 @@ Individual vehicle failures don't stop the migration. All errors are:
 ## Support
 
 For issues or questions:
+
 1. Check the troubleshooting section above
 2. Review the error messages in the migration summary
 3. Verify database state with the post-migration verification queries

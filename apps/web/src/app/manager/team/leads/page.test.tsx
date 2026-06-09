@@ -39,7 +39,9 @@ const queryClient = new QueryClient({
 });
 
 const renderWithQueryClient = (component: React.ReactElement) => {
-  return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
+  return render(
+    <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>,
+  );
 };
 
 // Mock child components
@@ -69,7 +71,9 @@ describe("ManagerTeamLeadsPage", () => {
 
     expect(screen.getByText("Leads del equipo")).toBeInTheDocument();
     expect(
-      screen.getByText("Supervisión de todos los leads activos asignados al equipo.")
+      screen.getByText(
+        "Supervisión de todos los leads activos asignados al equipo.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -82,13 +86,19 @@ describe("ManagerTeamLeadsPage", () => {
   it("should render team description", () => {
     renderWithQueryClient(<ManagerTeamLeadsPage />);
 
-    expect(screen.getByText("Supervisión de todos los leads activos asignados al equipo.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Supervisión de todos los leads activos asignados al equipo.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("should not show reassign modal initially", () => {
     const { container } = renderWithQueryClient(<ManagerTeamLeadsPage />);
 
     // Modal should not be present initially
-    expect(container.querySelector('[data-testid="reassign-modal"]')).not.toBeInTheDocument();
+    expect(
+      container.querySelector('[data-testid="reassign-modal"]'),
+    ).not.toBeInTheDocument();
   });
 });

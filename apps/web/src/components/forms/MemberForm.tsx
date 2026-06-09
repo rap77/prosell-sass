@@ -30,9 +30,7 @@ import { toast } from "sonner";
 // ============================================
 
 const memberSchema = z.object({
-  user_id: z
-    .string()
-    .min(1, "User ID is required"),
+  user_id: z.string().min(1, "User ID is required"),
   role: z.enum(["manager", "vendor"] as const, {
     message: "Role is required",
   }),
@@ -42,7 +40,7 @@ const memberSchema = z.object({
       .number()
       .min(0, "Commission must be 0 or greater")
       .max(100, "Commission cannot exceed 100%")
-      .optional()
+      .optional(),
   ),
 });
 
@@ -71,10 +69,7 @@ export interface MemberFormProps {
  * - Error display from store state
  * - Full accessibility support
  */
-export function MemberForm({
-  teamId,
-  onSuccess,
-}: MemberFormProps) {
+export function MemberForm({ teamId, onSuccess }: MemberFormProps) {
   const [isPending, startTransition] = useTransition();
 
   // Get tenant_id from auth store
@@ -82,12 +77,7 @@ export function MemberForm({
   const tenantId = user?.id || ""; // Use user ID as tenant_id for now
 
   // Get store methods
-  const {
-    addMember,
-    isLoading,
-    error,
-    clearError,
-  } = useTeamStore();
+  const { addMember, isLoading, error, clearError } = useTeamStore();
 
   // React Hook Form setup
   const {
@@ -226,9 +216,7 @@ export function MemberForm({
 
       {/* Commission Rate Input */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="commission_rate">
-          Commission Rate (%)
-        </Label>
+        <Label htmlFor="commission_rate">Commission Rate (%)</Label>
         <Input
           {...register("commission_rate", { valueAsNumber: true })}
           onBlur={handleInputChange}
@@ -269,11 +257,7 @@ export function MemberForm({
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button
-          type="submit"
-          disabled={isDisabled}
-          className="flex-1"
-        >
+        <Button type="submit" disabled={isDisabled} className="flex-1">
           {isLoading || isPending ? "Adding..." : "Add Member"}
         </Button>
       </div>

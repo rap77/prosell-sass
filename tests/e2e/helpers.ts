@@ -79,7 +79,7 @@ export function getExistingUser() {
 export async function loginUser(
   page: any,
   email?: string,
-  password?: string
+  password?: string,
 ): Promise<void> {
   const user = getExistingUser();
   const loginEmail = email || user.email;

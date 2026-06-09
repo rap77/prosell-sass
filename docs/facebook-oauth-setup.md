@@ -21,14 +21,15 @@ Guía para configurar la integración OAuth 2.0 con Facebook Marketplace.
 
 En **Facebook Login → Settings**:
 
-| Campo | Valor (dev) | Valor (prod) |
-|-------|-------------|--------------|
-| Valid OAuth Redirect URIs | `http://localhost:8000/api/v1/facebook/callback` | `https://api.tudominio.com/api/v1/facebook/callback` |
-| Deauthorize Callback URL | (vacío) | `https://api.tudominio.com/api/v1/facebook/deauthorize` |
+| Campo                     | Valor (dev)                                      | Valor (prod)                                            |
+| ------------------------- | ------------------------------------------------ | ------------------------------------------------------- |
+| Valid OAuth Redirect URIs | `http://localhost:8000/api/v1/facebook/callback` | `https://api.tudominio.com/api/v1/facebook/callback`    |
+| Deauthorize Callback URL  | (vacío)                                          | `https://api.tudominio.com/api/v1/facebook/deauthorize` |
 
 ### Scopes requeridos
 
 En **App Review → Permissions**, solicitar:
+
 - `pages_manage_posts`
 - `pages_read_engagement`
 - `pages_manage_metadata`
@@ -40,6 +41,7 @@ En **App Review → Permissions**, solicitar:
 ### Obtener credenciales
 
 En **Settings → Basic**:
+
 - **App ID** → `FACEBOOK_OAUTH_APP_ID`
 - **App Secret** → `FACEBOOK_OAUTH_APP_SECRET`
 
@@ -85,6 +87,7 @@ curl -s http://localhost:4040/api/tunnels | python3 -m json.tool | grep public_u
 ```
 
 Actualizar `FACEBOOK_OAUTH_REDIRECT_URI` con la URL ngrok:
+
 ```bash
 FACEBOOK_OAUTH_REDIRECT_URI=https://<tu-subdominio>.ngrok-free.app/api/v1/facebook/callback
 ```
@@ -135,15 +138,15 @@ curl http://localhost:8000/api/v1/facebook/accounts \
 
 ## 5. Endpoints de la API
 
-| Método | Endpoint | Auth | Descripción |
-|--------|----------|------|-------------|
-| `POST` | `/api/v1/facebook/authorize` | Vendedor | Inicia OAuth, retorna URL |
-| `GET` | `/api/v1/facebook/callback` | — | Callback de Facebook |
-| `GET` | `/api/v1/facebook/accounts` | Vendedor | Lista cuentas conectadas |
-| `GET` | `/api/v1/facebook/accounts/{id}/pages` | Vendedor | Lista páginas de una cuenta |
-| `POST` | `/api/v1/facebook/accounts/{acc_id}/pages/{page_id}/set-default` | Vendedor | Establece página default |
-| `DELETE` | `/api/v1/facebook/accounts/{id}` | Vendedor | Desconecta cuenta |
-| `POST` | `/api/v1/facebook/admin/refresh-tokens` | Super Admin | Refresca tokens próximos a expirar |
+| Método   | Endpoint                                                         | Auth        | Descripción                        |
+| -------- | ---------------------------------------------------------------- | ----------- | ---------------------------------- |
+| `POST`   | `/api/v1/facebook/authorize`                                     | Vendedor    | Inicia OAuth, retorna URL          |
+| `GET`    | `/api/v1/facebook/callback`                                      | —           | Callback de Facebook               |
+| `GET`    | `/api/v1/facebook/accounts`                                      | Vendedor    | Lista cuentas conectadas           |
+| `GET`    | `/api/v1/facebook/accounts/{id}/pages`                           | Vendedor    | Lista páginas de una cuenta        |
+| `POST`   | `/api/v1/facebook/accounts/{acc_id}/pages/{page_id}/set-default` | Vendedor    | Establece página default           |
+| `DELETE` | `/api/v1/facebook/accounts/{id}`                                 | Vendedor    | Desconecta cuenta                  |
+| `POST`   | `/api/v1/facebook/admin/refresh-tokens`                          | Super Admin | Refresca tokens próximos a expirar |
 
 ---
 
@@ -162,6 +165,7 @@ curl -X POST "http://localhost:8000/api/v1/facebook/admin/refresh-tokens?hours_b
 ```
 
 **Cron recomendado** (cada 6 horas):
+
 ```bash
 0 */6 * * * curl -X POST https://api.tudominio.com/api/v1/facebook/admin/refresh-tokens \
   -H "Authorization: Bearer $ADMIN_TOKEN"
@@ -180,10 +184,10 @@ curl -X POST "http://localhost:8000/api/v1/facebook/admin/refresh-tokens?hours_b
 
 ## 8. Troubleshooting
 
-| Error | Causa | Solución |
-|-------|-------|----------|
-| `Facebook OAuth is not configured` | `FACEBOOK_OAUTH_APP_ID` vacío | Setear vars de entorno |
-| `Invalid state token` | Token Redis expiró o inválido | Re-iniciar flujo desde `/authorize` |
-| `redirect_uri_mismatch` | URI no registrada en Facebook | Agregar URI en Facebook Developers |
-| `ConnectionError: Redis` | Redis no está corriendo | `docker start prosell-redis` |
-| `400 Bad Request` en callback | Code de Facebook inválido/expirado | El code dura ~10 min, reintentar |
+| Error                              | Causa                              | Solución                            |
+| ---------------------------------- | ---------------------------------- | ----------------------------------- |
+| `Facebook OAuth is not configured` | `FACEBOOK_OAUTH_APP_ID` vacío      | Setear vars de entorno              |
+| `Invalid state token`              | Token Redis expiró o inválido      | Re-iniciar flujo desde `/authorize` |
+| `redirect_uri_mismatch`            | URI no registrada en Facebook      | Agregar URI en Facebook Developers  |
+| `ConnectionError: Redis`           | Redis no está corriendo            | `docker start prosell-redis`        |
+| `400 Bad Request` en callback      | Code de Facebook inválido/expirado | El code dura ~10 min, reintentar    |

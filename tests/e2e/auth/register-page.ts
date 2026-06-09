@@ -30,9 +30,7 @@ export class RegisterPage extends BasePage {
     super(page);
 
     // Spanish heading: "Creá tu cuenta"
-    this.heading = page
-      .locator("h1")
-      .first();
+    this.heading = page.locator("h1").first();
 
     // Form inputs — match actual IDs in RegisterPageContent.tsx
     this.fullNameInput = page.locator("#fullName");
@@ -48,7 +46,9 @@ export class RegisterPage extends BasePage {
     this.githubButton = page.getByRole("button", { name: /github/i });
 
     // Spanish link: "Iniciar sesión →"
-    this.loginLink = page.getByRole("link", { name: /iniciar sesión/i }).first();
+    this.loginLink = page
+      .getByRole("link", { name: /iniciar sesión/i })
+      .first();
   }
 
   async goto(): Promise<void> {

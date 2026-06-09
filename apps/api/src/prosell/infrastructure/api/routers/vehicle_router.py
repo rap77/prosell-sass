@@ -122,7 +122,9 @@ async def list_vehicles(
                 item["photo_url"] = None
         if item.get("image_urls"):
             item["image_urls"] = await sign_image_urls(
-                item["image_urls"], spaces, tenant_id=current_user.tenant_id,
+                item["image_urls"],
+                spaces,
+                tenant_id=current_user.tenant_id,
             )
         items.append(item)
 

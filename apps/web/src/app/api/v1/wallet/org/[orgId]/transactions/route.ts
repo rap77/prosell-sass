@@ -55,7 +55,7 @@ function getMockTransactions(): MockTransactions {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ orgId: string }> }
+  { params }: { params: Promise<{ orgId: string }> },
 ) {
   const { orgId } = await params;
   const url = new URL(request.url);
@@ -68,14 +68,17 @@ export async function GET(
   // In the real API, we would first lookup the wallet by organization_id,
   // then filter transactions by wallet_id. This simplification is acceptable
   // for E2E tests where we control the test data.
-  let transactions = Object.values(getMockTransactions()).filter((t) => t.wallet_id === orgId);
+  let transactions = Object.values(getMockTransactions()).filter(
+    (t) => t.wallet_id === orgId,
+  );
 
   // Create mock transactions if requested and none exist
   if (createMock && transactions.length === 0) {
     const globalWithMocks = global as typeof global & {
       __mockWalletTransactions?: MockTransactions;
     };
-    globalWithMocks.__mockWalletTransactions = globalWithMocks.__mockWalletTransactions || {};
+    globalWithMocks.__mockWalletTransactions =
+      globalWithMocks.__mockWalletTransactions || {};
 
     // Create sample transactions with realistic timestamps
     const sampleTransactions: MockTransaction[] = [

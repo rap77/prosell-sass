@@ -50,6 +50,7 @@ Install MasterMind Framework into any project. Verifies services, detects stack,
    - Registers project in `projects` table (PostgreSQL)
 
 **Output:**
+
 - `STATUS: installed` — Success
 - `STATUS: not-installed` -- Project empty (with --check)
 - `ERROR: <reason>` — Failure (PostgreSQL down, permissions, etc.)
@@ -71,6 +72,7 @@ Run from the project root (where `.claude/` exists).
 ### Step 2: Parse Handler Output
 
 Capture stdout and look for:
+
 - `STATUS: installed|not-installed` → Installation status
 - `ERROR: ...` → Handler error, show to user
 - `STACK: {...}` → Detected stack (JSON)
@@ -79,6 +81,7 @@ Capture stdout and look for:
 ### Step 3: Verify Installation
 
 Check that files were created:
+
 - `.mastermind/config.yaml` exists
 - `.claude/commands/mm/init.md` exists
 - `.claude/agents/mm/brain-01-product-strategy/` exists
@@ -95,11 +98,11 @@ Check that files were created:
 
 ## Flags
 
-| Flag | Description |
-|------|-------------|
-| `--target <path>` | Target directory (default: current directory) |
-| `--check` | Check if already installed (doesn't modify files) |
-| `--force` | Overwrite if already installed (without this, warns and exits) |
+| Flag              | Description                                                    |
+| ----------------- | -------------------------------------------------------------- |
+| `--target <path>` | Target directory (default: current directory)                  |
+| `--check`         | Check if already installed (doesn't modify files)              |
+| `--force`         | Overwrite if already installed (without this, warns and exits) |
 
 ---
 
@@ -199,11 +202,13 @@ Done — ready for /mm:discover
 ## Prerequisites
 
 **Required:**
+
 - **PostgreSQL:** `mastermind_bd` database must be running
   - Check: `docker compose ps` (look for mastermind-postgres-1)
   - Port: localhost:5433
 
 **Optional (recommended):**
+
 - **Rust Control Plane:** For advanced features
   - Check: `curl -s http://localhost:3001/health`
   - Warning if not available, doesn't block installation
@@ -214,14 +219,14 @@ Done — ready for /mm:discover
 
 MasterMind auto-detects your project stack:
 
-| File | Stack Detected |
-|------|----------------|
-| `package.json` | Node.js (Next.js, React, Vue, etc.) |
-| `pyproject.toml` | Python (FastAPI, Django, etc.) |
-| `requirements.txt` | Python (legacy) |
-| `CLAUDE.md` | Claude Code instructions |
-| `go.mod` | Go |
-| `Cargo.toml` | Rust |
+| File               | Stack Detected                      |
+| ------------------ | ----------------------------------- |
+| `package.json`     | Node.js (Next.js, React, Vue, etc.) |
+| `pyproject.toml`   | Python (FastAPI, Django, etc.)      |
+| `requirements.txt` | Python (legacy)                     |
+| `CLAUDE.md`        | Claude Code instructions            |
+| `go.mod`           | Go                                  |
+| `Cargo.toml`       | Rust                                |
 
 This information is stored in `.mastermind/config.yaml` for brain consultation.
 
@@ -248,6 +253,7 @@ INSERT INTO projects (
 ```
 
 This enables:
+
 - Cross-project learning (brains see what worked elsewhere)
 - Usage analytics
 - Multi-project management
@@ -261,6 +267,7 @@ This enables:
 **Problem:** `mastermind_bd` is not running.
 
 **Solution:**
+
 ```bash
 cd <mastermind-project-root>
 docker compose up -d mastermind-postgres-1
@@ -271,6 +278,7 @@ docker compose up -d mastermind-postgres-1
 **Problem:** `.mastermind/` directory exists.
 
 **Solution:** Use `--force` flag to overwrite:
+
 ```bash
 /mm:init --target /path/to/project --force
 ```
@@ -280,6 +288,7 @@ docker compose up -d mastermind-postgres-1
 **Problem:** Cannot write to target directory.
 
 **Solution:** Check directory permissions:
+
 ```bash
 ls -la /path/to/project
 chmod u+w /path/to/project  # if needed

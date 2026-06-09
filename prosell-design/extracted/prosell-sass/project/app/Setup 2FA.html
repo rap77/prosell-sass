@@ -1,585 +1,795 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProSell — Setup 2FA</title>
-<link rel="stylesheet" href="../colors_and_type.css">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<style>
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body {
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-  position: relative;
-  overflow-x: hidden;
-}
-
-/* Background glow */
-body::before {
-  content: "";
-  position: fixed; inset: 0;
-  background:
-    radial-gradient(ellipse at 20% 10%, rgba(30,95,212,0.20), transparent 55%),
-    radial-gradient(ellipse at 85% 85%, rgba(77,184,255,0.12), transparent 55%);
-  pointer-events: none;
-  z-index: 0;
-}
-body::after {
-  content: "";
-  position: fixed; inset: 0;
-  background-image:
-    linear-gradient(rgba(77,184,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(77,184,255,0.04) 1px, transparent 1px);
-  background-size: 40px 40px;
-  mask: radial-gradient(ellipse at 50% 30%, black, transparent 75%);
-  -webkit-mask: radial-gradient(ellipse at 50% 30%, black, transparent 75%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.stage {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 48px 24px 64px;
-  gap: 8px;
-}
-.stage-head {
-  text-align: center;
-  margin-bottom: 16px;
-}
-.stage-head .eyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--cyan);
-}
-.stage-head h2 {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 6px 0 0;
-  color: var(--text-secondary);
-  letter-spacing: -0.005em;
-}
-
-.cards-row {
-  display: grid;
-  grid-template-columns: repeat(3, 440px);
-  gap: 28px;
-  margin-top: 8px;
-}
-
-/* ===== Card ===== */
-.card {
-  background: rgba(13,27,62,0.80);
-  border: 1px solid rgba(77,184,255,0.12);
-  border-radius: 16px;
-  padding: 40px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 16px 48px rgba(6,13,36,0.55);
-  display: flex; flex-direction: column;
-  gap: 22px;
-  position: relative;
-}
-.step-label {
-  position: absolute;
-  top: -10px; left: 24px;
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 10px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  background: var(--bg-base);
-  border: 1px solid var(--border-default);
-  border-radius: 100px;
-  color: var(--text-secondary);
-}
-.step-label.done { color: var(--success); border-color: rgba(34,211,160,0.4); }
-.step-label .num {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  background: rgba(77,184,255,0.18);
-  color: var(--cyan);
-  font-family: var(--font-mono);
-  font-size: 10px;
-}
-.step-label.done .num { background: rgba(34,211,160,0.18); color: var(--success); }
-
-/* Logo */
-.brand {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 10px;
-  align-self: center;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.005em;
-}
-.brand img { height: 22px; width: auto; }
-
-/* Header icon + titles */
-.head-block {
-  display: flex; flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  text-align: center;
-}
-.head-icon {
-  width: 76px; height: 76px;
-  border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(77,184,255,0.14);
-  border: 1px solid rgba(77,184,255,0.32);
-  color: var(--cyan);
-  box-shadow: 0 0 28px rgba(77,184,255,0.22), inset 0 1px 0 rgba(255,255,255,0.05);
-}
-.head-icon.success {
-  background: rgba(34,211,160,0.14);
-  border-color: rgba(34,211,160,0.34);
-  color: var(--success);
-  box-shadow: 0 0 28px rgba(34,211,160,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
-}
-.head-icon [data-lucide] { width: 48px; height: 48px; stroke-width: 1.5; }
-.titles { display: flex; flex-direction: column; gap: 8px; }
-.titles h1 {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  margin: 0;
-  color: var(--text-primary);
-  line-height: 1.18;
-}
-.titles p {
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.55;
-  margin: 0;
-}
-
-/* ===== Step 1 — QR ===== */
-.qr-wrap {
-  display: flex; flex-direction: column; align-items: center; gap: 14px;
-}
-.qr {
-  width: 180px; height: 180px;
-  background: #FFFFFF;
-  border-radius: 8px;
-  padding: 8px;
-  display: grid;
-  grid-template-columns: repeat(21, 1fr);
-  grid-template-rows: repeat(21, 1fr);
-  gap: 0;
-}
-.qr span { background: transparent; }
-.qr span.on { background: #060D24; }
-/* Finder corners */
-.qr-corner {
-  position: relative;
-  display: flex; align-items: center; justify-content: center;
-}
-
-.manual-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  text-align: center;
-}
-.code-pill {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px;
-  background: rgba(77,184,255,0.06);
-  border: 1px solid var(--border-default);
-  border-radius: 8px;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--cyan);
-  letter-spacing: 0.04em;
-}
-.code-pill .copy {
-  margin-left: auto;
-  width: 24px; height: 24px;
-  border-radius: 5px;
-  border: 0;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-  transition: all 160ms;
-}
-.code-pill .copy:hover { color: var(--cyan); background: rgba(77,184,255,0.10); }
-.code-pill .copy [data-lucide] { width: 13px; height: 13px; stroke-width: 2; }
-
-/* App suggestion */
-.app-hint {
-  margin-top: 4px;
-  background: rgba(6,13,36,0.4);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.app-hint-head {
-  display: flex; align-items: center; gap: 6px;
-  padding: 10px 12px;
-  background: transparent;
-  border: 0;
-  width: 100%;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--cyan);
-  letter-spacing: -0.005em;
-  text-align: left;
-}
-.app-hint-head [data-lucide] { width: 13px; height: 13px; stroke-width: 2; }
-.app-hint-head .chev { margin-left: auto; transition: transform 200ms; }
-.app-hint[open] .app-hint-head .chev { transform: rotate(180deg); }
-.app-hint-body {
-  display: none;
-  padding: 4px 12px 12px;
-  flex-direction: column; gap: 6px;
-}
-.app-hint[open] .app-hint-body { display: flex; }
-.app-hint-row {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 12px;
-  color: var(--text-primary);
-}
-.app-hint-row .src-ic {
-  width: 18px; height: 18px;
-  border-radius: 4px;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(77,184,255,0.14);
-  color: var(--cyan);
-}
-.app-hint-row .src-ic [data-lucide] { width: 11px; height: 11px; stroke-width: 2.25; }
-.app-hint-row .ext { margin-left: auto; color: var(--text-disabled); }
-.app-hint-row .ext [data-lucide] { width: 11px; height: 11px; stroke-width: 2; }
-
-/* ===== Step 2 — Code input ===== */
-.code-input {
-  display: flex; align-items: center; justify-content: center;
-  gap: 10px;
-}
-.code-box {
-  width: 44px; height: 52px;
-  border-radius: 8px;
-  background: rgba(13,27,62,0.8);
-  border: 1px solid rgba(77,184,255,0.15);
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  letter-spacing: -0.02em;
-  transition: all 180ms;
-}
-.code-box.filled { color: var(--cyan); border-color: rgba(77,184,255,0.3); background: rgba(77,184,255,0.04); }
-.code-box.active {
-  border-color: var(--cyan);
-  box-shadow: 0 0 0 3px rgba(77,184,255,0.10);
-  position: relative;
-}
-.code-box.active .caret {
-  width: 2px; height: 28px;
-  background: var(--cyan);
-  border-radius: 100px;
-  animation: blink 1s steps(2) infinite;
-}
-@keyframes blink { 50% { opacity: 0; } }
-
-.countdown {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--warning);
-  align-self: center;
-}
-.countdown [data-lucide] { width: 12px; height: 12px; stroke-width: 2; }
-
-/* ===== Step 3 — Recovery codes ===== */
-.recovery {
-  background: rgba(34,211,160,0.06);
-  border: 1px solid rgba(34,211,160,0.20);
-  border-radius: 10px;
-  padding: 16px;
-  display: flex; flex-direction: column;
-  gap: 10px;
-}
-.recovery-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  color: var(--success);
-}
-.recovery-warn {
-  display: flex; align-items: flex-start; gap: 8px;
-  font-size: 12px;
-  color: var(--warning);
-  line-height: 1.45;
-}
-.recovery-warn [data-lucide] { width: 13px; height: 13px; stroke-width: 2.25; flex-shrink: 0; margin-top: 2px; }
-.codes-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px 12px;
-  padding-top: 4px;
-}
-.codes-grid span {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  color: var(--text-secondary);
-  letter-spacing: 0.04em;
-  font-weight: 500;
-}
-
-/* ===== Buttons ===== */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 8px;
-  width: 100%;
-  height: 44px;
-  padding: 0 18px;
-  border-radius: 9px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid transparent;
-  background: transparent;
-  transition: all 180ms;
-}
-.btn [data-lucide] { width: 14px; height: 14px; stroke-width: 2.5; }
-.btn-ghost { border-color: var(--border-default); color: var(--text-secondary); }
-.btn-ghost:hover { border-color: var(--cyan); color: var(--text-primary); }
-.btn-primary {
-  background: var(--cyan);
-  color: var(--bg-base);
-  box-shadow: 0 4px 16px rgba(77,184,255,0.28);
-}
-.btn-primary:hover { background: var(--cyan-hover); box-shadow: 0 8px 24px rgba(77,184,255,0.4); transform: translateY(-1px); }
-.btn-success {
-  background: var(--success);
-  color: var(--bg-base);
-  box-shadow: 0 4px 16px rgba(34,211,160,0.28);
-}
-.btn-success:hover { background: #38E5B0; box-shadow: 0 8px 24px rgba(34,211,160,0.4); transform: translateY(-1px); }
-
-.link-row { display: inline-flex; align-self: center; }
-.text-link {
-  background: transparent; border: 0;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: color 160ms;
-}
-.text-link:hover { color: var(--cyan); }
-.text-link [data-lucide] { width: 11px; height: 11px; stroke-width: 2.25; vertical-align: -1.5px; margin-right: 2px; }
-
-@media (max-width: 1420px) {
-  .cards-row { grid-template-columns: 1fr; }
-}
-</style>
-</head>
-<body>
-
-<main class="stage">
-  <div class="stage-head">
-    <div class="eyebrow">ProSell · Seguridad</div>
-    <h2>Configurar verificación en dos pasos · flujo completo</h2>
-  </div>
-
-  <div class="cards-row">
-
-    <!-- ===== STEP 1 — Show QR ===== -->
-    <section class="card">
-      <span class="step-label"><span class="num">1</span>Escanear</span>
-      <a class="brand" href="#"><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a>
-
-      <div class="head-block">
-        <span class="head-icon"><i data-lucide="shield"></i></span>
-        <div class="titles">
-          <h1>Activá la verificación en dos pasos</h1>
-          <p>Escaneá el código QR con tu app de autenticación (Google Authenticator, Authy, etc.)</p>
-        </div>
-      </div>
-
-      <div class="qr-wrap">
-        <div class="qr" id="qr"></div>
-        <div class="manual-label">O ingresá este código manualmente:</div>
-        <div class="code-pill">
-          PROS-3K7A-X2MN-9QBT
-          <button class="copy" type="button" aria-label="Copiar"><i data-lucide="copy"></i></button>
-        </div>
-
-        <details class="app-hint" style="width: 100%;">
-          <summary class="app-hint-head" style="list-style: none;">
-            <i data-lucide="help-circle"></i> ¿Qué app usar?
-            <span class="chev"><i data-lucide="chevron-down"></i></span>
-          </summary>
-          <div class="app-hint-body">
-            <a class="app-hint-row" href="#">
-              <span class="src-ic"><i data-lucide="key-round"></i></span>
-              Google Authenticator
-              <span class="ext"><i data-lucide="external-link"></i></span>
-            </a>
-            <a class="app-hint-row" href="#">
-              <span class="src-ic"><i data-lucide="shield-check"></i></span>
-              Authy
-              <span class="ext"><i data-lucide="external-link"></i></span>
-            </a>
-          </div>
-        </details>
-      </div>
-
-      <button class="btn btn-primary" type="button">Ya escaneé el código <i data-lucide="arrow-right"></i></button>
-      <button class="text-link" type="button" style="align-self: center;">Configurar después</button>
-    </section>
-
-    <!-- ===== STEP 2 — Verify ===== -->
-    <section class="card">
-      <span class="step-label"><span class="num">2</span>Verificar</span>
-      <a class="brand" href="#"><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a>
-
-      <div class="head-block">
-        <span class="head-icon"><i data-lucide="smartphone"></i></span>
-        <div class="titles">
-          <h1>Verificá el código</h1>
-          <p>Ingresá el código de 6 dígitos de tu app de autenticación</p>
-        </div>
-      </div>
-
-      <div class="code-input">
-        <div class="code-box filled">4</div>
-        <div class="code-box filled">8</div>
-        <div class="code-box filled">2</div>
-        <div class="code-box active"><span class="caret"></span></div>
-        <div class="code-box"></div>
-        <div class="code-box"></div>
-      </div>
-
-      <div class="countdown">
-        <i data-lucide="clock"></i>
-        El código expira en 28 segundos
-      </div>
-
-      <button class="btn btn-primary" type="button">Verificar y activar 2FA <i data-lucide="arrow-right"></i></button>
-      <button class="text-link" type="button" style="align-self: center;"><i data-lucide="arrow-left"></i>Volver</button>
-    </section>
-
-    <!-- ===== STEP 3 — Success ===== -->
-    <section class="card">
-      <span class="step-label done"><span class="num"><i data-lucide="check" style="width:10px;height:10px;stroke-width:3.5;"></i></span>Activado</span>
-      <a class="brand" href="#"><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a>
-
-      <div class="head-block">
-        <span class="head-icon success"><i data-lucide="shield-check"></i></span>
-        <div class="titles">
-          <h1>¡2FA activado!</h1>
-          <p>Tu cuenta ahora tiene una capa extra de seguridad.</p>
-        </div>
-      </div>
-
-      <div class="recovery">
-        <span class="recovery-label">Códigos de recuperación</span>
-        <div class="recovery-warn">
-          <i data-lucide="alert-triangle"></i>
-          <span>Guardalos en un lugar seguro. Solo se muestran una vez.</span>
-        </div>
-        <div class="codes-grid">
-          <span>A3K7-X2MN</span><span>9QBT-W5LR</span>
-          <span>M8YP-4VCZ</span><span>R2NK-7JHF</span>
-          <span>T6DX-1BQS</span><span>Y4WM-3PCG</span>
-          <span>N9RV-5TKA</span><span>H7JL-2ZXE</span>
-        </div>
-      </div>
-
-      <button class="btn btn-ghost" type="button"><i data-lucide="download"></i>Descargar códigos</button>
-      <button class="btn btn-success" type="button">Ir al dashboard <i data-lucide="arrow-right"></i></button>
-    </section>
-
-  </div>
-</main>
-
-<script>
-  // Generate a stylized QR pattern (deterministic, recognizable shape with finder corners)
-  (function buildQR() {
-    const N = 21;
-    const grid = document.getElementById('qr');
-    if (!grid) return;
-    // Build set of "on" cells with a pseudo-random but stable pattern + 3 finder corners
-    const onCells = new Set();
-    // Finder square at (0,0), (0,14), (14,0)
-    function addFinder(r, c) {
-      for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) {
-        const edge = (i === 0 || i === 6 || j === 0 || j === 6);
-        const inner = (i >= 2 && i <= 4 && j >= 2 && j <= 4);
-        if (edge || inner) onCells.add(`${r+i},${c+j}`);
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ProSell — Setup 2FA</title>
+    <link rel="stylesheet" href="../colors_and_type.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
       }
-    }
-    addFinder(0, 0);
-    addFinder(0, N-7);
-    addFinder(N-7, 0);
-    // Timing pattern: row 6, col 6 alternating
-    for (let i = 8; i < N-8; i++) {
-      if (i % 2 === 0) { onCells.add(`6,${i}`); onCells.add(`${i},6`); }
-    }
-    // Fill data with deterministic noise
-    let seed = 73;
-    function rnd() { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; }
-    for (let r = 0; r < N; r++) {
-      for (let c = 0; c < N; c++) {
-        // skip finder zones
-        const inFinder = (r < 8 && c < 8) || (r < 8 && c >= N-8) || (r >= N-8 && c < 8);
-        if (inFinder) continue;
-        if (r === 6 || c === 6) continue;
-        if (rnd() > 0.55) onCells.add(`${r},${c}`);
+      html,
+      body {
+        margin: 0;
+        padding: 0;
       }
-    }
-    // Render
-    const frag = document.createDocumentFragment();
-    for (let r = 0; r < N; r++) {
-      for (let c = 0; c < N; c++) {
-        const s = document.createElement('span');
-        if (onCells.has(`${r},${c}`)) s.className = 'on';
-        frag.appendChild(s);
+      body {
+        background: var(--bg-base);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
       }
-    }
-    grid.appendChild(frag);
-  })();
 
-  lucide.createIcons();
+      /* Background glow */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse at 20% 10%,
+            rgba(30, 95, 212, 0.2),
+            transparent 55%
+          ),
+          radial-gradient(
+            ellipse at 85% 85%,
+            rgba(77, 184, 255, 0.12),
+            transparent 55%
+          );
+        pointer-events: none;
+        z-index: 0;
+      }
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(77, 184, 255, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(77, 184, 255, 0.04) 1px, transparent 1px);
+        background-size: 40px 40px;
+        mask: radial-gradient(ellipse at 50% 30%, black, transparent 75%);
+        -webkit-mask: radial-gradient(
+          ellipse at 50% 30%,
+          black,
+          transparent 75%
+        );
+        pointer-events: none;
+        z-index: 0;
+      }
 
-  // Code-box: simple keyboard typing demo on the middle (active) card
-  document.querySelectorAll('.code-box').forEach((box, idx, arr) => {
-    box.addEventListener('click', () => {
-      arr.forEach(b => {
-        b.classList.remove('active');
-        if (!b.textContent.trim() || b.querySelector('.caret')) {
-          b.innerHTML = '';
+      .stage {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 48px 24px 64px;
+        gap: 8px;
+      }
+      .stage-head {
+        text-align: center;
+        margin-bottom: 16px;
+      }
+      .stage-head .eyebrow {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--cyan);
+      }
+      .stage-head h2 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 6px 0 0;
+        color: var(--text-secondary);
+        letter-spacing: -0.005em;
+      }
+
+      .cards-row {
+        display: grid;
+        grid-template-columns: repeat(3, 440px);
+        gap: 28px;
+        margin-top: 8px;
+      }
+
+      /* ===== Card ===== */
+      .card {
+        background: rgba(13, 27, 62, 0.8);
+        border: 1px solid rgba(77, 184, 255, 0.12);
+        border-radius: 16px;
+        padding: 40px;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        box-shadow: 0 16px 48px rgba(6, 13, 36, 0.55);
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        position: relative;
+      }
+      .step-label {
+        position: absolute;
+        top: -10px;
+        left: 24px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        background: var(--bg-base);
+        border: 1px solid var(--border-default);
+        border-radius: 100px;
+        color: var(--text-secondary);
+      }
+      .step-label.done {
+        color: var(--success);
+        border-color: rgba(34, 211, 160, 0.4);
+      }
+      .step-label .num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: rgba(77, 184, 255, 0.18);
+        color: var(--cyan);
+        font-family: var(--font-mono);
+        font-size: 10px;
+      }
+      .step-label.done .num {
+        background: rgba(34, 211, 160, 0.18);
+        color: var(--success);
+      }
+
+      /* Logo */
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        align-self: center;
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.005em;
+      }
+      .brand img {
+        height: 22px;
+        width: auto;
+      }
+
+      /* Header icon + titles */
+      .head-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        text-align: center;
+      }
+      .head-icon {
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(77, 184, 255, 0.14);
+        border: 1px solid rgba(77, 184, 255, 0.32);
+        color: var(--cyan);
+        box-shadow:
+          0 0 28px rgba(77, 184, 255, 0.22),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      .head-icon.success {
+        background: rgba(34, 211, 160, 0.14);
+        border-color: rgba(34, 211, 160, 0.34);
+        color: var(--success);
+        box-shadow:
+          0 0 28px rgba(34, 211, 160, 0.25),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      .head-icon [data-lucide] {
+        width: 48px;
+        height: 48px;
+        stroke-width: 1.5;
+      }
+      .titles {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .titles h1 {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        margin: 0;
+        color: var(--text-primary);
+        line-height: 1.18;
+      }
+      .titles p {
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.55;
+        margin: 0;
+      }
+
+      /* ===== Step 1 — QR ===== */
+      .qr-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+      }
+      .qr {
+        width: 180px;
+        height: 180px;
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 8px;
+        display: grid;
+        grid-template-columns: repeat(21, 1fr);
+        grid-template-rows: repeat(21, 1fr);
+        gap: 0;
+      }
+      .qr span {
+        background: transparent;
+      }
+      .qr span.on {
+        background: #060d24;
+      }
+      /* Finder corners */
+      .qr-corner {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .manual-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        text-align: center;
+      }
+      .code-pill {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: rgba(77, 184, 255, 0.06);
+        border: 1px solid var(--border-default);
+        border-radius: 8px;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--cyan);
+        letter-spacing: 0.04em;
+      }
+      .code-pill .copy {
+        margin-left: auto;
+        width: 24px;
+        height: 24px;
+        border-radius: 5px;
+        border: 0;
+        background: transparent;
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 160ms;
+      }
+      .code-pill .copy:hover {
+        color: var(--cyan);
+        background: rgba(77, 184, 255, 0.1);
+      }
+      .code-pill .copy [data-lucide] {
+        width: 13px;
+        height: 13px;
+        stroke-width: 2;
+      }
+
+      /* App suggestion */
+      .app-hint {
+        margin-top: 4px;
+        background: rgba(6, 13, 36, 0.4);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .app-hint-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 12px;
+        background: transparent;
+        border: 0;
+        width: 100%;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--cyan);
+        letter-spacing: -0.005em;
+        text-align: left;
+      }
+      .app-hint-head [data-lucide] {
+        width: 13px;
+        height: 13px;
+        stroke-width: 2;
+      }
+      .app-hint-head .chev {
+        margin-left: auto;
+        transition: transform 200ms;
+      }
+      .app-hint[open] .app-hint-head .chev {
+        transform: rotate(180deg);
+      }
+      .app-hint-body {
+        display: none;
+        padding: 4px 12px 12px;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .app-hint[open] .app-hint-body {
+        display: flex;
+      }
+      .app-hint-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text-primary);
+      }
+      .app-hint-row .src-ic {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(77, 184, 255, 0.14);
+        color: var(--cyan);
+      }
+      .app-hint-row .src-ic [data-lucide] {
+        width: 11px;
+        height: 11px;
+        stroke-width: 2.25;
+      }
+      .app-hint-row .ext {
+        margin-left: auto;
+        color: var(--text-disabled);
+      }
+      .app-hint-row .ext [data-lucide] {
+        width: 11px;
+        height: 11px;
+        stroke-width: 2;
+      }
+
+      /* ===== Step 2 — Code input ===== */
+      .code-input {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+      .code-box {
+        width: 44px;
+        height: 52px;
+        border-radius: 8px;
+        background: rgba(13, 27, 62, 0.8);
+        border: 1px solid rgba(77, 184, 255, 0.15);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-family: var(--font-mono);
+        letter-spacing: -0.02em;
+        transition: all 180ms;
+      }
+      .code-box.filled {
+        color: var(--cyan);
+        border-color: rgba(77, 184, 255, 0.3);
+        background: rgba(77, 184, 255, 0.04);
+      }
+      .code-box.active {
+        border-color: var(--cyan);
+        box-shadow: 0 0 0 3px rgba(77, 184, 255, 0.1);
+        position: relative;
+      }
+      .code-box.active .caret {
+        width: 2px;
+        height: 28px;
+        background: var(--cyan);
+        border-radius: 100px;
+        animation: blink 1s steps(2) infinite;
+      }
+      @keyframes blink {
+        50% {
+          opacity: 0;
         }
+      }
+
+      .countdown {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--warning);
+        align-self: center;
+      }
+      .countdown [data-lucide] {
+        width: 12px;
+        height: 12px;
+        stroke-width: 2;
+      }
+
+      /* ===== Step 3 — Recovery codes ===== */
+      .recovery {
+        background: rgba(34, 211, 160, 0.06);
+        border: 1px solid rgba(34, 211, 160, 0.2);
+        border-radius: 10px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .recovery-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--success);
+      }
+      .recovery-warn {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--warning);
+        line-height: 1.45;
+      }
+      .recovery-warn [data-lucide] {
+        width: 13px;
+        height: 13px;
+        stroke-width: 2.25;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+      .codes-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px 12px;
+        padding-top: 4px;
+      }
+      .codes-grid span {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        color: var(--text-secondary);
+        letter-spacing: 0.04em;
+        font-weight: 500;
+      }
+
+      /* ===== Buttons ===== */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        height: 44px;
+        padding: 0 18px;
+        border-radius: 9px;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        background: transparent;
+        transition: all 180ms;
+      }
+      .btn [data-lucide] {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2.5;
+      }
+      .btn-ghost {
+        border-color: var(--border-default);
+        color: var(--text-secondary);
+      }
+      .btn-ghost:hover {
+        border-color: var(--cyan);
+        color: var(--text-primary);
+      }
+      .btn-primary {
+        background: var(--cyan);
+        color: var(--bg-base);
+        box-shadow: 0 4px 16px rgba(77, 184, 255, 0.28);
+      }
+      .btn-primary:hover {
+        background: var(--cyan-hover);
+        box-shadow: 0 8px 24px rgba(77, 184, 255, 0.4);
+        transform: translateY(-1px);
+      }
+      .btn-success {
+        background: var(--success);
+        color: var(--bg-base);
+        box-shadow: 0 4px 16px rgba(34, 211, 160, 0.28);
+      }
+      .btn-success:hover {
+        background: #38e5b0;
+        box-shadow: 0 8px 24px rgba(34, 211, 160, 0.4);
+        transform: translateY(-1px);
+      }
+
+      .link-row {
+        display: inline-flex;
+        align-self: center;
+      }
+      .text-link {
+        background: transparent;
+        border: 0;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: color 160ms;
+      }
+      .text-link:hover {
+        color: var(--cyan);
+      }
+      .text-link [data-lucide] {
+        width: 11px;
+        height: 11px;
+        stroke-width: 2.25;
+        vertical-align: -1.5px;
+        margin-right: 2px;
+      }
+
+      @media (max-width: 1420px) {
+        .cards-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="stage">
+      <div class="stage-head">
+        <div class="eyebrow">ProSell · Seguridad</div>
+        <h2>Configurar verificación en dos pasos · flujo completo</h2>
+      </div>
+
+      <div class="cards-row">
+        <!-- ===== STEP 1 — Show QR ===== -->
+        <section class="card">
+          <span class="step-label"><span class="num">1</span>Escanear</span>
+          <a class="brand" href="#"
+            ><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a
+          >
+
+          <div class="head-block">
+            <span class="head-icon"><i data-lucide="shield"></i></span>
+            <div class="titles">
+              <h1>Activá la verificación en dos pasos</h1>
+              <p>
+                Escaneá el código QR con tu app de autenticación (Google
+                Authenticator, Authy, etc.)
+              </p>
+            </div>
+          </div>
+
+          <div class="qr-wrap">
+            <div class="qr" id="qr"></div>
+            <div class="manual-label">O ingresá este código manualmente:</div>
+            <div class="code-pill">
+              PROS-3K7A-X2MN-9QBT
+              <button class="copy" type="button" aria-label="Copiar">
+                <i data-lucide="copy"></i>
+              </button>
+            </div>
+
+            <details class="app-hint" style="width: 100%">
+              <summary class="app-hint-head" style="list-style: none">
+                <i data-lucide="help-circle"></i> ¿Qué app usar?
+                <span class="chev"><i data-lucide="chevron-down"></i></span>
+              </summary>
+              <div class="app-hint-body">
+                <a class="app-hint-row" href="#">
+                  <span class="src-ic"><i data-lucide="key-round"></i></span>
+                  Google Authenticator
+                  <span class="ext"><i data-lucide="external-link"></i></span>
+                </a>
+                <a class="app-hint-row" href="#">
+                  <span class="src-ic"><i data-lucide="shield-check"></i></span>
+                  Authy
+                  <span class="ext"><i data-lucide="external-link"></i></span>
+                </a>
+              </div>
+            </details>
+          </div>
+
+          <button class="btn btn-primary" type="button">
+            Ya escaneé el código <i data-lucide="arrow-right"></i>
+          </button>
+          <button class="text-link" type="button" style="align-self: center">
+            Configurar después
+          </button>
+        </section>
+
+        <!-- ===== STEP 2 — Verify ===== -->
+        <section class="card">
+          <span class="step-label"><span class="num">2</span>Verificar</span>
+          <a class="brand" href="#"
+            ><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a
+          >
+
+          <div class="head-block">
+            <span class="head-icon"><i data-lucide="smartphone"></i></span>
+            <div class="titles">
+              <h1>Verificá el código</h1>
+              <p>Ingresá el código de 6 dígitos de tu app de autenticación</p>
+            </div>
+          </div>
+
+          <div class="code-input">
+            <div class="code-box filled">4</div>
+            <div class="code-box filled">8</div>
+            <div class="code-box filled">2</div>
+            <div class="code-box active"><span class="caret"></span></div>
+            <div class="code-box"></div>
+            <div class="code-box"></div>
+          </div>
+
+          <div class="countdown">
+            <i data-lucide="clock"></i>
+            El código expira en 28 segundos
+          </div>
+
+          <button class="btn btn-primary" type="button">
+            Verificar y activar 2FA <i data-lucide="arrow-right"></i>
+          </button>
+          <button class="text-link" type="button" style="align-self: center">
+            <i data-lucide="arrow-left"></i>Volver
+          </button>
+        </section>
+
+        <!-- ===== STEP 3 — Success ===== -->
+        <section class="card">
+          <span class="step-label done"
+            ><span class="num"
+              ><i
+                data-lucide="check"
+                style="width: 10px; height: 10px; stroke-width: 3.5"
+              ></i></span
+            >Activado</span
+          >
+          <a class="brand" href="#"
+            ><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a
+          >
+
+          <div class="head-block">
+            <span class="head-icon success"
+              ><i data-lucide="shield-check"></i
+            ></span>
+            <div class="titles">
+              <h1>¡2FA activado!</h1>
+              <p>Tu cuenta ahora tiene una capa extra de seguridad.</p>
+            </div>
+          </div>
+
+          <div class="recovery">
+            <span class="recovery-label">Códigos de recuperación</span>
+            <div class="recovery-warn">
+              <i data-lucide="alert-triangle"></i>
+              <span
+                >Guardalos en un lugar seguro. Solo se muestran una vez.</span
+              >
+            </div>
+            <div class="codes-grid">
+              <span>A3K7-X2MN</span><span>9QBT-W5LR</span> <span>M8YP-4VCZ</span
+              ><span>R2NK-7JHF</span> <span>T6DX-1BQS</span
+              ><span>Y4WM-3PCG</span> <span>N9RV-5TKA</span
+              ><span>H7JL-2ZXE</span>
+            </div>
+          </div>
+
+          <button class="btn btn-ghost" type="button">
+            <i data-lucide="download"></i>Descargar códigos
+          </button>
+          <button class="btn btn-success" type="button">
+            Ir al dashboard <i data-lucide="arrow-right"></i>
+          </button>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      // Generate a stylized QR pattern (deterministic, recognizable shape with finder corners)
+      (function buildQR() {
+        const N = 21;
+        const grid = document.getElementById("qr");
+        if (!grid) return;
+        // Build set of "on" cells with a pseudo-random but stable pattern + 3 finder corners
+        const onCells = new Set();
+        // Finder square at (0,0), (0,14), (14,0)
+        function addFinder(r, c) {
+          for (let i = 0; i < 7; i++)
+            for (let j = 0; j < 7; j++) {
+              const edge = i === 0 || i === 6 || j === 0 || j === 6;
+              const inner = i >= 2 && i <= 4 && j >= 2 && j <= 4;
+              if (edge || inner) onCells.add(`${r + i},${c + j}`);
+            }
+        }
+        addFinder(0, 0);
+        addFinder(0, N - 7);
+        addFinder(N - 7, 0);
+        // Timing pattern: row 6, col 6 alternating
+        for (let i = 8; i < N - 8; i++) {
+          if (i % 2 === 0) {
+            onCells.add(`6,${i}`);
+            onCells.add(`${i},6`);
+          }
+        }
+        // Fill data with deterministic noise
+        let seed = 73;
+        function rnd() {
+          seed = (seed * 1103515245 + 12345) % 2147483648;
+          return seed / 2147483648;
+        }
+        for (let r = 0; r < N; r++) {
+          for (let c = 0; c < N; c++) {
+            // skip finder zones
+            const inFinder =
+              (r < 8 && c < 8) ||
+              (r < 8 && c >= N - 8) ||
+              (r >= N - 8 && c < 8);
+            if (inFinder) continue;
+            if (r === 6 || c === 6) continue;
+            if (rnd() > 0.55) onCells.add(`${r},${c}`);
+          }
+        }
+        // Render
+        const frag = document.createDocumentFragment();
+        for (let r = 0; r < N; r++) {
+          for (let c = 0; c < N; c++) {
+            const s = document.createElement("span");
+            if (onCells.has(`${r},${c}`)) s.className = "on";
+            frag.appendChild(s);
+          }
+        }
+        grid.appendChild(frag);
+      })();
+
+      lucide.createIcons();
+
+      // Code-box: simple keyboard typing demo on the middle (active) card
+      document.querySelectorAll(".code-box").forEach((box, idx, arr) => {
+        box.addEventListener("click", () => {
+          arr.forEach((b) => {
+            b.classList.remove("active");
+            if (!b.textContent.trim() || b.querySelector(".caret")) {
+              b.innerHTML = "";
+            }
+          });
+          box.classList.add("active");
+          box.innerHTML = '<span class="caret"></span>';
+        });
       });
-      box.classList.add('active');
-      box.innerHTML = '<span class="caret"></span>';
-    });
-  });
-</script>
-</body>
+    </script>
+  </body>
 </html>

@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+const { chromium } = require("playwright");
 
 (async () => {
   const browser = await chromium.launch({ headless: false });
@@ -8,13 +8,15 @@ const { chromium } = require('playwright');
   await page.context().addCookies([
     {
       name: "user_data",
-      value: encodeURIComponent(JSON.stringify({
-        id: "dealer-1",
-        email: "test@example.com",
-        role: "branch",
-        name: "Test Branch",
-        tenant_id: "default-tenant-id",
-      })),
+      value: encodeURIComponent(
+        JSON.stringify({
+          id: "dealer-1",
+          email: "test@example.com",
+          role: "branch",
+          name: "Test Branch",
+          tenant_id: "default-tenant-id",
+        }),
+      ),
       domain: "localhost",
       path: "/",
       sameSite: "Lax",
@@ -57,7 +59,12 @@ const { chromium } = require('playwright');
             price_cents: 2000000,
             currency: "USD",
             status: "active",
-            attributes: { category: "vehicle", year: 2024, make: "Toyota", model: "Camry" },
+            attributes: {
+              category: "vehicle",
+              year: 2024,
+              make: "Toyota",
+              model: "Camry",
+            },
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
@@ -80,20 +87,22 @@ const { chromium } = require('playwright');
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          items: [{
-            id: "apt-1",
-            tenant_id: "tenant-1",
-            user_id: "dealer-1",
-            lead_id: "lead-1",
-            product_id: "prod-1",
-            buyer_name: "John Doe",
-            buyer_phone: "+1-555-0101",
-            scheduled_at: new Date().toISOString(),
-            status: "scheduled",
-            notes: "Interested in this vehicle",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }],
+          items: [
+            {
+              id: "apt-1",
+              tenant_id: "tenant-1",
+              user_id: "dealer-1",
+              lead_id: "lead-1",
+              product_id: "prod-1",
+              buyer_name: "John Doe",
+              buyer_phone: "+1-555-0101",
+              scheduled_at: new Date().toISOString(),
+              status: "scheduled",
+              notes: "Interested in this vehicle",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ],
           total: 1,
           limit: 50,
           offset: 0,
@@ -135,7 +144,7 @@ const { chromium } = require('playwright');
   console.log("Modal content:", modalText?.substring(0, 500));
 
   console.log("Press any key to close...");
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  await new Promise((resolve) => setTimeout(resolve, 5000));
 
   await browser.close();
 })();

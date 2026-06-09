@@ -132,8 +132,10 @@ export const walletApi = {
   ): Promise<WalletTransactionsResponse> {
     const searchParams = new URLSearchParams();
     searchParams.set("tenant_id", tenantId);
-    if (params?.skip !== undefined) searchParams.set("skip", params.skip.toString());
-    if (params?.limit !== undefined) searchParams.set("limit", params.limit.toString());
+    if (params?.skip !== undefined)
+      searchParams.set("skip", params.skip.toString());
+    if (params?.limit !== undefined)
+      searchParams.set("limit", params.limit.toString());
 
     const query = searchParams.toString();
     const url = `${API_BASE_URL}/api/v1/wallet/org/${orgId}/transactions${query ? `?${query}` : ""}`;

@@ -7,61 +7,70 @@
 
 :root {
   /* ---------- Color: Base / Surfaces ---------- */
-  --bg-base:        #060D24;
-  --bg-surface:     #0D1B3E;
-  --bg-elevated:    #1A2D5A;
+  --bg-base: #060d24;
+  --bg-surface: #0d1b3e;
+  --bg-elevated: #1a2d5a;
 
   /* ---------- Color: Brand ---------- */
-  --navy:           #0D1B6E;
-  --blue:           #1E5FD4;
-  --cyan:           #4DB8FF;
-  --cyan-hover:     #7DCEFF;
+  --navy: #0d1b6e;
+  --blue: #1e5fd4;
+  --cyan: #4db8ff;
+  --cyan-hover: #7dceff;
 
   /* ---------- Color: Text ---------- */
-  --text-primary:   #F0F4FF;
-  --text-secondary: #8A9BBF;
-  --text-disabled:  #3D4F72;
+  --text-primary: #f0f4ff;
+  --text-secondary: #8a9bbf;
+  --text-disabled: #3d4f72;
 
   /* ---------- Color: Status ---------- */
-  --success:        #22D3A0;
-  --warning:        #F5A623;
-  --error:          #F04438;
+  --success: #22d3a0;
+  --warning: #f5a623;
+  --error: #f04438;
 
   /* Status background tints (12% opacity for badges) */
-  --success-bg:     rgba(34, 211, 160, 0.12);
-  --warning-bg:     rgba(245, 166, 35, 0.12);
-  --error-bg:       rgba(240, 68, 56, 0.12);
-  --info-bg:        rgba(77, 184, 255, 0.12);
+  --success-bg: rgba(34, 211, 160, 0.12);
+  --warning-bg: rgba(245, 166, 35, 0.12);
+  --error-bg: rgba(240, 68, 56, 0.12);
+  --info-bg: rgba(77, 184, 255, 0.12);
 
   /* ---------- Borders ---------- */
-  --border-subtle:  rgba(77, 184, 255, 0.10);
+  --border-subtle: rgba(77, 184, 255, 0.1);
   --border-default: rgba(77, 184, 255, 0.15);
-  --border-strong:  rgba(77, 184, 255, 0.30);
-  --border-active:  #4DB8FF;
+  --border-strong: rgba(77, 184, 255, 0.3);
+  --border-active: #4db8ff;
 
   /* ---------- Gradients ---------- */
-  --gradient-hero:    linear-gradient(135deg, #060D24 0%, #0D1B6E 50%, #1E5FD4 100%);
-  --gradient-glow:    radial-gradient(ellipse at 70% 20%, rgba(30, 95, 212, 0.18), transparent 60%);
-  --gradient-cta:     linear-gradient(135deg, #4DB8FF, #1E5FD4);
-  --gradient-text:    linear-gradient(135deg, #4DB8FF, #1E5FD4);
+  --gradient-hero: linear-gradient(
+    135deg,
+    #060d24 0%,
+    #0d1b6e 50%,
+    #1e5fd4 100%
+  );
+  --gradient-glow: radial-gradient(
+    ellipse at 70% 20%,
+    rgba(30, 95, 212, 0.18),
+    transparent 60%
+  );
+  --gradient-cta: linear-gradient(135deg, #4db8ff, #1e5fd4);
+  --gradient-text: linear-gradient(135deg, #4db8ff, #1e5fd4);
 
   /* ---------- Shadows / Elevation ---------- */
-  --shadow-sm:    0 2px 8px rgba(6, 13, 36, 0.4);
-  --shadow-md:    0 8px 24px rgba(6, 13, 36, 0.5);
-  --shadow-lg:    0 16px 48px rgba(6, 13, 36, 0.55);
-  --shadow-xl:    0 32px 80px rgba(6, 13, 36, 0.6);
+  --shadow-sm: 0 2px 8px rgba(6, 13, 36, 0.4);
+  --shadow-md: 0 8px 24px rgba(6, 13, 36, 0.5);
+  --shadow-lg: 0 16px 48px rgba(6, 13, 36, 0.55);
+  --shadow-xl: 0 32px 80px rgba(6, 13, 36, 0.6);
   --shadow-glow-cyan: 0 8px 32px rgba(77, 184, 255, 0.35);
   --shadow-glow-blue: 0 8px 32px rgba(30, 95, 212, 0.4);
   --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
   /* ---------- Radii ---------- */
-  --radius-xs:    4px;
-  --radius-sm:    6px;
-  --radius-md:    8px;
-  --radius-lg:    12px;
-  --radius-xl:    16px;
-  --radius-2xl:   24px;
-  --radius-pill:  100px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-pill: 100px;
 
   /* ---------- Spacing (4px base) ---------- */
   --space-1: 4px;
@@ -78,33 +87,34 @@
   --space-24: 96px;
 
   /* ---------- Typography: families ---------- */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
 
   /* ---------- Typography: scale ---------- */
-  --fs-hero:   64px;
-  --fs-h1:     48px;
-  --fs-h2:     36px;
-  --fs-h3:     24px;
-  --fs-h4:     18px;
+  --fs-hero: 64px;
+  --fs-h1: 48px;
+  --fs-h2: 36px;
+  --fs-h3: 24px;
+  --fs-h4: 18px;
   --fs-body-lg: 18px;
-  --fs-body:   16px;
-  --fs-small:  14px;
-  --fs-xs:     12px;
+  --fs-body: 16px;
+  --fs-small: 14px;
+  --fs-xs: 12px;
 
   /* ---------- Typography: weights ---------- */
-  --fw-regular:  400;
-  --fw-medium:   500;
+  --fw-regular: 400;
+  --fw-medium: 500;
   --fw-semibold: 600;
-  --fw-bold:     700;
-  --fw-black:    800;
+  --fw-bold: 700;
+  --fw-black: 800;
 
   /* ---------- Motion ---------- */
-  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --dur-fast:    120ms;
-  --dur-base:    200ms;
-  --dur-slow:    320ms;
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
 }
 
 /* ============================================================

@@ -49,7 +49,7 @@ function getMockWallets(): MockWallets {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ orgId: string }> }
+  { params }: { params: Promise<{ orgId: string }> },
 ) {
   const { orgId } = await params;
 

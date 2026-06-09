@@ -7,18 +7,21 @@ Smoke tests are critical path tests that verify the core functionality of the ap
 ## Running Smoke Tests
 
 ### Run all smoke tests:
+
 ```bash
 cd tests/e2e
 pnpm test --grep @smoke
 ```
 
 ### Run smoke tests in specific file:
+
 ```bash
 cd tests/e2e
 pnpm test vehicle-form-vin.spec.ts --grep @smoke
 ```
 
 ### Run smoke tests with UI (for debugging):
+
 ```bash
 cd tests/e2e
 pnpm test --grep @smoke --ui
@@ -27,6 +30,7 @@ pnpm test --grep @smoke --ui
 ## Smoke Test Coverage (20 tests)
 
 ### Auth Flow (5 tests)
+
 1. `@smoke should display login page elements correctly` - Verifies login form loads
 2. `@smoke should pass accessibility checks` - Login page WCAG compliance
 3. `@smoke should show validation error for empty email` - Form validation
@@ -34,6 +38,7 @@ pnpm test --grep @smoke --ui
 5. `@smoke should login successfully with valid credentials` - Auth flow works
 
 ### Vehicle Form (7 tests)
+
 6. `@smoke should update model field after VIN decode` - VIN decode: model = "equinox"
 7. `@smoke should update engine field after VIN decode` - Engine field populates
 8. `@smoke should update make select field after VIN decode` - Select: make = "chevrolet"
@@ -43,16 +48,20 @@ pnpm test --grep @smoke --ui
 12. `@smoke should submit form and create product via POST /api/v1/products` - Form creates product+vehicle
 
 ### Middleware (1 test)
+
 13. `@smoke should redirect to login when accessing /dashboard` - Protected routes work
 
 ### UI Components (2 tests)
+
 14. `@smoke should display the main heading` - Home page loads
 15. `@smoke should display Google OAuth button` - OAuth button visible
 
 ### Dashboard (1 test)
+
 16. `@smoke should display organizations list page elements correctly` - Org list loads
 
 ### API Contracts (5 tests)
+
 17. `@smoke GET /api/v1/categories - should list categories` - Categories API
 18. `@smoke POST /api/v1/categories - should create category` - Create category works
 19. `@smoke GET /api/v1/products - should list products` - Products API
@@ -79,13 +88,14 @@ test(
   { tag: ["@smoke", "@critical"] },
   async ({ page }) => {
     // test implementation
-  }
+  },
 );
 ```
 
 ## Criteria for Smoke Tests
 
 A test should be tagged as @smoke if it:
+
 1. Tests a critical user path (login, create vehicle, view catalog)
 2. Executes quickly (< 10 seconds per test)
 3. Covers high-risk functionality (auth, API contracts, data integrity)
@@ -94,6 +104,7 @@ A test should be tagged as @smoke if it:
 ## CI/CD Integration
 
 Smoke tests should run:
+
 - On every PR (before full E2E suite)
 - After every deployment to staging
 - As a quick health check before full regression testing

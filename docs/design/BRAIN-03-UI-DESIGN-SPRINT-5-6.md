@@ -1,4 +1,5 @@
 # 🎨 Diseño UI/UX - Sprint 5-6 (Carga de Inventarios)
+
 **Fuente:** MasterMind Framework - Cerebro #3 (UI Design)
 **Fecha:** 2026-03-04
 **NotebookLM ID:** 8d544475-6860-4cd7-9037-8549325493dd
@@ -21,10 +22,12 @@
 **Recomendación:** Flujo HÍBRIDO con "Smart Focus"
 
 **Desktop:**
+
 - Página única dividida en secciones claras (Organismos)
 - Dealer ve todo de un vistazo
 
 **Móvil:**
+
 - Acordeón o scroll por secciones
 - "Sticky Actions" (botón de publicar siempre visible al final)
 
@@ -45,20 +48,20 @@
 
 ### Formulario de Carga
 
-| Componente | Librería | Uso |
-|------------|---------|-----|
-| **Input + Button** | shadcn/ui | Campo VIN con botón "Decodificar" |
-| **Card** | shadcn/ui | Agrupar campos (Datos, Precio, Multimedia) |
-| **Retro Grid / Animated List** | Magic UI | Área de carga de fotos con progreso visual |
-| **Progress** | shadcn/ui | Barra de progreso real para upload de 20 fotos |
+| Componente                     | Librería  | Uso                                            |
+| ------------------------------ | --------- | ---------------------------------------------- |
+| **Input + Button**             | shadcn/ui | Campo VIN con botón "Decodificar"              |
+| **Card**                       | shadcn/ui | Agrupar campos (Datos, Precio, Multimedia)     |
+| **Retro Grid / Animated List** | Magic UI  | Área de carga de fotos con progreso visual     |
+| **Progress**                   | shadcn/ui | Barra de progreso real para upload de 20 fotos |
 
 ### Dashboard (Listado)
 
-| Componente | Librería | Uso |
-|------------|---------|-----|
-| **Data Table** | shadcn/ui | Vista de lista con filtros rápidos |
-| **Bento Grid** | Magic UI | Vista de cards de autos (desktop) |
-| **Tabs** | shadcn/ui | Alternar estados (Publicado, Vendido, Borrador) |
+| Componente     | Librería  | Uso                                             |
+| -------------- | --------- | ----------------------------------------------- |
+| **Data Table** | shadcn/ui | Vista de lista con filtros rápidos              |
+| **Bento Grid** | Magic UI  | Vista de cards de autos (desktop)               |
+| **Tabs**       | shadcn/ui | Alternar estados (Publicado, Vendido, Borrador) |
 
 ---
 
@@ -68,21 +71,13 @@
 
 ```css
 /* Neutrales (60%) - Fondo, texto */
---neutral-900: #121212  /* Fondo dark mode (evita smearing OLED) */
---neutral-800: #1e1e1e
---neutral-700: #2d2d2d
---neutral-200: #e5e5e5
---neutral-100: #f5f5f5  /* Fondo light mode */
-
-/* Primario (10%) - Brand */
---primary: #6366f1  /* Índigo profesional */
---primary-hover: #4f46e5
---primary-light: #818cf8
-
-/* Semánticos */
---success: #22c55e  /* Verde - Vendido */
---error: #ef4444    /* Rojo - Errores VIN */
---warning: #f59e0b  /* Ámbar - Borrador */
+--neutral-900: #121212 /* Fondo dark mode (evita smearing OLED) */
+  --neutral-800: #1e1e1e --neutral-700: #2d2d2d --neutral-200: #e5e5e5
+  --neutral-100: #f5f5f5 /* Fondo light mode */ /* Primario (10%) - Brand */
+  --primary: #6366f1 /* Índigo profesional */ --primary-hover: #4f46e5
+  --primary-light: #818cf8 /* Semánticos */ --success: #22c55e
+  /* Verde - Vendido */ --error: #ef4444 /* Rojo - Errores VIN */
+  --warning: #f59e0b /* Ámbar - Borrador */;
 ```
 
 **IMPORTANTE:** Nunca usar color primario para estados de error
@@ -91,18 +86,19 @@
 
 ```css
 /* Fuente */
-font-family: 'Inter' | 'Geist', sans-serif;
+font-family:
+  "Inter" | "Geist",
+  sans-serif;
 
 /* Escala */
---text-base: 16px  /* Mínimo para móvil (evita zoom iOS) */
---text-small: 14px  /* Etiquetas */
---text-large: 18px  /* Títulos */
---text-display: 24px; /* Headers */
+--text-base: 16px /* Mínimo para móvil (evita zoom iOS) */ --text-small: 14px
+  /* Etiquetas */ --text-large: 18px /* Títulos */ --text-display: 24px; /* Headers */
 ```
 
 ### Spacing
 
 **Escala de 8px fija**
+
 ```css
 /* Múltiplos de 8 */
 --spacing-1: 8px;
@@ -161,9 +157,9 @@ font-family: 'Inter' | 'Geist', sans-serif;
 
 ### Accesibilidad
 
-| Patrón | Implementación |
-|--------|----------------|
-| **Foco visible** | `:focus-visible` con anillo prominente |
+| Patrón             | Implementación                                      |
+| ------------------ | --------------------------------------------------- |
+| **Foco visible**   | `:focus-visible` con anillo prominente              |
 | **Zonas de toque** | Mínimo 44x44px en móvil (incluso si ícono es menor) |
 | **Inputs nativos** | `type="number"` para precio, `type="text"` para VIN |
 
@@ -333,21 +329,21 @@ export default {
       colors: {
         // Primario
         primary: {
-          DEFAULT: '#6366f1',
-          hover: '#4f46e5',
-          light: '#818cf8',
+          DEFAULT: "#6366f1",
+          hover: "#4f46e5",
+          light: "#818cf8",
         },
         // Semánticos
-        success: '#22c55e',
-        error: '#ef4444',
-        warning: '#f59e0b',
+        success: "#22c55e",
+        error: "#ef4444",
+        warning: "#f59e0b",
       },
       spacing: {
-        '18': '4.5rem', // Múltiplos de 8 personalizados
+        "18": "4.5rem", // Múltiplos de 8 personalizados
       },
     },
   },
-}
+};
 ```
 
 ---
@@ -357,4 +353,4 @@ export default {
 
 ---
 
-*Generado por MasterMind Framework v1.0 - Cerebro #3 (UI Design)*
+_Generado por MasterMind Framework v1.0 - Cerebro #3 (UI Design)_

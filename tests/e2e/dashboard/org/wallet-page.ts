@@ -39,20 +39,24 @@ export class WalletPage extends BasePage {
 
     // Wallet Card
     this.tokenBalanceTitle = page.getByText(/token balance/i);
-    this.tokenBalanceValue = page.locator('.text-2xl.font-bold');
-    this.tokenBalanceLabel = page.locator('.text-xs.text-muted-foreground').getByText(/tokens/i);
+    this.tokenBalanceValue = page.locator(".text-2xl.font-bold");
+    this.tokenBalanceLabel = page
+      .locator(".text-xs.text-muted-foreground")
+      .getByText(/tokens/i);
     this.rechargeButton = page.getByRole("button", { name: /recharge/i });
     this.refreshButton = page.getByRole("button", { name: /refresh balance/i });
 
     // Transaction History
-    this.transactionHistoryHeading = page.getByRole("heading", { name: /transaction history/i });
+    this.transactionHistoryHeading = page.getByRole("heading", {
+      name: /transaction history/i,
+    });
     this.transactionItems = page.locator(
-      'div[class*="flex items-center justify-between p-4 rounded-lg border"]'
+      'div[class*="flex items-center justify-between p-4 rounded-lg border"]',
     );
     this.emptyTransactionsMessage = page.getByText(/no transactions yet/i);
 
     // States
-    this.loadingSpinner = page.locator('.animate-spin');
+    this.loadingSpinner = page.locator(".animate-spin");
 
     // Pagination
     this.paginationInfo = page.getByText(/showing \d+ of \d+ transactions/i);
@@ -60,9 +64,15 @@ export class WalletPage extends BasePage {
     this.nextButton = page.getByRole("button", { name: /next/i });
 
     // Recharge dialog
-    this.rechargeDialog = page.locator('div[class*="mt-4 p-4 rounded-md bg-muted border"]');
-    this.tokenPackageButtons = this.rechargeDialog.getByRole("button", { name: /tokens/i });
-    this.rechargeCancelButton = this.rechargeDialog.getByRole("button", { name: /cancel/i });
+    this.rechargeDialog = page.locator(
+      'div[class*="mt-4 p-4 rounded-md bg-muted border"]',
+    );
+    this.tokenPackageButtons = this.rechargeDialog.getByRole("button", {
+      name: /tokens/i,
+    });
+    this.rechargeCancelButton = this.rechargeDialog.getByRole("button", {
+      name: /cancel/i,
+    });
   }
 
   /**
@@ -158,7 +168,7 @@ export class WalletPage extends BasePage {
    */
   async getTransactionAmount(index: number): Promise<string | null> {
     const transaction = this.transactionItems.nth(index);
-    const amountText = transaction.locator('.font-semibold');
+    const amountText = transaction.locator(".font-semibold");
     return await amountText.textContent();
   }
 
@@ -167,17 +177,22 @@ export class WalletPage extends BasePage {
    */
   async getTransactionDescription(index: number): Promise<string | null> {
     const transaction = this.transactionItems.nth(index);
-    const description = transaction.locator('.font-medium');
+    const description = transaction.locator(".font-medium");
     return await description.textContent();
   }
 
   /**
    * Verify transaction type is displayed (credit/debit)
    */
-  async verifyTransactionType(index: number, type: "credit" | "debit"): Promise<void> {
+  async verifyTransactionType(
+    index: number,
+    type: "credit" | "debit",
+  ): Promise<void> {
     const transaction = this.transactionItems.nth(index);
     const typeIndicator = type === "credit" ? "+" : "-";
-    const amountText = await transaction.getByText(new RegExp(`\\${typeIndicator}`)).textContent();
+    const amountText = await transaction
+      .getByText(new RegExp(`\\${typeIndicator}`))
+      .textContent();
     expect(amountText).toBeTruthy();
   }
 

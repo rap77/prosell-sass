@@ -50,15 +50,15 @@ describe("RegisterPage", () => {
       ).toBeInTheDocument();
 
       // Footer text
-      expect(
-        screen.getByText(/14 días gratis/i),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/14 días gratis/i)).toBeInTheDocument();
     });
 
     it("should render logo with correct styling and link", () => {
       render(<RegisterPageContent />);
 
-      expect(screen.getByRole("button", { name: /Google/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Google/i }),
+      ).toBeInTheDocument();
     });
 
     it("should render RegisterForm component inside a card", () => {
@@ -71,8 +71,12 @@ describe("RegisterPage", () => {
     it("should render footer with Terms and Privacy links", () => {
       render(<RegisterPageContent />);
 
-      const termsLink = screen.getByRole("link", { name: /Términos de Servicio/i });
-      const privacyLink = screen.getByRole("link", { name: /Política de Privacidad/i });
+      const termsLink = screen.getByRole("link", {
+        name: /Términos de Servicio/i,
+      });
+      const privacyLink = screen.getByRole("link", {
+        name: /Política de Privacidad/i,
+      });
 
       expect(termsLink).toBeInTheDocument();
       expect(termsLink).toHaveAttribute("href", "/terms");
@@ -106,7 +110,9 @@ describe("RegisterPage", () => {
     it("should center content in a max-width container", () => {
       const { container } = render(<RegisterPageContent />);
 
-      expect(screen.getByRole("button", { name: /Crear cuenta/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Crear cuenta/i }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -122,8 +128,12 @@ describe("RegisterPage", () => {
     it("should have accessible links with proper labels", () => {
       render(<RegisterPageContent />);
 
-      expect(screen.getByRole("link", { name: /Términos de Servicio/i })).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /Política de Privacidad/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /Términos de Servicio/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /Política de Privacidad/i }),
+      ).toBeInTheDocument();
     });
   });
 });

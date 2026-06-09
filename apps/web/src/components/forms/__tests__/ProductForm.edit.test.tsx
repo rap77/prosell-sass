@@ -205,9 +205,7 @@ describe("ProductForm - edit mode", () => {
 
     await user.clear(screen.getByLabelText(/Modelo/i));
     await user.type(screen.getByLabelText(/Modelo/i), "Camry");
-    await user.click(
-      screen.getByRole("button", { name: /update vehicle/i }),
-    );
+    await user.click(screen.getByRole("button", { name: /update vehicle/i }));
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
@@ -256,7 +254,9 @@ describe("ProductForm - edit mode", () => {
     await user.click(screen.getByRole("button", { name: /update vehicle/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/VIN must be 17 characters/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/VIN must be 17 characters/i),
+      ).toBeInTheDocument();
     });
   });
 

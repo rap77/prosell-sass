@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 /**
  * LocalStorage Schema Versioning Hook

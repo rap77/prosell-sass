@@ -22,106 +22,106 @@
    * ===================================================== */
   :root {
     /* shadcn/ui vars (HSL, no wrapper) mapped to ProSell dark */
-    --background: 222 81% 8%;        /* #060D24 */
-    --foreground: 220 100% 97%;      /* #F0F4FF */
-    --card: 222 66% 15%;             /* #0D1B3E */
+    --background: 222 81% 8%; /* #060D24 */
+    --foreground: 220 100% 97%; /* #F0F4FF */
+    --card: 222 66% 15%; /* #0D1B3E */
     --card-foreground: 220 100% 97%;
     --popover: 222 66% 15%;
     --popover-foreground: 220 100% 97%;
-    --primary: 207 100% 65%;         /* #4DB8FF */
+    --primary: 207 100% 65%; /* #4DB8FF */
     --primary-foreground: 222 81% 8%;
-    --secondary: 222 55% 23%;        /* #1A2D5A */
+    --secondary: 222 55% 23%; /* #1A2D5A */
     --secondary-foreground: 220 100% 97%;
-    --muted: 222 60% 17%;            /* ~#0D1B3E */
+    --muted: 222 60% 17%; /* ~#0D1B3E */
     --muted-foreground: 220 33% 63%; /* #8A9BBF */
     --accent: 222 60% 17%;
     --accent-foreground: 220 100% 97%;
-    --destructive: 4 88% 60%;        /* #F04438 */
+    --destructive: 4 88% 60%; /* #F04438 */
     --destructive-foreground: 220 100% 97%;
-    --border: 222 38% 22%;           /* ~rgba(77,184,255,0.15) solid approx */
+    --border: 222 38% 22%; /* ~rgba(77,184,255,0.15) solid approx */
     --input: 222 38% 22%;
     --ring: 207 100% 65%;
     --radius: 0.5rem;
 
     /* ProSell design tokens — dark */
-    --ps-bg-base:         #060D24;
-    --ps-bg-surface:      #0D1B3E;
-    --ps-bg-elevated:     #1A2D5A;
-    --ps-bg-sidebar:      #040A1A;
+    --ps-bg-base: #060d24;
+    --ps-bg-surface: #0d1b3e;
+    --ps-bg-elevated: #1a2d5a;
+    --ps-bg-sidebar: #040a1a;
 
-    --ps-navy:            #0D1B6E;
-    --ps-blue:            #1E5FD4;
-    --ps-blue-hover:      #2D72E8;
-    --ps-cyan:            #4DB8FF;
-    --ps-cyan-hover:      #7DCEFF;
+    --ps-navy: #0d1b6e;
+    --ps-blue: #1e5fd4;
+    --ps-blue-hover: #2d72e8;
+    --ps-cyan: #4db8ff;
+    --ps-cyan-hover: #7dceff;
 
-    --ps-text-primary:    #F0F4FF;
-    --ps-text-secondary:  #8A9BBF;
-    --ps-text-disabled:   #3D4F72;
+    --ps-text-primary: #f0f4ff;
+    --ps-text-secondary: #8a9bbf;
+    --ps-text-disabled: #3d4f72;
 
-    --ps-success:         #22D3A0;
-    --ps-warning:         #F5A623;
-    --ps-error:           #F04438;
+    --ps-success: #22d3a0;
+    --ps-warning: #f5a623;
+    --ps-error: #f04438;
 
-    --ps-success-bg:      rgba(34, 211, 160, 0.14);
-    --ps-warning-bg:      rgba(245, 166, 35, 0.10);
-    --ps-error-bg:        rgba(240, 68, 56, 0.10);
-    --ps-info-bg:         rgba(77, 184, 255, 0.12);
+    --ps-success-bg: rgba(34, 211, 160, 0.14);
+    --ps-warning-bg: rgba(245, 166, 35, 0.1);
+    --ps-error-bg: rgba(240, 68, 56, 0.1);
+    --ps-info-bg: rgba(77, 184, 255, 0.12);
 
-    --ps-border-subtle:   rgba(77, 184, 255, 0.10);
-    --ps-border-default:  rgba(77, 184, 255, 0.15);
-    --ps-border-medium:   rgba(77, 184, 255, 0.20);
-    --ps-border-strong:   rgba(77, 184, 255, 0.30);
-    --ps-border-active:   #4DB8FF;
+    --ps-border-subtle: rgba(77, 184, 255, 0.1);
+    --ps-border-default: rgba(77, 184, 255, 0.15);
+    --ps-border-medium: rgba(77, 184, 255, 0.2);
+    --ps-border-strong: rgba(77, 184, 255, 0.3);
+    --ps-border-active: #4db8ff;
 
     /* Component-specific tokens */
-    --ps-chip-bg:              rgba(6, 13, 36, 0.55);
-    --ps-field-tag-bg:         rgba(13, 27, 62, 0.60);
-    --ps-niche-inactive-bg:    rgba(13, 27, 62, 0.45);
-    --ps-switch-off-bg:        rgba(61, 79, 114, 0.60);
-    --ps-ico-inactive-bg:      rgba(138, 155, 191, 0.06);
-    --ps-ico-inactive-border:  rgba(138, 155, 191, 0.12);
-    --ps-nav-active-bg:        rgba(77, 184, 255, 0.08);
-    --ps-badge-bg:             rgba(77, 184, 255, 0.14);
-    --ps-hover-bg-sm:          rgba(77, 184, 255, 0.05);
-    --ps-hover-bg-xs:          rgba(77, 184, 255, 0.04);
-    --ps-add-card-bg:          rgba(77, 184, 255, 0.02);
-    --ps-add-card-hover-bg:    rgba(77, 184, 255, 0.05);
-    --ps-icon-btn-hover-border:rgba(77, 184, 255, 0.20);
-    --ps-danger-hover-bg:      rgba(240, 68, 56, 0.06);
-    --ps-danger-hover-border:  rgba(240, 68, 56, 0.30);
-    --ps-type-chip-text-bg:    rgba(77, 184, 255, 0.10);
-    --ps-type-chip-num-bg:     rgba(34, 211, 160, 0.10);
-    --ps-type-chip-bool-bg:    rgba(245, 166, 35, 0.10);
-    --ps-table-row-hover:      rgba(77, 184, 255, 0.04);
-    --ps-table-divider:        rgba(77, 184, 255, 0.06);
-    --ps-user-card-bg:         rgba(13, 27, 62, 0.60);
-    --ps-niche-active-border:         rgba(77, 184, 255, 0.20);
-    --ps-niche-active-border-hover:   rgba(77, 184, 255, 0.32);
-    --ps-niche-inactive-border:       rgba(77, 184, 255, 0.08);
+    --ps-chip-bg: rgba(6, 13, 36, 0.55);
+    --ps-field-tag-bg: rgba(13, 27, 62, 0.6);
+    --ps-niche-inactive-bg: rgba(13, 27, 62, 0.45);
+    --ps-switch-off-bg: rgba(61, 79, 114, 0.6);
+    --ps-ico-inactive-bg: rgba(138, 155, 191, 0.06);
+    --ps-ico-inactive-border: rgba(138, 155, 191, 0.12);
+    --ps-nav-active-bg: rgba(77, 184, 255, 0.08);
+    --ps-badge-bg: rgba(77, 184, 255, 0.14);
+    --ps-hover-bg-sm: rgba(77, 184, 255, 0.05);
+    --ps-hover-bg-xs: rgba(77, 184, 255, 0.04);
+    --ps-add-card-bg: rgba(77, 184, 255, 0.02);
+    --ps-add-card-hover-bg: rgba(77, 184, 255, 0.05);
+    --ps-icon-btn-hover-border: rgba(77, 184, 255, 0.2);
+    --ps-danger-hover-bg: rgba(240, 68, 56, 0.06);
+    --ps-danger-hover-border: rgba(240, 68, 56, 0.3);
+    --ps-type-chip-text-bg: rgba(77, 184, 255, 0.1);
+    --ps-type-chip-num-bg: rgba(34, 211, 160, 0.1);
+    --ps-type-chip-bool-bg: rgba(245, 166, 35, 0.1);
+    --ps-table-row-hover: rgba(77, 184, 255, 0.04);
+    --ps-table-divider: rgba(77, 184, 255, 0.06);
+    --ps-user-card-bg: rgba(13, 27, 62, 0.6);
+    --ps-niche-active-border: rgba(77, 184, 255, 0.2);
+    --ps-niche-active-border-hover: rgba(77, 184, 255, 0.32);
+    --ps-niche-inactive-border: rgba(77, 184, 255, 0.08);
     --ps-niche-inactive-border-hover: rgba(77, 184, 255, 0.15);
 
     /* Form / input tokens */
-    --ps-input-bg:           rgba(13, 27, 62, 0.80);
-    --ps-input-bg-focus:     rgba(13, 27, 62, 0.95);
-    --ps-input-border:       rgba(77, 184, 255, 0.15);
-    --ps-input-focus-shadow: rgba(77, 184, 255, 0.10);
+    --ps-input-bg: rgba(13, 27, 62, 0.8);
+    --ps-input-bg-focus: rgba(13, 27, 62, 0.95);
+    --ps-input-border: rgba(77, 184, 255, 0.15);
+    --ps-input-focus-shadow: rgba(77, 184, 255, 0.1);
     --ps-input-error-shadow: rgba(240, 68, 56, 0.12);
 
     /* Navigation */
     --ps-nav-bg: rgba(6, 13, 36, 0.72);
 
     /* Landing decorative glows */
-    --ps-landing-grid:   rgba(77, 184, 255, 0.04);
+    --ps-landing-grid: rgba(77, 184, 255, 0.04);
     --ps-landing-glow-1: rgba(30, 95, 212, 0.35);
-    --ps-landing-glow-2: rgba(13, 27, 110, 0.40);
+    --ps-landing-glow-2: rgba(13, 27, 110, 0.4);
 
     /* Violet (sold status) */
     --ps-violet-bg: rgba(139, 92, 246, 0.12);
-    --ps-violet:    #a78bfa;
+    --ps-violet: #a78bfa;
 
     /* Shadow overlay (modals) */
-    --ps-shadow-overlay: rgba(6, 13, 36, 0.40);
+    --ps-shadow-overlay: rgba(6, 13, 36, 0.4);
   }
 
   /* .dark mirrors :root — ensures Tailwind dark: utilities see the dark palette
@@ -155,102 +155,102 @@
    * ===================================================== */
   [data-theme="light"] {
     /* shadcn/ui vars mapped to ProSell light */
-    --background: 220 41% 96%;       /* #F4F6FB */
-    --foreground: 225 49% 12%;       /* #0E1730 */
-    --card: 0 0% 100%;               /* #FFFFFF */
+    --background: 220 41% 96%; /* #F4F6FB */
+    --foreground: 225 49% 12%; /* #0E1730 */
+    --card: 0 0% 100%; /* #FFFFFF */
     --card-foreground: 225 49% 12%;
     --popover: 0 0% 100%;
     --popover-foreground: 225 49% 12%;
-    --primary: 214 67% 47%;          /* #1E5FD4 */
+    --primary: 214 67% 47%; /* #1E5FD4 */
     --primary-foreground: 0 0% 100%;
-    --secondary: 219 31% 93%;        /* #EEF1F8 */
+    --secondary: 219 31% 93%; /* #EEF1F8 */
     --secondary-foreground: 225 49% 12%;
     --muted: 219 31% 93%;
     --muted-foreground: 224 26% 40%; /* #4E5C7E */
     --accent: 219 31% 93%;
     --accent-foreground: 225 49% 12%;
-    --destructive: 4 67% 50%;        /* #D03A2F */
+    --destructive: 4 67% 50%; /* #D03A2F */
     --destructive-foreground: 0 0% 100%;
-    --border: 218 26% 87%;           /* #D5DCEA */
+    --border: 218 26% 87%; /* #D5DCEA */
     --input: 218 26% 87%;
     --ring: 214 67% 47%;
 
     /* ProSell design tokens — light */
-    --ps-bg-base:         #F4F6FB;
-    --ps-bg-surface:      #FFFFFF;
-    --ps-bg-elevated:     #FFFFFF;
-    --ps-bg-sidebar:      #F8F9FC;
+    --ps-bg-base: #f4f6fb;
+    --ps-bg-surface: #ffffff;
+    --ps-bg-elevated: #ffffff;
+    --ps-bg-sidebar: #f8f9fc;
 
-    --ps-navy:            #0D1B6E;
-    --ps-blue:            #1E5FD4;
-    --ps-blue-hover:      #1849A8;
-    --ps-cyan:            #2E8FE0;
-    --ps-cyan-hover:      #1849A8;
+    --ps-navy: #0d1b6e;
+    --ps-blue: #1e5fd4;
+    --ps-blue-hover: #1849a8;
+    --ps-cyan: #2e8fe0;
+    --ps-cyan-hover: #1849a8;
 
-    --ps-text-primary:    #0E1730;
-    --ps-text-secondary:  #4E5C7E;
-    --ps-text-disabled:   #94A0BD;
+    --ps-text-primary: #0e1730;
+    --ps-text-secondary: #4e5c7e;
+    --ps-text-disabled: #94a0bd;
 
-    --ps-success:         #067A52;
-    --ps-warning:         #A85508;
-    --ps-error:           #D03A2F;
+    --ps-success: #067a52;
+    --ps-warning: #a85508;
+    --ps-error: #d03a2f;
 
-    --ps-success-bg:      #E4F4EC;
-    --ps-warning-bg:      #FBEFDF;
-    --ps-error-bg:        #FBE5E2;
-    --ps-info-bg:         #E4EEFB;
+    --ps-success-bg: #e4f4ec;
+    --ps-warning-bg: #fbefdf;
+    --ps-error-bg: #fbe5e2;
+    --ps-info-bg: #e4eefb;
 
-    --ps-border-subtle:   #E5EAF4;
-    --ps-border-default:  #D5DCEA;
-    --ps-border-medium:   #C8D1E5;
-    --ps-border-strong:   #B7C2D8;
-    --ps-border-active:   #1E5FD4;
+    --ps-border-subtle: #e5eaf4;
+    --ps-border-default: #d5dcea;
+    --ps-border-medium: #c8d1e5;
+    --ps-border-strong: #b7c2d8;
+    --ps-border-active: #1e5fd4;
 
     /* Component-specific tokens */
-    --ps-chip-bg:              #EEF1F8;
-    --ps-field-tag-bg:         #F4F6FB;
-    --ps-niche-inactive-bg:    rgba(14, 23, 48, 0.03);
-    --ps-switch-off-bg:        #B7C2D8;
-    --ps-ico-inactive-bg:      rgba(14, 23, 48, 0.04);
-    --ps-ico-inactive-border:  #D5DCEA;
-    --ps-nav-active-bg:        rgba(30, 95, 212, 0.08);
-    --ps-badge-bg:             rgba(30, 95, 212, 0.10);
-    --ps-hover-bg-sm:          rgba(30, 95, 212, 0.05);
-    --ps-hover-bg-xs:          rgba(30, 95, 212, 0.04);
-    --ps-add-card-bg:          rgba(30, 95, 212, 0.02);
-    --ps-add-card-hover-bg:    rgba(30, 95, 212, 0.05);
-    --ps-icon-btn-hover-border:rgba(30, 95, 212, 0.20);
-    --ps-danger-hover-bg:      rgba(208, 58, 47, 0.06);
-    --ps-danger-hover-border:  rgba(208, 58, 47, 0.30);
-    --ps-type-chip-text-bg:    rgba(30, 95, 212, 0.10);
-    --ps-type-chip-num-bg:     rgba(6, 122, 82, 0.10);
-    --ps-type-chip-bool-bg:    rgba(168, 85, 8, 0.10);
-    --ps-table-row-hover:      rgba(30, 95, 212, 0.04);
-    --ps-table-divider:        #E5EAF4;
-    --ps-user-card-bg:         #EEF1F8;
-    --ps-niche-active-border:         #D5DCEA;
-    --ps-niche-active-border-hover:   #B7C2D8;
-    --ps-niche-inactive-border:       #E5EAF4;
-    --ps-niche-inactive-border-hover: #D5DCEA;
+    --ps-chip-bg: #eef1f8;
+    --ps-field-tag-bg: #f4f6fb;
+    --ps-niche-inactive-bg: rgba(14, 23, 48, 0.03);
+    --ps-switch-off-bg: #b7c2d8;
+    --ps-ico-inactive-bg: rgba(14, 23, 48, 0.04);
+    --ps-ico-inactive-border: #d5dcea;
+    --ps-nav-active-bg: rgba(30, 95, 212, 0.08);
+    --ps-badge-bg: rgba(30, 95, 212, 0.1);
+    --ps-hover-bg-sm: rgba(30, 95, 212, 0.05);
+    --ps-hover-bg-xs: rgba(30, 95, 212, 0.04);
+    --ps-add-card-bg: rgba(30, 95, 212, 0.02);
+    --ps-add-card-hover-bg: rgba(30, 95, 212, 0.05);
+    --ps-icon-btn-hover-border: rgba(30, 95, 212, 0.2);
+    --ps-danger-hover-bg: rgba(208, 58, 47, 0.06);
+    --ps-danger-hover-border: rgba(208, 58, 47, 0.3);
+    --ps-type-chip-text-bg: rgba(30, 95, 212, 0.1);
+    --ps-type-chip-num-bg: rgba(6, 122, 82, 0.1);
+    --ps-type-chip-bool-bg: rgba(168, 85, 8, 0.1);
+    --ps-table-row-hover: rgba(30, 95, 212, 0.04);
+    --ps-table-divider: #e5eaf4;
+    --ps-user-card-bg: #eef1f8;
+    --ps-niche-active-border: #d5dcea;
+    --ps-niche-active-border-hover: #b7c2d8;
+    --ps-niche-inactive-border: #e5eaf4;
+    --ps-niche-inactive-border-hover: #d5dcea;
 
     /* Form / input tokens — light */
-    --ps-input-bg:           #FFFFFF;
-    --ps-input-bg-focus:     #FFFFFF;
-    --ps-input-border:       #D5DCEA;
-    --ps-input-focus-shadow: rgba(30, 95, 212, 0.10);
+    --ps-input-bg: #ffffff;
+    --ps-input-bg-focus: #ffffff;
+    --ps-input-border: #d5dcea;
+    --ps-input-focus-shadow: rgba(30, 95, 212, 0.1);
     --ps-input-error-shadow: rgba(208, 58, 47, 0.12);
 
     /* Navigation */
     --ps-nav-bg: rgba(248, 249, 252, 0.85);
 
     /* Landing decorative glows — subtle in light mode */
-    --ps-landing-grid:   rgba(30, 95, 212, 0.04);
+    --ps-landing-grid: rgba(30, 95, 212, 0.04);
     --ps-landing-glow-1: rgba(30, 95, 212, 0.08);
     --ps-landing-glow-2: rgba(30, 95, 212, 0.05);
 
     /* Violet (sold status) */
     --ps-violet-bg: rgba(109, 40, 217, 0.08);
-    --ps-violet:    #5B21B6;
+    --ps-violet: #5b21b6;
 
     /* Shadow overlay (modals) */
     --ps-shadow-overlay: rgba(14, 23, 48, 0.12);
@@ -273,11 +273,17 @@
 /* Auth split-layout responsive */
 @media (max-width: 768px) {
   /* Left brand panel is hidden on mobile */
-  .ps-auth-split > aside[aria-hidden="true"] { display: none; }
+  .ps-auth-split > aside[aria-hidden="true"] {
+    display: none;
+  }
   /* Form panel takes full width */
-  .ps-auth-split { grid-template-columns: 1fr !important; }
+  .ps-auth-split {
+    grid-template-columns: 1fr !important;
+  }
   /* Show mobile logo */
-  .ps-auth-mobile-logo { display: inline-flex !important; }
+  .ps-auth-mobile-logo {
+    display: inline-flex !important;
+  }
 }
 
 /* Smooth scrolling */
@@ -392,7 +398,11 @@ button {
   }
 
   @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 }

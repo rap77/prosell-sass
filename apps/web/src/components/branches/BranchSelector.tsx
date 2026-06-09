@@ -61,7 +61,9 @@ export function BranchSelector({
         {isLoading ? (
           <div className="flex items-center justify-center py-4">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-            <span className="ml-2 text-sm text-muted-foreground">Loading branches...</span>
+            <span className="ml-2 text-sm text-muted-foreground">
+              Loading branches...
+            </span>
           </div>
         ) : error ? (
           <div className="px-2 py-4 text-sm text-destructive">

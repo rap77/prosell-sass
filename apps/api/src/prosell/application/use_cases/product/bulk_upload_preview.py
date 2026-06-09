@@ -70,7 +70,7 @@ class BulkUploadPreviewUseCase:
 
                 images_count += len(preview_row.images_found)
 
-            except Exception as e:  # noqa: BLE-001
+            except Exception as e:
                 logger.warning("Preview row analysis failed: %s", e)
                 error_count += 1
                 rows.append(

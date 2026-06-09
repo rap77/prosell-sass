@@ -19,8 +19,11 @@ import { loginUser } from "../../helpers";
 import type { Page } from "@playwright/test";
 
 function makeMockId(): string {
-  const hex = () => Math.floor(Math.random() * 0xffffffff).toString(16).padStart(8, "0");
-  return `${hex().slice(0,8)}-${hex().slice(0,4)}-${hex().slice(0,4)}-${hex().slice(0,4)}-${hex()}${hex().slice(0,4)}`;
+  const hex = () =>
+    Math.floor(Math.random() * 0xffffffff)
+      .toString(16)
+      .padStart(8, "0");
+  return `${hex().slice(0, 8)}-${hex().slice(0, 4)}-${hex().slice(0, 4)}-${hex().slice(0, 4)}-${hex()}${hex().slice(0, 4)}`;
 }
 
 async function setupWalletApiMocks(page: Page) {
@@ -36,7 +39,11 @@ async function setupWalletApiMocks(page: Page) {
     if (orgId) {
       if (method === "GET") {
         const org = orgStore[orgId];
-        await route.fulfill({ status: org ? 200 : 404, contentType: "application/json", body: JSON.stringify(org ?? { detail: "Not found" }) });
+        await route.fulfill({
+          status: org ? 200 : 404,
+          contentType: "application/json",
+          body: JSON.stringify(org ?? { detail: "Not found" }),
+        });
       } else {
         await route.continue();
       }
@@ -45,16 +52,39 @@ async function setupWalletApiMocks(page: Page) {
       const id = makeMockId();
       const now = new Date().toISOString();
       const org = {
-        id, name: body.name, tenant_id: "test-user-123", status: "pending_verification",
-        description: body.description ?? null, website: body.website ?? null, phone: body.phone ?? null,
-        logo_url: null, banner_url: null, wallet_id: null,
-        created_at: now, updated_at: now, verified_at: null, verified_by: null,
+        id,
+        name: body.name,
+        tenant_id: "test-user-123",
+        status: "pending_verification",
+        description: body.description ?? null,
+        website: body.website ?? null,
+        phone: body.phone ?? null,
+        logo_url: null,
+        banner_url: null,
+        wallet_id: null,
+        created_at: now,
+        updated_at: now,
+        verified_at: null,
+        verified_by: null,
       };
       orgStore[id] = org;
-      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(org) });
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify(org),
+      });
     } else {
       const orgs = Object.values(orgStore);
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ organizations: orgs, total: orgs.length, page: 1, page_size: 100 }) });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          organizations: orgs,
+          total: orgs.length,
+          page: 1,
+          page_size: 100,
+        }),
+      });
     }
   });
 
@@ -66,18 +96,29 @@ async function setupWalletApiMocks(page: Page) {
     if (url.match(/\/api\/v1\/wallet\/org\/[^/?]+\/transactions/)) {
       // GET /api/v1/wallet/org/{orgId}/transactions
       await route.fulfill({
-        status: 200, contentType: "application/json",
-        body: JSON.stringify({ transactions: [], total: 0, skip: 0, limit: 20 }),
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          transactions: [],
+          total: 0,
+          skip: 0,
+          limit: 20,
+        }),
       });
     } else if (url.match(/\/api\/v1\/wallet\/org\/([^/?]+)/)) {
       // GET /api/v1/wallet/org/{orgId}
       const pathMatch = url.match(/\/api\/v1\/wallet\/org\/([^/?]+)/);
       const orgId = pathMatch ? pathMatch[1] : "unknown";
       await route.fulfill({
-        status: 200, contentType: "application/json",
+        status: 200,
+        contentType: "application/json",
         body: JSON.stringify({
-          id: `wallet-${orgId}`, organization_id: orgId, tenant_id: "test-user-123",
-          balance: 0, created_at: now, updated_at: now,
+          id: `wallet-${orgId}`,
+          organization_id: orgId,
+          tenant_id: "test-user-123",
+          balance: 0,
+          created_at: now,
+          updated_at: now,
         }),
       });
     } else {
@@ -298,7 +339,9 @@ test.describe("Wallet", () => {
         // Verify package pricing (10 tokens = $1)
         const packages = ["100 Tokens", "500 Tokens", "1000 Tokens"];
         for (const pkg of packages) {
-          const packageButton = walletPage.tokenPackageButtons.filter({ hasText: pkg });
+          const packageButton = walletPage.tokenPackageButtons.filter({
+            hasText: pkg,
+          });
           await expect(packageButton).toBeVisible();
         }
       },

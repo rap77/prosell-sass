@@ -50,7 +50,7 @@
  *   cover, and reordering on read would silently change the cover.
  */
 
-import type { Product } from '@/types/product'
+import type { Product } from "@/types/product";
 
 /**
  * Filter an arbitrary `unknown` to the list of non-empty strings it
@@ -63,8 +63,10 @@ import type { Product } from '@/types/product'
  * images and they should still render.
  */
 function filterStrings(values: unknown): string[] {
-  if (!Array.isArray(values)) return []
-  return values.filter((v): v is string => typeof v === 'string' && v.length > 0)
+  if (!Array.isArray(values)) return [];
+  return values.filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
 }
 
 /**
@@ -74,29 +76,31 @@ function filterStrings(values: unknown): string[] {
  * Safe to call with a partially-populated `Product` (e.g. fixtures
  * that only define the fields relevant to a test).
  */
-export function getProductImageKeys(product: Product | null | undefined): string[] {
-  if (!product || typeof product !== 'object') return []
+export function getProductImageKeys(
+  product: Product | null | undefined,
+): string[] {
+  if (!product || typeof product !== "object") return [];
 
-  const productLevel = filterStrings(product.image_urls)
+  const productLevel = filterStrings(product.image_urls);
 
-  const attrs = product.attributes
+  const attrs = product.attributes;
   const attributeLevel =
-    attrs && typeof attrs === 'object' && !Array.isArray(attrs)
+    attrs && typeof attrs === "object" && !Array.isArray(attrs)
       ? filterStrings((attrs as Record<string, unknown>).image_urls)
-      : []
+      : [];
 
   // Deduped, order-preserving merge. Top-level wins (it's the
   // post-migration canonical location). The backend endpoint does
   // the exact same merge — see `product_router.py`:
   // `get_product_image_urls`.
-  const seen = new Set<string>()
-  const merged: string[] = []
+  const seen = new Set<string>();
+  const merged: string[] = [];
   for (const key of [...productLevel, ...attributeLevel]) {
-    if (seen.has(key)) continue
-    seen.add(key)
-    merged.push(key)
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(key);
   }
-  return merged
+  return merged;
 }
 
 /**
@@ -128,12 +132,12 @@ export function getProductImageKeys(product: Product | null | undefined): string
 export function getCoverImageKey(
   product: Product | null | undefined,
 ): string | undefined {
-  if (!product || typeof product !== 'object') return undefined
+  if (!product || typeof product !== "object") return undefined;
 
-  const images = getProductImageKeys(product)
-  const cover = product.cover_image_key
-  if (typeof cover === 'string' && cover.length > 0 && images.includes(cover)) {
-    return cover
+  const images = getProductImageKeys(product);
+  const cover = product.cover_image_key;
+  if (typeof cover === "string" && cover.length > 0 && images.includes(cover)) {
+    return cover;
   }
-  return images[0]
+  return images[0];
 }

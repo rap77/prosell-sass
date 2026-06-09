@@ -45,7 +45,10 @@ export interface ProductImage {
  * as a signal to render the empty state rather than feeding an unreachable
  * URL to `<Image>`.
  */
-export function getDisplayUrl(image: ProductImage, useThumbnail = false): string | null {
+export function getDisplayUrl(
+  image: ProductImage,
+  useThumbnail = false,
+): string | null {
   if (useThumbnail && image.thumbnail_url) {
     return image.thumbnail_url;
   }
@@ -56,8 +59,12 @@ export function getDisplayUrl(image: ProductImage, useThumbnail = false): string
  * Helper to check if image has dimensions
  */
 export function hasDimensions(image: ProductImage): boolean {
-  return image.width !== null && image.width !== undefined &&
-         image.height !== null && image.height !== undefined;
+  return (
+    image.width !== null &&
+    image.width !== undefined &&
+    image.height !== null &&
+    image.height !== undefined
+  );
 }
 
 /**

@@ -69,7 +69,7 @@ function getMockTransactions(): MockTransactions {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   const wallets = getMockWallets();
@@ -83,7 +83,10 @@ export async function GET(
   const transactions = getMockTransactions();
   const walletTransactions = Object.values(transactions)
     .filter((t) => t.wallet_id === id)
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
 
   return NextResponse.json({
     ...wallet,

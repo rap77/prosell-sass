@@ -3,12 +3,14 @@
 A pixel-faithful recreation of ProSell's sales intelligence app shell. Built from the design system spec only (no codebase or Figma was provided), so the screens are best-guess for a B2B sales intelligence product.
 
 ## Screens
+
 - **Dashboard** (default) — KPI tiles, pipeline-at-risk feed, signals inbox
 - **Pipeline** — sortable deals table with stage chips and ARR bars
 - **Account** — Acme Corp detail: company info, signals, contacts, related deals
 - **Deal** — deal detail panel with timeline + champion/blocker
 
 ## Components (`*.jsx`)
+
 - `Shell.jsx` — top-level layout with sidebar + topbar + content area, view router
 - `Sidebar.jsx` — left nav, 240px, primary navigation + workspace switcher
 - `TopBar.jsx` — global search, notifications, user menu
@@ -21,6 +23,7 @@ A pixel-faithful recreation of ProSell's sales intelligence app shell. Built fro
 - `Icon.jsx` — Lucide wrapper
 
 ## How to use
+
 Open `index.html` directly. Navigate via the sidebar; clicking a deal in the Pipeline table opens the Deal view, clicking an account name opens the Account view.
 
 > ⚠️ This kit is a **visual recreation against the brand spec**. If a real ProSell codebase exists, attach it and the kit will be re-cut against actual components.

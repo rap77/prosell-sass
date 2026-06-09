@@ -26,15 +26,15 @@ Perfil entrevistados:
 
 ### Respuestas múltiples permitidas
 
-|Canal|# de menciones (sobre 20)|%|
-|---|---|---|
-|Google Search|18|90%|
-|Facebook Marketplace|14|70%|
-|CarGurus|13|65%|
-|AutoTrader|11|55%|
-|Website directo del dealer|10|50%|
-|Referidos|4|20%|
-|TikTok/Instagram|3|15%|
+| Canal                      | # de menciones (sobre 20) | %   |
+| -------------------------- | ------------------------- | --- |
+| Google Search              | 18                        | 90% |
+| Facebook Marketplace       | 14                        | 70% |
+| CarGurus                   | 13                        | 65% |
+| AutoTrader                 | 11                        | 55% |
+| Website directo del dealer | 10                        | 50% |
+| Referidos                  | 4                         | 20% |
+| TikTok/Instagram           | 3                         | 15% |
 
 ### Insight clave
 
@@ -50,12 +50,12 @@ Comentario típico:
 
 # 2️⃣ ¿Confían en agendar cita online?
 
-|Respuesta|#|%|
-|---|---|---|
-|Sí, sin problema|11|55%|
-|Sí, pero prefiero confirmación por llamada|6|30%|
-|Solo si el dealer es confiable|2|10%|
-|Prefiero ir sin cita|1|5%|
+| Respuesta                                  | #   | %   |
+| ------------------------------------------ | --- | --- |
+| Sí, sin problema                           | 11  | 55% |
+| Sí, pero prefiero confirmación por llamada | 6   | 30% |
+| Solo si el dealer es confiable             | 2   | 10% |
+| Prefiero ir sin cita                       | 1   | 5%  |
 
 ### Insight
 
@@ -73,13 +73,13 @@ Velocidad de respuesta < 5 minutos aumenta dramáticamente show-up rate.
 
 # 3️⃣ ¿Qué les molesta del proceso actual?
 
-|Dolor|# menciones|
-|---|---|
-|No responden rápido|13|
-|Me llaman demasiado|9|
-|Me envían info genérica|7|
-|Precio cambia al llegar|6|
-|Demasiados formularios|5|
+| Dolor                   | # menciones |
+| ----------------------- | ----------- |
+| No responden rápido     | 13          |
+| Me llaman demasiado     | 9           |
+| Me envían info genérica | 7           |
+| Precio cambia al llegar | 6           |
+| Demasiados formularios  | 5           |
 
 Insight:
 Compradores quieren:
@@ -100,12 +100,12 @@ Primero aclaración que se les dio en la simulación:
 
 Resultados:
 
-|Respuesta|#|%|
-|---|---|---|
-|No pagaría nada extra|12|60%|
-|Pagaría si me ahorra dinero|4|20%|
-|Pagaría fee fijo pequeño|3|15%|
-|Pagaría % sobre ahorro logrado|1|5%|
+| Respuesta                      | #   | %   |
+| ------------------------------ | --- | --- |
+| No pagaría nada extra          | 12  | 60% |
+| Pagaría si me ahorra dinero    | 4   | 20% |
+| Pagaría fee fijo pequeño       | 3   | 15% |
+| Pagaría % sobre ahorro logrado | 1   | 5%  |
 
 🚨 Insight fuerte:
 

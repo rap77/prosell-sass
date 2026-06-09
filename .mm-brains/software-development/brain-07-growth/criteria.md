@@ -10,13 +10,13 @@ A response that makes domain recommendations instead of systems-level evaluation
 
 ## Rating 3 (Peer) vs Rating 4 (Senior)
 
-| Attribute | Rating 3 (Peer) | Rating 4 (Senior) |
-|-----------|-----------------|-------------------|
-| **Domain synthesis** | Accurately summarizes what domain brains said | Identifies a contradiction or tension BETWEEN domain brains that each missed individually |
-| **Second-order effects** | "Consider the implications of this decision" | Names the specific feedback loop: A → B → C where C undermines A — named components, not generic |
-| **Metrics** | Identifies that metrics are missing | Proposes a specific SLI/OKR with a measurable target that tracks the systemic risk (not just "add monitoring") |
-| **Risk identification** | Identifies the direct risk in the domain consensus | Maps the cascade: if this risk materializes, which other subsystems fail and in what order? |
-| **Approval quality** | States the verdict without evidence (Rating 2 MAX) | Cites specific evidence from domain brain outputs AND names what specific finding would change the verdict |
+| Attribute                | Rating 3 (Peer)                                    | Rating 4 (Senior)                                                                                              |
+| ------------------------ | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Domain synthesis**     | Accurately summarizes what domain brains said      | Identifies a contradiction or tension BETWEEN domain brains that each missed individually                      |
+| **Second-order effects** | "Consider the implications of this decision"       | Names the specific feedback loop: A → B → C where C undermines A — named components, not generic               |
+| **Metrics**              | Identifies that metrics are missing                | Proposes a specific SLI/OKR with a measurable target that tracks the systemic risk (not just "add monitoring") |
+| **Risk identification**  | Identifies the direct risk in the domain consensus | Maps the cascade: if this risk materializes, which other subsystems fail and in what order?                    |
+| **Approval quality**     | States the verdict without evidence (Rating 2 MAX) | Cites specific evidence from domain brain outputs AND names what specific finding would change the verdict     |
 
 **Observable distinction:** A Rating 3 response synthesizes what domain brains said. A Rating 4 response identifies what the domain brains collectively missed at the systems level — the gap that exists not in any single brain's domain, but in the space between them.
 
@@ -45,6 +45,7 @@ Source: brain-07-growth/warnings.md > Domain Misfire | dispatch protocol
 ## Rating 5 (Architect) Threshold
 
 A Rating 5 response:
+
 - Identifies a systemic leverage point (Meadows' high-leverage intervention) where one architectural change shifts multiple subsystem outcomes simultaneously
 - Predicts a feedback loop that would cause the system to degrade under growth conditions (e.g., more brain queries → longer T1 → less useful BRAIN-FEED → lower Delta-Velocity → fewer brain queries, but for the wrong reason)
 - Proposes an experiment that validates the cross-domain consensus with a falsifiable hypothesis and defined acceptance criteria

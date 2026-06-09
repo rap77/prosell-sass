@@ -13,15 +13,15 @@
 
 **Health Score: 87/100** - Sólido pero con riesgo operativo crítico
 
-| Dimensión | Score | Estado |
-|-----------|-------|--------|
-| Product Strategy | 95/100 | ✅ PMF Confirmado |
-| Backend | 90/100 | ✅ Arquitectura sólida, **falta task queue** |
-| Frontend | 85/100 | ✅ React 19 + Tailwind 4 |
-| QA/Testing | 95/100 | ✅ 716 tests passing |
-| DevOps | 80/100 | ⚠️ Falta: workers, circuit breakers |
-| **Growth** | **75/100** | 🔴 **BLOQUEADO por capacidad manual** |
-| UX/UI | 70/100 | ⚠️ Sin catálogo público aún |
+| Dimensión        | Score      | Estado                                       |
+| ---------------- | ---------- | -------------------------------------------- |
+| Product Strategy | 95/100     | ✅ PMF Confirmado                            |
+| Backend          | 90/100     | ✅ Arquitectura sólida, **falta task queue** |
+| Frontend         | 85/100     | ✅ React 19 + Tailwind 4                     |
+| QA/Testing       | 95/100     | ✅ 716 tests passing                         |
+| DevOps           | 80/100     | ⚠️ Falta: workers, circuit breakers          |
+| **Growth**       | **75/100** | 🔴 **BLOQUEADO por capacidad manual**        |
+| UX/UI            | 70/100     | ⚠️ Sin catálogo público aún                  |
 
 **CONSENSUS UNÁNIME (100% de los 7 cerebros): PRIORIZAR MARKETPLACE INTEGRATION**
 
@@ -34,6 +34,7 @@ HOY:     5 dealers × 15 autos = ~75 pubs/día (manejable)
 ```
 
 **Sin automatización:**
+
 - Empleados se queman
 - Calidad cae
 - Dealers se van
@@ -41,11 +42,12 @@ HOY:     5 dealers × 15 autos = ~75 pubs/día (manejable)
 
 ### Decisión de Pivot
 
-| Roadmap Original (v2.0) | Realidad del Negocio | Veredicto 7-Brain |
-|------------------------|---------------------|------------------|
+| Roadmap Original (v2.0)      | Realidad del Negocio                     | Veredicto 7-Brain                     |
+| ---------------------------- | ---------------------------------------- | ------------------------------------- |
 | Sprint 7-8: Catálogo Público | 5 dealers esperan automatización URGENTE | **PIVOTAR a Marketplace Integration** |
 
 **Estrategia Híbrida:** "Automate-First, Surface-Later"
+
 - Sprint 7-8: Marketplace Integration (CRÍTICO)
 - Sprint 8.5: Landing temporal mientras tanto (Quick Win)
 - Sprint 9+: Catálogo Público completo
@@ -98,15 +100,16 @@ gantt
 
 #### Fase 1: Foundation (Semanas 1-2)
 
-| Tarea | Prioridad | Estimación | Dependencias |
-| ----- | --------- | ---------- | ------------ |
-| Task Queue (Redis + Taskiq/Celery) | P0 | 3 días | - |
-| Facebook App Review process | P0 | Iniciar DÍA 1 | Meta approval |
-| Architecture de colas con circuit breakers | P0 | 3 días | Task Queue |
-| Health checks endpoint | P0 | 1 día | - |
-| Setup staging environment | P0 | 2 días | - |
+| Tarea                                      | Prioridad | Estimación    | Dependencias  |
+| ------------------------------------------ | --------- | ------------- | ------------- |
+| Task Queue (Redis + Taskiq/Celery)         | P0        | 3 días        | -             |
+| Facebook App Review process                | P0        | Iniciar DÍA 1 | Meta approval |
+| Architecture de colas con circuit breakers | P0        | 3 días        | Task Queue    |
+| Health checks endpoint                     | P0        | 1 día         | -             |
+| Setup staging environment                  | P0        | 2 días        | -             |
 
 **Criterios de éxito:**
+
 - [ ] Task queue procesa jobs sin bloquear API
 - [ ] Circuit breakers configurados
 - [ ] Facebook App submitted para review
@@ -116,16 +119,17 @@ gantt
 
 #### Fase 2: Facebook Integration (Semanas 3-4)
 
-| Tarea | Prioridad | Estimación | Dependencias |
-| ----- | --------- | ---------- | ------------ |
-| OAuth dinámico por dealer | P0 | 5 días | Facebook App approved |
-| Graph API client | P0 | 5 días | OAuth |
-| Rate limiting (token bucket) | P0 | 3 días | Graph API |
-| Image upload optimization | P0 | 3 días | Graph API |
-| Webhook listener | P0 | 3 días | Graph API |
-| VIN Decoder production-ready | P0 | 2 días | Sprint 5-6 (NHTSA) |
+| Tarea                        | Prioridad | Estimación | Dependencias          |
+| ---------------------------- | --------- | ---------- | --------------------- |
+| OAuth dinámico por dealer    | P0        | 5 días     | Facebook App approved |
+| Graph API client             | P0        | 5 días     | OAuth                 |
+| Rate limiting (token bucket) | P0        | 3 días     | Graph API             |
+| Image upload optimization    | P0        | 3 días     | Graph API             |
+| Webhook listener             | P0        | 3 días     | Graph API             |
+| VIN Decoder production-ready | P0        | 2 días     | Sprint 5-6 (NHTSA)    |
 
 **Criterios de éxito:**
+
 - [ ] Dealer puede autorizar Facebook OAuth
 - [ ] Publicación manual funciona end-to-end
 - [ ] Rate limiting previene baneos
@@ -135,18 +139,19 @@ gantt
 
 #### Fase 3: Automation & QA (Semanas 5-6)
 
-| Tarea | Prioridad | Estimación | Dependencias |
-| ----- | --------- | ---------- | ------------ |
-| IA títulos/descripciones (GPT-4/Claude) | P0 | 3 días | OpenAI API |
-| Re-publicación scheduler (posts vencen a 7 días) | P0 | 5 días | Task Queue |
-| State machine publicación (Zustand) | P0 | 4 días | - |
-| Server Actions (OAuth + mutations) | P0 | 5 días | Next.js 16 |
-| Contract Tests suite (Facebook API) | P0 | 3 días | Graph API |
-| Unit tests de OAuth flow | P0 | 2 días | - |
-| Webhook integration tests | P0 | 2 días | - |
-| Canary deployment setup | P0 | 2 días | - |
+| Tarea                                            | Prioridad | Estimación | Dependencias |
+| ------------------------------------------------ | --------- | ---------- | ------------ |
+| IA títulos/descripciones (GPT-4/Claude)          | P0        | 3 días     | OpenAI API   |
+| Re-publicación scheduler (posts vencen a 7 días) | P0        | 5 días     | Task Queue   |
+| State machine publicación (Zustand)              | P0        | 4 días     | -            |
+| Server Actions (OAuth + mutations)               | P0        | 5 días     | Next.js 16   |
+| Contract Tests suite (Facebook API)              | P0        | 3 días     | Graph API    |
+| Unit tests de OAuth flow                         | P0        | 2 días     | -            |
+| Webhook integration tests                        | P0        | 2 días     | -            |
+| Canary deployment setup                          | P0        | 2 días     | -            |
 
 **Criterios de éxito:**
+
 - [ ] Dealer publica vehículo → Facebook en <30 segundos
 - [ ] IA genera títulos optimizados para CTR
 - [ ] Re-publicación automática funciona
@@ -160,19 +165,21 @@ gantt
 
 **Fechas**: Abr 1 - Abr 14, 2026 (Paralelo a Sprint 7+ últimas 2 semanas)
 
-| Tarea | Prioridad | Estimación |
-| ----- | --------- | ---------- |
-| Landing estática temporal (usa componentes Sprint 5-6) | P0 | 3 días |
-| Dashboard básico (publicaciones/día, time-to-publish) | P0 | 3 días |
-| Facebook App credential setup | P0 | 2 días |
-| Tests E2E básicos | P0 | 2 días |
+| Tarea                                                  | Prioridad | Estimación |
+| ------------------------------------------------------ | --------- | ---------- |
+| Landing estática temporal (usa componentes Sprint 5-6) | P0        | 3 días     |
+| Dashboard básico (publicaciones/día, time-to-publish)  | P0        | 3 días     |
+| Facebook App credential setup                          | P0        | 2 días     |
+| Tests E2E básicos                                      | P0        | 2 días     |
 
 **Criterios de éxito:**
+
 - [ ] Landing lista vehículos que van a Facebook
 - [ ] Dashboard muestra estado de publicaciones
 - [ ] Preparado para integración Facebook
 
 **POR QUÉ ESTE SPRINT:**
+
 - Mientras terminamos Marketplace (semanas 5-6), ya entregamos valor visible
 - Usa componentes ya construidos en Sprint 5-6
 - Satisface necesidad parcial de "presencia pública"
@@ -190,23 +197,25 @@ gantt
 
 **Fechas**: Abr 22 - May 19, 2026
 
-| Entregable | Prioridad | Estimación |
-| ---------- | --------- | ---------- |
-| Asignar tenant_id en OAuth users | P1 | 1 día |
-| Rutas dinámicas por tenant | P0 | 3 días |
-| Shared layouts anidados | P0 | 2 días |
-| Edge caching (ISR/SWR) | P0 | 2 días |
-| Metadata API (SEO) | P0 | 3 días |
-| Filtros avanzados | P0 | 4 días |
-| Búsqueda (Postgres full-text) | P0 | 3 días |
-| Paginación optimizada | P0 | 2 días |
-| Imagen optimizada (next/image) | P0 | 2 días |
-| Tests E2E | P0 | 2 días |
+| Entregable                       | Prioridad | Estimación |
+| -------------------------------- | --------- | ---------- |
+| Asignar tenant_id en OAuth users | P1        | 1 día      |
+| Rutas dinámicas por tenant       | P0        | 3 días     |
+| Shared layouts anidados          | P0        | 2 días     |
+| Edge caching (ISR/SWR)           | P0        | 2 días     |
+| Metadata API (SEO)               | P0        | 3 días     |
+| Filtros avanzados                | P0        | 4 días     |
+| Búsqueda (Postgres full-text)    | P0        | 3 días     |
+| Paginación optimizada            | P0        | 2 días     |
+| Imagen optimizada (next/image)   | P0        | 2 días     |
+| Tests E2E                        | P0        | 2 días     |
 
 **Deuda técnica incluida:**
+
 - `tenant_id=None` en usuarios creados via OAuth → requiere Organizaciones implementadas
 
 **Criterios de éxito:**
+
 - [ ] Catálogo público funcional
 - [ ] Búsqueda con filtros avanzados
 - [ ] SEO metadata dinámico por vehículo
@@ -219,7 +228,7 @@ gantt
 
 **Fechas**: May 20 - Jun 16, 2026
 
-*(Mantiene especificaciones del roadmap v2.0 - ver archivo original)*
+_(Mantiene especificaciones del roadmap v2.0 - ver archivo original)_
 
 ---
 
@@ -227,7 +236,7 @@ gantt
 
 **Fechas**: Jun 17 - Jul 14, 2026
 
-*(Mantiene especificaciones del roadmap v2.0 - ver archivo original)*
+_(Mantiene especificaciones del roadmap v2.0 - ver archivo original)_
 
 ---
 
@@ -241,15 +250,16 @@ gantt
 
 **Fechas**: Jul 15 - Ago 11, 2026
 
-| Entregable | Prioridad | Estimación | Depende de |
-| ---------- | --------- | ---------- | ---------- |
-| Scraping FB Marketplace/CarGurus/AutoTrader | P0 | 5 días | Playwright setup |
-| Normalización de datos multi-fuente | P0 | 3 días | Scraper |
-| Dashboard pricing intelligence (percentiles) | P0 | 4 días | Datos normalizados |
-| Alertas de repricing automático | P0 | 3 días | Dashboard |
-| Tests | P0 | 2 días | - |
+| Entregable                                   | Prioridad | Estimación | Depende de         |
+| -------------------------------------------- | --------- | ---------- | ------------------ |
+| Scraping FB Marketplace/CarGurus/AutoTrader  | P0        | 5 días     | Playwright setup   |
+| Normalización de datos multi-fuente          | P0        | 3 días     | Scraper            |
+| Dashboard pricing intelligence (percentiles) | P0        | 4 días     | Datos normalizados |
+| Alertas de repricing automático              | P0        | 3 días     | Dashboard          |
+| Tests                                        | P0        | 2 días     | -                  |
 
 **Criterios de éxito:**
+
 - [ ] Scraper extrae listings sin bloquearse
 - [ ] Datos se normalizan correctamente
 - [ ] Pricing dashboard muestra percentiles
@@ -261,19 +271,19 @@ gantt
 
 **Fechas**: Ago 12 - Sep 8, 2026
 
-*(Mantiene especificaciones del roadmap v2.0 - ver archivo original)*
+_(Mantiene especificaciones del roadmap v2.0 - ver archivo original)_
 
 ---
 
 ## 📅 MILESTONES ACTUALIZADOS
 
-| Milestone | Fecha | Descripción |
-| --------- | ----- | ----------- |
-| **M1: Alpha** | Mar 4, 2026 | ✅ Backend core funcional (Sprint 5-6 completado) |
-| **M2: Marketplace Automation** | Abr 21, 2026 | 🎯 Publicación automática en Facebook funcional |
-| **M3: MVP Completo** | May 19, 2026 | Catálogo público + Marketplace automation |
-| **M4: Beta Pilotos** | Jul 14, 2026 | 5 orgs piloto con wallet + ventas |
-| **M5: MVP Launch** | Sep 8, 2026 | Lanzamiento público con scraping + analytics |
+| Milestone                      | Fecha        | Descripción                                       |
+| ------------------------------ | ------------ | ------------------------------------------------- |
+| **M1: Alpha**                  | Mar 4, 2026  | ✅ Backend core funcional (Sprint 5-6 completado) |
+| **M2: Marketplace Automation** | Abr 21, 2026 | 🎯 Publicación automática en Facebook funcional   |
+| **M3: MVP Completo**           | May 19, 2026 | Catálogo público + Marketplace automation         |
+| **M4: Beta Pilotos**           | Jul 14, 2026 | 5 orgs piloto con wallet + ventas                 |
+| **M5: MVP Launch**             | Sep 8, 2026  | Lanzamiento público con scraping + analytics      |
 
 ---
 
@@ -281,25 +291,25 @@ gantt
 
 ### Sprint 7+ (Marketplace Automation)
 
-| Métrica | Hoy | Objetivo 6 semanas | Objetivo 12 semanas |
-| ------- | --- | ------------------ | ------------------- |
-| Publicaciones/día | ~75 manual | ~75 automático <30s | 150+ automático |
-| Dealers activos | 5 | 5 (retención 100%) | 10 |
-| API Success Rate | N/A | >99.9% | >99.9% |
-| Time-to-Publish | Minutos | <30 segundos | <30 segundos |
-| Churn Rate | 0% | 0% | <5% |
-| Dealer Satisfaction | 7/10 (asumido) | 9/10 | 9/10 |
+| Métrica             | Hoy            | Objetivo 6 semanas  | Objetivo 12 semanas |
+| ------------------- | -------------- | ------------------- | ------------------- |
+| Publicaciones/día   | ~75 manual     | ~75 automático <30s | 150+ automático     |
+| Dealers activos     | 5              | 5 (retención 100%)  | 10                  |
+| API Success Rate    | N/A            | >99.9%              | >99.9%              |
+| Time-to-Publish     | Minutos        | <30 segundos        | <30 segundos        |
+| Churn Rate          | 0%             | 0%                  | <5%                 |
+| Dealer Satisfaction | 7/10 (asumido) | 9/10                | 9/10                |
 
 ---
 
 ## ⚠️ DEPENDENCIAS CRÍTICAS (ACTUALIZADO)
 
-| Dependencia | Tipo | Lead Time | Due Date | Responsable |
-| ----------- | ---- | --------- | -------- | ----------- |
-| **Facebook App Review** | External | 14-30 días | Mar 12, 2026 | Tech Lead |
-| **OpenAI/Claude API Key** | External | 1 día | Mar 31, 2026 | Tech Lead |
-| **Stripe Account** | External | 3 días | Jun 1, 2026 | Tech Lead |
-| **DigitalOcean Spaces** | External | 1 día | Feb 10, 2026 | DevOps |
+| Dependencia               | Tipo     | Lead Time  | Due Date     | Responsable |
+| ------------------------- | -------- | ---------- | ------------ | ----------- |
+| **Facebook App Review**   | External | 14-30 días | Mar 12, 2026 | Tech Lead   |
+| **OpenAI/Claude API Key** | External | 1 día      | Mar 31, 2026 | Tech Lead   |
+| **Stripe Account**        | External | 3 días     | Jun 1, 2026  | Tech Lead   |
+| **DigitalOcean Spaces**   | External | 1 día      | Feb 10, 2026 | DevOps      |
 
 **Plan de Mitigación (Facebook App):**
 
@@ -314,12 +324,12 @@ gantt
 
 ### Riesgos Específicos de Marketplace Integration
 
-| Riesgo | Probabilidad | Impacto | Mitigación |
-| ------ | ----------- | ------- | ---------- |
-| Facebook App rejection | Media | Alto | Plan B: CSV upload + Selenium |
-| Rate limiting blocks | Alta | Medio | Queue con exponential backoff |
-| Token expiration | Media | Alto | Auto-refresh 48hs antes |
-| Webhook failures | Media | Medio | Circuit breakers + dead letter queue |
+| Riesgo                 | Probabilidad | Impacto | Mitigación                           |
+| ---------------------- | ------------ | ------- | ------------------------------------ |
+| Facebook App rejection | Media        | Alto    | Plan B: CSV upload + Selenium        |
+| Rate limiting blocks   | Alta         | Medio   | Queue con exponential backoff        |
+| Token expiration       | Media        | Alto    | Auto-refresh 48hs antes              |
+| Webhook failures       | Media        | Medio   | Circuit breakers + dead letter queue |
 
 ---
 
@@ -347,13 +357,13 @@ Mientras construimos Marketplace:
 
 ### Métricas de Desarrollo (Sprint over Sprint)
 
-| Métrica | Sprint 1-2 | Sprint 3-4 | Sprint 5-6 | Sprint 7+ (Target) |
-| ------- | ---------- | ---------- | ---------- | ----------------- |
-| **Velocity (SP)** | - | 20-25 | 25-30 | Estabilizar en 25-30 |
-| **Sprint Burndown** | - | 90% | 95% | 100% |
-| **Test Coverage** | - | >70% | >80% | >90% |
-| **API Success Rate** | - | 95% | 98% | >99.9% |
-| **Dealer Satisfaction** | - | - | 7/10 | 9/10 |
+| Métrica                 | Sprint 1-2 | Sprint 3-4 | Sprint 5-6 | Sprint 7+ (Target)   |
+| ----------------------- | ---------- | ---------- | ---------- | -------------------- |
+| **Velocity (SP)**       | -          | 20-25      | 25-30      | Estabilizar en 25-30 |
+| **Sprint Burndown**     | -          | 90%        | 95%        | 100%                 |
+| **Test Coverage**       | -          | >70%       | >80%       | >90%                 |
+| **API Success Rate**    | -          | 95%        | 98%        | >99.9%               |
+| **Dealer Satisfaction** | -          | -          | 7/10       | 9/10                 |
 
 ---
 
@@ -384,6 +394,7 @@ Mientras construimos Marketplace:
 **SI TODO SÍ → Continuar con Sprint 9 (Catálogo Público)**
 
 **SI ALGÚN NO →**
+
 - Investigar root cause
 - Corregir antes de avanzar
 - Re-evaluar timeline
@@ -417,6 +428,7 @@ Mientras construimos Marketplace:
 ### Antes de iniciar el Sprint
 
 **Técnico:**
+
 - [ ] Task Queue (Redis + Taskiq/Celery) configurado en staging
 - [ ] Facebook App creado y submitted para review
 - [ ] Circuit breakers diseñados y documentados
@@ -424,12 +436,14 @@ Mientras construimos Marketplace:
 - [ ] Staging environment funcional
 
 **Negocio:**
+
 - [ ] Stakeholders notificados del pivot
 - [ ] Timeline actualizado comunicado
 - [ ] Expectativas realistas establecidas (6-7 semanas)
 - [ ] Plan de mitigación documentado
 
 **Equipo:**
+
 - [ ] Todos alineados con nueva prioridad
 - [ ] Dependencias externas identificadas
 - [ ] Riesgos comprendidos

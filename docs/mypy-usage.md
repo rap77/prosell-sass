@@ -67,14 +67,14 @@ file.py:line:column: error: Error message [error-code]
 
 ### Common Error Codes
 
-| Error Code | Meaning | Example |
-|------------|---------|---------|
-| `arg-type` | Argument type mismatch | Passing `str` when `int` expected |
-| `attr-defined` | Attribute not found | Accessing `obj.foo` on `int` |
-| `return-type` | Return type mismatch | Returning `str` when `int` expected |
-| `assignment` | Assignment type mismatch | Assigning `str` to `int` variable |
-| `call-arg` | Missing/extra arguments | Function called with wrong args |
-| `import-untyped` | Importing untyped module | Missing `py.typed` marker |
+| Error Code       | Meaning                  | Example                             |
+| ---------------- | ------------------------ | ----------------------------------- |
+| `arg-type`       | Argument type mismatch   | Passing `str` when `int` expected   |
+| `attr-defined`   | Attribute not found      | Accessing `obj.foo` on `int`        |
+| `return-type`    | Return type mismatch     | Returning `str` when `int` expected |
+| `assignment`     | Assignment type mismatch | Assigning `str` to `int` variable   |
+| `call-arg`       | Missing/extra arguments  | Function called with wrong args     |
+| `import-untyped` | Importing untyped module | Missing `py.typed` marker           |
 
 ### Example Errors
 
@@ -253,6 +253,7 @@ warn_return_any = True
 **Cause**: Missing `py.typed` marker in local packages
 
 **Solution**:
+
 ```bash
 touch apps/api/src/prosell/py.typed
 ```
@@ -268,6 +269,7 @@ touch apps/api/src/prosell/py.typed
 **Cause**: Type mismatch in function call
 
 **Solution**:
+
 ```python
 # Before
 user = User(id="123")  # ❌ str, expected UUID
@@ -281,6 +283,7 @@ user = User(id=UUID("123"))  # ✅ UUID
 **Cause**: Accessing attribute that doesn't exist on type
 
 **Solution**:
+
 ```python
 # Before
 class User:
@@ -296,13 +299,13 @@ class User:
 
 ## Comparison with Pyright
 
-| Feature | Pyright | Mypy | Winner |
-|---------|---------|------|--------|
-| **Fixture Support** | ❌ 2,400 errors | ✅ 0 errors | **Mypy** |
-| **Speed** | ~120s | ~45s | **Mypy** (2.7x faster) |
-| **Production Code** | 116 errors | 240 errors | **Mypy** (more comprehensive) |
-| **Error Messages** | Clear | Clear | Tie |
-| **Configuration** | JSON | INI | Preference |
+| Feature             | Pyright         | Mypy        | Winner                        |
+| ------------------- | --------------- | ----------- | ----------------------------- |
+| **Fixture Support** | ❌ 2,400 errors | ✅ 0 errors | **Mypy**                      |
+| **Speed**           | ~120s           | ~45s        | **Mypy** (2.7x faster)        |
+| **Production Code** | 116 errors      | 240 errors  | **Mypy** (more comprehensive) |
+| **Error Messages**  | Clear           | Clear       | Tie                           |
+| **Configuration**   | JSON            | INI         | Preference                    |
 
 ## Migration Tips
 
@@ -317,6 +320,7 @@ uv run mypy src/ tests/
 ### Phase 2: Fix High-Priority Errors (Week 2)
 
 Focus on:
+
 1. Missing type annotations
 2. Type mismatches
 3. Interface violations
@@ -344,11 +348,13 @@ disallow_untyped_defs = True
 Pylance uses Pyright by default. To use mypy:
 
 1. Install mypy plugin:
+
 ```bash
 pip install mypy-vscode
 ```
 
 2. Update `.vscode/settings.json`:
+
 ```json
 {
   "python.linting.mypyEnabled": true,

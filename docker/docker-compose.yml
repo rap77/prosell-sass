@@ -43,8 +43,8 @@ services:
     image: minio/minio:latest
     container_name: prosell-minio
     ports:
-      - "9000:9000"   # S3 API
-      - "9001:9001"   # Web console
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web console
     volumes:
       - minio_data:/data
     environment:
@@ -86,7 +86,7 @@ services:
       POSTGRES_USER: prosell
       POSTGRES_PASSWORD: prosell_test_password
     ports:
-      - "5433:5432"  # Different port to avoid conflicts
+      - "5433:5432" # Different port to avoid conflicts
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
     healthcheck:

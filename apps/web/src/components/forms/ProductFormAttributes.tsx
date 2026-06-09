@@ -11,7 +11,10 @@
 import { Controller, type Control, type UseFormWatch } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { SelectControlled, useFbOptions } from "@/components/ui/select-controlled";
+import {
+  SelectControlled,
+  useFbOptions,
+} from "@/components/ui/select-controlled";
 import {
   FB_BRANDS,
   FB_BODY_STYLES,
@@ -71,7 +74,9 @@ function shouldShowField(
 ): boolean {
   const schema = selectedCategory?.attribute_schema;
   // Show field if: no schema, empty schema, or explicitly enabled in schema
-  return !schema || Object.keys(schema).length === 0 || schema[fieldName] === true;
+  return (
+    !schema || Object.keys(schema).length === 0 || schema[fieldName] === true
+  );
 }
 
 /**
@@ -119,7 +124,11 @@ export function ProductFormAttributes({
                   <Input
                     {...field}
                     value={field.value ?? ""}
-                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value ? Number(e.target.value) : undefined,
+                      )
+                    }
                     id="price"
                     type="number"
                     placeholder="18500"
@@ -141,7 +150,9 @@ export function ProductFormAttributes({
                 render={({ field }) => (
                   <SelectControlled
                     value={field.value != null ? String(field.value) : ""}
-                    onChange={(val) => field.onChange(val !== "" ? Number(val) : undefined)}
+                    onChange={(val) =>
+                      field.onChange(val !== "" ? Number(val) : undefined)
+                    }
                     options={yearOptions}
                     placeholder="Select year"
                     id="year"
@@ -352,7 +363,9 @@ export function ProductFormAttributes({
                     value={field.value ?? ""}
                     onChange={(e) => {
                       const n = Number(e.target.value);
-                      field.onChange(e.target.value === "" || isNaN(n) ? undefined : n);
+                      field.onChange(
+                        e.target.value === "" || isNaN(n) ? undefined : n,
+                      );
                     }}
                     id="mpg_city"
                     type="number"
@@ -375,7 +388,9 @@ export function ProductFormAttributes({
                     value={field.value ?? ""}
                     onChange={(e) => {
                       const n = Number(e.target.value);
-                      field.onChange(e.target.value === "" || isNaN(n) ? undefined : n);
+                      field.onChange(
+                        e.target.value === "" || isNaN(n) ? undefined : n,
+                      );
                     }}
                     id="mpg_highway"
                     type="number"
@@ -398,7 +413,9 @@ export function ProductFormAttributes({
                     value={field.value ?? ""}
                     onChange={(e) => {
                       const n = Number(e.target.value);
-                      field.onChange(e.target.value === "" || isNaN(n) ? undefined : n);
+                      field.onChange(
+                        e.target.value === "" || isNaN(n) ? undefined : n,
+                      );
                     }}
                     id="mpg_combined"
                     type="number"
@@ -430,7 +447,11 @@ export function ProductFormAttributes({
                   <Input
                     {...field}
                     value={field.value ?? ""}
-                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value ? Number(e.target.value) : undefined,
+                      )
+                    }
                     id="mileage"
                     type="number"
                     placeholder="50000"
@@ -474,7 +495,9 @@ export function ProductFormAttributes({
         <div className="grid grid-cols-2 gap-4">
           {shouldShowField("exterior_color", selectedCategory) && (
             <div className="flex flex-col gap-2">
-              <Label htmlFor="exterior_color">{FIELD_LABELS.exterior_color}</Label>
+              <Label htmlFor="exterior_color">
+                {FIELD_LABELS.exterior_color}
+              </Label>
               <Controller
                 control={control}
                 name="exterior_color"
@@ -494,7 +517,9 @@ export function ProductFormAttributes({
 
           {shouldShowField("interior_color", selectedCategory) && (
             <div className="flex flex-col gap-2">
-              <Label htmlFor="interior_color">{FIELD_LABELS.interior_color}</Label>
+              <Label htmlFor="interior_color">
+                {FIELD_LABELS.interior_color}
+              </Label>
               <Controller
                 control={control}
                 name="interior_color"

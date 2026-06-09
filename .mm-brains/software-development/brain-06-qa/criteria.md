@@ -10,13 +10,13 @@ A response that "sounds thorough" but cannot be rated against this table is a Ra
 
 ## Rating 3 (Peer) vs Rating 4 (Senior)
 
-| Attribute | Rating 3 (Peer) | Rating 4 (Senior) |
-|-----------|-----------------|-------------------|
-| **Test strategy** | Provides correct test type for the scenario (unit vs integration) | Identifies which test pyramid layer and explains WHY this specific layer — not just "add a test" |
-| **Coverage** | Adds tests for the happy path | Identifies edge cases: concurrent access, timeout, partial failure scenarios — tests the failure modes, not just the success path |
-| **CI/CD** | Provides correct pipeline step addition | Identifies the feedback loop bottleneck — where does the pipeline slow the team down? Proposes specific speed improvement |
-| **Observability** | Adds logging to the change | Defines what makes an alert actionable vs. noise — proposes specific SLI/SLO with measurable target |
-| **Legacy** | Writes tests for new code | Characterizes existing behavior before refactoring (Feathers approach — test the seam, verify behavior, then change) |
+| Attribute         | Rating 3 (Peer)                                                   | Rating 4 (Senior)                                                                                                                 |
+| ----------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Test strategy** | Provides correct test type for the scenario (unit vs integration) | Identifies which test pyramid layer and explains WHY this specific layer — not just "add a test"                                  |
+| **Coverage**      | Adds tests for the happy path                                     | Identifies edge cases: concurrent access, timeout, partial failure scenarios — tests the failure modes, not just the success path |
+| **CI/CD**         | Provides correct pipeline step addition                           | Identifies the feedback loop bottleneck — where does the pipeline slow the team down? Proposes specific speed improvement         |
+| **Observability** | Adds logging to the change                                        | Defines what makes an alert actionable vs. noise — proposes specific SLI/SLO with measurable target                               |
+| **Legacy**        | Writes tests for new code                                         | Characterizes existing behavior before refactoring (Feathers approach — test the seam, verify behavior, then change)              |
 
 **Observable distinction:** A Rating 3 response adds the correct test. A Rating 4 response explains what to test, why that layer, and what the test would catch that currently would silently fail.
 
@@ -45,6 +45,7 @@ Source: brain-06-qa/criteria.md > Auto-Reject | brain-06-qa/warnings.md > Live M
 ## Rating 5 (Architect) Threshold
 
 A Rating 5 response:
+
 - Identifies a test coverage gap that would cause a silent failure under production conditions (concurrent brain queries exceeding TaskGroup limits, JWT expiry during a multi-step operation)
 - Proposes a characterization test that captures the exact behavior boundary of a legacy component before refactoring, making the refactor provably safe
 - Designs a test pyramid restructure that reduces test suite runtime by 30%+ without reducing coverage

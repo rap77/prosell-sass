@@ -1,11 +1,11 @@
-'use client'
+"use client";
 
-import { cn } from '@/lib/utils'
-import { useLayoutStore } from '@/lib/stores/layoutStore'
-import { useAuth } from '@/hooks/useAuth'
-import { usePathname } from 'next/navigation'
-import { LucideIcon } from 'lucide-react'
-import Image from 'next/image'
+import { cn } from "@/lib/utils";
+import { useLayoutStore } from "@/lib/stores/layoutStore";
+import { useAuth } from "@/hooks/useAuth";
+import { usePathname } from "next/navigation";
+import { LucideIcon } from "lucide-react";
+import Image from "next/image";
 import {
   LayoutDashboard,
   Package,
@@ -15,7 +15,7 @@ import {
   BarChart3,
   Settings,
   ScrollText,
-} from 'lucide-react'
+} from "lucide-react";
 
 /**
  * Navigation group types for role-based sidebar filtering.
@@ -25,73 +25,73 @@ import {
  * - 'ventas'        → sales execution (leads, pipeline, analytics)
  * - 'configuración' → admin/branch only
  */
-export type NavGroup = 'general' | 'inventario' | 'ventas' | 'configuración'
+export type NavGroup = "general" | "inventario" | "ventas" | "configuración";
 
 interface NavItem {
-  label: string
-  href: string
-  icon: LucideIcon
-  group: NavGroup
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  group: NavGroup;
 }
 
 const navigationItems: NavItem[] = [
   // General — top-level (no section header)
   {
-    label: 'Dashboard',
-    href: '/dashboard',
+    label: "Dashboard",
+    href: "/dashboard",
     icon: LayoutDashboard,
-    group: 'general',
+    group: "general",
   },
   // Inventario group
   {
-    label: 'Catálogo',
-    href: '/catalog',
+    label: "Catálogo",
+    href: "/catalog",
     icon: Package,
-    group: 'inventario',
+    group: "inventario",
   },
   {
-    label: 'Publicaciones',
-    href: '/publications',
+    label: "Publicaciones",
+    href: "/publications",
     icon: FileText,
-    group: 'inventario',
+    group: "inventario",
   },
   // Ventas group
   {
-    label: 'Leads',
-    href: '/vendedor/leads',
+    label: "Leads",
+    href: "/vendedor/leads",
     icon: Users,
-    group: 'ventas',
+    group: "ventas",
   },
   {
-    label: 'Pipeline',
-    href: '/pipeline',
+    label: "Pipeline",
+    href: "/pipeline",
     icon: TrendingUp,
-    group: 'ventas',
+    group: "ventas",
   },
   {
-    label: 'Analytics',
-    href: '/analytics',
+    label: "Analytics",
+    href: "/analytics",
     icon: BarChart3,
-    group: 'ventas',
+    group: "ventas",
   },
   // Configuración group (admin/branch only)
   {
-    label: 'Configuración',
-    href: '/settings',
+    label: "Configuración",
+    href: "/settings",
     icon: Settings,
-    group: 'configuración',
+    group: "configuración",
   },
   {
-    label: 'Logs',
-    href: '/logs',
+    label: "Logs",
+    href: "/logs",
     icon: ScrollText,
-    group: 'configuración',
+    group: "configuración",
   },
-]
+];
 
 interface SidebarProps {
   /** Navigation groups to display based on user role */
-  groups: NavGroup[]
+  groups: NavGroup[];
 }
 
 /**
@@ -105,23 +105,23 @@ interface SidebarProps {
  * - Active route highlighting
  */
 export function Sidebar({ groups }: SidebarProps) {
-  const { sidebarCollapsed, toggleSidebar } = useLayoutStore()
-  const pathname = usePathname()
+  const { sidebarCollapsed, toggleSidebar } = useLayoutStore();
+  const pathname = usePathname();
 
   // Filter navigation items based on user role
   const visibleItems = navigationItems.filter((item) =>
-    groups.includes(item.group)
-  )
+    groups.includes(item.group),
+  );
 
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out',
-        sidebarCollapsed ? 'w-16' : 'w-64'
+        "fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out",
+        sidebarCollapsed ? "w-16" : "w-64",
       )}
       style={{
-        background: 'var(--ps-bg-sidebar)',
-        borderRight: '1px solid var(--ps-border-subtle)',
+        background: "var(--ps-bg-sidebar)",
+        borderRight: "1px solid var(--ps-border-subtle)",
       }}
     >
       {/* Toggle button — floats at right edge of sidebar */}
@@ -129,25 +129,33 @@ export function Sidebar({ groups }: SidebarProps) {
         onClick={toggleSidebar}
         className="absolute -right-3 top-[22px] z-50 flex h-6 w-6 items-center justify-center rounded-full border transition-colors"
         style={{
-          background: 'var(--ps-bg-sidebar)',
-          borderColor: 'var(--ps-border-subtle)',
-          color: 'var(--ps-text-secondary)',
+          background: "var(--ps-bg-sidebar)",
+          borderColor: "var(--ps-border-subtle)",
+          color: "var(--ps-text-secondary)",
         }}
-        aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'var(--ps-border-medium)'
-          e.currentTarget.style.color = 'var(--ps-text-primary)'
+          e.currentTarget.style.borderColor = "var(--ps-border-medium)";
+          e.currentTarget.style.color = "var(--ps-text-primary)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = 'var(--ps-border-subtle)'
-          e.currentTarget.style.color = 'var(--ps-text-secondary)'
+          e.currentTarget.style.borderColor = "var(--ps-border-subtle)";
+          e.currentTarget.style.color = "var(--ps-text-secondary)";
         }}
       >
         <svg
-          width="12" height="12" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" strokeWidth="2.5"
-          strokeLinecap="round" strokeLinejoin="round"
-          className={cn('transition-transform duration-300', sidebarCollapsed ? 'rotate-180' : 'rotate-0')}
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={cn(
+            "transition-transform duration-300",
+            sidebarCollapsed ? "rotate-180" : "rotate-0",
+          )}
         >
           <path d="m15 18-6-6 6-6" />
         </svg>
@@ -157,26 +165,45 @@ export function Sidebar({ groups }: SidebarProps) {
         {/* Logo */}
         <div
           className="flex h-16 items-center justify-center border-b px-4"
-          style={{ borderBottomColor: 'var(--ps-border-subtle)' }}
+          style={{ borderBottomColor: "var(--ps-border-subtle)" }}
         >
           {sidebarCollapsed ? (
-            <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 26, width: 'auto' }} />
+            <Image
+              src="/logo-mark.png"
+              alt="ProSell"
+              width={271}
+              height={294}
+              style={{ height: 26, width: "auto" }}
+            />
           ) : (
-            <span className="flex w-full items-center gap-2 text-[17px] font-bold tracking-tight" style={{ color: 'var(--ps-text-primary)' }}>
-              <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 26, width: 'auto', flexShrink: 0 }} />
+            <span
+              className="flex w-full items-center gap-2 text-[17px] font-bold tracking-tight"
+              style={{ color: "var(--ps-text-primary)" }}
+            >
+              <Image
+                src="/logo-mark.png"
+                alt="ProSell"
+                width={271}
+                height={294}
+                style={{ height: 26, width: "auto", flexShrink: 0 }}
+              />
               ProSell
             </span>
           )}
         </div>
 
         {/* Navigation */}
-        <Sidebar.Nav items={visibleItems} pathname={pathname} collapsed={sidebarCollapsed} />
+        <Sidebar.Nav
+          items={visibleItems}
+          pathname={pathname}
+          collapsed={sidebarCollapsed}
+        />
 
         {/* Footer */}
         <Sidebar.Footer collapsed={sidebarCollapsed} />
       </div>
     </aside>
-  )
+  );
 }
 
 /**
@@ -188,35 +215,46 @@ Sidebar.Nav = function SidebarNav({
   pathname,
   collapsed,
 }: {
-  items: NavItem[]
-  pathname: string
-  collapsed: boolean
+  items: NavItem[];
+  pathname: string;
+  collapsed: boolean;
 }) {
   // Group items by category
-  const groupedItems = items.reduce((acc, item) => {
-    if (!acc[item.group]) {
-      acc[item.group] = []
-    }
-    acc[item.group].push(item)
-    return acc
-  }, {} as Record<NavGroup, NavItem[]>)
+  const groupedItems = items.reduce(
+    (acc, item) => {
+      if (!acc[item.group]) {
+        acc[item.group] = [];
+      }
+      acc[item.group].push(item);
+      return acc;
+    },
+    {} as Record<NavGroup, NavItem[]>,
+  );
 
   const groupLabels: Record<NavGroup, string> = {
-    general: '',            // top-level items — no visible header
-    inventario: 'Inventario',
-    ventas: 'Ventas',
-    configuración: 'Configuración',
-  }
+    general: "", // top-level items — no visible header
+    inventario: "Inventario",
+    ventas: "Ventas",
+    configuración: "Configuración",
+  };
 
   return (
-    <nav className="flex-1 overflow-y-auto py-4" style={{ padding: '16px 8px' }} aria-label="Main navigation">
+    <nav
+      className="flex-1 overflow-y-auto py-4"
+      style={{ padding: "16px 8px" }}
+      aria-label="Main navigation"
+    >
       {Object.entries(groupedItems).map(([group, groupItems], groupIdx) => (
         <div key={group}>
           {/* Group divider between sections (not before first) */}
           {groupIdx > 0 && (
             <div
               className="my-3"
-              style={{ height: 1, background: 'var(--ps-border-subtle)', margin: '12px 8px' }}
+              style={{
+                height: 1,
+                background: "var(--ps-border-subtle)",
+                margin: "12px 8px",
+              }}
             />
           )}
 
@@ -224,102 +262,121 @@ Sidebar.Nav = function SidebarNav({
           {!collapsed && groupLabels[group as NavGroup] && (
             <span
               className="block mb-1 px-4 text-[10px] font-bold uppercase tracking-[0.14em]"
-              style={{ color: 'var(--ps-text-disabled)' }}
+              style={{ color: "var(--ps-text-disabled)" }}
             >
               {groupLabels[group as NavGroup]}
             </span>
           )}
 
-          <ul style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <ul style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {groupItems.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
-              const Icon = item.icon
+              const isActive =
+                pathname === item.href || pathname.startsWith(`${item.href}/`);
+              const Icon = item.icon;
 
               return (
                 <li key={item.href}>
                   <a
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-3 text-sm font-medium transition-all duration-200',
-                      collapsed ? 'justify-center px-2 py-2' : 'px-4 py-[10px]'
+                      "flex items-center gap-3 text-sm font-medium transition-all duration-200",
+                      collapsed ? "justify-center px-2 py-2" : "px-4 py-[10px]",
                     )}
                     style={{
-                      borderRadius: isActive ? '8px 0 0 8px' : 8,
-                      background: isActive ? 'var(--ps-nav-active-bg)' : 'transparent',
-                      color: 'var(--ps-text-primary)',
-                      borderRight: isActive ? '2px solid var(--ps-cyan)' : '2px solid transparent',
-                      textDecoration: 'none',
+                      borderRadius: isActive ? "8px 0 0 8px" : 8,
+                      background: isActive
+                        ? "var(--ps-nav-active-bg)"
+                        : "transparent",
+                      color: "var(--ps-text-primary)",
+                      borderRight: isActive
+                        ? "2px solid var(--ps-cyan)"
+                        : "2px solid transparent",
+                      textDecoration: "none",
                     }}
                     onMouseEnter={(e) => {
-                      if (!isActive) e.currentTarget.style.background = 'var(--ps-hover-bg-xs)'
+                      if (!isActive)
+                        e.currentTarget.style.background =
+                          "var(--ps-hover-bg-xs)";
                     }}
                     onMouseLeave={(e) => {
-                      if (!isActive) e.currentTarget.style.background = 'transparent'
+                      if (!isActive)
+                        e.currentTarget.style.background = "transparent";
                     }}
                   >
                     <Icon
                       className="h-[18px] w-[18px] flex-shrink-0"
-                      style={{ strokeWidth: 2, color: isActive ? 'var(--ps-cyan)' : 'var(--ps-text-secondary)' }}
+                      style={{
+                        strokeWidth: 2,
+                        color: isActive
+                          ? "var(--ps-cyan)"
+                          : "var(--ps-text-secondary)",
+                      }}
                     />
                     {!collapsed && <span className="flex-1">{item.label}</span>}
                   </a>
                 </li>
-              )
+              );
             })}
           </ul>
         </div>
       ))}
     </nav>
-  )
-}
+  );
+};
 
 /**
  * Sidebar footer with user info and logout.
  */
 Sidebar.Footer = function SidebarFooter({ collapsed }: { collapsed: boolean }) {
-  const { user } = useAuth()
+  const { user } = useAuth();
 
   // Helper function to get user initials
   const getInitials = (firstName?: string, lastName?: string): string => {
     if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase()
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
     }
     if (firstName) {
-      return firstName.substring(0, 2).toUpperCase()
+      return firstName.substring(0, 2).toUpperCase();
     }
-    return '??'
-  }
+    return "??";
+  };
 
-  const initials = getInitials(user?.first_name, user?.last_name)
-  const displayName = user?.first_name && user?.last_name
-    ? `${user.first_name} ${user.last_name}`
-    : user?.email?.split('@')[0] || 'User'
-  const role = user?.role || 'Seller'
+  const initials = getInitials(user?.first_name, user?.last_name);
+  const displayName =
+    user?.first_name && user?.last_name
+      ? `${user.first_name} ${user.last_name}`
+      : user?.email?.split("@")[0] || "User";
+  const role = user?.role || "Seller";
 
   return (
     <div
       className="p-3"
-      style={{ borderTop: '1px solid var(--ps-border-subtle)' }}
+      style={{ borderTop: "1px solid var(--ps-border-subtle)" }}
     >
       <div
         className={cn(
-          'flex items-center gap-[10px] rounded-[10px] cursor-pointer transition-all',
-          collapsed ? 'justify-center p-2' : 'p-3'
+          "flex items-center gap-[10px] rounded-[10px] cursor-pointer transition-all",
+          collapsed ? "justify-center p-2" : "p-3",
         )}
         style={{
-          background: 'var(--ps-user-card-bg)',
-          border: '1px solid var(--ps-border-subtle)',
+          background: "var(--ps-user-card-bg)",
+          border: "1px solid var(--ps-border-subtle)",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--ps-border-medium)')}
-        onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--ps-border-subtle)')}
+        onMouseEnter={(e) =>
+          (e.currentTarget.style.borderColor = "var(--ps-border-medium)")
+        }
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.borderColor = "var(--ps-border-subtle)")
+        }
       >
         {/* Avatar */}
         <div
           className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
           style={{
-            background: 'linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))',
-            color: 'var(--ps-bg-base)',
-            letterSpacing: '0.02em',
+            background:
+              "linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))",
+            color: "var(--ps-bg-base)",
+            letterSpacing: "0.02em",
           }}
         >
           {initials}
@@ -330,25 +387,30 @@ Sidebar.Footer = function SidebarFooter({ collapsed }: { collapsed: boolean }) {
             <div className="flex-1 min-w-0 flex flex-col gap-[3px]">
               <b
                 className="truncate text-[13px] font-semibold"
-                style={{ color: 'var(--ps-text-primary)' }}
+                style={{ color: "var(--ps-text-primary)" }}
               >
                 {displayName}
               </b>
               <span
                 className="inline-flex self-start text-[10px] font-bold uppercase px-[7px] py-[2px] rounded-full tracking-[0.04em]"
                 style={{
-                  background: 'var(--ps-badge-bg)',
-                  color: 'var(--ps-cyan)',
+                  background: "var(--ps-badge-bg)",
+                  color: "var(--ps-cyan)",
                 }}
               >
                 {role}
               </span>
             </div>
             <svg
-              width="14" height="14" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round"
-              style={{ color: 'var(--ps-text-secondary)', flexShrink: 0 }}
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ color: "var(--ps-text-secondary)", flexShrink: 0 }}
             >
               <path d="m9 18 6-6-6-6" />
             </svg>
@@ -356,5 +418,5 @@ Sidebar.Footer = function SidebarFooter({ collapsed }: { collapsed: boolean }) {
         )}
       </div>
     </div>
-  )
-}
+  );
+};

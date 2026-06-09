@@ -59,7 +59,8 @@ const nextConfig: NextConfig = {
   },
   env: {
     // Backend API URL - must be http://localhost:8000 for OAuth to work
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
+    NEXT_PUBLIC_API_URL:
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
   },
 
   // Proxy API requests to backend during development
@@ -68,7 +69,10 @@ const nextConfig: NextConfig = {
   async rewrites() {
     // During SSR/build, we use API_URL (internal docker network)
     // During client-side navigation, we use NEXT_PUBLIC_API_URL
-    const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const apiUrl =
+      process.env.API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:8000";
 
     return {
       // Process rewrites AFTER Next.js API routes

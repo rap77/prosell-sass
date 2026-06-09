@@ -38,11 +38,13 @@ pnpm report
 **Qué prueba**: Flujo completo de autenticación, OAuth, registro
 **Tiempo estimado**: 3-5 minutos
 **Archivos**:
+
 - `specs/oauth.spec.ts` - OAuth flow (Google, Facebook)
 - `specs/facebook-oauth.spec.ts` - Facebook OAuth específico
 - `smoke.spec.ts` (Auth Flow section)
 
 **Ejecutar**:
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 
@@ -57,6 +59,7 @@ pnpm test smoke.spec.ts --grep "Auth Flow"
 ```
 
 **Qué verificar**:
+
 - ✅ Login page carga correctamente
 - ✅ Validación de email funciona
 - ✅ Google OAuth button visible
@@ -72,6 +75,7 @@ pnpm test smoke.spec.ts --grep "Auth Flow"
 **Qué prueba**: CRUD de categorías, productos, vehículos
 **Tiempo estimado**: 5-8 minutos
 **Archivos**:
+
 - `specs/categories.spec.ts` - Categorías CRUD
 - `specs/products.spec.ts` - Productos CRUD
 - `specs/products-api.spec.ts` - API contracts productos
@@ -80,6 +84,7 @@ pnpm test smoke.spec.ts --grep "Auth Flow"
 - `smoke.spec.ts` (Category/DataGrid sections)
 
 **Ejecutar**:
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 
@@ -103,6 +108,7 @@ pnpm test smoke.spec.ts --grep "Category|DataGrid"
 ```
 
 **Qué verificar**:
+
 - ✅ GET /api/v1/categories - lista categorías
 - ✅ POST /api/v1/categories - crea categoría
 - ✅ GET /api/v1/products - lista productos
@@ -119,10 +125,12 @@ pnpm test smoke.spec.ts --grep "Category|DataGrid"
 **Qué prueba**: Decodificación de VIN, validación de formulario
 **Tiempo estimado**: 4-6 minutos
 **Archivos**:
+
 - `specs/vehicle-form-vin.spec.ts` - VIN decode + form
 - `smoke.spec.ts` (VehicleForm section)
 
 **Ejecutar**:
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 
@@ -134,6 +142,7 @@ pnpm test smoke.spec.ts --grep "VehicleForm"
 ```
 
 **Qué verificar**:
+
 - ✅ POST /api/v1/vehicles/decode-vin - decodifica VIN válido
 - ✅ Model field se actualiza después de decode (model = "equinox")
 - ✅ Engine field se pobla correctamente
@@ -152,11 +161,13 @@ pnpm test smoke.spec.ts --grep "VehicleForm"
 **Qué prueba**: Captura, listado, asignación de leads
 **Tiempo estimado**: 5-7 minutos
 **Archivos**:
+
 - `specs/leads.spec.ts` - Leads CRUD
 - `specs/manager-leads.spec.ts` - Vista de manager
 - `specs/manager-leads-verify.spec.ts` - Verificación manager
 
 **Ejecutar**:
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 
@@ -171,6 +182,7 @@ pnpm test manager-leads-verify.spec.ts
 ```
 
 **Qué verificar**:
+
 - ✅ Lead creation funciona
 - ✅ Lead listing muestra datos
 - ✅ Lead assignment a vendedores
@@ -186,11 +198,13 @@ pnpm test manager-leads-verify.spec.ts
 **Qué prueba**: Creación, listado, calendar de citas
 **Tiempo estimado**: 5-7 minutos
 **Archivos**:
+
 - `specs/appointments.spec.ts` - Appointments CRUD
 - `specs/dealer-calendar.spec.ts` - Calendar de dealer
 - `specs/appointments-debug.spec.ts` - Debug appointments
 
 **Ejecutar**:
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 
@@ -205,6 +219,7 @@ pnpm test appointments-debug.spec.ts
 ```
 
 **Qué verificar**:
+
 - ✅ Appointment creation funciona
 - ✅ Appointment listing muestra citas
 - ✅ Dealer calendar muestra slots disponibles
@@ -220,11 +235,13 @@ pnpm test appointments-debug.spec.ts
 **Qué prueba**: Image upload, bulk operations, webhooks
 **Tiempo estimado**: 6-10 minutos
 **Archivos**:
+
 - `specs/bulk-image-upload.spec.ts` - Upload masivo de imágenes
 - `specs/facebook-webhook.spec.ts` - Webhook de Facebook
 - `specs/catalog-accessibility.spec.ts` - Accesibilidad WCAG
 
 **Ejecutar**:
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 
@@ -239,6 +256,7 @@ pnpm test catalog-accessibility.spec.ts
 ```
 
 **Qué verificar**:
+
 - ✅ Image upload (presigned URL) funciona
 - ✅ Bulk upload maneja múltiples archivos
 - ✅ Facebook webhook recibe publicaciones
@@ -253,11 +271,13 @@ pnpm test catalog-accessibility.spec.ts
 **Qué prueba**: El flujo completo de negocio
 **Tiempo estimado**: 10-15 minutos
 **Archivos**:
+
 - `specs/a6-verification.spec.ts` - Verificación completa fase A6
 - `specs/a6-manual-verification.spec.ts` - Verificación manual
 - `specs/staging-smoke.spec.ts` - Smoke en staging
 
 **Ejecutar**:
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 
@@ -272,6 +292,7 @@ pnpm test staging-smoke.spec.ts
 ```
 
 **Qué verificar** (Flujo Completo):
+
 1. ✅ Login → Dashboard accesible
 2. ✅ Catálogo → Crear categoría
 3. ✅ Catálogo → Crear vehículo (con VIN decode)
@@ -288,6 +309,7 @@ pnpm test staging-smoke.spec.ts
 ## 🔧 Debugging
 
 ### Ver screenshots de failures
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 ls -la screenshots/
@@ -295,6 +317,7 @@ ls -la screenshots-summary/
 ```
 
 ### Ver reporte HTML
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 pnpm report
@@ -302,6 +325,7 @@ pnpm report
 ```
 
 ### Ejecutar un solo test
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 
@@ -313,6 +337,7 @@ pnpm test vehicle-form-vin.spec.ts --ui --headed
 ```
 
 ### Ver logs
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 cat test-results.log
@@ -323,15 +348,15 @@ cat test-output.log
 
 ## 📊 Matriz de Ejecución
 
-| Módulo | Tests | Tiempo | Dependencies | Próximo |
-|--------|-------|--------|--------------|---------|
-| 1. Auth | 5-8 | 3-5 min | Ninguno | 2. Catálogo |
-| 2. Catálogo | 8-12 | 5-8 min | 1. Auth | 3. VIN |
-| 3. VIN Decode | 7-10 | 4-6 min | 2. Catálogo | 4. Leads |
-| 4. Leads | 6-9 | 5-7 min | 3. VIN | 5. Appointments |
-| 5. Appointments | 5-8 | 5-7 min | 4. Leads | 6. Features |
-| 6. Features | 4-6 | 6-10 min | 5. Appointments | 7. E2E |
-| 7. E2E Full | 10-15 | 10-15 min | Todos los anteriores | ✅ Done |
+| Módulo          | Tests | Tiempo    | Dependencies         | Próximo         |
+| --------------- | ----- | --------- | -------------------- | --------------- |
+| 1. Auth         | 5-8   | 3-5 min   | Ninguno              | 2. Catálogo     |
+| 2. Catálogo     | 8-12  | 5-8 min   | 1. Auth              | 3. VIN          |
+| 3. VIN Decode   | 7-10  | 4-6 min   | 2. Catálogo          | 4. Leads        |
+| 4. Leads        | 6-9   | 5-7 min   | 3. VIN               | 5. Appointments |
+| 5. Appointments | 5-8   | 5-7 min   | 4. Leads             | 6. Features     |
+| 6. Features     | 4-6   | 6-10 min  | 5. Appointments      | 7. E2E          |
+| 7. E2E Full     | 10-15 | 10-15 min | Todos los anteriores | ✅ Done         |
 
 **Total estimado**: 40-60 minutos para ejecutar todos los módulos secuencialmente.
 
@@ -340,18 +365,21 @@ cat test-output.log
 ## 🎯 Estrategia Recomendada
 
 ### Opción A: Fast Feedback (Desarrollo)
+
 ```bash
 # Ejecutar smoke tests después de cada cambio
 pnpm test --grep @smoke
 ```
 
 ### Opción B: Modular (Feature Development)
+
 ```bash
 # Ejecutar solo el módulo que estás trabajando
 pnpm test vehicle-form-vin.spec.ts
 ```
 
 ### Opción C: Completo (Pre-release)
+
 ```bash
 # Ejecutar todos los tests en orden
 pnpm test oauth.spec.ts
@@ -368,6 +396,7 @@ pnpm test a6-verification.spec.ts
 ## ⚠️ Troubleshooting
 
 ### "Address already in use"
+
 ```bash
 # Matar procesos en puerto 3999 (web) o 8000 (api)
 lsof -ti:3999 | xargs kill -9
@@ -375,12 +404,14 @@ lsof -ti:8000 | xargs kill -9
 ```
 
 ### "Cannot find module"
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 pnpm install
 ```
 
 ### "Server not responding"
+
 ```bash
 # Verificar que API y Web están corriendo
 curl http://localhost:8000/health
@@ -388,6 +419,7 @@ curl http://localhost:3999
 ```
 
 ### Tests timeout
+
 ```bash
 # Aumentar timeout en playwright.config.ts
 # O ejecutar con --timeout=60000 (60s por test)

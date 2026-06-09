@@ -1,112 +1,114 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { Sidebar } from '@/components/layout/Sidebar'
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { Sidebar } from "@/components/layout/Sidebar";
 
 // Mock Next.js usePathname
-vi.mock('next/navigation', () => ({
-  usePathname: () => '/catalog',
-}))
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/catalog",
+}));
 
 // Mock useAuth hook
-vi.mock('@/hooks/useAuth', () => ({
+vi.mock("@/hooks/useAuth", () => ({
   useAuth: vi.fn(() => ({
     user: {
-      id: '1',
-      email: 'john@example.com',
-      first_name: 'John',
-      last_name: 'Doe',
-      role: 'Seller',
+      id: "1",
+      email: "john@example.com",
+      first_name: "John",
+      last_name: "Doe",
+      role: "Seller",
     },
     isAuthenticated: false,
     isLoading: false,
   })),
-}))
+}));
 
 // Mock Zustand store
-vi.mock('@/lib/stores/layoutStore', () => ({
+vi.mock("@/lib/stores/layoutStore", () => ({
   useLayoutStore: vi.fn(() => ({
     sidebarCollapsed: false,
     toggleSidebar: vi.fn(),
   })),
-}))
+}));
 
-describe('Sidebar', () => {
+describe("Sidebar", () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
-  it('renders navigation groups (Inventario, Ventas, Configuración)', () => {
-    render(<Sidebar groups={['inventario', 'ventas', 'configuración']} />)
+  it("renders navigation groups (Inventario, Ventas, Configuración)", () => {
+    render(<Sidebar groups={["inventario", "ventas", "configuración"]} />);
 
-    expect(screen.getAllByText('Inventario').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Ventas').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Configuración').length).toBeGreaterThan(0)
-  })
+    expect(screen.getAllByText("Inventario").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Ventas").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Configuración").length).toBeGreaterThan(0);
+  });
 
-  it('filters navigation by user role (seller excludes Configuración)', () => {
-    render(<Sidebar groups={['inventario', 'ventas']} />)
+  it("filters navigation by user role (seller excludes Configuración)", () => {
+    render(<Sidebar groups={["inventario", "ventas"]} />);
 
-    expect(screen.getByText('Inventario')).toBeInTheDocument()
-    expect(screen.getByText('Ventas')).toBeInTheDocument()
-    expect(screen.queryByText('Configuración')).not.toBeInTheDocument()
-  })
+    expect(screen.getByText("Inventario")).toBeInTheDocument();
+    expect(screen.getByText("Ventas")).toBeInTheDocument();
+    expect(screen.queryByText("Configuración")).not.toBeInTheDocument();
+  });
 
-  it('shows only Inventario group for limited role', () => {
-    render(<Sidebar groups={['inventario']} />)
+  it("shows only Inventario group for limited role", () => {
+    render(<Sidebar groups={["inventario"]} />);
 
-    expect(screen.getByText('Inventario')).toBeInTheDocument()
-    expect(screen.queryByText('Ventas')).not.toBeInTheDocument()
-    expect(screen.queryByText('Configuración')).not.toBeInTheDocument()
-  })
+    expect(screen.getByText("Inventario")).toBeInTheDocument();
+    expect(screen.queryByText("Ventas")).not.toBeInTheDocument();
+    expect(screen.queryByText("Configuración")).not.toBeInTheDocument();
+  });
 
-  it('renders navigation items within groups', () => {
-    render(<Sidebar groups={['inventario']} />)
+  it("renders navigation items within groups", () => {
+    render(<Sidebar groups={["inventario"]} />);
 
-    expect(screen.getByText('Catálogo')).toBeInTheDocument()
-    expect(screen.getByText('Publicaciones')).toBeInTheDocument()
-  })
+    expect(screen.getByText("Catálogo")).toBeInTheDocument();
+    expect(screen.getByText("Publicaciones")).toBeInTheDocument();
+  });
 
-  it('uses corrected Spanish terminology (not Operations/Growth)', () => {
-    const { container } = render(<Sidebar groups={['inventario', 'ventas', 'configuración']} />)
+  it("uses corrected Spanish terminology (not Operations/Growth)", () => {
+    const { container } = render(
+      <Sidebar groups={["inventario", "ventas", "configuración"]} />,
+    );
 
     // Verify correct terms are present (Configuración appears twice: as group header and as nav item)
-    expect(screen.getAllByText('Inventario').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Ventas').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Configuración').length).toBeGreaterThan(0)
+    expect(screen.getAllByText("Inventario").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Ventas").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Configuración").length).toBeGreaterThan(0);
 
     // Verify incorrect terms are NOT present
-    expect(screen.queryByText('Operations')).not.toBeInTheDocument()
-    expect(screen.queryByText('Growth')).not.toBeInTheDocument()
-    expect(screen.queryByText('System')).not.toBeInTheDocument()
-  })
+    expect(screen.queryByText("Operations")).not.toBeInTheDocument();
+    expect(screen.queryByText("Growth")).not.toBeInTheDocument();
+    expect(screen.queryByText("System")).not.toBeInTheDocument();
+  });
 
-  it('highlights active route', () => {
-    render(<Sidebar groups={['inventario']} />)
+  it("highlights active route", () => {
+    render(<Sidebar groups={["inventario"]} />);
 
-    const catalogLink = screen.getByText('Catálogo').closest('a')
+    const catalogLink = screen.getByText("Catálogo").closest("a");
     expect(catalogLink).toHaveStyle({
-      background: 'var(--ps-nav-active-bg)',
-      color: 'var(--ps-text-primary)',
-    })
-  })
+      background: "var(--ps-nav-active-bg)",
+      color: "var(--ps-text-primary)",
+    });
+  });
 
-  it('renders collapse toggle button', () => {
-    render(<Sidebar groups={['inventario']} />)
+  it("renders collapse toggle button", () => {
+    render(<Sidebar groups={["inventario"]} />);
 
-    const toggleButton = screen.getByLabelText(/collapse sidebar/i)
-    expect(toggleButton).toBeInTheDocument()
-  })
+    const toggleButton = screen.getByLabelText(/collapse sidebar/i);
+    expect(toggleButton).toBeInTheDocument();
+  });
 
-  it('renders footer with user info', () => {
-    render(<Sidebar groups={['inventario']} />)
+  it("renders footer with user info", () => {
+    render(<Sidebar groups={["inventario"]} />);
 
-    expect(screen.getByText('John Doe')).toBeInTheDocument()
-    expect(screen.getByText('Seller')).toBeInTheDocument()
-  })
+    expect(screen.getByText("John Doe")).toBeInTheDocument();
+    expect(screen.getByText("Seller")).toBeInTheDocument();
+  });
 
-  it('renders ProSell logo when expanded', () => {
-    render(<Sidebar groups={['inventario']} />)
+  it("renders ProSell logo when expanded", () => {
+    render(<Sidebar groups={["inventario"]} />);
 
-    expect(screen.getByText('ProSell')).toBeInTheDocument()
-  })
-})
+    expect(screen.getByText("ProSell")).toBeInTheDocument();
+  });
+});

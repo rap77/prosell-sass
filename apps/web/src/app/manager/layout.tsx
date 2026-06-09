@@ -1,7 +1,7 @@
-import { Sidebar } from '@/components/layout/Sidebar'
-import { Header } from '@/components/layout/Header'
-import { MobileNav } from '@/components/layout/MobileNav'
-import { MainContentWrapper } from '@/components/layout/MainContentWrapper'
+import { Sidebar } from "@/components/layout/Sidebar";
+import { Header } from "@/components/layout/Header";
+import { MobileNav } from "@/components/layout/MobileNav";
+import { MainContentWrapper } from "@/components/layout/MainContentWrapper";
 
 /**
  * Manager layout — team oversight and performance.
@@ -9,30 +9,36 @@ import { MainContentWrapper } from '@/components/layout/MainContentWrapper'
  * Navigation groups: inventario + ventas (no configuración).
  * Server Component by default.
  */
-export default function ManagerLayout({ children }: { children: React.ReactNode }) {
+export default function ManagerLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       {/* Desktop sidebar */}
       <div className="hidden md:block">
-        <Sidebar groups={['inventario', 'ventas']} />
+        <Sidebar groups={["inventario", "ventas"]} />
       </div>
 
       {/* Main content */}
       <MainContentWrapper>
         <Header />
-        <main style={{
-          position: 'relative',
-          zIndex: 50,
-          flex: 1,
-          overflowY: 'auto',
-          background: 'var(--ps-bg-base)',
-          padding: 24,
-        }}>
+        <main
+          style={{
+            position: "relative",
+            zIndex: 50,
+            flex: 1,
+            overflowY: "auto",
+            background: "var(--ps-bg-base)",
+            padding: 24,
+          }}
+        >
           {children}
         </main>
       </MainContentWrapper>
 
       <MobileNav />
     </div>
-  )
+  );
 }

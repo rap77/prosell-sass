@@ -54,41 +54,45 @@ function isAuthUserData(value: unknown): value is AuthUserData {
  * }
  * ```
  */
-export const checkAuthServer = cache(async function checkAuthServer(): Promise<ServerAuthState> {
-  const cookieStore = await cookies();
+export const checkAuthServer = cache(
+  async function checkAuthServer(): Promise<ServerAuthState> {
+    const cookieStore = await cookies();
 
-  const accessToken = cookieStore.get("access_token")?.value;
-  const userDataCookie = cookieStore.get("user_data")?.value;
+    const accessToken = cookieStore.get("access_token")?.value;
+    const userDataCookie = cookieStore.get("user_data")?.value;
 
-  // Safely parse user data from cookie
-  let userData: AuthUserData | null = null;
-  if (userDataCookie) {
-    try {
-      const parsedUserData: unknown = JSON.parse(decodeURIComponent(userDataCookie));
-      if (isAuthUserData(parsedUserData)) {
-        userData = parsedUserData;
+    // Safely parse user data from cookie
+    let userData: AuthUserData | null = null;
+    if (userDataCookie) {
+      try {
+        const parsedUserData: unknown = JSON.parse(
+          decodeURIComponent(userDataCookie),
+        );
+        if (isAuthUserData(parsedUserData)) {
+          userData = parsedUserData;
+        }
+      } catch {
+        // Invalid JSON in cookie, treat as not authenticated
+        userData = null;
       }
-    } catch {
-      // Invalid JSON in cookie, treat as not authenticated
-      userData = null;
     }
-  }
 
-  const isAuthenticated = Boolean(accessToken && userData);
+    const isAuthenticated = Boolean(accessToken && userData);
 
-  return {
-    isAuthenticated,
-    accessToken: accessToken || null,
-    userData,
+    return {
+      isAuthenticated,
+      accessToken: accessToken || null,
+      userData,
 
-    /**
-     * Redirect to a path if authenticated (convenience method)
-     * Usage: `if (auth.isAuthenticated) auth.redirectTo("/dashboard");`
-     */
-    redirectTo: (path: string) => {
-      if (isAuthenticated) {
-        redirect(path);
-      }
-    },
-  };
-});
+      /**
+       * Redirect to a path if authenticated (convenience method)
+       * Usage: `if (auth.isAuthenticated) auth.redirectTo("/dashboard");`
+       */
+      redirectTo: (path: string) => {
+        if (isAuthenticated) {
+          redirect(path);
+        }
+      },
+    };
+  },
+);

@@ -8,7 +8,11 @@
  * @param currency - Currency code (default: "USD")
  * @param decimals - Number of decimal places (default: 2)
  */
-export function formatCurrency(amount: number, currency = "USD", decimals = 2): string {
+export function formatCurrency(
+  amount: number,
+  currency = "USD",
+  decimals = 2,
+): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
@@ -100,7 +104,7 @@ export function formatVehicleTitle(
   year?: number,
   make?: string,
   model?: string,
-  trim?: string
+  trim?: string,
 ): string {
   const parts = [year, make, model, trim].filter(Boolean);
   return parts.join(" ") || "Unknown Vehicle";

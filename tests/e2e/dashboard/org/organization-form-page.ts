@@ -69,7 +69,9 @@ export class OrganizationFormPage extends BasePage {
     // Edit page uses "Edit Organization" heading, not "Organization Details"
     const expectedHeading =
       mode === "create" ? /create organization/i : /edit organization/i;
-    await expect(this.page.getByRole("heading", { name: expectedHeading })).toBeVisible({ timeout: 10000 });
+    await expect(
+      this.page.getByRole("heading", { name: expectedHeading }),
+    ).toBeVisible({ timeout: 10000 });
   }
 
   /**
@@ -121,7 +123,10 @@ export class OrganizationFormPage extends BasePage {
   /**
    * Verify field error is shown
    */
-  async verifyFieldError(fieldName: string, errorMessage: string): Promise<void> {
+  async verifyFieldError(
+    fieldName: string,
+    errorMessage: string,
+  ): Promise<void> {
     const fieldError = this.page.getByText(errorMessage);
     await expect(fieldError).toBeVisible();
   }

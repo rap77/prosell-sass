@@ -36,11 +36,11 @@ test.describe("Reset Password", () => {
       { tag: ["@e2e", "@reset-password", "@a11y", "@RESET-E2E-002"] },
       async ({ page }) => {
         const accessibilityScanResults = await new AxeBuilder({ page })
-          .disableRules(['color-contrast']) // inline styles bypass Axe color check
+          .disableRules(["color-contrast"]) // inline styles bypass Axe color check
           .analyze();
         // Only block on critical and serious violations
         const critical = accessibilityScanResults.violations.filter(
-          (v) => v.impact === 'critical' || v.impact === 'serious',
+          (v) => v.impact === "critical" || v.impact === "serious",
         );
         expect(critical).toHaveLength(0);
       },

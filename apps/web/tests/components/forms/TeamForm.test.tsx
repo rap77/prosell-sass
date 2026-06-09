@@ -52,7 +52,9 @@ describe("TeamForm", () => {
   it("renders create form with name field", () => {
     render(<TeamForm mode="create" organizationId="org-123" />);
     expect(screen.getByLabelText(/team name/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /create team/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /create team/i }),
+    ).toBeInTheDocument();
   });
 
   it("shows validation error when name is empty", async () => {
@@ -72,19 +74,29 @@ describe("TeamForm", () => {
 
     await waitFor(() => {
       expect(mockCreateTeam).toHaveBeenCalledWith(
-        expect.objectContaining({ name: "Sales Team", organization_id: "org-123" })
+        expect.objectContaining({
+          name: "Sales Team",
+          organization_id: "org-123",
+        }),
       );
     });
   });
 
   it("renders edit mode with Save Changes button", () => {
     render(<TeamForm mode="edit" teamId="team-123" organizationId="org-123" />);
-    expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /save changes/i }),
+    ).toBeInTheDocument();
   });
 
   it("populates name field with initialData in edit mode", () => {
     render(
-      <TeamForm mode="edit" teamId="team-123" organizationId="org-123" initialData={{ name: "Old Team" }} />
+      <TeamForm
+        mode="edit"
+        teamId="team-123"
+        organizationId="org-123"
+        initialData={{ name: "Old Team" }}
+      />,
     );
     expect(screen.getByLabelText(/team name/i)).toHaveValue("Old Team");
   });
@@ -108,7 +120,9 @@ describe("TeamForm", () => {
     await user.click(screen.getByRole("button", { name: /create team/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/name must be at least 2 characters/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/name must be at least 2 characters/i),
+      ).toBeInTheDocument();
     });
   });
 });

@@ -1,572 +1,807 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProSell — Configurá tu negocio</title>
-<link rel="stylesheet" href="../colors_and_type.css">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<style>
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body {
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ProSell — Configurá tu negocio</title>
+    <link rel="stylesheet" href="../colors_and_type.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg-base);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+      }
 
-/* ===================== Split layout ===================== */
-.login {
-  display: grid;
-  grid-template-columns: 1.05fr 1fr;
-  min-height: 100vh;
-}
+      /* ===================== Split layout ===================== */
+      .login {
+        display: grid;
+        grid-template-columns: 1.05fr 1fr;
+        min-height: 100vh;
+      }
 
-/* ===================== Left: branding panel ===================== */
-.brand-panel {
-  position: relative;
-  overflow: hidden;
-  padding: 48px 56px;
-  background: linear-gradient(135deg, #060D24 0%, #0D1B6E 60%, #1E5FD4 100%);
-  display: flex; flex-direction: column;
-  color: #fff;
-}
-.brand-panel::before {
-  content: "";
-  position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(77,184,255,0.18), transparent 70%);
-}
-.brand-panel::after {
-  content: "";
-  position: absolute; inset: 0; pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-}
-.brand-panel > * { position: relative; z-index: 1; }
+      /* ===================== Left: branding panel ===================== */
+      .brand-panel {
+        position: relative;
+        overflow: hidden;
+        padding: 48px 56px;
+        background: linear-gradient(
+          135deg,
+          #060d24 0%,
+          #0d1b6e 60%,
+          #1e5fd4 100%
+        );
+        display: flex;
+        flex-direction: column;
+        color: #fff;
+      }
+      .brand-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse 60% 50% at 50% 50%,
+          rgba(77, 184, 255, 0.18),
+          transparent 70%
+        );
+      }
+      .brand-panel::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 56px 56px;
+        mask-image: radial-gradient(
+          ellipse at center,
+          black 30%,
+          transparent 80%
+        );
+        -webkit-mask-image: radial-gradient(
+          ellipse at center,
+          black 30%,
+          transparent 80%
+        );
+      }
+      .brand-panel > * {
+        position: relative;
+        z-index: 1;
+      }
 
-.bp-logo {
-  display: inline-flex; align-items: center; gap: 12px;
-  font-size: 22px; font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #fff;
-  text-decoration: none;
-}
-.bp-logo img { height: 32px; width: auto; }
+      .bp-logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #fff;
+        text-decoration: none;
+      }
+      .bp-logo img {
+        height: 32px;
+        width: auto;
+      }
 
-.bp-body {
-  flex: 1;
-  display: flex; flex-direction: column;
-  justify-content: center;
-  gap: 22px;
-  max-width: 480px;
-  margin: auto 0;
-  padding: 32px 0;
-}
-.bp-title {
-  font-size: 36px;
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  line-height: 1.1;
-  margin: 0;
-  color: #fff;
-}
-.bp-sub {
-  font-size: 16px;
-  line-height: 1.6;
-  color: rgba(255,255,255,0.7);
-  max-width: 380px;
-  margin: 0;
-}
+      .bp-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 22px;
+        max-width: 480px;
+        margin: auto 0;
+        padding: 32px 0;
+      }
+      .bp-title {
+        font-size: 36px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 1.1;
+        margin: 0;
+        color: #fff;
+      }
+      .bp-sub {
+        font-size: 16px;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.7);
+        max-width: 380px;
+        margin: 0;
+      }
 
-/* Illustration card */
-.illust {
-  margin-top: 14px;
-  background: rgba(13,27,62,0.45);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: var(--radius-lg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding: 24px;
-  box-shadow: 0 16px 48px rgba(6,13,36,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
-}
-.illust-head {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 16px;
-}
-.illust-title { font-size: 13px; font-weight: 600; color: #fff; }
-.illust-pill {
-  font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 3px 9px;
-  border-radius: 100px;
-  background: rgba(34,211,160,0.15);
-  color: var(--success);
-}
-.illust-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-.illust-cell {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  padding: 16px 8px;
-  background: rgba(6,13,36,0.45);
-  border: 1px solid rgba(77,184,255,0.18);
-  border-radius: 10px;
-  color: #fff;
-}
-.illust-cell .ico {
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(77,184,255,0.15);
-  border: 1px solid rgba(77,184,255,0.3);
-  color: var(--cyan);
-}
-.illust-cell .ico [data-lucide] { width: 16px; height: 16px; stroke-width: 2; }
-.illust-cell .label { font-size: 11px; color: rgba(255,255,255,0.75); font-weight: 500; }
+      /* Illustration card */
+      .illust {
+        margin-top: 14px;
+        background: rgba(13, 27, 62, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-lg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 24px;
+        box-shadow:
+          0 16px 48px rgba(6, 13, 36, 0.5),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      .illust-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .illust-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+      }
+      .illust-pill {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 3px 9px;
+        border-radius: 100px;
+        background: rgba(34, 211, 160, 0.15);
+        color: var(--success);
+      }
+      .illust-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .illust-cell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 16px 8px;
+        background: rgba(6, 13, 36, 0.45);
+        border: 1px solid rgba(77, 184, 255, 0.18);
+        border-radius: 10px;
+        color: #fff;
+      }
+      .illust-cell .ico {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(77, 184, 255, 0.15);
+        border: 1px solid rgba(77, 184, 255, 0.3);
+        color: var(--cyan);
+      }
+      .illust-cell .ico [data-lucide] {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2;
+      }
+      .illust-cell .label {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.75);
+        font-weight: 500;
+      }
 
-.illust-bars {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  display: flex; align-items: flex-end; gap: 5px;
-  height: 38px;
-}
-.illust-bars span {
-  flex: 1;
-  border-radius: 2px 2px 0 0;
-  background: linear-gradient(to top, rgba(77,184,255,0.25), rgba(77,184,255,0.5));
-}
-.illust-bars span.hi { background: linear-gradient(to top, var(--cyan), #7DCEFF); box-shadow: 0 0 12px rgba(77,184,255,0.4); }
+      .illust-bars {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: flex-end;
+        gap: 5px;
+        height: 38px;
+      }
+      .illust-bars span {
+        flex: 1;
+        border-radius: 2px 2px 0 0;
+        background: linear-gradient(
+          to top,
+          rgba(77, 184, 255, 0.25),
+          rgba(77, 184, 255, 0.5)
+        );
+      }
+      .illust-bars span.hi {
+        background: linear-gradient(to top, var(--cyan), #7dceff);
+        box-shadow: 0 0 12px rgba(77, 184, 255, 0.4);
+      }
 
-.bp-foot {
-  margin-top: auto;
-  display: flex; align-items: center; gap: 8px;
-  font-size: 12px;
-  color: rgba(255,255,255,0.5);
-}
-.bp-foot .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 6px var(--success); }
+      .bp-foot {
+        margin-top: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .bp-foot .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--success);
+        box-shadow: 0 0 6px var(--success);
+      }
 
-/* ===================== Right: form panel ===================== */
-.form-panel {
-  background: var(--bg-base);
-  display: flex; flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 48px;
-}
-.form-wrap {
-  width: 100%;
-  max-width: 480px;
-  display: flex; flex-direction: column;
-  gap: 22px;
-}
-.fp-logo-mobile {
-  display: none;
-  align-items: center; gap: 10px;
-  font-size: 18px; font-weight: 700;
-  color: var(--text-primary);
-  text-decoration: none;
-}
-.fp-logo-mobile img { height: 28px; width: auto; }
+      /* ===================== Right: form panel ===================== */
+      .form-panel {
+        background: var(--bg-base);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 48px;
+      }
+      .form-wrap {
+        width: 100%;
+        max-width: 480px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      .fp-logo-mobile {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary);
+        text-decoration: none;
+      }
+      .fp-logo-mobile img {
+        height: 28px;
+        width: auto;
+      }
 
-/* Step progress */
-.steps {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.steps .dots { display: inline-flex; gap: 6px; }
-.steps .dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--border-default);
-}
-.steps .dot.active {
-  background: var(--cyan);
-  box-shadow: 0 0 8px rgba(77,184,255,0.5);
-}
-.steps b { color: var(--text-primary); font-weight: 600; }
+      /* Step progress */
+      .steps {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+      .steps .dots {
+        display: inline-flex;
+        gap: 6px;
+      }
+      .steps .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--border-default);
+      }
+      .steps .dot.active {
+        background: var(--cyan);
+        box-shadow: 0 0 8px rgba(77, 184, 255, 0.5);
+      }
+      .steps b {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
 
-.fp-head { display: flex; flex-direction: column; gap: 6px; }
-.fp-title {
-  font-size: 28px; font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  margin: 0;
-  color: var(--text-primary);
-}
-.fp-subtitle {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0;
-  line-height: 1.5;
-}
+      .fp-head {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .fp-title {
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin: 0;
+        color: var(--text-primary);
+      }
+      .fp-subtitle {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin: 0;
+        line-height: 1.5;
+      }
 
-/* Form */
-form { display: flex; flex-direction: column; gap: 22px; }
-.field { display: flex; flex-direction: column; gap: 8px; }
-.field-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  letter-spacing: -0.005em;
-}
-.field-input {
-  position: relative;
-  display: flex; align-items: center;
-}
-.field-input input,
-.field-input select {
-  width: 100%;
-  height: 44px;
-  padding: 0 14px;
-  background: rgba(13,27,62,0.8);
-  border: 1px solid rgba(77,184,255,0.15);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 15px;
-  outline: none;
-  transition: border-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out), background 180ms var(--ease-out);
-  -webkit-appearance: none; appearance: none;
-}
-.field-input select {
-  padding-right: 40px;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238A9BBF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-}
-.field-input input::placeholder { color: var(--text-disabled); }
-.field-input input:focus,
-.field-input select:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 0 3px rgba(77,184,255,0.10);
-  background-color: rgba(13,27,62,0.95);
-}
+      /* Form */
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .field-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        letter-spacing: -0.005em;
+      }
+      .field-input {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .field-input input,
+      .field-input select {
+        width: 100%;
+        height: 44px;
+        padding: 0 14px;
+        background: rgba(13, 27, 62, 0.8);
+        border: 1px solid rgba(77, 184, 255, 0.15);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 15px;
+        outline: none;
+        transition:
+          border-color 180ms var(--ease-out),
+          box-shadow 180ms var(--ease-out),
+          background 180ms var(--ease-out);
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .field-input select {
+        padding-right: 40px;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238A9BBF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+      }
+      .field-input input::placeholder {
+        color: var(--text-disabled);
+      }
+      .field-input input:focus,
+      .field-input select:focus {
+        border-color: var(--cyan);
+        box-shadow: 0 0 0 3px rgba(77, 184, 255, 0.1);
+        background-color: rgba(13, 27, 62, 0.95);
+      }
 
-/* Niche cards */
-.niche-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-.niche-card {
-  position: relative;
-  display: flex; flex-direction: column;
-  align-items: flex-start; gap: 4px;
-  padding: 16px;
-  background: rgba(13,27,62,0.6);
-  border: 1px solid rgba(77,184,255,0.1);
-  border-radius: 10px;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-  color: var(--text-primary);
-  transition: all 180ms var(--ease-out);
-}
-.niche-card:hover {
-  border-color: rgba(77,184,255,0.3);
-  background: rgba(13,27,62,0.85);
-}
-.niche-card.active {
-  border: 2px solid var(--cyan);
-  background: rgba(77,184,255,0.08);
-  padding: 15px;
-}
-.niche-card .ico {
-  font-size: 22px;
-  line-height: 1;
-  margin-bottom: 6px;
-}
-.niche-card .label {
-  font-size: 14px; font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-}
-.niche-card .sub {
-  font-size: 11.5px;
-  color: var(--text-secondary);
-  line-height: 1.35;
-}
-.niche-card .check {
-  position: absolute;
-  top: 10px; right: 10px;
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: var(--cyan);
-  color: var(--bg-base);
-  display: none;
-  align-items: center; justify-content: center;
-}
-.niche-card.active .check { display: inline-flex; }
-.niche-card .check [data-lucide] { width: 11px; height: 11px; stroke-width: 3; }
+      /* Niche cards */
+      .niche-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .niche-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        padding: 16px;
+        background: rgba(13, 27, 62, 0.6);
+        border: 1px solid rgba(77, 184, 255, 0.1);
+        border-radius: 10px;
+        cursor: pointer;
+        text-align: left;
+        font-family: inherit;
+        color: var(--text-primary);
+        transition: all 180ms var(--ease-out);
+      }
+      .niche-card:hover {
+        border-color: rgba(77, 184, 255, 0.3);
+        background: rgba(13, 27, 62, 0.85);
+      }
+      .niche-card.active {
+        border: 2px solid var(--cyan);
+        background: rgba(77, 184, 255, 0.08);
+        padding: 15px;
+      }
+      .niche-card .ico {
+        font-size: 22px;
+        line-height: 1;
+        margin-bottom: 6px;
+      }
+      .niche-card .label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        letter-spacing: -0.01em;
+      }
+      .niche-card .sub {
+        font-size: 11.5px;
+        color: var(--text-secondary);
+        line-height: 1.35;
+      }
+      .niche-card .check {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--cyan);
+        color: var(--bg-base);
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .niche-card.active .check {
+        display: inline-flex;
+      }
+      .niche-card .check [data-lucide] {
+        width: 11px;
+        height: 11px;
+        stroke-width: 3;
+      }
 
-/* Segmented */
-.segmented {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  padding: 4px;
-  background: rgba(13,27,62,0.6);
-  border: 1px solid rgba(77,184,255,0.12);
-  border-radius: 10px;
-}
-.seg-btn {
-  height: 36px;
-  padding: 0 8px;
-  background: transparent;
-  border: 0;
-  border-radius: 7px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 180ms var(--ease-out);
-  white-space: nowrap;
-}
-.seg-btn:hover:not(.active) { color: var(--text-primary); }
-.seg-btn.active {
-  background: var(--cyan);
-  color: var(--bg-base);
-  box-shadow: 0 4px 14px rgba(77,184,255,0.25);
-}
+      /* Segmented */
+      .segmented {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        padding: 4px;
+        background: rgba(13, 27, 62, 0.6);
+        border: 1px solid rgba(77, 184, 255, 0.12);
+        border-radius: 10px;
+      }
+      .seg-btn {
+        height: 36px;
+        padding: 0 8px;
+        background: transparent;
+        border: 0;
+        border-radius: 7px;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 180ms var(--ease-out);
+        white-space: nowrap;
+      }
+      .seg-btn:hover:not(.active) {
+        color: var(--text-primary);
+      }
+      .seg-btn.active {
+        background: var(--cyan);
+        color: var(--bg-base);
+        box-shadow: 0 4px 14px rgba(77, 184, 255, 0.25);
+      }
 
-/* Primary button */
-.btn-submit {
-  margin-top: 4px;
-  width: 100%;
-  height: 48px;
-  background: var(--cyan);
-  color: var(--bg-base);
-  border: 0;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  transition: background 180ms var(--ease-out), box-shadow 180ms var(--ease-out), transform 180ms var(--ease-out);
-}
-.btn-submit:hover {
-  background: var(--cyan-hover);
-  box-shadow: 0 8px 28px rgba(77,184,255,0.30);
-  transform: translateY(-1px);
-}
-.btn-submit [data-lucide] { width: 18px; height: 18px; stroke-width: 2.5; }
+      /* Primary button */
+      .btn-submit {
+        margin-top: 4px;
+        width: 100%;
+        height: 48px;
+        background: var(--cyan);
+        color: var(--bg-base);
+        border: 0;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition:
+          background 180ms var(--ease-out),
+          box-shadow 180ms var(--ease-out),
+          transform 180ms var(--ease-out);
+      }
+      .btn-submit:hover {
+        background: var(--cyan-hover);
+        box-shadow: 0 8px 28px rgba(77, 184, 255, 0.3);
+        transform: translateY(-1px);
+      }
+      .btn-submit [data-lucide] {
+        width: 18px;
+        height: 18px;
+        stroke-width: 2.5;
+      }
 
-.legal {
-  text-align: center;
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--text-disabled);
-  margin: 0;
-}
+      .legal {
+        text-align: center;
+        font-size: 11px;
+        line-height: 1.5;
+        color: var(--text-disabled);
+        margin: 0;
+      }
 
-.back-link {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  align-self: flex-start;
-  transition: color 180ms;
-}
-.back-link:hover { color: var(--text-primary); }
-.back-link [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        align-self: flex-start;
+        transition: color 180ms;
+      }
+      .back-link:hover {
+        color: var(--text-primary);
+      }
+      .back-link [data-lucide] {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2;
+      }
 
-/* Mobile */
-@media (max-width: 768px) {
-  .login { grid-template-columns: 1fr; }
-  .brand-panel { display: none; }
-  .form-panel { padding: 32px 24px; min-height: 100vh; }
-  .fp-logo-mobile { display: inline-flex; }
-  .fp-title { font-size: 24px; }
-  .niche-grid { grid-template-columns: 1fr; }
-  .segmented { grid-template-columns: repeat(2, 1fr); }
-}
-</style>
-</head>
-<body>
-<div class="login">
-  <!-- Left: Branding -->
-  <aside class="brand-panel">
-    <a class="bp-logo" href="#">
-      <img src="../assets/logo-mark.png" alt="" />
-      <span>ProSell</span>
-    </a>
+      /* Mobile */
+      @media (max-width: 768px) {
+        .login {
+          grid-template-columns: 1fr;
+        }
+        .brand-panel {
+          display: none;
+        }
+        .form-panel {
+          padding: 32px 24px;
+          min-height: 100vh;
+        }
+        .fp-logo-mobile {
+          display: inline-flex;
+        }
+        .fp-title {
+          font-size: 24px;
+        }
+        .niche-grid {
+          grid-template-columns: 1fr;
+        }
+        .segmented {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login">
+      <!-- Left: Branding -->
+      <aside class="brand-panel">
+        <a class="bp-logo" href="#">
+          <img src="../assets/logo-mark.png" alt="" />
+          <span>ProSell</span>
+        </a>
 
-    <div class="bp-body">
-      <h2 class="bp-title">Casi listo. Configurá tu negocio.</h2>
-      <p class="bp-sub">Estos datos nos ayudan a personalizar ProSell para tu tipo de negocio.</p>
+        <div class="bp-body">
+          <h2 class="bp-title">Casi listo. Configurá tu negocio.</h2>
+          <p class="bp-sub">
+            Estos datos nos ayudan a personalizar ProSell para tu tipo de
+            negocio.
+          </p>
 
-      <div class="illust">
-        <div class="illust-head">
-          <span class="illust-title">Pipeline · Vista previa</span>
-          <span class="illust-pill">Personalizado</span>
-        </div>
-        <div class="illust-grid">
-          <div class="illust-cell">
-            <span class="ico"><i data-lucide="car"></i></span>
-            <span class="label">Vehículos</span>
+          <div class="illust">
+            <div class="illust-head">
+              <span class="illust-title">Pipeline · Vista previa</span>
+              <span class="illust-pill">Personalizado</span>
+            </div>
+            <div class="illust-grid">
+              <div class="illust-cell">
+                <span class="ico"><i data-lucide="car"></i></span>
+                <span class="label">Vehículos</span>
+              </div>
+              <div class="illust-cell">
+                <span class="ico"><i data-lucide="home"></i></span>
+                <span class="label">Inmuebles</span>
+              </div>
+              <div class="illust-cell">
+                <span class="ico"><i data-lucide="package"></i></span>
+                <span class="label">Productos</span>
+              </div>
+            </div>
+            <div class="illust-bars">
+              <span style="height: 30%"></span>
+              <span style="height: 48%"></span>
+              <span style="height: 36%"></span>
+              <span style="height: 62%"></span>
+              <span style="height: 50%"></span>
+              <span style="height: 76%"></span>
+              <span class="hi" style="height: 92%"></span>
+            </div>
           </div>
-          <div class="illust-cell">
-            <span class="ico"><i data-lucide="home"></i></span>
-            <span class="label">Inmuebles</span>
-          </div>
-          <div class="illust-cell">
-            <span class="ico"><i data-lucide="package"></i></span>
-            <span class="label">Productos</span>
-          </div>
         </div>
-        <div class="illust-bars">
-          <span style="height: 30%"></span>
-          <span style="height: 48%"></span>
-          <span style="height: 36%"></span>
-          <span style="height: 62%"></span>
-          <span style="height: 50%"></span>
-          <span style="height: 76%"></span>
-          <span class="hi" style="height: 92%"></span>
+
+        <div class="bp-foot">
+          <span class="dot"></span>
+          Tu cuenta queda lista en segundos
         </div>
-      </div>
+      </aside>
+
+      <!-- Right: Form -->
+      <main class="form-panel">
+        <div class="form-wrap">
+          <a class="fp-logo-mobile" href="#">
+            <img src="../assets/logo-mark.png" alt="" />
+            <span>ProSell</span>
+          </a>
+
+          <a class="back-link" href="Register.html">
+            <i data-lucide="arrow-left"></i>
+            Volver al paso anterior
+          </a>
+
+          <div class="steps">
+            <span class="dots">
+              <span class="dot active"></span>
+              <span class="dot active"></span>
+            </span>
+            <span><b>Paso 2 de 2</b> — Tu negocio</span>
+          </div>
+
+          <div class="fp-head">
+            <h1 class="fp-title">Contanos sobre tu negocio</h1>
+            <p class="fp-subtitle">
+              Podés cambiar esto después desde configuración
+            </p>
+          </div>
+
+          <form id="reg2-form" novalidate>
+            <!-- Company name -->
+            <div class="field">
+              <label class="field-label" for="company"
+                >Nombre de tu empresa</label
+              >
+              <div class="field-input">
+                <input
+                  type="text"
+                  id="company"
+                  name="company"
+                  placeholder="Ej: Automotores del Norte"
+                />
+              </div>
+            </div>
+
+            <!-- Niche selector -->
+            <div class="field">
+              <label class="field-label">¿En qué rubro operás?</label>
+              <div class="niche-grid" role="radiogroup" aria-label="Rubro">
+                <button
+                  class="niche-card active"
+                  type="button"
+                  data-niche="vehicles"
+                  role="radio"
+                  aria-checked="true"
+                >
+                  <span class="check"><i data-lucide="check"></i></span>
+                  <span class="ico">🚗</span>
+                  <span class="label">Vehículos</span>
+                  <span class="sub">Autos, motos, maquinaria</span>
+                </button>
+                <button
+                  class="niche-card"
+                  type="button"
+                  data-niche="real-estate"
+                  role="radio"
+                  aria-checked="false"
+                >
+                  <span class="check"><i data-lucide="check"></i></span>
+                  <span class="ico">🏠</span>
+                  <span class="label">Inmuebles</span>
+                  <span class="sub">Casas, dptos, locales</span>
+                </button>
+                <button
+                  class="niche-card"
+                  type="button"
+                  data-niche="products"
+                  role="radio"
+                  aria-checked="false"
+                >
+                  <span class="check"><i data-lucide="check"></i></span>
+                  <span class="ico">📦</span>
+                  <span class="label">Productos</span>
+                  <span class="sub">Stock general, retail</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Team size segmented -->
+            <div class="field">
+              <label class="field-label"
+                >¿Cuántas personas en tu equipo de ventas?</label
+              >
+              <div
+                class="segmented"
+                role="radiogroup"
+                aria-label="Tamaño del equipo"
+              >
+                <button
+                  class="seg-btn"
+                  type="button"
+                  data-size="1"
+                  role="radio"
+                  aria-checked="false"
+                >
+                  Solo yo
+                </button>
+                <button
+                  class="seg-btn active"
+                  type="button"
+                  data-size="2-5"
+                  role="radio"
+                  aria-checked="true"
+                >
+                  2–5
+                </button>
+                <button
+                  class="seg-btn"
+                  type="button"
+                  data-size="6-15"
+                  role="radio"
+                  aria-checked="false"
+                >
+                  6–15
+                </button>
+                <button
+                  class="seg-btn"
+                  type="button"
+                  data-size="15+"
+                  role="radio"
+                  aria-checked="false"
+                >
+                  +15
+                </button>
+              </div>
+            </div>
+
+            <!-- Source -->
+            <div class="field">
+              <label class="field-label" for="source"
+                >¿Cómo nos encontraste?</label
+              >
+              <div class="field-input">
+                <select id="source" name="source">
+                  <option value="" disabled selected>Elegí una opción</option>
+                  <option value="google">Google</option>
+                  <option value="linkedin">LinkedIn</option>
+                  <option value="referido">Referido</option>
+                  <option value="redes">Redes sociales</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+            </div>
+
+            <button class="btn-submit" type="submit">
+              Crear mi cuenta gratis
+              <i data-lucide="arrow-right"></i>
+            </button>
+
+            <p class="legal">
+              Al crear tu cuenta aceptás nuestros términos.<br />Sin cargo hasta
+              que vendas.
+            </p>
+          </form>
+        </div>
+      </main>
     </div>
 
-    <div class="bp-foot">
-      <span class="dot"></span>
-      Tu cuenta queda lista en segundos
-    </div>
-  </aside>
+    <script>
+      lucide.createIcons();
 
-  <!-- Right: Form -->
-  <main class="form-panel">
-    <div class="form-wrap">
-      <a class="fp-logo-mobile" href="#">
-        <img src="../assets/logo-mark.png" alt="" />
-        <span>ProSell</span>
-      </a>
-
-      <a class="back-link" href="Register.html">
-        <i data-lucide="arrow-left"></i>
-        Volver al paso anterior
-      </a>
-
-      <div class="steps">
-        <span class="dots">
-          <span class="dot active"></span>
-          <span class="dot active"></span>
-        </span>
-        <span><b>Paso 2 de 2</b> — Tu negocio</span>
-      </div>
-
-      <div class="fp-head">
-        <h1 class="fp-title">Contanos sobre tu negocio</h1>
-        <p class="fp-subtitle">Podés cambiar esto después desde configuración</p>
-      </div>
-
-      <form id="reg2-form" novalidate>
-        <!-- Company name -->
-        <div class="field">
-          <label class="field-label" for="company">Nombre de tu empresa</label>
-          <div class="field-input">
-            <input type="text" id="company" name="company" placeholder="Ej: Automotores del Norte" />
-          </div>
-        </div>
-
-        <!-- Niche selector -->
-        <div class="field">
-          <label class="field-label">¿En qué rubro operás?</label>
-          <div class="niche-grid" role="radiogroup" aria-label="Rubro">
-            <button class="niche-card active" type="button" data-niche="vehicles" role="radio" aria-checked="true">
-              <span class="check"><i data-lucide="check"></i></span>
-              <span class="ico">🚗</span>
-              <span class="label">Vehículos</span>
-              <span class="sub">Autos, motos, maquinaria</span>
-            </button>
-            <button class="niche-card" type="button" data-niche="real-estate" role="radio" aria-checked="false">
-              <span class="check"><i data-lucide="check"></i></span>
-              <span class="ico">🏠</span>
-              <span class="label">Inmuebles</span>
-              <span class="sub">Casas, dptos, locales</span>
-            </button>
-            <button class="niche-card" type="button" data-niche="products" role="radio" aria-checked="false">
-              <span class="check"><i data-lucide="check"></i></span>
-              <span class="ico">📦</span>
-              <span class="label">Productos</span>
-              <span class="sub">Stock general, retail</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Team size segmented -->
-        <div class="field">
-          <label class="field-label">¿Cuántas personas en tu equipo de ventas?</label>
-          <div class="segmented" role="radiogroup" aria-label="Tamaño del equipo">
-            <button class="seg-btn" type="button" data-size="1" role="radio" aria-checked="false">Solo yo</button>
-            <button class="seg-btn active" type="button" data-size="2-5" role="radio" aria-checked="true">2–5</button>
-            <button class="seg-btn" type="button" data-size="6-15" role="radio" aria-checked="false">6–15</button>
-            <button class="seg-btn" type="button" data-size="15+" role="radio" aria-checked="false">+15</button>
-          </div>
-        </div>
-
-        <!-- Source -->
-        <div class="field">
-          <label class="field-label" for="source">¿Cómo nos encontraste?</label>
-          <div class="field-input">
-            <select id="source" name="source">
-              <option value="" disabled selected>Elegí una opción</option>
-              <option value="google">Google</option>
-              <option value="linkedin">LinkedIn</option>
-              <option value="referido">Referido</option>
-              <option value="redes">Redes sociales</option>
-              <option value="otro">Otro</option>
-            </select>
-          </div>
-        </div>
-
-        <button class="btn-submit" type="submit">
-          Crear mi cuenta gratis
-          <i data-lucide="arrow-right"></i>
-        </button>
-
-        <p class="legal">Al crear tu cuenta aceptás nuestros términos.<br>Sin cargo hasta que vendas.</p>
-      </form>
-    </div>
-  </main>
-</div>
-
-<script>
-  lucide.createIcons();
-
-  // Niche cards (radio group)
-  document.querySelectorAll('.niche-card').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.niche-card').forEach(b => {
-        b.classList.remove('active');
-        b.setAttribute('aria-checked', 'false');
+      // Niche cards (radio group)
+      document.querySelectorAll(".niche-card").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".niche-card").forEach((b) => {
+            b.classList.remove("active");
+            b.setAttribute("aria-checked", "false");
+          });
+          btn.classList.add("active");
+          btn.setAttribute("aria-checked", "true");
+        });
       });
-      btn.classList.add('active');
-      btn.setAttribute('aria-checked', 'true');
-    });
-  });
 
-  // Segmented control
-  document.querySelectorAll('.seg-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.seg-btn').forEach(b => {
-        b.classList.remove('active');
-        b.setAttribute('aria-checked', 'false');
+      // Segmented control
+      document.querySelectorAll(".seg-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".seg-btn").forEach((b) => {
+            b.classList.remove("active");
+            b.setAttribute("aria-checked", "false");
+          });
+          btn.classList.add("active");
+          btn.setAttribute("aria-checked", "true");
+        });
       });
-      btn.classList.add('active');
-      btn.setAttribute('aria-checked', 'true');
-    });
-  });
-</script>
-</body>
+    </script>
+  </body>
 </html>

@@ -31,6 +31,6 @@ layer_selection:
 test_data:
   vin_decode:
     valid_vins:
-      - "2GNALBEK8H1615946"  # 2017 Buick Enclave
-      - "1HGCM82633A004351"  # 2023 Honda Accord
-      - "1F1F1500000010001"  # Invalid checksum
+      - "2GNALBEK8H1615946" # 2017 Buick Enclave
+      - "1HGCM82633A004351" # 2023 Honda Accord
+      - "1F1F1500000010001" # Invalid checksum

@@ -168,7 +168,12 @@ export function XIcon({ className, width = 24, height = 24 }: IconProps) {
 /**
  * Shield icon (for 2FA security)
  */
-export function ShieldIcon({ className, width = 24, height = 24, style }: IconProps) {
+export function ShieldIcon({
+  className,
+  width = 24,
+  height = 24,
+  style,
+}: IconProps) {
   return (
     <svg
       className={className}

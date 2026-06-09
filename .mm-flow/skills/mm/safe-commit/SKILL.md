@@ -46,6 +46,7 @@ Si el hook falla, arreglá el error. No lo salteés."
 ### ✅ Tests deben pasar (0 fallas toleradas)
 
 Lee los comandos de test desde `.mastermind/config.yaml` del proyecto. Si no existe, usá las convenciones del stack detectado:
+
 - Python → `uv run pytest`
 - Node.js/Next.js → `pnpm test run` o `pnpm --prefix <app-dir> test run`
 
@@ -114,6 +115,7 @@ mcp__notebooklm-mcp__notebook_query(
 ```
 
 **Correcciones de Brain #6 que siempre respetás:**
+
 - ✅ pnpm no npm
 - ✅ uv no pip
 - ✅ Tests desde el subdirectorio correcto (leer de `.mastermind/config.yaml`)
@@ -125,6 +127,7 @@ mcp__notebooklm-mcp__notebook_query(
 Si algo falla en el checklist:
 
 ### Tests fallan
+
 ```bash
 # Corregir ANTES de commitear
 cd apps/api && uv run pytest  # Ver qué falla
@@ -133,6 +136,7 @@ cd apps/api && uv run pytest  # Ver qué falla
 ```
 
 ### GGA falla
+
 ```bash
 # Ver qué validación falló
 pre-commit run --all-files
@@ -141,6 +145,7 @@ pre-commit run --all-files
 ```
 
 ### Formato incorrecto
+
 ```
 ❌ "Updated feature X"
 ✅ "feat(product): add X validation"
@@ -150,6 +155,7 @@ pre-commit run --all-files
 ```
 
 ### Atribución AI
+
 ```
 ❌ "Co-Authored-By: Claude Code <noreply@anthropic.com>"
 ✅ (nada — GGA lo agrega automáticamente)
@@ -157,11 +163,11 @@ pre-commit run --all-files
 
 ## Comandos
 
-| Comando | Qué hace |
-|---------|----------|
-| `/mm:safe-commit` | Valida TODO y commitea cambios staged |
-| `/mm:safe-commit --check` | Solo checkea, no commitea (dry-run) |
-| `/mm:safe-commit --fix` | Auto-corrige issues y luego commitea |
+| Comando                   | Qué hace                              |
+| ------------------------- | ------------------------------------- |
+| `/mm:safe-commit`         | Valida TODO y commitea cambios staged |
+| `/mm:safe-commit --check` | Solo checkea, no commitea (dry-run)   |
+| `/mm:safe-commit --fix`   | Auto-corrige issues y luego commitea  |
 
 ## Mensajes de Error — Explicaciones Claras
 

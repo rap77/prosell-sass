@@ -96,7 +96,10 @@ export class TeamFormPage extends BasePage {
   /**
    * Verify field error is shown
    */
-  async verifyFieldError(fieldName: string, errorMessage: string): Promise<void> {
+  async verifyFieldError(
+    fieldName: string,
+    errorMessage: string,
+  ): Promise<void> {
     const fieldError = this.page.getByText(errorMessage);
     await expect(fieldError).toBeVisible();
   }

@@ -11,12 +11,14 @@
 ### Estado Actual: Consistencia Técnica Alta, Consistencia Funcional Media
 
 **Fortalezas:**
+
 - ✅ Next.js 16 + React 19 + Tailwind 4 (stack de vanguardia)
 - ✅ 358 tests frontend passing (estructura sólida)
 - ✅ Magic UI components documentados
 - ✅ Clean Architecture facilita reutilización
 
 **Deudas identificadas:**
+
 - ⚠️ Documentación parcial del sistema de diseño
 - ⚠️ Patrones de feedback no estandarizados (API externa)
 - ⚠️ Estados de carga complejos no definidos
@@ -29,6 +31,7 @@
 ### 1. Widget de Conectividad
 
 **Qué es:**
+
 ```
 ┌────────────────────────────────┐
 │ 🟢 Facebook API - Conectado    │
@@ -38,6 +41,7 @@
 ```
 
 **Por qué falta:**
+
 - Dashboard actual es administrativo, no operativo
 - No hay indicadores de estado de conexiones externas
 
@@ -48,6 +52,7 @@
 ### 2. Centro de Notificaciones Operativas
 
 **Qué es:**
+
 ```
 ┌────────────────────────────────┐
 │ 🔔 NOTIFICACIONES (3)          │
@@ -59,6 +64,7 @@
 ```
 
 **Por qué falta:**
+
 - No hay sistema de alertas para errores de publicación
 - Tokens expirados no están monitoreados
 
@@ -69,6 +75,7 @@
 ### 3. Activity Logs Visuales
 
 **Qué es:**
+
 ```
 ┌────────────────────────────────┐
 │ ACTIVIDAD RECIENTE              │
@@ -83,6 +90,7 @@
 ```
 
 **Por qué falta:**
+
 - Dealer no tiene visibilidad del estado de sus publicaciones
 - No hay timeline de actividad
 
@@ -93,6 +101,7 @@
 ### 4. Bulk Action Toolbar
 
 **Qué es:**
+
 ```
 ┌────────────────────────────────┐
 │ ☑️ Seleccionar todos (20)      │
@@ -101,6 +110,7 @@
 ```
 
 **Por qué es crítico:**
+
 - Sin esto, colapso operativo con 20+ vehículos
 - Dealer necesita publicar lote, no uno por uno
 
@@ -113,6 +123,7 @@
 ### 1. Preview de Ad (Simulador)
 
 **Qué es:**
+
 ```
 ┌──────────────────────────────────────┐
 │ 📱 CÓMO SE VERÁ EN FACEBOOK          │
@@ -127,6 +138,7 @@
 ```
 
 **Por qué es necesario:**
+
 - Dealer necesita saber cómo se verá antes de publicar
 - Elimina sorpresas post-publicación
 - Aumenta confianza en el sistema
@@ -138,6 +150,7 @@
 ### 2. AI Prompt Interface
 
 **Qué es:**
+
 ```
 ┌──────────────────────────────────────┐
 │ ✨ TÍTULO GENERADO POR IA            │
@@ -150,6 +163,7 @@
 ```
 
 **Por qué es necesario:**
+
 - Reduce esfuerzo cognitivo
 - Permite personalización sin escribir desde cero
 - Mejora CTR con títulos optimizados
@@ -161,6 +175,7 @@
 ### 3. Scheduler Component
 
 **Qué es:**
+
 ```
 ┌──────────────────────────────────────┐
 │ 📅 RE-PUBLICACIÓN PROGRAMADA          │
@@ -175,6 +190,7 @@
 ```
 
 **Por qué es necesario:**
+
 - Posts de Facebook vencen a los 7 días
 - Re-publicación automática es crítica
 - Dealer necesita control sobre cuándo se publica
@@ -188,6 +204,7 @@
 ### 1. Formularios Dinámicos (field_config)
 
 **Qué ya existe:**
+
 ```typescript
 // Categories tienen field_config dinámico
 {
@@ -197,6 +214,7 @@
 ```
 
 **Cómo reutilizar:**
+
 - Adaptar `field_config` para campos requeridos por Facebook
 - Validación automática según tipo de vehículo
 - Reduce boilerplate de forms
@@ -208,6 +226,7 @@
 ### 2. Galería de Imágenes Ordenada
 
 **Qué ya existe:**
+
 ```typescript
 // ProductImage con sort_order + is_primary
 {
@@ -219,6 +238,7 @@
 ```
 
 **Cómo reutilizar:**
+
 - Carrusel de Facebook usa mismo patrón
 - Upload ordering ya está implementado
 - Thumbnail generation ya existe
@@ -230,6 +250,7 @@
 ### 3. Display de VIN
 
 **Qué ya existe:**
+
 ```typescript
 // VIN Decoder (NHTSA VPIC API) integrado
 {
@@ -244,6 +265,7 @@
 ```
 
 **Cómo reutilizar:**
+
 - Display de datos del vehículo en dashboard
 - Preview de información antes de publicar
 - Generación de confianza en comprador final
@@ -256,12 +278,12 @@
 
 ### Gap Principal: Estático vs Transaccional
 
-| Dimensión | Diseño Actual (Sprint 5-6) | Marketplace Automation |
-|-----------|----------------------------|-------------------------|
-| **Naturaleza** | Estático (gestión de DB) | Transaccional (acciones) |
-| **Feedback** | Mínimo (CRUD responses) | Complejo (API externa) |
-| **Estados** | 2 (idle, loading) | 5+ (draft, syncing, published, error, retry) |
-| **Control** | Lista de inventario | Panel de control de publicaciones |
+| Dimensión      | Diseño Actual (Sprint 5-6) | Marketplace Automation                       |
+| -------------- | -------------------------- | -------------------------------------------- |
+| **Naturaleza** | Estático (gestión de DB)   | Transaccional (acciones)                     |
+| **Feedback**   | Mínimo (CRUD responses)    | Complejo (API externa)                       |
+| **Estados**    | 2 (idle, loading)          | 5+ (draft, syncing, published, error, retry) |
+| **Control**    | Lista de inventario        | Panel de control de publicaciones            |
 
 **Conclusión**: El diseño actual es "tablas", Marketplace Automation necesita "herramientas de productividad".
 
@@ -270,11 +292,13 @@
 ### Gap de Feedback: Estados Asíncronos de Larga Duración
 
 **Problema:**
+
 - Publicación en Facebook toma 5-30 segundos
 - Dealer necesita feedback inmediato (optimistic UI)
 - No hay patrones para retry/error de API externa
 
 **Solución:**
+
 ```
 1. Dealer clic "Publicar"
 2. UI: "🔄 Publicando..." (optimistic)
@@ -287,10 +311,12 @@
 ### Gap de Control: Dashboard Operativo
 
 **Problema:**
+
 - Dashboard actual: "Qué vehículos tengo"
 - Dashboard necesario: "Qué se está publicando"
 
 **Solución:**
+
 - Panel de control de publicación
 - Métricas de éxito en tiempo real
 - Acciones correctivas (reintentar, pausar, editar)
@@ -327,21 +353,25 @@
 ### Sprint 7+: Marketplace UI (Semanas 1-4)
 
 **Semana 1: Estado y Conectividad**
+
 - Widget de conectividad Facebook
 - Activity logs visuales
 - Dashboard de publicaciones
 
 **Semana 2: Publicación**
+
 - Preview de Ad (simulador)
 - Botón "Publicar en Facebook"
 - Bulk action toolbar
 
 **Semana 3: IA y Optimización**
+
 - AI Prompt interface
 - Generador de títulos
 - Editor asistido de descripciones
 
 **Semana 4: Scheduler**
+
 - Scheduler component (re-publicación)
 - Configuración de frecuencia
 - Pausa/reanudar publicaciones
@@ -349,6 +379,7 @@
 ### Sprint 9: Catálogo Público (Semanas 9-10)
 
 **Solo cuando:**
+
 - Flujo de datos hacia afuera está automatizado
 - Dealers están retenidos y satisfechos
 - Hay capacidad para "nice-to-haves"

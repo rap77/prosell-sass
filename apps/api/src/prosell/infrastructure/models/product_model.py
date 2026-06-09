@@ -68,9 +68,7 @@ class ProductModel(Base):
         default=[],
         nullable=True,
     )
-    cover_image_key: Mapped[str | None] = mapped_column(
-        String(500), nullable=True
-    )
+    cover_image_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Location
     location_city: Mapped[str | None] = mapped_column(String(100), nullable=True)

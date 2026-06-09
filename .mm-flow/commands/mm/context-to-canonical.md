@@ -60,6 +60,7 @@ python3 .claude/commands/mm/context-to-canonical-handler.py --payload-only [opti
 ```
 
 That mode emits:
+
 - `PAYLOAD: {...}`
 - `LAUNCH: canonical-writer`
 

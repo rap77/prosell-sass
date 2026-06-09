@@ -1,395 +1,596 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProSell — Verify email</title>
-<link rel="stylesheet" href="../colors_and_type.css">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<style>
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body {
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-  position: relative;
-  overflow-x: hidden;
-}
-body::before {
-  content: "";
-  position: fixed; inset: 0;
-  background:
-    radial-gradient(ellipse at 20% 10%, rgba(30,95,212,0.20), transparent 55%),
-    radial-gradient(ellipse at 85% 85%, rgba(77,184,255,0.12), transparent 55%);
-  pointer-events: none;
-  z-index: 0;
-}
-body::after {
-  content: "";
-  position: fixed; inset: 0;
-  background-image:
-    linear-gradient(rgba(77,184,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(77,184,255,0.04) 1px, transparent 1px);
-  background-size: 40px 40px;
-  mask: radial-gradient(ellipse at 50% 30%, black, transparent 75%);
-  -webkit-mask: radial-gradient(ellipse at 50% 30%, black, transparent 75%);
-  pointer-events: none;
-  z-index: 0;
-}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ProSell — Verify email</title>
+    <link rel="stylesheet" href="../colors_and_type.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg-base);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse at 20% 10%,
+            rgba(30, 95, 212, 0.2),
+            transparent 55%
+          ),
+          radial-gradient(
+            ellipse at 85% 85%,
+            rgba(77, 184, 255, 0.12),
+            transparent 55%
+          );
+        pointer-events: none;
+        z-index: 0;
+      }
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(77, 184, 255, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(77, 184, 255, 0.04) 1px, transparent 1px);
+        background-size: 40px 40px;
+        mask: radial-gradient(ellipse at 50% 30%, black, transparent 75%);
+        -webkit-mask: radial-gradient(
+          ellipse at 50% 30%,
+          black,
+          transparent 75%
+        );
+        pointer-events: none;
+        z-index: 0;
+      }
 
-.stage {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 48px 24px 64px;
-  gap: 8px;
-}
-.stage-head { text-align: center; margin-bottom: 16px; }
-.stage-head .eyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--cyan);
-}
-.stage-head h2 {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 6px 0 0;
-  color: var(--text-secondary);
-  letter-spacing: -0.005em;
-}
+      .stage {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 48px 24px 64px;
+        gap: 8px;
+      }
+      .stage-head {
+        text-align: center;
+        margin-bottom: 16px;
+      }
+      .stage-head .eyebrow {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--cyan);
+      }
+      .stage-head h2 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 6px 0 0;
+        color: var(--text-secondary);
+        letter-spacing: -0.005em;
+      }
 
-.cards-row {
-  display: grid;
-  grid-template-columns: repeat(3, 420px);
-  gap: 28px;
-  margin-top: 8px;
-}
+      .cards-row {
+        display: grid;
+        grid-template-columns: repeat(3, 420px);
+        gap: 28px;
+        margin-top: 8px;
+      }
 
-/* ===== Card ===== */
-.card {
-  background: rgba(13,27,62,0.80);
-  border: 1px solid rgba(77,184,255,0.12);
-  border-radius: 16px;
-  padding: 40px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 16px 48px rgba(6,13,36,0.55);
-  display: flex; flex-direction: column;
-  gap: 22px;
-  position: relative;
-}
-.state-pill {
-  position: absolute;
-  top: -10px; left: 24px;
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 10px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  background: var(--bg-base);
-  border: 1px solid var(--border-default);
-  border-radius: 100px;
-  color: var(--text-secondary);
-}
-.state-pill.ok    { color: var(--success); border-color: rgba(34,211,160,0.4); }
-.state-pill.err   { color: var(--error);   border-color: rgba(240,68,56,0.4); }
-.state-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
+      /* ===== Card ===== */
+      .card {
+        background: rgba(13, 27, 62, 0.8);
+        border: 1px solid rgba(77, 184, 255, 0.12);
+        border-radius: 16px;
+        padding: 40px;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        box-shadow: 0 16px 48px rgba(6, 13, 36, 0.55);
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        position: relative;
+      }
+      .state-pill {
+        position: absolute;
+        top: -10px;
+        left: 24px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        background: var(--bg-base);
+        border: 1px solid var(--border-default);
+        border-radius: 100px;
+        color: var(--text-secondary);
+      }
+      .state-pill.ok {
+        color: var(--success);
+        border-color: rgba(34, 211, 160, 0.4);
+      }
+      .state-pill.err {
+        color: var(--error);
+        border-color: rgba(240, 68, 56, 0.4);
+      }
+      .state-pill .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        box-shadow: 0 0 6px currentColor;
+      }
 
-/* Logo */
-.brand {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 10px;
-  align-self: center;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.005em;
-}
-.brand img { height: 22px; width: auto; }
+      /* Logo */
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        align-self: center;
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.005em;
+      }
+      .brand img {
+        height: 22px;
+        width: auto;
+      }
 
-/* Header icon + titles */
-.head-block {
-  display: flex; flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  text-align: center;
-}
-.head-icon {
-  width: 76px; height: 76px;
-  border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(77,184,255,0.14);
-  border: 1px solid rgba(77,184,255,0.32);
-  color: var(--cyan);
-  box-shadow: 0 0 28px rgba(77,184,255,0.22), inset 0 1px 0 rgba(255,255,255,0.05);
-}
-.head-icon.success {
-  background: rgba(34,211,160,0.14);
-  border-color: rgba(34,211,160,0.34);
-  color: var(--success);
-  box-shadow: 0 0 28px rgba(34,211,160,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
-}
-.head-icon.error {
-  background: rgba(240,68,56,0.14);
-  border-color: rgba(240,68,56,0.34);
-  color: var(--error);
-  box-shadow: 0 0 28px rgba(240,68,56,0.22), inset 0 1px 0 rgba(255,255,255,0.05);
-}
-.head-icon [data-lucide] { width: 48px; height: 48px; stroke-width: 1.5; }
-.titles { display: flex; flex-direction: column; gap: 8px; }
-.titles h1 {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  margin: 0;
-  color: var(--text-primary);
-  line-height: 1.18;
-}
-.titles p {
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.55;
-  margin: 0;
-}
-.email-line {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--cyan);
-  letter-spacing: -0.005em;
-  margin-top: 2px;
-  word-break: break-all;
-}
+      /* Header icon + titles */
+      .head-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        text-align: center;
+      }
+      .head-icon {
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(77, 184, 255, 0.14);
+        border: 1px solid rgba(77, 184, 255, 0.32);
+        color: var(--cyan);
+        box-shadow:
+          0 0 28px rgba(77, 184, 255, 0.22),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      .head-icon.success {
+        background: rgba(34, 211, 160, 0.14);
+        border-color: rgba(34, 211, 160, 0.34);
+        color: var(--success);
+        box-shadow:
+          0 0 28px rgba(34, 211, 160, 0.25),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      .head-icon.error {
+        background: rgba(240, 68, 56, 0.14);
+        border-color: rgba(240, 68, 56, 0.34);
+        color: var(--error);
+        box-shadow:
+          0 0 28px rgba(240, 68, 56, 0.22),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      .head-icon [data-lucide] {
+        width: 48px;
+        height: 48px;
+        stroke-width: 1.5;
+      }
+      .titles {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .titles h1 {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        margin: 0;
+        color: var(--text-primary);
+        line-height: 1.18;
+      }
+      .titles p {
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.55;
+        margin: 0;
+      }
+      .email-line {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--cyan);
+        letter-spacing: -0.005em;
+        margin-top: 2px;
+        word-break: break-all;
+      }
 
-/* Info box */
-.info-box {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 14px;
-  background: rgba(77,184,255,0.06);
-  border: 1px solid rgba(77,184,255,0.20);
-  border-radius: 10px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.55;
-}
-.info-box .ic {
-  width: 22px; height: 22px;
-  border-radius: 6px;
-  background: rgba(77,184,255,0.16);
-  color: var(--cyan);
-  display: inline-flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-.info-box .ic [data-lucide] { width: 12px; height: 12px; stroke-width: 2.25; }
-.info-box b { color: var(--text-primary); font-weight: 600; }
+      /* Info box */
+      .info-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 14px;
+        background: rgba(77, 184, 255, 0.06);
+        border: 1px solid rgba(77, 184, 255, 0.2);
+        border-radius: 10px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.55;
+      }
+      .info-box .ic {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: rgba(77, 184, 255, 0.16);
+        color: var(--cyan);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .info-box .ic [data-lucide] {
+        width: 12px;
+        height: 12px;
+        stroke-width: 2.25;
+      }
+      .info-box b {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
 
-/* Divider with label */
-.divider {
-  display: flex; align-items: center;
-  gap: 10px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--text-disabled);
-  text-transform: none;
-}
-.divider::before, .divider::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--border-subtle);
-}
+      /* Divider with label */
+      .divider {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: var(--text-disabled);
+        text-transform: none;
+      }
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border-subtle);
+      }
 
-/* Cooldown row */
-.cooldown {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  align-self: center;
-}
-.cooldown [data-lucide] { width: 12px; height: 12px; stroke-width: 2; }
-.cooldown .timer {
-  font-family: var(--font-mono);
-  color: var(--warning);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
+      /* Cooldown row */
+      .cooldown {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        align-self: center;
+      }
+      .cooldown [data-lucide] {
+        width: 12px;
+        height: 12px;
+        stroke-width: 2;
+      }
+      .cooldown .timer {
+        font-family: var(--font-mono);
+        color: var(--warning);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
 
-/* ===== Buttons ===== */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 8px;
-  width: 100%;
-  height: 44px;
-  padding: 0 18px;
-  border-radius: 9px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid transparent;
-  background: transparent;
-  transition: all 180ms;
-}
-.btn [data-lucide] { width: 14px; height: 14px; stroke-width: 2.5; }
-.btn-ghost { border-color: var(--border-default); color: var(--text-secondary); }
-.btn-ghost:hover { border-color: var(--cyan); color: var(--text-primary); }
-.btn-ghost.disabled {
-  border-color: var(--border-subtle);
-  color: var(--text-disabled);
-  cursor: not-allowed;
-  background: rgba(77,184,255,0.02);
-}
-.btn-ghost.disabled:hover { border-color: var(--border-subtle); color: var(--text-disabled); }
-.btn-primary {
-  background: var(--cyan);
-  color: var(--bg-base);
-  box-shadow: 0 4px 16px rgba(77,184,255,0.28);
-}
-.btn-primary:hover { background: var(--cyan-hover); box-shadow: 0 8px 24px rgba(77,184,255,0.40); transform: translateY(-1px); }
-.btn-error {
-  background: var(--error);
-  color: var(--text-primary);
-  box-shadow: 0 4px 16px rgba(240,68,56,0.28);
-}
-.btn-error:hover { background: #F76D63; box-shadow: 0 8px 24px rgba(240,68,56,0.40); transform: translateY(-1px); }
+      /* ===== Buttons ===== */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        height: 44px;
+        padding: 0 18px;
+        border-radius: 9px;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        background: transparent;
+        transition: all 180ms;
+      }
+      .btn [data-lucide] {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2.5;
+      }
+      .btn-ghost {
+        border-color: var(--border-default);
+        color: var(--text-secondary);
+      }
+      .btn-ghost:hover {
+        border-color: var(--cyan);
+        color: var(--text-primary);
+      }
+      .btn-ghost.disabled {
+        border-color: var(--border-subtle);
+        color: var(--text-disabled);
+        cursor: not-allowed;
+        background: rgba(77, 184, 255, 0.02);
+      }
+      .btn-ghost.disabled:hover {
+        border-color: var(--border-subtle);
+        color: var(--text-disabled);
+      }
+      .btn-primary {
+        background: var(--cyan);
+        color: var(--bg-base);
+        box-shadow: 0 4px 16px rgba(77, 184, 255, 0.28);
+      }
+      .btn-primary:hover {
+        background: var(--cyan-hover);
+        box-shadow: 0 8px 24px rgba(77, 184, 255, 0.4);
+        transform: translateY(-1px);
+      }
+      .btn-error {
+        background: var(--error);
+        color: var(--text-primary);
+        box-shadow: 0 4px 16px rgba(240, 68, 56, 0.28);
+      }
+      .btn-error:hover {
+        background: #f76d63;
+        box-shadow: 0 8px 24px rgba(240, 68, 56, 0.4);
+        transform: translateY(-1px);
+      }
 
-.link-stack { display: flex; flex-direction: column; gap: 4px; align-items: center; }
-.text-link {
-  background: transparent; border: 0;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: color 160ms;
-  text-decoration: none;
-}
-.text-link:hover { color: var(--cyan); }
-.text-link [data-lucide] { width: 11px; height: 11px; stroke-width: 2.25; vertical-align: -1.5px; margin-right: 2px; }
+      .link-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: center;
+      }
+      .text-link {
+        background: transparent;
+        border: 0;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: color 160ms;
+        text-decoration: none;
+      }
+      .text-link:hover {
+        color: var(--cyan);
+      }
+      .text-link [data-lucide] {
+        width: 11px;
+        height: 11px;
+        stroke-width: 2.25;
+        vertical-align: -1.5px;
+        margin-right: 2px;
+      }
 
-@media (max-width: 1380px) {
-  .cards-row { grid-template-columns: 1fr; }
-}
-</style>
-</head>
-<body>
+      @media (max-width: 1380px) {
+        .cards-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="stage">
+      <div class="stage-head">
+        <div class="eyebrow">ProSell · Onboarding</div>
+        <h2>Verificación de email · 3 estados</h2>
+      </div>
 
-<main class="stage">
-  <div class="stage-head">
-    <div class="eyebrow">ProSell · Onboarding</div>
-    <h2>Verificación de email · 3 estados</h2>
-  </div>
+      <div class="cards-row">
+        <!-- ===== STATE 1 — Pending / sent ===== -->
+        <section class="card">
+          <span class="state-pill"><span class="dot"></span>Pendiente</span>
+          <a class="brand" href="#"
+            ><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a
+          >
 
-  <div class="cards-row">
+          <div class="head-block">
+            <span class="head-icon"><i data-lucide="mail"></i></span>
+            <div class="titles">
+              <h1>Verificá tu email</h1>
+              <p>Te enviamos un link de verificación a:</p>
+              <span class="email-line">martin@automotoresdelnorte.com</span>
+            </div>
+          </div>
 
-    <!-- ===== STATE 1 — Pending / sent ===== -->
-    <section class="card">
-      <span class="state-pill"><span class="dot"></span>Pendiente</span>
-      <a class="brand" href="#"><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a>
+          <div class="info-box">
+            <span class="ic"><i data-lucide="info"></i></span>
+            <span
+              >El link expira en <b>24 horas</b>. Si no lo ves, revisá también
+              tu carpeta de spam.</span
+            >
+          </div>
 
-      <div class="head-block">
-        <span class="head-icon"><i data-lucide="mail"></i></span>
-        <div class="titles">
-          <h1>Verificá tu email</h1>
-          <p>Te enviamos un link de verificación a:</p>
-          <span class="email-line">martin@automotoresdelnorte.com</span>
+          <div class="divider">¿No recibiste el email?</div>
+
+          <button class="btn btn-ghost" type="button">
+            <i data-lucide="send"></i>Reenviar email de verificación
+          </button>
+
+          <div class="link-stack">
+            <button class="text-link" type="button">Cambiar email</button>
+            <button class="text-link" type="button">
+              <i data-lucide="log-out"></i>Cerrar sesión
+            </button>
+          </div>
+        </section>
+
+        <!-- ===== STATE 2 — Success ===== -->
+        <section class="card">
+          <span class="state-pill ok"><span class="dot"></span>Verificado</span>
+          <a class="brand" href="#"
+            ><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a
+          >
+
+          <div class="head-block">
+            <span class="head-icon success"
+              ><i data-lucide="check-circle-2"></i
+            ></span>
+            <div class="titles">
+              <h1>¡Email verificado!</h1>
+              <p>Tu cuenta está lista para usar.</p>
+            </div>
+          </div>
+
+          <!-- Account summary card (small visual reward) -->
+          <div
+            class="info-box"
+            style="
+              background: rgba(34, 211, 160, 0.06);
+              border-color: rgba(34, 211, 160, 0.22);
+              color: var(--text-secondary);
+            "
+          >
+            <span
+              class="ic"
+              style="
+                background: rgba(34, 211, 160, 0.16);
+                color: var(--success);
+              "
+              ><i data-lucide="check"></i
+            ></span>
+            <span
+              ><b style="color: var(--success)"
+                >martin@automotoresdelnorte.com</b
+              >
+              · ahora podés conectar canales, cargar tu inventario y empezar a
+              recibir leads.</span
+            >
+          </div>
+
+          <button class="btn btn-primary" type="button">
+            Ir al dashboard <i data-lucide="arrow-right"></i>
+          </button>
+        </section>
+
+        <!-- ===== STATE 3 — Expired ===== -->
+        <section class="card">
+          <span class="state-pill err"
+            ><span class="dot"></span>Link expirado</span
+          >
+          <a class="brand" href="#"
+            ><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a
+          >
+
+          <div class="head-block">
+            <span class="head-icon error"
+              ><i data-lucide="alert-circle"></i
+            ></span>
+            <div class="titles">
+              <h1>El link expiró</h1>
+              <p>
+                Este link de verificación ya no es válido. Podés solicitar uno
+                nuevo y te lo enviamos al instante.
+              </p>
+            </div>
+          </div>
+
+          <div
+            class="info-box"
+            style="
+              background: rgba(240, 68, 56, 0.05);
+              border-color: rgba(240, 68, 56, 0.22);
+              color: var(--text-secondary);
+            "
+          >
+            <span
+              class="ic"
+              style="background: rgba(240, 68, 56, 0.16); color: var(--error)"
+              ><i data-lucide="clock"></i
+            ></span>
+            <span
+              >El último link se envió a
+              <b>martin@automotoresdelnorte.com</b> hace más de 24 horas.</span
+            >
+          </div>
+
+          <button class="btn btn-primary" type="button">
+            <i data-lucide="refresh-cw"></i>Solicitar nuevo link
+            <i data-lucide="arrow-right"></i>
+          </button>
+
+          <div class="link-stack">
+            <button class="text-link" type="button">
+              <i data-lucide="arrow-left"></i>Volver al login
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <!-- Variant footer: cooldown state of the resend button (shown beside the cards) -->
+      <div class="stage-head" style="margin-top: 28px">
+        <div class="eyebrow" style="color: var(--text-secondary)">
+          Variante · cooldown del botón "Reenviar"
         </div>
       </div>
 
-      <div class="info-box">
-        <span class="ic"><i data-lucide="info"></i></span>
-        <span>El link expira en <b>24 horas</b>. Si no lo ves, revisá también tu carpeta de spam.</span>
+      <div
+        style="
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          width: 100%;
+          max-width: 420px;
+        "
+      >
+        <button class="btn btn-ghost disabled" type="button">
+          <i data-lucide="send"></i>Reenviar en
+          <span
+            style="
+              font-family: var(--font-mono);
+              font-weight: 700;
+              color: var(--warning);
+              margin-left: 4px;
+            "
+            >45s</span
+          >
+        </button>
+        <span class="cooldown">
+          <i data-lucide="clock"></i>
+          Esperá un momento antes de pedir otro email
+        </span>
       </div>
+    </main>
 
-      <div class="divider">¿No recibiste el email?</div>
-
-      <button class="btn btn-ghost" type="button"><i data-lucide="send"></i>Reenviar email de verificación</button>
-
-      <div class="link-stack">
-        <button class="text-link" type="button">Cambiar email</button>
-        <button class="text-link" type="button"><i data-lucide="log-out"></i>Cerrar sesión</button>
-      </div>
-    </section>
-
-    <!-- ===== STATE 2 — Success ===== -->
-    <section class="card">
-      <span class="state-pill ok"><span class="dot"></span>Verificado</span>
-      <a class="brand" href="#"><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a>
-
-      <div class="head-block">
-        <span class="head-icon success"><i data-lucide="check-circle-2"></i></span>
-        <div class="titles">
-          <h1>¡Email verificado!</h1>
-          <p>Tu cuenta está lista para usar.</p>
-        </div>
-      </div>
-
-      <!-- Account summary card (small visual reward) -->
-      <div class="info-box" style="background: rgba(34,211,160,0.06); border-color: rgba(34,211,160,0.22); color: var(--text-secondary);">
-        <span class="ic" style="background: rgba(34,211,160,0.16); color: var(--success);"><i data-lucide="check"></i></span>
-        <span><b style="color: var(--success);">martin@automotoresdelnorte.com</b> · ahora podés conectar canales, cargar tu inventario y empezar a recibir leads.</span>
-      </div>
-
-      <button class="btn btn-primary" type="button">Ir al dashboard <i data-lucide="arrow-right"></i></button>
-    </section>
-
-    <!-- ===== STATE 3 — Expired ===== -->
-    <section class="card">
-      <span class="state-pill err"><span class="dot"></span>Link expirado</span>
-      <a class="brand" href="#"><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a>
-
-      <div class="head-block">
-        <span class="head-icon error"><i data-lucide="alert-circle"></i></span>
-        <div class="titles">
-          <h1>El link expiró</h1>
-          <p>Este link de verificación ya no es válido. Podés solicitar uno nuevo y te lo enviamos al instante.</p>
-        </div>
-      </div>
-
-      <div class="info-box" style="background: rgba(240,68,56,0.05); border-color: rgba(240,68,56,0.22); color: var(--text-secondary);">
-        <span class="ic" style="background: rgba(240,68,56,0.16); color: var(--error);"><i data-lucide="clock"></i></span>
-        <span>El último link se envió a <b>martin@automotoresdelnorte.com</b> hace más de 24 horas.</span>
-      </div>
-
-      <button class="btn btn-primary" type="button"><i data-lucide="refresh-cw"></i>Solicitar nuevo link <i data-lucide="arrow-right"></i></button>
-
-      <div class="link-stack">
-        <button class="text-link" type="button"><i data-lucide="arrow-left"></i>Volver al login</button>
-      </div>
-    </section>
-
-  </div>
-
-  <!-- Variant footer: cooldown state of the resend button (shown beside the cards) -->
-  <div class="stage-head" style="margin-top: 28px;">
-    <div class="eyebrow" style="color: var(--text-secondary);">Variante · cooldown del botón "Reenviar"</div>
-  </div>
-
-  <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 420px;">
-    <button class="btn btn-ghost disabled" type="button"><i data-lucide="send"></i>Reenviar en <span style="font-family: var(--font-mono); font-weight: 700; color: var(--warning); margin-left: 4px;">45s</span></button>
-    <span class="cooldown">
-      <i data-lucide="clock"></i>
-      Esperá un momento antes de pedir otro email
-    </span>
-  </div>
-
-</main>
-
-<script>
-  lucide.createIcons();
-</script>
-</body>
+    <script>
+      lucide.createIcons();
+    </script>
+  </body>
 </html>

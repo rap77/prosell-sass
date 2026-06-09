@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   CommandDialog,
   CommandInput,
@@ -9,45 +9,47 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
-} from 'cmdk'
-import Image from 'next/image'
-import { Car, Upload, Plus } from 'lucide-react'
-import type { Vehicle } from '@/components/datagrid/DataGrid'
+} from "cmdk";
+import Image from "next/image";
+import { Car, Upload, Plus } from "lucide-react";
+import type { Vehicle } from "@/components/datagrid/DataGrid";
 
 interface CommandPaletteProps {
-  vehicles?: Vehicle[]
+  vehicles?: Vehicle[];
 }
 
 export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState('')
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   // Keyboard shortcut listener (Cmd+K / Ctrl+K)
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if ((e.key === 'k' && (e.metaKey || e.ctrlKey))) {
-        e.preventDefault()
-        setOpen(open => !open)
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setOpen((open) => !open);
       }
-    }
+    };
 
-    document.addEventListener('keydown', down)
-    return () => document.removeEventListener('keydown', down)
-  }, [])
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
 
   // Filter vehicles by search (React 19 Compiler handles optimization)
   const filteredVehicles = !search
     ? vehicles.slice(0, 5) // Show 5 recent when empty
-    : vehicles.filter(v => {
-        const searchLower = search.toLowerCase()
-        return (
-          v.title.toLowerCase().includes(searchLower) ||
-          v.id.toLowerCase().includes(searchLower) ||
-          v.make?.toLowerCase().includes(searchLower) ||
-          v.model?.toLowerCase().includes(searchLower)
-        )
-      }).slice(0, 10) // Show 10 results max
+    : vehicles
+        .filter((v) => {
+          const searchLower = search.toLowerCase();
+          return (
+            v.title.toLowerCase().includes(searchLower) ||
+            v.id.toLowerCase().includes(searchLower) ||
+            v.make?.toLowerCase().includes(searchLower) ||
+            v.model?.toLowerCase().includes(searchLower)
+          );
+        })
+        .slice(0, 10); // Show 10 results max
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
@@ -66,13 +68,16 @@ export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {
             </CommandEmpty>
           ) : (
             <>
-              <CommandGroup heading="Vehicles" className="px-2 py-1 text-xs font-semibold text-muted-foreground">
-                {filteredVehicles.map(vehicle => (
+              <CommandGroup
+                heading="Vehicles"
+                className="px-2 py-1 text-xs font-semibold text-muted-foreground"
+              >
+                {filteredVehicles.map((vehicle) => (
                   <CommandItem
                     key={vehicle.id}
                     onSelect={() => {
-                      router.push(`/catalog/${vehicle.id}`)
-                      setOpen(false)
+                      router.push(`/catalog/${vehicle.id}`);
+                      setOpen(false);
                     }}
                     className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-accent aria-selected:bg-accent"
                   >
@@ -100,7 +105,9 @@ export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{vehicle.title}</div>
+                      <div className="text-sm font-medium truncate">
+                        {vehicle.title}
+                      </div>
                       <div className="text-xs text-muted-foreground">
                         ${vehicle.price.toLocaleString()}
                       </div>
@@ -119,8 +126,8 @@ export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {
               >
                 <CommandItem
                   onSelect={() => {
-                    router.push('/catalog/new?publish=true')
-                    setOpen(false)
+                    router.push("/catalog/new?publish=true");
+                    setOpen(false);
                   }}
                   className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-accent aria-selected:bg-accent"
                 >
@@ -129,8 +136,8 @@ export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {
                 </CommandItem>
                 <CommandItem
                   onSelect={() => {
-                    router.push('/catalog/new')
-                    setOpen(false)
+                    router.push("/catalog/new");
+                    setOpen(false);
                   }}
                   className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-accent aria-selected:bg-accent"
                 >
@@ -146,17 +153,20 @@ export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {
         <div className="border-t px-3 py-2 text-xs text-muted-foreground flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-muted text-xs">↑↓</kbd> navigate
+              <kbd className="px-1.5 py-0.5 rounded bg-muted text-xs">↑↓</kbd>{" "}
+              navigate
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-muted text-xs">↵</kbd> select
+              <kbd className="px-1.5 py-0.5 rounded bg-muted text-xs">↵</kbd>{" "}
+              select
             </span>
           </div>
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-muted text-xs">esc</kbd> close
+            <kbd className="px-1.5 py-0.5 rounded bg-muted text-xs">esc</kbd>{" "}
+            close
           </span>
         </div>
       </div>
     </CommandDialog>
-  )
+  );
 }

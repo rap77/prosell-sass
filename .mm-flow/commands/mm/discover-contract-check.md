@@ -11,6 +11,7 @@ Validate that discovery left behind the minimum planning contract required for c
 ## What it checks
 
 ### Required contract
+
 - `.planning/changes/<objective>/requirements.md`
 - `.planning/changes/<objective>/design.md`
 - `.planning/changes/<objective>/tasks.md`
@@ -18,6 +19,7 @@ Validate that discovery left behind the minimum planning contract required for c
 - `.planning/changes/<objective>/HANDOFF-CURRENT.md`
 
 Minimum structure:
+
 - `requirements.md` includes purpose, scope, out-of-scope, non-negotiables, acceptance criteria
 - `design.md` includes boundaries, approach, dependencies, validation strategy
 - `tasks.md` includes task headings and acceptance checkboxes

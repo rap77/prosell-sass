@@ -43,7 +43,11 @@ function createWrapper() {
   });
 
   function Wrapper({ children }: { children: React.ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children);
+    return createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      children,
+    );
   }
   return Wrapper;
 }
@@ -113,7 +117,7 @@ describe("createProductWithVehicle", () => {
         },
         credentials: "include",
         body: JSON.stringify(requestData),
-      })
+      }),
     );
 
     expect(result).toEqual(mockProduct);
@@ -240,13 +244,15 @@ describe("createProductWithVehicle", () => {
     });
 
     expect(result.id).toBe("prod-123");
-    expect(result.attributes).toEqual(expect.objectContaining({
-      vin: "2GNALCEK1H1615946",
-      year: 2017,
-      make: "Toyota",
-      model: "Camry",
-      trim: "SE",
-    }));
+    expect(result.attributes).toEqual(
+      expect.objectContaining({
+        vin: "2GNALCEK1H1615946",
+        year: 2017,
+        make: "Toyota",
+        model: "Camry",
+        trim: "SE",
+      }),
+    );
   });
 
   it("should throw error with backend message on failure", async () => {
@@ -262,8 +268,15 @@ describe("createProductWithVehicle", () => {
         tenant_id: "tenant-1",
         organization_id: "org-1",
         category_id: "cat-1",
-        attributes: { category: "vehicle" as const, vin: "INVALID", year: 2000, make: "Test", model: "Vehicle", mileage: 0 },
-      })
+        attributes: {
+          category: "vehicle" as const,
+          vin: "INVALID",
+          year: 2000,
+          make: "Test",
+          model: "Vehicle",
+          mileage: 0,
+        },
+      }),
     ).rejects.toThrow("Invalid VIN format");
   });
 
@@ -283,7 +296,7 @@ describe("createProductWithVehicle", () => {
         organization_id: "org-1",
         category_id: "cat-1",
         attributes: { category: "generic" as const },
-      })
+      }),
     ).rejects.toThrow("Failed to create product");
   });
 });

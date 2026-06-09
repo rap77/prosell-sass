@@ -21,18 +21,21 @@
 ### ✅ Mypy Handles Pytest Fixtures Out-of-the-Box
 
 **Test Results**:
+
 ```bash
 # Pyright on test_appointment_api.py: 96 errors (all fixture-related)
 # Mypy on same file: 0 errors ✅
 ```
 
 **Why This Works**:
+
 - Mypy has **native understanding** of pytest fixtures without plugins
 - Fixture parameters in test functions are automatically inferred
 - No special configuration needed for basic fixture support
 - Works with both `@pytest.fixture` and `@pytest_asyncio.fixture`
 
 **Example That Failed in Pyright, Passes in Mypy**:
+
 ```python
 @pytest.fixture
 async def async_client():
@@ -58,6 +61,7 @@ async def test_create_appointment_success(self, async_client, auth_headers):
 ### Current State
 
 **Pyright Configuration**:
+
 - Python 3.13 target
 - Strict mode enabled
 - 85 test files
@@ -66,6 +70,7 @@ async def test_create_appointment_success(self, async_client, auth_headers):
 - 13 test files excluded due to fixture errors
 
 **Test Suite Composition**:
+
 ```
 Total test files: 85
 Fixture usage: 144 fixtures across tests
@@ -92,6 +97,7 @@ Unit tests: ~30% of test files
 ### Mypy + pytest-mypy-plugins Viability
 
 **pytest-mypy-plugins Assessment**:
+
 - ❌ **NOT NEEDED** for basic pytest fixture support
 - ❌ Plugin architecture is outdated (last update 2023)
 - ❌ Entry point configuration is problematic
@@ -100,6 +106,7 @@ Unit tests: ~30% of test files
 **Mypy Version**: 2.1.0 (installed via uv)
 
 **Compatibility Check**:
+
 - ✅ Python 3.13 support
 - ✅ pytest-asyncio compatibility
 - ✅ SQLAlchemy 2.0 async patterns
@@ -107,6 +114,7 @@ Unit tests: ~30% of test files
 - ✅ Complex fixture dependencies
 
 **Performance Test**:
+
 - Mypy on single file: ~0.5s (vs Pyright ~1.2s)
 - Mypy on full test suite: TBD (estimated 30-60s)
 - Memory usage: Comparable to Pyright
@@ -118,9 +126,11 @@ Unit tests: ~30% of test files
 ### Phase 1: Setup & Configuration (2-4 hours)
 
 **Tasks**:
+
 1. ✅ **Already Done**: Install mypy (version 2.1.0)
 2. ✅ **Already Done**: Create mypy.ini
 3. ⏳ **Configure Mypy Settings**:
+
    ```ini
    [mypy]
    python_version = 3.13
@@ -158,7 +168,9 @@ Unit tests: ~30% of test files
 ### Phase 2: Validation & Baseline (4-6 hours)
 
 **Tasks**:
+
 1. ⏳ **Run Mypy on Entire Test Suite**:
+
    ```bash
    uv run mypy tests/ --show-error-codes
    ```
@@ -169,9 +181,11 @@ Unit tests: ~30% of test files
    - Document any errors pyright catches that mypy misses
 
 3. ⏳ **Validate Production Code**:
+
    ```bash
    uv run mypy src/ --show-error-codes
    ```
+
    - Ensure mypy catches same errors as pyright in src/
    - Document any differences
 
@@ -194,7 +208,9 @@ Unit tests: ~30% of test files
 ### Phase 3: CI/CD Integration (2-4 hours)
 
 **Tasks**:
+
 1. ⏳ **Update Pre-commit Hooks**:
+
    ```yaml
    # .pre-commit-config.yaml
    - repo: local
@@ -208,6 +224,7 @@ Unit tests: ~30% of test files
    ```
 
 2. ⏳ **Update GitHub Actions**:
+
    ```yaml
    # .github/workflows/ci.yml
    - name: Type check with Mypy
@@ -235,6 +252,7 @@ Unit tests: ~30% of test files
 ### Phase 4: Team Transition (2-4 hours)
 
 **Tasks**:
+
 1. ⏳ **Create Migration Guide**:
    - How to run mypy locally
    - How to read mypy error messages
@@ -260,13 +278,16 @@ Unit tests: ~30% of test files
 ### Phase 5: Final Validation (2-4 hours)
 
 **Tasks**:
+
 1. ⏳ **Full Test Suite Run**:
+
    ```bash
    uv run pytest
    uv run mypy tests/
    ```
 
 2. ⏳ **Production Code Validation**:
+
    ```bash
    uv run mypy src/
    ```
@@ -291,17 +312,18 @@ Unit tests: ~30% of test files
 
 ### Technical Risks
 
-| Risk | Probability | Impact | Mitigation |
-|------|------------|--------|------------|
-| Mypy misses errors pyright catches | **LOW** | MEDIUM | Run both checkers in parallel for 1 week |
-| Performance degradation | **LOW** | LOW | Mypy is actually faster than pyright |
-| IDE integration issues | **MEDIUM** | LOW | Most IDEs support mypy natively |
-| Team learning curve | **MEDIUM** | LOW | Mypy error messages are similar to pyright |
-| Test failures due to type changes | **VERY LOW** | HIGH | We're only changing the checker, not types |
+| Risk                               | Probability  | Impact | Mitigation                                 |
+| ---------------------------------- | ------------ | ------ | ------------------------------------------ |
+| Mypy misses errors pyright catches | **LOW**      | MEDIUM | Run both checkers in parallel for 1 week   |
+| Performance degradation            | **LOW**      | LOW    | Mypy is actually faster than pyright       |
+| IDE integration issues             | **MEDIUM**   | LOW    | Most IDEs support mypy natively            |
+| Team learning curve                | **MEDIUM**   | LOW    | Mypy error messages are similar to pyright |
+| Test failures due to type changes  | **VERY LOW** | HIGH   | We're only changing the checker, not types |
 
 ### Mitigation Strategies
 
 **Parallel Execution (Transition Period)**:
+
 ```yaml
 # Run both checkers for 1 week
 - name: Type check with Pyright
@@ -312,12 +334,14 @@ Unit tests: ~30% of test files
 ```
 
 **Rollback Plan**:
+
 1. Revert mypy.ini changes
 2. Restore pyright in CI/CD
 3. Remove mypy from pre-commit hooks
 4. Document lessons learned
 
 **Incremental Migration** (Alternative Approach):
+
 - Start with mypy on tests only
 - Keep pyright on production code
 - Gradually migrate production code
@@ -330,6 +354,7 @@ Unit tests: ~30% of test files
 ### Type Checking Mode
 
 **Pyright**:
+
 ```json
 {
   "typeCheckingMode": "strict"
@@ -337,6 +362,7 @@ Unit tests: ~30% of test files
 ```
 
 **Mypy**:
+
 ```ini
 [mypy]
 strict = True
@@ -345,17 +371,16 @@ strict = True
 ### Include/Exclude Paths
 
 **Pyright**:
+
 ```json
 {
   "include": ["src", "tests"],
-  "exclude": [
-    "**/__pycache__",
-    "**/.*"
-  ]
+  "exclude": ["**/__pycache__", "**/.*"]
 }
 ```
 
 **Mypy**:
+
 ```ini
 [mypy]
 exclude = (?x)(
@@ -368,6 +393,7 @@ exclude = (?x)(
 ### Python Version
 
 **Pyright**:
+
 ```json
 {
   "pythonVersion": "3.13"
@@ -375,6 +401,7 @@ exclude = (?x)(
 ```
 
 **Mypy**:
+
 ```ini
 [mypy]
 python_version = 3.13
@@ -383,12 +410,14 @@ python_version = 3.13
 ### Specific Rules
 
 **Pyright** (implicit in strict mode):
+
 - reportUnknownParameterType
 - reportMissingParameterType
 - reportUnknownVariableType
 - reportUnknownMemberType
 
 **Mypy** (implicit in strict mode):
+
 - disallow_untyped_defs
 - disallow_any_generics
 - check_untyped_defs
@@ -401,12 +430,14 @@ python_version = 3.13
 ### ✅ ZERO Changes Required for Most Tests
 
 **Why No Changes?**:
+
 - Mypy natively understands pytest fixtures
 - Fixture parameters are automatically inferred
 - Return types of fixtures are inferred from usage
 - Async fixtures work without plugins
 
 **Example** (No changes needed):
+
 ```python
 # This works in mypy without any changes
 @pytest.fixture
@@ -427,6 +458,7 @@ async def test_create_user(db_session):
 ### ⚠️ Potential Changes (Edge Cases)
 
 **1. Explicit Type Annotations (Rare)**:
+
 ```python
 # Before (Pyright accepts this)
 @pytest.fixture
@@ -440,6 +472,7 @@ def get_user() -> User:
 ```
 
 **2. Complex Fixture Dependencies**:
+
 ```python
 # This should work in both, but test it
 @pytest.fixture
@@ -451,6 +484,7 @@ def user_with_org(db_session, test_organization):
 ```
 
 **3. Parametrized Fixtures**:
+
 ```python
 # This should work in both
 @pytest.fixture(params=["admin", "user", "guest"])
@@ -465,19 +499,19 @@ def test_user_role(user_role):
 
 ## Comparison: Pyright vs Mypy
 
-| Feature | Pyright | Mypy | Winner |
-|---------|---------|------|--------|
-| **Pytest fixture support** | ❌ No native support | ✅ Native support | **Mypy** |
-| **Speed** | ~1.2s per file | ~0.5s per file | **Mypy** (2x faster) |
-| **Error messages** | Clear, actionable | Clear, actionable | **Tie** |
-| **IDE integration** | Excellent (VSCode Pylance) | Good (VSCode, PyCharm) | **Tie** |
-| **Configuration** | JSON/JSONC | INI | **Tie** (preference) |
-| **Community** | Microsoft-backed | Community-backed | **Tie** |
-| **Maintenance** | Active | Active | **Tie** |
-| **Python 3.13 support** | ✅ Full | ✅ Full | **Tie** |
-| **SQLAlchemy 2.0 async** | ✅ Good | ✅ Good | **Tie** |
-| **FastAPI support** | ✅ Good | ✅ Good | **Tie** |
-| **Test type checking** | ❌ 2,426 errors | ✅ 0 errors | **Mypy** (by far) |
+| Feature                    | Pyright                    | Mypy                   | Winner               |
+| -------------------------- | -------------------------- | ---------------------- | -------------------- |
+| **Pytest fixture support** | ❌ No native support       | ✅ Native support      | **Mypy**             |
+| **Speed**                  | ~1.2s per file             | ~0.5s per file         | **Mypy** (2x faster) |
+| **Error messages**         | Clear, actionable          | Clear, actionable      | **Tie**              |
+| **IDE integration**        | Excellent (VSCode Pylance) | Good (VSCode, PyCharm) | **Tie**              |
+| **Configuration**          | JSON/JSONC                 | INI                    | **Tie** (preference) |
+| **Community**              | Microsoft-backed           | Community-backed       | **Tie**              |
+| **Maintenance**            | Active                     | Active                 | **Tie**              |
+| **Python 3.13 support**    | ✅ Full                    | ✅ Full                | **Tie**              |
+| **SQLAlchemy 2.0 async**   | ✅ Good                    | ✅ Good                | **Tie**              |
+| **FastAPI support**        | ✅ Good                    | ✅ Good                | **Tie**              |
+| **Test type checking**     | ❌ 2,426 errors            | ✅ 0 errors            | **Mypy** (by far)    |
 
 ---
 
@@ -486,11 +520,13 @@ def test_user_role(user_role):
 ### Error Reduction
 
 **Before (Pyright)**:
+
 - Total errors: 2,426
 - Fixture-related errors: ~2,400 (99%)
 - Production code errors: ~26 (1%)
 
 **After (Mypy)**:
+
 - Total errors: ~26 (production code only)
 - Fixture-related errors: 0 (100% reduction)
 - Production code errors: ~26 (maintained)
@@ -521,6 +557,7 @@ def test_user_role(user_role):
 ### If Migration Fails
 
 **Immediate Rollback** (15 minutes):
+
 ```bash
 # 1. Revert configuration changes
 git checkout HEAD -- mypy.ini
@@ -535,11 +572,13 @@ uv pip uninstall mypy
 ```
 
 **Document Lessons Learned**:
+
 - What went wrong?
 - Can we fix it?
 - Should we try again later?
 
 **Alternative Approach**:
+
 - Keep pyright for production code
 - Use mypy only for tests
 - Add both to CI pipeline
@@ -553,10 +592,12 @@ uv pip uninstall mypy
 **Approach**: Add `# type: ignore` to all fixture parameters
 
 **Pros**:
+
 - Familiar tool
 - No migration needed
 
 **Cons**:
+
 - 2,400+ `# type: ignore` comments
 - Hides real type errors
 - Violates strict type checking philosophy
@@ -573,10 +614,12 @@ uv pip uninstall mypy
 **Approach**: Create stub files for all fixtures
 
 **Pros**:
+
 - Keep pyright
 - Type-safe fixtures
 
 **Cons**:
+
 - 144 stub files to create
 - Double maintenance (fixture + stub)
 - Fragile (stubs get out of sync)
@@ -593,10 +636,12 @@ uv pip uninstall mypy
 **Approach**: Exclude all tests from pyright
 
 **Pros**:
+
 - Quick fix
 - No test changes
 
 **Cons**:
+
 - Lose type safety in tests
 - Tests can have type bugs that propagate to production
 - Violates strict type checking philosophy
@@ -612,6 +657,7 @@ uv pip uninstall mypy
 ### ✅ GO: Migrate to Mypy
 
 **Why**:
+
 1. ✅ **Solves the Problem**: Fixes 2,400 fixture errors
 2. ✅ **Low Risk**: Well-understood tool, proven in production
 3. ✅ **Low Effort**: 20-30 hours vs 60-80 hours for alternatives
@@ -768,6 +814,7 @@ jobs:
 ### Q: What about IDE integration? Will Pylance still work?
 
 **A**: Pylance (VSCode) uses pyright by default. You have two options:
+
 1. Use mypy plugin for VSCode (recommended)
 2. Run mypy in terminal for additional checking
 
@@ -786,6 +833,7 @@ jobs:
 ### Q: What if we find errors mypy misses that pyright catches?
 
 **A**: We'll document these and evaluate:
+
 1. Are they false positives in pyright?
 2. Can we configure mypy to catch them?
 3. Are they critical enough to keep pyright?
@@ -812,6 +860,7 @@ jobs:
 ### Success Definition
 
 **Migration is successful when**:
+
 1. All test files pass mypy without `# type: ignore` comments
 2. All production code passes mypy with same error count as pyright
 3. CI/CD pipeline runs mypy instead of pyright

@@ -50,11 +50,13 @@ export function useDecodeVin() {
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to decode VIN" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to decode VIN" }));
         throw new Error(error.message || "Failed to decode VIN");
       }
 
-      const data = await res.json() as { vehicle: DecodedVehicle };
+      const data = (await res.json()) as { vehicle: DecodedVehicle };
       return data.vehicle;
     },
 
@@ -93,7 +95,7 @@ export function useBulkUploadProducts() {
         price_cents: Math.round(Number(row.price) * 100),
         category_id: row.category_id || "default-category-id", // TODO: Make configurable
         attributes: {
-          category: 'vehicle' as const,
+          category: "vehicle" as const,
           vin: row.vin, // REQUIRED - triggers vehicle auto-creation
           year: Number(row.year),
           make: row.make,
@@ -121,7 +123,9 @@ export function useBulkUploadProducts() {
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to upload products" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to upload products" }));
         throw new Error(error.message || "Failed to upload products");
       }
 

@@ -1,38 +1,56 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Type scale — body</title>
-<link rel="stylesheet" href="../colors_and_type.css">
-<style>
-  body { margin: 0; padding: 28px; background: var(--bg-base); }
-  .stack { display: flex; flex-direction: column; gap: 12px; }
-  .row { display: flex; align-items: baseline; gap: 18px; }
-  .meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-secondary); min-width: 130px; flex-shrink: 0; }
-</style>
-</head>
-<body>
-  <div class="stack">
-    <div class="row">
-      <div class="meta">H4 · 18 / 600</div>
-      <div class="ds-h4">Acme Corp</div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Type scale — body</title>
+    <link rel="stylesheet" href="../colors_and_type.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: 28px;
+        background: var(--bg-base);
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .row {
+        display: flex;
+        align-items: baseline;
+        gap: 18px;
+      }
+      .meta {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--text-secondary);
+        min-width: 130px;
+        flex-shrink: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stack">
+      <div class="row">
+        <div class="meta">H4 · 18 / 600</div>
+        <div class="ds-h4">Acme Corp</div>
+      </div>
+      <div class="row">
+        <div class="meta">Body-lg · 18 / 400</div>
+        <div class="ds-body-lg">Track every account that matters.</div>
+      </div>
+      <div class="row">
+        <div class="meta">Body · 16 / 400</div>
+        <div class="ds-body">4 deals need your attention this week.</div>
+      </div>
+      <div class="row">
+        <div class="meta">Small · 14 / 400</div>
+        <div class="ds-small">Last touched 2 days ago by Sarah Chen</div>
+      </div>
+      <div class="row">
+        <div class="meta">XS · 12 / 500</div>
+        <div class="ds-xs">12 days in stage · $240K ARR</div>
+      </div>
     </div>
-    <div class="row">
-      <div class="meta">Body-lg · 18 / 400</div>
-      <div class="ds-body-lg">Track every account that matters.</div>
-    </div>
-    <div class="row">
-      <div class="meta">Body · 16 / 400</div>
-      <div class="ds-body">4 deals need your attention this week.</div>
-    </div>
-    <div class="row">
-      <div class="meta">Small · 14 / 400</div>
-      <div class="ds-small">Last touched 2 days ago by Sarah Chen</div>
-    </div>
-    <div class="row">
-      <div class="meta">XS · 12 / 500</div>
-      <div class="ds-xs">12 days in stage · $240K ARR</div>
-    </div>
-  </div>
-</body>
+  </body>
 </html>

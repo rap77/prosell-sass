@@ -20,13 +20,13 @@ Esto cambia completamente el veredicto de **CONDITIONAL** a **APPROVE**.
 
 ### Lo que el fundador reveló (2026-03-04):
 
-| Hecho | Detalle | Impacto |
-|-------|---------|---------|
-| **6 meses operando** | Una persona ejecutando el modelo manualmente | ❌ No es idea, es negocio real |
-| **5 dealers activos** | Rango de inventario: 5-20 autos/dealer (1 con 50) | ✅ Product-Market Fit temprano |
-| **Empleados contratados** | Gestionan leads, pagan con parte de comisión | ✅ Unit economics validados |
-| **Manual inviable** | "Publicación manual se ha tornado tediosa" | 🔥 URGENTE: Automatizar |
-| **Quieren más features** | Data analytics, pricing intelligence, proyecciones | ✅ Expansión natural del producto |
+| Hecho                     | Detalle                                            | Impacto                           |
+| ------------------------- | -------------------------------------------------- | --------------------------------- |
+| **6 meses operando**      | Una persona ejecutando el modelo manualmente       | ❌ No es idea, es negocio real    |
+| **5 dealers activos**     | Rango de inventario: 5-20 autos/dealer (1 con 50)  | ✅ Product-Market Fit temprano    |
+| **Empleados contratados** | Gestionan leads, pagan con parte de comisión       | ✅ Unit economics validados       |
+| **Manual inviable**       | "Publicación manual se ha tornado tediosa"         | 🔥 URGENTE: Automatizar           |
+| **Quieren más features**  | Data analytics, pricing intelligence, proyecciones | ✅ Expansión natural del producto |
 
 ---
 
@@ -34,21 +34,21 @@ Esto cambia completamente el veredicto de **CONDITIONAL** a **APPROVE**.
 
 ### Evaluación MasterMind Framework (Basada en brief incompleto)
 
-| Dimensión | Evaluación Anterior | Evaluación Actual (con info real) |
-|-----------|---------------------|-----------------------------------|
-| **Validación comercial** | ❌ Faltante - "Nadie pagó todavía" | ✅ **COMPLETA** - 5 dealers pagando 6 meses |
-| **Product-Market Fit** | ⚠️ Sin probar - "Solo intenciones" | ✅ **CONFIRMADO** - Quieren más features |
-| **Unit Economics** | ❌ Sin validar - "Riesgo viabilidad" | ✅ **FUNCIONAN** - Empleados + comisión viable |
-| **Modelo B2Cgratis/B2Bcomisión** | ✅ Viable teóricamente | ✅ **VALIDADO EN PRÁCTICA** |
-| **Prioridad** | "Hacer MVP Conserje" | **"Automatizar y escalar URGENTE"** |
+| Dimensión                        | Evaluación Anterior                  | Evaluación Actual (con info real)              |
+| -------------------------------- | ------------------------------------ | ---------------------------------------------- |
+| **Validación comercial**         | ❌ Faltante - "Nadie pagó todavía"   | ✅ **COMPLETA** - 5 dealers pagando 6 meses    |
+| **Product-Market Fit**           | ⚠️ Sin probar - "Solo intenciones"   | ✅ **CONFIRMADO** - Quieren más features       |
+| **Unit Economics**               | ❌ Sin validar - "Riesgo viabilidad" | ✅ **FUNCIONAN** - Empleados + comisión viable |
+| **Modelo B2Cgratis/B2Bcomisión** | ✅ Viable teóricamente               | ✅ **VALIDADO EN PRÁCTICA**                    |
+| **Prioridad**                    | "Hacer MVP Conserje"                 | **"Automatizar y escalar URGENTE"**            |
 
 ### Veredicto: CONDITIONAL → APPROVE
 
-| Aspecto | Antes | Después |
-|--------|-------|---------|
-| **Veredicto** | CONDITIONAL 66/100 | ✅ **APPROVE** (con condiciones técnicas) |
-| **Riesgo principal** | "No paguen" | "No construyamos rápido y se vayan" |
-| **Acción crítica** | MVP Conserje para validar | **Automatización URGENTE** |
+| Aspecto              | Antes                     | Después                                   |
+| -------------------- | ------------------------- | ----------------------------------------- |
+| **Veredicto**        | CONDITIONAL 66/100        | ✅ **APPROVE** (con condiciones técnicas) |
+| **Riesgo principal** | "No paguen"               | "No construyamos rápido y se vayan"       |
+| **Acción crítica**   | MVP Conserje para validar | **Automatización URGENTE**                |
 
 ---
 
@@ -57,9 +57,11 @@ Esto cambia completamente el veredicto de **CONDITIONAL** a **APPROVE**.
 ### El MVP Conserje YA PASÓ
 
 **Antes (Condición para APPROVE):**
+
 > "Hacer MVP Conserje para validar que dealers paguen"
 
 **Realidad (Lo que YA pasó):**
+
 - ✅ 6 meses de operación manual
 - ✅ 5 dealers pagando comisiones reales
 - ✅ Empleados contratados pagados con comisión
@@ -72,10 +74,12 @@ Esto cambia completamente el veredicto de **CONDITIONAL** a **APPROVE**.
 ### El problema YA NO es "¿comprará?"
 
 **Riesgo eliminado:**
+
 - ❌ "68% dispuesto a probar" ≠ "Van a pagar"
 - ✅ **Ya están pagando. Validación conductual completa.**
 
 **Nuevo riesgo:**
+
 - 🔥 "Manual es inviable" → **Morir por éxito**
 - 🔥 "Si no automatizamos, se van" → **Pérdida de clientes validados**
 
@@ -101,11 +105,11 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 
 ### Timeline de riesgo:
 
-| Estado | Autos publicados/día | Viabilidad |
-|--------|---------------------|------------|
-| **Hoy** | ~75 (5 dealers × 15 promedio) | 🟡 Manejable pero tedioso |
-| **+3 meses** | ~150 (si duplican) | 🟠 Difícil de sostener |
-| **+6 meses** | ~225 (si triplican) | 🔴 Imposible - COLAPSO |
+| Estado       | Autos publicados/día          | Viabilidad                |
+| ------------ | ----------------------------- | ------------------------- |
+| **Hoy**      | ~75 (5 dealers × 15 promedio) | 🟡 Manejable pero tedioso |
+| **+3 meses** | ~150 (si duplican)            | 🟠 Difícil de sostener    |
+| **+6 meses** | ~225 (si triplican)           | 🔴 Imposible - COLAPSO    |
 
 ---
 
@@ -114,6 +118,7 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 ### Fase 1: Publicación Automática (URGENTE - 4-6 semanas)
 
 **Flujo actual (manual):**
+
 ```
 1. Dealer sube foto/precio al WhatsApp
 2. Empleado toma foto
@@ -124,6 +129,7 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 ```
 
 **Flujo automatizado:**
+
 ```
 1. Dealer sube a ProSell (web app) ← YA EN SPRINT 5-6
 2. ProSell genera título/descripción con IA
@@ -133,6 +139,7 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 ```
 
 **Tareas técnicas:**
+
 - [ ] Facebook Graph API integration (Marketplace publishing)
 - [ ] AutoTrader API integration (o CSV upload automático)
 - [ ] IA para títulos/descriptions (GPT-4 / Claude API)
@@ -144,6 +151,7 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 ### Fase 2: Scraping + Data Intelligence (2-4 semanas)
 
 **Feature solicitada por dealers:**
+
 > "Información basada en datos - precio está muy arriba, muy abajo o en promedio"
 
 **Implementación:**
@@ -159,6 +167,7 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 ```
 
 **Tareas técnicas:**
+
 - [ ] Scraping service (BeautifulSoup / Playwright)
 - [ ] Normalización de datos multi-fuente
 - [ ] Calculadora de percentiles por modelo/año/ubicación
@@ -170,6 +179,7 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 ### Fase 3: Atribución de Ventas (2-3 semanas)
 
 **El problema identificado:**
+
 > "Venta offline = fuga de comisiones"
 
 **Solución para este contexto:**
@@ -184,6 +194,7 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 ```
 
 **Ventaja del contexto actual:**
+
 - Los empleados YA saben qué ventas fueron de ProSell
 - Solo hay que registrarlas en el sistema
 - El dealer ya confía en el proceso (6 meses de relación)
@@ -193,11 +204,13 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 ### Fase 4: Features Adicionales Solicitadas
 
 **Proyecciones de mercado:**
+
 - Tendencias de precios por modelo
 - Temporadas de alta/baja demanda
 - Recomendaciones de cuándo comprar/vender
 
 **Mejores precios:**
+
 - Análisis de márgenes de negociación
 - Identificación de oportunidades (autos bajo precio de mercado)
 
@@ -207,12 +220,12 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 
 ### Modelo Actual (Manual):
 
-| Item | Costo/Ingreso |
-|------|---------------|
-| Empleado tiempo completo | Salario + comisión |
-| Publicación manual | Horas de empleado |
-| Gestión de leads | Horas de empleado |
-| Tu overhead | Gestión de empleados |
+| Item                     | Costo/Ingreso        |
+| ------------------------ | -------------------- |
+| Empleado tiempo completo | Salario + comisión   |
+| Publicación manual       | Horas de empleado    |
+| Gestión de leads         | Horas de empleado    |
+| Tu overhead              | Gestión de empleados |
 
 **Margen actual:** Bajo (mucho tiempo humano)
 
@@ -220,12 +233,12 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 
 ### Modelo Automatizado:
 
-| Item | Costo/Ingreso |
-|------|---------------|
-| Plataforma (dev) | Costo único (~$10-20k) |
-| Publicación automática | ~$0 |
-| Lead management | ~$0 |
-| Data analytics | **Valor ADD ↑** |
+| Item                   | Costo/Ingreso          |
+| ---------------------- | ---------------------- |
+| Plataforma (dev)       | Costo único (~$10-20k) |
+| Publicación automática | ~$0                    |
+| Lead management        | ~$0                    |
+| Data analytics         | **Valor ADD ↑**        |
 
 **Margen automatizado:** Alto (mismo empleado gestiona 10x más dealers)
 
@@ -235,29 +248,29 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 
 ### 🔥 Priority 0 (Bloqueantes - Automatizar YA)
 
-| Tarea | Complejidad | Impacto | Timeline |
-|-------|-------------|---------|----------|
-| Facebook Graph API | Media | 🔥 Crítico | 2-3 semanas |
-| IA títulos/descripciones | Baja | 🔥 Alto | 1 semana |
-| Re-publicación automática | Media | 🔥 Alto | 1-2 semanas |
-| VIN Decoder | Baja | 🟡 Medio | 1 semana |
+| Tarea                     | Complejidad | Impacto    | Timeline    |
+| ------------------------- | ----------- | ---------- | ----------- |
+| Facebook Graph API        | Media       | 🔥 Crítico | 2-3 semanas |
+| IA títulos/descripciones  | Baja        | 🔥 Alto    | 1 semana    |
+| Re-publicación automática | Media       | 🔥 Alto    | 1-2 semanas |
+| VIN Decoder               | Baja        | 🟡 Medio   | 1 semana    |
 
 ### ⚡ Priority 1 (Valor ADD - 1-2 meses)
 
-| Tarea | Complejidad | Impacto | Timeline |
-|-------|-------------|---------|----------|
-| Scraping FB Marketplace | Alta | ⚡ Alto | 2-3 semanas |
-| Scraping CarGurus | Media | ⚡ Alto | 1-2 semanas |
-| Normalización datos | Media | ⚡ Alto | 2 semanas |
-| Dashboard pricing | Media | ⚡ Alto | 2 semanas |
+| Tarea                   | Complejidad | Impacto | Timeline    |
+| ----------------------- | ----------- | ------- | ----------- |
+| Scraping FB Marketplace | Alta        | ⚡ Alto | 2-3 semanas |
+| Scraping CarGurus       | Media       | ⚡ Alto | 1-2 semanas |
+| Normalización datos     | Media       | ⚡ Alto | 2 semanas   |
+| Dashboard pricing       | Media       | ⚡ Alto | 2 semanas   |
 
 ### 💎 Priority 2 (Escalabilidad - 2-3 meses)
 
-| Tarea | Complejidad | Impacto | Timeline |
-|-------|-------------|---------|----------|
-| AutoTrader integration | Alta | 💎 Alto | 3-4 semanas |
-| Cars.com integration | Alta | 💎 Alto | 3-4 semanas |
-| Alertas stock | Media | 💎 Medio | 2 semanas |
+| Tarea                  | Complejidad | Impacto  | Timeline    |
+| ---------------------- | ----------- | -------- | ----------- |
+| AutoTrader integration | Alta        | 💎 Alto  | 3-4 semanas |
+| Cars.com integration   | Alta        | 💎 Alto  | 3-4 semanas |
+| Alertas stock          | Media       | 💎 Medio | 2 semanas   |
 
 ---
 
@@ -268,6 +281,7 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 **Por qué:** Sprint 5-6 (Productos) ya está en progreso y resuelve 50% del problema
 
 **Plan:**
+
 1. **Completar Sprint 5-6** - CRUD de productos (2-3 semanas)
 2. **Agregar Facebook API** - Publicación automática (2-3 semanas)
 3. **IA descriptions** - GPT-4 API (1 semana)
@@ -276,6 +290,7 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 **Timeline:** 6-8 semanas para automatización básica funcional
 
 **Ventajas:**
+
 - Aprovecha progreso existente
 - Entrega valor QUICKLY a dealers actuales
 - Reduce riesgo de pérdida por demora
@@ -287,11 +302,13 @@ Resultado: Empleados quemados, calidad cae, dealers se van
 **Por qué:** Si empleados están QUemados AHORA MISMO
 
 **Plan:**
+
 1. Script Python que publique en FB desde Excel
 2. No CRUD completo, solo bridge temporal
 3. Ganas 2-3 meses de tranquilidad
 
 **Riesgos:**
+
 - Tech debt que hay que pagar después
 - No resuelve el problema de fondo
 
@@ -323,13 +340,13 @@ Para refinar el plan técnico, se necesita:
 
 ## 📈 Métricas de Éxito (Actualizadas)
 
-| Métrica | Objetivo | Actual | Estado |
-|---------|----------|--------|--------|
-| Dealers activos | 5+ | 5 | ✅ |
-| De ellos pagando | ≥3 | 5 | ✅ |
-| Meses operando | >3 | 6 | ✅ |
+| Métrica           | Objetivo    | Actual     | Estado     |
+| ----------------- | ----------- | ---------- | ---------- |
+| Dealers activos   | 5+          | 5          | ✅         |
+| De ellos pagando  | ≥3          | 5          | ✅         |
+| Meses operando    | >3          | 6          | ✅         |
 | Publicaciones/día | Automatizar | ~75 manual | 🔴 URGENTE |
-| Unit economics | Positivo | Funciona | ✅ |
+| Unit economics    | Positivo    | Funciona   | ✅         |
 
 ---
 
@@ -366,11 +383,11 @@ Para refinar el plan técnico, se necesita:
 
 ## 🔄 Historial de Evaluaciones
 
-| Fecha | Método | Veredicto | Notas |
-|-------|--------|-----------|-------|
-| 2026-02-XX | Project Scanner | REJECT 18/156 | Basado en docs iniciales incompletos |
+| Fecha      | Método               | Veredicto          | Notas                                                |
+| ---------- | -------------------- | ------------------ | ---------------------------------------------------- |
+| 2026-02-XX | Project Scanner      | REJECT 18/156      | Basado en docs iniciales incompletos                 |
 | 2026-03-04 | MasterMind Framework | CONDITIONAL 66/100 | Con investigación B2B/B2C, SIN saber validación real |
-| 2026-03-04 | **Re-evaluación** | **✅ APPROVE** | **Con información de 6 meses operación real** |
+| 2026-03-04 | **Re-evaluación**    | **✅ APPROVE**     | **Con información de 6 meses operación real**        |
 
 ---
 
@@ -380,5 +397,5 @@ Para refinar el plan técnico, se necesita:
 
 ---
 
-*Generado por MasterMind Framework v1.0*
-*Re-evaluación basada en información actualizada del fundador*
+_Generado por MasterMind Framework v1.0_
+_Re-evaluación basada en información actualizada del fundador_

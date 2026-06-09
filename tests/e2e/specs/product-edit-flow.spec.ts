@@ -50,7 +50,9 @@ test.describe("Product Edit Flow - E2E", () => {
   // CORE SMOKE TEST: Complete edit flow
   // ============================================
 
-  test("@smoke B3.4.11: Edit page loads and form pre-fills with existing data", async ({ page }) => {
+  test("@smoke B3.4.11: Edit page loads and form pre-fills with existing data", async ({
+    page,
+  }) => {
     // Verify we're on the edit page
     await expect(page).toHaveURL(new RegExp(`/catalog/${vehicleId}/edit`));
 
@@ -75,7 +77,9 @@ test.describe("Product Edit Flow - E2E", () => {
     await expect(submitButton).toBeVisible();
   });
 
-  test("B3.4.11: User can modify price and submit the update", async ({ page }) => {
+  test("B3.4.11: User can modify price and submit the update", async ({
+    page,
+  }) => {
     // Wait for form to load with existing data
     const priceInput = page.locator("input#price");
     await expect(priceInput).toBeVisible({ timeout: 5000 });
@@ -95,7 +99,9 @@ test.describe("Product Edit Flow - E2E", () => {
     await expect(successToast).toBeVisible({ timeout: 10000 });
 
     // After success, we are redirected away from edit page
-    await page.waitForURL((url) => url.pathname === "/catalog", { timeout: 10000 });
+    await page.waitForURL((url) => url.pathname === "/catalog", {
+      timeout: 10000,
+    });
     expect(page.url()).not.toContain("/edit");
 
     // Verify the update actually persisted — navigate back to edit page and check value
@@ -105,7 +111,9 @@ test.describe("Product Edit Flow - E2E", () => {
     await expect(updatedPriceInput).toHaveValue("30000", { timeout: 5000 });
   });
 
-  test("B3.4.11: Cancel button navigates back without saving", async ({ page }) => {
+  test("B3.4.11: Cancel button navigates back without saving", async ({
+    page,
+  }) => {
     // Wait for form to load
     const vinInput = page.locator("input#vin");
     await expect(vinInput).toBeVisible({ timeout: 5000 });
@@ -119,11 +127,15 @@ test.describe("Product Edit Flow - E2E", () => {
     await cancelButton.click();
 
     // Should navigate away from edit page (back navigation)
-    await page.waitForURL((url) => url.pathname === "/catalog", { timeout: 5000 });
+    await page.waitForURL((url) => url.pathname === "/catalog", {
+      timeout: 5000,
+    });
     expect(page.url()).not.toContain(`/catalog/${vehicleId}/edit`);
   });
 
-  test("B3.4.11: Edit page shows validation error for invalid VIN", async ({ page }) => {
+  test("B3.4.11: Edit page shows validation error for invalid VIN", async ({
+    page,
+  }) => {
     // Wait for form to load
     const vinInput = page.locator("input#vin");
     await expect(vinInput).toBeVisible({ timeout: 5000 });

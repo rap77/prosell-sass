@@ -30,13 +30,15 @@ function getMockTeams(): MockTeams {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ orgId: string }> }
+  { params }: { params: Promise<{ orgId: string }> },
 ) {
   const { orgId } = await params;
   const url = new URL(request.url);
 
   const teams = getMockTeams();
-  const teamList = Object.values(teams).filter((t) => t.organization_id === orgId);
+  const teamList = Object.values(teams).filter(
+    (t) => t.organization_id === orgId,
+  );
 
   const skip = parseInt(url.searchParams.get("skip") || "0");
   const limit = parseInt(url.searchParams.get("limit") || "20");

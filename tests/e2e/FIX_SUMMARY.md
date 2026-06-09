@@ -3,9 +3,11 @@
 ## Root Causes Identified
 
 ### 1. Select Component Timeout (9 tests)
+
 **Primary Issue**: Race condition between test creating category via API and frontend loading categories
 
 **Flow**:
+
 1. Test creates category via `dataBuilder.createCategory()` (line 35)
 2. Test immediately tries to select category (line 60)
 3. Frontend's `useCategories()` hook hasn't fetched the new category yet
@@ -13,6 +15,7 @@
 5. Test times out waiting for option
 
 **Fix Applied**:
+
 - Updated `vehicles-page.ts` to wait for Portal rendering
 - Added 500ms delay after clicking select
 - Added multiple fallback strategies for finding options
@@ -20,6 +23,7 @@
 
 **Additional Fix Needed**:
 Add explicit wait in test for category to be available:
+
 ```typescript
 // After creating category, wait for it to appear in dropdown
 await vehiclesPage.categorySelect.click();
@@ -29,9 +33,11 @@ await vehiclesPage.categorySelect.click(); // Close dropdown
 ```
 
 ### 2. VIN Decode Wrong Data (1 test)
+
 **Issue**: Test expects `/equinox/i` but mock returns "Accord" for VIN `1HGCM82633A123456`
 
 **Analysis**:
+
 - Line 38-45: Mock setup for VIN `1HGCM82633A123456` returns Accord
 - Line 173-184: Test uses VIN `2GNALCEK1H1615946` which should return Equinox
 - Line 184: Test expects `/equinox/i`
@@ -43,26 +49,31 @@ await vehiclesPage.categorySelect.click(); // Close dropdown
 **Fix**: Already handled in VehicleForm.tsx with proper setValue calls
 
 ### 3. Toast Messages Not Visible (4 tests)
+
 **Issue**: Tests use `getByText()` but Sonner toasts render in Portal
 
 **Fix Applied**:
+
 - Updated `vehicles-page.ts` with better toast detection
 - Uses `[data-sonner-toast]` attribute selector
 - Falls back to text search if attribute not found
 - Added explicit wait for toast rendering
 
 **Tests Affected**:
+
 - Line 315-327: VIN format validation
 - Line 329-346: Missing required fields
 - Line 348-362: Network errors
 - Line 364-379: Timeout errors
 
 ### 4. API Timeout (1 test)
+
 **Issue**: Form submission not reaching backend
 
 **Root Cause**: Submit button locator too broad
 
 **Fix Applied**:
+
 - Updated submit button locator to be more specific
 - Changed from `getByRole("button", { name: /create|save|crear/i })`
 - To: `getByRole("button", { name: /(create|save|crear)\s*(vehicle)?/i })`
@@ -98,6 +109,7 @@ await vehiclesPage.categorySelect.click(); // Close dropdown
 The following tests need to be updated to use the new page object methods:
 
 1. **Line 315-327**: should validate VIN format (too long)
+
    ```typescript
    // OLD:
    await expect(page.getByText(/Invalid VIN/i)).toBeVisible({ timeout: 3000 });
@@ -107,18 +119,24 @@ The following tests need to be updated to use the new page object methods:
    ```
 
 2. **Line 329-346**: should handle missing required fields
+
    ```typescript
    // OLD:
-   await expect(page.getByText(/Campos incompletos/i)).toBeVisible({ timeout: 3000 });
+   await expect(page.getByText(/Campos incompletos/i)).toBeVisible({
+     timeout: 3000,
+   });
 
    // NEW:
    await vehiclesPage.verifyToastVisible(/Campos incompletos/i);
    ```
 
 3. **Line 348-362**: should handle network errors
+
    ```typescript
    // OLD:
-   const toast = page.locator('[data-sonner-toast]').filter({ hasText: /Failed to decode VIN/i });
+   const toast = page
+     .locator("[data-sonner-toast]")
+     .filter({ hasText: /Failed to decode VIN/i });
    await expect(toast).toBeVisible({ timeout: 5000 });
 
    // NEW:
@@ -126,9 +144,12 @@ The following tests need to be updated to use the new page object methods:
    ```
 
 4. **Line 364-379**: should handle timeout
+
    ```typescript
    // OLD:
-   const toast = page.locator('[data-sonner-toast]').filter({ hasText: /Failed to decode VIN/i });
+   const toast = page
+     .locator("[data-sonner-toast]")
+     .filter({ hasText: /Failed to decode VIN/i });
    await expect(toast).toBeVisible({ timeout: 5000 });
 
    // NEW:
@@ -164,7 +185,7 @@ test.beforeEach(async ({ page, request }) => {
     vin: "1HGCM82633A123456",
     make: "honda",
     model: "Accord",
-    year: 2003
+    year: 2003,
   });
 });
 ```
@@ -172,6 +193,7 @@ test.beforeEach(async ({ page, request }) => {
 ## Expected Results
 
 After applying these fixes:
+
 - **Select timeout issues**: Should be resolved by better Portal handling
 - **Toast visibility**: Should be resolved by better selectors
 - **VIN decode timing**: Should be resolved by explicit waits
@@ -180,6 +202,7 @@ After applying these fixes:
 ## Test Execution
 
 With database running:
+
 ```bash
 cd tests/e2e
 pnpm test vehicle-creation-c3.spec.ts

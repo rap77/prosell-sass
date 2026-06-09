@@ -66,7 +66,10 @@ describe("useLocalStorageSchema", () => {
     });
 
     it("should clear storage", () => {
-      localStorage.setItem("app_schema_version", JSON.stringify({ version: "1.0.0", data: {}, timestamp: Date.now() }));
+      localStorage.setItem(
+        "app_schema_version",
+        JSON.stringify({ version: "1.0.0", data: {}, timestamp: Date.now() }),
+      );
 
       LocalStorageSchemaManager.clearStorage();
 
@@ -155,7 +158,9 @@ describe("useLocalStorageSchema", () => {
     });
 
     it("should handle migration errors gracefully", async () => {
-      vi.spyOn(LocalStorageSchemaManager, "needsMigration").mockReturnValue(true);
+      vi.spyOn(LocalStorageSchemaManager, "needsMigration").mockReturnValue(
+        true,
+      );
       vi.spyOn(LocalStorageSchemaManager, "migrateStorage").mockRejectedValue(
         new Error("Failed to initialize schema"),
       );
@@ -188,9 +193,7 @@ describe("useLocalStorageSchema", () => {
     });
 
     it("should use updater function", async () => {
-      const { result } = renderHook(() =>
-        useLocalStorage("count", 0),
-      );
+      const { result } = renderHook(() => useLocalStorage("count", 0));
 
       act(() => {
         result.current[1]((prev) => prev + 1);

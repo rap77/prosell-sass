@@ -5,11 +5,7 @@
 import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi, type Mock } from "vitest";
 import { useRouter } from "next/navigation";
-import {
-  useLead,
-  useLeadDuplicates,
-  useLeadAuditTrail,
-} from "@/lib/api/leads";
+import { useLead, useLeadDuplicates, useLeadAuditTrail } from "@/lib/api/leads";
 
 // Mock Next.js router
 vi.mock("next/navigation", () => ({
@@ -41,7 +37,13 @@ vi.mock("@/components/leads/DuplicateWarning", () => ({
 
 // Mock AppointmentForm component
 vi.mock("@/components/appointments/AppointmentForm", () => ({
-  AppointmentForm: ({ open, onClose }: { open: boolean; onClose: () => void }) => {
+  AppointmentForm: ({
+    open,
+    onClose,
+  }: {
+    open: boolean;
+    onClose: () => void;
+  }) => {
     if (!open) return null;
     return (
       <div data-testid="appointment-form-modal">
@@ -87,7 +89,11 @@ describe("LeadDetails Page", () => {
       // Act & Assert: Page should render without errors
       await expect(async () => {
         await act(async () => {
-          render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+          render(
+            <LeadDetailsPage
+              params={Promise.resolve({ id: "test-lead-123" })}
+            />,
+          );
         });
       }).not.toThrow();
     });
@@ -102,7 +108,9 @@ describe("LeadDetails Page", () => {
 
       // Act
       await act(async () => {
-        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+        render(
+          <LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />,
+        );
       });
 
       // Assert: Loading text should be visible
@@ -120,7 +128,9 @@ describe("LeadDetails Page", () => {
 
       // Act
       await act(async () => {
-        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+        render(
+          <LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />,
+        );
       });
 
       // Assert: Error message should be visible
@@ -138,7 +148,9 @@ describe("LeadDetails Page", () => {
 
       // Act
       await act(async () => {
-        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+        render(
+          <LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />,
+        );
       });
 
       // Assert: Not found message should be visible
@@ -171,14 +183,18 @@ describe("LeadDetails Page", () => {
 
       // Act
       await act(async () => {
-        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+        render(
+          <LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />,
+        );
       });
 
       // Assert: Lead details should be visible
       expect(screen.getAllByText("John Doe").length).toBeGreaterThan(0);
       expect(screen.getByText("john@example.com")).toBeInTheDocument();
       expect(screen.getByText("+1-555-0123")).toBeInTheDocument();
-      expect(screen.getByText("I'm interested in this vehicle")).toBeInTheDocument();
+      expect(
+        screen.getByText("I'm interested in this vehicle"),
+      ).toBeInTheDocument();
       expect(screen.getAllByText(/facebook/i).length).toBeGreaterThan(0);
     });
 
@@ -206,7 +222,9 @@ describe("LeadDetails Page", () => {
 
       // Act
       await act(async () => {
-        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+        render(
+          <LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />,
+        );
       });
 
       expect(screen.getAllByText("Jane Smith").length).toBeGreaterThan(0);
@@ -240,11 +258,15 @@ describe("LeadDetails Page", () => {
 
       // Act
       await act(async () => {
-        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+        render(
+          <LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />,
+        );
       });
 
       // Assert: "Agendar Cita" button should be visible
-      expect(screen.getByRole("button", { name: /Agendar cita/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Agendar cita/i }),
+      ).toBeInTheDocument();
     });
 
     it("should not display 'Agendar Cita' button when loading", async () => {
@@ -257,11 +279,15 @@ describe("LeadDetails Page", () => {
 
       // Act
       await act(async () => {
-        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+        render(
+          <LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />,
+        );
       });
 
       // Assert: "Agendar Cita" button should not be visible
-      expect(screen.queryByRole("button", { name: /Agendar cita/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /Agendar cita/i }),
+      ).not.toBeInTheDocument();
     });
 
     it("should not display 'Agendar Cita' button when there's an error", async () => {
@@ -275,11 +301,15 @@ describe("LeadDetails Page", () => {
 
       // Act
       await act(async () => {
-        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+        render(
+          <LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />,
+        );
       });
 
       // Assert: "Agendar Cita" button should not be visible
-      expect(screen.queryByRole("button", { name: /Agendar cita/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /Agendar cita/i }),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -299,7 +329,11 @@ describe("LeadDetails Page", () => {
     };
 
     it("should NOT show duplicate warning when no duplicates", async () => {
-      (useLead as Mock).mockReturnValue({ data: mockLead, isLoading: false, error: null });
+      (useLead as Mock).mockReturnValue({
+        data: mockLead,
+        isLoading: false,
+        error: null,
+      });
       (useLeadDuplicates as Mock).mockReturnValue({
         data: { lead_id: "test-lead-123", duplicates: [], count: 0 },
         isLoading: false,
@@ -307,14 +341,20 @@ describe("LeadDetails Page", () => {
       });
 
       await act(async () => {
-        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+        render(
+          <LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />,
+        );
       });
 
       expect(screen.queryByTestId("duplicate-warning")).not.toBeInTheDocument();
     });
 
     it("should show duplicate warning when duplicates exist", async () => {
-      (useLead as Mock).mockReturnValue({ data: mockLead, isLoading: false, error: null });
+      (useLead as Mock).mockReturnValue({
+        data: mockLead,
+        isLoading: false,
+        error: null,
+      });
       (useLeadDuplicates as Mock).mockReturnValue({
         data: {
           lead_id: "test-lead-123",
@@ -332,14 +372,20 @@ describe("LeadDetails Page", () => {
       });
 
       await act(async () => {
-        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+        render(
+          <LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />,
+        );
       });
 
       expect(screen.getByTestId("duplicate-warning")).toBeInTheDocument();
     });
 
     it("should NOT show duplicate warning when duplicates data is undefined", async () => {
-      (useLead as Mock).mockReturnValue({ data: mockLead, isLoading: false, error: null });
+      (useLead as Mock).mockReturnValue({
+        data: mockLead,
+        isLoading: false,
+        error: null,
+      });
       (useLeadDuplicates as Mock).mockReturnValue({
         data: undefined,
         isLoading: true,
@@ -347,7 +393,9 @@ describe("LeadDetails Page", () => {
       });
 
       await act(async () => {
-        render(<LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />);
+        render(
+          <LeadDetailsPage params={Promise.resolve({ id: "test-lead-123" })} />,
+        );
       });
 
       expect(screen.queryByTestId("duplicate-warning")).not.toBeInTheDocument();

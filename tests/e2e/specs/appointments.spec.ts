@@ -29,7 +29,12 @@ const MOCK_LEAD = {
     price_cents: 2000000,
     currency: "USD",
     status: "active",
-    attributes: { category: "vehicle", year: 2020, make: "Toyota", model: "Camry" },
+    attributes: {
+      category: "vehicle",
+      year: 2020,
+      make: "Toyota",
+      model: "Camry",
+    },
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -72,7 +77,7 @@ async function setDealerRoleCookie(page: Page) {
           role: "branch",
           name: "Test Branch",
           tenant_id: process.env.TEST_TENANT_ID || "default-tenant-id",
-        })
+        }),
       ),
       domain: "localhost",
       path: "/",
@@ -209,7 +214,9 @@ test.describe("Appointment Form UI", () => {
 
     // Set a Saturday date
     const saturday = new Date();
-    saturday.setDate(saturday.getDate() + ((6 - saturday.getDay() + 7) % 7 || 7));
+    saturday.setDate(
+      saturday.getDate() + ((6 - saturday.getDay() + 7) % 7 || 7),
+    );
     const dateInput = page.locator('input[type="date"]');
     await dateInput.fill(localDateStr(saturday));
     await dateInput.blur();
@@ -218,7 +225,9 @@ test.describe("Appointment Form UI", () => {
     await page.click('button[type="submit"]');
 
     // Verify weekend rejection error — "Appointments cannot be scheduled on weekends (Saturday/Sunday)"
-    await expect(page.locator("text=/weekends/i")).toBeVisible({ timeout: 2000 });
+    await expect(page.locator("text=/weekends/i")).toBeVisible({
+      timeout: 2000,
+    });
   });
 
   test("should create appointment successfully", async ({ page }) => {
@@ -229,7 +238,7 @@ test.describe("Appointment Form UI", () => {
     await page.waitForSelector('[role="dialog"]');
 
     // Select dealer - click the Select trigger
-    await page.click('#user_id');
+    await page.click("#user_id");
 
     // Wait for dropdown to open
     await page.waitForSelector('[role="listbox"]', { timeout: 2000 });
@@ -246,7 +255,7 @@ test.describe("Appointment Form UI", () => {
     await page.fill('input[type="date"]', dateStr);
 
     // Select time - click the Select trigger
-    await page.click('#time');
+    await page.click("#time");
 
     // Wait for dropdown and click on "10:00" option
     await page.waitForSelector('[role="listbox"]', { timeout: 2000 });
@@ -259,7 +268,10 @@ test.describe("Appointment Form UI", () => {
     await page.click('button[type="submit"]');
 
     // Wait for success - modal should close
-    await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 5000 });
+    await page.waitForSelector('[role="dialog"]', {
+      state: "hidden",
+      timeout: 5000,
+    });
   });
 });
 
@@ -338,7 +350,9 @@ test.describe("Appointment Creation Accessibility", () => {
     await page.keyboard.press("Tab"); // Next field
 
     // Verify focus is manageable - should be on an interactive element
-    const focusedElement = await page.evaluate(() => document.activeElement?.tagName);
+    const focusedElement = await page.evaluate(
+      () => document.activeElement?.tagName,
+    );
     expect(["BUTTON", "INPUT", "SELECT", "TEXTAREA"]).toContain(focusedElement);
   });
 
@@ -353,7 +367,9 @@ test.describe("Appointment Creation Accessibility", () => {
     }
 
     // Focus should be on some element (focus trap is working if we haven't crashed)
-    const focusedElement = await page.evaluate(() => document.activeElement?.tagName);
+    const focusedElement = await page.evaluate(
+      () => document.activeElement?.tagName,
+    );
     expect(focusedElement).toBeTruthy();
   });
 });
@@ -498,10 +514,15 @@ test.describe("Appointment Creation - E2E Verification (A7)", () => {
     await page.click('button[type="submit"]');
 
     // Wait for success - modal should close
-    await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 5000 });
+    await page.waitForSelector('[role="dialog"]', {
+      state: "hidden",
+      timeout: 5000,
+    });
 
     // Verify success message or toast
-    const successMessage = page.locator("text=Appointment scheduled successfully");
+    const successMessage = page.locator(
+      "text=Appointment scheduled successfully",
+    );
     await expect(successMessage).toBeVisible({ timeout: 3000 });
   });
 
@@ -520,17 +541,19 @@ test.describe("Appointment Creation - E2E Verification (A7)", () => {
     // Verify validation errors appear (regex OR — not CSS comma-separated)
     // Dealer selection is required
     await expect(
-      page.locator("text=/User is required|Dealer is required|dealer es requerido/i")
+      page.locator(
+        "text=/User is required|Dealer is required|dealer es requerido/i",
+      ),
     ).toBeVisible({ timeout: 2000 });
 
     // Date is required
     await expect(
-      page.locator("text=/Date is required|fecha es requerida/i")
+      page.locator("text=/Date is required|fecha es requerida/i"),
     ).toBeVisible({ timeout: 2000 });
 
     // Time is required
     await expect(
-      page.locator("text=/Time is required|hora es requerida/i")
+      page.locator("text=/Time is required|hora es requerida/i"),
     ).toBeVisible({ timeout: 2000 });
   });
 
@@ -550,7 +573,9 @@ test.describe("Appointment Creation - E2E Verification (A7)", () => {
 
     // Try to select a Saturday
     const saturday = new Date();
-    saturday.setDate(saturday.getDate() + ((6 - saturday.getDay() + 7) % 7 || 7));
+    saturday.setDate(
+      saturday.getDate() + ((6 - saturday.getDay() + 7) % 7 || 7),
+    );
 
     const dateInput = page.locator('input[type="date"]');
     await dateInput.fill(localDateStr(saturday));
@@ -560,9 +585,9 @@ test.describe("Appointment Creation - E2E Verification (A7)", () => {
     await page.click('button[type="submit"]');
 
     // Verify weekend rejection error (matches exact Zod message)
-    await expect(
-      page.locator("text=/weekends|fin de semana/i")
-    ).toBeVisible({ timeout: 2000 });
+    await expect(page.locator("text=/weekends|fin de semana/i")).toBeVisible({
+      timeout: 2000,
+    });
   });
 
   test("A7.11: should reject past dates", async ({ page }) => {
@@ -628,7 +653,7 @@ test.describe("Appointment Creation - E2E Verification (A7)", () => {
       (response) =>
         response.url().includes("/appointments") &&
         response.request().method() === "POST",
-      { timeout: 10000 }
+      { timeout: 10000 },
     );
 
     // Submit form
@@ -639,9 +664,11 @@ test.describe("Appointment Creation - E2E Verification (A7)", () => {
     expect(response.status()).toBeLessThan(300);
 
     // Wait for modal to close and success toast to appear
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[role="dialog"]')).not.toBeVisible({
+      timeout: 5000,
+    });
     await expect(
-      page.locator("text=/Appointment scheduled successfully/i")
+      page.locator("text=/Appointment scheduled successfully/i"),
     ).toBeVisible({ timeout: 3000 });
   });
 
@@ -686,9 +713,9 @@ test.describe("Appointment Creation - E2E Verification (A7)", () => {
     await page.click('button[type="submit"]');
 
     // Verify error toast is shown — matches the exact message from the 500 mock response
-    await expect(
-      page.locator("text=Failed to create appointment")
-    ).toBeVisible({ timeout: 3000 });
+    await expect(page.locator("text=Failed to create appointment")).toBeVisible(
+      { timeout: 3000 },
+    );
 
     // Verify modal stays open on error
     const modal = page.locator('[role="dialog"]');
@@ -706,10 +733,10 @@ test.describe("Appointment Creation - E2E Verification (A7)", () => {
 
     // Verify both business hours constraints are displayed
     await expect(
-      page.locator("text=Business hours: Monday-Friday only")
+      page.locator("text=Business hours: Monday-Friday only"),
     ).toBeVisible();
     await expect(
-      page.locator("text=Business hours: 9:00 AM - 6:00 PM")
+      page.locator("text=Business hours: 9:00 AM - 6:00 PM"),
     ).toBeVisible();
   });
 
@@ -728,17 +755,20 @@ test.describe("Appointment Creation - E2E Verification (A7)", () => {
     await page.click('[role="option"]:has-text("Main Branch")');
 
     // Click cancel button
-    const cancelButton = page.locator('button:has-text("Cancel")').or(
-      page.locator('button:has-text("Cancelar")')
-    );
+    const cancelButton = page
+      .locator('button:has-text("Cancel")')
+      .or(page.locator('button:has-text("Cancelar")'));
     await cancelButton.click();
 
     // Verify modal closes
-    await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 3000 });
+    await page.waitForSelector('[role="dialog"]', {
+      state: "hidden",
+      timeout: 3000,
+    });
 
     // Verify no appointment was created (modal closed, no success message)
     await expect(
-      page.locator("text=/appointment created|cita creada/i")
+      page.locator("text=/appointment created|cita creada/i"),
     ).not.toBeVisible();
   });
 });

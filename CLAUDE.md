@@ -199,8 +199,8 @@ Configuration files:
 
 When you detect any of these contexts, IMMEDIATELY read the corresponding skill file BEFORE writing any code.
 
-| Context | Read this file |
-| ------- | -------------- |
+| Context                                                 | Read this file                      |
+| ------------------------------------------------------- | ----------------------------------- |
 | API contract bugs, testing backend-frontend integration | `.skills/contract-testing/SKILL.md` |
 
 Read skills BEFORE writing code. Apply ALL patterns. Multiple skills can apply simultaneously.

@@ -67,7 +67,7 @@ function generateHubSignature(_payload: Record<string, unknown>): string {
 async function webhookPost(
   page: Page,
   data: unknown,
-  headers: Record<string, string>
+  headers: Record<string, string>,
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   return page.evaluate(
     async ({ url, data, headers }) => {
@@ -79,10 +79,12 @@ async function webhookPost(
       let body: Record<string, unknown> = {};
       try {
         body = await res.json();
-      } catch { /* ignore non-JSON responses */ }
+      } catch {
+        /* ignore non-JSON responses */
+      }
       return { status: res.status, body };
     },
-    { url: WEBHOOK_URL, data, headers }
+    { url: WEBHOOK_URL, data, headers },
   );
 }
 
@@ -90,7 +92,7 @@ async function webhookPost(
 async function webhookPostRaw(
   page: Page,
   rawBody: string,
-  headers: Record<string, string>
+  headers: Record<string, string>,
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   return page.evaluate(
     async ({ url, rawBody, headers }) => {
@@ -102,10 +104,12 @@ async function webhookPostRaw(
       let body: Record<string, unknown> = {};
       try {
         body = await res.json();
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       return { status: res.status, body };
     },
-    { url: WEBHOOK_URL, rawBody, headers }
+    { url: WEBHOOK_URL, rawBody, headers },
   );
 }
 
@@ -184,12 +188,16 @@ test.describe("Facebook Webhook - Lead Capture", () => {
     });
   });
 
-  test("A7.1: should create E2E test file for Facebook webhook lead capture", async ({ page }) => {
+  test("A7.1: should create E2E test file for Facebook webhook lead capture", async ({
+    page,
+  }) => {
     expect(test.describe).toBeDefined();
     expect(test.beforeEach).toBeDefined();
   });
 
-  test("A7.2: should receive Facebook webhook payload at endpoint", async ({ page }) => {
+  test("A7.2: should receive Facebook webhook payload at endpoint", async ({
+    page,
+  }) => {
     const { status, body } = await webhookPost(page, MOCK_WEBHOOK_PAYLOAD, {
       "X-Hub-Signature": generateHubSignature(MOCK_WEBHOOK_PAYLOAD),
       "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
@@ -199,7 +207,9 @@ test.describe("Facebook Webhook - Lead Capture", () => {
     expect(body).toEqual({ status: "received" });
   });
 
-  test("A7.2: should reject webhook without X-Hub-Signature header", async ({ page }) => {
+  test("A7.2: should reject webhook without X-Hub-Signature header", async ({
+    page,
+  }) => {
     const { status, body } = await webhookPost(page, MOCK_WEBHOOK_PAYLOAD, {
       "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
     });
@@ -208,7 +218,9 @@ test.describe("Facebook Webhook - Lead Capture", () => {
     expect(String(body.detail)).toContain("X-Hub-Signature");
   });
 
-  test("A7.2: should reject webhook without X-Tenant-ID header", async ({ page }) => {
+  test("A7.2: should reject webhook without X-Tenant-ID header", async ({
+    page,
+  }) => {
     const { status, body } = await webhookPost(page, MOCK_WEBHOOK_PAYLOAD, {
       "X-Hub-Signature": generateHubSignature(MOCK_WEBHOOK_PAYLOAD),
     });
@@ -231,22 +243,32 @@ test.describe("Facebook Webhook - Lead Capture", () => {
 
     // Verify lead email appears (from mock lead response)
     await expect(
-      page.locator("text=john.buyer@example.com").first()
+      page.locator("text=john.buyer@example.com").first(),
     ).toBeVisible({ timeout: 5000 });
   });
 
-  test("A7.4: should detect duplicate leads from same leadgen_id", async ({ page }) => {
-    const { status: first } = await webhookPost(page, MOCK_WEBHOOK_WITH_BUYER_INFO, {
-      "X-Hub-Signature": generateHubSignature(MOCK_WEBHOOK_WITH_BUYER_INFO),
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    });
+  test("A7.4: should detect duplicate leads from same leadgen_id", async ({
+    page,
+  }) => {
+    const { status: first } = await webhookPost(
+      page,
+      MOCK_WEBHOOK_WITH_BUYER_INFO,
+      {
+        "X-Hub-Signature": generateHubSignature(MOCK_WEBHOOK_WITH_BUYER_INFO),
+        "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+      },
+    );
     expect(first).toBe(200);
 
     // Duplicate webhook — mock always returns 200 (idempotent)
-    const { status: second } = await webhookPost(page, MOCK_WEBHOOK_WITH_BUYER_INFO, {
-      "X-Hub-Signature": generateHubSignature(MOCK_WEBHOOK_WITH_BUYER_INFO),
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    });
+    const { status: second } = await webhookPost(
+      page,
+      MOCK_WEBHOOK_WITH_BUYER_INFO,
+      {
+        "X-Hub-Signature": generateHubSignature(MOCK_WEBHOOK_WITH_BUYER_INFO),
+        "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+      },
+    );
     expect(second).toBe(200);
 
     // Navigate to leads page — mock returns exactly 1 item regardless of duplicates
@@ -254,7 +276,7 @@ test.describe("Facebook Webhook - Lead Capture", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(
-      page.locator("text=john.buyer@example.com").first()
+      page.locator("text=john.buyer@example.com").first(),
     ).toBeVisible({ timeout: 5000 });
   });
 

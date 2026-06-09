@@ -1,517 +1,735 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProSell — Crear cuenta</title>
-<link rel="stylesheet" href="../colors_and_type.css">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<style>
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body {
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ProSell — Crear cuenta</title>
+    <link rel="stylesheet" href="../colors_and_type.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg-base);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+      }
 
-/* ===================== Split layout ===================== */
-.login {
-  display: grid;
-  grid-template-columns: 1.05fr 1fr;
-  min-height: 100vh;
-}
+      /* ===================== Split layout ===================== */
+      .login {
+        display: grid;
+        grid-template-columns: 1.05fr 1fr;
+        min-height: 100vh;
+      }
 
-/* ===================== Left: branding panel ===================== */
-.brand-panel {
-  position: relative;
-  overflow: hidden;
-  padding: 48px 56px;
-  background: linear-gradient(135deg, #060D24 0%, #0D1B6E 60%, #1E5FD4 100%);
-  display: flex; flex-direction: column;
-  color: #fff;
-}
-.brand-panel::before {
-  content: "";
-  position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(77,184,255,0.18), transparent 70%);
-}
-.brand-panel::after {
-  content: "";
-  position: absolute; inset: 0; pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-}
-.brand-panel > * { position: relative; z-index: 1; }
+      /* ===================== Left: branding panel ===================== */
+      .brand-panel {
+        position: relative;
+        overflow: hidden;
+        padding: 48px 56px;
+        background: linear-gradient(
+          135deg,
+          #060d24 0%,
+          #0d1b6e 60%,
+          #1e5fd4 100%
+        );
+        display: flex;
+        flex-direction: column;
+        color: #fff;
+      }
+      .brand-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse 60% 50% at 50% 50%,
+          rgba(77, 184, 255, 0.18),
+          transparent 70%
+        );
+      }
+      .brand-panel::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 56px 56px;
+        mask-image: radial-gradient(
+          ellipse at center,
+          black 30%,
+          transparent 80%
+        );
+        -webkit-mask-image: radial-gradient(
+          ellipse at center,
+          black 30%,
+          transparent 80%
+        );
+      }
+      .brand-panel > * {
+        position: relative;
+        z-index: 1;
+      }
 
-.bp-logo {
-  display: inline-flex; align-items: center; gap: 12px;
-  font-size: 22px; font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #fff;
-  text-decoration: none;
-}
-.bp-logo img { height: 32px; width: auto; }
+      .bp-logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #fff;
+        text-decoration: none;
+      }
+      .bp-logo img {
+        height: 32px;
+        width: auto;
+      }
 
-.bp-body {
-  flex: 1;
-  display: flex; flex-direction: column;
-  justify-content: center;
-  gap: 22px;
-  max-width: 480px;
-  margin: auto 0;
-  padding: 32px 0;
-}
-.bp-title {
-  font-size: 36px;
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  line-height: 1.1;
-  margin: 0;
-  color: #fff;
-}
-.bp-sub {
-  font-size: 16px;
-  line-height: 1.6;
-  color: rgba(255,255,255,0.7);
-  max-width: 380px;
-  margin: 0;
-}
+      .bp-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 22px;
+        max-width: 480px;
+        margin: auto 0;
+        padding: 32px 0;
+      }
+      .bp-title {
+        font-size: 36px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 1.1;
+        margin: 0;
+        color: #fff;
+      }
+      .bp-sub {
+        font-size: 16px;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.7);
+        max-width: 380px;
+        margin: 0;
+      }
 
-.bp-pills {
-  display: flex; flex-direction: column;
-  gap: 10px;
-  margin-top: 8px;
-}
-.bp-pill {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 16px;
-  background: rgba(13,27,62,0.45);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  color: #fff;
-  font-size: 13px;
-  line-height: 1.4;
-}
-.bp-pill .check {
-  flex-shrink: 0;
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  background: rgba(77,184,255,0.2);
-  border: 1px solid rgba(77,184,255,0.45);
-  display: inline-flex; align-items: center; justify-content: center;
-  color: #fff;
-}
-.bp-pill .check [data-lucide] { width: 12px; height: 12px; stroke-width: 3; }
+      .bp-pills {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 8px;
+      }
+      .bp-pill {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: rgba(13, 27, 62, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        color: #fff;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .bp-pill .check {
+        flex-shrink: 0;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(77, 184, 255, 0.2);
+        border: 1px solid rgba(77, 184, 255, 0.45);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+      }
+      .bp-pill .check [data-lucide] {
+        width: 12px;
+        height: 12px;
+        stroke-width: 3;
+      }
 
-.bp-foot {
-  margin-top: auto;
-  display: flex; align-items: center; gap: 8px;
-  font-size: 12px;
-  color: rgba(255,255,255,0.5);
-}
-.bp-foot .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 6px var(--success); }
+      .bp-foot {
+        margin-top: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .bp-foot .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--success);
+        box-shadow: 0 0 6px var(--success);
+      }
 
-/* ===================== Right: form panel ===================== */
-.form-panel {
-  background: var(--bg-base);
-  display: flex; flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 48px;
-  position: relative;
-}
-.form-wrap {
-  width: 100%;
-  max-width: 440px;
-  display: flex; flex-direction: column;
-  gap: 20px;
-}
-.fp-logo-mobile {
-  display: none;
-  align-items: center; gap: 10px;
-  font-size: 18px; font-weight: 700;
-  color: var(--text-primary);
-  text-decoration: none;
-  margin-bottom: 4px;
-}
-.fp-logo-mobile img { height: 28px; width: auto; }
+      /* ===================== Right: form panel ===================== */
+      .form-panel {
+        background: var(--bg-base);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 48px;
+        position: relative;
+      }
+      .form-wrap {
+        width: 100%;
+        max-width: 440px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .fp-logo-mobile {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary);
+        text-decoration: none;
+        margin-bottom: 4px;
+      }
+      .fp-logo-mobile img {
+        height: 28px;
+        width: auto;
+      }
 
-/* Step progress */
-.steps {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.steps .dots { display: inline-flex; gap: 6px; }
-.steps .dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--border-default);
-}
-.steps .dot.active {
-  background: var(--cyan);
-  box-shadow: 0 0 8px rgba(77,184,255,0.5);
-}
-.steps b { color: var(--text-primary); font-weight: 600; }
+      /* Step progress */
+      .steps {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+      .steps .dots {
+        display: inline-flex;
+        gap: 6px;
+      }
+      .steps .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--border-default);
+      }
+      .steps .dot.active {
+        background: var(--cyan);
+        box-shadow: 0 0 8px rgba(77, 184, 255, 0.5);
+      }
+      .steps b {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
 
-.fp-head { display: flex; flex-direction: column; gap: 6px; }
-.fp-title {
-  font-size: 28px; font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  margin: 0;
-  color: var(--text-primary);
-}
-.fp-subtitle {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0;
-  line-height: 1.5;
-}
+      .fp-head {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .fp-title {
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin: 0;
+        color: var(--text-primary);
+      }
+      .fp-subtitle {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin: 0;
+        line-height: 1.5;
+      }
 
-/* Form fields */
-form { display: flex; flex-direction: column; gap: 18px; }
-.field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-.field { display: flex; flex-direction: column; gap: 6px; }
-.field-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  letter-spacing: -0.005em;
-}
-.field-input {
-  position: relative;
-  display: flex; align-items: center;
-}
-.field-input input {
-  width: 100%;
-  height: 44px;
-  padding: 0 14px;
-  background: rgba(13,27,62,0.8);
-  border: 1px solid rgba(77,184,255,0.15);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 15px;
-  outline: none;
-  transition: border-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out), background 180ms var(--ease-out);
-  -webkit-appearance: none; appearance: none;
-}
-.field-input input::placeholder { color: var(--text-disabled); }
-.field-input input:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 0 3px rgba(77,184,255,0.10);
-  background: rgba(13,27,62,0.95);
-}
-.field-input .eye {
-  position: absolute;
-  right: 8px;
-  width: 32px; height: 32px;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: color 180ms;
-}
-.field-input .eye:hover { color: var(--text-primary); }
-.field-input .eye [data-lucide] { width: 16px; height: 16px; stroke-width: 2; }
-.field.with-icon input { padding-right: 44px; }
+      /* Form fields */
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .field-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        letter-spacing: -0.005em;
+      }
+      .field-input {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .field-input input {
+        width: 100%;
+        height: 44px;
+        padding: 0 14px;
+        background: rgba(13, 27, 62, 0.8);
+        border: 1px solid rgba(77, 184, 255, 0.15);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 15px;
+        outline: none;
+        transition:
+          border-color 180ms var(--ease-out),
+          box-shadow 180ms var(--ease-out),
+          background 180ms var(--ease-out);
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .field-input input::placeholder {
+        color: var(--text-disabled);
+      }
+      .field-input input:focus {
+        border-color: var(--cyan);
+        box-shadow: 0 0 0 3px rgba(77, 184, 255, 0.1);
+        background: rgba(13, 27, 62, 0.95);
+      }
+      .field-input .eye {
+        position: absolute;
+        right: 8px;
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: 0;
+        border-radius: 6px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: color 180ms;
+      }
+      .field-input .eye:hover {
+        color: var(--text-primary);
+      }
+      .field-input .eye [data-lucide] {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2;
+      }
+      .field.with-icon input {
+        padding-right: 44px;
+      }
 
-/* Strength meter */
-.strength {
-  display: flex; flex-direction: column;
-  gap: 6px;
-  margin-top: 2px;
-}
-.strength-bars {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-}
-.strength-bars span {
-  height: 4px;
-  border-radius: 100px;
-  background: var(--border-subtle);
-  transition: background 220ms var(--ease-out);
-}
-.strength.s1 .strength-bars span:nth-child(-n+1) { background: var(--error); }
-.strength.s2 .strength-bars span:nth-child(-n+2) { background: var(--warning); }
-.strength.s3 .strength-bars span:nth-child(-n+3) { background: var(--warning); }
-.strength.s4 .strength-bars span { background: var(--success); }
+      /* Strength meter */
+      .strength {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 2px;
+      }
+      .strength-bars {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+      }
+      .strength-bars span {
+        height: 4px;
+        border-radius: 100px;
+        background: var(--border-subtle);
+        transition: background 220ms var(--ease-out);
+      }
+      .strength.s1 .strength-bars span:nth-child(-n + 1) {
+        background: var(--error);
+      }
+      .strength.s2 .strength-bars span:nth-child(-n + 2) {
+        background: var(--warning);
+      }
+      .strength.s3 .strength-bars span:nth-child(-n + 3) {
+        background: var(--warning);
+      }
+      .strength.s4 .strength-bars span {
+        background: var(--success);
+      }
 
-.strength-label {
-  font-size: 11px;
-  color: var(--text-secondary);
-  display: flex; align-items: center; gap: 6px;
-}
-.strength-label b { font-weight: 600; }
-.strength.s1 .strength-label b { color: var(--error); }
-.strength.s2 .strength-label b { color: var(--warning); }
-.strength.s3 .strength-label b { color: var(--warning); }
-.strength.s4 .strength-label b { color: var(--success); }
+      .strength-label {
+        font-size: 11px;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .strength-label b {
+        font-weight: 600;
+      }
+      .strength.s1 .strength-label b {
+        color: var(--error);
+      }
+      .strength.s2 .strength-label b {
+        color: var(--warning);
+      }
+      .strength.s3 .strength-label b {
+        color: var(--warning);
+      }
+      .strength.s4 .strength-label b {
+        color: var(--success);
+      }
 
-/* Checkbox */
-.checkbox-row {
-  display: flex; align-items: flex-start; gap: 10px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  cursor: pointer;
-  user-select: none;
-}
-.checkbox-row input { display: none; }
-.checkbox-row .cb {
-  flex-shrink: 0;
-  width: 18px; height: 18px;
-  border-radius: 5px;
-  border: 1.5px solid rgba(77,184,255,0.4);
-  background: rgba(13,27,62,0.8);
-  display: inline-flex; align-items: center; justify-content: center;
-  margin-top: 1px;
-  transition: all 180ms var(--ease-out);
-  color: var(--bg-base);
-}
-.checkbox-row .cb [data-lucide] {
-  width: 12px; height: 12px;
-  stroke-width: 3;
-  opacity: 0;
-  transition: opacity 180ms;
-}
-.checkbox-row input:checked + .cb {
-  background: var(--cyan);
-  border-color: var(--cyan);
-}
-.checkbox-row input:checked + .cb [data-lucide] { opacity: 1; }
-.checkbox-row a {
-  color: var(--cyan);
-  text-decoration: none;
-  font-weight: 500;
-}
-.checkbox-row a:hover { text-decoration: underline; }
+      /* Checkbox */
+      .checkbox-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+        cursor: pointer;
+        user-select: none;
+      }
+      .checkbox-row input {
+        display: none;
+      }
+      .checkbox-row .cb {
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
+        border: 1.5px solid rgba(77, 184, 255, 0.4);
+        background: rgba(13, 27, 62, 0.8);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 1px;
+        transition: all 180ms var(--ease-out);
+        color: var(--bg-base);
+      }
+      .checkbox-row .cb [data-lucide] {
+        width: 12px;
+        height: 12px;
+        stroke-width: 3;
+        opacity: 0;
+        transition: opacity 180ms;
+      }
+      .checkbox-row input:checked + .cb {
+        background: var(--cyan);
+        border-color: var(--cyan);
+      }
+      .checkbox-row input:checked + .cb [data-lucide] {
+        opacity: 1;
+      }
+      .checkbox-row a {
+        color: var(--cyan);
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .checkbox-row a:hover {
+        text-decoration: underline;
+      }
 
-/* Primary button */
-.btn-submit {
-  margin-top: 4px;
-  width: 100%;
-  height: 44px;
-  background: var(--cyan);
-  color: var(--bg-base);
-  border: 0;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  transition: background 180ms var(--ease-out), box-shadow 180ms var(--ease-out), transform 180ms var(--ease-out);
-}
-.btn-submit:hover {
-  background: var(--cyan-hover);
-  box-shadow: 0 8px 28px rgba(77,184,255,0.30);
-  transform: translateY(-1px);
-}
-.btn-submit [data-lucide] { width: 16px; height: 16px; stroke-width: 2.5; }
+      /* Primary button */
+      .btn-submit {
+        margin-top: 4px;
+        width: 100%;
+        height: 44px;
+        background: var(--cyan);
+        color: var(--bg-base);
+        border: 0;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition:
+          background 180ms var(--ease-out),
+          box-shadow 180ms var(--ease-out),
+          transform 180ms var(--ease-out);
+      }
+      .btn-submit:hover {
+        background: var(--cyan-hover);
+        box-shadow: 0 8px 28px rgba(77, 184, 255, 0.3);
+        transform: translateY(-1px);
+      }
+      .btn-submit [data-lucide] {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2.5;
+      }
 
-.signin {
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-top: 8px;
-}
-.signin a {
-  color: var(--cyan);
-  text-decoration: none;
-  font-weight: 600;
-  margin-left: 4px;
-  transition: color 180ms;
-}
-.signin a:hover { color: var(--cyan-hover); }
+      .signin {
+        text-align: center;
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 8px;
+      }
+      .signin a {
+        color: var(--cyan);
+        text-decoration: none;
+        font-weight: 600;
+        margin-left: 4px;
+        transition: color 180ms;
+      }
+      .signin a:hover {
+        color: var(--cyan-hover);
+      }
 
-/* Mobile */
-@media (max-width: 768px) {
-  .login { grid-template-columns: 1fr; }
-  .brand-panel { display: none; }
-  .form-panel { padding: 32px 24px; min-height: 100vh; }
-  .fp-logo-mobile { display: inline-flex; }
-  .fp-title { font-size: 24px; }
-  .field-row { grid-template-columns: 1fr; gap: 18px; }
-}
-</style>
-</head>
-<body>
-<div class="login">
-  <!-- Left: Branding -->
-  <aside class="brand-panel">
-    <a class="bp-logo" href="#">
-      <img src="../assets/logo-mark.png" alt="" />
-      <span>ProSell</span>
-    </a>
+      /* Mobile */
+      @media (max-width: 768px) {
+        .login {
+          grid-template-columns: 1fr;
+        }
+        .brand-panel {
+          display: none;
+        }
+        .form-panel {
+          padding: 32px 24px;
+          min-height: 100vh;
+        }
+        .fp-logo-mobile {
+          display: inline-flex;
+        }
+        .fp-title {
+          font-size: 24px;
+        }
+        .field-row {
+          grid-template-columns: 1fr;
+          gap: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login">
+      <!-- Left: Branding -->
+      <aside class="brand-panel">
+        <a class="bp-logo" href="#">
+          <img src="../assets/logo-mark.png" alt="" />
+          <span>ProSell</span>
+        </a>
 
-    <div class="bp-body">
-      <h2 class="bp-title">Empezá a vender<br>más hoy.</h2>
-      <p class="bp-sub">Setup en 10 minutos.<br>Sin tarjeta de crédito requerida.</p>
+        <div class="bp-body">
+          <h2 class="bp-title">Empezá a vender<br />más hoy.</h2>
+          <p class="bp-sub">
+            Setup en 10 minutos.<br />Sin tarjeta de crédito requerida.
+          </p>
 
-      <div class="bp-pills">
-        <div class="bp-pill">
-          <span class="check"><i data-lucide="check"></i></span>
-          Publicación automática en todos los canales
+          <div class="bp-pills">
+            <div class="bp-pill">
+              <span class="check"><i data-lucide="check"></i></span>
+              Publicación automática en todos los canales
+            </div>
+            <div class="bp-pill">
+              <span class="check"><i data-lucide="check"></i></span>
+              Inbox unificado con respuesta en &lt; 60s
+            </div>
+            <div class="bp-pill">
+              <span class="check"><i data-lucide="check"></i></span>
+              Analytics de pipeline en tiempo real
+            </div>
+          </div>
         </div>
-        <div class="bp-pill">
-          <span class="check"><i data-lucide="check"></i></span>
-          Inbox unificado con respuesta en &lt; 60s
-        </div>
-        <div class="bp-pill">
-          <span class="check"><i data-lucide="check"></i></span>
-          Analytics de pipeline en tiempo real
-        </div>
-      </div>
-    </div>
 
-    <div class="bp-foot">
-      <span class="dot"></span>
-      Más de 2.400 equipos ya usan ProSell
-    </div>
-  </aside>
-
-  <!-- Right: Form -->
-  <main class="form-panel">
-    <div class="form-wrap">
-      <a class="fp-logo-mobile" href="#">
-        <img src="../assets/logo-mark.png" alt="" />
-        <span>ProSell</span>
-      </a>
-
-      <div class="steps">
-        <span class="dots">
-          <span class="dot active"></span>
+        <div class="bp-foot">
           <span class="dot"></span>
-        </span>
-        <span><b>Paso 1 de 2</b> — Datos básicos</span>
-      </div>
+          Más de 2.400 equipos ya usan ProSell
+        </div>
+      </aside>
 
-      <div class="fp-head">
-        <h1 class="fp-title">Creá tu cuenta</h1>
-        <p class="fp-subtitle">Gratis para siempre en el plan Arranque</p>
-      </div>
+      <!-- Right: Form -->
+      <main class="form-panel">
+        <div class="form-wrap">
+          <a class="fp-logo-mobile" href="#">
+            <img src="../assets/logo-mark.png" alt="" />
+            <span>ProSell</span>
+          </a>
 
-      <form id="register-form" autocomplete="on" novalidate>
-        <div class="field-row">
-          <div class="field">
-            <label class="field-label" for="first">Nombre</label>
-            <div class="field-input">
-              <input type="text" id="first" name="first" placeholder="Martín" autocomplete="given-name" />
+          <div class="steps">
+            <span class="dots">
+              <span class="dot active"></span>
+              <span class="dot"></span>
+            </span>
+            <span><b>Paso 1 de 2</b> — Datos básicos</span>
+          </div>
+
+          <div class="fp-head">
+            <h1 class="fp-title">Creá tu cuenta</h1>
+            <p class="fp-subtitle">Gratis para siempre en el plan Arranque</p>
+          </div>
+
+          <form id="register-form" autocomplete="on" novalidate>
+            <div class="field-row">
+              <div class="field">
+                <label class="field-label" for="first">Nombre</label>
+                <div class="field-input">
+                  <input
+                    type="text"
+                    id="first"
+                    name="first"
+                    placeholder="Martín"
+                    autocomplete="given-name"
+                  />
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="last">Apellido</label>
+                <div class="field-input">
+                  <input
+                    type="text"
+                    id="last"
+                    name="last"
+                    placeholder="Rodríguez"
+                    autocomplete="family-name"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="field">
-            <label class="field-label" for="last">Apellido</label>
-            <div class="field-input">
-              <input type="text" id="last" name="last" placeholder="Rodríguez" autocomplete="family-name" />
+
+            <div class="field">
+              <label class="field-label" for="email">Email de trabajo</label>
+              <div class="field-input">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="vos@empresa.com"
+                  autocomplete="email"
+                />
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div class="field">
-          <label class="field-label" for="email">Email de trabajo</label>
-          <div class="field-input">
-            <input type="email" id="email" name="email" placeholder="vos@empresa.com" autocomplete="email" />
-          </div>
-        </div>
+            <div class="field with-icon">
+              <label class="field-label" for="password">Contraseña</label>
+              <div class="field-input">
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  placeholder="Mínimo 8 caracteres"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  class="eye"
+                  id="toggle-pw"
+                  aria-label="Mostrar contraseña"
+                >
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+              <div class="strength s2" id="strength">
+                <div class="strength-bars">
+                  <span></span><span></span><span></span><span></span>
+                </div>
+                <div class="strength-label">
+                  Seguridad: <b id="strength-label">Media</b>
+                </div>
+              </div>
+            </div>
 
-        <div class="field with-icon">
-          <label class="field-label" for="password">Contraseña</label>
-          <div class="field-input">
-            <input type="password" id="password" name="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" />
-            <button type="button" class="eye" id="toggle-pw" aria-label="Mostrar contraseña">
-              <i data-lucide="eye"></i>
+            <div class="field with-icon">
+              <label class="field-label" for="confirm"
+                >Confirmar contraseña</label
+              >
+              <div class="field-input">
+                <input
+                  type="password"
+                  id="confirm"
+                  name="confirm"
+                  placeholder="Repetí tu contraseña"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  class="eye"
+                  id="toggle-confirm"
+                  aria-label="Mostrar contraseña"
+                >
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="terms" />
+              <span class="cb"><i data-lucide="check"></i></span>
+              <span
+                >Acepto los <a href="#">Términos de uso</a> y la
+                <a href="#">Política de privacidad</a></span
+              >
+            </label>
+
+            <button class="btn-submit" type="submit">
+              Continuar
+              <i data-lucide="arrow-right"></i>
             </button>
-          </div>
-          <div class="strength s2" id="strength">
-            <div class="strength-bars"><span></span><span></span><span></span><span></span></div>
-            <div class="strength-label">Seguridad: <b id="strength-label">Media</b></div>
-          </div>
+          </form>
+
+          <p class="signin">
+            ¿Ya tenés cuenta?<a href="Login.html">Iniciá sesión</a>
+          </p>
         </div>
-
-        <div class="field with-icon">
-          <label class="field-label" for="confirm">Confirmar contraseña</label>
-          <div class="field-input">
-            <input type="password" id="confirm" name="confirm" placeholder="Repetí tu contraseña" autocomplete="new-password" />
-            <button type="button" class="eye" id="toggle-confirm" aria-label="Mostrar contraseña">
-              <i data-lucide="eye"></i>
-            </button>
-          </div>
-        </div>
-
-        <label class="checkbox-row">
-          <input type="checkbox" id="terms" />
-          <span class="cb"><i data-lucide="check"></i></span>
-          <span>Acepto los <a href="#">Términos de uso</a> y la <a href="#">Política de privacidad</a></span>
-        </label>
-
-        <button class="btn-submit" type="submit">
-          Continuar
-          <i data-lucide="arrow-right"></i>
-        </button>
-      </form>
-
-      <p class="signin">¿Ya tenés cuenta?<a href="Login.html">Iniciá sesión</a></p>
+      </main>
     </div>
-  </main>
-</div>
 
-<script>
-  lucide.createIcons();
-
-  // Password eye toggles
-  function bindEye(inputId, btnId) {
-    const input = document.getElementById(inputId);
-    const btn = document.getElementById(btnId);
-    btn.addEventListener('click', () => {
-      const showing = input.type === 'text';
-      input.type = showing ? 'password' : 'text';
-      btn.innerHTML = showing
-        ? '<i data-lucide="eye"></i>'
-        : '<i data-lucide="eye-off"></i>';
-      btn.setAttribute('aria-label', showing ? 'Mostrar contraseña' : 'Ocultar contraseña');
+    <script>
       lucide.createIcons();
-    });
-  }
-  bindEye('password', 'toggle-pw');
-  bindEye('confirm', 'toggle-confirm');
 
-  // Strength meter
-  const pwInput = document.getElementById('password');
-  const strengthEl = document.getElementById('strength');
-  const strengthLabel = document.getElementById('strength-label');
-  function scoreFor(v) {
-    if (!v) return 0;
-    let s = 0;
-    if (v.length >= 8) s++;
-    if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++;
-    if (/\d/.test(v)) s++;
-    if (/[^A-Za-z0-9]/.test(v)) s++;
-    return Math.min(s, 4);
-  }
-  const labels = ['', 'Débil', 'Media', 'Media', 'Fuerte'];
-  pwInput.addEventListener('input', () => {
-    const s = scoreFor(pwInput.value);
-    strengthEl.className = 'strength' + (s ? ' s' + s : '');
-    strengthLabel.textContent = labels[s] || '—';
-  });
-</script>
-</body>
+      // Password eye toggles
+      function bindEye(inputId, btnId) {
+        const input = document.getElementById(inputId);
+        const btn = document.getElementById(btnId);
+        btn.addEventListener("click", () => {
+          const showing = input.type === "text";
+          input.type = showing ? "password" : "text";
+          btn.innerHTML = showing
+            ? '<i data-lucide="eye"></i>'
+            : '<i data-lucide="eye-off"></i>';
+          btn.setAttribute(
+            "aria-label",
+            showing ? "Mostrar contraseña" : "Ocultar contraseña",
+          );
+          lucide.createIcons();
+        });
+      }
+      bindEye("password", "toggle-pw");
+      bindEye("confirm", "toggle-confirm");
+
+      // Strength meter
+      const pwInput = document.getElementById("password");
+      const strengthEl = document.getElementById("strength");
+      const strengthLabel = document.getElementById("strength-label");
+      function scoreFor(v) {
+        if (!v) return 0;
+        let s = 0;
+        if (v.length >= 8) s++;
+        if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++;
+        if (/\d/.test(v)) s++;
+        if (/[^A-Za-z0-9]/.test(v)) s++;
+        return Math.min(s, 4);
+      }
+      const labels = ["", "Débil", "Media", "Media", "Fuerte"];
+      pwInput.addEventListener("input", () => {
+        const s = scoreFor(pwInput.value);
+        strengthEl.className = "strength" + (s ? " s" + s : "");
+        strengthLabel.textContent = labels[s] || "—";
+      });
+    </script>
+  </body>
 </html>

@@ -12,6 +12,7 @@
 Implement a robust async task queue system using Taskiq (with Celery as fallback) and multi-language infrastructure (i18n) for Sprint 7+. This is the FOUNDATION for all subsequent phases - Facebook OAuth, Graph API, Scraping, and AI Assistant all depend on async task processing.
 
 **Why this matters**: Without a task queue, we cannot handle background jobs like:
+
 - Scheduled Facebook republishing (posts expire every 7 days)
 - Async scraping operations (don't block API responses)
 - AI lead processing (can take 10+ seconds)
@@ -42,6 +43,7 @@ Implement a robust async task queue system using Taskiq (with Celery as fallback
 **So that** long-running operations don't block API responses
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Task is enqueued and executed
   GIVEN a task is enqueued with parameters
@@ -69,6 +71,7 @@ Scenario: Circuit breaker activates
 **So that** Facebook Marketplace listings stay active
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Daily scheduled task executes
   GIVEN a task is scheduled for 9 AM daily
@@ -84,6 +87,7 @@ Scenario: Daily scheduled task executes
 **So that** I can understand the interface
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Spanish user sees Spanish labels
   GIVEN Accept-Language header contains "es"
@@ -104,6 +108,7 @@ Scenario: English user sees English labels
 **So that** users understand what went wrong
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Validation error in Spanish
   GIVEN a Spanish user submits invalid data
@@ -150,13 +155,13 @@ Scenario: Validation error in English
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|-----------|---------|-------|
-| Task Queue | Taskiq (preferred) or Celery (fallback) | Latest | Async-first, Python 3.13 compatible |
-| Broker | Redis | 7.4+ | Already in stack |
-| Scheduler | Taskiq scheduler (or Celery Beat) | Latest | For scheduled tasks |
-| i18n | Pydantic + custom | Latest | Multi-language strings |
-| Monitoring | Custom health endpoint | - | `/health/integrations` |
+| Component  | Technology                              | Version | Notes                               |
+| ---------- | --------------------------------------- | ------- | ----------------------------------- |
+| Task Queue | Taskiq (preferred) or Celery (fallback) | Latest  | Async-first, Python 3.13 compatible |
+| Broker     | Redis                                   | 7.4+    | Already in stack                    |
+| Scheduler  | Taskiq scheduler (or Celery Beat)       | Latest  | For scheduled tasks                 |
+| i18n       | Pydantic + custom                       | Latest  | Multi-language strings              |
+| Monitoring | Custom health endpoint                  | -       | `/health/integrations`              |
 
 ### 3.2 Key Libraries
 
@@ -174,15 +179,18 @@ uv add taskiq-scheduler         # Scheduled tasks
 ### 3.3 External Documentation
 
 **Taskiq** (if chosen after spike):
+
 - GitHub: https://github.com/taskiq-python/taskiq
 - Docs: https://taskiq-python.github.io/
 - FastAPI Integration: https://taskiq-python.github.io/latest/integrations/fastapi/
 
 **Celery** (fallback):
+
 - Docs: https://docs.celeryq.dev/en/stable/
 - FastAPI Integration: https://docs.celeryq.dev/en/stable/userguide/frameworks.html#flask
 
 **Circuit Breakers**:
+
 - Pattern: https://martinfowler.com/bliki/CircuitBreaker.html
 
 ---
@@ -212,6 +220,7 @@ flowchart TD
 **Objective**: Validate Taskiq works with FastAPI async + SQLAlchemy 2.0
 
 **Tasks**:
+
 1. Create minimal FastAPI app with Taskiq
 2. Define a simple async task (sleep + log)
 3. Test task execution (enqueue → worker → result)
@@ -220,6 +229,7 @@ flowchart TD
 6. Compare with Celery (if Taskiq fails)
 
 **Success Criteria**:
+
 - ✅ Task executes without blocking API
 - ✅ Retry works with exponential backoff
 - ✅ Scheduled task triggers on time
@@ -232,6 +242,7 @@ flowchart TD
 #### Step 1: Infrastructure Layer - Task Queue
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/tasks/__init__.py` - Package init
 - `apps/api/src/prosell/infrastructure/tasks/broker.py` - Redis broker configuration
 - `apps/api/src/prosell/infrastructure/tasks/circuit_breaker.py` - Circuit breaker implementation
@@ -318,6 +329,7 @@ class CircuitBreaker:
 ```
 
 **Gotchas**:
+
 - Taskiq requires `broker.start()` after FastAPI app startup (use lifespan context manager)
 - SQLAlchemy sessions in tasks: create new session per task (don't share across tasks)
 - Redis connection pool: tune `max_connections` based on worker count
@@ -325,6 +337,7 @@ class CircuitBreaker:
 #### Step 2: Domain Layer - Multi-Language Value Objects
 
 **Files to create**:
+
 - `apps/api/src/prosell/domain/value_objects/i18n.py` - Multi-language string value object
 
 **Implementation notes**:
@@ -366,12 +379,14 @@ class MultiLanguageString(ValueObject):
 ```
 
 **Gotchas**:
+
 - Always validate both languages are present (required=True)
 - Use `get()` method instead of direct attribute access in templates
 
 #### Step 3: Infrastructure Layer - i18n Locales
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/i18n/__init__.py` - Package init
 - `apps/api/src/prosell/infrastructure/i18n/translator.py` - Translator class
 - `apps/api/src/prosell/infrastructure/i18n/locales/es.json` - Spanish labels
@@ -464,12 +479,14 @@ translator = Translator()
 ```
 
 **Gotchas**:
+
 - Cache translations in memory (reload on dev only)
 - Use f-string formatting for dynamic values (e.g., "El valor mínimo es {min}")
 
 #### Step 4: Application Layer - Language Detection Use Case
 
 **Files to create**:
+
 - `apps/api/src/prosell/application/use_cases/i18n/detect_language.py` - Language detection use case
 
 **Implementation notes**:
@@ -524,6 +541,7 @@ class DetectLanguageUseCase:
 #### Step 5: API Layer - Health Check Endpoint
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/api/routers/health_router.py` - Health check router
 
 **Implementation notes**:
@@ -551,6 +569,7 @@ async def health_check():
 #### Step 6: Configuration - Settings
 
 **Files to modify**:
+
 - `apps/api/src/prosell/core/config.py` - Add Task Queue settings
 
 **Implementation notes**:
@@ -582,6 +601,7 @@ task_queue_max_retries: int = Field(
 #### Step 7: Worker Entry Point
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/tasks/worker.py` - Worker entry point
 - `apps/api/worker.py` - Worker startup script
 
@@ -625,6 +645,7 @@ if __name__ == "__main__":
 ```
 
 **Gotchas**:
+
 - Worker must import tasks to register them with broker
 - Use `uv run worker` to run with proper Python path
 
@@ -759,12 +780,14 @@ cd apps/api && uv run pytest tests/integration/tasks/ -v
 ### 7.1 Unit Tests
 
 **Task Queue Tests**:
+
 - Test task decorator registers with broker
 - Test retry logic with mock failures
 - Test circuit breaker state transitions (CLOSED → OPEN → HALF_OPEN)
 - Test exponential backoff timing
 
 **i18n Tests**:
+
 - Test `MultiLanguageString` value object immutability
 - Test `get()` method returns correct language
 - Test `Translator` loads from JSON files
@@ -773,18 +796,21 @@ cd apps/api && uv run pytest tests/integration/tasks/ -v
 ### 7.2 Integration Tests
 
 **Task Queue Integration**:
+
 - Test task enqueues to Redis
 - Test worker receives and executes task
 - Test scheduled task triggers on cron
 - Test dead letter queue for permanent failures
 
 **i18n Integration**:
+
 - Test translations render correctly in API responses
 - Test validation messages use correct language
 
 ### 7.3 E2E Tests
 
 **Critical Path**:
+
 ```gherkin
 Scenario: Task enqueues and executes
   GIVEN API endpoint enqueues a task
@@ -861,6 +887,7 @@ If implementation fails:
 4. **Worker crashes**: Check for infinite loops, add timeouts to all tasks
 
 **Rollback steps**:
+
 1. Revert this PRP's commits
 2. Remove Taskiq/Task Queue code
 3. Keep i18n infrastructure (can be used later)
@@ -1036,12 +1063,14 @@ grep -q "Decision:" docs/plans/2026-03-06-phase1-taskqueue-spike.md
 **Reasoning**:
 
 **Positive factors**:
+
 - Taskiq is well-maintained and async-first (perfect for Python 3.13 + FastAPI)
 - Redis already in stack (no new infrastructure)
 - Clean Architecture patterns already established in codebase
 - Multi-language is straightforward (JSON files + value objects)
 
 **Risk factors**:
+
 - Spike required to validate Taskiq works with SQLAlchemy 2.0 async sessions
 - Worker process management in production needs testing
 - Circuit breaker adds complexity (but can be simplified if needed)
@@ -1055,6 +1084,7 @@ grep -q "Decision:" docs/plans/2026-03-06-phase1-taskqueue-spike.md
 **Objective**: Validate Taskiq works with FastAPI + SQLAlchemy 2.0
 
 **Tasks**:
+
 1. Create minimal FastAPI app with Taskiq broker
 2. Define task: `sleep(5)` + log completion
 3. Test: Enqueue task via API endpoint
@@ -1064,6 +1094,7 @@ grep -q "Decision:" docs/plans/2026-03-06-phase1-taskqueue-spike.md
 7. Compare with Celery (if Taskiq has issues)
 
 **Success Criteria**:
+
 - ✅ Task executes without blocking API
 - ✅ Retry works with exponential backoff
 - ✅ Scheduled task triggers on time

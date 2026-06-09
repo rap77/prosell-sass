@@ -10,13 +10,13 @@ A response that "sounds correct" but cannot be rated against this table is a Rat
 
 ## Rating 3 (Peer) vs Rating 4 (Senior)
 
-| Attribute | Rating 3 (Peer) | Rating 4 (Senior) |
-|-----------|-----------------|-------------------|
-| **Type safety** | Provides correct Pydantic v2 model with proper field types | Identifies where `Any` would leak through the model boundary — proposes TypeVar with bounds or Protocol instead |
-| **Async pattern** | Correct use of async/await for database calls | Proposes asyncio.TaskGroup for concurrent operations, explains why sequential would be slower and why not to use gather without error handling |
-| **API contract** | Correct FastAPI route with valid response model | Proposes response model that prevents internal field leakage — fields not in the response model cannot leak through |
-| **Data modeling** | Correct SQLAlchemy 2.x async model definition | Identifies N+1 query risk and proposes selectinload/joinedload strategy before it becomes a production problem |
-| **Error handling** | Returns appropriate HTTP status codes | Proposes domain exception hierarchy that maps to HTTP codes without coupling — domain layer doesn't import FastAPI |
+| Attribute          | Rating 3 (Peer)                                            | Rating 4 (Senior)                                                                                                                              |
+| ------------------ | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Type safety**    | Provides correct Pydantic v2 model with proper field types | Identifies where `Any` would leak through the model boundary — proposes TypeVar with bounds or Protocol instead                                |
+| **Async pattern**  | Correct use of async/await for database calls              | Proposes asyncio.TaskGroup for concurrent operations, explains why sequential would be slower and why not to use gather without error handling |
+| **API contract**   | Correct FastAPI route with valid response model            | Proposes response model that prevents internal field leakage — fields not in the response model cannot leak through                            |
+| **Data modeling**  | Correct SQLAlchemy 2.x async model definition              | Identifies N+1 query risk and proposes selectinload/joinedload strategy before it becomes a production problem                                 |
+| **Error handling** | Returns appropriate HTTP status codes                      | Proposes domain exception hierarchy that maps to HTTP codes without coupling — domain layer doesn't import FastAPI                             |
 
 **Observable distinction:** A Rating 3 response makes the feature work. A Rating 4 response makes the feature work AND prevents the next 3 bugs from occurring.
 
@@ -45,6 +45,7 @@ Source: global-protocol.md > Stack Hard-Lock | brain-05-backend/warnings.md > Ce
 ## Rating 5 (Architect) Threshold
 
 A Rating 5 response:
+
 - Identifies a boundary condition in the asyncio event loop that would cause a data race under concurrent brain queries — proposes a lock strategy that preserves throughput
 - Redesigns the data model boundary so that a future schema migration requires zero application code changes (schema evolution without coupled migration)
 - Identifies a cross-layer coupling that would make the system untestable at scale — restructures the dependency graph so that every layer is independently testable

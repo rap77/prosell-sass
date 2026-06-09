@@ -34,6 +34,7 @@
   - [ ] Test on single file
 
 - [ ] **Configuration checklist**
+
   ```ini
   [mypy]
   python_version = 3.13
@@ -51,6 +52,7 @@
 ## Phase 2: Validation & Baseline (4-6 hours)
 
 - [ ] **Run mypy on entire test suite**
+
   ```bash
   uv run mypy tests/ --show-error-codes
   ```
@@ -62,6 +64,7 @@
   - [ ] Create error classification matrix
 
 - [ ] **Validate production code**
+
   ```bash
   uv run mypy src/ --show-error-codes
   ```
@@ -116,12 +119,14 @@
 ## Phase 5: Final Validation (2-4 hours)
 
 - [ ] **Full test suite validation**
+
   ```bash
   uv run pytest
   uv run mypy tests/
   ```
 
 - [ ] **Production code validation**
+
   ```bash
   uv run mypy src/
   ```
@@ -197,15 +202,15 @@ git checkout HEAD -- .github/workflows/ci.yml
 
 ## Timeline
 
-| Phase | Duration | Start Date | End Date | Status |
-|-------|----------|------------|----------|--------|
-| Pre-Migration | ✅ Complete | - | 2026-05-12 | ✅ Done |
-| Phase 1: Setup | 2-4h | TBD | TBD | ⏳ Pending |
-| Phase 2: Validation | 4-6h | TBD | TBD | ⏳ Pending |
-| Phase 3: CI/CD | 2-4h | TBD | TBD | ⏳ Pending |
-| Phase 4: Training | 2-4h | TBD | TBD | ⏳ Pending |
-| Phase 5: Final | 2-4h | TBD | TBD | ⏳ Pending |
-| **Total** | **20-30h** | **TBD** | **TBD** | **3-4 days** |
+| Phase               | Duration    | Start Date | End Date   | Status       |
+| ------------------- | ----------- | ---------- | ---------- | ------------ |
+| Pre-Migration       | ✅ Complete | -          | 2026-05-12 | ✅ Done      |
+| Phase 1: Setup      | 2-4h        | TBD        | TBD        | ⏳ Pending   |
+| Phase 2: Validation | 4-6h        | TBD        | TBD        | ⏳ Pending   |
+| Phase 3: CI/CD      | 2-4h        | TBD        | TBD        | ⏳ Pending   |
+| Phase 4: Training   | 2-4h        | TBD        | TBD        | ⏳ Pending   |
+| Phase 5: Final      | 2-4h        | TBD        | TBD        | ⏳ Pending   |
+| **Total**           | **20-30h**  | **TBD**    | **TBD**    | **3-4 days** |
 
 ## Dependencies
 
@@ -216,13 +221,13 @@ git checkout HEAD -- .github/workflows/ci.yml
 
 ## Risks & Mitigations
 
-| Risk | Probability | Impact | Mitigation |
-|------|------------|--------|------------|
-| Mypy misses errors pyright catches | LOW | MEDIUM | Run both in parallel for 1 week |
-| Performance degradation | LOW | LOW | Mypy is actually faster |
-| IDE integration issues | MEDIUM | LOW | Use mypy plugin or run in terminal |
-| Team learning curve | MEDIUM | LOW | Error messages are similar |
-| Test failures due to type changes | VERY LOW | HIGH | Only changing checker, not types |
+| Risk                               | Probability | Impact | Mitigation                         |
+| ---------------------------------- | ----------- | ------ | ---------------------------------- |
+| Mypy misses errors pyright catches | LOW         | MEDIUM | Run both in parallel for 1 week    |
+| Performance degradation            | LOW         | LOW    | Mypy is actually faster            |
+| IDE integration issues             | MEDIUM      | LOW    | Use mypy plugin or run in terminal |
+| Team learning curve                | MEDIUM      | LOW    | Error messages are similar         |
+| Test failures due to type changes  | VERY LOW    | HIGH   | Only changing checker, not types   |
 
 ## Notes
 

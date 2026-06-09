@@ -30,7 +30,9 @@ export function LeadStatusDropdown({
   onStatusUpdated,
 }: LeadStatusDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [optimisticStatus, setOptimisticStatus] = useState<LeadStatus | null>(null);
+  const [optimisticStatus, setOptimisticStatus] = useState<LeadStatus | null>(
+    null,
+  );
   const updateLeadStatus = useUpdateLeadStatus(leadId);
 
   // Display optimistic status if updating, otherwise current status

@@ -1,4 +1,5 @@
 # 🎨 Magic UI Components - Sprint 5-6
+
 **Fuente:** 21st.dev Magic UI
 **Fecha:** 2026-03-04
 
@@ -9,6 +10,7 @@
 Perfecto para carga de hasta 20 fotos de productos.
 
 ### Características:
+
 - ✅ Drag & drop
 - ✅ Preview con zoom on hover
 - ✅ Botones de reemplazar/eliminar
@@ -21,51 +23,53 @@ Perfecto para carga de hasta 20 fotos de productos.
 
 ```tsx
 // Hook personalizado
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from "react";
 
-export function useImageUpload({ onUpload }: { onUpload?: (url: string) => void } = {}) {
-  const previewRef = useRef<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [fileName, setFileName] = useState<string | null>(null)
+export function useImageUpload({
+  onUpload,
+}: { onUpload?: (url: string) => void } = {}) {
+  const previewRef = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
 
   const handleThumbnailClick = useCallback(() => {
-    fileInputRef.current?.click()
-  }, [])
+    fileInputRef.current?.click();
+  }, []);
 
   const handleFileChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0]
+      const file = event.target.files?.[0];
       if (file) {
-        setFileName(file.name)
-        const url = URL.createObjectURL(file)
-        setPreviewUrl(url)
-        previewRef.current = url
-        onUpload?.(url)
+        setFileName(file.name);
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+        previewRef.current = url;
+        onUpload?.(url);
       }
     },
-    [onUpload]
-  )
+    [onUpload],
+  );
 
   const handleRemove = useCallback(() => {
     if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
+      URL.revokeObjectURL(previewUrl);
     }
-    setPreviewUrl(null)
-    setFileName(null)
-    previewRef.current = null
+    setPreviewUrl(null);
+    setFileName(null);
+    previewRef.current = null;
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+      fileInputRef.current.value = "";
     }
-  }, [previewUrl])
+  }, [previewUrl]);
 
   useEffect(() => {
     return () => {
       if (previewRef.current) {
-        URL.revokeObjectURL(previewRef.current)
+        URL.revokeObjectURL(previewRef.current);
       }
-    }
-  }, [])
+    };
+  }, []);
 
   return {
     previewUrl,
@@ -74,32 +78,34 @@ export function useImageUpload({ onUpload }: { onUpload?: (url: string) => void 
     handleThumbnailClick,
     handleFileChange,
     handleRemove,
-  }
+  };
 }
 ```
 
 ```tsx
 // Componente completo
-'use client'
+"use client";
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useImageUpload } from '@/components/hooks/use-image-upload'
-import { ImagePlus, X, Upload, Trash2 } from 'lucide-react'
-import Image from 'next/image'
-import { useCallback, useState } from 'react'
-import { cn } from '@/lib/utils'
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useImageUpload } from "@/components/hooks/use-image-upload";
+import { ImagePlus, X, Upload, Trash2 } from "lucide-react";
+import Image from "next/image";
+import { useCallback, useState } from "react";
+import { cn } from "@/lib/utils";
 
 export function MultiPhotoUpload({ maxPhotos = 20 }) {
-  const [photos, setPhotos] = useState<Array<{ id: string, url: string, file: File }>>([])
+  const [photos, setPhotos] = useState<
+    Array<{ id: string; url: string; file: File }>
+  >([]);
 
   const addPhoto = (url: string, file: File) => {
-    setPhotos(prev => [...prev, { id: crypto.randomUUID(), url, file }])
-  }
+    setPhotos((prev) => [...prev, { id: crypto.randomUUID(), url, file }]);
+  };
 
   const removePhoto = (id: string) => {
-    setPhotos(prev => prev.filter(p => p.id !== id))
-  }
+    setPhotos((prev) => prev.filter((p) => p.id !== id));
+  };
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -112,17 +118,15 @@ export function MultiPhotoUpload({ maxPhotos = 20 }) {
         />
       ))}
 
-      {photos.length < maxPhotos && (
-        <UploadTrigger onUpload={addPhoto} />
-      )}
+      {photos.length < maxPhotos && <UploadTrigger onUpload={addPhoto} />}
     </div>
-  )
+  );
 }
 
 function PhotoCard({ photo, index, onRemove }) {
   const { previewUrl, fileName, handleRemove } = useImageUpload({
-    onUpload: (url) => console.log('Uploaded:', url)
-  })
+    onUpload: (url) => console.log("Uploaded:", url),
+  });
 
   return (
     <div className="group relative aspect-square">
@@ -145,7 +149,7 @@ function PhotoCard({ photo, index, onRemove }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function UploadTrigger({ onUpload }) {
@@ -156,27 +160,33 @@ function UploadTrigger({ onUpload }) {
     handleThumbnailClick,
     handleFileChange,
   } = useImageUpload({
-    onUpload: (url) => onUpload(url, null) // Simplificado
-  })
+    onUpload: (url) => onUpload(url, null), // Simplificado
+  });
 
-  const [isDragging, setIsDragging] = useState(false)
+  const [isDragging, setIsDragging] = useState(false);
 
   return (
     <div
       onClick={handleThumbnailClick}
-      onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
-      onDragLeave={(e) => { e.preventDefault(); setIsDragging(false) }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setIsDragging(true);
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        setIsDragging(false);
+      }}
       onDrop={(e) => {
-        e.preventDefault()
-        setIsDragging(false)
-        const file = e.dataTransfer.files?.[0]
-        if (file?.type.startsWith('image/')) {
-          handleFileChange({ target: { files: [file] } })
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file?.type.startsWith("image/")) {
+          handleFileChange({ target: { files: [file] } });
         }
       }}
       className={cn(
         "flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 transition-colors hover:bg-muted",
-        isDragging && "border-primary/50 bg-primary/5"
+        isDragging && "border-primary/50 bg-primary/5",
       )}
     >
       <input
@@ -192,7 +202,7 @@ function UploadTrigger({ onUpload }) {
         o arrastra aquí
       </p>
     </div>
-  )
+  );
 }
 ```
 
@@ -203,6 +213,7 @@ function UploadTrigger({ onUpload }) {
 Para el listado de productos con filtros y búsqueda.
 
 ### Características:
+
 - ✅ Sortable columns
 - ✅ Filterable columns
 - ✅ Search functionality
@@ -212,74 +223,82 @@ Para el listado de productos con filtros y búsqueda.
 ### Código simplificado:
 
 ```tsx
-'use client'
+"use client";
 
-import { useState, useMemo } from 'react'
-import { ChevronUp, ChevronDown, Search, Filter } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useState, useMemo } from "react";
+import { ChevronUp, ChevronDown, Search, Filter } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export type DataTableColumn<T> = {
-  key: keyof T
-  header: string
-  sortable?: boolean
-  filterable?: boolean
-  render?: (value: any, row: T) => React.ReactNode
-}
+  key: keyof T;
+  header: string;
+  sortable?: boolean;
+  filterable?: boolean;
+  render?: (value: any, row: T) => React.ReactNode;
+};
 
 type DataTableProps<T> = {
-  data: T[]
-  columns: DataTableColumn<T>[]
-  searchable?: boolean
-  itemsPerPage?: number
-}
+  data: T[];
+  columns: DataTableColumn<T>[];
+  searchable?: boolean;
+  itemsPerPage?: number;
+};
 
-export function DataTable<T>({ data, columns, searchable = true, itemsPerPage = 10 }: DataTableProps<T>) {
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
+export function DataTable<T>({
+  data,
+  columns,
+  searchable = true,
+  itemsPerPage = 10,
+}: DataTableProps<T>) {
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: "asc" | "desc";
+  } | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Filter data
   const filteredData = useMemo(() => {
-    return data.filter(row => {
-      if (!searchTerm) return true
-      return Object.values(row).some(value =>
-        String(value).toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    })
-  }, [data, searchTerm])
+    return data.filter((row) => {
+      if (!searchTerm) return true;
+      return Object.values(row).some((value) =>
+        String(value).toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+    });
+  }, [data, searchTerm]);
 
   // Sort data
   const sortedData = useMemo(() => {
-    if (!sortConfig) return filteredData
+    if (!sortConfig) return filteredData;
 
     return [...filteredData].sort((a, b) => {
-      const aValue = a[sortConfig.key]
-      const bValue = b[sortConfig.key]
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
 
-      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
-      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
-      return 0
-    })
-  }, [filteredData, sortConfig])
+      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filteredData, sortConfig]);
 
   // Paginate
   const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage
-    return sortedData.slice(start, start + itemsPerPage)
-  }, [sortedData, currentPage, itemsPerPage])
+    const start = (currentPage - 1) * itemsPerPage;
+    return sortedData.slice(start, start + itemsPerPage);
+  }, [sortedData, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage)
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
 
   const handleSort = (key: string) => {
     if (sortConfig?.key === key) {
       setSortConfig({
         key,
-        direction: sortConfig.direction === 'asc' ? 'desc' : 'asc',
-      })
+        direction: sortConfig.direction === "asc" ? "desc" : "asc",
+      });
     } else {
-      setSortConfig({ key, direction: 'asc' })
+      setSortConfig({ key, direction: "asc" });
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
@@ -310,17 +329,19 @@ export function DataTable<T>({ data, columns, searchable = true, itemsPerPage = 
                   className="px-4 py-3 text-left text-sm font-medium"
                 >
                   <button
-                    onClick={() => column.sortable && handleSort(String(column.key))}
+                    onClick={() =>
+                      column.sortable && handleSort(String(column.key))
+                    }
                     className={cn(
                       "flex items-center gap-1",
-                      column.sortable && "cursor-pointer hover:text-primary"
+                      column.sortable && "cursor-pointer hover:text-primary",
                     )}
                   >
                     {column.header}
                     {column.sortable && (
                       <span className="ml-1">
                         {sortConfig?.key === String(column.key) ? (
-                          sortConfig.direction === 'asc' ? (
+                          sortConfig.direction === "asc" ? (
                             <ChevronUp className="h-4 w-4" />
                           ) : (
                             <ChevronDown className="h-4 w-4" />
@@ -340,7 +361,9 @@ export function DataTable<T>({ data, columns, searchable = true, itemsPerPage = 
               <tr key={index} className="border-t hover:bg-muted/50">
                 {columns.map((column) => (
                   <td key={String(column.key)} className="px-4 py-3 text-sm">
-                    {column.render ? column.render(row[column.key], row) : String(row[column.key])}
+                    {column.render
+                      ? column.render(row[column.key], row)
+                      : String(row[column.key])}
                   </td>
                 ))}
               </tr>
@@ -352,18 +375,20 @@ export function DataTable<T>({ data, columns, searchable = true, itemsPerPage = 
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Mostrando {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, sortedData.length)} de {sortedData.length}
+          Mostrando {(currentPage - 1) * itemsPerPage + 1} -{" "}
+          {Math.min(currentPage * itemsPerPage, sortedData.length)} de{" "}
+          {sortedData.length}
         </p>
         <div className="flex gap-2">
           <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
             className="px-3 py-1 text-sm rounded border disabled:opacity-50"
           >
             Anterior
           </button>
           <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
             className="px-3 py-1 text-sm rounded border disabled:opacity-50"
           >
@@ -372,7 +397,7 @@ export function DataTable<T>({ data, columns, searchable = true, itemsPerPage = 
         </div>
       </div>
     </div>
-  )
+  );
 }
 ```
 
@@ -380,23 +405,23 @@ export function DataTable<T>({ data, columns, searchable = true, itemsPerPage = 
 
 ```tsx
 // app/(dashboard)/products/page.tsx
-'use client'
+"use client";
 
-import { DataTable } from '@/components/ui/data-table'
-import { useQuery } from '@tanstack/react-query'
+import { DataTable } from "@/components/ui/data-table";
+import { useQuery } from "@tanstack/react-query";
 
 export function ProductsList() {
   const { data: products } = useQuery({
-    queryKey: ['products'],
+    queryKey: ["products"],
     queryFn: getProducts,
-  })
+  });
 
   const columns = [
-    { key: 'title', header: 'Título', sortable: true, filterable: true },
-    { key: 'price', header: 'Precio', sortable: true },
-    { key: 'status', header: 'Estado', sortable: true, filterable: true },
-    { key: 'createdAt', header: 'Creado', sortable: true },
-  ]
+    { key: "title", header: "Título", sortable: true, filterable: true },
+    { key: "price", header: "Precio", sortable: true },
+    { key: "status", header: "Estado", sortable: true, filterable: true },
+    { key: "createdAt", header: "Creado", sortable: true },
+  ];
 
   return (
     <DataTable
@@ -405,7 +430,7 @@ export function ProductsList() {
       searchable
       itemsPerPage={20}
     />
-  )
+  );
 }
 ```
 
@@ -453,6 +478,7 @@ Perfumes (Categoría futura):
 ### El código UI es REUTILIZABLE:
 
 Los componentes de Magic UI funcionan para CUALQUIER categoría porque:
+
 - Los campos se generan dinámicamente desde `category.fields`
 - El upload de fotos es genérico
 - La data table filtra cualquier tipo de producto
@@ -468,4 +494,4 @@ Los componentes de Magic UI funcionan para CUALQUIER categoría porque:
 
 ---
 
-*Generado por 21st.dev Magic UI*
+_Generado por 21st.dev Magic UI_

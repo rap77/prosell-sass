@@ -62,7 +62,12 @@ describe("AppointmentDetailsModal", () => {
       price_cents: 3500000,
       currency: "USD",
       status: "active",
-      attributes: { category: "vehicle", year: 2024, make: "Toyota", model: "RAV4" },
+      attributes: {
+        category: "vehicle",
+        year: 2024,
+        make: "Toyota",
+        model: "RAV4",
+      },
       created_at: "2026-05-01T10:00:00Z",
       updated_at: "2026-05-01T10:00:00Z",
     },
@@ -88,7 +93,7 @@ describe("AppointmentDetailsModal", () => {
         appointment={mockAppointment}
         open={true}
         onOpenChange={vi.fn()}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -112,7 +117,7 @@ describe("AppointmentDetailsModal", () => {
         appointment={mockAppointment}
         open={true}
         onOpenChange={vi.fn()}
-      />
+      />,
     );
 
     expect(screen.getByText("Cargando datos del lead...")).toBeInTheDocument();
@@ -129,10 +134,12 @@ describe("AppointmentDetailsModal", () => {
         appointment={mockAppointment}
         open={true}
         onOpenChange={vi.fn()}
-      />
+      />,
     );
 
-    expect(screen.getByText("No se encontró información del lead")).toBeInTheDocument();
+    expect(
+      screen.getByText("No se encontró información del lead"),
+    ).toBeInTheDocument();
   });
 
   it("should not render when appointment is null", () => {
@@ -146,7 +153,7 @@ describe("AppointmentDetailsModal", () => {
         appointment={null}
         open={true}
         onOpenChange={vi.fn()}
-      />
+      />,
     );
 
     expect(container.firstChild).toBeNull();
@@ -163,7 +170,7 @@ describe("AppointmentDetailsModal", () => {
         appointment={mockAppointment}
         open={false}
         onOpenChange={vi.fn()}
-      />
+      />,
     );
 
     expect(container.firstChild).toBeNull();
@@ -180,7 +187,7 @@ describe("AppointmentDetailsModal", () => {
         appointment={mockAppointment}
         open={true}
         onOpenChange={vi.fn()}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -205,7 +212,7 @@ describe("AppointmentDetailsModal", () => {
         appointment={completedAppointment}
         open={true}
         onOpenChange={vi.fn()}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -230,7 +237,7 @@ describe("AppointmentDetailsModal", () => {
         appointment={cancelledAppointment}
         open={true}
         onOpenChange={vi.fn()}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -253,7 +260,7 @@ describe("AppointmentDetailsModal", () => {
         appointment={mockAppointment}
         open={true}
         onOpenChange={vi.fn()}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -272,7 +279,7 @@ describe("AppointmentDetailsModal", () => {
         appointment={mockAppointment}
         open={true}
         onOpenChange={vi.fn()}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -296,7 +303,7 @@ describe("AppointmentDetailsModal", () => {
         appointment={mockAppointment}
         open={true}
         onOpenChange={onOpenChange}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -321,7 +328,7 @@ describe("AppointmentDetailsModal", () => {
         appointment={mockAppointment}
         open={true}
         onOpenChange={vi.fn()}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -345,7 +352,7 @@ describe("AppointmentDetailsModal", () => {
         appointment={appointmentWithoutNotes}
         open={true}
         onOpenChange={vi.fn()}
-      />
+      />,
     );
 
     await waitFor(() => {

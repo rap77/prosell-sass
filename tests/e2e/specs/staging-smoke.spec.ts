@@ -28,7 +28,10 @@ test.describe("Staging Smoke Tests", () => {
       await page.waitForLoadState("load");
 
       // Take screenshot
-      await page.screenshot({ path: "test-results/dashboard.png", fullPage: true });
+      await page.screenshot({
+        path: "test-results/dashboard.png",
+        fullPage: true,
+      });
 
       // Check if dashboard content exists
       // Note: Dashboard may not be fully implemented, so we just check it loads
@@ -45,7 +48,7 @@ test.describe("Staging Smoke Tests", () => {
       await page.waitForLoadState("load");
 
       // Look for navigation elements
-      const nav = page.locator("nav").or(page.locator("[role=\"navigation\"]"));
+      const nav = page.locator("nav").or(page.locator('[role="navigation"]'));
       const isVisible = await nav.count();
 
       console.log("Navigation elements found:", isVisible);
@@ -64,7 +67,10 @@ test.describe("Staging Smoke Tests", () => {
       await page.waitForLoadState("load");
 
       // Take screenshot
-      await page.screenshot({ path: "test-results/vehicles-list.png", fullPage: true });
+      await page.screenshot({
+        path: "test-results/vehicles-list.png",
+        fullPage: true,
+      });
 
       // Check if page loads
       const title = await page.title();
@@ -80,8 +86,12 @@ test.describe("Staging Smoke Tests", () => {
       await page.waitForLoadState("load");
 
       // Look for filter elements (Phase 8 feature)
-      const filterAside = page.locator("aside").or(page.locator("[data-testid=\"filter-sidebar\"]"));
-      const searchInput = page.getByPlaceholder(/search/i).or(page.locator("input[type=\"search\"]"));
+      const filterAside = page
+        .locator("aside")
+        .or(page.locator('[data-testid="filter-sidebar"]'));
+      const searchInput = page
+        .getByPlaceholder(/search/i)
+        .or(page.locator('input[type="search"]'));
 
       const hasFilters = await filterAside.count();
       const hasSearch = await searchInput.count();
@@ -106,7 +116,9 @@ test.describe("Staging Smoke Tests", () => {
         console.log("Model filter:", hasModel > 0 ? "✓" : "✗");
         console.log("Year filter:", hasYear > 0 ? "✓" : "✗");
 
-        await page.screenshot({ path: "test-results/vehicles-filters-open.png" });
+        await page.screenshot({
+          path: "test-results/vehicles-filters-open.png",
+        });
       }
     });
 
@@ -115,8 +127,10 @@ test.describe("Staging Smoke Tests", () => {
       await page.waitForLoadState("load");
 
       // Look for data grid or table elements (Phase 8 feature)
-      const table = page.locator("table").or(page.locator("[role=\"table\"]"));
-      const grid = page.locator(".datagrid").or(page.locator("[data-testid*=\"grid\"]"));
+      const table = page.locator("table").or(page.locator('[role="table"]'));
+      const grid = page
+        .locator(".datagrid")
+        .or(page.locator('[data-testid*="grid"]'));
 
       const hasTable = await table.count();
       const hasGrid = await grid.count();
@@ -128,9 +142,9 @@ test.describe("Staging Smoke Tests", () => {
       await page.screenshot({ path: "test-results/vehicles-datagrid.png" });
 
       // Check for vehicle cards or list items
-      const vehicleCards = page.locator("[data-testid*=\"vehicle\"]").or(
-        page.locator(".vehicle-card")
-      );
+      const vehicleCards = page
+        .locator('[data-testid*="vehicle"]')
+        .or(page.locator(".vehicle-card"));
       const cardCount = await vehicleCards.count();
       console.log("Vehicle cards found:", cardCount);
     });
@@ -144,7 +158,10 @@ test.describe("Staging Smoke Tests", () => {
       await page.waitForLoadState("load");
 
       // Take screenshot
-      await page.screenshot({ path: "test-results/vehicle-new.png", fullPage: true });
+      await page.screenshot({
+        path: "test-results/vehicle-new.png",
+        fullPage: true,
+      });
 
       // Check for VIN input (Inventory MVP feature)
       const vinInput = page.getByLabel(/vin/i).or(page.locator("#vin"));
@@ -168,19 +185,21 @@ test.describe("Staging Smoke Tests", () => {
 
       const vinInput = page.getByLabel(/vin/i).or(page.locator("#vin"));
 
-      if (await vinInput.count() > 0) {
+      if ((await vinInput.count()) > 0) {
         // Fill with invalid VIN (too short)
         await vinInput.fill("123");
 
         // Try to decode or submit
         const decodeButton = page.getByRole("button", { name: /decode/i });
-        if (await decodeButton.count() > 0) {
+        if ((await decodeButton.count()) > 0) {
           await decodeButton.click();
           await page.waitForTimeout(2000);
         }
 
         // Take screenshot showing validation
-        await page.screenshot({ path: "test-results/vehicle-vin-validation.png" });
+        await page.screenshot({
+          path: "test-results/vehicle-vin-validation.png",
+        });
       }
     });
   });
@@ -193,9 +212,9 @@ test.describe("Staging Smoke Tests", () => {
       await page.waitForLoadState("load");
 
       // Phase 8: Dynamic filters by make, model, year, etc.
-      const filterControls = page.locator("[data-testid*=\"filter\"]").or(
-        page.locator(".filter")
-      );
+      const filterControls = page
+        .locator('[data-testid*="filter"]')
+        .or(page.locator(".filter"));
 
       const filterCount = await filterControls.count();
       console.log("Filter controls found:", filterCount);
@@ -221,9 +240,9 @@ test.describe("Staging Smoke Tests", () => {
       await page.waitForLoadState("load");
 
       // Phase 8: Search functionality
-      const searchInput = page.getByPlaceholder(/search/i).or(
-        page.locator("input[type=\"search\"]")
-      );
+      const searchInput = page
+        .getByPlaceholder(/search/i)
+        .or(page.locator('input[type="search"]'));
 
       const hasSearch = await searchInput.count();
 
@@ -236,7 +255,9 @@ test.describe("Staging Smoke Tests", () => {
         // Try typing in search
         await searchInput.first().fill("Honda");
         await page.waitForTimeout(1000);
-        await page.screenshot({ path: "test-results/phase8-search-filled.png" });
+        await page.screenshot({
+          path: "test-results/phase8-search-filled.png",
+        });
       } else {
         console.log("Search input found: ✗");
       }
@@ -247,18 +268,18 @@ test.describe("Staging Smoke Tests", () => {
       await page.waitForLoadState("load");
 
       // Phase 8: Infinite scroll or pagination
-      const pagination = page.locator("[role=\"navigation\"]").or(
-        page.locator(".pagination")
-      );
+      const pagination = page
+        .locator('[role="navigation"]')
+        .or(page.locator(".pagination"));
 
       const hasPagination = await pagination.count();
 
       console.log("Pagination found:", hasPagination > 0 ? "✓" : "✗");
 
       // Check for scroll indicators
-      const scrollIndicator = page.getByText(/load more/i).or(
-        page.getByText(/showing/i)
-      );
+      const scrollIndicator = page
+        .getByText(/load more/i)
+        .or(page.getByText(/showing/i));
 
       const hasScroll = await scrollIndicator.count();
       console.log("Infinite scroll indicator:", hasScroll > 0 ? "✓" : "✗");
@@ -270,7 +291,9 @@ test.describe("Staging Smoke Tests", () => {
   test.describe("API Endpoints Verification", () => {
     test("should verify API is accessible", async ({ page }) => {
       // Make a direct API call through the page
-      const response = await page.request.get("http://localhost:8000/api/v1/auth/health");
+      const response = await page.request.get(
+        "http://localhost:8000/api/v1/auth/health",
+      );
 
       expect(response.status()).toBe(200);
 
@@ -282,7 +305,9 @@ test.describe("Staging Smoke Tests", () => {
 
     test("should verify vehicles API endpoint", async ({ page }) => {
       // Try to access vehicles API (may need auth)
-      const response = await page.request.get("http://localhost:8000/api/v1/vehicles");
+      const response = await page.request.get(
+        "http://localhost:8000/api/v1/vehicles",
+      );
 
       console.log("Vehicles API status:", response.status());
 
@@ -298,10 +323,16 @@ test.describe("Staging Smoke Tests", () => {
       const AxeBuilder = (await import("@axe-core/playwright")).default;
       const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
 
-      console.log("A11y violations on login:", accessibilityScanResults.violations.length);
+      console.log(
+        "A11y violations on login:",
+        accessibilityScanResults.violations.length,
+      );
 
       if (accessibilityScanResults.violations.length > 0) {
-        console.log("Violations:", JSON.stringify(accessibilityScanResults.violations, null, 2));
+        console.log(
+          "Violations:",
+          JSON.stringify(accessibilityScanResults.violations, null, 2),
+        );
       }
 
       // Allow some violations for staging
@@ -315,10 +346,16 @@ test.describe("Staging Smoke Tests", () => {
       const AxeBuilder = (await import("@axe-core/playwright")).default;
       const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
 
-      console.log("A11y violations on vehicles:", accessibilityScanResults.violations.length);
+      console.log(
+        "A11y violations on vehicles:",
+        accessibilityScanResults.violations.length,
+      );
 
       if (accessibilityScanResults.violations.length > 0) {
-        console.log("Violations:", JSON.stringify(accessibilityScanResults.violations, null, 2));
+        console.log(
+          "Violations:",
+          JSON.stringify(accessibilityScanResults.violations, null, 2),
+        );
       }
 
       // Allow some violations for staging

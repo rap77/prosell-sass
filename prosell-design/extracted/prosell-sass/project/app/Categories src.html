@@ -1,842 +1,1557 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProSell — Categorías</title>
-<link rel="stylesheet" href="../colors_and_type.css">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<template id="__bundler_thumbnail" data-bg-color="#060D24">
-  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <radialGradient id="g" cx="50%" cy="50%" r="55%">
-        <stop offset="0%" stop-color="#1E5FD4" stop-opacity="0.22"/>
-        <stop offset="100%" stop-color="#060D24" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
-    <rect width="1200" height="800" fill="#060D24"/>
-    <rect width="1200" height="800" fill="url(#g)"/>
-    <!-- sidebar -->
-    <rect x="0" y="0" width="180" height="800" fill="#040A1A"/>
-    <g fill="rgba(77,184,255,0.10)">
-      <rect x="20" y="80" width="140" height="28" rx="6"/>
-      <rect x="20" y="118" width="140" height="28" rx="6"/>
-      <rect x="20" y="156" width="140" height="28" rx="6"/>
-      <rect x="20" y="194" width="140" height="28" rx="6"/>
-    </g>
-    <rect x="20" y="232" width="140" height="32" rx="6" fill="rgba(77,184,255,0.18)"/>
-    <rect x="158" y="232" width="3" height="32" fill="#4DB8FF"/>
-    <!-- niche cards -->
-    <g>
-      <rect x="220" y="100" width="440" height="280" rx="16" fill="#0D1B3E" stroke="rgba(77,184,255,0.30)"/>
-      <rect x="240" y="120" width="60" height="60" rx="14" fill="rgba(77,184,255,0.10)" stroke="rgba(77,184,255,0.25)"/>
-      <rect x="316" y="132" width="140" height="18" rx="4" fill="#F0F4FF"/>
-      <rect x="316" y="158" width="80" height="14" rx="100" fill="rgba(34,211,160,0.18)"/>
-      <rect x="585" y="138" width="50" height="22" rx="100" fill="#4DB8FF"/>
-      <g fill="rgba(6,13,36,0.55)" stroke="rgba(77,184,255,0.10)">
-        <rect x="240" y="200" width="120" height="34" rx="8"/>
-        <rect x="370" y="200" width="140" height="34" rx="8"/>
-        <rect x="520" y="200" width="100" height="34" rx="8"/>
-      </g>
-      <g fill="rgba(13,27,62,0.6)" stroke="rgba(77,184,255,0.10)">
-        <rect x="240" y="252" width="60" height="22" rx="6"/>
-        <rect x="306" y="252" width="60" height="22" rx="6"/>
-        <rect x="372" y="252" width="60" height="22" rx="6"/>
-        <rect x="438" y="252" width="60" height="22" rx="6"/>
-      </g>
-      <rect x="240" y="324" width="195" height="38" rx="8" fill="transparent" stroke="rgba(77,184,255,0.30)" stroke-width="1.5"/>
-      <rect x="445" y="324" width="195" height="38" rx="8" fill="transparent" stroke="rgba(77,184,255,0.30)" stroke-width="1.5"/>
-    </g>
-    <!-- inactive card -->
-    <g>
-      <rect x="700" y="100" width="440" height="280" rx="16" fill="rgba(13,27,62,0.45)" stroke="rgba(77,184,255,0.10)"/>
-      <rect x="720" y="120" width="60" height="60" rx="14" fill="rgba(138,155,191,0.08)" stroke="rgba(138,155,191,0.15)"/>
-      <rect x="796" y="132" width="140" height="18" rx="4" fill="rgba(138,155,191,0.6)"/>
-      <rect x="796" y="158" width="80" height="14" rx="100" fill="rgba(138,155,191,0.12)"/>
-      <rect x="1065" y="138" width="50" height="22" rx="100" fill="rgba(61,79,114,0.6)"/>
-      <rect x="720" y="324" width="400" height="38" rx="8" fill="#4DB8FF"/>
-    </g>
-    <!-- add niche dashed -->
-    <rect x="220" y="400" width="440" height="180" rx="16" fill="rgba(77,184,255,0.02)" stroke="rgba(77,184,255,0.30)" stroke-width="2" stroke-dasharray="8 6"/>
-    <circle cx="440" cy="465" r="28" fill="rgba(77,184,255,0.10)" stroke="rgba(77,184,255,0.25)"/>
-    <line x1="426" y1="465" x2="454" y2="465" stroke="#4DB8FF" stroke-width="3" stroke-linecap="round"/>
-    <line x1="440" y1="451" x2="440" y2="479" stroke="#4DB8FF" stroke-width="3" stroke-linecap="round"/>
-    <rect x="370" y="510" width="140" height="14" rx="4" fill="rgba(138,155,191,0.65)"/>
-    <!-- table card -->
-    <rect x="700" y="400" width="440" height="340" rx="12" fill="#0D1B3E" stroke="rgba(77,184,255,0.10)"/>
-    <rect x="700" y="440" width="440" height="40" fill="rgba(6,13,36,0.4)"/>
-    <g fill="rgba(240,244,255,0.10)">
-      <rect x="720" y="496" width="220" height="10" rx="3"/>
-      <rect x="720" y="528" width="220" height="10" rx="3"/>
-      <rect x="720" y="560" width="220" height="10" rx="3"/>
-      <rect x="720" y="592" width="220" height="10" rx="3"/>
-      <rect x="720" y="624" width="220" height="10" rx="3"/>
-    </g>
-    <rect x="720" y="690" width="400" height="38" rx="8" fill="transparent" stroke="rgba(77,184,255,0.30)" stroke-width="1.5" stroke-dasharray="6 4"/>
-  </svg>
-</template>
-<style>
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body {
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-}
-a { color: inherit; text-decoration: none; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ProSell — Categorías</title>
+    <link rel="stylesheet" href="../colors_and_type.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <template id="__bundler_thumbnail" data-bg-color="#060D24">
+      <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="g" cx="50%" cy="50%" r="55%">
+            <stop offset="0%" stop-color="#1E5FD4" stop-opacity="0.22" />
+            <stop offset="100%" stop-color="#060D24" stop-opacity="0" />
+          </radialGradient>
+        </defs>
+        <rect width="1200" height="800" fill="#060D24" />
+        <rect width="1200" height="800" fill="url(#g)" />
+        <!-- sidebar -->
+        <rect x="0" y="0" width="180" height="800" fill="#040A1A" />
+        <g fill="rgba(77,184,255,0.10)">
+          <rect x="20" y="80" width="140" height="28" rx="6" />
+          <rect x="20" y="118" width="140" height="28" rx="6" />
+          <rect x="20" y="156" width="140" height="28" rx="6" />
+          <rect x="20" y="194" width="140" height="28" rx="6" />
+        </g>
+        <rect
+          x="20"
+          y="232"
+          width="140"
+          height="32"
+          rx="6"
+          fill="rgba(77,184,255,0.18)"
+        />
+        <rect x="158" y="232" width="3" height="32" fill="#4DB8FF" />
+        <!-- niche cards -->
+        <g>
+          <rect
+            x="220"
+            y="100"
+            width="440"
+            height="280"
+            rx="16"
+            fill="#0D1B3E"
+            stroke="rgba(77,184,255,0.30)"
+          />
+          <rect
+            x="240"
+            y="120"
+            width="60"
+            height="60"
+            rx="14"
+            fill="rgba(77,184,255,0.10)"
+            stroke="rgba(77,184,255,0.25)"
+          />
+          <rect x="316" y="132" width="140" height="18" rx="4" fill="#F0F4FF" />
+          <rect
+            x="316"
+            y="158"
+            width="80"
+            height="14"
+            rx="100"
+            fill="rgba(34,211,160,0.18)"
+          />
+          <rect
+            x="585"
+            y="138"
+            width="50"
+            height="22"
+            rx="100"
+            fill="#4DB8FF"
+          />
+          <g fill="rgba(6,13,36,0.55)" stroke="rgba(77,184,255,0.10)">
+            <rect x="240" y="200" width="120" height="34" rx="8" />
+            <rect x="370" y="200" width="140" height="34" rx="8" />
+            <rect x="520" y="200" width="100" height="34" rx="8" />
+          </g>
+          <g fill="rgba(13,27,62,0.6)" stroke="rgba(77,184,255,0.10)">
+            <rect x="240" y="252" width="60" height="22" rx="6" />
+            <rect x="306" y="252" width="60" height="22" rx="6" />
+            <rect x="372" y="252" width="60" height="22" rx="6" />
+            <rect x="438" y="252" width="60" height="22" rx="6" />
+          </g>
+          <rect
+            x="240"
+            y="324"
+            width="195"
+            height="38"
+            rx="8"
+            fill="transparent"
+            stroke="rgba(77,184,255,0.30)"
+            stroke-width="1.5"
+          />
+          <rect
+            x="445"
+            y="324"
+            width="195"
+            height="38"
+            rx="8"
+            fill="transparent"
+            stroke="rgba(77,184,255,0.30)"
+            stroke-width="1.5"
+          />
+        </g>
+        <!-- inactive card -->
+        <g>
+          <rect
+            x="700"
+            y="100"
+            width="440"
+            height="280"
+            rx="16"
+            fill="rgba(13,27,62,0.45)"
+            stroke="rgba(77,184,255,0.10)"
+          />
+          <rect
+            x="720"
+            y="120"
+            width="60"
+            height="60"
+            rx="14"
+            fill="rgba(138,155,191,0.08)"
+            stroke="rgba(138,155,191,0.15)"
+          />
+          <rect
+            x="796"
+            y="132"
+            width="140"
+            height="18"
+            rx="4"
+            fill="rgba(138,155,191,0.6)"
+          />
+          <rect
+            x="796"
+            y="158"
+            width="80"
+            height="14"
+            rx="100"
+            fill="rgba(138,155,191,0.12)"
+          />
+          <rect
+            x="1065"
+            y="138"
+            width="50"
+            height="22"
+            rx="100"
+            fill="rgba(61,79,114,0.6)"
+          />
+          <rect x="720" y="324" width="400" height="38" rx="8" fill="#4DB8FF" />
+        </g>
+        <!-- add niche dashed -->
+        <rect
+          x="220"
+          y="400"
+          width="440"
+          height="180"
+          rx="16"
+          fill="rgba(77,184,255,0.02)"
+          stroke="rgba(77,184,255,0.30)"
+          stroke-width="2"
+          stroke-dasharray="8 6"
+        />
+        <circle
+          cx="440"
+          cy="465"
+          r="28"
+          fill="rgba(77,184,255,0.10)"
+          stroke="rgba(77,184,255,0.25)"
+        />
+        <line
+          x1="426"
+          y1="465"
+          x2="454"
+          y2="465"
+          stroke="#4DB8FF"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
+        <line
+          x1="440"
+          y1="451"
+          x2="440"
+          y2="479"
+          stroke="#4DB8FF"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
+        <rect
+          x="370"
+          y="510"
+          width="140"
+          height="14"
+          rx="4"
+          fill="rgba(138,155,191,0.65)"
+        />
+        <!-- table card -->
+        <rect
+          x="700"
+          y="400"
+          width="440"
+          height="340"
+          rx="12"
+          fill="#0D1B3E"
+          stroke="rgba(77,184,255,0.10)"
+        />
+        <rect
+          x="700"
+          y="440"
+          width="440"
+          height="40"
+          fill="rgba(6,13,36,0.4)"
+        />
+        <g fill="rgba(240,244,255,0.10)">
+          <rect x="720" y="496" width="220" height="10" rx="3" />
+          <rect x="720" y="528" width="220" height="10" rx="3" />
+          <rect x="720" y="560" width="220" height="10" rx="3" />
+          <rect x="720" y="592" width="220" height="10" rx="3" />
+          <rect x="720" y="624" width="220" height="10" rx="3" />
+        </g>
+        <rect
+          x="720"
+          y="690"
+          width="400"
+          height="38"
+          rx="8"
+          fill="transparent"
+          stroke="rgba(77,184,255,0.30)"
+          stroke-width="1.5"
+          stroke-dasharray="6 4"
+        />
+      </svg>
+    </template>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg-base);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
 
-/* ===== App shell ===== */
-.app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+      /* ===== App shell ===== */
+      .app {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        min-height: 100vh;
+      }
 
-/* ===== Sidebar ===== */
-.sidebar {
-  background: #040A1A;
-  border-right: 1px solid rgba(77,184,255,0.06);
-  display: flex; flex-direction: column;
-  padding: 20px 0 16px;
-  position: sticky; top: 0;
-  height: 100vh;
-}
-.sb-top { padding: 0 16px 16px; border-bottom: 1px solid rgba(77,184,255,0.06); display: flex; flex-direction: column; gap: 14px; }
-.sb-logo { display: inline-flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; color: var(--text-primary); }
-.sb-logo img { height: 26px; width: auto; }
-.workspace { display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 10px; background: rgba(77,184,255,0.06); border: 1px solid var(--border-subtle); border-radius: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
-.workspace span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
-.workspace [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
-.sb-nav { flex: 1; display: flex; flex-direction: column; padding: 16px 8px; gap: 2px; }
-.sb-nav .group-divider { height: 1px; background: rgba(77,184,255,0.06); margin: 12px 8px; }
-.nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 8px; color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: background 180ms, color 180ms; }
-.nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
-.nav-item [data-lucide] { width: 18px; height: 18px; stroke-width: 2; flex-shrink: 0; }
-.nav-item .label { flex: 1; }
-.nav-item .badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 100px; background: rgba(77,184,255,0.14); color: var(--cyan); }
-.nav-item.active { background: rgba(77,184,255,0.08); color: var(--text-primary); font-weight: 600; border-right: 2px solid var(--cyan); border-radius: 8px 0 0 8px; }
-.nav-item.active [data-lucide] { color: var(--cyan); }
-.sb-user { display: flex; align-items: center; gap: 10px; margin: 0 12px; padding: 10px 12px; background: rgba(13,27,62,0.6); border: 1px solid var(--border-subtle); border-radius: 10px; cursor: pointer; }
-.sb-user .av { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--bg-base); background: linear-gradient(135deg, #4DB8FF, #1E5FD4); flex-shrink: 0; }
-.sb-user .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.sb-user .meta b { font-size: 13px; font-weight: 600; }
-.sb-user .plan { display: inline-flex; align-self: flex-start; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 100px; background: rgba(77,184,255,0.14); color: var(--cyan); letter-spacing: 0.04em; text-transform: uppercase; }
-.sb-user [data-lucide].chev { width: 14px; height: 14px; color: var(--text-secondary); }
+      /* ===== Sidebar ===== */
+      .sidebar {
+        background: #040a1a;
+        border-right: 1px solid rgba(77, 184, 255, 0.06);
+        display: flex;
+        flex-direction: column;
+        padding: 20px 0 16px;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+      }
+      .sb-top {
+        padding: 0 16px 16px;
+        border-bottom: 1px solid rgba(77, 184, 255, 0.06);
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .sb-logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+      .sb-logo img {
+        height: 26px;
+        width: auto;
+      }
+      .workspace {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        padding: 6px 10px;
+        background: rgba(77, 184, 255, 0.06);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        cursor: pointer;
+      }
+      .workspace span {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-align: left;
+      }
+      .workspace [data-lucide] {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2;
+      }
+      .sb-nav {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 16px 8px;
+        gap: 2px;
+      }
+      .sb-nav .group-divider {
+        height: 1px;
+        background: rgba(77, 184, 255, 0.06);
+        margin: 12px 8px;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        color: var(--text-secondary);
+        font-size: 14px;
+        font-weight: 500;
+        transition:
+          background 180ms,
+          color 180ms;
+      }
+      .nav-item:hover {
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text-primary);
+      }
+      .nav-item [data-lucide] {
+        width: 18px;
+        height: 18px;
+        stroke-width: 2;
+        flex-shrink: 0;
+      }
+      .nav-item .label {
+        flex: 1;
+      }
+      .nav-item .badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 100px;
+        background: rgba(77, 184, 255, 0.14);
+        color: var(--cyan);
+      }
+      .nav-item.active {
+        background: rgba(77, 184, 255, 0.08);
+        color: var(--text-primary);
+        font-weight: 600;
+        border-right: 2px solid var(--cyan);
+        border-radius: 8px 0 0 8px;
+      }
+      .nav-item.active [data-lucide] {
+        color: var(--cyan);
+      }
+      .sb-user {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 12px;
+        padding: 10px 12px;
+        background: rgba(13, 27, 62, 0.6);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .sb-user .av {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--bg-base);
+        background: linear-gradient(135deg, #4db8ff, #1e5fd4);
+        flex-shrink: 0;
+      }
+      .sb-user .meta {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .sb-user .meta b {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .sb-user .plan {
+        display: inline-flex;
+        align-self: flex-start;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 100px;
+        background: rgba(77, 184, 255, 0.14);
+        color: var(--cyan);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .sb-user [data-lucide].chev {
+        width: 14px;
+        height: 14px;
+        color: var(--text-secondary);
+      }
 
-/* ===== Main ===== */
-.main { padding: 32px; max-width: calc(100vw - 240px); }
+      /* ===== Main ===== */
+      .main {
+        padding: 32px;
+        max-width: calc(100vw - 240px);
+      }
 
-.top {
-  display: flex; align-items: flex-end; justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 26px;
-}
-.top h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; margin: 0 0 4px; }
-.top p { font-size: 13px; color: var(--text-secondary); margin: 0; }
-.btn-cta {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: var(--cyan);
-  color: var(--bg-base);
-  border: 0;
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 180ms;
-}
-.btn-cta:hover { background: var(--cyan-hover); box-shadow: 0 6px 20px rgba(77,184,255,0.3); transform: translateY(-1px); }
-.btn-cta [data-lucide] { width: 14px; height: 14px; stroke-width: 2.5; }
+      .top {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 26px;
+      }
+      .top h1 {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.015em;
+        margin: 0 0 4px;
+      }
+      .top p {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin: 0;
+      }
+      .btn-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--cyan);
+        color: var(--bg-base);
+        border: 0;
+        height: 38px;
+        padding: 0 16px;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 13.5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 180ms;
+      }
+      .btn-cta:hover {
+        background: var(--cyan-hover);
+        box-shadow: 0 6px 20px rgba(77, 184, 255, 0.3);
+        transform: translateY(-1px);
+      }
+      .btn-cta [data-lucide] {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2.5;
+      }
 
-/* ===== Niches grid ===== */
-.niches {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-bottom: 28px;
-}
+      /* ===== Niches grid ===== */
+      .niches {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 28px;
+      }
 
-.niche {
-  background: var(--bg-surface);
-  border: 1px solid rgba(77,184,255,0.20);
-  border-radius: 16px;
-  padding: 24px;
-  display: flex; flex-direction: column;
-  gap: 18px;
-  transition: border-color 200ms, transform 200ms;
-  position: relative;
-}
-.niche.active:hover { border-color: rgba(77,184,255,0.32); transform: translateY(-1px); }
-.niche.inactive {
-  border-color: rgba(77,184,255,0.08);
-  background: rgba(13,27,62,0.45);
-}
-.niche.inactive:hover { border-color: rgba(77,184,255,0.15); }
+      .niche {
+        background: var(--bg-surface);
+        border: 1px solid rgba(77, 184, 255, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        transition:
+          border-color 200ms,
+          transform 200ms;
+        position: relative;
+      }
+      .niche.active:hover {
+        border-color: rgba(77, 184, 255, 0.32);
+        transform: translateY(-1px);
+      }
+      .niche.inactive {
+        border-color: rgba(77, 184, 255, 0.08);
+        background: rgba(13, 27, 62, 0.45);
+      }
+      .niche.inactive:hover {
+        border-color: rgba(77, 184, 255, 0.15);
+      }
 
-.niche-head {
-  display: flex; align-items: center;
-  gap: 14px;
-}
-.niche-ico {
-  width: 52px; height: 52px;
-  border-radius: 12px;
-  background: rgba(77,184,255,0.10);
-  border: 1px solid rgba(77,184,255,0.20);
-  color: var(--cyan);
-  display: inline-flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.niche-ico [data-lucide] { width: 26px; height: 26px; stroke-width: 1.75; }
-.niche.inactive .niche-ico {
-  background: rgba(138,155,191,0.06);
-  border-color: rgba(138,155,191,0.12);
-  color: var(--text-disabled);
-}
-.niche-title {
-  flex: 1;
-  display: flex; flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-.niche-title h2 {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.015em;
-  margin: 0;
-  color: var(--text-primary);
-}
-.niche.inactive .niche-title h2 { color: var(--text-secondary); }
+      .niche-head {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .niche-ico {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        background: rgba(77, 184, 255, 0.1);
+        border: 1px solid rgba(77, 184, 255, 0.2);
+        color: var(--cyan);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .niche-ico [data-lucide] {
+        width: 26px;
+        height: 26px;
+        stroke-width: 1.75;
+      }
+      .niche.inactive .niche-ico {
+        background: rgba(138, 155, 191, 0.06);
+        border-color: rgba(138, 155, 191, 0.12);
+        color: var(--text-disabled);
+      }
+      .niche-title {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+      }
+      .niche-title h2 {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.015em;
+        margin: 0;
+        color: var(--text-primary);
+      }
+      .niche.inactive .niche-title h2 {
+        color: var(--text-secondary);
+      }
 
-.niche-status {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 100px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  align-self: flex-start;
-}
-.niche-status.on { background: rgba(34,211,160,0.14); color: var(--success); }
-.niche-status.on .d { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-.niche-status.off { background: rgba(138,155,191,0.10); color: var(--text-secondary); }
-.niche-status.off .d { width: 5px; height: 5px; border-radius: 50%; background: var(--text-disabled); }
+      .niche-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 100px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        align-self: flex-start;
+      }
+      .niche-status.on {
+        background: rgba(34, 211, 160, 0.14);
+        color: var(--success);
+      }
+      .niche-status.on .d {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .niche-status.off {
+        background: rgba(138, 155, 191, 0.1);
+        color: var(--text-secondary);
+      }
+      .niche-status.off .d {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--text-disabled);
+      }
 
-.niche-toggle {
-  margin-left: auto;
-  flex-shrink: 0;
-}
+      .niche-toggle {
+        margin-left: auto;
+        flex-shrink: 0;
+      }
 
-/* Switch */
-.switch {
-  position: relative;
-  width: 38px; height: 22px;
-  border-radius: 100px;
-  background: rgba(61,79,114,0.6);
-  border: 1px solid var(--border-subtle);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 180ms, border-color 180ms;
-}
-.switch::after {
-  content: "";
-  position: absolute;
-  top: 50%; left: 2px;
-  transform: translateY(-50%);
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  background: var(--text-secondary);
-  transition: all 200ms var(--ease-out);
-}
-.switch.on { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(77,184,255,0.35); }
-.switch.on::after { left: 18px; background: var(--bg-base); }
+      /* Switch */
+      .switch {
+        position: relative;
+        width: 38px;
+        height: 22px;
+        border-radius: 100px;
+        background: rgba(61, 79, 114, 0.6);
+        border: 1px solid var(--border-subtle);
+        cursor: pointer;
+        flex-shrink: 0;
+        transition:
+          background 180ms,
+          border-color 180ms;
+      }
+      .switch::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 2px;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--text-secondary);
+        transition: all 200ms var(--ease-out);
+      }
+      .switch.on {
+        background: var(--cyan);
+        border-color: var(--cyan);
+        box-shadow: 0 0 12px rgba(77, 184, 255, 0.35);
+      }
+      .switch.on::after {
+        left: 18px;
+        background: var(--bg-base);
+      }
 
-/* Stats row */
-.niche-stats {
-  display: flex; flex-wrap: wrap;
-  gap: 8px;
-}
-.stat-chip {
-  display: inline-flex; align-items: baseline; gap: 5px;
-  padding: 6px 12px;
-  background: rgba(6,13,36,0.55);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.stat-chip b {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  letter-spacing: -0.01em;
-}
-.niche.inactive .stat-chip { color: var(--text-disabled); }
-.niche.inactive .stat-chip b { color: var(--text-disabled); }
+      /* Stats row */
+      .niche-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .stat-chip {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 5px;
+        padding: 6px 12px;
+        background: rgba(6, 13, 36, 0.55);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-variant-numeric: tabular-nums;
+      }
+      .stat-chip b {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        letter-spacing: -0.01em;
+      }
+      .niche.inactive .stat-chip {
+        color: var(--text-disabled);
+      }
+      .niche.inactive .stat-chip b {
+        color: var(--text-disabled);
+      }
 
-/* Sub-blocks */
-.niche-block {
-  display: flex; flex-direction: column;
-  gap: 8px;
-}
-.niche-block .lbl {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-disabled);
-}
-.fields-row { display: flex; flex-wrap: wrap; gap: 6px; }
-.field-tag {
-  display: inline-flex; align-items: center;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  padding: 4px 9px;
-  background: rgba(13,27,62,0.6);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-}
-.fields-more {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--cyan);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  padding: 4px 4px;
-}
-.fields-more:hover { color: var(--cyan-hover); }
+      /* Sub-blocks */
+      .niche-block {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .niche-block .lbl {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text-disabled);
+      }
+      .fields-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .field-tag {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11.5px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        padding: 4px 9px;
+        background: rgba(13, 27, 62, 0.6);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+      }
+      .fields-more {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--cyan);
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        padding: 4px 4px;
+      }
+      .fields-more:hover {
+        color: var(--cyan-hover);
+      }
 
-/* Channels row */
-.channels-row {
-  display: flex; align-items: center;
-  gap: 10px;
-}
-.chan-logos { display: inline-flex; }
-.chan-logos .chip {
-  width: 24px; height: 24px;
-  border-radius: 6px;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 800;
-  color: #fff;
-  margin-left: -6px;
-  border: 1.5px solid var(--bg-surface);
-  letter-spacing: -0.02em;
-}
-.chan-logos .chip:first-child { margin-left: 0; }
-.chan-logos .chip.fb { background: #1877F2; }
-.chan-logos .chip.at { background: #FF6600; font-size: 9px; }
-.chan-logos .chip.ml { background: #FFE600; color: #1E1E1E; font-size: 9px; }
-.chan-logos .chip.web { background: var(--navy); color: var(--cyan); }
-.chan-logos .chip.web [data-lucide] { width: 12px; height: 12px; stroke-width: 2; }
-.chan-meta {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
+      /* Channels row */
+      .channels-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .chan-logos {
+        display: inline-flex;
+      }
+      .chan-logos .chip {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 800;
+        color: #fff;
+        margin-left: -6px;
+        border: 1.5px solid var(--bg-surface);
+        letter-spacing: -0.02em;
+      }
+      .chan-logos .chip:first-child {
+        margin-left: 0;
+      }
+      .chan-logos .chip.fb {
+        background: #1877f2;
+      }
+      .chan-logos .chip.at {
+        background: #ff6600;
+        font-size: 9px;
+      }
+      .chan-logos .chip.ml {
+        background: #ffe600;
+        color: #1e1e1e;
+        font-size: 9px;
+      }
+      .chan-logos .chip.web {
+        background: var(--navy);
+        color: var(--cyan);
+      }
+      .chan-logos .chip.web [data-lucide] {
+        width: 12px;
+        height: 12px;
+        stroke-width: 2;
+      }
+      .chan-meta {
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
 
-/* Action row */
-.niche-actions {
-  display: flex; gap: 8px;
-  padding-top: 6px;
-  border-top: 1px solid var(--border-subtle);
-}
-.btn-ghost {
-  display: inline-flex; align-items: center; gap: 8px;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--border-default);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 180ms;
-  flex: 1;
-  justify-content: center;
-}
-.btn-ghost:hover { border-color: var(--cyan); background: rgba(77,184,255,0.04); }
-.btn-ghost [data-lucide] { width: 13px; height: 13px; stroke-width: 2.5; }
+      /* Action row */
+      .niche-actions {
+        display: flex;
+        gap: 8px;
+        padding-top: 6px;
+        border-top: 1px solid var(--border-subtle);
+      }
+      .btn-ghost {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 36px;
+        padding: 0 14px;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text-primary);
+        border: 1px solid var(--border-default);
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 180ms;
+        flex: 1;
+        justify-content: center;
+      }
+      .btn-ghost:hover {
+        border-color: var(--cyan);
+        background: rgba(77, 184, 255, 0.04);
+      }
+      .btn-ghost [data-lucide] {
+        width: 13px;
+        height: 13px;
+        stroke-width: 2.5;
+      }
 
-.btn-activate {
-  width: 100%;
-  height: 40px;
-  background: var(--cyan);
-  color: var(--bg-base);
-  border: 0;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  transition: all 180ms;
-}
-.btn-activate:hover { background: var(--cyan-hover); box-shadow: 0 6px 20px rgba(77,184,255,0.3); transform: translateY(-1px); }
-.btn-activate [data-lucide] { width: 14px; height: 14px; stroke-width: 2.5; }
+      .btn-activate {
+        width: 100%;
+        height: 40px;
+        background: var(--cyan);
+        color: var(--bg-base);
+        border: 0;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 13.5px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 180ms;
+      }
+      .btn-activate:hover {
+        background: var(--cyan-hover);
+        box-shadow: 0 6px 20px rgba(77, 184, 255, 0.3);
+        transform: translateY(-1px);
+      }
+      .btn-activate [data-lucide] {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2.5;
+      }
 
-.niche.inactive { gap: 16px; }
-.niche.inactive .niche-stats { opacity: 0.7; }
-.niche.inactive .channels-row,
-.niche.inactive .niche-block { opacity: 0.5; }
+      .niche.inactive {
+        gap: 16px;
+      }
+      .niche.inactive .niche-stats {
+        opacity: 0.7;
+      }
+      .niche.inactive .channels-row,
+      .niche.inactive .niche-block {
+        opacity: 0.5;
+      }
 
-/* Add niche card */
-.niche-add {
-  border: 2px dashed rgba(77,184,255,0.15);
-  border-radius: 16px;
-  padding: 24px;
-  background: rgba(77,184,255,0.02);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 10px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 200ms var(--ease-out);
-  min-height: 200px;
-}
-.niche-add:hover {
-  border-color: rgba(77,184,255,0.35);
-  background: rgba(77,184,255,0.05);
-  transform: translateY(-1px);
-}
-.niche-add .ico {
-  width: 56px; height: 56px;
-  border-radius: 14px;
-  background: rgba(77,184,255,0.10);
-  border: 1px solid rgba(77,184,255,0.20);
-  color: var(--cyan);
-  display: inline-flex; align-items: center; justify-content: center;
-}
-.niche-add .ico [data-lucide] { width: 28px; height: 28px; stroke-width: 1.75; }
-.niche-add .ttl {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: -0.005em;
-}
-.niche-add:hover .ttl { color: var(--text-primary); }
-.niche-add .sub {
-  font-size: 12px;
-  color: var(--text-disabled);
-  display: inline-flex; align-items: center;
-  flex-wrap: wrap; justify-content: center;
-  gap: 4px 10px;
-}
-.niche-add .sub span { display: inline-flex; align-items: center; gap: 4px; }
-.niche-add .sub [data-lucide] { width: 12px; height: 12px; stroke-width: 2; color: var(--text-secondary); }
-.niche-add .sub b { font-weight: 500; color: var(--text-secondary); }
+      /* Add niche card */
+      .niche-add {
+        border: 2px dashed rgba(77, 184, 255, 0.15);
+        border-radius: 16px;
+        padding: 24px;
+        background: rgba(77, 184, 255, 0.02);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 200ms var(--ease-out);
+        min-height: 200px;
+      }
+      .niche-add:hover {
+        border-color: rgba(77, 184, 255, 0.35);
+        background: rgba(77, 184, 255, 0.05);
+        transform: translateY(-1px);
+      }
+      .niche-add .ico {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: rgba(77, 184, 255, 0.1);
+        border: 1px solid rgba(77, 184, 255, 0.2);
+        color: var(--cyan);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .niche-add .ico [data-lucide] {
+        width: 28px;
+        height: 28px;
+        stroke-width: 1.75;
+      }
+      .niche-add .ttl {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        letter-spacing: -0.005em;
+      }
+      .niche-add:hover .ttl {
+        color: var(--text-primary);
+      }
+      .niche-add .sub {
+        font-size: 12px;
+        color: var(--text-disabled);
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 4px 10px;
+      }
+      .niche-add .sub span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .niche-add .sub [data-lucide] {
+        width: 12px;
+        height: 12px;
+        stroke-width: 2;
+        color: var(--text-secondary);
+      }
+      .niche-add .sub b {
+        font-weight: 500;
+        color: var(--text-secondary);
+      }
 
-/* ===== Custom fields card ===== */
-.card {
-  background: var(--bg-surface);
-  border: 1px solid rgba(77,184,255,0.10);
-  border-radius: 12px;
-  overflow: hidden;
-}
-.card-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-.card-title {
-  display: flex; flex-direction: column;
-  gap: 2px;
-}
-.card-title h3 {
-  font-size: 15px;
-  font-weight: 600;
-  margin: 0;
-  letter-spacing: -0.005em;
-}
-.card-title .ctx {
-  font-size: 11.5px;
-  color: var(--text-disabled);
-  font-family: var(--font-mono);
-  letter-spacing: -0.01em;
-}
-.card-title .ctx b { color: var(--cyan); font-family: var(--font-sans); font-weight: 600; letter-spacing: 0; }
-.card-link {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--cyan);
-  display: inline-flex; align-items: center; gap: 4px;
-  cursor: pointer;
-}
-.card-link:hover { color: var(--cyan-hover); }
-.card-link [data-lucide] { width: 12px; height: 12px; stroke-width: 2; }
+      /* ===== Custom fields card ===== */
+      .card {
+        background: var(--bg-surface);
+        border: 1px solid rgba(77, 184, 255, 0.1);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .card-title {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .card-title h3 {
+        font-size: 15px;
+        font-weight: 600;
+        margin: 0;
+        letter-spacing: -0.005em;
+      }
+      .card-title .ctx {
+        font-size: 11.5px;
+        color: var(--text-disabled);
+        font-family: var(--font-mono);
+        letter-spacing: -0.01em;
+      }
+      .card-title .ctx b {
+        color: var(--cyan);
+        font-family: var(--font-sans);
+        font-weight: 600;
+        letter-spacing: 0;
+      }
+      .card-link {
+        font-size: 12.5px;
+        font-weight: 500;
+        color: var(--cyan);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+      }
+      .card-link:hover {
+        color: var(--cyan-hover);
+      }
+      .card-link [data-lucide] {
+        width: 12px;
+        height: 12px;
+        stroke-width: 2;
+      }
 
-/* Table */
-.tbl { width: 100%; border-collapse: separate; border-spacing: 0; }
-.tbl thead th {
-  text-align: left;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-disabled);
-  padding: 12px 14px;
-  background: rgba(6,13,36,0.4);
-  border-bottom: 1px solid var(--border-subtle);
-}
-.tbl thead th:first-child { padding-left: 20px; }
-.tbl thead th:last-child { padding-right: 20px; text-align: right; }
-.tbl tbody td {
-  padding: 12px 14px;
-  border-bottom: 1px solid rgba(77,184,255,0.06);
-  font-size: 13px;
-  color: var(--text-primary);
-  vertical-align: middle;
-}
-.tbl tbody td:first-child { padding-left: 20px; }
-.tbl tbody td:last-child { padding-right: 20px; text-align: right; }
-.tbl tbody tr { transition: background 180ms; }
-.tbl tbody tr:hover { background: rgba(77,184,255,0.04); }
+      /* Table */
+      .tbl {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      .tbl thead th {
+        text-align: left;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-disabled);
+        padding: 12px 14px;
+        background: rgba(6, 13, 36, 0.4);
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .tbl thead th:first-child {
+        padding-left: 20px;
+      }
+      .tbl thead th:last-child {
+        padding-right: 20px;
+        text-align: right;
+      }
+      .tbl tbody td {
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(77, 184, 255, 0.06);
+        font-size: 13px;
+        color: var(--text-primary);
+        vertical-align: middle;
+      }
+      .tbl tbody td:first-child {
+        padding-left: 20px;
+      }
+      .tbl tbody td:last-child {
+        padding-right: 20px;
+        text-align: right;
+      }
+      .tbl tbody tr {
+        transition: background 180ms;
+      }
+      .tbl tbody tr:hover {
+        background: rgba(77, 184, 255, 0.04);
+      }
 
-.field-name {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 13px;
-  font-weight: 500;
-}
-.field-name [data-lucide] {
-  width: 14px; height: 14px;
-  color: var(--text-disabled);
-  stroke-width: 2;
-}
-.type-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 100px;
-  background: rgba(77,184,255,0.10);
-  color: var(--cyan);
-  letter-spacing: -0.005em;
-  font-family: var(--font-mono);
-}
-.type-chip.num { background: rgba(34,211,160,0.10); color: var(--success); }
-.type-chip.bool { background: rgba(245,166,35,0.10); color: var(--warning); }
+      .field-name {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .field-name [data-lucide] {
+        width: 14px;
+        height: 14px;
+        color: var(--text-disabled);
+        stroke-width: 2;
+      }
+      .type-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 100px;
+        background: rgba(77, 184, 255, 0.1);
+        color: var(--cyan);
+        letter-spacing: -0.005em;
+        font-family: var(--font-mono);
+      }
+      .type-chip.num {
+        background: rgba(34, 211, 160, 0.1);
+        color: var(--success);
+      }
+      .type-chip.bool {
+        background: rgba(245, 166, 35, 0.1);
+        color: var(--warning);
+      }
 
-.flag {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-.flag.yes { color: var(--success); }
-.flag.no  { color: var(--text-disabled); }
-.flag [data-lucide] { width: 13px; height: 13px; stroke-width: 2.5; }
+      .flag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+      .flag.yes {
+        color: var(--success);
+      }
+      .flag.no {
+        color: var(--text-disabled);
+      }
+      .flag [data-lucide] {
+        width: 13px;
+        height: 13px;
+        stroke-width: 2.5;
+      }
 
-.row-actions {
-  display: inline-flex; gap: 4px;
-  justify-content: flex-end;
-}
-.icon-btn {
-  width: 28px; height: 28px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-secondary);
-  display: inline-flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  transition: all 150ms;
-}
-.icon-btn:hover {
-  border-color: rgba(77,184,255,0.20);
-  background: rgba(77,184,255,0.05);
-  color: var(--cyan);
-}
-.icon-btn.danger:hover {
-  border-color: rgba(240,68,56,0.30);
-  background: rgba(240,68,56,0.06);
-  color: var(--error);
-}
-.icon-btn [data-lucide] { width: 13px; height: 13px; stroke-width: 2; }
+      .row-actions {
+        display: inline-flex;
+        gap: 4px;
+        justify-content: flex-end;
+      }
+      .icon-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-secondary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 150ms;
+      }
+      .icon-btn:hover {
+        border-color: rgba(77, 184, 255, 0.2);
+        background: rgba(77, 184, 255, 0.05);
+        color: var(--cyan);
+      }
+      .icon-btn.danger:hover {
+        border-color: rgba(240, 68, 56, 0.3);
+        background: rgba(240, 68, 56, 0.06);
+        color: var(--error);
+      }
+      .icon-btn [data-lucide] {
+        width: 13px;
+        height: 13px;
+        stroke-width: 2;
+      }
 
-/* Add field row in table foot */
-.tbl-add {
-  padding: 12px 20px;
-  border-top: 1px solid var(--border-subtle);
-}
-.btn-add-dashed {
-  width: 100%;
-  height: 40px;
-  background: transparent;
-  border: 1.5px dashed rgba(77,184,255,0.20);
-  border-radius: 8px;
-  color: var(--cyan);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  transition: all 180ms;
-}
-.btn-add-dashed:hover {
-  border-color: var(--cyan);
-  background: rgba(77,184,255,0.05);
-}
-.btn-add-dashed [data-lucide] { width: 14px; height: 14px; stroke-width: 2.5; }
+      /* Add field row in table foot */
+      .tbl-add {
+        padding: 12px 20px;
+        border-top: 1px solid var(--border-subtle);
+      }
+      .btn-add-dashed {
+        width: 100%;
+        height: 40px;
+        background: transparent;
+        border: 1.5px dashed rgba(77, 184, 255, 0.2);
+        border-radius: 8px;
+        color: var(--cyan);
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 180ms;
+      }
+      .btn-add-dashed:hover {
+        border-color: var(--cyan);
+        background: rgba(77, 184, 255, 0.05);
+      }
+      .btn-add-dashed [data-lucide] {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2.5;
+      }
 
-@media (max-width: 1100px) {
-  .niches { grid-template-columns: 1fr; }
-}
-@media (max-width: 768px) {
-  .app { grid-template-columns: 1fr; }
-  .sidebar { display: none; }
-  .main { padding: 20px 18px; max-width: 100%; }
-  .top { flex-direction: column; align-items: flex-start; gap: 14px; }
-  .niche-actions { flex-direction: column; }
-}
-</style>
-</head>
-<body>
-<div class="app">
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sb-top">
-      <a class="sb-logo" href="Dashboard.html"><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a>
-      <button class="workspace" type="button">
-        <span>Automotores del Norte</span>
-        <i data-lucide="chevron-down"></i>
-      </button>
-    </div>
-    <nav class="sb-nav">
-      <a class="nav-item" href="Dashboard.html"><i data-lucide="layout-dashboard"></i><span class="label">Dashboard</span></a>
-      <a class="nav-item" href="Leads Inbox.html"><i data-lucide="inbox"></i><span class="label">Leads</span><span class="badge">12</span></a>
-      <a class="nav-item" href="Pipeline.html"><i data-lucide="git-branch"></i><span class="label">Pipeline</span></a>
-      <a class="nav-item" href="Inventario.html"><i data-lucide="package"></i><span class="label">Inventario</span><span class="badge">38</span></a>
-      <a class="nav-item active" href="#"><i data-lucide="layers"></i><span class="label">Categorías</span></a>
-      <a class="nav-item" href="Publicaciones.html"><i data-lucide="megaphone"></i><span class="label">Publicaciones</span></a>
-      <a class="nav-item" href="Analytics.html"><i data-lucide="bar-chart-3"></i><span class="label">Analytics</span></a>
-      <div class="group-divider"></div>
-      <a class="nav-item" href="Settings General.html"><i data-lucide="settings"></i><span class="label">Configuración</span></a>
-      <a class="nav-item" href="#"><i data-lucide="help-circle"></i><span class="label">Ayuda</span></a>
-    </nav>
-    <div class="sb-user">
-      <span class="av">MR</span>
-      <span class="meta"><b>Martín R.</b><span class="plan">Crecimiento</span></span>
-      <i data-lucide="chevron-right" class="chev"></i>
-    </div>
-  </aside>
+      @media (max-width: 1100px) {
+        .niches {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 768px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          display: none;
+        }
+        .main {
+          padding: 20px 18px;
+          max-width: 100%;
+        }
+        .top {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 14px;
+        }
+        .niche-actions {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sb-top">
+          <a class="sb-logo" href="Dashboard.html"
+            ><img src="../assets/logo-mark.png" alt="" /><span>ProSell</span></a
+          >
+          <button class="workspace" type="button">
+            <span>Automotores del Norte</span>
+            <i data-lucide="chevron-down"></i>
+          </button>
+        </div>
+        <nav class="sb-nav">
+          <a class="nav-item" href="Dashboard.html"
+            ><i data-lucide="layout-dashboard"></i
+            ><span class="label">Dashboard</span></a
+          >
+          <a class="nav-item" href="Leads Inbox.html"
+            ><i data-lucide="inbox"></i><span class="label">Leads</span
+            ><span class="badge">12</span></a
+          >
+          <a class="nav-item" href="Pipeline.html"
+            ><i data-lucide="git-branch"></i
+            ><span class="label">Pipeline</span></a
+          >
+          <a class="nav-item" href="Inventario.html"
+            ><i data-lucide="package"></i><span class="label">Inventario</span
+            ><span class="badge">38</span></a
+          >
+          <a class="nav-item active" href="#"
+            ><i data-lucide="layers"></i
+            ><span class="label">Categorías</span></a
+          >
+          <a class="nav-item" href="Publicaciones.html"
+            ><i data-lucide="megaphone"></i
+            ><span class="label">Publicaciones</span></a
+          >
+          <a class="nav-item" href="Analytics.html"
+            ><i data-lucide="bar-chart-3"></i
+            ><span class="label">Analytics</span></a
+          >
+          <div class="group-divider"></div>
+          <a class="nav-item" href="Settings General.html"
+            ><i data-lucide="settings"></i
+            ><span class="label">Configuración</span></a
+          >
+          <a class="nav-item" href="#"
+            ><i data-lucide="help-circle"></i
+            ><span class="label">Ayuda</span></a
+          >
+        </nav>
+        <div class="sb-user">
+          <span class="av">MR</span>
+          <span class="meta"
+            ><b>Martín R.</b><span class="plan">Crecimiento</span></span
+          >
+          <i data-lucide="chevron-right" class="chev"></i>
+        </div>
+      </aside>
 
-  <!-- Main -->
-  <main class="main">
-    <div class="top">
-      <div>
-        <h1>Categorías</h1>
-        <p>Gestioná los nichos activos en tu cuenta</p>
-      </div>
-      <button class="btn-cta" type="button">
-        <i data-lucide="plus"></i>
-        Nueva categoría
-      </button>
-    </div>
-
-    <!-- Niches grid -->
-    <div class="niches">
-
-      <!-- Vehículos (ACTIVE) -->
-      <article class="niche active">
-        <div class="niche-head">
-          <span class="niche-ico"><i data-lucide="car-front"></i></span>
-          <div class="niche-title">
-            <h2>Vehículos</h2>
-            <span class="niche-status on"><span class="d"></span>Activo</span>
+      <!-- Main -->
+      <main class="main">
+        <div class="top">
+          <div>
+            <h1>Categorías</h1>
+            <p>Gestioná los nichos activos en tu cuenta</p>
           </div>
-          <span class="niche-toggle"><button class="switch on" type="button" role="switch" aria-checked="true" aria-label="Activar Vehículos"></button></span>
+          <button class="btn-cta" type="button">
+            <i data-lucide="plus"></i>
+            Nueva categoría
+          </button>
         </div>
 
-        <div class="niche-stats">
-          <span class="stat-chip"><b>38</b>productos</span>
-          <span class="stat-chip"><b>24</b>publicaciones</span>
-          <span class="stat-chip"><b>284</b>leads</span>
-        </div>
+        <!-- Niches grid -->
+        <div class="niches">
+          <!-- Vehículos (ACTIVE) -->
+          <article class="niche active">
+            <div class="niche-head">
+              <span class="niche-ico"><i data-lucide="car-front"></i></span>
+              <div class="niche-title">
+                <h2>Vehículos</h2>
+                <span class="niche-status on"
+                  ><span class="d"></span>Activo</span
+                >
+              </div>
+              <span class="niche-toggle"
+                ><button
+                  class="switch on"
+                  type="button"
+                  role="switch"
+                  aria-checked="true"
+                  aria-label="Activar Vehículos"
+                ></button
+              ></span>
+            </div>
 
-        <div class="niche-block">
-          <span class="lbl">Campos configurados</span>
-          <div class="fields-row">
-            <span class="field-tag">Marca</span>
-            <span class="field-tag">Modelo</span>
-            <span class="field-tag">Año</span>
-            <span class="field-tag">KM</span>
-            <span class="field-tag">Color</span>
-            <span class="field-tag">VIN</span>
-            <button class="fields-more" type="button">+ 4 más</button>
-          </div>
-        </div>
+            <div class="niche-stats">
+              <span class="stat-chip"><b>38</b>productos</span>
+              <span class="stat-chip"><b>24</b>publicaciones</span>
+              <span class="stat-chip"><b>284</b>leads</span>
+            </div>
 
-        <div class="niche-block">
-          <span class="lbl">Canales</span>
-          <div class="channels-row">
-            <span class="chan-logos">
-              <span class="chip fb">f</span>
-              <span class="chip at">AT</span>
-              <span class="chip ml">ML</span>
-              <span class="chip web"><i data-lucide="globe"></i></span>
+            <div class="niche-block">
+              <span class="lbl">Campos configurados</span>
+              <div class="fields-row">
+                <span class="field-tag">Marca</span>
+                <span class="field-tag">Modelo</span>
+                <span class="field-tag">Año</span>
+                <span class="field-tag">KM</span>
+                <span class="field-tag">Color</span>
+                <span class="field-tag">VIN</span>
+                <button class="fields-more" type="button">+ 4 más</button>
+              </div>
+            </div>
+
+            <div class="niche-block">
+              <span class="lbl">Canales</span>
+              <div class="channels-row">
+                <span class="chan-logos">
+                  <span class="chip fb">f</span>
+                  <span class="chip at">AT</span>
+                  <span class="chip ml">ML</span>
+                  <span class="chip web"><i data-lucide="globe"></i></span>
+                </span>
+                <span class="chan-meta"
+                  ><b style="color: var(--text-primary); font-weight: 600"
+                    >4 canales</b
+                  >
+                  conectados</span
+                >
+              </div>
+            </div>
+
+            <div class="niche-actions">
+              <button class="btn-ghost" type="button">
+                <i data-lucide="sliders-horizontal"></i>
+                Configurar
+              </button>
+              <button class="btn-ghost" type="button">
+                <i data-lucide="package"></i>
+                Ver productos
+              </button>
+            </div>
+          </article>
+
+          <!-- Inmuebles (INACTIVE) -->
+          <article class="niche inactive">
+            <div class="niche-head">
+              <span class="niche-ico"><i data-lucide="home"></i></span>
+              <div class="niche-title">
+                <h2>Inmuebles</h2>
+                <span class="niche-status off"
+                  ><span class="d"></span>Inactivo</span
+                >
+              </div>
+              <span class="niche-toggle"
+                ><button
+                  class="switch"
+                  type="button"
+                  role="switch"
+                  aria-checked="false"
+                  aria-label="Activar Inmuebles"
+                ></button
+              ></span>
+            </div>
+
+            <div class="niche-stats">
+              <span class="stat-chip"><b>0</b>productos</span>
+              <span class="stat-chip"><b>0</b>publicaciones</span>
+              <span class="stat-chip"><b>0</b>leads</span>
+            </div>
+
+            <div class="niche-block">
+              <span class="lbl">Campos configurados</span>
+              <div class="fields-row">
+                <span class="field-tag">Operación</span>
+                <span class="field-tag">Ambientes</span>
+                <span class="field-tag">m²</span>
+                <span class="field-tag">Ubicación</span>
+              </div>
+            </div>
+
+            <button class="btn-activate" type="button">
+              <i data-lucide="zap"></i>
+              Activar nicho
+            </button>
+          </article>
+
+          <!-- Add niche card -->
+          <article class="niche-add">
+            <span class="ico"><i data-lucide="plus"></i></span>
+            <span class="ttl">Agregar nicho</span>
+            <span class="sub">
+              <span><i data-lucide="package"></i><b>Productos</b></span>
+              <span><i data-lucide="home"></i><b>Inmuebles</b></span>
+              <span><i data-lucide="tractor"></i><b>Maquinaria</b></span>
+              <span><b>y más</b></span>
             </span>
-            <span class="chan-meta"><b style="color:var(--text-primary);font-weight:600;">4 canales</b> conectados</span>
+          </article>
+        </div>
+
+        <!-- Custom fields card -->
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <h3>Campos personalizados</h3>
+              <span class="ctx">aplica a · <b>Vehículos</b></span>
+            </div>
+            <button class="card-link" type="button">
+              Gestionar
+              <i data-lucide="chevron-down"></i>
+            </button>
           </div>
-        </div>
 
-        <div class="niche-actions">
-          <button class="btn-ghost" type="button">
-            <i data-lucide="sliders-horizontal"></i>
-            Configurar
-          </button>
-          <button class="btn-ghost" type="button">
-            <i data-lucide="package"></i>
-            Ver productos
-          </button>
-        </div>
-      </article>
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Nombre del campo</th>
+                <th>Tipo</th>
+                <th>Requerido</th>
+                <th>Visible en listing</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span class="field-name"
+                    ><i data-lucide="type"></i>Marca</span
+                  >
+                </td>
+                <td><span class="type-chip">Texto</span></td>
+                <td>
+                  <span class="flag yes"><i data-lucide="check"></i>Sí</span>
+                </td>
+                <td>
+                  <span class="flag yes"><i data-lucide="check"></i>Sí</span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button class="icon-btn" aria-label="Editar">
+                      <i data-lucide="pencil"></i></button
+                    ><button class="icon-btn danger" aria-label="Eliminar">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="field-name"
+                    ><i data-lucide="type"></i>Modelo</span
+                  >
+                </td>
+                <td><span class="type-chip">Texto</span></td>
+                <td>
+                  <span class="flag yes"><i data-lucide="check"></i>Sí</span>
+                </td>
+                <td>
+                  <span class="flag yes"><i data-lucide="check"></i>Sí</span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button class="icon-btn" aria-label="Editar">
+                      <i data-lucide="pencil"></i></button
+                    ><button class="icon-btn danger" aria-label="Eliminar">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="field-name"><i data-lucide="hash"></i>Año</span>
+                </td>
+                <td><span class="type-chip num">Número</span></td>
+                <td>
+                  <span class="flag yes"><i data-lucide="check"></i>Sí</span>
+                </td>
+                <td>
+                  <span class="flag yes"><i data-lucide="check"></i>Sí</span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button class="icon-btn" aria-label="Editar">
+                      <i data-lucide="pencil"></i></button
+                    ><button class="icon-btn danger" aria-label="Eliminar">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="field-name"
+                    ><i data-lucide="hash"></i>Kilometraje</span
+                  >
+                </td>
+                <td><span class="type-chip num">Número</span></td>
+                <td>
+                  <span class="flag yes"><i data-lucide="check"></i>Sí</span>
+                </td>
+                <td>
+                  <span class="flag yes"><i data-lucide="check"></i>Sí</span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button class="icon-btn" aria-label="Editar">
+                      <i data-lucide="pencil"></i></button
+                    ><button class="icon-btn danger" aria-label="Eliminar">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="field-name"
+                    ><i data-lucide="type"></i>Color</span
+                  >
+                </td>
+                <td><span class="type-chip">Texto</span></td>
+                <td>
+                  <span class="flag no"><i data-lucide="minus"></i>No</span>
+                </td>
+                <td>
+                  <span class="flag yes"><i data-lucide="check"></i>Sí</span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button class="icon-btn" aria-label="Editar">
+                      <i data-lucide="pencil"></i></button
+                    ><button class="icon-btn danger" aria-label="Eliminar">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="field-name"><i data-lucide="type"></i>VIN</span>
+                </td>
+                <td><span class="type-chip">Texto</span></td>
+                <td>
+                  <span class="flag no"><i data-lucide="minus"></i>No</span>
+                </td>
+                <td>
+                  <span class="flag no"><i data-lucide="minus"></i>No</span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button class="icon-btn" aria-label="Editar">
+                      <i data-lucide="pencil"></i></button
+                    ><button class="icon-btn danger" aria-label="Eliminar">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="field-name"
+                    ><i data-lucide="toggle-right"></i>Financiación
+                    disponible</span
+                  >
+                </td>
+                <td><span class="type-chip bool">Boolean</span></td>
+                <td>
+                  <span class="flag no"><i data-lucide="minus"></i>No</span>
+                </td>
+                <td>
+                  <span class="flag yes"><i data-lucide="check"></i>Sí</span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button class="icon-btn" aria-label="Editar">
+                      <i data-lucide="pencil"></i></button
+                    ><button class="icon-btn danger" aria-label="Eliminar">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
-      <!-- Inmuebles (INACTIVE) -->
-      <article class="niche inactive">
-        <div class="niche-head">
-          <span class="niche-ico"><i data-lucide="home"></i></span>
-          <div class="niche-title">
-            <h2>Inmuebles</h2>
-            <span class="niche-status off"><span class="d"></span>Inactivo</span>
+          <div class="tbl-add">
+            <button class="btn-add-dashed" type="button">
+              <i data-lucide="plus"></i>
+              Agregar campo personalizado
+            </button>
           </div>
-          <span class="niche-toggle"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="Activar Inmuebles"></button></span>
-        </div>
-
-        <div class="niche-stats">
-          <span class="stat-chip"><b>0</b>productos</span>
-          <span class="stat-chip"><b>0</b>publicaciones</span>
-          <span class="stat-chip"><b>0</b>leads</span>
-        </div>
-
-        <div class="niche-block">
-          <span class="lbl">Campos configurados</span>
-          <div class="fields-row">
-            <span class="field-tag">Operación</span>
-            <span class="field-tag">Ambientes</span>
-            <span class="field-tag">m²</span>
-            <span class="field-tag">Ubicación</span>
-          </div>
-        </div>
-
-        <button class="btn-activate" type="button">
-          <i data-lucide="zap"></i>
-          Activar nicho
-        </button>
-      </article>
-
-      <!-- Add niche card -->
-      <article class="niche-add">
-        <span class="ico"><i data-lucide="plus"></i></span>
-        <span class="ttl">Agregar nicho</span>
-        <span class="sub">
-          <span><i data-lucide="package"></i><b>Productos</b></span>
-          <span><i data-lucide="home"></i><b>Inmuebles</b></span>
-          <span><i data-lucide="tractor"></i><b>Maquinaria</b></span>
-          <span><b>y más</b></span>
-        </span>
-      </article>
-
+        </section>
+      </main>
     </div>
 
-    <!-- Custom fields card -->
-    <section class="card">
-      <div class="card-head">
-        <div class="card-title">
-          <h3>Campos personalizados</h3>
-          <span class="ctx">aplica a · <b>Vehículos</b></span>
-        </div>
-        <button class="card-link" type="button">
-          Gestionar
-          <i data-lucide="chevron-down"></i>
-        </button>
-      </div>
+    <script>
+      lucide.createIcons();
 
-      <table class="tbl">
-        <thead>
-          <tr>
-            <th>Nombre del campo</th>
-            <th>Tipo</th>
-            <th>Requerido</th>
-            <th>Visible en listing</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="field-name"><i data-lucide="type"></i>Marca</span></td>
-            <td><span class="type-chip">Texto</span></td>
-            <td><span class="flag yes"><i data-lucide="check"></i>Sí</span></td>
-            <td><span class="flag yes"><i data-lucide="check"></i>Sí</span></td>
-            <td><div class="row-actions"><button class="icon-btn" aria-label="Editar"><i data-lucide="pencil"></i></button><button class="icon-btn danger" aria-label="Eliminar"><i data-lucide="trash-2"></i></button></div></td>
-          </tr>
-          <tr>
-            <td><span class="field-name"><i data-lucide="type"></i>Modelo</span></td>
-            <td><span class="type-chip">Texto</span></td>
-            <td><span class="flag yes"><i data-lucide="check"></i>Sí</span></td>
-            <td><span class="flag yes"><i data-lucide="check"></i>Sí</span></td>
-            <td><div class="row-actions"><button class="icon-btn" aria-label="Editar"><i data-lucide="pencil"></i></button><button class="icon-btn danger" aria-label="Eliminar"><i data-lucide="trash-2"></i></button></div></td>
-          </tr>
-          <tr>
-            <td><span class="field-name"><i data-lucide="hash"></i>Año</span></td>
-            <td><span class="type-chip num">Número</span></td>
-            <td><span class="flag yes"><i data-lucide="check"></i>Sí</span></td>
-            <td><span class="flag yes"><i data-lucide="check"></i>Sí</span></td>
-            <td><div class="row-actions"><button class="icon-btn" aria-label="Editar"><i data-lucide="pencil"></i></button><button class="icon-btn danger" aria-label="Eliminar"><i data-lucide="trash-2"></i></button></div></td>
-          </tr>
-          <tr>
-            <td><span class="field-name"><i data-lucide="hash"></i>Kilometraje</span></td>
-            <td><span class="type-chip num">Número</span></td>
-            <td><span class="flag yes"><i data-lucide="check"></i>Sí</span></td>
-            <td><span class="flag yes"><i data-lucide="check"></i>Sí</span></td>
-            <td><div class="row-actions"><button class="icon-btn" aria-label="Editar"><i data-lucide="pencil"></i></button><button class="icon-btn danger" aria-label="Eliminar"><i data-lucide="trash-2"></i></button></div></td>
-          </tr>
-          <tr>
-            <td><span class="field-name"><i data-lucide="type"></i>Color</span></td>
-            <td><span class="type-chip">Texto</span></td>
-            <td><span class="flag no"><i data-lucide="minus"></i>No</span></td>
-            <td><span class="flag yes"><i data-lucide="check"></i>Sí</span></td>
-            <td><div class="row-actions"><button class="icon-btn" aria-label="Editar"><i data-lucide="pencil"></i></button><button class="icon-btn danger" aria-label="Eliminar"><i data-lucide="trash-2"></i></button></div></td>
-          </tr>
-          <tr>
-            <td><span class="field-name"><i data-lucide="type"></i>VIN</span></td>
-            <td><span class="type-chip">Texto</span></td>
-            <td><span class="flag no"><i data-lucide="minus"></i>No</span></td>
-            <td><span class="flag no"><i data-lucide="minus"></i>No</span></td>
-            <td><div class="row-actions"><button class="icon-btn" aria-label="Editar"><i data-lucide="pencil"></i></button><button class="icon-btn danger" aria-label="Eliminar"><i data-lucide="trash-2"></i></button></div></td>
-          </tr>
-          <tr>
-            <td><span class="field-name"><i data-lucide="toggle-right"></i>Financiación disponible</span></td>
-            <td><span class="type-chip bool">Boolean</span></td>
-            <td><span class="flag no"><i data-lucide="minus"></i>No</span></td>
-            <td><span class="flag yes"><i data-lucide="check"></i>Sí</span></td>
-            <td><div class="row-actions"><button class="icon-btn" aria-label="Editar"><i data-lucide="pencil"></i></button><button class="icon-btn danger" aria-label="Eliminar"><i data-lucide="trash-2"></i></button></div></td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="tbl-add">
-        <button class="btn-add-dashed" type="button">
-          <i data-lucide="plus"></i>
-          Agregar campo personalizado
-        </button>
-      </div>
-    </section>
-  </main>
-</div>
-
-<script>
-  lucide.createIcons();
-
-  // Switches
-  document.querySelectorAll('.switch').forEach(sw => {
-    sw.addEventListener('click', () => {
-      const on = sw.classList.toggle('on');
-      sw.setAttribute('aria-checked', String(on));
-    });
-  });
-</script>
-</body>
+      // Switches
+      document.querySelectorAll(".switch").forEach((sw) => {
+        sw.addEventListener("click", () => {
+          const on = sw.classList.toggle("on");
+          sw.setAttribute("aria-checked", String(on));
+        });
+      });
+    </script>
+  </body>
 </html>

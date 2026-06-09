@@ -35,7 +35,7 @@ async function setDealerRoleCookie(page: Page) {
           role: "branch",
           name: "Test Branch",
           tenant_id: process.env.TEST_TENANT_ID || "default-tenant-id",
-        })
+        }),
       ),
       domain: "localhost",
       path: "/",
@@ -87,7 +87,9 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
       }
     });
 
-    console.log("Starting test - user role set to dealer, appointments API mocked");
+    console.log(
+      "Starting test - user role set to dealer, appointments API mocked",
+    );
   });
 
   test.afterEach(async ({ page }, testInfo) => {
@@ -103,7 +105,9 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
     }
   });
 
-  test("CRITERION 1: Dealer can view appointments at `/branch/appointments`", async ({ page }) => {
+  test("CRITERION 1: Dealer can view appointments at `/branch/appointments`", async ({
+    page,
+  }) => {
     await test.step("Navigate to dealer appointments page", async () => {
       await page.goto("/branch/appointments");
       await page.waitForLoadState("load");
@@ -133,7 +137,9 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
     });
   });
 
-  test("CRITERION 2: Calendar view shows day/week/month toggle", async ({ page }) => {
+  test("CRITERION 2: Calendar view shows day/week/month toggle", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("load");
 
@@ -195,17 +201,21 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
 
           // Check that buyer information section exists
           // Look for User icon (buyer name is near it)
-          const buyerSection = modal.locator("svg").filter({ hasText: /user/i });
+          const buyerSection = modal
+            .locator("svg")
+            .filter({ hasText: /user/i });
           await expect(buyerSection).toBeVisible();
 
           // Check for buyer name (should be near the user icon)
           const buyerInfo = modal.locator("text=/Buyer|Customer|Client/i");
-          const hasBuyerInfo = await buyerInfo.count() > 0;
+          const hasBuyerInfo = (await buyerInfo.count()) > 0;
 
           if (hasBuyerInfo) {
             console.log("✓ Buyer information is displayed in modal");
           } else {
-            console.log("⚠ Buyer info section exists but no specific buyer text found");
+            console.log(
+              "⚠ Buyer info section exists but no specific buyer text found",
+            );
             // Still pass - the component structure is correct
           }
 
@@ -220,7 +230,7 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
         // Mark as passed - the calendar UI is working, just no data
         test.info().annotations.push({
           type: "info",
-          description: "No appointments in database to test buyer info display"
+          description: "No appointments in database to test buyer info display",
         });
       }
     });
@@ -247,23 +257,41 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
           await expect(modal).toBeVisible({ timeout: 3000 });
 
           // Check for action buttons
-          const confirmButton = modal.locator('button[data-testid="confirm-button"]');
-          const cancelButton = modal.locator('button[data-testid="cancel-button"]');
+          const confirmButton = modal.locator(
+            'button[data-testid="confirm-button"]',
+          );
+          const cancelButton = modal.locator(
+            'button[data-testid="cancel-button"]',
+          );
 
           const confirmButtonCount = await confirmButton.count();
           const cancelButtonCount = await cancelButton.count();
 
           if (confirmButtonCount > 0 && cancelButtonCount > 0) {
-            console.log("✓ Confirm and cancel buttons exist for scheduled appointment");
+            console.log(
+              "✓ Confirm and cancel buttons exist for scheduled appointment",
+            );
 
             // Verify button colors (green for confirm, red for cancel)
-            await expect(confirmButton).toHaveCSS("background-color", /rgb\(22,\s*163,\s*74\)/);
-            await expect(cancelButton).toHaveCSS("background-color", /rgb\(220,\s*38,\s*38\)/);
+            await expect(confirmButton).toHaveCSS(
+              "background-color",
+              /rgb\(22,\s*163,\s*74\)/,
+            );
+            await expect(cancelButton).toHaveCSS(
+              "background-color",
+              /rgb\(220,\s*38,\s*38\)/,
+            );
 
-            console.log("✓ Button colors are correct (green/confirm, red/cancel)");
+            console.log(
+              "✓ Button colors are correct (green/confirm, red/cancel)",
+            );
           } else {
-            console.log("⚠ Action buttons not present - appointment may not be in 'scheduled' status");
-            console.log("This is OK - we're verifying the UI component structure");
+            console.log(
+              "⚠ Action buttons not present - appointment may not be in 'scheduled' status",
+            );
+            console.log(
+              "This is OK - we're verifying the UI component structure",
+            );
 
             // Check if status badge shows completed/cancelled
             const statusBadge = modal.locator('[class*="rounded-full"]');
@@ -278,13 +306,15 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
         console.log("⚠ No appointments found to test action buttons");
         test.info().annotations.push({
           type: "info",
-          description: "No appointments in database to test action buttons"
+          description: "No appointments in database to test action buttons",
         });
       }
     });
   });
 
-  test("CRITERION 5: Appointment details modal shows full info", async ({ page }) => {
+  test("CRITERION 5: Appointment details modal shows full info", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("load");
 
@@ -302,7 +332,9 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
           await expect(modal).toBeVisible({ timeout: 3000 });
 
           // Check modal title
-          const title = modal.locator("h2").filter({ hasText: "Appointment Details" });
+          const title = modal
+            .locator("h2")
+            .filter({ hasText: "Appointment Details" });
           await expect(title).toBeVisible();
           console.log("✓ Modal title is visible");
 
@@ -310,7 +342,9 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
           const sections = {
             "Status badge": modal.locator('[class*="rounded-full"]'),
             "Date/time": modal.locator("svg").filter({ hasText: /calendar/i }),
-            "Contact info": modal.locator("svg").filter({ hasText: /user|mail|phone/i }),
+            "Contact info": modal
+              .locator("svg")
+              .filter({ hasText: /user|mail|phone/i }),
           };
 
           for (const [name, locator] of Object.entries(sections)) {
@@ -330,7 +364,7 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
         console.log("⚠ No appointments found to test modal details");
         test.info().annotations.push({
           type: "info",
-          description: "No appointments in database to test modal details"
+          description: "No appointments in database to test modal details",
         });
       }
     });
@@ -364,7 +398,10 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
         }
 
         // Verify badge styling
-        await expect(badge).toHaveCSS("background-color", /rgb\(219,\s*234,\s*254\)/); // blue-100
+        await expect(badge).toHaveCSS(
+          "background-color",
+          /rgb\(219,\s*234,\s*254\)/,
+        ); // blue-100
         console.log("✓ Badge has correct blue background");
 
         // Check for calendar icon
@@ -383,7 +420,9 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
         const isVisible = await badgeHidden.isVisible().catch(() => false);
 
         if (!isVisible) {
-          console.log("✓ Badge component exists in DOM (conditionally rendered)");
+          console.log(
+            "✓ Badge component exists in DOM (conditionally rendered)",
+          );
         } else {
           console.log("⚠ Badge component not found in DOM");
         }
@@ -391,7 +430,8 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
         // This is still a pass - we verified the UI structure
         test.info().annotations.push({
           type: "info",
-          description: "Badge exists but conditionally rendered (only shows when there are today's appointments)"
+          description:
+            "Badge exists but conditionally rendered (only shows when there are today's appointments)",
         });
       }
     });
@@ -431,7 +471,9 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
       if (badgeCount > 0) {
         console.log("✓ Today's badge component present");
       } else {
-        console.log("ℹ Badge component conditionally rendered (no today appointments)");
+        console.log(
+          "ℹ Badge component conditionally rendered (no today appointments)",
+        );
       }
     });
 
@@ -445,8 +487,12 @@ test.describe("Phase A6 - Dealer Calendar Feature", () => {
       console.log("✅ Criterion 5: Appointment modal component exists");
       console.log("✅ Criterion 6: Today's badge component exists");
       console.log("");
-      console.log("Note: Some UI components are conditionally rendered based on data.");
-      console.log("All 6 UI components are properly implemented and functional.");
+      console.log(
+        "Note: Some UI components are conditionally rendered based on data.",
+      );
+      console.log(
+        "All 6 UI components are properly implemented and functional.",
+      );
     });
   });
 });
