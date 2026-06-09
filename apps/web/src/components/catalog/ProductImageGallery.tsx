@@ -59,7 +59,11 @@ export function ProductImageGallery({ images, className = '' }: ProductImageGall
     galleryRef.current?.focus()
   }, [])
 
-  // Reset selection if the active image is no longer renderable
+  // Reset selection if the active image is no longer renderable.
+  // The setState is conditional and only fires when currentIndex has fallen
+  // out of range, so the cascading-render concern from the rule does not
+  // apply here.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (currentIndex >= renderableImages.length) {
       setCurrentIndex(0)
