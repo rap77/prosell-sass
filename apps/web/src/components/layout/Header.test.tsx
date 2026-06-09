@@ -194,9 +194,7 @@ describe("Header — breadcrumb humanization", () => {
   });
 
   it("renders 'Inicio / Catálogo / Detalle / Editar' for /catalog/<uuid>/edit", () => {
-    mockUsePathname.mockReturnValue(
-      `/dashboard/catalog/${SAMPLE_UUID}/edit`,
-    );
+    mockUsePathname.mockReturnValue(`/dashboard/catalog/${SAMPLE_UUID}/edit`);
 
     const { container } = render(<Header />);
 
