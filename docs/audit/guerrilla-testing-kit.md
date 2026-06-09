@@ -33,7 +33,7 @@
 - [ ] "Subir autos"
 - [ ] "Cargar vehículos"
 - [ ] "Publicar autos"
-- [ ] Otro: ****\_\_\_****
+- [ ] Otro: \***\*\_\_\_\*\***
 
 ### Question 3: Navigation (3 min)
 

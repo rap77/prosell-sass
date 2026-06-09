@@ -95,6 +95,7 @@
    ```
 
 9. **New migration `drop_product_images_table.py`**
+
    ```python
    op.drop_table('product_images')
    ```
