@@ -1,8 +1,10 @@
 "use client"; // Required for useState and usePathname hooks
 
 import { useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { formatBreadcrumbLabel } from "@/lib/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,6 +24,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
 import { TeamSwitcher } from "@/components/teams/TeamSwitcher";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
@@ -60,6 +63,7 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout, user: authUser } = useAuth();
+  const breadcrumbOverrides = useBreadcrumbStore((state) => state.labels);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Helper function to get user initials from name
@@ -104,13 +108,18 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
     router.push("/auth/login");
   };
 
-  // Generate breadcrumbs from pathname
+  // Generate breadcrumbs from pathname. A detail page can register the real
+  // entity name for its dynamic `[id]` segment via the breadcrumb store; we
+  // prefer that override and fall back to the URL-only resolver (which turns
+  // a raw UUID into the generic "Detalle" label).
   const breadcrumbs = pathname
     .split("/")
     .filter(Boolean)
     .map((segment, index, array) => {
       const href = "/" + array.slice(0, index + 1).join("/");
-      const label = segment.charAt(0).toUpperCase() + segment.slice(1);
+      const label =
+        breadcrumbOverrides[segment] ??
+        formatBreadcrumbLabel(segment, pathname);
       return { label, href };
     });
 
@@ -143,12 +152,12 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
 
         {/* Breadcrumbs */}
         <nav className="flex items-center gap-2 text-sm">
-          <a
+          <Link
             href="/dashboard"
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
-            Home
-          </a>
+            Inicio
+          </Link>
           {breadcrumbs.map((crumb, index) => (
             <div key={crumb.href} className="flex items-center gap-2">
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -157,12 +166,12 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
                   {crumb.label}
                 </span>
               ) : (
-                <a
+                <Link
                   href={crumb.href}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {crumb.label}
-                </a>
+                </Link>
               )}
             </div>
           ))}
@@ -245,13 +254,17 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+            <DropdownMenuItem asChild>
+              <Link href="/profile">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
+            <DropdownMenuItem asChild>
+              <Link href="/settings">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

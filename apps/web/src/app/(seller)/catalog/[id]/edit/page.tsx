@@ -9,15 +9,35 @@
  * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 
+import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { ProductForm } from "@/components/forms/ProductForm";
+import { useProduct } from "@/lib/api/products";
+import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
 
 export default function EditVehiclePage() {
   const router = useRouter();
   const params = useParams();
   const productId = typeof params.id === "string" ? params.id : "";
+
+  // Same query key as ProductForm's edit-mode read, so React Query dedupes
+  // this — no extra request, just the cached title for the breadcrumb.
+  const { data: product } = useProduct(productId || undefined, {
+    internal: true,
+  });
+  const setBreadcrumbLabel = useBreadcrumbStore((state) => state.setLabel);
+  const clearBreadcrumbLabel = useBreadcrumbStore((state) => state.clearLabel);
+
+  // Register the real product title for the `[id]` segment so the breadcrumb
+  // reads "… / Toyota Corolla 2020 / Editar" instead of "… / Detalle / Editar".
+  useEffect(() => {
+    const title = product?.title;
+    if (!title || !productId) return;
+    setBreadcrumbLabel(productId, title);
+    return () => clearBreadcrumbLabel(productId);
+  }, [product?.title, productId, setBreadcrumbLabel, clearBreadcrumbLabel]);
 
   return (
     <div style={{ maxWidth: 896, margin: "0 auto" }}>
