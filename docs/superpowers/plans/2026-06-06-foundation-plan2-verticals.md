@@ -11,6 +11,7 @@
 **Branch:** `feat/category-presentation-foundation` (continues Plan 1).
 
 **Prereqs / known facts (from Plan 1):**
+
 - `Category` entity (pydantic `DomainModel`): `tenant_id: UUID`, `parent_id`, `level`, `field_config`, `attribute_schema`, `presentation: dict|None`. `Category.create(name, slug, tenant_id, parent_id=None, level=0, **kwargs)`.
 - `CategoryModel`: `tenant_id` non-nullable today; `updated_at` already uses `onupdate=func.now()` (Plan 1 fix).
 - `AbstractCategoryRepository` has `get_by_id(id, tenant_id)`, `get_children(parent_id, tenant_id)`, `get_tree(tenant_id)`, `get_ancestor_ids(id, tenant_id)`.
@@ -25,21 +26,21 @@
 
 ## File structure
 
-| File | Responsibility | Action |
-|------|----------------|--------|
-| `src/prosell/domain/entities/category.py` | `tenant_id` optional | Modify |
-| `src/prosell/infrastructure/models/category_model.py` | `tenant_id` nullable | Modify |
-| `src/prosell/domain/entities/organization_vertical.py` | M2M entity | Create |
-| `src/prosell/infrastructure/models/organization_vertical_model.py` | M2M table | Create |
-| `src/prosell/domain/repositories/organization_vertical_repository.py` | M2M port | Create |
-| `src/prosell/infrastructure/repositories/organization_vertical_repository_impl.py` | M2M adapter | Create |
-| `alembic/versions/<rev>_global_categories_and_org_verticals.py` | migration | Create |
-| `src/prosell/domain/services/presentation_resolver.py` | inherit presentation + filter fields | Create |
-| `src/prosell/application/use_cases/organization/list_org_verticals.py` | read-API use case | Create |
-| `src/prosell/application/dto/organization/verticals.py` | read-API DTOs | Create |
-| `src/prosell/infrastructure/api/routers/organization_router.py` (or existing) | `GET /organizations/{id}/verticals` | Modify/Create |
-| `src/prosell/application/use_cases/product/update_product.py` | update + title recompose | Create |
-| `src/prosell/infrastructure/api/routers/product_router.py` | PATCH delegates to use case | Modify |
+| File                                                                               | Responsibility                       | Action        |
+| ---------------------------------------------------------------------------------- | ------------------------------------ | ------------- |
+| `src/prosell/domain/entities/category.py`                                          | `tenant_id` optional                 | Modify        |
+| `src/prosell/infrastructure/models/category_model.py`                              | `tenant_id` nullable                 | Modify        |
+| `src/prosell/domain/entities/organization_vertical.py`                             | M2M entity                           | Create        |
+| `src/prosell/infrastructure/models/organization_vertical_model.py`                 | M2M table                            | Create        |
+| `src/prosell/domain/repositories/organization_vertical_repository.py`              | M2M port                             | Create        |
+| `src/prosell/infrastructure/repositories/organization_vertical_repository_impl.py` | M2M adapter                          | Create        |
+| `alembic/versions/<rev>_global_categories_and_org_verticals.py`                    | migration                            | Create        |
+| `src/prosell/domain/services/presentation_resolver.py`                             | inherit presentation + filter fields | Create        |
+| `src/prosell/application/use_cases/organization/list_org_verticals.py`             | read-API use case                    | Create        |
+| `src/prosell/application/dto/organization/verticals.py`                            | read-API DTOs                        | Create        |
+| `src/prosell/infrastructure/api/routers/organization_router.py` (or existing)      | `GET /organizations/{id}/verticals`  | Modify/Create |
+| `src/prosell/application/use_cases/product/update_product.py`                      | update + title recompose             | Create        |
+| `src/prosell/infrastructure/api/routers/product_router.py`                         | PATCH delegates to use case          | Modify        |
 
 ---
 
@@ -60,16 +61,17 @@ def test_global_category_has_no_tenant():
 ```
 
 - [ ] **Step 2: Run → FAIL** — `Category.create` requires `tenant_id: UUID` / pydantic rejects None.
-Run: `cd apps/api && uv run pytest tests/unit/domain/entities/test_category_global.py -v`
+      Run: `cd apps/api && uv run pytest tests/unit/domain/entities/test_category_global.py -v`
 
 - [ ] **Step 3: Implement**
-In `category.py`: change `tenant_id: UUID` → `tenant_id: UUID | None = None`. Change `Category.create(..., tenant_id: UUID | None, ...)` signature accordingly.
-In `category_model.py`: change the `tenant_id` column to `nullable=True` (keep the index).
+      In `category.py`: change `tenant_id: UUID` → `tenant_id: UUID | None = None`. Change `Category.create(..., tenant_id: UUID | None, ...)` signature accordingly.
+      In `category_model.py`: change the `tenant_id` column to `nullable=True` (keep the index).
 
 - [ ] **Step 4: Run → PASS**. Then recreate the test DB schema (model changed): use the DROP SCHEMA snippet above.
 
 - [ ] **Step 5: Migration**
-Run: `uv run alembic revision -m "global categories: tenant_id nullable + organization_vertical"` (note path). In `upgrade()`:
+      Run: `uv run alembic revision -m "global categories: tenant_id nullable + organization_vertical"` (note path). In `upgrade()`:
+
 ```python
 import sqlalchemy as sa
 from alembic import op
@@ -88,6 +90,7 @@ def downgrade() -> None:
     op.drop_table("organization_vertical")
     op.alter_column("categories", "tenant_id", existing_type=postgresql.UUID(), nullable=False)
 ```
+
 (This migration also creates the Task 2 table — they ship together.)
 
 - [ ] **Step 6: Commit** — `feat(api): categories become global templates (tenant_id nullable) + organization_vertical table`
@@ -127,6 +130,7 @@ async def test_enable_and_list_verticals(db_session, test_organization):
 - [ ] **Step 2: Run → FAIL** (module/table missing). Recreate test DB schema first.
 
 - [ ] **Step 3: Implement entity** `src/prosell/domain/entities/organization_vertical.py`
+
 ```python
 from datetime import UTC, datetime
 from uuid import UUID
@@ -140,6 +144,7 @@ class OrganizationVertical(DomainModel):
 ```
 
 - [ ] **Step 4: Implement model** `src/prosell/infrastructure/models/organization_vertical_model.py`
+
 ```python
 from datetime import datetime
 from uuid import UUID
@@ -153,10 +158,12 @@ class OrganizationVerticalModel(Base):
     root_category_id: Mapped[UUID] = mapped_column(ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True)
     enabled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 ```
+
 Ensure it's imported in `prosell/infrastructure/models/__init__.py` so `create_all`/Alembic sees it.
 
 - [ ] **Step 5: Implement port + adapter**
-Port `src/prosell/domain/repositories/organization_vertical_repository.py`:
+      Port `src/prosell/domain/repositories/organization_vertical_repository.py`:
+
 ```python
 from typing import Protocol
 from uuid import UUID
@@ -165,7 +172,9 @@ class AbstractOrganizationVerticalRepository(Protocol):
     async def enable(self, organization_id: UUID, root_category_id: UUID) -> None: ...
     async def list_root_category_ids(self, organization_id: UUID) -> list[UUID]: ...
 ```
+
 Adapter `src/prosell/infrastructure/repositories/organization_vertical_repository_impl.py`:
+
 ```python
 from uuid import UUID
 from sqlalchemy import select
@@ -201,6 +210,7 @@ class SqlAlchemyOrganizationVerticalRepository:
 **Files:** `src/prosell/domain/services/presentation_resolver.py`; Test: `tests/unit/domain/services/test_presentation_resolver.py`
 
 - [ ] **Step 1: Failing test**
+
 ```python
 from prosell.domain.services.presentation_resolver import resolve_presentation, filter_fields
 
@@ -229,6 +239,7 @@ def test_filter_fields_extracts_filterable_only():
 ```
 
 - [ ] **Step 2: Run → FAIL**. **Step 3: Implement**
+
 ```python
 # src/prosell/domain/services/presentation_resolver.py
 from collections.abc import Mapping, Sequence
@@ -278,6 +289,7 @@ async def test_list_org_verticals_returns_enabled_with_subtree(async_client_as_a
 ```
 
 - [ ] **Step 2: Run → FAIL** (404, no route). **Step 3: Implement DTO** `src/prosell/application/dto/organization/verticals.py`
+
 ```python
 from uuid import UUID
 from pydantic import BaseModel
@@ -302,10 +314,11 @@ class OrgVerticalsResponse(BaseModel):
 ```
 
 - [ ] **Step 4: Implement use case** `src/prosell/application/use_cases/organization/list_org_verticals.py`
-For each enabled root id: load the root (`category_repo.get_by_id(root_id, UUID(int=0))` — tenant filter skipped for globals), then `get_children(root_id, UUID(int=0))`. Resolve each node's presentation via `resolve_presentation(node.presentation, [root.presentation])` and `filter_fields(node.attribute_schema)`. Assemble DTOs.
-NOTE: confirm `get_by_id`/`get_children` accept `UUID(int=0)` to bypass the tenant filter for global rows (they do in the product repo pattern); if the category repo enforces tenant, add a tenant-agnostic read or pass the sentinel.
+      For each enabled root id: load the root (`category_repo.get_by_id(root_id, UUID(int=0))` — tenant filter skipped for globals), then `get_children(root_id, UUID(int=0))`. Resolve each node's presentation via `resolve_presentation(node.presentation, [root.presentation])` and `filter_fields(node.attribute_schema)`. Assemble DTOs.
+      NOTE: confirm `get_by_id`/`get_children` accept `UUID(int=0)` to bypass the tenant filter for global rows (they do in the product repo pattern); if the category repo enforces tenant, add a tenant-agnostic read or pass the sentinel.
 
 - [ ] **Step 5: Implement endpoint** — add to the organization router (or create one, registered in `main.py` like the others):
+
 ```python
 @router.get("/{organization_id}/verticals", response_model=OrgVerticalsResponse)
 async def list_org_verticals(organization_id: UUID, current_user: User = Depends(get_current_auth_user_from_cookie), db: AsyncSession = Depends(get_async_session)) -> OrgVerticalsResponse:
@@ -326,6 +339,7 @@ async def list_org_verticals(organization_id: UUID, current_user: User = Depends
 **Why a use case:** Plan 1 deferred update-composition because adding an inline category DB call to the PATCH router broke unit tests that mock only the product repo. A use case (taking product_repo + category_repo) is the clean home, mirrors `CreateProductUseCase`, and the router delegates to it.
 
 - [ ] **Step 1: Failing integration test**
+
 ```python
 @pytest.mark.asyncio
 async def test_update_recomposes_title_from_template(db_session, test_organization, test_category):
@@ -348,7 +362,7 @@ async def test_update_recomposes_title_from_template(db_session, test_organizati
 ## Task 6: Audit category reads for tenant filters
 
 - [ ] Grep category reads for hard tenant filters that would now exclude global (NULL-tenant) rows:
-Run: `rg -n "tenant_id" src/prosell/infrastructure/repositories/category_repository_impl.py`
+      Run: `rg -n "tenant_id" src/prosell/infrastructure/repositories/category_repository_impl.py`
 - [ ] For any read that products/verticals depend on, ensure NULL-tenant (global) categories are returned (e.g., `WHERE tenant_id == :t OR tenant_id IS NULL`, or use the `UUID(int=0)` bypass already present in `get_by_id`). Add/adjust a test if behavior changes.
 - [ ] **Commit** — `fix(api): category reads include global (null-tenant) templates`
 
@@ -363,6 +377,7 @@ Not code-under-test — a seed/migration-data step. Decide in execution: extend 
 ---
 
 ## Self-review (plan author)
+
 - **Spec coverage:** §3.1 global-ization (T1), §3.4 M2M (T1+T2), §3.3 filterable (T3 + read-API T4), §5 read-API (T4), §4 update composition (T5), migration risk (T1+T6+T7). No silent gaps.
 - **Placeholders:** the read-API integration test (T4 step 1) and the seed (T7) are intentionally adapt-to-harness/ops; every code task has concrete code. The T4 test skeleton must be fleshed out against the project's API test fixtures at execution.
 - **Type consistency:** `resolve_title(presentation, attributes, fallback)`, `resolve_presentation(own, ancestors)`, `filter_fields(schema)`, repo `list_root_category_ids(org_id)` / `enable(org_id, root_id)` used consistently across tasks.

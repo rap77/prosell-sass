@@ -156,11 +156,13 @@ Plan: `docs/superpowers/plans/2026-06-06-foundation-title-composition.md` (Plan 
 Branch: `feat/category-presentation-foundation`.
 
 **Done (Plan 1):**
+
 - §3.2 `presentation` column on `Category` (entity + model + migration `a4d7a394211c`).
 - §4 title composition service (`template_composer.compose_from_template` + `resolve_title`) wired into **product create** (server composes the title from the category's `title_template`; falls back to the request title when the category has none).
 - Bug fixed en route: `CategoryModel.updated_at` `onupdate` was the literal string `"now()"`, which made **every category UPDATE** fail with an asyncpg `DataError`. Fixed to `func.now()`. (Worth knowing for Plan 2, which updates categories to set presentation.)
 
 **Deferred:**
+
 - §4 title recomposition on **UPDATE** → Plan 2 (needs the category loaded; clean via a dedicated `UpdateProductUseCase`). Edit still composes title client-side meanwhile — backward-compatible.
 - `title` optional in the create DTO → subsystem A (only needed once the frontend stops sending a client-composed title).
 - §3.1/§3.4 global-ization + filterable, §3.4 `organization_vertical` M2M, §5 read-API, subtitle → Plan 2.
