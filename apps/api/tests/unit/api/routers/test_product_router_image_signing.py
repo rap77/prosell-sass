@@ -100,9 +100,7 @@ class TestListProductsReturnsBareKeys:
     """GET /api/v1/products must return image_urls as bare storage keys."""
 
     @pytest.mark.asyncio
-    async def test_list_products_image_urls_are_bare_keys(
-        self, async_client: AsyncClient
-    ) -> None:
+    async def test_list_products_image_urls_are_bare_keys(self, async_client: AsyncClient) -> None:
         """The list response contains the storage keys verbatim.
 
         The DB has bare keys. The router must NOT sign them here —
@@ -141,9 +139,7 @@ class TestGetProductReturnsBareKeys:
     """GET /api/v1/products/{id} must return image_urls as bare storage keys."""
 
     @pytest.mark.asyncio
-    async def test_get_product_image_urls_are_bare_keys(
-        self, async_client: AsyncClient
-    ) -> None:
+    async def test_get_product_image_urls_are_bare_keys(self, async_client: AsyncClient) -> None:
         """The detail response contains the storage keys verbatim."""
         raw_product = _make_product(image_urls=[BARE_KEY_1, BARE_KEY_2])
         product_entity = _to_product_entity(raw_product)

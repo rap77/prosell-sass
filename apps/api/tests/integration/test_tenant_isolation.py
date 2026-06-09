@@ -326,9 +326,11 @@ class TestIDORPrevention:
         mock_repo = MagicMock()
         # Repository returns None for lead from other tenant
         mock_repo.get_by_id = AsyncMock(
-            side_effect=lambda lead_id, **_kwargs: lead_tenant_a  # type: ignore
-            if lead_id == lead_tenant_a.id
-            else None
+            side_effect=lambda lead_id, **_kwargs: (
+                lead_tenant_a  # type: ignore
+                if lead_id == lead_tenant_a.id
+                else None
+            )
         )
 
         # User A tries to access Tenant B's lead by ID

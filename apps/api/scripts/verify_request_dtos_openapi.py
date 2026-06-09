@@ -41,7 +41,7 @@ expected_request_dtos = {
 actual_schemas = set()
 components = openapi_schema.get("components", {}).get("schemas", {})
 
-for schema_name in components.keys():
+for schema_name in components:
     if (
         "Request" in schema_name
         or "Create" in schema_name
@@ -69,7 +69,7 @@ if missing:
         print(f"  - {dto}")
 
 if extra:
-    print(f"\nℹ️  Extra DTOs not in contract tests ({len(extra)}):")
+    print(f"\nInfo:  Extra DTOs not in contract tests ({len(extra)}):")
     for dto in sorted(extra):
         print(f"  - {dto}")
 

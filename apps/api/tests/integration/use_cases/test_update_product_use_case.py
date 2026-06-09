@@ -20,9 +20,7 @@ from prosell.infrastructure.repositories.product_repository_impl import (
 )
 
 
-async def _create_product(
-    db_session, test_organization, test_category, *, title, attributes
-):
+async def _create_product(db_session, test_organization, test_category, *, title, attributes):
     return await CreateProductUseCase(
         SqlAlchemyProductRepository(db_session),
         SqlAlchemyCategoryRepository(db_session),
@@ -40,9 +38,7 @@ async def _create_product(
 
 
 @pytest.mark.asyncio
-async def test_update_recomposes_title_from_template(
-    db_session, test_organization, test_category
-):
+async def test_update_recomposes_title_from_template(db_session, test_organization, test_category):
     """Changing an attribute that feeds the template recomposes the title."""
     test_category.presentation = {"title_template": "{year} {make} {model}"}
     await db_session.flush()
@@ -62,9 +58,7 @@ async def test_update_recomposes_title_from_template(
     ).execute(
         created.id,
         test_organization.tenant_id,
-        UpdateProductRequest(
-            attributes={"year": 2020, "make": "Honda", "model": "Accord"}
-        ),
+        UpdateProductRequest(attributes={"year": 2020, "make": "Honda", "model": "Accord"}),
     )
 
     assert updated.title == "2020 Honda Accord"
@@ -101,9 +95,7 @@ async def test_update_falls_back_to_existing_title_without_template(
 
 
 @pytest.mark.asyncio
-async def test_update_missing_product_raises_not_found(
-    db_session, test_organization
-):
+async def test_update_missing_product_raises_not_found(db_session, test_organization):
     """Updating a non-existent product raises a domain error (router → 404)."""
     from uuid import uuid4
 

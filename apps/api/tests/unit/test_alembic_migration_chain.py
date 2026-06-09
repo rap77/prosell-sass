@@ -61,7 +61,7 @@ def _parse_migration(path: Path) -> tuple[str, str | None]:
     # Match `down_revision = "..."` OR `down_revision: <type> = ...` — single line only.
     # The value must be a string literal, None, or a list literal — all fit on one line.
     down_match = re.search(
-        r'^\s*down_revision\s*(?::\s*[^=\n]+)?=\s*(\S.*?)\s*$',
+        r"^\s*down_revision\s*(?::\s*[^=\n]+)?=\s*(\S.*?)\s*$",
         text,
         re.MULTILINE,
     )
@@ -81,9 +81,7 @@ def _parse_migration(path: Path) -> tuple[str, str | None]:
         first = re.search(r'["\']([^"\']+)["\']', raw_value)
         down_revision = first.group(1) if first else None
     else:
-        pytest.fail(
-            f"{path.name}: cannot parse down_revision value: {raw_value!r}"
-        )
+        pytest.fail(f"{path.name}: cannot parse down_revision value: {raw_value!r}")
 
     return revision, down_revision
 

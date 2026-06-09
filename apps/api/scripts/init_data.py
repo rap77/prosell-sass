@@ -99,9 +99,9 @@ async def init_data() -> None:
             print(f"Admin user {admin_email} already exists — skipping (idempotent)")
         else:
             admin_pass = os.environ["ADMIN_PASSWORD"]
-            password_hash = bcrypt.hashpw(
-                admin_pass.encode("utf-8"), bcrypt.gensalt()
-            ).decode("utf-8")
+            password_hash = bcrypt.hashpw(admin_pass.encode("utf-8"), bcrypt.gensalt()).decode(
+                "utf-8"
+            )
 
             user_id = uuid4()
             user = UserModel(

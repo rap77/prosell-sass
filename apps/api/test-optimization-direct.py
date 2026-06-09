@@ -46,7 +46,7 @@ async def test_optimization():
             original_size = img_file.stat().st_size
 
             # Optimizar
-            with open(img_file, "rb") as f:
+            with img_file.open("rb") as f:
                 original_bytes = f.read()
 
             optimized_bytes = await optimizer.process(original_bytes)

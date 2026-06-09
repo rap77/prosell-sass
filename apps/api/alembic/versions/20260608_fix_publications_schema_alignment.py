@@ -49,31 +49,19 @@ def upgrade() -> None:
     op.execute("ALTER TABLE publications DROP COLUMN IF EXISTS vehicle_id")
 
     # 2. Add tenant_id NOT NULL with FK organizations (table is empty, safe)
-    op.execute(
-        "ALTER TABLE publications ADD COLUMN IF NOT EXISTS tenant_id UUID"
-    )
+    op.execute("ALTER TABLE publications ADD COLUMN IF NOT EXISTS tenant_id UUID")
     # Populate any pre-existing rows from product->organization (defensive, table is empty)
-    op.execute(
-        "ALTER TABLE publications ALTER COLUMN tenant_id SET NOT NULL"
-    )
-    op.execute(
-        "ALTER TABLE publications DROP CONSTRAINT IF EXISTS publications_tenant_id_fkey"
-    )
+    op.execute("ALTER TABLE publications ALTER COLUMN tenant_id SET NOT NULL")
+    op.execute("ALTER TABLE publications DROP CONSTRAINT IF EXISTS publications_tenant_id_fkey")
     op.execute(
         "ALTER TABLE publications ADD CONSTRAINT publications_tenant_id_fkey "
         "FOREIGN KEY (tenant_id) REFERENCES organizations(id) ON DELETE CASCADE"
     )
 
     # 3. Add product_id NOT NULL with FK products
-    op.execute(
-        "ALTER TABLE publications ADD COLUMN IF NOT EXISTS product_id UUID"
-    )
-    op.execute(
-        "ALTER TABLE publications ALTER COLUMN product_id SET NOT NULL"
-    )
-    op.execute(
-        "ALTER TABLE publications DROP CONSTRAINT IF EXISTS publications_product_id_fkey"
-    )
+    op.execute("ALTER TABLE publications ADD COLUMN IF NOT EXISTS product_id UUID")
+    op.execute("ALTER TABLE publications ALTER COLUMN product_id SET NOT NULL")
+    op.execute("ALTER TABLE publications DROP CONSTRAINT IF EXISTS publications_product_id_fkey")
     op.execute(
         "ALTER TABLE publications ADD CONSTRAINT publications_product_id_fkey "
         "FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE"
@@ -86,32 +74,19 @@ def upgrade() -> None:
     )
 
     # 5. Add fb_listing_id column (looked up by webhook)
-    op.execute(
-        "ALTER TABLE publications ADD COLUMN IF NOT EXISTS fb_listing_id VARCHAR(255)"
-    )
+    op.execute("ALTER TABLE publications ADD COLUMN IF NOT EXISTS fb_listing_id VARCHAR(255)")
 
     # 6. Convert image_urls from JSON to JSONB
     op.execute(
-        "ALTER TABLE publications "
-        "ALTER COLUMN image_urls TYPE JSONB USING image_urls::jsonb"
+        "ALTER TABLE publications ALTER COLUMN image_urls TYPE JSONB USING image_urls::jsonb"
     )
 
     # 7. Create indexes used by repository queries
+    op.execute("CREATE INDEX IF NOT EXISTS ix_publications_tenant_id ON publications (tenant_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_publications_product_id ON publications (product_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_publications_status ON publications (status)")
     op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_publications_tenant_id "
-        "ON publications (tenant_id)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_publications_product_id "
-        "ON publications (product_id)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_publications_status "
-        "ON publications (status)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_publications_fb_listing_id "
-        "ON publications (fb_listing_id)"
+        "CREATE INDEX IF NOT EXISTS ix_publications_fb_listing_id ON publications (fb_listing_id)"
     )
 
 
@@ -122,21 +97,15 @@ def downgrade() -> None:
     op.execute("DROP INDEX IF EXISTS ix_publications_product_id")
     op.execute("DROP INDEX IF EXISTS ix_publications_tenant_id")
 
-    op.execute(
-        "ALTER TABLE publications ALTER COLUMN image_urls TYPE JSON USING image_urls::json"
-    )
+    op.execute("ALTER TABLE publications ALTER COLUMN image_urls TYPE JSON USING image_urls::json")
 
     op.execute("ALTER TABLE publications DROP COLUMN IF EXISTS fb_listing_id")
     op.execute("ALTER TABLE publications DROP COLUMN IF EXISTS status")
 
-    op.execute(
-        "ALTER TABLE publications DROP CONSTRAINT IF EXISTS publications_product_id_fkey"
-    )
+    op.execute("ALTER TABLE publications DROP CONSTRAINT IF EXISTS publications_product_id_fkey")
     op.execute("ALTER TABLE publications DROP COLUMN IF EXISTS product_id")
 
-    op.execute(
-        "ALTER TABLE publications DROP CONSTRAINT IF EXISTS publications_tenant_id_fkey"
-    )
+    op.execute("ALTER TABLE publications DROP CONSTRAINT IF EXISTS publications_tenant_id_fkey")
     op.execute("ALTER TABLE publications DROP COLUMN IF EXISTS tenant_id")
 
     op.execute("ALTER TABLE publications ADD COLUMN IF NOT EXISTS vehicle_id UUID")

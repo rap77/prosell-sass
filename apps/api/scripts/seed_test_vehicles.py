@@ -43,7 +43,10 @@ TEST_VEHICLES = [
         "mileage_unit": "mi",
         "price_cents": 1850000,  # $18,500
         "currency": "USD",
-        "description": "Well-maintained Honda Civic with low miles. Features include Bluetooth, backup camera, and Honda Sensing safety suite.",
+        "description": (
+            "Well-maintained Honda Civic with low miles. "
+            "Features include Bluetooth, backup camera, and Honda Sensing safety suite."
+        ),
         "has_bluetooth": True,
         "has_backup_camera": True,
         "has_sunroof": False,
@@ -64,7 +67,10 @@ TEST_VEHICLES = [
         "mileage_unit": "mi",
         "price_cents": 4200000,  # $42,000
         "currency": "USD",
-        "description": "Powerful Toyota Tacoma TRD Off-Road with 4WD. Tow package, bed liner, and off-road suspension.",
+        "description": (
+            "Powerful Toyota Tacoma TRD Off-Road with 4WD. "
+            "Tow package, bed liner, and off-road suspension."
+        ),
         "has_bluetooth": True,
         "has_backup_camera": True,
         "has_sunroof": False,
@@ -85,7 +91,9 @@ TEST_VEHICLES = [
         "mileage_unit": "mi",
         "price_cents": 6850000,  # $68,500
         "currency": "USD",
-        "description": "Luxury BMW X5 with premium package, navigation, leather seats, and panoramic sunroof.",
+        "description": (
+            "Luxury BMW X5 with premium package, navigation, leather seats, and panoramic sunroof."
+        ),
         "has_bluetooth": True,
         "has_backup_camera": True,
         "has_sunroof": True,
@@ -108,7 +116,10 @@ TEST_VEHICLES = [
         "mileage_unit": "mi",
         "price_cents": 459900,  # $45,990
         "currency": "USD",
-        "description": "Tesla Model 3 Long Range with Autopilot, premium interior, and full self-driving capability.",
+        "description": (
+            "Tesla Model 3 Long Range with Autopilot, "
+            "premium interior, and full self-driving capability."
+        ),
         "has_bluetooth": True,
         "has_backup_camera": True,
         "has_navigation": True,
@@ -129,7 +140,9 @@ TEST_VEHICLES = [
         "mileage_unit": "mi",
         "price_cents": 5500000,  # $55,000
         "currency": "USD",
-        "description": "Ford F-150 Lariat with EcoBoost V6, leather seats, navigation, and tow package.",
+        "description": (
+            "Ford F-150 Lariat with EcoBoost V6, leather seats, navigation, and tow package."
+        ),
         "has_bluetooth": True,
         "has_backup_camera": True,
         "has_navigation": True,
@@ -152,7 +165,9 @@ TEST_VEHICLES = [
         "mileage_unit": "mi",
         "price_cents": 3295000,  # $32,950
         "currency": "USD",
-        "description": "Fuel-efficient Toyota RAV4 Hybrid with AWD, premium audio, and safety sense package.",
+        "description": (
+            "Fuel-efficient Toyota RAV4 Hybrid with AWD, premium audio, and safety sense package."
+        ),
         "has_bluetooth": True,
         "has_backup_camera": True,
     },
@@ -172,7 +187,10 @@ TEST_VEHICLES = [
         "mileage_unit": "mi",
         "price_cents": 1250000,  # $12,500
         "currency": "USD",
-        "description": "Fun-to-drive Mazda MX-5 Miata convertible. Manual transmission, premium package, well maintained.",
+        "description": (
+            "Fun-to-drive Mazda MX-5 Miata convertible. "
+            "Manual transmission, premium package, well maintained."
+        ),
         "has_bluetooth": False,
         "has_backup_camera": False,
     },
@@ -192,7 +210,10 @@ TEST_VEHICLES = [
         "mileage_unit": "mi",
         "price_cents": 1899000,  # $18,990
         "currency": "USD",
-        "description": "Classic Chevrolet Camaro SS with LS1 V8, manual transmission, T-tops, and aftermarket exhaust.",
+        "description": (
+            "Classic Chevrolet Camaro SS with LS1 V8, manual transmission, "
+            "T-tops, and aftermarket exhaust."
+        ),
         "has_bluetooth": False,
         "has_backup_camera": False,
     },
@@ -208,11 +229,8 @@ async def get_or_create_test_data():
         )
         org_row = result.first()
 
-        if org_row:
-            org_id = org_row[0]
-        else:
-            # Fallback: use known org ID from seed.py
-            org_id = "f63ef6cf-4659-40bb-9e25-c08bbd5d03a3"
+        # Fallback: use known org ID from seed.py when no row exists
+        org_id = org_row[0] if org_row else "f63ef6cf-4659-40bb-9e25-c08bbd5d03a3"
 
         # Get vehicles category
         result = await session.execute(
@@ -222,11 +240,8 @@ async def get_or_create_test_data():
         )
         cat_row = result.first()
 
-        if cat_row:
-            cat_id = cat_row[0]
-        else:
-            # Fallback: use known category ID
-            cat_id = "776bd2e7-fe89-4a52-ac5c-717b134eb9c6"
+        # Fallback: use known category ID when no row exists
+        cat_id = cat_row[0] if cat_row else "776bd2e7-fe89-4a52-ac5c-717b134eb9c6"
 
         return org_id, cat_id
 
@@ -267,7 +282,10 @@ async def create_vehicles():
                 tenant_id=org_id,
                 organization_id=org_id,
                 category_id=cat_id,
-                title=f"{vehicle_data['year']} {vehicle_data['make']} {vehicle_data['model']} {vehicle_data.get('trim', '')}".strip(),
+                title=(
+                    f"{vehicle_data['year']} {vehicle_data['make']} "
+                    f"{vehicle_data['model']} {vehicle_data.get('trim', '')}"
+                ).strip(),
                 slug=None,
                 description=description,
                 price_cents=price_cents,
@@ -317,7 +335,8 @@ async def create_vehicles():
             created_count += 1
 
             print(
-                f"   ✓ Created: {vehicle_data['year']} {vehicle_data['make']} {vehicle_data['model']} ({vehicle_data['vin']})"
+                f"   ✓ Created: {vehicle_data['year']} {vehicle_data['make']} "
+                f"{vehicle_data['model']} ({vehicle_data['vin']})"
             )
 
         await session.commit()

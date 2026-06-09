@@ -46,9 +46,7 @@ async def _seed_global_category(db_session):
 
 
 @pytest.mark.asyncio
-async def test_update_global_category_denied_without_platform_admin(
-    db_session, test_organization
-):
+async def test_update_global_category_denied_without_platform_admin(db_session, test_organization):
     global_cat = await _seed_global_category(db_session)
     use_case = UpdateCategoryUseCase(SqlAlchemyCategoryRepository(db_session))
 
@@ -63,9 +61,7 @@ async def test_update_global_category_denied_without_platform_admin(
 
 
 @pytest.mark.asyncio
-async def test_update_global_category_allowed_for_platform_admin(
-    db_session, test_organization
-):
+async def test_update_global_category_allowed_for_platform_admin(db_session, test_organization):
     global_cat = await _seed_global_category(db_session)
     use_case = UpdateCategoryUseCase(SqlAlchemyCategoryRepository(db_session))
 
@@ -79,16 +75,12 @@ async def test_update_global_category_allowed_for_platform_admin(
 
 
 @pytest.mark.asyncio
-async def test_delete_global_category_denied_without_platform_admin(
-    db_session, test_organization
-):
+async def test_delete_global_category_denied_without_platform_admin(db_session, test_organization):
     global_cat = await _seed_global_category(db_session)
     use_case = DeleteCategoryUseCase(SqlAlchemyCategoryRepository(db_session))
 
     with pytest.raises(HTTPException) as exc:
-        await use_case.execute(
-            global_cat.id, test_organization.tenant_id, is_platform_admin=False
-        )
+        await use_case.execute(global_cat.id, test_organization.tenant_id, is_platform_admin=False)
     assert exc.value.status_code == 403
 
 
@@ -97,9 +89,7 @@ async def test_update_attribute_schema_global_denied_without_platform_admin(
     db_session, test_organization
 ):
     global_cat = await _seed_global_category(db_session)
-    use_case = UpdateCategoryAttributeSchemaUseCase(
-        SqlAlchemyCategoryRepository(db_session)
-    )
+    use_case = UpdateCategoryAttributeSchemaUseCase(SqlAlchemyCategoryRepository(db_session))
 
     with pytest.raises(HTTPException) as exc:
         await use_case.execute(

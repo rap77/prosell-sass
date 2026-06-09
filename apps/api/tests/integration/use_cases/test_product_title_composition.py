@@ -41,7 +41,8 @@ async def test_create_composes_title_from_category_template(
     )
     response = await use_case.execute(
         _request(
-            test_organization, test_category,
+            test_organization,
+            test_category,
             title="IGNORED CLIENT TITLE",
             attributes={"year": 2020, "make": "Honda", "model": "Civic"},
         )
@@ -63,7 +64,8 @@ async def test_create_falls_back_to_request_title_without_template(
     )
     response = await use_case.execute(
         _request(
-            test_organization, test_category,
+            test_organization,
+            test_category,
             title="2020 Honda Accord",
             attributes={"year": 2020, "make": "Honda", "model": "Accord"},
         )

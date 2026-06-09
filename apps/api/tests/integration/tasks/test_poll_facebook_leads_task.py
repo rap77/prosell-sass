@@ -306,7 +306,6 @@ class TestPollFacebookLeadsTaskLogic:
         assert result["leads_created"] <= result["leads_found"]
 
 
-
 __all__ = [
     "TestPollFacebookLeadsTask",
     "TestPollFacebookLeadsTaskConfiguration",

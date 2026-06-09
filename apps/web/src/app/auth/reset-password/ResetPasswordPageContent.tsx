@@ -278,7 +278,9 @@ export function ResetPasswordPageContent({
   token,
 }: ResetPasswordPageContentProps) {
   const [success, setSuccess] = useState(false);
-  const [tokenInvalid] = useState(() => !token || token.trim() === "");
+  const [tokenInvalid, setTokenInvalid] = useState(
+    () => !token || token.trim() === "",
+  );
   const [apiError, setApiError] = useState<string | null>(null);
 
   const {

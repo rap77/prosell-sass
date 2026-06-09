@@ -21,17 +21,17 @@ The old `is_primary` flag on `product_images` is left untouched and is
 considered legacy — it is not read by the application code today and
 its semantics overlap with this column.
 """
-from typing import Sequence, Union
 
-from alembic import op
+from collections.abc import Sequence
+
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "add_cover_image_key"
-down_revision: Union[str, None] = "xyzabc123456"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "xyzabc123456"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

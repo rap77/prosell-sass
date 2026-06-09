@@ -34,9 +34,7 @@ def _next_weekday_business_hour() -> datetime:
     return base
 
 
-async def _create_prereqs(
-    db_session, tenant_id: UUID, category_id: UUID
-) -> tuple[UUID, UUID]:
+async def _create_prereqs(db_session, tenant_id: UUID, category_id: UUID) -> tuple[UUID, UUID]:
     """Insert a lead + product so the appointment FKs are satisfied.
 
     Returns (lead_id, product_id).
@@ -78,9 +76,7 @@ async def test_create_appointment_persists_entity(
     same id and status."""
     repo = SqlAlchemyAppointmentRepository(db_session)
     tenant_id = test_organization.tenant_id
-    lead_id, product_id = await _create_prereqs(
-        db_session, tenant_id, test_category.id
-    )
+    lead_id, product_id = await _create_prereqs(db_session, tenant_id, test_category.id)
 
     scheduled = _next_weekday_business_hour()
     appt = Appointment.create(
@@ -112,9 +108,7 @@ async def test_create_appointment_rejects_overlap_within_one_hour(
     window filter ever breaks, this test goes RED."""
     repo = SqlAlchemyAppointmentRepository(db_session)
     tenant_id = test_organization.tenant_id
-    lead_id, product_id = await _create_prereqs(
-        db_session, tenant_id, test_category.id
-    )
+    lead_id, product_id = await _create_prereqs(db_session, tenant_id, test_category.id)
 
     scheduled_first = _next_weekday_business_hour()
     scheduled_second = scheduled_first + timedelta(minutes=20)
@@ -150,9 +144,7 @@ async def test_create_appointment_allows_non_overlap(
     bookings."""
     repo = SqlAlchemyAppointmentRepository(db_session)
     tenant_id = test_organization.tenant_id
-    lead_id, product_id = await _create_prereqs(
-        db_session, tenant_id, test_category.id
-    )
+    lead_id, product_id = await _create_prereqs(db_session, tenant_id, test_category.id)
 
     scheduled_first = _next_weekday_business_hour()
     # Move to a different hour on the same day to avoid business-hours edge

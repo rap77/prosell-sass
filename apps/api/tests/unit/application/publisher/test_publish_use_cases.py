@@ -151,9 +151,7 @@ async def test_update_listing_raises_if_not_published(mock_publication_repo):
     use_case = UpdateListingUseCase(
         publication_repo=mock_publication_repo, task_dispatcher=AsyncMock()
     )  # type: ignore[call-arg]
-    request = UpdateListingRequest(
-        publication_id=pub_id, price_cents=15000, tenant_id=uuid.uuid4()
-    )
+    request = UpdateListingRequest(publication_id=pub_id, price_cents=15000, tenant_id=uuid.uuid4())
 
     with pytest.raises(ValueError, match="Cannot update a non-published listing"):
         await use_case.execute(request)

@@ -94,9 +94,7 @@ class TestImageUploadReturnsSignedURL:
     """POST /api/v1/images/upload must return a presigned URL."""
 
     @pytest.mark.asyncio
-    async def test_upload_response_url_is_presigned(
-        self, async_client: AsyncClient
-    ) -> None:
+    async def test_upload_response_url_is_presigned(self, async_client: AsyncClient) -> None:
         """The url field in the response is a presigned URL with X-Amz-Signature.
 
         It must NOT be a hardcoded internal endpoint (e.g. http://minio:9000/...)
@@ -118,18 +116,14 @@ class TestImageUploadReturnsSignedURL:
             f"Expected presigned URL with X-Amz-Signature, got: {url!r}"
         )
         # And it must NOT be the internal docker network endpoint
-        assert "minio:9000" not in url, (
-            f"URL leaked internal endpoint (minio:9000), got: {url!r}"
-        )
+        assert "minio:9000" not in url, f"URL leaked internal endpoint (minio:9000), got: {url!r}"
 
 
 class TestImageStatusReturnsSignedURL:
     """GET /api/v1/images/status/{file_id} must return a presigned URL when present."""
 
     @pytest.mark.asyncio
-    async def test_status_response_url_is_presigned(
-        self, async_client: AsyncClient
-    ) -> None:
+    async def test_status_response_url_is_presigned(self, async_client: AsyncClient) -> None:
         """When the file exists, the url field is a presigned URL with X-Amz-Signature.
 
         Same regression as upload: must not leak internal endpoint.
@@ -148,9 +142,7 @@ class TestImageStatusReturnsSignedURL:
             f"Expected presigned URL with X-Amz-Signature, got: {url!r}"
         )
         # And it must NOT be the internal docker network endpoint
-        assert "minio:9000" not in url, (
-            f"URL leaked internal endpoint (minio:9000), got: {url!r}"
-        )
+        assert "minio:9000" not in url, f"URL leaked internal endpoint (minio:9000), got: {url!r}"
 
 
 class TestImageUploadReturnsStorageKey:
@@ -169,9 +161,7 @@ class TestImageUploadReturnsStorageKey:
     """
 
     @pytest.mark.asyncio
-    async def test_upload_response_includes_storage_key(
-        self, async_client: AsyncClient
-    ) -> None:
+    async def test_upload_response_includes_storage_key(self, async_client: AsyncClient) -> None:
         """The response MUST include a `key` field with the raw storage path."""
         response = await async_client.post(
             "/api/v1/images/upload",
@@ -183,9 +173,7 @@ class TestImageUploadReturnsStorageKey:
         assert "key" in body, f"Response missing `key` field; got: {body!r}"
         key = body["key"]
         # The key MUST be the raw S3 path — no signature query string.
-        assert "?" not in key, (
-            f"key contains a query string (signed URL leaked): {key!r}"
-        )
+        assert "?" not in key, f"key contains a query string (signed URL leaked): {key!r}"
         # And it MUST start with the tenant prefix.
         assert key.startswith(f"orgs/{TEST_TENANT_ID}/vehicles/"), (
             f"key does not match expected tenant prefix: {key!r}"

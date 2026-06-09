@@ -127,9 +127,7 @@ class TestGetProductImageUrlsFallbackToAttributes:
         attributes.image_urls MUST return a signed URL for each legacy entry.
         """
         client, _ = async_client_with_spaces
-        legacy_url = (
-            f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/vehicles/legacy1.jpg"
-        )
+        legacy_url = f"http://minio:9000/{BUCKET}/orgs/{TEST_TENANT_ID}/vehicles/legacy1.jpg"
         product = _make_product_entity(
             image_urls=[],
             attributes={"image_urls": [legacy_url]},
@@ -155,8 +153,7 @@ class TestGetProductImageUrlsFallbackToAttributes:
             f"Signed URL still leaks internal endpoint: {signed['url']!r}"
         )
         assert signed["url"].startswith("http://localhost:9000/"), (
-            f"Signed URL should target the public endpoint (localhost:9000), got: "
-            f"{signed['url']!r}"
+            f"Signed URL should target the public endpoint (localhost:9000), got: {signed['url']!r}"
         )
 
     @pytest.mark.asyncio
@@ -257,9 +254,7 @@ class TestGetProductImageUrlsSecurityFilters:
                 # Re-use the same transport as the fixture's client
                 transport = ASGITransport(app=app)
                 async with AsyncClient(transport=transport, base_url="http://test") as client:
-                    response = await client.get(
-                        f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls"
-                    )
+                    response = await client.get(f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls")
         finally:
             app.dependency_overrides.pop(get_spaces_service, None)
 
@@ -313,9 +308,7 @@ class TestGetProductImageUrlsSecurityFilters:
                 mock_repo_cls.return_value.get_by_id = AsyncMock(return_value=product)
                 transport = ASGITransport(app=app)
                 async with AsyncClient(transport=transport, base_url="http://test") as client:
-                    response = await client.get(
-                        f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls"
-                    )
+                    response = await client.get(f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls")
         finally:
             app.dependency_overrides.pop(get_spaces_service, None)
 
@@ -396,9 +389,7 @@ class TestGetProductImageUrlsStripsQueryString:
 
         assert response.status_code == status.HTTP_200_OK, response.text
         body = response.json()
-        assert len(body["images"]) == 1, (
-            f"Expected 1 normalized image, got: {body['images']!r}"
-        )
+        assert len(body["images"]) == 1, f"Expected 1 normalized image, got: {body['images']!r}"
         signed = body["images"][0]
         # The returned key MUST be the bare storage key (no query string).
         assert signed["key"] == key, (
@@ -454,9 +445,7 @@ class TestGetProductImageUrlsStripsQueryString:
             "?X-Amz-Algorithm=AWS4-HMAC-SHA256"
             "&X-Amz-Signature=stale"
         )
-        product = _make_product_entity(
-            image_urls=[clean_url, corrupt_url], attributes={}
-        )
+        product = _make_product_entity(image_urls=[clean_url, corrupt_url], attributes={})
 
         with patch(
             "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
@@ -524,9 +513,7 @@ class TestGetProductImageUrlsAcceptsBareKeys:
         """Same for legacy data that uses bare keys in attributes.image_urls."""
         client, spaces = async_client_with_spaces
         key = f"orgs/{TEST_TENANT_ID}/vehicles/legacy-bare.jpg"
-        product = _make_product_entity(
-            image_urls=[], attributes={"image_urls": [key]}
-        )
+        product = _make_product_entity(image_urls=[], attributes={"image_urls": [key]})
 
         with patch(
             "prosell.infrastructure.api.routers.product_router.SqlAlchemyProductRepository"
@@ -573,9 +560,7 @@ class TestGetProductImageUrlsAcceptsBareKeys:
                 mock_repo_cls.return_value.get_by_id = AsyncMock(return_value=product)
                 transport = ASGITransport(app=app)
                 async with AsyncClient(transport=transport, base_url="http://test") as client:
-                    response = await client.get(
-                        f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls"
-                    )
+                    response = await client.get(f"/api/v1/products/{TEST_PRODUCT_ID}/image-urls")
         finally:
             app.dependency_overrides.pop(get_spaces_service, None)
 

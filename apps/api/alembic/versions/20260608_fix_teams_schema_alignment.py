@@ -56,9 +56,7 @@ def upgrade() -> None:
 
     # 4. Add parent_team_id column with self-referencing FK
     op.execute("ALTER TABLE teams ADD COLUMN IF NOT EXISTS parent_team_id UUID NULL")
-    op.execute(
-        "ALTER TABLE teams DROP CONSTRAINT IF EXISTS teams_parent_team_id_fkey"
-    )
+    op.execute("ALTER TABLE teams DROP CONSTRAINT IF EXISTS teams_parent_team_id_fkey")
     op.execute(
         "ALTER TABLE teams ADD CONSTRAINT teams_parent_team_id_fkey "
         "FOREIGN KEY (parent_team_id) REFERENCES teams(id) ON DELETE SET NULL"
@@ -79,23 +77,16 @@ def downgrade() -> None:
 
     # Add back slug, is_active as nullable (we can't recover the data)
     op.execute("ALTER TABLE teams ADD COLUMN IF NOT EXISTS slug VARCHAR(255)")
-    op.execute(
-        "ALTER TABLE teams ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"
-    )
+    op.execute("ALTER TABLE teams ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE")
 
     # Drop self-referencing FK and column
-    op.execute(
-        "ALTER TABLE teams DROP CONSTRAINT IF EXISTS teams_parent_team_id_fkey"
-    )
+    op.execute("ALTER TABLE teams DROP CONSTRAINT IF EXISTS teams_parent_team_id_fkey")
     op.execute("ALTER TABLE teams DROP COLUMN IF EXISTS parent_team_id")
 
     # Rename back
     op.execute("ALTER TABLE teams RENAME COLUMN org_id TO organization_id")
 
     # Recreate original indexes
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_teams_organization_id "
-        "ON teams (organization_id)"
-    )
+    op.execute("CREATE INDEX IF NOT EXISTS ix_teams_organization_id ON teams (organization_id)")
     op.execute("CREATE INDEX IF NOT EXISTS ix_teams_slug ON teams (slug)")
     op.execute("CREATE INDEX IF NOT EXISTS ix_teams_is_active ON teams (is_active)")

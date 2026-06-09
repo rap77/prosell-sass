@@ -46,9 +46,7 @@ async def _add_global_category(db_session, *, presentation):
 
 
 @pytest.mark.asyncio
-async def test_create_product_referencing_global_category(
-    db_session, test_organization
-):
+async def test_create_product_referencing_global_category(db_session, test_organization):
     """Creating a product under a global category succeeds and composes the
     title from the global template."""
     global_cat = await _add_global_category(
@@ -75,9 +73,7 @@ async def test_create_product_referencing_global_category(
 
 
 @pytest.mark.asyncio
-async def test_update_product_under_global_category_recomposes_title(
-    db_session, test_organization
-):
+async def test_update_product_under_global_category_recomposes_title(db_session, test_organization):
     """Updating an attribute recomposes the title from the global template."""
     global_cat = await _add_global_category(
         db_session, presentation={"title_template": "{year} {make} {model}"}
@@ -101,9 +97,7 @@ async def test_update_product_under_global_category_recomposes_title(
     updated = await UpdateProductUseCase(product_repo, category_repo).execute(
         created.id,
         test_organization.tenant_id,
-        UpdateProductRequest(
-            attributes={"year": 2021, "make": "Toyota", "model": "Camry"}
-        ),
+        UpdateProductRequest(attributes={"year": 2021, "make": "Toyota", "model": "Camry"}),
     )
 
     assert updated.title == "2021 Toyota Camry"

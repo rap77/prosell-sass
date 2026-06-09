@@ -213,9 +213,9 @@ class TestPermissionMatrixConsistency:
         for role_name in PERMISSION_MATRIX:
             matrix_keys = set(PERMISSION_MATRIX[role_name].keys())
             missing = all_perm_strings - matrix_keys
-            assert (
-                not missing
-            ), f"Role '{role_name}' is missing permissions in PERMISSION_MATRIX: {missing}"
+            assert not missing, (
+                f"Role '{role_name}' is missing permissions in PERMISSION_MATRIX: {missing}"
+            )
 
 
 # =============================================================================
@@ -576,9 +576,9 @@ class TestAllRoleCombinations:
         ]:
             higher_perms = _perms_for(role_type)
             for perm in viewer_perms:
-                assert (
-                    perm in higher_perms
-                ), f"Role '{role_type.value}' missing viewer permission '{perm}'"
+                assert perm in higher_perms, (
+                    f"Role '{role_type.value}' missing viewer permission '{perm}'"
+                )
 
     def test_no_role_above_super_admin(self) -> None:
         """SUPER_ADMIN has all defined permissions."""
@@ -861,9 +861,9 @@ class TestRoleEscalationBlocked:
             Permission.SETTINGS_UPDATE,
         ]
         for perm in admin_only_perms:
-            assert not viewer.has_permission(
-                perm
-            ), f"VIEWER unexpectedly has admin permission: {perm}"
+            assert not viewer.has_permission(perm), (
+                f"VIEWER unexpectedly has admin permission: {perm}"
+            )
 
     def test_vendedor_cannot_delete_vehicles(self) -> None:
         """SALES_AGENT does not have VEHICLE_DELETE — that requires manager+."""
@@ -883,9 +883,9 @@ class TestRoleEscalationBlocked:
             Permission.ORG_DELETE,
         ]
         for perm in escalation_perms:
-            assert not manager.has_permission(
-                perm
-            ), f"MANAGER unexpectedly has super_admin permission: {perm}"
+            assert not manager.has_permission(perm), (
+                f"MANAGER unexpectedly has super_admin permission: {perm}"
+            )
 
     def test_custom_role_defaults_to_viewer_permissions(self) -> None:
         """Custom roles start with VIEWER permissions (minimal) — no escalation."""
@@ -1021,9 +1021,9 @@ class TestPermissionMatrixDocumentation:
             len(_perms_for(RoleType.VIEWER)),  # 2
         ]
         for i in range(len(counts) - 1):
-            assert (
-                counts[i] > counts[i + 1]
-            ), f"Hierarchy broken at index {i}: {counts[i]} <= {counts[i + 1]}"
+            assert counts[i] > counts[i + 1], (
+                f"Hierarchy broken at index {i}: {counts[i]} <= {counts[i + 1]}"
+            )
 
     def test_doc_every_role_can_at_least_read_vehicles(self) -> None:
         """All roles have at minimum VEHICLE_READ (the most basic read access)."""
@@ -1035,9 +1035,9 @@ class TestPermissionMatrixDocumentation:
         """ANALYTICS_VIEW is granted to every role (basic business insight)."""
         for role_type in RoleType:
             perms = _perms_for(role_type)
-            assert (
-                Permission.ANALYTICS_VIEW in perms
-            ), f"Role {role_type.value} missing ANALYTICS_VIEW"
+            assert Permission.ANALYTICS_VIEW in perms, (
+                f"Role {role_type.value} missing ANALYTICS_VIEW"
+            )
 
     def test_doc_destructive_ops_require_manager_or_above(self) -> None:
         """VEHICLE_DELETE requires at least MANAGER role."""

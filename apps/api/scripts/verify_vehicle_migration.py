@@ -16,8 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import func, select, text
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from prosell.infrastructure.models.product_model import ProductModel
 from prosell.infrastructure.models.vehicle_model import VehicleModel
@@ -28,9 +27,8 @@ async def verify_migration(database_url: str) -> None:
 
     # Create async engine
     engine = create_async_engine(database_url, echo=False)
-    async_session_maker = sessionmaker(
+    async_session_maker = async_sessionmaker(
         engine,
-        class_=AsyncSession,
         expire_on_commit=False,
     )
 
@@ -106,7 +104,8 @@ async def verify_migration(database_url: str) -> None:
             print(f"\n   {i}. Product: {product.title}")
             print(f"      VIN: {attrs.get('vin', 'N/A')}")
             print(
-                f"      Make/Model: {attrs.get('make', 'N/A')} {attrs.get('model', 'N/A')} {attrs.get('year', 'N/A')}"
+                f"      Make/Model: {attrs.get('make', 'N/A')} "
+                f"{attrs.get('model', 'N/A')} {attrs.get('year', 'N/A')}"
             )
             print(
                 f"      Mileage: {attrs.get('mileage', 'N/A')} {attrs.get('mileage_unit', 'miles')}"

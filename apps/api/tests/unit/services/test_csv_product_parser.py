@@ -51,8 +51,7 @@ def valid_csv_content(category_id):
 def minimal_csv_content(category_id):
     """Minimal CSV content with only required columns."""
     return (
-        "vin,title,price,category_id\n"
-        f"1HGCM82633A123456,2020 Honda Civic,18500.00,{category_id}\n"
+        f"vin,title,price,category_id\n1HGCM82633A123456,2020 Honda Civic,18500.00,{category_id}\n"
     )
 
 

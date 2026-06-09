@@ -260,11 +260,7 @@ class TestUpdateProductCoverAcceptsLegacyKeys:
 
             response = await async_client_with_auth.patch(
                 f"/api/v1/products/{TEST_PRODUCT_ID}",
-                json={
-                    "cover_image_key": (
-                        f"orgs/{TEST_TENANT_ID}/vehicles/does-not-exist.jpg"
-                    )
-                },
+                json={"cover_image_key": (f"orgs/{TEST_TENANT_ID}/vehicles/does-not-exist.jpg")},
             )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY

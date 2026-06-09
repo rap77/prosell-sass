@@ -37,9 +37,7 @@ async def _seed_global_category(db_session, *, is_active=True, attribute_schema=
 
 
 @pytest.mark.asyncio
-async def test_seller_sees_global_category_in_list(
-    async_client_as_seller: AsyncClient, db_session
-):
+async def test_seller_sees_global_category_in_list(async_client_as_seller: AsyncClient, db_session):
     """A tenant (sales agent) sees global categories in the list."""
     global_cat = await _seed_global_category(db_session)
 

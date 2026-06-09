@@ -134,15 +134,15 @@ async def async_client() -> AsyncGenerator[AsyncClient]:
     )
 
     app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: mock_user
-    app.dependency_overrides[get_create_appointment_use_case] = (
-        lambda: MockCreateAppointmentUseCase()
+    app.dependency_overrides[get_create_appointment_use_case] = lambda: (
+        MockCreateAppointmentUseCase()
     )
     app.dependency_overrides[get_appointment_repository] = lambda: MockAppointmentRepository()
-    app.dependency_overrides[get_cancel_appointment_use_case] = (
-        lambda: MockCancelAppointmentUseCase()
+    app.dependency_overrides[get_cancel_appointment_use_case] = lambda: (
+        MockCancelAppointmentUseCase()
     )
-    app.dependency_overrides[get_confirm_appointment_use_case] = (
-        lambda: MockConfirmAppointmentUseCase()
+    app.dependency_overrides[get_confirm_appointment_use_case] = lambda: (
+        MockConfirmAppointmentUseCase()
     )
 
     transport = ASGITransport(app=app)

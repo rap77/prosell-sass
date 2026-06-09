@@ -77,9 +77,7 @@ def test_resolve_title_falls_back_without_template():
 
 def test_resolve_title_falls_back_when_template_composes_empty():
     # Template present but no matching attributes → empty compose → fallback.
-    out = resolve_title(
-        {"title_template": "{make}"}, {}, fallback="My Title"
-    )
+    out = resolve_title({"title_template": "{make}"}, {}, fallback="My Title")
     assert out == "My Title"
 
 

@@ -62,9 +62,7 @@ def _category_payload(tenant_id):
 
 
 @pytest.mark.asyncio
-async def test_super_admin_can_create_category(
-    async_client_as_admin: AsyncClient, admin_user
-):
+async def test_super_admin_can_create_category(async_client_as_admin: AsyncClient, admin_user):
     """Baseline: the ProSell platform admin (super_admin) CAN create."""
     resp = await async_client_as_admin.post(
         "/api/v1/categories", json=_category_payload(admin_user.tenant_id)
@@ -77,9 +75,7 @@ async def test_org_admin_cannot_create_category(test_user, db_session):
     """An ORGANIZATION admin (role=admin) is NOT the ProSell admin → 403."""
     org_admin = _user_with_role(test_user, RoleType.ADMIN)
     async with await _client_for(org_admin, db_session) as client:
-        resp = await client.post(
-            "/api/v1/categories", json=_category_payload(test_user.tenant_id)
-        )
+        resp = await client.post("/api/v1/categories", json=_category_payload(test_user.tenant_id))
     app.dependency_overrides.clear()
     assert resp.status_code == 403, resp.text
 
@@ -107,9 +103,7 @@ async def test_seller_cannot_update_category(
     cat_id = create.json()["id"]
 
     async with await _client_for(seller_user, db_session) as client:
-        resp = await client.patch(
-            f"/api/v1/categories/{cat_id}", json={"description": "hack"}
-        )
+        resp = await client.patch(f"/api/v1/categories/{cat_id}", json={"description": "hack"})
     app.dependency_overrides.clear()
     assert resp.status_code == 403, resp.text
 

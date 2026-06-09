@@ -58,9 +58,7 @@ class TestSignImageURLsTenantScope:
         assert len(signed) == 1
         assert "X-Amz-Signature=" in signed[0]
         # And signer was called with the right key
-        spaces.generate_download_url.assert_called_once_with(
-            f"orgs/{CALLER_TENANT}/vehicles/a.jpg"
-        )
+        spaces.generate_download_url.assert_called_once_with(f"orgs/{CALLER_TENANT}/vehicles/a.jpg")
 
     @pytest.mark.asyncio
     async def test_keys_for_other_tenant_are_dropped(self) -> None:

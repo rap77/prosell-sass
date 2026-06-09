@@ -28,11 +28,11 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(project_root))
 
-from sqlalchemy import delete, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete, select  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
 
-from prosell.core.config import get_settings
-from prosell.infrastructure.database.session import get_async_session
+from prosell.core.config import get_settings  # noqa: E402
+from prosell.infrastructure.database.session import get_async_session  # noqa: E402
 
 
 async def cleanup_test_data(
