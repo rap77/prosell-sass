@@ -82,6 +82,9 @@ jobs:
       - name: Lint
         run: pnpm --filter @prosell/web lint
 
+      - name: Typecheck
+        run: pnpm --filter @prosell/web typecheck
+
       - name: Format check
         run: pnpm format:check
 
