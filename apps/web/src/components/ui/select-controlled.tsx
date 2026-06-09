@@ -14,7 +14,12 @@
 "use client";
 
 import * as React from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 
 export interface SelectOption {
   /** The canonical value stored in form state */
@@ -60,7 +65,9 @@ export function SelectControlled({
 }: SelectControlledProps) {
   // Case-insensitive lookup for robustness - handles VIN decode returning "Chevrolet"
   // when options have "chevrolet" as the key
-  const selectedOption = options.find((opt) => opt.value.toLowerCase() === value.toLowerCase());
+  const selectedOption = options.find(
+    (opt) => opt.value.toLowerCase() === value.toLowerCase(),
+  );
   const displayValue = selectedOption?.label ?? (value ? value : "");
 
   // Normalize the value to match the option's actual value (case-sensitive)
@@ -89,7 +96,11 @@ export function SelectControlled({
   };
 
   return (
-    <Select value={normalizedValue} onValueChange={handleChange} disabled={disabled}>
+    <Select
+      value={normalizedValue}
+      onValueChange={handleChange}
+      disabled={disabled}
+    >
       <SelectTrigger id={id} className={className} aria-label={ariaLabel}>
         {/*
           Passing display value as children ensures it renders when set

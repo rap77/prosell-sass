@@ -10,13 +10,13 @@ A response that "sounds good" but cannot be rated against this table is a Rating
 
 ## Rating 3 (Peer) vs Rating 4 (Senior)
 
-| Attribute | Rating 3 (Peer) | Rating 4 (Senior) |
-|-----------|-----------------|-------------------|
-| **Focus** | Solution space — suggests logical features based on the request | Opportunity space — frames the problem as user pain before touching solutions |
-| **Risks** | "We should validate this" (generic, no specifics) | Explicitly names all 4 Risks: Value (will users want it?), Usability (can they use it?), Feasibility (can we build it?), Viability (should the business build it?) |
-| **Metrics** | Vanity metrics or output metrics (ship X, ship by date Y) | Outcome KRs — measurable behavior changes (e.g., "agent executes protocol in <20% human T1 time") |
-| **Systems** | Linear thinking — A causes B, single causal chain | Identifies Feedback Loops + second-order effects (e.g., faster T1 → more brain queries → more feed pollution → need for feed hygiene) |
-| **Decision** | Waiter mode — takes the order, organizes it, asks "anything else?" | Synthesizer — questions "why now", surfaces alternatives, proposes the smallest useful experiment |
+| Attribute    | Rating 3 (Peer)                                                    | Rating 4 (Senior)                                                                                                                                                  |
+| ------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Focus**    | Solution space — suggests logical features based on the request    | Opportunity space — frames the problem as user pain before touching solutions                                                                                      |
+| **Risks**    | "We should validate this" (generic, no specifics)                  | Explicitly names all 4 Risks: Value (will users want it?), Usability (can they use it?), Feasibility (can we build it?), Viability (should the business build it?) |
+| **Metrics**  | Vanity metrics or output metrics (ship X, ship by date Y)          | Outcome KRs — measurable behavior changes (e.g., "agent executes protocol in <20% human T1 time")                                                                  |
+| **Systems**  | Linear thinking — A causes B, single causal chain                  | Identifies Feedback Loops + second-order effects (e.g., faster T1 → more brain queries → more feed pollution → need for feed hygiene)                              |
+| **Decision** | Waiter mode — takes the order, organizes it, asks "anything else?" | Synthesizer — questions "why now", surfaces alternatives, proposes the smallest useful experiment                                                                  |
 
 **Observable distinction:** A Rating 3 response answers the question asked. A Rating 4 response also points out what question SHOULD have been asked.
 
@@ -37,6 +37,7 @@ Any response that names solutions before framing the opportunity = solution spac
 ## Rating 5 (Architect) Threshold
 
 A Rating 5 response:
+
 - Identifies a systemic leverage point (Meadows) where one change shifts multiple outcomes simultaneously
 - Predicts second-order effects with supporting logic (not just intuition)
 - Proposes an experiment that validates multiple assumptions at once (Torres opportunity solution tree)

@@ -69,7 +69,7 @@ ELSE:
 
 1. **Read appropriate template** (`templates/layer{N}_test.py.j2`)
 2. **Render with context**: endpoint path, DTO name, test data from `config.yaml`
-3. **Write to tests/contract/{layer}/test_{endpoint}_contract.py`
+3. \*\*Write to tests/contract/{layer}/test\_{endpoint}\_contract.py`
 4. **Run pytest**: Verify test exists and is discoverable
 5. **Report results**: Pass/fail with diagnostic information
 
@@ -157,6 +157,7 @@ normalization_keywords:
 **Symptoms**: Select fields don't populate after VIN decode
 
 **Diagnosis**:
+
 ```python
 # analyzer.analyze_endpoint() detects:
 # - external_api: True (NHTSA API)
@@ -165,6 +166,7 @@ normalization_keywords:
 ```
 
 **Test generates**:
+
 ```python
 # tests/contract/integration/test_vin_decode_contract.py
 async def test_vin_decode_returns_normalized_make():
@@ -189,6 +191,7 @@ async def test_vin_decode_returns_normalized_make():
 **Problem**: Need to verify response structure is valid
 
 **Test generates**:
+
 ```python
 # tests/contract/openapi/test_organizations_schema.py
 def test_organizations_openapi_schema_exists():
@@ -201,6 +204,7 @@ def test_organizations_openapi_schema_exists():
 ## Tool Resolution
 
 Use `ToolSearch` to find:
+
 - `mcp__serena__find_symbol` - Locate DTOs and routers
 - `mcp__serena__read_file` - Read endpoint implementation
 - `mcp__serena__search_for_pattern` - Find normalization keywords

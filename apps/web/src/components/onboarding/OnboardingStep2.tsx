@@ -46,10 +46,18 @@ interface OnboardingStep2Props {
   isLoading?: boolean;
 }
 
-export function OnboardingStep2({ onNext, onBack, onSkip, isLoading }: OnboardingStep2Props) {
+export function OnboardingStep2({
+  onNext,
+  onBack,
+  onSkip,
+  isLoading,
+}: OnboardingStep2Props) {
   const form = useForm<Step2Data>({
     resolver: zodResolver(step2Schema),
-    defaultValues: { timezone: "America/Argentina/Buenos_Aires", currency: "ARS" },
+    defaultValues: {
+      timezone: "America/Argentina/Buenos_Aires",
+      currency: "ARS",
+    },
   });
 
   const timezone = useWatch({ control: form.control, name: "timezone" });
@@ -63,11 +71,17 @@ export function OnboardingStep2({ onNext, onBack, onSkip, isLoading }: Onboardin
         </div>
         <div>
           <h2 className="text-lg font-semibold">Configuración inicial</h2>
-          <p className="text-sm text-muted-foreground">Ajustá la zona horaria y moneda de tu organización</p>
+          <p className="text-sm text-muted-foreground">
+            Ajustá la zona horaria y moneda de tu organización
+          </p>
         </div>
       </div>
 
-      <form className="space-y-4" onSubmit={form.handleSubmit(onNext)} noValidate>
+      <form
+        className="space-y-4"
+        onSubmit={form.handleSubmit(onNext)}
+        noValidate
+      >
         <div className="space-y-2">
           <Label>Zona horaria</Label>
           <Select
@@ -86,7 +100,9 @@ export function OnboardingStep2({ onNext, onBack, onSkip, isLoading }: Onboardin
             </SelectContent>
           </Select>
           {form.formState.errors.timezone && (
-            <p className="text-sm text-destructive">{form.formState.errors.timezone.message}</p>
+            <p className="text-sm text-destructive">
+              {form.formState.errors.timezone.message}
+            </p>
           )}
         </div>
 
@@ -108,16 +124,28 @@ export function OnboardingStep2({ onNext, onBack, onSkip, isLoading }: Onboardin
             </SelectContent>
           </Select>
           {form.formState.errors.currency && (
-            <p className="text-sm text-destructive">{form.formState.errors.currency.message}</p>
+            <p className="text-sm text-destructive">
+              {form.formState.errors.currency.message}
+            </p>
           )}
         </div>
 
         <div className="flex justify-between pt-2">
           <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={onBack} disabled={isLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onBack}
+              disabled={isLoading}
+            >
               Atrás
             </Button>
-            <Button type="button" variant="ghost" onClick={onSkip} disabled={isLoading}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onSkip}
+              disabled={isLoading}
+            >
               Saltar
             </Button>
           </div>

@@ -9,21 +9,22 @@
 
 All 10 fixes (5 Critical + 4 Important + 1 Minor) have been **completed and verified**:
 
-| Fix | Description | Status |
-|-----|-------------|--------|
-| C5 | Deleted backdoor routes (`test-login`, `auth/test`) | ✅ |
-| C3 | Fixed `OAuthSettings` (removed duplicates, added `redis_url`) | ✅ |
-| C1 | `OAuthServiceImpl` now uses `self.settings.redis_url` | ✅ |
-| C2 | `get_oauth_service()` has `@lru_cache` (singleton) | ✅ |
-| C4 | Safe error codes in `oauth_callback` (no `e.detail` leak) | ✅ |
-| I3 | OAuth domain exceptions added & used | ✅ |
-| I2 | `provider_redirect_uris` DRY helper | ✅ |
-| I4 | E2E `.gitignore` created | ✅ |
-| I6 | Duplicate `generate-auth-state.cjs` deleted | ✅ |
-| I7 | `OAuthButtons` loading state | ✅ |
-| M3 | `API_BASE_URL` from `authApi` | ✅ |
+| Fix | Description                                                   | Status |
+| --- | ------------------------------------------------------------- | ------ |
+| C5  | Deleted backdoor routes (`test-login`, `auth/test`)           | ✅     |
+| C3  | Fixed `OAuthSettings` (removed duplicates, added `redis_url`) | ✅     |
+| C1  | `OAuthServiceImpl` now uses `self.settings.redis_url`         | ✅     |
+| C2  | `get_oauth_service()` has `@lru_cache` (singleton)            | ✅     |
+| C4  | Safe error codes in `oauth_callback` (no `e.detail` leak)     | ✅     |
+| I3  | OAuth domain exceptions added & used                          | ✅     |
+| I2  | `provider_redirect_uris` DRY helper                           | ✅     |
+| I4  | E2E `.gitignore` created                                      | ✅     |
+| I6  | Duplicate `generate-auth-state.cjs` deleted                   | ✅     |
+| I7  | `OAuthButtons` loading state                                  | ✅     |
+| M3  | `API_BASE_URL` from `authApi`                                 | ✅     |
 
 **Test Results:**
+
 - Backend: **297/297** passed ✅
 - Frontend: **332/332** passed ✅
 - Pyright: **0 errors, 0 warnings** ✅
@@ -55,13 +56,16 @@ Fixes identified by code review of `feature/oauth-backend-callbacks` branch. Cov
 ### 2.1 Issues to Fix (Priority Order)
 
 #### C5 — BACKDOOR: Delete test/debug routes (SECURITY CRITICAL)
+
 **Files to delete:**
+
 - `apps/web/src/app/api/test-login/route.ts` — accepts any email/password, emits mock cookies, bypasses auth
 - `apps/web/src/app/api/auth/test/route.ts` — sets `test_cookie` with `console.log`, debug endpoint
 
 These are unauthenticated endpoints that ship to production and bypass the entire auth system.
 
 #### C3 — OAuthSettings duplicate Facebook fields
+
 `apps/api/src/prosell/core/config.py` lines 404-428:
 
 ```python
@@ -83,6 +87,7 @@ class OAuthSettings(BaseSettings):
 **Fix:** Remove variant B from `OAuthSettings`. Add `redis_url` field (required for C1). Update `OAuthServiceImpl` to use variant A names.
 
 #### C1 — OAuthServiceImpl uses global settings for Redis URL
+
 `apps/api/src/prosell/infrastructure/services/oauth_service_impl.py` line 76-77:
 
 ```python
@@ -95,6 +100,7 @@ async def _get_redis(self) -> redis.Redis:
 `OAuthSettings` has no `redis_url` field. Fix requires adding `redis_url` to `OAuthSettings` and using `self.settings.redis_url`.
 
 #### C2 — get_oauth_service() creates new instance per request (no singleton)
+
 `apps/api/src/prosell/infrastructure/api/dependencies.py` lines 103-106:
 
 ```python
@@ -107,6 +113,7 @@ def get_oauth_service() -> IOAuthService:
 `OAuthServiceImpl._redis = None` on every request → new Redis connection per request → no connection pooling. Fix: add `@lru_cache`.
 
 #### C4 — Internal error detail leaked into redirect URL
+
 `apps/api/src/prosell/infrastructure/api/routers/auth_router.py` line 417:
 
 ```python
@@ -119,11 +126,13 @@ except HTTPException as e:
 Fix: Use safe error codes, never raw `e.detail`.
 
 #### I3 — HTTPException raised inside infrastructure service (Clean Architecture violation)
+
 `apps/api/src/prosell/infrastructure/services/oauth_service_impl.py` — raises `HTTPException` from FastAPI in multiple places. Service layer must be independent of HTTP framework.
 
 **Fix:** Add domain exceptions for OAuth to `auth_exceptions.py`. Update `OAuthServiceImpl` to raise domain exceptions. Update router to catch domain exceptions and map to HTTP redirects.
 
 #### I2 — provider_redirect_uris dict duplicated in auth_router
+
 ```python
 # oauth_authorize (line 251) and oauth_callback (line 330) have identical dict
 provider_redirect_uris: dict[str, str] = {
@@ -135,25 +144,33 @@ provider_redirect_uris: dict[str, str] = {
 Fix: Extract to module-level constant.
 
 #### I4 — E2E storage-state.json committed to git
+
 `tests/e2e/.auth/storage-state.json` contains mock tokens and should be gitignored.
 
 Fix: Create `tests/e2e/.gitignore` with `.auth/` entry.
 
 #### I6 — generate-auth-state.cjs is byte-identical duplicate of generate-auth-state.js
+
 `tests/e2e/generate-auth-state.cjs` — delete it.
 
 #### I7 — OAuthButtons always renders isLoading={false}
+
 `apps/web/src/components/auth/OAuthButtons.tsx` lines 183, 197:
+
 ```tsx
 <OAuthButton ... isLoading={false} />
 ```
+
 After click → full page navigation via `window.location.href`, but button stays interactive until navigation starts. Fix: Add `useState` for per-button loading, set `true` on click.
 
 #### M3 — OAuthButtons uses raw process.env instead of centralized API_BASE_URL
+
 `apps/web/src/components/auth/OAuthButtons.tsx` line 111:
+
 ```tsx
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 ```
+
 `authApi.ts` already defines `API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''`. Two sources of truth. Fix: import and use `API_BASE_URL` from authApi.
 
 ---
@@ -162,17 +179,18 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version |
-|-----------|------------|---------|
-| Backend   | FastAPI + Python | 0.115 / 3.13 |
-| Config    | Pydantic BaseSettings | 2.12 |
-| Frontend  | Next.js + React | 16 / 19 |
-| State     | Zustand | 5.x |
-| Testing   | pytest / Vitest | latest |
+| Component | Technology            | Version      |
+| --------- | --------------------- | ------------ |
+| Backend   | FastAPI + Python      | 0.115 / 3.13 |
+| Config    | Pydantic BaseSettings | 2.12         |
+| Frontend  | Next.js + React       | 16 / 19      |
+| State     | Zustand               | 5.x          |
+| Testing   | pytest / Vitest       | latest       |
 
 ### 3.2 Key Patterns in Codebase
 
 **Domain exceptions pattern** (reference: `apps/api/src/prosell/domain/exceptions/auth_exceptions.py`):
+
 ```python
 class AuthDomainException(Exception):
     def __init__(self, message: str, details: dict[str, Any] | None = None) -> None:
@@ -186,6 +204,7 @@ class OAuthEmailMismatchException(AuthDomainException): ...
 ```
 
 **Singleton service pattern** (reference: `dependencies.py` `get_oauth_settings()`):
+
 ```python
 @lru_cache
 def get_oauth_settings() -> OAuthSettings:
@@ -193,10 +212,12 @@ def get_oauth_settings() -> OAuthSettings:
 ```
 
 **OAuthSettings** (reference: `apps/api/src/prosell/core/config.py` line 384):
+
 - `model_config = SettingsConfigDict(env_file=".env", env_ignore_empty=True, extra="ignore")`
 - Field naming convention: `{provider}_oauth_{field}` (e.g., `google_oauth_client_id`)
 
 **OAuthButtons component** (reference: `apps/web/src/components/auth/OAuthButtons.tsx`):
+
 - `OAuthButton` accepts `isLoading: boolean`, `disabled: boolean`
 - Navigation via `window.location.href` (full page)
 - `API_BASE_URL` from `apps/web/src/lib/api/authApi.ts` line 63
@@ -228,10 +249,12 @@ auth_router.py (infrastructure/api)
 #### Step 1: Delete test/debug routes (C5) — IMMEDIATE
 
 **Files to delete:**
+
 - `apps/web/src/app/api/test-login/route.ts`
 - `apps/web/src/app/api/auth/test/route.ts`
 
 Also delete parent dirs if they become empty:
+
 - `apps/web/src/app/api/test-login/` (entire dir)
 - `apps/web/src/app/api/auth/test/` (dir only if no other files)
 
@@ -300,6 +323,7 @@ from prosell.domain.exceptions.auth_exceptions import (
 **File to modify:** `apps/api/src/prosell/core/config.py`
 
 In `OAuthSettings` class:
+
 1. **Remove** variant B fields: `facebook_app_id`, `facebook_app_secret`, `facebook_redirect_uri`
 2. **Add** `redis_url` field:
 
@@ -324,6 +348,7 @@ class OAuthSettings(BaseSettings):
 **File to modify:** `apps/api/src/prosell/infrastructure/services/oauth_service_impl.py`
 
 Changes:
+
 1. Remove `from fastapi import HTTPException, status` import
 2. Add domain exception imports
 3. `_get_redis()`: change `settings.redis_url` → `self.settings.redis_url`
@@ -368,13 +393,13 @@ async def initiate_authorization(self, provider: str, redirect_uri: str) -> OAut
 
 **ALL occurrences of variant B fields in `oauth_service_impl.py` — replace every one:**
 
-| Line | Before | After |
-|------|--------|-------|
-| 206 | `self.settings.facebook_app_id` | `self.settings.facebook_oauth_app_id` |
-| 222 | `"client_id": self.settings.facebook_app_id` | `"client_id": self.settings.facebook_oauth_app_id` |
-| 431 | `self.settings.facebook_app_secret` | `self.settings.facebook_oauth_app_secret` |
-| 445 | `"client_id": self.settings.facebook_app_id` | `"client_id": self.settings.facebook_oauth_app_id` |
-| 446 | `"client_secret": self.settings.facebook_app_secret` | `"client_secret": self.settings.facebook_oauth_app_secret` |
+| Line | Before                                               | After                                                      |
+| ---- | ---------------------------------------------------- | ---------------------------------------------------------- |
+| 206  | `self.settings.facebook_app_id`                      | `self.settings.facebook_oauth_app_id`                      |
+| 222  | `"client_id": self.settings.facebook_app_id`         | `"client_id": self.settings.facebook_oauth_app_id`         |
+| 431  | `self.settings.facebook_app_secret`                  | `self.settings.facebook_oauth_app_secret`                  |
+| 445  | `"client_id": self.settings.facebook_app_id`         | `"client_id": self.settings.facebook_oauth_app_id`         |
+| 446  | `"client_secret": self.settings.facebook_app_secret` | `"client_secret": self.settings.facebook_oauth_app_secret` |
 
 **Gotcha:** `httpx.HTTPStatusError` wrapping must still use `OAuthCallbackError`, not `HTTPException`. The router will catch it.
 
@@ -383,12 +408,14 @@ async def initiate_authorization(self, provider: str, redirect_uri: str) -> OAut
 **File to modify:** `apps/api/src/prosell/infrastructure/api/dependencies.py`
 
 **IMPORTANT:** The file currently has NO `lru_cache` import. Add it:
+
 ```python
 # ADD at top of file (after existing imports):
 from functools import lru_cache
 ```
 
 Then wrap the function:
+
 ```python
 # BEFORE:
 def get_oauth_service() -> IOAuthService:
@@ -439,6 +466,7 @@ return RedirectResponse(url=result.authorization_url, status_code=302)
 ```
 
 **6c. Module-level constant (I2 DRY fix — was 6a, renumbered):**
+
 ```python
 # Add near top of file, after imports:
 # Module-level constant: maps OAuth provider to backend callback URI from settings
@@ -453,6 +481,7 @@ def _get_provider_redirect_uris() -> dict[str, str]:
 Replace both inline `provider_redirect_uris` dicts with `_get_provider_redirect_uris()`.
 
 **6d. Add domain exception imports:**
+
 ```python
 from prosell.domain.exceptions.auth_exceptions import (
     OAuthCallbackError,
@@ -496,6 +525,7 @@ except Exception as e:
 **6f. Also fix the `error` query param from provider (already safe, but verify):**
 Line 317: `error_url = f"{settings.oauth_frontend_failure_url}{error}"`
 The `error` here is from the OAuth provider query param (e.g., `access_denied`). This is provider-controlled, not internal. Sanitize to allowed values:
+
 ```python
 # Allowlist of provider error codes
 ALLOWED_OAUTH_ERRORS = {"access_denied", "server_error", "temporarily_unavailable"}
@@ -506,6 +536,7 @@ error_url = f"{settings.oauth_frontend_failure_url}{safe_error}"
 #### Step 7: Fix E2E gitignore (I4)
 
 **File to create:** `tests/e2e/.gitignore`
+
 ```
 # Auth state files (generated by Playwright, never commit)
 .auth/
@@ -542,12 +573,13 @@ export function OAuthButtons({ disabled = false, onMouseEnter }: OAuthButtonsPro
 **Gotcha:** Check how `OAuthButton` handles `onClick`. If it handles the `window.location.href` internally, we need to intercept. If it accepts an `onClick` prop, we pass our wrapper.
 
 Looking at the component (line 105-113 from grep results):
+
 ```tsx
 // OAuthButton (inside OAuthButtons.tsx):
 if (isLoading || disabled) {
   return;
 }
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 window.location.href = `${apiUrl}/api/auth/oauth/${variant}/authorize`;
 ```
 
@@ -584,6 +616,7 @@ const [loadingProvider, setLoadingProvider] = useState<"google" | "facebook" | n
 **File to update:** `apps/api/tests/unit/test_oauth_service.py`
 
 Changes needed:
+
 - `FakeRedis` injection pattern: The test currently patches `_get_redis`. With C1/C2 fixes, `redis_url` comes from `self.settings` now. The existing `FakeRedis` injection approach should still work — but verify the test creates `OAuthSettings` with a `redis_url` field.
 - Add `redis_url="redis://localhost:6379/0"` to `OAuthSettings(...)` calls in tests.
 - Update tests that assert `HTTPException` is raised from service — they should now assert domain exceptions:
@@ -627,6 +660,7 @@ def get_jwt_service() -> IJWTService:
 ### 5.3 FakeRedis injection pattern in tests
 
 **Reference:** `apps/api/tests/unit/test_oauth_service.py` (existing pattern):
+
 ```python
 fake_redis = FakeRedis()
 service._redis = fake_redis  # inject after construction
@@ -699,6 +733,7 @@ grep "from fastapi import" apps/api/src/prosell/infrastructure/services/oauth_se
 **`apps/api/tests/unit/test_oauth_service.py`:**
 
 **Change 1 — `oauth_settings` fixture (lines 92-106):** Update field names + add `redis_url`:
+
 ```python
 @pytest.fixture
 def oauth_settings():
@@ -721,6 +756,7 @@ def oauth_settings():
 ```
 
 **Change 2 — `test_initiate_authorization_unsupported_provider_raises_error` (lines 180-191):**
+
 ```python
 # BEFORE:
 from fastapi import HTTPException
@@ -738,6 +774,7 @@ assert exc_info.value.details["provider"] == "unsupported"
 ```
 
 **Change 3 — `test_google_credentials_required_for_authorization` (lines 334-347):**
+
 ```python
 # BEFORE:
 from fastapi import HTTPException
@@ -755,10 +792,12 @@ assert exc_info.value.details["provider"] == "Google"
 **Note:** `client_id=test-facebook-app-id` assertion in `test_initiate_facebook_authorization_generates_valid_url` (line 170) stays valid — the value in the fixture is the same, just the field name changed.
 
 **`apps/api/tests/integration/test_oauth_callback.py`:**
+
 - Verify callback returns redirect to `oauth_failed` (not internal message) on failure
 - Verify no `e.detail` in redirect URL
 
 ### 7.2 No New E2E Tests Needed
+
 These are internal fixes — OAuth flow behavior (from user perspective) is unchanged.
 
 ---
@@ -766,16 +805,21 @@ These are internal fixes — OAuth flow behavior (from user perspective) is unch
 ## 8. Common Pitfalls
 
 ### 8.1 OAuthSettings field naming in env vars
+
 Pydantic BaseSettings maps `FACEBOOK_OAUTH_APP_ID` → `facebook_oauth_app_id`. After removing variant B fields, any env var `FACEBOOK_APP_ID` will be silently ignored (due to `extra="ignore"`). Document this in `.env.example` if it exists.
 
 ### 8.2 @lru_cache on get_oauth_service() in tests
+
 If integration tests create a fresh app, `@lru_cache` means the singleton persists between test runs. Tests that need a fresh `OAuthServiceImpl` should call `get_oauth_service.cache_clear()` in teardown (or use `dependency_overrides` to inject a test double).
 
 ### 8.3 Removing facebook_app_id may break existing .env files
+
 Anyone with `FACEBOOK_APP_ID=xxx` in their `.env` will silently lose it. Since `extra="ignore"` swallows it. Document the rename in commit message.
 
 ### 8.4 Deleting test routes may break E2E fixtures
+
 Check `tests/e2e/` for any reference to `/api/test-login` before deleting:
+
 ```bash
 grep -r "test-login\|auth/test" tests/e2e/
 ```
@@ -785,6 +829,7 @@ grep -r "test-login\|auth/test" tests/e2e/
 ## 9. Rollback Plan
 
 If tests fail after any step:
+
 1. `git diff` to identify the problematic change
 2. `git stash` to revert the step
 3. Fix forward rather than reverting — these are targeted changes
@@ -794,6 +839,7 @@ If tests fail after any step:
 ## 10. Completion Checklist
 
 ### Critical (Blockers for Merge)
+
 - [x] C5: `test-login/route.ts` deleted ✅
 - [x] C5: `auth/test/route.ts` deleted ✅
 - [x] C3: `OAuthSettings` variant B fields removed, `redis_url` added ✅
@@ -803,6 +849,7 @@ If tests fail after any step:
 - [x] C4: `oauth_callback` error redirect uses safe codes (not `e.detail`) ✅
 
 ### Important
+
 - [x] I3: Domain OAuth exceptions added to `auth_exceptions.py` ✅
 - [x] I3: `OAuthServiceImpl` raises domain exceptions (no `HTTPException`) ✅
 - [x] I3: Router catches domain exceptions, maps to safe redirects ✅
@@ -812,6 +859,7 @@ If tests fail after any step:
 - [x] I7: `OAuthButtons` loading state tracks per-provider ✅
 
 ### Quality
+
 - [x] M3: `OAuthButtons` uses `API_BASE_URL` from authApi ✅
 - [x] Tests updated for domain exceptions ✅
 - [x] 297/297 backend tests pass ✅
@@ -825,11 +873,13 @@ If tests fail after any step:
 **All 10 fixes completed and verified** ✅
 
 **Tests Results:**
+
 - Backend: 297/297 passed ✅
 - Frontend: 332/332 passed ✅
 - Pyright: 0 errors, 0 warnings ✅
 
 **Next Steps:**
+
 1. Configure Google OAuth credentials in `.env`
 2. Test OAuth flow in browser with real credentials
 3. Consider merging `feature/oauth-backend-callbacks` → `main`

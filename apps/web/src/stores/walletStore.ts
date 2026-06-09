@@ -13,7 +13,14 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { walletApi, ApiError, Wallet, WalletTransaction, CreditWalletRequest, DebitWalletRequest } from "@/lib/api/walletApi";
+import {
+  walletApi,
+  ApiError,
+  Wallet,
+  WalletTransaction,
+  CreditWalletRequest,
+  DebitWalletRequest,
+} from "@/lib/api/walletApi";
 import { logger } from "@/lib/logger";
 
 // ============================================

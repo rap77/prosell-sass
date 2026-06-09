@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     if (!body.name || body.name.length < 2) {
       return NextResponse.json(
         { detail: "Name must be at least 2 characters" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { detail: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

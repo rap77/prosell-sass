@@ -56,16 +56,18 @@ interface TestAuthState {
     last_name: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
-  updateUser: (updates: Partial<{
-    id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    role: string;
-    is_email_verified: boolean;
-    is_2fa_enabled?: boolean;
-    organization_id?: string | null;
-  }>) => void;
+  updateUser: (
+    updates: Partial<{
+      id: string;
+      email: string;
+      first_name: string;
+      last_name: string;
+      role: string;
+      is_email_verified: boolean;
+      is_2fa_enabled?: boolean;
+      organization_id?: string | null;
+    }>,
+  ) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
   reset: () => void;

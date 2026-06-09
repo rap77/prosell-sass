@@ -52,9 +52,7 @@ describe("LoginPage", () => {
       ).toBeInTheDocument();
 
       // Footer text
-      expect(
-        screen.getByText(/¿No tenés cuenta\?/i),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/¿No tenés cuenta\?/i)).toBeInTheDocument();
     });
 
     it("should render logo with correct styling and link", () => {
@@ -74,7 +72,9 @@ describe("LoginPage", () => {
     it("should render footer with Terms and Privacy links", () => {
       render(<LoginPageContent />);
 
-      const registerLink = screen.getByRole("link", { name: /Registrate gratis/i });
+      const registerLink = screen.getByRole("link", {
+        name: /Registrate gratis/i,
+      });
       expect(registerLink).toBeInTheDocument();
       expect(registerLink).toHaveAttribute("href", "/auth/register");
     });
@@ -91,7 +91,9 @@ describe("LoginPage", () => {
     it("should center content in a max-width container", () => {
       const { container } = render(<LoginPageContent />);
 
-      expect(screen.getByRole("button", { name: /Iniciar sesión/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Iniciar sesión/i }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -109,13 +111,15 @@ describe("LoginPage", () => {
       render(<LoginPageContent />);
 
       // Logo link
-      expect(
-        screen.getByAltText("ProSell").closest("a"),
-      ).toBeInTheDocument();
+      expect(screen.getByAltText("ProSell").closest("a")).toBeInTheDocument();
 
       // Terms link
-      expect(screen.getByRole("link", { name: /¿Olvidaste tu contraseña\?/i })).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /Registrate gratis/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /¿Olvidaste tu contraseña\?/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /Registrate gratis/i }),
+      ).toBeInTheDocument();
     });
   });
 });

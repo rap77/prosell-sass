@@ -19,6 +19,7 @@ mark-in-progress → implementer → tester → [fix loop] → code-reviewer →
 ```
 
 You are the ONLY agent authorized to call:
+
 - `python3 .claude/commands/mm/complete-task-handler.py --mark-in-progress <id>`
 - `python3 .claude/commands/mm/complete-task-handler.py --mark-done <id>`
 - `python3 .claude/commands/mm/update-todo-times.py <task_id>`
@@ -38,8 +39,16 @@ Never instruct subagents to call these.
   "plan_path": ".planning/changes/<objective>/tasks.md",
   "todo_path": ".planning/changes/<objective>/todo.md",
   "subtasks": [
-    {"id": "T2.1", "description": "Review requirements and design context for T2", "completed": false},
-    {"id": "T2.2", "description": "Implement T2 end-to-end", "completed": false}
+    {
+      "id": "T2.1",
+      "description": "Review requirements and design context for T2",
+      "completed": false
+    },
+    {
+      "id": "T2.2",
+      "description": "Implement T2 end-to-end",
+      "completed": false
+    }
   ],
   "total_subtasks": 2,
   "pending_count": 2,
@@ -56,6 +65,7 @@ Working directory: use `payload.working_directory`. If missing, detect via `git 
 ## Orchestration Cycle (per subtask)
 
 **IRON RULE — applies to every subtask without exception:**
+
 > `--mark-done` is MANDATORY before moving to the next subtask.
 > It does not matter if the subtask only reads files, runs a check, or has no code change.
 > Reading is work. Checking is work. Every subtask ends with `--mark-done`.
@@ -64,10 +74,10 @@ Working directory: use `payload.working_directory`. If missing, detect via `git 
 
 Classify the subtask from its description:
 
-| Type | Indicators | Steps to run |
-|------|-----------|--------------|
-| **read-only** | "Leer", "Read", "Review", "Entender", "Check" (no code output) | Step 0 → read files → **Step 6** |
-| **implementation** | "Crear", "Implementar", "Agregar", "Extender", "Fix" | Step 0 → 1 → 2 → 3 → 4 → 5 → **Step 6** |
+| Type               | Indicators                                                     | Steps to run                            |
+| ------------------ | -------------------------------------------------------------- | --------------------------------------- |
+| **read-only**      | "Leer", "Read", "Review", "Entender", "Check" (no code output) | Step 0 → read files → **Step 6**        |
+| **implementation** | "Crear", "Implementar", "Agregar", "Extender", "Fix"           | Step 0 → 1 → 2 → 3 → 4 → 5 → **Step 6** |
 
 For read-only subtasks: skip Steps 1–5. Jump directly to Step 6 after completing the read.
 
@@ -80,6 +90,7 @@ python3 .claude/commands/mm/complete-task-handler.py --mark-in-progress <subtask
 ```
 
 If the shell is not already in `working_directory`, use the cd form:
+
 ```bash
 cd "<working_directory>" && python3 .claude/commands/mm/complete-task-handler.py --mark-in-progress <subtask_id>
 ```
@@ -87,7 +98,7 @@ cd "<working_directory>" && python3 .claude/commands/mm/complete-task-handler.py
 ### Step 1: Invoke implementer skill
 
 ```javascript
-Skill("build")
+Skill("build");
 ```
 
 Read design and requirements first, then implement the subtask.
@@ -95,10 +106,11 @@ Read design and requirements first, then implement the subtask.
 ### Step 2: Invoke tester skill
 
 ```javascript
-Skill("test")
+Skill("test");
 ```
 
 Run tests for the implemented subtask.
+
 - `status: "pass"` → proceed to Step 3.
 - `status: "fail"` → fix issues and re-test. Max 2 fix iterations. If still failing: mark subtask failed, continue.
 
@@ -114,7 +126,7 @@ Store as `current_diff` (truncate to 500 lines if needed). Extract `files_change
 ### Step 4: Invoke code-reviewer skill
 
 ```javascript
-Skill("review")
+Skill("review");
 ```
 
 Review the implementation. Report ALL issues — every issue will be investigated and fixed.
@@ -129,7 +141,7 @@ Review the implementation. Report ALL issues — every issue will be investigate
 ### Step 5: Commit via mm:safe-commit
 
 ```javascript
-Skill("mm:safe-commit")
+Skill("mm:safe-commit");
 ```
 
 Commit message format: `feat(<objective_slug>): <subtask_id> — <subtask_description>`
@@ -153,6 +165,7 @@ If not already in `working_directory`, prefix with `cd "<working_directory>" &&`
 Call `--mark-done` before doing anything else for the next subtask. No exceptions.
 
 Save to Engram:
+
 ```javascript
 mem_save(
   project: "mastermind-framework",
@@ -167,6 +180,7 @@ mem_save(
 ## Context Budget
 
 Check context after each subtask. If > 75%:
+
 1. Complete `--mark-done` for the current subtask if it was committed
 2. Exit: `[orchestrator] Context budget >75% — exiting. Resume with /mm:complete-task <task_id> --continue`
 
@@ -176,12 +190,12 @@ Never batch-commit multiple subtasks. Each subtask = one commit = one `--mark-do
 
 ## Failure Handling
 
-| Situation | Action |
-|-----------|--------|
-| Implementer fails after 1 retry | Mark subtask `failed`, continue to next |
-| Tests fail after 2 fix iterations | Mark subtask `failed`, continue to next |
-| Code-reviewer issues remain after 2 fix cycles | Commit with `[unresolved: ...]`, mark done |
-| Permission error on any command | **STOP immediately** — do NOT retry, do NOT continue to next subtask. Emit `BLOCKED_PERMISSION` report and exit. |
+| Situation                                                                                                              | Action                                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Implementer fails after 1 retry                                                                                        | Mark subtask `failed`, continue to next                                                                                   |
+| Tests fail after 2 fix iterations                                                                                      | Mark subtask `failed`, continue to next                                                                                   |
+| Code-reviewer issues remain after 2 fix cycles                                                                         | Commit with `[unresolved: ...]`, mark done                                                                                |
+| Permission error on any command                                                                                        | **STOP immediately** — do NOT retry, do NOT continue to next subtask. Emit `BLOCKED_PERMISSION` report and exit.          |
 | Missing handler / wrapper / write-path error (`can't open file`, `No such file or directory`, read-only planning file) | **STOP immediately** — do NOT continue manually, do NOT edit planning files by hand. Emit `BLOCKED_FLOW` report and exit. |
 
 ### Permission Error Protocol
@@ -195,12 +209,14 @@ Permission denials are not transient — retrying wastes time and continuing to 
 ### Flow Error Protocol
 
 If any command that maintains execution state fails, including:
+
 - `python3 .claude/commands/mm/complete-task-handler.py --mark-in-progress ...`
 - `python3 .claude/commands/mm/complete-task-handler.py --mark-done ...`
 - `python3 .claude/commands/mm/update-todo-times.py ...`
 - `/mm:safe-commit`
 
 and the error looks like a broken adapter/runtime, for example:
+
 - `can't open file`
 - `No such file or directory`
 - missing `.claude/commands/mm/...`

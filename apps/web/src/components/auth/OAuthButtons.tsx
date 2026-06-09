@@ -181,7 +181,9 @@ export function OAuthButtons({
   disabled = false,
   onMouseEnter,
 }: OAuthButtonsProps) {
-  const [loadingProvider, setLoadingProvider] = useState<"google" | "facebook" | null>(null);
+  const [loadingProvider, setLoadingProvider] = useState<
+    "google" | "facebook" | null
+  >(null);
 
   return (
     <div

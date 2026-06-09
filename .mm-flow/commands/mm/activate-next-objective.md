@@ -49,6 +49,7 @@ python3 .claude/commands/mm/activate-next-objective-handler.py [--quick]
 2. Parse output:
 
 **`STATUS: PASSED`** → package activated. Tell the user:
+
 ```
 ▶ Next: /mm:complete-task <FIRST_TASK_ID> --brief
 ```
@@ -58,6 +59,7 @@ python3 .claude/commands/mm/activate-next-objective-handler.py [--quick]
 a. Read `.mm-flow/planning/changes/<active-slug>/tasks.md` to find the first non-completed task ID.
 
 b. Reply with exactly:
+
 ```
 ⚠ Already active: <active-slug>
 

@@ -7,12 +7,20 @@ import { BasePage } from "../base-page";
 
 export class CategoriesPage extends BasePage {
   // Locators
-  readonly newCategoryButton = this.page.getByRole("button", { name: /new category|crear categoría/i });
+  readonly newCategoryButton = this.page.getByRole("button", {
+    name: /new category|crear categoría/i,
+  });
   readonly categoryNameInput = this.page.getByLabel(/name|nombre/i);
   readonly categorySlugInput = this.page.getByLabel(/slug/i);
-  readonly categoryDescriptionInput = this.page.getByLabel(/description|descripción/i);
-  readonly saveButton = this.page.getByRole("button", { name: /save|guardar/i });
-  readonly cancelButton = this.page.getByRole("button", { name: /cancel|cancelar/i });
+  readonly categoryDescriptionInput = this.page.getByLabel(
+    /description|descripción/i,
+  );
+  readonly saveButton = this.page.getByRole("button", {
+    name: /save|guardar/i,
+  });
+  readonly cancelButton = this.page.getByRole("button", {
+    name: /cancel|cancelar/i,
+  });
 
   constructor(page: Page) {
     super(page);

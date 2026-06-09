@@ -14,15 +14,25 @@ import { useBranchStats } from "@/lib/api/branches";
 // HELPERS
 // ============================================
 
-function PulseBox({ width, height, borderRadius = 6 }: { width?: number | string; height: number; borderRadius?: number }) {
+function PulseBox({
+  width,
+  height,
+  borderRadius = 6,
+}: {
+  width?: number | string;
+  height: number;
+  borderRadius?: number;
+}) {
   return (
-    <div style={{
-      width: width ?? '100%',
-      height,
-      borderRadius,
-      background: 'var(--ps-bg-elevated)',
-      animation: 'psBranchPulse 1.6s ease-in-out infinite',
-    }} />
+    <div
+      style={{
+        width: width ?? "100%",
+        height,
+        borderRadius,
+        background: "var(--ps-bg-elevated)",
+        animation: "psBranchPulse 1.6s ease-in-out infinite",
+      }}
+    />
   );
 }
 
@@ -53,24 +63,27 @@ interface BranchStatsCardProps {
 // COMPONENT
 // ============================================
 
-export function BranchStatsCard({ branchId, branchName }: BranchStatsCardProps) {
+export function BranchStatsCard({
+  branchId,
+  branchName,
+}: BranchStatsCardProps) {
   const { data: stats, isLoading, error } = useBranchStats(branchId);
 
   const cardStyle: React.CSSProperties = {
-    background: 'var(--ps-bg-surface)',
-    border: '1px solid var(--ps-border-default)',
+    background: "var(--ps-bg-surface)",
+    border: "1px solid var(--ps-border-default)",
     borderRadius: 12,
-    overflow: 'hidden',
-  }
+    overflow: "hidden",
+  };
 
   const headerStyle: React.CSSProperties = {
-    padding: '16px 20px',
-    borderBottom: '1px solid var(--ps-border-default)',
-  }
+    padding: "16px 20px",
+    borderBottom: "1px solid var(--ps-border-default)",
+  };
 
   const contentStyle: React.CSSProperties = {
-    padding: '16px 20px',
-  }
+    padding: "16px 20px",
+  };
 
   if (isLoading) {
     return (
@@ -80,7 +93,13 @@ export function BranchStatsCard({ branchId, branchName }: BranchStatsCardProps) 
           <PulseBox height={18} width={192} />
         </div>
         <div style={contentStyle}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3,1fr)",
+              gap: 12,
+            }}
+          >
             <PulseBox height={64} />
             <PulseBox height={64} />
             <PulseBox height={64} />
@@ -97,12 +116,19 @@ export function BranchStatsCard({ branchId, branchName }: BranchStatsCardProps) 
     return (
       <div style={cardStyle}>
         <div style={headerStyle}>
-          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--ps-text-primary)' }}>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "var(--ps-text-primary)",
+            }}
+          >
             {branchName}
           </h3>
         </div>
         <div style={contentStyle}>
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--ps-error)' }}>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--ps-error)" }}>
             Error al cargar estadísticas
           </p>
         </div>
@@ -111,64 +137,141 @@ export function BranchStatsCard({ branchId, branchName }: BranchStatsCardProps) 
   }
 
   const statCell: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '14px 10px',
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: "14px 10px",
     borderRadius: 8,
-    background: 'var(--ps-bg-elevated)',
-  }
+    background: "var(--ps-bg-elevated)",
+  };
 
   return (
     <div style={cardStyle}>
       <div style={headerStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--ps-text-primary)' }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "var(--ps-text-primary)",
+            }}
+          >
             {branchName}
           </h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--ps-text-disabled)' }}>
-            <Activity size={13} strokeWidth={2} style={{ color: 'var(--ps-text-disabled)' }} />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 12,
+              color: "var(--ps-text-disabled)",
+            }}
+          >
+            <Activity
+              size={13}
+              strokeWidth={2}
+              style={{ color: "var(--ps-text-disabled)" }}
+            />
             <span>{formatDate(stats?.last_activity ?? null)}</span>
           </div>
         </div>
       </div>
 
       <div style={contentStyle}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
-
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3,1fr)",
+            gap: 12,
+          }}
+        >
           {/* Total */}
           <div style={statCell}>
-            <Car size={18} strokeWidth={2} style={{ color: 'var(--ps-cyan)', marginBottom: 8 }} />
-            <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--ps-text-primary)' }}>
+            <Car
+              size={18}
+              strokeWidth={2}
+              style={{ color: "var(--ps-cyan)", marginBottom: 8 }}
+            />
+            <span
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: "var(--ps-text-primary)",
+              }}
+            >
               {stats?.total_vehicles ?? 0}
             </span>
-            <span style={{ fontSize: 11, color: 'var(--ps-text-disabled)', marginTop: 2 }}>
+            <span
+              style={{
+                fontSize: 11,
+                color: "var(--ps-text-disabled)",
+                marginTop: 2,
+              }}
+            >
               Total
             </span>
           </div>
 
           {/* Publicados */}
           <div style={statCell}>
-            <Eye size={18} strokeWidth={2} style={{ color: 'var(--ps-success)', marginBottom: 8 }} />
-            <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--ps-text-primary)' }}>
+            <Eye
+              size={18}
+              strokeWidth={2}
+              style={{ color: "var(--ps-success)", marginBottom: 8 }}
+            />
+            <span
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: "var(--ps-text-primary)",
+              }}
+            >
               {stats?.published_vehicles ?? 0}
             </span>
-            <span style={{ fontSize: 11, color: 'var(--ps-text-disabled)', marginTop: 2 }}>
+            <span
+              style={{
+                fontSize: 11,
+                color: "var(--ps-text-disabled)",
+                marginTop: 2,
+              }}
+            >
               Publicados
             </span>
           </div>
 
           {/* Borrador */}
           <div style={statCell}>
-            <FileText size={18} strokeWidth={2} style={{ color: 'var(--ps-warning)', marginBottom: 8 }} />
-            <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--ps-text-primary)' }}>
+            <FileText
+              size={18}
+              strokeWidth={2}
+              style={{ color: "var(--ps-warning)", marginBottom: 8 }}
+            />
+            <span
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: "var(--ps-text-primary)",
+              }}
+            >
               {stats?.draft_vehicles ?? 0}
             </span>
-            <span style={{ fontSize: 11, color: 'var(--ps-text-disabled)', marginTop: 2 }}>
+            <span
+              style={{
+                fontSize: 11,
+                color: "var(--ps-text-disabled)",
+                marginTop: 2,
+              }}
+            >
               Borrador
             </span>
           </div>
-
         </div>
       </div>
     </div>

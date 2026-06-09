@@ -32,32 +32,39 @@ export function Setup2FAPageContent({
   is2FAEnabled = false,
 }: Setup2FAPageContentProps) {
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'var(--ps-bg-base)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 16,
-    }}>
-      <div style={{ width: '100%', maxWidth: 448 }}>
-
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "var(--ps-bg-base)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: 448 }}>
         {/* Brand */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
           <Link
             href="/"
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
+              display: "inline-flex",
+              alignItems: "center",
               gap: 10,
               fontSize: 22,
               fontWeight: 800,
-              letterSpacing: '-0.02em',
-              color: 'var(--ps-text-primary)',
-              textDecoration: 'none',
+              letterSpacing: "-0.02em",
+              color: "var(--ps-text-primary)",
+              textDecoration: "none",
             }}
           >
-            <Image src="/logo-mark.png" alt="ProSell" width={271} height={294} style={{ height: 32, width: 'auto', flexShrink: 0 }} />
+            <Image
+              src="/logo-mark.png"
+              alt="ProSell"
+              width={271}
+              height={294}
+              style={{ height: 32, width: "auto", flexShrink: 0 }}
+            />
             ProSell
           </Link>
         </div>
@@ -66,7 +73,6 @@ export function Setup2FAPageContent({
         <Suspense fallback={<TwoFactorSetupSkeleton />}>
           <TwoFactorSetupForm is2FAEnabled={is2FAEnabled} />
         </Suspense>
-
       </div>
     </div>
   );

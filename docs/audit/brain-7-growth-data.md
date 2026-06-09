@@ -11,18 +11,19 @@
 ### OPCIÓN A: Catálogo Público
 
 **Qué entrega:**
+
 - Landing page para dealers
 - SEO y visibilidad orgánica
 - Marca propia
 
 **Impacto en retención de los 5 dealers actuales:**
 
-| Factor | Impacto | Severidad |
-|--------|---------|-----------|
-| **Resuelve problema principal** | ❌ NO (el problema es generación de leads en Facebook) | Media |
-| **Agrega valor inmediato** | ⚠️ DUDOSO (ya están en Facebook, que tiene más tráfico) | Media |
-| **Reduce carga operativa** | ❌ NO (aún es manual) | Alta |
-| **Mejora experiencia** | ⚠️ PARCIAL (otra plataforma más, no menos trabajo) | Baja |
+| Factor                          | Impacto                                                 | Severidad |
+| ------------------------------- | ------------------------------------------------------- | --------- |
+| **Resuelve problema principal** | ❌ NO (el problema es generación de leads en Facebook)  | Media     |
+| **Agrega valor inmediato**      | ⚠️ DUDOSO (ya están en Facebook, que tiene más tráfico) | Media     |
+| **Reduce carga operativa**      | ❌ NO (aún es manual)                                   | Alta      |
+| **Mejora experiencia**          | ⚠️ PARCIAL (otra plataforma más, no menos trabajo)      | Baja      |
 
 **Conclusión**: El catálogo es un "nice-to-have" que NO ataca el pain point principal.
 
@@ -31,6 +32,7 @@
 ### OPCIÓN B: Marketplace Automation
 
 **Qué entrega:**
+
 - Publicación automática en Facebook
 - Re-publicación programada
 - Dashboard en tiempo real
@@ -38,12 +40,12 @@
 
 **Impacto en retención de los 5 dealers actuales:**
 
-| Factor | Impacto | Severidad |
-|--------|---------|-----------|
-| **Resuelve problema principal** | ✅ SÍ (elimina carga manual completamente) | **CRÍTICO** |
-| **Agrega valor inmediato** | ✅ SÍ (tiempo reducido de minutos a segundos) | **ALTO** |
-| **Reduce carga operativa** | ✅ SÍ (dealer publica solo, sin intermediario) | **CRÍTICO** |
-| **Mejora experiencia** | ✅ SÍ (control total, transparencia) | **ALTO** |
+| Factor                          | Impacto                                        | Severidad   |
+| ------------------------------- | ---------------------------------------------- | ----------- |
+| **Resuelve problema principal** | ✅ SÍ (elimina carga manual completamente)     | **CRÍTICO** |
+| **Agrega valor inmediato**      | ✅ SÍ (tiempo reducido de minutos a segundos)  | **ALTO**    |
+| **Reduce carga operativa**      | ✅ SÍ (dealer publica solo, sin intermediario) | **CRÍTICO** |
+| **Mejora experiencia**          | ✅ SÍ (control total, transparencia)           | **ALTO**    |
 
 **Conclusión**: Marketplace automation es el "must-have" que MANTIENE el contrato vivo.
 
@@ -90,12 +92,12 @@ CAPACIDAD AUTOMATIZADA:
 
 ### Análisis de Escalabilidad
 
-| Métrica | Manual | Automatizado | Diferencia |
-|---------|--------|--------------|------------|
-| **5 dealers** | 75 pubs/día | 75 pubs/día | 0% |
-| **10 dealers** | 150 pubs/día (IMPOSIBLE) | 150 pubs/día | ∞ |
-| **20 dealers** | 300 pubs/día (COLAPSO) | 300 pubs/día | ∞ |
-| **Costo por publicación** | ~$0.50 (empleado) | ~$0.01 (API) | 98% ↓ |
+| Métrica                   | Manual                   | Automatizado | Diferencia |
+| ------------------------- | ------------------------ | ------------ | ---------- |
+| **5 dealers**             | 75 pubs/día              | 75 pubs/día  | 0%         |
+| **10 dealers**            | 150 pubs/día (IMPOSIBLE) | 150 pubs/día | ∞          |
+| **20 dealers**            | 300 pubs/día (COLAPSO)   | 300 pubs/día | ∞          |
+| **Costo por publicación** | ~$0.50 (empleado)        | ~$0.01 (API) | 98% ↓      |
 
 **Conclusión**: Solo la Opción B permite escalar a 10+ dealers.
 
@@ -105,15 +107,16 @@ CAPACIDAD AUTOMATIZADA:
 
 ### De NO hacer Opción A (Catálogo Público)
 
-| Pérdida | Timeline | Valor |
-|--------|----------|-------|
+| Pérdida             | Timeline        | Valor                               |
+| ------------------- | --------------- | ----------------------------------- |
 | **SEO positioning** | -50% en 6 meses | $500 (estimado AdWords equivalente) |
-| **Brand awareness** | -20% | Hard de cuantificar |
-| **Credibilidad** | -15% | Percepción de "herramienta backend" |
+| **Brand awareness** | -20%            | Hard de cuantificar                 |
+| **Credibilidad**    | -15%            | Percepción de "herramienta backend" |
 
 **Costo total**: Crecimiento lento, pero **NO FATAL**
 
 **Mitigación**:
+
 - Retomar catálogo en Sprint 9
 - SEO se recupera en 6-12 meses
 - Brand se construye con producto, no con landing page
@@ -122,16 +125,17 @@ CAPACIDAD AUTOMATIZADA:
 
 ### De NO hacer Opción B (Marketplace Automation)
 
-| Pérdida | Timeline | Valor |
-|--------|----------|-------|
-| **Dealer #6** | INMEDIATO | LTV (Lifetime Value) perdido |
-| **Dealer #7-10** | +3 meses | 4 × LTV = MILES perdidos |
-| **Dealers actuales** | +6 meses | Churn por "no escala" |
-| **Reputación** | PERMANENTE | "No puede escalar = mal producto" |
+| Pérdida              | Timeline   | Valor                             |
+| -------------------- | ---------- | --------------------------------- |
+| **Dealer #6**        | INMEDIATO  | LTV (Lifetime Value) perdido      |
+| **Dealer #7-10**     | +3 meses   | 4 × LTV = MILES perdidos          |
+| **Dealers actuales** | +6 meses   | Churn por "no escala"             |
+| **Reputación**       | PERMANENTE | "No puede escalar = mal producto" |
 
 **Costo total**: **MUERTE DEL NEGOCIO**
 
 **Sin mitigación posible**:
+
 - No podemos aceptar más dealers
 - Los 5 actuales se van cuando crezcan
 - Percepción de "producto que no funciona"
@@ -142,23 +146,23 @@ CAPACIDAD AUTOMATIZADA:
 
 ### Para validar Opción B (Marketplace):
 
-| Métrica | Hoy | Objetivo 6 semanas | Objetivo 12 semanas | Señal de éxito |
-|---------|-----|-------------------|--------------------|----------------|
-| **Publicaciones/día** | ~75 manual | ~75 automático <30s | 150+ automático | Capacidad ×10 |
-| **Dealers activos** | 5 | 5 (retención 100%) | 10+ | Retención = 0% |
-| **API Success Rate** | N/A | >99.9% | >99.9% | Estabilidad |
-| **Time-to-Publish** | Minutos (latencia variable) | <30 segundos | <30 segundos | Eficiencia |
-| **Churn Rate** | 0% | 0% | <5% | Retención |
-| **Dealer Satisfaction** | 7/10 (asumido) | 9/10 | 9/10 | NPS↑ |
+| Métrica                 | Hoy                         | Objetivo 6 semanas  | Objetivo 12 semanas | Señal de éxito |
+| ----------------------- | --------------------------- | ------------------- | ------------------- | -------------- |
+| **Publicaciones/día**   | ~75 manual                  | ~75 automático <30s | 150+ automático     | Capacidad ×10  |
+| **Dealers activos**     | 5                           | 5 (retención 100%)  | 10+                 | Retención = 0% |
+| **API Success Rate**    | N/A                         | >99.9%              | >99.9%              | Estabilidad    |
+| **Time-to-Publish**     | Minutos (latencia variable) | <30 segundos        | <30 segundos        | Eficiencia     |
+| **Churn Rate**          | 0%                          | 0%                  | <5%                 | Retención      |
+| **Dealer Satisfaction** | 7/10 (asumido)              | 9/10                | 9/10                | NPS↑           |
 
 ### Para medir impacto de NO hacer Opción A:
 
-| Métrica | Impacto | Severidad | Timeline |
-|---------|---------|-----------|----------|
-| **Tráfico orgánico** | -50% | Media | 6 meses |
-| **SEO rankings** | -30 posiciones | Media | 6 meses |
-| **Brand awareness** | -20% | Baja | 12 meses |
-| **Leads orgánicos** | -10% | Baja | 6 meses |
+| Métrica              | Impacto        | Severidad | Timeline |
+| -------------------- | -------------- | --------- | -------- |
+| **Tráfico orgánico** | -50%           | Media     | 6 meses  |
+| **SEO rankings**     | -30 posiciones | Media     | 6 meses  |
+| **Brand awareness**  | -20%           | Baja      | 12 meses |
+| **Leads orgánicos**  | -10%           | Baja      | 6 meses  |
 
 ---
 
@@ -167,6 +171,7 @@ CAPACIDAD AUTOMATIZADA:
 ### 1. Dashboard de Estado (Week 1)
 
 **Qué es:**
+
 ```
 ┌─────────────────────────────────┐
 │ 📊 TU ESTADO DE PUBLICACIONES     │
@@ -178,6 +183,7 @@ CAPACIDAD AUTOMATIZADA:
 ```
 
 **Impacto en growth:**
+
 - Transparencia inmediata (reduce ansiedad)
 - Confianza en el sistema (aumenta retención)
 - Perceived value del producto
@@ -189,6 +195,7 @@ CAPACIDAD AUTOMATIZADA:
 ### 2. VIN Decoder Frontend (Week 1)
 
 **Qué es:**
+
 ```
 [ VIN: 2T1BURHE1MC... ] → [Buscar]
       ↓
@@ -200,6 +207,7 @@ CAPACIDAD AUTOMATIZADA:
 ```
 
 **Impacto en growth:**
+
 - Ahorro de tiempo inmediato (dealer ve valor)
 - "Magia" del producto (wow factor)
 - Reducción de errores (data quality ↑)
@@ -211,6 +219,7 @@ CAPACIDAD AUTOMATIZADA:
 ### 3. Generador de Títulos IA (Week 2)
 
 **Qué es:**
+
 ```
 ✨ Título sugerido por IA:
 "2021 Toyota Corolla LE - AWD - 45K mi - One Owner - Clean Title"
@@ -219,6 +228,7 @@ CAPACIDAD AUTOMATIZADA:
 ```
 
 **Impacto en growth:**
+
 - CTR ↑ (mejores títulos = más clics)
 - Esfuerzo cognitivo ↓ (dealer no piensa)
 - Calidad consistente (no depende de humor humano)
@@ -249,6 +259,7 @@ CAPACIDAD AUTOMATIZADA:
    - Dealer no recuerda hacerlo
 
 **Métricas de éxito**:
+
 - 5 dealers retained (churn = 0%)
 - API Success Rate > 99.9%
 - Time-to-Publish < 30 segundos
@@ -272,6 +283,7 @@ CAPACIDAD AUTOMATIZADA:
    - ROI de publicaciones
 
 **Métricas de éxito**:
+
 - 10 dealers activos (escalado ×2)
 - Pricing dashboard usado por 80% dealers
 - Churn < 5%
@@ -295,6 +307,7 @@ CAPACIDAD AUTOMATIZADA:
    - Backlinks strategy
 
 **Métricas de éxito**:
+
 - 1000 visitantes únicos/mes
 - 50 leads orgánicos/mes
 - Top 10 para keywords locales
@@ -330,12 +343,12 @@ CAPACIDAD AUTOMATIZADA:
 
 ### Modelo Manual Actual (Sprint 5-6)
 
-| Item | Costo/Ingreso |
-|------|---------------|
-| Empleado tiempo completo | Salario + comisión |
-| Publicación manual | Horas de empleado |
-| Gestión de leads | Horas de empleado |
-| Tu overhead | Gestión de empleados |
+| Item                     | Costo/Ingreso        |
+| ------------------------ | -------------------- |
+| Empleado tiempo completo | Salario + comisión   |
+| Publicación manual       | Horas de empleado    |
+| Gestión de leads         | Horas de empleado    |
+| Tu overhead              | Gestión de empleados |
 
 **Margen actual**: Bajo (mucho tiempo humano)
 
@@ -345,12 +358,12 @@ CAPACIDAD AUTOMATIZADA:
 
 ### Modelo Automatizado (Sprint 7+)
 
-| Item | Costo/Ingreso |
-|------|---------------|
-| Plataforma (dev) | Costo único (~$10-20k) |
-| Publicación automática | ~$0 |
-| Lead management | ~$0 |
-| Data analytics | **Valor ADD ↑** |
+| Item                   | Costo/Ingreso          |
+| ---------------------- | ---------------------- |
+| Plataforma (dev)       | Costo único (~$10-20k) |
+| Publicación automática | ~$0                    |
+| Lead management        | ~$0                    |
+| Data analytics         | **Valor ADD ↑**        |
 
 **Margen automatizado**: Alto (mismo empleado gestiona 10x más dealers)
 
@@ -364,17 +377,18 @@ CAPACIDAD AUTOMATIZADA:
 
 **Análisis costo-beneficio:**
 
-| Aspecto | Opción A (Catálogo) | Opción B (Marketplace) |
-|---------|-------------------|----------------------|
-| **Costo desarrollo** | 4 semanas | 6 semanas |
-| **Valor inmediato** | Bajo (decorativo) | Alto (operativo) |
-| **Impacto retención** | Neutro/Negativo | Positivo alto |
-| **Capacidad escala** | 0 (no cambia) | ∞ (permite crecer) |
-| **Costo NO hacer** | Crecimiento lento | **Muerte negocio** |
+| Aspecto               | Opción A (Catálogo) | Opción B (Marketplace) |
+| --------------------- | ------------------- | ---------------------- |
+| **Costo desarrollo**  | 4 semanas           | 6 semanas              |
+| **Valor inmediato**   | Bajo (decorativo)   | Alto (operativo)       |
+| **Impacto retención** | Neutro/Negativo     | Positivo alto          |
+| **Capacidad escala**  | 0 (no cambia)       | ∞ (permite crecer)     |
+| **Costo NO hacer**    | Crecimiento lento   | **Muerte negocio**     |
 
 **Decisión**: PRIORIZAR OPCIÓN B
 
 **Plan:**
+
 1. Sprint 7-8 (reconfigurado): Marketplace Integration
 2. Sprint 9: Catálogo Público (cuando capacidad operativa resuelta)
 3. Sprint 10+: Scraping + Analytics

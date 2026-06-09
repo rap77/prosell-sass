@@ -13,7 +13,7 @@ const BACKEND_URL = process.env.API_URL || "http://localhost:8000";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await params;
   return proxyRequest(request, path);
@@ -21,7 +21,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await params;
   return proxyRequest(request, path);
@@ -29,7 +29,7 @@ export async function POST(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await params;
   return proxyRequest(request, path);
@@ -37,7 +37,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await params;
   return proxyRequest(request, path);
@@ -98,7 +98,10 @@ async function proxyRequest(request: NextRequest, path: string[]) {
 
     // Forward other relevant headers
     if (response.headers.get("Content-Type")) {
-      nextResponse.headers.set("Content-Type", response.headers.get("Content-Type")!);
+      nextResponse.headers.set(
+        "Content-Type",
+        response.headers.get("Content-Type")!,
+      );
     }
 
     return nextResponse;
@@ -106,7 +109,7 @@ async function proxyRequest(request: NextRequest, path: string[]) {
     console.error("Proxy error:", error);
     return NextResponse.json(
       { detail: "Proxy error: Failed to reach backend" },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

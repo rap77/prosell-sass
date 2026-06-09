@@ -15,9 +15,9 @@
  *
  * @see {@link useTeamStore} for the underlying store implementation
  */
-import { useTeamStore } from "@/stores/teamStore"
-import type { Team } from "@/lib/api/teamApi"
-import type { TeamError } from "@/stores/teamStore"
+import { useTeamStore } from "@/stores/teamStore";
+import type { Team } from "@/lib/api/teamApi";
+import type { TeamError } from "@/stores/teamStore";
 
 /**
  * Return type for the useTeams hook
@@ -26,40 +26,54 @@ import type { TeamError } from "@/stores/teamStore"
  */
 export interface UseTeamsReturn {
   /** List of teams available to the user */
-  teams: Team[]
+  teams: Team[];
 
   /** Currently selected team */
-  currentTeam: Team | null
+  currentTeam: Team | null;
 
   /** Whether team operations are in progress */
-  isLoading: boolean
+  isLoading: boolean;
 
   /** Current error state, if any */
-  error: TeamError | null
+  error: TeamError | null;
 
   /** Switch to a different team */
-  switchTeam: (team: Team) => void
+  switchTeam: (team: Team) => void;
 
   /** Fetch teams for an organization */
-  fetchTeams: (orgId: string, tenantId: string, params?: { skip?: number; limit?: number }) => Promise<void>
+  fetchTeams: (
+    orgId: string,
+    tenantId: string,
+    params?: { skip?: number; limit?: number },
+  ) => Promise<void>;
 
   /** Create a new team */
-  createTeam: (data: { name: string; tenant_id: string; organization_id: string }) => Promise<Team>
+  createTeam: (data: {
+    name: string;
+    tenant_id: string;
+    organization_id: string;
+  }) => Promise<Team>;
 
   /** Update team information */
-  updateTeam: (teamId: string, data: { name?: string }) => Promise<void>
+  updateTeam: (teamId: string, data: { name?: string }) => Promise<void>;
 
   /** Add a member to a team */
-  addMember: (teamId: string, data: Omit<{
-    team_id: string
-    user_id: string
-    tenant_id: string
-    role?: "manager" | "vendor"
-    commission_rate?: number | null
-  }, "team_id">) => Promise<void>
+  addMember: (
+    teamId: string,
+    data: Omit<
+      {
+        team_id: string;
+        user_id: string;
+        tenant_id: string;
+        role?: "manager" | "vendor";
+        commission_rate?: number | null;
+      },
+      "team_id"
+    >,
+  ) => Promise<void>;
 
   /** Clear the current error */
-  clearError: () => void
+  clearError: () => void;
 }
 
 /**
@@ -82,12 +96,12 @@ export function useTeams(): UseTeamsReturn {
     updateTeam,
     addMember,
     clearError,
-  } = useTeamStore()
+  } = useTeamStore();
 
   // Switch to a different team
   const switchTeam = (team: Team) => {
-    setCurrentTeam(team)
-  }
+    setCurrentTeam(team);
+  };
 
   // Fetch teams for an organization
   const fetchTeams = async (
@@ -100,8 +114,8 @@ export function useTeams(): UseTeamsReturn {
       tenant_id: tenantId,
       skip: params?.skip,
       limit: params?.limit,
-    })
-  }
+    });
+  };
 
   return {
     teams,
@@ -114,5 +128,5 @@ export function useTeams(): UseTeamsReturn {
     updateTeam,
     addMember,
     clearError,
-  }
+  };
 }

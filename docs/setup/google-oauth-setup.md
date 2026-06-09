@@ -83,6 +83,7 @@ GOOGLE_OAUTH_CLIENT_SECRET=GOCSPX-XXXXXXXXXXXXXXXX
 ```
 
 Las otras variables ya están configuradas:
+
 ```bash
 GOOGLE_OAUTH_REDIRECT_URI=http://localhost:8000/api/auth/oauth/google/callback
 ```
@@ -92,12 +93,14 @@ GOOGLE_OAUTH_REDIRECT_URI=http://localhost:8000/api/auth/oauth/google/callback
 ## Paso 7: Verificar
 
 1. Reiniciar el backend:
+
 ```bash
 cd apps/api
 fastapi dev src/prosell/infrastructure/api/main.py --reload
 ```
 
 2. Verificar que cargó las credenciales:
+
 ```bash
 curl http://localhost:8000/api/v1/auth/oauth/google/authorize
 ```
@@ -123,6 +126,7 @@ Si devuelve redirect a Google, ¡está funcionando!
 **Causa**: El redirect URI en Google Console no coincide con el código.
 
 **Solución**: Verificar que EXACTAMENTE coincida:
+
 - En Google Console: `http://localhost:8000/api/auth/oauth/google/callback`
 - En .env: `GOOGLE_OAUTH_REDIRECT_URI=http://localhost:8000/api/auth/oauth/google/callback`
 - **NO incluir barra al final**
@@ -146,12 +150,14 @@ Si devuelve redirect a Google, ¡está funcionando!
 Cuando deployes a producción:
 
 1. **Agregar redirect URIs de producción** en Google Console:
+
 ```
 https://api.prosell.saas/api/auth/oauth/google/callback
 https://staging-api.prosell.saas/api/auth/oauth/google/callback
 ```
 
 2. **Actualizar .env**:
+
 ```bash
 GOOGLE_OAUTH_REDIRECT_URI=https://api.prosell.saas/api/auth/oauth/google/callback
 OAUTH_FRONTEND_SUCCESS_URL=https://prosell.saas/dashboard
@@ -159,6 +165,7 @@ OAUTH_FRONTEND_FAILURE_URL=https://prosell.saas/auth/login?error=
 ```
 
 3. **Verificar frontend NEXT_PUBLIC_API_URL**:
+
 ```bash
 # apps/web/.env.local
 NEXT_PUBLIC_API_URL=https://api.prosell.saas

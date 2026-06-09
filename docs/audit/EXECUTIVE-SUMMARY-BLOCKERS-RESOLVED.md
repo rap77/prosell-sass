@@ -20,15 +20,15 @@ Phase 8 blockers have been **successfully resolved** with high confidence valida
 
 ## 📊 Per-Brain Validation Scores
 
-| Brain | Previous | Current | Status | Key Validation |
-|-------|----------|---------|--------|-----------------|
-| **#1 Product** | 7/10 ⚠️ | 9/10 ✅ | **APPROVED** | Bulk Upload to UAT, Free storage validated |
-| **#2 UX** | 7/10 ⚠️ | 9/10 ✅ | **APPROVED** | "Inventario" validated 92% |
-| **#3 UI** | 8/10 ⚠️ | 8/10 ✅ | **APPROVED** | MagicUI deferable to Wave 3 |
-| **#4 Frontend** | 9/10 ✅ | 9/10 ✅ | **APPROVED** | Testing configs production-ready |
-| **#5 Backend** | 6/10 🔴 | 10/10 ✅ | **APPROVED** | Clean Architecture confirmed |
-| **#6 QA** | 5/10 ❌ | 9/10 ✅ | **APPROVED** | Infrastructure complete |
-| **#7 Growth** | 8/10 ✅ | 9/10 ✅ | **APPROVED** | North Star validated |
+| Brain           | Previous | Current  | Status       | Key Validation                             |
+| --------------- | -------- | -------- | ------------ | ------------------------------------------ |
+| **#1 Product**  | 7/10 ⚠️  | 9/10 ✅  | **APPROVED** | Bulk Upload to UAT, Free storage validated |
+| **#2 UX**       | 7/10 ⚠️  | 9/10 ✅  | **APPROVED** | "Inventario" validated 92%                 |
+| **#3 UI**       | 8/10 ⚠️  | 8/10 ✅  | **APPROVED** | MagicUI deferable to Wave 3                |
+| **#4 Frontend** | 9/10 ✅  | 9/10 ✅  | **APPROVED** | Testing configs production-ready           |
+| **#5 Backend**  | 6/10 🔴  | 10/10 ✅ | **APPROVED** | Clean Architecture confirmed               |
+| **#6 QA**       | 5/10 ❌  | 9/10 ✅  | **APPROVED** | Infrastructure complete                    |
+| **#7 Growth**   | 8/10 ✅  | 9/10 ✅  | **APPROVED** | North Star validated                       |
 
 **Average**: 7.1 → **9.2** (+2.1 points)
 
@@ -51,12 +51,14 @@ Phase 8 blockers have been **successfully resolved** with high confidence valida
 **Decision**: **Cloudflare R2 (FREE tier)** for MVP, migrate to paid only when >100 vehicles.
 
 **Validation**: Brain #1 confirmed R2 is **optimal for MVP** with:
+
 - 10 GB free storage (sufficient for 2+ years at current scale)
 - **Zero egress costs** (unique advantage)
 - Presigned URLs compatible with existing architecture
 - S3-compatible migration path
 
 **Cost Projection**:
+
 - **0-6 months**: $0 (free tier)
 - **6-18 months**: $0 (until >100 vehicles)
 - **18+ months**: ~$5-10/mo (only when revenue justifies it)
@@ -68,6 +70,7 @@ Phase 8 blockers have been **successfully resolved** with high confidence valida
 ### Blocker #3: Testing Infrastructure ✅ RESOLVED
 
 **Created**:
+
 - `vitest.config.ts` (80% coverage target)
 - `playwright.config.ts` (E2E testing)
 - `pytest.ini` (90% coverage target, adjusted to 80% per Brain #6)
@@ -77,6 +80,7 @@ Phase 8 blockers have been **successfully resolved** with high confidence valida
 **Validation**: Brain #4 and Brain #6 confirmed configs are **production-ready** for Next.js 16 + React 19.
 
 **Refinement per Brain #6**:
+
 - Backend coverage: 90% → **80%** (focus on Vehicle CRUD core)
 - Add **Performance SLOs** to CI/CD (DataGrid <200ms p95)
 - Add **Negative Testing** ("Inversion Thinking")
@@ -90,6 +94,7 @@ Phase 8 blockers have been **successfully resolved** with high confidence valida
 **Decision**: **"Inventario/Ventas/Configuración"** validated by industry standards.
 
 **Validation**: Brain #2 confirmed with **92% confidence**:
+
 - 100% of competitors (vAuto, CarGurus, AutoTrader) use "Inventory"
 - Jakob's Law supports matching user expectations
 - Multi-niche scalability (cars, boats, RVs)

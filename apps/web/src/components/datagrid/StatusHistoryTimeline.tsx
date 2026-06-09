@@ -5,7 +5,14 @@ import { formatRelativeTime } from "@/lib/utils/format";
 import { StatusBadge } from "./StatusBadge";
 
 export interface StatusHistoryItem {
-  status: "published" | "pending" | "failed" | "draft" | "expired" | "online" | "sold";
+  status:
+    | "published"
+    | "pending"
+    | "failed"
+    | "draft"
+    | "expired"
+    | "online"
+    | "sold";
   changed_at: string;
   changed_by?: string;
   note?: string;
@@ -54,9 +61,13 @@ export function StatusHistoryTimeline({
                     Changed by {item.changed_by}
                   </span>
                 )}
-                {item.changed_by && item.note && <span className="mx-2">•</span>}
+                {item.changed_by && item.note && (
+                  <span className="mx-2">•</span>
+                )}
                 {item.note && (
-                  <span className="text-muted-foreground italic">{item.note}</span>
+                  <span className="text-muted-foreground italic">
+                    {item.note}
+                  </span>
                 )}
               </div>
 

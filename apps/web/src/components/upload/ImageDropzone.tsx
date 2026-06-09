@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import { useDropzone } from 'react-dropzone'
-import { Upload } from 'lucide-react'
-import { useUploadStore } from '@/lib/stores/uploadStore'
-import { useClipboardPasteImage } from '@/lib/hooks/useClipboardPasteImage'
+import { useDropzone } from "react-dropzone";
+import { Upload } from "lucide-react";
+import { useUploadStore } from "@/lib/stores/uploadStore";
+import { useClipboardPasteImage } from "@/lib/hooks/useClipboardPasteImage";
 
 /**
  * ImageDropzone — entry point for new uploads.
@@ -21,29 +21,29 @@ import { useClipboardPasteImage } from '@/lib/hooks/useClipboardPasteImage'
  * (separate component) renders the store state.
  */
 export function ImageDropzone() {
-  const { addFile } = useUploadStore()
+  const { addFile } = useUploadStore();
 
   const onDrop = (acceptedFiles: File[]) => {
     // Wrap so `addFile` gets ONLY the File — `forEach` would otherwise
     // pass (file, index, array), and the store action takes a single
     // File. Keeps the contract identical to the paste path below.
-    acceptedFiles.forEach((file) => addFile(file))
-  }
+    acceptedFiles.forEach((file) => addFile(file));
+  };
 
   // Paste-to-upload: a user with a screenshot in their clipboard can
   // press Ctrl/Cmd+V anywhere on the page and the file lands in the
   // store. The hook owns the window listener and the image-only
   // filter; this component just hands the File off.
-  useClipboardPasteImage(addFile)
+  useClipboardPasteImage(addFile);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.webp'],
+      "image/*": [".png", ".jpg", ".jpeg", ".webp"],
     },
     maxSize: 10 * 1024 * 1024, // 10MB
     multiple: true,
-  })
+  });
 
   return (
     <div
@@ -51,9 +51,10 @@ export function ImageDropzone() {
       className={`
         border-2 border-dashed rounded-lg p-12 text-center cursor-pointer
         transition-colors duration-200
-        ${isDragActive
-          ? 'border-primary bg-primary/5'
-          : 'border-muted-foreground/25 hover:border-primary/50'
+        ${
+          isDragActive
+            ? "border-primary bg-primary/5"
+            : "border-muted-foreground/25 hover:border-primary/50"
         }
       `}
     >
@@ -74,5 +75,5 @@ export function ImageDropzone() {
         </div>
       )}
     </div>
-  )
+  );
 }

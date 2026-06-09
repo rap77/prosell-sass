@@ -1,7 +1,7 @@
-import { Sidebar } from '@/components/layout/Sidebar'
-import { Header } from '@/components/layout/Header'
-import { MobileNav } from '@/components/layout/MobileNav'
-import { MainContentWrapper } from '@/components/layout/MainContentWrapper'
+import { Sidebar } from "@/components/layout/Sidebar";
+import { Header } from "@/components/layout/Header";
+import { MobileNav } from "@/components/layout/MobileNav";
+import { MainContentWrapper } from "@/components/layout/MainContentWrapper";
 
 /**
  * Admin-specific layout with full system access.
@@ -17,13 +17,15 @@ import { MainContentWrapper } from '@/components/layout/MainContentWrapper'
 export default function AdminLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar - hidden on mobile */}
       <div className="hidden md:block">
-        <Sidebar groups={['general', 'inventario', 'ventas', 'configuración']} />
+        <Sidebar
+          groups={["general", "inventario", "ventas", "configuración"]}
+        />
       </div>
 
       {/* Main content area */}
@@ -38,5 +40,5 @@ export default function AdminLayout({
       {/* Mobile bottom navigation - visible only on mobile */}
       <MobileNav />
     </div>
-  )
+  );
 }

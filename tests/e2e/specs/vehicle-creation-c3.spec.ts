@@ -11,7 +11,10 @@
 
 import { expect, test } from "@playwright/test";
 import { VehiclesPage } from "../pages/vehicles-page";
-import { clearVinMocks, mockVinDecodeEndpoint } from "../helpers/mock-endpoints";
+import {
+  clearVinMocks,
+  mockVinDecodeEndpoint,
+} from "../helpers/mock-endpoints";
 import { MOCK_VIN_DECODED } from "../fixtures/mock-data";
 import { TestDataBuilder } from "../helpers/data-builder";
 
@@ -101,7 +104,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
   });
 
   test.describe("Complete Vehicle Creation Flow", () => {
-    test("@smoke should create vehicle via POST /api/v1/products with VIN", async ({ page }) => {
+    test("@smoke should create vehicle via POST /api/v1/products with VIN", async ({
+      page,
+    }) => {
       // Step 1: Select category (using REAL category created via API)
       await vehiclesPage.selectCategory(testCategoryName);
 
@@ -110,7 +115,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await vehiclesPage.decodeVinButton.click();
       // Wait reactively for the model input to be populated — NHTSA cold-start can take 15s+.
       // Using toHaveValue with a long timeout is more reliable than a fixed waitForTimeout.
-      await expect(vehiclesPage.modelInput).toHaveValue(/equinox/i, { timeout: 20000 });
+      await expect(vehiclesPage.modelInput).toHaveValue(/equinox/i, {
+        timeout: 20000,
+      });
 
       // For Select fields (Radix UI), verify decode completed by checking button is enabled
       await expect(vehiclesPage.decodeVinButton).toBeEnabled();
@@ -129,10 +136,14 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       // Step 7: Verify vehicle appears in list
       await page.waitForLoadState("load");
       // Vehicle title is "2017 Chevrolet Equinox" - search for Equinox or Chevrolet
-      await expect(page.getByText("Equinox").or(page.getByText(/chevrolet/i))).toBeVisible({ timeout: 5000 });
+      await expect(
+        page.getByText("Equinox").or(page.getByText(/chevrolet/i)),
+      ).toBeVisible({ timeout: 5000 });
     });
 
-    test("should create vehicle with category-specific attributes", async ({ page }) => {
+    test("should create vehicle with category-specific attributes", async ({
+      page,
+    }) => {
       // Select category with specific attribute_schema (e.g., Sedan)
       await vehiclesPage.selectCategory(testCategoryName);
 
@@ -145,7 +156,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await vehiclesPage.vinInput.fill("1HGCM82633A123456"); // Honda Accord 2003 (valid 17-char VIN)
       await vehiclesPage.decodeVinButton.click();
       // Wait for decode to finish — button re-enables when done (up to 20s for NHTSA cold start)
-      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({
+        timeout: 20000,
+      });
 
       await vehiclesPage.priceInput.fill("8500");
 
@@ -156,13 +169,19 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await page.waitForURL(/\/catalog/, { timeout: 5000 });
     });
 
-    test("should show validation errors for required fields", async ({ page }) => {
+    test("should show validation errors for required fields", async ({
+      page,
+    }) => {
       // Try to submit without filling required fields
       await vehiclesPage.submitButton.click();
 
       // Should show validation error toast - use specific toast description
-      await expect(page.getByText(/Campos incompletos/i)).toBeVisible({ timeout: 5000 });
-      await expect(page.getByText(/Completá: VIN/i)).toBeVisible({ timeout: 5000 });
+      await expect(page.getByText(/Campos incompletos/i)).toBeVisible({
+        timeout: 5000,
+      });
+      await expect(page.getByText(/Completá: VIN/i)).toBeVisible({
+        timeout: 5000,
+      });
 
       // VIN field should show error - check for error message below field
       // Note: React Hook Form doesn't set aria-invalid automatically
@@ -178,7 +197,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await page.waitForTimeout(1000);
 
       // Should show error toast - use more specific locator
-      await expect(page.getByText(/failed to decode/i).or(page.getByText(/Invalid VIN/i))).toBeVisible({
+      await expect(
+        page.getByText(/failed to decode/i).or(page.getByText(/Invalid VIN/i)),
+      ).toBeVisible({
         timeout: 3000,
       });
     });
@@ -202,7 +223,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await expect(page.getByText(/sedan/i)).toBeVisible();
     });
 
-    test("should show all fields when no category selected", async ({ page }) => {
+    test("should show all fields when no category selected", async ({
+      page,
+    }) => {
       // Don't select a category - all fields should be visible
       await expect(vehiclesPage.vinInput).toBeVisible();
       await expect(vehiclesPage.yearSelect).toBeVisible();
@@ -213,13 +236,17 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
   });
 
   test.describe("VIN Decode Integration", () => {
-    test("should auto-populate fields after successful VIN decode", async ({ page }) => {
+    test("should auto-populate fields after successful VIN decode", async ({
+      page,
+    }) => {
       // Fill and decode VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
       await vehiclesPage.decodeVinButton.click();
 
       // Wait reactively — model populated = decode complete (up to 20s for NHTSA cold start)
-      await expect(vehiclesPage.modelInput).toHaveValue(/equinox/i, { timeout: 20000 });
+      await expect(vehiclesPage.modelInput).toHaveValue(/equinox/i, {
+        timeout: 20000,
+      });
 
       // For trim input (text field), check it's not empty
       const trimValue = await vehiclesPage.trimInput.inputValue();
@@ -234,7 +261,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       // Decode VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
       await vehiclesPage.decodeVinButton.click();
-      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({
+        timeout: 20000,
+      });
 
       // Manually override make field
       await vehiclesPage.makeSelect.click();
@@ -242,27 +271,35 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
 
       // Verify manual override worked - check that Toyota option is now selected
       await vehiclesPage.makeSelect.click(); // Open dropdown again
-      await expect(page.getByRole("option", { name: /toyota/i, selected: true })).toBeVisible();
+      await expect(
+        page.getByRole("option", { name: /toyota/i, selected: true }),
+      ).toBeVisible();
       await page.keyboard.press("Escape"); // Close dropdown
     });
   });
 
   test.describe("Form Submission and API Integration", () => {
-    test("should submit product data with correct structure", async ({ page }) => {
+    test("should submit product data with correct structure", async ({
+      page,
+    }) => {
       // Setup form data
       await vehiclesPage.selectCategory(testCategoryName);
       await page.keyboard.press("Escape"); // Ensure dropdown closed
       await vehiclesPage.vinInput.fill("1G1PE5SB6G7175794"); // Valid 17-char VIN
       await vehiclesPage.decodeVinButton.click();
-      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({
+        timeout: 20000,
+      });
 
       await vehiclesPage.priceInput.fill("10000");
       await vehiclesPage.mileageInput.fill("75000");
 
       // Intercept API call to verify structure - set up BEFORE submit
-      const apiRequestPromise = page.waitForResponse((response) =>
-        response.url().includes("/api/v1/products") && response.request().method() === "POST",
-        { timeout: 20000 } // Increased timeout
+      const apiRequestPromise = page.waitForResponse(
+        (response) =>
+          response.url().includes("/api/v1/products") &&
+          response.request().method() === "POST",
+        { timeout: 20000 }, // Increased timeout
       );
 
       // Submit form - ensure button is clicked properly
@@ -277,12 +314,14 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
         // If API call fails, check if we navigated away (success case)
         const currentUrl = page.url();
         console.log(`[TEST] API call timed out, current URL: ${currentUrl}`);
-        if (currentUrl.includes('/catalog')) {
+        if (currentUrl.includes("/catalog")) {
           // Navigation happened, assume success
-          console.log('[TEST] Navigation occurred, assuming API call succeeded');
+          console.log(
+            "[TEST] Navigation occurred, assuming API call succeeded",
+          );
           return;
         }
-        console.log('[TEST] API call failed and no navigation occurred');
+        console.log("[TEST] API call failed and no navigation occurred");
         throw error;
       }
 
@@ -293,7 +332,10 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       // If not OK, log the response body to see validation errors
       if (!response.ok()) {
         const errorBody = await response.json();
-        console.log(`[TEST] API error response:`, JSON.stringify(errorBody, null, 2));
+        console.log(
+          `[TEST] API error response:`,
+          JSON.stringify(errorBody, null, 2),
+        );
       }
 
       // Verify success
@@ -304,16 +346,23 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       expect(responseBody).toHaveProperty("id");
       expect(responseBody).toHaveProperty("title");
       expect(responseBody).toHaveProperty("attributes");
-      expect(responseBody.attributes).toHaveProperty("vin", "1G1PE5SB6G7175794");
+      expect(responseBody.attributes).toHaveProperty(
+        "vin",
+        "1G1PE5SB6G7175794",
+      );
     });
 
-    test("should show success message after vehicle creation", async ({ page }) => {
+    test("should show success message after vehicle creation", async ({
+      page,
+    }) => {
       // Fill form
       await vehiclesPage.selectCategory(testCategoryName);
       await page.keyboard.press("Escape"); // Ensure dropdown closed
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946"); // Valid 17-char VIN
       await vehiclesPage.decodeVinButton.click();
-      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({
+        timeout: 20000,
+      });
       await vehiclesPage.priceInput.fill("15000");
 
       // Submit
@@ -325,13 +374,17 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await page.waitForURL(/\/catalog/, { timeout: 10000 });
     });
 
-    test("should redirect to catalog page after successful creation", async ({ page }) => {
+    test("should redirect to catalog page after successful creation", async ({
+      page,
+    }) => {
       // Fill and submit form
       await vehiclesPage.selectCategory(testCategoryName);
       await page.keyboard.press("Escape"); // Ensure dropdown closed
       await vehiclesPage.vinInput.fill("KMHHU6KH9AU020511"); // Valid 17-char VIN
       await vehiclesPage.decodeVinButton.click();
-      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({
+        timeout: 20000,
+      });
       await vehiclesPage.priceInput.fill("12000");
 
       await vehiclesPage.submitButton.scrollIntoViewIfNeeded();
@@ -344,7 +397,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
   });
 
   test.describe("Edge Cases", () => {
-    test("should handle empty category selection gracefully", async ({ page }) => {
+    test("should handle empty category selection gracefully", async ({
+      page,
+    }) => {
       // Try to create vehicle without selecting category
       // Note: category_id is optional in schema, so this should succeed
       await vehiclesPage.vinInput.fill("1HGCM82633A123456"); // Valid 17-char VIN
@@ -368,14 +423,16 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await vehiclesPage.decodeVinButton.click();
 
       // Should show format validation error - check for toast with Sonner data attribute
-      const toast = page.locator('[data-sonner-toast]').filter({ hasText: /Invalid VIN/i });
+      const toast = page
+        .locator("[data-sonner-toast]")
+        .filter({ hasText: /Invalid VIN/i });
       await expect(toast).toBeVisible({ timeout: 5000 });
     });
 
     test("should validate VIN format (too long)", async ({ page }) => {
       // Fill VIN with invalid format (too long) - Input has maxLength=17 so we need to work around
       await vehiclesPage.vinInput.evaluate((el: HTMLInputElement) => {
-        el.removeAttribute('maxlength');
+        el.removeAttribute("maxlength");
         el.value = "1HGCM82633A123456789012345";
       });
       await vehiclesPage.vinInput.fill("1HGCM82633A123456789012345");
@@ -384,12 +441,16 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await vehiclesPage.decodeVinButton.click();
 
       // Should show format validation error - check for Sonner toast
-      const toast = page.locator('[data-sonner-toast]').filter({ hasText: /Invalid VIN/i });
+      const toast = page
+        .locator("[data-sonner-toast]")
+        .filter({ hasText: /Invalid VIN/i });
       await expect(toast).toBeVisible({ timeout: 5000 });
       await expect(page.getByText(/VIN must be 17 characters/i)).toBeVisible();
     });
 
-    test("should handle missing required fields with validation errors", async ({ page }) => {
+    test("should handle missing required fields with validation errors", async ({
+      page,
+    }) => {
       // Select category but don't fill the required VIN field.
       await vehiclesPage.selectCategory(testCategoryName);
       await page.keyboard.press("Escape"); // Ensure dropdown closed
@@ -405,7 +466,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await expect(page.getByText(/Campos incompletos/i)).toBeVisible({
         timeout: 8000,
       });
-      await expect(page.getByText(/Completá: VIN/i)).toBeVisible({ timeout: 5000 });
+      await expect(page.getByText(/Completá: VIN/i)).toBeVisible({
+        timeout: 5000,
+      });
     });
 
     test("should handle network errors during VIN decode", async ({ page }) => {
@@ -421,7 +484,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       // Should show error or at least finish the decode attempt (button becomes enabled)
       await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 5000 });
       // Optionally check for error toast, but don't fail if it's not shown
-      const toast = page.locator('[data-sonner-toast]').filter({ hasText: /Failed to decode VIN/i });
+      const toast = page
+        .locator("[data-sonner-toast]")
+        .filter({ hasText: /Failed to decode VIN/i });
       await toast.isVisible().catch(() => {}); // Don't fail if toast not shown
     });
 
@@ -438,10 +503,14 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
 
       // The request will hang - just verify decode button is disabled during attempt
       // Note: This test might timeout, but that's expected behavior
-      await expect(vehiclesPage.decodeVinButton).toBeDisabled({ timeout: 3000 }).catch(() => {
-        // If button is not disabled, at least verify the decode attempt started
-        console.log("Decode button was not disabled - route may not have intercepted");
-      });
+      await expect(vehiclesPage.decodeVinButton)
+        .toBeDisabled({ timeout: 3000 })
+        .catch(() => {
+          // If button is not disabled, at least verify the decode attempt started
+          console.log(
+            "Decode button was not disabled - route may not have intercepted",
+          );
+        });
       // We can't wait for the error since the test will timeout first
       // This test verifies the UI enters the correct loading state
     });
@@ -452,7 +521,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await page.keyboard.press("Escape"); // Ensure dropdown closed
       await vehiclesPage.vinInput.fill("KNAFX4A65E5134820"); // Valid 17-char VIN
       await vehiclesPage.decodeVinButton.click();
-      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({
+        timeout: 20000,
+      });
 
       await vehiclesPage.priceInput.fill("10000");
 
@@ -467,12 +538,17 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       await page.waitForLoadState("networkidle");
 
       // Wait for category selector to be visible before interacting
-      await vehiclesPage.categorySelect.waitFor({ state: "visible", timeout: 10000 });
+      await vehiclesPage.categorySelect.waitFor({
+        state: "visible",
+        timeout: 10000,
+      });
       await vehiclesPage.selectCategory(testCategoryName);
 
       await vehiclesPage.vinInput.fill("KNAFX4A65E5134820"); // Same VIN - duplicate
       await vehiclesPage.decodeVinButton.click();
-      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({
+        timeout: 20000,
+      });
 
       await vehiclesPage.priceInput.fill("12000");
       await vehiclesPage.submitButton.click();
@@ -485,7 +561,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       });
     });
 
-    test("should handle special characters in make/model fields", async ({ page }) => {
+    test("should handle special characters in make/model fields", async ({
+      page,
+    }) => {
       // Select category
       await vehiclesPage.selectCategory(testCategoryName);
       await page.keyboard.press("Escape"); // Ensure dropdown closed
@@ -494,7 +572,9 @@ test.describe("Vehicle Creation - C3 API Flow", () => {
       // Fill VIN and decode
       await vehiclesPage.vinInput.fill("KNDJP3A5XF7227448"); // Valid 17-char VIN (extra)
       await vehiclesPage.decodeVinButton.click();
-      await expect(vehiclesPage.decodeVinButton).toBeEnabled({ timeout: 20000 });
+      await expect(vehiclesPage.decodeVinButton).toBeEnabled({
+        timeout: 20000,
+      });
 
       // Manually enter model with special characters (make is Select, can't type special chars)
       await vehiclesPage.modelInput.fill("Civic Édition Spéciale");

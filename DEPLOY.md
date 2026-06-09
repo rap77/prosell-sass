@@ -19,11 +19,11 @@
 
 En el panel de Hostinger, en la zona DNS de `prosellweb.com`, agregá estos registros A:
 
-| Host | Tipo | Valor | TTL |
-|------|------|-------|-----|
-| `@` | A | `IP_DEL_DROPLET` | 3600 |
-| `www` | A | `IP_DEL_DROPLET` | 3600 |
-| `api` | A | `IP_DEL_DROPLET` | 3600 |
+| Host  | Tipo | Valor            | TTL  |
+| ----- | ---- | ---------------- | ---- |
+| `@`   | A    | `IP_DEL_DROPLET` | 3600 |
+| `www` | A    | `IP_DEL_DROPLET` | 3600 |
+| `api` | A    | `IP_DEL_DROPLET` | 3600 |
 
 > La propagación puede tardar hasta 24h, pero generalmente son minutos.
 
@@ -77,6 +77,7 @@ chmod 600 apps/api/keys/private.pem
 ```
 
 > Si ya tenés las claves del staging, copialas al Droplet:
+>
 > ```bash
 > scp -r apps/api/keys/ usuario@IP_DROPLET:/opt/prosell/apps/api/keys/
 > ```
@@ -92,6 +93,7 @@ nano .env.prod
 ```
 
 Completá los valores:
+
 - `DB_PASSWORD` — generá uno seguro: `openssl rand -base64 32`
 - `REDIS_PASSWORD` — generá uno seguro: `openssl rand -base64 32`
 - `GOOGLE_OAUTH_CLIENT_ID` y `GOOGLE_OAUTH_CLIENT_SECRET` — de Google Cloud Console
@@ -142,6 +144,7 @@ curl https://prosellweb.com
 ```
 
 Deberías ver:
+
 - `prosellweb.com` → app Next.js con SSL ✅
 - `api.prosellweb.com/api/v1/health` → `{"status": "ok"}` ✅
 
@@ -158,11 +161,11 @@ cd /opt/prosell
 
 El script exige que tipees literalmente `deploy-prod` para confirmar. Flags útiles:
 
-| Flag | Cuándo |
-|------|--------|
-| `--skip-build` | Solo reiniciar containers (ej: cambiar config de Caddy sin código nuevo) |
-| `--branch <name>` | Deploy desde otra branch (default: `main`) |
-| `--no-backup` | Saltar backup de DB — **NO recomendado** |
+| Flag              | Cuándo                                                                   |
+| ----------------- | ------------------------------------------------------------------------ |
+| `--skip-build`    | Solo reiniciar containers (ej: cambiar config de Caddy sin código nuevo) |
+| `--branch <name>` | Deploy desde otra branch (default: `main`)                               |
+| `--no-backup`     | Saltar backup de DB — **NO recomendado**                                 |
 
 **Deploy manual** (si el script no aplica a tu caso):
 

@@ -1,6 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { MOCK_CATEGORIES } from "../fixtures/mock-data";
-import { mockVehiclesEndpoint, mockCategoriesEndpoint } from "../helpers/mock-endpoints";
+import {
+  mockVehiclesEndpoint,
+  mockCategoriesEndpoint,
+} from "../helpers/mock-endpoints";
 
 /**
  * E2E Accessibility Tests for Catalog
@@ -20,7 +23,9 @@ test.describe("Catalog - Accessibility", () => {
     await page.waitForLoadState("load");
 
     // Wait for content to render (vehicles from mock)
-    await expect(page.locator('[data-testid="vehicle-row"]').first()).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.locator('[data-testid="vehicle-row"]').first(),
+    ).toBeVisible({ timeout: 5000 });
 
     // Run accessibility check, skipping rules known to produce false positives or
     // pre-existing violations in the shared layout (not the catalog feature under test).

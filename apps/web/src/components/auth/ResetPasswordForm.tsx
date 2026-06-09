@@ -26,7 +26,9 @@ import { CheckCircle2, AlertTriangle, AlertCircle } from "lucide-react";
 
 const resetPasswordSchema = z
   .object({
-    password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
+    password: z
+      .string()
+      .min(8, "La contraseña debe tener al menos 8 caracteres"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -47,17 +49,17 @@ interface ResetPasswordFormProps {
 // ============================================
 
 const pageStyle: React.CSSProperties = {
-  minHeight: '100vh',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'var(--ps-bg-base)',
-  padding: '16px',
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "var(--ps-bg-base)",
+  padding: "16px",
 };
 
 const cardStyle: React.CSSProperties = {
-  background: 'var(--ps-bg-surface)',
-  border: '1px solid var(--ps-border-default)',
+  background: "var(--ps-bg-surface)",
+  border: "1px solid var(--ps-border-default)",
   borderRadius: 14,
   padding: 32,
 };
@@ -104,7 +106,10 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     } catch (err) {
       setFormState("error");
       setErrorMessage(
-        getErrorMessage(err, "No pudimos restablecer tu contraseña. Intentá de nuevo."),
+        getErrorMessage(
+          err,
+          "No pudimos restablecer tu contraseña. Intentá de nuevo.",
+        ),
       );
     }
   };
@@ -114,45 +119,69 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   if (tokenError) {
     return (
       <div style={pageStyle}>
-        <div style={{ width: '100%', maxWidth: 440 }}>
+        <div style={{ width: "100%", maxWidth: 440 }}>
           <div style={cardStyle}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                width: 64,
-                height: 64,
-                borderRadius: '50%',
-                background: 'var(--ps-error-bg)',
-                border: '1px solid rgba(240,68,56,0.25)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 20,
-              }}>
-                <AlertTriangle size={28} strokeWidth={1.8} style={{ color: 'var(--ps-error)' }} />
+            <div style={{ textAlign: "center" }}>
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "var(--ps-error-bg)",
+                  border: "1px solid rgba(240,68,56,0.25)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 20,
+                }}
+              >
+                <AlertTriangle
+                  size={28}
+                  strokeWidth={1.8}
+                  style={{ color: "var(--ps-error)" }}
+                />
               </div>
 
-              <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>
+              <h2
+                style={{
+                  margin: "0 0 8px",
+                  fontSize: 22,
+                  fontWeight: 700,
+                  letterSpacing: "-0.02em",
+                  color: "var(--ps-text-primary)",
+                }}
+              >
                 Enlace inválido
               </h2>
-              <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--ps-text-secondary)', lineHeight: 1.6 }}>
-                El enlace de recuperación no es válido o expiró. Solicitá uno nuevo.
+              <p
+                style={{
+                  margin: "0 0 24px",
+                  fontSize: 14,
+                  color: "var(--ps-text-secondary)",
+                  lineHeight: 1.6,
+                }}
+              >
+                El enlace de recuperación no es válido o expiró. Solicitá uno
+                nuevo.
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+              >
                 <Link
                   href="/auth/forgot-password"
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                     height: 44,
-                    background: 'var(--ps-cyan)',
-                    color: 'var(--ps-bg-base)',
+                    background: "var(--ps-cyan)",
+                    color: "var(--ps-bg-base)",
                     border: 0,
                     borderRadius: 8,
                     fontSize: 15,
                     fontWeight: 600,
-                    textDecoration: 'none',
+                    textDecoration: "none",
                   }}
                 >
                   Solicitar nuevo enlace
@@ -160,17 +189,17 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                 <Link
                   href="/auth/login"
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                     height: 44,
-                    background: 'transparent',
-                    color: 'var(--ps-text-secondary)',
-                    border: '1px solid var(--ps-border-default)',
+                    background: "transparent",
+                    color: "var(--ps-text-secondary)",
+                    border: "1px solid var(--ps-border-default)",
                     borderRadius: 8,
                     fontSize: 14,
                     fontWeight: 500,
-                    textDecoration: 'none',
+                    textDecoration: "none",
                   }}
                 >
                   Volver al inicio de sesión
@@ -188,45 +217,67 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   if (formState === "success") {
     return (
       <div style={pageStyle}>
-        <div style={{ width: '100%', maxWidth: 440 }}>
+        <div style={{ width: "100%", maxWidth: 440 }}>
           <div style={cardStyle}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                width: 64,
-                height: 64,
-                borderRadius: '50%',
-                background: 'var(--ps-success-bg)',
-                border: '1px solid rgba(34,211,160,0.25)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 20,
-              }}>
-                <CheckCircle2 size={28} strokeWidth={1.8} style={{ color: 'var(--ps-success)' }} />
+            <div style={{ textAlign: "center" }}>
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "var(--ps-success-bg)",
+                  border: "1px solid rgba(34,211,160,0.25)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 20,
+                }}
+              >
+                <CheckCircle2
+                  size={28}
+                  strokeWidth={1.8}
+                  style={{ color: "var(--ps-success)" }}
+                />
               </div>
 
-              <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>
+              <h2
+                style={{
+                  margin: "0 0 8px",
+                  fontSize: 22,
+                  fontWeight: 700,
+                  letterSpacing: "-0.02em",
+                  color: "var(--ps-text-primary)",
+                }}
+              >
                 ¡Contraseña actualizada!
               </h2>
-              <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--ps-text-secondary)', lineHeight: 1.6 }}>
-                Tu contraseña se actualizó correctamente. Ya podés iniciar sesión.
+              <p
+                style={{
+                  margin: "0 0 24px",
+                  fontSize: 14,
+                  color: "var(--ps-text-secondary)",
+                  lineHeight: 1.6,
+                }}
+              >
+                Tu contraseña se actualizó correctamente. Ya podés iniciar
+                sesión.
               </p>
 
               <Link
                 href="/auth/login"
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   height: 44,
-                  width: '100%',
-                  background: 'var(--ps-cyan)',
-                  color: 'var(--ps-bg-base)',
+                  width: "100%",
+                  background: "var(--ps-cyan)",
+                  color: "var(--ps-bg-base)",
                   border: 0,
                   borderRadius: 8,
                   fontSize: 15,
                   fontWeight: 600,
-                  textDecoration: 'none',
+                  textDecoration: "none",
                 }}
               >
                 Iniciar sesión
@@ -244,12 +295,27 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
 
   return (
     <div style={pageStyle}>
-      <div style={{ width: '100%', maxWidth: 440 }}>
+      <div style={{ width: "100%", maxWidth: 440 }}>
         <div style={cardStyle}>
-          <h2 style={{ margin: '0 0 6px', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ps-text-primary)' }}>
+          <h2
+            style={{
+              margin: "0 0 6px",
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              color: "var(--ps-text-primary)",
+            }}
+          >
             Nueva contraseña
           </h2>
-          <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--ps-text-secondary)', lineHeight: 1.5 }}>
+          <p
+            style={{
+              margin: "0 0 24px",
+              fontSize: 14,
+              color: "var(--ps-text-secondary)",
+              lineHeight: 1.5,
+            }}
+          >
             Elegí una contraseña segura para tu cuenta.
           </p>
 
@@ -257,24 +323,30 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             <div
               role="alert"
               style={{
-                display: 'flex',
-                alignItems: 'center',
+                display: "flex",
+                alignItems: "center",
                 gap: 8,
-                padding: '10px 14px',
+                padding: "10px 14px",
                 borderRadius: 8,
                 marginBottom: 16,
-                background: 'var(--ps-error-bg)',
-                border: '1px solid rgba(240,68,56,0.25)',
+                background: "var(--ps-error-bg)",
+                border: "1px solid rgba(240,68,56,0.25)",
               }}
             >
-              <AlertCircle size={14} style={{ color: 'var(--ps-error)', flexShrink: 0 }} strokeWidth={2.5} />
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--ps-error)' }}>{errorMessage}</p>
+              <AlertCircle
+                size={14}
+                style={{ color: "var(--ps-error)", flexShrink: 0 }}
+                strokeWidth={2.5}
+              />
+              <p style={{ margin: 0, fontSize: 13, color: "var(--ps-error)" }}>
+                {errorMessage}
+              </p>
             </div>
           )}
 
           <form
             onSubmit={handleSubmit(onSubmit)}
-            style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+            style={{ display: "flex", flexDirection: "column", gap: 16 }}
           >
             <Controller
               name="password"
@@ -317,25 +389,34 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
               disabled={isDisabled}
               style={{
                 marginTop: 8,
-                width: '100%',
+                width: "100%",
                 height: 44,
-                background: isDisabled ? 'rgba(77,184,255,0.4)' : 'var(--ps-cyan)',
-                color: 'var(--ps-bg-base)',
+                background: isDisabled
+                  ? "rgba(77,184,255,0.4)"
+                  : "var(--ps-cyan)",
+                color: "var(--ps-bg-base)",
                 border: 0,
                 borderRadius: 8,
                 fontSize: 15,
                 fontWeight: 600,
-                cursor: isDisabled ? 'not-allowed' : 'pointer',
-                transition: 'background 180ms',
+                cursor: isDisabled ? "not-allowed" : "pointer",
+                transition: "background 180ms",
               }}
             >
-              {formState === "loading" ? "Restableciendo..." : "Restablecer contraseña"}
+              {formState === "loading"
+                ? "Restableciendo..."
+                : "Restablecer contraseña"}
             </button>
 
-            <div style={{ textAlign: 'center' }}>
+            <div style={{ textAlign: "center" }}>
               <Link
                 href="/auth/login"
-                style={{ fontSize: 13, color: 'var(--ps-text-secondary)', textDecoration: 'none', fontWeight: 500 }}
+                style={{
+                  fontSize: 13,
+                  color: "var(--ps-text-secondary)",
+                  textDecoration: "none",
+                  fontWeight: 500,
+                }}
               >
                 Volver al inicio de sesión
               </Link>

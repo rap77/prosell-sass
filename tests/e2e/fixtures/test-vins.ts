@@ -76,7 +76,7 @@ export const TEST_VINS = {
    * WMI: JTD (Toyota Japan)
    * Note: NHTSA data may be inconsistent, using Honda Accord as fallback
    */
-  toyotaCorolla2019: "1HGCV1F31KA012345",  // Using Honda Accord for reliable fuel_type
+  toyotaCorolla2019: "1HGCV1F31KA012345", // Using Honda Accord for reliable fuel_type
 } as const;
 
 /**
@@ -94,11 +94,11 @@ export const EXPECTED_VEHICLE_DATA = {
   [TEST_VINS.toyotaCamry2018]: {
     make: "Toyota",
     model: "Camry",
-    year: 2012,  // NHTSA returns 2012 for this VIN
+    year: 2012, // NHTSA returns 2012 for this VIN
     trim: "LE",
     body_type: "Sedan/Saloon",
     drivetrain: "4x2",
-    transmission: null,  // NHTSA may not have transmission for this VIN
+    transmission: null, // NHTSA may not have transmission for this VIN
     fuel_type: "Gasoline",
   },
 
@@ -118,7 +118,7 @@ export const EXPECTED_VEHICLE_DATA = {
     model: "CR-V",
     year: 2020,
     trim: "EX",
-    body_type: "Sedan/Saloon",  // NHTSA returns this for the test VIN
+    body_type: "Sedan/Saloon", // NHTSA returns this for the test VIN
     drivetrain: "4x2",
     transmission: "Continuously Variable Transmission (CVT)",
     fuel_type: "Gasoline",
@@ -131,7 +131,7 @@ export const EXPECTED_VEHICLE_DATA = {
     trim: "XLE",
     body_type: "Sport Utility Vehicle (SUV)/Multi-Purpose Vehicle (MPV)",
     drivetrain: "AWD",
-    transmission: null,  // May not be available
+    transmission: null, // May not be available
     fuel_type: "Gasoline",
   },
 
@@ -142,12 +142,12 @@ export const EXPECTED_VEHICLE_DATA = {
     trim: "XLT",
     body_type: "Pickup",
     drivetrain: "4WD/4-Wheel Drive/4x4",
-    transmission: "Automatic",  // NHTSA returns "Automatic", not "10-Speed Automatic"
+    transmission: "Automatic", // NHTSA returns "Automatic", not "10-Speed Automatic"
     fuel_type: "Gasoline",
   },
 
   [TEST_VINS.toyotaCorolla2019]: {
-    make: "Honda",  // Using Honda Accord VIN
+    make: "Honda", // Using Honda Accord VIN
     model: "Accord",
     year: 2019,
     trim: "EX",
@@ -158,7 +158,7 @@ export const EXPECTED_VEHICLE_DATA = {
   },
 
   [TEST_VINS.toyotaRAV42021]: {
-    make: "Ford",  // Using Ford F-150 VIN
+    make: "Ford", // Using Ford F-150 VIN
     model: "F-150",
     year: 2020,
     trim: "XLT",

@@ -73,7 +73,10 @@ function AuditEntry({ entry, isLast }: AuditEntryProps) {
           data-testid="audit-status-change"
         >
           <LeadStatusBadge status={entry.old_status} />
-          <span className="text-xs text-muted-foreground" aria-label="changed to">
+          <span
+            className="text-xs text-muted-foreground"
+            aria-label="changed to"
+          >
             →
           </span>
           <LeadStatusBadge status={entry.new_status} />

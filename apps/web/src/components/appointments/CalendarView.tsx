@@ -5,14 +5,23 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
-import type { DateSelectArg, DatesSetArg, EventClickArg, EventDropArg } from "@fullcalendar/core";
+import type {
+  DateSelectArg,
+  DatesSetArg,
+  EventClickArg,
+  EventDropArg,
+} from "@fullcalendar/core";
 import { Appointment, AppointmentStatus } from "@/lib/api/appointments";
 import { format, parseISO } from "date-fns";
 
 /**
  * Calendar view types
  */
-type CalendarView = "dayGridMonth" | "timeGridWeek" | "timeGridDay" | "listWeek";
+type CalendarView =
+  | "dayGridMonth"
+  | "timeGridWeek"
+  | "timeGridDay"
+  | "listWeek";
 
 /**
  * Status badge colors for appointments
@@ -46,7 +55,11 @@ interface CalendarViewProps {
   /** Callback when empty slot is selected */
   onSlotSelect?: (start: Date, end: Date) => void;
   /** Callback when appointment is dropped (rescheduled) */
-  onAppointmentDrop?: (appointment: Appointment, newStart: Date, newEnd: Date) => void;
+  onAppointmentDrop?: (
+    appointment: Appointment,
+    newStart: Date,
+    newEnd: Date,
+  ) => void;
   /** Enable drag and drop */
   editable?: boolean;
   /** Enable slot selection */
@@ -119,8 +132,18 @@ export function CalendarView({
 
   const handleDrop = (dropInfo: EventDropArg) => {
     const apt = dropInfo.event.extendedProps.appointment;
-    if (apt && typeof apt === "object" && "id" in apt && dropInfo.event.start && dropInfo.event.end) {
-      onAppointmentDrop?.(apt as Appointment, dropInfo.event.start, dropInfo.event.end);
+    if (
+      apt &&
+      typeof apt === "object" &&
+      "id" in apt &&
+      dropInfo.event.start &&
+      dropInfo.event.end
+    ) {
+      onAppointmentDrop?.(
+        apt as Appointment,
+        dropInfo.event.start,
+        dropInfo.event.end,
+      );
     }
   };
 
@@ -128,7 +151,12 @@ export function CalendarView({
     <div className="calendar-view w-full" data-testid="calendar-view">
       <div data-testid="fullcalendar-wrapper">
         <FullCalendar
-          plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+          plugins={[
+            dayGridPlugin,
+            timeGridPlugin,
+            listPlugin,
+            interactionPlugin,
+          ]}
           initialView={initialView}
           headerToolbar={{
             left: "prev,next today",

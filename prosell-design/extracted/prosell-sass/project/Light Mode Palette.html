@@ -1,709 +1,1065 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProSell — Paleta modo claro</title>
-<style>
-  @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
-  :root {
-    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-  }
-</style>
-<style>
-  :root {
-    /* Light palette */
-    --L-base:      #F4F6FB;
-    --L-surface:   #FFFFFF;
-    --L-muted:     #EEF1F8;
-    --L-elevated:  #FFFFFF;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ProSell — Paleta modo claro</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
+      :root {
+        --font-sans:
+          "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+      }
+    </style>
+    <style>
+      :root {
+        /* Light palette */
+        --L-base: #f4f6fb;
+        --L-surface: #ffffff;
+        --L-muted: #eef1f8;
+        --L-elevated: #ffffff;
 
-    --L-text-primary:   #0E1730;
-    --L-text-secondary: #4E5C7E;
-    --L-text-disabled:  #94A0BD;
+        --L-text-primary: #0e1730;
+        --L-text-secondary: #4e5c7e;
+        --L-text-disabled: #94a0bd;
 
-    --L-blue:    #1E5FD4;
-    --L-blue-h:  #1849A8;
-    --L-navy:    #0D1B6E;
-    --L-cyan:    #2E8FE0;   /* large/accent only */
+        --L-blue: #1e5fd4;
+        --L-blue-h: #1849a8;
+        --L-navy: #0d1b6e;
+        --L-cyan: #2e8fe0; /* large/accent only */
 
-    --L-success: #067A52;
-    --L-warning: #A85508;
-    --L-error:   #D03A2F;
+        --L-success: #067a52;
+        --L-warning: #a85508;
+        --L-error: #d03a2f;
 
-    --L-success-tint: #E4F4EC;
-    --L-warning-tint: #FBEFDF;
-    --L-error-tint:   #FBE5E2;
-    --L-info-tint:    #E4EEFB;
+        --L-success-tint: #e4f4ec;
+        --L-warning-tint: #fbefdf;
+        --L-error-tint: #fbe5e2;
+        --L-info-tint: #e4eefb;
 
-    --L-border-subtle:  #E5EAF4;
-    --L-border-default: #D5DCEA;
-    --L-border-strong:  #B7C2D8;
-  }
+        --L-border-subtle: #e5eaf4;
+        --L-border-default: #d5dcea;
+        --L-border-strong: #b7c2d8;
+      }
 
-  html, body { margin: 0; padding: 0; height: auto; }
-  body {
-    background: var(--L-base);
-    color: var(--L-text-primary);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    padding: 48px 56px 64px;
-    min-height: 100vh;
-  }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: auto;
+      }
+      body {
+        background: var(--L-base);
+        color: var(--L-text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        padding: 48px 56px 64px;
+        min-height: 100vh;
+      }
 
-  /* ===== Header ===== */
-  .head {
-    display: flex; align-items: flex-end; justify-content: space-between;
-    gap: 32px;
-    padding-bottom: 28px;
-    border-bottom: 1px solid var(--L-border-subtle);
-    margin-bottom: 40px;
-    flex-wrap: wrap;
-  }
-  .head-left { display: flex; flex-direction: column; gap: 8px; max-width: 640px; }
-  .eyebrow {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--L-blue);
-  }
-  h1 {
-    font-size: 38px;
-    font-weight: 800;
-    letter-spacing: -0.025em;
-    margin: 0;
-    color: var(--L-text-primary);
-    line-height: 1.1;
-  }
-  .head-sub {
-    font-size: 14px;
-    color: var(--L-text-secondary);
-    line-height: 1.55;
-    margin: 0;
-  }
-  .head-right {
-    display: flex; align-items: center; gap: 10px;
-    flex-wrap: wrap;
-  }
-  .mode-pill {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 12px;
-    border-radius: 100px;
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    background: var(--L-surface);
-    border: 1px solid var(--L-border-default);
-    color: var(--L-text-secondary);
-  }
-  .mode-pill.active {
-    background: var(--L-text-primary);
-    color: var(--L-surface);
-    border-color: var(--L-text-primary);
-  }
-  .mode-pill .dot { width: 8px; height: 8px; border-radius: 50%; }
-  .mode-pill.active .dot { background: #F5D46B; box-shadow: 0 0 8px rgba(245,212,107,0.55); }
-  .mode-pill:not(.active) .dot { background: var(--L-border-strong); }
+      /* ===== Header ===== */
+      .head {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 32px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--L-border-subtle);
+        margin-bottom: 40px;
+        flex-wrap: wrap;
+      }
+      .head-left {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-width: 640px;
+      }
+      .eyebrow {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--L-blue);
+      }
+      h1 {
+        font-size: 38px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        margin: 0;
+        color: var(--L-text-primary);
+        line-height: 1.1;
+      }
+      .head-sub {
+        font-size: 14px;
+        color: var(--L-text-secondary);
+        line-height: 1.55;
+        margin: 0;
+      }
+      .head-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .mode-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 100px;
+        font-size: 11.5px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        background: var(--L-surface);
+        border: 1px solid var(--L-border-default);
+        color: var(--L-text-secondary);
+      }
+      .mode-pill.active {
+        background: var(--L-text-primary);
+        color: var(--L-surface);
+        border-color: var(--L-text-primary);
+      }
+      .mode-pill .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .mode-pill.active .dot {
+        background: #f5d46b;
+        box-shadow: 0 0 8px rgba(245, 212, 107, 0.55);
+      }
+      .mode-pill:not(.active) .dot {
+        background: var(--L-border-strong);
+      }
 
-  /* ===== Section ===== */
-  section { margin-bottom: 48px; }
-  .sec-head {
-    display: flex; align-items: baseline; justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-  .sec-title {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--L-text-secondary);
-  }
-  .sec-meta {
-    font-size: 11.5px;
-    color: var(--L-text-disabled);
-    font-family: var(--font-mono);
-    letter-spacing: -0.01em;
-  }
+      /* ===== Section ===== */
+      section {
+        margin-bottom: 48px;
+      }
+      .sec-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .sec-title {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--L-text-secondary);
+      }
+      .sec-meta {
+        font-size: 11.5px;
+        color: var(--L-text-disabled);
+        font-family: var(--font-mono);
+        letter-spacing: -0.01em;
+      }
 
-  /* ===== Swatch grids ===== */
-  .grid {
-    display: grid;
-    gap: 14px;
-  }
-  .grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
-  .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+      /* ===== Swatch grids ===== */
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+      .grid.cols-4 {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .grid.cols-3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
 
-  .sw {
-    background: var(--L-surface);
-    border: 1px solid var(--L-border-default);
-    border-radius: 14px;
-    overflow: hidden;
-    display: flex; flex-direction: column;
-  }
-  .sw-fill {
-    height: 96px;
-    position: relative;
-    border-bottom: 1px solid var(--L-border-subtle);
-  }
-  .sw-fill.tinted-border { border-bottom-color: inherit; }
-  .sw-fill .label-on {
-    position: absolute;
-    top: 12px; left: 14px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    opacity: 0.85;
-  }
-  .sw-meta { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 8px; }
-  .sw-name {
-    font-size: 13.5px;
-    font-weight: 700;
-    color: var(--L-text-primary);
-    letter-spacing: -0.005em;
-  }
-  .sw-token {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--L-text-secondary);
-    letter-spacing: -0.01em;
-  }
-  .sw-row {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 8px;
-    font-family: var(--font-mono);
-    font-size: 10.5px;
-    color: var(--L-text-secondary);
-    padding-top: 8px;
-    border-top: 1px solid var(--L-border-subtle);
-    letter-spacing: -0.01em;
-  }
-  .sw-hex {
-    color: var(--L-text-primary);
-    font-weight: 700;
-  }
-  .sw-ratio { color: var(--L-text-secondary); }
+      .sw {
+        background: var(--L-surface);
+        border: 1px solid var(--L-border-default);
+        border-radius: 14px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .sw-fill {
+        height: 96px;
+        position: relative;
+        border-bottom: 1px solid var(--L-border-subtle);
+      }
+      .sw-fill.tinted-border {
+        border-bottom-color: inherit;
+      }
+      .sw-fill .label-on {
+        position: absolute;
+        top: 12px;
+        left: 14px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        opacity: 0.85;
+      }
+      .sw-meta {
+        padding: 12px 14px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .sw-name {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--L-text-primary);
+        letter-spacing: -0.005em;
+      }
+      .sw-token {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--L-text-secondary);
+        letter-spacing: -0.01em;
+      }
+      .sw-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--L-text-secondary);
+        padding-top: 8px;
+        border-top: 1px solid var(--L-border-subtle);
+        letter-spacing: -0.01em;
+      }
+      .sw-hex {
+        color: var(--L-text-primary);
+        font-weight: 700;
+      }
+      .sw-ratio {
+        color: var(--L-text-secondary);
+      }
 
-  /* AA / AAA badges */
-  .badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 2px 7px;
-    border-radius: 100px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    font-family: var(--font-sans);
-  }
-  .badge.aaa { background: #DBF1E4; color: #065F38; }
-  .badge.aa  { background: #DDEBFD; color: #1849A8; }
-  .badge.aa-lg { background: #F4ECD9; color: #6E4505; }
-  .badge.fail  { background: #FBE5E2; color: #9A2A22; }
+      /* AA / AAA badges */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 7px;
+        border-radius: 100px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        font-family: var(--font-sans);
+      }
+      .badge.aaa {
+        background: #dbf1e4;
+        color: #065f38;
+      }
+      .badge.aa {
+        background: #ddebfd;
+        color: #1849a8;
+      }
+      .badge.aa-lg {
+        background: #f4ecd9;
+        color: #6e4505;
+      }
+      .badge.fail {
+        background: #fbe5e2;
+        color: #9a2a22;
+      }
 
-  /* ===== Text scale demo ===== */
-  .text-card {
-    background: var(--L-surface);
-    border: 1px solid var(--L-border-default);
-    border-radius: 14px;
-    padding: 28px 32px;
-  }
-  .text-row {
-    display: grid;
-    grid-template-columns: 110px 1fr 96px 96px;
-    gap: 18px;
-    align-items: center;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--L-border-subtle);
-  }
-  .text-row:last-child { border-bottom: 0; }
-  .text-role { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--L-text-disabled); }
-  .text-sample { font-size: 15px; letter-spacing: -0.005em; }
-  .text-sample.primary  { color: var(--L-text-primary); font-weight: 500; }
-  .text-sample.secondary { color: var(--L-text-secondary); font-weight: 500; }
-  .text-sample.disabled  { color: var(--L-text-disabled); font-weight: 500; }
-  .text-sample.link      { color: var(--L-blue); font-weight: 600; }
-  .text-mono { font-family: var(--font-mono); font-size: 11.5px; color: var(--L-text-secondary); }
+      /* ===== Text scale demo ===== */
+      .text-card {
+        background: var(--L-surface);
+        border: 1px solid var(--L-border-default);
+        border-radius: 14px;
+        padding: 28px 32px;
+      }
+      .text-row {
+        display: grid;
+        grid-template-columns: 110px 1fr 96px 96px;
+        gap: 18px;
+        align-items: center;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--L-border-subtle);
+      }
+      .text-row:last-child {
+        border-bottom: 0;
+      }
+      .text-role {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--L-text-disabled);
+      }
+      .text-sample {
+        font-size: 15px;
+        letter-spacing: -0.005em;
+      }
+      .text-sample.primary {
+        color: var(--L-text-primary);
+        font-weight: 500;
+      }
+      .text-sample.secondary {
+        color: var(--L-text-secondary);
+        font-weight: 500;
+      }
+      .text-sample.disabled {
+        color: var(--L-text-disabled);
+        font-weight: 500;
+      }
+      .text-sample.link {
+        color: var(--L-blue);
+        font-weight: 600;
+      }
+      .text-mono {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        color: var(--L-text-secondary);
+      }
 
-  /* ===== Status row ===== */
-  .status-card {
-    background: var(--L-surface);
-    border: 1px solid var(--L-border-default);
-    border-radius: 14px;
-    padding: 22px 28px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
-  }
-  .status-block { display: flex; flex-direction: column; gap: 10px; }
-  .status-label {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--L-text-secondary);
-  }
-  .status-pill {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 5px 11px;
-    border-radius: 100px;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    align-self: flex-start;
-  }
-  .status-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-  .status-pill.success { background: var(--L-success-tint); color: var(--L-success); }
-  .status-pill.warning { background: var(--L-warning-tint); color: var(--L-warning); }
-  .status-pill.error   { background: var(--L-error-tint); color: var(--L-error); }
+      /* ===== Status row ===== */
+      .status-card {
+        background: var(--L-surface);
+        border: 1px solid var(--L-border-default);
+        border-radius: 14px;
+        padding: 22px 28px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+      .status-block {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .status-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--L-text-secondary);
+      }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 11px;
+        border-radius: 100px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        align-self: flex-start;
+      }
+      .status-pill .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .status-pill.success {
+        background: var(--L-success-tint);
+        color: var(--L-success);
+      }
+      .status-pill.warning {
+        background: var(--L-warning-tint);
+        color: var(--L-warning);
+      }
+      .status-pill.error {
+        background: var(--L-error-tint);
+        color: var(--L-error);
+      }
 
-  .status-text { font-size: 13px; color: var(--L-text-primary); line-height: 1.5; }
-  .status-text b.success { color: var(--L-success); font-weight: 700; }
-  .status-text b.warning { color: var(--L-warning); font-weight: 700; }
-  .status-text b.error   { color: var(--L-error); font-weight: 700; }
-  .status-bar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding-top: 8px;
-    border-top: 1px solid var(--L-border-subtle);
-    font-family: var(--font-mono);
-    font-size: 10.5px;
-    color: var(--L-text-secondary);
-    letter-spacing: -0.01em;
-  }
-  .status-bar .hex { color: var(--L-text-primary); font-weight: 700; }
+      .status-text {
+        font-size: 13px;
+        color: var(--L-text-primary);
+        line-height: 1.5;
+      }
+      .status-text b.success {
+        color: var(--L-success);
+        font-weight: 700;
+      }
+      .status-text b.warning {
+        color: var(--L-warning);
+        font-weight: 700;
+      }
+      .status-text b.error {
+        color: var(--L-error);
+        font-weight: 700;
+      }
+      .status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 8px;
+        border-top: 1px solid var(--L-border-subtle);
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--L-text-secondary);
+        letter-spacing: -0.01em;
+      }
+      .status-bar .hex {
+        color: var(--L-text-primary);
+        font-weight: 700;
+      }
 
-  /* ===== Borders & shadows ===== */
-  .stack-card {
-    background: var(--L-surface);
-    border: 1px solid var(--L-border-default);
-    border-radius: 14px;
-    padding: 28px;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 28px;
-  }
-  .border-stack { display: flex; flex-direction: column; gap: 12px; }
-  .border-row { display: flex; align-items: center; gap: 16px; }
-  .border-bar {
-    flex: 1; height: 0;
-    border-top-width: 1.5px;
-    border-top-style: solid;
-  }
-  .border-meta {
-    width: 220px;
-    display: flex; align-items: baseline; justify-content: space-between;
-    gap: 8px;
-    font-family: var(--font-mono);
-    font-size: 11.5px;
-    color: var(--L-text-secondary);
-  }
-  .border-meta b { color: var(--L-text-primary); font-family: var(--font-sans); font-weight: 700; font-size: 12.5px; letter-spacing: -0.005em; }
+      /* ===== Borders & shadows ===== */
+      .stack-card {
+        background: var(--L-surface);
+        border: 1px solid var(--L-border-default);
+        border-radius: 14px;
+        padding: 28px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 28px;
+      }
+      .border-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .border-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .border-bar {
+        flex: 1;
+        height: 0;
+        border-top-width: 1.5px;
+        border-top-style: solid;
+      }
+      .border-meta {
+        width: 220px;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        color: var(--L-text-secondary);
+      }
+      .border-meta b {
+        color: var(--L-text-primary);
+        font-family: var(--font-sans);
+        font-weight: 700;
+        font-size: 12.5px;
+        letter-spacing: -0.005em;
+      }
 
-  .shadow-stack { display: flex; flex-direction: column; gap: 18px; align-items: center; padding: 6px 0; }
-  .shadow-card-demo {
-    width: 100%;
-    height: 56px;
-    background: var(--L-surface);
-    border-radius: 10px;
-    border: 1px solid var(--L-border-subtle);
-    display: flex; align-items: center;
-    padding: 0 18px;
-    font-size: 12px;
-    color: var(--L-text-secondary);
-    font-family: var(--font-mono);
-    letter-spacing: -0.01em;
-    justify-content: space-between;
-  }
-  .shadow-card-demo .name { color: var(--L-text-primary); font-weight: 600; font-family: var(--font-sans); font-size: 13px; letter-spacing: -0.005em; }
-  .shadow-card-demo.sm { box-shadow: 0 1px 2px rgba(14,23,48,0.04), 0 1px 3px rgba(14,23,48,0.06); }
-  .shadow-card-demo.md { box-shadow: 0 4px 12px rgba(14,23,48,0.06), 0 2px 4px rgba(14,23,48,0.04); }
-  .shadow-card-demo.lg { box-shadow: 0 16px 40px rgba(14,23,48,0.10), 0 4px 12px rgba(14,23,48,0.06); }
-  .shadow-card-demo.glow { box-shadow: 0 6px 18px rgba(30,95,212,0.30); border-color: rgba(30,95,212,0.25); }
+      .shadow-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        align-items: center;
+        padding: 6px 0;
+      }
+      .shadow-card-demo {
+        width: 100%;
+        height: 56px;
+        background: var(--L-surface);
+        border-radius: 10px;
+        border: 1px solid var(--L-border-subtle);
+        display: flex;
+        align-items: center;
+        padding: 0 18px;
+        font-size: 12px;
+        color: var(--L-text-secondary);
+        font-family: var(--font-mono);
+        letter-spacing: -0.01em;
+        justify-content: space-between;
+      }
+      .shadow-card-demo .name {
+        color: var(--L-text-primary);
+        font-weight: 600;
+        font-family: var(--font-sans);
+        font-size: 13px;
+        letter-spacing: -0.005em;
+      }
+      .shadow-card-demo.sm {
+        box-shadow:
+          0 1px 2px rgba(14, 23, 48, 0.04),
+          0 1px 3px rgba(14, 23, 48, 0.06);
+      }
+      .shadow-card-demo.md {
+        box-shadow:
+          0 4px 12px rgba(14, 23, 48, 0.06),
+          0 2px 4px rgba(14, 23, 48, 0.04);
+      }
+      .shadow-card-demo.lg {
+        box-shadow:
+          0 16px 40px rgba(14, 23, 48, 0.1),
+          0 4px 12px rgba(14, 23, 48, 0.06);
+      }
+      .shadow-card-demo.glow {
+        box-shadow: 0 6px 18px rgba(30, 95, 212, 0.3);
+        border-color: rgba(30, 95, 212, 0.25);
+      }
 
-  /* ===== In-use sample card ===== */
-  .demo-app {
-    background: var(--L-surface);
-    border: 1px solid var(--L-border-default);
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 16px 40px rgba(14,23,48,0.06);
-  }
-  .demo-head {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 24px;
-    border-bottom: 1px solid var(--L-border-subtle);
-    gap: 16px;
-  }
-  .demo-head h3 { font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
-  .demo-head .sub { font-size: 12px; color: var(--L-text-secondary); margin-top: 2px; }
-  .demo-head .actions { display: flex; align-items: center; gap: 8px; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    height: 32px;
-    padding: 0 14px;
-    border-radius: 8px;
-    font-family: inherit;
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-    border: 1px solid transparent;
-    background: transparent;
-    letter-spacing: -0.005em;
-  }
-  .btn-ghost { border-color: var(--L-border-default); color: var(--L-text-secondary); }
-  .btn-primary { background: var(--L-blue); color: #FFFFFF; box-shadow: 0 4px 12px rgba(30,95,212,0.22); }
-  .demo-body {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    padding: 20px 24px 24px;
-    background: var(--L-base);
-  }
-  .demo-stat {
-    background: var(--L-surface);
-    border: 1px solid var(--L-border-subtle);
-    border-radius: 12px;
-    padding: 14px 16px;
-    display: flex; flex-direction: column;
-    gap: 4px;
-  }
-  .demo-stat .lbl { font-size: 11.5px; color: var(--L-text-secondary); letter-spacing: 0.02em; }
-  .demo-stat .val {
-    font-size: 22px; font-weight: 800;
-    letter-spacing: -0.025em;
-    color: var(--L-text-primary);
-    font-variant-numeric: tabular-nums;
-  }
-  .demo-stat .delta {
-    font-size: 11.5px; font-weight: 600;
-    font-family: var(--font-mono);
-    margin-top: 2px;
-  }
-  .demo-stat .delta.up { color: var(--L-success); }
-  .demo-stat .delta.down { color: var(--L-error); }
+      /* ===== In-use sample card ===== */
+      .demo-app {
+        background: var(--L-surface);
+        border: 1px solid var(--L-border-default);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 16px 40px rgba(14, 23, 48, 0.06);
+      }
+      .demo-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 24px;
+        border-bottom: 1px solid var(--L-border-subtle);
+        gap: 16px;
+      }
+      .demo-head h3 {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: -0.01em;
+      }
+      .demo-head .sub {
+        font-size: 12px;
+        color: var(--L-text-secondary);
+        margin-top: 2px;
+      }
+      .demo-head .actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 14px;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        background: transparent;
+        letter-spacing: -0.005em;
+      }
+      .btn-ghost {
+        border-color: var(--L-border-default);
+        color: var(--L-text-secondary);
+      }
+      .btn-primary {
+        background: var(--L-blue);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(30, 95, 212, 0.22);
+      }
+      .demo-body {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        padding: 20px 24px 24px;
+        background: var(--L-base);
+      }
+      .demo-stat {
+        background: var(--L-surface);
+        border: 1px solid var(--L-border-subtle);
+        border-radius: 12px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .demo-stat .lbl {
+        font-size: 11.5px;
+        color: var(--L-text-secondary);
+        letter-spacing: 0.02em;
+      }
+      .demo-stat .val {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        color: var(--L-text-primary);
+        font-variant-numeric: tabular-nums;
+      }
+      .demo-stat .delta {
+        font-size: 11.5px;
+        font-weight: 600;
+        font-family: var(--font-mono);
+        margin-top: 2px;
+      }
+      .demo-stat .delta.up {
+        color: var(--L-success);
+      }
+      .demo-stat .delta.down {
+        color: var(--L-error);
+      }
 
-  /* ===== Footer notes ===== */
-  .notes {
-    margin-top: 8px;
-    padding: 18px 22px;
-    background: var(--L-info-tint);
-    border: 1px solid rgba(30,95,212,0.18);
-    border-radius: 12px;
-    display: grid;
-    grid-template-columns: 32px 1fr;
-    gap: 14px;
-    align-items: flex-start;
-  }
-  .notes .ic {
-    width: 32px; height: 32px;
-    border-radius: 9px;
-    background: rgba(30,95,212,0.16);
-    color: var(--L-blue);
-    display: inline-flex; align-items: center; justify-content: center;
-    font-weight: 800;
-    font-size: 14px;
-    font-family: var(--font-mono);
-  }
-  .notes p { margin: 0 0 6px; font-size: 12.5px; line-height: 1.55; color: var(--L-text-primary); }
-  .notes p:last-child { margin-bottom: 0; }
-  .notes b { color: var(--L-blue); font-weight: 700; }
-  .notes code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.6); padding: 1px 6px; border-radius: 4px; color: var(--L-text-primary); }
+      /* ===== Footer notes ===== */
+      .notes {
+        margin-top: 8px;
+        padding: 18px 22px;
+        background: var(--L-info-tint);
+        border: 1px solid rgba(30, 95, 212, 0.18);
+        border-radius: 12px;
+        display: grid;
+        grid-template-columns: 32px 1fr;
+        gap: 14px;
+        align-items: flex-start;
+      }
+      .notes .ic {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        background: rgba(30, 95, 212, 0.16);
+        color: var(--L-blue);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 14px;
+        font-family: var(--font-mono);
+      }
+      .notes p {
+        margin: 0 0 6px;
+        font-size: 12.5px;
+        line-height: 1.55;
+        color: var(--L-text-primary);
+      }
+      .notes p:last-child {
+        margin-bottom: 0;
+      }
+      .notes b {
+        color: var(--L-blue);
+        font-weight: 700;
+      }
+      .notes code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.6);
+        padding: 1px 6px;
+        border-radius: 4px;
+        color: var(--L-text-primary);
+      }
 
-  @media (max-width: 1100px) {
-    body { padding: 32px 28px; }
-    .grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
-    .grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
-    .stack-card { grid-template-columns: 1fr; }
-    .demo-body { grid-template-columns: 1fr; }
-    .text-row { grid-template-columns: 1fr; gap: 6px; }
-  }
-</style>
-</head>
-<body>
-
-  <!-- ===== Header ===== -->
-  <header class="head">
-    <div class="head-left">
-      <span class="eyebrow">ProSell · Design system</span>
-      <h1>Paleta modo claro <span style="color: var(--L-text-secondary); font-weight: 500;">/ contrastes WCAG 2.1</span></h1>
-      <p class="head-sub">Versión clara complementaria al sistema oscuro. Calibrada para legibilidad operacional: cada par texto-fondo cumple <b style="color: var(--L-text-primary);">AA</b> (4.5:1) como mínimo y la mayoría llegan a <b style="color: var(--L-text-primary);">AAA</b> (7:1).</p>
-    </div>
-    <div class="head-right">
-      <span class="mode-pill"><span class="dot"></span>Dark</span>
-      <span class="mode-pill active"><span class="dot"></span>Light</span>
-    </div>
-  </header>
-
-  <!-- ===== 1. Surfaces ===== -->
-  <section>
-    <div class="sec-head">
-      <span class="sec-title">01 · Superficies</span>
-      <span class="sec-meta">tono frío, saturación &lt; 0.02</span>
-    </div>
-    <div class="grid cols-4">
-
-      <div class="sw">
-        <div class="sw-fill" style="background: #F4F6FB; border-bottom-color: var(--L-border-subtle);"></div>
-        <div class="sw-meta">
-          <span class="sw-name">Base</span>
-          <span class="sw-token">--bg-base</span>
-          <div class="sw-row"><span class="sw-hex">#F4F6FB</span><span class="sw-ratio">app background</span></div>
-        </div>
+      @media (max-width: 1100px) {
+        body {
+          padding: 32px 28px;
+        }
+        .grid.cols-4 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .grid.cols-3 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .stack-card {
+          grid-template-columns: 1fr;
+        }
+        .demo-body {
+          grid-template-columns: 1fr;
+        }
+        .text-row {
+          grid-template-columns: 1fr;
+          gap: 6px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ===== Header ===== -->
+    <header class="head">
+      <div class="head-left">
+        <span class="eyebrow">ProSell · Design system</span>
+        <h1>
+          Paleta modo claro
+          <span style="color: var(--L-text-secondary); font-weight: 500"
+            >/ contrastes WCAG 2.1</span
+          >
+        </h1>
+        <p class="head-sub">
+          Versión clara complementaria al sistema oscuro. Calibrada para
+          legibilidad operacional: cada par texto-fondo cumple
+          <b style="color: var(--L-text-primary)">AA</b> (4.5:1) como mínimo y
+          la mayoría llegan a
+          <b style="color: var(--L-text-primary)">AAA</b> (7:1).
+        </p>
       </div>
-
-      <div class="sw">
-        <div class="sw-fill" style="background: #FFFFFF; border-bottom-color: var(--L-border-subtle);"></div>
-        <div class="sw-meta">
-          <span class="sw-name">Surface</span>
-          <span class="sw-token">--bg-surface</span>
-          <div class="sw-row"><span class="sw-hex">#FFFFFF</span><span class="sw-ratio">cards, tables</span></div>
-        </div>
+      <div class="head-right">
+        <span class="mode-pill"><span class="dot"></span>Dark</span>
+        <span class="mode-pill active"><span class="dot"></span>Light</span>
       </div>
+    </header>
 
-      <div class="sw">
-        <div class="sw-fill" style="background: #EEF1F8; border-bottom-color: var(--L-border-subtle);"></div>
-        <div class="sw-meta">
-          <span class="sw-name">Muted</span>
-          <span class="sw-token">--bg-muted</span>
-          <div class="sw-row"><span class="sw-hex">#EEF1F8</span><span class="sw-ratio">subtle fills</span></div>
-        </div>
+    <!-- ===== 1. Surfaces ===== -->
+    <section>
+      <div class="sec-head">
+        <span class="sec-title">01 · Superficies</span>
+        <span class="sec-meta">tono frío, saturación &lt; 0.02</span>
       </div>
-
-      <div class="sw">
-        <div class="sw-fill" style="background: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(14,23,48,0.04), 0 8px 24px rgba(14,23,48,0.08); border-bottom-color: var(--L-border-subtle);"></div>
-        <div class="sw-meta">
-          <span class="sw-name">Elevated</span>
-          <span class="sw-token">--bg-elevated</span>
-          <div class="sw-row"><span class="sw-hex">#FFFFFF</span><span class="sw-ratio">+ shadow-md</span></div>
+      <div class="grid cols-4">
+        <div class="sw">
+          <div
+            class="sw-fill"
+            style="
+              background: #f4f6fb;
+              border-bottom-color: var(--L-border-subtle);
+            "
+          ></div>
+          <div class="sw-meta">
+            <span class="sw-name">Base</span>
+            <span class="sw-token">--bg-base</span>
+            <div class="sw-row">
+              <span class="sw-hex">#F4F6FB</span
+              ><span class="sw-ratio">app background</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-    </div>
-  </section>
-
-  <!-- ===== 2. Brand ===== -->
-  <section>
-    <div class="sec-head">
-      <span class="sec-title">02 · Marca</span>
-      <span class="sec-meta">cyan se reserva para acentos · azul es el primario</span>
-    </div>
-    <div class="grid cols-3">
-
-      <div class="sw">
-        <div class="sw-fill" style="background: #1E5FD4;">
-          <span class="label-on" style="color: #FFFFFF;">Primary action</span>
+        <div class="sw">
+          <div
+            class="sw-fill"
+            style="
+              background: #ffffff;
+              border-bottom-color: var(--L-border-subtle);
+            "
+          ></div>
+          <div class="sw-meta">
+            <span class="sw-name">Surface</span>
+            <span class="sw-token">--bg-surface</span>
+            <div class="sw-row">
+              <span class="sw-hex">#FFFFFF</span
+              ><span class="sw-ratio">cards, tables</span>
+            </div>
+          </div>
         </div>
-        <div class="sw-meta">
-          <span class="sw-name">Brand blue · primario</span>
-          <span class="sw-token">--blue / --primary</span>
-          <div class="sw-row">
-            <span class="sw-hex">#1E5FD4</span>
-            <span class="badge aa">AA · 5.76:1</span>
+
+        <div class="sw">
+          <div
+            class="sw-fill"
+            style="
+              background: #eef1f8;
+              border-bottom-color: var(--L-border-subtle);
+            "
+          ></div>
+          <div class="sw-meta">
+            <span class="sw-name">Muted</span>
+            <span class="sw-token">--bg-muted</span>
+            <div class="sw-row">
+              <span class="sw-hex">#EEF1F8</span
+              ><span class="sw-ratio">subtle fills</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sw">
+          <div
+            class="sw-fill"
+            style="
+              background: #ffffff;
+              box-shadow:
+                inset 0 0 0 1px rgba(14, 23, 48, 0.04),
+                0 8px 24px rgba(14, 23, 48, 0.08);
+              border-bottom-color: var(--L-border-subtle);
+            "
+          ></div>
+          <div class="sw-meta">
+            <span class="sw-name">Elevated</span>
+            <span class="sw-token">--bg-elevated</span>
+            <div class="sw-row">
+              <span class="sw-hex">#FFFFFF</span
+              ><span class="sw-ratio">+ shadow-md</span>
+            </div>
           </div>
         </div>
       </div>
+    </section>
 
-      <div class="sw">
-        <div class="sw-fill" style="background: #0D1B6E;">
-          <span class="label-on" style="color: #FFFFFF;">Headlines · brand fill</span>
+    <!-- ===== 2. Brand ===== -->
+    <section>
+      <div class="sec-head">
+        <span class="sec-title">02 · Marca</span>
+        <span class="sec-meta"
+          >cyan se reserva para acentos · azul es el primario</span
+        >
+      </div>
+      <div class="grid cols-3">
+        <div class="sw">
+          <div class="sw-fill" style="background: #1e5fd4">
+            <span class="label-on" style="color: #ffffff">Primary action</span>
+          </div>
+          <div class="sw-meta">
+            <span class="sw-name">Brand blue · primario</span>
+            <span class="sw-token">--blue / --primary</span>
+            <div class="sw-row">
+              <span class="sw-hex">#1E5FD4</span>
+              <span class="badge aa">AA · 5.76:1</span>
+            </div>
+          </div>
         </div>
-        <div class="sw-meta">
-          <span class="sw-name">Brand navy</span>
-          <span class="sw-token">--navy</span>
-          <div class="sw-row">
-            <span class="sw-hex">#0D1B6E</span>
-            <span class="badge aaa">AAA · 15.0:1</span>
+
+        <div class="sw">
+          <div class="sw-fill" style="background: #0d1b6e">
+            <span class="label-on" style="color: #ffffff"
+              >Headlines · brand fill</span
+            >
+          </div>
+          <div class="sw-meta">
+            <span class="sw-name">Brand navy</span>
+            <span class="sw-token">--navy</span>
+            <div class="sw-row">
+              <span class="sw-hex">#0D1B6E</span>
+              <span class="badge aaa">AAA · 15.0:1</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sw">
+          <div class="sw-fill" style="background: #2e8fe0">
+            <span class="label-on" style="color: #ffffff"
+              >Cyan accent · large only</span
+            >
+          </div>
+          <div class="sw-meta">
+            <span class="sw-name">Cyan accent</span>
+            <span class="sw-token">--cyan</span>
+            <div class="sw-row">
+              <span class="sw-hex">#2E8FE0</span>
+              <span class="badge aa-lg">AA Large · 3.43:1</span>
+            </div>
           </div>
         </div>
       </div>
+    </section>
 
-      <div class="sw">
-        <div class="sw-fill" style="background: #2E8FE0;">
-          <span class="label-on" style="color: #FFFFFF;">Cyan accent · large only</span>
+    <!-- ===== 3. Texto ===== -->
+    <section>
+      <div class="sec-head">
+        <span class="sec-title"
+          >03 · Tipografía · Contraste sobre superficie blanca</span
+        >
+        <span class="sec-meta">muestras a 15px / 500</span>
+      </div>
+      <div class="text-card">
+        <div class="text-row">
+          <span class="text-role">Primary</span>
+          <span class="text-sample primary"
+            >ProSell — 47 deals activos · Pipeline saludable, conversion al
+            23%.</span
+          >
+          <span class="text-mono">#0E1730</span>
+          <span class="badge aaa">AAA · 17.7:1</span>
         </div>
-        <div class="sw-meta">
-          <span class="sw-name">Cyan accent</span>
-          <span class="sw-token">--cyan</span>
-          <div class="sw-row">
-            <span class="sw-hex">#2E8FE0</span>
-            <span class="badge aa-lg">AA Large · 3.43:1</span>
+        <div class="text-row">
+          <span class="text-role">Secondary</span>
+          <span class="text-sample secondary"
+            >Mayo 2026 · 284 leads totales · costo por lead: $148</span
+          >
+          <span class="text-mono">#4E5C7E</span>
+          <span class="badge aaa">AAA · 6.65:1</span>
+        </div>
+        <div class="text-row">
+          <span class="text-role">Disabled</span>
+          <span class="text-sample disabled"
+            >Placeholder / metadata · ABC 123 · hace 12 días</span
+          >
+          <span class="text-mono">#94A0BD</span>
+          <span class="badge aa-lg">AA Large · 2.62:1</span>
+        </div>
+        <div class="text-row">
+          <span class="text-role">Link</span>
+          <span class="text-sample link"
+            >Cambiar plan · Ver pipeline completo · Conectar canal</span
+          >
+          <span class="text-mono">#1E5FD4</span>
+          <span class="badge aa">AA · 5.76:1</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 4. Status ===== -->
+    <section>
+      <div class="sec-head">
+        <span class="sec-title">04 · Estados · pills & texto</span>
+        <span class="sec-meta"
+          >colores calibrados sobre fondo claro para AA mínimo</span
+        >
+      </div>
+      <div class="status-card">
+        <div class="status-block">
+          <span class="status-label">Success</span>
+          <span class="status-pill success"
+            ><span class="dot"></span>Activo</span
+          >
+          <span class="status-text"
+            >Deal cerrado · <b class="success">+ $7.500 ganancia</b> registrada
+            en Mayo.</span
+          >
+          <div class="status-bar">
+            <span
+              ><span class="hex">#067A52</span> · tint
+              <span class="hex">#E4F4EC</span></span
+            >
+            <span class="badge aaa">AAA · 6.63:1</span>
+          </div>
+        </div>
+
+        <div class="status-block">
+          <span class="status-label">Warning</span>
+          <span class="status-pill warning"
+            ><span class="dot"></span>Reservado</span
+          >
+          <span class="status-text"
+            >Seña vencida · <b class="warning">vence en 2 días</b> · contactar
+            al cliente.</span
+          >
+          <div class="status-bar">
+            <span
+              ><span class="hex">#A85508</span> · tint
+              <span class="hex">#FBEFDF</span></span
+            >
+            <span class="badge aa">AA · 5.29:1</span>
+          </div>
+        </div>
+
+        <div class="status-block">
+          <span class="status-label">Error</span>
+          <span class="status-pill error"
+            ><span class="dot"></span>Bloqueado</span
+          >
+          <span class="status-text"
+            >Patente <b class="error">ABC 123 duplicada</b> · revisá la fila
+            4.</span
+          >
+          <div class="status-bar">
+            <span
+              ><span class="hex">#D03A2F</span> · tint
+              <span class="hex">#FBE5E2</span></span
+            >
+            <span class="badge aa">AA · 4.85:1</span>
           </div>
         </div>
       </div>
+    </section>
 
-    </div>
-  </section>
-
-  <!-- ===== 3. Texto ===== -->
-  <section>
-    <div class="sec-head">
-      <span class="sec-title">03 · Tipografía · Contraste sobre superficie blanca</span>
-      <span class="sec-meta">muestras a 15px / 500</span>
-    </div>
-    <div class="text-card">
-      <div class="text-row">
-        <span class="text-role">Primary</span>
-        <span class="text-sample primary">ProSell — 47 deals activos · Pipeline saludable, conversion al 23%.</span>
-        <span class="text-mono">#0E1730</span>
-        <span class="badge aaa">AAA · 17.7:1</span>
+    <!-- ===== 5. Borders & shadows ===== -->
+    <section>
+      <div class="sec-head">
+        <span class="sec-title">05 · Bordes & elevación</span>
+        <span class="sec-meta">grises azulados fríos · sombras navy 6%</span>
       </div>
-      <div class="text-row">
-        <span class="text-role">Secondary</span>
-        <span class="text-sample secondary">Mayo 2026 · 284 leads totales · costo por lead: $148</span>
-        <span class="text-mono">#4E5C7E</span>
-        <span class="badge aaa">AAA · 6.65:1</span>
-      </div>
-      <div class="text-row">
-        <span class="text-role">Disabled</span>
-        <span class="text-sample disabled">Placeholder / metadata · ABC 123 · hace 12 días</span>
-        <span class="text-mono">#94A0BD</span>
-        <span class="badge aa-lg">AA Large · 2.62:1</span>
-      </div>
-      <div class="text-row">
-        <span class="text-role">Link</span>
-        <span class="text-sample link">Cambiar plan · Ver pipeline completo · Conectar canal</span>
-        <span class="text-mono">#1E5FD4</span>
-        <span class="badge aa">AA · 5.76:1</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== 4. Status ===== -->
-  <section>
-    <div class="sec-head">
-      <span class="sec-title">04 · Estados · pills & texto</span>
-      <span class="sec-meta">colores calibrados sobre fondo claro para AA mínimo</span>
-    </div>
-    <div class="status-card">
-
-      <div class="status-block">
-        <span class="status-label">Success</span>
-        <span class="status-pill success"><span class="dot"></span>Activo</span>
-        <span class="status-text">Deal cerrado · <b class="success">+ $7.500 ganancia</b> registrada en Mayo.</span>
-        <div class="status-bar">
-          <span><span class="hex">#067A52</span> · tint <span class="hex">#E4F4EC</span></span>
-          <span class="badge aaa">AAA · 6.63:1</span>
+      <div class="stack-card">
+        <div class="border-stack">
+          <div class="border-row">
+            <div
+              class="border-bar"
+              style="border-top-color: var(--L-border-subtle)"
+            ></div>
+            <div class="border-meta">
+              <b>border-subtle</b><span>#E5EAF4</span>
+            </div>
+          </div>
+          <div class="border-row">
+            <div
+              class="border-bar"
+              style="border-top-color: var(--L-border-default)"
+            ></div>
+            <div class="border-meta">
+              <b>border-default</b><span>#D5DCEA</span>
+            </div>
+          </div>
+          <div class="border-row">
+            <div
+              class="border-bar"
+              style="border-top-color: var(--L-border-strong)"
+            ></div>
+            <div class="border-meta">
+              <b>border-strong</b><span>#B7C2D8</span>
+            </div>
+          </div>
+          <div class="border-row">
+            <div
+              class="border-bar"
+              style="border-top-color: var(--L-blue); border-top-width: 2px"
+            ></div>
+            <div class="border-meta">
+              <b>border-active</b><span>#1E5FD4</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div class="status-block">
-        <span class="status-label">Warning</span>
-        <span class="status-pill warning"><span class="dot"></span>Reservado</span>
-        <span class="status-text">Seña vencida · <b class="warning">vence en 2 días</b> · contactar al cliente.</span>
-        <div class="status-bar">
-          <span><span class="hex">#A85508</span> · tint <span class="hex">#FBEFDF</span></span>
-          <span class="badge aa">AA · 5.29:1</span>
-        </div>
-      </div>
-
-      <div class="status-block">
-        <span class="status-label">Error</span>
-        <span class="status-pill error"><span class="dot"></span>Bloqueado</span>
-        <span class="status-text">Patente <b class="error">ABC 123 duplicada</b> · revisá la fila 4.</span>
-        <div class="status-bar">
-          <span><span class="hex">#D03A2F</span> · tint <span class="hex">#FBE5E2</span></span>
-          <span class="badge aa">AA · 4.85:1</span>
+        <div class="shadow-stack">
+          <div class="shadow-card-demo sm">
+            <span class="name">shadow-sm</span>
+            <span>0 1px 2px · 1px 3px navy/4–6%</span>
+          </div>
+          <div class="shadow-card-demo md">
+            <span class="name">shadow-md</span>
+            <span>0 4px 12px navy/6%</span>
+          </div>
+          <div class="shadow-card-demo lg">
+            <span class="name">shadow-lg</span>
+            <span>0 16px 40px navy/10%</span>
+          </div>
+          <div class="shadow-card-demo glow">
+            <span class="name">shadow-glow-blue</span>
+            <span>0 6px 18px blue/30%</span>
+          </div>
         </div>
       </div>
+    </section>
 
-    </div>
-  </section>
-
-  <!-- ===== 5. Borders & shadows ===== -->
-  <section>
-    <div class="sec-head">
-      <span class="sec-title">05 · Bordes & elevación</span>
-      <span class="sec-meta">grises azulados fríos · sombras navy 6%</span>
-    </div>
-    <div class="stack-card">
-
-      <div class="border-stack">
-        <div class="border-row">
-          <div class="border-bar" style="border-top-color: var(--L-border-subtle);"></div>
-          <div class="border-meta"><b>border-subtle</b><span>#E5EAF4</span></div>
+    <!-- ===== 6. In-use ===== -->
+    <section>
+      <div class="sec-head">
+        <span class="sec-title">06 · La paleta en uso</span>
+        <span class="sec-meta"
+          >composición de stat-cards con números reales</span
+        >
+      </div>
+      <div class="demo-app">
+        <div class="demo-head">
+          <div>
+            <h3>Resumen de Mayo</h3>
+            <div class="sub">47 deals activos · 24 unidades disponibles</div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost" type="button">Exportar PDF</button>
+            <button class="btn btn-primary" type="button">+ Nuevo deal</button>
+          </div>
         </div>
-        <div class="border-row">
-          <div class="border-bar" style="border-top-color: var(--L-border-default);"></div>
-          <div class="border-meta"><b>border-default</b><span>#D5DCEA</span></div>
-        </div>
-        <div class="border-row">
-          <div class="border-bar" style="border-top-color: var(--L-border-strong);"></div>
-          <div class="border-meta"><b>border-strong</b><span>#B7C2D8</span></div>
-        </div>
-        <div class="border-row">
-          <div class="border-bar" style="border-top-color: var(--L-blue); border-top-width: 2px;"></div>
-          <div class="border-meta"><b>border-active</b><span>#1E5FD4</span></div>
+        <div class="demo-body">
+          <div class="demo-stat">
+            <span class="lbl">Revenue total</span>
+            <span class="val">$284K</span>
+            <span class="delta up">↑ +12.4% vs anterior</span>
+          </div>
+          <div class="demo-stat">
+            <span class="lbl">Deals cerrados</span>
+            <span class="val">23</span>
+            <span class="delta up">↑ +4 deals</span>
+          </div>
+          <div class="demo-stat">
+            <span class="lbl">Tasa de respuesta</span>
+            <span class="val">94%</span>
+            <span class="delta down">↓ −3 pp</span>
+          </div>
         </div>
       </div>
+    </section>
 
-      <div class="shadow-stack">
-        <div class="shadow-card-demo sm">
-          <span class="name">shadow-sm</span>
-          <span>0 1px 2px · 1px 3px navy/4–6%</span>
-        </div>
-        <div class="shadow-card-demo md">
-          <span class="name">shadow-md</span>
-          <span>0 4px 12px navy/6%</span>
-        </div>
-        <div class="shadow-card-demo lg">
-          <span class="name">shadow-lg</span>
-          <span>0 16px 40px navy/10%</span>
-        </div>
-        <div class="shadow-card-demo glow">
-          <span class="name">shadow-glow-blue</span>
-          <span>0 6px 18px blue/30%</span>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ===== 6. In-use ===== -->
-  <section>
-    <div class="sec-head">
-      <span class="sec-title">06 · La paleta en uso</span>
-      <span class="sec-meta">composición de stat-cards con números reales</span>
-    </div>
-    <div class="demo-app">
-      <div class="demo-head">
-        <div>
-          <h3>Resumen de Mayo</h3>
-          <div class="sub">47 deals activos · 24 unidades disponibles</div>
-        </div>
-        <div class="actions">
-          <button class="btn btn-ghost" type="button">Exportar PDF</button>
-          <button class="btn btn-primary" type="button">+ Nuevo deal</button>
-        </div>
-      </div>
-      <div class="demo-body">
-        <div class="demo-stat">
-          <span class="lbl">Revenue total</span>
-          <span class="val">$284K</span>
-          <span class="delta up">↑ +12.4% vs anterior</span>
-        </div>
-        <div class="demo-stat">
-          <span class="lbl">Deals cerrados</span>
-          <span class="val">23</span>
-          <span class="delta up">↑ +4 deals</span>
-        </div>
-        <div class="demo-stat">
-          <span class="lbl">Tasa de respuesta</span>
-          <span class="val">94%</span>
-          <span class="delta down">↓ −3 pp</span>
-        </div>
+    <!-- ===== Notes ===== -->
+    <div class="notes">
+      <span class="ic">i</span>
+      <div>
+        <p>
+          <b>Sobre los tokens:</b> el modo claro usa los mismos nombres
+          semánticos que el dark (<code>--bg-surface</code>,
+          <code>--text-primary</code>, etc.) pero invierte los valores. Mantené
+          el <b>cyan #2E8FE0</b> solo para acentos grandes, iconos o highlights
+          — el primario es <b>#1E5FD4</b> que sí cumple AA en cuerpos de texto.
+        </p>
+        <p>
+          <b>Excepción de placeholder:</b> el
+          <code>--text-disabled</code> (#94A0BD) no llega a AA y por diseño se
+          reserva exclusivamente para placeholders, metadata y elementos
+          auxiliares no esenciales.
+        </p>
       </div>
     </div>
-  </section>
-
-  <!-- ===== Notes ===== -->
-  <div class="notes">
-    <span class="ic">i</span>
-    <div>
-      <p><b>Sobre los tokens:</b> el modo claro usa los mismos nombres semánticos que el dark (<code>--bg-surface</code>, <code>--text-primary</code>, etc.) pero invierte los valores. Mantené el <b>cyan #2E8FE0</b> solo para acentos grandes, iconos o highlights — el primario es <b>#1E5FD4</b> que sí cumple AA en cuerpos de texto.</p>
-      <p><b>Excepción de placeholder:</b> el <code>--text-disabled</code> (#94A0BD) no llega a AA y por diseño se reserva exclusivamente para placeholders, metadata y elementos auxiliares no esenciales.</p>
-    </div>
-  </div>
-
-</body>
+  </body>
 </html>

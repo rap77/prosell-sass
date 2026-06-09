@@ -24,7 +24,10 @@ import { useFeatureFlagStore } from "@/stores/featureFlagStore";
 
 export type AnimationType = "fadeIn" | "slideUp" | "scaleIn";
 
-export interface AnimatedSvgWrapperProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'ref'> {
+export interface AnimatedSvgWrapperProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  "ref"
+> {
   /** Animation type to apply */
   animation?: AnimationType;
   /** Animation duration in milliseconds */
@@ -74,34 +77,46 @@ interface AnimatedSvgWrapperWithRefProps extends AnimatedSvgWrapperProps {
 export const AnimatedSvgWrapper = React.forwardRef<
   HTMLDivElement,
   AnimatedSvgWrapperProps
->(({ animation = "fadeIn", duration = 300, delay = 0, children, className, ...props }, forwardedRef) => {
-  // Feature flag check
-  const useSvgWrapper = useFeatureFlagStore((state) =>
-    state.get("svg-wrapper", true),
-  );
+>(
+  (
+    {
+      animation = "fadeIn",
+      duration = 300,
+      delay = 0,
+      children,
+      className,
+      ...props
+    },
+    forwardedRef,
+  ) => {
+    // Feature flag check
+    const useSvgWrapper = useFeatureFlagStore((state) =>
+      state.get("svg-wrapper", true),
+    );
 
-  // If feature flag is disabled, render without animation
-  if (!useSvgWrapper) {
+    // If feature flag is disabled, render without animation
+    if (!useSvgWrapper) {
+      return (
+        <div ref={forwardedRef} className={className} {...props}>
+          {children}
+        </div>
+      );
+    }
+
+    const style = createAnimationStyle(animation, duration, delay);
+
     return (
-      <div ref={forwardedRef} className={className} {...props}>
+      <div
+        ref={forwardedRef}
+        className={cn("inline-block", className)}
+        style={style}
+        {...props}
+      >
         {children}
       </div>
     );
-  }
-
-  const style = createAnimationStyle(animation, duration, delay);
-
-  return (
-    <div
-      ref={forwardedRef}
-      className={cn("inline-block", className)}
-      style={style}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-});
+  },
+);
 
 // Display name for debugging
 AnimatedSvgWrapper.displayName = "AnimatedSvgWrapper";

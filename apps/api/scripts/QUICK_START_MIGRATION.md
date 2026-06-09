@@ -3,6 +3,7 @@
 ## 🚀 Quick Start (3 Steps)
 
 ### 1. Dry Run (Do This First!)
+
 ```bash
 cd apps/api
 
@@ -11,12 +12,14 @@ uv run python scripts/migrate_vehicles_to_product_attributes.py --dry-run
 ```
 
 ### 2. Run Migration with Backup
+
 ```bash
 DATABASE_URL="postgresql+asyncpg://prosell:prosell@localhost:5432/prosell" \
 uv run python scripts/migrate_vehicles_to_product_attributes.py --backup
 ```
 
 ### 3. Verify Results
+
 ```bash
 DATABASE_URL="postgresql+asyncpg://prosell:prosell@localhost:5432/prosell" \
 uv run python scripts/verify_vehicle_migration.py
@@ -25,6 +28,7 @@ uv run python scripts/verify_vehicle_migration.py
 ## 📊 What to Expect
 
 **Dry Run Output**:
+
 ```
 🚀 Starting vehicle to product attributes migration...
    Mode: DRY RUN
@@ -48,6 +52,7 @@ Failed: 0
 ```
 
 **Verification Output**:
+
 ```
 🔍 Verifying vehicle to product attributes migration...
 
@@ -69,12 +74,14 @@ VERIFICATION SUMMARY
 ## 🔧 Custom Options
 
 ### Larger Batch Size
+
 ```bash
 uv run python scripts/migrate_vehicles_to_product_attributes.py \
   --backup --batch-size 200
 ```
 
 ### Skip Backup (Not Recommended for Production)
+
 ```bash
 uv run python scripts/migrate_vehicles_to_product_attributes.py
 ```
@@ -98,6 +105,7 @@ COMMIT;
 ## 📚 Full Documentation
 
 See `MIGRATE_VEHICLES_README.md` for:
+
 - Complete field mapping
 - Troubleshooting guide
 - Safety features explanation
@@ -114,12 +122,14 @@ See `MIGRATE_VEHICLES_README.md` for:
 ## 🆘 Troubleshooting
 
 ### "No vehicles found to migrate"
+
 ```sql
 -- Check if vehicles exist
 SELECT COUNT(*) FROM vehicles;
 ```
 
 ### "Invalid VIN: must be 17 characters"
+
 ```sql
 -- Find invalid VINs
 SELECT id, vin, LENGTH(vin) as vin_length
@@ -128,6 +138,7 @@ WHERE LENGTH(vin) != 17;
 ```
 
 ### "password authentication failed"
+
 ```bash
 # Check DATABASE_URL format
 export DATABASE_URL="postgresql+asyncpg://user:pass@localhost:5432/dbname"
@@ -136,6 +147,7 @@ export DATABASE_URL="postgresql+asyncpg://user:pass@localhost:5432/dbname"
 ## ✅ Success Criteria
 
 Migration is successful when:
+
 - ✅ All vehicles migrated (Migrated count = Total vehicles)
 - ✅ No failures (Failed: 0)
 - ✅ Verification shows 0 missing categories

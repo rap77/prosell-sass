@@ -22,9 +22,24 @@ vi.mock("sonner", () => ({
 
 // Mock vendedores API
 const mockVendedores = [
-  { id: "vendedor-1", name: "Juan Pérez", email: "juan@example.com", role: "SALES_AGENT" },
-  { id: "vendedor-2", name: "María García", email: "maria@example.com", role: "SALES_AGENT" },
-  { id: "vendedor-3", name: "Carlos López", email: "carlos@example.com", role: "SALES_AGENT" },
+  {
+    id: "vendedor-1",
+    name: "Juan Pérez",
+    email: "juan@example.com",
+    role: "SALES_AGENT",
+  },
+  {
+    id: "vendedor-2",
+    name: "María García",
+    email: "maria@example.com",
+    role: "SALES_AGENT",
+  },
+  {
+    id: "vendedor-3",
+    name: "Carlos López",
+    email: "carlos@example.com",
+    role: "SALES_AGENT",
+  },
 ];
 
 const mockLead = {
@@ -39,7 +54,12 @@ const mockLead = {
     price_cents: 2500000,
     currency: "USD",
     status: "active",
-    attributes: { category: "vehicle", year: 2020, make: "Toyota", model: "Camry" },
+    attributes: {
+      category: "vehicle",
+      year: 2020,
+      make: "Toyota",
+      model: "Camry",
+    },
     created_at: "2026-04-28T12:00:00Z",
     updated_at: "2026-04-28T12:00:00Z",
   },
@@ -59,7 +79,9 @@ function createWrapper() {
   });
 
   function Wrapper({ children }: { children: React.ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
   }
   return Wrapper;
 }
@@ -88,7 +110,7 @@ describe("LeadReassignModal", () => {
         onClose={vi.fn()}
         onSuccess={vi.fn()}
       />,
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     );
 
     expect(screen.getByText("Reassign Lead")).toBeInTheDocument();
@@ -102,7 +124,7 @@ describe("LeadReassignModal", () => {
         onClose={vi.fn()}
         onSuccess={vi.fn()}
       />,
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     );
 
     expect(screen.queryByText("Reassign Lead")).not.toBeInTheDocument();
@@ -116,7 +138,7 @@ describe("LeadReassignModal", () => {
         onClose={vi.fn()}
         onSuccess={vi.fn()}
       />,
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     );
 
     expect(screen.getByText(mockLead.buyer_name)).toBeInTheDocument();
@@ -131,7 +153,7 @@ describe("LeadReassignModal", () => {
         onClose={vi.fn()}
         onSuccess={vi.fn()}
       />,
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     );
 
     // Verify the select trigger exists by test ID
@@ -149,7 +171,7 @@ describe("LeadReassignModal", () => {
         onClose={onClose}
         onSuccess={vi.fn()}
       />,
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     );
 
     const cancelButton = screen.getByRole("button", { name: /cancel/i });
@@ -166,7 +188,7 @@ describe("LeadReassignModal", () => {
         onClose={vi.fn()}
         onSuccess={vi.fn()}
       />,
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     );
 
     const confirmButton = screen.getByRole("button", { name: /reassign/i });

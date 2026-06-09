@@ -1,14 +1,17 @@
 # Layer 3: Schema Matching
 
 ## Purpose
+
 Detect drift between backend Pydantic DTOs and frontend TypeScript types.
 
 ## When to Use
+
 - Endpoints with 10+ response fields
 - High risk of type drift
 - Manual type synchronization is error-prone
 
 ## Implementation
+
 Extracts Pydantic model fields and compares with frontend TypeScript types.
 
 ## How It Works

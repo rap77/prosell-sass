@@ -20,7 +20,10 @@
 
 import { expect, test } from "@playwright/test";
 import { VehiclesPage } from "../pages/vehicles-page";
-import { mockVinDecodeEndpoint, mockCategoriesEndpoint } from "../helpers/mock-endpoints";
+import {
+  mockVinDecodeEndpoint,
+  mockCategoriesEndpoint,
+} from "../helpers/mock-endpoints";
 import { MOCK_VIN_DECODED, MOCK_CATEGORIES } from "../fixtures/mock-data";
 import { TEST_VINS, EXPECTED_VEHICLE_DATA } from "../fixtures/test-vins";
 
@@ -45,7 +48,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   // ============================================
 
   test.describe("Input Fields Update After VIN Decode", () => {
-    test("@smoke should update model field after VIN decode", async ({ page }) => {
+    test("@smoke should update model field after VIN decode", async ({
+      page,
+    }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946"); // Chevrolet Equinox 2017
 
@@ -63,7 +68,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(modelValue.toLowerCase()).toBe("equinox");
     });
 
-    test("@smoke should update engine field after VIN decode", async ({ page }) => {
+    test("@smoke should update engine field after VIN decode", async ({
+      page,
+    }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
@@ -91,7 +98,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await expect(trimInput).not.toHaveValue("");
     });
 
-    test("should preserve input field values across multiple page interactions", async ({ page }) => {
+    test("should preserve input field values across multiple page interactions", async ({
+      page,
+    }) => {
       // Fill VIN and decode
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
       await vehiclesPage.decodeVinButton.click();
@@ -119,7 +128,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   // ============================================
 
   test.describe("Select Fields Update After VIN Decode", () => {
-    test("@smoke should update make select field after VIN decode", async ({ page }) => {
+    test("@smoke should update make select field after VIN decode", async ({
+      page,
+    }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
@@ -134,14 +145,18 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await makeSelect.click();
 
       // Find the selected item in the dropdown
-      const selectedItem = page.locator('[role="option"][data-state="checked"]');
+      const selectedItem = page.locator(
+        '[role="option"][data-state="checked"]',
+      );
       const selectedText = await selectedItem.textContent();
 
       // SPECIFIC assertion: Chevrolet should be selected (Condition #9)
       expect(selectedText?.toLowerCase()).toBe("chevrolet");
     });
 
-    test("should update body_type select field after VIN decode", async ({ page }) => {
+    test("should update body_type select field after VIN decode", async ({
+      page,
+    }) => {
       // Using Toyota Camry 2018 VIN (reliable body_type data from NHTSA)
       // Previously failed with Chevrolet Equinox VIN due to NHTSA returning null
       const testVIN = TEST_VINS.toyotaCamry2018;
@@ -159,7 +174,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await bodyTypeSelect.click();
 
       // Find the selected item
-      const selectedItem = page.locator('[role="option"][data-state="checked"]');
+      const selectedItem = page.locator(
+        '[role="option"][data-state="checked"]',
+      );
       const selectedText = await selectedItem.textContent();
 
       // Should have a body type value (Sedan 4D for Camry)
@@ -167,7 +184,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(selectedText?.length).toBeGreaterThan(0);
     });
 
-    test("@smoke should update drivetrain select field after VIN decode", async ({ page }) => {
+    test("@smoke should update drivetrain select field after VIN decode", async ({
+      page,
+    }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
@@ -182,14 +201,18 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await drivetrainSelect.click();
 
       // Find the selected item
-      const selectedItem = page.locator('[role="option"][data-state="checked"]');
+      const selectedItem = page.locator(
+        '[role="option"][data-state="checked"]',
+      );
       const selectedText = await selectedItem.textContent();
 
       // Should be one of the drivetrain options
       expect(selectedText).toMatch(/FWD|RWD|AWD|4WD/);
     });
 
-    test("should update transmission select field after VIN decode", async ({ page }) => {
+    test("should update transmission select field after VIN decode", async ({
+      page,
+    }) => {
       // Using Ford F-150 2020 VIN (reliable transmission data from NHTSA)
       // Previously failed with Chevrolet Equinox VIN due to NHTSA returning null
       const testVIN = TEST_VINS.fordF1502020;
@@ -207,7 +230,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await transmissionSelect.click();
 
       // Find the selected item
-      const selectedItem = page.locator('[role="option"][data-state="checked"]');
+      const selectedItem = page.locator(
+        '[role="option"][data-state="checked"]',
+      );
       const selectedText = await selectedItem.textContent();
 
       // Should have transmission value (10-Speed Automatic for F-150)
@@ -215,7 +240,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(selectedText?.length).toBeGreaterThan(0);
     });
 
-    test("should update fuel_type select field after VIN decode", async ({ page }) => {
+    test("should update fuel_type select field after VIN decode", async ({
+      page,
+    }) => {
       // Using Toyota Corolla 2019 VIN (reliable fuel_type data from NHTSA)
       // Previously failed with Chevrolet Equinox VIN due to NHTSA returning null
       const testVIN = TEST_VINS.toyotaCorolla2019;
@@ -233,7 +260,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await fuelTypeSelect.click();
 
       // Find the selected item
-      const selectedItem = page.locator('[role="option"][data-state="checked"]');
+      const selectedItem = page.locator(
+        '[role="option"][data-state="checked"]',
+      );
       const selectedText = await selectedItem.textContent();
 
       // Should be a fuel type (Gasoline for Corolla)
@@ -247,7 +276,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   // ============================================
 
   test.describe("Select Fields Display Correct Selected Values", () => {
-    test("@smoke should display selected make value in trigger without placeholder", async ({ page }) => {
+    test("@smoke should display selected make value in trigger without placeholder", async ({
+      page,
+    }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
@@ -268,7 +299,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(triggerText).toMatch(/chevrolet|chevy/i);
     });
 
-    test("should display selected body_type value in trigger without placeholder", async ({ page }) => {
+    test("should display selected body_type value in trigger without placeholder", async ({
+      page,
+    }) => {
       // Using Honda CR-V 2020 VIN (reliable body_type data from NHTSA)
       // Previously failed with Chevrolet Equinox VIN due to NHTSA returning null
       const testVIN = TEST_VINS.hondaCRV2020;
@@ -289,7 +322,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(triggerText).not.toContain("Select");
     });
 
-    test("should display selected drivetrain value in trigger without placeholder", async ({ page }) => {
+    test("should display selected drivetrain value in trigger without placeholder", async ({
+      page,
+    }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
@@ -306,7 +341,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(triggerText).toMatch(/FWD|RWD|AWD|4WD/);
     });
 
-    test("should display selected transmission value in trigger without placeholder", async ({ page }) => {
+    test("should display selected transmission value in trigger without placeholder", async ({
+      page,
+    }) => {
       // Using Honda Accord 2019 VIN (reliable transmission data from NHTSA)
       // Previously failed with Chevrolet Equinox VIN due to NHTSA returning null
       const testVIN = TEST_VINS.hondaAccord2019;
@@ -327,7 +364,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(triggerText).not.toContain("Select transmission");
     });
 
-    test("should display selected fuel_type value in trigger without placeholder", async ({ page }) => {
+    test("should display selected fuel_type value in trigger without placeholder", async ({
+      page,
+    }) => {
       // Using Toyota RAV4 2021 VIN (reliable fuel_type data from NHTSA)
       // Previously failed with Chevrolet Equinox VIN due to NHTSA returning null
       const testVIN = TEST_VINS.toyotaRAV42021;
@@ -354,7 +393,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   // ============================================
 
   test.describe("Select Fields Show Placeholders When Empty", () => {
-    test("make select should show placeholder when no value is set", async ({ page }) => {
+    test("make select should show placeholder when no value is set", async ({
+      page,
+    }) => {
       // Don't decode VIN, just check empty state
       const makeTrigger = page.locator('[id="make"]');
       await expect(makeTrigger).toBeVisible();
@@ -366,7 +407,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(triggerText).toContain("Select make");
     });
 
-    test("body_type select should show placeholder when no value is set", async ({ page }) => {
+    test("body_type select should show placeholder when no value is set", async ({
+      page,
+    }) => {
       // Don't decode VIN, just check empty state
       const bodyTypeTrigger = page.locator('[id="body_type"]');
       await expect(bodyTypeTrigger).toBeVisible();
@@ -375,7 +418,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(triggerText).toContain("Select type");
     });
 
-    test("drivetrain select should show placeholder when no value is set", async ({ page }) => {
+    test("drivetrain select should show placeholder when no value is set", async ({
+      page,
+    }) => {
       // Don't decode VIN, just check empty state
       const drivetrainTrigger = page.locator('[id="drivetrain"]');
       await expect(drivetrainTrigger).toBeVisible();
@@ -384,7 +429,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(triggerText).toContain("Select drivetrain");
     });
 
-    test("transmission select should show placeholder when no value is set", async ({ page }) => {
+    test("transmission select should show placeholder when no value is set", async ({
+      page,
+    }) => {
       // Don't decode VIN, just check empty state
       const transmissionTrigger = page.locator('[id="transmission"]');
       await expect(transmissionTrigger).toBeVisible();
@@ -393,7 +440,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(triggerText).toContain("Select transmission");
     });
 
-    test("fuel_type select should show placeholder when no value is set", async ({ page }) => {
+    test("fuel_type select should show placeholder when no value is set", async ({
+      page,
+    }) => {
       // Don't decode VIN, just check empty state
       const fuelTypeTrigger = page.locator('[id="fuel_type"]');
       await expect(fuelTypeTrigger).toBeVisible();
@@ -408,7 +457,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   // ============================================
 
   test.describe("Console Warnings & Errors", () => {
-    test("should not show controlled/uncontrolled component warnings", async ({ page }) => {
+    test("should not show controlled/uncontrolled component warnings", async ({
+      page,
+    }) => {
       const consoleMessages: string[] = [];
 
       // Collect console messages
@@ -427,14 +478,16 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await page.waitForTimeout(2000);
 
       // Check for controlled/uncontrolled warnings
-      const controlledWarnings = consoleMessages.filter((msg) =>
-        msg.includes("controlled") || msg.includes("uncontrolled")
+      const controlledWarnings = consoleMessages.filter(
+        (msg) => msg.includes("controlled") || msg.includes("uncontrolled"),
       );
 
       expect(controlledWarnings).toHaveLength(0);
     });
 
-    test("should not show React form state errors after VIN decode", async ({ page }) => {
+    test("should not show React form state errors after VIN decode", async ({
+      page,
+    }) => {
       const consoleMessages: string[] = [];
 
       // Collect error messages
@@ -453,8 +506,8 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await page.waitForTimeout(2000);
 
       // Filter for React-specific form errors
-      const formErrors = consoleMessages.filter((msg) =>
-        msg.includes("onChange") || msg.includes("register")
+      const formErrors = consoleMessages.filter(
+        (msg) => msg.includes("onChange") || msg.includes("register"),
       );
 
       expect(formErrors).toHaveLength(0);
@@ -478,8 +531,11 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await page.waitForTimeout(2000);
 
       // Check for value type warnings
-      const typeWarnings = consoleMessages.filter((msg) =>
-        msg.includes("String") || msg.includes("type") || msg.includes("value")
+      const typeWarnings = consoleMessages.filter(
+        (msg) =>
+          msg.includes("String") ||
+          msg.includes("type") ||
+          msg.includes("value"),
       );
 
       // Should not have warnings about type mismatches
@@ -492,7 +548,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
   // ============================================
 
   test.describe("Integration Tests", () => {
-    test("@smoke should submit form and create product via POST /api/v1/products", async ({ page }) => {
+    test("@smoke should submit form and create product via POST /api/v1/products", async ({
+      page,
+    }) => {
       // Mock the products API to verify correct request format
       let createProductRequestBody: any = null;
 
@@ -508,7 +566,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
         // Verify attributes.vin is present (triggers auto-vehicle creation)
         expect(createProductRequestBody.attributes).toHaveProperty("vin");
-        expect(createProductRequestBody.attributes.vin).toBe("2GNALCEK1H1615946");
+        expect(createProductRequestBody.attributes.vin).toBe(
+          "2GNALCEK1H1615946",
+        );
 
         // Verify decoded vehicle attributes are in attributes object
         expect(createProductRequestBody.attributes).toHaveProperty("year");
@@ -543,14 +603,18 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
 
       // Select category (open dropdown, click first option)
       // Note: Category field uses aria-label="Categoría", not an id attribute
-      const categorySelect = page.getByRole("combobox", { name: /categoría|category/i });
+      const categorySelect = page.getByRole("combobox", {
+        name: /categoría|category/i,
+      });
       await categorySelect.click();
       await page.waitForTimeout(500);
       const firstOption = page.locator('[role="option"]').first();
       await firstOption.click();
 
       // Submit form
-      const submitButton = page.getByRole("button", { name: /create|submit|save/i });
+      const submitButton = page.getByRole("button", {
+        name: /create|submit|save/i,
+      });
       await submitButton.click();
       await page.waitForLoadState("load");
 
@@ -559,7 +623,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(createProductRequestBody.title).toMatch(/chevrolet|equinox/i);
     });
 
-    test("@smoke should decode all fields simultaneously and maintain consistency", async ({ page }) => {
+    test("@smoke should decode all fields simultaneously and maintain consistency", async ({
+      page,
+    }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
@@ -591,7 +657,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(makeText).toMatch(/chevrolet|chevy/i);
     });
 
-    test("should allow manual override of auto-populated fields", async ({ page }) => {
+    test("should allow manual override of auto-populated fields", async ({
+      page,
+    }) => {
       // Fill VIN and decode
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
       await vehiclesPage.decodeVinButton.click();
@@ -612,7 +680,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(newModel).toBe("Custom Model");
     });
 
-    test("should populate select field with proper values that match SelectItem values", async ({ page }) => {
+    test("should populate select field with proper values that match SelectItem values", async ({
+      page,
+    }) => {
       // Fill VIN
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
 
@@ -626,7 +696,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       await drivetrainSelect.click();
 
       // Get the selected item
-      const selectedOption = page.locator('[role="option"][data-state="checked"]');
+      const selectedOption = page.locator(
+        '[role="option"][data-state="checked"]',
+      );
       await expect(selectedOption).toBeVisible();
 
       // Get the selected value via textContent — Radix SelectItem does not expose
@@ -636,7 +708,9 @@ test.describe("Vehicle Form - VIN Decode with Select Components", () => {
       expect(selectedText).toMatch(/FWD|RWD|AWD|4WD/);
     });
 
-    test("should handle rapid VIN decode operations without losing field values", async ({ page }) => {
+    test("should handle rapid VIN decode operations without losing field values", async ({
+      page,
+    }) => {
       const modelInput = page.getByLabel(/model/i);
 
       // First VIN

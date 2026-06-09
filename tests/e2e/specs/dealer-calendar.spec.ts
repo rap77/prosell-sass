@@ -37,7 +37,7 @@ async function setDealerRoleCookie(page: Page) {
           role: "branch",
           name: "Test Branch",
           tenant_id: process.env.TEST_TENANT_ID || "default-tenant-id",
-        })
+        }),
       ),
       domain: "localhost",
       path: "/",
@@ -150,7 +150,12 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
           price_cents: 2000000,
           currency: "USD",
           status: "active",
-          attributes: { category: "vehicle", year: 2024, make: "Toyota", model: "Camry" },
+          attributes: {
+            category: "vehicle",
+            year: 2024,
+            make: "Toyota",
+            model: "Camry",
+          },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -172,7 +177,12 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
           price_cents: 2200000,
           currency: "USD",
           status: "active",
-          attributes: { category: "vehicle", year: 2024, make: "Honda", model: "Accord" },
+          attributes: {
+            category: "vehicle",
+            year: 2024,
+            make: "Honda",
+            model: "Accord",
+          },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -190,7 +200,10 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ lead: mockLeadData["lead-1"], audit_logs: [] }),
+          body: JSON.stringify({
+            lead: mockLeadData["lead-1"],
+            audit_logs: [],
+          }),
         });
       } else {
         await route.fallback();
@@ -202,7 +215,10 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ lead: mockLeadData["lead-2"], audit_logs: [] }),
+          body: JSON.stringify({
+            lead: mockLeadData["lead-2"],
+            audit_logs: [],
+          }),
         });
       } else {
         await route.fallback();
@@ -214,7 +230,9 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
       if (route.request().method() === "GET") {
         const url = route.request().url();
         const leadId = url.split("/").pop() || "lead-1";
-        const mockLead = mockLeadData[leadId as keyof typeof mockLeadData] || mockLeadData["lead-1"];
+        const mockLead =
+          mockLeadData[leadId as keyof typeof mockLeadData] ||
+          mockLeadData["lead-1"];
 
         await route.fulfill({
           status: 200,
@@ -229,10 +247,19 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
     // Mock appointments list endpoint (GET only).
     // Registered AFTER leads so the more specific patterns take precedence.
     await page.route("**/api/v1/appointments**", async (route) => {
-      console.log("[APPOINTMENTS MOCK] URL called:", route.request().url(), "Method:", route.request().method());
+      console.log(
+        "[APPOINTMENTS MOCK] URL called:",
+        route.request().url(),
+        "Method:",
+        route.request().method(),
+      );
 
       if (route.request().method() === "GET") {
-        console.log("[APPOINTMENTS MOCK] Returning", MOCK_APPOINTMENTS.length, "appointments");
+        console.log(
+          "[APPOINTMENTS MOCK] Returning",
+          MOCK_APPOINTMENTS.length,
+          "appointments",
+        );
 
         await route.fulfill({
           status: 200,
@@ -255,7 +282,11 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
     await page.route("**/api/v1/appointments/**/status", async (route) => {
       if (route.request().method() === "PUT") {
         let body: Record<string, unknown> = {};
-        try { body = route.request().postDataJSON() ?? {}; } catch { /* no body */ }
+        try {
+          body = route.request().postDataJSON() ?? {};
+        } catch {
+          /* no body */
+        }
         const newStatus = (body.status as string) ?? "completed";
         await route.fulfill({
           status: 200,
@@ -283,7 +314,9 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
     await expect(page.locator("h1")).toContainText("Appointments");
 
     // Scope to main to avoid strict mode violation with sidebar <p> elements
-    await expect(page.locator("main p").filter({ hasText: "Manage your appointments" })).toBeVisible();
+    await expect(
+      page.locator("main p").filter({ hasText: "Manage your appointments" }),
+    ).toBeVisible();
   });
 
   test("should show today's appointments badge (A6.11)", async ({ page }) => {
@@ -307,7 +340,9 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
     await expect(monthView).toBeVisible();
   });
 
-  test("should switch between day/week/month views (A6.14)", async ({ page }) => {
+  test("should switch between day/week/month views (A6.14)", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
 
     // Month view should be active by default
@@ -335,10 +370,16 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
     }
   });
 
-  test("should show appointment details modal on click (A6.10, A6.15)", async ({ page }) => {
+  test("should show appointment details modal on click (A6.10, A6.15)", async ({
+    page,
+  }) => {
     // Intercept console.log from the browser to see React Query logs
     page.on("console", (msg) => {
-      if (msg.text().includes("lead") || msg.text().includes("Lead") || msg.text().includes("[QUERY]")) {
+      if (
+        msg.text().includes("lead") ||
+        msg.text().includes("Lead") ||
+        msg.text().includes("[QUERY]")
+      ) {
         console.log("[BROWSER CONSOLE]", msg.text());
       }
     });
@@ -352,7 +393,9 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
     await firstEvent.click();
 
     // Wait for modal to appear - use role="dialog" instead of text content
-    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[role="dialog"]')).toBeVisible({
+      timeout: 5000,
+    });
 
     // Debug: Check the modal content
     const modalText = await page.locator('[role="dialog"]').textContent();
@@ -360,17 +403,23 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
 
     // CRITICAL: Verify that buyer data is loaded and displayed
     // The mock should return "John Doe" for lead-1
-    await expect(page.locator('[role="dialog"]')).toContainText("John Doe", { timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).toContainText("John Doe", {
+      timeout: 3000,
+    });
 
     // Also verify vehicle information is displayed
-    await expect(page.locator('[role="dialog"]')).toContainText("Toyota", { timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).toContainText("Toyota", {
+      timeout: 3000,
+    });
 
     // Close modal
     await page.keyboard.press("Escape");
     await expect(page.locator('[role="dialog"]')).not.toBeVisible();
   });
 
-  test("should show confirm and cancel buttons for scheduled appointments (A6.15)", async ({ page }) => {
+  test("should show confirm and cancel buttons for scheduled appointments (A6.15)", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
 
     // Click on a scheduled appointment
@@ -431,7 +480,9 @@ test.describe("Dealer Calendar (A6.13-A6.15)", () => {
     await expect(page.locator("text=Appointment Details")).not.toBeVisible();
   });
 
-  test("should close modal when clicking close button (A6.15)", async ({ page }) => {
+  test("should close modal when clicking close button (A6.15)", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
 
     // Click on appointment to open modal
@@ -529,7 +580,12 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
           price_cents: 2000000,
           currency: "USD",
           status: "active",
-          attributes: { category: "vehicle", year: 2024, make: "Toyota", model: "Camry" },
+          attributes: {
+            category: "vehicle",
+            year: 2024,
+            make: "Toyota",
+            model: "Camry",
+          },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -551,7 +607,12 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
           price_cents: 2200000,
           currency: "USD",
           status: "active",
-          attributes: { category: "vehicle", year: 2024, make: "Honda", model: "Accord" },
+          attributes: {
+            category: "vehicle",
+            year: 2024,
+            make: "Honda",
+            model: "Accord",
+          },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -569,7 +630,10 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ lead: mockLeadData["lead-1"], audit_logs: [] }),
+          body: JSON.stringify({
+            lead: mockLeadData["lead-1"],
+            audit_logs: [],
+          }),
         });
       } else {
         await route.fallback();
@@ -581,7 +645,10 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ lead: mockLeadData["lead-2"], audit_logs: [] }),
+          body: JSON.stringify({
+            lead: mockLeadData["lead-2"],
+            audit_logs: [],
+          }),
         });
       } else {
         await route.fallback();
@@ -593,7 +660,9 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
       if (route.request().method() === "GET") {
         const url = route.request().url();
         const leadId = url.split("/").pop() || "lead-1";
-        const mockLead = mockLeadData[leadId as keyof typeof mockLeadData] || mockLeadData["lead-1"];
+        const mockLead =
+          mockLeadData[leadId as keyof typeof mockLeadData] ||
+          mockLeadData["lead-1"];
 
         await route.fulfill({
           status: 200,
@@ -608,10 +677,19 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     // Mock appointments list endpoint (GET only).
     // Registered AFTER leads so the more specific patterns take precedence.
     await page.route("**/api/v1/appointments**", async (route) => {
-      console.log("[APPOINTMENTS MOCK] URL called:", route.request().url(), "Method:", route.request().method());
+      console.log(
+        "[APPOINTMENTS MOCK] URL called:",
+        route.request().url(),
+        "Method:",
+        route.request().method(),
+      );
 
       if (route.request().method() === "GET") {
-        console.log("[APPOINTMENTS MOCK] Returning", MOCK_APPOINTMENTS.length, "appointments");
+        console.log(
+          "[APPOINTMENTS MOCK] Returning",
+          MOCK_APPOINTMENTS.length,
+          "appointments",
+        );
 
         await route.fulfill({
           status: 200,
@@ -634,7 +712,11 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     await page.route("**/api/v1/appointments/**/status", async (route) => {
       if (route.request().method() === "PUT") {
         let body: Record<string, unknown> = {};
-        try { body = route.request().postDataJSON() ?? {}; } catch { /* no body */ }
+        try {
+          body = route.request().postDataJSON() ?? {};
+        } catch {
+          /* no body */
+        }
         const newStatus = (body.status as string) ?? "completed";
         await route.fulfill({
           status: 200,
@@ -655,7 +737,9 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     await closeOpenDialogs(page);
   });
 
-  test("A7.16: should create E2E test for dealer calendar", async ({ page }) => {
+  test("A7.16: should create E2E test for dealer calendar", async ({
+    page,
+  }) => {
     // Meta-test to verify test structure
     expect(test.describe).toBeDefined();
   });
@@ -679,7 +763,9 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test("A7.17: should display appointment details in calendar", async ({ page }) => {
+  test("A7.17: should display appointment details in calendar", async ({
+    page,
+  }) => {
     // Navigate to dealer calendar page
     await page.goto("/branch/appointments");
     await page.waitForLoadState("networkidle");
@@ -694,14 +780,20 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     await events.first().click();
 
     // Wait for modal to appear
-    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).toBeVisible({
+      timeout: 3000,
+    });
 
     // CRITICAL: Verify that buyer data is loaded and displayed
     // The mock should return "John Doe" for lead-1
-    await expect(page.locator('[role="dialog"]')).toContainText("John Doe", { timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).toContainText("John Doe", {
+      timeout: 3000,
+    });
 
     // Also verify vehicle information is displayed
-    await expect(page.locator('[role="dialog"]')).toContainText("Toyota", { timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).toContainText("Toyota", {
+      timeout: 3000,
+    });
   });
 
   test("A7.17: should switch between calendar views", async ({ page }) => {
@@ -744,7 +836,9 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     await events.first().click();
 
     // Wait for modal to appear
-    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).toBeVisible({
+      timeout: 3000,
+    });
 
     // Verify confirm button is visible
     const confirmButton = page.locator('[data-testid="confirm-button"]');
@@ -755,7 +849,7 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
       (response) =>
         response.url().includes("/appointments/") &&
         response.url().includes("/status"),
-      { timeout: 10000 }
+      { timeout: 10000 },
     );
 
     // Click confirm button
@@ -766,11 +860,13 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     expect(response.status()).toBeLessThan(300);
 
     // Wait for modal to close after successful confirmation
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[role="dialog"]')).not.toBeVisible({
+      timeout: 5000,
+    });
 
     // Verify success message (regex OR — not CSS comma-separated)
     await expect(
-      page.locator("text=/confirmed|confirmada|successfully/i")
+      page.locator("text=/confirmed|confirmada|successfully/i"),
     ).toBeVisible({ timeout: 3000 });
   });
 
@@ -784,7 +880,9 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     await events.first().click();
 
     // Wait for modal to appear
-    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).toBeVisible({
+      timeout: 3000,
+    });
 
     // Verify cancel button is visible
     const cancelButton = page.locator('[data-testid="cancel-button"]');
@@ -795,7 +893,7 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
       (response) =>
         response.url().includes("/appointments/") &&
         response.url().includes("/status"),
-      { timeout: 10000 }
+      { timeout: 10000 },
     );
 
     // Click cancel button
@@ -806,11 +904,13 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     expect(response.status()).toBeLessThan(300);
 
     // Wait for modal to close after successful cancellation
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[role="dialog"]')).not.toBeVisible({
+      timeout: 5000,
+    });
 
     // Verify success message (regex OR — not CSS comma-separated)
     await expect(
-      page.locator("text=/cancelled|cancelada|successfully/i")
+      page.locator("text=/cancelled|cancelada|successfully/i"),
     ).toBeVisible({ timeout: 3000 });
   });
 
@@ -824,13 +924,17 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     await events.first().click();
 
     // Wait for modal to appear
-    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).toBeVisible({
+      timeout: 3000,
+    });
 
     // Close modal by pressing Escape
     await page.keyboard.press("Escape");
 
     // Verify modal is closed
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).not.toBeVisible({
+      timeout: 3000,
+    });
   });
 
   test("should display today's appointments count", async ({ page }) => {
@@ -889,7 +993,9 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
       await prevButton.dispatchEvent("click");
       await page.waitForTimeout(500);
 
-      const returnedPeriod = await page.locator(".fc-toolbar-title").textContent();
+      const returnedPeriod = await page
+        .locator(".fc-toolbar-title")
+        .textContent();
       expect(returnedPeriod).toBe(currentPeriod);
     }
   });
@@ -918,7 +1024,9 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     await events.first().click();
 
     // Wait for modal to appear
-    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).toBeVisible({
+      timeout: 3000,
+    });
 
     // Try to confirm appointment
     const confirmButton = page.locator('[data-testid="confirm-button"]');
@@ -926,7 +1034,7 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
 
     // Error toast comes from useUpdateAppointmentStatus onError handler
     await expect(
-      page.locator("text=Failed to confirm appointment")
+      page.locator("text=Failed to confirm appointment"),
     ).toBeVisible({ timeout: 3000 });
 
     // Verify modal stays open on error
@@ -956,16 +1064,18 @@ test.describe("Dealer Calendar - E2E Verification (A7)", () => {
     await events.first().click();
 
     // Wait for modal to appear
-    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).toBeVisible({
+      timeout: 3000,
+    });
 
     // Try to cancel appointment
     const cancelButton = page.locator('[data-testid="cancel-button"]');
     await cancelButton.click();
 
     // Error toast comes from useUpdateAppointmentStatus onError handler
-    await expect(
-      page.locator("text=Failed to cancel appointment")
-    ).toBeVisible({ timeout: 3000 });
+    await expect(page.locator("text=Failed to cancel appointment")).toBeVisible(
+      { timeout: 3000 },
+    );
 
     // Verify modal stays open on error
     await expect(page.locator('[role="dialog"]')).toBeVisible();

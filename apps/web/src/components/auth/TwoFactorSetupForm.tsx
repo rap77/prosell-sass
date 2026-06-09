@@ -494,15 +494,24 @@ export function TwoFactorSetupForm({
           {formState.state === "enabled" && (
             <CardContent className="pt-8">
               <div className="text-center py-12 space-y-6">
-                <div style={{
-                  display: 'inline-flex', width: 80, height: 80,
-                  alignItems: 'center', justifyContent: 'center',
-                  borderRadius: '50%',
-                  background: 'var(--ps-success-bg)',
-                  border: '1px solid rgba(34,211,160,0.25)',
-                }}>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    width: 80,
+                    height: 80,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "50%",
+                    background: "var(--ps-success-bg)",
+                    border: "1px solid rgba(34,211,160,0.25)",
+                  }}
+                >
                   <svg
-                    style={{ width: 40, height: 40, color: 'var(--ps-success)' }}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      color: "var(--ps-success)",
+                    }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -538,22 +547,32 @@ export function TwoFactorSetupForm({
                   Autenticación de dos factores activada
                 </CardTitle>
                 <CardDescription>
-                  Tu cuenta está protegida actualmente con autenticación de dos factores
+                  Tu cuenta está protegida actualmente con autenticación de dos
+                  factores
                 </CardDescription>
               </CardHeader>
 
               <CardContent className="space-y-6">
                 <div className="text-center">
-                  <div style={{
-                    display: 'inline-flex', width: 64, height: 64,
-                    alignItems: 'center', justifyContent: 'center',
-                    borderRadius: '50%',
-                    background: 'var(--ps-success-bg)',
-                    border: '1px solid rgba(34,211,160,0.25)',
-                    marginBottom: 16,
-                  }}>
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      width: 64,
+                      height: 64,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "50%",
+                      background: "var(--ps-success-bg)",
+                      border: "1px solid rgba(34,211,160,0.25)",
+                      marginBottom: 16,
+                    }}
+                  >
                     <svg
-                      style={{ width: 32, height: 32, color: 'var(--ps-success)' }}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        color: "var(--ps-success)",
+                      }}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -589,18 +608,33 @@ export function TwoFactorSetupForm({
                 <Separator />
 
                 {/* Warning */}
-                <div style={{
-                  background: 'var(--ps-warning-bg)',
-                  border: '1px solid rgba(251,191,36,0.25)',
-                  borderRadius: 8,
-                  padding: 16,
-                }}>
-                  <h3 style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: 'var(--ps-warning)' }}>
+                <div
+                  style={{
+                    background: "var(--ps-warning-bg)",
+                    border: "1px solid rgba(251,191,36,0.25)",
+                    borderRadius: 8,
+                    padding: 16,
+                  }}
+                >
+                  <h3
+                    style={{
+                      margin: "0 0 8px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "var(--ps-warning)",
+                    }}
+                  >
                     Atención:
                   </h3>
-                  <p style={{ margin: 0, fontSize: 13, color: 'var(--ps-warning)' }}>
-                    Desactivar la autenticación de dos factores reducirá la seguridad de tu cuenta.
-                    Recomendamos mantenerla activada.
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 13,
+                      color: "var(--ps-warning)",
+                    }}
+                  >
+                    Desactivar la autenticación de dos factores reducirá la
+                    seguridad de tu cuenta. Recomendamos mantenerla activada.
                   </p>
                 </div>
 
@@ -661,7 +695,8 @@ export function TwoFactorSetupForm({
                   Desactivando...
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Esperá un momento mientras desactivamos la autenticación de dos factores
+                  Esperá un momento mientras desactivamos la autenticación de
+                  dos factores
                 </p>
               </div>
             </CardContent>
@@ -671,15 +706,24 @@ export function TwoFactorSetupForm({
           {formState.state === "disabled" && (
             <CardContent className="pt-8">
               <div className="text-center py-12 space-y-6">
-                <div style={{
-                  display: 'inline-flex', width: 80, height: 80,
-                  alignItems: 'center', justifyContent: 'center',
-                  borderRadius: '50%',
-                  background: 'var(--ps-warning-bg)',
-                  border: '1px solid rgba(251,191,36,0.25)',
-                }}>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    width: 80,
+                    height: 80,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "50%",
+                    background: "var(--ps-warning-bg)",
+                    border: "1px solid rgba(251,191,36,0.25)",
+                  }}
+                >
                   <svg
-                    style={{ width: 40, height: 40, color: 'var(--ps-warning)' }}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      color: "var(--ps-warning)",
+                    }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -697,7 +741,8 @@ export function TwoFactorSetupForm({
                     Autenticación de dos factores desactivada
                   </h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    La autenticación de dos factores fue desactivada para tu cuenta
+                    La autenticación de dos factores fue desactivada para tu
+                    cuenta
                   </p>
                 </div>
                 <Button onClick={handleDone} className="w-full">
@@ -711,15 +756,20 @@ export function TwoFactorSetupForm({
           {formState.state === "error" && (
             <CardContent className="pt-8">
               <div className="text-center py-12 space-y-6">
-                <div style={{
-                  display: 'inline-flex', width: 80, height: 80,
-                  alignItems: 'center', justifyContent: 'center',
-                  borderRadius: '50%',
-                  background: 'var(--ps-error-bg)',
-                  border: '1px solid rgba(240,68,56,0.25)',
-                }}>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    width: 80,
+                    height: 80,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "50%",
+                    background: "var(--ps-error-bg)",
+                    border: "1px solid rgba(240,68,56,0.25)",
+                  }}
+                >
                   <svg
-                    style={{ width: 40, height: 40, color: 'var(--ps-error)' }}
+                    style={{ width: 40, height: 40, color: "var(--ps-error)" }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

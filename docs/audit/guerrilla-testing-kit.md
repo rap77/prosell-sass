@@ -21,6 +21,7 @@
 **Instruction**: "Agrupa estas palabras en 3 categorías que para ti tengan sentido: **Gestión de autos**, **Ventas**, **Configuración**."
 
 **Expected**:
+
 - If they group "Autos/Vehículos/Inventario" together → terminology matches
 - If they reject "Inventario" → note their preference
 
@@ -32,7 +33,7 @@
 - [ ] "Subir autos"
 - [ ] "Cargar vehículos"
 - [ ] "Publicar autos"
-- [ ] Otro: ___________
+- [ ] Otro: ****\_\_\_****
 
 ### Question 3: Navigation (3 min)
 
@@ -62,10 +63,10 @@ Show mock (use paper or Figma):
 
 "¿Cuál de estas opciones te parece más clara?"
 
-| Option A | Option B |
-|----------|----------|
-| Inventario | Autos / Vehículos |
-| Ventas | Operaciones |
+| Option A      | Option B           |
+| ------------- | ------------------ |
+| Inventario    | Autos / Vehículos  |
+| Ventas        | Operaciones        |
 | Configuración | Ajustes / Settings |
 
 ### Question 5: Mental Model (3 min)
@@ -73,6 +74,7 @@ Show mock (use paper or Figma):
 "Describí cómo organizás tu trabajo hoy, desde que tenés un auto nuevo hasta que se vende."
 
 **Listen for**:
+
 - ¿Usan la palabra "inventario" espontáneamente?
 - ¿Hablan de "cargar", "publicar", "subir"?
 - ¿Mencionan "leads" o "interesados"?
@@ -82,14 +84,15 @@ Show mock (use paper or Figma):
 ## Decision Matrix
 
 | Seller | Prefiere "Inventario"? | Prefiere "Autos"? | Confundido? | Notes |
-|--------|------------------------|-------------------|-------------|-------|
-| 1 | | | | |
-| 2 | | | | |
-| 3 | | | | |
-| 4 | | | | |
-| 5 | | | | |
+| ------ | ---------------------- | ----------------- | ----------- | ----- |
+| 1      |                        |                   |             |       |
+| 2      |                        |                   |             |       |
+| 3      |                        |                   |             |       |
+| 4      |                        |                   |             |       |
+| 5      |                        |                   |             |       |
 
 **Go/No-Go Decision**:
+
 - If ≥4/5 prefer "Inventario" → **GO** (proceed with current terminology)
 - If ≥3/5 prefer "Autos/Vehículos" → **CHANGE** to "Autos"
 - If ≥2 confused → **REDESIGN** sidebar
@@ -101,14 +104,17 @@ Show mock (use paper or Figma):
 ### Current Risk: MEDIUM
 
 **Why**:
+
 - "Inventario" is standard B2B terminology (used by dealers daily)
 - But some sellers may prefer more colloquial "Autos"
 
 **Mitigation**:
+
 - If testing reveals preference for "Autos", Route Groups refactoring is ~2h work
 - Zustand stores use `inventoryStore` (internal), UI text is decoupled
 
 **Fallback**:
+
 - Phase 8 can use "Autos" in UI while keeping `inventoryStore` internally
 - No breaking changes to architecture
 
@@ -116,11 +122,11 @@ Show mock (use paper or Figma):
 
 ## Timeline
 
-| Day | Action |
-|-----|--------|
-| Today | Prepare script + recruit sellers |
-| Day 1-2 | Conduct 3-5 interviews |
-| Day 3 | Analyze results + decision |
-| Day 4 | Implement if change needed |
+| Day     | Action                           |
+| ------- | -------------------------------- |
+| Today   | Prepare script + recruit sellers |
+| Day 1-2 | Conduct 3-5 interviews           |
+| Day 3   | Analyze results + decision       |
+| Day 4   | Implement if change needed       |
 
 **Total**: 3-4 days (but only ~2-3 hours of active work)

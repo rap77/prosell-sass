@@ -15,7 +15,11 @@ describe("Next.js Configuration", () => {
   it("should have optimizePackageImports configured", async () => {
     const config = await import("../../../next.config");
     expect(config.default.experimental).toBeDefined();
-    expect(config.default.experimental?.optimizePackageImports).toContain("lucide-react");
-    expect(config.default.experimental?.optimizePackageImports).toContain("@/components/icons");
+    expect(config.default.experimental?.optimizePackageImports).toContain(
+      "lucide-react",
+    );
+    expect(config.default.experimental?.optimizePackageImports).toContain(
+      "@/components/icons",
+    );
   });
 });

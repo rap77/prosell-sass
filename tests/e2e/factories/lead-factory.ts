@@ -14,7 +14,7 @@
  * - vehicle: optional, nested object with vehicle data
  */
 
-import { BaseFactory } from './base-factory';
+import { BaseFactory } from "./base-factory";
 
 export interface LeadVehicle {
   id: string;
@@ -31,8 +31,8 @@ export interface LeadData {
   buyer_phone: string | null;
   vehicle: LeadVehicle | null;
   message: string | null;
-  status: 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
-  source: 'facebook' | 'website' | 'manual';
+  status: "new" | "contacted" | "qualified" | "lost" | "converted";
+  source: "facebook" | "website" | "manual";
   created_at: string;
   updated_at: string;
 }
@@ -43,9 +43,9 @@ export class LeadFactory extends BaseFactory<LeadData> {
    * Each call generates different ID, email, phone.
    */
   create(overrides?: Partial<LeadData>): LeadData {
-    const id = this.generateId('lead');
+    const id = this.generateId("lead");
     const buyerName = `Test Customer ${this.counter}`;
-    const buyerEmail = this.generateEmail('buyer');
+    const buyerEmail = this.generateEmail("buyer");
     const buyerPhone = this.generatePhone();
     const now = this.generateDateTime();
 
@@ -55,9 +55,9 @@ export class LeadFactory extends BaseFactory<LeadData> {
       buyer_email: buyerEmail,
       buyer_phone: buyerPhone,
       vehicle: null, // Default to null since vehicles table doesn't exist
-      message: 'Interested in this vehicle',
-      status: 'new',
-      source: 'facebook',
+      message: "Interested in this vehicle",
+      status: "new",
+      source: "facebook",
       created_at: now,
       updated_at: now,
       ...overrides,
@@ -70,18 +70,18 @@ export class LeadFactory extends BaseFactory<LeadData> {
    */
   createInvalid(): LeadData {
     return {
-      id: '', // Invalid: empty ID
-      buyer_name: '', // Invalid: empty name
-      buyer_email: 'invalid-email', // Invalid: bad email format
-      buyer_phone: 'not-a-phone', // Invalid: bad phone format
+      id: "", // Invalid: empty ID
+      buyer_name: "", // Invalid: empty name
+      buyer_email: "invalid-email", // Invalid: bad email format
+      buyer_phone: "not-a-phone", // Invalid: bad phone format
       vehicle: null,
-      message: 'x'.repeat(5001), // Invalid: exceeds 5000 char limit
+      message: "x".repeat(5001), // Invalid: exceeds 5000 char limit
       // @ts-expect-error intentionally invalid enum value for validation testing
-      status: 'invalid',
+      status: "invalid",
       // @ts-expect-error intentionally invalid enum value for validation testing
-      source: 'invalid',
-      created_at: 'not-a-date', // Invalid: bad datetime format
-      updated_at: 'not-a-date',
+      source: "invalid",
+      created_at: "not-a-date", // Invalid: bad datetime format
+      updated_at: "not-a-date",
     };
   }
 
@@ -90,7 +90,7 @@ export class LeadFactory extends BaseFactory<LeadData> {
    * Tests minimum/maximum values, special characters, etc.
    */
   createEdgeCase(): LeadData {
-    const id = this.generateId('lead');
+    const id = this.generateId("lead");
     const now = this.generateDateTime();
     const timestamp = Date.now().toString().slice(-6); // Last 6 digits for uniqueness
 
@@ -101,14 +101,14 @@ export class LeadFactory extends BaseFactory<LeadData> {
       buyer_phone: `+1 (555) ${timestamp.slice(-4)}`, // Phone with formatting + unique
       vehicle: {
         id: this.generateUUID(), // Generate valid UUID v4
-        title: ' vehicle '.repeat(50), // Very long title
-        make: 'ÆØÅ', // Special unicode chars
-        model: 'Model™ ©®', // Trademark symbols
+        title: " vehicle ".repeat(50), // Very long title
+        make: "ÆØÅ", // Special unicode chars
+        model: "Model™ ©®", // Trademark symbols
         year: new Date().getFullYear(), // Current year
       },
-      message: 'Test with emojis: 🚗 💨 \nNewlines and \t tabs', // Emojis and whitespace
-      status: 'new',
-      source: 'manual',
+      message: "Test with emojis: 🚗 💨 \nNewlines and \t tabs", // Emojis and whitespace
+      status: "new",
+      source: "manual",
       created_at: now,
       updated_at: now,
     };
@@ -136,8 +136,8 @@ export class LeadFactory extends BaseFactory<LeadData> {
    * Convenience method for status-based filtering tests.
    */
   createWithStatus(
-    status: LeadData['status'],
-    overrides?: Partial<LeadData>
+    status: LeadData["status"],
+    overrides?: Partial<LeadData>,
   ): LeadData {
     return this.create({ ...overrides, status });
   }
@@ -147,8 +147,8 @@ export class LeadFactory extends BaseFactory<LeadData> {
    * Convenience method for source-based filtering tests.
    */
   createWithSource(
-    source: LeadData['source'],
-    overrides?: Partial<LeadData>
+    source: LeadData["source"],
+    overrides?: Partial<LeadData>,
   ): LeadData {
     return this.create({ ...overrides, source });
   }
@@ -157,7 +157,10 @@ export class LeadFactory extends BaseFactory<LeadData> {
    * Create lead with vehicle data.
    * Convenience method for vehicle association tests.
    */
-  createWithVehicle(vehicle: LeadVehicle, overrides?: Partial<LeadData>): LeadData {
+  createWithVehicle(
+    vehicle: LeadVehicle,
+    overrides?: Partial<LeadData>,
+  ): LeadData {
     return this.create({ ...overrides, vehicle });
   }
 
@@ -188,7 +191,7 @@ export class LeadFactory extends BaseFactory<LeadData> {
       ...overrides,
       created_at: yesterday.toISOString(),
       updated_at: yesterday.toISOString(),
-      status: 'new',
+      status: "new",
     });
   }
 }

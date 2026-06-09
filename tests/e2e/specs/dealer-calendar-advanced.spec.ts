@@ -31,7 +31,7 @@ async function setDealerRoleCookie(page: Page) {
           role: "branch",
           name: "Test Branch",
           tenant_id: process.env.TEST_TENANT_ID || "default-tenant-id",
-        })
+        }),
       ),
       domain: "localhost",
       path: "/",
@@ -164,7 +164,12 @@ test.describe("Dealer Calendar - Advanced Interactions (B2.4)", () => {
               price_cents: 2000000,
               currency: "USD",
               status: "active",
-              attributes: { category: "vehicle", year: 2024, make: "Toyota", model: "Camry" },
+              attributes: {
+                category: "vehicle",
+                year: 2024,
+                make: "Toyota",
+                model: "Camry",
+              },
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             },
@@ -186,7 +191,12 @@ test.describe("Dealer Calendar - Advanced Interactions (B2.4)", () => {
               price_cents: 2200000,
               currency: "USD",
               status: "active",
-              attributes: { category: "vehicle", year: 2024, make: "Honda", model: "Accord" },
+              attributes: {
+                category: "vehicle",
+                year: 2024,
+                make: "Honda",
+                model: "Accord",
+              },
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             },
@@ -201,7 +211,10 @@ test.describe("Dealer Calendar - Advanced Interactions (B2.4)", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ lead: mockLeads[leadId ?? "lead-1"] ?? mockLeads["lead-1"], audit_logs: [] }),
+          body: JSON.stringify({
+            lead: mockLeads[leadId ?? "lead-1"] ?? mockLeads["lead-1"],
+            audit_logs: [],
+          }),
         });
       }
     });
@@ -211,7 +224,9 @@ test.describe("Dealer Calendar - Advanced Interactions (B2.4)", () => {
     await closeOpenDialogs(page);
   });
 
-  test("B2.4.n: should render calendar with interaction plugin loaded", async ({ page }) => {
+  test("B2.4.n: should render calendar with interaction plugin loaded", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("networkidle");
 
@@ -224,7 +239,9 @@ test.describe("Dealer Calendar - Advanced Interactions (B2.4)", () => {
     await expect(events.first()).toBeVisible({ timeout: 15000 });
   });
 
-  test("B2.4.n: should display appointments with color-coded status", async ({ page }) => {
+  test("B2.4.n: should display appointments with color-coded status", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("networkidle");
 
@@ -300,7 +317,9 @@ test.describe("Dealer Calendar - Advanced Interactions (B2.4)", () => {
     await expect(title).toBeVisible();
   });
 
-  test("B2.4.n: should handle appointment click for details", async ({ page }) => {
+  test("B2.4.n: should handle appointment click for details", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("networkidle");
 
@@ -312,17 +331,23 @@ test.describe("Dealer Calendar - Advanced Interactions (B2.4)", () => {
     await events.first().click();
 
     // Wait for modal to appear
-    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).toBeVisible({
+      timeout: 3000,
+    });
 
     // Verify buyer name is displayed
     await expect(page.locator("text=John Doe")).toBeVisible();
 
     // Close modal
     await page.keyboard.press("Escape");
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).not.toBeVisible({
+      timeout: 3000,
+    });
   });
 
-  test("B2.4.n: should switch between calendar views successfully", async ({ page }) => {
+  test("B2.4.n: should switch between calendar views successfully", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("networkidle");
 
@@ -374,12 +399,16 @@ test.describe("Dealer Calendar - Advanced Interactions (B2.4)", () => {
       await prevButton.dispatchEvent("click");
       await page.waitForTimeout(500);
 
-      const returnedPeriod = await page.locator(".fc-toolbar-title").textContent();
+      const returnedPeriod = await page
+        .locator(".fc-toolbar-title")
+        .textContent();
       expect(returnedPeriod).toBe(currentPeriod);
     }
   });
 
-  test("B2.4.n: should return to today when clicking today button", async ({ page }) => {
+  test("B2.4.n: should return to today when clicking today button", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("networkidle");
 
@@ -397,7 +426,9 @@ test.describe("Dealer Calendar - Advanced Interactions (B2.4)", () => {
       await page.waitForTimeout(300);
 
       // Verify calendar returned to today's period
-      const returnedTitle = await page.locator(".fc-toolbar-title").textContent();
+      const returnedTitle = await page
+        .locator(".fc-toolbar-title")
+        .textContent();
       expect(returnedTitle).toBe(todayTitle);
     }
   });
@@ -433,7 +464,9 @@ test.describe("Dealer Calendar - Advanced Interactions (B2.4)", () => {
     expect(dayCount).toBeGreaterThan(0);
   });
 
-  test("B2.4.n: should show now indicator in time grid views", async ({ page }) => {
+  test("B2.4.n: should show now indicator in time grid views", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("networkidle");
 
@@ -509,7 +542,12 @@ test.describe("Dealer Calendar - Interaction Plugin Features (B2.4)", () => {
             price_cents: 2000000,
             currency: "USD",
             status: "active",
-            attributes: { category: "vehicle", year: 2024, make: "Toyota", model: "Camry" },
+            attributes: {
+              category: "vehicle",
+              year: 2024,
+              make: "Toyota",
+              model: "Camry",
+            },
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
@@ -533,7 +571,9 @@ test.describe("Dealer Calendar - Interaction Plugin Features (B2.4)", () => {
     await closeOpenDialogs(page);
   });
 
-  test("B2.4.i-j: should have interaction plugin capabilities available", async ({ page }) => {
+  test("B2.4.i-j: should have interaction plugin capabilities available", async ({
+    page,
+  }) => {
     await page.goto("/branch/appointments");
     await page.waitForLoadState("networkidle");
 
@@ -563,7 +603,9 @@ test.describe("Dealer Calendar - Interaction Plugin Features (B2.4)", () => {
     await events.first().click();
 
     // Verify that the click triggered the modal (interaction plugin working)
-    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[role="dialog"]')).toBeVisible({
+      timeout: 3000,
+    });
 
     // Close modal
     await page.keyboard.press("Escape");

@@ -16,21 +16,11 @@
  * ```
  */
 
-export { BaseFactory } from './base-factory';
-export {
-  LeadFactory,
-  type LeadData,
-  type LeadVehicle,
-} from './lead-factory';
+export { BaseFactory } from "./base-factory";
+export { LeadFactory, type LeadData, type LeadVehicle } from "./lead-factory";
 export {
   AppointmentFactory,
   type AppointmentData,
-} from './appointment-factory';
-export {
-  VehicleFactory,
-  type VehicleData,
-} from './vehicle-factory';
-export {
-  CategoryFactory,
-  type CategoryData,
-} from './category-factory';
+} from "./appointment-factory";
+export { VehicleFactory, type VehicleData } from "./vehicle-factory";
+export { CategoryFactory, type CategoryData } from "./category-factory";

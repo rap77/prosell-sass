@@ -12,6 +12,7 @@
 Implement an automated web scraping system that detects changes daily on dealer websites, performs incremental scraping with deduplication, and uses AI agents for intelligent data extraction. This system eliminates manual inventory updates by automatically detecting new/sold vehicles on dealer websites.
 
 **Why this matters**: Without automated scraping, admins must manually check dealer websites daily and update inventory by hand. As the number of dealers grows, this becomes operationally impossible. The scraping system enables:
+
 - Daily automatic inventory sync from dealer websites
 - Detection of new vehicles listed for sale
 - Detection of sold vehicles (removed from website)
@@ -46,6 +47,7 @@ Implement an automated web scraping system that detects changes daily on dealer 
 **So that** inventory stays up-to-date without manual intervention
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Daily scraping job executes
   GIVEN a dealer has a website URL configured
@@ -68,6 +70,7 @@ Scenario: No changes detected
 **So that** scraping is fast and doesn't waste resources
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Incremental scraping skips unchanged pages
   GIVEN a page was scraped yesterday
@@ -91,6 +94,7 @@ Scenario: Incremental scraping processes changed pages
 **So that** we don't create duplicate inventory entries
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Duplicate detection by URL
   GIVEN a product with URL "site.com/toyota-corolla-123" exists
@@ -112,6 +116,7 @@ Scenario: Duplicate detection by content hash
 **So that** we can scrape any dealer website regardless of structure
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: AI extracts product from HTML
   GIVEN an HTML page contains vehicle information
@@ -134,6 +139,7 @@ Scenario: AI handles multiple page layouts
 **So that** dealer websites don't block our scraping
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Realistic browser behavior
   GIVEN the scraper visits a dealer website
@@ -184,14 +190,14 @@ Scenario: No bot detection
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|-----------|---------|-------|
-| Scraping | Playwright Python | Latest | Async browser automation |
-| Anti-Detection | playwright-extra-plugin-stealth | Latest | Bot detection avoidance |
-| AI Extraction | Rules-based (initially) → LLM (future) | - | OpenAI GPT-4 or Anthropic Claude |
-| Task Queue | Taskiq (from PRP 1) | Latest | Async job processing |
-| Deduplication | Content hashing (SHA256) | - | Python hashlib |
-| Change Detection | ETag/Last-Modified | - | HTTP headers |
+| Component        | Technology                             | Version | Notes                            |
+| ---------------- | -------------------------------------- | ------- | -------------------------------- |
+| Scraping         | Playwright Python                      | Latest  | Async browser automation         |
+| Anti-Detection   | playwright-extra-plugin-stealth        | Latest  | Bot detection avoidance          |
+| AI Extraction    | Rules-based (initially) → LLM (future) | -       | OpenAI GPT-4 or Anthropic Claude |
+| Task Queue       | Taskiq (from PRP 1)                    | Latest  | Async job processing             |
+| Deduplication    | Content hashing (SHA256)               | -       | Python hashlib                   |
+| Change Detection | ETag/Last-Modified                     | -       | HTTP headers                     |
 
 ### 3.2 Key Libraries
 
@@ -213,15 +219,18 @@ playwright install chromium
 ### 3.3 External Documentation
 
 **Playwright Python**:
+
 - Docs: https://playwright.dev/python/docs/api/class-playwright
 - Async API: https://playwright.dev/python/docs/api/class-playwrightasync
 - Launch Options: https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch
 
 **Anti-Detection**:
+
 - playwright-extra: https://github.com/berstend/puppeteer-extra/tree/master/packages/playwright-extra
 - Stealth Plugin: https://github.com/berstend/puppeteer-extra/tree/master/packages/puppeteer-extra-plugin-stealth
 
 **Web Scraping Best Practices**:
+
 - robots.txt: https://developers.google.com/search/docs/crawling-indexing/robots-txt
 - Rate Limiting: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After
 
@@ -259,6 +268,7 @@ flowchart TD
 **Objective**: Validate Playwright works with anti-detection and AI extraction
 
 **Tasks**:
+
 1. Create minimal Playwright scraper with stealth plugin
 2. Test on sample dealer website (user-provided URL)
 3. Verify anti-detection measures (no bot detection)
@@ -268,6 +278,7 @@ flowchart TD
 7. Test deduplication logic
 
 **Success Criteria**:
+
 - ✅ Playwright launches with stealth plugin (no detection)
 - ✅ Scraper extracts at least 1 product from test site
 - ✅ ETag detection skips unchanged pages
@@ -281,6 +292,7 @@ flowchart TD
 #### Step 1: Domain Layer - Scraping Entities
 
 **Files to create**:
+
 - `apps/api/src/prosell/domain/entities/scraping_session.py` - Scraping session entity
 - `apps/api/src/prosell/domain/value_objects/scraped_product.py` - Scraped product value object
 - `apps/api/src/prosell/domain/events/product_events.py` - Product change events
@@ -458,6 +470,7 @@ class AbstractScraper(Protocol):
 ```
 
 **Gotchas**:
+
 - ScrapingSession is immutable after completion (no updates)
 - ScrapedProduct is a Value Object (frozen dataclass)
 - All scraping logic lives in infrastructure, domain only defines interfaces
@@ -465,6 +478,7 @@ class AbstractScraper(Protocol):
 #### Step 2: Infrastructure Layer - Playwright Scraper
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/scraping/__init__.py` - Package init
 - `apps/api/src/prosell/infrastructure/scraping/playwright_scraper.py` - Playwright scraper implementation
 - `apps/api/src/prosell/infrastructure/scraping/anti_detection.py` - Anti-detection config
@@ -749,6 +763,7 @@ class ChangeDetector:
 ```
 
 **Gotchas**:
+
 - Playwright must be installed with `playwright install chromium`
 - Anti-detection is never 100% effective - monitor for blocks
 - Use `wait_until="domcontentloaded"` not `networkidle` (faster)
@@ -757,6 +772,7 @@ class ChangeDetector:
 #### Step 3: Infrastructure Layer - AI Extractor
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/scraping/ai_extractor.py` - AI extraction service
 - `apps/api/src/prosell/infrastructure/scraping/rules/vehicle_extractor.py` - Vehicle-specific rules
 
@@ -996,6 +1012,7 @@ class VehicleExtractor(BaseExtractor):
 ```
 
 **Gotchas**:
+
 - Rules-based extraction is fragile - add unit tests for each pattern
 - LLM extraction (future) is more robust but slower/more expensive
 - Always compute content hash for deduplication
@@ -1003,6 +1020,7 @@ class VehicleExtractor(BaseExtractor):
 #### Step 4: Application Layer - Scraping Use Cases
 
 **Files to create**:
+
 - `apps/api/src/prosell/application/use_cases/scraping/scrape_dealer_website.py` - Main use case
 - `apps/api/src/prosell/application/use_cases/scraping/detect_changes.py` - Change detection use case
 - `apps/api/src/prosell/application/dto/scraping/*.py` - DTOs
@@ -1096,6 +1114,7 @@ class ScrapeDealerWebsiteUseCase:
 #### Step 5: Task Queue Integration
 
 **Files to create**:
+
 - `apps/api/src/prosell/infrastructure/tasks/scraping_tasks.py` - Scraping tasks
 
 **Implementation notes**:
@@ -1142,6 +1161,7 @@ async def scrape_dealer_website_task(dealer_id: str, website_url: str) -> dict:
 #### Step 6: Scheduled Task (Cron)
 
 **Files to modify**:
+
 - `apps/api/src/prosell/infrastructure/tasks/scheduled_tasks.py` - Create or modify
 
 **Implementation notes**:
@@ -1297,12 +1317,14 @@ cd apps/api && uv run pytest tests/integration/scraping/ -v
 ### 7.1 Unit Tests
 
 **Scraper Tests**:
+
 - Test `ChangeDetector.has_changed()` with mock ETag
 - Test `VehicleExtractor` with sample HTML
 - Test content hash computation
 - Test deduplication logic
 
 **Use Case Tests**:
+
 - Test `ScrapeDealerWebsiteUseCase` with mocked scraper
 - Test session state transitions (PENDING → RUNNING → COMPLETED)
 - Test error handling (FAILED status)
@@ -1310,17 +1332,20 @@ cd apps/api && uv run pytest tests/integration/scraping/ -v
 ### 7.2 Integration Tests
 
 **Playwright Integration**:
+
 - Test Playwright launches correctly
 - Test anti-detection context configuration
 - Test scraper extracts from test HTML file
 
 **Repository Tests**:
+
 - Test ScrapingSession CRUD
 - Test session metrics updates
 
 ### 7.3 E2E Tests
 
 **Critical Path**:
+
 ```gherkin
 Scenario: Daily scraping job completes
   GIVEN the scheduler triggers at 9 AM
@@ -1345,6 +1370,7 @@ Scenario: Daily scraping job completes
 **Problem**: Dealer websites block scraping attempts.
 
 **Solution**: Use comprehensive anti-detection:
+
 - playwright-extra-plugin-stealth
 - Realistic User-Agent rotation
 - Random delays (2-5 seconds)
@@ -1356,6 +1382,7 @@ Scenario: Daily scraping job completes
 **Problem**: Rules-based extraction breaks when site changes.
 
 **Solution**:
+
 - Add unit tests for each site pattern
 - Monitor extraction accuracy
 - Fallback to LLM extraction (future spike)
@@ -1366,6 +1393,7 @@ Scenario: Daily scraping job completes
 **Problem**: Same product appears multiple times.
 
 **Solution**:
+
 - Always compute content hash (title + price + year)
 - Check by URL first (exact match)
 - Check by hash second (similar match)
@@ -1376,6 +1404,7 @@ Scenario: Daily scraping job completes
 **Problem**: Scraping too fast triggers IP bans.
 
 **Solution**:
+
 - Respect robots.txt
 - Add delays between requests (2-5 seconds)
 - Use exponential backoff on 429 errors
@@ -1393,6 +1422,7 @@ If implementation fails:
 4. **Performance issues**: Limit concurrent scraping jobs, add caching
 
 **Rollback steps**:
+
 1. Stop scheduled scraping job
 2. Revert this PRP's commits
 3. Keep ScrapingSession entity (can be reused)
@@ -1424,7 +1454,6 @@ If implementation fails:
 20. ✅ Merge to main
 
 ---
-
 
 ---
 
@@ -1487,7 +1516,6 @@ grep -q "^## 11. Completion Gates" {prp_file}
 - [ ] Code review completado
 - [ ] E2E tests pasan (si aplica)
 
-
 ## Confidence Score
 
 **Score**: 7/10
@@ -1495,6 +1523,7 @@ grep -q "^## 11. Completion Gates" {prp_file}
 **Reasoning**:
 
 **Positive factors**:
+
 - Playwright is mature and well-documented
 - Anti-detection techniques are well-known
 - Rules-based extraction is straightforward for common patterns
@@ -1502,6 +1531,7 @@ grep -q "^## 11. Completion Gates" {prp_file}
 - Task Queue from PRP 1 enables async processing
 
 **Risk factors**:
+
 - Spike required to validate anti-detection effectiveness
 - Rules-based extraction may be fragile for diverse sites
 - LLM extraction adds latency and cost (future spike)
@@ -1517,6 +1547,7 @@ grep -q "^## 11. Completion Gates" {prp_file}
 **Objective**: Validate Playwright works with anti-detection and extraction
 
 **Tasks**:
+
 1. Install Playwright + chromium
 2. Create minimal scraper with stealth plugin
 3. Scrape sample dealer website (URL from user)
@@ -1527,6 +1558,7 @@ grep -q "^## 11. Completion Gates" {prp_file}
 8. Benchmark scraping performance
 
 **Success Criteria**:
+
 - ✅ Scraper extracts ≥ 3 products from test site
 - ✅ No bot detection triggered
 - ✅ ETag detection skips unchanged pages
@@ -1544,11 +1576,13 @@ grep -q "^## 11. Completion Gates" {prp_file}
 **Objective**: Validate LLM extraction for complex/unstructured sites
 
 **Options**:
+
 1. OpenAI GPT-4 Turbo (vision + text)
 2. Anthropic Claude 3 Sonnet (long context)
 3. Fine-tuned model for vehicle data
 
 **Tasks**:
+
 1. Test GPT-4 with HTML → JSON extraction
 2. Test accuracy across 10 diverse dealer sites
 3. Benchmark cost per 1000 pages
@@ -1556,6 +1590,7 @@ grep -q "^## 11. Completion Gates" {prp_file}
 5. Compare with rules-based accuracy
 
 **Success Criteria**:
+
 - ✅ Accuracy > 90% on diverse sites
 - ✅ Latency < 5 seconds per page
 - ✅ Cost < $0.10 per page

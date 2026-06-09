@@ -13,7 +13,15 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { teamApi, ApiError, Team, CreateTeamRequest, UpdateTeamRequest, TeamMember, AddTeamMemberRequest } from "@/lib/api/teamApi";
+import {
+  teamApi,
+  ApiError,
+  Team,
+  CreateTeamRequest,
+  UpdateTeamRequest,
+  TeamMember,
+  AddTeamMemberRequest,
+} from "@/lib/api/teamApi";
 import { logger } from "@/lib/logger";
 
 // ============================================
@@ -54,7 +62,10 @@ export interface TeamState {
   fetchTeamById: (teamId: string, tenantId: string) => Promise<void>;
   createTeam: (data: CreateTeamRequest) => Promise<Team>;
   updateTeam: (teamId: string, data: UpdateTeamRequest) => Promise<void>;
-  addMember: (teamId: string, data: Omit<AddTeamMemberRequest, "team_id">) => Promise<void>;
+  addMember: (
+    teamId: string,
+    data: Omit<AddTeamMemberRequest, "team_id">,
+  ) => Promise<void>;
   setCurrentTeam: (team: Team | null) => void;
   clearError: () => void;
   reset: () => void;
@@ -188,9 +199,7 @@ export const useTeamStore = create<TeamState>()(
           const { teams, currentTeam } = get();
 
           set({
-            teams: teams.map((t) =>
-              t.id === teamId ? updated : t,
-            ),
+            teams: teams.map((t) => (t.id === teamId ? updated : t)),
             currentTeam: currentTeam?.id === teamId ? updated : currentTeam,
             isLoading: false,
           });

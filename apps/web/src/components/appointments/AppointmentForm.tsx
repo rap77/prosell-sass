@@ -62,7 +62,7 @@ const FORM_STYLES = `
   .ps-apt-textarea {
     resize: none;
   }
-`
+`;
 
 // ============================================
 // HELPERS
@@ -190,7 +190,9 @@ export function AppointmentForm({
       if (status === 409) {
         setSubmitError({
           type: "conflict",
-          message: appointmentError.message || "Esta sucursal ya tiene un turno en ese horario.",
+          message:
+            appointmentError.message ||
+            "Esta sucursal ya tiene un turno en ese horario.",
         });
       } else if (status === 400) {
         setSubmitError({
@@ -208,9 +210,16 @@ export function AppointmentForm({
 
   // Horarios disponibles (días hábiles: 9:00–18:00)
   const timeSlots = [
-    "09:00", "10:00", "11:00", "12:00",
-    "13:00", "14:00", "15:00", "16:00",
-    "17:00", "18:00",
+    "09:00",
+    "10:00",
+    "11:00",
+    "12:00",
+    "13:00",
+    "14:00",
+    "15:00",
+    "16:00",
+    "17:00",
+    "18:00",
   ];
 
   const watchedUserId = useWatch({ control, name: "user_id" });
@@ -220,24 +229,24 @@ export function AppointmentForm({
   const today = format(new Date(), "yyyy-MM-dd");
 
   const labelStyle: React.CSSProperties = {
-    display: 'block',
+    display: "block",
     fontSize: 13,
     fontWeight: 500,
-    color: 'var(--ps-text-primary)',
+    color: "var(--ps-text-primary)",
     marginBottom: 6,
-  }
+  };
 
   const errorStyle: React.CSSProperties = {
-    margin: '4px 0 0',
+    margin: "4px 0 0",
     fontSize: 11,
-    color: 'var(--ps-error)',
-  }
+    color: "var(--ps-error)",
+  };
 
   const hintStyle: React.CSSProperties = {
-    margin: '4px 0 0',
+    margin: "4px 0 0",
     fontSize: 11,
-    color: 'var(--ps-text-disabled)',
-  }
+    color: "var(--ps-text-disabled)",
+  };
 
   if (!open) return null;
 
@@ -249,10 +258,10 @@ export function AppointmentForm({
       <div
         onClick={onClose}
         style={{
-          position: 'fixed',
+          position: "fixed",
           inset: 0,
-          background: 'rgba(0,0,0,0.55)',
-          backdropFilter: 'blur(4px)',
+          background: "rgba(0,0,0,0.55)",
+          backdropFilter: "blur(4px)",
           zIndex: 40,
         }}
       />
@@ -264,37 +273,53 @@ export function AppointmentForm({
         aria-label="Agendar turno"
         onClick={(e) => e.stopPropagation()}
         style={{
-          position: 'fixed',
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '100%',
+          position: "fixed",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "100%",
           maxWidth: 500,
-          background: 'var(--ps-bg-surface)',
-          border: '1px solid var(--ps-border-default)',
+          background: "var(--ps-bg-surface)",
+          border: "1px solid var(--ps-border-default)",
           borderRadius: 14,
-          boxShadow: '0 24px 48px rgba(6,13,36,0.4)',
+          boxShadow: "0 24px 48px rgba(6,13,36,0.4)",
           zIndex: 50,
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
         {/* Header */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 24px',
-          borderBottom: '1px solid var(--ps-border-default)',
-          flexShrink: 0,
-        }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 24px",
+            borderBottom: "1px solid var(--ps-border-default)",
+            flexShrink: 0,
+          }}
+        >
           <div>
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--ps-text-primary)', letterSpacing: '-0.01em' }}>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 16,
+                fontWeight: 700,
+                color: "var(--ps-text-primary)",
+                letterSpacing: "-0.01em",
+              }}
+            >
               Agendar turno
             </h2>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--ps-text-secondary)' }}>
+            <p
+              style={{
+                margin: "2px 0 0",
+                fontSize: 12,
+                color: "var(--ps-text-secondary)",
+              }}
+            >
               Seleccioná una sucursal y el horario preferido.
             </p>
           </div>
@@ -303,16 +328,16 @@ export function AppointmentForm({
             onClick={onClose}
             aria-label="Cerrar"
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
               width: 32,
               height: 32,
               borderRadius: 8,
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--ps-text-secondary)',
-              cursor: 'pointer',
+              border: "none",
+              background: "transparent",
+              color: "var(--ps-text-secondary)",
+              cursor: "pointer",
             }}
           >
             <X size={18} strokeWidth={2} />
@@ -320,41 +345,78 @@ export function AppointmentForm({
         </div>
 
         {/* Content */}
-        <div style={{ overflowY: 'auto', padding: '20px 24px', flex: 1 }}>
-
+        <div style={{ overflowY: "auto", padding: "20px 24px", flex: 1 }}>
           {/* A4.33: Banner de error */}
           {submitError && (
             <div
               data-testid="appointment-error-banner"
               style={{
-                display: 'flex',
-                alignItems: 'flex-start',
+                display: "flex",
+                alignItems: "flex-start",
                 gap: 12,
                 padding: 14,
                 borderRadius: 10,
                 marginBottom: 16,
-                border: `1px solid ${submitError.type === "conflict" ? 'var(--ps-error)' : 'var(--ps-warning)'}`,
-                background: submitError.type === "conflict" ? 'var(--ps-error-bg)' : 'var(--ps-warning-bg)',
+                border: `1px solid ${submitError.type === "conflict" ? "var(--ps-error)" : "var(--ps-warning)"}`,
+                background:
+                  submitError.type === "conflict"
+                    ? "var(--ps-error-bg)"
+                    : "var(--ps-warning-bg)",
               }}
             >
               {submitError.type === "conflict" ? (
-                <AlertCircle size={16} strokeWidth={2} style={{ color: 'var(--ps-error)', flexShrink: 0, marginTop: 1 }} />
+                <AlertCircle
+                  size={16}
+                  strokeWidth={2}
+                  style={{
+                    color: "var(--ps-error)",
+                    flexShrink: 0,
+                    marginTop: 1,
+                  }}
+                />
               ) : (
-                <AlertTriangle size={16} strokeWidth={2} style={{ color: 'var(--ps-warning)', flexShrink: 0, marginTop: 1 }} />
+                <AlertTriangle
+                  size={16}
+                  strokeWidth={2}
+                  style={{
+                    color: "var(--ps-warning)",
+                    flexShrink: 0,
+                    marginTop: 1,
+                  }}
+                />
               )}
               <div style={{ flex: 1 }}>
-                <p style={{
-                  margin: 0,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: submitError.type === "conflict" ? 'var(--ps-error)' : 'var(--ps-warning)',
-                }}>
-                  {submitError.type === "conflict" ? "Conflicto de horario" : "Error de validación"}
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color:
+                      submitError.type === "conflict"
+                        ? "var(--ps-error)"
+                        : "var(--ps-warning)",
+                  }}
+                >
+                  {submitError.type === "conflict"
+                    ? "Conflicto de horario"
+                    : "Error de validación"}
                 </p>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ps-text-secondary)' }}>
+                <p
+                  style={{
+                    margin: "4px 0 0",
+                    fontSize: 12,
+                    color: "var(--ps-text-secondary)",
+                  }}
+                >
                   {submitError.message}
                 </p>
-                <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--ps-text-disabled)' }}>
+                <p
+                  style={{
+                    margin: "4px 0 0",
+                    fontSize: 11,
+                    color: "var(--ps-text-disabled)",
+                  }}
+                >
                   {submitError.type === "conflict"
                     ? "Elegí un horario o sucursal diferente."
                     : "Elegí un día hábil dentro del horario de atención (9:00 – 18:00)."}
@@ -364,10 +426,10 @@ export function AppointmentForm({
                 type="button"
                 onClick={() => setSubmitError(null)}
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--ps-text-secondary)',
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--ps-text-secondary)",
                   padding: 2,
                   lineHeight: 1,
                 }}
@@ -380,12 +442,12 @@ export function AppointmentForm({
           <form
             onSubmit={handleSubmit(onSubmit)}
             id="appointment-form"
-            style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+            style={{ display: "flex", flexDirection: "column", gap: 16 }}
           >
             {/* Sucursal */}
             <div>
               <label htmlFor="user_id" style={labelStyle}>
-                Sucursal <span style={{ color: 'var(--ps-error)' }}>*</span>
+                Sucursal <span style={{ color: "var(--ps-error)" }}>*</span>
               </label>
               <select
                 id="user_id"
@@ -409,25 +471,23 @@ export function AppointmentForm({
             {/* Fecha */}
             <div>
               <label htmlFor="date" style={labelStyle}>
-                Fecha <span style={{ color: 'var(--ps-error)' }}>*</span>
+                Fecha <span style={{ color: "var(--ps-error)" }}>*</span>
               </label>
               <input
                 id="date"
                 type="date"
                 min={today}
                 {...register("date")}
-                className={`ps-apt-input${errors.date ? ' ps-apt-input--error' : ''}`}
+                className={`ps-apt-input${errors.date ? " ps-apt-input--error" : ""}`}
               />
               <p style={hintStyle}>Sólo días hábiles: lunes a viernes</p>
-              {errors.date && (
-                <p style={errorStyle}>{errors.date.message}</p>
-              )}
+              {errors.date && <p style={errorStyle}>{errors.date.message}</p>}
             </div>
 
             {/* Horario */}
             <div>
               <label htmlFor="time" style={labelStyle}>
-                Horario <span style={{ color: 'var(--ps-error)' }}>*</span>
+                Horario <span style={{ color: "var(--ps-error)" }}>*</span>
               </label>
               <select
                 id="time"
@@ -437,18 +497,20 @@ export function AppointmentForm({
               >
                 <option value="">Seleccioná un horario</option>
                 {timeSlots.map((time) => (
-                  <option key={time} value={time}>{time}</option>
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
                 ))}
               </select>
               <p style={hintStyle}>Horario de atención: 9:00 – 18:00</p>
-              {errors.time && (
-                <p style={errorStyle}>{errors.time.message}</p>
-              )}
+              {errors.time && <p style={errorStyle}>{errors.time.message}</p>}
             </div>
 
             {/* Notas */}
             <div>
-              <label htmlFor="notes" style={labelStyle}>Notas</label>
+              <label htmlFor="notes" style={labelStyle}>
+                Notas
+              </label>
               <textarea
                 id="notes"
                 placeholder="Agregar notas adicionales..."
@@ -461,29 +523,31 @@ export function AppointmentForm({
         </div>
 
         {/* Footer */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          gap: 10,
-          padding: '14px 24px',
-          borderTop: '1px solid var(--ps-border-default)',
-          flexShrink: 0,
-        }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: 10,
+            padding: "14px 24px",
+            borderTop: "1px solid var(--ps-border-default)",
+            flexShrink: 0,
+          }}
+        >
           <button
             type="button"
             onClick={onClose}
             disabled={isCreating}
             style={{
               height: 38,
-              padding: '0 16px',
+              padding: "0 16px",
               borderRadius: 8,
-              background: 'var(--ps-bg-elevated)',
-              border: '1px solid var(--ps-border-default)',
-              color: 'var(--ps-text-secondary)',
+              background: "var(--ps-bg-elevated)",
+              border: "1px solid var(--ps-border-default)",
+              color: "var(--ps-text-secondary)",
               fontSize: 13,
               fontWeight: 500,
-              cursor: 'pointer',
+              cursor: "pointer",
               opacity: isCreating ? 0.5 : 1,
             }}
           >
@@ -494,18 +558,18 @@ export function AppointmentForm({
             form="appointment-form"
             disabled={isCreating}
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
+              display: "inline-flex",
+              alignItems: "center",
               gap: 8,
               height: 38,
-              padding: '0 18px',
+              padding: "0 18px",
               borderRadius: 8,
-              background: 'var(--ps-cyan)',
-              border: 'none',
-              color: 'var(--ps-bg-base)',
+              background: "var(--ps-cyan)",
+              border: "none",
+              color: "var(--ps-bg-base)",
               fontSize: 13,
               fontWeight: 700,
-              cursor: 'pointer',
+              cursor: "pointer",
               opacity: isCreating ? 0.7 : 1,
             }}
           >
@@ -513,7 +577,7 @@ export function AppointmentForm({
               <Loader2
                 size={14}
                 strokeWidth={2}
-                style={{ animation: 'spin 0.8s linear infinite' }}
+                style={{ animation: "spin 0.8s linear infinite" }}
               />
             )}
             Agendar

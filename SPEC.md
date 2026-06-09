@@ -14,16 +14,16 @@ Cerrar los 8 gaps de UX identificados en el codebase de ProSell SaaS para comple
 
 ## Stack
 
-| Capa | Tecnología |
-|------|------------|
-| Frontend | Next.js 16 App Router + React 19 + TypeScript strict |
-| Styling | TailwindCSS 4 (sin `var()` en className, usar `cn()`) |
-| Estado servidor | TanStack Query v5 (`useQuery`, `useMutation`) |
-| Estado cliente | Zustand 5 |
-| Formularios | React Hook Form + Zod |
-| Backend | FastAPI Python 3.13 + Clean Architecture |
-| ORM | SQLAlchemy 2.0 async (`Mapped[]`, `mapped_column`) |
-| Auth | JWT en httpOnly cookies, middleware Next.js |
+| Capa            | Tecnología                                            |
+| --------------- | ----------------------------------------------------- |
+| Frontend        | Next.js 16 App Router + React 19 + TypeScript strict  |
+| Styling         | TailwindCSS 4 (sin `var()` en className, usar `cn()`) |
+| Estado servidor | TanStack Query v5 (`useQuery`, `useMutation`)         |
+| Estado cliente  | Zustand 5                                             |
+| Formularios     | React Hook Form + Zod                                 |
+| Backend         | FastAPI Python 3.13 + Clean Architecture              |
+| ORM             | SQLAlchemy 2.0 async (`Mapped[]`, `mapped_column`)    |
+| Auth            | JWT en httpOnly cookies, middleware Next.js           |
 
 ---
 

@@ -9,15 +9,15 @@
 
 ## 📊 Status Summary
 
-| Layer                        | Status      | Progress     | Notes                                       |
-| ---------------------------- | ----------- | ------------ | ------------------------------------------- |
-| **Domain**                   | ⏳ Pending   | 0/6 (0%)     | Organization, Team, Wallet entities + VOs   |
-| **Application**              | ⏳ Pending   | 0/8 (0%)     | 8 use cases + DTOs + Ports                  |
-| **Infrastructure**           | ⏳ Pending   | 0/6 (0%)     | 3 models + 3 repos + DO Spaces service      |
-| **API**                      | ⏳ Pending   | 0/3 (0%)     | org_router, team_router, wallet_router       |
-| **Frontend**                 | ⏳ Pending   | 0/7 (0%)     | CRUD UI + DO Spaces upload                  |
-| **Testing (Backend)**        | ⏳ Pending   | 0/0          | Unit + integration tests                    |
-| **Testing (Frontend)**       | ⏳ Pending   | 0/0          | Component + E2E tests                       |
+| Layer                  | Status     | Progress | Notes                                     |
+| ---------------------- | ---------- | -------- | ----------------------------------------- |
+| **Domain**             | ⏳ Pending | 0/6 (0%) | Organization, Team, Wallet entities + VOs |
+| **Application**        | ⏳ Pending | 0/8 (0%) | 8 use cases + DTOs + Ports                |
+| **Infrastructure**     | ⏳ Pending | 0/6 (0%) | 3 models + 3 repos + DO Spaces service    |
+| **API**                | ⏳ Pending | 0/3 (0%) | org_router, team_router, wallet_router    |
+| **Frontend**           | ⏳ Pending | 0/7 (0%) | CRUD UI + DO Spaces upload                |
+| **Testing (Backend)**  | ⏳ Pending | 0/0      | Unit + integration tests                  |
+| **Testing (Frontend)** | ⏳ Pending | 0/0      | Component + E2E tests                     |
 
 **Overall**: 0/30 primary tasks pending (0%)
 
@@ -125,27 +125,27 @@ Scenario: Recharge wallet via Stripe
 
 ### 2.2 Functional Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-001 | Multi-tenant isolation (tenant_id on all entities) | P0 |
-| FR-002 | Organization CRUD with verification workflow | P0 |
-| FR-003 | Logo/banner upload to DO Spaces with optimization | P0 |
-| FR-004 | Team hierarchy (Manager → Vendors, max 3 levels) | P0 |
-| FR-005 | Wallet with token balance and transaction log | P0 |
-| FR-006 | Stripe integration for wallet recharge | P0 |
-| FR-007 | Permission-based access control per organization | P0 |
-| FR-008 | Commission tracking between managers and vendors | P1 |
+| ID     | Requirement                                        | Priority |
+| ------ | -------------------------------------------------- | -------- |
+| FR-001 | Multi-tenant isolation (tenant_id on all entities) | P0       |
+| FR-002 | Organization CRUD with verification workflow       | P0       |
+| FR-003 | Logo/banner upload to DO Spaces with optimization  | P0       |
+| FR-004 | Team hierarchy (Manager → Vendors, max 3 levels)   | P0       |
+| FR-005 | Wallet with token balance and transaction log      | P0       |
+| FR-006 | Stripe integration for wallet recharge             | P0       |
+| FR-007 | Permission-based access control per organization   | P0       |
+| FR-008 | Commission tracking between managers and vendors   | P1       |
 
 ### 2.3 Non-Functional Requirements
 
-| Category | Requirement | Target |
-|----------|-------------|--------|
-| **Performance** | Organization API response time | < 200ms p95 |
-| **Performance** | Image upload processing | < 3s |
-| **Security** | Tenant isolation enforcement | 100% (no data leaks) |
-| **Security** | DO Spaces signed URLs | Expire in 1h |
-| **Scalability** | Support 10,000+ organizations | Horizontal scaling ready |
-| **Availability** | Wallet transaction atomicity | ACID compliant |
+| Category         | Requirement                    | Target                   |
+| ---------------- | ------------------------------ | ------------------------ |
+| **Performance**  | Organization API response time | < 200ms p95              |
+| **Performance**  | Image upload processing        | < 3s                     |
+| **Security**     | Tenant isolation enforcement   | 100% (no data leaks)     |
+| **Security**     | DO Spaces signed URLs          | Expire in 1h             |
+| **Scalability**  | Support 10,000+ organizations  | Horizontal scaling ready |
+| **Availability** | Wallet transaction atomicity   | ACID compliant           |
 
 ---
 
@@ -153,20 +153,20 @@ Scenario: Recharge wallet via Stripe
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Critical Notes |
-|-----------|-----------|---------|----------------|
-| Backend | Python | 3.13+ | Free-threading enabled |
-| Backend | FastAPI | 0.115+ | Async routes, dependency injection |
-| Validation | Pydantic | 2.12+ | `model_validate()` not `parse_obj()` |
-| ORM | SQLAlchemy | 2.0.36+ | Use `Mapped[]`, `mapped_column()`, `select()` |
-| Database | PostgreSQL | 17 | asyncpg driver for async |
-| Cache | Redis | 7.4+ | Session storage, rate limiting |
-| Storage | DigitalOcean Spaces | S3 API | boto3 + presigned URLs |
-| Payments | Stripe | 7.x | Webhook signature verification |
-| Frontend | Next.js | 16.1+ | Turbopack, App Router |
-| Frontend | React | 19.2 | Server Components by default |
-| State | Zustand | 5.x | New store syntax |
-| Forms | React Hook Form + Zod | 3.x | Type-safe forms |
+| Component  | Technology            | Version | Critical Notes                                |
+| ---------- | --------------------- | ------- | --------------------------------------------- |
+| Backend    | Python                | 3.13+   | Free-threading enabled                        |
+| Backend    | FastAPI               | 0.115+  | Async routes, dependency injection            |
+| Validation | Pydantic              | 2.12+   | `model_validate()` not `parse_obj()`          |
+| ORM        | SQLAlchemy            | 2.0.36+ | Use `Mapped[]`, `mapped_column()`, `select()` |
+| Database   | PostgreSQL            | 17      | asyncpg driver for async                      |
+| Cache      | Redis                 | 7.4+    | Session storage, rate limiting                |
+| Storage    | DigitalOcean Spaces   | S3 API  | boto3 + presigned URLs                        |
+| Payments   | Stripe                | 7.x     | Webhook signature verification                |
+| Frontend   | Next.js               | 16.1+   | Turbopack, App Router                         |
+| Frontend   | React                 | 19.2    | Server Components by default                  |
+| State      | Zustand               | 5.x     | New store syntax                              |
+| Forms      | React Hook Form + Zod | 3.x     | Type-safe forms                               |
 
 ### 3.2 Key Libraries
 
@@ -202,14 +202,14 @@ alembic = "^1.13.0"  # Migrations
 
 ### 3.3 External Documentation
 
-| Topic | URL | Notes |
-|-------|-----|-------|
-| SQLAlchemy 2.0 | https://docs.sqlalchemy.org/en/20/changelog/migration_20.html | Mapped[], mapped_column, select() |
-| FastAPI | https://fastapi.tiangolo.com/tutorial/dependencies/ | Dependencies for auth |
-| DO Spaces (boto3) | https://boto3.amazonaws.com/v1/documentation/api/latest/guide/s3-example-presigned-urls.html | Upload with signed URLs |
-| Stripe | https://stripe.com/docs/api/payment_intents | Payment flow |
-| Pillow | https://pillow.readthedocs.io/en/stable/reference/Image.html | Image processing |
-| Uppy (React) | https://uppy.io/docs/react/ | File upload component |
+| Topic             | URL                                                                                          | Notes                             |
+| ----------------- | -------------------------------------------------------------------------------------------- | --------------------------------- |
+| SQLAlchemy 2.0    | https://docs.sqlalchemy.org/en/20/changelog/migration_20.html                                | Mapped[], mapped_column, select() |
+| FastAPI           | https://fastapi.tiangolo.com/tutorial/dependencies/                                          | Dependencies for auth             |
+| DO Spaces (boto3) | https://boto3.amazonaws.com/v1/documentation/api/latest/guide/s3-example-presigned-urls.html | Upload with signed URLs           |
+| Stripe            | https://stripe.com/docs/api/payment_intents                                                  | Payment flow                      |
+| Pillow            | https://pillow.readthedocs.io/en/stable/reference/Image.html                                 | Image processing                  |
+| Uppy (React)      | https://uppy.io/docs/react/                                                                  | File upload component             |
 
 ---
 
@@ -298,16 +298,16 @@ class OrganizationRepository(AbstractOrganizationRepository):
 
 **Files to create**:
 
-| File | Purpose |
-|------|---------|
-| `domain/entities/organization.py` | Organization entity with verification status |
-| `domain/entities/team.py` | Team, TeamMember entities for hierarchy |
-| `domain/entities/wallet.py` | Wallet, WalletTransaction entities |
-| `domain/value_objects/organization_status.py` | Enum: PENDING, ACTIVE, SUSPENDED |
-| `domain/repositories/organization_repository.py` | AbstractOrganizationRepository interface |
-| `domain/repositories/team_repository.py` | AbstractTeamRepository interface |
-| `domain/repositories/wallet_repository.py` | AbstractWalletRepository interface |
-| `domain/events/organization_events.py` | OrganizationCreated, OrganizationVerified |
+| File                                             | Purpose                                      |
+| ------------------------------------------------ | -------------------------------------------- |
+| `domain/entities/organization.py`                | Organization entity with verification status |
+| `domain/entities/team.py`                        | Team, TeamMember entities for hierarchy      |
+| `domain/entities/wallet.py`                      | Wallet, WalletTransaction entities           |
+| `domain/value_objects/organization_status.py`    | Enum: PENDING, ACTIVE, SUSPENDED             |
+| `domain/repositories/organization_repository.py` | AbstractOrganizationRepository interface     |
+| `domain/repositories/team_repository.py`         | AbstractTeamRepository interface             |
+| `domain/repositories/wallet_repository.py`       | AbstractWalletRepository interface           |
+| `domain/events/organization_events.py`           | OrganizationCreated, OrganizationVerified    |
 
 **Implementation notes**:
 
@@ -390,6 +390,7 @@ class Organization(DomainModel):
 ```
 
 **Gotchas**:
+
 - **ALWAYS** include `tenant_id` in all queries (isolation)
 - Use `Field(...)` for required fields (Pydantic 2.12 pattern)
 - Domain events should be raised after state changes
@@ -403,20 +404,20 @@ class Organization(DomainModel):
 
 **Files to create**:
 
-| File | Purpose |
-|------|---------|
-| `application/use_cases/org/create_organization.py` | CreateOrganization use case |
-| `application/use_cases/org/update_organization.py` | UpdateOrganization use case |
-| `application/use_cases/org/verify_organization.py` | VerifyOrganization use case |
-| `application/use_cases/org/upload_logo.py` | UploadLogo use case (DO Spaces) |
-| `application/use_cases/team/create_team.py` | CreateTeam use case |
-| `application/use_cases/team/assign_vendors.py` | AssignVendorsToManager use case |
-| `application/use_cases/wallet/get_balance.py` | GetWalletBalance use case |
-| `application/use_cases/wallet/recharge_wallet.py` | RechargeWallet use case (Stripe) |
-| `application/dto/org/` | OrganizationDTOs (request/response) |
-| `application/dto/team/` | TeamDTOs |
-| `application/dto/wallet/` | WalletDTOs |
-| `application/ports/ido_spaces.py` | IDOSpacesService interface |
+| File                                               | Purpose                             |
+| -------------------------------------------------- | ----------------------------------- |
+| `application/use_cases/org/create_organization.py` | CreateOrganization use case         |
+| `application/use_cases/org/update_organization.py` | UpdateOrganization use case         |
+| `application/use_cases/org/verify_organization.py` | VerifyOrganization use case         |
+| `application/use_cases/org/upload_logo.py`         | UploadLogo use case (DO Spaces)     |
+| `application/use_cases/team/create_team.py`        | CreateTeam use case                 |
+| `application/use_cases/team/assign_vendors.py`     | AssignVendorsToManager use case     |
+| `application/use_cases/wallet/get_balance.py`      | GetWalletBalance use case           |
+| `application/use_cases/wallet/recharge_wallet.py`  | RechargeWallet use case (Stripe)    |
+| `application/dto/org/`                             | OrganizationDTOs (request/response) |
+| `application/dto/team/`                            | TeamDTOs                            |
+| `application/dto/wallet/`                          | WalletDTOs                          |
+| `application/ports/ido_spaces.py`                  | IDOSpacesService interface          |
 
 **Implementation notes**:
 
@@ -470,6 +471,7 @@ class CreateOrganization:
 ```
 
 **Gotchas**:
+
 - Use Pydantic `model_validate()` for DTOs (not `parse_obj()`)
 - Use cases should be thin - business logic in entities
 - Events published AFTER persistence (outbox pattern if needed)
@@ -483,16 +485,16 @@ class CreateOrganization:
 
 **Files to create**:
 
-| File | Purpose |
-|------|---------|
-| `infrastructure/models/organization_model.py` | SQLAlchemy OrganizationModel |
-| `infrastructure/models/team_model.py` | TeamModel, TeamMemberModel |
-| `infrastructure/models/wallet_model.py` | WalletModel, WalletTransactionModel |
-| `infrastructure/repositories/organization_repository_impl.py` | SqlAlchemyOrganizationRepository |
-| `infrastructure/repositories/team_repository_impl.py` | SqlAlchemyTeamRepository |
-| `infrastructure/repositories/wallet_repository_impl.py` | SqlAlchemyWalletRepository |
-| `infrastructure/services/do_spaces_service.py` | DigitalOcean Spaces integration |
-| `infrastructure/services/stripe_service.py` | Stripe payment integration |
+| File                                                          | Purpose                             |
+| ------------------------------------------------------------- | ----------------------------------- |
+| `infrastructure/models/organization_model.py`                 | SQLAlchemy OrganizationModel        |
+| `infrastructure/models/team_model.py`                         | TeamModel, TeamMemberModel          |
+| `infrastructure/models/wallet_model.py`                       | WalletModel, WalletTransactionModel |
+| `infrastructure/repositories/organization_repository_impl.py` | SqlAlchemyOrganizationRepository    |
+| `infrastructure/repositories/team_repository_impl.py`         | SqlAlchemyTeamRepository            |
+| `infrastructure/repositories/wallet_repository_impl.py`       | SqlAlchemyWalletRepository          |
+| `infrastructure/services/do_spaces_service.py`                | DigitalOcean Spaces integration     |
+| `infrastructure/services/stripe_service.py`                   | Stripe payment integration          |
 
 **Implementation notes**:
 
@@ -600,6 +602,7 @@ class DOSpacesService(IDOSpacesService):
 ```
 
 **Gotchas**:
+
 - SQLAlchemy relationships need proper `back_populates`
 - Foreign keys to `users.id` need `nullable=True` for orphan records
 - DO Spaces presigned URLs expire in 1 hour - client must upload quickly
@@ -613,12 +616,12 @@ class DOSpacesService(IDOSpacesService):
 
 **Files to create**:
 
-| File | Purpose |
-|------|---------|
-| `infrastructure/api/routers/org_router.py` | `/api/v1/org/*` endpoints |
-| `infrastructure/api/routers/team_router.py` | `/api/v1/teams/*` endpoints |
-| `infrastructure/api/routers/wallet_router.py` | `/api/v1/wallet/*` endpoints |
-| `infrastructure/api/schemas/org_schemas.py` | FastAPI request/response schemas |
+| File                                          | Purpose                          |
+| --------------------------------------------- | -------------------------------- |
+| `infrastructure/api/routers/org_router.py`    | `/api/v1/org/*` endpoints        |
+| `infrastructure/api/routers/team_router.py`   | `/api/v1/teams/*` endpoints      |
+| `infrastructure/api/routers/wallet_router.py` | `/api/v1/wallet/*` endpoints     |
+| `infrastructure/api/schemas/org_schemas.py`   | FastAPI request/response schemas |
 
 **Implementation notes**:
 
@@ -698,6 +701,7 @@ async def upload_logo(
 ```
 
 **Gotchas**:
+
 - **ALWAYS** verify tenant_id in GET requests (data isolation)
 - Use `Depends(get_current_user)` for auth on all protected routes
 - Stripe webhook endpoint must NOT require auth (signature verification instead)
@@ -710,22 +714,22 @@ async def upload_logo(
 
 **Files to create**:
 
-| File | Purpose |
-|------|---------|
-| `stores/organizationStore.ts` | Zustand store for org state |
-| `app/dashboard/org/page.tsx` | Organization list page |
-| `app/dashboard/org/[id]/page.tsx` | Organization detail page |
-| `app/dashboard/org/new/page.tsx` | Create organization form |
+| File                                    | Purpose                          |
+| --------------------------------------- | -------------------------------- |
+| `stores/organizationStore.ts`           | Zustand store for org state      |
+| `app/dashboard/org/page.tsx`            | Organization list page           |
+| `app/dashboard/org/[id]/page.tsx`       | Organization detail page         |
+| `app/dashboard/org/new/page.tsx`        | Create organization form         |
 | `components/forms/OrganizationForm.tsx` | Organization form with RHF + Zod |
-| `components/uploads/LogoUpload.tsx` | Uppy dashboard for logo upload |
-| `components/dashboard/WalletCard.tsx` | Wallet balance display |
+| `components/uploads/LogoUpload.tsx`     | Uppy dashboard for logo upload   |
+| `components/dashboard/WalletCard.tsx`   | Wallet balance display           |
 
 **Implementation notes**:
 
 ```typescript
 // stores/organizationStore.ts
-import { create } from 'zustand';
-import { api } from '@/lib/api';
+import { create } from "zustand";
+import { api } from "@/lib/api";
 
 interface Organization {
   id: string;
@@ -755,7 +759,7 @@ export const useOrganizationStore = create<OrganizationStore>((set, get) => ({
   fetchOrganizations: async () => {
     set({ isLoading: true, error: null });
     try {
-      const { data } = await api.get('/api/v1/org');
+      const { data } = await api.get("/api/v1/org");
       set({ organizations: data.organizations, isLoading: false });
     } catch (error) {
       set({ error: error.message, isLoading: false });
@@ -763,7 +767,7 @@ export const useOrganizationStore = create<OrganizationStore>((set, get) => ({
   },
 
   createOrganization: async (data) => {
-    const { data: org } = await api.post('/api/v1/org', data);
+    const { data: org } = await api.post("/api/v1/org", data);
     set((state) => ({
       organizations: [...state.organizations, org],
       currentOrg: org,
@@ -773,16 +777,17 @@ export const useOrganizationStore = create<OrganizationStore>((set, get) => ({
 
   uploadLogo: async (orgId, file) => {
     // 1. Get presigned URL
-    const { data: { upload_url, public_url } } = await api.post(
-      `/api/v1/org/${orgId}/logo/upload`,
-      { content_type: file.type }
-    );
+    const {
+      data: { upload_url, public_url },
+    } = await api.post(`/api/v1/org/${orgId}/logo/upload`, {
+      content_type: file.type,
+    });
 
     // 2. Direct upload to DO Spaces
     await fetch(upload_url, {
-      method: 'PUT',
+      method: "PUT",
       body: file,
-      headers: { 'Content-Type': file.type },
+      headers: { "Content-Type": file.type },
     });
 
     // 3. Update org
@@ -845,6 +850,7 @@ export function OrganizationForm() {
 ```
 
 **Gotchas**:
+
 - Use `use client` for forms with RHF (Client Components)
 - Zod schemas must match backend Pydantic DTOs exactly
 - Uppy requires separate CDN bundle (not tree-shakeable)
@@ -858,15 +864,15 @@ export function OrganizationForm() {
 
 **Files to create**:
 
-| File | Purpose |
-|------|---------|
-| `tests/unit/domain/test_organization_entity.py` | Organization entity tests |
-| `tests/unit/domain/test_team_entity.py` | Team entity tests |
-| `tests/unit/domain/test_wallet_entity.py` | Wallet entity tests |
-| `tests/unit/application/test_create_organization.py` | Use case tests |
-| `tests/integration/test_organization_api.py` | API integration tests |
-| `apps/web/tests/components/OrganizationForm.test.tsx` | Component tests |
-| `tests/e2e/org-crud.spec.ts` | Playwright E2E tests |
+| File                                                  | Purpose                   |
+| ----------------------------------------------------- | ------------------------- |
+| `tests/unit/domain/test_organization_entity.py`       | Organization entity tests |
+| `tests/unit/domain/test_team_entity.py`               | Team entity tests         |
+| `tests/unit/domain/test_wallet_entity.py`             | Wallet entity tests       |
+| `tests/unit/application/test_create_organization.py`  | Use case tests            |
+| `tests/integration/test_organization_api.py`          | API integration tests     |
+| `apps/web/tests/components/OrganizationForm.test.tsx` | Component tests           |
+| `tests/e2e/org-crud.spec.ts`                          | Playwright E2E tests      |
 
 **Implementation notes**:
 
@@ -1039,6 +1045,7 @@ cd tests/e2e && pnpm test
 **Problem**: Forgetting to filter by `tenant_id` in queries
 
 **Solution**:
+
 ```python
 # WRONG - data leak!
 async def get_all(self) -> list[Organization]:
@@ -1058,6 +1065,7 @@ async def get_all(self, tenant_id: UUID) -> list[Organization]:
 **Problem**: Direct property assignment breaks encapsulation
 
 **Solution**:
+
 ```python
 # WRONG
 org.status = OrganizationStatus.ACTIVE
@@ -1077,6 +1085,7 @@ org.verify(verifier_id)
 **Problem**: Accepting webhook requests without signature verification
 
 **Solution**:
+
 ```python
 # ALWAYS verify signature
 payload = await request.body()
@@ -1100,6 +1109,7 @@ If implementation fails:
 ## 9. Implementation Tasks (Ordered)
 
 ### Phase 1: Foundation (Days 1-3)
+
 1. Create Organization entity + value objects
 2. Create Team entities (Team, TeamMember)
 3. Create Wallet entities (Wallet, WalletTransaction)
@@ -1107,6 +1117,7 @@ If implementation fails:
 5. Write unit tests for entities
 
 ### Phase 2: Backend Implementation (Days 4-8)
+
 6. Create SQLAlchemy models (Infrastructure)
 7. Implement repository implementations
 8. Implement CreateOrganization use case
@@ -1116,6 +1127,7 @@ If implementation fails:
 12. Write integration tests for API
 
 ### Phase 3: Teams & Wallet (Days 9-13)
+
 13. Create Team use cases (CreateTeam, AssignVendors)
 14. Create Wallet use cases (GetBalance, RechargeWallet)
 15. Implement Stripe service
@@ -1123,6 +1135,7 @@ If implementation fails:
 17. Write tests for teams & wallet
 
 ### Phase 4: Frontend (Days 14-17)
+
 18. Create organizationStore (Zustand)
 19. Create OrganizationForm component
 20. Create LogoUpload component (Uppy)
@@ -1131,6 +1144,7 @@ If implementation fails:
 23. Write component tests
 
 ### Phase 5: Integration & Polish (Days 18-20)
+
 24. Write E2E tests (Playwright)
 25. DO Spaces integration testing
 26. Stripe test mode integration
@@ -1163,6 +1177,7 @@ If implementation fails:
 **Reasoning**:
 
 **Positive factors:**
+
 - ✅ Auth system PRP provides proven patterns to follow
 - ✅ Clean Architecture well-established in codebase
 - ✅ SQLAlchemy 2.0 patterns documented
@@ -1170,11 +1185,13 @@ If implementation fails:
 - ✅ Multi-tenant pattern straightforward (tenant_id everywhere)
 
 **Risk factors:**
+
 - ⚠️ DO Spaces image processing may need external worker (Pillow heavy ops)
 - ⚠️ Stripe webhook endpoint needs careful testing
 - ⚠️ Frontend state management for real-time wallet balance (polling vs WS)
 
 **Mitigation**:
+
 - Image processing can be deferred to Phase 2 (Sprint 5-6)
 - Use Stripe test mode for all development
 - Start with polling, upgrade to WebSocket later
@@ -1185,16 +1202,16 @@ If implementation fails:
 
 ### Key Files to Reference
 
-| Purpose | Reference File |
-|---------|---------------|
-| Entity pattern | `apps/api/src/prosell/domain/entities/user.py` |
+| Purpose            | Reference File                                                             |
+| ------------------ | -------------------------------------------------------------------------- |
+| Entity pattern     | `apps/api/src/prosell/domain/entities/user.py`                             |
 | Repository pattern | `apps/api/src/prosell/infrastructure/repositories/user_repository_impl.py` |
-| Use case pattern | `apps/api/src/prosell/application/use_cases/auth/register_user.py` |
-| DTO pattern | `apps/api/src/prosell/application/dto/auth/register.py` |
-| Model pattern | `apps/api/src/prosell/infrastructure/models/user_model.py` |
-| Router pattern | `apps/api/src/prosell/infrastructure/api/routers/auth_router.py` |
-| Frontend store | `apps/web/src/stores/authStore.ts` |
-| Frontend form | `apps/web/src/components/forms/auth/RegisterForm.tsx` |
+| Use case pattern   | `apps/api/src/prosell/application/use_cases/auth/register_user.py`         |
+| DTO pattern        | `apps/api/src/prosell/application/dto/auth/register.py`                    |
+| Model pattern      | `apps/api/src/prosell/infrastructure/models/user_model.py`                 |
+| Router pattern     | `apps/api/src/prosell/infrastructure/api/routers/auth_router.py`           |
+| Frontend store     | `apps/web/src/stores/authStore.ts`                                         |
+| Frontend form      | `apps/web/src/components/forms/auth/RegisterForm.tsx`                      |
 
 ### Environment Variables Needed
 

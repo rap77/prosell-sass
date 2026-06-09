@@ -71,7 +71,10 @@ async function proxyRequest(request: NextRequest) {
 
     // Forward other relevant headers
     if (response.headers.get("Content-Type")) {
-      nextResponse.headers.set("Content-Type", response.headers.get("Content-Type")!);
+      nextResponse.headers.set(
+        "Content-Type",
+        response.headers.get("Content-Type")!,
+      );
     }
 
     return nextResponse;
@@ -79,7 +82,7 @@ async function proxyRequest(request: NextRequest) {
     console.error("Proxy error:", error);
     return NextResponse.json(
       { detail: "Proxy error: Failed to reach backend" },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

@@ -46,7 +46,9 @@ test.describe("Smoke Tests - Critical Path", () => {
   test.describe("Auth Flow", () => {
     test.use({ storageState: { cookies: [], origins: [] } }); // No auth for login tests
 
-    test("@smoke should display login page elements correctly", async ({ page }) => {
+    test("@smoke should display login page elements correctly", async ({
+      page,
+    }) => {
       await page.goto("/auth/login");
       await page.waitForLoadState("load");
 
@@ -62,25 +64,33 @@ test.describe("Smoke Tests - Critical Path", () => {
       expect(hasForm + hasInputs + hasButtons).toBeGreaterThan(0);
     });
 
-    test("@smoke should show validation error for empty email", async ({ page }) => {
+    test("@smoke should show validation error for empty email", async ({
+      page,
+    }) => {
       await page.goto("/auth/login");
       await page.waitForLoadState("load");
 
       // Try to submit without email
-      const submitButton = page.locator("button[type=\"submit\"]").first();
+      const submitButton = page.locator('button[type="submit"]').first();
       await submitButton.click();
 
       // Wait for validation error to appear (use more specific selector)
-      const errorVisible = await page.locator(".text-destruct, [role=\"alert\"], .error").count();
+      const errorVisible = await page
+        .locator('.text-destruct, [role="alert"], .error')
+        .count();
       if (errorVisible > 0) {
-        await expect(page.locator(".text-destruct, [role=\"alert\"], .error").first()).toBeVisible();
+        await expect(
+          page.locator('.text-destruct, [role="alert"], .error').first(),
+        ).toBeVisible();
       }
 
       // Check we're still on login page (validation prevented submission)
       await expect(page).toHaveURL(/\/auth\/login/);
     });
 
-    test("@smoke should redirect to login when accessing protected route", async ({ page }) => {
+    test("@smoke should redirect to login when accessing protected route", async ({
+      page,
+    }) => {
       await page.goto("/dashboard");
       await page.waitForURL(/\/auth\/login/);
       expect(page.url()).toContain("/auth/login");
@@ -90,7 +100,9 @@ test.describe("Smoke Tests - Critical Path", () => {
       await page.goto("/");
       await page.waitForLoadState("load");
       expect(page.url()).toMatch(/localhost:3000\/?$/);
-      await expect(page.getByRole("heading", { name: /prosell/i })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: /prosell/i }),
+      ).toBeVisible();
     });
 
     test("@smoke should display Google OAuth button", async ({ page }) => {
@@ -119,7 +131,9 @@ test.describe("Smoke Tests - Critical Path", () => {
       await page.waitForLoadState("load");
     });
 
-    test("@smoke should update model field after VIN decode", async ({ page }) => {
+    test("@smoke should update model field after VIN decode", async ({
+      page,
+    }) => {
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
       await vehiclesPage.decodeVinButton.click();
       await page.waitForLoadState("load");
@@ -129,7 +143,9 @@ test.describe("Smoke Tests - Critical Path", () => {
       await expect(modelInput).toHaveValue(/equinox/i, { timeout: 3000 });
     });
 
-    test("@smoke should update make select field after VIN decode", async ({ page }) => {
+    test("@smoke should update make select field after VIN decode", async ({
+      page,
+    }) => {
       await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
       await vehiclesPage.decodeVinButton.click();
       await page.waitForLoadState("load");
@@ -141,14 +157,18 @@ test.describe("Smoke Tests - Critical Path", () => {
 
     test("@smoke should display category dropdown", async ({ page }) => {
       // Wait for form elements to be visible
-      const formSelect = page.locator("select, [role=\"combobox\"]").first();
+      const formSelect = page.locator('select, [role="combobox"]').first();
       await expect(formSelect).toBeVisible({ timeout: 3000 });
 
       // Check for any form elements (selects, inputs, labels)
-      const hasSelects = await page.locator("select, [role=\"combobox\"]").count();
+      const hasSelects = await page
+        .locator('select, [role="combobox"]')
+        .count();
       const hasInputs = await page.locator("input").count();
       const hasLabels = await page.locator("label").count();
-      const hasText = await page.getByText(/categor|vehicle|form/i, { exact: false }).count();
+      const hasText = await page
+        .getByText(/categor|vehicle|form/i, { exact: false })
+        .count();
 
       expect(hasSelects + hasInputs + hasLabels + hasText).toBeGreaterThan(0);
     });
@@ -163,7 +183,9 @@ test.describe("Smoke Tests - Critical Path", () => {
     });
 
     test("@smoke should show form submit button", async ({ page }) => {
-      const submitButton = page.getByRole("button", { name: /create|save|crear|guardar/i });
+      const submitButton = page.getByRole("button", {
+        name: /create|save|crear|guardar/i,
+      });
       await expect(submitButton).toBeVisible();
     });
   });
@@ -184,17 +206,25 @@ test.describe("Smoke Tests - Critical Path", () => {
     });
 
     test("@smoke should display categories page", async ({ page }) => {
-      await expect(page.getByRole("heading", { name: /categories/i })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: /categories/i }),
+      ).toBeVisible();
       await expect(page.getByText("2 categories found")).toBeVisible();
     });
 
     test("@smoke should display category cards", async ({ page }) => {
-      await expect(page.getByRole("heading", { name: "SUVs", exact: true })).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Sedans", exact: true })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "SUVs", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Sedans", exact: true }),
+      ).toBeVisible();
     });
 
     test("@smoke should open new category form", async ({ page }) => {
-      await page.getByRole("button", { name: /new category|crear categoría/i }).click();
+      await page
+        .getByRole("button", { name: /new category|crear categoría/i })
+        .click();
       await expect(page.getByLabel(/name|nombre/i)).toBeVisible();
       await expect(page.getByLabel(/slug/i)).toBeVisible();
     });
@@ -219,14 +249,18 @@ test.describe("Smoke Tests - Critical Path", () => {
 
     test("@smoke should display data table", async ({ page }) => {
       // Check for specific DataGrid elements
-      const dataGrid = page.locator("[role=\"table\"], table, [data-testid=\"vehicle-grid\"]");
+      const dataGrid = page.locator(
+        '[role="table"], table, [data-testid="vehicle-grid"]',
+      );
       const count = await dataGrid.count();
 
       if (count > 0) {
         await expect(dataGrid.first()).toBeVisible({ timeout: 5000 });
 
         // Verify at least one row exists
-        const row = page.locator("[role=\"row\"], tr, [data-testid=\"vehicle-row\"]").first();
+        const row = page
+          .locator('[role="row"], tr, [data-testid="vehicle-row"]')
+          .first();
         await expect(row).toBeVisible();
       } else {
         // If no DataGrid found, verify page loads without errors
@@ -242,7 +276,9 @@ test.describe("Smoke Tests - Critical Path", () => {
 
     test("@smoke should display vehicle data in grid", async ({ page }) => {
       // Check page has some content
-      const hasContent = await page.locator("main, [role=\"main\"], body").count();
+      const hasContent = await page
+        .locator('main, [role="main"], body')
+        .count();
       expect(hasContent).toBeGreaterThan(0);
     });
   });
@@ -275,7 +311,7 @@ test.describe("Smoke Tests - Critical Path", () => {
     });
 
     test("@smoke should allow file selection", async ({ page }) => {
-      const fileInput = page.locator("input[type=\"file\"]");
+      const fileInput = page.locator('input[type="file"]');
       const count = await fileInput.count();
 
       if (count > 0) {
@@ -390,7 +426,10 @@ test.describe("Smoke Tests - Critical Path", () => {
       // Verify lead status is displayed
       // Note: Vehicle details are not populated by current API (title is empty string)
       // So we only verify buyer info and status
-      const statusBadge = page.locator("[data-testid='lead-item']").first().locator("[data-testid='status-badge']");
+      const statusBadge = page
+        .locator("[data-testid='lead-item']")
+        .first()
+        .locator("[data-testid='status-badge']");
       await expect(statusBadge).toBeVisible();
     });
 
@@ -414,7 +453,9 @@ test.describe("Smoke Tests - Critical Path", () => {
       await page.waitForTimeout(200);
 
       // Click on "Contacted" status
-      const contactedOption = page.locator("[role='menuitem']").filter({ hasText: "Contacted" });
+      const contactedOption = page
+        .locator("[role='menuitem']")
+        .filter({ hasText: "Contacted" });
       await contactedOption.click();
 
       // Wait for the PATCH request to complete and UI to update
@@ -426,7 +467,9 @@ test.describe("Smoke Tests - Critical Path", () => {
 
       // Find the lead again after reload
       const reloadedLead = page.locator("[data-testid='lead-item']").first();
-      const reloadedBadge = reloadedLead.locator("[data-testid='status-badge']");
+      const reloadedBadge = reloadedLead.locator(
+        "[data-testid='status-badge']",
+      );
 
       // Verify the status was updated
       await expect(reloadedBadge).toBeVisible();
@@ -478,17 +521,25 @@ test.describe("Smoke Tests - Critical Path", () => {
   test.describe("Auth Smoke — B1.1.31", () => {
     test.use({ storageState: { cookies: [], origins: [] } }); // No saved auth
 
-    test("@smoke @auth B1.1.31: login page renders email and password inputs", async ({ page }) => {
+    test("@smoke @auth B1.1.31: login page renders email and password inputs", async ({
+      page,
+    }) => {
       await page.goto("/auth/login");
       await page.waitForLoadState("load");
-      await expect(page.locator("input[type='email'], input[name='email']")).toBeVisible();
+      await expect(
+        page.locator("input[type='email'], input[name='email']"),
+      ).toBeVisible();
       await expect(page.locator("input[type='password']")).toBeVisible();
     });
 
-    test("@smoke @auth B1.1.31: invalid credentials show error message", async ({ page }) => {
+    test("@smoke @auth B1.1.31: invalid credentials show error message", async ({
+      page,
+    }) => {
       await page.goto("/auth/login");
       await page.waitForLoadState("load");
-      await page.locator("input[type='email'], input[name='email']").fill("bad@example.com");
+      await page
+        .locator("input[type='email'], input[name='email']")
+        .fill("bad@example.com");
       await page.locator("input[type='password']").fill("wrongpassword");
       await page.locator("button[type='submit']").click();
       // Wait for response — either error text or stay on login
@@ -496,17 +547,23 @@ test.describe("Smoke Tests - Critical Path", () => {
       await expect(page).toHaveURL(/\/auth\/login/);
     });
 
-    test("@smoke @auth B1.1.31: OAuth Google button is visible", async ({ page }) => {
+    test("@smoke @auth B1.1.31: OAuth Google button is visible", async ({
+      page,
+    }) => {
       await page.goto("/auth/login");
       await page.waitForLoadState("load");
       const oauthBtn = page.getByTestId("google-oauth-button");
       await expect(oauthBtn).toBeVisible();
     });
 
-    test("@smoke @auth B1.1.31: forgot password link is accessible", async ({ page }) => {
+    test("@smoke @auth B1.1.31: forgot password link is accessible", async ({
+      page,
+    }) => {
       await page.goto("/auth/login");
       await page.waitForLoadState("load");
-      const forgotLink = page.locator("a[href*='forgot'], a[href*='reset'], a:has-text(/forgot|reset/i)");
+      const forgotLink = page.locator(
+        "a[href*='forgot'], a[href*='reset'], a:has-text(/forgot|reset/i)",
+      );
       const count = await forgotLink.count();
       // Forgot password link may or may not exist — if it does, it should be visible
       if (count > 0) {
@@ -517,7 +574,9 @@ test.describe("Smoke Tests - Critical Path", () => {
       }
     });
 
-    test("@smoke @auth B1.1.31: token refresh endpoint is reachable", async ({ request }) => {
+    test("@smoke @auth B1.1.31: token refresh endpoint is reachable", async ({
+      request,
+    }) => {
       const res = await request.post("/api/v1/auth/refresh", {
         data: {},
         headers: { "Content-Type": "application/json" },
@@ -542,7 +601,9 @@ test.describe("Smoke Tests - Critical Path", () => {
       await expect(page).toHaveURL(/\/vehicles/);
     });
 
-    test("@smoke @catalog B1.1.32: create vehicle form is accessible", async ({ page }) => {
+    test("@smoke @catalog B1.1.32: create vehicle form is accessible", async ({
+      page,
+    }) => {
       await page.goto("/catalog/create");
       await page.waitForLoadState("load");
       await expect(page).toHaveURL(/\/catalog\/create/);
@@ -550,22 +611,30 @@ test.describe("Smoke Tests - Critical Path", () => {
       expect(hasInputs).toBeGreaterThan(0);
     });
 
-    test("@smoke @catalog B1.1.32: VIN input field exists in vehicle form", async ({ page }) => {
+    test("@smoke @catalog B1.1.32: VIN input field exists in vehicle form", async ({
+      page,
+    }) => {
       await mockVinDecodeEndpoint(page, "1HGCM82633A004352");
       await page.goto("/catalog/create");
       await page.waitForLoadState("load");
-      const vinInput = page.locator("input[placeholder*='VIN'], input[name='vin'], input[id='vin']");
+      const vinInput = page.locator(
+        "input[placeholder*='VIN'], input[name='vin'], input[id='vin']",
+      );
       await expect(vinInput.first()).toBeVisible({ timeout: 5000 });
     });
 
-    test("@smoke @catalog B1.1.32: category dropdown exists in vehicle form", async ({ page }) => {
+    test("@smoke @catalog B1.1.32: category dropdown exists in vehicle form", async ({
+      page,
+    }) => {
       await page.goto("/catalog/create");
       await page.waitForLoadState("load");
       const dropdown = page.locator("[role='combobox'], select").first();
       await expect(dropdown).toBeVisible({ timeout: 5000 });
     });
 
-    test("@smoke @catalog B1.1.32: vehicle list shows catalog entries", async ({ page }) => {
+    test("@smoke @catalog B1.1.32: vehicle list shows catalog entries", async ({
+      page,
+    }) => {
       await page.goto("/vehicles");
       await page.waitForLoadState("networkidle");
       // Verify page has content — DataGrid or list
@@ -573,17 +642,23 @@ test.describe("Smoke Tests - Critical Path", () => {
       await expect(content.first()).toBeVisible();
     });
 
-    test("@smoke @catalog B1.1.32: pagination is present for catalog", async ({ page }) => {
+    test("@smoke @catalog B1.1.32: pagination is present for catalog", async ({
+      page,
+    }) => {
       await page.goto("/vehicles");
       await page.waitForLoadState("networkidle");
       // Pagination or load-more controls may be present
       await expect(page).toHaveURL(/\/vehicles/);
     });
 
-    test("@smoke @catalog B1.1.32: catalog search input is functional", async ({ page }) => {
+    test("@smoke @catalog B1.1.32: catalog search input is functional", async ({
+      page,
+    }) => {
       await page.goto("/vehicles");
       await page.waitForLoadState("load");
-      const searchInput = page.locator("input[placeholder*='search'], input[placeholder*='Search'], input[type='search']");
+      const searchInput = page.locator(
+        "input[placeholder*='search'], input[placeholder*='Search'], input[type='search']",
+      );
       const count = await searchInput.count();
       if (count > 0) {
         await searchInput.first().fill("Toyota");
@@ -594,7 +669,9 @@ test.describe("Smoke Tests - Critical Path", () => {
       }
     });
 
-    test("@smoke @catalog B1.1.32: categories management page loads", async ({ page }) => {
+    test("@smoke @catalog B1.1.32: categories management page loads", async ({
+      page,
+    }) => {
       await page.goto("/admin/categories");
       await page.waitForLoadState("load");
       // Either renders categories or redirects to login/dashboard
@@ -639,7 +716,12 @@ test.describe("Smoke Tests - Critical Path", () => {
           await route.fulfill({
             status: 200,
             contentType: "application/json",
-            body: JSON.stringify({ items: MOCK_LEADS, total: 1, limit: 50, offset: 0 }),
+            body: JSON.stringify({
+              items: MOCK_LEADS,
+              total: 1,
+              limit: 50,
+              offset: 0,
+            }),
           });
         } else {
           await route.continue();
@@ -656,13 +738,20 @@ test.describe("Smoke Tests - Critical Path", () => {
       });
 
       // Mock duplicates endpoint
-      await page.route("**/api/v1/leads/lead-smoke-b1-1/duplicates", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ lead_id: "lead-smoke-b1-1", duplicates: [], count: 0 }),
-        });
-      });
+      await page.route(
+        "**/api/v1/leads/lead-smoke-b1-1/duplicates",
+        async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              lead_id: "lead-smoke-b1-1",
+              duplicates: [],
+              count: 0,
+            }),
+          });
+        },
+      );
 
       // Mock webhook endpoint
       await page.route("**/api/v1/webhooks/**", async (route) => {
@@ -680,20 +769,26 @@ test.describe("Smoke Tests - Critical Path", () => {
       await expect(page.locator("h1")).toContainText(/leads/i);
     });
 
-    test("@smoke @leads B1.1.33: lead buyer name is displayed in list", async ({ page }) => {
+    test("@smoke @leads B1.1.33: lead buyer name is displayed in list", async ({
+      page,
+    }) => {
       await page.goto("/vendedor/leads");
       await page.waitForLoadState("networkidle");
       await expect(page.locator("text=B1 Test Customer")).toBeVisible();
     });
 
-    test("@smoke @leads B1.1.33: lead status badge is visible", async ({ page }) => {
+    test("@smoke @leads B1.1.33: lead status badge is visible", async ({
+      page,
+    }) => {
       await page.goto("/vendedor/leads");
       await page.waitForLoadState("networkidle");
       const badge = page.locator("[data-testid='status-badge']").first();
       await expect(badge).toBeVisible();
     });
 
-    test("@smoke @leads B1.1.33: lead webhook endpoint returns 200", async ({ request }) => {
+    test("@smoke @leads B1.1.33: lead webhook endpoint returns 200", async ({
+      request,
+    }) => {
       const res = await request.post("/api/v1/webhooks/facebook", {
         data: { object: "page", entry: [] },
         headers: { "Content-Type": "application/json" },
@@ -702,14 +797,18 @@ test.describe("Smoke Tests - Critical Path", () => {
       expect(res.status()).not.toBe(500);
     });
 
-    test("@smoke @leads B1.1.33: lead status update dropdown is accessible", async ({ page }) => {
+    test("@smoke @leads B1.1.33: lead status update dropdown is accessible", async ({
+      page,
+    }) => {
       await page.goto("/vendedor/leads");
       await page.waitForLoadState("networkidle");
       const dropdown = page.locator("[data-testid='status-dropdown']").first();
       await expect(dropdown).toBeVisible();
     });
 
-    test("@smoke @leads B1.1.33: clicking lead navigates to detail view", async ({ page }) => {
+    test("@smoke @leads B1.1.33: clicking lead navigates to detail view", async ({
+      page,
+    }) => {
       await page.goto("/vendedor/leads");
       await page.waitForLoadState("networkidle");
       const firstLead = page.locator("[data-testid='lead-item']").first();
@@ -719,13 +818,17 @@ test.describe("Smoke Tests - Critical Path", () => {
       await expect(page).toHaveURL(/\/vendedor\/leads\/.+/);
     });
 
-    test("@smoke @leads B1.1.33: lead detail page shows buyer info", async ({ page }) => {
+    test("@smoke @leads B1.1.33: lead detail page shows buyer info", async ({
+      page,
+    }) => {
       await page.goto("/vendedor/leads/lead-smoke-b1-1");
       await page.waitForLoadState("networkidle");
       await expect(page.locator("text=B1 Test Customer")).toBeVisible();
     });
 
-    test("@smoke @leads B1.1.33: no duplicate warning shown for clean lead", async ({ page }) => {
+    test("@smoke @leads B1.1.33: no duplicate warning shown for clean lead", async ({
+      page,
+    }) => {
       await page.goto("/vendedor/leads/lead-smoke-b1-1");
       await page.waitForLoadState("networkidle");
       const warning = page.locator("[data-testid='duplicate-warning']");
@@ -776,7 +879,9 @@ test.describe("Smoke Tests - Critical Path", () => {
       });
     });
 
-    test("@smoke @appointments B1.1.34: appointments page is accessible", async ({ page }) => {
+    test("@smoke @appointments B1.1.34: appointments page is accessible", async ({
+      page,
+    }) => {
       await page.goto("/manager/appointments");
       await page.waitForLoadState("load");
       // Accept the route or redirect to login
@@ -784,14 +889,18 @@ test.describe("Smoke Tests - Critical Path", () => {
       expect(url).toMatch(/\/manager\/appointments|\/auth\/login|\/dashboard/);
     });
 
-    test("@smoke @appointments B1.1.34: dealer calendar page is accessible", async ({ page }) => {
+    test("@smoke @appointments B1.1.34: dealer calendar page is accessible", async ({
+      page,
+    }) => {
       await page.goto("/vendedor/appointments");
       await page.waitForLoadState("load");
       const url = page.url();
       expect(url).toMatch(/\/vendedor\/appointments|\/auth\/login|\/dashboard/);
     });
 
-    test("@smoke @appointments B1.1.34: appointment form opens from lead detail", async ({ page }) => {
+    test("@smoke @appointments B1.1.34: appointment form opens from lead detail", async ({
+      page,
+    }) => {
       // Mock lead data
       await page.route("**/api/v1/leads/lead-smoke-b1-1", async (route) => {
         await route.fulfill({
@@ -817,13 +926,20 @@ test.describe("Smoke Tests - Critical Path", () => {
         });
       });
 
-      await page.route("**/api/v1/leads/lead-smoke-b1-1/duplicates", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ lead_id: "lead-smoke-b1-1", duplicates: [], count: 0 }),
-        });
-      });
+      await page.route(
+        "**/api/v1/leads/lead-smoke-b1-1/duplicates",
+        async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              lead_id: "lead-smoke-b1-1",
+              duplicates: [],
+              count: 0,
+            }),
+          });
+        },
+      );
 
       await page.goto("/vendedor/leads/lead-smoke-b1-1");
       await page.waitForLoadState("networkidle");
@@ -837,28 +953,40 @@ test.describe("Smoke Tests - Critical Path", () => {
       await expect(dialog).toBeVisible({ timeout: 3000 });
     });
 
-    test("@smoke @appointments B1.1.34: appointment confirmation endpoint exists", async ({ request }) => {
-      const res = await request.put("/api/v1/appointments/nonexistent-id/confirm", {
-        data: {},
-        headers: { "Content-Type": "application/json" },
-      });
+    test("@smoke @appointments B1.1.34: appointment confirmation endpoint exists", async ({
+      request,
+    }) => {
+      const res = await request.put(
+        "/api/v1/appointments/nonexistent-id/confirm",
+        {
+          data: {},
+          headers: { "Content-Type": "application/json" },
+        },
+      );
       // Should be 401 (no auth), 404 (not found), or 422 — not 500
       expect(res.status()).not.toBe(500);
     });
 
-    test("@smoke @appointments B1.1.34: appointment cancellation endpoint exists", async ({ request }) => {
-      const res = await request.put("/api/v1/appointments/nonexistent-id/cancel", {
-        data: {},
-        headers: { "Content-Type": "application/json" },
-      });
+    test("@smoke @appointments B1.1.34: appointment cancellation endpoint exists", async ({
+      request,
+    }) => {
+      const res = await request.put(
+        "/api/v1/appointments/nonexistent-id/cancel",
+        {
+          data: {},
+          headers: { "Content-Type": "application/json" },
+        },
+      );
       expect(res.status()).not.toBe(500);
     });
 
-    test("@smoke @appointments B1.1.34: appointments list API returns expected shape", async ({ request }) => {
+    test("@smoke @appointments B1.1.34: appointments list API returns expected shape", async ({
+      request,
+    }) => {
       const res = await request.get("/api/v1/appointments");
       // Without auth returns 401; with auth returns 200 with items array
       if (res.status() === 200) {
-        const body = await res.json() as Record<string, unknown>;
+        const body = (await res.json()) as Record<string, unknown>;
         expect(body).toHaveProperty("items");
       } else {
         // 401 is expected without auth cookies
@@ -997,7 +1125,9 @@ test.describe("Smoke Tests - Critical Path", () => {
 
       // Step 2: Click "Agendar Cita" button if visible
       const scheduleButton = page.locator('button:has-text("Agendar Cita")');
-      if (await scheduleButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+      if (
+        await scheduleButton.isVisible({ timeout: 3000 }).catch(() => false)
+      ) {
         await scheduleButton.click();
 
         // Wait for modal to open
@@ -1006,7 +1136,10 @@ test.describe("Smoke Tests - Critical Path", () => {
         // Fill out appointment form
         await page.click("#dealer_id");
         await page.waitForSelector('[role="listbox"]');
-        await page.locator("[role='option']").filter({ hasText: "Flow Test Dealer" }).click();
+        await page
+          .locator("[role='option']")
+          .filter({ hasText: "Flow Test Dealer" })
+          .click();
 
         // Select a weekday
         const monday = new Date();
@@ -1018,20 +1151,31 @@ test.describe("Smoke Tests - Critical Path", () => {
         // Select time
         await page.click("#time");
         await page.waitForSelector('[role="listbox"]');
-        await page.locator("[role='option']").filter({ hasText: "10:00" }).first().click();
+        await page
+          .locator("[role='option']")
+          .filter({ hasText: "10:00" })
+          .first()
+          .click();
 
         // Submit form
         await page.click('button[type="submit"]');
 
         // Wait for success - modal should close
-        await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 5000 });
+        await page.waitForSelector('[role="dialog"]', {
+          state: "hidden",
+          timeout: 5000,
+        });
 
         // Verify success message
-        const successMessage = page.locator("text=appointment created, text=cita creada");
+        const successMessage = page.locator(
+          "text=appointment created, text=cita creada",
+        );
         await expect(successMessage).toBeVisible({ timeout: 3000 });
       } else {
         // If button doesn't exist, test still passes - we verified the lead flow works
-        console.log("Agendar Cita button not found - skipping appointment creation");
+        console.log(
+          "Agendar Cita button not found - skipping appointment creation",
+        );
       }
 
       // Smoke test verified: lead → appointment flow is accessible

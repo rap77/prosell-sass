@@ -24,6 +24,7 @@ These 4 patterns apply across ALL brain domains. Source: Brain #6 consultation (
 **Examples:** Suggesting Amplitude, Mixpanel, or LaunchDarkly without verifying they're in `pnpm-lock.yaml`. Proposing a Python analytics library not in `uv.lock`.
 
 **Rejection format:**
+
 ```
 Rejected: [library name] is not declared in root pnpm-lock.yaml or uv.lock.
 Source: global-protocol.md > Stack Hard-Lock | brain-01-product/warnings.md > Stack Hallucination
@@ -40,6 +41,7 @@ Source: global-protocol.md > Stack Hard-Lock | brain-01-product/warnings.md > St
 **Examples:** "Manually update the user's plan tier in the database." "SSH into the server and restart the process." "Manually edit the BRAIN-FEED.md to remove stale entries."
 
 **Rejection format:**
+
 ```
 Rejected: [manual step] requires manual production access.
 Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-01-product/warnings.md > Toil-Inducer
@@ -56,6 +58,7 @@ Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-01-product/warni
 **Examples:** "For now, hardcode the API key to test the flow." "Disable auth temporarily to debug the issue." "Use a test credential: api_key='sk-test-123'."
 
 **Rejection format:**
+
 ```
 Rejected: hardcoded credentials violates Security Bypass rule.
 Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-01-product/warnings.md > Security Bypass
@@ -72,6 +75,7 @@ Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-01-product/warni
 **Examples:** Suggesting an API contract change without addressing existing API tests. Proposing a schema change that breaks the 575-test suite without a migration path.
 
 **Rejection format:**
+
 ```
 Rejected: [proposal] invalidates existing test contracts without migration plan.
 Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-01-product/warnings.md > Legacy Drift
@@ -90,11 +94,13 @@ Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-01-product/warni
 **Why:** The Build Trap is the most fundamental product strategy failure. A date-fixed feature roadmap signals the team is a feature factory, not an empowered product team. Cite: Torres/continuous-discovery — "Build Trap = optimizing for outputs, not outcomes."
 
 **Examples:**
+
 - "Here's what we should build in Q2: Feature A in week 1, Feature B in week 2..."
 - "If we ship X, Y, and Z by March, we'll have a complete product."
 - Proposing backlog items without evidence of user pain behind them.
 
 **Rejection format:**
+
 ```
 Rejected: feature roadmap without demand validation = Build Trap.
 Source: brain-01-product/warnings.md > Build Trap | Torres/continuous-discovery
@@ -111,6 +117,7 @@ Source: brain-01-product/warnings.md > Build Trap | Torres/continuous-discovery
 **Why:** Vanity metrics look good but don't tell you if the product is actually solving the problem. "10,000 signups" means nothing if 9,900 churn in week 1.
 
 **Examples:**
+
 - "Success metric: 1,000 monthly users."
 - "We'll know it's working when brain query volume increases."
 - Tracking usage without measuring whether the usage achieved the intended behavior change.
@@ -128,6 +135,7 @@ Source: brain-01-product/warnings.md > Build Trap | Torres/continuous-discovery
 **Why:** Solutions proposed without opportunity framing anchor the conversation to a specific implementation, killing the exploration of alternatives. The solution might solve the wrong problem.
 
 **Examples:**
+
 - "We should add a dashboard to show brain usage metrics." (solution-first, no pain stated)
 - "The fix is to add caching here." (without stating what the user experience problem is)
 - Responding to "what should we build next?" with a feature list instead of a problem map.
@@ -145,6 +153,7 @@ Source: brain-01-product/warnings.md > Build Trap | Torres/continuous-discovery
 **Why:** This is the most insidious pattern because it sounds user-centric but isn't. "The CEO wants X" becomes "users need X" without evidence. This corrupts the discovery process and leads to building what executives imagine, not what users actually need.
 
 **Examples:**
+
 - "Our investors want a mobile app, so our users clearly need mobile." (business requirement → fake user need)
 - "Since the team voted for this feature, users must want it." (internal consensus → fake user evidence)
 - Quoting internal stakeholders as evidence of user pain without actual user research.

@@ -20,24 +20,24 @@
  *   - Renders nothing when `images` is empty.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { ProductCoverPicker } from '@/components/forms/ProductCoverPicker'
-import { useUploadStore, type ImageEntry } from '@/lib/stores/uploadStore'
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { ProductCoverPicker } from "@/components/forms/ProductCoverPicker";
+import { useUploadStore, type ImageEntry } from "@/lib/stores/uploadStore";
 
 // ─── next/image mock ──────────────────────────────────────────────────
 // Same pattern as the rest of the suite. Forwards src so the test
 // can assert which image the gallery rendered.
-vi.mock('next/image', () => ({
+vi.mock("next/image", () => ({
   default: ({ src, unoptimized }: { src: string; unoptimized?: boolean }) => (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       data-testid="cover-image-img"
       src={src}
-      data-unoptimized={unoptimized ? 'true' : 'false'}
+      data-unoptimized={unoptimized ? "true" : "false"}
     />
   ),
-}))
+}));
 
 // ─── uploadStore mock ────────────────────────────────────────────────
 // The picker reads from a single source of truth (the store) and
@@ -48,9 +48,9 @@ const mockStore = {
   coverImageId: null as string | null,
   setCoverImage: vi.fn(),
   removeEntry: vi.fn(),
-}
+};
 
-vi.mock('@/lib/stores/uploadStore', () => ({
+vi.mock("@/lib/stores/uploadStore", () => ({
   useUploadStore: (selector?: (s: typeof mockStore) => unknown) =>
     selector ? selector(mockStore) : mockStore,
   // Re-export the ImageEntry type so the test can type its fixtures
@@ -58,123 +58,123 @@ vi.mock('@/lib/stores/uploadStore', () => ({
   // from the real module; this lets the test compile without
   // importing the (mocked) module body.
   __esModule: true,
-}))
+}));
 
 beforeEach(() => {
-  vi.clearAllMocks()
-  mockStore.images = []
-  mockStore.coverImageId = null
-})
+  vi.clearAllMocks();
+  mockStore.images = [];
+  mockStore.coverImageId = null;
+});
 
-describe('ProductCoverPicker — render', () => {
-  it('renders one tile per image in the store', () => {
+describe("ProductCoverPicker — render", () => {
+  it("renders one tile per image in the store", () => {
     // Two entries: one in-flight (blob preview, no storage key yet),
     // one seeded from an existing product (signed URL, has storage
     // key). The picker doesn't care which is which — both are
     // images, both get a tile.
     mockStore.images = [
-      { id: 'file-a', preview: 'blob:preview-a', status: 'pending' },
+      { id: "file-a", preview: "blob:preview-a", status: "pending" },
       {
-        id: 'seeded-1',
-        preview: 'https://signed/existing',
-        status: 'complete',
-        storageKey: 'orgs/t1/vehicles/existing.jpg',
+        id: "seeded-1",
+        preview: "https://signed/existing",
+        status: "complete",
+        storageKey: "orgs/t1/vehicles/existing.jpg",
       },
-    ]
+    ];
 
-    render(<ProductCoverPicker />)
+    render(<ProductCoverPicker />);
 
-    const imgs = screen.queryAllByTestId('cover-image-img')
-    expect(imgs).toHaveLength(2)
-    expect(imgs[0]).toHaveAttribute('src', 'blob:preview-a')
-    expect(imgs[1]).toHaveAttribute('src', 'https://signed/existing')
-  })
+    const imgs = screen.queryAllByTestId("cover-image-img");
+    expect(imgs).toHaveLength(2);
+    expect(imgs[0]).toHaveAttribute("src", "blob:preview-a");
+    expect(imgs[1]).toHaveAttribute("src", "https://signed/existing");
+  });
 
-  it('marks the tile whose id matches coverImageId as the cover', () => {
+  it("marks the tile whose id matches coverImageId as the cover", () => {
     // The cover is identified by the ENTRY id (not the storage key).
     // This is the contract: a click writes the entry's id to the
     // store, and the picker matches on id. The form's submit
     // handler later translates the picked id to a storage key.
     mockStore.images = [
-      { id: 'a', preview: 'blob:a', status: 'pending' },
-      { id: 'b', preview: 'blob:b', status: 'pending' },
-    ]
-    mockStore.coverImageId = 'b'
+      { id: "a", preview: "blob:a", status: "pending" },
+      { id: "b", preview: "blob:b", status: "pending" },
+    ];
+    mockStore.coverImageId = "b";
 
-    render(<ProductCoverPicker />)
+    render(<ProductCoverPicker />);
 
-    const badges = screen.queryAllByTestId('cover-badge')
-    expect(badges).toHaveLength(1)
-  })
+    const badges = screen.queryAllByTestId("cover-badge");
+    expect(badges).toHaveLength(1);
+  });
 
-  it('renders nothing when the store has no images', () => {
+  it("renders nothing when the store has no images", () => {
     // Same UX as before — the picker is invisible until at least
     // one image exists. The seller has to add an image first.
-    mockStore.images = []
-    mockStore.coverImageId = null
+    mockStore.images = [];
+    mockStore.coverImageId = null;
 
-    render(<ProductCoverPicker />)
+    render(<ProductCoverPicker />);
 
-    expect(screen.queryAllByTestId('cover-image-img')).toHaveLength(0)
-  })
-})
+    expect(screen.queryAllByTestId("cover-image-img")).toHaveLength(0);
+  });
+});
 
-describe('ProductCoverPicker — interaction', () => {
-  it('writes the picked entry id to the store on cover click', () => {
+describe("ProductCoverPicker — interaction", () => {
+  it("writes the picked entry id to the store on cover click", () => {
     // The WRITE side of the contract. A click here does NOT PATCH
     // the server, does NOT call any mutation hook — it just
     // updates the store. The form's submit handler (in either
     // create or edit) reads coverImageId and sends the resolved
     // storage key in the request body.
     mockStore.images = [
-      { id: 'a', preview: 'blob:a', status: 'pending' },
-      { id: 'b', preview: 'blob:b', status: 'pending' },
-    ]
+      { id: "a", preview: "blob:a", status: "pending" },
+      { id: "b", preview: "blob:b", status: "pending" },
+    ];
 
-    render(<ProductCoverPicker />)
+    render(<ProductCoverPicker />);
 
     // Target the tile by data-testid — `getAllByRole('button')`
     // would also pick up the per-tile remove (X) buttons, which
     // call removeEntry, not setCoverImage.
-    const tileB = screen.getByTestId('cover-image-tile-b')
-    fireEvent.click(tileB)
+    const tileB = screen.getByTestId("cover-image-tile-b");
+    fireEvent.click(tileB);
 
-    expect(mockStore.setCoverImage).toHaveBeenCalledTimes(1)
-    expect(mockStore.setCoverImage).toHaveBeenCalledWith('b')
-  })
+    expect(mockStore.setCoverImage).toHaveBeenCalledTimes(1);
+    expect(mockStore.setCoverImage).toHaveBeenCalledWith("b");
+  });
 
-  it('writes the picked entry id to the store even when clicking the already-cover tile', () => {
+  it("writes the picked entry id to the store even when clicking the already-cover tile", () => {
     // The contract is "every click emits" — keeps the consumer
     // (the form's submit) simple. The store's setCoverImage is
     // idempotent (same id, no-op).
     mockStore.images = [
-      { id: 'a', preview: 'blob:a', status: 'pending' },
-      { id: 'b', preview: 'blob:b', status: 'pending' },
-    ]
-    mockStore.coverImageId = 'a'
+      { id: "a", preview: "blob:a", status: "pending" },
+      { id: "b", preview: "blob:b", status: "pending" },
+    ];
+    mockStore.coverImageId = "a";
 
-    render(<ProductCoverPicker />)
+    render(<ProductCoverPicker />);
 
-    fireEvent.click(screen.getByTestId('cover-image-tile-a'))
+    fireEvent.click(screen.getByTestId("cover-image-tile-a"));
 
-    expect(mockStore.setCoverImage).toHaveBeenCalledWith('a')
-  })
+    expect(mockStore.setCoverImage).toHaveBeenCalledWith("a");
+  });
 
-  it('calls removeEntry when the X button is clicked', () => {
+  it("calls removeEntry when the X button is clicked", () => {
     // Each tile gets a remove button (X). The picker delegates
     // removal to the store; the store decides whether to also
     // clear the cover if the removed entry was the cover.
     mockStore.images = [
-      { id: 'a', preview: 'blob:a', status: 'pending' },
-      { id: 'b', preview: 'blob:b', status: 'pending' },
-    ]
+      { id: "a", preview: "blob:a", status: "pending" },
+      { id: "b", preview: "blob:b", status: "pending" },
+    ];
 
-    render(<ProductCoverPicker />)
+    render(<ProductCoverPicker />);
 
-    const removeA = screen.getByTestId('cover-image-remove-a')
-    fireEvent.click(removeA)
+    const removeA = screen.getByTestId("cover-image-remove-a");
+    fireEvent.click(removeA);
 
-    expect(mockStore.removeEntry).toHaveBeenCalledTimes(1)
-    expect(mockStore.removeEntry).toHaveBeenCalledWith('a')
-  })
-})
+    expect(mockStore.removeEntry).toHaveBeenCalledTimes(1);
+    expect(mockStore.removeEntry).toHaveBeenCalledWith("a");
+  });
+});

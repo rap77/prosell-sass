@@ -1,618 +1,846 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProSell — Aceptar invitación</title>
-<link rel="stylesheet" href="../colors_and_type.css">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<style>
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body {
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-  position: relative;
-  overflow-x: hidden;
-}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ProSell — Aceptar invitación</title>
+    <link rel="stylesheet" href="../colors_and_type.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg-base);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+      }
 
-/* Background glow + grid (same as other auth screens) */
-body::before {
-  content: "";
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background: radial-gradient(ellipse 50% 40% at 50% 50%, rgba(30,95,212,0.08), transparent 70%);
-}
-body::after {
-  content: "";
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background-image:
-    linear-gradient(rgba(77,184,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(77,184,255,0.04) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
-}
+      /* Background glow + grid (same as other auth screens) */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        background: radial-gradient(
+          ellipse 50% 40% at 50% 50%,
+          rgba(30, 95, 212, 0.08),
+          transparent 70%
+        );
+      }
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        background-image:
+          linear-gradient(rgba(77, 184, 255, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(77, 184, 255, 0.04) 1px, transparent 1px);
+        background-size: 56px 56px;
+        mask-image: radial-gradient(
+          ellipse at center,
+          black 20%,
+          transparent 70%
+        );
+        -webkit-mask-image: radial-gradient(
+          ellipse at center,
+          black 20%,
+          transparent 70%
+        );
+      }
 
-.page {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
-  display: flex; align-items: flex-start; justify-content: center;
-  padding: 48px 24px;
-}
+      .page {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 48px 24px;
+      }
 
-.stage {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-  width: 100%;
-  max-width: 992px;
-  align-items: start;
-}
+      .stage {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        width: 100%;
+        max-width: 992px;
+        align-items: start;
+      }
 
-.card {
-  background: rgba(13,27,62,0.8);
-  border: 1px solid rgba(77,184,255,0.12);
-  border-radius: 16px;
-  padding: 40px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-lg);
-  display: flex; flex-direction: column;
-  gap: 22px;
-  max-width: 460px;
-  width: 100%;
-  margin: 0 auto;
-}
+      .card {
+        background: rgba(13, 27, 62, 0.8);
+        border: 1px solid rgba(77, 184, 255, 0.12);
+        border-radius: 16px;
+        padding: 40px;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        box-shadow: var(--shadow-lg);
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        max-width: 460px;
+        width: 100%;
+        margin: 0 auto;
+      }
 
-.card-logo {
-  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  font-size: 16px; font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--text-primary);
-  text-decoration: none;
-  align-self: center;
-}
-.card-logo img { height: 24px; width: auto; }
+      .card-logo {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: var(--text-primary);
+        text-decoration: none;
+        align-self: center;
+      }
+      .card-logo img {
+        height: 24px;
+        width: auto;
+      }
 
-.card-state-tag {
-  align-self: center;
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-disabled);
-  margin-top: -10px;
-}
+      .card-state-tag {
+        align-self: center;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-disabled);
+        margin-top: -10px;
+      }
 
-/* Hero icon */
-.hero-icon {
-  align-self: center;
-  width: 80px; height: 80px;
-  border-radius: 50%;
-  background: rgba(77,184,255,0.08);
-  border: 1px solid rgba(77,184,255,0.15);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--cyan);
-  position: relative;
-}
-.hero-icon::before {
-  content: "";
-  position: absolute; inset: -8px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(77,184,255,0.15), transparent 70%);
-  z-index: -1;
-}
-.hero-icon [data-lucide] { width: 36px; height: 36px; stroke-width: 1.75; }
-.hero-icon.error {
-  background: rgba(240,68,56,0.08);
-  border-color: rgba(240,68,56,0.20);
-  color: var(--error);
-}
-.hero-icon.error::before {
-  background: radial-gradient(circle, rgba(240,68,56,0.18), transparent 70%);
-}
+      /* Hero icon */
+      .hero-icon {
+        align-self: center;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(77, 184, 255, 0.08);
+        border: 1px solid rgba(77, 184, 255, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--cyan);
+        position: relative;
+      }
+      .hero-icon::before {
+        content: "";
+        position: absolute;
+        inset: -8px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(77, 184, 255, 0.15),
+          transparent 70%
+        );
+        z-index: -1;
+      }
+      .hero-icon [data-lucide] {
+        width: 36px;
+        height: 36px;
+        stroke-width: 1.75;
+      }
+      .hero-icon.error {
+        background: rgba(240, 68, 56, 0.08);
+        border-color: rgba(240, 68, 56, 0.2);
+        color: var(--error);
+      }
+      .hero-icon.error::before {
+        background: radial-gradient(
+          circle,
+          rgba(240, 68, 56, 0.18),
+          transparent 70%
+        );
+      }
 
-.card-head {
-  display: flex; flex-direction: column;
-  gap: 8px;
-  text-align: center;
-}
-.card-title {
-  font-size: 26px; font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  margin: 0;
-  color: var(--text-primary);
-}
-.card-sub {
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--text-secondary);
-  margin: 0;
-}
-.card-sub b { color: var(--text-primary); font-weight: 600; }
+      .card-head {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+      }
+      .card-title {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin: 0;
+        color: var(--text-primary);
+      }
+      .card-sub {
+        font-size: 14px;
+        line-height: 1.55;
+        color: var(--text-secondary);
+        margin: 0;
+      }
+      .card-sub b {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
 
-/* Invitation context */
-.invite-ctx {
-  background: rgba(77,184,255,0.06);
-  border: 1px solid rgba(77,184,255,0.12);
-  border-radius: 10px;
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.invite-avatar {
-  flex-shrink: 0;
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, #4DB8FF 0%, #1E5FD4 100%);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  box-shadow: 0 4px 14px rgba(30,95,212,0.35);
-}
-.invite-text {
-  display: flex; flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.invite-line {
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.4;
-}
-.invite-line b { color: var(--text-primary); font-weight: 600; }
-.invite-company {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--cyan);
-  line-height: 1.3;
-  letter-spacing: -0.005em;
-}
-.invite-role {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 2px;
-}
-.invite-role b { color: var(--text-primary); font-weight: 600; }
+      /* Invitation context */
+      .invite-ctx {
+        background: rgba(77, 184, 255, 0.06);
+        border: 1px solid rgba(77, 184, 255, 0.12);
+        border-radius: 10px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .invite-avatar {
+        flex-shrink: 0;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #4db8ff 0%, #1e5fd4 100%);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        box-shadow: 0 4px 14px rgba(30, 95, 212, 0.35);
+      }
+      .invite-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+      .invite-line {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.4;
+      }
+      .invite-line b {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+      .invite-company {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--cyan);
+        line-height: 1.3;
+        letter-spacing: -0.005em;
+      }
+      .invite-role {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 2px;
+      }
+      .invite-role b {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
 
-/* Form */
-form { display: flex; flex-direction: column; gap: 18px; }
-.field { display: flex; flex-direction: column; gap: 6px; }
-.field-label {
-  font-size: 13px; font-weight: 500;
-  color: var(--text-secondary);
-}
-.field-input {
-  position: relative;
-  display: flex; align-items: center;
-}
-.field-input input {
-  width: 100%;
-  height: 44px;
-  padding: 0 14px;
-  background: rgba(13,27,62,0.8);
-  border: 1px solid rgba(77,184,255,0.15);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 15px;
-  outline: none;
-  transition: border-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out), background 180ms var(--ease-out);
-  -webkit-appearance: none; appearance: none;
-}
-.field-input input::placeholder { color: var(--text-disabled); }
-.field-input input:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 0 3px rgba(77,184,255,0.10);
-  background: rgba(13,27,62,0.95);
-}
-.field-input .eye {
-  position: absolute; right: 8px;
-  width: 32px; height: 32px;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: transparent; border: 0;
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: color 180ms;
-}
-.field-input .eye:hover { color: var(--text-primary); }
-.field-input .eye [data-lucide] { width: 16px; height: 16px; stroke-width: 2; }
-.field.with-icon input { padding-right: 44px; }
+      /* Form */
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .field-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
+      }
+      .field-input {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .field-input input {
+        width: 100%;
+        height: 44px;
+        padding: 0 14px;
+        background: rgba(13, 27, 62, 0.8);
+        border: 1px solid rgba(77, 184, 255, 0.15);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 15px;
+        outline: none;
+        transition:
+          border-color 180ms var(--ease-out),
+          box-shadow 180ms var(--ease-out),
+          background 180ms var(--ease-out);
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .field-input input::placeholder {
+        color: var(--text-disabled);
+      }
+      .field-input input:focus {
+        border-color: var(--cyan);
+        box-shadow: 0 0 0 3px rgba(77, 184, 255, 0.1);
+        background: rgba(13, 27, 62, 0.95);
+      }
+      .field-input .eye {
+        position: absolute;
+        right: 8px;
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: 0;
+        border-radius: 6px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: color 180ms;
+      }
+      .field-input .eye:hover {
+        color: var(--text-primary);
+      }
+      .field-input .eye [data-lucide] {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2;
+      }
+      .field.with-icon input {
+        padding-right: 44px;
+      }
 
-/* Read-only invited email pill (small touch — shows token-bound email) */
-.invited-email {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(13,27,62,0.6);
-  border: 1px dashed rgba(77,184,255,0.18);
-  color: var(--text-secondary);
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 13px;
-  font-family: var(--font-mono);
-}
-.invited-email [data-lucide] {
-  width: 14px; height: 14px;
-  color: var(--cyan);
-  stroke-width: 2;
-}
-.invited-email b { color: var(--text-primary); font-weight: 500; }
+      /* Read-only invited email pill (small touch — shows token-bound email) */
+      .invited-email {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(13, 27, 62, 0.6);
+        border: 1px dashed rgba(77, 184, 255, 0.18);
+        color: var(--text-secondary);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 13px;
+        font-family: var(--font-mono);
+      }
+      .invited-email [data-lucide] {
+        width: 14px;
+        height: 14px;
+        color: var(--cyan);
+        stroke-width: 2;
+      }
+      .invited-email b {
+        color: var(--text-primary);
+        font-weight: 500;
+      }
 
-/* Strength meter */
-.strength {
-  display: flex; flex-direction: column;
-  gap: 6px;
-  margin-top: 2px;
-}
-.strength-bars {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-}
-.strength-bars span {
-  height: 4px;
-  border-radius: 100px;
-  background: var(--border-subtle);
-  transition: background 220ms var(--ease-out);
-}
-.strength.s1 .strength-bars span:nth-child(-n+1) { background: var(--error); }
-.strength.s2 .strength-bars span:nth-child(-n+2) { background: var(--warning); }
-.strength.s3 .strength-bars span:nth-child(-n+3) { background: var(--warning); }
-.strength.s4 .strength-bars span { background: var(--success); }
+      /* Strength meter */
+      .strength {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 2px;
+      }
+      .strength-bars {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+      }
+      .strength-bars span {
+        height: 4px;
+        border-radius: 100px;
+        background: var(--border-subtle);
+        transition: background 220ms var(--ease-out);
+      }
+      .strength.s1 .strength-bars span:nth-child(-n + 1) {
+        background: var(--error);
+      }
+      .strength.s2 .strength-bars span:nth-child(-n + 2) {
+        background: var(--warning);
+      }
+      .strength.s3 .strength-bars span:nth-child(-n + 3) {
+        background: var(--warning);
+      }
+      .strength.s4 .strength-bars span {
+        background: var(--success);
+      }
 
-.strength-label {
-  font-size: 11px;
-  color: var(--text-secondary);
-  display: flex; align-items: center; gap: 6px;
-}
-.strength-label b { font-weight: 600; }
-.strength.s1 .strength-label b { color: var(--error); }
-.strength.s2 .strength-label b { color: var(--warning); }
-.strength.s3 .strength-label b { color: var(--warning); }
-.strength.s4 .strength-label b { color: var(--success); }
+      .strength-label {
+        font-size: 11px;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .strength-label b {
+        font-weight: 600;
+      }
+      .strength.s1 .strength-label b {
+        color: var(--error);
+      }
+      .strength.s2 .strength-label b {
+        color: var(--warning);
+      }
+      .strength.s3 .strength-label b {
+        color: var(--warning);
+      }
+      .strength.s4 .strength-label b {
+        color: var(--success);
+      }
 
-/* Checkbox */
-.checkbox-row {
-  display: flex; align-items: flex-start; gap: 10px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  cursor: pointer;
-  user-select: none;
-}
-.checkbox-row input { display: none; }
-.checkbox-row .cb {
-  flex-shrink: 0;
-  width: 18px; height: 18px;
-  border-radius: 5px;
-  border: 1.5px solid rgba(77,184,255,0.4);
-  background: rgba(13,27,62,0.8);
-  display: inline-flex; align-items: center; justify-content: center;
-  margin-top: 1px;
-  transition: all 180ms var(--ease-out);
-  color: var(--bg-base);
-}
-.checkbox-row .cb [data-lucide] {
-  width: 12px; height: 12px;
-  stroke-width: 3;
-  opacity: 0;
-  transition: opacity 180ms;
-}
-.checkbox-row input:checked + .cb {
-  background: var(--cyan);
-  border-color: var(--cyan);
-}
-.checkbox-row input:checked + .cb [data-lucide] { opacity: 1; }
-.checkbox-row a {
-  color: var(--cyan);
-  text-decoration: none;
-  font-weight: 500;
-}
-.checkbox-row a:hover { text-decoration: underline; }
+      /* Checkbox */
+      .checkbox-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+        cursor: pointer;
+        user-select: none;
+      }
+      .checkbox-row input {
+        display: none;
+      }
+      .checkbox-row .cb {
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
+        border: 1.5px solid rgba(77, 184, 255, 0.4);
+        background: rgba(13, 27, 62, 0.8);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 1px;
+        transition: all 180ms var(--ease-out);
+        color: var(--bg-base);
+      }
+      .checkbox-row .cb [data-lucide] {
+        width: 12px;
+        height: 12px;
+        stroke-width: 3;
+        opacity: 0;
+        transition: opacity 180ms;
+      }
+      .checkbox-row input:checked + .cb {
+        background: var(--cyan);
+        border-color: var(--cyan);
+      }
+      .checkbox-row input:checked + .cb [data-lucide] {
+        opacity: 1;
+      }
+      .checkbox-row a {
+        color: var(--cyan);
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .checkbox-row a:hover {
+        text-decoration: underline;
+      }
 
-/* Buttons */
-.btn-primary {
-  width: 100%;
-  height: 46px;
-  background: var(--cyan);
-  color: var(--bg-base);
-  border: 0;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  transition: background 180ms var(--ease-out), box-shadow 180ms var(--ease-out), transform 180ms var(--ease-out);
-}
-.btn-primary:hover {
-  background: var(--cyan-hover);
-  box-shadow: 0 8px 28px rgba(77,184,255,0.30);
-  transform: translateY(-1px);
-}
-.btn-primary [data-lucide] { width: 16px; height: 16px; stroke-width: 2.5; }
+      /* Buttons */
+      .btn-primary {
+        width: 100%;
+        height: 46px;
+        background: var(--cyan);
+        color: var(--bg-base);
+        border: 0;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition:
+          background 180ms var(--ease-out),
+          box-shadow 180ms var(--ease-out),
+          transform 180ms var(--ease-out);
+      }
+      .btn-primary:hover {
+        background: var(--cyan-hover);
+        box-shadow: 0 8px 28px rgba(77, 184, 255, 0.3);
+        transform: translateY(-1px);
+      }
+      .btn-primary [data-lucide] {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2.5;
+      }
 
-.btn-ghost {
-  width: 100%;
-  height: 44px;
-  background: transparent;
-  color: var(--text-primary);
-  border: 1px solid rgba(77,184,255,0.25);
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  text-decoration: none;
-  transition: all 180ms var(--ease-out);
-}
-.btn-ghost:hover {
-  border-color: var(--cyan);
-  background: rgba(77,184,255,0.05);
-}
-.btn-ghost [data-lucide] { width: 16px; height: 16px; stroke-width: 2; }
+      .btn-ghost {
+        width: 100%;
+        height: 44px;
+        background: transparent;
+        color: var(--text-primary);
+        border: 1px solid rgba(77, 184, 255, 0.25);
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-decoration: none;
+        transition: all 180ms var(--ease-out);
+      }
+      .btn-ghost:hover {
+        border-color: var(--cyan);
+        background: rgba(77, 184, 255, 0.05);
+      }
+      .btn-ghost [data-lucide] {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2;
+      }
 
-/* Expired meta block */
-.expired-meta {
-  background: rgba(13,27,62,0.6);
-  border: 1px solid rgba(77,184,255,0.10);
-  border-radius: 10px;
-  padding: 14px 16px;
-  display: flex; flex-direction: column;
-  gap: 10px;
-}
-.expired-row {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
-}
-.expired-row .k {
-  color: var(--text-secondary);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-weight: 600;
-  font-size: 10.5px;
-}
-.expired-row .v {
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 12px;
-}
-.expired-row .v.muted { color: var(--text-disabled); text-decoration: line-through; }
-.expired-row .v .pill {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 8px;
-  background: var(--error-bg);
-  color: var(--error);
-  border-radius: 100px;
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-.expired-row .v .pill::before {
-  content: "";
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--error);
-}
+      /* Expired meta block */
+      .expired-meta {
+        background: rgba(13, 27, 62, 0.6);
+        border: 1px solid rgba(77, 184, 255, 0.1);
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .expired-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 12px;
+      }
+      .expired-row .k {
+        color: var(--text-secondary);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-weight: 600;
+        font-size: 10.5px;
+      }
+      .expired-row .v {
+        color: var(--text-primary);
+        font-family: var(--font-mono);
+        font-size: 12px;
+      }
+      .expired-row .v.muted {
+        color: var(--text-disabled);
+        text-decoration: line-through;
+      }
+      .expired-row .v .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        background: var(--error-bg);
+        color: var(--error);
+        border-radius: 100px;
+        font-family: var(--font-sans);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+      .expired-row .v .pill::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--error);
+      }
 
-.back {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  align-self: center;
-  transition: color 180ms;
-  padding-top: 4px;
-}
-.back:hover { color: var(--cyan); }
-.back [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+      .back {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        align-self: center;
+        transition: color 180ms;
+        padding-top: 4px;
+      }
+      .back:hover {
+        color: var(--cyan);
+      }
+      .back [data-lucide] {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2;
+      }
 
-/* Token chip at bottom */
-.token-chip {
-  align-self: center;
-  display: inline-flex; align-items: center; gap: 8px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-disabled);
-  padding: 6px 10px;
-  background: rgba(13,27,62,0.5);
-  border: 1px solid rgba(77,184,255,0.08);
-  border-radius: 100px;
-  margin-top: -6px;
-}
-.token-chip [data-lucide] { width: 11px; height: 11px; stroke-width: 2; }
+      /* Token chip at bottom */
+      .token-chip {
+        align-self: center;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-disabled);
+        padding: 6px 10px;
+        background: rgba(13, 27, 62, 0.5);
+        border: 1px solid rgba(77, 184, 255, 0.08);
+        border-radius: 100px;
+        margin-top: -6px;
+      }
+      .token-chip [data-lucide] {
+        width: 11px;
+        height: 11px;
+        stroke-width: 2;
+      }
 
-@media (max-width: 920px) {
-  .stage { grid-template-columns: 1fr; max-width: 460px; gap: 24px; }
-  .card { padding: 32px 24px; }
-  .card-title { font-size: 22px; }
-}
-</style>
-</head>
-<body>
-<div class="page">
-  <div class="stage">
+      @media (max-width: 920px) {
+        .stage {
+          grid-template-columns: 1fr;
+          max-width: 460px;
+          gap: 24px;
+        }
+        .card {
+          padding: 32px 24px;
+        }
+        .card-title {
+          font-size: 22px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="stage">
+        <!-- ============== Default: Accept Invitation ============== -->
+        <section class="card" data-screen-label="01 Aceptar invitación">
+          <a class="card-logo" href="#">
+            <img src="../assets/logo-mark.png" alt="" />
+            <span>ProSell</span>
+          </a>
+          <span class="card-state-tag">Estado · Invitación válida</span>
 
-    <!-- ============== Default: Accept Invitation ============== -->
-    <section class="card" data-screen-label="01 Aceptar invitación">
-      <a class="card-logo" href="#">
-        <img src="../assets/logo-mark.png" alt="" />
-        <span>ProSell</span>
-      </a>
-      <span class="card-state-tag">Estado · Invitación válida</span>
-
-      <div class="hero-icon">
-        <i data-lucide="user-plus"></i>
-      </div>
-
-      <div class="card-head">
-        <h1 class="card-title">Te invitaron a ProSell</h1>
-      </div>
-
-      <!-- Invitation context -->
-      <div class="invite-ctx">
-        <div class="invite-avatar">MR</div>
-        <div class="invite-text">
-          <div class="invite-line"><b>Martín Rodríguez</b> te invitó a unirte a</div>
-          <div class="invite-company">Automotores del Norte</div>
-          <div class="invite-role">Como: <b>Vendedor</b></div>
-        </div>
-      </div>
-
-      <form id="accept-form" novalidate>
-        <div class="invited-email" title="Email vinculado al token de invitación">
-          <i data-lucide="mail"></i>
-          Invitación enviada a&nbsp;<b>sofia.garcia@autonorte.com.ar</b>
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="name">Tu nombre completo</label>
-          <div class="field-input">
-            <input type="text" id="name" name="name" placeholder="Ej: Sofía García" autocomplete="name" />
+          <div class="hero-icon">
+            <i data-lucide="user-plus"></i>
           </div>
-        </div>
 
-        <div class="field with-icon">
-          <label class="field-label" for="password">Contraseña</label>
-          <div class="field-input">
-            <input type="password" id="password" name="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" />
-            <button type="button" class="eye" id="toggle-pw" aria-label="Mostrar contraseña">
-              <i data-lucide="eye"></i>
+          <div class="card-head">
+            <h1 class="card-title">Te invitaron a ProSell</h1>
+          </div>
+
+          <!-- Invitation context -->
+          <div class="invite-ctx">
+            <div class="invite-avatar">MR</div>
+            <div class="invite-text">
+              <div class="invite-line">
+                <b>Martín Rodríguez</b> te invitó a unirte a
+              </div>
+              <div class="invite-company">Automotores del Norte</div>
+              <div class="invite-role">Como: <b>Vendedor</b></div>
+            </div>
+          </div>
+
+          <form id="accept-form" novalidate>
+            <div
+              class="invited-email"
+              title="Email vinculado al token de invitación"
+            >
+              <i data-lucide="mail"></i>
+              Invitación enviada a&nbsp;<b>sofia.garcia@autonorte.com.ar</b>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="name">Tu nombre completo</label>
+              <div class="field-input">
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  placeholder="Ej: Sofía García"
+                  autocomplete="name"
+                />
+              </div>
+            </div>
+
+            <div class="field with-icon">
+              <label class="field-label" for="password">Contraseña</label>
+              <div class="field-input">
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  placeholder="Mínimo 8 caracteres"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  class="eye"
+                  id="toggle-pw"
+                  aria-label="Mostrar contraseña"
+                >
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+              <div class="strength" id="strength">
+                <div class="strength-bars">
+                  <span></span><span></span><span></span><span></span>
+                </div>
+                <div class="strength-label">
+                  Seguridad: <b id="strength-label">—</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="field with-icon">
+              <label class="field-label" for="confirm"
+                >Confirmar contraseña</label
+              >
+              <div class="field-input">
+                <input
+                  type="password"
+                  id="confirm"
+                  name="confirm"
+                  placeholder="Repetí tu contraseña"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  class="eye"
+                  id="toggle-confirm"
+                  aria-label="Mostrar contraseña"
+                >
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="terms" />
+              <span class="cb"><i data-lucide="check"></i></span>
+              <span
+                >Acepto los <a href="#">Términos de uso</a> y la
+                <a href="#">Política de privacidad</a></span
+              >
+            </label>
+
+            <button class="btn-primary" type="submit">
+              Aceptar invitación y entrar
+              <i data-lucide="arrow-right"></i>
             </button>
+          </form>
+
+          <div class="token-chip">
+            <i data-lucide="link-2"></i>
+            token · inv_8f3a91c7 · expira en 6 días
           </div>
-          <div class="strength" id="strength">
-            <div class="strength-bars"><span></span><span></span><span></span><span></span></div>
-            <div class="strength-label">Seguridad: <b id="strength-label">—</b></div>
+        </section>
+
+        <!-- ============== Expired token state ============== -->
+        <section class="card" data-screen-label="02 Invitación expirada">
+          <a class="card-logo" href="#">
+            <img src="../assets/logo-mark.png" alt="" />
+            <span>ProSell</span>
+          </a>
+          <span class="card-state-tag">Estado · Token expirado</span>
+
+          <div class="hero-icon error">
+            <i data-lucide="alert-circle"></i>
           </div>
-        </div>
 
-        <div class="field with-icon">
-          <label class="field-label" for="confirm">Confirmar contraseña</label>
-          <div class="field-input">
-            <input type="password" id="confirm" name="confirm" placeholder="Repetí tu contraseña" autocomplete="new-password" />
-            <button type="button" class="eye" id="toggle-confirm" aria-label="Mostrar contraseña">
-              <i data-lucide="eye"></i>
-            </button>
+          <div class="card-head">
+            <h1 class="card-title">Invitación expirada</h1>
+            <p class="card-sub">
+              Este link ya no es válido o fue usado.<br />Pedile al admin que te
+              envíe uno nuevo.
+            </p>
           </div>
-        </div>
 
-        <label class="checkbox-row">
-          <input type="checkbox" id="terms" />
-          <span class="cb"><i data-lucide="check"></i></span>
-          <span>Acepto los <a href="#">Términos de uso</a> y la <a href="#">Política de privacidad</a></span>
-        </label>
+          <div class="expired-meta">
+            <div class="expired-row">
+              <span class="k">Estado</span>
+              <span class="v"><span class="pill">Expirado</span></span>
+            </div>
+            <div class="expired-row">
+              <span class="k">Workspace</span>
+              <span class="v">Automotores del Norte</span>
+            </div>
+            <div class="expired-row">
+              <span class="k">Invitado por</span>
+              <span class="v">Martín Rodríguez</span>
+            </div>
+            <div class="expired-row">
+              <span class="k">Expiró</span>
+              <span class="v muted">14 may 2026 · 09:42</span>
+            </div>
+          </div>
 
-        <button class="btn-primary" type="submit">
-          Aceptar invitación y entrar
-          <i data-lucide="arrow-right"></i>
-        </button>
-      </form>
+          <a class="btn-ghost" href="#">
+            <i data-lucide="mail"></i>
+            Contactar al admin
+          </a>
 
-      <div class="token-chip">
-        <i data-lucide="link-2"></i>
-        token · inv_8f3a91c7 · expira en 6 días
+          <a class="back" href="Login.html">
+            <i data-lucide="arrow-left"></i>
+            Ir al login
+          </a>
+        </section>
       </div>
-    </section>
+    </div>
 
-    <!-- ============== Expired token state ============== -->
-    <section class="card" data-screen-label="02 Invitación expirada">
-      <a class="card-logo" href="#">
-        <img src="../assets/logo-mark.png" alt="" />
-        <span>ProSell</span>
-      </a>
-      <span class="card-state-tag">Estado · Token expirado</span>
-
-      <div class="hero-icon error">
-        <i data-lucide="alert-circle"></i>
-      </div>
-
-      <div class="card-head">
-        <h1 class="card-title">Invitación expirada</h1>
-        <p class="card-sub">Este link ya no es válido o fue usado.<br>Pedile al admin que te envíe uno nuevo.</p>
-      </div>
-
-      <div class="expired-meta">
-        <div class="expired-row">
-          <span class="k">Estado</span>
-          <span class="v"><span class="pill">Expirado</span></span>
-        </div>
-        <div class="expired-row">
-          <span class="k">Workspace</span>
-          <span class="v">Automotores del Norte</span>
-        </div>
-        <div class="expired-row">
-          <span class="k">Invitado por</span>
-          <span class="v">Martín Rodríguez</span>
-        </div>
-        <div class="expired-row">
-          <span class="k">Expiró</span>
-          <span class="v muted">14 may 2026 · 09:42</span>
-        </div>
-      </div>
-
-      <a class="btn-ghost" href="#">
-        <i data-lucide="mail"></i>
-        Contactar al admin
-      </a>
-
-      <a class="back" href="Login.html">
-        <i data-lucide="arrow-left"></i>
-        Ir al login
-      </a>
-    </section>
-
-  </div>
-</div>
-
-<script>
-  lucide.createIcons();
-
-  function bindEye(inputId, btnId) {
-    const input = document.getElementById(inputId);
-    const btn = document.getElementById(btnId);
-    if (!input || !btn) return;
-    btn.addEventListener('click', () => {
-      const showing = input.type === 'text';
-      input.type = showing ? 'password' : 'text';
-      btn.innerHTML = showing
-        ? '<i data-lucide="eye"></i>'
-        : '<i data-lucide="eye-off"></i>';
-      btn.setAttribute('aria-label', showing ? 'Mostrar contraseña' : 'Ocultar contraseña');
+    <script>
       lucide.createIcons();
-    });
-  }
-  bindEye('password', 'toggle-pw');
-  bindEye('confirm', 'toggle-confirm');
 
-  const pwInput = document.getElementById('password');
-  const strengthEl = document.getElementById('strength');
-  const strengthLabel = document.getElementById('strength-label');
-  function scoreFor(v) {
-    if (!v) return 0;
-    let s = 0;
-    if (v.length >= 8) s++;
-    if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++;
-    if (/\d/.test(v)) s++;
-    if (/[^A-Za-z0-9]/.test(v)) s++;
-    return Math.min(s, 4);
-  }
-  const labels = ['—', 'Débil', 'Media', 'Media', 'Fuerte'];
-  pwInput.addEventListener('input', () => {
-    const s = scoreFor(pwInput.value);
-    strengthEl.className = 'strength' + (s ? ' s' + s : '');
-    strengthLabel.textContent = labels[s];
-  });
-</script>
-</body>
+      function bindEye(inputId, btnId) {
+        const input = document.getElementById(inputId);
+        const btn = document.getElementById(btnId);
+        if (!input || !btn) return;
+        btn.addEventListener("click", () => {
+          const showing = input.type === "text";
+          input.type = showing ? "password" : "text";
+          btn.innerHTML = showing
+            ? '<i data-lucide="eye"></i>'
+            : '<i data-lucide="eye-off"></i>';
+          btn.setAttribute(
+            "aria-label",
+            showing ? "Mostrar contraseña" : "Ocultar contraseña",
+          );
+          lucide.createIcons();
+        });
+      }
+      bindEye("password", "toggle-pw");
+      bindEye("confirm", "toggle-confirm");
+
+      const pwInput = document.getElementById("password");
+      const strengthEl = document.getElementById("strength");
+      const strengthLabel = document.getElementById("strength-label");
+      function scoreFor(v) {
+        if (!v) return 0;
+        let s = 0;
+        if (v.length >= 8) s++;
+        if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++;
+        if (/\d/.test(v)) s++;
+        if (/[^A-Za-z0-9]/.test(v)) s++;
+        return Math.min(s, 4);
+      }
+      const labels = ["—", "Débil", "Media", "Media", "Fuerte"];
+      pwInput.addEventListener("input", () => {
+        const s = scoreFor(pwInput.value);
+        strengthEl.className = "strength" + (s ? " s" + s : "");
+        strengthLabel.textContent = labels[s];
+      });
+    </script>
+  </body>
 </html>

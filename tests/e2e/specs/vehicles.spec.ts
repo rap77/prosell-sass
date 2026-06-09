@@ -1,9 +1,15 @@
 import { expect, test } from "@playwright/test";
-import { mockVehiclesEndpoint, mockVinDecodeEndpoint, mockCategoriesEndpoint } from "../helpers/mock-endpoints";
+import {
+  mockVehiclesEndpoint,
+  mockVinDecodeEndpoint,
+  mockCategoriesEndpoint,
+} from "../helpers/mock-endpoints";
 import { MOCK_VIN_DECODED, MOCK_CATEGORIES } from "../fixtures/mock-data";
 
 test.describe("Vehicles", () => {
-  test("should populate Select fields after VIN decode - bug fix verification", async ({ page }) => {
+  test("should populate Select fields after VIN decode - bug fix verification", async ({
+    page,
+  }) => {
     // This test verifies the fix for commit 3252454
     // Previously: Select fields remained empty after VIN decode
     // Fix: Removed ?? "" fallback from Select value props
@@ -36,7 +42,9 @@ test.describe("Vehicles", () => {
     await expect(vinInput).toBeVisible();
     await vinInput.fill(testVin);
 
-    const decodeButton = page.getByRole("button", { name: /decode|decodificar/i });
+    const decodeButton = page.getByRole("button", {
+      name: /decode|decodificar/i,
+    });
     await expect(decodeButton).toBeVisible();
     await decodeButton.click();
 
@@ -48,7 +56,7 @@ test.describe("Vehicles", () => {
     await page.screenshot({ path: "test-results/after-decode.png" });
 
     // CRITICAL VERIFICATION: Check Select fields are populated IMMEDIATELY after screenshot
-    const engineInputCheck = page.locator('#engine');
+    const engineInputCheck = page.locator("#engine");
     const engineCheckValue = await engineInputCheck.inputValue();
     console.log("Engine value RIGHT after screenshot:", engineCheckValue);
 
@@ -62,14 +70,14 @@ test.describe("Vehicles", () => {
     await expect(makeLabel).toBeVisible();
 
     // Find the SelectTrigger next to the label
-    const makeSelect = page.locator('label:has-text("Marca") + div').or(
-      page.locator('[id="make"]')
-    );
+    const makeSelect = page
+      .locator('label:has-text("Marca") + div')
+      .or(page.locator('[id="make"]'));
     await expect(makeSelect).toBeVisible();
 
     // For Radix UI Select, check the visible text content
     // The SelectValue should show the selected option, not placeholder
-    const makeContainer = page.locator('[id="make"]').locator('..');
+    const makeContainer = page.locator('[id="make"]').locator("..");
     const makeText = await makeContainer.textContent();
 
     console.log("Make select container text:", makeText);
@@ -99,7 +107,7 @@ test.describe("Vehicles", () => {
     console.log("Engine input value:", engineValue);
 
     // Try selecting by ID directly
-    const engineById = page.locator('#engine');
+    const engineById = page.locator("#engine");
     const engineByIdValue = await engineById.inputValue();
     console.log("Engine by ID value:", engineByIdValue);
 
@@ -110,7 +118,9 @@ test.describe("Vehicles", () => {
     await expect(trimInput).toHaveValue(/LT/i);
   });
 
-  test("should load vehicles in DataGrid with C3 schema data", async ({ page }) => {
+  test("should load vehicles in DataGrid with C3 schema data", async ({
+    page,
+  }) => {
     // Mock products endpoint (C3 schema where vehicles are products)
     await page.route("**/api/v1/products**", async (route) => {
       if (route.request().method() === "GET") {
@@ -183,7 +193,7 @@ test.describe("Vehicles", () => {
     await expect(firstRow.getByText(/2022|2023|2024|2025/i)).toBeVisible();
 
     // Check that price is displayed (product.price_cents field)
-    await expect(firstRow.locator('text=/\\$|USD/')).toBeVisible();
+    await expect(firstRow.locator("text=/\\$|USD/")).toBeVisible();
 
     // Check that status badge is visible (product.status field)
     const statusBadge = firstRow.locator('[data-testid="vehicle-status"]');
@@ -283,7 +293,7 @@ test.describe("Vehicles", () => {
     await page.waitForLoadState("load");
 
     // Wait for DataGrid to render
-    const vehicleRows = page.locator('table tbody tr');
+    const vehicleRows = page.locator("table tbody tr");
     await expect(vehicleRows.first()).toBeVisible({ timeout: 5000 });
 
     // Verify initial page loaded
@@ -302,13 +312,15 @@ test.describe("Vehicles", () => {
     expect(Array.isArray(apiResponse.products)).toBeTruthy();
   });
 
-  test("should maintain performance with row virtualization", async ({ page }) => {
+  test("should maintain performance with row virtualization", async ({
+    page,
+  }) => {
     // Mock vehicles endpoint with large dataset
     // Use C3 schema format (products with vehicle attributes)
     const largeVehicleList = Array.from({ length: 100 }, (_, i) => ({
       id: `prod-v${i}`,
       title: `Vehicle ${i}`,
-      price_cents: 2000000 + (i * 10000),
+      price_cents: 2000000 + i * 10000,
       status: i % 3 === 0 ? "draft" : "published",
       category_id: "cat-1",
       attributes: {
@@ -373,7 +385,9 @@ test.describe("Vehicles", () => {
     // Verify we can scroll through the list
     // Verify page loads quickly with 100 vehicles (performance test)
     const loadTime = await page.evaluate(() => {
-      return performance.timing.loadEventEnd - performance.timing.navigationStart;
+      return (
+        performance.timing.loadEventEnd - performance.timing.navigationStart
+      );
     });
 
     // Page should load in less than 5 seconds (reasonable for 100 vehicles with virtualization)

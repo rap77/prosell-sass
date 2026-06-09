@@ -31,7 +31,12 @@ services:
     container_name: prosell-prod-redis
     env_file:
       - ../.env.prod
-    command: ["sh", "-c", "redis-server --appendonly yes --requirepass $$REDIS_PASSWORD"]
+    command:
+      [
+        "sh",
+        "-c",
+        "redis-server --appendonly yes --requirepass $$REDIS_PASSWORD",
+      ]
     volumes:
       - redis_prod_data:/data
     healthcheck:
@@ -88,7 +93,15 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3000"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://127.0.0.1:3000",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -103,7 +116,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "443:443/udp"   # HTTP/3
+      - "443:443/udp" # HTTP/3
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

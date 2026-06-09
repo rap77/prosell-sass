@@ -26,18 +26,24 @@ import { ActionMenu } from "./ActionMenu";
  * vehicle row must be resolved through the backend signed-URL endpoint.
  * Cache is shared with the catalog card view via TanStack query keys.
  */
-function SignedPhotoCell({ productId, rawKey }: { productId: string; rawKey?: string }) {
-  const { data } = useProductImageUrls(rawKey ? productId : undefined)
+function SignedPhotoCell({
+  productId,
+  rawKey,
+}: {
+  productId: string;
+  rawKey?: string;
+}) {
+  const { data } = useProductImageUrls(rawKey ? productId : undefined);
   const signedUrl = rawKey
     ? data?.images.find((img) => img.key === rawKey)?.url
-    : undefined
+    : undefined;
 
   if (!signedUrl) {
     return (
       <div className="w-15 h-15 rounded-md bg-muted flex items-center justify-center">
         <span className="text-xs text-muted-foreground">No photo</span>
       </div>
-    )
+    );
   }
 
   return (
@@ -49,14 +55,21 @@ function SignedPhotoCell({ productId, rawKey }: { productId: string; rawKey?: st
       className="w-15 h-15 rounded-md object-cover"
       unoptimized
     />
-  )
+  );
 }
 
 export interface Vehicle {
   id: string;
   title: string;
   price: number;
-  status: "published" | "pending" | "failed" | "draft" | "expired" | "online" | "sold";
+  status:
+    | "published"
+    | "pending"
+    | "failed"
+    | "draft"
+    | "expired"
+    | "online"
+    | "sold";
   photo_url?: string;
   year?: number;
   make?: string;
@@ -86,7 +99,9 @@ export function DataGrid({
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
-  const stopRowNavigation = (event: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>) => {
+  const stopRowNavigation = (
+    event: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>,
+  ) => {
     event.stopPropagation();
   };
 
@@ -100,106 +115,107 @@ export function DataGrid({
     };
   };
 
-  const handleRowKeyDown = (vehicleId: string) => (event: KeyboardEvent<HTMLTableRowElement>) => {
-    if (!onRowClick) {
-      return;
-    }
+  const handleRowKeyDown =
+    (vehicleId: string) => (event: KeyboardEvent<HTMLTableRowElement>) => {
+      if (!onRowClick) {
+        return;
+      }
 
-    if (event.key !== "Enter" && event.key !== " ") {
-      return;
-    }
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
 
-    event.preventDefault();
-    onRowClick(vehicleId);
-  };
+      event.preventDefault();
+      onRowClick(vehicleId);
+    };
 
   // Stable columns definition (prevent re-renders)
   const columns: ColumnDef<Vehicle>[] = [
-      {
-        id: "select",
-        header: ({ table }) => (
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <div onClick={stopRowNavigation} onKeyDown={stopRowNavigation}>
           <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && "indeterminate")
-            }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label={`Select row ${row.id}`}
           />
-        ),
-        cell: ({ row }) => (
-          <div onClick={stopRowNavigation} onKeyDown={stopRowNavigation}>
-            <Checkbox
-              checked={row.getIsSelected()}
-              onCheckedChange={(value) => row.toggleSelected(!!value)}
-              aria-label={`Select row ${row.id}`}
-            />
-          </div>
-        ),
-        enableSorting: false,
-        enableHiding: false,
+        </div>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "photo_url",
+      header: "Photo",
+      cell: ({ row }) => (
+        <SignedPhotoCell
+          productId={row.original.id}
+          rawKey={row.original.photo_url}
+        />
+      ),
+    },
+    {
+      accessorKey: "title",
+      header: "Vehicle",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.title}</span>
+      ),
+    },
+    {
+      accessorKey: "price",
+      header: "Price",
+      cell: ({ row }) => {
+        const price = row.original.price;
+        return new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+        }).format(price);
       },
-      {
-        accessorKey: "photo_url",
-        header: "Photo",
-        cell: ({ row }) => (
-          <SignedPhotoCell
-            productId={row.original.id}
-            rawKey={row.original.photo_url}
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    },
+    {
+      accessorKey: "branch_name",
+      header: "Branch",
+      cell: ({ row }) => {
+        const branchName = row.original.branch_name;
+        return branchName ? (
+          <span className="text-sm">{branchName}</span>
+        ) : (
+          <span className="text-sm text-muted-foreground">Unassigned</span>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <div onClick={stopRowNavigation} onKeyDown={stopRowNavigation}>
+          <ActionMenu
+            vehicleId={row.original.id}
+            vehicleTitle={row.original.title}
+            onPublish={() => onPublish(row.original.id)}
+            onEdit={() => onEdit(row.original.id)}
+            onDelete={() => onDelete(row.original.id)}
           />
-        ),
-      },
-      {
-        accessorKey: "title",
-        header: "Vehicle",
-        cell: ({ row }) => (
-          <span className="font-medium">{row.original.title}</span>
-        ),
-      },
-      {
-        accessorKey: "price",
-        header: "Price",
-        cell: ({ row }) => {
-          const price = row.original.price;
-          return new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "USD",
-          }).format(price);
-        },
-      },
-      {
-        accessorKey: "status",
-        header: "Status",
-        cell: ({ row }) => <StatusBadge status={row.original.status} />,
-      },
-      {
-        accessorKey: "branch_name",
-        header: "Branch",
-        cell: ({ row }) => {
-          const branchName = row.original.branch_name;
-          return branchName ? (
-            <span className="text-sm">{branchName}</span>
-          ) : (
-            <span className="text-sm text-muted-foreground">Unassigned</span>
-          );
-        },
-      },
-      {
-        id: "actions",
-        header: "Actions",
-        cell: ({ row }) => (
-          <div onClick={stopRowNavigation} onKeyDown={stopRowNavigation}>
-            <ActionMenu
-              vehicleId={row.original.id}
-              vehicleTitle={row.original.title}
-              onPublish={() => onPublish(row.original.id)}
-              onEdit={() => onEdit(row.original.id)}
-              onDelete={() => onDelete(row.original.id)}
-            />
-          </div>
-        ),
-      },
-    ];
+        </div>
+      ),
+    },
+  ];
 
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table v8 is incompatible with React Compiler by design; "use no memo" is already applied
   const table = useReactTable({
@@ -215,10 +231,12 @@ export function DataGrid({
   });
 
   // Get selected vehicle IDs
-  const selectedProductIds = Object.keys(rowSelection).map((rowIndex) => {
+  const selectedProductIds = Object.keys(rowSelection)
+    .map((rowIndex) => {
       const index = parseInt(rowIndex, 10);
       return data[index]?.id;
-    }).filter((productId): productId is string => productId !== undefined);
+    })
+    .filter((productId): productId is string => productId !== undefined);
 
   const handleBulkAssign = () => {
     if (onBulkAssignBranch && selectedProductIds.length > 0) {
@@ -253,7 +271,8 @@ export function DataGrid({
         <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-b border-border">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">
-              {selectedProductIds.length} product{selectedProductIds.length !== 1 ? "s" : ""} selected
+              {selectedProductIds.length} product
+              {selectedProductIds.length !== 1 ? "s" : ""} selected
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -281,10 +300,7 @@ export function DataGrid({
         </div>
       )}
 
-      <div
-        ref={tableContainerRef}
-        className="h-[600px] overflow-auto"
-      >
+      <div ref={tableContainerRef} className="h-[600px] overflow-auto">
         <table className="w-full border-collapse">
           <thead className="bg-muted sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -298,7 +314,7 @@ export function DataGrid({
                       ? null
                       : flexRender(
                           header.column.columnDef.header,
-                          header.getContext()
+                          header.getContext(),
                         )}
                   </th>
                 ))}
@@ -307,30 +323,27 @@ export function DataGrid({
           </thead>
           <tbody>
             {rowsToRender.map(({ key, row }) => (
-                <tr
-                  key={key}
-                  data-row-id={row.id}
-                  data-testid="vehicle-row"
-                  data-vehicle-id={row.original.id}
-                  className={cn(
-                    "border-b border-border transition-colors",
-                    onRowClick
-                      ? "cursor-pointer hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                      : "hover:bg-muted/50",
-                  )}
-                  onClick={handleRowClick(row.original.id)}
-                  onKeyDown={handleRowKeyDown(row.original.id)}
-                  tabIndex={onRowClick ? 0 : undefined}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="px-4 py-3 text-sm"
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
+              <tr
+                key={key}
+                data-row-id={row.id}
+                data-testid="vehicle-row"
+                data-vehicle-id={row.original.id}
+                className={cn(
+                  "border-b border-border transition-colors",
+                  onRowClick
+                    ? "cursor-pointer hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                    : "hover:bg-muted/50",
+                )}
+                onClick={handleRowClick(row.original.id)}
+                onKeyDown={handleRowKeyDown(row.original.id)}
+                tabIndex={onRowClick ? 0 : undefined}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} className="px-4 py-3 text-sm">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
             ))}
           </tbody>
         </table>

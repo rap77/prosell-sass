@@ -48,7 +48,10 @@ test.describe("Integrated Critical Path", () => {
     await builder.cleanup();
   });
 
-  test("@smoke complete sales cycle: publish → lead → appointment", async ({ page, request }) => {
+  test("@smoke complete sales cycle: publish → lead → appointment", async ({
+    page,
+    request,
+  }) => {
     console.log("[INTEGRATED TEST] Starting complete sales cycle test...");
 
     // ========================================
@@ -80,9 +83,13 @@ test.describe("Integrated Critical Path", () => {
       headers: { Cookie: `access_token=${accessToken}` },
     });
     const catRaw = await catResp.text();
-    console.log(`[DEBUG] Categories status: ${catResp.status()}, body: ${catRaw.substring(0, 200)}`);
+    console.log(
+      `[DEBUG] Categories status: ${catResp.status()}, body: ${catRaw.substring(0, 200)}`,
+    );
     expect(catResp.ok()).toBeTruthy();
-    const catData = JSON.parse(catRaw) as { categories: { id: string; name: string }[] };
+    const catData = JSON.parse(catRaw) as {
+      categories: { id: string; name: string }[];
+    };
     const vehiclesCat = catData.categories?.find((c) => c.name === "Vehicles");
     // Use first available category if "Vehicles" not found
     const categoryId = vehiclesCat?.id ?? catData.categories?.[0]?.id;
@@ -110,7 +117,7 @@ test.describe("Integrated Critical Path", () => {
       },
     });
     expect(productResp.ok()).toBeTruthy();
-    const productData = await productResp.json() as { id: string };
+    const productData = (await productResp.json()) as { id: string };
     productId = productData.id;
     expect(productId).toBeTruthy();
     console.log(`[STEP 2] ✓ Product created: ${productId}`);
@@ -118,7 +125,9 @@ test.describe("Integrated Critical Path", () => {
     // Verify product appears in the products UI
     await page.goto("/products");
     await expect(page).toHaveURL(/\/products/);
-    await expect(page.locator(`text=${productTitle}`).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=${productTitle}`).first()).toBeVisible({
+      timeout: 10000,
+    });
     console.log("[STEP 2] ✓ Product visible in products list");
 
     // ========================================
@@ -126,29 +135,39 @@ test.describe("Integrated Critical Path", () => {
     // ========================================
     console.log("[STEP 3] Submitting product for approval...");
 
-    const submitResp = await request.post(`${apiBase}/api/v1/products/${productId}/submit`, {
-      headers: { Cookie: `access_token=${accessToken}` },
-    });
+    const submitResp = await request.post(
+      `${apiBase}/api/v1/products/${productId}/submit`,
+      {
+        headers: { Cookie: `access_token=${accessToken}` },
+      },
+    );
     expect(submitResp.ok()).toBeTruthy();
     console.log("[STEP 3] ✓ Product submitted for approval");
 
     // Now publish (admin skips approval)
     console.log("[STEP 3b] Publishing product...");
 
-    const publishResp = await request.post(`${apiBase}/api/v1/products/${productId}/publish`, {
-      headers: { Cookie: `access_token=${accessToken}` },
-      data: { platform: "facebook" },
-    });
+    const publishResp = await request.post(
+      `${apiBase}/api/v1/products/${productId}/publish`,
+      {
+        headers: { Cookie: `access_token=${accessToken}` },
+        data: { platform: "facebook" },
+      },
+    );
     // Accept any non-5xx response — publish endpoint may not be wired yet (404/405 OK)
     const publishStatus = publishResp.status();
     // Facebook publish requires external credentials — accept any response (200/404/500)
     // The important thing is the webhook lead capture in Step 4 still runs
-    console.log(`[STEP 3b] ✓ Facebook publish attempted (status: ${publishStatus} — credentials may not be configured)`);
+    console.log(
+      `[STEP 3b] ✓ Facebook publish attempted (status: ${publishStatus} — credentials may not be configured)`,
+    );
 
     // ========================================
     // Step 4: Create lead via API (simulates webhook lead capture result)
     // ========================================
-    console.log("[STEP 4] Creating lead via API (simulates Facebook webhook lead capture)...");
+    console.log(
+      "[STEP 4] Creating lead via API (simulates Facebook webhook lead capture)...",
+    );
 
     // Facebook webhook requires HMAC signature + external credentials.
     // We simulate the end result: a lead created for this product/vendor.
@@ -164,7 +183,9 @@ test.describe("Integrated Critical Path", () => {
       },
     });
     const leadRaw = await leadCreateResp.text();
-    console.log(`[DEBUG] Lead create status: ${leadCreateResp.status()}, body: ${leadRaw.substring(0, 200)}`);
+    console.log(
+      `[DEBUG] Lead create status: ${leadCreateResp.status()}, body: ${leadRaw.substring(0, 200)}`,
+    );
     expect(leadCreateResp.ok()).toBeTruthy();
     const leadData = JSON.parse(leadRaw) as { id: string };
     leadId = leadData.id;
@@ -187,7 +208,7 @@ test.describe("Integrated Critical Path", () => {
     console.log("[STEP 5] ✓ Lead visible in vendedor list");
 
     // Verify "Nuevo" status badge is visible (UI uses Spanish labels)
-    await expect(page.locator('text=Nuevo').first()).toBeVisible();
+    await expect(page.locator("text=Nuevo").first()).toBeVisible();
     console.log("[STEP 5] ✓ Lead status badge visible");
 
     // ========================================
@@ -197,14 +218,16 @@ test.describe("Integrated Critical Path", () => {
 
     // Click on the lead to navigate to detail view
     await leadRow.click();
-    await expect(page).toHaveURL(new RegExp(`/vendedor/leads/${leadId}`), { timeout: 10000 });
+    await expect(page).toHaveURL(new RegExp(`/vendedor/leads/${leadId}`), {
+      timeout: 10000,
+    });
     console.log("[STEP 6] ✓ Navigated to lead detail");
 
     // Get current user ID for appointment creation
     const authStateResp = await request.get(`${apiBase}/api/v1/auth/state`, {
       headers: { Cookie: `access_token=${accessToken}` },
     });
-    const authState = await authStateResp.json() as { user: { id: string } };
+    const authState = (await authStateResp.json()) as { user: { id: string } };
     const userId = authState.user.id;
     expect(userId).toBeTruthy();
 
@@ -217,8 +240,10 @@ test.describe("Integrated Critical Path", () => {
     const daysAhead = 30 + (testRunId % 335);
     appointmentDay.setDate(appointmentDay.getDate() + daysAhead);
     // Skip weekends
-    if (appointmentDay.getDay() === 6) appointmentDay.setDate(appointmentDay.getDate() + 2);
-    if (appointmentDay.getDay() === 0) appointmentDay.setDate(appointmentDay.getDate() + 1);
+    if (appointmentDay.getDay() === 6)
+      appointmentDay.setDate(appointmentDay.getDate() + 2);
+    if (appointmentDay.getDay() === 0)
+      appointmentDay.setDate(appointmentDay.getDate() + 1);
     const scheduledAt = new Date(appointmentDay);
     // Hour: 9-16 range, minute: 0 (clean slots)
     scheduledAt.setHours(9 + (Math.floor(testRunId / 1000000) % 8), 0, 0, 0);
@@ -234,7 +259,9 @@ test.describe("Integrated Critical Path", () => {
       },
     });
     const apptRaw = await apptResp.text();
-    console.log(`[DEBUG] Appointment create status: ${apptResp.status()}, body: ${apptRaw.substring(0, 200)}`);
+    console.log(
+      `[DEBUG] Appointment create status: ${apptResp.status()}, body: ${apptRaw.substring(0, 200)}`,
+    );
     expect(apptResp.ok()).toBeTruthy();
     const apptData = JSON.parse(apptRaw) as { id: string };
     appointmentId = apptData.id;
@@ -250,19 +277,28 @@ test.describe("Integrated Critical Path", () => {
     await page.goto("/dealer/appointments");
     await expect(page).toHaveURL(/\/dealer\/appointments/);
     // Verify page loaded (appointments page exists)
-    await expect(page.locator('h1, h2, [role="heading"]').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('h1, h2, [role="heading"]').first()).toBeVisible({
+      timeout: 10000,
+    });
     console.log("[STEP 7] ✓ Dealer appointments page accessible");
 
     // Confirm appointment via API (UI calendar requires FullCalendar interaction)
-    const confirmResp = await request.put(`${apiBase}/api/v1/appointments/${appointmentId}/status`, {
-      headers: { Cookie: `access_token=${accessToken}` },
-      data: { status: "confirmed" },
-    });
+    const confirmResp = await request.put(
+      `${apiBase}/api/v1/appointments/${appointmentId}/status`,
+      {
+        headers: { Cookie: `access_token=${accessToken}` },
+        data: { status: "confirmed" },
+      },
+    );
     const confirmBody = await confirmResp.text();
-    console.log(`[DEBUG] Confirm status: ${confirmResp.status()}, body: ${confirmBody.substring(0, 200)}`);
+    console.log(
+      `[DEBUG] Confirm status: ${confirmResp.status()}, body: ${confirmBody.substring(0, 200)}`,
+    );
     // Accept 200 OK or 404/422 if status field/endpoint differs
     expect(confirmResp.status() < 500).toBeTruthy();
-    console.log(`[STEP 7] ✓ Appointment confirm attempted (status: ${confirmResp.status()})`);
+    console.log(
+      `[STEP 7] ✓ Appointment confirm attempted (status: ${confirmResp.status()})`,
+    );
 
     // ========================================
     // Step 8: Verify email notifications (mocked via SendGrid mock)
@@ -270,19 +306,30 @@ test.describe("Integrated Critical Path", () => {
     console.log("[STEP 8] Verifying lead + appointment state...");
 
     // Verify lead status changed to "appointment_set" via API
-    const updatedLeadResp = await request.get(`${apiBase}/api/v1/leads/${leadId}`, {
-      headers: { Cookie: `access_token=${accessToken}` },
-    });
+    const updatedLeadResp = await request.get(
+      `${apiBase}/api/v1/leads/${leadId}`,
+      {
+        headers: { Cookie: `access_token=${accessToken}` },
+      },
+    );
     expect(updatedLeadResp.ok()).toBeTruthy();
-    const updatedLeadData = await updatedLeadResp.json() as { status?: string; lead?: { status: string } };
+    const updatedLeadData = (await updatedLeadResp.json()) as {
+      status?: string;
+      lead?: { status: string };
+    };
     const leadStatus = updatedLeadData.status ?? updatedLeadData.lead?.status;
     // Lead may be "appointment_set" if use case updated it, or still "new" if not wired
-    console.log(`[STEP 8] ✓ Lead status: ${leadStatus} (expected: appointment_set or new)`);
+    console.log(
+      `[STEP 8] ✓ Lead status: ${leadStatus} (expected: appointment_set or new)`,
+    );
 
     // Verify appointment exists in DB
-    const apptCheckResp = await request.get(`${apiBase}/api/v1/appointments/${appointmentId}`, {
-      headers: { Cookie: `access_token=${accessToken}` },
-    });
+    const apptCheckResp = await request.get(
+      `${apiBase}/api/v1/appointments/${appointmentId}`,
+      {
+        headers: { Cookie: `access_token=${accessToken}` },
+      },
+    );
     expect(apptCheckResp.ok()).toBeTruthy();
     console.log("[STEP 8] ✓ Appointment verified in database");
 

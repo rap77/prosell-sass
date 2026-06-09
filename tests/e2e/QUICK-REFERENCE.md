@@ -15,42 +15,49 @@ pnpm install
 ## 📋 Ejecutar por Módulo
 
 ### Módulo 1: Auth & Registro
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 pnpm test oauth.spec.ts
 ```
 
 ### Módulo 2: Catálogo C3
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 pnpm test categories.spec.ts products.spec.ts vehicles.spec.ts
 ```
 
 ### Módulo 3: VIN Decode
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 pnpm test vehicle-form-vin.spec.ts
 ```
 
 ### Módulo 4: Leads
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 pnpm test leads.spec.ts manager-leads.spec.ts
 ```
 
 ### Módulo 5: Appointments
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 pnpm test appointments.spec.ts dealer-calendar.spec.ts
 ```
 
 ### Módulo 6: Features Avanzados
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 pnpm test bulk-image-upload.spec.ts facebook-webhook.spec.ts
 ```
 
 ### Módulo 7: End-to-End Completo
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 pnpm test a6-verification.spec.ts
@@ -148,23 +155,24 @@ pnpm test --grep @smoke
 
 ## 📊 Matriz de Referencia
 
-| Módulo | Script Command | Manual Command | Tiempo |
-|--------|---------------|----------------|--------|
-| 1. Auth | `run-modules.sh auth` | `pnpm test oauth.spec.ts` | 3-5 min |
-| 2. Catálogo | `run-modules.sh catalog` | `pnpm test categories.spec.ts products.spec.ts` | 5-8 min |
-| 3. VIN | `run-modules.sh vin` | `pnpm test vehicle-form-vin.spec.ts` | 4-6 min |
-| 4. Leads | `run-modules.sh leads` | `pnpm test leads.spec.ts` | 5-7 min |
-| 5. Appointments | `run-modules.sh appointments` | `pnpm test appointments.spec.ts` | 5-7 min |
-| 6. Advanced | `run-modules.sh advanced` | `pnpm test bulk-image-upload.spec.ts` | 6-10 min |
-| 7. E2E | `run-modules.sh e2e` | `pnpm test a6-verification.spec.ts` | 10-15 min |
-| Smoke | `run-modules.sh smoke` | `pnpm test --grep @smoke` | ~2 min |
-| ALL | `run-modules.sh` | — | 40-60 min |
+| Módulo          | Script Command                | Manual Command                                  | Tiempo    |
+| --------------- | ----------------------------- | ----------------------------------------------- | --------- |
+| 1. Auth         | `run-modules.sh auth`         | `pnpm test oauth.spec.ts`                       | 3-5 min   |
+| 2. Catálogo     | `run-modules.sh catalog`      | `pnpm test categories.spec.ts products.spec.ts` | 5-8 min   |
+| 3. VIN          | `run-modules.sh vin`          | `pnpm test vehicle-form-vin.spec.ts`            | 4-6 min   |
+| 4. Leads        | `run-modules.sh leads`        | `pnpm test leads.spec.ts`                       | 5-7 min   |
+| 5. Appointments | `run-modules.sh appointments` | `pnpm test appointments.spec.ts`                | 5-7 min   |
+| 6. Advanced     | `run-modules.sh advanced`     | `pnpm test bulk-image-upload.spec.ts`           | 6-10 min  |
+| 7. E2E          | `run-modules.sh e2e`          | `pnpm test a6-verification.spec.ts`             | 10-15 min |
+| Smoke           | `run-modules.sh smoke`        | `pnpm test --grep @smoke`                       | ~2 min    |
+| ALL             | `run-modules.sh`              | —                                               | 40-60 min |
 
 ---
 
 ## 🎯 Estrategia Recomendada
 
 ### Durante Desarrollo
+
 ```bash
 # Ejecutar smoke tests después de cada cambio
 cd /home/rpadron/proy/prosell-sass/tests/e2e
@@ -172,12 +180,14 @@ pnpm test --grep @smoke
 ```
 
 ### Para Verificar Feature
+
 ```bash
 # Ejecutar solo el módulo del feature
 /home/rpadron/proy/prosell-sass/tests/e2e/run-modules.sh vin
 ```
 
 ### Pre-Release
+
 ```bash
 # Ejecutar todos los módulos
 /home/rpadron/proy/prosell-sass/tests/e2e/run-modules.sh
@@ -188,6 +198,7 @@ pnpm test --grep @smoke
 ## 🔧 Troubleshooting
 
 ### Servidor no corre
+
 ```bash
 # Verificar API
 curl http://localhost:8000/health
@@ -201,12 +212,14 @@ fastapi dev src/prosell/infrastructure/api/main.py
 ```
 
 ### Tests fallan por timeouts
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 pnpm test --timeout=60000  # 60s por test
 ```
 
 ### Dependencias faltan
+
 ```bash
 cd /home/rpadron/proy/prosell-sass/tests/e2e
 pnpm install
@@ -215,6 +228,7 @@ pnpm install
 ---
 
 **Documentos Relacionados**:
+
 - 📖 Guía completa: `MODULAR-TEST-GUIDE.md`
 - 📋 Smoke tests: `SMOKE_TESTS.md`
 - 📊 Reportes: `playwright-report/index.html`

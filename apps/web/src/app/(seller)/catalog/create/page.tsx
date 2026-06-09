@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 /**
  * Catalog › Crear vehículo — ProSell vehicle creation form.
@@ -11,23 +11,31 @@
  * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 
-import { ProductForm } from '@/components/forms/ProductForm'
+import { ProductForm } from "@/components/forms/ProductForm";
 
 export default function CreateVehiclePage() {
   return (
-    <div style={{ maxWidth: 896, margin: '0 auto' }}>
+    <div style={{ maxWidth: 896, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{
-          margin: 0,
-          fontSize: 22,
-          fontWeight: 700,
-          letterSpacing: '-0.02em',
-          color: 'var(--ps-text-primary)',
-        }}>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 22,
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+            color: "var(--ps-text-primary)",
+          }}
+        >
           Crear vehículo
         </h1>
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ps-text-secondary)' }}>
+        <p
+          style={{
+            margin: "4px 0 0",
+            fontSize: 13,
+            color: "var(--ps-text-secondary)",
+          }}
+        >
           Agregá un nuevo vehículo al catálogo.
         </p>
       </div>
@@ -35,5 +43,5 @@ export default function CreateVehiclePage() {
       {/* Vehicle form — owns images (dropzone + cover picker) internally */}
       <ProductForm mode="create" />
     </div>
-  )
+  );
 }

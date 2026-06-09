@@ -126,7 +126,9 @@ export function mapSecurityErrorMessage(message: string): string {
   if (normalizedMessage.includes("invalid email or password")) {
     return "La contraseña actual no es correcta.";
   }
-  if (normalizedMessage.includes("password must be at least 8 characters long")) {
+  if (
+    normalizedMessage.includes("password must be at least 8 characters long")
+  ) {
     return "La nueva contraseña debe tener al menos 8 caracteres.";
   }
   if (normalizedMessage.includes("uppercase letter")) {
@@ -212,7 +214,8 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: async (input: UpdateProfileInput) => {
       const parsedInput = UPDATE_PROFILE_INPUT_SCHEMA.parse(input);
-      const fullName = `${parsedInput.firstName} ${parsedInput.lastName}`.trim();
+      const fullName =
+        `${parsedInput.firstName} ${parsedInput.lastName}`.trim();
 
       const response = await fetch("/api/v1/users/me", {
         method: "PUT",
@@ -245,7 +248,9 @@ export function useUpdateProfile() {
       return updatedUser;
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["organization-profile"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["organization-profile"],
+      });
     },
   });
 }

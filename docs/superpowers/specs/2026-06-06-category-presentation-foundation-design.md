@@ -31,50 +31,67 @@ These were decided during brainstorming and are NOT open for re-litigation in th
 ## 3. Data model changes
 
 ### 3.1 `Category` becomes a global template
+
 - Root categories (`level 0`) are the **verticals**.
 - Categories are **system-owned**: `tenant_id` becomes **nullable**, and global templates store `tenant_id = NULL` (decision: NULL is simpler than a magic "system tenant" row and reads as "belongs to no dealer"). Any future per-dealer override category would carry a real `tenant_id`.
 - Existing fields stay: `parent_id`, `level`, `field_config` (UI renderer), `attribute_schema` (validation).
 
 ### 3.2 New: presentation contract on `Category`
+
 Add a `presentation` JSONB column on `Category` (inherited down the tree — a child without its own `presentation` falls back to the nearest ancestor that has one):
 
 ```jsonc
 {
-  "title_template":    "{year} {make} {model}",
+  "title_template": "{year} {make} {model}",
   "subtitle_template": "{trim} · {mileage} km",
-  "card_fields":       ["price", "status"]   // extra fields the card surfaces
+  "card_fields": ["price", "status"], // extra fields the card surfaces
 }
 ```
 
 ### 3.3 Per-field filter declaration
+
 Extend each entry of `attribute_schema` with optional filter metadata:
 
 ```jsonc
 {
-  "make":     { "type": "string", "required": true,  "filterable": true,  "filter_type": "select" },
-  "year":     { "type": "number", "required": true,  "filterable": true,  "filter_type": "range"  },
-  "mileage":  { "type": "number", "required": false, "filterable": false }
+  "make": {
+    "type": "string",
+    "required": true,
+    "filterable": true,
+    "filter_type": "select",
+  },
+  "year": {
+    "type": "number",
+    "required": true,
+    "filterable": true,
+    "filter_type": "range",
+  },
+  "mileage": { "type": "number", "required": false, "filterable": false },
 }
 ```
+
 `filter_type ∈ {select, range, text, boolean}`. Subsystem B (filters UI) reads this.
 
 ### 3.4 New table: `organization_vertical`
+
 Many-to-many between organization and the verticals (root categories) it operates in:
 
-| column            | type      | notes                                  |
-|-------------------|-----------|----------------------------------------|
-| `organization_id` | UUID FK   | the dealer                             |
-| `root_category_id`| UUID FK   | a `level 0` category (vertical)        |
-| `enabled_at`      | timestamp |                                        |
+| column             | type      | notes                           |
+| ------------------ | --------- | ------------------------------- |
+| `organization_id`  | UUID FK   | the dealer                      |
+| `root_category_id` | UUID FK   | a `level 0` category (vertical) |
+| `enabled_at`       | timestamp |                                 |
 
 Composite PK `(organization_id, root_category_id)`.
 
 ### 3.5 `Product`
+
 No structural change. `category_id` still points at a (now global) leaf category. `organization_id` already records the owning dealer.
 
 ## 4. Title / subtitle composition
 
 A domain service `compose_product_title(category, attributes)`:
+
 - Resolves the category's effective `presentation` (own, or inherited from the nearest ancestor).
 - Substitutes each `{field_name}` with `str(attributes[field_name])`.
 - **Missing/empty field** → the placeholder AND any immediately-adjacent separator collapse, so `"{year} {make} {model}"` with no `trim` never yields double spaces or dangling separators. (Concrete rule: split the template into tokens, drop tokens whose value is empty, then join survivors and normalize whitespace.)
@@ -98,6 +115,7 @@ A domain service `compose_product_title(category, attributes)`:
   ]
 }
 ```
+
 This single contract feeds: A (rendering), B (filters), C (auto-category: 1 vertical+1 category → auto; N → picker).
 
 ## 6. Migration (project is NOT fully in production)

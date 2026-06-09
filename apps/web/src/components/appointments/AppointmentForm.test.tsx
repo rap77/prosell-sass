@@ -50,7 +50,7 @@ describe("AppointmentForm", () => {
           onClose={mockOnClose}
           onSuccess={mockOnSuccess}
           leadId={leadId}
-        />
+        />,
       );
 
       expect(screen.getByText(/Agendar turno/i)).toBeInTheDocument();
@@ -63,7 +63,7 @@ describe("AppointmentForm", () => {
           onClose={mockOnClose}
           onSuccess={mockOnSuccess}
           leadId={leadId}
-        />
+        />,
       );
 
       expect(screen.queryByText(/Agendar/i)).not.toBeInTheDocument();
@@ -76,7 +76,7 @@ describe("AppointmentForm", () => {
           onClose={mockOnClose}
           onSuccess={mockOnSuccess}
           leadId={leadId}
-        />
+        />,
       );
 
       expect(screen.getByLabelText(/Sucursal/i)).toBeInTheDocument();
@@ -94,7 +94,7 @@ describe("AppointmentForm", () => {
           onClose={mockOnClose}
           onSuccess={mockOnSuccess}
           leadId={leadId}
-        />
+        />,
       );
 
       // Try to submit without filling fields
@@ -102,9 +102,13 @@ describe("AppointmentForm", () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/La sucursal es requerida/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/La sucursal es requerida/i),
+        ).toBeInTheDocument();
         expect(screen.getByText(/La fecha es requerida/i)).toBeInTheDocument();
-        expect(screen.getByText(/El horario es requerido/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/El horario es requerido/i),
+        ).toBeInTheDocument();
       });
     });
   });
@@ -123,7 +127,7 @@ describe("AppointmentForm", () => {
           onClose={mockOnClose}
           onSuccess={mockOnSuccess}
           leadId={leadId}
-        />
+        />,
       );
 
       const submitButton = screen.getByRole("button", { name: /^Agendar$/i });
@@ -143,7 +147,7 @@ describe("AppointmentForm", () => {
           onClose={mockOnClose}
           onSuccess={mockOnSuccess}
           leadId={leadId}
-        />
+        />,
       );
 
       // Check for loading spinner

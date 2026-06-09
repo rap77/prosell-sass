@@ -22,6 +22,7 @@
 ### ❌ NO COVERAGE (14 routers)
 
 #### product_router.py (14 endpoints) - CRITICAL GAP
+
 ```
 Endpoints:
 - POST /api/v1/products (create product + vehicle)
@@ -45,6 +46,7 @@ Endpoints:
 ```
 
 #### category_router.py (7 endpoints) - CRITICAL GAP
+
 ```
 Endpoints:
 - GET /api/v1/categories (list categories)
@@ -61,6 +63,7 @@ Endpoints:
 ```
 
 #### auth_router.py (12 endpoints) - CRITICAL GAP
+
 ```
 Endpoints:
 - GET /health (health check)
@@ -82,6 +85,7 @@ Endpoints:
 ```
 
 #### team_router.py (estimated 5+ endpoints) - HIGH GAP
+
 ```
 **Test Coverage**: 0% (0 endpoints detected, but router exists)
 **Impact**: HIGH - Multi-tenancy, dealer assignment
@@ -90,6 +94,7 @@ Endpoints:
 ```
 
 #### publisher_router.py (3 endpoints) - HIGH GAP
+
 ```
 Endpoints:
 - PATCH /api/v1/publisher/{publication_id} (update listing)
@@ -102,6 +107,7 @@ Endpoints:
 ```
 
 #### image_router.py (estimated 5+ endpoints) - MEDIUM GAP
+
 ```
 **Test Coverage**: 0% (0 endpoints detected)
 **Impact**: MEDIUM - Image upload with presigned URLs
@@ -110,6 +116,7 @@ Endpoints:
 ```
 
 #### user_branch_router.py (3 endpoints) - MEDIUM GAP
+
 ```
 Endpoints:
 - POST /api/v1/users/bulk-assign (bulk assign branches)
@@ -122,6 +129,7 @@ Endpoints:
 ```
 
 #### facebook_router.py (3 endpoints) - LOW GAP
+
 ```
 Endpoints:
 - GET /facebook/callback (OAuth callback)
@@ -134,6 +142,7 @@ Endpoints:
 ```
 
 #### health_router.py (3 endpoints) - LOW GAP
+
 ```
 Endpoints:
 - GET /health/ (health check)
@@ -146,6 +155,7 @@ Endpoints:
 ```
 
 #### test_router.py (3 endpoints) - SKIP
+
 ```
 Endpoints:
 - GET /test/health (test health endpoint)
@@ -158,6 +168,7 @@ Endpoints:
 ```
 
 #### branch_router.py, vendedor_router.py, wallet_router.py, admin_router.py
+
 ```
 **Test Coverage**: 0% (0 endpoints detected)
 **Impact**: VARIES
@@ -170,6 +181,7 @@ Endpoints:
 ### ✅ HAS COVERAGE (5 routers)
 
 #### appointment_router.py - EXCELLENT ✅
+
 ```
 Test File: tests/e2e/layer2/appointments-contract.spec.ts
 Test Type: E2E (Layer 2 Contract)
@@ -189,6 +201,7 @@ Tests cover:
 ```
 
 #### lead_router.py - EXCELLENT ✅
+
 ```
 Test File: tests/e2e/layer2/leads-contract.spec.ts
 Test Type: E2E (Layer 2 Contract)
@@ -208,6 +221,7 @@ Tests cover:
 ```
 
 #### vehicle_router.py - PARTIAL ⚠️
+
 ```
 Test File: tests/e2e/layer2/vehicles-contract.spec.ts
 Test Type: E2E (Layer 2 Contract)
@@ -227,6 +241,7 @@ Missing:
 ```
 
 #### org_router.py - UNKNOWN ⚠️
+
 ```
 Test File: apps/api/tests/contract/openapi/test_organizations_schema.py
 Test Type: API (Schema validation)
@@ -237,6 +252,7 @@ Coverage: UNKNOWN
 ```
 
 #### webhook_router.py - UNKNOWN ⚠️
+
 ```
 Test File: apps/api/tests/contract/openapi/test_webhooks_schema.py
 Test Type: API (Schema validation)
@@ -251,6 +267,7 @@ Coverage: UNKNOWN
 ## 2. Coverage Gaps by Endpoint Type
 
 ### POST Endpoints (Creation)
+
 - ❌ POST /api/v1/products (CRITICAL)
 - ❌ POST /api/v1/categories (CRITICAL)
 - ❌ POST /api/v1/auth/login (CRITICAL)
@@ -259,6 +276,7 @@ Coverage: UNKNOWN
 - ❌ POST /api/v1/publisher/{publication_id} (HIGH)
 
 ### GET Endpoints (Retrieval)
+
 - ❌ GET /api/v1/products (CRITICAL)
 - ❌ GET /api/v1/products/{id} (CRITICAL)
 - ❌ GET /api/v1/categories (CRITICAL)
@@ -268,6 +286,7 @@ Coverage: UNKNOWN
 - ❌ GET /api/v1/publisher/{publication_id} (HIGH)
 
 ### PUT/PATCH Endpoints (Updates)
+
 - ❌ PATCH /api/v1/products/{id} (CRITICAL)
 - ❌ PATCH /api/v1/products/{id}/submit (HIGH)
 - ❌ PATCH /api/v1/products/{id}/approve (HIGH)
@@ -275,6 +294,7 @@ Coverage: UNKNOWN
 - ❌ PATCH /api/v1/categories/{id} (HIGH)
 
 ### DELETE Endpoints (Deletion)
+
 - ❌ DELETE /api/v1/products/{id} (HIGH)
 - ❌ DELETE /api/v1/categories/{id} (MEDIUM)
 - ❌ DELETE /api/v1/publisher/{publication_id} (HIGH)
@@ -284,13 +304,16 @@ Coverage: UNKNOWN
 ## 3. Test Quality Assessment
 
 ### Excellent Quality (Pattern to Follow)
+
 - **appointments-contract.spec.ts**: 23 tests, full CRUD, edge cases, business rules
 - **leads-contract.spec.ts**: 22 tests, full CRUD, state machine, validation
 
 ### Good Quality (Limited Scope)
+
 - **vehicles-contract.spec.ts**: 6 tests, VIN decode only (vehicle CRUD via products)
 
 ### Unknown Quality (Needs Review)
+
 - **test_organizations_schema.py**: Verify completeness
 - **test_webhooks_schema.py**: Verify completeness
 
@@ -299,25 +322,30 @@ Coverage: UNKNOWN
 ## 4. Recommended Implementation Order
 
 ### Phase 1: MVP Critical (P0)
+
 1. **product_router.py** - 14 endpoints, core C3 model
 2. **category_router.py** - 7 endpoints, C3 foundation
 3. **auth_router.py** - 12 endpoints, authentication
 
 ### Phase 2: MVP Important (P1)
+
 4. **team_router.py** - Multi-tenancy
 5. **publisher_router.py** - 3 endpoints, Facebook publishing
 
 ### Phase 3: MVP Nice-to-Have (P2)
+
 6. **image_router.py** - Image upload
 7. **user_branch_router.py** - Multi-location
 
 ### Phase 4: Lower Priority (P3-P4)
+
 8. **branch_router.py** - Branch management
 9. **facebook_router.py** - OAuth flow
 10. **admin_router.py** - Admin endpoints
 11. **health_router.py** - Health checks
 
 ### Phase 5: Out of Scope (SKIP)
+
 - **test_router.py** - Test utilities only
 - **wallet_router.py** - Payments (post-MVP)
 
@@ -326,13 +354,16 @@ Coverage: UNKNOWN
 ## 5. Test Pattern Recommendations
 
 ### Follow Existing Pattern (appointments/leads)
+
 ```typescript
 // tests/e2e/layer2/{resource}-contract.spec.ts
-test.describe('Layer 2: {Resource} - Contract Validation', () => {
-  test.describe('POST /api/v1/{resource} - Create', () => {
-    test('should create with valid data', async ({ request }) => {
-      const response = await request.post('/api/v1/{resource}', {
-        data: { /* valid payload */ },
+test.describe("Layer 2: {Resource} - Contract Validation", () => {
+  test.describe("POST /api/v1/{resource} - Create", () => {
+    test("should create with valid data", async ({ request }) => {
+      const response = await request.post("/api/v1/{resource}", {
+        data: {
+          /* valid payload */
+        },
       });
       expect(response.status()).toBe(201);
       // Validate response structure
@@ -340,17 +371,21 @@ test.describe('Layer 2: {Resource} - Contract Validation', () => {
       // Validate business rules
     });
 
-    test('should reject invalid data', async ({ request }) => {
-      const response = await request.post('/api/v1/{resource}', {
-        data: { /* invalid payload */ },
+    test("should reject invalid data", async ({ request }) => {
+      const response = await request.post("/api/v1/{resource}", {
+        data: {
+          /* invalid payload */
+        },
       });
       expect(response.status()).toBe(422);
     });
   });
 
-  test.describe('GET /api/v1/{resource} - List', () => {
-    test('should return paginated list', async ({ request }) => {
-      const response = await request.get('/api/v1/{resource}?limit=10&offset=0');
+  test.describe("GET /api/v1/{resource} - List", () => {
+    test("should return paginated list", async ({ request }) => {
+      const response = await request.get(
+        "/api/v1/{resource}?limit=10&offset=0",
+      );
       expect(response.status()).toBe(200);
       // Validate pagination structure
       // Validate filters work
@@ -360,7 +395,9 @@ test.describe('Layer 2: {Resource} - Contract Validation', () => {
 ```
 
 ### Test Coverage Checklist
+
 Each endpoint test should validate:
+
 - ✅ Status code (201, 200, 404, 422)
 - ✅ Response structure (Pydantic DTO)
 - ✅ Field formats (email, UUID, ISO datetime)

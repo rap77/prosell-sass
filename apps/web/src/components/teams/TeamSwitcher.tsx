@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { Users } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,18 +11,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { useTeamStore } from '@/stores/teamStore'
-import { logger } from '@/lib/logger'
+} from "@/components/ui/dropdown-menu";
+import { useTeamStore } from "@/stores/teamStore";
+import { logger } from "@/lib/logger";
 
 /**
  * Props for TeamSwitcher component
  */
 interface TeamSwitcherProps {
   /** Organization ID to fetch teams for */
-  organizationId: string
+  organizationId: string;
   /** Tenant ID for multi-tenancy */
-  tenantId: string
+  tenantId: string;
 }
 
 /**
@@ -44,8 +44,15 @@ interface TeamSwitcherProps {
  * ```
  */
 export function TeamSwitcher({ organizationId, tenantId }: TeamSwitcherProps) {
-  const router = useRouter()
-  const { teams, currentTeam, isLoading, error, fetchTeamsByOrg, setCurrentTeam } = useTeamStore()
+  const router = useRouter();
+  const {
+    teams,
+    currentTeam,
+    isLoading,
+    error,
+    fetchTeamsByOrg,
+    setCurrentTeam,
+  } = useTeamStore();
 
   // Fetch teams on mount if not already loaded
   useEffect(() => {
@@ -53,22 +60,24 @@ export function TeamSwitcher({ organizationId, tenantId }: TeamSwitcherProps) {
       fetchTeamsByOrg({
         org_id: organizationId,
         tenant_id: tenantId,
-      })
+      });
     }
-  }, [organizationId, tenantId, teams.length, isLoading, fetchTeamsByOrg])
+  }, [organizationId, tenantId, teams.length, isLoading, fetchTeamsByOrg]);
 
   // Handle team selection
   const handleTeamSelect = (teamId: string) => {
-    const selectedTeam = teams.find((t) => t.id === teamId)
+    const selectedTeam = teams.find((t) => t.id === teamId);
 
     if (selectedTeam) {
-      setCurrentTeam(selectedTeam)
-      logger.info(`Team switched to: ${selectedTeam.name}`, { teamId: selectedTeam.id })
+      setCurrentTeam(selectedTeam);
+      logger.info(`Team switched to: ${selectedTeam.name}`, {
+        teamId: selectedTeam.id,
+      });
 
       // Refresh the page to update context
-      router.refresh()
+      router.refresh();
     }
-  }
+  };
 
   // Show loading state
   if (isLoading) {
@@ -77,7 +86,7 @@ export function TeamSwitcher({ organizationId, tenantId }: TeamSwitcherProps) {
         <Users className="h-4 w-4 mr-2" />
         <span>Loading...</span>
       </Button>
-    )
+    );
   }
 
   // Show error state
@@ -87,7 +96,7 @@ export function TeamSwitcher({ organizationId, tenantId }: TeamSwitcherProps) {
         <Users className="h-4 w-4 mr-2" />
         <span>Error</span>
       </Button>
-    )
+    );
   }
 
   // Show no teams state
@@ -97,16 +106,20 @@ export function TeamSwitcher({ organizationId, tenantId }: TeamSwitcherProps) {
         <Users className="h-4 w-4 mr-2" />
         <span>No Teams</span>
       </Button>
-    )
+    );
   }
 
   // Display current team name or placeholder
-  const displayName = currentTeam?.name || 'Select Team'
+  const displayName = currentTeam?.name || "Select Team";
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="gap-2" aria-label={`Select team. Currently: ${displayName}`}>
+        <Button
+          variant="outline"
+          className="gap-2"
+          aria-label={`Select team. Currently: ${displayName}`}
+        >
           <Users className="h-4 w-4" />
           <span className="hidden md:inline">{displayName}</span>
         </Button>
@@ -118,16 +131,18 @@ export function TeamSwitcher({ organizationId, tenantId }: TeamSwitcherProps) {
           <DropdownMenuItem
             key={team.id}
             onClick={() => handleTeamSelect(team.id)}
-            className={currentTeam?.id === team.id ? 'bg-accent' : ''}
+            className={currentTeam?.id === team.id ? "bg-accent" : ""}
           >
             <Users className="mr-2 h-4 w-4" />
             <span>{team.name}</span>
             {currentTeam?.id === team.id && (
-              <span className="ml-auto text-xs text-muted-foreground">Active</span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                Active
+              </span>
             )}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

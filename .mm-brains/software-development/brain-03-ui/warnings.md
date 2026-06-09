@@ -24,6 +24,7 @@ These 4 patterns apply across ALL brain domains. Source: Brain #6 consultation (
 **UI Examples:** Suggesting a CSS-in-JS library (Emotion, styled-components), a new icon pack not in pnpm-lock.yaml, or a design token tool that requires `tailwind.config.js`.
 
 **Rejection format:**
+
 ```
 Rejected: [library name] is not declared in root pnpm-lock.yaml or uv.lock.
 Source: global-protocol.md > Stack Hard-Lock | brain-03-ui/warnings.md > Stack Hallucination
@@ -38,6 +39,7 @@ Source: global-protocol.md > Stack Hard-Lock | brain-03-ui/warnings.md > Stack H
 **Rule:** `ANTI-PATTERN: Any recommendation requiring manual production access is an architecture failure.`
 
 **Rejection format:**
+
 ```
 Rejected: [manual step] requires manual production access.
 Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-03-ui/warnings.md > Toil-Inducer
@@ -52,6 +54,7 @@ Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-03-ui/warnings.m
 **Rule:** `BLOCKER: Never suggest hardcoded credentials, not even in test examples.`
 
 **Rejection format:**
+
 ```
 Rejected: hardcoded credentials violates Security Bypass rule.
 Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-03-ui/warnings.md > Security Bypass
@@ -68,6 +71,7 @@ Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-03-ui/warnings.m
 **UI Examples:** Suggesting a new spacing scale that conflicts with existing components. Proposing a color system that requires re-theming all 4 panels. Ignoring the existing shadcn/ui component usage in favour of a new component library.
 
 **Rejection format:**
+
 ```
 Rejected: [proposal] breaks existing visual pattern without migration plan.
 Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-03-ui/warnings.md > Legacy Drift
@@ -86,11 +90,13 @@ Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-03-ui/warnings.m
 **Why:** Every animation adds cognitive overhead. If the animation doesn't serve the user's task, it is friction. Cite: Saffer — "A microinteraction should feel inevitable, not decorative."
 
 **Examples:**
+
 - "Add a fade-in to the card for a polished feel."
 - "Animate the sidebar open/close so it feels smooth."
 - Adding spring animations to list items that don't communicate order change.
 
 **Rejection format:**
+
 ```
 Rejected: animation without stated UX purpose = Animation Inflation.
 Source: brain-03-ui/warnings.md > Animation Inflation | Saffer/microinteractions
@@ -107,6 +113,7 @@ Source: brain-03-ui/warnings.md > Animation Inflation | Saffer/microinteractions
 **Why:** Red/green color distinction fails for protanopia and deuteranopia users. State must always be communicated through a minimum of TWO signals: color + one of (icon, label, pattern, shape, position).
 
 **Examples:**
+
 - "Show active brain nodes in green, inactive in gray." (color-only)
 - "Error state is red border." (color-only)
 - Using only opacity changes to indicate disabled state without a label.
@@ -124,11 +131,13 @@ Source: brain-03-ui/warnings.md > Animation Inflation | Saffer/microinteractions
 **Why:** Tailwind 4 uses CSS-only configuration. All design tokens, custom colors, and theme values live in `globals.css` as CSS variables. Any recommendation assuming `tailwind.config.js` exists has hallucinated the stack.
 
 **Examples:**
+
 - "Add a custom color to your Tailwind config."
 - "Extend the theme in tailwind.config.js to add a new spacing scale."
 - "Configure your Tailwind safelist to include..."
 
 **Rejection format:**
+
 ```
 Rejected: tailwind.config.js does not exist in this project.
 Source: global-protocol.md > Stack Hard-Lock | brain-03-ui/warnings.md > Tailwind Config Contamination
@@ -145,6 +154,7 @@ Source: global-protocol.md > Stack Hard-Lock | brain-03-ui/warnings.md > Tailwin
 **Why:** Every new component is maintenance debt. shadcn/ui provides a comprehensive primitive set. Before proposing a new component, the brain must verify that no existing shadcn/ui primitive (Button, Card, Badge, Dialog, Sheet, etc.) can serve the need with class overrides.
 
 **Examples:**
+
 - Proposing a `StatusBadge` component when `Badge` with variant exists.
 - Creating a `PanelHeader` component when `CardHeader` with class override works.
 - Adding a custom `LoadingSpinner` when the existing one can be resized via className.
@@ -174,6 +184,7 @@ Source: global-protocol.md > Stack Hard-Lock | brain-03-ui/warnings.md > Tailwin
 **Why:** v2.2 ships with a single dark theme. Theme infrastructure is a significant undertaking and is explicitly deferred. Any recommendation touching `prefers-color-scheme`, theme toggles, or light-mode variants is out of scope and adds scope risk.
 
 **Rejection format:**
+
 ```
 Rejected: theme switching is out of scope for v2.2 — single dark theme only.
 Source: brain-03-ui/warnings.md > Theme Scope Creep

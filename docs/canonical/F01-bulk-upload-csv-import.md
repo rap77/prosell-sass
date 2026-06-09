@@ -58,34 +58,35 @@ transmission | option | description | path | groups | label | publicado | VIN
 
 ### Mapeo CSV → ProSell
 
-| Campo CSV | Mapa a | Notas |
-|----------|--------|-------|
-| `title` | `title` | ⚠️ Ahora es `cod_dealer` (el cliente lo renombró) |
-| `price` | `price_cents` | Multiplicar ×100 |
-| `description` | `description` | Directa |
-| `year` | `attributes.year` | Int |
-| `make` | `attributes.make` | String |
-| `model` | `attributes.model` | String |
-| `mileage` | `attributes.mileage` | Float, asumir `miles` como `mileage_unit` |
-| `exterior_color` | `attributes.exterior_color` | String |
-| `interior_color` | `attributes.interior_color` | String |
-| `fuel_type` | `attributes.fuel_type` | String |
-| `transmission` | `attributes.transmission` | String |
-| `VIN` | `attributes.vin` | Validado como VIN de 17 chars |
-| `location` | `location_city` + `location_state` | `"Orlando florida"` → parsear estado desde abreviatura o string completo |
-| `clean_title` | `attributes.title_status` | `"1"` = clean, `"0"` = rebuilt |
-| `state` | `attributes.title_state` | Condición del título |
-| `groups` | `attributes.facebook_groups` | Guardar como JSON array `["1","2","3"]` |
-| `label` | `attributes.label` | Fecha en formato inconsistente, guardar como string |
-| `publicado` | `attributes.publicado` | Booleano `"1"` / vacío |
-| `option` | — | Ignorar (`"make your appointment"`) |
-| `type` | — | Ignorar (el cliente siempre usa `"Auto/camioneta"`) |
-| `id` | — | Ignorar (es ID externo del cliente) |
-| `path` | **IMAGENES** | Ruta local → mapping a DO Spaces (ver abajo) |
+| Campo CSV        | Mapa a                             | Notas                                                                    |
+| ---------------- | ---------------------------------- | ------------------------------------------------------------------------ |
+| `title`          | `title`                            | ⚠️ Ahora es `cod_dealer` (el cliente lo renombró)                        |
+| `price`          | `price_cents`                      | Multiplicar ×100                                                         |
+| `description`    | `description`                      | Directa                                                                  |
+| `year`           | `attributes.year`                  | Int                                                                      |
+| `make`           | `attributes.make`                  | String                                                                   |
+| `model`          | `attributes.model`                 | String                                                                   |
+| `mileage`        | `attributes.mileage`               | Float, asumir `miles` como `mileage_unit`                                |
+| `exterior_color` | `attributes.exterior_color`        | String                                                                   |
+| `interior_color` | `attributes.interior_color`        | String                                                                   |
+| `fuel_type`      | `attributes.fuel_type`             | String                                                                   |
+| `transmission`   | `attributes.transmission`          | String                                                                   |
+| `VIN`            | `attributes.vin`                   | Validado como VIN de 17 chars                                            |
+| `location`       | `location_city` + `location_state` | `"Orlando florida"` → parsear estado desde abreviatura o string completo |
+| `clean_title`    | `attributes.title_status`          | `"1"` = clean, `"0"` = rebuilt                                           |
+| `state`          | `attributes.title_state`           | Condición del título                                                     |
+| `groups`         | `attributes.facebook_groups`       | Guardar como JSON array `["1","2","3"]`                                  |
+| `label`          | `attributes.label`                 | Fecha en formato inconsistente, guardar como string                      |
+| `publicado`      | `attributes.publicado`             | Booleano `"1"` / vacío                                                   |
+| `option`         | —                                  | Ignorar (`"make your appointment"`)                                      |
+| `type`           | —                                  | Ignorar (el cliente siempre usa `"Auto/camioneta"`)                      |
+| `id`             | —                                  | Ignorar (es ID externo del cliente)                                      |
+| `path`           | **IMAGENES**                       | Ruta local → mapping a DO Spaces (ver abajo)                             |
 
 ### Gaps reales entre el parser actual y lo necesario
 
 El parser actual (`csv_product_parser.py`) solo extrae:
+
 ```python
 required = {"vin", "title", "price", "category_id"}  # category_id es UUID!
 optional = {"description", "condition", "currency", "location_city", "location_state", "location_zip", "attributes"}
@@ -107,6 +108,7 @@ Faltan: `year`, `make`, `model`, `mileage`, `body_style`, `exterior_color`, `int
 ### Servicios afectados
 
 **Backend:**
+
 - `apps/api/src/prosell/domain/services/csv_product_parser.py` — ampliar `_parse_row()`
 - `apps/api/src/prosell/domain/services/csv_image_mapper.py` (nuevo) — mapeo path → DO Spaces
 - `apps/api/src/prosell/application/dto/product/attributes.py` — agregar `title_status`, `title_state`, `facebook_groups`, `label`, `publicado` a `VehicleAttributes`
@@ -114,6 +116,7 @@ Faltan: `year`, `make`, `model`, `mileage`, `body_style`, `exterior_color`, `int
 - `apps/api/src/prosell/infrastructure/images/image_optimizer.py` — reutilizar existente
 
 **DTOs a extender:**
+
 ```python
 # VehicleAttributes — agregar:
 title_status: Literal["clean", "rebuilt"] | None  # de clean_title
@@ -128,6 +131,7 @@ publicado: bool  # de publicado
 ### Conversión de location
 
 El CSV tiene `location = "Orlando florida"` o `"Miami florida"`. Se divide en:
+
 - `location_city = parte antes del último espacio`
 - `location_state = "FL"` (hardcodear mapping FL, OR para Orlando/Miami o inferir del string)
 
@@ -148,10 +152,12 @@ El CSV tiene fechas en formatos inconsistentes: `"01/01/25"`, `"1/14/2025"`, `"2
 ### `POST /api/v1/products/bulk-upload/preview`
 
 **Request:** `multipart/form-data`
+
 - `file`: CSV (required)
 - `dry_run`: boolean (default: true)
 
 **Response:**
+
 ```json
 {
   "total_rows": 45,
@@ -189,12 +195,14 @@ El CSV tiene fechas en formatos inconsistentes: `"01/01/25"`, `"1/14/2025"`, `"2
 ### `POST /api/v1/products/bulk-upload/with-images`
 
 **Request:** `multipart/form-data`
+
 - `file`: CSV (required)
 - `images_zip`: ZIP file (optional)
 - `organization_id`: UUID (required)
 - `category_id`: UUID (required)
 
 **Response:**
+
 ```json
 {
   "total_rows": 45,

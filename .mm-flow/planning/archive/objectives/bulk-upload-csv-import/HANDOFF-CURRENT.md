@@ -21,6 +21,7 @@
 - Las imágenes están en la máquina del vendedor (Mac de Juan) — el cliente debe subir un ZIP con la estructura de carpetas
 
 ## Exact next recommended task
+
 - Objective package has no pending root tasks.
 
 ## Validation commands
@@ -40,6 +41,7 @@ cd apps/api && pyright prosell/domain/services/csv_product_parser.py
 ## canonical doc
 
 `docs/canonical/F01-bulk-upload-csv-import.md` — contiene:
+
 - Las 23 columnas del CSV con mapeo a DB
 - Los gaps entre el parser actual y el necesario
 - El diseño de los endpoints nuevos (preview + with-images)

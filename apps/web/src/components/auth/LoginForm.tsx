@@ -180,10 +180,10 @@ export function LoginForm() {
 
         // Redirect to dashboard after successful login
         // The login function updates the auth store, so we can redirect immediately
-        router.push('/dashboard');
+        router.push("/dashboard");
       } catch (error) {
         // Error is already set in auth store by login function
-        logger.error('Login failed', error);
+        logger.error("Login failed", error);
       }
     });
   };
@@ -202,11 +202,13 @@ export function LoginForm() {
       {/* OAuth Buttons */}
       <OAuthButtons
         onGoogleClick={() => {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+          const apiUrl =
+            process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
           window.location.href = `${apiUrl}/api/v1/auth/oauth/google/authorize`;
         }}
         onFacebookClick={() => {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+          const apiUrl =
+            process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
           window.location.href = `${apiUrl}/api/v1/auth/oauth/facebook/authorize`;
         }}
       />

@@ -40,10 +40,12 @@ Este comando ejecuta `safe_commit_handler.py` (también compatible con el alias
 El hook `~/.claude/hooks/mm-safe-commit-pre-guard.js` detecta `git commit --no-verify` y muestra una ADVERTENCIA, pero **NO puede bloquear el comando** (Claude Code ignora los exit codes de los hooks).
 
 **Cómo funciona:**
+
 1. **Hook (automático):** PreToolUse detecta `git commit --no-verify` → Muestra advertencia (NO bloquea)
 2. **Slash command (manual):** Usás `/mm:safe-commit` → Commitea con validación completa
 
 **⚠️ LIMITACIÓN:** Claude Code NO respeta exit codes de hooks PreToolUse. La única forma real de bloquear es:
+
 - Usar `/mm:safe-commit` manualmente (RECOMENDADO)
 - Crear alias: `alias git='~/.claude/bin/git-safe'` en tu shell
 
@@ -91,6 +93,7 @@ Resolución: ¿Cómo arreglar el error raíz?
 ```
 
 **El sistema automáticamente:**
+
 1. Revierte el commit (`git reset --soft HEAD~1`)
 2. Mantiene tus cambios staged (no los perdés)
 3. Invoca `/systematic-debugging` para investigar la raíz
@@ -130,12 +133,12 @@ Consultamos a Brain #6 (QA/DevOps) para:
 
 Si algo falla:
 
-| Error | Auto-corrección |
-|-------|-----------------|
-| Tests fallan | Mostrar qué tests fallaron, cómo fixearlos |
-| GGA falla | Mostrar errores de validación, cómo corregir |
-| Format wrong | Sugerir formato correcto: `feat(scope): message` |
-| AI attribution | Remover "Co-Authored-By:" del mensaje |
+| Error          | Auto-corrección                                  |
+| -------------- | ------------------------------------------------ |
+| Tests fallan   | Mostrar qué tests fallaron, cómo fixearlos       |
+| GGA falla      | Mostrar errores de validación, cómo corregir     |
+| Format wrong   | Sugerir formato correcto: `feat(scope): message` |
+| AI attribution | Remover "Co-Authored-By:" del mensaje            |
 
 ## Examples
 
@@ -159,6 +162,7 @@ Cualquier cambio que rompa este baseline = commit bloqueado hasta arreglar.
 ## Error Messages
 
 **Si tests fallan:**
+
 ```
 ⚠️ Tests failing BEFORE commit
 
@@ -169,6 +173,7 @@ Fix these BEFORE committing. Brain #6 demands ZERO failures.
 ```
 
 **Si GGA hook falta:**
+
 ```
 ⚠️ GGA hook not configured
 

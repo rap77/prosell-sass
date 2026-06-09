@@ -21,7 +21,10 @@ export type {
   UpdateOrganizationRequest,
 } from "@/lib/api/orgApi";
 
-export type { OrganizationListParams, OrganizationError } from "./organizationStore";
+export type {
+  OrganizationListParams,
+  OrganizationError,
+} from "./organizationStore";
 
 // Re-export types from teamApi
 export type {

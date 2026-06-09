@@ -29,7 +29,7 @@ type MockOrganization = {
 type MockOrganizations = Record<string, MockOrganization>;
 
 declare global {
-  var __mockOrganizations: MockOrganizations | undefined
+  var __mockOrganizations: MockOrganizations | undefined;
 }
 
 function getMockOrganizations(): MockOrganizations {
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
   } catch {
     return NextResponse.json(
       { detail: "Organization not found" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 }

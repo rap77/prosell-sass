@@ -16,15 +16,21 @@ export default function PrivacyPage() {
               <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
                 Privacy Policy
               </h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Coming Soon
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground">Coming Soon</p>
             </div>
 
             <div className="prose dark:prose-invert max-w-none">
-              <p>The Privacy Policy page is currently under development. Please check back soon for our complete privacy policy detailing how we collect, use, and protect your personal information.</p>
+              <p>
+                The Privacy Policy page is currently under development. Please
+                check back soon for our complete privacy policy detailing how we
+                collect, use, and protect your personal information.
+              </p>
 
-              <p>For any immediate questions or concerns regarding our privacy practices, please contact our privacy officer at privacy@prosell.saas.</p>
+              <p>
+                For any immediate questions or concerns regarding our privacy
+                practices, please contact our privacy officer at
+                privacy@prosell.saas.
+              </p>
             </div>
 
             <div className="text-center mt-8">

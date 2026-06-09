@@ -25,7 +25,10 @@ const MESSAGE_RESPONSE_SCHEMA = z.object({
   message: z.string(),
 });
 
-const TOTP_CODE_SCHEMA = z.string().trim().regex(/^\d{6}$/);
+const TOTP_CODE_SCHEMA = z
+  .string()
+  .trim()
+  .regex(/^\d{6}$/);
 
 interface ApiErrorPayload {
   detail?: unknown;

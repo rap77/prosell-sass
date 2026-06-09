@@ -26,7 +26,7 @@ describe("TeamMetricsCard", () => {
 
   it("should show loading state initially", () => {
     (global.fetch as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      () => new Promise(() => {}) // Never resolves - loading state
+      () => new Promise(() => {}), // Never resolves - loading state
     );
 
     const { container } = render(<TeamMetricsCard />, { wrapper });
@@ -83,7 +83,7 @@ describe("TeamMetricsCard", () => {
 
   it("should display error state when API fails", async () => {
     (global.fetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error("Failed to fetch metrics")
+      new Error("Failed to fetch metrics"),
     );
 
     const { container } = render(<TeamMetricsCard />, { wrapper });

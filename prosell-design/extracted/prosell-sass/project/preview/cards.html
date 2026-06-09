@@ -1,50 +1,116 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Card anatomy</title>
-<link rel="stylesheet" href="../colors_and_type.css">
-<style>
-  body { margin: 0; padding: 24px; background: var(--bg-base); font-family: var(--font-sans); color: var(--text-primary); position: relative; overflow: hidden; }
-  body::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 70% 20%, rgba(30,95,212,0.18), transparent 60%); pointer-events: none; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; position: relative; }
-  .card { background: rgba(13, 27, 62, 0.7); border: 1px solid rgba(77, 184, 255, 0.15); border-radius: 12px; backdrop-filter: blur(20px); padding: 18px; box-shadow: 0 8px 24px rgba(6,13,36,0.5); }
-  .card-hover { background: rgba(26, 45, 90, 0.7); border-color: rgba(77, 184, 255, 0.3); }
-  .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .name { font-size: 14px; font-weight: 600; }
-  .sub { font-size: 11.5px; color: var(--text-secondary); }
-  .arr { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
-  .delta { font-size: 11px; color: #22D3A0; font-weight: 600; }
-  .badge { display: inline-flex; padding: 2px 8px; border-radius: 100px; font-size: 10.5px; font-weight: 500; background: rgba(77,184,255,0.12); color: #4DB8FF; }
-  .meta-label { font-family: var(--font-mono); font-size: 9px; color: var(--text-disabled); margin-top: 12px; letter-spacing: 0.05em; }
-</style>
-</head>
-<body>
-  <div class="grid">
-    <div class="card">
-      <div class="row">
-        <div>
-          <div class="name">Acme Corp</div>
-          <div class="sub">SaaS · Series C</div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Card anatomy</title>
+    <link rel="stylesheet" href="../colors_and_type.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        background: var(--bg-base);
+        font-family: var(--font-sans);
+        color: var(--text-primary);
+        position: relative;
+        overflow: hidden;
+      }
+      body::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          ellipse at 70% 20%,
+          rgba(30, 95, 212, 0.18),
+          transparent 60%
+        );
+        pointer-events: none;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        position: relative;
+      }
+      .card {
+        background: rgba(13, 27, 62, 0.7);
+        border: 1px solid rgba(77, 184, 255, 0.15);
+        border-radius: 12px;
+        backdrop-filter: blur(20px);
+        padding: 18px;
+        box-shadow: 0 8px 24px rgba(6, 13, 36, 0.5);
+      }
+      .card-hover {
+        background: rgba(26, 45, 90, 0.7);
+        border-color: rgba(77, 184, 255, 0.3);
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .name {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .sub {
+        font-size: 11.5px;
+        color: var(--text-secondary);
+      }
+      .arr {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .delta {
+        font-size: 11px;
+        color: #22d3a0;
+        font-weight: 600;
+      }
+      .badge {
+        display: inline-flex;
+        padding: 2px 8px;
+        border-radius: 100px;
+        font-size: 10.5px;
+        font-weight: 500;
+        background: rgba(77, 184, 255, 0.12);
+        color: #4db8ff;
+      }
+      .meta-label {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        color: var(--text-disabled);
+        margin-top: 12px;
+        letter-spacing: 0.05em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grid">
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="name">Acme Corp</div>
+            <div class="sub">SaaS · Series C</div>
+          </div>
+          <span class="badge">ICP fit</span>
         </div>
-        <span class="badge">ICP fit</span>
+        <div class="arr">$240K</div>
+        <div class="delta">↑ 34% QoQ</div>
+        <div class="meta-label">DEFAULT</div>
       </div>
-      <div class="arr">$240K</div>
-      <div class="delta">↑ 34% QoQ</div>
-      <div class="meta-label">DEFAULT</div>
-    </div>
-    <div class="card card-hover">
-      <div class="row">
-        <div>
-          <div class="name">Northwind Inc</div>
-          <div class="sub">Fintech · Enterprise</div>
+      <div class="card card-hover">
+        <div class="row">
+          <div>
+            <div class="name">Northwind Inc</div>
+            <div class="sub">Fintech · Enterprise</div>
+          </div>
+          <span class="badge">ICP fit</span>
         </div>
-        <span class="badge">ICP fit</span>
+        <div class="arr">$480K</div>
+        <div class="delta">↑ 12% QoQ</div>
+        <div class="meta-label">HOVER</div>
       </div>
-      <div class="arr">$480K</div>
-      <div class="delta">↑ 12% QoQ</div>
-      <div class="meta-label">HOVER</div>
     </div>
-  </div>
-</body>
+  </body>
 </html>

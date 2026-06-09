@@ -17,12 +17,12 @@ planning:
 # Task lifecycle
 task_lifecycle:
   cycle:
-    - build        # implementer skill
-    - test         # tester skill
-    - review       # review skill
-    - code-review  # code-reviewer agent
-    - safe-commit  # safe-commit skill
-    - checkpoint   # update task-progress.json
+    - build # implementer skill
+    - test # tester skill
+    - review # review skill
+    - code-review # code-reviewer agent
+    - safe-commit # safe-commit skill
+    - checkpoint # update task-progress.json
   checkpoint_file: .planning/task-progress.json
   context_budget_threshold: 0.75
 

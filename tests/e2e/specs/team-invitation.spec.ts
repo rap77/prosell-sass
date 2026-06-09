@@ -9,25 +9,28 @@
  * 5. User is added to team
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test.describe('Team Invitation Flow', () => {
+test.describe("Team Invitation Flow", () => {
   test.beforeEach(async ({ page }) => {
     // Login as admin
-    await page.goto('/auth/login');
-    await page.fill('input[name="email"]', 'admin@prosell-demo.com');
-    await page.fill('input[name="password"]', 'Admin123!');
+    await page.goto("/auth/login");
+    await page.fill('input[name="email"]', "admin@prosell-demo.com");
+    await page.fill('input[name="password"]', "Admin123!");
     await page.click('button[type="submit"]');
-    await page.waitForURL('/dashboard');
+    await page.waitForURL("/dashboard");
   });
 
-  test('should accept team invitation from email link', async ({ page, request }) => {
+  test("should accept team invitation from email link", async ({
+    page,
+    request,
+  }) => {
     // Step 1: Create invitation via API
-    const createResponse = await request.post('/api/v1/teams/invite', {
+    const createResponse = await request.post("/api/v1/teams/invite", {
       data: {
-        team_id: 'test-team-id',
-        email: 'newuser@example.com',
-        role: 'vendor',
+        team_id: "test-team-id",
+        email: "newuser@example.com",
+        role: "vendor",
         expires_in_days: 7,
       },
     });
@@ -38,56 +41,65 @@ test.describe('Team Invitation Flow', () => {
 
     // Logout to simulate new user receiving email
     await page.click('button:has-text("Logout")');
-    await page.waitForURL('/auth/login');
+    await page.waitForURL("/auth/login");
 
     // Login as the invited user
-    await page.fill('input[name="email"]', 'newuser@example.com');
-    await page.fill('input[name="password"]', 'password123');
+    await page.fill('input[name="email"]', "newuser@example.com");
+    await page.fill('input[name="password"]', "password123");
     await page.click('button[type="submit"]');
-    await page.waitForURL('/dashboard');
+    await page.waitForURL("/dashboard");
 
     // Step 2: Navigate to invitation link (simulate clicking email link)
     await page.goto(`/invite/${token}`);
 
     // Step 3: Verify acceptance page loads
-    await expect(page.locator('h1, h2').filter({ hasText: 'Team Invitation' })).toBeVisible();
+    await expect(
+      page.locator("h1, h2").filter({ hasText: "Team Invitation" }),
+    ).toBeVisible();
 
     // Step 4: Wait for acceptance to complete
-    await expect(page.locator('text=Welcome to the team')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("text=Welcome to the team")).toBeVisible({
+      timeout: 5000,
+    });
 
     // Step 5: Verify redirect to dashboard
-    await page.waitForURL('/dashboard*');
-    expect(page.url()).toContain('/dashboard');
+    await page.waitForURL("/dashboard*");
+    expect(page.url()).toContain("/dashboard");
   });
 
-  test('should show error for expired invitation', async ({ page }) => {
+  test("should show error for expired invitation", async ({ page }) => {
     // Use an expired token (this would be mocked in real scenario)
-    const expiredToken = 'expired-token-1234567890abcdef';
+    const expiredToken = "expired-token-1234567890abcdef";
 
     await page.goto(`/invite/${expiredToken}`);
 
     // Verify expired invitation message
-    await expect(page.locator('text=Invitation Expired')).toBeVisible();
-    await expect(page.locator('text=has expired')).toBeVisible();
+    await expect(page.locator("text=Invitation Expired")).toBeVisible();
+    await expect(page.locator("text=has expired")).toBeVisible();
   });
 
-  test('should show error for invalid invitation token', async ({ page }) => {
-    const invalidToken = 'invalid-token-abc123';
+  test("should show error for invalid invitation token", async ({ page }) => {
+    const invalidToken = "invalid-token-abc123";
 
     await page.goto(`/invite/${invalidToken}`);
 
     // Verify error message
-    await expect(page.locator('text=Unable to Accept Invitation')).toBeVisible();
-    await expect(page.locator('text=Invalid invitation token')).toBeVisible();
+    await expect(
+      page.locator("text=Unable to Accept Invitation"),
+    ).toBeVisible();
+    await expect(page.locator("text=Invalid invitation token")).toBeVisible();
   });
 
-  test('should redirect unauthenticated users to login', async ({ page, request }) => {
+  test("should redirect unauthenticated users to login", async ({
+    page,
+    request,
+  }) => {
     // Create invitation
-    const createResponse = await request.post('/api/v1/teams/invite', {
+    const createResponse = await request.post("/api/v1/teams/invite", {
       data: {
-        team_id: 'test-team-id',
-        email: 'newuser@example.com',
-        role: 'vendor',
+        team_id: "test-team-id",
+        email: "newuser@example.com",
+        role: "vendor",
       },
     });
 
@@ -99,17 +111,17 @@ test.describe('Team Invitation Flow', () => {
 
     // Should redirect to login with return URL
     await page.waitForURL(/\/auth\/login/);
-    expect(page.url()).toContain('/auth/login');
+    expect(page.url()).toContain("/auth/login");
     expect(page.url()).toContain(`/invite/${token}`);
   });
 
-  test('should handle already member scenario', async ({ page, request }) => {
+  test("should handle already member scenario", async ({ page, request }) => {
     // Create invitation for existing team member
-    const createResponse = await request.post('/api/v1/teams/invite', {
+    const createResponse = await request.post("/api/v1/teams/invite", {
       data: {
-        team_id: 'test-team-id',
-        email: 'admin@prosell-demo.com', // Already a member
-        role: 'vendor',
+        team_id: "test-team-id",
+        email: "admin@prosell-demo.com", // Already a member
+        role: "vendor",
       },
     });
 
@@ -119,20 +131,24 @@ test.describe('Team Invitation Flow', () => {
     await page.goto(`/invite/${token}`);
 
     // Verify already member message
-    await expect(page.locator('text=Already a Member')).toBeVisible();
-    await expect(page.locator('text=already a member of this team')).toBeVisible();
+    await expect(page.locator("text=Already a Member")).toBeVisible();
+    await expect(
+      page.locator("text=already a member of this team"),
+    ).toBeVisible();
 
     // Should redirect to dashboard
-    await page.waitForURL('/dashboard');
+    await page.waitForURL("/dashboard");
   });
 
-  test('should have retry button on error', async ({ page }) => {
-    const invalidToken = 'definitely-invalid-token';
+  test("should have retry button on error", async ({ page }) => {
+    const invalidToken = "definitely-invalid-token";
 
     await page.goto(`/invite/${invalidToken}`);
 
     // Verify error state
-    await expect(page.locator('text=Unable to Accept Invitation')).toBeVisible();
+    await expect(
+      page.locator("text=Unable to Accept Invitation"),
+    ).toBeVisible();
 
     // Verify retry button exists
     const retryButton = page.locator('button:has-text("Try Again")');

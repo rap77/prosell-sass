@@ -19,21 +19,21 @@ Create new canonical documents from MasterMind framework templates.
 
 ## Types
 
-| Type | Description |
-|------|-------------|
-| `prd` | Product Requirements Document |
-| `brain` | Brain specification |
-| `source` | Source master document |
-| `task` | Task specification |
-| `objective` | Objective specification |
+| Type        | Description                   |
+| ----------- | ----------------------------- |
+| `prd`       | Product Requirements Document |
+| `brain`     | Brain specification           |
+| `source`    | Source master document        |
+| `task`      | Task specification            |
+| `objective` | Objective specification       |
 
 ## Flags
 
-| Flag | Description |
-|------|-------------|
-| `--name <slug>` | Slug for the document (required) |
+| Flag              | Description                                       |
+| ----------------- | ------------------------------------------------- |
+| `--name <slug>`   | Slug for the document (required)                  |
 | `--title <title>` | Human-readable title (optional, defaults to name) |
-| `--output <path>` | Custom output path |
+| `--output <path>` | Custom output path                                |
 
 ## Protocol
 

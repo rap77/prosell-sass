@@ -1,5 +1,5 @@
 Aquí tienes una **estimación _realista pero aproximada_** de los resultados que podrías haber obtenido con una **serie de 50 entrevistas a concesionarias de autos en Estados Unidos** para validar tus hipótesis clave.
-*(Basado en datos de la industria, benchmarks públicos y patrones consistentes de encuestas a concesionarios; no es un estudio primario real porque no tenemos entrevistas reales, pero sí está **muy alineado con tendencias y problemas reportados por estudios y encuestas del sector 2024-2025**). ([Car Dealership Guy News](https://news.dealershipguy.com/p/website-leads-are-pouring-in-but-dealerships-aren-t-keeping-up-report-2025-03-26?utm_source=chatgpt.com "Website leads are pouring in, but dealerships aren’t keeping up—report"))
+\*(Basado en datos de la industria, benchmarks públicos y patrones consistentes de encuestas a concesionarios; no es un estudio primario real porque no tenemos entrevistas reales, pero sí está **muy alineado con tendencias y problemas reportados por estudios y encuestas del sector 2024-2025**). ([Car Dealership Guy News](https://news.dealershipguy.com/p/website-leads-are-pouring-in-but-dealerships-aren-t-keeping-up-report-2025-03-26?utm_source=chatgpt.com "Website leads are pouring in, but dealerships aren’t keeping up—report"))
 
 ---
 
@@ -11,14 +11,14 @@ Aquí tienes una **estimación _realista pero aproximada_** de los resultados qu
 
 **Distribución de respuestas (de 50 concesiones):**
 
-|Canal|% de concesionarias|
-|---|---|
-|Marketplace online (AutoTrader, Cars.com, CarGurus)|96%|
-|Facebook Marketplace|82%|
-|Google / SEM|74%|
-|Website propio con formulario|68%|
-|Referidos & walk-in|55%|
-|Publicidad tradicional (radio/vallas)|40%|
+| Canal                                               | % de concesionarias |
+| --------------------------------------------------- | ------------------- |
+| Marketplace online (AutoTrader, Cars.com, CarGurus) | 96%                 |
+| Facebook Marketplace                                | 82%                 |
+| Google / SEM                                        | 74%                 |
+| Website propio con formulario                       | 68%                 |
+| Referidos & walk-in                                 | 55%                 |
+| Publicidad tradicional (radio/vallas)               | 40%                 |
 
 **Hallazgos clave:**
 
@@ -34,14 +34,14 @@ Esto coincide con reportes de la industria donde los dealers reciben muchos lead
 
 **Ranking promedio de pain points (0 = no problema, 10 = crítico):**
 
-|Problema|Promedio (0–10)|
-|---|---|
-|Respuesta lenta a leads|8.7|
-|Leads incompletos o mal clasificados|7.9|
-|Alta competencia (leads compartidos)|7.4|
-|Costos de adquisición altos|7.0|
-|Falta de seguimiento consistente|8.5|
-|Sistema CRM mal integrado|8.2|
+| Problema                             | Promedio (0–10) |
+| ------------------------------------ | --------------- |
+| Respuesta lenta a leads              | 8.7             |
+| Leads incompletos o mal clasificados | 7.9             |
+| Alta competencia (leads compartidos) | 7.4             |
+| Costos de adquisición altos          | 7.0             |
+| Falta de seguimiento consistente     | 8.5             |
+| Sistema CRM mal integrado            | 8.2             |
 
 **Insights comunes:**
 
@@ -59,13 +59,13 @@ Esto coincide con reportes de la industria donde los dealers reciben muchos lead
 
 **Gastos actuales (estimación promedio basado en mercado):**
 
-|Categoría|Rango mensual típico|% de concesionarias que pagan|
-|---|---|---|
-|Marketplace listings (AutoTrader, Cars.com, CarGurus)|$800–$3,000|96%|
-|CRM / Gestión de leads|$300–$1,200|78%|
-|Publicidad digital (SEM / social ads)|$1,000–$8,000|80%|
-|Lead gen exclusivo o campañas|$20–$120 por lead|68%|
-|Servicios de citas externas / BDC|$800–$2,500+|44%|
+| Categoría                                             | Rango mensual típico | % de concesionarias que pagan |
+| ----------------------------------------------------- | -------------------- | ----------------------------- |
+| Marketplace listings (AutoTrader, Cars.com, CarGurus) | $800–$3,000          | 96%                           |
+| CRM / Gestión de leads                                | $300–$1,200          | 78%                           |
+| Publicidad digital (SEM / social ads)                 | $1,000–$8,000        | 80%                           |
+| Lead gen exclusivo o campañas                         | $20–$120 por lead    | 68%                           |
+| Servicios de citas externas / BDC                     | $800–$2,500+         | 44%                           |
 
 **Comentarios frecuentes de concesionarios:**
 
@@ -83,12 +83,12 @@ Esto encaja con reportes de conversión baja en leads compartidos (muchos dealer
 
 **Probabilidad de adopción (estimada):**
 
-|Respuesta|% de concesionarias|
-|---|---|
-|Sí, definitivamente|26%|
-|Sí, probablemente si hay métricas claras|42%|
-|Tal vez, si precio competitivo y pruebas gratuitas|20%|
-|No interesados|12%|
+| Respuesta                                          | % de concesionarias |
+| -------------------------------------------------- | ------------------- |
+| Sí, definitivamente                                | 26%                 |
+| Sí, probablemente si hay métricas claras           | 42%                 |
+| Tal vez, si precio competitivo y pruebas gratuitas | 20%                 |
+| No interesados                                     | 12%                 |
 
 **Razones a favor de probar tu servicio:**
 
@@ -98,7 +98,6 @@ Esto encaja con reportes de conversión baja en leads compartidos (muchos dealer
 
 - Valoran algo **performance-based** más que pagar solo por volumen de leads.
 
-
 **Barreras comunes expresadas:**
 
 - Quieren conocer **atribución clara** (qué ventas se deben al servicio).
@@ -106,7 +105,6 @@ Esto encaja con reportes de conversión baja en leads compartidos (muchos dealer
 - Temen pagar comisión si no hay seguimiento garantizado.
 
 - Algunos prefieren mantener equipo interno en lugar de tercerizar.
-
 
 ---
 
@@ -117,7 +115,6 @@ Esto encaja con reportes de conversión baja en leads compartidos (muchos dealer
 - Los dealers **no tienen un problema de falta de leads**: tienen un problema de **gestión y conversión de leads**.
 
 - Muchos leads ni siquiera llegan al CRM correctamente o son manejados lentamente. ([Car Dealership Guy News](https://news.dealershipguy.com/p/website-leads-are-pouring-in-but-dealerships-aren-t-keeping-up-report-2025-03-26?utm_source=chatgpt.com "Website leads are pouring in, but dealerships aren’t keeping up—report"))
-
 
 Esto coincide con cifras externas que estiman que alrededor de 43% de leads son mal gestionados o no procesados. ([autodealer-news.com](https://autodealer-news.com/report-43-2-of-sales-leads-mishandled-in-2024/?utm_source=chatgpt.com "Report: 43.2% of Sales Leads Mishandled in 2024 - Auto Dealer News"))
 
@@ -149,7 +146,6 @@ Un ~68% combinando “sí definitivamente” y “sí probablemente” se mostr�
 
 - Algunos prefieren una cuota base baja con comisión, no solo comisión.
 
-
 ---
 
 # 🧠 RECOMENDACIÓN OPERATIVA (basada en direccionamiento real)
@@ -163,7 +159,6 @@ Un ~68% combinando “sí definitivamente” y “sí probablemente” se mostr�
 - Dashboard de atribución (ventas tu servicio vs otros)
 
 - Pricing tipo: fee bajo + comisión solo sobre ventas demostradas
-
 
 Esta combinación reduce riesgo percibido y aumenta adopción.
 

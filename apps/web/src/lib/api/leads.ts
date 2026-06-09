@@ -3,7 +3,12 @@
  * Handles lead management for vendedores and managers
  */
 
-import { useQuery, useMutation, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import { fetchWithAuth } from "@/lib/api/fetchWithAuth";
 
@@ -243,7 +248,11 @@ function transformLead(backendLead: BackendLeadResponse): Lead {
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
-export function useLeads(filters?: LeadFilters, limit: number = 50, offset: number = 0): UseQueryResult<Lead[], Error> {
+export function useLeads(
+  filters?: LeadFilters,
+  limit: number = 50,
+  offset: number = 0,
+): UseQueryResult<Lead[], Error> {
   return useQuery({
     queryKey: ["leads", filters, limit, offset],
     queryFn: async () => {
@@ -253,21 +262,26 @@ export function useLeads(filters?: LeadFilters, limit: number = 50, offset: numb
       queryParams.append("offset", offset.toString());
       if (filters?.status) queryParams.append("status", filters.status);
       if (filters?.search) queryParams.append("search", filters.search);
-      if (filters?.vendedor_id) queryParams.append("vendedor_id", filters.vendedor_id);
+      if (filters?.vendedor_id)
+        queryParams.append("vendedor_id", filters.vendedor_id);
 
-      const res = await fetchWithAuth(`/api/v1/leads?${queryParams.toString()}`);
+      const res = await fetchWithAuth(
+        `/api/v1/leads?${queryParams.toString()}`,
+      );
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to fetch leads" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to fetch leads" }));
         throw new Error(error.message || "Failed to fetch leads");
       }
 
       const data = (await res.json()) as BackendLeadListResponse;
       return data.items.map(transformLead);
     },
-    staleTime: 35_000,          // slightly above refetchInterval to avoid redundant refetches
+    staleTime: 35_000, // slightly above refetchInterval to avoid redundant refetches
     refetchInterval: 30_000,
-    refetchIntervalInBackground: false,  // pause polling when tab is not visible
+    refetchIntervalInBackground: false, // pause polling when tab is not visible
   });
 }
 
@@ -279,11 +293,15 @@ export function useLeads(filters?: LeadFilters, limit: number = 50, offset: numb
  *
  * Audit logs are returned newest-first by the backend.
  */
-export async function getLeadAuditTrail(leadId: string): Promise<LeadAuditLogEntry[]> {
+export async function getLeadAuditTrail(
+  leadId: string,
+): Promise<LeadAuditLogEntry[]> {
   const res = await fetchWithAuth(`/api/v1/leads/${leadId}`);
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Failed to fetch lead audit trail" }));
+    const error = await res
+      .json()
+      .catch(() => ({ message: "Failed to fetch lead audit trail" }));
     throw new Error(error.message || "Failed to fetch lead audit trail");
   }
 
@@ -291,10 +309,14 @@ export async function getLeadAuditTrail(leadId: string): Promise<LeadAuditLogEnt
   return data.audit_logs;
 }
 
-async function fetchLeadDetail(leadId: string): Promise<BackendLeadDetailResponse> {
+async function fetchLeadDetail(
+  leadId: string,
+): Promise<BackendLeadDetailResponse> {
   const res = await fetchWithAuth(`/api/v1/leads/${leadId}`);
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Failed to fetch lead" }));
+    const error = await res
+      .json()
+      .catch(() => ({ message: "Failed to fetch lead" }));
     throw new Error(error.message || "Failed to fetch lead");
   }
   return (await res.json()) as BackendLeadDetailResponse;
@@ -304,7 +326,9 @@ async function fetchLeadDetail(leadId: string): Promise<BackendLeadDetailRespons
  * useLead and useLeadAuditTrail share the same query key ["lead-detail", leadId].
  * TanStack Query deduplicates the HTTP call — one request per lead, two consumers.
  */
-export function useLead(leadId: string | undefined): UseQueryResult<Lead | null, Error> {
+export function useLead(
+  leadId: string | undefined,
+): UseQueryResult<Lead | null, Error> {
   return useQuery({
     queryKey: ["lead-detail", leadId],
     queryFn: () => (leadId ? fetchLeadDetail(leadId) : null),
@@ -343,7 +367,9 @@ export function useUpdateLeadStatus(leadId: string) {
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to update lead status" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to update lead status" }));
         throw new Error(error.message || "Failed to update lead status");
       }
 
@@ -373,7 +399,9 @@ export function useReassignLead(leadId: string) {
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to reassign lead" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to reassign lead" }));
         throw new Error(error.message || "Failed to reassign lead");
       }
 
@@ -398,7 +426,9 @@ export function useTeamMetrics(): UseQueryResult<TeamMetricsResponse, Error> {
       const res = await fetchWithAuth("/api/v1/leads/metrics");
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to fetch team metrics" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to fetch team metrics" }));
         throw new Error(error.message || "Failed to fetch team metrics");
       }
 
@@ -426,7 +456,9 @@ export function useLeadDuplicates(
       const res = await fetchWithAuth(`/api/v1/leads/${leadId}/duplicates`);
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to fetch duplicates" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to fetch duplicates" }));
         throw new Error(error.message || "Failed to fetch duplicates");
       }
 

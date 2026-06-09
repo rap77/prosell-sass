@@ -227,7 +227,9 @@ describe("ForgotPasswordForm Component", () => {
     it("should navigate to login when clicking back link", () => {
       render(<ForgotPasswordForm />);
 
-      const backLink = screen.getByRole("link", { name: /volver al inicio de sesi/i });
+      const backLink = screen.getByRole("link", {
+        name: /volver al inicio de sesi/i,
+      });
       expect(backLink).toHaveAttribute("href", "/auth/login");
     });
 

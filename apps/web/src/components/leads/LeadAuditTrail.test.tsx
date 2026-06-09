@@ -20,7 +20,9 @@ import { LeadStatus, type LeadAuditLogEntry } from "@/lib/api/leads";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-const makeEntry = (overrides: Partial<LeadAuditLogEntry> = {}): LeadAuditLogEntry => ({
+const makeEntry = (
+  overrides: Partial<LeadAuditLogEntry> = {},
+): LeadAuditLogEntry => ({
   id: "11111111-0000-0000-0000-000000000001",
   lead_id: "22222222-0000-0000-0000-000000000002",
   old_status: LeadStatus.NEW,
@@ -85,7 +87,7 @@ describe("LeadAuditTrail", () => {
       render(<LeadAuditTrail auditLogs={[]} />);
       expect(screen.getByTestId("audit-empty")).toBeInTheDocument();
       expect(
-        screen.getByText(/no status changes recorded yet/i)
+        screen.getByText(/no status changes recorded yet/i),
       ).toBeInTheDocument();
     });
 
@@ -138,7 +140,9 @@ describe("LeadAuditTrail", () => {
       render(<LeadAuditTrail auditLogs={[entry]} />);
       const changedBy = screen.getByTestId("audit-changed-by");
       expect(changedBy).toBeInTheDocument();
-      expect(changedBy).toHaveTextContent("33333333-0000-0000-0000-000000000003");
+      expect(changedBy).toHaveTextContent(
+        "33333333-0000-0000-0000-000000000003",
+      );
     });
 
     it("hides the changed-by section when changed_by_user_id is null", () => {
@@ -170,10 +174,16 @@ describe("LeadAuditTrail", () => {
       expect(entries).toHaveLength(2);
       // First entry should have the newest timestamp
       const firstTimestamp = within(entries[0]).getByTestId("audit-timestamp");
-      expect(firstTimestamp).toHaveAttribute("dateTime", "2026-05-16T15:00:00.000Z");
+      expect(firstTimestamp).toHaveAttribute(
+        "dateTime",
+        "2026-05-16T15:00:00.000Z",
+      );
       // Second entry should have the older timestamp
       const secondTimestamp = within(entries[1]).getByTestId("audit-timestamp");
-      expect(secondTimestamp).toHaveAttribute("dateTime", "2026-05-16T10:00:00.000Z");
+      expect(secondTimestamp).toHaveAttribute(
+        "dateTime",
+        "2026-05-16T10:00:00.000Z",
+      );
     });
 
     it("renders correct status changes for each entry", () => {
@@ -203,13 +213,21 @@ describe("LeadAuditTrail", () => {
     const statusPairs: Array<[LeadStatus, LeadStatus, string, string]> = [
       [LeadStatus.NEW, LeadStatus.CONTACTED, "Nuevo", "Contactado"],
       [LeadStatus.CONTACTED, LeadStatus.QUALIFIED, "Contactado", "Calificado"],
-      [LeadStatus.QUALIFIED, LeadStatus.APPOINTMENT_SET, "Calificado", "Cita agendada"],
+      [
+        LeadStatus.QUALIFIED,
+        LeadStatus.APPOINTMENT_SET,
+        "Calificado",
+        "Cita agendada",
+      ],
       [LeadStatus.NEW, LeadStatus.LOST, "Nuevo", "Perdido"],
     ];
 
     statusPairs.forEach(([oldStatus, newStatus, oldLabel, newLabel]) => {
       it(`renders ${oldLabel} → ${newLabel} transition`, () => {
-        const entry = makeEntry({ old_status: oldStatus, new_status: newStatus });
+        const entry = makeEntry({
+          old_status: oldStatus,
+          new_status: newStatus,
+        });
         render(<LeadAuditTrail auditLogs={[entry]} />);
         const statusChange = screen.getByTestId("audit-status-change");
         const badges = within(statusChange).getAllByTestId("status-badge");
@@ -223,7 +241,9 @@ describe("LeadAuditTrail", () => {
     it("has aria-label on the section", () => {
       const entry = makeEntry();
       render(<LeadAuditTrail auditLogs={[entry]} />);
-      expect(screen.getByRole("region", { name: /lead audit trail/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("region", { name: /lead audit trail/i }),
+      ).toBeInTheDocument();
     });
 
     it("has aria-label on the list reflecting the count", () => {
@@ -242,7 +262,7 @@ describe("LeadAuditTrail", () => {
     it("applies custom className to the root section", () => {
       const entry = makeEntry();
       const { container } = render(
-        <LeadAuditTrail auditLogs={[entry]} className="custom-audit" />
+        <LeadAuditTrail auditLogs={[entry]} className="custom-audit" />,
       );
       // The section is the root element
       const section = container.querySelector("section");

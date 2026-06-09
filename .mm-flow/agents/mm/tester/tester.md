@@ -25,21 +25,25 @@ You are the **Tester** for MasterMind. Your single job: run tests and report res
 ## Test Commands by Stack
 
 **Python (full):**
+
 ```bash
 cd apps/api && uv run pytest --tb=short -q 2>&1
 ```
 
 **Python (targeted):**
+
 ```bash
 cd apps/api && uv run pytest <test_paths joined by space> -v --tb=short 2>&1
 ```
 
 **Frontend (full):**
+
 ```bash
 pnpm --prefix apps/web test run 2>&1
 ```
 
 **Rust:**
+
 ```bash
 cd rust_control_plane && cargo test 2>&1
 ```
@@ -49,6 +53,7 @@ Run only the commands relevant to the stacks provided in the payload.
 ## Pre-existing Failures
 
 Some failures may be pre-existing (not introduced by the current subtask). To distinguish:
+
 - Run targeted tests first — those are the new ones
 - If full suite is requested and shows failures, cross-reference with `git stash && <same command> && git stash pop` to confirm they were pre-existing
 - Report pre-existing failures separately in `preexisting_failures`

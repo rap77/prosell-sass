@@ -10,17 +10,18 @@
 
 ### Stack Confirmado (Sólido para escalabilidad)
 
-| Tecnología | Versión | Propósito | Estado |
-|------------|---------|-----------|--------|
-| **Python** | 3.13+ (free-threading) | Runtime | ✅ Producción |
-| **FastAPI** | 0.115+ | Framework | ✅ Producción |
-| **SQLAlchemy** | 2.0 async | ORM | ✅ Producción |
-| **Pydantic** | 2.12+ | Validation | ✅ Producción |
-| **PostgreSQL** | 17 | Database | ✅ Producción |
-| **Redis** | 7.4+ | Cache/Queue | ✅ Producción |
-| **Tests** | 325 passing | Coverage | ✅ 95%+ |
+| Tecnología     | Versión                | Propósito   | Estado        |
+| -------------- | ---------------------- | ----------- | ------------- |
+| **Python**     | 3.13+ (free-threading) | Runtime     | ✅ Producción |
+| **FastAPI**    | 0.115+                 | Framework   | ✅ Producción |
+| **SQLAlchemy** | 2.0 async              | ORM         | ✅ Producción |
+| **Pydantic**   | 2.12+                  | Validation  | ✅ Producción |
+| **PostgreSQL** | 17                     | Database    | ✅ Producción |
+| **Redis**      | 7.4+                   | Cache/Queue | ✅ Producción |
+| **Tests**      | 325 passing            | Coverage    | ✅ 95%+       |
 
 **Fortalezas:**
+
 - ✅ Clean Architecture (domain → application → infrastructure)
 - ✅ Multi-tenant (tenant_id en todas las entidades)
 - ✅ Async/await (soporta alta concurrencia)
@@ -75,12 +76,14 @@
 **Complejidad**: MEDIA
 
 **Qué requiere:**
+
 - API endpoints públicos (`GET /api/v1/public/vehicles`)
 - SEO metadata generation
 - Caching (Redis + CDN)
 - Rate limiting (prevenir scraping)
 
 **Riesgos:**
+
 - **Desperdicio de recursos**: Implementar caching/SEO para producto que dealers no necesitan urgentemente
 - **Costo de oportunidad técnico**: Alto (podríamos estar automatizando)
 
@@ -95,6 +98,7 @@
 **Qué requiere:**
 
 #### 1. OAuth Dinámico (1-2 semanas)
+
 ```python
 # Flujo de tokens
 1. Dealer autoriza ProSell en Facebook
@@ -105,6 +109,7 @@
 ```
 
 **Riesgos:**
+
 - Tokens expiran sin warning
 - Dealer puede revocar acceso
 - Facebook puede cambiar política de tokens
@@ -112,6 +117,7 @@
 ---
 
 #### 2. Webhook Listener (1 semana)
+
 ```python
 # Recibir actualizaciones de Facebook
 @app.post("/webhooks/facebook")
@@ -123,6 +129,7 @@ async def facebook_webhook(request):
 ```
 
 **Riesgos:**
+
 - Webhooks pueden llegar desordenados
 - Necesitamos deduplication
 - Facebook puede reenviar webhooks
@@ -130,6 +137,7 @@ async def facebook_webhook(request):
 ---
 
 #### 3. Rate Limiting (1-2 semanas)
+
 ```python
 # Facebook tiene límites estrictos
 # 200 calls per hour per user
@@ -142,6 +150,7 @@ async def facebook_webhook(request):
 ```
 
 **Riesgos:**
+
 - Si excedemos límites, Facebook banea nuestra app
 - Queue puede crecer infinitamente si workers fallan
 - Dealers pueden no publicar en horas pico
@@ -149,6 +158,7 @@ async def facebook_webhook(request):
 ---
 
 #### 4. Image Upload (1 semana)
+
 ```python
 # Subir imágenes a Facebook
 - Multipart/form-data
@@ -157,6 +167,7 @@ async def facebook_webhook(request):
 ```
 
 **Riesgos:**
+
 - Uploads pueden fallar por timeout
 - Imágenes corruptas rechazadas
 - Storage cost (S3/Spaces)
@@ -168,16 +179,19 @@ async def facebook_webhook(request):
 ### Facebook App Review Process
 
 **Qué es:**
+
 - Facebook revisa nuestra app manualmente
 - Requiere screenshots, video demo, explicación detallada
 - Pueden pedir cambios múltiples veces
 
 **Timeline realista:**
+
 - **Mejor caso**: 3 días
 - **Caso promedio**: 2 semanas
 - **Peor caso**: 6 semanas o rechazo
 
 **Estrategia de mitigación:**
+
 - INICIAR proceso DÍA 1 (paralelo al desarrollo)
 - Tener Plan B (CSV upload + Selenium)
 - Documentar todo el proceso
@@ -188,19 +202,19 @@ async def facebook_webhook(request):
 
 ### Desglose por componente:
 
-| Componente | Estimado | Dependencias |
-|------------|----------|--------------|
-| **Setup Task Queue (Redis + Taskiq)** | 3 días | - |
-| **OAuth Facebook** | 5 días | App Review |
-| **Graph API Client** | 1 semana | OAuth |
-| **Webhook Listener** | 3 días | Graph API |
-| **Image Upload** | 3 días | Graph API |
-| **Rate Limiting** | 5 días | Graph API |
-| **Re-publicación Scheduler** | 1 semana | Task Queue |
-| **IA Titles/Descriptions** | 3 días | OpenAI API |
-| **Error Handling + Retries** | 1 semana | Todos |
-| **Testing + QA** | 1 semana | Todos |
-| **TOTAL** | **~6-7 semanas** | |
+| Componente                            | Estimado         | Dependencias |
+| ------------------------------------- | ---------------- | ------------ |
+| **Setup Task Queue (Redis + Taskiq)** | 3 días           | -            |
+| **OAuth Facebook**                    | 5 días           | App Review   |
+| **Graph API Client**                  | 1 semana         | OAuth        |
+| **Webhook Listener**                  | 3 días           | Graph API    |
+| **Image Upload**                      | 3 días           | Graph API    |
+| **Rate Limiting**                     | 5 días           | Graph API    |
+| **Re-publicación Scheduler**          | 1 semana         | Task Queue   |
+| **IA Titles/Descriptions**            | 3 días           | OpenAI API   |
+| **Error Handling + Retries**          | 1 semana         | Todos        |
+| **Testing + QA**                      | 1 semana         | Todos        |
+| **TOTAL**                             | **~6-7 semanas** |              |
 
 **Nota**: El App Review es paralelo, no secuencial.
 
@@ -235,23 +249,27 @@ async def facebook_webhook(request):
 ### Sprint 7+: Marketplace BE (Semanas 1-6)
 
 **Semana 1-2: Foundation**
+
 - [ ] Implementar Taskiq (Python async task queue)
 - [ ] Configurar Redis para queues
 - [ ] Iniciar Facebook App Review (DÍA 1)
 - [ ] Setup Circuit Breakers
 
 **Semana 3-4: Integration**
+
 - [ ] OAuth Facebook implementation
 - [ ] Graph API client con rate limiting
 - [ ] Webhook listener + deduplication
 - [ ] Image upload optimization
 
 **Semana 5: Automation**
+
 - [ ] IA titles/descriptions (OpenAI/Claude)
 - [ ] Re-publication scheduler (celery beat)
 - [ ] VIN Decoder production-ready
 
 **Semana 6: Production**
+
 - [ ] Error handling + retries
 - [ ] Observability (OpenTelemetry)
 - [ ] Canary deployment (1 dealer primero)
@@ -260,6 +278,7 @@ async def facebook_webhook(request):
 ### Sprint 9: Catálogo Público (Semanas 9-10)
 
 **Solo cuando:**
+
 - Marketplace automation está estable (>99.9% success rate)
 - No hay fires operativos
 - Hay capacidad para "nice-to-haves"
@@ -273,6 +292,7 @@ async def facebook_webhook(request):
 **Probabilidad**: Media (30%)
 **Impacto**: CRÍTICO (bloquea desarrollo)
 **Mitigación**:
+
 - Plan B: Selenium automation (fallback)
 - Plan C: CSV upload manual
 - Iniciar múltiples apps en paralelo
@@ -284,6 +304,7 @@ async def facebook_webhook(request):
 **Probabilidad**: Alta (60%)
 **Impacto**: Alto (publicaciones fallan)
 **Mitigación**:
+
 - Token bucket algorithm
 - Priority queue (dealers premium primero)
 - Exponential backoff
@@ -296,6 +317,7 @@ async def facebook_webhook(request):
 **Probabilidad**: Media (40%)
 **Impacto**: Alto (dealer pierde servicio)
 **Mitigación**:
+
 - Auto-refresh 48hs antes
 - Alertas tempranas
 - Manual refresh option
@@ -307,6 +329,7 @@ async def facebook_webhook(request):
 **Probabilidad**: Media (30%)
 **Impacto**: Medio (desincronización)
 **Mitigación**:
+
 - Dead letter queue
 - Idempotency keys
 - Status polling fallback

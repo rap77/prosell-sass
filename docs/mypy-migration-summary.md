@@ -43,6 +43,7 @@ min_version = 7.0
 ### 2. `apps/api/pyproject.toml` (UPDATED)
 
 Added mypy configuration to existing `[tool.mypy]` section:
+
 - Python 3.12 compatibility
 - Strict mode enabled
 - Plugin support for pytest-mypy-plugins
@@ -53,6 +54,7 @@ Added mypy configuration to existing `[tool.mypy]` section:
 ## Test Results Comparison
 
 ### Mypy (NEW)
+
 ```
 ✅ 0 errors in test suite
 ✅ Fixture handling: Excellent (pytest-mypy-plugins)
@@ -60,6 +62,7 @@ Added mypy configuration to existing `[tool.mypy]` section:
 ```
 
 ### Pyright (PREVIOUS)
+
 ```
 ❌ 96+ errors in test_appointment_api.py alone
 ❌ Fixture handling: Poor (false positives)
@@ -80,6 +83,7 @@ Added mypy configuration to existing `[tool.mypy]` section:
 ## Next Steps
 
 1. **Update Pre-commit Hook**: Add mypy to `.pre-commit-config.yaml`
+
    ```yaml
    - repo: https://github.com/pre-commit/mirrors-mypy
      rev: v1.14.1
@@ -115,19 +119,20 @@ cd apps/api && mypy tests/integration/api/test_appointment_api.py
 
 ## Migration Benefits
 
-| Aspect | Pyright | Mypy |
-|--------|---------|------|
-| Fixture Support | ❌ Poor | ✅ Excellent |
-| Test Suite Errors | 96+ | 0 |
-| Speed | Moderate | Fast |
-| Community | Growing | Standard |
-| Plugin Support | Limited | Rich (pytest-mypy-plugins) |
+| Aspect            | Pyright  | Mypy                       |
+| ----------------- | -------- | -------------------------- |
+| Fixture Support   | ❌ Poor  | ✅ Excellent               |
+| Test Suite Errors | 96+      | 0                          |
+| Speed             | Moderate | Fast                       |
+| Community         | Growing  | Standard                   |
+| Plugin Support    | Limited  | Rich (pytest-mypy-plugins) |
 
 ---
 
 ## Conclusion
 
 The migration to Mypy has been **successfully completed** with significant improvements:
+
 - ✅ Zero type errors in test suite
 - ✅ Proper pytest fixture handling
 - ✅ Better developer experience

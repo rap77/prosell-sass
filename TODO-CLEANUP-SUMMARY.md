@@ -18,12 +18,14 @@ Cleaned up critical TODO comments that represented security issues, incomplete f
 **Problem**: Any authenticated user could create organizations. No SUPER_ADMIN check was in place.
 
 **Solution Implemented**:
+
 - Created `require_permission()` dependency in `dependencies.py` for RBAC permission checks
 - Created `require_role()` dependency for role-based checks
 - Updated `create_organization()` endpoint to use `require_permission(Permission.ORG_CREATE)`
 - Updated verification endpoints (`verify_organization`, `reject_organization`, `suspend_organization`) to use `require_role(RoleType.SUPER_ADMIN)`
 
 **Files Modified**:
+
 - `apps/api/src/prosell/infrastructure/api/dependencies.py` - Added permission checking dependencies
 - `apps/api/src/prosell/infrastructure/api/routers/org_router.py` - Applied permission checks
 
@@ -40,12 +42,14 @@ Cleaned up critical TODO comments that represented security issues, incomplete f
 **Problem**: File upload size validation parameter existed but was never enforced. Users could upload arbitrarily large files.
 
 **Solution Implemented**:
+
 - Implemented size validation with 10MB hard limit
 - Changed parameter name from `_max_size_bytes` (ignored) to `max_size_bytes` (validated)
 - Added `ValueError` exception if requested size exceeds limit
 - Added `max_size_bytes` to response dict so frontend knows the limit
 
 **Files Modified**:
+
 - `apps/api/src/prosell/infrastructure/services/do_spaces_service.py`
 
 **Impact**: File uploads now properly validated with hard 10MB limit, preventing DoS attacks via large file uploads.
@@ -62,11 +66,13 @@ Cleaned up critical TODO comments that represented security issues, incomplete f
 **Problem**: Auth endpoints have no rate limiting, making them vulnerable to brute force attacks.
 
 **Solution**:
+
 - Updated TODO comment to clarify this is intentionally disabled during development
 - Added clear documentation in code about how to enable when ready
 - Tracked in GitHub issue `security-123`
 
 **Files Modified**:
+
 - `apps/api/src/prosell/infrastructure/api/routers/auth_router.py`
 
 **Impact**: No functional change. This is properly documented for future implementation.
@@ -84,11 +90,13 @@ Cleaned up critical TODO comments that represented security issues, incomplete f
 **Problem**: Page was using hardcoded `"test-user-123"` instead of actual auth user ID.
 
 **Solution Implemented**:
+
 - Imported `useAuthStore` hook
 - Changed from hardcoded string to `user?.id` from auth store
 - Added proper null check with `user?.id`
 
 **Files Modified**:
+
 - `apps/web/src/app/dashboard/org/[id]/edit/page.tsx`
 
 **Impact**: Organization edit page now uses actual authenticated user ID.
@@ -98,6 +106,7 @@ Cleaned up critical TODO comments that represented security issues, incomplete f
 ### 5. Ambiguous TODO Comments ✅ CLEANED UP
 
 **Files Modified**:
+
 - `apps/web/src/lib/logger.ts` - Changed TODO to NOTE with reference to technical debt docs
 - `apps/web/src/components/ui/WalletCard.tsx` - Changed TODO to NOTE with reference to Stripe integration plan
 - `apps/web/src/types/auth.ts` - Changed TODO to NOTE with reference to migration guide
@@ -122,12 +131,14 @@ Cleaned up critical TODO comments that represented security issues, incomplete f
 ## Files Modified Summary
 
 ### Backend (Python)
+
 1. `apps/api/src/prosell/infrastructure/api/dependencies.py` - Added RBAC permission/role checking
 2. `apps/api/src/prosell/infrastructure/api/routers/org_router.py` - Applied permission checks
 3. `apps/api/src/prosell/infrastructure/services/do_spaces_service.py` - Added file size validation
 4. `apps/api/src/prosell/infrastructure/api/routers/auth_router.py` - Improved TODO documentation
 
 ### Frontend (TypeScript)
+
 1. `apps/web/src/app/dashboard/org/[id]/edit/page.tsx` - Fixed hardcoded user ID
 2. `apps/web/src/lib/logger.ts` - Improved TODO documentation
 3. `apps/web/src/components/ui/WalletCard.tsx` - Improved TODO documentation

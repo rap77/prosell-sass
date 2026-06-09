@@ -41,7 +41,9 @@ const fillAndSubmitForgotForm = async (email: string) => {
   const user = userEvent.setup();
   const emailInput = screen.getByLabelText(/email/i);
   await user.type(emailInput, email);
-  const submitBtn = screen.getByRole("button", { name: /Enviar enlace de recuperación/i });
+  const submitBtn = screen.getByRole("button", {
+    name: /Enviar enlace de recuperación/i,
+  });
   await user.click(submitBtn);
 };
 
@@ -67,13 +69,15 @@ describe("B1.1.49 — Request password reset from forgot-password form", () => {
   it("shows a 'Send Reset Link' submit button", () => {
     render(<ForgotPasswordForm />);
     expect(
-      screen.getByRole("button", { name: /Enviar enlace de recuperación/i })
+      screen.getByRole("button", { name: /Enviar enlace de recuperación/i }),
     ).toBeInTheDocument();
   });
 
   it("has a 'Back to Login' link pointing to /auth/login", () => {
     render(<ForgotPasswordForm />);
-    const link = screen.getByRole("link", { name: /Volver al inicio de sesión/i });
+    const link = screen.getByRole("link", {
+      name: /Volver al inicio de sesión/i,
+    });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute("href", "/auth/login");
   });
@@ -81,7 +85,9 @@ describe("B1.1.49 — Request password reset from forgot-password form", () => {
   it("shows validation error when submitting without email", async () => {
     render(<ForgotPasswordForm />);
     const user = userEvent.setup();
-    const submitBtn = screen.getByRole("button", { name: /Enviar enlace de recuperación/i });
+    const submitBtn = screen.getByRole("button", {
+      name: /Enviar enlace de recuperación/i,
+    });
     await user.click(submitBtn);
     // Error message should appear
     await waitFor(() => {
@@ -98,13 +104,15 @@ describe("B1.1.49 — Request password reset from forgot-password form", () => {
   it("disables submit button while request is loading", async () => {
     // Make the API call take a moment
     forgotPasswordMock.mockImplementation(
-      () => new Promise((resolve) => setTimeout(resolve, 100))
+      () => new Promise((resolve) => setTimeout(resolve, 100)),
     );
 
     render(<ForgotPasswordForm />);
     const user = userEvent.setup();
     await user.type(screen.getByLabelText(/email/i), "user@example.com");
-    const submitBtn = screen.getByRole("button", { name: /Enviar enlace de recuperación/i });
+    const submitBtn = screen.getByRole("button", {
+      name: /Enviar enlace de recuperación/i,
+    });
     await user.click(submitBtn);
 
     // Button should be disabled during loading
@@ -112,7 +120,7 @@ describe("B1.1.49 — Request password reset from forgot-password form", () => {
       () => {
         expect(submitBtn).toBeDisabled();
       },
-      { timeout: 200 }
+      { timeout: 200 },
     ).catch(() => {
       // Some implementations use a different loading pattern
       expect(forgotPasswordMock).toHaveBeenCalled();
@@ -195,13 +203,15 @@ describe("B1.1.51 — ResetPasswordForm: valid token + new password", () => {
       await user.type(passwordInputs[1], "NewSecure1!");
     }
 
-    const submitBtn = screen.getByRole("button", { name: /Restablecer contraseña/i });
+    const submitBtn = screen.getByRole("button", {
+      name: /Restablecer contraseña/i,
+    });
     await user.click(submitBtn);
 
     await waitFor(() => {
       expect(resetPasswordMock).toHaveBeenCalledWith(
         "valid-token-abc",
-        "NewSecure1!"
+        "NewSecure1!",
       );
     });
   });
@@ -216,7 +226,9 @@ describe("B1.1.51 — ResetPasswordForm: valid token + new password", () => {
       await user.type(passwordInputs[1], "NewSecure1!");
     }
 
-    await user.click(screen.getByRole("button", { name: /Restablecer contraseña/i }));
+    await user.click(
+      screen.getByRole("button", { name: /Restablecer contraseña/i }),
+    );
 
     await waitFor(() => {
       const success = screen.queryByText(/contraseña actualizada/i);
@@ -260,7 +272,7 @@ describe("B1.1.52 — Invalid/missing token shows error state", () => {
 
   it("shows error message when API returns error for invalid token", async () => {
     resetPasswordMock.mockRejectedValue(
-      new Error("Invalid or expired reset token")
+      new Error("Invalid or expired reset token"),
     );
 
     render(<ResetPasswordForm token="bad-token" />);
@@ -270,7 +282,9 @@ describe("B1.1.52 — Invalid/missing token shows error state", () => {
     if (passwordInputs.length >= 2) {
       await user.type(passwordInputs[0], "NewSecure1!");
       await user.type(passwordInputs[1], "NewSecure1!");
-      await user.click(screen.getByRole("button", { name: /Restablecer contraseña/i }));
+      await user.click(
+        screen.getByRole("button", { name: /Restablecer contraseña/i }),
+      );
     }
 
     await waitFor(() => {
@@ -304,7 +318,9 @@ describe("B1.1.53 — After reset, user is directed to login", () => {
     if (passwordInputs.length >= 2) {
       await user.type(passwordInputs[0], "NewSecure1!");
       await user.type(passwordInputs[1], "NewSecure1!");
-      await user.click(screen.getByRole("button", { name: /Restablecer contraseña/i }));
+      await user.click(
+        screen.getByRole("button", { name: /Restablecer contraseña/i }),
+      );
     }
 
     await waitFor(() => {

@@ -74,13 +74,19 @@ test.describe("Categories", () => {
 
   test("should display categories page", async ({ page }) => {
     await expect(page).toHaveURL(/.*categories/);
-    await expect(page.getByRole("heading", { name: /categories/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /categories/i }),
+    ).toBeVisible();
   });
 
   test("should display existing categories from API", async ({ page }) => {
     // Should show the mocked categories (use heading to avoid strict mode violation with slug text)
-    await expect(page.getByRole("heading", { name: "SUVs", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Sedans", exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "SUVs", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Sedans", exact: true }),
+    ).toBeVisible();
 
     // Should show category count
     await expect(page.getByText("2 categories found")).toBeVisible();
@@ -98,7 +104,9 @@ test.describe("Categories", () => {
     // Fill form
     await page.getByLabel(/name/i).fill("Test Category");
     await page.getByLabel(/slug/i).fill("test-category");
-    await page.getByLabel(/description/i).fill("A test category for e2e testing");
+    await page
+      .getByLabel(/description/i)
+      .fill("A test category for e2e testing");
 
     // Verify form values
     await expect(page.getByLabel(/name/i)).toHaveValue("Test Category");
@@ -116,22 +124,29 @@ test.describe("Categories", () => {
     expect(slugValue).toBe("my-test-category");
   });
 
-  test("should pass accessibility checks with no critical violations", async ({ page }) => {
+  test("should pass accessibility checks with no critical violations", async ({
+    page,
+  }) => {
     const AxeBuilder = (await import("@axe-core/playwright")).default;
     const accessibilityScanResults = await new AxeBuilder({ page })
-      .disableRules(["heading-order", "landmark-main-is-top-level", "landmark-no-duplicate-main", "landmark-unique"])
+      .disableRules([
+        "heading-order",
+        "landmark-main-is-top-level",
+        "landmark-no-duplicate-main",
+        "landmark-unique",
+      ])
       .analyze();
 
     // Filter to only critical/serious violations (icon buttons without labels are known issues)
     const criticalViolations = accessibilityScanResults.violations.filter(
-      (v) => v.impact === "critical"
+      (v) => v.impact === "critical",
     );
 
     // Log violations for awareness but don't block the test
     if (criticalViolations.length > 0) {
       console.log(
         "A11y critical violations:",
-        criticalViolations.map((v) => v.id)
+        criticalViolations.map((v) => v.id),
       );
     }
 

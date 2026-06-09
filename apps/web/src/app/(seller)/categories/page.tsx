@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   Plus,
   Car,
@@ -19,101 +19,132 @@ import {
   Pencil,
   Trash2,
   ChevronDown,
-} from "lucide-react"
-import { useCategories } from "@/lib/api/categories"
-import type { Category } from "@/types/category"
+} from "lucide-react";
+import { useCategories } from "@/lib/api/categories";
+import type { Category } from "@/types/category";
 
 // ── Design token references (CSS vars — auto-switch per theme) ────────────────
 // All values from globals.css. Zero hardcoded colors in this component.
 const T = {
-  bgBase:         "var(--ps-bg-base)",
-  bgSurface:      "var(--ps-bg-surface)",
-  bgElevated:     "var(--ps-bg-elevated)",
-  navy:           "var(--ps-navy)",
-  cyan:           "var(--ps-cyan)",
-  cyanHover:      "var(--ps-cyan-hover)",
-  blue:           "var(--ps-blue)",
-  textPrimary:    "var(--ps-text-primary)",
-  textSecondary:  "var(--ps-text-secondary)",
-  textDisabled:   "var(--ps-text-disabled)",
-  success:        "var(--ps-success)",
-  warning:        "var(--ps-warning)",
-  error:          "var(--ps-error)",
-  successBg:      "var(--ps-success-bg)",
-  warningBg:      "var(--ps-warning-bg)",
-  errorBg:        "var(--ps-error-bg)",
-  infoBg:         "var(--ps-info-bg)",
-  borderSubtle:   "var(--ps-border-subtle)",
-  borderDefault:  "var(--ps-border-default)",
-  borderMedium:   "var(--ps-border-medium)",
-  borderStrong:   "var(--ps-border-strong)",
-  borderActive:   "var(--ps-border-active)",
+  bgBase: "var(--ps-bg-base)",
+  bgSurface: "var(--ps-bg-surface)",
+  bgElevated: "var(--ps-bg-elevated)",
+  navy: "var(--ps-navy)",
+  cyan: "var(--ps-cyan)",
+  cyanHover: "var(--ps-cyan-hover)",
+  blue: "var(--ps-blue)",
+  textPrimary: "var(--ps-text-primary)",
+  textSecondary: "var(--ps-text-secondary)",
+  textDisabled: "var(--ps-text-disabled)",
+  success: "var(--ps-success)",
+  warning: "var(--ps-warning)",
+  error: "var(--ps-error)",
+  successBg: "var(--ps-success-bg)",
+  warningBg: "var(--ps-warning-bg)",
+  errorBg: "var(--ps-error-bg)",
+  infoBg: "var(--ps-info-bg)",
+  borderSubtle: "var(--ps-border-subtle)",
+  borderDefault: "var(--ps-border-default)",
+  borderMedium: "var(--ps-border-medium)",
+  borderStrong: "var(--ps-border-strong)",
+  borderActive: "var(--ps-border-active)",
   // Component-specific
-  chipBg:              "var(--ps-chip-bg)",
-  fieldTagBg:          "var(--ps-field-tag-bg)",
-  nicheInactiveBg:     "var(--ps-niche-inactive-bg)",
-  switchOffBg:         "var(--ps-switch-off-bg)",
-  icoInactiveBg:       "var(--ps-ico-inactive-bg)",
-  icoInactiveBorder:   "var(--ps-ico-inactive-border)",
-  badgeBg:             "var(--ps-badge-bg)",
-  hoverBgSm:           "var(--ps-hover-bg-sm)",
-  hoverBgXs:           "var(--ps-hover-bg-xs)",
-  addCardBg:           "var(--ps-add-card-bg)",
-  addCardHoverBg:      "var(--ps-add-card-hover-bg)",
-  iconBtnHoverBorder:  "var(--ps-icon-btn-hover-border)",
-  dangerHoverBg:       "var(--ps-danger-hover-bg)",
-  dangerHoverBorder:   "var(--ps-danger-hover-border)",
-  typeChipTextBg:      "var(--ps-type-chip-text-bg)",
-  typeChipNumBg:       "var(--ps-type-chip-num-bg)",
-  typeChipBoolBg:      "var(--ps-type-chip-bool-bg)",
-  tableRowHover:       "var(--ps-table-row-hover)",
-  tableDivider:        "var(--ps-table-divider)",
-  nicheActiveBorder:        "var(--ps-niche-active-border)",
-  nicheActiveBorderHover:   "var(--ps-niche-active-border-hover)",
-  nicheInactiveBorder:      "var(--ps-niche-inactive-border)",
+  chipBg: "var(--ps-chip-bg)",
+  fieldTagBg: "var(--ps-field-tag-bg)",
+  nicheInactiveBg: "var(--ps-niche-inactive-bg)",
+  switchOffBg: "var(--ps-switch-off-bg)",
+  icoInactiveBg: "var(--ps-ico-inactive-bg)",
+  icoInactiveBorder: "var(--ps-ico-inactive-border)",
+  badgeBg: "var(--ps-badge-bg)",
+  hoverBgSm: "var(--ps-hover-bg-sm)",
+  hoverBgXs: "var(--ps-hover-bg-xs)",
+  addCardBg: "var(--ps-add-card-bg)",
+  addCardHoverBg: "var(--ps-add-card-hover-bg)",
+  iconBtnHoverBorder: "var(--ps-icon-btn-hover-border)",
+  dangerHoverBg: "var(--ps-danger-hover-bg)",
+  dangerHoverBorder: "var(--ps-danger-hover-border)",
+  typeChipTextBg: "var(--ps-type-chip-text-bg)",
+  typeChipNumBg: "var(--ps-type-chip-num-bg)",
+  typeChipBoolBg: "var(--ps-type-chip-bool-bg)",
+  tableRowHover: "var(--ps-table-row-hover)",
+  tableDivider: "var(--ps-table-divider)",
+  nicheActiveBorder: "var(--ps-niche-active-border)",
+  nicheActiveBorderHover: "var(--ps-niche-active-border-hover)",
+  nicheInactiveBorder: "var(--ps-niche-inactive-border)",
   nicheInactiveBorderHover: "var(--ps-niche-inactive-border-hover)",
-} as const
+} as const;
 
 // ── Icon mapping ──────────────────────────────────────────────────────────────
-type IconEl = React.ElementType<{ size?: number; strokeWidth?: number; color?: string }>
+type IconEl = React.ElementType<{
+  size?: number;
+  strokeWidth?: number;
+  color?: string;
+}>;
 
 const NICHE_ICONS: Record<string, IconEl> = {
   vehiculos: Car,
   inmuebles: Home,
   maquinaria: Tractor,
   productos: Package,
-}
+};
 
 function getNicheIcon(slug: string): IconEl {
-  return NICHE_ICONS[slug.toLowerCase()] ?? Layers
+  return NICHE_ICONS[slug.toLowerCase()] ?? Layers;
 }
 
 // ── Static sample data (stats + fields will come from API in future sprints) ──
-const NICHE_STATS: Record<string, { products: number; publications: number; leads: number }> = {
+const NICHE_STATS: Record<
+  string,
+  { products: number; publications: number; leads: number }
+> = {
   vehiculos: { products: 38, publications: 24, leads: 284 },
-}
+};
 
 const CUSTOM_FIELDS: Array<{
-  name: string
-  icon: IconEl
-  type: "text" | "number" | "boolean"
-  required: boolean
-  visible: boolean
+  name: string;
+  icon: IconEl;
+  type: "text" | "number" | "boolean";
+  required: boolean;
+  visible: boolean;
 }> = [
-  { name: "Marca",                 icon: Type,        type: "text",    required: true,  visible: true  },
-  { name: "Modelo",                icon: Type,        type: "text",    required: true,  visible: true  },
-  { name: "Año",                   icon: Hash,        type: "number",  required: true,  visible: true  },
-  { name: "Kilometraje",           icon: Hash,        type: "number",  required: true,  visible: true  },
-  { name: "Color",                 icon: Type,        type: "text",    required: false, visible: true  },
-  { name: "VIN",                   icon: Type,        type: "text",    required: false, visible: false },
-  { name: "Financiación disponible", icon: ToggleRight, type: "boolean", required: false, visible: true },
-]
+  { name: "Marca", icon: Type, type: "text", required: true, visible: true },
+  { name: "Modelo", icon: Type, type: "text", required: true, visible: true },
+  { name: "Año", icon: Hash, type: "number", required: true, visible: true },
+  {
+    name: "Kilometraje",
+    icon: Hash,
+    type: "number",
+    required: true,
+    visible: true,
+  },
+  { name: "Color", icon: Type, type: "text", required: false, visible: true },
+  { name: "VIN", icon: Type, type: "text", required: false, visible: false },
+  {
+    name: "Financiación disponible",
+    icon: ToggleRight,
+    type: "boolean",
+    required: false,
+    visible: true,
+  },
+];
 
 const TYPE_CHIPS = {
-  text:    { bgVar: "var(--ps-type-chip-text-bg)", colorVar: "var(--ps-cyan)",    label: "Texto"   },
-  number:  { bgVar: "var(--ps-type-chip-num-bg)",  colorVar: "var(--ps-success)", label: "Número"  },
-  boolean: { bgVar: "var(--ps-type-chip-bool-bg)", colorVar: "var(--ps-warning)", label: "Boolean" },
-} as const
+  text: {
+    bgVar: "var(--ps-type-chip-text-bg)",
+    colorVar: "var(--ps-cyan)",
+    label: "Texto",
+  },
+  number: {
+    bgVar: "var(--ps-type-chip-num-bg)",
+    colorVar: "var(--ps-success)",
+    label: "Número",
+  },
+  boolean: {
+    bgVar: "var(--ps-type-chip-bool-bg)",
+    colorVar: "var(--ps-warning)",
+    label: "Boolean",
+  },
+} as const;
 
 // ── Switch ────────────────────────────────────────────────────────────────────
 function Switch({ on, onClick }: { on: boolean; onClick: () => void }) {
@@ -150,7 +181,7 @@ function Switch({ on, onClick }: { on: boolean; onClick: () => void }) {
         }}
       />
     </button>
-  )
+  );
 }
 
 // ── IconBtn ───────────────────────────────────────────────────────────────────
@@ -159,11 +190,11 @@ function IconBtn({
   danger = false,
   "aria-label": label,
 }: {
-  icon: IconEl
-  danger?: boolean
-  "aria-label"?: string
+  icon: IconEl;
+  danger?: boolean;
+  "aria-label"?: string;
 }) {
-  const [hov, setHov] = useState(false)
+  const [hov, setHov] = useState(false);
   return (
     <button
       type="button"
@@ -175,7 +206,11 @@ function IconBtn({
         height: 28,
         borderRadius: 6,
         border: `1px solid ${hov ? (danger ? T.dangerHoverBorder : T.iconBtnHoverBorder) : "transparent"}`,
-        background: hov ? (danger ? T.dangerHoverBg : T.hoverBgSm) : "transparent",
+        background: hov
+          ? danger
+            ? T.dangerHoverBg
+            : T.hoverBgSm
+          : "transparent",
         color: hov ? (danger ? T.error : T.cyan) : T.textSecondary,
         display: "inline-flex",
         alignItems: "center",
@@ -186,12 +221,12 @@ function IconBtn({
     >
       <Icon size={13} strokeWidth={2} />
     </button>
-  )
+  );
 }
 
 // ── GhostButton ───────────────────────────────────────────────────────────────
 function GhostButton({ icon: Icon, label }: { icon: IconEl; label: string }) {
-  const [hov, setHov] = useState(false)
+  const [hov, setHov] = useState(false);
   return (
     <button
       type="button"
@@ -219,7 +254,7 @@ function GhostButton({ icon: Icon, label }: { icon: IconEl; label: string }) {
       <Icon size={13} strokeWidth={2.5} />
       {label}
     </button>
-  )
+  );
 }
 
 // ── CtaButton ─────────────────────────────────────────────────────────────────
@@ -229,12 +264,12 @@ function CtaButton({
   onClick,
   full = false,
 }: {
-  icon: IconEl
-  label: string
-  onClick?: () => void
-  full?: boolean
+  icon: IconEl;
+  label: string;
+  onClick?: () => void;
+  full?: boolean;
 }) {
-  const [hov, setHov] = useState(false)
+  const [hov, setHov] = useState(false);
   return (
     <button
       type="button"
@@ -266,7 +301,7 @@ function CtaButton({
       <Icon size={14} strokeWidth={2.5} />
       {label}
     </button>
-  )
+  );
 }
 
 // ── NicheCard ─────────────────────────────────────────────────────────────────
@@ -274,20 +309,28 @@ function NicheCard({
   category,
   onToggle,
 }: {
-  category: Category & { is_active: boolean }
-  onToggle: (id: string, active: boolean) => void
+  category: Category & { is_active: boolean };
+  onToggle: (id: string, active: boolean) => void;
 }) {
-  const [hov, setHov] = useState(false)
-  const Icon = getNicheIcon(category.slug)
-  const active = category.is_active
-  const stats = NICHE_STATS[category.slug.toLowerCase()] ?? { products: 0, publications: 0, leads: 0 }
-  const fields = Object.keys(category.attribute_schema)
-  const shown = fields.slice(0, 6)
-  const extra = Math.max(0, fields.length - 6)
+  const [hov, setHov] = useState(false);
+  const Icon = getNicheIcon(category.slug);
+  const active = category.is_active;
+  const stats = NICHE_STATS[category.slug.toLowerCase()] ?? {
+    products: 0,
+    publications: 0,
+    leads: 0,
+  };
+  const fields = Object.keys(category.attribute_schema);
+  const shown = fields.slice(0, 6);
+  const extra = Math.max(0, fields.length - 6);
 
   const border = active
-    ? hov ? T.nicheActiveBorderHover : T.nicheActiveBorder
-    : hov ? T.nicheInactiveBorderHover : T.nicheInactiveBorder
+    ? hov
+      ? T.nicheActiveBorderHover
+      : T.nicheActiveBorder
+    : hov
+      ? T.nicheInactiveBorderHover
+      : T.nicheInactiveBorder;
 
   return (
     <article
@@ -327,7 +370,15 @@ function NicheCard({
           }
         </span>
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+            minWidth: 0,
+          }}
+        >
           <h2
             style={{
               fontSize: 20,
@@ -371,7 +422,14 @@ function NicheCard({
       </div>
 
       {/* Stats */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, opacity: active ? 1 : 0.7 }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          opacity: active ? 1 : 0.7,
+        }}
+      >
         {[
           { value: stats.products, label: "productos" },
           { value: stats.publications, label: "publicaciones" },
@@ -408,7 +466,14 @@ function NicheCard({
       </div>
 
       {/* Fields */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: active ? 1 : 0.5 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          opacity: active ? 1 : 0.5,
+        }}
+      >
         <span
           style={{
             fontSize: 10,
@@ -476,8 +541,8 @@ function NicheCard({
             <span style={{ display: "inline-flex" }}>
               {(
                 [
-                  { bg: "#1877F2", label: "f",  color: "#fff", sm: false },
-                  { bg: "#FF6600", label: "AT", color: "#fff", sm: true  },
+                  { bg: "#1877F2", label: "f", color: "#fff", sm: false },
+                  { bg: "#FF6600", label: "AT", color: "#fff", sm: true },
                   { bg: "#FFE600", label: "ML", color: "#1E1E1E", sm: true },
                 ] as const
               ).map(({ bg, label, color, sm }, idx) => (
@@ -520,7 +585,8 @@ function NicheCard({
               </span>
             </span>
             <span style={{ fontSize: 12, color: T.textSecondary }}>
-              <b style={{ color: T.textPrimary, fontWeight: 600 }}>4 canales</b> conectados
+              <b style={{ color: T.textPrimary, fontWeight: 600 }}>4 canales</b>{" "}
+              conectados
             </span>
           </div>
         </div>
@@ -548,12 +614,12 @@ function NicheCard({
         />
       )}
     </article>
-  )
+  );
 }
 
 // ── AddNicheCard ──────────────────────────────────────────────────────────────
 function AddNicheCard({ onClick }: { onClick: () => void }) {
-  const [hov, setHov] = useState(false)
+  const [hov, setHov] = useState(false);
   return (
     <article
       onClick={onClick}
@@ -616,11 +682,14 @@ function AddNicheCard({ onClick }: { onClick: () => void }) {
         {(
           [
             { Icon: Package, label: "Productos" },
-            { Icon: Home,    label: "Inmuebles" },
+            { Icon: Home, label: "Inmuebles" },
             { Icon: Tractor, label: "Maquinaria" },
           ] as const
         ).map(({ Icon, label }) => (
-          <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <span
+            key={label}
+            style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+          >
             <Icon size={12} strokeWidth={2} color="var(--ps-text-secondary)" />
             <b style={{ fontWeight: 500, color: T.textSecondary }}>{label}</b>
           </span>
@@ -628,12 +697,12 @@ function AddNicheCard({ onClick }: { onClick: () => void }) {
         <b style={{ fontWeight: 500, color: T.textSecondary }}>y más</b>
       </span>
     </article>
-  )
+  );
 }
 
 // ── AddFieldButton ────────────────────────────────────────────────────────────
 function AddFieldButton() {
-  const [hov, setHov] = useState(false)
+  const [hov, setHov] = useState(false);
   return (
     <button
       type="button"
@@ -660,12 +729,18 @@ function AddFieldButton() {
       <Plus size={14} strokeWidth={2.5} />
       Agregar campo personalizado
     </button>
-  )
+  );
 }
 
 // ── CustomFieldsCard ──────────────────────────────────────────────────────────
 function CustomFieldsCard({ contextLabel }: { contextLabel: string }) {
-  const COLS = ["Nombre del campo", "Tipo", "Requerido", "Visible en listing", ""]
+  const COLS = [
+    "Nombre del campo",
+    "Tipo",
+    "Requerido",
+    "Visible en listing",
+    "",
+  ];
   return (
     <section
       style={{
@@ -697,9 +772,17 @@ function CustomFieldsCard({ contextLabel }: { contextLabel: string }) {
           >
             Campos personalizados
           </h3>
-          <span style={{ fontSize: 11.5, color: T.textDisabled, letterSpacing: "-0.01em" }}>
+          <span
+            style={{
+              fontSize: 11.5,
+              color: T.textDisabled,
+              letterSpacing: "-0.01em",
+            }}
+          >
             aplica a ·{" "}
-            <b style={{ color: T.cyan, fontWeight: 600, letterSpacing: 0 }}>{contextLabel}</b>
+            <b style={{ color: T.cyan, fontWeight: 600, letterSpacing: 0 }}>
+              {contextLabel}
+            </b>
           </span>
         </div>
         <button
@@ -722,7 +805,9 @@ function CustomFieldsCard({ contextLabel }: { contextLabel: string }) {
       </div>
 
       {/* Table */}
-      <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0 }}>
+      <table
+        style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0 }}
+      >
         <thead>
           <tr>
             {COLS.map((col) => (
@@ -752,19 +837,22 @@ function CustomFieldsCard({ contextLabel }: { contextLabel: string }) {
         </thead>
         <tbody>
           {CUSTOM_FIELDS.map((field) => {
-            const chip = TYPE_CHIPS[field.type]
-            return (
-              <FieldRow key={field.name} field={field} chip={chip} />
-            )
+            const chip = TYPE_CHIPS[field.type];
+            return <FieldRow key={field.name} field={field} chip={chip} />;
           })}
         </tbody>
       </table>
 
-      <div style={{ padding: "12px 20px", borderTop: `1px solid ${T.borderSubtle}` }}>
+      <div
+        style={{
+          padding: "12px 20px",
+          borderTop: `1px solid ${T.borderSubtle}`,
+        }}
+      >
         <AddFieldButton />
       </div>
     </section>
-  )
+  );
 }
 
 // Extracted to keep renders cheap (no closure over CUSTOM_FIELDS)
@@ -772,15 +860,18 @@ function FieldRow({
   field,
   chip,
 }: {
-  field: (typeof CUSTOM_FIELDS)[number]
-  chip: (typeof TYPE_CHIPS)[keyof typeof TYPE_CHIPS]
+  field: (typeof CUSTOM_FIELDS)[number];
+  chip: (typeof TYPE_CHIPS)[keyof typeof TYPE_CHIPS];
 }) {
-  const [rowHov, setRowHov] = useState(false)
+  const [rowHov, setRowHov] = useState(false);
   return (
     <tr
       onMouseEnter={() => setRowHov(true)}
       onMouseLeave={() => setRowHov(false)}
-      style={{ background: rowHov ? T.tableRowHover : "transparent", transition: "background 180ms" }}
+      style={{
+        background: rowHov ? T.tableRowHover : "transparent",
+        transition: "background 180ms",
+      }}
     >
       <td
         style={{
@@ -792,11 +883,21 @@ function FieldRow({
         }}
       >
         <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <field.icon size={14} strokeWidth={2} color="var(--ps-text-disabled)" />
+          <field.icon
+            size={14}
+            strokeWidth={2}
+            color="var(--ps-text-disabled)"
+          />
           <span style={{ fontWeight: 500 }}>{field.name}</span>
         </span>
       </td>
-      <td style={{ padding: "12px 14px", borderBottom: `1px solid ${T.tableDivider}`, verticalAlign: "middle" }}>
+      <td
+        style={{
+          padding: "12px 14px",
+          borderBottom: `1px solid ${T.tableDivider}`,
+          verticalAlign: "middle",
+        }}
+      >
         <span
           style={{
             display: "inline-flex",
@@ -833,7 +934,11 @@ function FieldRow({
               color: val ? T.success : T.textDisabled,
             }}
           >
-            {val ? <Check size={13} strokeWidth={2.5} /> : <Minus size={13} strokeWidth={2.5} />}
+            {val ? (
+              <Check size={13} strokeWidth={2.5} />
+            ) : (
+              <Minus size={13} strokeWidth={2.5} />
+            )}
             {val ? "Sí" : "No"}
           </span>
         </td>
@@ -852,14 +957,20 @@ function FieldRow({
         </div>
       </td>
     </tr>
-  )
+  );
 }
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 function PageSkeleton() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gap: 16,
+        }}
+      >
         {[1, 2].map((i) => (
           <div
             key={i}
@@ -883,30 +994,32 @@ function PageSkeleton() {
         }}
       />
     </div>
-  )
+  );
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function CategoriesPage() {
-  const { data: categories = [], isLoading, error } = useCategories()
-  const [localActive, setLocalActive] = useState<Record<string, boolean>>({})
+  const { data: categories = [], isLoading, error } = useCategories();
+  const [localActive, setLocalActive] = useState<Record<string, boolean>>({});
 
   const resolveActive = (cat: Category) =>
-    localActive[cat.id] !== undefined ? localActive[cat.id] : cat.is_active
+    localActive[cat.id] !== undefined ? localActive[cat.id] : cat.is_active;
 
   const handleToggle = (id: string, active: boolean) => {
-    setLocalActive((prev) => ({ ...prev, [id]: active }))
+    setLocalActive((prev) => ({ ...prev, [id]: active }));
     // TODO: PATCH /api/v1/categories/{id} once backend supports toggle
-  }
+  };
 
-  const firstActive = categories.find((c) => resolveActive(c))
+  const firstActive = categories.find((c) => resolveActive(c));
 
-  if (isLoading) return <PageSkeleton />
+  if (isLoading) return <PageSkeleton />;
 
   if (error) {
     return (
       <div style={{ textAlign: "center", padding: "48px 0" }}>
-        <p style={{ color: T.error, marginBottom: 16 }}>Error al cargar las categorías</p>
+        <p style={{ color: T.error, marginBottom: 16 }}>
+          Error al cargar las categorías
+        </p>
         <button
           onClick={() => window.location.reload()}
           style={{
@@ -923,7 +1036,7 @@ export default function CategoriesPage() {
           Reintentar
         </button>
       </div>
-    )
+    );
   }
 
   return (
@@ -979,5 +1092,5 @@ export default function CategoriesPage() {
       {/* Custom fields */}
       {firstActive && <CustomFieldsCard contextLabel={firstActive.name} />}
     </div>
-  )
+  );
 }

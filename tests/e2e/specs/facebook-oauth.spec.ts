@@ -12,7 +12,9 @@ import { expect, test } from "@playwright/test";
 test.describe.configure({ mode: "serial" });
 
 test.describe("Facebook OAuth - API Endpoint Validation", () => {
-  test("should verify authorize endpoint responds correctly", async ({ request }) => {
+  test("should verify authorize endpoint responds correctly", async ({
+    request,
+  }) => {
     // Test that the authorize endpoint requires authentication
     // Without auth, should get 401 or 403
     const response = await request.post(
@@ -22,7 +24,7 @@ test.describe("Facebook OAuth - API Endpoint Validation", () => {
           seller_user_id: "00000000-0000-0000-0000-000000000000",
           redirect_uri: "http://localhost:3000/auth/facebook/callback",
         },
-      }
+      },
     );
 
     // Should get 401 (Unauthorized) or 403 (Forbidden) without valid auth
@@ -43,7 +45,7 @@ test.describe("Facebook OAuth - API Endpoint Validation", () => {
     // The important part is that the endpoint responds (not 404/500)
     const response = await request.get(
       "http://localhost:8000/api/v1/facebook/callback?code=test&state=invalid-state",
-      { maxRedirects: 0 } // Don't follow redirects to catch the 302
+      { maxRedirects: 0 }, // Don't follow redirects to catch the 302
     );
 
     // Should redirect (302) even with invalid params, or handle gracefully
@@ -58,10 +60,12 @@ test.describe("Facebook OAuth - API Endpoint Validation", () => {
     }
   });
 
-  test("should verify accounts list endpoint requires authentication", async ({ request }) => {
+  test("should verify accounts list endpoint requires authentication", async ({
+    request,
+  }) => {
     // Test that listing accounts requires auth
     const response = await request.get(
-      "http://localhost:8000/api/v1/facebook/accounts"
+      "http://localhost:8000/api/v1/facebook/accounts",
     );
 
     // Should require authentication
@@ -71,7 +75,7 @@ test.describe("Facebook OAuth - API Endpoint Validation", () => {
   test("should verify refresh tokens endpoint exists", async ({ request }) => {
     // Test admin refresh endpoint
     const response = await request.post(
-      "http://localhost:8000/api/v1/facebook/admin/refresh-tokens"
+      "http://localhost:8000/api/v1/facebook/admin/refresh-tokens",
     );
 
     // Should respond (200 if tokens to refresh, or empty result)
@@ -84,12 +88,14 @@ test.describe("Facebook OAuth - Configuration Validation", () => {
   test("should have all required endpoints registered", async ({ request }) => {
     // Get OpenAPI docs
     const docsResponse = await request.get(
-      "http://localhost:8000/api/v1/facebook/docs"
+      "http://localhost:8000/api/v1/facebook/docs",
     );
 
     // Docs should be accessible (200) or endpoint should exist (404 on /docs but endpoints work)
     // In FastAPI, docs are at /docs, not /api/v1/facebook/docs
-    const openApiResponse = await request.get("http://localhost:8000/openapi.json");
+    const openApiResponse = await request.get(
+      "http://localhost:8000/openapi.json",
+    );
 
     if (openApiResponse.status() === 200) {
       const openApi = await openApiResponse.json();
@@ -100,8 +106,14 @@ test.describe("Facebook OAuth - Configuration Validation", () => {
       expect(paths["/api/v1/facebook/callback"]).toBeDefined();
       expect(paths["/api/v1/facebook/accounts"]).toBeDefined();
       expect(paths["/api/v1/facebook/accounts/{account_id}"]).toBeDefined();
-      expect(paths["/api/v1/facebook/accounts/{account_id}/pages"]).toBeDefined();
-      expect(paths["/api/v1/facebook/accounts/{account_id}/pages/{page_id}/set-default"]).toBeDefined();
+      expect(
+        paths["/api/v1/facebook/accounts/{account_id}/pages"],
+      ).toBeDefined();
+      expect(
+        paths[
+          "/api/v1/facebook/accounts/{account_id}/pages/{page_id}/set-default"
+        ],
+      ).toBeDefined();
       expect(paths["/api/v1/facebook/admin/refresh-tokens"]).toBeDefined();
     }
   });
@@ -112,7 +124,7 @@ test.describe("Facebook OAuth - Configuration Validation", () => {
       "http://localhost:8000/api/v1/facebook/authorize",
       {
         method: "OPTIONS",
-      }
+      },
     );
 
     // Should handle CORS preflight (200 or 204)
@@ -135,11 +147,13 @@ test.describe("Facebook OAuth - Configuration Validation", () => {
 });
 
 test.describe("Facebook OAuth - Error Handling", () => {
-  test("should handle missing authorization code gracefully", async ({ request }) => {
+  test("should handle missing authorization code gracefully", async ({
+    request,
+  }) => {
     // Callback without code parameter
     const response = await request.get(
       "http://localhost:8000/api/v1/facebook/callback?state=test",
-      { maxRedirects: 0 }
+      { maxRedirects: 0 },
     );
 
     // Should respond with 422 (validation error) or redirect with error
@@ -152,11 +166,13 @@ test.describe("Facebook OAuth - Error Handling", () => {
     }
   });
 
-  test("should handle missing state parameter gracefully", async ({ request }) => {
+  test("should handle missing state parameter gracefully", async ({
+    request,
+  }) => {
     // Callback without state parameter
     const response = await request.get(
       "http://localhost:8000/api/v1/facebook/callback?code=test",
-      { maxRedirects: 0 }
+      { maxRedirects: 0 },
     );
 
     // Should respond with 422 (validation error) or redirect with error
@@ -167,7 +183,7 @@ test.describe("Facebook OAuth - Error Handling", () => {
     // Simulate Facebook error response
     const response = await request.get(
       "http://localhost:8000/api/v1/facebook/callback?error=access_denied&error_description=User%20denied%20access",
-      { maxRedirects: 0 }
+      { maxRedirects: 0 },
     );
 
     // Should handle error (redirect with error, 422 for missing state, or 200)
@@ -187,7 +203,7 @@ test.describe("Facebook OAuth - Error Handling", () => {
     // Callback with invalid state (not in Redis)
     const response = await request.get(
       "http://localhost:8000/api/v1/facebook/callback?code=test&state=invalid-uuid-format",
-      { maxRedirects: 0 }
+      { maxRedirects: 0 },
     );
 
     // Should handle gracefully (redirect with error or 422)
@@ -196,7 +212,9 @@ test.describe("Facebook OAuth - Error Handling", () => {
 });
 
 test.describe("Facebook OAuth - Request/Response Validation", () => {
-  test("should validate required fields in authorize request", async ({ request }) => {
+  test("should validate required fields in authorize request", async ({
+    request,
+  }) => {
     // Missing required fields
     const response = await request.post(
       "http://localhost:8000/api/v1/facebook/authorize",
@@ -205,7 +223,7 @@ test.describe("Facebook OAuth - Request/Response Validation", () => {
           // Missing seller_user_id
           redirect_uri: "http://localhost:3000/auth/facebook/callback",
         },
-      }
+      },
     );
 
     // Should return 422 (validation error)
@@ -221,7 +239,7 @@ test.describe("Facebook OAuth - Request/Response Validation", () => {
           seller_user_id: "00000000-0000-0000-0000-000000000000",
           redirect_uri: "http://localhost:3000/auth/facebook/callback",
         },
-      }
+      },
     );
 
     // Should accept format (even if auth fails or FB not configured)
@@ -234,7 +252,7 @@ test.describe("Facebook OAuth - Request/Response Validation", () => {
   test("should validate UUID format for account_id", async ({ request }) => {
     // Invalid UUID format
     const response = await request.delete(
-      "http://localhost:8000/api/v1/facebook/accounts/not-a-uuid"
+      "http://localhost:8000/api/v1/facebook/accounts/not-a-uuid",
     );
 
     // Should return 422 for invalid UUID
@@ -244,7 +262,7 @@ test.describe("Facebook OAuth - Request/Response Validation", () => {
   test("should validate UUID format for page_id", async ({ request }) => {
     // Invalid UUID format in path
     const response = await request.post(
-      "http://localhost:8000/api/v1/facebook/accounts/00000000-0000-0000-0000-000000000001/pages/not-a-uuid/set-default"
+      "http://localhost:8000/api/v1/facebook/accounts/00000000-0000-0000-0000-000000000001/pages/not-a-uuid/set-default",
     );
 
     // Should return 422 for invalid UUID
@@ -253,37 +271,53 @@ test.describe("Facebook OAuth - Request/Response Validation", () => {
 });
 
 test.describe("Facebook OAuth - Security Validation", () => {
-  test("should require authentication for all protected endpoints", async ({ request }) => {
+  test("should require authentication for all protected endpoints", async ({
+    request,
+  }) => {
     const protectedEndpoints = [
       { method: "POST", url: "/api/v1/facebook/authorize" },
       { method: "GET", url: "/api/v1/facebook/accounts" },
-      { method: "GET", url: "/api/v1/facebook/accounts/00000000-0000-0000-0000-000000000001/pages" },
-      { method: "DELETE", url: "/api/v1/facebook/accounts/00000000-0000-0000-0000-000000000001" },
-      { method: "POST", url: "/api/v1/facebook/accounts/00000000-0000-0000-0000-000000000001/pages/00000000-0000-0000-0000-000000000002/set-default" },
+      {
+        method: "GET",
+        url: "/api/v1/facebook/accounts/00000000-0000-0000-0000-000000000001/pages",
+      },
+      {
+        method: "DELETE",
+        url: "/api/v1/facebook/accounts/00000000-0000-0000-0000-000000000001",
+      },
+      {
+        method: "POST",
+        url: "/api/v1/facebook/accounts/00000000-0000-0000-0000-000000000001/pages/00000000-0000-0000-0000-000000000002/set-default",
+      },
     ];
 
     for (const endpoint of protectedEndpoints) {
-      const response = await request.fetch(`http://localhost:8000${endpoint.url}`, {
-        method: endpoint.method,
-        data:
-          endpoint.method === "POST"
-            ? {
-                seller_user_id: "00000000-0000-0000-0000-000000000000",
-                redirect_uri: "http://localhost:3000/auth/facebook/callback",
-              }
-            : undefined,
-      });
+      const response = await request.fetch(
+        `http://localhost:8000${endpoint.url}`,
+        {
+          method: endpoint.method,
+          data:
+            endpoint.method === "POST"
+              ? {
+                  seller_user_id: "00000000-0000-0000-0000-000000000000",
+                  redirect_uri: "http://localhost:3000/auth/facebook/callback",
+                }
+              : undefined,
+        },
+      );
 
       // Protected endpoints should require auth (401/403) or return valid authenticated response (200)
       // Note: storageState auth may be active in this test context
       expect(
         [200, 401, 403].includes(response.status()),
-        `${endpoint.method} ${endpoint.url} returned unexpected status ${response.status()}`
+        `${endpoint.method} ${endpoint.url} returned unexpected status ${response.status()}`,
       ).toBeTruthy();
     }
   });
 
-  test("should use HTTPS-compatible redirect URIs in production", async ({ request }) => {
+  test("should use HTTPS-compatible redirect URIs in production", async ({
+    request,
+  }) => {
     // This test verifies that the code supports HTTPS URIs
     // In dev, we use localhost, but the validation should accept https://
 
@@ -294,7 +328,7 @@ test.describe("Facebook OAuth - Security Validation", () => {
           seller_user_id: "00000000-0000-0000-0000-000000000000",
           redirect_uri: "https://example.com/auth/facebook/callback", // HTTPS URI
         },
-      }
+      },
     );
 
     // Should accept HTTPS URIs (validation passes, auth may fail)
@@ -306,13 +340,15 @@ test.describe("Facebook OAuth - Security Validation", () => {
 });
 
 test.describe("Facebook OAuth - Integration Points", () => {
-  test("should verify Redis dependency for state tokens", async ({ request }) => {
+  test("should verify Redis dependency for state tokens", async ({
+    request,
+  }) => {
     // The callback endpoint uses Redis to validate state tokens
     // If Redis is not running, it should still handle gracefully
 
     const response = await request.get(
       "http://localhost:8000/api/v1/facebook/callback?code=test&state=00000000-0000-0000-0000-000000000000",
-      { maxRedirects: 0 } // Don't follow redirects - we want to catch the 302
+      { maxRedirects: 0 }, // Don't follow redirects - we want to catch the 302
     );
 
     // Should handle Redis error gracefully (not crash)
@@ -337,7 +373,7 @@ test.describe("Facebook OAuth - Integration Points", () => {
           seller_user_id: "00000000-0000-0000-0000-000000000000",
           redirect_uri: "http://localhost:3000/auth/facebook/callback",
         },
-      }
+      },
     );
 
     // If encryption is not configured, should get specific error
@@ -351,7 +387,9 @@ test.describe("Facebook OAuth - Data Model Validation", () => {
     // We can't test actual data without auth, but we can verify
     // the endpoint structure by checking OpenAPI schema
 
-    const openApiResponse = await request.get("http://localhost:8000/openapi.json");
+    const openApiResponse = await request.get(
+      "http://localhost:8000/openapi.json",
+    );
 
     if (openApiResponse.status() === 200) {
       const openApi = await openApiResponse.json();
@@ -367,7 +405,9 @@ test.describe("Facebook OAuth - Data Model Validation", () => {
   });
 
   test("should verify pages response structure", async ({ request }) => {
-    const openApiResponse = await request.get("http://localhost:8000/openapi.json");
+    const openApiResponse = await request.get(
+      "http://localhost:8000/openapi.json",
+    );
 
     if (openApiResponse.status() === 200) {
       const openApi = await openApiResponse.json();
@@ -384,7 +424,9 @@ test.describe("Facebook OAuth - Data Model Validation", () => {
 });
 
 test.describe("Facebook OAuth - Rate Limiting", () => {
-  test("should handle multiple rapid requests gracefully", async ({ request }) => {
+  test("should handle multiple rapid requests gracefully", async ({
+    request,
+  }) => {
     // Send multiple rapid requests to check rate limiting
     const requests = Array.from({ length: 10 }, () =>
       request.post("http://localhost:8000/api/v1/facebook/authorize", {
@@ -392,7 +434,7 @@ test.describe("Facebook OAuth - Rate Limiting", () => {
           seller_user_id: "00000000-0000-0000-0000-000000000000",
           redirect_uri: "http://localhost:3000/auth/facebook/callback",
         },
-      })
+      }),
     );
 
     const responses = await Promise.all(requests);

@@ -16,6 +16,7 @@
 Milestone C queda cerrada formalmente el **2026-05-21**.
 
 Resultado del audit:
+
 - **8/8 tasks** completadas
 - sin tasks pendientes ni en progreso en el runtime de MasterMind
 - bloques UX planeados entregados: error pages, catalog detail, publications, settings/profile, settings/security, notifications, onboarding y pipeline
@@ -31,17 +32,14 @@ Resultado del audit:
 ---
 
 - [x] M3: Páginas de error globales⏱️ **Estimate**: N/A | **Actual**: in progress | **Deviation**: — | **Progress**: 4/4 (100%)
-📊 **Avg/subtask**: — | **ETA**: in progress
-
-
+      📊 **Avg/subtask**: — | **ETA**: in progress
   - [x] M3.01: Crear `app/not-found.tsx` con branding ProSell (logo, mensaje claro, CTA a dashboard)
   - [x] M3.02: Crear `app/error.tsx` (Client Component) con mensaje amigable y botón "Intentar de nuevo"
   - [x] M3.03: Verificar TypeScript strict sin errores en ambos archivos
   - [x] M3.04: Verificar que el build pasa (`pnpm typecheck`)
 
 - [x] M2: Detalle de ítem de catálogo (view-only)⏱️ **Estimate**: 2h | **Actual**: done | **Deviation**: — | **Progress**: 7/7 (100%)
-📊 **Avg/subtask**: — | **ETA**: done
-
+      📊 **Avg/subtask**: — | **ETA**: done
   - [x] M2.01: Crear `app/(seller)/catalog/[id]/page.tsx` (Server Component, fetch del producto)
   - [x] M2.02: Renderizar datos del producto (título, precio, atributos del vehículo)
   - [x] M2.03: Integrar `ProductImageGallery` para mostrar imágenes
@@ -51,8 +49,7 @@ Resultado del audit:
   - [x] M2.07: Verificar TypeScript strict sin errores
 
 - [x] M1: Publicaciones — ruta accesible⏱️ **Estimate**: (3h) | **Actual**: 55.0m | **Deviation**: N/A | **Progress**: 7/7 (100%)
-📊 **Avg/subtask**: 7.9m | **ETA**: 55.0m
-
+      📊 **Avg/subtask**: 7.9m | **ETA**: 55.0m
   - [x] M1.01: Crear `app/(seller)/publications/page.tsx` con lista de publicaciones del tenant
   - [x] M1.02: Agregar botón "Nueva publicación" que abre `PublishModal`
   - [x] M1.03: Verificar/extender `publisherApi.ts` con hook de lista si falta
@@ -62,8 +59,7 @@ Resultado del audit:
   - [x] M1.07: Verificar TypeScript strict sin errores
 
 - [x] A1: Settings — estructura y tab Perfil⏱️ **Estimate**: (4h) | **Actual**: 53.0m | **Deviation**: N/A | **Progress**: 9/9 (100%)
-📊 **Avg/subtask**: 5.9m | **ETA**: 53.0m
-
+      📊 **Avg/subtask**: 5.9m | **ETA**: 53.0m
   - [x] A1.01: Crear `app/settings/layout.tsx` con tabs (Perfil, Notificaciones, Seguridad)
   - [x] A1.02: Crear `app/settings/page.tsx` que redirige a `/settings/profile`
   - [x] A1.03: Crear `app/settings/profile/page.tsx` con formulario de edición de perfil
@@ -75,8 +71,7 @@ Resultado del audit:
   - [x] A1.09: Verificar TypeScript strict sin errores
 
 - [x] A2: Settings/Seguridad — cambio de contraseña y 2FA⏱️ **Estimate**: (4h) | **Actual**: 1.1h | **Deviation**: N/A | **Progress**: 9/9 (100%)
-📊 **Avg/subtask**: 7.3m | **ETA**: 1.1h
-
+      📊 **Avg/subtask**: 7.3m | **ETA**: 1.1h
   - [x] A2.01: Crear `app/settings/security/page.tsx` con sección "Cambiar contraseña"
   - [x] A2.02: Implementar formulario con validación (mínimo 8 chars, confirmación igual)
   - [x] A2.03: Conectar a `POST /api/v1/auth/change-password`

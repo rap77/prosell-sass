@@ -3,6 +3,7 @@
 **Purpose:** Optional enrichment path. Read a project's existing context and produce a fully populated canonical document — replacing every template placeholder with synthesized real content.
 
 **Input:** A JSON payload from `context-to-canonical-handler.py --payload-only` containing:
+
 - `doc_type` — type of canonical doc to produce
 - `target` — absolute path to the source project
 - `output_path` — where to write the output file
@@ -32,6 +33,7 @@ Do not leave any section empty — synthesize from what is available, mark uncer
 ### Step 1 — Parse the payload
 
 Extract from the JSON payload:
+
 - `output_path` — the file to write
 - `template_content` — structure to follow
 - `example_content` — reference for tone and depth
@@ -44,6 +46,7 @@ Extract from the JSON payload:
 The payload contains pre-read content in `context.content`. Use it directly.
 
 If a section requires detail not in the payload, read the file from `context.target`:
+
 - `README.md`
 - `CLAUDE.md`
 - `docs/PRD/*.md` (first few)
@@ -57,34 +60,35 @@ For each section of the template, use the field mapping for the active `doc_type
 
 #### doc_type: project-adapter
 
-| Template section | Primary source |
-|-----------------|----------------|
-| Project Identity | `project_name`, `claude_md`, `readme` |
-| Project Goal | `readme`, `claude_md`, `docs_prd` |
-| Why MasterMind | `mastermind_config`, `claude_md` |
-| Constraints | `claude_md`, `readme`, `docs_prd` |
-| Selected Brains | `mastermind_config` → `brains.active` |
+| Template section           | Primary source                                      |
+| -------------------------- | --------------------------------------------------- |
+| Project Identity           | `project_name`, `claude_md`, `readme`               |
+| Project Goal               | `readme`, `claude_md`, `docs_prd`                   |
+| Why MasterMind             | `mastermind_config`, `claude_md`                    |
+| Constraints                | `claude_md`, `readme`, `docs_prd`                   |
+| Selected Brains            | `mastermind_config` → `brains.active`               |
 | Project-Specific Knowledge | `claude_md` (Key Design Decisions, Language, Stack) |
-| Local Integrations | `package_json`, `pyproject_toml`, `claude_md` |
-| Decision Model | `claude_md`, `docs_prd` |
-| Memory Boundaries | synthesize from all sources |
-| Success Criteria | `readme`, `docs_prd`, `claude_md` |
+| Local Integrations         | `package_json`, `pyproject_toml`, `claude_md`       |
+| Decision Model             | `claude_md`, `docs_prd`                             |
+| Memory Boundaries          | synthesize from all sources                         |
+| Success Criteria           | `readme`, `docs_prd`, `claude_md`                   |
 
 #### doc_type: objective
 
-| Template section | Primary source |
-|-----------------|----------------|
-| Objective Identity | `objective_name`, `objective_slug`, `objective_intent`, `project_name` |
-| Summary | synthesize from `objective_name` + `claude_md` + `readme` — one sentence |
-| Why It Matters | `docs_prd`, `claude_md`, `readme` — product + technical + user impact |
-| Scope | synthesize from `objective_name` + project patterns — be specific about what is NOT included |
+| Template section    | Primary source                                                                               |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| Objective Identity  | `objective_name`, `objective_slug`, `objective_intent`, `project_name`                       |
+| Summary             | synthesize from `objective_name` + `claude_md` + `readme` — one sentence                     |
+| Why It Matters      | `docs_prd`, `claude_md`, `readme` — product + technical + user impact                        |
+| Scope               | synthesize from `objective_name` + project patterns — be specific about what is NOT included |
 | Acceptance Criteria | derive from `objective_name` + `objective_intent` + project conventions — concrete, testable |
-| MVP Relevance | `handoff`, `roadmap` — check if similar objective is active/done |
-| Dependencies | `roadmap` (existing objectives), `canonical_index` |
-| Technical Context | `stack`, `claude_md`, `docs_prd` — affected modules, approach, constraints |
-| Evidence | `files_found` — list actual source docs read |
+| MVP Relevance       | `handoff`, `roadmap` — check if similar objective is active/done                             |
+| Dependencies        | `roadmap` (existing objectives), `canonical_index`                                           |
+| Technical Context   | `stack`, `claude_md`, `docs_prd` — affected modules, approach, constraints                   |
+| Evidence            | `files_found` — list actual source docs read                                                 |
 
 **For objective docs, the `<!-- mm:objective-spec -->` comment line MUST be populated:**
+
 ```
 <!-- mm:objective-spec | slug: {objective_slug} | intent: {objective_intent} | status: draft -->
 ```
@@ -103,6 +107,7 @@ Write the populated document to `output_path`.
 ### Step 5 — Report
 
 Print:
+
 ```
 STATUS: written
 FILE: <output_path>
@@ -128,6 +133,7 @@ Add a footer at the end:
 
 ```markdown
 ---
-*Generated by MasterMind canonical-writer from project context on {date}.*
-*Sources: {comma-separated list of context.files_found}*
+
+_Generated by MasterMind canonical-writer from project context on {date}._
+_Sources: {comma-separated list of context.files_found}_
 ```

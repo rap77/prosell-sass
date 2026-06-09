@@ -1,7 +1,16 @@
-import { useQuery, useQueryClient, useMutation, type UseQueryResult } from "@tanstack/react-query";
+import {
+  useQuery,
+  useQueryClient,
+  useMutation,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 import { useMemo } from "react";
 import { toast } from "sonner";
-import type { Category, CategoryOption, CategoryListResponse } from "@/types/category";
+import type {
+  Category,
+  CategoryOption,
+  CategoryListResponse,
+} from "@/types/category";
 
 interface BackendCategoryResponse {
   categories: Array<{
@@ -32,7 +41,7 @@ export function useCategories(): UseQueryResult<Category[], Error> {
   const isTestMode =
     typeof window !== "undefined" &&
     (window.location.hostname === "localhost" ||
-     process.env.NODE_ENV === "test");
+      process.env.NODE_ENV === "test");
 
   return useQuery({
     queryKey: ["categories"],
@@ -42,7 +51,9 @@ export function useCategories(): UseQueryResult<Category[], Error> {
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to fetch categories" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to fetch categories" }));
         throw new Error(error.message || "Failed to fetch categories");
       }
 
@@ -110,7 +121,9 @@ export async function createCategory(data: {
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Failed to create category" }));
+    const error = await res
+      .json()
+      .catch(() => ({ message: "Failed to create category" }));
     throw new Error(error.message || "Failed to create category");
   }
 

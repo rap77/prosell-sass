@@ -11,6 +11,7 @@
 **Legacy `product_images` table:** dropped. It has 0 rows in production and is referenced by nothing (only the SQLAlchemy model + the FK from `\d products`).
 
 **Why this design:**
+
 - The signed-URL endpoint `GET /api/v1/products/{id}/image-urls` already reads from `products.image_urls` — that's the contract the frontend depends on
 - The legacy table is dead weight (0 rows, no write paths, no read paths)
 - Nested JSONB in `attributes` was a temporary escape hatch that became permanent by accident; the right move is to extract it to its proper column
@@ -85,6 +86,7 @@
 ### Migrations (Alembic)
 
 8. **New migration `backfill_product_image_urls.py`**
+
    ```sql
    UPDATE products
    SET image_urls = COALESCE(attributes->'image_urls', '[]'::jsonb)
@@ -96,6 +98,7 @@
    ```python
    op.drop_table('product_images')
    ```
+
    - Pre-flight: `rg "product_images|ProductImage" apps/ tests/` must show only the model + FK references
    - If anything else uses it, abort and re-evaluate
 
@@ -104,6 +107,7 @@
 ### RED — failing tests first
 
 1. **`tests/integration/test_create_product_image_urls.py`**
+
    ```python
    async def test_create_product_persists_image_urls_top_level():
        """POST /api/v1/products with image_urls should persist them to the top-level column."""
@@ -122,6 +126,7 @@
    ```
 
 2. **`tests/integration/test_get_product_image_urls.py`**
+
    ```python
    async def test_get_product_image_urls_returns_signed_urls():
        """GET /api/v1/products/{id}/image-urls should return signed URLs for each image."""
@@ -163,13 +168,13 @@
 
 ## Risks & mitigations
 
-| Risk | Likelihood | Mitigation |
-|---|---|---|
-| Frontend has more places sending `image_urls` nested | medium | `rg` sweep before TDD GREEN, update all |
-| Bulk upload uses different code path | high | Cover with dedicated test (T3 third test) |
-| Data migration fails on a row | low | Wrap in TX, validate row count before/after |
-| Drop `product_images` breaks unknown consumer | low | Pre-flight `rg` sweep + check FK references |
-| Production deploy timing | medium | Maintenance window agreed with user |
+| Risk                                                 | Likelihood | Mitigation                                  |
+| ---------------------------------------------------- | ---------- | ------------------------------------------- |
+| Frontend has more places sending `image_urls` nested | medium     | `rg` sweep before TDD GREEN, update all     |
+| Bulk upload uses different code path                 | high       | Cover with dedicated test (T3 third test)   |
+| Data migration fails on a row                        | low        | Wrap in TX, validate row count before/after |
+| Drop `product_images` breaks unknown consumer        | low        | Pre-flight `rg` sweep + check FK references |
+| Production deploy timing                             | medium     | Maintenance window agreed with user         |
 
 ## What is explicitly NOT changing
 

@@ -24,7 +24,9 @@ test.describe("Team Switching", () => {
       { tag: ["@e2e", "@team", "@TEAM-E2E-001"] },
       async ({ page }) => {
         // Team switcher should be visible in header
-        const teamSwitcher = page.locator('[data-testid="team-switcher"], button:has-text("Select Team")');
+        const teamSwitcher = page.locator(
+          '[data-testid="team-switcher"], button:has-text("Select Team")',
+        );
         await expect(teamSwitcher).toBeVisible();
       },
     );
@@ -35,7 +37,7 @@ test.describe("Team Switching", () => {
       async ({ page }) => {
         const accessibilityScanResults = await new AxeBuilder({
           page,
-    }).analyze();
+        }).analyze();
         expect(accessibilityScanResults.violations).toEqual([]);
       },
     );
@@ -45,7 +47,9 @@ test.describe("Team Switching", () => {
       { tag: ["@e2e", "@team", "@TEAM-E2E-003"] },
       async ({ page }) => {
         // Click on team switcher
-        const teamSwitcher = page.locator('button:has-text("Select Team")').first();
+        const teamSwitcher = page
+          .locator('button:has-text("Select Team")')
+          .first();
         await teamSwitcher.click();
 
         // Dropdown should appear with team options
@@ -59,7 +63,9 @@ test.describe("Team Switching", () => {
       { tag: ["@e2e", "@team", "@TEAM-E2E-004"] },
       async ({ page }) => {
         // Open team switcher dropdown
-        const teamSwitcher = page.locator('button:has-text("Select Team")').first();
+        const teamSwitcher = page
+          .locator('button:has-text("Select Team")')
+          .first();
         await teamSwitcher.click();
 
         // Wait for dropdown to appear
@@ -80,7 +86,9 @@ test.describe("Team Switching", () => {
       { tag: ["@e2e", "@team", "@TEAM-E2E-005"] },
       async ({ page }) => {
         // Open team switcher dropdown
-        const teamSwitcher = page.locator('button:has-text("Select Team")').first();
+        const teamSwitcher = page
+          .locator('button:has-text("Select Team")')
+          .first();
         await teamSwitcher.click();
 
         // Wait for dropdown to appear
@@ -99,7 +107,9 @@ test.describe("Team Switching", () => {
           await page.waitForLoadState("networkidle");
 
           // Team switcher should now show the selected team
-          const updatedTeamSwitcher = page.locator('button:has-text("Select Team")').first();
+          const updatedTeamSwitcher = page
+            .locator('button:has-text("Select Team")')
+            .first();
           await expect(updatedTeamSwitcher).toBeVisible();
         }
       },
@@ -110,7 +120,9 @@ test.describe("Team Switching", () => {
       { tag: ["@e2e", "@team", "@TEAM-E2E-006"] },
       async ({ page }) => {
         // Open team switcher dropdown
-        const teamSwitcher = page.locator('button:has-text("Select Team")').first();
+        const teamSwitcher = page
+          .locator('button:has-text("Select Team")')
+          .first();
         await teamSwitcher.click();
 
         // Wait for dropdown to appear
@@ -118,7 +130,7 @@ test.describe("Team Switching", () => {
         await expect(dropdown).toBeVisible();
 
         // Check if there's an "Active" indicator on the current team
-        const activeIndicator = page.locator('text=Active');
+        const activeIndicator = page.locator("text=Active");
         const isActiveVisible = await activeIndicator.isVisible();
         expect(isActiveVisible).toBe(true);
       },
@@ -132,7 +144,9 @@ test.describe("Team Switching", () => {
       async ({ page }) => {
         // This test would require mocking the API response
         // For now, we'll just verify the component exists
-        const teamSwitcher = page.locator('[data-testid="team-switcher"], button:has-text("Select Team")');
+        const teamSwitcher = page.locator(
+          '[data-testid="team-switcher"], button:has-text("Select Team")',
+        );
         await expect(teamSwitcher).toBeVisible();
       },
     );
@@ -143,7 +157,9 @@ test.describe("Team Switching", () => {
       async ({ page }) => {
         // This test would require mocking the API response
         // For now, we'll just verify the component exists
-        const teamSwitcher = page.locator('[data-testid="team-switcher"], button:has-text("Select Team")');
+        const teamSwitcher = page.locator(
+          '[data-testid="team-switcher"], button:has-text("Select Team")',
+        );
         await expect(teamSwitcher).toBeVisible();
       },
     );

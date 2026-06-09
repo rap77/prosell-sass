@@ -12,6 +12,7 @@
 A multi-layer contract testing skill that **prevents, diagnoses, AND FIXES** API contract mismatches between backend (FastAPI/Python) and frontend (React/TypeScript). The skill automatically detects endpoint characteristics, applies the appropriate validation layer, and **iterates until tests pass**.
 
 **Business Value**:
+
 - Reduces debugging time from 2-3 hours to < 3 minutes (fully automated)
 - Prevents contract bugs from reaching staging
 - **Auto-fixes common issues** (normalizer not connected, casing mismatches, null handling)
@@ -75,6 +76,7 @@ A multi-layer contract testing skill that **prevents, diagnoses, AND FIXES** API
 ```
 
 **Key Design Decision**: All Python code lives in `scripts/` per Anthropic skill standards. This ensures:
+
 - ✅ Portability (entire skill is self-contained)
 - ✅ Standard compliance (follows Anthropic conventions)
 - ✅ Executability (scripts can be invoked directly or via skill)
@@ -88,6 +90,7 @@ A multi-layer contract testing skill that **prevents, diagnoses, AND FIXES** API
 **Purpose**: Inspect endpoint and recommend validation layer
 
 **Interface**:
+
 ```python
 from scripts.analyzer import analyze_endpoint, LayerRecommendation
 
@@ -102,6 +105,7 @@ print(recommendation.confidence) # "high"
 ```
 
 **Algorithm**:
+
 ```python
 def analyze_endpoint(endpoint_path: str, project_root: Path) -> LayerRecommendation:
     # 1. Find router definition
@@ -128,6 +132,7 @@ def analyze_endpoint(endpoint_path: str, project_root: Path) -> LayerRecommendat
 **Purpose**: Generate test from template
 
 **Interface**:
+
 ```python
 from scripts.generator import generate_test
 
@@ -140,6 +145,7 @@ test_path = generate_test(
 ```
 
 **Process**:
+
 ```python
 def generate_test(endpoint_path: str, layer: int, project_root: Path) -> Path:
     # 1. Read endpoint metadata
@@ -165,6 +171,7 @@ def generate_test(endpoint_path: str, layer: int, project_root: Path) -> Path:
 **Purpose**: Iterate until test passes, applying fixes automatically
 
 **Interface**:
+
 ```python
 from scripts.fixer import fix_until_pass
 
@@ -181,6 +188,7 @@ else:
 ```
 
 **Algorithm**:
+
 ```python
 def fix_until_pass(test_path: Path, project_root: Path) -> FixResult:
     """Iterate fixes until test passes or max iterations reached."""
@@ -221,30 +229,33 @@ def fix_until_pass(test_path: Path, project_root: Path) -> FixResult:
 
 **Common Fix Patterns**:
 
-| Pattern | Detection | Fix |
-|---------|-----------|-----|
+| Pattern                      | Detection                                           | Fix                                      |
+| ---------------------------- | --------------------------------------------------- | ---------------------------------------- |
 | **Normalizer not connected** | `AssertionError: assert 'chevrolet' == 'CHEVROLET'` | Import and call `normalize_*()` function |
-| **Missing field** | `KeyError: 'field_name'` | Add field to DTO or default value |
-| **Type mismatch** | `TypeError: expected str, got int` | Add type conversion |
-| **Null handling** | `AssertionError: None != <expected>` | Add null check or default |
-| **Import missing** | `ImportError: No module named 'x'` | Add import statement |
+| **Missing field**            | `KeyError: 'field_name'`                            | Add field to DTO or default value        |
+| **Type mismatch**            | `TypeError: expected str, got int`                  | Add type conversion                      |
+| **Null handling**            | `AssertionError: None != <expected>`                | Add null check or default                |
+| **Import missing**           | `ImportError: No module named 'x'`                  | Add import statement                     |
 
 ---
 
 ## Workflow: Complete Example
 
 ### User Request
+
 ```
 "El VIN decode devuelve CHEVROLET pero debería ser chevrolet"
 ```
 
 ### Step 1: Claude Activates Skill
+
 ```
 <Skill: contract-testing>
 Analyzing endpoint /api/v1/vehicles/decode-vin...
 ```
 
 ### Step 2: Analyzer Runs
+
 ```python
 recommendation = analyzer.analyze_endpoint("/api/v1/vehicles/decode-vin")
 # Layer: 2
@@ -253,12 +264,14 @@ recommendation = analyzer.analyze_endpoint("/api/v1/vehicles/decode-vin")
 ```
 
 ### Step 3: Generator Creates Test
+
 ```python
 test_path = generator.generate_test("/api/v1/vehicles/decode-vin", layer=2)
 # Created: tests/contract/integration/test_vin_decode_contract.py
 ```
 
 ### Step 4: Fixer Iterates
+
 ```bash
 Iteration 1: Normalizer not connected
   File: apps/api/.../decode_vin.py
@@ -277,6 +290,7 @@ Commit: abc123 (fix(contract): connect VIN normalizer in decode_vin.py)
 ```
 
 ### Step 5: Result
+
 ```
 ✅ Test passing
 ✅ Fix applied automatically
@@ -291,11 +305,13 @@ Commit: abc123 (fix(contract): connect VIN normalizer in decode_vin.py)
 ### Task 4 (Updated): Implement Fixer
 
 **Files to Create**:
+
 - `scripts/fixer.py` - Core iterative fix logic
 - `scripts/diagnosis.py` - Failure analysis
 - `scripts/fixes/` - Fix pattern library
 
 **Fix Patterns to Implement**:
+
 1. Normalizer connection (VIN decode case)
 2. Missing imports
 3. Type conversions
@@ -303,6 +319,7 @@ Commit: abc123 (fix(contract): connect VIN normalizer in decode_vin.py)
 5. Default values
 
 **Tests**:
+
 - `tests/unit/test_fixer.py` - Test fixer logic with mock scenarios
 
 ---
@@ -320,4 +337,4 @@ The updated skill is successful when:
 
 ---
 
-*Updated: 2026-04-03 - Added iterative fixer architecture*
+_Updated: 2026-04-03 - Added iterative fixer architecture_

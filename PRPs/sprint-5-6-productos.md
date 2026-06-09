@@ -10,10 +10,10 @@
 
 ### 1.1 Estado Actual del Proyecto
 
-| Sprint | Estado | Entregables Clave |
-|--------|--------|-------------------|
-| Sprint 1-2 | ✅ Completado | Autenticación, OAuth, 2FA, RBAC |
-| Sprint 3-4 | ✅ Completado | Organizaciones, Teams, Wallet |
+| Sprint         | Estado          | Entregables Clave                      |
+| -------------- | --------------- | -------------------------------------- |
+| Sprint 1-2     | ✅ Completado   | Autenticación, OAuth, 2FA, RBAC        |
+| Sprint 3-4     | ✅ Completado   | Organizaciones, Teams, Wallet          |
 | **Sprint 5-6** | ⏳ **Este PRP** | **Productos, Categorías, VIN Decoder** |
 
 ### 1.2 Referencias del Proyecto
@@ -145,6 +145,7 @@ prosell/domain/entities/
 ```
 
 **Key Patterns**:
+
 - `Category`: soporta jerarquía (parent_id), validación de circular references
 - `Product`: status enum (DRAFT → PENDING → PUBLISHED → SOLD/ARCHIVED)
 - `Vehicle`: VIN validation (17 chars alphanumeric), VIN decoded data caching
@@ -203,11 +204,13 @@ prosell/infrastructure/api/routers/
 **Endpoint**: `GET /vehicles/DecodeVin/{vin}?format=json`
 
 **Ejemplo**:
+
 ```bash
 curl "https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVin/1HGCM82633A123456?format=json"
 ```
 
 **Response**:
+
 ```json
 {
   "Results": [
@@ -220,6 +223,7 @@ curl "https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVin/1HGCM82633A123456?format
 ```
 
 **Implementación Pattern**:
+
 ```python
 # prosell/infrastructure/services/nhtsa_vin_service.py
 class NHTSAVinService:
@@ -246,31 +250,37 @@ class NHTSAVinService:
 ### Fase 1: Foundation (Día 1-2)
 
 **T1. Crear value objects y enums**
+
 - [ ] `domain/value_objects/product_status.py` (enum: DRAFT, PENDING, PUBLISHED, PAUSED, RESERVED, SOLD, REJECTED, ARCHIVED)
 - [ ] `domain/value_objects/product_condition.py` (enum: NEW, USED, REFURBISHED, FOR_PARTS)
 - [ ] `domain/value_objects/field_type.py` (enum: TEXT, TEXTAREA, NUMBER, DECIMAL, SELECT, etc.)
 
 **T2. Crear base class para category fields**
+
 - [ ] `domain/value_objects/category_field.py` (dataclass con validación rules)
 
 ### Fase 2: Domain Entities (Día 3-4)
 
 **T3. Category Entity**
+
 - [ ] `domain/entities/category.py`
   - Fields: id, tenant_id, name, slug, parent_id, icon, sort_order
   - Methods: `add_child()`, `get_ancestors()`, `validate_no_circular_reference()`
 
 **T4. Product Entity**
+
 - [ ] `domain/entities/product.py`
   - Fields: id, tenant_id, organization_id, category_id, title, description, price, status, attributes (JSONB)
   - Methods: `submit_for_approval()`, `approve()`, `reject()`, `publish()`, `mark_sold()`
 
 **T5. ProductImage Entity**
+
 - [ ] `domain/entities/product_image.py`
   - Fields: id, product_id, urls, sort_order, is_primary
   - Methods: `set_primary()` (desmarca otras primarias)
 
 **T6. Vehicle Entity**
+
 - [ ] `domain/entities/vehicle.py`
   - Fields: id, product_id, vin, year, make, model, trim, mileage, etc.
   - Methods: `validate_vin()`, `update_from_nhtsa()`
@@ -278,6 +288,7 @@ class NHTSAVinService:
 ### Fase 3: Repository Interfaces (Día 5)
 
 **T7. Create repository interfaces in domain**
+
 - [ ] `domain/repositories/category_repository.py` (AbstractCategoryRepository)
 - [ ] `domain/repositories/product_repository.py` (AbstractProductRepository)
 - [ ] `domain/repositories/vehicle_repository.py` (AbstractVehicleRepository)
@@ -285,12 +296,14 @@ class NHTSAVinService:
 ### Fase 4: Infrastructure Models (Día 6-7)
 
 **T8. SQLAlchemy Models**
+
 - [ ] `infrastructure/models/category_model.py`
 - [ ] `infrastructure/models/product_model.py`
 - [ ] `infrastructure/models/product_image_model.py`
 - [ ] `infrastructure/models/vehicle_model.py`
 
 **T9. Repository Implementations**
+
 - [ ] `infrastructure/repositories/category_repository_impl.py`
 - [ ] `infrastructure/repositories/product_repository_impl.py`
 - [ ] `infrastructure/repositories/vehicle_repository_impl.py`
@@ -298,9 +311,11 @@ class NHTSAVinService:
 ### Fase 5: Database Migration (Día 8)
 
 **T10. Create Alembic migration**
+
 - [ ] `alembic/versions/YYYYMMDD_HHMM-sprint5_6_products_categories_vehicles.py`
 
 **Includes**:
+
 ```sql
 -- Tables: categories, category_fields, products, product_images, vehicles
 -- Enums: product_status, product_condition, fuel_type, transmission_type, etc.
@@ -313,26 +328,31 @@ class NHTSAVinService:
 ### Fase 6: External Service (Día 9)
 
 **T11. NHTSA VIN Service**
+
 - [ ] `infrastructure/services/nhtsa_vin_service.py`
 - [ ] `application/ports/ivin_decoder_service.py` (interface)
 
 ### Fase 7: Application Layer (Día 10-12)
 
 **T12. Category Use Cases**
+
 - [ ] `application/use_cases/category/create_category.py`
 - [ ] `application/use_cases/category/list_categories.py`
 
 **T13. Product Use Cases**
+
 - [ ] `application/use_cases/product/create_product.py`
 - [ ] `application/use_cases/product/update_product.py`
 - [ ] `application/use_cases/product/approve_product.py`
 - [ ] `application/use_cases/product/list_products.py` (con filtros y paginación)
 
 **T14. Vehicle Use Cases**
+
 - [ ] `application/use_cases/vehicle/decode_vin.py`
 - [ ] `application/use_cases/vehicle/create_vehicle.py`
 
 **T15. DTOs**
+
 - [ ] `application/dto/category/` (CreateCategoryRequest, CategoryResponse)
 - [ ] `application/dto/product/` (CreateProductRequest, ProductResponse, ProductListResponse)
 - [ ] `application/dto/vehicle/` (VehicleData, DecodeVinResponse)
@@ -340,6 +360,7 @@ class NHTSAVinService:
 ### Fase 8: API Layer (Día 13-14)
 
 **T16. Routers**
+
 - [ ] `infrastructure/api/routers/category_router.py`
   - GET /api/v1/categories (listado jerárquico)
   - POST /api/v1/categories (solo MASTER)
@@ -358,16 +379,19 @@ class NHTSAVinService:
   - POST /api/v1/vehicles/decode-vin (decode VIN sin crear producto)
 
 **T17. Dependencies**
+
 - [ ] `infrastructure/api/dependencies.py` agregar factories para nuevos repos
 
 ### Fase 9: Tests (Día 15-16)
 
 **T18. Unit Tests**
+
 - [ ] `tests/unit/test_entities/test_category.py`
 - [ ] `tests/unit/test_entities/test_product.py`
 - [ ] `tests/unit/test_entities/test_vehicle.py`
 
 **T19. Integration Tests**
+
 - [ ] `tests/integration/test_category_api.py`
 - [ ] `tests/integration/test_product_api.py`
 - [ ] `tests/integration/test_vehicle_api.py`
@@ -377,6 +401,7 @@ class NHTSAVinService:
 **NOTA**: Frontend completo de productos es Sprint 7-8. Solo crear:
 
 **T20. Frontend - Mínimo para testing**
+
 - [ ] `apps/web/src/app/dashboard/products/page.tsx` (listado básico)
 - [ ] `apps/web/src/app/dashboard/products/new/page.tsx` (form create)
 - [ ] `apps/web/src/components/products/ProductForm.tsx` (form component)
@@ -385,6 +410,7 @@ class NHTSAVinService:
 ### Fase 11: CSV Import (Día 19)
 
 **T21. CSV Bulk Import**
+
 - [ ] `infrastructure/services/csv_import_service.py`
 - [ ] `application/use_cases/product/import_products_csv.py`
 - [ ] `POST /api/v1/products/import-csv` endpoint
@@ -505,6 +531,7 @@ Implementar como state machine en entity.
 ### 7.4 VIN Validation
 
 VIN debe ser:
+
 - Exactamente 17 caracteres
 - Alfanumérico (no I, O, Q)
 - Checksum válido (algoritmo específico)
@@ -564,7 +591,7 @@ Los campos dinámicos se configuran en `category_fields`:
   "field_label": "Año",
   "field_type": "NUMBER",
   "is_required": true,
-  "validation_rules": {"min": 1900, "max": 2100},
+  "validation_rules": { "min": 1900, "max": 2100 },
   "is_searchable": true,
   "field_group": "specs"
 }
@@ -591,10 +618,12 @@ El frontend debe leer estos campos para generar el formulario dinámico.
 ## 9. DEPENDENCIAS
 
 **External**:
+
 - NHTSA VPIC API (gratis, no requiere API key)
 - DigitalOcean Spaces (ya configurado)
 
 **Internal**:
+
 - Organizations (tenant_id) ✅ ya existe
 - Users (created_by, approved_by) ✅ ya existe
 - DO Spaces presigned URL ✅ ya existe (Sprint 3-4)
@@ -603,18 +632,19 @@ El frontend debe leer estos campos para generar el formulario dinámico.
 
 ## 10. RIESGOS Y MITIGACIÓN
 
-| Riesgo | Probabilidad | Impacto | Mitigación |
-|--------|-------------|---------|------------|
-| NHTSA API down/hard to reach | Media | Alto | Cache agresivo (24h), retry con backoff |
-| VIN decode lento (>5s) | Alta | Medio | Async decode, mostrar "Procesando..." en UI |
-| Category circular reference | Media | Medio | Validación en entity + DB constraint |
-| Product images order race condition | Baja | Bajo | `sort_order` con timestamp en UI |
+| Riesgo                              | Probabilidad | Impacto | Mitigación                                  |
+| ----------------------------------- | ------------ | ------- | ------------------------------------------- |
+| NHTSA API down/hard to reach        | Media        | Alto    | Cache agresivo (24h), retry con backoff     |
+| VIN decode lento (>5s)              | Alta         | Medio   | Async decode, mostrar "Procesando..." en UI |
+| Category circular reference         | Media        | Medio   | Validación en entity + DB constraint        |
+| Product images order race condition | Baja         | Bajo    | `sort_order` con timestamp en UI            |
 
 ---
 
 ## 11. SCORE DE CONFIANZA: 8/10
 
 **Por qué 8/10**:
+
 - ✅ Patrones existentes muy claros (org, team, wallet)
 - ✅ Modelo de datos documentado exhaustivamente
 - ✅ Arquitectura Clean Architecture bien establecida

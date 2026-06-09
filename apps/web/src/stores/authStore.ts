@@ -384,7 +384,8 @@ export const useAuthStore = create<AuthState>()(
 
           // Delete auth cookies via API route
           try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const apiUrl =
+              process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
             await fetch(`${apiUrl}/api/auth/state`, {
               method: "DELETE",
               credentials: "include",
@@ -404,7 +405,8 @@ export const useAuthStore = create<AuthState>()(
 
           // Try to delete cookies via API
           try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const apiUrl =
+              process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
             await fetch(`${apiUrl}/api/auth/state`, {
               method: "DELETE",
               credentials: "include",

@@ -12,6 +12,7 @@
 Implement role-based dashboards (Admin, Manager, Vendor, Dealer) and leads management for Sprint 7+. This PRP provides visibility into inventory, publications, and leads for each user role based on their permissions and assigned resources.
 
 **Why this matters**: Without dashboards, users have ZERO visibility into:
+
 - What products are published where
 - Which leads are assigned to them
 - Performance metrics (publications/day, lead conversion)
@@ -46,6 +47,7 @@ Implement role-based dashboards (Admin, Manager, Vendor, Dealer) and leads manag
 **So that** I can monitor business health and identify issues
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Admin views global metrics
   GIVEN an admin user is logged in
@@ -71,6 +73,7 @@ Scenario: Admin views dealer performance
 **So that** I can monitor my team's performance
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Manager views team metrics
   GIVEN a manager user is logged in
@@ -89,6 +92,7 @@ Scenario: Manager views team metrics
 **So that** I can track my performance and follow up on leads
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Vendor views personal dashboard
   GIVEN a vendor user is logged in
@@ -107,6 +111,7 @@ Scenario: Vendor views personal dashboard
 **So that** I can verify my products are being published correctly
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Dealer views their dashboard
   GIVEN a dealer user is logged in
@@ -132,6 +137,7 @@ Scenario: Dealer edits inventory
 **So that** I can follow up and close sales
 
 **Acceptance Criteria**:
+
 ```gherkin
 Scenario: Vendor views leads list
   GIVEN a vendor user is on their dashboard
@@ -185,15 +191,15 @@ Scenario: Vendor views lead details
 
 ### 3.1 Tech Stack
 
-| Component | Technology | Version | Notes |
-|-----------|-----------|---------|-------|
-| Frontend | Next.js | 16.1+ | App Router, Turbopack |
-| UI | React | 19.2 | Server Components |
-| Styling | TailwindCSS | 4.0 | New engine |
-| Data Fetching | TanStack Query | v5 | Caching, refetch |
-| Charts | Recharts | 2.12+ | D3-based |
-| State | Zustand | 5.x | Client state |
-| Tables | TanStack Table | v8 | Sorting, filtering |
+| Component     | Technology     | Version | Notes                 |
+| ------------- | -------------- | ------- | --------------------- |
+| Frontend      | Next.js        | 16.1+   | App Router, Turbopack |
+| UI            | React          | 19.2    | Server Components     |
+| Styling       | TailwindCSS    | 4.0     | New engine            |
+| Data Fetching | TanStack Query | v5      | Caching, refetch      |
+| Charts        | Recharts       | 2.12+   | D3-based              |
+| State         | Zustand        | 5.x     | Client state          |
+| Tables        | TanStack Table | v8      | Sorting, filtering    |
 
 ### 3.2 Key Libraries
 
@@ -210,16 +216,19 @@ pnpm add lucide-react
 ### 3.3 External Documentation
 
 **TanStack Query**:
+
 - Docs: https://tanstack.com/query/latest/docs/react/overview
 - useQuery: https://tanstack.com/query/latest/docs/react/reference/useQuery
 - DevTools: https://tanstack.com/query/latest/docs/react/devtools
 
 **Recharts**:
+
 - Docs: https://recharts.org/en-US/
 - Examples: httpsrecharts.org/en-US/examples
 - API: https://recharts.org/en-US/api
 
 **Tailwind CSS 4**:
+
 - Docs: https://tailwindcss.com/docs
 - Dark mode: https://tailwindcss.com/docs/dark-mode
 
@@ -251,12 +260,14 @@ flowchart TD
 **Objective**: Design UI/UX before coding
 
 **Deliverables**:
+
 1. Wireframes for each dashboard (Admin, Manager, Vendor, Dealer)
 2. Leads view wireframe
 3. Component mockups (MetricsCard, Chart, Table)
 4. Mobile responsive mockups
 
 **Tools**:
+
 - Figma or hand-drawn wireframes
 - Tailwind color palette reference
 
@@ -267,6 +278,7 @@ flowchart TD
 #### Step 1: Backend - Metrics Endpoints
 
 **Files to create**:
+
 - `apps/api/src/prosell/application/queries/metrics/get_user_metrics.py` - Get user metrics
 - `apps/api/src/prosell/application/queries/metrics/get_dashboard_stats.py` - Get dashboard stats
 - `apps/api/src/prosell/application/queries/leads/list_leads.py` - List leads query
@@ -382,6 +394,7 @@ async def get_dashboard_metrics(
 ```
 
 **Gotchas**:
+
 - Role-based filtering is CRITICAL for security
 - Use SQL COUNT queries (not fetch all) for performance
 - Cache results in Redis (5 min TTL)
@@ -389,6 +402,7 @@ async def get_dashboard_metrics(
 #### Step 2: Frontend - Dashboard Layout
 
 **Files to create**:
+
 - `apps/web/src/app/dashboard/(dashboard)/layout.tsx` - Dashboard layout
 - `apps/web/src/app/dashboard/(dashboard)/admin/page.tsx` - Admin dashboard
 - `apps/web/src/app/dashboard/(dashboard)/manager/page.tsx` - Manager dashboard
@@ -399,26 +413,26 @@ async def get_dashboard_metrics(
 
 ```tsx
 // layout.tsx - Dashboard layout with sidebar
-import { redirect } from "next/navigation"
-import { getServerSession } from "@/lib/auth/server-check"
+import { redirect } from "next/navigation";
+import { getServerSession } from "@/lib/auth/server-check";
 
 export default async function DashboardLayout({
   children,
   params,
 }: {
-  children: React.ReactNode
-  params: { role: string }
+  children: React.ReactNode;
+  params: { role: string };
 }) {
-  const session = await getServerSession()
+  const session = await getServerSession();
 
   if (!session) {
-    redirect("/auth/login")
+    redirect("/auth/login");
   }
 
   // Role-based routing
-  const userRole = session.user.role
+  const userRole = session.user.role;
   if (params.role !== userRole && userRole !== "admin") {
-    redirect(`/dashboard/${userRole}`)
+    redirect(`/dashboard/${userRole}`);
   }
 
   return (
@@ -427,21 +441,19 @@ export default async function DashboardLayout({
       <DashboardSidebar role={userRole} />
 
       {/* Main content */}
-      <main className="lg:pl-64 p-6">
-        {children}
-      </main>
+      <main className="lg:pl-64 p-6">{children}</main>
     </div>
-  )
+  );
 }
 ```
 
 ```tsx
 // vendor/page.tsx - Vendor dashboard
-import { Suspense } from "react"
-import { MetricsCards } from "@/components/dashboard/MetricsCards"
-import { PublicationsChart } from "@/components/dashboard/PublicationsChart"
-import { LeadsTable } from "@/components/dashboard/LeadsTable"
-import { DealerGrid } from "@/components/dashboard/DealerGrid"
+import { Suspense } from "react";
+import { MetricsCards } from "@/components/dashboard/MetricsCards";
+import { PublicationsChart } from "@/components/dashboard/PublicationsChart";
+import { LeadsTable } from "@/components/dashboard/LeadsTable";
+import { DealerGrid } from "@/components/dashboard/DealerGrid";
 
 export default function VendorDashboardPage() {
   return (
@@ -482,11 +494,12 @@ export default function VendorDashboardPage() {
         <LeadsTable limit={10} />
       </Suspense>
     </div>
-  )
+  );
 }
 ```
 
 **Gotchas**:
+
 - Use Next.js 16 Route Groups `(dashboard)` for layout
 - Server Components by default (use Client Components for interactivity)
 - Suspense boundaries for each data section
@@ -494,6 +507,7 @@ export default function VendorDashboardPage() {
 #### Step 3: Frontend - Dashboard Components
 
 **Files to create**:
+
 - `apps/web/src/components/dashboard/MetricsCards.tsx` - Metrics cards
 - `apps/web/src/components/dashboard/PublicationsChart.tsx` - Publications trend chart
 - `apps/web/src/components/dashboard/LeadsTrendChart.tsx` - Leads trend chart
@@ -504,17 +518,17 @@ export default function VendorDashboardPage() {
 
 ```tsx
 // MetricsCards.tsx - Metrics cards component
-"use client"
+"use client";
 
-import { useQuery } from "@tanstack/react-query"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, TrendingDown, Package, MessageSquare } from "lucide-react"
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TrendingUp, TrendingDown, Package, MessageSquare } from "lucide-react";
 
 interface MetricCardProps {
-  title: string
-  value: string | number
-  change?: number
-  icon: React.ReactNode
+  title: string;
+  value: string | number;
+  change?: number;
+  icon: React.ReactNode;
 }
 
 function MetricCard({ title, value, change, icon }: MetricCardProps) {
@@ -545,28 +559,28 @@ function MetricCard({ title, value, change, icon }: MetricCardProps) {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 interface MetricsCardsProps {
-  role: string
+  role: string;
 }
 
 export function MetricsCards({ role }: MetricsCardsProps) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["metrics", "dashboard", role],
     queryFn: async () => {
-      const res = await fetch("/api/metrics/dashboard")
-      if (!res.ok) throw new Error("Failed to fetch metrics")
-      return res.json()
+      const res = await fetch("/api/metrics/dashboard");
+      if (!res.ok) throw new Error("Failed to fetch metrics");
+      return res.json();
     },
     refetchInterval: 60000, // Refetch every minute
-  })
+  });
 
-  if (isLoading) return <MetricsCardsSkeleton />
-  if (error) return <div>Error loading metrics</div>
+  if (isLoading) return <MetricsCardsSkeleton />;
+  if (error) return <div>Error loading metrics</div>;
 
-  const stats = data
+  const stats = data;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -597,15 +611,15 @@ export function MetricsCards({ role }: MetricsCardsProps) {
         icon={<MessageSquare className="h-4 w-4 text-purple-500" />}
       />
     </div>
-  )
+  );
 }
 ```
 
 ```tsx
 // PublicationsChart.tsx - Publications trend chart
-"use client"
+"use client";
 
-import { useQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query";
 import {
   LineChart,
   Line,
@@ -615,18 +629,18 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from "recharts"
+} from "recharts";
 
 export function PublicationsChart() {
   const { data, isLoading } = useQuery({
     queryKey: ["metrics", "publications-trend"],
     queryFn: async () => {
-      const res = await fetch("/api/metrics/publications-trend?days=30")
-      return res.json()
+      const res = await fetch("/api/metrics/publications-trend?days=30");
+      return res.json();
     },
-  })
+  });
 
-  if (isLoading) return <ChartSkeleton />
+  if (isLoading) return <ChartSkeleton />;
 
   return (
     <Card>
@@ -637,11 +651,7 @@ export function PublicationsChart() {
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="date"
-              tick={{ fontSize: 12 }}
-              stroke="#64748b"
-            />
+            <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#64748b" />
             <YAxis tick={{ fontSize: 12 }} stroke="#64748b" />
             <Tooltip
               contentStyle={{
@@ -669,11 +679,12 @@ export function PublicationsChart() {
         </ResponsiveContainer>
       </CardContent>
     </Card>
-  )
+  );
 }
 ```
 
 **Gotchas**:
+
 - Use "use client" for TanStack Query hooks
 - Refetch interval: 60 seconds for real-time updates
 - ResponsiveContainer for responsive charts
@@ -682,6 +693,7 @@ export function PublicationsChart() {
 #### Step 4: Frontend - Leads View
 
 **Files to create**:
+
 - `apps/web/src/app/dashboard/leads/page.tsx` - Leads list page
 - `apps/web/src/components/dashboard/LeadsTable.tsx` - Leads table with filtering
 - `apps/web/src/components/dashboard/LeadDetailModal.tsx` - Lead detail modal
@@ -690,8 +702,8 @@ export function PublicationsChart() {
 
 ```tsx
 // leads/page.tsx - Leads list page
-import { Suspense } from "react"
-import { LeadsTable } from "@/components/dashboard/LeadsTable"
+import { Suspense } from "react";
+import { LeadsTable } from "@/components/dashboard/LeadsTable";
 
 export default function LeadsPage() {
   return (
@@ -721,34 +733,34 @@ export default function LeadsPage() {
         <LeadsTable />
       </Suspense>
     </div>
-  )
+  );
 }
 ```
 
 ```tsx
 // LeadsTable.tsx - Leads table with TanStack Table
-"use client"
+"use client";
 
-import { useQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
-} from "@tanstack/react-table"
-import { Badge } from "@/components/ui/badge"
+} from "@tanstack/react-table";
+import { Badge } from "@/components/ui/badge";
 
 interface Lead {
-  id: string
-  name: string
-  phone: string
-  email?: string
-  product_interest: string
-  status: "new" | "contacted" | "qualified" | "closed"
-  created_at: string
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  product_interest: string;
+  status: "new" | "contacted" | "qualified" | "closed";
+  created_at: string;
 }
 
-const columnHelper = createColumnHelper<Lead>()
+const columnHelper = createColumnHelper<Lead>();
 
 const columns = [
   columnHelper.accessor("name", {
@@ -766,18 +778,17 @@ const columns = [
   columnHelper.accessor("status", {
     header: "Status",
     cell: (info) => {
-      const status = info.getValue()
+      const status = info.getValue();
       const colors = {
         new: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-        contacted: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-        qualified: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-        closed: "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300",
-      }
-      return (
-        <Badge className={colors[status]}>
-          {status}
-        </Badge>
-      )
+        contacted:
+          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+        qualified:
+          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+        closed:
+          "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300",
+      };
+      return <Badge className={colors[status]}>{status}</Badge>;
     },
   }),
   columnHelper.accessor("created_at", {
@@ -797,24 +808,24 @@ const columns = [
       </Button>
     ),
   }),
-]
+];
 
 export function LeadsTable() {
   const { data, isLoading } = useQuery({
     queryKey: ["leads", "list"],
     queryFn: async () => {
-      const res = await fetch("/api/leads")
-      return res.json() as Promise<Lead[]>
+      const res = await fetch("/api/leads");
+      return res.json() as Promise<Lead[]>;
     },
-  })
+  });
 
   const table = useReactTable({
     data: data ?? [],
     columns,
     getCoreRowModel: getCoreRowModel(),
-  })
+  });
 
-  if (isLoading) return <TableSkeleton />
+  if (isLoading) return <TableSkeleton />;
 
   return (
     <Card>
@@ -832,7 +843,7 @@ export function LeadsTable() {
                       ? null
                       : flexRender(
                           header.column.columnDef.header,
-                          header.getContext()
+                          header.getContext(),
                         )}
                   </th>
                 ))}
@@ -859,11 +870,12 @@ export function LeadsTable() {
         </table>
       </CardContent>
     </Card>
-  )
+  );
 }
 ```
 
 **Gotchas**:
+
 - TanStack Table for headless table functionality
 - Server-side pagination for large datasets
 - Filter by status with query params
@@ -872,6 +884,7 @@ export function LeadsTable() {
 #### Step 5: Backend - Leads Management
 
 **Files to create**:
+
 - `apps/api/src/prosell/domain/entities/lead.py` - Lead entity
 - `apps/api/src/prosell/domain/repositories/lead_repository.py` - Lead repo interface
 - `apps/api/src/prosell/infrastructure/models/lead_model.py` - Lead ORM model
@@ -946,6 +959,7 @@ class Lead(DomainModel):
 ```
 
 **Gotchas**:
+
 - Lead belongs to dealer + assigned to vendor
 - AI assistant qualifies lead before human sees it
 - Status transition: NEW → CONTACTED → QUALIFIED → CLOSED
@@ -960,36 +974,36 @@ class Lead(DomainModel):
 
 ```tsx
 // TanStack Query with Server Components
-import { dehydrate } from "@tanstack/react-query"
-import { HydrationBoundary } from "@tanstack/react-query"
+import { dehydrate } from "@tanstack/react-query";
+import { HydrationBoundary } from "@tanstack/react-query";
 
 // Server Component
 export default async function DashboardPage() {
-  const queryClient = getQueryClient()
+  const queryClient = getQueryClient();
 
   // Prefetch data on server
   await queryClient.prefetchQuery({
     queryKey: ["metrics", "dashboard"],
     queryFn: getDashboardMetrics,
-  })
+  });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <ClientDashboard />
     </HydrationBoundary>
-  )
+  );
 }
 
 // Client Component
-"use client"
+("use client");
 
 export function ClientDashboard() {
   const { data } = useQuery({
     queryKey: ["metrics", "dashboard"],
     queryFn: getDashboardMetrics,
-  })
+  });
 
-  return <div>{data?.total_products}</div>
+  return <div>{data?.total_products}</div>;
 }
 ```
 
@@ -1026,24 +1040,24 @@ const chartColors = {
 ```tsx
 // Role-based component rendering
 interface RoleGuardProps {
-  allowedRoles: string[]
-  children: React.ReactNode
+  allowedRoles: string[];
+  children: React.ReactNode;
 }
 
 export function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
-  const { user } = useAuthStore()
+  const { user } = useAuthStore();
 
   if (!user || !allowedRoles.includes(user.role)) {
-    return <div>Not authorized</div>
+    return <div>Not authorized</div>;
   }
 
-  return <>{children}</>
+  return <>{children}</>;
 }
 
 // Usage
 <RoleGuard allowedRoles={["admin", "manager"]}>
   <AdminOnlyComponent />
-</RoleGuard>
+</RoleGuard>;
 ```
 
 ---
@@ -1094,18 +1108,21 @@ cd tests/e2e && pnpm test dashboard-spec
 ### 7.1 Unit Tests
 
 **Components**:
+
 - Test MetricsCards renders with data
 - Test Charts render with empty data
 - Test Table renders rows correctly
 - Test RoleGuard blocks unauthorized access
 
 **Queries**:
+
 - Test GetDashboardStatsUseCase filters by role
 - Test ListLeadsQuery filters by assigned user
 
 ### 7.2 Integration Tests
 
 **API**:
+
 - Test GET /api/metrics/dashboard returns 200
 - Test GET /api/metrics/dashboard filters by role
 - Test GET /api/leads returns leads for user
@@ -1144,18 +1161,19 @@ Scenario: Vendor views their dashboard
 **Problem**: Fetching all data (slow query).
 
 **Solution**: Use pagination and filters:
+
 ```tsx
 // Bad: Fetch all leads
 const { data } = useQuery({
   queryKey: ["leads"],
-  queryFn: () => fetch("/api/leads").then(r => r.json()),
-})
+  queryFn: () => fetch("/api/leads").then((r) => r.json()),
+});
 
 // Good: Paginate
 const { data } = useQuery({
   queryKey: ["leads", { page: 1, limit: 20 }],
-  queryFn: () => fetch("/api/leads?page=1&limit=20").then(r => r.json()),
-})
+  queryFn: () => fetch("/api/leads?page=1&limit=20").then((r) => r.json()),
+});
 ```
 
 ### 8.2 Missing Loading States
@@ -1163,6 +1181,7 @@ const { data } = useQuery({
 **Problem**: UI flickers while loading.
 
 **Solution**: Always use Suspense or skeleton:
+
 ```tsx
 <Suspense fallback={<Skeleton />}>
   <AsyncComponent />
@@ -1174,6 +1193,7 @@ const { data } = useQuery({
 **Problem**: Vendor sees other vendors' data.
 
 **Solution**: Filter at BOTH frontend and backend:
+
 ```python
 # Backend: Always filter
 if current_user.role == "vendor":
@@ -1197,6 +1217,7 @@ If implementation fails:
 4. **Recharts issues**: Use simpler chart library or custom SVG
 
 **Rollback steps**:
+
 1. Revert UI changes
 2. Keep backend endpoints (can be reused)
 3. Simplify dashboard (remove charts, use tables only)
@@ -1229,7 +1250,6 @@ If implementation fails:
 21. ✅ Monitor performance metrics
 
 ---
-
 
 ---
 
@@ -1292,7 +1312,6 @@ grep -q "^## 11. Completion Gates" {prp_file}
 - [ ] Code review completado
 - [ ] E2E tests pasan (si aplica)
 
-
 ## Confidence Score
 
 **Score**: 8/10
@@ -1300,6 +1319,7 @@ grep -q "^## 11. Completion Gates" {prp_file}
 **Reasoning**:
 
 **Positive factors**:
+
 - TanStack Query is mature and well-documented
 - Recharts is simple and effective for basic charts
 - Next.js 16 App Router patterns are established
@@ -1307,6 +1327,7 @@ grep -q "^## 11. Completion Gates" {prp_file}
 - Role-based access is well-understood pattern
 
 **Risk factors**:
+
 - UX design phase may require iterations (user feedback)
 - Performance issues with large datasets (need pagination)
 - Chart customization may be limited with Recharts

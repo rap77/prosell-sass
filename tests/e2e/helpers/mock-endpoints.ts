@@ -54,7 +54,7 @@ const vinMockStore = new Map<string, Partial<MockVehicleData>>();
  */
 export async function mockVehiclesEndpoint(
   page: Page,
-  vehicles: MockVehicleItem[] = MOCK_VEHICLE_LIST
+  vehicles: MockVehicleItem[] = MOCK_VEHICLE_LIST,
 ): Promise<void> {
   // Also mock /api/v1/products so the catalog DataGrid can render via useInfiniteVehicles
   await page.route("**/api/v1/products**", async (route) => {
@@ -144,13 +144,13 @@ export async function mockVehiclesEndpoint(
 
     if (makeFilter) {
       filtered = filtered.filter(
-        (v) => v.make.toLowerCase() === makeFilter.toLowerCase()
+        (v) => v.make.toLowerCase() === makeFilter.toLowerCase(),
       );
     }
 
     if (statusFilter) {
       filtered = filtered.filter(
-        (v) => v.product.status.toLowerCase() === statusFilter.toLowerCase()
+        (v) => v.product.status.toLowerCase() === statusFilter.toLowerCase(),
       );
     }
 
@@ -181,7 +181,7 @@ export async function mockVehiclesEndpoint(
  */
 export async function mockCategoriesEndpoint(
   page: Page,
-  categories: MockCategory[] = []
+  categories: MockCategory[] = [],
 ): Promise<void> {
   await page.route("**/api/v1/categories**", async (route) => {
     if (route.request().method() === "GET") {
@@ -213,7 +213,7 @@ export function clearVinMocks(): void {
 export async function mockVinDecodeEndpoint(
   page: Page,
   vin: string,
-  vehicleData?: Partial<MockVehicleData>
+  vehicleData?: Partial<MockVehicleData>,
 ): Promise<void> {
   // Store this VIN mock
   vinMockStore.set(vin, vehicleData ?? { ...MOCK_VIN_DECODED, vin });
@@ -309,7 +309,10 @@ export async function mockImageUploadEndpoints(page: Page): Promise<void> {
 /**
  * Mock products endpoint for DataGrid
  */
-export async function mockProductsEndpoint(page: Page, products: MockProduct[]): Promise<void> {
+export async function mockProductsEndpoint(
+  page: Page,
+  products: MockProduct[],
+): Promise<void> {
   await page.route("**/api/v1/products**", async (route) => {
     await route.fulfill({
       status: 200,

@@ -12,18 +12,18 @@ Reference it from every agent system prompt. Never duplicate its constraints inl
 
 The ONLY approved stack. Any suggestion outside this list = Stack Hallucination = Rating 1.
 
-| Layer | Approved | Prohibited |
-|-------|----------|------------|
-| Framework | Next.js 16 (App Router only — no Pages Router) | Any other framework, Pages Router |
-| UI Runtime | React 19 (Compiler DISABLED — conflicts with React.memo on RF nodes) | React 18, React Compiler enabled |
-| Language | TypeScript strict mode (no implicit any, no explicit any without suppression comment) | JavaScript, loose TypeScript |
-| Styling | Tailwind 4 (CSS-only config — no tailwind.config.js) | CSS Modules, styled-components, Emotion, tailwind.config.js |
-| State | Zustand 5 + Immer (never Redux, never Context for performance-critical state) | Redux, MobX, Context API for state |
-| State access | `useBrainState(id)` targeted selector — never `useStore()` global | `useStore()` global, direct store access |
-| Package manager (Node.js) | pnpm | npm, yarn, bun |
-| Package manager (Python) | uv | pip, poetry, conda, pipenv |
-| Python runtime | 3.14 | Any older Python version |
-| Graph library | @xyflow/react v12 | react-flow (legacy), d3-force standalone |
+| Layer                     | Approved                                                                              | Prohibited                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Framework                 | Next.js 16 (App Router only — no Pages Router)                                        | Any other framework, Pages Router                           |
+| UI Runtime                | React 19 (Compiler DISABLED — conflicts with React.memo on RF nodes)                  | React 18, React Compiler enabled                            |
+| Language                  | TypeScript strict mode (no implicit any, no explicit any without suppression comment) | JavaScript, loose TypeScript                                |
+| Styling                   | Tailwind 4 (CSS-only config — no tailwind.config.js)                                  | CSS Modules, styled-components, Emotion, tailwind.config.js |
+| State                     | Zustand 5 + Immer (never Redux, never Context for performance-critical state)         | Redux, MobX, Context API for state                          |
+| State access              | `useBrainState(id)` targeted selector — never `useStore()` global                     | `useStore()` global, direct store access                    |
+| Package manager (Node.js) | pnpm                                                                                  | npm, yarn, bun                                              |
+| Package manager (Python)  | uv                                                                                    | pip, poetry, conda, pipenv                                  |
+| Python runtime            | 3.14                                                                                  | Any older Python version                                    |
+| Graph library             | @xyflow/react v12                                                                     | react-flow (legacy), d3-force standalone                    |
 
 **Hard rule:** Suggesting ANY library not declared in the root `uv.lock` or `pnpm-lock.yaml` = Stack Hallucination = automatic Rating 1.
 
@@ -41,6 +41,7 @@ Only create files in these locations:
 Any file outside these locations requires **explicit orchestrator approval before creation**.
 
 Prohibited locations without approval:
+
 - Root directory (except config files that require it)
 - `apps/web/public/` (assets only, no code)
 - `.claude/agents/` (managed by authoring process, not brain output)
@@ -52,6 +53,7 @@ Prohibited locations without approval:
 Only use fields defined in the existing WS schema. Never invent protocol fields.
 
 Locked patterns (do not modify):
+
 - `wsDispatcher` is a **module singleton** — not a class, not a hook, not a service
 - Token obtained via `/api/auth/token` endpoint (Server Action reading httpOnly cookie)
 - RAF batching lives in `brainStore` — NOT in `wsDispatcher`
@@ -59,6 +61,7 @@ Locked patterns (do not modify):
 - Positions locked after dagre layout — no layout recalculation on WS events
 
 Prohibited:
+
 - Inventing new WS message fields not in the existing schema
 - Moving RAF batching out of `brainStore`
 - Bypassing the `/api/auth/token` token handoff
@@ -70,15 +73,15 @@ Prohibited:
 
 These trigger rejection across ALL brain domains regardless of context:
 
-| Pattern | Rule | Rating Impact |
-|---------|------|---------------|
-| Functions > 50 lines | Split into focused units | Rating 2 max if present |
-| `any` types without suppression comment | Add explicit suppression + reason | Rating 2 max if present |
-| Commented-out production code | Remove it — git history exists | Rating 2 max if present |
-| Hardcoded credentials | NEVER — not even in test examples | Rating 1 (Security Bypass = Blocker) |
-| Manual production access steps | Direct DB changes, SSH without automation = architecture failure | Rating 1 (Toil-Inducer = Blocker) |
-| `useStore()` global selector | Always use `useBrainState(id)` or equivalent targeted selector | Rating 2 max if present |
-| `NODE_TYPES` inline in JSX | Must be at module level — prevents infinite re-render loop | Rating 1 (causes production bug) |
+| Pattern                                 | Rule                                                             | Rating Impact                        |
+| --------------------------------------- | ---------------------------------------------------------------- | ------------------------------------ |
+| Functions > 50 lines                    | Split into focused units                                         | Rating 2 max if present              |
+| `any` types without suppression comment | Add explicit suppression + reason                                | Rating 2 max if present              |
+| Commented-out production code           | Remove it — git history exists                                   | Rating 2 max if present              |
+| Hardcoded credentials                   | NEVER — not even in test examples                                | Rating 1 (Security Bypass = Blocker) |
+| Manual production access steps          | Direct DB changes, SSH without automation = architecture failure | Rating 1 (Toil-Inducer = Blocker)    |
+| `useStore()` global selector            | Always use `useBrainState(id)` or equivalent targeted selector   | Rating 2 max if present              |
+| `NODE_TYPES` inline in JSX              | Must be at module level — prevents infinite re-render loop       | Rating 1 (causes production bug)     |
 
 ---
 
@@ -86,12 +89,13 @@ These trigger rejection across ALL brain domains regardless of context:
 
 The BRAIN-FEED system has two levels:
 
-| File | Access | Who writes |
-|------|--------|------------|
-| `.planning/BRAIN-FEED.md` | READ-ONLY for all agents | Orchestrator only — after cross-domain synthesis |
+| File                                | Access                            | Who writes                                              |
+| ----------------------------------- | --------------------------------- | ------------------------------------------------------- |
+| `.planning/BRAIN-FEED.md`           | READ-ONLY for all agents          | Orchestrator only — after cross-domain synthesis        |
 | `.planning/BRAIN-FEED-NN-domain.md` | READ + WRITE for the owning brain | Brain NN only — after filtering its NotebookLM response |
 
 Rules:
+
 - Agents read BOTH `.planning/BRAIN-FEED.md` AND their own `.planning/BRAIN-FEED-NN-domain.md` before querying
 - Agents write ONLY to their own `.planning/BRAIN-FEED-NN-domain.md`
 - A brain writing to `.planning/BRAIN-FEED.md` directly = context pollution = architectural violation
@@ -140,13 +144,13 @@ No citation = no proof of identity = the agent is guessing, not reasoning.
 
 ## Delta-Velocity Rating Scale
 
-| Rating | Level | Definition |
-|--------|-------|------------|
-| 1 | Blocker | Hallucinates libraries, breaks TypeScript types, ignores Stack Hard-Lock or warnings.md. Unusable. |
-| 2 | Junior | Correct but generic — doesn't use existing Zustand stores, React Flow architecture, or project-specific patterns. Full refactor needed. |
-| 3 | Peer | Correct, respects stack and context, integrates with project architecture. PR-ready with minor tweaks. |
-| 4 | Senior | Detects non-obvious optimization or gap not in the ticket (e.g., critical useMemo, unasked WS error handling). Improves the codebase. |
-| 5 | Architect | Proposes game-changing solution that unlocks the next roadmap phase (e.g., DAG optimization reducing DOM load 40%). |
+| Rating | Level     | Definition                                                                                                                              |
+| ------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 1      | Blocker   | Hallucinates libraries, breaks TypeScript types, ignores Stack Hard-Lock or warnings.md. Unusable.                                      |
+| 2      | Junior    | Correct but generic — doesn't use existing Zustand stores, React Flow architecture, or project-specific patterns. Full refactor needed. |
+| 3      | Peer      | Correct, respects stack and context, integrates with project architecture. PR-ready with minor tweaks.                                  |
+| 4      | Senior    | Detects non-obvious optimization or gap not in the ticket (e.g., critical useMemo, unasked WS error handling). Improves the codebase.   |
+| 5      | Architect | Proposes game-changing solution that unlocks the next roadmap phase (e.g., DAG optimization reducing DOM load 40%).                     |
 
 Target: Rating >= 3 = system is stable. Rating 4-5 = system is profitable.
 

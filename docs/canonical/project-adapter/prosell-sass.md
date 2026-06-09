@@ -104,16 +104,19 @@ What knowledge is specific to this project and should not automatically be promo
 ### Keep local to project
 
 **Local heuristics:**
+
 - "If it's async I/O, use async def everywhere — never mix sync/async at the boundary"
 - "If it's a domain event, use IDomainEventBus — never import infrastructure into domain"
 - "If it's a Pydantic DTO, use pydantic 2.12+ with Annotated for validation"
 
 **Local data assumptions:**
+
 - All entities have tenant_id as first-class attribute
 - PostgreSQL 17 with SQLAlchemy 2.0 async (Mapped[], mapped_column, select())
 - Redis 7.4+ for caching (future)
 
 **Local workflow decisions:**
+
 - Pre-commit: ruff lint → pyright type-check → eslint → prettier → GGA AI review
 - E2E against real staging services (docker-compose.staging.yml), not mocked
 - Python tests: pytest-asyncio with asyncio_mode=auto

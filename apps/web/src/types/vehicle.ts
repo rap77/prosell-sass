@@ -11,7 +11,7 @@
  * Uses strict mode to ensure data integrity.
  */
 export interface VehicleAttributes {
-  category: 'vehicle';
+  category: "vehicle";
 
   // Basic vehicle info
   vin: string; // 17 chars, pattern: ^[A-HJ-NPR-Z0-9]{17}$
@@ -36,7 +36,7 @@ export interface VehicleAttributes {
 
   // Mileage
   mileage: number; // >= 0
-  mileage_unit?: 'miles' | 'km'; // default: 'miles'
+  mileage_unit?: "miles" | "km"; // default: 'miles'
 
   // Colors
   exterior_color?: string; // 0-100 chars
@@ -62,7 +62,7 @@ export interface VehicleAttributes {
  * Real estate-specific product attributes
  */
 export interface RealEstateAttributes {
-  category: 'real_estate';
+  category: "real_estate";
 
   property_type: string; // 1-50 chars
   sq_meters: number; // >= 0
@@ -80,47 +80,56 @@ export interface RealEstateAttributes {
  * Generic product attributes for non-vehicle, non-real-estate categories
  */
 export interface GenericProductAttributes {
-  category: 'generic';
+  category: "generic";
   [key: string]: unknown; // Allow any additional fields
 }
 
 /**
  * Discriminated union of all product attribute types
  */
-export type ProductAttributes = VehicleAttributes | RealEstateAttributes | GenericProductAttributes;
+export type ProductAttributes =
+  | VehicleAttributes
+  | RealEstateAttributes
+  | GenericProductAttributes;
 
 /**
  * Type guard to check if attributes are vehicle attributes
  */
-export function isVehicleAttributes(attrs: unknown): attrs is VehicleAttributes {
+export function isVehicleAttributes(
+  attrs: unknown,
+): attrs is VehicleAttributes {
   return (
-    typeof attrs === 'object' &&
+    typeof attrs === "object" &&
     attrs !== null &&
-    'category' in attrs &&
-    (attrs as VehicleAttributes).category === 'vehicle'
+    "category" in attrs &&
+    (attrs as VehicleAttributes).category === "vehicle"
   );
 }
 
 /**
  * Type guard to check if attributes are real estate attributes
  */
-export function isRealEstateAttributes(attrs: unknown): attrs is RealEstateAttributes {
+export function isRealEstateAttributes(
+  attrs: unknown,
+): attrs is RealEstateAttributes {
   return (
-    typeof attrs === 'object' &&
+    typeof attrs === "object" &&
     attrs !== null &&
-    'category' in attrs &&
-    (attrs as RealEstateAttributes).category === 'real_estate'
+    "category" in attrs &&
+    (attrs as RealEstateAttributes).category === "real_estate"
   );
 }
 
 /**
  * Type guard to check if attributes are generic attributes
  */
-export function isGenericAttributes(attrs: unknown): attrs is GenericProductAttributes {
+export function isGenericAttributes(
+  attrs: unknown,
+): attrs is GenericProductAttributes {
   return (
-    typeof attrs === 'object' &&
+    typeof attrs === "object" &&
     attrs !== null &&
-    'category' in attrs &&
-    (attrs as GenericProductAttributes).category === 'generic'
+    "category" in attrs &&
+    (attrs as GenericProductAttributes).category === "generic"
   );
 }

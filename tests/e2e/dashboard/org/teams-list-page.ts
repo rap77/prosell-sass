@@ -32,12 +32,12 @@ export class TeamsListPage extends BasePage {
 
     // Team cards
     this.teamCards = page.locator(
-      'div[class*="rounded-lg border"][class*="hover:border"]'
+      'div[class*="rounded-lg border"][class*="hover:border"]',
     );
 
     // States
     this.emptyStateMessage = page.getByText(/you don't have any teams yet/i);
-    this.loadingSpinner = page.locator('.animate-spin');
+    this.loadingSpinner = page.locator(".animate-spin");
 
     // Pagination
     this.paginationInfo = page.getByText(/showing \d+ of \d+ teams/i);
@@ -75,10 +75,16 @@ export class TeamsListPage extends BasePage {
     // Use a simpler approach with timeout instead of waitForFunction
     try {
       // Try waiting for cards first (short timeout)
-      await this.page.waitForSelector('div[class*="rounded-lg border"][class*="hover:border"]', { timeout: 2000 })
+      await this.page
+        .waitForSelector(
+          'div[class*="rounded-lg border"][class*="hover:border"]',
+          { timeout: 2000 },
+        )
         .catch(() => {
           // If no cards, wait for empty state
-          return this.page.waitForSelector('text=/don\'t have any teams/i', { timeout: 2000 });
+          return this.page.waitForSelector("text=/don't have any teams/i", {
+            timeout: 2000,
+          });
         });
     } catch {
       // If neither is found after short wait, continue anyway

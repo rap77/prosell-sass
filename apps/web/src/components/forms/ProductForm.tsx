@@ -26,9 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SelectControlled } from "@/components/ui/select-controlled";
 import { toast } from "sonner";
-import {
-  FB_YEARS,
-} from "@/lib/constants/fbVehicleOptions";
+import { FB_YEARS } from "@/lib/constants/fbVehicleOptions";
 import { useCategories, useCategoryOptions } from "@/lib/api/categories";
 import { useDecodeVin } from "@/lib/api/vehicles";
 import {
@@ -105,7 +103,10 @@ const vehicleSchema = z.object({
 
   // Additional Info
   stock_number: z.string().optional(),
-  description: z.string().max(5000, "Description must be less than 5000 characters").optional(),
+  description: z
+    .string()
+    .max(5000, "Description must be less than 5000 characters")
+    .optional(),
 });
 
 export type ProductFormValues = z.infer<typeof vehicleSchema>;
@@ -152,8 +153,11 @@ export function ProductForm({
   // any in-flight entries, then read the final storage keys + cover
   // straight from the store. There is no parallel `imageKeys` state and
   // no VehicleImageManager — one path for create AND edit.
-  const { seedImages, setCoverImage, clearAll: clearUploadStore } =
-    useUploadStore();
+  const {
+    seedImages,
+    setCoverImage,
+    clearAll: clearUploadStore,
+  } = useUploadStore();
   const { uploadImages } = useImageUploadOptimized();
 
   // React Hook Form setup
@@ -182,10 +186,20 @@ export function ProductForm({
       transmission: initialData?.transmission ?? undefined,
       engine: initialData?.engine,
       fuel_type: initialData?.fuel_type ?? undefined,
-      mpg_city: initialData?.mpg_city != null ? Number(initialData.mpg_city) : undefined,
-      mpg_highway: initialData?.mpg_highway != null ? Number(initialData.mpg_highway) : undefined,
-      mpg_combined: initialData?.mpg_combined != null ? Number(initialData.mpg_combined) : undefined,
-      mileage: initialData?.mileage != null ? Number(initialData.mileage) : undefined,
+      mpg_city:
+        initialData?.mpg_city != null
+          ? Number(initialData.mpg_city)
+          : undefined,
+      mpg_highway:
+        initialData?.mpg_highway != null
+          ? Number(initialData.mpg_highway)
+          : undefined,
+      mpg_combined:
+        initialData?.mpg_combined != null
+          ? Number(initialData.mpg_combined)
+          : undefined,
+      mileage:
+        initialData?.mileage != null ? Number(initialData.mileage) : undefined,
       mileage_unit: initialData?.mileage_unit ?? "mi",
       exterior_color: initialData?.exterior_color ?? "",
       interior_color: initialData?.interior_color ?? "",
@@ -208,7 +222,7 @@ export function ProductForm({
 
   // Get selected category object for attribute_schema
   const selectedCategory: Category | undefined = categories?.find(
-    (cat) => cat.id === selectedCategoryId
+    (cat) => cat.id === selectedCategoryId,
   );
 
   // VIN decode hook
@@ -225,14 +239,14 @@ export function ProductForm({
   // seller-side reads (this is an admin/edit context, not a buyer view).
   const { data: existingProduct, isLoading: isLoadingProduct } = useProduct(
     mode === "edit" ? productId : undefined,
-    { internal: true }
+    { internal: true },
   );
 
   // Signed URLs for the product's existing images (edit only). The
   // backend returns `{ key, url }` per image — the `key` is what we
   // persist, the `url` is the short-lived preview the picker renders.
   const { data: signedImages } = useProductImageUrls(
-    mode === "edit" ? productId : undefined
+    mode === "edit" ? productId : undefined,
   );
 
   // Derived state
@@ -285,7 +299,9 @@ export function ProductForm({
       reset({
         category_id: existingProduct.category_id,
         vin: attrs.vin || "",
-        price: existingProduct.price_cents ? existingProduct.price_cents / 100 : 0,
+        price: existingProduct.price_cents
+          ? existingProduct.price_cents / 100
+          : 0,
         year: attrs.year,
         make: attrs.make || "",
         model: attrs.model || "",
@@ -331,7 +347,10 @@ export function ProductForm({
     if (mode === "edit" && currentStock && currentStock.length > 0) return;
 
     const last6 = vin.slice(-6).toUpperCase();
-    setValue("stock_number", last6, { shouldDirty: true, shouldValidate: true });
+    setValue("stock_number", last6, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
     // Trigger re-render of the field so user sees it immediately
     trigger("stock_number");
   }, [watch("vin"), watch("stock_number"), mode, setValue, trigger]);
@@ -481,7 +500,14 @@ export function ProductForm({
    */
   const onSubmit = async (data: ProductFormValues) => {
     logger.debug("🚀 onSubmit ENTRY POINT - called with data:", data);
-    logger.debug("🚀 Form state - isSubmitting:", isSubmitting, "isPending:", isPending, "isDisabled:", isDisabled);
+    logger.debug(
+      "🚀 Form state - isSubmitting:",
+      isSubmitting,
+      "isPending:",
+      isPending,
+      "isDisabled:",
+      isDisabled,
+    );
 
     // NOTE: Don't check isDisabled here - it blocks submission!
     // isSubmitting is already true when RHF calls this handler
@@ -499,13 +525,14 @@ export function ProductForm({
         .map((e) => e.storageKey)
         .filter((k): k is string => Boolean(k));
       const coverKey = coverImageId
-        ? images.find((e) => e.id === coverImageId)?.storageKey ?? null
+        ? (images.find((e) => e.id === coverImageId)?.storageKey ?? null)
         : null;
 
       if (mode === "create") {
         logger.debug("🚀 MODE: CREATE - Starting product creation");
         logger.debug("📦 Product data:", {
-          title: `${data.year ?? ""} ${data.make ?? ""} ${data.model ?? ""}`.trim(),
+          title:
+            `${data.year ?? ""} ${data.make ?? ""} ${data.model ?? ""}`.trim(),
           price_cents: Math.round((data.price ?? 0) * 100),
           category_id: data.category_id ?? "",
           vin: data.vin,
@@ -530,7 +557,8 @@ export function ProductForm({
           mpg_city: data.mpg_city ?? undefined,
           mpg_highway: data.mpg_highway ?? undefined,
           mpg_combined: data.mpg_combined ?? undefined,
-          mileage_unit: data.mileage_unit === "mi" ? "miles" : data.mileage_unit,
+          mileage_unit:
+            data.mileage_unit === "mi" ? "miles" : data.mileage_unit,
           exterior_color: data.exterior_color,
           interior_color: data.interior_color,
           has_sunroof: data.has_sunroof,
@@ -544,7 +572,8 @@ export function ProductForm({
         };
 
         const product = await createProduct.mutateAsync({
-          title: `${data.year ?? ""} ${data.make ?? ""} ${data.model ?? ""}`.trim(),
+          title:
+            `${data.year ?? ""} ${data.make ?? ""} ${data.model ?? ""}`.trim(),
           price_cents: Math.round((data.price ?? 0) * 100), // Convert dollars to cents
           // tenant_id / organization_id intentionally omitted — the
           // backend injects them from the JWT (sending an empty string
@@ -562,7 +591,9 @@ export function ProductForm({
         clearUploadStore();
 
         logger.debug("✅ Product created successfully:", product);
-        logger.debug("🎯 Success - calling onSuccess or redirecting to /catalog");
+        logger.debug(
+          "🎯 Success - calling onSuccess or redirecting to /catalog",
+        );
 
         // Success toast shown by useCreateProduct hook
         if (onSuccess) {
@@ -592,7 +623,8 @@ export function ProductForm({
           mpg_city: data.mpg_city ?? undefined,
           mpg_highway: data.mpg_highway ?? undefined,
           mpg_combined: data.mpg_combined ?? undefined,
-          mileage_unit: data.mileage_unit === "mi" ? "miles" : data.mileage_unit,
+          mileage_unit:
+            data.mileage_unit === "mi" ? "miles" : data.mileage_unit,
           exterior_color: data.exterior_color,
           interior_color: data.interior_color,
           has_sunroof: data.has_sunroof,
@@ -608,7 +640,8 @@ export function ProductForm({
         const updatedProduct = await updateProduct.mutateAsync({
           productId: productId,
           data: {
-            title: `${data.year ?? ""} ${data.make ?? ""} ${data.model ?? ""}`.trim(),
+            title:
+              `${data.year ?? ""} ${data.make ?? ""} ${data.model ?? ""}`.trim(),
             price_cents: Math.round((data.price ?? 0) * 100),
             category_id: data.category_id ?? "",
             description: data.description,
@@ -649,53 +682,59 @@ export function ProductForm({
 
   return (
     <form
-      onSubmit={handleSubmit(async (data) => {
-        logger.debug("📤 Form submitting with data:", data);
-        try {
-          await onSubmit(data);
-        } catch (err) {
-          logger.error("❌ Submit handler error:", err);
-          // Don't swallow - let it propagate to error boundary
-          throw err;
-        }
-      }, (errors) => {
-        // Show toast with specific field names
-        const fieldLabels: Record<string, string> = {
-          vin: "VIN",
-          price: "Precio",
-          year: "Año",
-          make: "Marca",
-          model: "Modelo",
-          trim: "Trim",
-          body_type: "Tipo de Carrocería",
-          drivetrain: "Tracción",
-          transmission: "Transmisión",
-          engine: "Motor",
-          fuel_type: "Combustible",
-          mileage: "Odómetro",
-          mileage_unit: "Unidad de Millaje",
-          exterior_color: "Color Exterior",
-          interior_color: "Color Interior",
-          stock_number: "Stock Number",
-          description: "Descripción",
-        };
-        const errorFields = Object.keys(errors);
-        if (errorFields.length > 0) {
-          const fieldNames = errorFields
-            .map((f) => fieldLabels[f] || f)
-            .join(", ");
-          toast.error("Campos incompletos", {
-            description: `Completá: ${fieldNames}`,
-          });
-        }
-      })}
+      onSubmit={handleSubmit(
+        async (data) => {
+          logger.debug("📤 Form submitting with data:", data);
+          try {
+            await onSubmit(data);
+          } catch (err) {
+            logger.error("❌ Submit handler error:", err);
+            // Don't swallow - let it propagate to error boundary
+            throw err;
+          }
+        },
+        (errors) => {
+          // Show toast with specific field names
+          const fieldLabels: Record<string, string> = {
+            vin: "VIN",
+            price: "Precio",
+            year: "Año",
+            make: "Marca",
+            model: "Modelo",
+            trim: "Trim",
+            body_type: "Tipo de Carrocería",
+            drivetrain: "Tracción",
+            transmission: "Transmisión",
+            engine: "Motor",
+            fuel_type: "Combustible",
+            mileage: "Odómetro",
+            mileage_unit: "Unidad de Millaje",
+            exterior_color: "Color Exterior",
+            interior_color: "Color Interior",
+            stock_number: "Stock Number",
+            description: "Descripción",
+          };
+          const errorFields = Object.keys(errors);
+          if (errorFields.length > 0) {
+            const fieldNames = errorFields
+              .map((f) => fieldLabels[f] || f)
+              .join(", ");
+            toast.error("Campos incompletos", {
+              description: `Completá: ${fieldNames}`,
+            });
+          }
+        },
+      )}
       className="flex flex-col gap-8"
       noValidate
     >
       {/* ========================================
           IMAGES (create and edit) — single store-backed flow
           ======================================== */}
-      <section className="flex flex-col gap-4" data-testid="product-images-section">
+      <section
+        className="flex flex-col gap-4"
+        data-testid="product-images-section"
+      >
         <h2 className="text-lg font-semibold">Imágenes del Vehículo</h2>
         <ImageDropzone />
         <ProductCoverPicker />
@@ -734,7 +773,8 @@ export function ProductForm({
             <p className="text-sm text-destructive">{errors.vin.message}</p>
           )}
           <p className="text-xs text-muted-foreground">
-            Ingresa 17 caracteres. El sistema decodificará automáticamente make, model, year, etc.
+            Ingresa 17 caracteres. El sistema decodificará automáticamente make,
+            model, year, etc.
           </p>
         </div>
 
@@ -767,7 +807,9 @@ export function ProductForm({
             )}
           />
           {errors.category_id && (
-            <p className="text-sm text-destructive">{errors.category_id.message}</p>
+            <p className="text-sm text-destructive">
+              {errors.category_id.message}
+            </p>
           )}
         </div>
       </section>
@@ -939,7 +981,9 @@ export function ProductForm({
             maxLength={5000}
           />
           {errors.description && (
-            <p className="text-sm text-destructive">{errors.description.message}</p>
+            <p className="text-sm text-destructive">
+              {errors.description.message}
+            </p>
           )}
         </div>
       </section>
@@ -954,7 +998,11 @@ export function ProductForm({
           size="lg"
           className="flex-1"
         >
-          {isSubmitting ? "Saving..." : mode === "create" ? "Create Vehicle" : "Update Vehicle"}
+          {isSubmitting
+            ? "Saving..."
+            : mode === "create"
+              ? "Create Vehicle"
+              : "Update Vehicle"}
         </Button>
 
         <Button

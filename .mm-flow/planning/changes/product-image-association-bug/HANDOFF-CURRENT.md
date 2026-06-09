@@ -1,10 +1,12 @@
 # Handoff — product-image-association-bug
 
 ## Current objective
+
 - `product-image-association-bug` — P0 production incident on prosellweb.com
 - Active since 2026-06-03
 
 ## Decisions already made
+
 - Single source of truth: `products.image_urls` top-level JSONB column
 - Legacy `product_images` table will be dropped (verified 0 rows in prod)
 - Workflow: mm-flow scaffolding + TDD (RED → GREEN → REFACTOR) as engineering technique
@@ -12,6 +14,7 @@
 - No patches, no `--no-verify`, no AI attribution on commits
 
 ## What was done in 2026-06-03 session
+
 - Phase 1 root cause investigation: COMPLETE
 - Read 20+ files: hooks, DTOs, use cases, migrations, env config
 - Verified prod state on server: 4 commands (alembic, \\d products, env, DB queries)
@@ -20,11 +23,13 @@
 - engram session summary saved
 
 ## Blockers / risks
+
 - None blocking; prod has the bug but data is recoverable
 - Maintenance window for prod deploy needs to be scheduled with user
 - T3 (failing tests) requires the test environment to be running and configured
 
 ## Context (for the next session)
+
 - Three inconsistent image storage locations in the system (see `requirements.md`)
 - The frontend `create/page.tsx:59` is the bug site for the write
 - The use cases `create_product.py` and `bulk_upload_vehicles.py:286` are the bug sites for the read/write coordination
@@ -32,9 +37,11 @@
 - The `product_images` legacy table is empty in prod and a candidate for drop
 
 ## Exact next recommended task
+
 - `/mm:complete-task T3 --brief` (start with the 3 failing tests)
 
 ## Validation commands
+
 - `cd apps/api && uv run pytest tests/integration/test_create_product_image_urls.py -v` (should FAIL initially)
 - `cd apps/web && pnpm test --filter products` (should FAIL initially)
 - After GREEN: `cd apps/api && uv run pytest` (full suite, 1124 tests should pass)

@@ -82,7 +82,9 @@ export class OrganizationDetailPage extends BasePage {
    */
   async verifyOrgStatus(expectedStatus: string): Promise<void> {
     const statusText = expectedStatus.replace(/_/g, " ").toLowerCase();
-    await expect(this.orgStatus).toContainText(statusText, { ignoreCase: true });
+    await expect(this.orgStatus).toContainText(statusText, {
+      ignoreCase: true,
+    });
   }
 
   /**

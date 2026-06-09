@@ -16,16 +16,16 @@ Successfully created test vehicle data and executed the full migration from `veh
 
 ### Vehicles Seeded: 8
 
-| # | Year | Make | Model | Trim | VIN | Price |
-|---|------|------|-------|------|-----|-------|
-| 1 | 2020 | Honda | Civic | EX | 1HGCM82633A123456 | $18,500 |
-| 2 | 2022 | Toyota | Tacoma | TRD Off-Road | 2T1BURHE1FC123456 | $42,000 |
-| 3 | 2023 | BMW | X5 | xDrive40i | 5UXCR6C05N9N12345 | $68,500 |
-| 4 | 2023 | Tesla | Model 3 | Long Range | 5YJ3E1EAJPF123456 | $45,990 |
-| 5 | 2021 | Ford | F-150 | Lariat | 1F1F15000MF123456 | $55,000 |
-| 6 | 2022 | Toyota | RAV4 | Hybrid XSE | JTDKN3DU5A0123456 | $32,950 |
-| 7 | 2006 | Mazda | MX-5 Miata | Grand Touring | JM1BK32G061123456 | $12,500 |
-| 8 | 2004 | Chevrolet | Camaro | SS | 1G1JC124047123456 | $18,990 |
+| #   | Year | Make      | Model      | Trim          | VIN               | Price   |
+| --- | ---- | --------- | ---------- | ------------- | ----------------- | ------- |
+| 1   | 2020 | Honda     | Civic      | EX            | 1HGCM82633A123456 | $18,500 |
+| 2   | 2022 | Toyota    | Tacoma     | TRD Off-Road  | 2T1BURHE1FC123456 | $42,000 |
+| 3   | 2023 | BMW       | X5         | xDrive40i     | 5UXCR6C05N9N12345 | $68,500 |
+| 4   | 2023 | Tesla     | Model 3    | Long Range    | 5YJ3E1EAJPF123456 | $45,990 |
+| 5   | 2021 | Ford      | F-150      | Lariat        | 1F1F15000MF123456 | $55,000 |
+| 6   | 2022 | Toyota    | RAV4       | Hybrid XSE    | JTDKN3DU5A0123456 | $32,950 |
+| 7   | 2006 | Mazda     | MX-5 Miata | Grand Touring | JM1BK32G061123456 | $12,500 |
+| 8   | 2004 | Chevrolet | Camaro     | SS            | 1G1JC124047123456 | $18,990 |
 
 ### Vehicle Diversity
 
@@ -41,11 +41,13 @@ Successfully created test vehicle data and executed the full migration from `veh
 ## Migration Results
 
 ### Before Migration
+
 - **Vehicles**: 8
 - **Products**: 8
 - **Products with empty attributes**: 8
 
 ### After Migration
+
 - **Vehicles**: 8
 - **Products**: 8
 - **Products with vehicle category**: 8 ✅
@@ -62,6 +64,7 @@ Successfully created test vehicle data and executed the full migration from `veh
 ### Sample Validated Data
 
 **Vehicle**: 2023 BMW X5 xDrive40i
+
 ```
 VIN: 5UXCR6C05N9N12345
 Make/Model/Year: BMW X5 2023

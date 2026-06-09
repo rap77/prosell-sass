@@ -262,7 +262,9 @@ erDiagram
 ### 2.1. Auth & Identity
 
 #### User
+
 Entidad principal de usuarios del sistema. Soporta:
+
 - Registro con email/password
 - OAuth (Google) - sin password
 - 2FA con TOTP
@@ -270,6 +272,7 @@ Entidad principal de usuarios del sistema. Soporta:
 - Multi-tenant (tenant_id)
 
 **Campos clave**:
+
 - `id`: UUID único
 - `email`: Email único (UK)
 - `password_hash`: NULL para usuarios OAuth
@@ -277,12 +280,15 @@ Entidad principal de usuarios del sistema. Soporta:
 - `tenant_id`: Organización a la que pertenece (opcional)
 
 #### Session
+
 Sesiones activas de usuario para refresh tokens.
+
 - Token hash almacenado para validar refresh tokens
 - Expiración configurable (default 7 días)
 - Revocación para logout
 
 #### Role
+
 Roles RBAC con permisos predefinidos.
 **Sistema**: SUPER_ADMIN, ADMIN, MANAGER, SALES_AGENT, SALES_USER, VIEWER
 **Custom**: Roles por organización (tenant_id)
@@ -290,42 +296,55 @@ Roles RBAC con permisos predefinidos.
 ### 2.2. Organization Structure
 
 #### Organization
+
 Organización (dealership) con multi-tenancy.
+
 - `id == tenant_id` (auto-referencial para aislamiento)
 - `status`: PENDING_VERIFICATION, ACTIVE, REJECTED, SUSPENDED
 - `wallet_id`: Billetera de tokens
 
 #### Team
+
 Equipos de ventas dentro de una organización.
+
 - Estructura jerárquica (parent_team_id)
 - Puede tener managers y vendors
 
 #### TeamMember
+
 Miembros de un equipo con rol y comisión.
+
 - `role`: MANAGER, VENDOR
 - `commission_rate`: Porcentaje de comisión (0-100)
 
 ### 2.3. Wallet & Payments
 
 #### Wallet
+
 Billetera de tokens para prepago de servicios.
+
 - `balance_cents`: Balance en centavos (evita floating point)
 - Moneda USD (1 token = $1)
 
 #### WalletTransaction
+
 Historial de transacciones de la billetera.
+
 - `transaction_type`: CREDIT (recarga), DEBIT (gasto)
 - `balance_after_cents`: Balance post-transacción
 
 ### 2.4. Product Catalog
 
 #### Category
+
 Categorías jerárquicas de productos.
+
 - `parent_id`: Categoría padre (NULL = root)
 - `level`: Nivel de anidamiento (0 = root)
 - `field_config`: Campos dinámicos para productos de esta categoría
 
 **Ejemplo de jerarquía**:
+
 ```
 Vehicles (level 0)
 ├── Cars (level 1)
@@ -335,13 +354,16 @@ Vehicles (level 0)
 ```
 
 #### Product
+
 Producto genérico con workflow de aprobación.
+
 - `status`: DRAFT → PENDING → PUBLISHED → SOLD/ARCHIVED
 - `attributes`: Campos dinámicos según categoría
 - `organization_id`: Dueño del producto
 - `category_id`: Categoría
 
 **Workflow de aprobación**:
+
 ```
 DRAFT → (submit_for_approval) → PENDING → (approve) → PUBLISHED
                                       ↓ (reject)
@@ -349,6 +371,7 @@ DRAFT → (submit_for_approval) → PENDING → (approve) → PUBLISHED
 ```
 
 **Estados posibles**:
+
 - `DRAFT`: Borrador editable
 - `PENDING`: Esperando aprobación
 - `PUBLISHED`: Publicado y visible
@@ -358,13 +381,17 @@ DRAFT → (submit_for_approval) → PENDING → (approve) → PUBLISHED
 - `ARCHIVED`: Archivado (soft delete)
 
 #### ProductImage
+
 Imágenes de un producto con ordenamiento.
+
 - `sort_order`: Orden de visualización
 - `is_primary`: Imagen principal (solo una por producto)
 - `thumbnail_url`: Miniatura optimizada
 
 #### Vehicle
+
 Extensión de Product para vehículos con VIN.
+
 - `product_id`: Referencia al Product base
 - `vin`: Número de identificación (17 caracteres, validado con checksum ISO 3779)
 - Datos técnicos: year, make, model, trim, body_type, drivetrain, etc.
@@ -372,6 +399,7 @@ Extensión de Product para vehículos con VIN.
 - `vin_verified`: Verificado contra base de datos
 
 **Validación de VIN**:
+
 - 17 caracteres alfanuméricos
 - Sin I, O, Q (caracteres inválidos)
 - Checksum ISO 3779
@@ -381,6 +409,7 @@ Extensión de Product para vehículos con VIN.
 ## 3. Enumeraciones
 
 ### UserStatus
+
 ```python
 PENDING_VERIFICATION = "pending_verification"  # Nuevo usuario, debe verificar email
 ACTIVE = "active"                              # Puede hacer login
@@ -388,6 +417,7 @@ SUSPENDED = "suspended"                        # Cuenta suspendida
 ```
 
 ### RoleType
+
 ```python
 SUPER_ADMIN = "super_admin"   # Full acceso
 ADMIN = "admin"                # Admin de organización
@@ -398,6 +428,7 @@ VIEWER = "viewer"              # Solo lectura
 ```
 
 ### Permission
+
 ```python
 # User management
 USER_CREATE, USER_READ, USER_UPDATE, USER_DELETE
@@ -414,6 +445,7 @@ SETTINGS_READ, SETTINGS_UPDATE
 ```
 
 ### OrganizationStatus
+
 ```python
 PENDING_VERIFICATION = "pending_verification"  # Esperando verificación
 ACTIVE = "active"                              # Verificada y activa
@@ -422,18 +454,21 @@ SUSPENDED = "suspended"                        # Suspendida temporalmente
 ```
 
 ### TeamMemberRole
+
 ```python
 MANAGER = "manager"   # Gestiona equipo, gana comisión de vendors
 VENDOR = "vendor"     # Vendedor directo
 ```
 
 ### TransactionType
+
 ```python
 CREDIT = "credit"  # Agregar tokens (recarga, bonus)
 DEBIT = "debit"    # Gastar tokens (listing fee, etc.)
 ```
 
 ### ProductCondition
+
 ```python
 NEW = "new"
 USED = "used"
@@ -443,6 +478,7 @@ SALVAGE = "salvage"
 ```
 
 ### ProductStatus
+
 ```python
 DRAFT = "draft"              # Borrador editable
 PENDING = "pending"          # Esperando aprobación
@@ -459,30 +495,37 @@ REJECTED = "rejected"        # Rechazado (vuelve a draft)
 ## 4. Relaciones Clave
 
 ### 4.1. Multi-Tenancy
+
 Todas las entidades tienen `tenant_id` para aislamiento por organización.
+
 - **Organization**: `tenant_id == id` (self-referencial)
 - **User**: `tenant_id` opcional (usuario sin organización)
 - **Product, Category, Team, etc.**: `tenant_id` obligatorio
 
 ### 4.2. User ↔ Organization
+
 - **User.organization_id**: FK a Organization
 - **Un usuario puede pertenecer a una organización**
 - **Usuarios OAuth pueden no tener organización**
 
 ### 4.3. Product ↔ Vehicle
+
 - **Vehicle.product_id**: FK a Product
 - **Vehicle extiende a Product** (herencia de tabla)
 - **Un Product tiene 0 o 1 Vehicle**
 
 ### 4.4. Category Hierarchy
+
 - **Category.parent_id**: FK a Category (self-reference)
 - **Prevent circular references** en dominio
 
 ### 4.5. Team Hierarchy
+
 - **Team.parent_team_id**: FK a Team (self-reference)
 - **Estructura multi-level para equipos grandes**
 
 ### 4.6. Product Approval
+
 - **Product.submitted_by**: User que envió a aprobación
 - **Product.approved_by**: User que aprobó/rechazó
 
@@ -490,23 +533,23 @@ Todas las entidades tienen `tenant_id` para aislamiento por organización.
 
 ## 5. Índices Únicos (UK)
 
-| Entidad | Campo(s) |
-|---------|----------|
-| User | email |
+| Entidad  | Campo(s)             |
+| -------- | -------------------- |
+| User     | email                |
 | Category | slug (por tenant_id) |
-| Vehicle | vin |
-| Session | token_hash |
+| Vehicle  | vin                  |
+| Session  | token_hash           |
 
 ---
 
 ## 6. Estadísticas del Modelo
 
-| Métrica | Valor |
-|---------|-------|
-| Entidades | 13 |
-| Enumeraciones | 7 |
-| Relaciones | 20+ |
-| Tablas en DB | 13 |
+| Métrica       | Valor |
+| ------------- | ----- |
+| Entidades     | 13    |
+| Enumeraciones | 7     |
+| Relaciones    | 20+   |
+| Tablas en DB  | 13    |
 
 ---
 
@@ -515,21 +558,25 @@ Todas las entidades tienen `tenant_id` para aislamiento por organización.
 Entidades no implementadas aún:
 
 ### Marketplace & Listings
+
 - **MarketplaceListing**: Publicación en Facebook Marketplace
 - **ListingStatus**: ACTIVE, EXPIRED, SOLD, DELETED
 - **ExternalListing**: Listado en plataformas externas (CarGurus, AutoTrader)
 
 ### Scraping
+
 - **ScrapedVehicle**: Vehículo scrapeado de marketplace
 - **ScrapeSource**: Fuente de scrape (FB, CG, AT)
 - **ScrapeQueue**: Cola de URLs para scrape
 
 ### Analytics
+
 - **ViewAnalytics**: Métricas de vista de productos
 - **MarketPricing**: Datos de precios del mercado
 - **PriceRecommendation**: Recomendación de precio por IA
 
 ### Notifications
+
 - **Notification**: Notificaciones push/email
 - **NotificationPreference**: Preferencias de usuario
 
@@ -538,16 +585,19 @@ Entidades no implementadas aún:
 ## 8. Notas de Implementación
 
 ### 8.1. SQLAlchemy 2.0
+
 - Usa `Mapped[]`, `mapped_column` (no más Column)
 - `select()` en lugar de `query()`
 - Async con `async_sessionmaker`
 
 ### 8.2. Pydantic 2.12+
+
 - Todas las entidades extienden `DomainModel`
 - Validadores con `@field_validator`
 - Factory methods: `create()`, `create_oauth()`
 
 ### 8.3. Domain-Driven Design
+
 - **Domain Layer**: Sin dependencias externas
 - **Pure Python entities**: Lógica de negocio en entidades
 - **Value Objects**: ProductCondition, ProductStatus, etc.

@@ -37,33 +37,36 @@ interface DuplicateWarningProps {
 // ============================================
 
 const CONFIDENCE_LABELS: Record<DuplicateMatch["confidence"], string> = {
-  high:   "Alta",
+  high: "Alta",
   medium: "Media",
-  low:    "Baja",
+  low: "Baja",
 };
 
-const CONFIDENCE_STYLES: Record<DuplicateMatch["confidence"], React.CSSProperties> = {
+const CONFIDENCE_STYLES: Record<
+  DuplicateMatch["confidence"],
+  React.CSSProperties
+> = {
   high: {
-    color: 'var(--ps-error)',
-    background: 'var(--ps-error-bg)',
-    border: '1px solid var(--ps-error)',
+    color: "var(--ps-error)",
+    background: "var(--ps-error-bg)",
+    border: "1px solid var(--ps-error)",
   },
   medium: {
-    color: 'var(--ps-warning)',
-    background: 'var(--ps-warning-bg)',
-    border: '1px solid var(--ps-warning)',
+    color: "var(--ps-warning)",
+    background: "var(--ps-warning-bg)",
+    border: "1px solid var(--ps-warning)",
   },
   low: {
-    color: 'var(--ps-cyan)',
-    background: 'var(--ps-info-bg)',
-    border: '1px solid rgba(77,184,255,0.25)',
+    color: "var(--ps-cyan)",
+    background: "var(--ps-info-bg)",
+    border: "1px solid rgba(77,184,255,0.25)",
   },
 };
 
 const MATCH_TYPE_LABELS: Record<DuplicateMatch["match_type"], string> = {
   email: "coincidencia de email",
   phone: "coincidencia de teléfono",
-  both:  "coincidencia de email y teléfono",
+  both: "coincidencia de email y teléfono",
 };
 
 // ============================================
@@ -88,27 +91,40 @@ export function DuplicateWarning({
       className={className}
       style={{
         borderRadius: 10,
-        border: '1px solid var(--ps-warning)',
-        background: 'var(--ps-warning-bg)',
+        border: "1px solid var(--ps-warning)",
+        background: "var(--ps-warning-bg)",
         padding: 16,
         ...style,
       }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <AlertTriangle
           size={18}
           strokeWidth={2}
           aria-hidden="true"
-          style={{ color: 'var(--ps-warning)', flexShrink: 0, marginTop: 1 }}
+          style={{ color: "var(--ps-warning)", flexShrink: 0, marginTop: 1 }}
         />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--ps-warning)' }}>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 13,
+              fontWeight: 600,
+              color: "var(--ps-warning)",
+            }}
+          >
             {duplicates.length === 1
               ? "Posible duplicado detectado"
               : `${duplicates.length} posibles duplicados detectados`}
           </h3>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ps-text-secondary)' }}>
+          <p
+            style={{
+              margin: "4px 0 0",
+              fontSize: 13,
+              color: "var(--ps-text-secondary)",
+            }}
+          >
             {duplicates.length === 1
               ? "Este lead podría ya existir en el sistema."
               : `Se encontraron ${duplicates.length} leads duplicados en el sistema.`}
@@ -117,7 +133,14 @@ export function DuplicateWarning({
           {/* Lista de duplicados */}
           <ul
             data-testid="duplicate-list"
-            style={{ margin: '12px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}
+            style={{
+              margin: "12px 0 0",
+              padding: 0,
+              listStyle: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}
           >
             {duplicates.map((match) => {
               const confidenceStyle = CONFIDENCE_STYLES[match.confidence];
@@ -128,7 +151,13 @@ export function DuplicateWarning({
                 <li
                   key={match.lead_id}
                   data-testid={`duplicate-item-${match.lead_id}`}
-                  style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, fontSize: 12 }}
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    gap: 8,
+                    fontSize: 12,
+                  }}
                 >
                   {/* Link al lead o ID plano */}
                   {onLeadClick ? (
@@ -137,27 +166,33 @@ export function DuplicateWarning({
                       onClick={() => onLeadClick(match.lead_id)}
                       aria-label={`Ver lead ${match.lead_id}`}
                       style={{
-                        background: 'none',
-                        border: 'none',
+                        background: "none",
+                        border: "none",
                         padding: 0,
-                        fontFamily: 'monospace',
+                        fontFamily: "monospace",
                         fontSize: 11,
-                        color: 'var(--ps-text-primary)',
-                        textDecoration: 'underline',
+                        color: "var(--ps-text-primary)",
+                        textDecoration: "underline",
                         textUnderlineOffset: 2,
-                        cursor: 'pointer',
+                        cursor: "pointer",
                       }}
                     >
                       {match.lead_id.slice(0, 8)}...
                     </button>
                   ) : (
-                    <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--ps-text-primary)' }}>
+                    <span
+                      style={{
+                        fontFamily: "monospace",
+                        fontSize: 11,
+                        color: "var(--ps-text-primary)",
+                      }}
+                    >
                       {match.lead_id.slice(0, 8)}...
                     </span>
                   )}
 
                   {/* Tipo de coincidencia */}
-                  <span style={{ color: 'var(--ps-text-secondary)' }}>
+                  <span style={{ color: "var(--ps-text-secondary)" }}>
                     vía {matchLabel}
                   </span>
 
@@ -165,10 +200,10 @@ export function DuplicateWarning({
                   <span
                     aria-label={`Confianza: ${confidenceLabel}`}
                     style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
+                      display: "inline-flex",
+                      alignItems: "center",
                       borderRadius: 99,
-                      padding: '2px 8px',
+                      padding: "2px 8px",
                       fontSize: 10,
                       fontWeight: 600,
                       ...confidenceStyle,
@@ -181,8 +216,15 @@ export function DuplicateWarning({
             })}
           </ul>
 
-          <p style={{ margin: '12px 0 0', fontSize: 11, color: 'var(--ps-text-disabled)' }}>
-            Revisá los leads de arriba antes de continuar para evitar duplicados.
+          <p
+            style={{
+              margin: "12px 0 0",
+              fontSize: 11,
+              color: "var(--ps-text-disabled)",
+            }}
+          >
+            Revisá los leads de arriba antes de continuar para evitar
+            duplicados.
           </p>
         </div>
       </div>

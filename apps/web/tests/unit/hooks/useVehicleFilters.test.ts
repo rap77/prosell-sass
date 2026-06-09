@@ -65,7 +65,9 @@ describe("useVehicleFilters", () => {
       result.current.setFilter("search", "toyota");
     });
 
-    expect(mockPush).toHaveBeenCalledWith(expect.any(String), { scroll: false });
+    expect(mockPush).toHaveBeenCalledWith(expect.any(String), {
+      scroll: false,
+    });
   });
 
   it("should call router.push with array filter", () => {
@@ -75,7 +77,9 @@ describe("useVehicleFilters", () => {
       result.current.setFilter("brand", ["toyota", "honda"]);
     });
 
-    expect(mockPush).toHaveBeenCalledWith(expect.any(String), { scroll: false });
+    expect(mockPush).toHaveBeenCalledWith(expect.any(String), {
+      scroll: false,
+    });
   });
 
   it("should call router.push when clearing array filter", () => {

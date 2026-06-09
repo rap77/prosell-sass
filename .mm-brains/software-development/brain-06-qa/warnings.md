@@ -25,6 +25,7 @@ Brain #6 was the source of these patterns — they are embedded here as primary 
 **QA examples:** Suggesting Jest when Vitest is the test runner in `pnpm-lock.yaml`. Proposing coverage tools not in lockfiles. Recommending `nox` for Python test automation when `pytest` + `uv` is the stack.
 
 **Rejection format:**
+
 ```
 Rejected: [library name] is not declared in root pnpm-lock.yaml or uv.lock.
 Source: global-protocol.md > Stack Hard-Lock | brain-06-qa/warnings.md > Stack Hallucination
@@ -41,6 +42,7 @@ Source: global-protocol.md > Stack Hard-Lock | brain-06-qa/warnings.md > Stack H
 **QA examples:** "Manually check the logs to verify the fix worked." "SSH in and look at the queue depth." "Edit the test fixture manually before running the suite."
 
 **Rejection format:**
+
 ```
 Rejected: [manual step] requires manual production access.
 Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-06-qa/warnings.md > Toil-Inducer
@@ -57,6 +59,7 @@ Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-06-qa/warnings.m
 **QA examples:** Using `api_key="test-hardcoded-key"` in pytest fixtures. "Disable auth in the test environment to simplify the integration test." Setting `JWT_SECRET=insecure` in test config files.
 
 **Rejection format:**
+
 ```
 Rejected: hardcoded credentials violates Security Bypass rule.
 Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-06-qa/warnings.md > Security Bypass
@@ -73,6 +76,7 @@ Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-06-qa/warnings.m
 **QA examples:** Proposing API schema changes without updating the existing API test fixtures. Changing test utilities in `tests/conftest.py` without verifying all test files that import them.
 
 **Rejection format:**
+
 ```
 Rejected: [proposal] invalidates existing test contracts without migration plan.
 Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-06-qa/warnings.md > Legacy Drift
@@ -91,6 +95,7 @@ Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-06-qa/warnings.m
 **Why:** A test that only verifies the happy path gives false confidence. The failures — timeouts, concurrent access, partial data — are where production systems actually break. Feathers: "Tests that don't test the seams aren't protecting the refactor."
 
 **Examples:**
+
 - Unit test that asserts `result == expected` where `expected` is set to whatever the function currently returns
 - Test that only calls the happy path and asserts `status_code == 200`
 - Test suite with 100% line coverage but zero error path coverage
@@ -108,11 +113,13 @@ Source: global-protocol.md > Cross-Domain Anti-Patterns | brain-06-qa/warnings.m
 **Why:** Pre-existing failures mask new failures. A suite with 5 "known" failures normalizes failure. The moment the suite goes from 5 to 6 failures, the team doesn't notice because 5 failures was already "normal." Zero tolerance is the only defensible policy.
 
 **Examples:**
+
 - "These 3 tests have been failing since the DB migration — we can ignore them for now."
 - "The fixture is broken but it doesn't affect this feature."
 - Closing a phase with any test marked `xfail`, `skip`, or failing without a documented justification and fix date.
 
 **Rejection format:**
+
 ```
 Rejected: leaving tests failing = Pre-Existing Failure Tolerance violation.
 Source: brain-06-qa/warnings.md > Pre-Existing Failure Tolerance | project rules
@@ -129,6 +136,7 @@ Source: brain-06-qa/warnings.md > Pre-Existing Failure Tolerance | project rules
 **Why:** The project uses pnpm lockfile. Running `npm install` creates a parallel `node_modules` that conflicts with pnpm's symlink structure. The correct commands are `pnpm --prefix apps/web test run` (frontend) and `cd apps/api && uv run pytest` (backend).
 
 **Rejection format:**
+
 ```
 Rejected: npm violates pnpm-only Node.js package management rule.
 Source: global-protocol.md > Stack Hard-Lock | brain-06-qa/warnings.md > npm Reference
@@ -145,6 +153,7 @@ Source: global-protocol.md > Stack Hard-Lock | brain-06-qa/warnings.md > npm Ref
 **Why:** Tests with live network dependencies are flaky by definition. A NotebookLM API timeout means your test suite fails in CI. The MCP tool must be mockable — and the test must verify the behavior of the code under test, not the behavior of an external API.
 
 **Examples:**
+
 - Integration test that calls `mcp__notebooklm-mcp__notebook_query` directly
 - Test that requires a real notebook to exist and respond
 - Fixture that sets up a real MCP connection to seed test data
@@ -152,6 +161,7 @@ Source: global-protocol.md > Stack Hard-Lock | brain-06-qa/warnings.md > npm Ref
 **Correction pattern:** Mock the MCP tool at the boundary. Test that the brain sends the correct query format (contract test) separately from testing NotebookLM's response (which is their responsibility, not ours).
 
 **Rejection format:**
+
 ```
 Rejected: test requires live NotebookLM connection — violates offline test requirement.
 Source: brain-06-qa/warnings.md > Live MCP Test

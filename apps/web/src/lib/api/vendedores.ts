@@ -55,7 +55,10 @@ function transformVendedor(backendVendedor: BackendVendedorResponse): Vendedor {
  * Fetch all vendedores in the team
  * @returns Query result with vendedores array
  */
-export function useVendedores(limit: number = 100, offset: number = 0): UseQueryResult<Vendedor[], Error> {
+export function useVendedores(
+  limit: number = 100,
+  offset: number = 0,
+): UseQueryResult<Vendedor[], Error> {
   const queryParams = new URLSearchParams();
   queryParams.append("limit", limit.toString());
   queryParams.append("offset", offset.toString());
@@ -68,7 +71,9 @@ export function useVendedores(limit: number = 100, offset: number = 0): UseQuery
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to fetch vendedores" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to fetch vendedores" }));
         throw new Error(error.message || "Failed to fetch vendedores");
       }
 

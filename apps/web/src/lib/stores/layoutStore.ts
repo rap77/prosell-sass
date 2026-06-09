@@ -1,5 +1,5 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 /**
  * Layout store for managing UI state across the application.
@@ -12,13 +12,13 @@ import { persist } from 'zustand/middleware'
  */
 interface LayoutState {
   /** Whether the sidebar is collapsed (narrow) or expanded */
-  sidebarCollapsed: boolean
+  sidebarCollapsed: boolean;
 
   /** Toggle sidebar between collapsed and expanded states */
-  toggleSidebar: () => void
+  toggleSidebar: () => void;
 
   /** Set sidebar to a specific state */
-  setSidebarCollapsed: (collapsed: boolean) => void
+  setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
 export const useLayoutStore = create<LayoutState>()(
@@ -29,13 +29,12 @@ export const useLayoutStore = create<LayoutState>()(
       toggleSidebar: () =>
         set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
-      setSidebarCollapsed: (collapsed) =>
-        set({ sidebarCollapsed: collapsed }),
+      setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
     }),
     {
-      name: 'prosell-layout',
+      name: "prosell-layout",
       // Only persist sidebarCollapsed, not sensitive data
       partialize: (state) => ({ sidebarCollapsed: state.sidebarCollapsed }),
-    }
-  )
-)
+    },
+  ),
+);

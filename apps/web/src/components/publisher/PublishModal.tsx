@@ -28,7 +28,7 @@ import { PublishForm } from "./PublishForm";
 // ============================================
 
 interface VehicleData {
-  id: string;  // Vehicle UUID for publish API
+  id: string; // Vehicle UUID for publish API
   title: string;
   description?: string;
   price_cents: number;
@@ -73,7 +73,10 @@ interface PublishModalProps {
   currentPublication?: PublicationResponse | null;
   facebookPages?: FacebookPage[];
   onClose: () => void;
-  onPublished?: (publication: PublicationResponse, vehicleData: VehicleData) => void;
+  onPublished?: (
+    publication: PublicationResponse,
+    vehicleData: VehicleData,
+  ) => void;
 }
 
 // ============================================
@@ -95,25 +98,42 @@ function CategoryBErrorBanner({
   });
 
   return (
-    <div style={{
-      background: 'var(--ps-error-bg)',
-      border: '1px solid var(--ps-error)',
-      borderRadius: 10,
-      padding: 16,
-      marginBottom: 16,
-    }}>
-      <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--ps-error)' }}>
+    <div
+      style={{
+        background: "var(--ps-error-bg)",
+        border: "1px solid var(--ps-error)",
+        borderRadius: 10,
+        padding: 16,
+        marginBottom: 16,
+      }}
+    >
+      <p
+        style={{
+          margin: 0,
+          fontSize: 13,
+          fontWeight: 500,
+          color: "var(--ps-error)",
+        }}
+      >
         Facebook solicita validación de seguridad. Abrí tu cuenta en un
         navegador para resolver el desafío antes de reintentar.
       </p>
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, cursor: 'pointer' }}>
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginTop: 12,
+          cursor: "pointer",
+        }}
+      >
         <input
           type="checkbox"
           checked={checked}
           onChange={(e) => setChecked(e.target.checked)}
-          style={{ width: 16, height: 16, accentColor: 'var(--ps-cyan)' }}
+          style={{ width: 16, height: 16, accentColor: "var(--ps-cyan)" }}
         />
-        <span style={{ fontSize: 13, color: 'var(--ps-error)' }}>
+        <span style={{ fontSize: 13, color: "var(--ps-error)" }}>
           Ya validé mi cuenta de Facebook
         </span>
       </label>
@@ -124,22 +144,26 @@ function CategoryBErrorBanner({
         style={{
           marginTop: 12,
           height: 34,
-          padding: '0 14px',
-          background: 'var(--ps-error)',
-          color: '#fff',
+          padding: "0 14px",
+          background: "var(--ps-error)",
+          color: "#fff",
           fontSize: 13,
           fontWeight: 600,
-          border: 'none',
+          border: "none",
           borderRadius: 8,
-          cursor: 'pointer',
+          cursor: "pointer",
           opacity: !checked || unlockMutation.isPending ? 0.5 : 1,
-          transition: 'opacity 0.15s',
+          transition: "opacity 0.15s",
         }}
       >
-        {unlockMutation.isPending ? "Desbloqueando..." : "Desbloquear y Reintentar"}
+        {unlockMutation.isPending
+          ? "Desbloqueando..."
+          : "Desbloquear y Reintentar"}
       </button>
       {unlockMutation.isError && (
-        <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--ps-error)' }}>
+        <p
+          style={{ margin: "8px 0 0", fontSize: 11, color: "var(--ps-error)" }}
+        >
           Error al desbloquear. Intentá de nuevo.
         </p>
       )}
@@ -164,7 +188,8 @@ export function PublishModal({
   const queryClient = useQueryClient();
   const isOpen = mode !== null && vehicleId !== null;
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
-  const effectiveVehicleId = vehicleData?.id || selectedVehicleId || vehicleOptions[0]?.id || "";
+  const effectiveVehicleId =
+    vehicleData?.id || selectedVehicleId || vehicleOptions[0]?.id || "";
   const selectedVehicleData =
     vehicleData ??
     vehicleOptions.find((option) => option.id === effectiveVehicleId);
@@ -223,7 +248,8 @@ export function PublishModal({
   };
 
   const isSubmitting = publishMutation.isPending || updateMutation.isPending;
-  const submitError = publishMutation.error?.message ?? updateMutation.error?.message ?? null;
+  const submitError =
+    publishMutation.error?.message ?? updateMutation.error?.message ?? null;
 
   if (!isOpen) return null;
 
@@ -233,10 +259,10 @@ export function PublishModal({
       <div
         onClick={onClose}
         style={{
-          position: 'fixed',
+          position: "fixed",
           inset: 0,
-          background: 'rgba(0,0,0,0.55)',
-          backdropFilter: 'blur(4px)',
+          background: "rgba(0,0,0,0.55)",
+          backdropFilter: "blur(4px)",
           zIndex: 40,
         }}
       />
@@ -245,68 +271,76 @@ export function PublishModal({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={mode === "publish" ? "Preparar publicación" : "Actualizar publicación"}
+        aria-label={
+          mode === "publish" ? "Preparar publicación" : "Actualizar publicación"
+        }
         onClick={(e) => e.stopPropagation()}
         style={{
-          position: 'fixed',
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '100%',
+          position: "fixed",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "100%",
           maxWidth: 672,
-          background: 'var(--ps-bg-surface)',
-          border: '1px solid var(--ps-border-default)',
+          background: "var(--ps-bg-surface)",
+          border: "1px solid var(--ps-border-default)",
           borderRadius: 14,
-          boxShadow: '0 24px 48px var(--ps-shadow-overlay)',
+          boxShadow: "0 24px 48px var(--ps-shadow-overlay)",
           zIndex: 50,
-          maxHeight: '85vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
+          maxHeight: "85vh",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
         {/* Header */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 24px',
-          borderBottom: '1px solid var(--ps-border-default)',
-          flexShrink: 0,
-        }}>
-          <h2 style={{
-            margin: 0,
-            fontSize: 16,
-            fontWeight: 700,
-            letterSpacing: '-0.01em',
-            color: 'var(--ps-text-primary)',
-          }}>
-            {mode === "publish" ? "Preparar Publicación" : "Actualizar Publicación"}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 24px",
+            borderBottom: "1px solid var(--ps-border-default)",
+            flexShrink: 0,
+          }}
+        >
+          <h2
+            style={{
+              margin: 0,
+              fontSize: 16,
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+              color: "var(--ps-text-primary)",
+            }}
+          >
+            {mode === "publish"
+              ? "Preparar Publicación"
+              : "Actualizar Publicación"}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
               width: 32,
               height: 32,
               borderRadius: 8,
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--ps-text-secondary)',
-              cursor: 'pointer',
-              transition: 'background 0.15s, color 0.15s',
+              border: "none",
+              background: "transparent",
+              color: "var(--ps-text-secondary)",
+              cursor: "pointer",
+              transition: "background 0.15s, color 0.15s",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--ps-bg-elevated)'
-              e.currentTarget.style.color = 'var(--ps-text-primary)'
+              e.currentTarget.style.background = "var(--ps-bg-elevated)";
+              e.currentTarget.style.color = "var(--ps-text-primary)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.color = 'var(--ps-text-secondary)'
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = "var(--ps-text-secondary)";
             }}
           >
             <X size={18} strokeWidth={2} />
@@ -314,25 +348,33 @@ export function PublishModal({
         </div>
 
         {/* Content */}
-        <div style={{ overflowY: 'auto', padding: '16px 24px', flex: 1, minHeight: 0 }}>
-
+        <div
+          style={{
+            overflowY: "auto",
+            padding: "16px 24px",
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
           {/* Vehicle selector (when no fixed vehicleData) */}
           {!vehicleData && vehicleOptions.length > 0 && (
-            <div style={{
-              marginBottom: 16,
-              borderRadius: 10,
-              border: '1px solid var(--ps-border-default)',
-              background: 'var(--ps-bg-elevated)',
-              padding: 16,
-            }}>
+            <div
+              style={{
+                marginBottom: 16,
+                borderRadius: 10,
+                border: "1px solid var(--ps-border-default)",
+                background: "var(--ps-bg-elevated)",
+                padding: 16,
+              }}
+            >
               <label
                 htmlFor="publication-vehicle-select"
                 style={{
-                  display: 'block',
+                  display: "block",
                   marginBottom: 8,
                   fontSize: 13,
                   fontWeight: 500,
-                  color: 'var(--ps-text-primary)',
+                  color: "var(--ps-text-primary)",
                 }}
               >
                 Vehículo a publicar
@@ -342,14 +384,14 @@ export function PublishModal({
                 value={effectiveVehicleId}
                 onChange={(event) => setSelectedVehicleId(event.target.value)}
                 style={{
-                  width: '100%',
+                  width: "100%",
                   borderRadius: 8,
-                  border: '1px solid var(--ps-input-border)',
-                  background: 'var(--ps-input-bg)',
-                  color: 'var(--ps-text-primary)',
+                  border: "1px solid var(--ps-input-border)",
+                  background: "var(--ps-input-bg)",
+                  color: "var(--ps-text-primary)",
                   fontSize: 13,
-                  padding: '8px 12px',
-                  outline: 'none',
+                  padding: "8px 12px",
+                  outline: "none",
                 }}
               >
                 {vehicleOptions.map((option) => (
@@ -373,28 +415,34 @@ export function PublishModal({
 
           {/* Submit error */}
           {submitError && (
-            <div style={{
-              marginBottom: 16,
-              background: 'var(--ps-error-bg)',
-              border: '1px solid var(--ps-error)',
-              borderRadius: 10,
-              padding: 12,
-            }}>
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--ps-error)' }}>{submitError}</p>
+            <div
+              style={{
+                marginBottom: 16,
+                background: "var(--ps-error-bg)",
+                border: "1px solid var(--ps-error)",
+                borderRadius: 10,
+                padding: 12,
+              }}
+            >
+              <p style={{ margin: 0, fontSize: 13, color: "var(--ps-error)" }}>
+                {submitError}
+              </p>
             </div>
           )}
 
           {/* No vehicle selected warning */}
           {!selectedVehicleData && (
-            <div style={{
-              borderRadius: 10,
-              border: '1px solid var(--ps-warning)',
-              background: 'var(--ps-warning-bg)',
-              padding: 16,
-              fontSize: 13,
-              color: 'var(--ps-warning)',
-              marginBottom: 16,
-            }}>
+            <div
+              style={{
+                borderRadius: 10,
+                border: "1px solid var(--ps-warning)",
+                background: "var(--ps-warning-bg)",
+                padding: 16,
+                fontSize: 13,
+                color: "var(--ps-warning)",
+                marginBottom: 16,
+              }}
+            >
               Seleccioná un vehículo del catálogo para preparar la publicación.
             </div>
           )}

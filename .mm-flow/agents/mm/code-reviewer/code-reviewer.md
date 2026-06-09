@@ -39,10 +39,12 @@ You ALWAYS receive the diff explicitly in the prompt. Do NOT run `git diff` to d
 ```
 
 If `diff` is empty or missing, run:
+
 ```bash
 git diff HEAD --stat
 git diff HEAD
 ```
+
 and use that. But this should not happen when called from task-executor.
 
 ---
@@ -74,12 +76,14 @@ STUB_PATTERNS = [
 ```
 
 **If ANY pattern is found:**
+
 1. Flag as **CRITICAL — STUB IMPLEMENTATION** under Axis 1 (Correctness)
 2. Report the exact line(s) where stub patterns appear
 3. Set Overall Assessment to **FAIL** immediately
 4. Do NOT proceed to other axes — the stub must be fixed first
 
 **Format:**
+
 ```
 🔴 CRITICAL (Axis 1 — Correctness): STUB IMPLEMENTATION DETECTED
    Line 47: return {"status": "pending", ...}
@@ -100,9 +104,11 @@ A stub that passes tests is worse than no implementation — it creates false co
 ## Review Protocol (5 Axes)
 
 ### Axis 1: Correctness
+
 **Question:** Does the code do what it's supposed to do?
 
 **Brain #6 (QA) Query:**
+
 ```python
 mcp__notebooklm-mcp__notebook_query(
     notebook_id="BRAIN_06_QA_DEVOPS",
@@ -129,6 +135,7 @@ Answer with:
 ```
 
 **What to look for:**
+
 - Logic bugs (off-by-one, null dereferences, type errors)
 - Missing edge cases (empty arrays, null/undefined, boundary conditions)
 - No input validation
@@ -136,14 +143,17 @@ Answer with:
 - Missing tests for critical paths
 
 **Severity mapping:**
+
 - CRITICAL: Bugs that break functionality
 - WARNING: Edge cases not handled
 - SUGGESTION: Additional test scenarios
 
 ### Axis 2: Readability
+
 **Question:** Is the code easy to understand?
 
 **Brain #7 (Growth) Query:**
+
 ```python
 mcp__notebooklm-mcp__notebook_query(
     notebook_id="BRAIN_07_GROWTH",
@@ -167,6 +177,7 @@ Answer with:
 ```
 
 **What to look for:**
+
 - Poor naming (single letters, misleading names)
 - Missing comments for non-obvious logic
 - Long functions (> 50 lines)
@@ -174,14 +185,17 @@ Answer with:
 - Magic numbers/strings without constants
 
 **Severity mapping:**
+
 - CRITICAL: Code is incomprehensible
 - WARNING: Confusing or misleading naming
 - SUGGESTION: Naming improvements
 
 ### Axis 3: Architecture
+
 **Question:** Does the code follow good architectural practices?
 
 **Brain #7 (Growth) Query:**
+
 ```python
 mcp__notebooklm-mcp__notebook_query(
     notebook_id="BRAIN_07_GROWTH",
@@ -205,6 +219,7 @@ Answer with:
 ```
 
 **What to look for:**
+
 - SRP violations (functions doing too much)
 - DRY violations (repeated code)
 - Tight coupling
@@ -212,14 +227,17 @@ Answer with:
 - Wrong patterns for the problem
 
 **Severity mapping:**
+
 - CRITICAL: Major architectural violation
 - WARNING: Pattern misuse
 - SUGGESTION: Refactoring opportunities
 
 ### Axis 4: Security
+
 **Question:** Are there vulnerabilities?
 
 **Brain #6 (QA) Query:**
+
 ```python
 mcp__notebooklm-mcp__notebook_query(
     notebook_id="BRAIN_06_QA_DEVOPS",
@@ -244,6 +262,7 @@ Answer with:
 ```
 
 **What to look for:**
+
 - SQL injection, command injection
 - XSS vulnerabilities
 - Missing auth/authorization
@@ -251,14 +270,17 @@ Answer with:
 - Missing headers (CORS, CSP)
 
 **Severity mapping:**
+
 - CRITICAL: OWASP Top 10 vulnerabilities
 - WARNING: Security hardening needed
 - SUGGESTION: Security best practices
 
 ### Axis 5: Performance
+
 **Question:** Is the code efficient?
 
 **Brain #7 (Growth) Query:**
+
 ```python
 mcp__notebooklm-mcp__notebook_query(
     notebook_id="BRAIN_07_GROWTH",
@@ -282,6 +304,7 @@ Answer with:
 ```
 
 **What to look for:**
+
 - N+1 queries
 - Missing database indexes
 - Memory leaks
@@ -289,6 +312,7 @@ Answer with:
 - No caching for expensive operations
 
 **Severity mapping:**
+
 - CRITICAL: Performance killer (N+1, O(n²) at scale)
 - WARNING: Inefficiency
 - SUGGESTION: Optimization opportunities
@@ -371,12 +395,15 @@ python3 .claude/commands/mm/db_write.py --type artifact \
 ## 1. Correctness
 
 ### CRITICAL
+
 - [ ] {issue} — Line {n} — {why_critical}
 
 ### WARNING
+
 - [ ] {issue} — Line {n} — {why_warning}
 
 ### SUGGESTION
+
 - [ ] {improvement} — Line {n} — {why_suggest}
 
 ---
@@ -384,12 +411,15 @@ python3 .claude/commands/mm/db_write.py --type artifact \
 ## 2. Readability
 
 ### CRITICAL
+
 - [ ] {confusing code} — Line {n}
 
 ### WARNING
+
 - [ ] {unclear name} — Line {n}
 
 ### SUGGESTION
+
 - [ ] {naming suggestion} — Line {n}
 
 ---
@@ -397,12 +427,15 @@ python3 .claude/commands/mm/db_write.py --type artifact \
 ## 3. Architecture
 
 ### CRITICAL
+
 - [ ] {violation} — Line {n} — {principle_violated}
 
 ### WARNING
+
 - [ ] {pattern suggestion} — Line {n}
 
 ### SUGGESTION
+
 - [ ] {refactoring opportunity} — Line {n}
 
 ---
@@ -410,12 +443,15 @@ python3 .claude/commands/mm/db_write.py --type artifact \
 ## 4. Security
 
 ### CRITICAL
+
 - [ ] {vulnerability} — Line {n} — {OWASP_category}
 
 ### WARNING
+
 - [ ] {risk} — Line {n}
 
 ### SUGGESTION
+
 - [ ] {hardening} — Line {n}
 
 ---
@@ -423,12 +459,15 @@ python3 .claude/commands/mm/db_write.py --type artifact \
 ## 5. Performance
 
 ### CRITICAL
+
 - [ ] {bottleneck} — Line {n} — {impact}
 
 ### WARNING
+
 - [ ] {inefficiency} — Line {n}
 
 ### SUGGESTION
+
 - [ ] {optimization} — Line {n}
 
 ---
@@ -436,14 +475,18 @@ python3 .claude/commands/mm/db_write.py --type artifact \
 ## Brain Consultations
 
 ### Brain #6 (QA) — Correctness
+
 **Confidence:** HIGH
 **Key Findings:**
+
 - {finding_1}
 - {finding_2}
 
 ### Brain #7 (Growth) — Readability
+
 **Confidence:** MEDIUM
-**Key Findings:
+\*\*Key Findings:
+
 - {finding_1}
 - {finding_2}
 
@@ -495,7 +538,9 @@ After completing the review, print:
 ## Severity Criteria
 
 ### CRITICAL 🔴
+
 **Must fix BEFORE commit**
+
 - Bugs that break functionality
 - OWASP Top 10 vulnerabilities
 - Performance killers (N+1, O(n²) at scale)
@@ -504,7 +549,9 @@ After completing the review, print:
 **Action:** Block commit until fixed
 
 ### WARNING 🟡
+
 **Should fix SOON**
+
 - Edge cases not handled
 - Incomplete error handling
 - Confusing code
@@ -514,7 +561,9 @@ After completing the review, print:
 **Action:** Allow commit with TODO comment
 
 ### SUGGESTION 🟢
+
 **Nice to have**
+
 - Naming improvements
 - Refactoring opportunities
 - Optimizations
@@ -559,12 +608,14 @@ mcp__plugin_engram_engram__mem_save(
 Perfect code doesn't exist — the goal is continuous improvement. Don't block a change because it isn't exactly how you would have written it. If it improves the codebase and follows the project's conventions, approve it.
 
 **What to approve:**
+
 - ✅ Code that works and follows conventions
 - ✅ Changes that reduce technical debt
 - ✅ Improvements even if not ideal
 - ✅ Pragmatic solutions with trade-offs acknowledged
 
 **What to block:**
+
 - 🔴 Code that introduces new problems
 - 🔴 Security vulnerabilities (OWASP Top 10)
 - 🔴 Performance regressions without justification
@@ -583,11 +634,13 @@ Small, focused changes are easier to review and safer:
 ```
 
 **When to suggest splitting:**
+
 - Change is > 500 lines and touches multiple concerns
 - Author included refactoring + feature work (separate these)
 - Change would take > 30 minutes to review thoroughly
 
 **Splitting strategies:**
+
 - **Stack:** Submit small change, then next based on it
 - **By file group:** Separate changes needing different reviewers
 - **Horizontal:** Shared code first, then consumers
@@ -599,13 +652,13 @@ Small, focused changes are easier to review and safer:
 
 Label every comment with severity so author knows what's required:
 
-| Prefix | Meaning | Author Action |
-|--------|---------|---------------|
-| *(no prefix)* | Required change | Must address before merge |
-| **Critical:** | Blocks merge | Security, data loss, broken functionality |
-| **Nit:** | Minor, optional | Author may ignore — formatting, style |
-| **Optional:** / **Consider:** | Suggestion | Worth considering but not required |
-| **FYI** | Informational only | No action needed — context for future |
+| Prefix                        | Meaning            | Author Action                             |
+| ----------------------------- | ------------------ | ----------------------------------------- |
+| _(no prefix)_                 | Required change    | Must address before merge                 |
+| **Critical:**                 | Blocks merge       | Security, data loss, broken functionality |
+| **Nit:**                      | Minor, optional    | Author may ignore — formatting, style     |
+| **Optional:** / **Consider:** | Suggestion         | Worth considering but not required        |
+| **FYI**                       | Informational only | No action needed — context for future     |
 
 **This prevents authors from treating ALL feedback as mandatory.**
 
@@ -616,6 +669,7 @@ Label every comment with severity so author knows what's required:
 ### Step 1: Understand Context
 
 Before reviewing code:
+
 - What is this change trying to accomplish?
 - What spec or task does it implement?
 - What is the expected behavior change?
@@ -623,6 +677,7 @@ Before reviewing code:
 ### Step 2: Review Tests First
 
 Tests reveal intent and coverage:
+
 - Do tests exist for the change?
 - Do they test behavior (not implementation)?
 - Are edge cases covered?
@@ -639,6 +694,7 @@ Use severity prefixes (Critical, Nit, Optional, etc).
 ### Step 5: Verify Verification
 
 Check author's verification story:
+
 - What tests were run?
 - Did build pass?
 - Manual testing done?
@@ -679,13 +735,13 @@ DEAD CODE IDENTIFIED:
 
 ## Common Anti-Patterns
 
-| Rationalization | Reality |
-|---|---|
-| "It works, that's good enough" | Working code that's unreadable/insecure creates compounding debt |
-| "I wrote it, so I know it's correct" | Authors are blind to their own assumptions |
-| "We'll clean it up later" | Later never comes. Require cleanup before merge |
-| "AI-generated code is probably fine" | AI code needs MORE scrutiny, not less |
-| "The tests pass, so it's good" | Tests are necessary but not sufficient |
+| Rationalization                      | Reality                                                          |
+| ------------------------------------ | ---------------------------------------------------------------- |
+| "It works, that's good enough"       | Working code that's unreadable/insecure creates compounding debt |
+| "I wrote it, so I know it's correct" | Authors are blind to their own assumptions                       |
+| "We'll clean it up later"            | Later never comes. Require cleanup before merge                  |
+| "AI-generated code is probably fine" | AI code needs MORE scrutiny, not less                            |
+| "The tests pass, so it's good"       | Tests are necessary but not sufficient                           |
 
 ---
 

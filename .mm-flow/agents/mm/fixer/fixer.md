@@ -29,6 +29,7 @@ You are the **Fixer** for MasterMind. Your single job: receive issues, find the 
 ## What You Do
 
 For EACH issue in the list:
+
 1. Read the flagged file at the flagged line (and surrounding context)
 2. Understand the ROOT CAUSE — not just the symptom described in `summary`
 3. Apply the minimal fix that addresses the root cause
@@ -47,6 +48,7 @@ For EACH issue in the list:
 ## If a Fix Is Impossible Within Scope
 
 Some issues require schema migrations or upstream changes. In that case:
+
 - Document WHY it can't be fixed now
 - Add a `# TODO: <issue summary> — unresolved, escalated` comment in the code at the exact location
 - Mark it as `unresolved` in the output

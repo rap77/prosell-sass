@@ -14,22 +14,22 @@
  * 4. Reset counter in beforeEach for test isolation
  */
 
-import { expect, test } from '@playwright/test';
-import { LeadFactory, AppointmentFactory } from '../factories/index';
+import { expect, test } from "@playwright/test";
+import { LeadFactory, AppointmentFactory } from "../factories/index";
 
 // Initialize factories
 const leadFactory = new LeadFactory();
 const aptFactory = new AppointmentFactory();
 
-test.describe('Refactored Smoke Tests - Lead Management', () => {
+test.describe("Refactored Smoke Tests - Lead Management", () => {
   test.beforeEach(async ({ page }) => {
     // Reset factory counters before each test
     leadFactory.reset();
     aptFactory.reset();
   });
 
-  test.describe('Lead Management - Independent Data Generation', () => {
-    test('should load leads list page with fresh data', async ({ page }) => {
+  test.describe("Lead Management - Independent Data Generation", () => {
+    test("should load leads list page with fresh data", async ({ page }) => {
       // BEFORE: Used MOCK_LEADS from shared fixture
       // await page.route('**/api/v1/leads**', async (route) => {
       //   await route.fulfill({
@@ -42,11 +42,11 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
       const freshLeads = leadFactory.createBatch(3);
 
       // Mock API with independent data
-      await page.route('**/api/v1/leads**', async (route) => {
-        if (route.request().method() === 'GET') {
+      await page.route("**/api/v1/leads**", async (route) => {
+        if (route.request().method() === "GET") {
           await route.fulfill({
             status: 200,
-            contentType: 'application/json',
+            contentType: "application/json",
             body: JSON.stringify({
               items: freshLeads,
               total: freshLeads.length,
@@ -58,34 +58,40 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
       });
 
       // Navigate to leads page
-      await page.goto('/vendedor/leads');
-      await page.waitForLoadState('networkidle');
+      await page.goto("/vendedor/leads");
+      await page.waitForLoadState("networkidle");
 
       // Verify page title
-      await expect(page.locator('h1')).toContainText(/leads/i);
+      await expect(page.locator("h1")).toContainText(/leads/i);
 
       // Verify leads list container
       const leadList = page.locator("[data-testid='lead-list']");
       await expect(leadList).toBeVisible();
 
       // Verify fresh data is displayed (not hardcoded MOCK_LEADS)
-      await expect(page.locator(`text=${freshLeads[0].buyer_name}`)).toBeVisible();
-      await expect(page.locator(`text=${freshLeads[1].buyer_name}`)).toBeVisible();
+      await expect(
+        page.locator(`text=${freshLeads[0].buyer_name}`),
+      ).toBeVisible();
+      await expect(
+        page.locator(`text=${freshLeads[1].buyer_name}`),
+      ).toBeVisible();
     });
 
-    test('should display lead information with independent data', async ({ page }) => {
+    test("should display lead information with independent data", async ({
+      page,
+    }) => {
       // Generate unique lead for this test
       const uniqueLead = leadFactory.create({
-        buyer_name: 'Unique Test Customer',
-        status: 'new',
+        buyer_name: "Unique Test Customer",
+        status: "new",
       });
 
       // Mock API
-      await page.route('**/api/v1/leads**', async (route) => {
-        if (route.request().method() === 'GET') {
+      await page.route("**/api/v1/leads**", async (route) => {
+        if (route.request().method() === "GET") {
           await route.fulfill({
             status: 200,
-            contentType: 'application/json',
+            contentType: "application/json",
             body: JSON.stringify({
               items: [uniqueLead],
               total: 1,
@@ -97,33 +103,39 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
       });
 
       // Navigate to leads page
-      await page.goto('/vendedor/leads');
-      await page.waitForLoadState('networkidle');
+      await page.goto("/vendedor/leads");
+      await page.waitForLoadState("networkidle");
 
       // Verify unique lead data is displayed
       await expect(page.locator(`text=${uniqueLead.buyer_name}`)).toBeVisible();
-      await expect(page.locator(`text=${uniqueLead.buyer_email}`)).toBeVisible();
+      await expect(
+        page.locator(`text=${uniqueLead.buyer_email}`),
+      ).toBeVisible();
 
       // Verify status badge (UI uses Spanish: "Nuevo")
-      const statusBadge = page.locator("[data-testid='lead-item']").first()
+      const statusBadge = page
+        .locator("[data-testid='lead-item']")
+        .first()
         .locator("[data-testid='status-badge']");
       await expect(statusBadge).toBeVisible();
-      await expect(statusBadge).toContainText('Nuevo');
+      await expect(statusBadge).toContainText("Nuevo");
     });
 
-    test('should update lead status with independent data', async ({ page }) => {
+    test("should update lead status with independent data", async ({
+      page,
+    }) => {
       // Generate unique lead for this test
-      const uniqueLead = leadFactory.createWithStatus('new');
+      const uniqueLead = leadFactory.createWithStatus("new");
 
       // Track current status across GET/PUT calls
       let currentStatus = uniqueLead.status;
 
       // Mock API — GET returns current status, PUT updates it
-      await page.route('**/api/v1/leads**', async (route) => {
-        if (route.request().method() === 'GET') {
+      await page.route("**/api/v1/leads**", async (route) => {
+        if (route.request().method() === "GET") {
           await route.fulfill({
             status: 200,
-            contentType: 'application/json',
+            contentType: "application/json",
             body: JSON.stringify({
               items: [{ ...uniqueLead, status: currentStatus }],
               total: 1,
@@ -131,14 +143,14 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
               offset: 0,
             }),
           });
-        } else if (route.request().method() === 'PUT') {
-          currentStatus = 'contacted';
+        } else if (route.request().method() === "PUT") {
+          currentStatus = "contacted";
           await route.fulfill({
             status: 200,
-            contentType: 'application/json',
+            contentType: "application/json",
             body: JSON.stringify({
               ...uniqueLead,
-              status: 'contacted',
+              status: "contacted",
               updated_at: new Date().toISOString(),
             }),
           });
@@ -146,60 +158,64 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
       });
 
       // Navigate to leads page
-      await page.goto('/vendedor/leads');
-      await page.waitForLoadState('networkidle');
+      await page.goto("/vendedor/leads");
+      await page.waitForLoadState("networkidle");
 
       // Find the first lead
       const firstLead = page.locator("[data-testid='lead-item']").first();
 
       // Verify initial status (UI uses Spanish: "Nuevo")
       const statusBadge = firstLead.locator("[data-testid='status-badge']");
-      await expect(statusBadge).toContainText('Nuevo');
+      await expect(statusBadge).toContainText("Nuevo");
 
       // Click the status dropdown trigger
       await firstLead.locator("[data-testid='status-dropdown']").click();
       await page.waitForTimeout(200);
 
       // Click on "Contactado" status (Spanish)
-      const contactedOption = page.locator("[role='menuitem']").filter({ hasText: 'Contactado' });
+      const contactedOption = page
+        .locator("[role='menuitem']")
+        .filter({ hasText: "Contactado" });
       await contactedOption.click();
 
       // Wait for the update then reload to see new status from mock
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState("networkidle");
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState("networkidle");
 
       // After reload, GET returns updated status "Contactado"
-      const reloadedBadge = page.locator("[data-testid='lead-item']").first()
+      const reloadedBadge = page
+        .locator("[data-testid='lead-item']")
+        .first()
         .locator("[data-testid='status-badge']");
-      await expect(reloadedBadge).toContainText('Contactado');
+      await expect(reloadedBadge).toContainText("Contactado");
     });
 
-    test('should search leads with independent data', async ({ page }) => {
+    test("should search leads with independent data", async ({ page }) => {
       // Generate multiple leads with different names
       const leads = [
-        leadFactory.create({ buyer_name: 'Alice Johnson' }),
-        leadFactory.create({ buyer_name: 'Bob Smith' }),
-        leadFactory.create({ buyer_name: 'Charlie Brown' }),
+        leadFactory.create({ buyer_name: "Alice Johnson" }),
+        leadFactory.create({ buyer_name: "Bob Smith" }),
+        leadFactory.create({ buyer_name: "Charlie Brown" }),
       ];
 
       // Mock API
-      await page.route('**/api/v1/leads**', async (route) => {
-        if (route.request().method() === 'GET') {
+      await page.route("**/api/v1/leads**", async (route) => {
+        if (route.request().method() === "GET") {
           const url = route.request().url();
           const searchParams = new URL(url).searchParams;
-          const search = searchParams.get('search');
+          const search = searchParams.get("search");
 
           let filteredLeads = leads;
           if (search) {
-            filteredLeads = leads.filter(lead =>
-              lead.buyer_name.toLowerCase().includes(search.toLowerCase())
+            filteredLeads = leads.filter((lead) =>
+              lead.buyer_name.toLowerCase().includes(search.toLowerCase()),
             );
           }
 
           await route.fulfill({
             status: 200,
-            contentType: 'application/json',
+            contentType: "application/json",
             body: JSON.stringify({
               items: filteredLeads,
               total: filteredLeads.length,
@@ -211,51 +227,55 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
       });
 
       // Navigate to leads page
-      await page.goto('/vendedor/leads');
-      await page.waitForLoadState('networkidle');
+      await page.goto("/vendedor/leads");
+      await page.waitForLoadState("networkidle");
 
       // Type in search box (UI placeholder is in Spanish: "Buscar por comprador...")
       const searchInput = page.locator("input[placeholder*='Buscar']");
-      await searchInput.fill('Alice');
+      await searchInput.fill("Alice");
 
       // Wait for search results
       await page.waitForTimeout(500);
 
       // Verify search input has the value
-      await expect(searchInput).toHaveValue('Alice');
+      await expect(searchInput).toHaveValue("Alice");
 
       // Verify filtered results (only Alice should be visible)
       const leadItems = page.locator("[data-testid='lead-item']");
       const count = await leadItems.count();
 
       if (count > 0) {
-        await expect(leadItems.first().locator('text=Alice Johnson')).toBeVisible();
+        await expect(
+          leadItems.first().locator("text=Alice Johnson"),
+        ).toBeVisible();
       }
     });
 
-    test('should filter leads by status with independent data', async ({ page }) => {
+    test("should filter leads by status with independent data", async ({
+      page,
+    }) => {
       // Generate leads with different statuses
       const leads = [
-        leadFactory.createWithStatus('new'),
-        leadFactory.createWithStatus('contacted'),
-        leadFactory.createWithStatus('qualified'),
+        leadFactory.createWithStatus("new"),
+        leadFactory.createWithStatus("contacted"),
+        leadFactory.createWithStatus("qualified"),
       ];
 
       // Mock API
-      await page.route('**/api/v1/leads**', async (route) => {
-        if (route.request().method() === 'GET') {
+      await page.route("**/api/v1/leads**", async (route) => {
+        if (route.request().method() === "GET") {
           const url = route.request().url();
           const searchParams = new URL(url).searchParams;
-          const status = searchParams.get('status');
+          const status = searchParams.get("status");
 
           let filteredLeads = leads;
           if (status) {
-            filteredLeads = leads.filter(lead => lead.status === status);
+            filteredLeads = leads.filter((lead) => lead.status === status);
           }
 
           await route.fulfill({
             status: 200,
-            contentType: 'application/json',
+            contentType: "application/json",
             body: JSON.stringify({
               items: filteredLeads,
               total: filteredLeads.length,
@@ -267,11 +287,11 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
       });
 
       // Navigate to leads page
-      await page.goto('/vendedor/leads');
-      await page.waitForLoadState('networkidle');
+      await page.goto("/vendedor/leads");
+      await page.waitForLoadState("networkidle");
 
       // Click the "Nuevos" status pill button (LeadList uses pill filters, not a dropdown)
-      const nuevosPill = page.locator("button").filter({ hasText: 'Nuevos' });
+      const nuevosPill = page.locator("button").filter({ hasText: "Nuevos" });
       await nuevosPill.click();
 
       // Wait for filter to apply
@@ -282,18 +302,22 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
       const count = await leadItems.count();
 
       if (count > 0) {
-        const firstBadge = leadItems.first().locator("[data-testid='status-badge']");
-        await expect(firstBadge).toContainText('Nuevo'); // Spanish
+        const firstBadge = leadItems
+          .first()
+          .locator("[data-testid='status-badge']");
+        await expect(firstBadge).toContainText("Nuevo"); // Spanish
       }
     });
   });
 
-  test.describe('Complete Lead Flow - Independent Data', () => {
-    test('should create lead and schedule appointment with fresh data', async ({ page }) => {
+  test.describe("Complete Lead Flow - Independent Data", () => {
+    test("should create lead and schedule appointment with fresh data", async ({
+      page,
+    }) => {
       // Generate independent lead and appointment data
       const flowLead = leadFactory.create({
-        buyer_name: 'Flow Test Customer',
-        source: 'manual',
+        buyer_name: "Flow Test Customer",
+        source: "manual",
       });
 
       const flowAppointment = aptFactory.createMonday();
@@ -301,18 +325,18 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
       const mockDealers = [
         {
           id: flowAppointment.dealer_id,
-          name: 'Flow Test Dealer',
-          email: 'dealer@example.com',
-          phone: '+1-555-7777',
+          name: "Flow Test Dealer",
+          email: "dealer@example.com",
+          phone: "+1-555-7777",
         },
       ];
 
       // Mock API endpoints with fresh data
-      await page.route('**/api/v1/leads**', async (route) => {
-        if (route.request().method() === 'GET') {
+      await page.route("**/api/v1/leads**", async (route) => {
+        if (route.request().method() === "GET") {
           await route.fulfill({
             status: 200,
-            contentType: 'application/json',
+            contentType: "application/json",
             body: JSON.stringify({
               items: [flowLead],
               total: 1,
@@ -320,23 +344,23 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
               offset: 0,
             }),
           });
-        } else if (route.request().method() === 'PUT') {
+        } else if (route.request().method() === "PUT") {
           await route.fulfill({
             status: 200,
-            contentType: 'application/json',
+            contentType: "application/json",
             body: JSON.stringify({
               ...flowLead,
-              status: 'contacted',
+              status: "contacted",
               updated_at: new Date().toISOString(),
             }),
           });
         }
       });
 
-      await page.route('**/api/**/dealer*', async (route) => {
+      await page.route("**/api/**/dealer*", async (route) => {
         await route.fulfill({
           status: 200,
-          contentType: 'application/json',
+          contentType: "application/json",
           body: JSON.stringify({
             items: mockDealers,
             total: mockDealers.length,
@@ -346,26 +370,26 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
         });
       });
 
-      await page.route('**/api/**/appointment*', async (route) => {
-        if (route.request().method() === 'POST') {
+      await page.route("**/api/**/appointment*", async (route) => {
+        if (route.request().method() === "POST") {
           await route.fulfill({
             status: 201,
-            contentType: 'application/json',
+            contentType: "application/json",
             body: JSON.stringify({
-              id: aptFactory.generateId('apt'),
+              id: aptFactory.generateId("apt"),
               dealer_id: flowAppointment.dealer_id,
               lead_id: flowLead.id,
               scheduled_at: flowAppointment.scheduled_at,
-              status: 'scheduled',
-              notes: 'Test appointment',
+              status: "scheduled",
+              notes: "Test appointment",
             }),
           });
         }
       });
 
       // Navigate to leads page
-      await page.goto('/vendedor/leads');
-      await page.waitForLoadState('networkidle');
+      await page.goto("/vendedor/leads");
+      await page.waitForLoadState("networkidle");
 
       // Verify lead is displayed (fresh data, not MOCK_LEADS)
       await expect(page.locator(`text=${flowLead.buyer_name}`)).toBeVisible();
@@ -373,38 +397,52 @@ test.describe('Refactored Smoke Tests - Lead Management', () => {
       // Click on lead to view details
       const firstLead = page.locator("[data-testid='lead-item']").first();
       await firstLead.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState("networkidle");
 
       // Click "Agendar Cita" button if visible
       const scheduleButton = page.locator('button:has-text("Agendar Cita")');
-      if (await scheduleButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+      if (
+        await scheduleButton.isVisible({ timeout: 3000 }).catch(() => false)
+      ) {
         await scheduleButton.click();
         await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
 
         // Fill out appointment form
-        await page.click('#dealer_id');
+        await page.click("#dealer_id");
         await page.waitForSelector('[role="listbox"]');
-        await page.locator("[role='option']").filter({ hasText: 'Flow Test Dealer' }).click();
+        await page
+          .locator("[role='option']")
+          .filter({ hasText: "Flow Test Dealer" })
+          .click();
 
         // Select Monday at 10 AM
         const monday = new Date();
         const daysUntilMonday = (1 - monday.getDay() + 7) % 7 || 7;
         monday.setDate(monday.getDate() + daysUntilMonday);
-        const dateStr = monday.toISOString().split('T')[0];
+        const dateStr = monday.toISOString().split("T")[0];
         await page.fill('input[type="date"]', dateStr);
 
-        await page.click('#time');
+        await page.click("#time");
         await page.waitForSelector('[role="listbox"]');
-        await page.locator("[role='option']").filter({ hasText: '10:00' }).first().click();
+        await page
+          .locator("[role='option']")
+          .filter({ hasText: "10:00" })
+          .first()
+          .click();
 
         // Submit form
         await page.click('button[type="submit"]');
 
         // Wait for success
-        await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 });
+        await page.waitForSelector('[role="dialog"]', {
+          state: "hidden",
+          timeout: 5000,
+        });
 
         // Verify success message
-        const successMessage = page.locator('text=appointment created, text=cita creada');
+        const successMessage = page.locator(
+          "text=appointment created, text=cita creada",
+        );
         await expect(successMessage).toBeVisible({ timeout: 3000 });
       }
 

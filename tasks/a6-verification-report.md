@@ -32,6 +32,7 @@ Se creó un test E2E completo para verificar los 6 criterios de Phase A6, pero s
 7. **BONUS**: Quick smoke test of all 6 criteria
 
 **Test Results**:
+
 - ✅ 1/7 passed (CRITERION 6 - badge component)
 - ❌ 6/7 failed (routing issues)
 
@@ -44,6 +45,7 @@ Se creó un test E2E completo para verificar los 6 criterios de Phase A6, pero s
 **Problem**: Global setup crea usuario con role "manager" pero la ruta `/dealer/appointments` requiere role "dealer".
 
 **Evidence**:
+
 ```
 [GLOBAL SETUP] Modified user role to: manager
 [WebServer] GET /manager/team 404
@@ -58,12 +60,14 @@ Se creó un test E2E completo para verificar los 6 criterios de Phase A6, pero s
 **Problem**: La ruta `/dealer/appointments` no existe o redirige a `/manager/team` (que es 404).
 
 **Evidence**:
+
 ```
 Expected pattern: /\/dealer\/appointments/
 Received string: "http://localhost:3999/manager/team"
 ```
 
 **Files Checked**:
+
 - ✅ `apps/web/src/app/(dealer)/appointments/page.tsx` EXISTS
 - ✅ Componente `CalendarView` EXISTS
 - ✅ Componente `AppointmentDetailsModal` EXISTS
@@ -163,11 +167,13 @@ const modifiedUserData = {
 **Problem**: `/dealer/appointments` no es accesible.
 
 **Solution**: Verificar si existe una ruta alternativa:
+
 - `/vendedor/appointments`
 - `/manager/appointments`
 - `/dashboard/appointments`
 
 **Investigation Needed**:
+
 ```bash
 find apps/web/src/app -type f -path "*/appointments/page.tsx"
 ```
@@ -179,13 +185,17 @@ find apps/web/src/app -type f -path "*/appointments/page.tsx"
 **Problem**: Auth setup es complejo y depende de múltiples factores.
 
 **Solution**: Crear test con auth mockeado:
+
 ```typescript
 test.beforeEach(async ({ page }) => {
   // Mock auth store
   await page.addInitScript(() => {
-    localStorage.setItem("auth", JSON.stringify({
-      user: { id: "test-dealer", role: "dealer" }
-    }));
+    localStorage.setItem(
+      "auth",
+      JSON.stringify({
+        user: { id: "test-dealer", role: "dealer" },
+      }),
+    );
   });
 });
 ```
@@ -254,9 +264,11 @@ test.beforeEach(async ({ page }) => {
 ## Files Modified/Created
 
 ### Created
+
 - `tests/e2e/specs/a6-verification.spec.ts` (350 lines)
 
 ### Verified (Existing)
+
 - `apps/web/src/app/(dealer)/appointments/page.tsx`
 - `apps/web/src/components/appointments/CalendarView.tsx`
 - `apps/web/src/components/appointments/AppointmentCard.tsx`
@@ -264,6 +276,7 @@ test.beforeEach(async ({ page }) => {
 - `apps/web/src/lib/api/appointments.ts`
 
 ### Needs Update
+
 - `tests/e2e/global-setup.ts` (change role from "manager" to "dealer")
 
 ---

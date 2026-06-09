@@ -96,7 +96,8 @@ export async function interceptOAuthNavigation(
  * Validate state token format (UUID)
  */
 export function isValidStateToken(state: string): boolean {
-  const uuidRegex = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+  const uuidRegex =
+    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
   return uuidRegex.test(state);
 }
 
@@ -117,7 +118,10 @@ export function validateRequiredScopes(
  * This intercepts the OAuth authorize endpoint and returns a mock authorization URL
  * instead of redirecting to the real OAuth provider.
  */
-export function setupMockOAuthRoute(page: Page, provider: "google" | "facebook"): void {
+export function setupMockOAuthRoute(
+  page: Page,
+  provider: "google" | "facebook",
+): void {
   const config = MOCK_OAUTH_CONFIG[provider];
 
   // Intercept the backend OAuth authorize endpoint

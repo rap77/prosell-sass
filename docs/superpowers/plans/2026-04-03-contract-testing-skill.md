@@ -13,6 +13,7 @@
 ## Task 1: Create Skill Directory Structure
 
 **Files:**
+
 - Create: `.skills/contract-testing/SKILL.md`
 - Create: `.skills/contract-testing/config.yaml`
 - Create: `.skills/contract-testing/layers/layer1-openapi.md`
@@ -40,6 +41,7 @@ Expected: Directory listing showing layers/, templates/, adapters/ subdirectorie
 
 ```markdown
 <!-- .skills/contract-testing/SKILL.md -->
+
 # Contract Testing Skill
 
 Auto-generates contract tests for API endpoints to prevent and diagnose backend-frontend contract mismatches.
@@ -104,9 +106,9 @@ layer_selection:
 test_data:
   vin_decode:
     valid_vins:
-      - "2GNALBEK8H1615946"  # 2017 Buick Enclave
-      - "1HGCM82633A004351"  # 2023 Honda Accord
-      - "1F1F1500000010001"  # Invalid checksum
+      - "2GNALBEK8H1615946" # 2017 Buick Enclave
+      - "1HGCM82633A004351" # 2023 Honda Accord
+      - "1F1F1500000010001" # Invalid checksum
 ```
 
 Run: `cat .skills/contract-testing/config.yaml`
@@ -124,6 +126,7 @@ git commit -m "feat(contract-testing): create skill directory structure and conf
 ## Task 2: Implement Endpoint Analyzer
 
 **Files:**
+
 - Create: `.skills/contract-testing/analyzer.py`
 - Test: `tests/unit/test_analyzer.py`
 
@@ -291,6 +294,7 @@ git commit -m "feat(contract-testing): implement endpoint analyzer with layer re
 ## Task 3: Implement Layer 1 - OpenAPI Validator
 
 **Files:**
+
 - Create: `.skills/contract-testing/layers/layer1-openapi.md`
 - Create: `.skills/contract-testing/templates/openapi_test.py.j2`
 - Create: `apps/api/tests/contract/openapi/test_organizations_schema.py`
@@ -299,6 +303,7 @@ git commit -m "feat(contract-testing): implement endpoint analyzer with layer re
 
 ```markdown
 <!-- .skills/contract-testing/layers/layer1-openapi.md -->
+
 # Layer 1: OpenAPI Schema Validator
 
 ## Purpose
@@ -408,6 +413,7 @@ git commit -m "feat(contract-testing): implement Layer 1 OpenAPI validator"
 ## Task 4: Implement Layer 2 - Integration Test Generator
 
 **Files:**
+
 - Create: `.skills/contract-testing/layers/layer2-integration.md`
 - Create: `.skills/contract-testing/templates/integration_test.py.j2`
 - Create: `apps/api/tests/contract/integration/test_vin_decode_contract.py`
@@ -417,6 +423,7 @@ git commit -m "feat(contract-testing): implement Layer 1 OpenAPI validator"
 
 ```markdown
 <!-- .skills/contract-testing/layers/layer2-integration.md -->
+
 # Layer 2: Integration + Contract Validation
 
 ## Purpose
@@ -433,6 +440,7 @@ Full format validation for endpoints with external APIs or data normalization. C
 ## Implementation
 
 Uses real HTTP client to call endpoint, then validates:
+
 1. Response structure (Pydantic)
 2. Field formats (lowercase, UPPERCASE, specific values)
 
@@ -619,6 +627,7 @@ Expected: Test FAILS (normalizer not connected yet)
 - [ ] **Step 4: Fix the bug - connect normalizer in decode_vin.py**
 
 Read the current implementation:
+
 ```bash
 cat apps/api/src/prosell/application/use_cases/vehicle/decode_vin.py | head -100
 ```
@@ -626,6 +635,7 @@ cat apps/api/src/prosell/application/use_cases/vehicle/decode_vin.py | head -100
 Expected: See that normalizer exists but is not being called
 
 Modify the file to use normalizer:
+
 ```python
 # In apps/api/src/prosell/application/use_cases/vehicle/decode_vin.py
 # Around line 79, in the vehicle_data construction:
@@ -670,6 +680,7 @@ git commit -m "feat(contract-testing): implement Layer 2 integration test + fix 
 ## Task 5: Implement Layer 3 - Schema Matching
 
 **Files:**
+
 - Create: `.skills/contract-testing/layers/layer3-schema.md`
 - Create: `apps/api/tests/contract/schema_matching/test_vehicle_dto_matching.py`
 - Create: `.skills/contract-testing/schema_extractor.py`
@@ -678,6 +689,7 @@ git commit -m "feat(contract-testing): implement Layer 2 integration test + fix 
 
 ```markdown
 <!-- .skills/contract-testing/layers/layer3-schema.md -->
+
 # Layer 3: Schema Matching
 
 ## Purpose
@@ -807,12 +819,13 @@ git commit -m "feat(contract-testing): implement Layer 3 schema matching"
 ## Task 6: Update Project Documentation
 
 **Files:**
+
 - Modify: `CLAUDE.md`
 - Create: `.skills/contract-testing/README.md`
 
 - [ ] **Step 1: Create skill README**
 
-```markdown
+````markdown
 # Contract Testing Skill
 
 Auto-generates contract tests for API endpoints.
@@ -851,6 +864,7 @@ Usuario: "Claude, hay un bug en /decode-vin. Usa contract testing."
 
 # Step 5: Test passes ✅
 ```
+````
 
 ## Files
 
@@ -858,7 +872,8 @@ Usuario: "Claude, hay un bug en /decode-vin. Usa contract testing."
 - `.skills/contract-testing/analyzer.py` - Endpoint analyzer
 - `.skills/contract-testing/templates/` - Jinja2 templates
 - `apps/api/tests/contract/` - Generated contract tests
-```
+
+````
 
 - [ ] **Step 2: Update CLAUDE.md**
 
@@ -868,7 +883,7 @@ Add to `CLAUDE.md` under "## Skills (Auto-load based on context)":
 | Context | Read this file |
 | ------- | -------------- |
 | API contract bugs, testing backend-frontend integration | `~/.claude/skills/contract-testing/SKILL.md` |
-```
+````
 
 - [ ] **Step 3: Commit documentation updates**
 
@@ -882,6 +897,7 @@ git commit -m "docs(contract-testing): add skill documentation and CLAUDE.md ref
 ## Task 7: Save Implementation to Memory
 
 **Files:**
+
 - Memory: `engram` (automatic via mem_save)
 
 - [ ] **Step 1: Save implementation summary to engram**
@@ -914,6 +930,7 @@ git commit -m "docs(contract-testing): add skill documentation and CLAUDE.md ref
 ## Files Created
 
 **Skill Files:**
+
 - `.skills/contract-testing/SKILL.md`
 - `.skills/contract-testing/config.yaml`
 - `.skills/contract-testing/analyzer.py`
@@ -922,6 +939,7 @@ git commit -m "docs(contract-testing): add skill documentation and CLAUDE.md ref
 - `.skills/contract-testing/templates/*.j2`
 
 **Test Files:**
+
 - `apps/api/tests/contract/openapi/test_organizations_schema.py`
 - `apps/api/tests/contract/integration/test_vin_decode_contract.py`
 - `apps/api/tests/contract/schema_matching/test_vehicle_dto_matching.py`
@@ -993,12 +1011,12 @@ Expected: `make` field returns "buick" (lowercase), not "BUICK"
 
 ## Success Criteria
 
-| Criterion | Target | Status |
-|-----------|--------|--------|
-| Skill generates tests | < 2 minutes | ⏳ Verify |
-| Bug detection time | < 10 minutes | ⏳ Verify |
-| VIN decode bug fixed | Normalized format | ⏳ Verify |
-| Test suite passes | 100% | ⏳ Verify |
+| Criterion              | Target             | Status    |
+| ---------------------- | ------------------ | --------- |
+| Skill generates tests  | < 2 minutes        | ⏳ Verify |
+| Bug detection time     | < 10 minutes       | ⏳ Verify |
+| VIN decode bug fixed   | Normalized format  | ⏳ Verify |
+| Test suite passes      | 100%               | ⏳ Verify |
 | Documentation complete | README + CLAUDE.md | ⏳ Verify |
 
 ---

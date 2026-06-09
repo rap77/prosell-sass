@@ -39,11 +39,11 @@ El foco en UI premium (MagicUI, Cmd+K) está **mitigado** porque en este mercado
 
 ### 4. Priority Gaps
 
-| Gap | Priority | Rationale |
-|-----|----------|-----------|
-| **Vehicle Status Visibility** | P0 | Adición Crítica del Brain #1 — sin badges (Online/Vendido) el DataGrid pierde utilidad |
-| **Mobile Camera Direct Upload** | P0 | Vital para sellers que caminan el lot — money-generating action |
-| **Analytics en DataGrid** | P1/P2 | Diferencial para Manager, vanity metric para Seller básico |
+| Gap                             | Priority | Rationale                                                                              |
+| ------------------------------- | -------- | -------------------------------------------------------------------------------------- |
+| **Vehicle Status Visibility**   | P0       | Adición Crítica del Brain #1 — sin badges (Online/Vendido) el DataGrid pierde utilidad |
+| **Mobile Camera Direct Upload** | P0       | Vital para sellers que caminan el lot — money-generating action                        |
+| **Analytics en DataGrid**       | P1/P2    | Diferencial para Manager, vanity metric para Seller básico                             |
 
 ### 5. Cmd+K Over-engineering ✅ **Validated**
 
@@ -51,7 +51,7 @@ Para <20 autos es over-engineering en búsqueda, pero **escalable** y necesario 
 
 ### 6. Missing Features
 
-**Falta visibilidad sobre sincronización con Marketplaces externos** (Facebook, MercadoLibre). El status "Online" es vago sin especificar *dónde* está publicado.
+**Falta visibilidad sobre sincronización con Marketplaces externos** (Facebook, MercadoLibre). El status "Online" es vago sin especificar _dónde_ está publicado.
 
 ---
 
@@ -88,6 +88,7 @@ Para <20 autos es over-engineering en búsqueda, pero **escalable** y necesario 
 **⚠️ Proceder a planning con ajustes menores.**
 
 No hay product blockers totales, pero se recomienda:
+
 1. Mover Bulk Upload al MVP (o versión simplificada)
 2. Redefinir North Star hacia velocidad de publicación
 3. Aclarar status de publicación con confirmación externa

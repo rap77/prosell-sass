@@ -57,7 +57,9 @@ export class VerifyEmailPage extends BasePage {
    */
   async verifySuccessMessage(): Promise<void> {
     // Spanish success heading: "¡Email verificado!"
-    const successMessage = this.page.locator("h1").filter({ hasText: /email verificado/i });
+    const successMessage = this.page
+      .locator("h1")
+      .filter({ hasText: /email verificado/i });
     await expect(successMessage).toBeVisible();
   }
 

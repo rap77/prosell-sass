@@ -16,6 +16,7 @@ A multi-layer contract testing skill that prevents and diagnoses API contract mi
 - **Layer 3**: Schema Matching (DTO ↔ TypeScript drift detection)
 
 **Business Value**:
+
 - Reduces debugging time from 2-3 hours to < 10 minutes
 - Prevents contract bugs from reaching staging
 - Provides clear diagnostic messages when contracts fail
@@ -28,6 +29,7 @@ A multi-layer contract testing skill that prevents and diagnoses API contract mi
 ### Problem Statement
 
 The ProSell SaaS project experienced a contract bug where:
+
 - Backend returns normalized data: `"chevrolet"` (lowercase)
 - Frontend expects: `"chevrolet"` (lowercase)
 - But without integration tests, there was no validation that the normalizer was connected
@@ -36,15 +38,15 @@ The ProSell SaaS project experienced a contract bug where:
 
 ### Current State
 
-| Aspect | Status |
-|--------|--------|
-| Backend DTOs | ✅ 41 Pydantic models in `/application/dto/` |
-| Frontend Types | ⚠️ Scattered, no centralization |
-| Type Sharing | ❌ None (manual duplication) |
-| OpenAPI Docs | ✅ Available in dev, disabled in prod |
-| Unit Tests | ✅ 355+ backend tests |
-| Integration Tests | ⚠️ 103 tests, gaps in critical endpoints |
-| E2E Tests | ✅ 65 Playwright tests |
+| Aspect            | Status                                       |
+| ----------------- | -------------------------------------------- |
+| Backend DTOs      | ✅ 41 Pydantic models in `/application/dto/` |
+| Frontend Types    | ⚠️ Scattered, no centralization              |
+| Type Sharing      | ❌ None (manual duplication)                 |
+| OpenAPI Docs      | ✅ Available in dev, disabled in prod        |
+| Unit Tests        | ✅ 355+ backend tests                        |
+| Integration Tests | ⚠️ 103 tests, gaps in critical endpoints     |
+| E2E Tests         | ✅ 65 Playwright tests                       |
 
 ### Design Decisions
 
@@ -90,14 +92,14 @@ The ProSell SaaS project experienced a contract bug where:
 
 ### Layer Selection Matrix
 
-| Endpoint Characteristics | Recommended Layer | Rationale |
-|-------------------------|-------------------|-----------|
-| Simple CRUD (GET/POST) | Layer 1 | Structure validation sufficient |
-| External API integration | Layer 2 | Need real API test + format validation |
-| Data normalization | Layer 2 | Format critical (e.g., VIN decode) |
-| Many fields (10+) | Layer 3 | Drift detection valuable |
-| Business critical (auth, payment) | Layer 2 | Runtime validation necessary |
-| New endpoint (no tests) | Layer 2 | Start with full coverage |
+| Endpoint Characteristics          | Recommended Layer | Rationale                              |
+| --------------------------------- | ----------------- | -------------------------------------- |
+| Simple CRUD (GET/POST)            | Layer 1           | Structure validation sufficient        |
+| External API integration          | Layer 2           | Need real API test + format validation |
+| Data normalization                | Layer 2           | Format critical (e.g., VIN decode)     |
+| Many fields (10+)                 | Layer 3           | Drift detection valuable               |
+| Business critical (auth, payment) | Layer 2           | Runtime validation necessary           |
+| New endpoint (no tests)           | Layer 2           | Start with full coverage               |
 
 ---
 
@@ -129,6 +131,7 @@ The ProSell SaaS project experienced a contract bug where:
 **Purpose**: Inspect endpoint and recommend layer
 
 **Algorithm**:
+
 ```python
 def analyze_endpoint(endpoint_path: str) -> LayerRecommendation:
     """
@@ -167,6 +170,7 @@ def analyze_endpoint(endpoint_path: str) -> LayerRecommendation:
 #### 2. Layer 1: OpenAPI Validator
 
 **Implementation**:
+
 ```python
 # tests/contract/test_openapi_schema.py
 
@@ -204,6 +208,7 @@ class TestOpenAPIContract:
 #### 3. Layer 2: Integration Test Generator
 
 **Template** (Jinja2):
+
 ```python
 # templates/integration_test.py.j2
 
@@ -267,6 +272,7 @@ class Test{{ endpoint_name }}Contract:
 ```
 
 **Example Usage** (VIN Decode):
+
 ```python
 # Generated: tests/integration/api/test_vin_decode_contract.py
 
@@ -308,6 +314,7 @@ class TestVinDecodeContract:
 #### 4. Layer 3: Schema Matching
 
 **Implementation**:
+
 ```python
 # tests/contract/test_schema_matching.py
 
@@ -374,6 +381,7 @@ if (
 ```
 
 **Suggestion message**:
+
 ```
 🔍 Detected: Endpoint /api/v1/vehicles/decode-vin has no integration test.
 
@@ -480,9 +488,11 @@ apps/api/tests/
 ## Implementation Plan
 
 ### Phase 1: Skill Framework + Layer 1 (OpenAPI)
+
 **Duration**: 2-3 hours
 
 **Tasks**:
+
 1. Create `.skills/contract-testing/` directory structure
 2. Implement `SKILL.md` with workflow logic
 3. Create endpoint analyzer (detects characteristics)
@@ -491,13 +501,16 @@ apps/api/tests/
 6. Test with simple CRUD endpoint (e.g., `/api/v1/organizations`)
 
 **Deliverables**:
+
 - Working skill that generates OpenAPI validation tests
 - Test file: `tests/contract/openapi/test_organizations_schema.py`
 
 ### Phase 2: Layer 2 (Integration Test Generator)
+
 **Duration**: 3-4 hours
 
 **Tasks**:
+
 1. Create integration test template (Jinja2)
 2. Implement contract validation logic (format checks)
 3. Add test data helpers (valid VINs, users, etc.)
@@ -507,14 +520,17 @@ apps/api/tests/
 7. Verify test passes
 
 **Deliverables**:
+
 - Working Layer 2 implementation
 - Test file: `tests/contract/integration/test_vin_decode_contract.py`
 - Bug fix: Normalizer connected in `decode_vin.py`
 
 ### Phase 3: Layer 3 (Schema Matching)
+
 **Duration**: 2-3 hours
 
 **Tasks**:
+
 1. Implement Pydantic field extractor
 2. Implement TypeScript type parser
 3. Create schema matching algorithm
@@ -522,31 +538,38 @@ apps/api/tests/
 5. Run test, verify it detects drift
 
 **Deliverables**:
+
 - Working Layer 3 implementation
 - Test file: `tests/contract/schema_matching/test_vehicle_dto_matching.py`
 
 ### Phase 4: Documentation & Memory
+
 **Duration**: 30 minutes
 
 **Tasks**:
+
 1. Write skill documentation (SKILL.md)
 2. Save implementation details to engram
 3. Create usage examples
 4. Update CLAUDE.md with skill reference
 
 **Deliverables**:
+
 - Complete skill documentation
 - Engram memory: `contract-testing-skill-implementation-2026-04-03`
 
 ### Phase 5: CI Integration (Optional)
+
 **Duration**: 1-2 hours
 
 **Tasks**:
+
 1. Add contract tests to CI pipeline
 2. Configure test execution order (contract → unit → e2e)
 3. Add contract test coverage reporting
 
 **Deliverables**:
+
 - CI workflow update
 - Contract test coverage badge
 
@@ -588,17 +611,17 @@ thresholds:
 layer_selection:
   # Priority order for layer selection
   priority:
-    - integration  # Layer 2 (highest priority)
-    - schema       # Layer 3
-    - openapi      # Layer 1
+    - integration # Layer 2 (highest priority)
+    - schema # Layer 3
+    - openapi # Layer 1
 
 test_data:
   # Known test data for endpoints
   vin_decode:
     valid_vins:
-      - "2GNALBEK8H1615946"  # 2017 Buick Enclave
-      - "1HGCM82633A004351"  # 2023 Honda Accord
-      - "1F1F1500000010001"  # Invalid checksum (negative test)
+      - "2GNALBEK8H1615946" # 2017 Buick Enclave
+      - "1HGCM82633A004351" # 2023 Honda Accord
+      - "1F1F1500000010001" # Invalid checksum (negative test)
 
   oauth:
     test_providers:
@@ -612,12 +635,12 @@ test_data:
 
 ### Technical Metrics
 
-| Metric | Target | How to Measure |
-|--------|--------|----------------|
-| Bug detection time | < 10 minutes | Time from bug report to root cause identified |
-| Test generation time | < 2 minutes | Time from invocation to test file created |
-| Test execution time | < 5 minutes | Contract test suite execution time |
-| Contract bug leakage | 0 in staging | No contract bugs reach staging environment |
+| Metric               | Target       | How to Measure                                |
+| -------------------- | ------------ | --------------------------------------------- |
+| Bug detection time   | < 10 minutes | Time from bug report to root cause identified |
+| Test generation time | < 2 minutes  | Time from invocation to test file created     |
+| Test execution time  | < 5 minutes  | Contract test suite execution time            |
+| Contract bug leakage | 0 in staging | No contract bugs reach staging environment    |
 
 ### Qualitative Metrics
 
@@ -630,13 +653,13 @@ test_data:
 
 ## Risks & Mitigations
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Test execution too slow | Medium | Layer 1 for fast feedback, Layer 2 for critical paths only |
-| False positives (over-strict validation) | Medium | User confirmation before generating tests, easy exclusions |
-| Template inflexibility | Low | Jinja2 templates allow customization |
-| TypeScript parsing complexity | Medium | Start with manual type definition, add parser later |
-| Maintenance burden | Low | Leverage existing test infrastructure, templates are reusable |
+| Risk                                     | Impact | Mitigation                                                    |
+| ---------------------------------------- | ------ | ------------------------------------------------------------- |
+| Test execution too slow                  | Medium | Layer 1 for fast feedback, Layer 2 for critical paths only    |
+| False positives (over-strict validation) | Medium | User confirmation before generating tests, easy exclusions    |
+| Template inflexibility                   | Low    | Jinja2 templates allow customization                          |
+| TypeScript parsing complexity            | Medium | Start with manual type definition, add parser later           |
+| Maintenance burden                       | Low    | Leverage existing test infrastructure, templates are reusable |
 
 ---
 

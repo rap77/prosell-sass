@@ -1,477 +1,655 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProSell — Invitá a tu equipo</title>
-<link rel="stylesheet" href="../colors_and_type.css">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<style>
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body {
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-  position: relative;
-  overflow-x: hidden;
-}
-body::before {
-  content: "";
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background:
-    radial-gradient(ellipse 50% 35% at 50% 0%, rgba(30,95,212,0.10), transparent 60%),
-    radial-gradient(ellipse 40% 30% at 20% 100%, rgba(13,27,110,0.18), transparent 60%);
-}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ProSell — Invitá a tu equipo</title>
+    <link rel="stylesheet" href="../colors_and_type.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg-base);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        background:
+          radial-gradient(
+            ellipse 50% 35% at 50% 0%,
+            rgba(30, 95, 212, 0.1),
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse 40% 30% at 20% 100%,
+            rgba(13, 27, 110, 0.18),
+            transparent 60%
+          );
+      }
 
-/* Top bar */
-.topbar {
-  position: sticky; top: 0; z-index: 10;
-  background: rgba(6,13,36,0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border-subtle);
-}
-.topbar-inner {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 32px;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 18px 32px;
-}
-.tb-logo {
-  display: inline-flex; align-items: center; gap: 10px;
-  font-size: 17px; font-weight: 700;
-  color: var(--text-primary);
-  text-decoration: none;
-}
-.tb-logo img { height: 26px; width: auto; }
+      /* Top bar */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(6, 13, 36, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .topbar-inner {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 32px;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 18px 32px;
+      }
+      .tb-logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-primary);
+        text-decoration: none;
+      }
+      .tb-logo img {
+        height: 26px;
+        width: auto;
+      }
 
-.tb-center {
-  display: flex; flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  max-width: 560px;
-  width: 100%;
-  margin: 0 auto;
-}
-.tb-step-label {
-  font-size: 13px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-.tb-step-label b { color: var(--cyan); font-weight: 600; }
-.tb-progress {
-  width: 100%; height: 4px;
-  border-radius: 100px;
-  background: rgba(77,184,255,0.10);
-  overflow: hidden;
-}
-.tb-progress-fill {
-  height: 100%; width: 100%;
-  border-radius: 100px;
-  background: linear-gradient(90deg, var(--cyan), var(--cyan-hover));
-  box-shadow: 0 0 12px rgba(77,184,255,0.40);
-}
-.tb-skip {
-  justify-self: end;
-  font-size: 12px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: color 180ms;
-}
-.tb-skip:hover { color: var(--cyan); }
+      .tb-center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        max-width: 560px;
+        width: 100%;
+        margin: 0 auto;
+      }
+      .tb-step-label {
+        font-size: 13px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+      }
+      .tb-step-label b {
+        color: var(--cyan);
+        font-weight: 600;
+      }
+      .tb-progress {
+        width: 100%;
+        height: 4px;
+        border-radius: 100px;
+        background: rgba(77, 184, 255, 0.1);
+        overflow: hidden;
+      }
+      .tb-progress-fill {
+        height: 100%;
+        width: 100%;
+        border-radius: 100px;
+        background: linear-gradient(90deg, var(--cyan), var(--cyan-hover));
+        box-shadow: 0 0 12px rgba(77, 184, 255, 0.4);
+      }
+      .tb-skip {
+        justify-self: end;
+        font-size: 12px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: color 180ms;
+      }
+      .tb-skip:hover {
+        color: var(--cyan);
+      }
 
-/* Content */
-.page {
-  position: relative;
-  z-index: 1;
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 56px 24px 140px;
-  display: flex; flex-direction: column;
-  gap: 28px;
-}
+      /* Content */
+      .page {
+        position: relative;
+        z-index: 1;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 56px 24px 140px;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
 
-.hero-icon {
-  align-self: center;
-  width: 72px; height: 72px;
-  border-radius: 50%;
-  background: rgba(77,184,255,0.08);
-  border: 1px solid rgba(77,184,255,0.18);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--cyan);
-  position: relative;
-}
-.hero-icon::before {
-  content: "";
-  position: absolute; inset: -10px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(77,184,255,0.15), transparent 70%);
-  z-index: -1;
-}
-.hero-icon [data-lucide] { width: 32px; height: 32px; stroke-width: 1.75; }
+      .hero-icon {
+        align-self: center;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: rgba(77, 184, 255, 0.08);
+        border: 1px solid rgba(77, 184, 255, 0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--cyan);
+        position: relative;
+      }
+      .hero-icon::before {
+        content: "";
+        position: absolute;
+        inset: -10px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(77, 184, 255, 0.15),
+          transparent 70%
+        );
+        z-index: -1;
+      }
+      .hero-icon [data-lucide] {
+        width: 32px;
+        height: 32px;
+        stroke-width: 1.75;
+      }
 
-.head {
-  text-align: center;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.head h1 {
-  font-size: 32px; font-weight: 800;
-  letter-spacing: -0.025em;
-  line-height: 1.15;
-  margin: 0;
-  color: var(--text-primary);
-}
-.head p {
-  font-size: 16px;
-  line-height: 1.55;
-  color: var(--text-secondary);
-  max-width: 520px;
-  margin: 0 auto;
-}
+      .head {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .head h1 {
+        font-size: 32px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 1.15;
+        margin: 0;
+        color: var(--text-primary);
+      }
+      .head p {
+        font-size: 16px;
+        line-height: 1.55;
+        color: var(--text-secondary);
+        max-width: 520px;
+        margin: 0 auto;
+      }
 
-/* Invite form */
-.invite-card {
-  background: rgba(13,27,62,0.7);
-  border: 1px solid rgba(77,184,255,0.12);
-  border-radius: 16px;
-  padding: 24px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  display: flex; flex-direction: column;
-  gap: 18px;
-}
-.invite-row {
-  display: grid;
-  grid-template-columns: 1fr 180px auto;
-  gap: 10px;
-}
-.in-field {
-  position: relative;
-  display: flex; align-items: center;
-}
-.in-field input,
-.in-field select {
-  width: 100%;
-  height: 44px;
-  padding: 0 14px;
-  background: rgba(6,13,36,0.6);
-  border: 1px solid rgba(77,184,255,0.15);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 14px;
-  outline: none;
-  transition: border-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out), background 180ms var(--ease-out);
-  -webkit-appearance: none; appearance: none;
-}
-.in-field select {
-  padding-right: 36px;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238A9BBF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-}
-.in-field input::placeholder { color: var(--text-disabled); }
-.in-field input:focus,
-.in-field select:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 0 3px rgba(77,184,255,0.10);
-  background-color: rgba(6,13,36,0.85);
-}
+      /* Invite form */
+      .invite-card {
+        background: rgba(13, 27, 62, 0.7);
+        border: 1px solid rgba(77, 184, 255, 0.12);
+        border-radius: 16px;
+        padding: 24px;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .invite-row {
+        display: grid;
+        grid-template-columns: 1fr 180px auto;
+        gap: 10px;
+      }
+      .in-field {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .in-field input,
+      .in-field select {
+        width: 100%;
+        height: 44px;
+        padding: 0 14px;
+        background: rgba(6, 13, 36, 0.6);
+        border: 1px solid rgba(77, 184, 255, 0.15);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 14px;
+        outline: none;
+        transition:
+          border-color 180ms var(--ease-out),
+          box-shadow 180ms var(--ease-out),
+          background 180ms var(--ease-out);
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .in-field select {
+        padding-right: 36px;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238A9BBF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+      }
+      .in-field input::placeholder {
+        color: var(--text-disabled);
+      }
+      .in-field input:focus,
+      .in-field select:focus {
+        border-color: var(--cyan);
+        box-shadow: 0 0 0 3px rgba(77, 184, 255, 0.1);
+        background-color: rgba(6, 13, 36, 0.85);
+      }
 
-.btn-invite {
-  height: 44px;
-  padding: 0 18px;
-  background: var(--cyan);
-  color: var(--bg-base);
-  border: 0;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex; align-items: center; gap: 6px;
-  transition: background 180ms, box-shadow 180ms;
-}
-.btn-invite:hover { background: var(--cyan-hover); box-shadow: 0 4px 14px rgba(77,184,255,0.30); }
-.btn-invite [data-lucide] { width: 14px; height: 14px; stroke-width: 2.5; }
+      .btn-invite {
+        height: 44px;
+        padding: 0 18px;
+        background: var(--cyan);
+        color: var(--bg-base);
+        border: 0;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition:
+          background 180ms,
+          box-shadow 180ms;
+      }
+      .btn-invite:hover {
+        background: var(--cyan-hover);
+        box-shadow: 0 4px 14px rgba(77, 184, 255, 0.3);
+      }
+      .btn-invite [data-lucide] {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2.5;
+      }
 
-/* Members list */
-.members {
-  display: flex; flex-direction: column;
-  gap: 1px;
-  background: var(--border-subtle);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.member {
-  display: flex; align-items: center; gap: 14px;
-  padding: 12px 14px;
-  background: rgba(6,13,36,0.55);
-}
-.m-av {
-  width: 34px; height: 34px;
-  border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700;
-  color: var(--bg-base);
-  flex-shrink: 0;
-  letter-spacing: 0.02em;
-}
-.m-email {
-  flex: 1; min-width: 0;
-  font-size: 13.5px;
-  color: var(--text-primary);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.m-role {
-  font-size: 11px; font-weight: 600;
-  padding: 3px 9px;
-  border-radius: 100px;
-  background: rgba(77,184,255,0.12);
-  color: var(--cyan);
-  letter-spacing: 0.02em;
-}
-.m-status {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--warning);
-}
-.m-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warning); }
-.m-trash {
-  width: 28px; height: 28px;
-  border-radius: 6px;
-  border: 0;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-  transition: all 180ms;
-}
-.m-trash:hover { background: rgba(240,68,56,0.10); color: var(--error); }
-.m-trash [data-lucide] { width: 15px; height: 15px; stroke-width: 2; }
+      /* Members list */
+      .members {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        background: var(--border-subtle);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .member {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 14px;
+        background: rgba(6, 13, 36, 0.55);
+      }
+      .m-av {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--bg-base);
+        flex-shrink: 0;
+        letter-spacing: 0.02em;
+      }
+      .m-email {
+        flex: 1;
+        min-width: 0;
+        font-size: 13.5px;
+        color: var(--text-primary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .m-role {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 100px;
+        background: rgba(77, 184, 255, 0.12);
+        color: var(--cyan);
+        letter-spacing: 0.02em;
+      }
+      .m-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--warning);
+      }
+      .m-status .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--warning);
+      }
+      .m-trash {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: 0;
+        background: transparent;
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 180ms;
+      }
+      .m-trash:hover {
+        background: rgba(240, 68, 56, 0.1);
+        color: var(--error);
+      }
+      .m-trash [data-lucide] {
+        width: 15px;
+        height: 15px;
+        stroke-width: 2;
+      }
 
-.only-me {
-  display: inline-flex;
-  align-self: center;
-  font-size: 13px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: color 180ms;
-}
-.only-me:hover { color: var(--cyan); text-decoration: underline; }
+      .only-me {
+        display: inline-flex;
+        align-self: center;
+        font-size: 13px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: color 180ms;
+      }
+      .only-me:hover {
+        color: var(--cyan);
+        text-decoration: underline;
+      }
 
-/* Completion card */
-.completion {
-  max-width: 480px;
-  margin: 12px auto 0;
-  background: rgba(13,27,62,0.55);
-  border: 1px solid rgba(77,184,255,0.18);
-  border-radius: 16px;
-  padding: 24px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  display: flex; flex-direction: column;
-  gap: 14px;
-  position: relative;
-  overflow: hidden;
-}
-.completion::before {
-  content: "";
-  position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 60% 80% at 100% 0%, rgba(77,184,255,0.10), transparent 70%);
-}
-.completion > * { position: relative; }
-.cmp-head {
-  display: flex; align-items: center; gap: 10px;
-  color: var(--cyan);
-  font-size: 13px; font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.cmp-head [data-lucide] { width: 16px; height: 16px; stroke-width: 2; }
-.cmp-list {
-  list-style: none;
-  margin: 0; padding: 0;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.cmp-list li {
-  display: flex; align-items: center; gap: 12px;
-  font-size: 14px;
-  color: var(--text-primary);
-}
-.cmp-list .ok {
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  background: var(--success);
-  color: var(--bg-base);
-  display: inline-flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.cmp-list .ok [data-lucide] { width: 13px; height: 13px; stroke-width: 3; }
+      /* Completion card */
+      .completion {
+        max-width: 480px;
+        margin: 12px auto 0;
+        background: rgba(13, 27, 62, 0.55);
+        border: 1px solid rgba(77, 184, 255, 0.18);
+        border-radius: 16px;
+        padding: 24px;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        position: relative;
+        overflow: hidden;
+      }
+      .completion::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse 60% 80% at 100% 0%,
+          rgba(77, 184, 255, 0.1),
+          transparent 70%
+        );
+      }
+      .completion > * {
+        position: relative;
+      }
+      .cmp-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--cyan);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .cmp-head [data-lucide] {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2;
+      }
+      .cmp-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .cmp-list li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        color: var(--text-primary);
+      }
+      .cmp-list .ok {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--success);
+        color: var(--bg-base);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .cmp-list .ok [data-lucide] {
+        width: 13px;
+        height: 13px;
+        stroke-width: 3;
+      }
 
-/* Bottom nav */
-.botnav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  background: rgba(6,13,36,0.92);
-  border-top: 1px solid var(--border-subtle);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  z-index: 10;
-}
-.botnav-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 18px 32px;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: 16px;
-  align-items: center;
-}
-.btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  height: 44px;
-  padding: 0 22px;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 0;
-  text-decoration: none;
-  transition: all 180ms var(--ease-out);
-}
-.btn-ghost {
-  background: transparent;
-  border: 1px solid rgba(77,184,255,0.2);
-  color: var(--text-primary);
-  justify-self: start;
-}
-.btn-ghost:hover { border-color: var(--cyan); background: rgba(77,184,255,0.04); }
-.btn-finish {
-  background: var(--cyan);
-  color: var(--bg-base);
-  justify-self: end;
-  padding: 0 30px;
-  height: 48px;
-  font-size: 15px;
-  font-weight: 700;
-  box-shadow: 0 6px 22px rgba(77,184,255,0.30);
-}
-.btn-finish:hover {
-  background: var(--cyan-hover);
-  box-shadow: 0 10px 32px rgba(77,184,255,0.45);
-  transform: translateY(-1px);
-}
-.btn [data-lucide] { width: 16px; height: 16px; stroke-width: 2.5; }
-.botnav-note {
-  font-size: 11px;
-  color: var(--text-disabled);
-  text-align: center;
-}
+      /* Bottom nav */
+      .botnav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(6, 13, 36, 0.92);
+        border-top: 1px solid var(--border-subtle);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        z-index: 10;
+      }
+      .botnav-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 18px 32px;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 16px;
+        align-items: center;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 44px;
+        padding: 0 22px;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 0;
+        text-decoration: none;
+        transition: all 180ms var(--ease-out);
+      }
+      .btn-ghost {
+        background: transparent;
+        border: 1px solid rgba(77, 184, 255, 0.2);
+        color: var(--text-primary);
+        justify-self: start;
+      }
+      .btn-ghost:hover {
+        border-color: var(--cyan);
+        background: rgba(77, 184, 255, 0.04);
+      }
+      .btn-finish {
+        background: var(--cyan);
+        color: var(--bg-base);
+        justify-self: end;
+        padding: 0 30px;
+        height: 48px;
+        font-size: 15px;
+        font-weight: 700;
+        box-shadow: 0 6px 22px rgba(77, 184, 255, 0.3);
+      }
+      .btn-finish:hover {
+        background: var(--cyan-hover);
+        box-shadow: 0 10px 32px rgba(77, 184, 255, 0.45);
+        transform: translateY(-1px);
+      }
+      .btn [data-lucide] {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2.5;
+      }
+      .botnav-note {
+        font-size: 11px;
+        color: var(--text-disabled);
+        text-align: center;
+      }
 
-@media (max-width: 760px) {
-  .topbar-inner { grid-template-columns: auto 1fr; padding: 14px 18px; }
-  .tb-skip { display: none; }
-  .page { padding: 36px 18px 150px; }
-  .head h1 { font-size: 26px; }
-  .invite-row { grid-template-columns: 1fr; }
-  .botnav-inner { grid-template-columns: 1fr 1fr; padding: 14px 18px; }
-  .botnav-note { grid-column: 1 / -1; order: -1; }
-}
-</style>
-</head>
-<body>
-
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="tb-logo" href="#">
-      <img src="../assets/logo-mark.png" alt="" />
-      <span>ProSell</span>
-    </a>
-    <div class="tb-center">
-      <span class="tb-step-label"><b>Paso 3 de 3</b> · Invitá a tu equipo</span>
-      <div class="tb-progress"><div class="tb-progress-fill"></div></div>
-    </div>
-    <a class="tb-skip" href="#">Saltar por ahora</a>
-  </div>
-</header>
-
-<main class="page">
-  <div class="hero-icon">
-    <i data-lucide="users"></i>
-  </div>
-
-  <div class="head">
-    <h1>¿Trabajás con alguien más?</h1>
-    <p>Invitá a tu equipo ahora o después. Cada miembro tiene su propio acceso.</p>
-  </div>
-
-  <div class="invite-card">
-    <div class="invite-row">
-      <div class="in-field">
-        <input type="email" placeholder="email@empresa.com" />
+      @media (max-width: 760px) {
+        .topbar-inner {
+          grid-template-columns: auto 1fr;
+          padding: 14px 18px;
+        }
+        .tb-skip {
+          display: none;
+        }
+        .page {
+          padding: 36px 18px 150px;
+        }
+        .head h1 {
+          font-size: 26px;
+        }
+        .invite-row {
+          grid-template-columns: 1fr;
+        }
+        .botnav-inner {
+          grid-template-columns: 1fr 1fr;
+          padding: 14px 18px;
+        }
+        .botnav-note {
+          grid-column: 1 / -1;
+          order: -1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="tb-logo" href="#">
+          <img src="../assets/logo-mark.png" alt="" />
+          <span>ProSell</span>
+        </a>
+        <div class="tb-center">
+          <span class="tb-step-label"
+            ><b>Paso 3 de 3</b> · Invitá a tu equipo</span
+          >
+          <div class="tb-progress"><div class="tb-progress-fill"></div></div>
+        </div>
+        <a class="tb-skip" href="#">Saltar por ahora</a>
       </div>
-      <div class="in-field">
-        <select>
-          <option value="vendedor">Vendedor</option>
-          <option value="gerente" selected>Gerente</option>
-          <option value="admin">Admin</option>
-        </select>
+    </header>
+
+    <main class="page">
+      <div class="hero-icon">
+        <i data-lucide="users"></i>
       </div>
-      <button class="btn-invite" type="button">
-        Invitar <i data-lucide="arrow-right"></i>
-      </button>
-    </div>
 
-    <div class="members">
-      <div class="member">
-        <span class="m-av" style="background: linear-gradient(135deg, #4DB8FF, #1E5FD4)">MR</span>
-        <span class="m-email">martin@empresa.com</span>
-        <span class="m-role">Gerente</span>
-        <span class="m-status"><span class="dot"></span>Pendiente</span>
-        <button class="m-trash" type="button" aria-label="Quitar invitación">
-          <i data-lucide="trash-2"></i>
-        </button>
+      <div class="head">
+        <h1>¿Trabajás con alguien más?</h1>
+        <p>
+          Invitá a tu equipo ahora o después. Cada miembro tiene su propio
+          acceso.
+        </p>
       </div>
-    </div>
 
-    <a class="only-me" href="#">Solo yo por ahora</a>
-  </div>
+      <div class="invite-card">
+        <div class="invite-row">
+          <div class="in-field">
+            <input type="email" placeholder="email@empresa.com" />
+          </div>
+          <div class="in-field">
+            <select>
+              <option value="vendedor">Vendedor</option>
+              <option value="gerente" selected>Gerente</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button class="btn-invite" type="button">
+            Invitar <i data-lucide="arrow-right"></i>
+          </button>
+        </div>
 
-  <!-- Completion summary -->
-  <section class="completion">
-    <div class="cmp-head">
-      <i data-lucide="sparkles"></i>
-      Listo para usar
-    </div>
-    <ul class="cmp-list">
-      <li><span class="ok"><i data-lucide="check"></i></span>Tu primer producto cargado</li>
-      <li><span class="ok"><i data-lucide="check"></i></span>2 canales conectados</li>
-      <li><span class="ok"><i data-lucide="check"></i></span>Equipo configurado</li>
-    </ul>
-  </section>
-</main>
+        <div class="members">
+          <div class="member">
+            <span
+              class="m-av"
+              style="background: linear-gradient(135deg, #4db8ff, #1e5fd4)"
+              >MR</span
+            >
+            <span class="m-email">martin@empresa.com</span>
+            <span class="m-role">Gerente</span>
+            <span class="m-status"><span class="dot"></span>Pendiente</span>
+            <button
+              class="m-trash"
+              type="button"
+              aria-label="Quitar invitación"
+            >
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
+        </div>
 
-<nav class="botnav">
-  <div class="botnav-inner">
-    <a class="btn btn-ghost" href="Onboarding Step 2.html">
-      <i data-lucide="arrow-left"></i> Anterior
-    </a>
-    <span class="botnav-note">🎉 Tu cuenta queda lista en segundos</span>
-    <a class="btn btn-finish" href="#">
-      Ir al Dashboard <i data-lucide="arrow-right"></i>
-    </a>
-  </div>
-</nav>
+        <a class="only-me" href="#">Solo yo por ahora</a>
+      </div>
 
-<script>lucide.createIcons();</script>
-</body>
+      <!-- Completion summary -->
+      <section class="completion">
+        <div class="cmp-head">
+          <i data-lucide="sparkles"></i>
+          Listo para usar
+        </div>
+        <ul class="cmp-list">
+          <li>
+            <span class="ok"><i data-lucide="check"></i></span>Tu primer
+            producto cargado
+          </li>
+          <li>
+            <span class="ok"><i data-lucide="check"></i></span>2 canales
+            conectados
+          </li>
+          <li>
+            <span class="ok"><i data-lucide="check"></i></span>Equipo
+            configurado
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <nav class="botnav">
+      <div class="botnav-inner">
+        <a class="btn btn-ghost" href="Onboarding Step 2.html">
+          <i data-lucide="arrow-left"></i> Anterior
+        </a>
+        <span class="botnav-note">🎉 Tu cuenta queda lista en segundos</span>
+        <a class="btn btn-finish" href="#">
+          Ir al Dashboard <i data-lucide="arrow-right"></i>
+        </a>
+      </div>
+    </nav>
+
+    <script>
+      lucide.createIcons();
+    </script>
+  </body>
 </html>

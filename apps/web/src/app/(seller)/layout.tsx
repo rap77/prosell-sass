@@ -1,7 +1,7 @@
-import { Sidebar } from '@/components/layout/Sidebar'
-import { Header } from '@/components/layout/Header'
-import { MobileNav } from '@/components/layout/MobileNav'
-import { MainContentWrapper } from '@/components/layout/MainContentWrapper'
+import { Sidebar } from "@/components/layout/Sidebar";
+import { Header } from "@/components/layout/Header";
+import { MobileNav } from "@/components/layout/MobileNav";
+import { MainContentWrapper } from "@/components/layout/MainContentWrapper";
 
 /**
  * Seller-specific layout with role-based navigation access.
@@ -17,13 +17,13 @@ import { MainContentWrapper } from '@/components/layout/MainContentWrapper'
 export default function SellerLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar - hidden on mobile */}
       <div className="hidden md:block">
-        <Sidebar groups={['general', 'inventario', 'ventas']} />
+        <Sidebar groups={["general", "inventario", "ventas"]} />
       </div>
 
       {/* Main content area */}
@@ -39,5 +39,5 @@ export default function SellerLayout({
       {/* Mobile bottom navigation - visible only on mobile */}
       <MobileNav />
     </div>
-  )
+  );
 }

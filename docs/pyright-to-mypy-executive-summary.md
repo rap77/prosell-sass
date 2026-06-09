@@ -3,16 +3,19 @@
 ## 🎯 Decision: GO (95% Confidence)
 
 ### Problem
+
 - Pyright: **2,426 type errors** in test suite
 - **99% of errors**: "Type of parameter 'fixture_name' is unknown"
 - Root cause: Pyright cannot understand pytest fixtures
 
 ### Solution
+
 - Migrate to **Mypy** (native pytest fixture support)
 - **Zero test changes required**
 - **98.9% error reduction** (2,426 → ~26 errors)
 
 ### Validation
+
 ```bash
 # Tested on test_appointment_api.py
 Pyright: 96 errors (all fixture-related)
@@ -21,21 +24,21 @@ Mypy:   0 errors ✅
 
 ## 📊 Comparison
 
-| Feature | Pyright | Mypy | Winner |
-|---------|---------|------|--------|
-| Fixture support | ❌ 2,426 errors | ✅ 0 errors | **Mypy** |
-| Speed | 1.2s/file | 0.5s/file | **Mypy** (2x) |
-| Production code | ✅ Good | ✅ Good | Tie |
-| Test changes needed | N/A | ❌ None | **Mypy** |
+| Feature             | Pyright         | Mypy        | Winner        |
+| ------------------- | --------------- | ----------- | ------------- |
+| Fixture support     | ❌ 2,426 errors | ✅ 0 errors | **Mypy**      |
+| Speed               | 1.2s/file       | 0.5s/file   | **Mypy** (2x) |
+| Production code     | ✅ Good         | ✅ Good     | Tie           |
+| Test changes needed | N/A             | ❌ None     | **Mypy**      |
 
 ## 💰 Effort vs Alternatives
 
-| Solution | Effort | Risk | Errors Fixed |
-|----------|--------|------|--------------|
-| **Mypy migration** | 20-30h | LOW | 98.9% |
-| Add # type: ignore | 40-60h | HIGH | 0% (hides errors) |
-| Create stub files | 60-80h | HIGH | 100% (fragile) |
-| Disable test checking | 2h | VERY HIGH | 0% (loses safety) |
+| Solution              | Effort | Risk      | Errors Fixed      |
+| --------------------- | ------ | --------- | ----------------- |
+| **Mypy migration**    | 20-30h | LOW       | 98.9%             |
+| Add # type: ignore    | 40-60h | HIGH      | 0% (hides errors) |
+| Create stub files     | 60-80h | HIGH      | 100% (fragile)    |
+| Disable test checking | 2h     | VERY HIGH | 0% (loses safety) |
 
 ## 📅 Migration Timeline: 3-4 Days
 

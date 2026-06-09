@@ -17,7 +17,7 @@ test.describe("Google OAuth Integration", () => {
   test.use({
     storageState: { cookies: [], origins: [] },
     // Set default timeout for OAuth tests (10s instead of default 30s)
-    timeout: 10000
+    timeout: 10000,
   });
 
   test.beforeEach(async ({ page, context }) => {
@@ -40,9 +40,11 @@ test.describe("Google OAuth Integration", () => {
     }
 
     // Wait for page to be ready
-    await page.waitForLoadState("domcontentloaded", { timeout: 10000 }).catch(() => {
-      // Continue even if timeout - page might be ready anyway
-    });
+    await page
+      .waitForLoadState("domcontentloaded", { timeout: 10000 })
+      .catch(() => {
+        // Continue even if timeout - page might be ready anyway
+      });
   });
 
   test("@smoke should display Google OAuth button", async ({ page }) => {
@@ -63,7 +65,9 @@ test.describe("Google OAuth Integration", () => {
   });
 
   // FIXED: Test OAuth button with proper timeout and wait conditions
-  test("should redirect to OAuth endpoint on click (with timeout)", async ({ page }) => {
+  test("should redirect to OAuth endpoint on click (with timeout)", async ({
+    page,
+  }) => {
     const googleButton = page.getByTestId("google-oauth-button");
 
     // Set up promise to wait for navigation (with timeout)
@@ -73,7 +77,7 @@ test.describe("Google OAuth Integration", () => {
         // URL should change from /auth/login to something else
         return !url.pathname.includes("/auth/login");
       },
-      { timeout: 5000 } // 5s timeout (OAuth redirect should be fast)
+      { timeout: 5000 }, // 5s timeout (OAuth redirect should be fast)
     );
 
     // Click the Google OAuth button
@@ -95,7 +99,9 @@ test.describe("Google OAuth Integration", () => {
       const currentUrl = page.url();
 
       if (currentUrl.includes("/auth/login")) {
-        console.log("OAuth did not navigate - may not be configured (this is OK)");
+        console.log(
+          "OAuth did not navigate - may not be configured (this is OK)",
+        );
         // Test passes - we verified the button exists and can be clicked
         // In a real environment with OAuth configured, navigation would occur
       } else {
@@ -106,14 +112,21 @@ test.describe("Google OAuth Integration", () => {
   });
 
   // FIXED: Test state token uniqueness with better waits
-  test("should generate unique state token for CSRF protection", async ({ page, context }) => {
+  test("should generate unique state token for CSRF protection", async ({
+    page,
+    context,
+  }) => {
     // Create two pages to test state token uniqueness
     const page1 = page;
     const page2 = await context.newPage();
 
     await Promise.all([
-      page1.goto("/auth/login").then(() => page1.waitForLoadState("networkidle")),
-      page2.goto("/auth/login").then(() => page2.waitForLoadState("networkidle")),
+      page1
+        .goto("/auth/login")
+        .then(() => page1.waitForLoadState("networkidle")),
+      page2
+        .goto("/auth/login")
+        .then(() => page2.waitForLoadState("networkidle")),
     ]);
 
     // Click OAuth button on both pages
@@ -124,13 +137,17 @@ test.describe("Google OAuth Integration", () => {
 
     // Wait a bit for navigation (with timeout)
     await Promise.race([
-      page1.waitForURL((url) => !url.pathname.includes("/auth/login"), { timeout: 5000 }),
-      new Promise(resolve => setTimeout(resolve, 2000)) // Fallback timeout
+      page1.waitForURL((url) => !url.pathname.includes("/auth/login"), {
+        timeout: 5000,
+      }),
+      new Promise((resolve) => setTimeout(resolve, 2000)), // Fallback timeout
     ]);
 
     await Promise.race([
-      page2.waitForURL((url) => !url.pathname.includes("/auth/login"), { timeout: 5000 }),
-      new Promise(resolve => setTimeout(resolve, 2000)) // Fallback timeout
+      page2.waitForURL((url) => !url.pathname.includes("/auth/login"), {
+        timeout: 5000,
+      }),
+      new Promise((resolve) => setTimeout(resolve, 2000)), // Fallback timeout
     ]);
 
     // Both pages should have navigated away from login OR stayed on login (both OK)
@@ -153,7 +170,7 @@ test.describe("Google OAuth Integration", () => {
     // Click and wait with timeout
     const navigationPromise = page.waitForURL(
       (url) => !url.pathname.includes("/auth/login"),
-      { timeout: 5000 }
+      { timeout: 5000 },
     );
 
     await googleButton.click();
@@ -162,7 +179,9 @@ test.describe("Google OAuth Integration", () => {
       await navigationPromise;
       console.log("OAuth navigation successful");
     } catch {
-      console.log("OAuth navigation timed out - may not be configured (OK for testing)");
+      console.log(
+        "OAuth navigation timed out - may not be configured (OK for testing)",
+      );
     }
 
     // Test passes if we got here without hanging
@@ -179,7 +198,9 @@ test.describe("Google OAuth Integration", () => {
     // Check if loading state was set (before navigation)
     // The button may redirect before loader is visible, so we check briefly
     try {
-      await expect(googleButton).toHaveAttribute("aria-busy", "true", { timeout: 100 });
+      await expect(googleButton).toHaveAttribute("aria-busy", "true", {
+        timeout: 100,
+      });
     } catch {
       // If redirect was too fast, loading state may not be visible - that's OK
       console.log("Loading state not visible (redirect was fast)");
@@ -187,8 +208,10 @@ test.describe("Google OAuth Integration", () => {
 
     // Wait for navigation OR timeout (don't hang)
     await Promise.race([
-      page.waitForURL((url) => !url.pathname.includes("/auth/login"), { timeout: 5000 }),
-      new Promise(resolve => setTimeout(resolve, 3000))
+      page.waitForURL((url) => !url.pathname.includes("/auth/login"), {
+        timeout: 5000,
+      }),
+      new Promise((resolve) => setTimeout(resolve, 3000)),
     ]);
 
     // Test passes if we got here without hanging
@@ -200,7 +223,7 @@ test.describe("OAuth Configuration Validation", () => {
   // These tests access the login page or backend OAuth endpoint without user auth.
   test.use({
     storageState: { cookies: [], origins: [] },
-    timeout: 10000
+    timeout: 10000,
   });
 
   test.beforeEach(async ({ page, context }) => {
@@ -217,11 +240,16 @@ test.describe("OAuth Configuration Validation", () => {
     await page.waitForLoadState("domcontentloaded", { timeout: 10000 });
   });
 
-  test("should verify backend OAuth endpoint is accessible", async ({ request }) => {
+  test("should verify backend OAuth endpoint is accessible", async ({
+    request,
+  }) => {
     // Test that the OAuth authorize endpoint responds
-    const response = await request.get("http://localhost:8000/api/v1/auth/oauth/google/authorize", {
-      timeout: 5000
-    });
+    const response = await request.get(
+      "http://localhost:8000/api/v1/auth/oauth/google/authorize",
+      {
+        timeout: 5000,
+      },
+    );
 
     // Should redirect (302), return JSON with URL (200), or rate limit (429) - all indicate endpoint is working
     // 404 or 500 would mean endpoint is broken
@@ -249,19 +277,23 @@ test.describe("OAuth Configuration Validation", () => {
     // Click and wait with timeout
     const navigationPromise = page.waitForURL(
       (url) => !url.pathname.includes("/auth/login"),
-      { timeout: 5000 }
+      { timeout: 5000 },
     );
 
     await googleButton.click();
 
     try {
       await navigationPromise;
-      console.log("OAuth navigation successful - credentials may be configured");
+      console.log(
+        "OAuth navigation successful - credentials may be configured",
+      );
     } catch {
       // If we're still on login page, OAuth may not be configured
       const currentUrl = page.url();
       if (currentUrl.includes("/auth/login")) {
-        console.log("OAuth not configured - this is OK for testing environments");
+        console.log(
+          "OAuth not configured - this is OK for testing environments",
+        );
       } else {
         // Something unexpected happened
         console.log("Current URL:", currentUrl);
@@ -277,7 +309,7 @@ test.describe("OAuth Error Handling", () => {
   // These tests navigate to login/callback pages without user auth.
   test.use({
     storageState: { cookies: [], origins: [] },
-    timeout: 10000
+    timeout: 10000,
   });
 
   test.beforeEach(async ({ page, context }) => {
@@ -311,7 +343,8 @@ test.describe("OAuth Error Handling", () => {
 
   test("should handle invalid state token", async ({ page }) => {
     // Navigate to callback with invalid state
-    const callbackUrl = "http://localhost:8000/api/v1/auth/oauth/google/callback?code=test&state=invalid-state";
+    const callbackUrl =
+      "http://localhost:8000/api/v1/auth/oauth/google/callback?code=test&state=invalid-state";
 
     try {
       await page.goto(callbackUrl, { timeout: 5000 });
@@ -333,7 +366,10 @@ test.describe("OAuth Error Handling", () => {
       expect(isValidResponse).toBeTruthy();
     } catch (error) {
       // Navigation might fail if backend is not running
-      console.log("Callback navigation failed - backend may not be running:", error);
+      console.log(
+        "Callback navigation failed - backend may not be running:",
+        error,
+      );
       // Test passes - we verified the endpoint behavior
       expect(true).toBeTruthy();
     }

@@ -58,6 +58,7 @@ Usuario: "Claude, hay un bug en /decode-vin. Usa contract testing."
 ## Usage
 
 Invoke when:
+
 - User reports API contract bug (data format mismatch)
 - Endpoint lacks integration tests
 - PR adds new endpoint with external API integration

@@ -21,24 +21,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   if (isLoading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--ps-bg-base)',
-      }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--ps-bg-base)",
+        }}
+      >
         <style>{`@keyframes authSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: "center" }}>
           <Loader2
             size={40}
             strokeWidth={1.5}
             style={{
-              color: 'var(--ps-cyan)',
-              animation: 'authSpin 0.8s linear infinite',
+              color: "var(--ps-cyan)",
+              animation: "authSpin 0.8s linear infinite",
             }}
           />
-          <p style={{ margin: '16px 0 0', fontSize: 13, color: 'var(--ps-text-secondary)' }}>
+          <p
+            style={{
+              margin: "16px 0 0",
+              fontSize: 13,
+              color: "var(--ps-text-secondary)",
+            }}
+          >
             Cargando sesión...
           </p>
         </div>

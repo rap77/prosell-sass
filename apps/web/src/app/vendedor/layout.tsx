@@ -1,18 +1,22 @@
-import { Sidebar } from '@/components/layout/Sidebar'
-import { Header } from '@/components/layout/Header'
-import { MobileNav } from '@/components/layout/MobileNav'
-import { MainContentWrapper } from '@/components/layout/MainContentWrapper'
+import { Sidebar } from "@/components/layout/Sidebar";
+import { Header } from "@/components/layout/Header";
+import { MobileNav } from "@/components/layout/MobileNav";
+import { MainContentWrapper } from "@/components/layout/MainContentWrapper";
 
 /**
  * Vendedor layout — wraps all /vendedor/* routes with the ProSell app shell.
  * Groups: general (Dashboard) + ventas (Leads, Pipeline, Analytics).
  * Server Component by default.
  */
-export default function VendedorLayout({ children }: { children: React.ReactNode }) {
+export default function VendedorLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex h-screen overflow-hidden">
       <div className="hidden md:block">
-        <Sidebar groups={['general', 'ventas']} />
+        <Sidebar groups={["general", "ventas"]} />
       </div>
 
       <MainContentWrapper>
@@ -24,5 +28,5 @@ export default function VendedorLayout({ children }: { children: React.ReactNode
 
       <MobileNav />
     </div>
-  )
+  );
 }

@@ -25,7 +25,7 @@ async function setManagerRoleCookie(page: import("@playwright/test").Page) {
           role: "manager",
           name: "Test Manager",
           tenant_id: process.env.TEST_TENANT_ID || "default-tenant-id",
-        })
+        }),
       ),
       domain: "localhost",
       path: "/",
@@ -122,7 +122,12 @@ test.describe("Manager Team Leads View - E2E Verification (A7)", () => {
         price_cents: 2000000,
         currency: "USD",
         status: "active",
-        attributes: { category: "vehicle", year: 2020, make: "Toyota", model: "Camry" },
+        attributes: {
+          category: "vehicle",
+          year: 2020,
+          make: "Toyota",
+          model: "Camry",
+        },
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
@@ -146,7 +151,12 @@ test.describe("Manager Team Leads View - E2E Verification (A7)", () => {
         price_cents: 2200000,
         currency: "USD",
         status: "active",
-        attributes: { category: "vehicle", year: 2021, make: "Honda", model: "Accord" },
+        attributes: {
+          category: "vehicle",
+          year: 2021,
+          make: "Honda",
+          model: "Accord",
+        },
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
@@ -270,7 +280,9 @@ test.describe("Manager Team Leads View - E2E Verification (A7)", () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test("A7.14: should display lead buyer names in team leads", async ({ page }) => {
+  test("A7.14: should display lead buyer names in team leads", async ({
+    page,
+  }) => {
     // Navigate to manager team leads page
     await page.goto("/manager/team/leads");
     await page.waitForLoadState("networkidle");
@@ -284,8 +296,18 @@ test.describe("Manager Team Leads View - E2E Verification (A7)", () => {
     // Scope to buyer column (first .flex-shrink-0.w-48) to avoid status badge and sidebar collisions
     const firstItem = leadItems.first();
     const secondItem = leadItems.nth(1);
-    await expect(firstItem.locator(".flex-shrink-0.w-48").first().locator("span.font-medium")).toContainText("John Doe");
-    await expect(secondItem.locator(".flex-shrink-0.w-48").first().locator("span.font-medium")).toContainText("Jane Smith");
+    await expect(
+      firstItem
+        .locator(".flex-shrink-0.w-48")
+        .first()
+        .locator("span.font-medium"),
+    ).toContainText("John Doe");
+    await expect(
+      secondItem
+        .locator(".flex-shrink-0.w-48")
+        .first()
+        .locator("span.font-medium"),
+    ).toContainText("Jane Smith");
   });
 
   test("A7.14: should filter team leads by status", async ({ page }) => {
@@ -409,6 +431,8 @@ test.describe("Manager Team Leads View - E2E Verification (A7)", () => {
     await page.waitForLoadState("networkidle");
 
     // Verify error message — LeadList renders "Error loading leads: ..."
-    await expect(page.locator("text=Error loading leads")).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("text=Error loading leads")).toBeVisible({
+      timeout: 5000,
+    });
   });
 });

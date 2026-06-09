@@ -159,7 +159,9 @@ export class PublisherApiError extends Error {
   }
 }
 
-function isErrorBody(value: unknown): value is { detail?: unknown; message?: unknown } {
+function isErrorBody(
+  value: unknown,
+): value is { detail?: unknown; message?: unknown } {
   return typeof value === "object" && value !== null;
 }
 
@@ -222,7 +224,9 @@ export async function publishVehicle(
       body: JSON.stringify(data),
     },
   );
-  return handlePublisherResponse(res, (data) => publicationResponseSchema.parse(data));
+  return handlePublisherResponse(res, (data) =>
+    publicationResponseSchema.parse(data),
+  );
 }
 
 /**
@@ -233,16 +237,15 @@ export async function updateListing(
   publicationId: string,
   data: UpdateListingRequest,
 ): Promise<PublicationResponse> {
-  const res = await fetch(
-    `${API_BASE_URL}/api/v1/publisher/${publicationId}`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(data),
-    },
+  const res = await fetch(`${API_BASE_URL}/api/v1/publisher/${publicationId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
+  return handlePublisherResponse(res, (data) =>
+    publicationResponseSchema.parse(data),
   );
-  return handlePublisherResponse(res, (data) => publicationResponseSchema.parse(data));
 }
 
 /**
@@ -252,15 +255,14 @@ export async function updateListing(
 export async function deleteListing(
   publicationId: string,
 ): Promise<PublicationResponse> {
-  const res = await fetch(
-    `${API_BASE_URL}/api/v1/publisher/${publicationId}`,
-    {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    },
+  const res = await fetch(`${API_BASE_URL}/api/v1/publisher/${publicationId}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  });
+  return handlePublisherResponse(res, (data) =>
+    publicationResponseSchema.parse(data),
   );
-  return handlePublisherResponse(res, (data) => publicationResponseSchema.parse(data));
 }
 
 /**
@@ -278,17 +280,20 @@ export async function unlockCategoryB(
       credentials: "include",
     },
   );
-  return handlePublisherResponse(res, (data) => publicationResponseSchema.parse(data));
+  return handlePublisherResponse(res, (data) =>
+    publicationResponseSchema.parse(data),
+  );
 }
 
-export async function listFacebookAccounts(): Promise<FacebookAccountResponse[]> {
+export async function listFacebookAccounts(): Promise<
+  FacebookAccountResponse[]
+> {
   const res = await fetch(`${API_BASE_URL}/api/v1/facebook/accounts`, {
     credentials: "include",
   });
 
-  const data = await handlePublisherResponse(
-    res,
-    (value) => facebookAccountsResponseSchema.parse(value),
+  const data = await handlePublisherResponse(res, (value) =>
+    facebookAccountsResponseSchema.parse(value),
   );
   return data.accounts;
 }
@@ -303,9 +308,8 @@ export async function listFacebookPages(
     },
   );
 
-  const data = await handlePublisherResponse(
-    res,
-    (value) => facebookPagesResponseSchema.parse(value),
+  const data = await handlePublisherResponse(res, (value) =>
+    facebookPagesResponseSchema.parse(value),
   );
   return data.pages.map((page) => ({
     id: page.id,
@@ -314,7 +318,10 @@ export async function listFacebookPages(
   }));
 }
 
-export function useFacebookPages(): UseQueryResult<FacebookPageOption[], Error> {
+export function useFacebookPages(): UseQueryResult<
+  FacebookPageOption[],
+  Error
+> {
   return useQuery({
     queryKey: ["facebook-pages"],
     queryFn: async () => {
@@ -330,7 +337,9 @@ export function useFacebookPages(): UseQueryResult<FacebookPageOption[], Error> 
 
       return pagesByAccount
         .flat()
-        .toSorted((left, right) => Number(right.is_default) - Number(left.is_default));
+        .toSorted(
+          (left, right) => Number(right.is_default) - Number(left.is_default),
+        );
     },
     staleTime: 60 * 1000,
   });

@@ -41,7 +41,9 @@ testWithFixtures.describe("Smoke Tests - Critical Path (Real API)", () => {
   test.describe("Auth Flow", () => {
     test.use({ storageState: { cookies: [], origins: [] } }); // No auth for login tests
 
-    test("@smoke should display login page elements correctly", async ({ page }) => {
+    test("@smoke should display login page elements correctly", async ({
+      page,
+    }) => {
       await page.goto("/auth/login");
       await page.waitForLoadState("load");
 
@@ -57,25 +59,33 @@ testWithFixtures.describe("Smoke Tests - Critical Path (Real API)", () => {
       expect(hasForm + hasInputs + hasButtons).toBeGreaterThan(0);
     });
 
-    test("@smoke should show validation error for empty email", async ({ page }) => {
+    test("@smoke should show validation error for empty email", async ({
+      page,
+    }) => {
       await page.goto("/auth/login");
       await page.waitForLoadState("load");
 
       // Try to submit without email
-      const submitButton = page.locator("button[type=\"submit\"]").first();
+      const submitButton = page.locator('button[type="submit"]').first();
       await submitButton.click();
 
       // Wait for validation error to appear (use more specific selector)
-      const errorVisible = await page.locator(".text-destruct, [role=\"alert\"], .error").count();
+      const errorVisible = await page
+        .locator('.text-destruct, [role="alert"], .error')
+        .count();
       if (errorVisible > 0) {
-        await expect(page.locator(".text-destruct, [role=\"alert\"], .error").first()).toBeVisible();
+        await expect(
+          page.locator('.text-destruct, [role="alert"], .error').first(),
+        ).toBeVisible();
       }
 
       // Check we're still on login page (validation prevented submission)
       await expect(page).toHaveURL(/\/auth\/login/);
     });
 
-    test("@smoke should redirect to login when accessing protected route", async ({ page }) => {
+    test("@smoke should redirect to login when accessing protected route", async ({
+      page,
+    }) => {
       await page.goto("/dashboard");
       await page.waitForURL(/\/auth\/login/);
       expect(page.url()).toContain("/auth/login");
@@ -85,7 +95,9 @@ testWithFixtures.describe("Smoke Tests - Critical Path (Real API)", () => {
       await page.goto("/");
       await page.waitForLoadState("load");
       expect(page.url()).toMatch(/localhost:3000\/?$/);
-      await expect(page.getByRole("heading", { name: /prosell/i })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: /prosell/i }),
+      ).toBeVisible();
     });
 
     test("@smoke should display Google OAuth button", async ({ page }) => {
@@ -111,59 +123,86 @@ testWithFixtures.describe("Smoke Tests - Critical Path (Real API)", () => {
       await page.waitForLoadState("load");
     });
 
-    testWithFixtures("@smoke should update model field after VIN decode", async ({ page }) => {
-      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
-      await vehiclesPage.decodeVinButton.click();
+    testWithFixtures(
+      "@smoke should update model field after VIN decode",
+      async ({ page }) => {
+        await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
+        await vehiclesPage.decodeVinButton.click();
 
-      // Wait for API response
-      await page.waitForResponse("**/api/v1/vehicles/decode-vin**", { timeout: 5000 });
-      await page.waitForLoadState("load");
+        // Wait for API response
+        await page.waitForResponse("**/api/v1/vehicles/decode-vin**", {
+          timeout: 5000,
+        });
+        await page.waitForLoadState("load");
 
-      // Wait for model field to be populated
-      const modelInput = page.getByLabel(/model|modelo/i);
-      await expect(modelInput).toHaveValue(/equinox/i, { timeout: 3000 });
-    });
+        // Wait for model field to be populated
+        const modelInput = page.getByLabel(/model|modelo/i);
+        await expect(modelInput).toHaveValue(/equinox/i, { timeout: 3000 });
+      },
+    );
 
-    testWithFixtures("@smoke should update make select field after VIN decode", async ({ page }) => {
-      await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
-      await vehiclesPage.decodeVinButton.click();
+    testWithFixtures(
+      "@smoke should update make select field after VIN decode",
+      async ({ page }) => {
+        await vehiclesPage.vinInput.fill("2GNALCEK1H1615946");
+        await vehiclesPage.decodeVinButton.click();
 
-      // Wait for API response
-      await page.waitForResponse("**/api/v1/vehicles/decode-vin**", { timeout: 5000 });
-      await page.waitForLoadState("load");
+        // Wait for API response
+        await page.waitForResponse("**/api/v1/vehicles/decode-vin**", {
+          timeout: 5000,
+        });
+        await page.waitForLoadState("load");
 
-      // Wait for make element to be populated
-      const makeElement = page.getByText(/chevrolet/i, { exact: false });
-      await expect(makeElement).toBeVisible({ timeout: 3000 });
-    });
+        // Wait for make element to be populated
+        const makeElement = page.getByText(/chevrolet/i, { exact: false });
+        await expect(makeElement).toBeVisible({ timeout: 3000 });
+      },
+    );
 
-    testWithFixtures("@smoke should display category dropdown", async ({ page }) => {
-      // Wait for form elements to be visible
-      const formSelect = page.locator("select, [role=\"combobox\"]").first();
-      await expect(formSelect).toBeVisible({ timeout: 3000 });
+    testWithFixtures(
+      "@smoke should display category dropdown",
+      async ({ page }) => {
+        // Wait for form elements to be visible
+        const formSelect = page.locator('select, [role="combobox"]').first();
+        await expect(formSelect).toBeVisible({ timeout: 3000 });
 
-      // Check for any form elements (selects, inputs, labels)
-      const hasSelects = await page.locator("select, [role=\"combobox\"]").count();
-      const hasInputs = await page.locator("input").count();
-      const hasLabels = await page.locator("label").count();
-      const hasText = await page.getByText(/categor|vehicle|form/i, { exact: false }).count();
+        // Check for any form elements (selects, inputs, labels)
+        const hasSelects = await page
+          .locator('select, [role="combobox"]')
+          .count();
+        const hasInputs = await page.locator("input").count();
+        const hasLabels = await page.locator("label").count();
+        const hasText = await page
+          .getByText(/categor|vehicle|form/i, { exact: false })
+          .count();
 
-      expect(hasSelects + hasInputs + hasLabels + hasText).toBeGreaterThan(0);
-    });
+        expect(hasSelects + hasInputs + hasLabels + hasText).toBeGreaterThan(0);
+      },
+    );
 
-    testWithFixtures("@smoke should select category from dropdown", async ({ page }) => {
-      // Verify form is interactive
-      const formElements = await page.locator("input, select, button").count();
-      expect(formElements).toBeGreaterThan(0);
+    testWithFixtures(
+      "@smoke should select category from dropdown",
+      async ({ page }) => {
+        // Verify form is interactive
+        const formElements = await page
+          .locator("input, select, button")
+          .count();
+        expect(formElements).toBeGreaterThan(0);
 
-      // Verify we're still on the page
-      await expect(page).toHaveURL(/\/catalog\/create/);
-    });
+        // Verify we're still on the page
+        await expect(page).toHaveURL(/\/catalog\/create/);
+      },
+    );
 
-    testWithFixtures("@smoke should show form submit button", async ({ page }) => {
-      const submitButton = page.getByRole("button", { name: /create|save|crear|guardar/i });
-      await expect(submitButton).toBeVisible();
-    });
+    testWithFixtures(
+      "@smoke should show form submit button",
+      async ({ page }) => {
+        const submitButton = page.getByRole("button", {
+          name: /create|save|crear|guardar/i,
+        });
+        await expect(submitButton).toBeVisible();
+      },
+    );
   });
 
   // ============================================
@@ -182,23 +221,40 @@ testWithFixtures.describe("Smoke Tests - Critical Path (Real API)", () => {
       await categoriesPage.goto();
     });
 
-    testWithFixtures("@smoke should display categories page", async ({ page }) => {
-      await expect(page.getByRole("heading", { name: /categories/i })).toBeVisible();
-      // Note: The exact text may vary - we're checking that categories are displayed
-      const categoriesCount = await page.getByText(/SUVs|Sedans/).count();
-      expect(categoriesCount).toBeGreaterThan(0);
-    });
+    testWithFixtures(
+      "@smoke should display categories page",
+      async ({ page }) => {
+        await expect(
+          page.getByRole("heading", { name: /categories/i }),
+        ).toBeVisible();
+        // Note: The exact text may vary - we're checking that categories are displayed
+        const categoriesCount = await page.getByText(/SUVs|Sedans/).count();
+        expect(categoriesCount).toBeGreaterThan(0);
+      },
+    );
 
-    testWithFixtures("@smoke should display category cards", async ({ page }) => {
-      await expect(page.getByRole("heading", { name: "SUVs", exact: true })).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Sedans", exact: true })).toBeVisible();
-    });
+    testWithFixtures(
+      "@smoke should display category cards",
+      async ({ page }) => {
+        await expect(
+          page.getByRole("heading", { name: "SUVs", exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("heading", { name: "Sedans", exact: true }),
+        ).toBeVisible();
+      },
+    );
 
-    testWithFixtures("@smoke should open new category form", async ({ page }) => {
-      await page.getByRole("button", { name: /new category|crear categoría/i }).click();
-      await expect(page.getByLabel(/name|nombre/i)).toBeVisible();
-      await expect(page.getByLabel(/slug/i)).toBeVisible();
-    });
+    testWithFixtures(
+      "@smoke should open new category form",
+      async ({ page }) => {
+        await page
+          .getByRole("button", { name: /new category|crear categoría/i })
+          .click();
+        await expect(page.getByLabel(/name|nombre/i)).toBeVisible();
+        await expect(page.getByLabel(/slug/i)).toBeVisible();
+      },
+    );
   });
 
   // ============================================
@@ -238,14 +294,18 @@ testWithFixtures.describe("Smoke Tests - Critical Path (Real API)", () => {
 
     testWithFixtures("@smoke should display data table", async ({ page }) => {
       // Check for specific DataGrid elements
-      const dataGrid = page.locator("[role=\"table\"], table, [data-testid=\"vehicle-grid\"]");
+      const dataGrid = page.locator(
+        '[role="table"], table, [data-testid="vehicle-grid"]',
+      );
       const count = await dataGrid.count();
 
       if (count > 0) {
         await expect(dataGrid.first()).toBeVisible({ timeout: 5000 });
 
         // Verify at least one row exists
-        const row = page.locator("[role=\"row\"], tr, [data-testid=\"vehicle-row\"]").first();
+        const row = page
+          .locator('[role="row"], tr, [data-testid="vehicle-row"]')
+          .first();
         await expect(row).toBeVisible();
       } else {
         // If no DataGrid found, verify page loads without errors
@@ -253,23 +313,31 @@ testWithFixtures.describe("Smoke Tests - Critical Path (Real API)", () => {
       }
     });
 
-    testWithFixtures("@smoke should display pagination controls", async ({ page }) => {
-      // Pagination may not be visible for small datasets
-      // Just verify page loads without errors
-      await expect(page).toHaveURL(/\/vehicles/);
-    });
+    testWithFixtures(
+      "@smoke should display pagination controls",
+      async ({ page }) => {
+        // Pagination may not be visible for small datasets
+        // Just verify page loads without errors
+        await expect(page).toHaveURL(/\/vehicles/);
+      },
+    );
 
-    testWithFixtures("@smoke should display vehicle data in grid", async ({ page }) => {
-      // Check page has some content
-      const hasContent = await page.locator("main, [role=\"main\"], body").count();
-      expect(hasContent).toBeGreaterThan(0);
+    testWithFixtures(
+      "@smoke should display vehicle data in grid",
+      async ({ page }) => {
+        // Check page has some content
+        const hasContent = await page
+          .locator('main, [role="main"], body')
+          .count();
+        expect(hasContent).toBeGreaterThan(0);
 
-      // Verify page URL is correct (vehicles are displayed via DataGrid)
-      await expect(page).toHaveURL(/\/vehicles/);
+        // Verify page URL is correct (vehicles are displayed via DataGrid)
+        await expect(page).toHaveURL(/\/vehicles/);
 
-      // Note: Vehicles may not be visible immediately due to API sync timing
-      // The key is that the page loads without errors and the URL is correct
-    });
+        // Note: Vehicles may not be visible immediately due to API sync timing
+        // The key is that the page loads without errors and the URL is correct
+      },
+    );
   });
 
   // ============================================
@@ -296,7 +364,7 @@ testWithFixtures.describe("Smoke Tests - Critical Path (Real API)", () => {
     });
 
     test("@smoke should allow file selection", async ({ page }) => {
-      const fileInput = page.locator("input[type=\"file\"]");
+      const fileInput = page.locator('input[type="file"]');
       const count = await fileInput.count();
 
       if (count > 0) {

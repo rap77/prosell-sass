@@ -31,9 +31,9 @@ vi.mock("sonner", () => ({
 global.fetch = vi.fn();
 
 // Mock File.text() method for jsdom environment
-Object.defineProperty(File.prototype, 'text', {
+Object.defineProperty(File.prototype, "text", {
   writable: true,
-  value: function(this: File) {
+  value: function (this: File) {
     return new Promise<string>((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
@@ -111,7 +111,7 @@ describe("useDecodeVin", () => {
         method: "POST",
         credentials: "include",
         body: JSON.stringify({ vin: "1HGCM82633A123456" }),
-      })
+      }),
     );
   });
 
@@ -142,7 +142,7 @@ describe("useDecodeVin", () => {
       "/api/v1/vehicles/decode-vin",
       expect.objectContaining({
         body: expect.stringContaining("1HGCM82633A123456"),
-      })
+      }),
     );
   });
 
@@ -248,7 +248,7 @@ describe("useBulkUploadProducts", () => {
         headers: {
           "Content-Type": "application/json",
         },
-      })
+      }),
     );
   });
 
@@ -383,7 +383,7 @@ describe("useBulkUploadProducts", () => {
       "/api/v1/products/bulk",
       expect.objectContaining({
         method: "POST",
-      })
+      }),
     );
   });
 
@@ -415,7 +415,9 @@ describe("useBulkUploadProducts", () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(toast.success).toHaveBeenCalledWith("Successfully uploaded 2 vehicles");
+    expect(toast.success).toHaveBeenCalledWith(
+      "Successfully uploaded 2 vehicles",
+    );
   });
 
   it("should show error toast when some uploads fail", async () => {
@@ -453,7 +455,7 @@ INVALID_VIN,2015,Toyota,Camry,12000`;
     });
 
     expect(toast.error).toHaveBeenCalledWith(
-      "Uploaded 1 vehicles, 1 failed. Check errors below."
+      "Uploaded 1 vehicles, 1 failed. Check errors below.",
     );
   });
 });

@@ -45,7 +45,7 @@ const mockOrganizationPatchSchema = z.object({
 });
 
 declare global {
-  var __mockOrganizations: MockOrganizationStore | undefined
+  var __mockOrganizations: MockOrganizationStore | undefined;
 }
 
 function getMockOrganizations(): MockOrganizationStore {
@@ -54,7 +54,7 @@ function getMockOrganizations(): MockOrganizationStore {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
 
@@ -70,14 +70,14 @@ export async function GET(
   } catch {
     return NextResponse.json(
       { detail: "Organization not found" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
 
@@ -106,7 +106,7 @@ export async function PATCH(
   } catch {
     return NextResponse.json(
       { detail: "Organization not found" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 }

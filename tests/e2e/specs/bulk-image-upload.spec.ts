@@ -102,7 +102,9 @@ test.describe("Bulk Image Upload", () => {
   });
 
   test.describe("Parallel Upload", () => {
-    test("@smoke should have useImageUpload hook available", async ({ page }) => {
+    test("@smoke should have useImageUpload hook available", async ({
+      page,
+    }) => {
       await page.goto("/catalog/create");
       await page.waitForLoadState("load");
 
@@ -127,14 +129,16 @@ test.describe("Bulk Image Upload", () => {
   });
 
   test.describe("Error Handling", () => {
-    test("should have toast notification system available", async ({ page }) => {
+    test("should have toast notification system available", async ({
+      page,
+    }) => {
       await page.goto("/catalog/create");
       await page.waitForLoadState("load");
 
       // Verify sonner toast container exists
-      const toastContainer = page.locator("[data-sonner-toast-container]").or(
-        page.locator(".sonner-toast-container")
-      );
+      const toastContainer = page
+        .locator("[data-sonner-toast-container]")
+        .or(page.locator(".sonner-toast-container"));
 
       // Toast container may or may not be visible initially (it's added dynamically)
       // Just verify the page loads without errors
@@ -171,7 +175,9 @@ test.describe("Bulk Image Upload", () => {
       await expect(photosSection).toBeVisible();
     });
 
-    test("should display vehicle form after upload section", async ({ page }) => {
+    test("should display vehicle form after upload section", async ({
+      page,
+    }) => {
       await page.goto("/catalog/create");
       await page.waitForLoadState("load");
 
@@ -179,9 +185,9 @@ test.describe("Bulk Image Upload", () => {
       await expect(page.locator("form")).toBeVisible();
 
       // Verify VIN input exists (key form field)
-      const vinInput = page.locator("input[name*='vin'], input[id*='vin']").or(
-        page.locator("label:text('VIN')").locator("..").locator("input")
-      );
+      const vinInput = page
+        .locator("input[name*='vin'], input[id*='vin']")
+        .or(page.locator("label:text('VIN')").locator("..").locator("input"));
       await expect(vinInput).toBeVisible();
     });
   });

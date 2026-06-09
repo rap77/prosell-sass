@@ -3,7 +3,7 @@
 **Date**: 2026-05-21  
 **Branch**: `main`  
 **Commits**: `b124452`, `a6ca3c5`, `[logo]`, `[sections]`, `[refactor]`  
-**Status**: ✅ Complete  
+**Status**: ✅ Complete
 
 ---
 
@@ -20,10 +20,12 @@ Continuar desde la sesión anterior: corregir errores TypeScript del redesign, c
 **Archivos**: `src/components/icons/index.tsx`, `src/components/leads/DuplicateWarning.tsx`
 
 **Problema**:
+
 - `ShieldIcon` (y el resto de íconos custom) recibían `style` prop desde `TwoFactorSetupForm.tsx`, pero `IconProps` no declaraba `style?: CSSProperties`.
 - `DuplicateWarning` era llamado con `className="max-w-full"` desde `vendedor/leads/[id]/page.tsx:185`, pero la interface no declaraba `className`.
 
 **Fix**:
+
 ```ts
 // icons/index.tsx
 import type { CSSProperties } from "react";
@@ -32,7 +34,7 @@ export interface IconProps {
   className?: string;
   width?: number;
   height?: number;
-  style?: CSSProperties;   // ← agregado
+  style?: CSSProperties; // ← agregado
 }
 
 // DuplicateWarning.tsx
@@ -40,7 +42,7 @@ interface DuplicateWarningProps {
   duplicates: DuplicateMatch[];
   onLeadClick?: (leadId: string) => void;
   style?: React.CSSProperties;
-  className?: string;      // ← agregado
+  className?: string; // ← agregado
 }
 ```
 
@@ -62,20 +64,20 @@ interface DuplicateWarningProps {
 
 **Secciones implementadas** (en orden de la página):
 
-| Sección | Descripción |
-|---------|-------------|
-| Nav | Sticky, blur backdrop, logo real, links, CTAs |
-| Hero | Dos columnas: copy + dashboard mockup animado (float), floating badges |
-| Proof strip | "2.400 equipos" + 5 company names |
-| Problema → Solución | Pain chips en rojo (43%, 65-80%, +8hs) → divider → 3 solution cards → niche switcher |
+| Sección                | Descripción                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
+| Nav                    | Sticky, blur backdrop, logo real, links, CTAs                                                     |
+| Hero                   | Dos columnas: copy + dashboard mockup animado (float), floating badges                            |
+| Proof strip            | "2.400 equipos" + 5 company names                                                                 |
+| Problema → Solución    | Pain chips en rojo (43%, 65-80%, +8hs) → divider → 3 solution cards → niche switcher              |
 | Features (alternating) | 3 filas: Distribución (channel grid mockup) / Leads (inbox + AI) / Inteligencia (bar chart + ROI) |
-| Métricas | 4 stats grandes: 43% / <60s / 3.2x / $15K + blockquote |
-| Precios | Toggle Mensual/Por comisión, 3 planes (Arranque $0 / Crecimiento $299 featured / Enterprise) |
-| Cómo funciona | 3 pasos numerados con íconos y time tags |
-| Testimonios | Grid 3+2 con avatar stack, role, niche badge |
-| FAQ | Layout 2 columnas, accordion nativo `<details>` |
-| Final CTA | Gradient bg, pulse dot, "Tu próximo cierre empieza acá.", trust badges |
-| Footer | 4 columnas: brand+social / Producto / Empresa / Soporte + footer-bar |
+| Métricas               | 4 stats grandes: 43% / <60s / 3.2x / $15K + blockquote                                            |
+| Precios                | Toggle Mensual/Por comisión, 3 planes (Arranque $0 / Crecimiento $299 featured / Enterprise)      |
+| Cómo funciona          | 3 pasos numerados con íconos y time tags                                                          |
+| Testimonios            | Grid 3+2 con avatar stack, role, niche badge                                                      |
+| FAQ                    | Layout 2 columnas, accordion nativo `<details>`                                                   |
+| Final CTA              | Gradient bg, pulse dot, "Tu próximo cierre empieza acá.", trust badges                            |
+| Footer                 | 4 columnas: brand+social / Producto / Empresa / Soporte + footer-bar                              |
 
 ---
 
@@ -84,6 +86,7 @@ interface DuplicateWarningProps {
 **Problema**: El logo era un `<div>` con "P" en gradient. El handoff tiene `assets/logo-mark.png` — una "P" pintada con nodos de circuito (271×294px).
 
 **Archivos actualizados**:
+
 - `apps/web/public/logo-mark.png` ← copiado desde `prosell-design/extracted/...`
 - `src/app/page.tsx` — landing (nav + footer)
 - `src/components/auth/AuthShell.tsx` — panel izquierdo de todas las páginas auth
@@ -91,15 +94,17 @@ interface DuplicateWarningProps {
 - `src/app/auth/setup-2fa/Setup2FAPageContent.tsx` — página standalone de 2FA
 
 **Implementación**:
+
 ```tsx
-<Image 
-  src="/logo-mark.png" 
-  alt="ProSell" 
-  width={271}   // dimensiones naturales del PNG
-  height={294}  
-  style={{ height: 34, width: "auto", flexShrink: 0 }} 
+<Image
+  src="/logo-mark.png"
+  alt="ProSell"
+  width={271} // dimensiones naturales del PNG
+  height={294}
+  style={{ height: 34, width: "auto", flexShrink: 0 }}
 />
 ```
+
 `width` y `height` naturales → CSS override con `height: 34px, width: auto` para mantener aspect ratio sin warnings.
 
 ---
@@ -128,6 +133,7 @@ landing-footer.tsx
 ```
 
 **`page.tsx` resultante** (55 líneas):
+
 ```tsx
 export default function HomePage() {
   return (
@@ -166,6 +172,7 @@ Para ocultar una sección: comentar una línea. Para editar: abrir el componente
 **Antes**: Single-row con logo + copyright + Privacidad/Términos.
 
 **Después** (fiel al handoff):
+
 ```
 ┌─────────────────────────────────────────────┐
 │ Logo ProSell                                 │
@@ -191,18 +198,23 @@ Para ocultar una sección: comentar una línea. Para editar: abrir el componente
 ## Patrones técnicos relevantes
 
 ### CSS en Server Components
+
 Animaciones CSS (`@keyframes`) se manejan con un `<style>` tag embebido en `LandingStyles` — patrón ya usado en `TwoFactorSetupSkeleton`. Evita JavaScript en el cliente para animaciones puramente decorativas.
 
 ### `<details>` nativo para FAQ
+
 La sección FAQ usa `<details>` + `<summary>` HTML nativos — funcionalidad accordion sin JS, compatible con Server Components. El primer ítem se renderiza `open` desde el servidor.
 
 ### Inline styles + CSS classes
+
 - Tokens de color: `var(--ps-*)` en `style={{}}` inline
 - Hover states, transitions y keyframes: clases CSS en `LandingStyles`
 - Esta división evita que Tailwind pelee con los tokens custom del design system
 
 ### Handoff consultado
+
 `prosell-design/extracted/prosell-sass/project/`:
+
 - `README.md` — fundamentals del design system
 - `SKILL.md` — reglas at-a-glance
 - `marketing/Hero.standalone-src.html` — hero section (leído directamente)
@@ -212,16 +224,16 @@ La sección FAQ usa `<details>` + `<summary>` HTML nativos — funcionalidad acc
 
 ## Archivos clave modificados/creados
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/app/page.tsx` | Orquestador delgado (55 líneas) |
-| `src/components/landing/*.tsx` | 13 componentes nuevos + `_data.ts` |
-| `src/components/auth/AuthShell.tsx` | Logo mark real |
-| `src/components/layout/Sidebar.tsx` | Logo mark real |
-| `src/app/auth/setup-2fa/Setup2FAPageContent.tsx` | Logo mark real |
-| `src/components/icons/index.tsx` | `style?: CSSProperties` en `IconProps` |
-| `src/components/leads/DuplicateWarning.tsx` | `className?: string` en props |
-| `apps/web/public/logo-mark.png` | Asset del handoff |
+| Archivo                                          | Cambio                                 |
+| ------------------------------------------------ | -------------------------------------- |
+| `src/app/page.tsx`                               | Orquestador delgado (55 líneas)        |
+| `src/components/landing/*.tsx`                   | 13 componentes nuevos + `_data.ts`     |
+| `src/components/auth/AuthShell.tsx`              | Logo mark real                         |
+| `src/components/layout/Sidebar.tsx`              | Logo mark real                         |
+| `src/app/auth/setup-2fa/Setup2FAPageContent.tsx` | Logo mark real                         |
+| `src/components/icons/index.tsx`                 | `style?: CSSProperties` en `IconProps` |
+| `src/components/leads/DuplicateWarning.tsx`      | `className?: string` en props          |
+| `apps/web/public/logo-mark.png`                  | Asset del handoff                      |
 
 ---
 

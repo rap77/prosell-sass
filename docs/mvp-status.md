@@ -51,30 +51,30 @@ Permitir que el equipo de ProSell gestione el flujo interno completo de ventas d
 
 ## Traffic Light by Module
 
-| Module | Status | Progress | Evidence | Main Risk | Next Step |
-|---|---|---:|---|---|---|
-| Auth | 🟢 Green | 95% | JWT, OAuth v1, 2FA, dynamic cookie domains, admin seeding | Final regression check | Smoke test in Docker |
-| Organizations & Teams | 🟢 Green | 95% | Seeding works, memberships/teams verified, invitation flow implemented end-to-end | Final integrated validation | E2E invitation + team flow |
-| Catalog C3 | 🟢 Green | 95% | Alembic unified, categories/products base multinicho + vertical vehicle ya funcional, DataGrid, CSV, VIN decode | Final integrated verification | Integrated E2E test |
-| Image Upload | 🟢 Green | 85% | Components and endpoints verified, hot-reload active in Docker | Real-env storage latency | Verify in staging |
-| Leads | 🟢 Green | 95% | Lead lifecycle, duplicate detection y auto-assignment ya verificados a nivel engine + use case | Final hardening / broader API coverage | Expand release regression if needed |
-| Appointments | 🟢 Green | 92% | Migrations merged, API verified, conflict detection verified, operational E2E path green, calendar route compiles again | Final UI/E2E hardening | Expand calendar UI coverage if needed |
-| E2E / QA | 🟢 Green | 100% | Staging verificado 2026-05-27: integrated-critical-path 2/2, integrated-flow 4/4 (Milestone C skips eliminados), staging-smoke 14/14 | Deuda menor: appointment endpoint usa query param vs body JSON | Corregir contrato endpoint antes de producción |
-| Documentation Status | 🟢 Green | 100% | Centralized in this file; stale docs marked for archival | Low | Maintain this file |
+| Module                | Status   | Progress | Evidence                                                                                                                             | Main Risk                                                      | Next Step                                      |
+| --------------------- | -------- | -------: | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | ---------------------------------------------- |
+| Auth                  | 🟢 Green |      95% | JWT, OAuth v1, 2FA, dynamic cookie domains, admin seeding                                                                            | Final regression check                                         | Smoke test in Docker                           |
+| Organizations & Teams | 🟢 Green |      95% | Seeding works, memberships/teams verified, invitation flow implemented end-to-end                                                    | Final integrated validation                                    | E2E invitation + team flow                     |
+| Catalog C3            | 🟢 Green |      95% | Alembic unified, categories/products base multinicho + vertical vehicle ya funcional, DataGrid, CSV, VIN decode                      | Final integrated verification                                  | Integrated E2E test                            |
+| Image Upload          | 🟢 Green |      85% | Components and endpoints verified, hot-reload active in Docker                                                                       | Real-env storage latency                                       | Verify in staging                              |
+| Leads                 | 🟢 Green |      95% | Lead lifecycle, duplicate detection y auto-assignment ya verificados a nivel engine + use case                                       | Final hardening / broader API coverage                         | Expand release regression if needed            |
+| Appointments          | 🟢 Green |      92% | Migrations merged, API verified, conflict detection verified, operational E2E path green, calendar route compiles again              | Final UI/E2E hardening                                         | Expand calendar UI coverage if needed          |
+| E2E / QA              | 🟢 Green |     100% | Staging verificado 2026-05-27: integrated-critical-path 2/2, integrated-flow 4/4 (Milestone C skips eliminados), staging-smoke 14/14 | Deuda menor: appointment endpoint usa query param vs body JSON | Corregir contrato endpoint antes de producción |
+| Documentation Status  | 🟢 Green |     100% | Centralized in this file; stale docs marked for archival                                                                             | Low                                                            | Maintain this file                             |
 
 ---
 
 ## Verification Status
 
-| Area | Implemented | Verified | Release-Ready | Notes |
-|---|---|---|---|---|
-| Auth | High | High | High | Prefixes unified to /api/v1; dynamic cookies ready. |
-| Catalog C3 | High | High | High | DB heads unified; seeding ensures functional catalog. |
-| Leads | High | High | High | Assignment strategy ya configurable en el use case y con cobertura adicional. |
-| Appointments | High | High | High | Operational flow passes and the dealer calendar route compile blocker was removed. |
-| Facebook/Publisher | Medium | Low-Medium | Low | Functional code exists but needs real API approval for the initial vehicle-first rollout. |
-| End-to-End MVP Flow | High | Medium-High | Medium-High | API path verificado (`integrated-flow.spec.ts`). El path UI ya cubre más superficie funcional tras el cierre de Milestone C, pero falta una pasada final de release. |
-| Team Collaboration | High | High | High | Team invitation system implemented end-to-end. |
+| Area                | Implemented | Verified    | Release-Ready | Notes                                                                                                                                                                |
+| ------------------- | ----------- | ----------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth                | High        | High        | High          | Prefixes unified to /api/v1; dynamic cookies ready.                                                                                                                  |
+| Catalog C3          | High        | High        | High          | DB heads unified; seeding ensures functional catalog.                                                                                                                |
+| Leads               | High        | High        | High          | Assignment strategy ya configurable en el use case y con cobertura adicional.                                                                                        |
+| Appointments        | High        | High        | High          | Operational flow passes and the dealer calendar route compile blocker was removed.                                                                                   |
+| Facebook/Publisher  | Medium      | Low-Medium  | Low           | Functional code exists but needs real API approval for the initial vehicle-first rollout.                                                                            |
+| End-to-End MVP Flow | High        | Medium-High | Medium-High   | API path verificado (`integrated-flow.spec.ts`). El path UI ya cubre más superficie funcional tras el cierre de Milestone C, pero falta una pasada final de release. |
+| Team Collaboration  | High        | High        | High          | Team invitation system implemented end-to-end.                                                                                                                       |
 
 ---
 
@@ -95,6 +95,7 @@ Permitir que el equipo de ProSell gestione el flujo interno completo de ventas d
 Milestone C quedó cerrada formalmente el **2026-05-21**. Ver `tasks/plan.md`, `tasks/todo.md` y `docs/audit/MILESTONE-C-CLOSEOUT-2026-05-21.md`.
 
 Bloques entregados:
+
 - **M3**: Error pages globales (`not-found.tsx`, `error.tsx`, `global-error.tsx`)
 - **M2**: Catalog detail `/catalog/{id}` en modo lectura
 - **M1**: Publications route `/publications` como entry point funcional
@@ -113,28 +114,33 @@ El siguiente paso ya no es completar la milestone, sino validar el estado final 
 **Evidence date for this review:** 2026-05-27
 
 ### Backend
+
 - Alembic: Lineal (Head: `e1f2a3b4c5d6`) — verificado en staging, 0 migraciones pendientes.
 - Data: `init_data.py` (ORM-based) successful.
 - Routes: `/api/v1/auth` consistent across backend/frontend.
 - pytest: **1124 passed, 0 failed**.
 
 ### Frontend
+
 - Build: SUCCESS (Next.js 16/Webpack).
 - Middleware: Migrated to `proxy.ts` (Clean build).
 - Vitest: **840 passed, 0 failed**.
 - TypeScript: 0 errores.
 
 ### E2E (staging real — 2026-05-27)
+
 - `integrated-critical-path.spec.ts`: **2/2 passed** — flujo completo publish → lead → appointment.
 - `integrated-flow.spec.ts`: **4/4 active, 4/4 passed** — Milestone C skips eliminados (catalog detail, publications, pipeline kanban ahora activos).
 - `staging-smoke.spec.ts`: **14/14 passed**.
 
 ### Deuda técnica (no-bloqueante para go-live)
+
 - `PUT /api/v1/appointments/{id}/status` — recibe `?new_status=` como query param; inconsistente con el resto de la API REST (debería ser body JSON).
 - A11y: sidebar dark mode contraste 2.4:1 vs mínimo WCAG AA 4.5:1 (`var(--ps-text-disabled)` sobre `--ps-bg-sidebar`).
 - A11y: `<h3>` sin `<h2>` previo en dashboard; dos `<aside>` sin `aria-label` diferenciador.
 
 ### Current Sprint Evidence
+
 - `tasks/todo.md`: refleja **Milestone C completada (8/8)** y cerrada formalmente.
 - `tasks/plan.md`: refleja el cierre formal de Milestone C y ausencia de tasks operativas pendientes para esta milestone.
 - `bash scripts/mm/mm.sh status`: sin tasks pendientes ni en progreso al momento del audit de cierre.

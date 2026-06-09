@@ -80,7 +80,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
           leadId="lead-123"
           vehicleId="vehicle-123"
         />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
   };
 
@@ -88,7 +88,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
     it("should display red warning banner for 409 conflict errors", async () => {
       // Mock 409 conflict error
       const conflictError = new Error(
-        "Branch branch-1 already has an appointment at 2026-04-30T14:00:00"
+        "Branch branch-1 already has an appointment at 2026-04-30T14:00:00",
       );
       (conflictError as any).status = 409;
       mockMutateAsync.mockRejectedValue(conflictError);
@@ -102,13 +102,15 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
       // Since form validation fails, let's test the error display logic directly
       // by checking that the component has the error state management
       // The actual backend error will be shown when form is valid
-      expect(screen.getByRole("button", { name: /^Agendar$/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /^Agendar$/i }),
+      ).toBeInTheDocument();
     });
 
     it("should display yellow warning for 400 validation errors", async () => {
       // Mock 400 validation error
       const validationError = new Error(
-        "No se pueden agendar turnos en fin de semana"
+        "No se pueden agendar turnos en fin de semana",
       );
       (validationError as any).status = 400;
       mockMutateAsync.mockRejectedValue(validationError);
@@ -144,7 +146,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
             leadId="lead-123"
             vehicleId="vehicle-123"
           />
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       // Form is rendered
@@ -160,7 +162,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
             leadId="lead-123"
             vehicleId="vehicle-123"
           />
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       rerender(
@@ -172,7 +174,7 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
             leadId="lead-123"
             vehicleId="vehicle-123"
           />
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       // Form is rendered again
@@ -188,7 +190,9 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
 
       // Form is rendered
       expect(screen.getByText(/agendar turno/i)).toBeInTheDocument();
-      expect(screen.queryByTestId("appointment-error-banner")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("appointment-error-banner"),
+      ).not.toBeInTheDocument();
     });
 
     it("should show success toast and not show error banner", async () => {
@@ -198,7 +202,9 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
 
       // Form is rendered
       expect(screen.getByText(/agendar turno/i)).toBeInTheDocument();
-      expect(screen.queryByTestId("appointment-error-banner")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("appointment-error-banner"),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -214,8 +220,12 @@ describe("AppointmentForm - Conflict Warnings (A4.33)", () => {
       expect(screen.getByLabelText(/Fecha/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Horario/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Notas/i)).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /^Agendar$/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /^Agendar$/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /cancel/i }),
+      ).toBeInTheDocument();
     });
 
     it("should show business hours hint", async () => {

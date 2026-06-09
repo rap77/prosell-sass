@@ -1,26 +1,26 @@
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig({
   plugins: [react()],
   test: {
     // Test environment
-    environment: 'jsdom',
+    environment: "jsdom",
 
     // Setup files
-    setupFiles: ['./tests/setup.tsx'],
+    setupFiles: ["./tests/setup.tsx"],
 
     // Coverage configuration
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html', 'lcov'],
+      provider: "v8",
+      reporter: ["text", "json", "html", "lcov"],
       exclude: [
-        'node_modules/',
-        'tests/',
-        '**/*.config.{js,ts}',
-        '**/*.d.ts',
-        '**/types/**',
+        "node_modules/",
+        "tests/",
+        "**/*.config.{js,ts}",
+        "**/*.d.ts",
+        "**/types/**",
       ],
       // Global coverage thresholds.
       //
@@ -46,14 +46,17 @@ export default defineConfig({
     },
 
     // Include files
-    include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}', 'tests/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    include: [
+      "src/**/*.{test,spec}.{js,jsx,ts,tsx}",
+      "tests/**/*.{test,spec}.{js,jsx,ts,tsx}",
+    ],
 
     // Exclude files — e2e/ uses Playwright, not Vitest
-    exclude: ['node_modules/', 'dist/', '.next/', 'out/', 'tests/e2e/**'],
+    exclude: ["node_modules/", "dist/", ".next/", "out/", "tests/e2e/**"],
 
     // Global aliases
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
 
     // Timeout for tests (ms)
@@ -66,7 +69,7 @@ export default defineConfig({
   // Resolve configuration
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
-})
+});

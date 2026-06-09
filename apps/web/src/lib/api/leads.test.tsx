@@ -4,7 +4,13 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useLeads, useLead, useUpdateLeadStatus, useReassignLead, LeadStatus } from "./leads";
+import {
+  useLeads,
+  useLead,
+  useUpdateLeadStatus,
+  useReassignLead,
+  LeadStatus,
+} from "./leads";
 import { toast } from "sonner";
 
 // Mock fetch
@@ -66,7 +72,9 @@ function createWrapper() {
   });
 
   function Wrapper({ children }: { children: React.ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
   }
   return Wrapper;
 }
@@ -82,7 +90,9 @@ describe("useLeads", () => {
       json: async () => mockLeadsResponse,
     });
 
-    const { result } = renderHook(() => useLeads(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLeads(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -92,7 +102,7 @@ describe("useLeads", () => {
       expect.stringContaining("/api/v1/leads?limit=50&offset=0"),
       expect.objectContaining({
         credentials: "include",
-      })
+      }),
     );
   });
 
@@ -104,14 +114,14 @@ describe("useLeads", () => {
 
     const { result } = renderHook(
       () => useLeads({ status: LeadStatus.CONTACTED }),
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("status=contacted"),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -129,7 +139,7 @@ describe("useLeads", () => {
 
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("search=John"),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -139,7 +149,9 @@ describe("useLeads", () => {
       json: async () => ({ message: "Unauthorized" }),
     });
 
-    const { result } = renderHook(() => useLeads(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLeads(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -170,7 +182,7 @@ describe("useLead", () => {
       "/api/v1/leads/lead-1",
       expect.objectContaining({
         credentials: "include",
-      })
+      }),
     );
   });
 
@@ -215,10 +227,12 @@ describe("useUpdateLeadStatus", () => {
         },
         credentials: "include",
         body: expect.stringContaining('"new_status":"contacted"'),
-      })
+      }),
     );
 
-    expect(toast.success).toHaveBeenCalledWith("Lead status updated successfully");
+    expect(toast.success).toHaveBeenCalledWith(
+      "Lead status updated successfully",
+    );
   });
 
   it("should show error toast on failure", async () => {
@@ -272,7 +286,7 @@ describe("useReassignLead", () => {
         },
         credentials: "include",
         body: expect.stringContaining(`"vendedor_id":"${newVendedorId}"`),
-      })
+      }),
     );
 
     expect(toast.success).toHaveBeenCalledWith("Lead reassigned successfully");
@@ -298,7 +312,7 @@ describe("useReassignLead", () => {
       expect.objectContaining({
         method: "PUT",
         body: expect.stringContaining('"vendedor_id":null'),
-      })
+      }),
     );
 
     expect(toast.success).toHaveBeenCalledWith("Lead reassigned successfully");

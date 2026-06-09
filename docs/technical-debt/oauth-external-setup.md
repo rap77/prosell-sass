@@ -196,6 +196,7 @@ However, OAuth 2.0 protocol requires **external configuration**:
    ```
 
 5. **Configure authorized redirect URIs**
+
    > **IMPORTANT**: With the new Backend Callback Flow, redirect URIs point to the BACKEND
 
    ```

@@ -17,7 +17,7 @@
  * pure-function shape of the fix makes the test much smaller and more
  * durable than a full component mount.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 
 /**
  * Mirror of `displayValue` from CatalogDetailView.tsx. Keep in sync.
@@ -26,76 +26,76 @@ import { describe, it, expect } from 'vitest';
  */
 function displayValue(value: unknown): string | null {
   if (value === null || value === undefined) return null;
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const trimmed = value.trim();
     if (trimmed.length === 0) return null;
     const tokens = trimmed.split(/\s+/).map((t) => t.toLowerCase());
     const onlyJunkTokens = tokens.every(
-      (t) => t === 'undefined' || t === 'null' || t === 'nan',
+      (t) => t === "undefined" || t === "null" || t === "nan",
     );
     if (onlyJunkTokens) return null;
     return trimmed;
   }
-  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
   return null;
 }
 
-describe('displayValue (CatalogDetailView title/attribute sanitization)', () => {
-  describe('happy path', () => {
-    it('returns trimmed strings unchanged', () => {
-      expect(displayValue('  Chevrolet Cruze  ')).toBe('Chevrolet Cruze');
+describe("displayValue (CatalogDetailView title/attribute sanitization)", () => {
+  describe("happy path", () => {
+    it("returns trimmed strings unchanged", () => {
+      expect(displayValue("  Chevrolet Cruze  ")).toBe("Chevrolet Cruze");
     });
 
-    it('returns numeric values as strings', () => {
-      expect(displayValue(2021)).toBe('2021');
-      expect(displayValue(0)).toBe('0');
+    it("returns numeric values as strings", () => {
+      expect(displayValue(2021)).toBe("2021");
+      expect(displayValue(0)).toBe("0");
     });
 
     it('preserves strings that contain "undefined" as a SUBSTRING of a real value', () => {
       // "undefined" appears in the middle but there are other real tokens.
       // We only reject strings composed ENTIRELY of junk tokens.
-      expect(displayValue('Chevrolet undefined')).toBe('Chevrolet undefined');
+      expect(displayValue("Chevrolet undefined")).toBe("Chevrolet undefined");
     });
   });
 
-  describe('missing / empty values', () => {
+  describe("missing / empty values", () => {
     it.each([
-      ['null literal', null],
-      ['undefined literal', undefined],
-      ['empty string', ''],
-      ['whitespace string', '   '],
-    ])('returns null for %s', (_label, input) => {
+      ["null literal", null],
+      ["undefined literal", undefined],
+      ["empty string", ""],
+      ["whitespace string", "   "],
+    ])("returns null for %s", (_label, input) => {
       expect(displayValue(input)).toBeNull();
     });
   });
 
-  describe('legacy concatenation bugs (the actual regression)', () => {
+  describe("legacy concatenation bugs (the actual regression)", () => {
     it.each([
-      ['single undefined', 'undefined'],
-      ['single null', 'null'],
-      ['single nan', 'NaN'],
-      ['two undefined tokens', 'undefined undefined'],
-      ['three undefined tokens', 'undefined undefined undefined'],
-      ['mixed undefined and null', 'undefined null undefined'],
-      ['mixed casing', 'Undefined UNDEFINED'],
-    ])('returns null for %s', (_label, input) => {
+      ["single undefined", "undefined"],
+      ["single null", "null"],
+      ["single nan", "NaN"],
+      ["two undefined tokens", "undefined undefined"],
+      ["three undefined tokens", "undefined undefined undefined"],
+      ["mixed undefined and null", "undefined null undefined"],
+      ["mixed casing", "Undefined UNDEFINED"],
+    ])("returns null for %s", (_label, input) => {
       expect(displayValue(input)).toBeNull();
     });
   });
 
-  describe('non-string non-number inputs', () => {
-    it('returns null for booleans', () => {
+  describe("non-string non-number inputs", () => {
+    it("returns null for booleans", () => {
       expect(displayValue(true)).toBeNull();
       expect(displayValue(false)).toBeNull();
     });
 
-    it('returns null for objects and arrays', () => {
+    it("returns null for objects and arrays", () => {
       expect(displayValue({})).toBeNull();
       expect(displayValue([])).toBeNull();
-      expect(displayValue({ foo: 'bar' })).toBeNull();
+      expect(displayValue({ foo: "bar" })).toBeNull();
     });
 
-    it('returns null for NaN / Infinity', () => {
+    it("returns null for NaN / Infinity", () => {
       expect(displayValue(NaN)).toBeNull();
       expect(displayValue(Infinity)).toBeNull();
       expect(displayValue(-Infinity)).toBeNull();

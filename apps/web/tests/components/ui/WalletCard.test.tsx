@@ -43,7 +43,9 @@ describe("WalletCard", () => {
   it("renders title and refresh button by default", () => {
     render(<WalletCard organizationId="org-123" />);
     expect(screen.getByText(/token balance/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /refresh balance/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /refresh balance/i }),
+    ).toBeInTheDocument();
   });
 
   it("fetches balance on mount", () => {
@@ -109,6 +111,8 @@ describe("WalletCard", () => {
 
   it("hides refresh button when showRefreshButton=false", () => {
     render(<WalletCard organizationId="org-123" showRefreshButton={false} />);
-    expect(screen.queryByRole("button", { name: /refresh balance/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /refresh balance/i }),
+    ).not.toBeInTheDocument();
   });
 });

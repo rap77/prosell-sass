@@ -19,12 +19,14 @@ metadata:
 Esta skill es **PROACTIVA** — se activa cuando:
 
 **Antes de Commit:**
+
 - El usuario indica que terminó una feature ("terminé", "listo", "ya está")
 - Se detectan cambios en git (`git status` muestra archivos modificados)
 - El usuario pregunta "¿qué te parece?", "¿está bien?", "¿revisás?"
 - Antes de ejecutar `/mm:safe-commit`
 
 **Post-Implementation:**
+
 - Después de `/mm:complete-task` completa una tarea
 - Después de implementar una feature compleja
 - El usuario solicita revisión explícita ("review", "revisame esto")
@@ -37,9 +39,11 @@ Esta skill es **PROACTIVA** — se activa cuando:
 ## Protocolo de Review (5 Ejes)
 
 ### Eje 1: Correctness
+
 **Pregunta clave:** ¿El código hace lo que debe hacer?
 
 **Criterios:**
+
 - Lógica correcta sin bugs obvios
 - Manejo de edge cases (null, undefined, empty arrays)
 - Validación de inputs
@@ -47,6 +51,7 @@ Esta skill es **PROACTIVA** — se activa cuando:
 - Tests cubren casos críticos
 
 **Brain #6 (QA):**
+
 ```python
 mcp__notebooklm-mcp__notebook_query(
     notebook_id="BRAIN_06_QA_DEVOPS",
@@ -73,9 +78,11 @@ Answer with:
 ```
 
 ### Eje 2: Readability
+
 **Pregunta clave:** ¿El código es fácil de entender?
 
 **Criterios:**
+
 - Nombres descriptivos (variables, funciones, clases)
 - Comentarios en lo NO obvio
 - Funciones pequeñas (< 50 líneas)
@@ -83,6 +90,7 @@ Answer with:
 - Sin "magia" (números hardcoded, strings sin explicación)
 
 **Brain #7 (Growth):**
+
 ```python
 mcp__notebooklm-mcp__notebook_query(
     notebook_id="BRAIN_07_GROWTH",
@@ -106,9 +114,11 @@ Answer with:
 ```
 
 ### Eje 3: Architecture
+
 **Pregunta clave:** ¿El código sigue buenas prácticas de arquitectura?
 
 **Criterios:**
+
 - Separación de responsabilidades (SRP)
 - DRY (Don't Repeat Yourself)
 - Inversión de dependencias
@@ -116,6 +126,7 @@ Answer with:
 - Modularidad y bajo acoplamiento
 
 **Brain #7 (Growth):**
+
 ```python
 mcp__notebooklm-mcp__notebook_query(
     notebook_id="BRAIN_07_GROWTH",
@@ -139,9 +150,11 @@ Answer with:
 ```
 
 ### Eje 4: Security
+
 **Pregunta clave:** ¿El código tiene vulnerabilidades?
 
 **Criterios:**
+
 - Sin inyección SQL/Command
 - Validación de entrada sanitizada
 - Auth/authorization correctos
@@ -149,6 +162,7 @@ Answer with:
 - Headers de seguridad (CORS, CSP)
 
 **Brain #6 (QA):**
+
 ```python
 mcp__notebooklm-mcp__notebook_query(
     notebook_id="BRAIN_06_QA_DEVOPS",
@@ -173,9 +187,11 @@ Answer with:
 ```
 
 ### Eje 5: Performance
+
 **Pregunta clave:** ¿El código es eficiente?
 
 **Criterios:**
+
 - Sin queries N+1
 - Uso apropiado de índices
 - Sin memory leaks
@@ -183,6 +199,7 @@ Answer with:
 - Caching cuando aplica
 
 **Brain #7 (Growth):**
+
 ```python
 mcp__notebooklm-mcp__notebook_query(
     notebook_id="BRAIN_07_GROWTH",
@@ -233,12 +250,15 @@ Generar reporte en `.planning/REVIEWS/<timestamp>-review.md`:
 ## 1. Correctness
 
 ### CRITICAL
+
 - [ ] {issue} — Line {n}
 
 ### WARNING
+
 - [ ] {issue} — Line {n}
 
 ### SUGGESTION
+
 - [ ] {improvement} — Line {n}
 
 ---
@@ -246,12 +266,15 @@ Generar reporte en `.planning/REVIEWS/<timestamp>-review.md`:
 ## 2. Readability
 
 ### CRITICAL
+
 - [ ] {confusing code} — Line {n}
 
 ### WARNING
+
 - [ ] {unclear name} — Line {n}
 
 ### SUGGESTION
+
 - [ ] {naming suggestion} — Line {n}
 
 ---
@@ -259,12 +282,15 @@ Generar reporte en `.planning/REVIEWS/<timestamp>-review.md`:
 ## 3. Architecture
 
 ### CRITICAL
+
 - [ ] {violation} — Line {n}
 
 ### WARNING
+
 - [ ] {pattern suggestion} — Line {n}
 
 ### SUGGESTION
+
 - [ ] {refactoring opportunity} — Line {n}
 
 ---
@@ -272,12 +298,15 @@ Generar reporte en `.planning/REVIEWS/<timestamp>-review.md`:
 ## 4. Security
 
 ### CRITICAL
+
 - [ ] {vulnerability} — Line {n}
 
 ### WARNING
+
 - [ ] {risk} — Line {n}
 
 ### SUGGESTION
+
 - [ ] {hardening} — Line {n}
 
 ---
@@ -285,12 +314,15 @@ Generar reporte en `.planning/REVIEWS/<timestamp>-review.md`:
 ## 5. Performance
 
 ### CRITICAL
+
 - [ ] {bottleneck} — Line {n}
 
 ### WARNING
+
 - [ ] {inefficiency} — Line {n}
 
 ### SUGGESTION
+
 - [ ] {optimization} — Line {n}
 
 ---
@@ -298,11 +330,13 @@ Generar reporte en `.planning/REVIEWS/<timestamp>-review.md`:
 ## Brain Consultations
 
 ### Brain #6 (QA) — {timestamp}
+
 **Input:** {query_summary}
 **Output:** {key_findings}
 **Confidence:** {HIGH/MEDIUM/LOW}
 
 ### Brain #7 (Growth) — {timestamp}
+
 **Input:** {query_summary}
 **Output:** {key_findings}
 **Confidence:** {HIGH/MEDIUM/LOW}
@@ -327,7 +361,9 @@ Generar reporte en `.planning/REVIEWS/<timestamp>-review.md`:
 ## Criterios de Severidad
 
 ### CRITICAL 🔴
+
 **Must fix BEFORE commit**
+
 - Bugs que rompen la funcionalidad
 - Vulnerabilidades de seguridad (OWASP Top 10)
 - Performance issues críticos (N+1 queries sin paginación)
@@ -336,7 +372,9 @@ Generar reporte en `.planning/REVIEWS/<timestamp>-review.md`:
 **Action:** Bloquear commit hasta corregir
 
 ### WARNING 🟡
+
 **Should fix SOON**
+
 - Edge cases no manejados
 - Error handling incompleto
 - Código confuso o difícil de mantener
@@ -346,7 +384,9 @@ Generar reporte en `.planning/REVIEWS/<timestamp>-review.md`:
 **Action:** Permitir commit con TODO comment, revisar en próxima iteración
 
 ### SUGGESTION 🟢
+
 **Nice to have**
+
 - Mejoras de naming
 - Refactoring opportunities
 - Optimizaciones no críticas
@@ -382,6 +422,7 @@ Esta skill se activa automáticamente cuando el comando `/mm:review` se ejecuta:
 ## Brain Protocol
 
 **Brain #6 (QA/DevOps):**
+
 - QA standards
 - Testing strategy
 - Edge cases identification
@@ -389,6 +430,7 @@ Esta skill se activa automáticamente cuando el comando `/mm:review` se ejecuta:
 - Error handling patterns
 
 **Brain #7 (Growth/Data):**
+
 - Systems thinking
 - Architecture evaluation
 - Impact analysis

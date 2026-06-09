@@ -1,15 +1,15 @@
 interface UploadUrlResponse {
-  uploadUrl: string
-  fileId: string
+  uploadUrl: string;
+  fileId: string;
 }
 
 interface ProcessingStatusResponse {
-  status: 'pending' | 'processing' | 'complete' | 'error'
-  url?: string
+  status: "pending" | "processing" | "complete" | "error";
+  url?: string;
 }
 
 interface DirectUploadResponse {
-  url: string
+  url: string;
 }
 
 /**
@@ -17,16 +17,18 @@ interface DirectUploadResponse {
  * @param fileType - MIME type (e.g., 'image/jpeg')
  * @returns Presigned URL and file ID
  */
-export async function generateUploadUrl(fileType: string): Promise<UploadUrlResponse> {
-  const res = await fetch('/api/v1/images/upload-url', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+export async function generateUploadUrl(
+  fileType: string,
+): Promise<UploadUrlResponse> {
+  const res = await fetch("/api/v1/images/upload-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content_type: fileType }),
-  })
+  });
 
-  if (!res.ok) throw new Error('Failed to generate upload URL')
+  if (!res.ok) throw new Error("Failed to generate upload URL");
 
-  return res.json()
+  return res.json();
 }
 
 /**
@@ -40,32 +42,32 @@ export async function uploadToCloud(
   url: string,
   file: File,
   fileId: string,
-  onProgress: (percent: number) => void
+  onProgress: (percent: number) => void,
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    const xhr = new XMLHttpRequest()
+    const xhr = new XMLHttpRequest();
 
     // Upload progress tracking
-    xhr.upload.addEventListener('progress', (e) => {
+    xhr.upload.addEventListener("progress", (e) => {
       if (e.lengthComputable) {
-        const percent = Math.round((e.loaded / e.total) * 100)
-        onProgress(percent)
+        const percent = Math.round((e.loaded / e.total) * 100);
+        onProgress(percent);
       }
-    })
+    });
 
-    xhr.addEventListener('load', () => {
+    xhr.addEventListener("load", () => {
       if (xhr.status === 200) {
-        resolve()
+        resolve();
       } else {
-        reject(new Error('Upload failed'))
+        reject(new Error("Upload failed"));
       }
-    })
+    });
 
-    xhr.addEventListener('error', () => reject(new Error('Upload failed')))
+    xhr.addEventListener("error", () => reject(new Error("Upload failed")));
 
-    xhr.open('PUT', url)
-    xhr.send(file)
-  })
+    xhr.open("PUT", url);
+    xhr.send(file);
+  });
 }
 
 /**
@@ -74,32 +76,34 @@ export async function uploadToCloud(
  * @param fileId - File ID from upload URL generation
  * @returns Final cloud URL when processing complete
  */
-export async function pollProcessingStatus(fileId: string): Promise<{ url: string }> {
-  const maxAttempts = 30 // 30 attempts * 2s = 1 minute timeout
-  let attempts = 0
+export async function pollProcessingStatus(
+  fileId: string,
+): Promise<{ url: string }> {
+  const maxAttempts = 30; // 30 attempts * 2s = 1 minute timeout
+  let attempts = 0;
 
   while (attempts < maxAttempts) {
-    const res = await fetch(`/api/v1/images/status/${fileId}`)
+    const res = await fetch(`/api/v1/images/status/${fileId}`);
 
-    if (!res.ok) throw new Error('Failed to check processing status')
+    if (!res.ok) throw new Error("Failed to check processing status");
 
-    const data: ProcessingStatusResponse = await res.json()
+    const data: ProcessingStatusResponse = await res.json();
 
-    if (data.status === 'complete') {
-      if (!data.url) throw new Error('Processing complete but no URL returned')
-      return { url: data.url }
+    if (data.status === "complete") {
+      if (!data.url) throw new Error("Processing complete but no URL returned");
+      return { url: data.url };
     }
 
-    if (data.status === 'error') {
-      throw new Error('Processing failed')
+    if (data.status === "error") {
+      throw new Error("Processing failed");
     }
 
     // Wait 2 seconds before retrying
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    attempts++
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    attempts++;
   }
 
-  throw new Error('Processing timeout')
+  throw new Error("Processing timeout");
 }
 
 /**
@@ -110,21 +114,21 @@ export async function pollProcessingStatus(fileId: string): Promise<{ url: strin
  *          `key` (raw storage path — persist this in `product.image_urls`).
  */
 export async function uploadImageDirect(
-  file: File
+  file: File,
 ): Promise<{ url: string; key: string }> {
-  const formData = new FormData()
-  formData.append('file', file)
+  const formData = new FormData();
+  formData.append("file", file);
 
-  const res = await fetch('/api/v1/images/upload', {
-    method: 'POST',
+  const res = await fetch("/api/v1/images/upload", {
+    method: "POST",
     body: formData,
     // Note: Don't set Content-Type header for FormData - browser sets it with boundary
-  })
+  });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: 'Upload failed' }))
-    throw new Error(error.detail || 'Failed to upload image')
+    const error = await res.json().catch(() => ({ detail: "Upload failed" }));
+    throw new Error(error.detail || "Failed to upload image");
   }
 
-  return res.json()
+  return res.json();
 }

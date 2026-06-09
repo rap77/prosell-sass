@@ -15,6 +15,7 @@ The Sprint 1-2 code review identified **5 critical bugs** and **5 important issu
 ### 1.2 Fix Inventory
 
 **CRITICAL (must fix before any release):**
+
 - **C1** — `auth_middleware.py`: JWT extracted from Bearer header, not cookie → all protected endpoints broken
 - **C2** — `authApi.ts` + `authStore.ts`: `register()` sets `isAuthenticated: true` despite backend returning no tokens
 - **C3** — `PasswordInput.tsx`: uses deprecated `forwardRef` (React 19 violation)
@@ -22,6 +23,7 @@ The Sprint 1-2 code review identified **5 critical bugs** and **5 important issu
 - **C5** — `authStore.initializeAuth`: error sets `initialized: false` → infinite retry loop
 
 **IMPORTANT (should fix before merge to main):**
+
 - **I1** — `authApi.ts`: `verifyEmail`, `forgotPassword`, `resetPassword`, `enable2FA`, `disable2FA` are mutations but are cached
 - **I2** — `RegisterForm.tsx`: `nameSplitCache` IIFE created inside component body (new Map on every render)
 - **I3** — `RegisterForm.tsx`: dead code — `errorFields` array and `trigger` destructure never used
@@ -49,13 +51,13 @@ I1..I5 → all independent
 
 ### 2.1 Tech Stack
 
-| Component | Technology | Version |
-|-----------|-----------|---------|
-| Backend middleware | FastAPI + python-jose | 0.115+ |
-| Frontend store | Zustand | 5.x |
-| Frontend forms | React Hook Form + Zod | 7.x + 4.x |
-| Frontend components | React 19 (ref as prop) | 19.2 |
-| Auth cookies | httpOnly, SameSite=Lax (OAuth) / Strict (regular) | - |
+| Component           | Technology                                        | Version   |
+| ------------------- | ------------------------------------------------- | --------- |
+| Backend middleware  | FastAPI + python-jose                             | 0.115+    |
+| Frontend store      | Zustand                                           | 5.x       |
+| Frontend forms      | React Hook Form + Zod                             | 7.x + 4.x |
+| Frontend components | React 19 (ref as prop)                            | 19.2      |
+| Auth cookies        | httpOnly, SameSite=Lax (OAuth) / Strict (regular) | -         |
 
 ### 2.2 Key Files
 
@@ -99,6 +101,7 @@ class RegisterUserResponse(BaseModel):
 ### 2.4 Existing Pattern: Cookie-based auth in FastAPI (reference)
 
 The login endpoint already sets cookies correctly:
+
 ```python
 # apps/api/src/prosell/infrastructure/api/routers/auth_router.py:~162
 response.set_cookie(key="access_token", value=..., httponly=True, secure=True, samesite="strict")
@@ -137,6 +140,7 @@ export const MyInput = forwardRef<HTMLInputElement, Props>((props, ref) => { ...
 **Problem**: Uses `HTTPBearer()` which reads `Authorization: Bearer <token>` header. The browser never sends this header — tokens are in httpOnly cookies.
 
 **Fix**:
+
 ```python
 # BEFORE
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -247,6 +251,7 @@ export async function GET(): Promise<NextResponse<AuthStateResponse>> {
 ```
 
 **Gotcha**: The `API_URL` env var is server-side only (no `NEXT_PUBLIC_` prefix). Add to `docker-compose.yml` and `.env.local`:
+
 ```bash
 API_URL=http://api:8000  # docker compose service
 # or for local dev:
@@ -254,6 +259,7 @@ API_URL=http://localhost:8000
 ```
 
 **Also**: The `/api/auth/me` backend endpoint now returns a `MeResponse` with `{ id, roles }`. We need the full user data for the auth state. Two options:
+
 - Option A: Call `/api/auth/state` backend endpoint (returns `AuthStateResponse` with full user)
 - Option B: Keep calling `/api/auth/me` and supplement with `user_data` cookie for non-sensitive display data
 
@@ -497,6 +503,7 @@ export function PasswordInput({
 **File**: `apps/web/src/lib/api/authApi.ts`
 
 These methods are **state-changing operations** and must NEVER be cached:
+
 - `verifyEmail` — token is consumed server-side after first use
 - `forgotPassword` — triggers email send, must always hit the API
 - `resetPassword` — token is consumed, password changes on backend
@@ -526,6 +533,7 @@ async verifyEmail(token: string): Promise<MessageResponse> {
 ```
 
 Also remove caching from `enable2FA` and `disable2FA` — these generate/revoke TOTP secrets:
+
 ```typescript
 // enable2FA generates a new QR code each time — should not be cached
 // disable2FA is a mutation — should not be cached
@@ -538,9 +546,13 @@ Also remove caching from `enable2FA` and `disable2FA` — these generate/revoke 
 **File**: `apps/web/src/components/auth/RegisterForm.tsx`
 
 **I2 — Move nameSplitCache to module level**:
+
 ```typescript
 // ✅ Module level — persists across renders
-const nameSplitCache = new Map<string, { firstName: string; lastName: string }>();
+const nameSplitCache = new Map<
+  string,
+  { firstName: string; lastName: string }
+>();
 
 function splitName(fullName: string): { firstName: string; lastName: string } {
   const cached = nameSplitCache.get(fullName);
@@ -548,13 +560,17 @@ function splitName(fullName: string): { firstName: string; lastName: string } {
 
   const trimmed = fullName.trim();
   const parts = trimmed.split(" ");
-  const result = { firstName: parts[0] ?? "", lastName: parts.slice(1).join(" ") };
+  const result = {
+    firstName: parts[0] ?? "",
+    lastName: parts.slice(1).join(" "),
+  };
   nameSplitCache.set(fullName, result);
   return result;
 }
 ```
 
 **I3 — Remove dead code**:
+
 ```typescript
 // ❌ Remove these entirely:
 const errorFields = ["fullName", "email", "password", "confirmPassword", "acceptTerms"];
@@ -563,6 +579,7 @@ const { control, handleSubmit, trigger, register: registerInput, ... } = useForm
 ```
 
 **I5 — Fix validation mode**:
+
 ```typescript
 // BEFORE
 mode: "all",  // ← validates on every keystroke, shows errors immediately
@@ -722,6 +739,7 @@ pnpm test -- --reporter=verbose tests/components/auth/ tests/unit/stores/ tests/
 File: `apps/api/tests/unit/infrastructure/middleware/test_auth_middleware.py`
 
 Tests to add/update:
+
 ```python
 # Mock request.cookies instead of HTTPBearer credentials
 async def test_get_current_user_with_valid_cookie(mock_jwt_service):
@@ -751,6 +769,7 @@ async def test_get_optional_user_no_cookie_returns_none(mock_jwt_service):
 File: `apps/web/tests/components/auth/PasswordInput.test.tsx`
 
 Tests to verify (should not need changes, but verify still pass):
+
 - `ref` forwarding test if exists — should still work
 - All existing rendering tests — zero changes to component behavior
 
@@ -759,15 +778,16 @@ Tests to verify (should not need changes, but verify still pass):
 File: `apps/web/tests/unit/stores/authStore.test.ts`
 
 Tests to add:
+
 ```typescript
 it("initializeAuth should set initialized: true on error (prevents retry loop)", async () => {
-  server.use(rest.get("/api/auth/state", (req, res, ctx) =>
-    res(ctx.status(500))
-  ));
+  server.use(
+    rest.get("/api/auth/state", (req, res, ctx) => res(ctx.status(500))),
+  );
   await useAuthStore.getState().initializeAuth();
   const { initialized, error, isLoading } = useAuthStore.getState();
-  expect(initialized).toBe(true);  // ← must be true
-  expect(error).not.toBeNull();    // ← error must be surfaced
+  expect(initialized).toBe(true); // ← must be true
+  expect(error).not.toBeNull(); // ← error must be surfaced
   expect(isLoading).toBe(false);
 });
 
@@ -779,7 +799,7 @@ it("register should NOT set isAuthenticated: true", async () => {
     last_name: "User",
   });
   const { isAuthenticated } = useAuthStore.getState();
-  expect(isAuthenticated).toBe(false);  // ← must be false
+  expect(isAuthenticated).toBe(false); // ← must be false
 });
 ```
 
@@ -788,6 +808,7 @@ it("register should NOT set isAuthenticated: true", async () => {
 File: `apps/web/tests/components/auth/RegisterForm.test.tsx`
 
 Tests to add:
+
 ```typescript
 it("should redirect to verify-email after successful registration", async () => {
   const mockPush = vi.fn();
@@ -849,6 +870,7 @@ vi.mocked(authApi.register).mockResolvedValue({
 ### 7.4 C4: API_URL env var required
 
 The state route now calls the backend. Both `API_URL` env var AND the backend running are required for auth state to work. Add to `docker-compose.yml`:
+
 ```yaml
 services:
   web:
@@ -857,6 +879,7 @@ services:
 ```
 
 And to `apps/web/.env.local` for local dev:
+
 ```
 API_URL=http://localhost:8000
 ```
@@ -929,6 +952,7 @@ C2, C3, C4, C5 are all additive fixes with no breaking changes to the API contra
 **Score**: 8.5/10
 
 **Positive factors**:
+
 - All files identified, all root causes understood
 - Clear before/after for each fix
 - Implementation order respects dependencies
@@ -936,6 +960,7 @@ C2, C3, C4, C5 are all additive fixes with no breaking changes to the API contra
 - Validation gates are executable
 
 **Risk factors**:
+
 - C4 requires backend+frontend coordination and `API_URL` env var setup
 - C2c redirect logic needs careful state tracking to avoid false redirects
 - `auth_middleware.py` change affects ALL protected endpoints — integration tests critical

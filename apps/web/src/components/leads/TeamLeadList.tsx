@@ -55,7 +55,7 @@ const FILTER_STYLES = `
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
   }
-`
+`;
 
 // ============================================
 // TYPES
@@ -70,7 +70,10 @@ interface TeamLeadListProps {
 // COMPONENT
 // ============================================
 
-export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps) {
+export function TeamLeadList({
+  onLeadClick,
+  onReassignLead,
+}: TeamLeadListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
   const [vendedorFilter, setVendedorFilter] = useState<string>("all");
@@ -82,7 +85,11 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
   const { data: vendedores = [] } = useVendedores();
 
   // Construir filtros
-  const filters: { status?: LeadStatus; search?: string; vendedor_id?: string } = {};
+  const filters: {
+    status?: LeadStatus;
+    search?: string;
+    vendedor_id?: string;
+  } = {};
 
   if (statusFilter !== "all") {
     filters.status = statusFilter;
@@ -97,13 +104,16 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
   }
 
   // Fetch leads con polling en tiempo real (30s)
-  const { data: leads = [], isLoading, error, refetch } = useLeads(
-    filters,
-    limit,
-    page * limit
-  );
+  const {
+    data: leads = [],
+    isLoading,
+    error,
+    refetch,
+  } = useLeads(filters, limit, page * limit);
 
-  const [unreadThreshold] = useState<Date>(() => new Date(Date.now() - 5 * 60 * 1000));
+  const [unreadThreshold] = useState<Date>(
+    () => new Date(Date.now() - 5 * 60 * 1000),
+  );
 
   const isUnread = (lead: Lead) => {
     return new Date(lead.created_at) > unreadThreshold;
@@ -116,7 +126,15 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
   };
 
   const handleExportToCSV = () => {
-    const headers = ["Comprador", "Email", "Teléfono", "Vehículo", "Estado", "Fuente", "Fecha"];
+    const headers = [
+      "Comprador",
+      "Email",
+      "Teléfono",
+      "Vehículo",
+      "Estado",
+      "Fuente",
+      "Fecha",
+    ];
 
     /**
      * Escapar campo CSV para prevenir CSV injection.
@@ -161,16 +179,22 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
   // Estado de error
   if (error) {
     return (
-      <div style={{
-        padding: 32,
-        textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 16,
-      }}>
-        <AlertCircle size={32} strokeWidth={1.5} style={{ color: 'var(--ps-error)' }} />
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--ps-error)' }}>
+      <div
+        style={{
+          padding: 32,
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 16,
+        }}
+      >
+        <AlertCircle
+          size={32}
+          strokeWidth={1.5}
+          style={{ color: "var(--ps-error)" }}
+        />
+        <p style={{ margin: 0, fontSize: 13, color: "var(--ps-error)" }}>
           Error al cargar los leads: {error.message}
         </p>
         <button
@@ -178,14 +202,14 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
           onClick={() => void refetch()}
           style={{
             height: 36,
-            padding: '0 16px',
+            padding: "0 16px",
             borderRadius: 8,
-            background: 'var(--ps-bg-elevated)',
-            border: '1px solid var(--ps-border-default)',
-            color: 'var(--ps-text-secondary)',
+            background: "var(--ps-bg-elevated)",
+            border: "1px solid var(--ps-border-default)",
+            color: "var(--ps-text-secondary)",
             fontSize: 13,
             fontWeight: 500,
-            cursor: 'pointer',
+            cursor: "pointer",
           }}
         >
           Reintentar
@@ -195,11 +219,11 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
   }
 
   const STATUS_LABELS: Record<LeadStatus, string> = {
-    [LeadStatus.NEW]:              "Nuevo",
-    [LeadStatus.CONTACTED]:        "Contactado",
-    [LeadStatus.QUALIFIED]:        "Calificado",
-    [LeadStatus.APPOINTMENT_SET]:  "Turno agendado",
-    [LeadStatus.LOST]:             "Perdido",
+    [LeadStatus.NEW]: "Nuevo",
+    [LeadStatus.CONTACTED]: "Contactado",
+    [LeadStatus.QUALIFIED]: "Calificado",
+    [LeadStatus.APPOINTMENT_SET]: "Turno agendado",
+    [LeadStatus.LOST]: "Perdido",
   };
 
   const isSpinning = isLoading || isManualRefetch;
@@ -208,23 +232,28 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
     <>
       <style>{FILTER_STYLES}</style>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {/* ── Filtros ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
           {/* Búsqueda */}
-          <div style={{ position: 'relative', flex: 1, maxWidth: 360 }}>
+          <div style={{ position: "relative", flex: 1, maxWidth: 360 }}>
             <Search
               size={14}
               strokeWidth={2}
               style={{
-                position: 'absolute',
+                position: "absolute",
                 left: 10,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--ps-text-disabled)',
-                pointerEvents: 'none',
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "var(--ps-text-disabled)",
+                pointerEvents: "none",
               }}
             />
             <input
@@ -236,7 +265,7 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
                 setPage(0);
               }}
               className="ps-tll-input"
-              style={{ paddingLeft: 32, width: '100%' }}
+              style={{ paddingLeft: 32, width: "100%" }}
               data-testid="search-input"
             />
           </div>
@@ -260,14 +289,18 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
           {/* Filtro por estado */}
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as LeadStatus | "all")}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as LeadStatus | "all")
+            }
             className="ps-tll-select"
             style={{ width: 192 }}
             data-testid="status-filter"
           >
             <option value="all">Todos los estados</option>
             {Object.entries(STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
+              <option key={value} value={value}>
+                {label}
+              </option>
             ))}
           </select>
 
@@ -278,20 +311,20 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
             disabled={leads.length === 0}
             data-testid="export-csv-button"
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
+              display: "inline-flex",
+              alignItems: "center",
               gap: 6,
               height: 36,
-              padding: '0 14px',
+              padding: "0 14px",
               borderRadius: 8,
-              background: 'var(--ps-bg-elevated)',
-              border: '1px solid var(--ps-border-default)',
-              color: 'var(--ps-text-secondary)',
+              background: "var(--ps-bg-elevated)",
+              border: "1px solid var(--ps-border-default)",
+              color: "var(--ps-text-secondary)",
               fontSize: 12,
               fontWeight: 500,
-              cursor: 'pointer',
+              cursor: "pointer",
               opacity: leads.length === 0 ? 0.5 : 1,
-              transition: 'opacity 0.15s',
+              transition: "opacity 0.15s",
             }}
           >
             <Download size={13} strokeWidth={2} />
@@ -305,22 +338,26 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
             data-testid="refresh-button"
             aria-label="Actualizar lista"
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
               width: 36,
               height: 36,
               borderRadius: 8,
-              background: 'var(--ps-bg-elevated)',
-              border: '1px solid var(--ps-border-default)',
-              color: 'var(--ps-text-secondary)',
-              cursor: 'pointer',
+              background: "var(--ps-bg-elevated)",
+              border: "1px solid var(--ps-border-default)",
+              color: "var(--ps-text-secondary)",
+              cursor: "pointer",
             }}
           >
             <RefreshCw
               size={14}
               strokeWidth={2}
-              style={{ animation: isSpinning ? 'spinRefresh 0.8s linear infinite' : 'none' }}
+              style={{
+                animation: isSpinning
+                  ? "spinRefresh 0.8s linear infinite"
+                  : "none",
+              }}
             />
           </button>
         </div>
@@ -329,53 +366,59 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
         <div
           data-testid="team-lead-list"
           style={{
-            border: '1px solid var(--ps-border-default)',
+            border: "1px solid var(--ps-border-default)",
             borderRadius: 10,
-            overflow: 'hidden',
+            overflow: "hidden",
           }}
         >
           {/* Header de columnas */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 16,
-            padding: '12px 16px',
-            background: 'var(--ps-bg-elevated)',
-            borderBottom: '1px solid var(--ps-border-default)',
-            fontSize: 11,
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            color: 'var(--ps-text-disabled)',
-          }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              padding: "12px 16px",
+              background: "var(--ps-bg-elevated)",
+              borderBottom: "1px solid var(--ps-border-default)",
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: "var(--ps-text-disabled)",
+            }}
+          >
             <div style={{ width: 192 }}>Comprador</div>
             <div style={{ width: 192 }}>Vehículo</div>
             <div style={{ flex: 1 }}>Mensaje</div>
             <div style={{ flexShrink: 0 }}>Estado</div>
-            <div style={{ width: 96, textAlign: 'right' }}>Hora</div>
+            <div style={{ width: 96, textAlign: "right" }}>Hora</div>
             {onReassignLead && <div style={{ width: 96 }}>Acciones</div>}
           </div>
 
           {/* Estado de carga */}
           {isLoading && leads.length === 0 && (
-            <div style={{
-              padding: 32,
-              textAlign: 'center',
-              fontSize: 13,
-              color: 'var(--ps-text-secondary)',
-            }}>
+            <div
+              style={{
+                padding: 32,
+                textAlign: "center",
+                fontSize: 13,
+                color: "var(--ps-text-secondary)",
+              }}
+            >
               Cargando leads...
             </div>
           )}
 
           {/* Estado vacío */}
           {!isLoading && leads.length === 0 && (
-            <div style={{
-              padding: 32,
-              textAlign: 'center',
-              fontSize: 13,
-              color: 'var(--ps-text-secondary)',
-            }}>
+            <div
+              style={{
+                padding: 32,
+                textAlign: "center",
+                fontSize: 13,
+                color: "var(--ps-text-secondary)",
+              }}
+            >
               Sin resultados. Ajustá los filtros.
             </div>
           )}
@@ -386,7 +429,7 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
               <div
                 key={lead.id}
                 onClick={() => onLeadClick?.(lead.id)}
-                style={{ cursor: onLeadClick ? 'pointer' : 'default' }}
+                style={{ cursor: onLeadClick ? "pointer" : "default" }}
               >
                 <LeadListItem
                   lead={lead}
@@ -405,15 +448,15 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
                         data-testid={`reassign-${lead.id}`}
                         style={{
                           height: 28,
-                          padding: '0 10px',
+                          padding: "0 10px",
                           borderRadius: 6,
-                          background: 'transparent',
-                          border: '1px solid var(--ps-border-default)',
-                          color: 'var(--ps-text-secondary)',
+                          background: "transparent",
+                          border: "1px solid var(--ps-border-default)",
+                          color: "var(--ps-text-secondary)",
                           fontSize: 12,
                           fontWeight: 500,
-                          cursor: 'pointer',
-                          transition: 'background 0.15s',
+                          cursor: "pointer",
+                          transition: "background 0.15s",
                         }}
                       >
                         Reasignar
@@ -427,7 +470,7 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
         </div>
 
         {/* ── Paginación ── */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
           <button
             type="button"
             onClick={() => setPage((p) => Math.max(0, p - 1))}
@@ -435,16 +478,16 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
             data-testid="previous-page"
             style={{
               height: 36,
-              padding: '0 16px',
+              padding: "0 16px",
               borderRadius: 8,
-              background: 'var(--ps-bg-elevated)',
-              border: '1px solid var(--ps-border-default)',
-              color: 'var(--ps-text-secondary)',
+              background: "var(--ps-bg-elevated)",
+              border: "1px solid var(--ps-border-default)",
+              color: "var(--ps-text-secondary)",
               fontSize: 13,
               fontWeight: 500,
-              cursor: 'pointer',
+              cursor: "pointer",
               opacity: page === 0 || isLoading ? 0.5 : 1,
-              transition: 'opacity 0.15s',
+              transition: "opacity 0.15s",
             }}
           >
             Anterior
@@ -456,22 +499,21 @@ export function TeamLeadList({ onLeadClick, onReassignLead }: TeamLeadListProps)
             data-testid="next-page"
             style={{
               height: 36,
-              padding: '0 16px',
+              padding: "0 16px",
               borderRadius: 8,
-              background: 'var(--ps-bg-elevated)',
-              border: '1px solid var(--ps-border-default)',
-              color: 'var(--ps-text-secondary)',
+              background: "var(--ps-bg-elevated)",
+              border: "1px solid var(--ps-border-default)",
+              color: "var(--ps-text-secondary)",
               fontSize: 13,
               fontWeight: 500,
-              cursor: 'pointer',
+              cursor: "pointer",
               opacity: leads.length < limit || isLoading ? 0.5 : 1,
-              transition: 'opacity 0.15s',
+              transition: "opacity 0.15s",
             }}
           >
             Siguiente
           </button>
         </div>
-
       </div>
     </>
   );

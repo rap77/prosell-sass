@@ -1,6 +1,19 @@
-import { useMutation, useQuery, useQueryClient, useInfiniteQuery, type UseMutationResult, type UseQueryResult, type UseInfiniteQueryResult } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useInfiniteQuery,
+  type UseMutationResult,
+  type UseQueryResult,
+  type UseInfiniteQueryResult,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { CreateProductRequest, Product, ProductListResponse, ProductAttributes } from "@/types/product";
+import type {
+  CreateProductRequest,
+  Product,
+  ProductListResponse,
+  ProductAttributes,
+} from "@/types/product";
 import type { VehicleAttributes } from "@/types/vehicle";
 import { isVehicleProduct } from "@/types/product";
 import { getCoverImageKey, getProductImageKeys } from "./productImages";
@@ -45,7 +58,7 @@ interface BackendProductResponse {
  * ```
  */
 export async function createProductWithVehicle(
-  data: CreateProductRequest
+  data: CreateProductRequest,
 ): Promise<Product> {
   const res = await fetch("/api/v1/products", {
     method: "POST",
@@ -57,7 +70,9 @@ export async function createProductWithVehicle(
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Failed to create product" }));
+    const error = await res
+      .json()
+      .catch(() => ({ message: "Failed to create product" }));
     throw new Error(error.message || "Failed to create product");
   }
 
@@ -137,7 +152,9 @@ export function useProducts(): UseQueryResult<Product[], Error> {
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to fetch products" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to fetch products" }));
         throw new Error(error.message || "Failed to fetch products");
       }
 
@@ -152,7 +169,7 @@ export function useProducts(): UseQueryResult<Product[], Error> {
  */
 export async function updateProduct(
   productId: string,
-  data: Partial<CreateProductRequest>
+  data: Partial<CreateProductRequest>,
 ): Promise<Product> {
   const res = await fetch(`/api/v1/products/${productId}`, {
     method: "PATCH",
@@ -164,7 +181,9 @@ export async function updateProduct(
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Failed to update product" }));
+    const error = await res
+      .json()
+      .catch(() => ({ message: "Failed to update product" }));
     throw new Error(error.message || "Failed to update product");
   }
 
@@ -177,7 +196,7 @@ export async function updateProduct(
  */
 export async function updateProductStatus(
   productId: string,
-  status: Product["status"]
+  status: Product["status"],
 ): Promise<Product> {
   const res = await fetch(`/api/v1/products/${productId}`, {
     method: "PATCH",
@@ -189,7 +208,9 @@ export async function updateProductStatus(
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Failed to update product" }));
+    const error = await res
+      .json()
+      .catch(() => ({ message: "Failed to update product" }));
     throw new Error(error.message || "Failed to update product");
   }
 
@@ -203,8 +224,13 @@ export function useUpdateProductStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ productId, status }: { productId: string; status: Product["status"] }) =>
-      updateProductStatus(productId, status),
+    mutationFn: ({
+      productId,
+      status,
+    }: {
+      productId: string;
+      status: Product["status"];
+    }) => updateProductStatus(productId, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Product status updated");
@@ -225,7 +251,7 @@ export function useUpdateProductStatus() {
  */
 export function useProduct(
   productId: string | undefined,
-  options: { internal?: boolean } = {}
+  options: { internal?: boolean } = {},
 ): UseQueryResult<Product, Error> {
   const { internal = false } = options;
 
@@ -245,7 +271,9 @@ export function useProduct(
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to fetch product" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to fetch product" }));
         throw new Error(error.message || "Failed to fetch product");
       }
 
@@ -273,7 +301,9 @@ export function useUpdateProduct(): UseMutationResult<
     onSuccess: (updatedProduct) => {
       // Invalidate products queries
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["products", updatedProduct.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["products", updatedProduct.id],
+      });
 
       toast.success("Product updated successfully");
     },
@@ -298,7 +328,9 @@ export function useDeleteProduct() {
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to delete product" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to delete product" }));
         throw new Error(error.message || "Failed to delete product");
       }
 
@@ -308,10 +340,12 @@ export function useDeleteProduct() {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ["products"] });
 
-      const previousProducts = queryClient.getQueryData<Product[]>(["products"]);
+      const previousProducts = queryClient.getQueryData<Product[]>([
+        "products",
+      ]);
 
       queryClient.setQueryData<Product[]>(["products"], (old) =>
-        old?.filter((p) => p.id !== id)
+        old?.filter((p) => p.id !== id),
       );
 
       return { previousProducts };
@@ -334,14 +368,14 @@ export function useDeleteProduct() {
 // ─── Signed image URLs ─────────────────────────────────────────────────────────
 
 interface ProductImageUrl {
-  key: string
-  url: string
-  expires_in: number
+  key: string;
+  url: string;
+  expires_in: number;
 }
 
 interface ProductImageUrlsResponse {
-  product_id: string
-  images: ProductImageUrl[]
+  product_id: string;
+  images: ProductImageUrl[];
 }
 
 /**
@@ -358,9 +392,9 @@ export function useProductImageUrls(productId: string | undefined) {
     queryFn: async () => {
       const res = await fetch(`/api/v1/products/${productId}/image-urls`, {
         credentials: "include",
-      })
-      if (!res.ok) throw new Error("Failed to fetch image URLs")
-      return res.json() as Promise<ProductImageUrlsResponse>
+      });
+      if (!res.ok) throw new Error("Failed to fetch image URLs");
+      return res.json() as Promise<ProductImageUrlsResponse>;
     },
     enabled: !!productId,
     staleTime: 5 * 60 * 1000,
@@ -368,7 +402,7 @@ export function useProductImageUrls(productId: string | undefined) {
     // (different tenant) and the card already falls back to the placeholder
     // in that case. We only retry once to absorb transient network blips.
     retry: 1,
-  })
+  });
 }
 
 // ─── Set the product cover ─────────────────────────────────────────────────────
@@ -397,7 +431,7 @@ export async function setProductCover(
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify({ cover_image_key: key }),
-  })
+  });
 
   if (!res.ok) {
     // Surface the backend's message verbatim — the validator
@@ -405,14 +439,17 @@ export async function setProductCover(
     // 'X' is not in the product's current image list") that the UI
     // shows to the user. Falling back to a generic message would
     // hide a useful diagnostic.
-    const err = await res.json().catch(() => ({ message: "Failed to set cover" }))
-    const detail = (err as { detail?: string; message?: string }).detail
-      ?? (err as { message?: string }).message
-      ?? "Failed to set cover"
-    throw new Error(detail)
+    const err = await res
+      .json()
+      .catch(() => ({ message: "Failed to set cover" }));
+    const detail =
+      (err as { detail?: string; message?: string }).detail ??
+      (err as { message?: string }).message ??
+      "Failed to set cover";
+    throw new Error(detail);
   }
 
-  return res.json() as Promise<Product>
+  return res.json() as Promise<Product>;
 }
 
 /**
@@ -423,25 +460,30 @@ export async function setProductCover(
  * cover. On error, shows a toast with the backend's message.
  */
 export function useSetProductCover() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ productId, key }: { productId: string; key: string | null }) =>
-      setProductCover(productId, key),
+    mutationFn: ({
+      productId,
+      key,
+    }: {
+      productId: string;
+      key: string | null;
+    }) => setProductCover(productId, key),
 
     onSuccess: (_data, { productId }) => {
       // Invalidate every product-related query so the catalog grid,
       // detail view, CommandPalette thumbnail, etc. all see the
       // new cover on next render.
-      queryClient.invalidateQueries({ queryKey: ["products"] })
-      queryClient.invalidateQueries({ queryKey: ["products", productId] })
-      toast.success("Cover updated")
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["products", productId] });
+      toast.success("Cover updated");
     },
 
     onError: (err) => {
-      toast.error(err.message || "Failed to update cover")
+      toast.error(err.message || "Failed to update cover");
     },
-  })
+  });
 }
 
 // ─── Vehicle-specific helpers (catalog page) ─────────────────────────────────
@@ -451,16 +493,23 @@ export function useSetProductCover() {
  * Extracts vehicle data from product.attributes.
  */
 export function transformProductToVehicle(product: Product): {
-  id: string
-  title: string
-  price: number
-  status: "published" | "pending" | "failed" | "draft" | "expired" | "online" | "sold"
-  photo_url?: string
-  year?: number
-  make?: string
-  model?: string
-  created_at: string
-  updated_at: string
+  id: string;
+  title: string;
+  price: number;
+  status:
+    | "published"
+    | "pending"
+    | "failed"
+    | "draft"
+    | "expired"
+    | "online"
+    | "sold";
+  photo_url?: string;
+  year?: number;
+  make?: string;
+  model?: string;
+  created_at: string;
+  updated_at: string;
 } {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const attrs = product.attributes as any;
@@ -496,28 +545,51 @@ export function transformProductToVehicle(product: Product): {
  * Vehicle uses: published | pending | failed | draft | expired | online | sold
  */
 function mapProductStatusToVehicleStatus(
-  status: Product["status"]
-): "published" | "pending" | "failed" | "draft" | "expired" | "online" | "sold" {
+  status: Product["status"],
+):
+  | "published"
+  | "pending"
+  | "failed"
+  | "draft"
+  | "expired"
+  | "online"
+  | "sold" {
   switch (status) {
-    case "published": return "published";
-    case "pending": return "pending";
-    case "rejected": return "failed";
-    case "draft": return "draft";
-    case "archived": return "expired";
-    case "sold": return "sold";
-    case "paused": return "online";
-    case "reserved": return "online";
-    default: return "draft";
+    case "published":
+      return "published";
+    case "pending":
+      return "pending";
+    case "rejected":
+      return "failed";
+    case "draft":
+      return "draft";
+    case "archived":
+      return "expired";
+    case "sold":
+      return "sold";
+    case "paused":
+      return "online";
+    case "reserved":
+      return "online";
+    default:
+      return "draft";
   }
 }
 
 export interface VehicleFilters {
-  status?: "published" | "pending" | "failed" | "draft" | "expired" | "online" | "sold"
-  search?: string
-  make?: string
-  model?: string
-  year_min?: number
-  year_max?: number
+  status?:
+    | "published"
+    | "pending"
+    | "failed"
+    | "draft"
+    | "expired"
+    | "online"
+    | "sold";
+  search?: string;
+  make?: string;
+  model?: string;
+  year_min?: number;
+  year_max?: number;
 }
 
 /**
@@ -525,14 +597,19 @@ export interface VehicleFilters {
  * Note: Does NOT filter by isVehicleProduct — caller should filter if needed.
  *       Currently catalog page needs all products returned and filters via isVehicleProduct.
  */
-export function useInfiniteProducts(filters?: VehicleFilters, limit: number = 50) {
+export function useInfiniteProducts(
+  filters?: VehicleFilters,
+  limit: number = 50,
+) {
   const queryParams = new URLSearchParams();
   if (filters?.status) queryParams.append("status", filters.status);
   if (filters?.search) queryParams.append("search", filters.search);
   if (filters?.make) queryParams.append("make", filters.make);
   if (filters?.model) queryParams.append("model", filters.model);
-  if (filters?.year_min) queryParams.append("year_min", filters.year_min.toString());
-  if (filters?.year_max) queryParams.append("year_max", filters.year_max.toString());
+  if (filters?.year_min)
+    queryParams.append("year_min", filters.year_min.toString());
+  if (filters?.year_max)
+    queryParams.append("year_max", filters.year_max.toString());
   queryParams.append("limit", limit.toString());
 
   return useInfiniteQuery({
@@ -548,11 +625,13 @@ export function useInfiniteProducts(filters?: VehicleFilters, limit: number = 50
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to fetch products" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to fetch products" }));
         throw new Error(error.message || "Failed to fetch products");
       }
 
-      const data = await res.json() as ProductListResponse;
+      const data = (await res.json()) as ProductListResponse;
 
       return {
         items: data.products,

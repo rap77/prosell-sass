@@ -7,11 +7,13 @@ All migration components have been successfully implemented and tested for synta
 ## 📁 Deliverables
 
 ### 1. Main Migration Script
+
 **File**: `apps/api/scripts/migrate_vehicles_to_product_attributes.py`
 **Lines**: 502
 **Status**: ✅ Complete and validated
 
 **Key Features**:
+
 - ✅ Async processing with SQLAlchemy 2.0 async driver
 - ✅ Batch processing (configurable, default 50 records)
 - ✅ Dry-run mode for safe preview
@@ -23,11 +25,13 @@ All migration components have been successfully implemented and tested for synta
 - ✅ Rollback SQL included (commented at bottom)
 
 ### 2. Verification Script
+
 **File**: `apps/api/scripts/verify_vehicle_migration.py`
 **Lines**: 163
 **Status**: ✅ Complete and validated
 
 **Key Features**:
+
 - ✅ Validates migration success
 - ✅ Checks for missing categories
 - ✅ Identifies invalid VINs
@@ -36,10 +40,12 @@ All migration components have been successfully implemented and tested for synta
 - ✅ Comprehensive verification summary
 
 ### 3. Documentation
+
 **File**: `apps/api/scripts/MIGRATE_VEHICLES_README.md`
 **Status**: ✅ Complete
 
 **Contents**:
+
 - Usage instructions
 - Field mapping table
 - Safety features explanation
@@ -50,6 +56,7 @@ All migration components have been successfully implemented and tested for synta
 ## 🚀 How to Use
 
 ### Step 1: Dry Run (Always do this first!)
+
 ```bash
 cd apps/api
 
@@ -58,6 +65,7 @@ uv run python scripts/migrate_vehicles_to_product_attributes.py --dry-run
 ```
 
 ### Step 2: Full Migration with Backup
+
 ```bash
 DATABASE_URL="postgresql+asyncpg://user:pass@localhost:5432/prosell" \
 uv run python scripts/migrate_vehicles_to_product_attributes.py \
@@ -66,6 +74,7 @@ uv run python scripts/migrate_vehicles_to_product_attributes.py \
 ```
 
 ### Step 3: Verify Migration
+
 ```bash
 DATABASE_URL="postgresql+asyncpg://user:pass@localhost:5432/prosell" \
 uv run python scripts/verify_vehicle_migration.py
@@ -76,6 +85,7 @@ uv run python scripts/verify_vehicle_migration.py
 ### VehicleModel → ProductModel.attributes
 
 **Before (vehicles table)**:
+
 ```sql
 id | product_id | vin                | make   | model | year  | mileage | has_sunroof |
 ---+------------+--------------------+--------+-------+-------+---------+-------------+
@@ -83,6 +93,7 @@ abc | prod-123  | 2HGFC2F59KH534821  | Honda  | Civic | 2019  | 45000   | true  
 ```
 
 **After (products.attributes)**:
+
 ```json
 {
   "category": "vehicle",
@@ -183,21 +194,25 @@ VERIFICATION SUMMARY
 ### Architecture Compliance
 
 ✅ **Clean Architecture**:
+
 - Infrastructure layer only (scripts directory)
 - Uses application DTOs for validation
 - No business logic in script
 
 ✅ **Async-First**:
+
 - SQLAlchemy 2.0 async driver
 - All I/O operations with `async def`
 - No blocking calls
 
 ✅ **Type Safety**:
+
 - Pydantic v2 strict mode validation
 - No `dict[str, Any]` without explicit TypeVar
 - Proper type annotations throughout
 
 ✅ **Repository Pattern**:
+
 - Uses SQLAlchemy ORM models
 - No raw SQL in migration logic
 - Clean separation of concerns
@@ -218,21 +233,22 @@ VERIFICATION SUMMARY
 
 ## 📝 Field Mapping Summary
 
-| Category | Fields | Notes |
-|----------|--------|-------|
-| **Required** | `vin`, `make`, `model`, `year`, `mileage` | Validated, defaults provided |
-| **Optional** | `trim`, `body_type`, `drivetrain`, `transmission` | Preserved if present |
-| **Specs** | `engine`, `fuel_type`, `mpg_city/highway/combined` | Optional |
-| **Features** | `has_sunroof`, `has_navigation`, etc. | Boolean flags, default false |
-| **Colors** | `exterior_color`, `interior_color` | Optional |
-| **Added** | `category: "vehicle"` | Discriminator field |
-| **Units** | `mileage_unit` | Validated as "miles" or "km" |
+| Category     | Fields                                             | Notes                        |
+| ------------ | -------------------------------------------------- | ---------------------------- |
+| **Required** | `vin`, `make`, `model`, `year`, `mileage`          | Validated, defaults provided |
+| **Optional** | `trim`, `body_type`, `drivetrain`, `transmission`  | Preserved if present         |
+| **Specs**    | `engine`, `fuel_type`, `mpg_city/highway/combined` | Optional                     |
+| **Features** | `has_sunroof`, `has_navigation`, etc.              | Boolean flags, default false |
+| **Colors**   | `exterior_color`, `interior_color`                 | Optional                     |
+| **Added**    | `category: "vehicle"`                              | Discriminator field          |
+| **Units**    | `mileage_unit`                                     | Validated as "miles" or "km" |
 
 ## 🔄 Rollback Procedure
 
 If migration needs to be reverted:
 
 ### Option 1: Restore Backup (if --backup used)
+
 ```sql
 BEGIN;
   DROP TABLE products CASCADE;
@@ -242,6 +258,7 @@ COMMIT;
 ```
 
 ### Option 2: Clear Attributes Only
+
 ```sql
 UPDATE products
 SET attributes = '{}'::jsonb
@@ -280,6 +297,7 @@ WHERE attributes->>'category' = 'vehicle';
 ## 📞 Support
 
 For issues or questions:
+
 1. Check `MIGRATE_VEHICLES_README.md` troubleshooting section
 2. Review error messages in migration summary
 3. Use verification script to check data integrity

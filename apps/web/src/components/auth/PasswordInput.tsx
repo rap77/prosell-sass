@@ -29,8 +29,10 @@ import { cn } from "@/lib/utils";
 // TYPES
 // ============================================
 
-export interface PasswordInputProps
-  extends Omit<ComponentPropsWithRef<"input">, "type" | "onChange" | "value"> {
+export interface PasswordInputProps extends Omit<
+  ComponentPropsWithRef<"input">,
+  "type" | "onChange" | "value"
+> {
   /**
    * Label for the input (accessible via aria-label)
    */
@@ -95,18 +97,18 @@ function calculatePasswordStrength(password: string): PasswordStrength {
 
 function getStrengthBarStyle(strength: PasswordStrength): React.CSSProperties {
   const COLORS: Record<PasswordStrength, string> = {
-    weak:   'var(--ps-error)',
-    medium: 'var(--ps-warning)',
-    strong: 'var(--ps-success)',
+    weak: "var(--ps-error)",
+    medium: "var(--ps-warning)",
+    strong: "var(--ps-success)",
   };
   const WIDTHS: Record<PasswordStrength, string> = {
-    weak:   '33%',
-    medium: '66%',
-    strong: '100%',
+    weak: "33%",
+    medium: "66%",
+    strong: "100%",
   };
   return {
-    height: '100%',
-    transition: 'all 0.3s',
+    height: "100%",
+    transition: "all 0.3s",
     background: COLORS[strength],
     width: WIDTHS[strength],
   };
@@ -114,16 +116,21 @@ function getStrengthBarStyle(strength: PasswordStrength): React.CSSProperties {
 
 function getStrengthTextStyle(strength: PasswordStrength): React.CSSProperties {
   const COLORS: Record<PasswordStrength, string> = {
-    weak:   'var(--ps-error)',
-    medium: 'var(--ps-warning)',
-    strong: 'var(--ps-success)',
+    weak: "var(--ps-error)",
+    medium: "var(--ps-warning)",
+    strong: "var(--ps-success)",
   };
-  return { fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: COLORS[strength] };
+  return {
+    fontSize: 10,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    color: COLORS[strength],
+  };
 }
 
 function getStrengthText(strength: PasswordStrength): string {
   const TEXTS: Record<PasswordStrength, string> = {
-    weak:   "Débil",
+    weak: "Débil",
     medium: "Media",
     strong: "Fuerte",
   };
@@ -296,10 +303,18 @@ export function PasswordInput({
         <div
           id={strengthId}
           data-testid="password-strength"
-          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+          style={{ display: "flex", alignItems: "center", gap: 8 }}
         >
           {/* Strength bar */}
-          <div style={{ flex: 1, height: 6, background: 'var(--ps-bg-elevated)', borderRadius: 99, overflow: 'hidden' }}>
+          <div
+            style={{
+              flex: 1,
+              height: 6,
+              background: "var(--ps-bg-elevated)",
+              borderRadius: 99,
+              overflow: "hidden",
+            }}
+          >
             <div style={getStrengthBarStyle(strength)} />
           </div>
 

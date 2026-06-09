@@ -3,7 +3,12 @@
  * Handles appointment scheduling and management
  */
 
-import { useQuery, useMutation, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 
 /**
@@ -86,7 +91,9 @@ interface ApiError extends Error {
 /**
  * Transform backend appointment response to frontend appointment
  */
-function transformAppointment(backendAppointment: BackendAppointmentResponse): Appointment {
+function transformAppointment(
+  backendAppointment: BackendAppointmentResponse,
+): Appointment {
   return {
     id: backendAppointment.id,
     tenant_id: backendAppointment.tenant_id,
@@ -109,7 +116,7 @@ function transformAppointment(backendAppointment: BackendAppointmentResponse): A
 export function useAppointments(
   filters?: { user_id?: string; lead_id?: string; status?: AppointmentStatus },
   limit: number = 50,
-  offset: number = 0
+  offset: number = 0,
 ): UseQueryResult<Appointment[], Error> {
   const queryParams = new URLSearchParams();
   queryParams.append("limit", limit.toString());
@@ -122,12 +129,17 @@ export function useAppointments(
   return useQuery({
     queryKey: ["appointments", filters, limit, offset],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/appointments?${queryParams.toString()}`, {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `/api/v1/appointments?${queryParams.toString()}`,
+        {
+          credentials: "include",
+        },
+      );
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to fetch appointments" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to fetch appointments" }));
         throw new Error(error.message || "Failed to fetch appointments");
       }
 
@@ -157,8 +169,12 @@ export function useCreateAppointment() {
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to create appointment" }));
-        const err: ApiError = new Error(error.message || "Failed to create appointment");
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to create appointment" }));
+        const err: ApiError = new Error(
+          error.message || "Failed to create appointment",
+        );
         err.status = res.status; // A4.33: Preserve status code for error handling
         throw err;
       }
@@ -195,7 +211,10 @@ export function useUpdateAppointmentStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ appointmentId, ...request }: UpdateAppointmentStatusVariables) => {
+    mutationFn: async ({
+      appointmentId,
+      ...request
+    }: UpdateAppointmentStatusVariables) => {
       const res = await fetch(`/api/v1/appointments/${appointmentId}/status`, {
         method: "PUT",
         headers: {
@@ -206,7 +225,9 @@ export function useUpdateAppointmentStatus() {
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Failed to update appointment status" }));
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to update appointment status" }));
         throw new Error(error.message || "Failed to update appointment status");
       }
 

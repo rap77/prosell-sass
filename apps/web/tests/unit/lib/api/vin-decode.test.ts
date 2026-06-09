@@ -39,7 +39,11 @@ function createWrapper() {
   });
 
   function Wrapper({ children }: { children: React.ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children);
+    return createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      children,
+    );
   }
   return Wrapper;
 }
@@ -84,7 +88,7 @@ describe("useDecodeVin", () => {
           "Content-Type": "application/json",
         }),
         body: JSON.stringify({ vin: "2GNALCEK1H1615946" }),
-      })
+      }),
     );
   });
 
@@ -111,7 +115,8 @@ describe("useDecodeVin", () => {
       wrapper: createWrapper(),
     });
 
-    const decodedVehicle = await result.current.mutateAsync("2GNALCEK1H1615946");
+    const decodedVehicle =
+      await result.current.mutateAsync("2GNALCEK1H1615946");
 
     expect(decodedVehicle).toEqual(mockDecodedVehicle);
     expect(decodedVehicle.vin).toBe("2GNALCEK1H1615946");
@@ -138,7 +143,8 @@ describe("useDecodeVin", () => {
       wrapper: createWrapper(),
     });
 
-    const decodedVehicle = await result.current.mutateAsync("1HGCM82633A123456");
+    const decodedVehicle =
+      await result.current.mutateAsync("1HGCM82633A123456");
 
     expect(decodedVehicle.vin).toBe("1HGCM82633A123456");
     expect(decodedVehicle.year).toBe(2003);
@@ -184,9 +190,9 @@ describe("useDecodeVin", () => {
       wrapper: createWrapper(),
     });
 
-    await expect(
-      result.current.mutateAsync("INVALID_VIN")
-    ).rejects.toThrow("Invalid VIN format");
+    await expect(result.current.mutateAsync("INVALID_VIN")).rejects.toThrow(
+      "Invalid VIN format",
+    );
 
     expect(toast.error).toHaveBeenCalledWith("Invalid VIN format");
   });
@@ -204,7 +210,7 @@ describe("useDecodeVin", () => {
     });
 
     await expect(
-      result.current.mutateAsync("2GNALCEK1H1615946")
+      result.current.mutateAsync("2GNALCEK1H1615946"),
     ).rejects.toThrow("Failed to decode VIN");
 
     expect(toast.error).toHaveBeenCalledWith("Failed to decode VIN");
@@ -220,7 +226,7 @@ describe("useDecodeVin", () => {
     });
 
     await expect(
-      result.current.mutateAsync("2GNALCEK1H1615946")
+      result.current.mutateAsync("2GNALCEK1H1615946"),
     ).rejects.toThrow("Network error");
 
     // onError is called with the error, but message is "Network error", not "Failed to decode VIN"
@@ -239,9 +245,9 @@ describe("useDecodeVin", () => {
                   vehicle: { vin: "2GNALCEK1H1615946", year: 2017 },
                 }),
               }),
-            100
-          )
-        )
+            100,
+          ),
+        ),
     );
 
     const { result } = renderHook(() => useDecodeVin(), {
@@ -256,7 +262,7 @@ describe("useDecodeVin", () => {
       () => {
         expect(result.current.isPending).toBe(true);
       },
-      { timeout: 3000 }
+      { timeout: 3000 },
     );
 
     await promise;

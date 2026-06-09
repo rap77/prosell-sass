@@ -9,12 +9,14 @@
 ### 1. Test Data Factories (`tests/e2e/factories/`)
 
 **Base Factory** (`base-factory.ts`):
+
 - `TestDataFactory<T>` interface for all factories
 - `BaseFactory<T>` abstract class with common utilities
 - Methods: `generateId()`, `generateEmail()`, `generatePhone()`, `generateDateTime()`
 - Reset capability for test isolation
 
 **Concrete Factories**:
+
 1. **LeadFactory** (`lead-factory.ts`):
    - Create valid/invalid/edge case leads
    - 10+ convenience methods: `createWithStatus()`, `createUnread()`, `createStale()`, etc.
@@ -39,18 +41,21 @@
 ### 2. Layer 2 Contract Tests (`tests/e2e/layer2/`)
 
 **Leads Contract Tests** (`leads-contract.spec.ts`):
+
 - 22 contract tests (L2-01 to L2-22)
 - Coverage: creation, listing, details, status updates, edge cases
 - Validation: email format, phone format, datetime format, status enum transitions
 - Business rules: max 255 char name, optional email/phone, unread highlight (<5 min)
 
 **Appointments Contract Tests** (`appointments-contract.spec.ts`):
+
 - 24 contract tests (L2-APT-01 to L2-APT-24)
 - Coverage: creation, listing, details, status updates, dealer calendar view
 - Validation: UUID format, datetime format, future datetime only, status enum
 - Business rules: max 2000 char notes, optional notes, weekday scheduling
 
 **Vehicles Contract Tests** (`vehicles-contract.spec.ts`):
+
 - 25 contract tests (L2-VEH-01 to L2-VEH-25)
 - Coverage: VIN decode (NHTSA), creation, listing, details, edge cases
 - Validation: VIN format (17 chars), year range (1900+), price >=0, status enum
@@ -58,15 +63,16 @@
 
 ## Total Contract Tests: 71
 
-| Module | Test Count | Coverage |
-|--------|------------|----------|
-| Leads | 22 | Creation, list, details, status, edge cases |
-| Appointments | 24 | Creation, list, details, status, dealer calendar |
-| Vehicles | 25 | VIN decode, creation, list, details, normalization |
+| Module       | Test Count | Coverage                                           |
+| ------------ | ---------- | -------------------------------------------------- |
+| Leads        | 22         | Creation, list, details, status, edge cases        |
+| Appointments | 24         | Creation, list, details, status, dealer calendar   |
+| Vehicles     | 25         | VIN decode, creation, list, details, normalization |
 
 ## Key Improvements
 
 ### Before (Shared Fixtures)
+
 ```typescript
 // ❌ Anti-pattern: Shared data between tests
 const MOCK_LEADS = [
@@ -84,6 +90,7 @@ test("should update lead", async ({ page }) => {
 ```
 
 ### After (Factory Pattern)
+
 ```typescript
 // ✅ Best practice: Independent data per test
 const leadFactory = new LeadFactory();
@@ -100,6 +107,7 @@ test("should update lead", async ({ page }) => {
 ## Contract Validation Examples
 
 ### NHTSA VIN Decode Normalization
+
 ```typescript
 // Input: VIN 2GNALBEK8H1615946 (2017 Chevrolet Equinox)
 // Expected normalized output:
@@ -114,6 +122,7 @@ test("should update lead", async ({ page }) => {
 ```
 
 ### Lead Field Format Validation
+
 ```typescript
 // Email: valid format
 expect(buyer_email).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
@@ -126,6 +135,7 @@ expect(created_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
 ```
 
 ### Appointment Business Rules
+
 ```typescript
 // scheduled_at must be in future
 const scheduledTime = new Date(scheduled_at);
@@ -139,6 +149,7 @@ expect(notes.length).toBeLessThanOrEqual(2000);
 ## Test Isolation Strategy
 
 Each test:
+
 1. Creates fresh factory instance
 2. Resets counter in `beforeEach()`
 3. Generates unique data via `generateId()`, `generateEmail()`, etc.
@@ -183,19 +194,19 @@ tests/e2e/
 ## Usage Example
 
 ```typescript
-import { LeadFactory, AppointmentFactory } from './factories';
+import { LeadFactory, AppointmentFactory } from "./factories";
 
 // Create fresh data for each test
 const leadFactory = new LeadFactory();
 const aptFactory = new AppointmentFactory();
 
-test('should create appointment from lead', async ({ request }) => {
+test("should create appointment from lead", async ({ request }) => {
   // Generate independent data
   const lead = leadFactory.create();
   const appointment = aptFactory.createMonday();
 
   // Use in test
-  const response = await request.post('/api/v1/appointments', {
+  const response = await request.post("/api/v1/appointments", {
     data: {
       lead_id: lead.id,
       dealer_id: appointment.dealer_id,

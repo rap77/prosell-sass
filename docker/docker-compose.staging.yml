@@ -112,7 +112,15 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3000"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://127.0.0.1:3000",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -125,8 +133,8 @@ services:
     image: minio/minio:latest
     container_name: prosell-staging-minio
     ports:
-      - "9002:9000"   # S3 API — host 9002 to avoid clashing with dev's 9000
-      - "9003:9001"   # Web console
+      - "9002:9000" # S3 API — host 9002 to avoid clashing with dev's 9000
+      - "9003:9001" # Web console
     volumes:
       - minio_staging_data:/data
     environment:

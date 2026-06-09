@@ -88,13 +88,8 @@ export function TeamForm({
   const tenantId = user?.id || ""; // Use user ID as tenant_id for now
 
   // Get store methods
-  const {
-    createTeam,
-    updateTeam,
-    isLoading,
-    error,
-    clearError,
-  } = useTeamStore();
+  const { createTeam, updateTeam, isLoading, error, clearError } =
+    useTeamStore();
 
   // React Hook Form setup
   const {
@@ -221,11 +216,7 @@ export function TeamForm({
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button
-          type="submit"
-          disabled={isDisabled}
-          className="flex-1"
-        >
+        <Button type="submit" disabled={isDisabled} className="flex-1">
           {isLoading || isPending
             ? mode === "create"
               ? "Creating..."

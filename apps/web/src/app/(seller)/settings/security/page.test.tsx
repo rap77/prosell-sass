@@ -59,10 +59,14 @@ describe("SettingsSecurityPage", () => {
       screen.getByLabelText("Confirmar nueva contraseña"),
       "Otra123!",
     );
-    await user.click(screen.getByRole("button", { name: "Actualizar contraseña" }));
+    await user.click(
+      screen.getByRole("button", { name: "Actualizar contraseña" }),
+    );
 
     expect(
-      await screen.findByText("La confirmación no coincide con la nueva contraseña"),
+      await screen.findByText(
+        "La confirmación no coincide con la nueva contraseña",
+      ),
     ).toBeInTheDocument();
     expect(changePasswordMutateAsync).not.toHaveBeenCalled();
   });

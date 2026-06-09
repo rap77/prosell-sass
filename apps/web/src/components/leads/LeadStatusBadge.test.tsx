@@ -51,7 +51,9 @@ describe("LeadStatusBadge", () => {
   });
 
   it("should apply custom className to the badge element", () => {
-    render(<LeadStatusBadge status={LeadStatus.NEW} className="custom-class" />);
+    render(
+      <LeadStatusBadge status={LeadStatus.NEW} className="custom-class" />,
+    );
     const badge = screen.getByTestId("status-badge");
 
     expect(badge).toHaveClass("custom-class");

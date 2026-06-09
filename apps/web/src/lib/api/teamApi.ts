@@ -120,9 +120,7 @@ export const teamApi = {
    * Create a new team
    * POST /api/v1/teams
    */
-  async create(
-    data: CreateTeamRequest,
-  ): Promise<Team> {
+  async create(data: CreateTeamRequest): Promise<Team> {
     const response = await fetch(`${API_BASE_URL}/api/v1/teams`, {
       method: "POST",
       headers: {
@@ -139,14 +137,20 @@ export const teamApi = {
    * List teams for an organization
    * GET /api/v1/teams/org/{org_id}
    */
-  async listByOrg(orgId: string, tenantId: string, params?: {
-    skip?: number;
-    limit?: number;
-  }): Promise<TeamListResponse> {
+  async listByOrg(
+    orgId: string,
+    tenantId: string,
+    params?: {
+      skip?: number;
+      limit?: number;
+    },
+  ): Promise<TeamListResponse> {
     const searchParams = new URLSearchParams();
     searchParams.set("tenant_id", tenantId);
-    if (params?.skip !== undefined) searchParams.set("skip", params.skip.toString());
-    if (params?.limit !== undefined) searchParams.set("limit", params.limit.toString());
+    if (params?.skip !== undefined)
+      searchParams.set("skip", params.skip.toString());
+    if (params?.limit !== undefined)
+      searchParams.set("limit", params.limit.toString());
 
     const query = searchParams.toString();
     const url = `${API_BASE_URL}/api/v1/teams/org/${orgId}${query ? `?${query}` : ""}`;
@@ -182,10 +186,7 @@ export const teamApi = {
    * Update team
    * PATCH /api/v1/teams/{team_id}
    */
-  async update(
-    teamId: string,
-    data: UpdateTeamRequest,
-  ): Promise<Team> {
+  async update(teamId: string, data: UpdateTeamRequest): Promise<Team> {
     const response = await fetch(`${API_BASE_URL}/api/v1/teams/${teamId}`, {
       method: "PATCH",
       headers: {
@@ -206,17 +207,20 @@ export const teamApi = {
     teamId: string,
     data: Omit<AddTeamMemberRequest, "team_id">,
   ): Promise<TeamMember> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/teams/${teamId}/members`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/teams/${teamId}/members`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...data,
+          team_id: teamId,
+        }),
+        credentials: "include",
       },
-      body: JSON.stringify({
-        ...data,
-        team_id: teamId,
-      }),
-      credentials: "include",
-    });
+    );
 
     return handleResponse<TeamMember>(response);
   },
@@ -228,14 +232,17 @@ export const teamApi = {
   async acceptInvitation(
     data: AcceptTeamInvitationRequest,
   ): Promise<TeamMember> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/teams/accept-invitation`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/teams/accept-invitation`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+        credentials: "include",
       },
-      body: JSON.stringify(data),
-      credentials: "include",
-    });
+    );
 
     return handleResponse<TeamMember>(response);
   },

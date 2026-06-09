@@ -54,7 +54,10 @@ async function proxyRequest(request: NextRequest) {
     });
 
     if (response.headers.get("Content-Type")) {
-      nextResponse.headers.set("Content-Type", response.headers.get("Content-Type")!);
+      nextResponse.headers.set(
+        "Content-Type",
+        response.headers.get("Content-Type")!,
+      );
     }
 
     return nextResponse;

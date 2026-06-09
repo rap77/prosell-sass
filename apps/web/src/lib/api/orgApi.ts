@@ -105,9 +105,7 @@ export const orgApi = {
    * Create a new organization
    * POST /api/v1/org
    */
-  async create(
-    data: CreateOrganizationRequest,
-  ): Promise<Organization> {
+  async create(data: CreateOrganizationRequest): Promise<Organization> {
     const response = await fetch(`${API_BASE_URL}/api/v1/org`, {
       method: "POST",
       headers: {
@@ -131,7 +129,8 @@ export const orgApi = {
   }): Promise<OrganizationListResponse> {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set("page", params.page.toString());
-    if (params?.page_size) searchParams.set("page_size", params.page_size.toString());
+    if (params?.page_size)
+      searchParams.set("page_size", params.page_size.toString());
     if (params?.tenant_id) searchParams.set("tenant_id", params.tenant_id);
 
     const query = searchParams.toString();
@@ -215,7 +214,11 @@ export const orgApi = {
    * Reject organization (SUPER_ADMIN only)
    * POST /api/v1/org/{id}/reject
    */
-  async reject(id: string, verifier_id: string, reason?: string): Promise<Organization> {
+  async reject(
+    id: string,
+    verifier_id: string,
+    reason?: string,
+  ): Promise<Organization> {
     const response = await fetch(`${API_BASE_URL}/api/v1/org/${id}/reject`, {
       method: "POST",
       headers: {

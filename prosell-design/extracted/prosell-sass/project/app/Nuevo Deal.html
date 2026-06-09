@@ -1,707 +1,1257 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProSell — Nuevo deal</title>
-<link rel="stylesheet" href="../colors_and_type.css">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<style>
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; }
-body {
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-  overflow: hidden;
-}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ProSell — Nuevo deal</title>
+    <link rel="stylesheet" href="../colors_and_type.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      body {
+        background: var(--bg-base);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+        overflow: hidden;
+      }
 
-/* ===== Underlay: blurred hint of the pipeline kanban ===== */
-.underlay {
-  position: fixed; inset: 0;
-  z-index: 0;
-  background: var(--bg-base);
-  padding: 20px 28px;
-  overflow: hidden;
-}
-.underlay::before {
-  content: "";
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse at 15% 30%, rgba(30,95,212,0.18), transparent 55%),
-    radial-gradient(ellipse at 85% 80%, rgba(77,184,255,0.10), transparent 55%);
-}
-.fake-top {
-  position: relative;
-  display: flex; align-items: flex-end; justify-content: space-between;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border-subtle);
-  filter: blur(2px);
-  opacity: 0.5;
-}
-.fake-top .ftitle { font-size: 22px; font-weight: 700; color: var(--text-primary); }
-.fake-top .fsub { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
-.fake-cols {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-top: 18px;
-  height: calc(100vh - 64px);
-  filter: blur(2.5px);
-  opacity: 0.45;
-}
-.fc-col {
-  display: flex; flex-direction: column; gap: 8px;
-  padding: 12px;
-  background: rgba(6,13,36,0.5);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-}
-.fc-head { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid var(--border-subtle); }
-.fc-dot { width: 8px; height: 8px; border-radius: 50%; }
-.fc-name { font-size: 13px; font-weight: 700; color: var(--text-primary); }
-.fc-card { background: rgba(13,27,62,0.8); border: 1px solid rgba(77,184,255,0.08); border-radius: 10px; padding: 12px; height: 70px; }
-.fc-line { height: 9px; border-radius: 4px; background: rgba(77,184,255,0.08); margin-bottom: 7px; }
-.fc-line:nth-child(2) { width: 70%; }
-.fc-line:nth-child(3) { width: 45%; background: rgba(77,184,255,0.15); }
+      /* ===== Underlay: blurred hint of the pipeline kanban ===== */
+      .underlay {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        background: var(--bg-base);
+        padding: 20px 28px;
+        overflow: hidden;
+      }
+      .underlay::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse at 15% 30%,
+            rgba(30, 95, 212, 0.18),
+            transparent 55%
+          ),
+          radial-gradient(
+            ellipse at 85% 80%,
+            rgba(77, 184, 255, 0.1),
+            transparent 55%
+          );
+      }
+      .fake-top {
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border-subtle);
+        filter: blur(2px);
+        opacity: 0.5;
+      }
+      .fake-top .ftitle {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+      .fake-top .fsub {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+      }
+      .fake-cols {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-top: 18px;
+        height: calc(100vh - 64px);
+        filter: blur(2.5px);
+        opacity: 0.45;
+      }
+      .fc-col {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        background: rgba(6, 13, 36, 0.5);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+      }
+      .fc-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .fc-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .fc-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+      .fc-card {
+        background: rgba(13, 27, 62, 0.8);
+        border: 1px solid rgba(77, 184, 255, 0.08);
+        border-radius: 10px;
+        padding: 12px;
+        height: 70px;
+      }
+      .fc-line {
+        height: 9px;
+        border-radius: 4px;
+        background: rgba(77, 184, 255, 0.08);
+        margin-bottom: 7px;
+      }
+      .fc-line:nth-child(2) {
+        width: 70%;
+      }
+      .fc-line:nth-child(3) {
+        width: 45%;
+        background: rgba(77, 184, 255, 0.15);
+      }
 
-/* ===== Backdrop ===== */
-.backdrop {
-  position: fixed; inset: 0;
-  z-index: 10;
-  background: rgba(6,13,36,0.80);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  display: flex; align-items: flex-start; justify-content: center;
-  padding: 24px;
-  overflow-y: auto;
-}
+      /* ===== Backdrop ===== */
+      .backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        background: rgba(6, 13, 36, 0.8);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 24px;
+        overflow-y: auto;
+      }
 
-/* ===== Modal — exact spec: 560px, padding 32px, radius 16px ===== */
-.modal {
-  position: relative;
-  width: 100%;
-  max-width: 560px;
-  background: #0D1B3E;
-  border: 1px solid rgba(77,184,255,0.15);
-  border-radius: 16px;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.04);
-  padding: 32px;
-  margin: auto 0;
-  display: flex; flex-direction: column;
-  gap: 22px;
-  animation: pop-in 220ms cubic-bezier(0.16,1,0.3,1);
-}
-@keyframes pop-in {
-  from { transform: translateY(8px) scale(0.985); opacity: 0; }
-  to   { transform: none; opacity: 1; }
-}
-.m-close {
-  position: absolute;
-  top: 16px; right: 16px;
-  width: 30px; height: 30px;
-  border-radius: 8px;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-  transition: all 180ms;
-  z-index: 2;
-}
-.m-close:hover { background: rgba(77,184,255,0.06); color: var(--text-primary); border-color: var(--border-subtle); }
-.m-close [data-lucide] { width: 15px; height: 15px; stroke-width: 2; }
+      /* ===== Modal — exact spec: 560px, padding 32px, radius 16px ===== */
+      .modal {
+        position: relative;
+        width: 100%;
+        max-width: 560px;
+        background: #0d1b3e;
+        border: 1px solid rgba(77, 184, 255, 0.15);
+        border-radius: 16px;
+        box-shadow:
+          0 32px 80px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        padding: 32px;
+        margin: auto 0;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        animation: pop-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      @keyframes pop-in {
+        from {
+          transform: translateY(8px) scale(0.985);
+          opacity: 0;
+        }
+        to {
+          transform: none;
+          opacity: 1;
+        }
+      }
+      .m-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 180ms;
+        z-index: 2;
+      }
+      .m-close:hover {
+        background: rgba(77, 184, 255, 0.06);
+        color: var(--text-primary);
+        border-color: var(--border-subtle);
+      }
+      .m-close [data-lucide] {
+        width: 15px;
+        height: 15px;
+        stroke-width: 2;
+      }
 
-/* ===== Header (exact spec: 32px icon, 22px title) ===== */
-.m-head {
-  display: flex; align-items: center; gap: 14px;
-  padding-right: 36px;
-}
-.m-icon {
-  width: 52px; height: 52px;
-  border-radius: 50%;
-  background: rgba(77,184,255,0.14);
-  border: 1px solid rgba(77,184,255,0.28);
-  color: var(--cyan);
-  display: inline-flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 0 22px rgba(77,184,255,0.20), inset 0 1px 0 rgba(255,255,255,0.05);
-}
-.m-icon [data-lucide] { width: 32px; height: 32px; stroke-width: 1.75; }
-.m-titles { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.m-titles h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0; color: var(--text-primary); line-height: 1.2; }
-.m-titles p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 0; }
+      /* ===== Header (exact spec: 32px icon, 22px title) ===== */
+      .m-head {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding-right: 36px;
+      }
+      .m-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: rgba(77, 184, 255, 0.14);
+        border: 1px solid rgba(77, 184, 255, 0.28);
+        color: var(--cyan);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow:
+          0 0 22px rgba(77, 184, 255, 0.2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      .m-icon [data-lucide] {
+        width: 32px;
+        height: 32px;
+        stroke-width: 1.75;
+      }
+      .m-titles {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+      }
+      .m-titles h1 {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0;
+        color: var(--text-primary);
+        line-height: 1.2;
+      }
+      .m-titles p {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+        margin: 0;
+      }
 
-/* ===== Form (single column per spec) ===== */
-.form { display: flex; flex-direction: column; gap: 14px; }
+      /* ===== Form (single column per spec) ===== */
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
 
-.field { display: flex; flex-direction: column; gap: 6px; }
-.field-label {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: -0.005em;
-}
-.field-label .req { color: var(--cyan); font-weight: 700; }
-.field-label .opt { color: var(--text-disabled); font-weight: 500; font-size: 11px; }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .field-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+        letter-spacing: -0.005em;
+      }
+      .field-label .req {
+        color: var(--cyan);
+        font-weight: 700;
+      }
+      .field-label .opt {
+        color: var(--text-disabled);
+        font-weight: 500;
+        font-size: 11px;
+      }
 
-.input, .textarea {
-  width: 100%;
-  background: rgba(6,13,36,0.55);
-  border: 1px solid var(--border-default);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 13.5px;
-  outline: none;
-  transition: border-color 180ms, box-shadow 180ms, background 180ms;
-}
-.input { height: 40px; padding: 0 14px; }
-.input::placeholder, .textarea::placeholder { color: var(--text-disabled); }
-.input:focus, .textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(77,184,255,0.10); }
-.textarea { padding: 10px 14px; resize: vertical; min-height: 78px; line-height: 1.5; }
+      .input,
+      .textarea {
+        width: 100%;
+        background: rgba(6, 13, 36, 0.55);
+        border: 1px solid var(--border-default);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 13.5px;
+        outline: none;
+        transition:
+          border-color 180ms,
+          box-shadow 180ms,
+          background 180ms;
+      }
+      .input {
+        height: 40px;
+        padding: 0 14px;
+      }
+      .input::placeholder,
+      .textarea::placeholder {
+        color: var(--text-disabled);
+      }
+      .input:focus,
+      .textarea:focus {
+        border-color: var(--cyan);
+        box-shadow: 0 0 0 3px rgba(77, 184, 255, 0.1);
+      }
+      .textarea {
+        padding: 10px 14px;
+        resize: vertical;
+        min-height: 78px;
+        line-height: 1.5;
+      }
 
-/* Phone with +54 prefix */
-.tel-wrap {
-  display: grid;
-  grid-template-columns: 54px 1fr;
-  background: rgba(6,13,36,0.55);
-  border: 1px solid var(--border-default);
-  border-radius: 8px;
-  overflow: hidden;
-  transition: border-color 180ms, box-shadow 180ms;
-  height: 40px;
-}
-.tel-wrap:focus-within { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(77,184,255,0.10); }
-.tel-prefix {
-  display: inline-flex; align-items: center; justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  border-right: 1px solid var(--border-default);
-  background: rgba(13,27,62,0.5);
-  letter-spacing: -0.01em;
-}
-.tel-wrap input {
-  background: transparent;
-  border: 0;
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 13.5px;
-  outline: none;
-  height: 40px;
-  padding: 0 14px;
-}
-.tel-wrap input::placeholder { color: var(--text-disabled); }
+      /* Phone with +54 prefix */
+      .tel-wrap {
+        display: grid;
+        grid-template-columns: 54px 1fr;
+        background: rgba(6, 13, 36, 0.55);
+        border: 1px solid var(--border-default);
+        border-radius: 8px;
+        overflow: hidden;
+        transition:
+          border-color 180ms,
+          box-shadow 180ms;
+        height: 40px;
+      }
+      .tel-wrap:focus-within {
+        border-color: var(--cyan);
+        box-shadow: 0 0 0 3px rgba(77, 184, 255, 0.1);
+      }
+      .tel-prefix {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        border-right: 1px solid var(--border-default);
+        background: rgba(13, 27, 62, 0.5);
+        letter-spacing: -0.01em;
+      }
+      .tel-wrap input {
+        background: transparent;
+        border: 0;
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 13.5px;
+        outline: none;
+        height: 40px;
+        padding: 0 14px;
+      }
+      .tel-wrap input::placeholder {
+        color: var(--text-disabled);
+      }
 
-/* Error state */
-.field.has-error .input,
-.field.has-error .textarea,
-.field.has-error .tel-wrap,
-.field.has-error .vsel {
-  border-color: var(--error);
-  box-shadow: 0 0 0 3px rgba(240,68,56,0.10);
-  background: rgba(240,68,56,0.03);
-}
-.field-error {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--error);
-}
-.field-error [data-lucide] { width: 12px; height: 12px; stroke-width: 2.5; }
+      /* Error state */
+      .field.has-error .input,
+      .field.has-error .textarea,
+      .field.has-error .tel-wrap,
+      .field.has-error .vsel {
+        border-color: var(--error);
+        box-shadow: 0 0 0 3px rgba(240, 68, 56, 0.1);
+        background: rgba(240, 68, 56, 0.03);
+      }
+      .field-error {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--error);
+      }
+      .field-error [data-lucide] {
+        width: 12px;
+        height: 12px;
+        stroke-width: 2.5;
+      }
 
-/* ===== Visual select base ===== */
-.vsel {
-  position: relative;
-  display: flex; align-items: center; gap: 10px;
-  height: 40px;
-  padding: 0 12px 0 8px;
-  background: rgba(6,13,36,0.55);
-  border: 1px solid var(--border-default);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: border-color 180ms, box-shadow 180ms;
-}
-.vsel:hover { border-color: var(--border-strong); }
-.vsel.focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(77,184,255,0.10); }
-.vsel .chev { color: var(--text-secondary); display: inline-flex; margin-left: auto; }
-.vsel .chev [data-lucide] { width: 14px; height: 14px; stroke-width: 2; }
+      /* ===== Visual select base ===== */
+      .vsel {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 40px;
+        padding: 0 12px 0 8px;
+        background: rgba(6, 13, 36, 0.55);
+        border: 1px solid var(--border-default);
+        border-radius: 8px;
+        cursor: pointer;
+        transition:
+          border-color 180ms,
+          box-shadow 180ms;
+      }
+      .vsel:hover {
+        border-color: var(--border-strong);
+      }
+      .vsel.focus {
+        border-color: var(--cyan);
+        box-shadow: 0 0 0 3px rgba(77, 184, 255, 0.1);
+      }
+      .vsel .chev {
+        color: var(--text-secondary);
+        display: inline-flex;
+        margin-left: auto;
+      }
+      .vsel .chev [data-lucide] {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2;
+      }
 
-/* Vehicle select */
-.veh-disp .thumb {
-  width: 26px; height: 26px;
-  border-radius: 6px;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: radial-gradient(ellipse at 50% 40%, #0F1F45, #060D24);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-disabled);
-  flex-shrink: 0;
-}
-.veh-disp .thumb [data-lucide] { width: 14px; height: 14px; stroke-width: 1.5; }
-.veh-disp .name { font-size: 13px; font-weight: 600; color: var(--text-primary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.veh-disp .price {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--cyan);
-  letter-spacing: -0.01em;
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-}
+      /* Vehicle select */
+      .veh-disp .thumb {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(ellipse at 50% 40%, #0f1f45, #060d24);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-disabled);
+        flex-shrink: 0;
+      }
+      .veh-disp .thumb [data-lucide] {
+        width: 14px;
+        height: 14px;
+        stroke-width: 1.5;
+      }
+      .veh-disp .name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .veh-disp .price {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--cyan);
+        letter-spacing: -0.01em;
+        font-variant-numeric: tabular-nums;
+        flex-shrink: 0;
+      }
 
-/* Origin select icons */
-.src-ic {
-  width: 22px; height: 22px;
-  border-radius: 5px;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  flex-shrink: 0;
-}
-.src-ic.fb { background: rgba(77,184,255,0.16); color: var(--cyan); border: 1px solid rgba(77,184,255,0.25); }
-.src-ic.at { background: rgba(245,166,35,0.16); color: var(--warning); border: 1px solid rgba(245,166,35,0.25); }
-.src-ic.cars { background: rgba(240,68,56,0.16); color: var(--error); border: 1px solid rgba(240,68,56,0.25); }
-.src-ic.web { background: rgba(138,155,191,0.16); color: var(--text-primary); border: 1px solid rgba(138,155,191,0.25); }
-.src-ic.phone { background: rgba(34,211,160,0.16); color: var(--success); border: 1px solid rgba(34,211,160,0.25); }
-.src-ic.visit { background: rgba(125,206,255,0.16); color: var(--cyan-hover); border: 1px solid rgba(125,206,255,0.25); }
-.src-ic [data-lucide] { width: 11px; height: 11px; stroke-width: 2; }
-.orig-disp .label { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+      /* Origin select icons */
+      .src-ic {
+        width: 22px;
+        height: 22px;
+        border-radius: 5px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9.5px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        flex-shrink: 0;
+      }
+      .src-ic.fb {
+        background: rgba(77, 184, 255, 0.16);
+        color: var(--cyan);
+        border: 1px solid rgba(77, 184, 255, 0.25);
+      }
+      .src-ic.at {
+        background: rgba(245, 166, 35, 0.16);
+        color: var(--warning);
+        border: 1px solid rgba(245, 166, 35, 0.25);
+      }
+      .src-ic.cars {
+        background: rgba(240, 68, 56, 0.16);
+        color: var(--error);
+        border: 1px solid rgba(240, 68, 56, 0.25);
+      }
+      .src-ic.web {
+        background: rgba(138, 155, 191, 0.16);
+        color: var(--text-primary);
+        border: 1px solid rgba(138, 155, 191, 0.25);
+      }
+      .src-ic.phone {
+        background: rgba(34, 211, 160, 0.16);
+        color: var(--success);
+        border: 1px solid rgba(34, 211, 160, 0.25);
+      }
+      .src-ic.visit {
+        background: rgba(125, 206, 255, 0.16);
+        color: var(--cyan-hover);
+        border: 1px solid rgba(125, 206, 255, 0.25);
+      }
+      .src-ic [data-lucide] {
+        width: 11px;
+        height: 11px;
+        stroke-width: 2;
+      }
+      .orig-disp .label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
 
-/* Assignee */
-.asg-disp .av {
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 700; color: var(--bg-base);
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
-}
-.asg-disp .name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+      /* Assignee */
+      .asg-disp .av {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--bg-base);
+        letter-spacing: 0.02em;
+        flex-shrink: 0;
+      }
+      .asg-disp .name {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
 
-/* Popover */
-.pop {
-  position: absolute;
-  top: calc(100% + 5px);
-  left: 0; right: 0;
-  background: #0A1530;
-  border: 1px solid var(--border-strong);
-  border-radius: 9px;
-  padding: 5px;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.6);
-  z-index: 5;
-  display: none;
-  max-height: 260px;
-  overflow-y: auto;
-}
-.pop.open { display: block; }
-.pop-opt {
-  display: flex; align-items: center; gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-  font-size: 13px;
-  color: var(--text-primary);
-  transition: background 160ms;
-}
-.pop-opt:hover { background: rgba(77,184,255,0.06); }
-.pop-opt.checked { background: rgba(77,184,255,0.10); }
-.pop-opt .thumb {
-  width: 28px; height: 28px;
-  border-radius: 6px;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: radial-gradient(ellipse at 50% 40%, #0F1F45, #060D24);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-disabled);
-  flex-shrink: 0;
-}
-.pop-opt .thumb [data-lucide] { width: 14px; height: 14px; stroke-width: 1.5; }
-.pop-opt .meta { display: flex; flex-direction: column; gap: 0; flex: 1; min-width: 0; }
-.pop-opt .meta b { font-size: 12.5px; font-weight: 600; }
-.pop-opt .meta span { font-size: 11px; color: var(--text-secondary); }
-.pop-opt .price {
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--cyan);
-  font-variant-numeric: tabular-nums;
-}
-.pop-opt.other { border-top: 1px solid var(--border-subtle); margin-top: 4px; padding-top: 10px; }
-.pop-opt.other .thumb { background: transparent; border-style: dashed; color: var(--text-secondary); }
-.pop-opt .check { margin-left: auto; color: var(--cyan); opacity: 0; display: inline-flex; }
-.pop-opt.checked .check { opacity: 1; }
-.pop-opt .check [data-lucide] { width: 13px; height: 13px; stroke-width: 3; }
+      /* Popover */
+      .pop {
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 0;
+        right: 0;
+        background: #0a1530;
+        border: 1px solid var(--border-strong);
+        border-radius: 9px;
+        padding: 5px;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+        z-index: 5;
+        display: none;
+        max-height: 260px;
+        overflow-y: auto;
+      }
+      .pop.open {
+        display: block;
+      }
+      .pop-opt {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 6px;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        text-align: left;
+        font-family: inherit;
+        font-size: 13px;
+        color: var(--text-primary);
+        transition: background 160ms;
+      }
+      .pop-opt:hover {
+        background: rgba(77, 184, 255, 0.06);
+      }
+      .pop-opt.checked {
+        background: rgba(77, 184, 255, 0.1);
+      }
+      .pop-opt .thumb {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(ellipse at 50% 40%, #0f1f45, #060d24);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-disabled);
+        flex-shrink: 0;
+      }
+      .pop-opt .thumb [data-lucide] {
+        width: 14px;
+        height: 14px;
+        stroke-width: 1.5;
+      }
+      .pop-opt .meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        flex: 1;
+        min-width: 0;
+      }
+      .pop-opt .meta b {
+        font-size: 12.5px;
+        font-weight: 600;
+      }
+      .pop-opt .meta span {
+        font-size: 11px;
+        color: var(--text-secondary);
+      }
+      .pop-opt .price {
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--cyan);
+        font-variant-numeric: tabular-nums;
+      }
+      .pop-opt.other {
+        border-top: 1px solid var(--border-subtle);
+        margin-top: 4px;
+        padding-top: 10px;
+      }
+      .pop-opt.other .thumb {
+        background: transparent;
+        border-style: dashed;
+        color: var(--text-secondary);
+      }
+      .pop-opt .check {
+        margin-left: auto;
+        color: var(--cyan);
+        opacity: 0;
+        display: inline-flex;
+      }
+      .pop-opt.checked .check {
+        opacity: 1;
+      }
+      .pop-opt .check [data-lucide] {
+        width: 13px;
+        height: 13px;
+        stroke-width: 3;
+      }
 
-/* ===== Segmented stage ===== */
-.stages {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  padding: 4px;
-  background: rgba(6,13,36,0.55);
-  border: 1px solid var(--border-default);
-  border-radius: 9px;
-}
-.stage-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 8px;
-  border-radius: 6px;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: -0.005em;
-  transition: all 180ms cubic-bezier(0.16,1,0.3,1);
-}
-.stage-btn .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.5; }
-.stage-btn:hover { color: var(--text-primary); }
-.stage-btn:hover .dot { opacity: 1; }
-.stage-btn.active {
-  background: var(--cyan);
-  color: var(--bg-base);
-  box-shadow: 0 0 14px rgba(77,184,255,0.4), 0 1px 0 rgba(255,255,255,0.15) inset;
-  font-weight: 700;
-}
-.stage-btn.active .dot { background: var(--bg-base); opacity: 1; }
+      /* ===== Segmented stage ===== */
+      .stages {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        padding: 4px;
+        background: rgba(6, 13, 36, 0.55);
+        border: 1px solid var(--border-default);
+        border-radius: 9px;
+      }
+      .stage-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 8px;
+        border-radius: 6px;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        letter-spacing: -0.005em;
+        transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .stage-btn .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: 0.5;
+      }
+      .stage-btn:hover {
+        color: var(--text-primary);
+      }
+      .stage-btn:hover .dot {
+        opacity: 1;
+      }
+      .stage-btn.active {
+        background: var(--cyan);
+        color: var(--bg-base);
+        box-shadow:
+          0 0 14px rgba(77, 184, 255, 0.4),
+          0 1px 0 rgba(255, 255, 255, 0.15) inset;
+        font-weight: 700;
+      }
+      .stage-btn.active .dot {
+        background: var(--bg-base);
+        opacity: 1;
+      }
 
-/* ===== Footer ===== */
-.foot {
-  display: flex; flex-direction: column;
-  gap: 10px;
-  padding-top: 18px;
-  border-top: 1px solid var(--border-subtle);
-}
-.foot-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 8px;
-  height: 40px;
-  padding: 0 18px;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid transparent;
-  background: transparent;
-  transition: all 180ms;
-}
-.btn [data-lucide] { width: 14px; height: 14px; stroke-width: 2.5; }
-.btn-ghost { border-color: var(--border-default); color: var(--text-secondary); }
-.btn-ghost:hover { border-color: var(--cyan); color: var(--text-primary); }
-.btn-primary {
-  background: var(--cyan);
-  color: var(--bg-base);
-  box-shadow: 0 4px 16px rgba(77,184,255,0.28);
-}
-.btn-primary:hover:not(:disabled) { background: var(--cyan-hover); box-shadow: 0 8px 24px rgba(77,184,255,0.4); transform: translateY(-1px); }
-.btn-primary:disabled {
-  background: rgba(77,184,255,0.18);
-  color: rgba(240,244,255,0.4);
-  cursor: not-allowed;
-  box-shadow: none;
-}
+      /* ===== Footer ===== */
+      .foot {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding-top: 18px;
+        border-top: 1px solid var(--border-subtle);
+      }
+      .foot-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        height: 40px;
+        padding: 0 18px;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 13.5px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        background: transparent;
+        transition: all 180ms;
+      }
+      .btn [data-lucide] {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2.5;
+      }
+      .btn-ghost {
+        border-color: var(--border-default);
+        color: var(--text-secondary);
+      }
+      .btn-ghost:hover {
+        border-color: var(--cyan);
+        color: var(--text-primary);
+      }
+      .btn-primary {
+        background: var(--cyan);
+        color: var(--bg-base);
+        box-shadow: 0 4px 16px rgba(77, 184, 255, 0.28);
+      }
+      .btn-primary:hover:not(:disabled) {
+        background: var(--cyan-hover);
+        box-shadow: 0 8px 24px rgba(77, 184, 255, 0.4);
+        transform: translateY(-1px);
+      }
+      .btn-primary:disabled {
+        background: rgba(77, 184, 255, 0.18);
+        color: rgba(240, 244, 255, 0.4);
+        cursor: not-allowed;
+        box-shadow: none;
+      }
 
-.hint {
-  text-align: center;
-  font-size: 11px;
-  color: var(--text-disabled);
-  letter-spacing: -0.005em;
-}
-.hint kbd {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 18px; height: 18px;
-  padding: 0 5px;
-  border-radius: 4px;
-  background: rgba(13,27,62,0.8);
-  border: 1px solid var(--border-subtle);
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  vertical-align: -3px;
-  margin: 0 2px;
-}
+      .hint {
+        text-align: center;
+        font-size: 11px;
+        color: var(--text-disabled);
+        letter-spacing: -0.005em;
+      }
+      .hint kbd {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 4px;
+        background: rgba(13, 27, 62, 0.8);
+        border: 1px solid var(--border-subtle);
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        vertical-align: -3px;
+        margin: 0 2px;
+      }
 
-@media (max-width: 640px) {
-  .modal { padding: 24px; border-radius: 14px; }
-  .stages { grid-template-columns: repeat(2, 1fr); }
-}
-</style>
-</head>
-<body>
-
-<!-- Underlay: blurred pipeline behind -->
-<div class="underlay" aria-hidden="true">
-  <div class="fake-top">
-    <div>
-      <div class="ftitle">Pipeline</div>
-      <div class="fsub">47 deals activos · Mayo 2026</div>
-    </div>
-  </div>
-  <div class="fake-cols">
-    <div class="fc-col">
-      <div class="fc-head"><span class="fc-dot" style="background:#1E5FD4;"></span><span class="fc-name">Nuevo</span></div>
-      <div class="fc-card"><div class="fc-line"></div><div class="fc-line"></div><div class="fc-line"></div></div>
-      <div class="fc-card"><div class="fc-line"></div><div class="fc-line"></div><div class="fc-line"></div></div>
-    </div>
-    <div class="fc-col">
-      <div class="fc-head"><span class="fc-dot" style="background:#4DB8FF;"></span><span class="fc-name">Contactado</span></div>
-      <div class="fc-card"><div class="fc-line"></div><div class="fc-line"></div><div class="fc-line"></div></div>
-    </div>
-    <div class="fc-col">
-      <div class="fc-head"><span class="fc-dot" style="background:#F5A623;"></span><span class="fc-name">Demo</span></div>
-      <div class="fc-card"><div class="fc-line"></div><div class="fc-line"></div><div class="fc-line"></div></div>
-    </div>
-    <div class="fc-col">
-      <div class="fc-head"><span class="fc-dot" style="background:#22D3A0;"></span><span class="fc-name">Cierre</span></div>
-      <div class="fc-card"><div class="fc-line"></div><div class="fc-line"></div><div class="fc-line"></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal -->
-<div class="backdrop">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-title">
-    <button class="m-close" type="button" aria-label="Cerrar"><i data-lucide="x"></i></button>
-
-    <header class="m-head">
-      <span class="m-icon"><i data-lucide="plus-circle"></i></span>
-      <div class="m-titles">
-        <h1 id="m-title">Nuevo deal</h1>
-        <p>Agregá un lead manualmente al pipeline</p>
-      </div>
-    </header>
-
-    <form class="form" onsubmit="event.preventDefault();">
-
-      <div class="field has-error">
-        <label class="field-label" for="f-name">Nombre del comprador <span class="req">*</span></label>
-        <input class="input" id="f-name" type="text" placeholder="Ej: Martín Rivas" value="" />
-        <span class="field-error"><i data-lucide="alert-circle"></i>Este campo es requerido</span>
-      </div>
-
-      <div class="field">
-        <label class="field-label" for="f-email">Email</label>
-        <input class="input" id="f-email" type="email" placeholder="martin@email.com" />
-      </div>
-
-      <div class="field">
-        <label class="field-label" for="f-phone">Teléfono</label>
-        <div class="tel-wrap">
-          <span class="tel-prefix">+54</span>
-          <input id="f-phone" type="tel" placeholder="11 4567-8901" />
+      @media (max-width: 640px) {
+        .modal {
+          padding: 24px;
+          border-radius: 14px;
+        }
+        .stages {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Underlay: blurred pipeline behind -->
+    <div class="underlay" aria-hidden="true">
+      <div class="fake-top">
+        <div>
+          <div class="ftitle">Pipeline</div>
+          <div class="fsub">47 deals activos · Mayo 2026</div>
         </div>
       </div>
+      <div class="fake-cols">
+        <div class="fc-col">
+          <div class="fc-head">
+            <span class="fc-dot" style="background: #1e5fd4"></span
+            ><span class="fc-name">Nuevo</span>
+          </div>
+          <div class="fc-card">
+            <div class="fc-line"></div>
+            <div class="fc-line"></div>
+            <div class="fc-line"></div>
+          </div>
+          <div class="fc-card">
+            <div class="fc-line"></div>
+            <div class="fc-line"></div>
+            <div class="fc-line"></div>
+          </div>
+        </div>
+        <div class="fc-col">
+          <div class="fc-head">
+            <span class="fc-dot" style="background: #4db8ff"></span
+            ><span class="fc-name">Contactado</span>
+          </div>
+          <div class="fc-card">
+            <div class="fc-line"></div>
+            <div class="fc-line"></div>
+            <div class="fc-line"></div>
+          </div>
+        </div>
+        <div class="fc-col">
+          <div class="fc-head">
+            <span class="fc-dot" style="background: #f5a623"></span
+            ><span class="fc-name">Demo</span>
+          </div>
+          <div class="fc-card">
+            <div class="fc-line"></div>
+            <div class="fc-line"></div>
+            <div class="fc-line"></div>
+          </div>
+        </div>
+        <div class="fc-col">
+          <div class="fc-head">
+            <span class="fc-dot" style="background: #22d3a0"></span
+            ><span class="fc-name">Cierre</span>
+          </div>
+          <div class="fc-card">
+            <div class="fc-line"></div>
+            <div class="fc-line"></div>
+            <div class="fc-line"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-      <div class="field">
-        <label class="field-label">Vehículo de interés</label>
-        <div class="vsel veh-disp" id="vehDisp" tabindex="0">
-          <span class="thumb"><i data-lucide="car-front"></i></span>
-          <span class="name" id="vehName">Toyota Corolla 2024</span>
-          <span class="price" id="vehPrice">$28.500</span>
-          <span class="chev"><i data-lucide="chevron-down"></i></span>
-          <div class="pop" id="vehPop">
-            <button type="button" class="pop-opt checked" data-name="Toyota Corolla 2024" data-sub="XEi CVT · 45.000 km" data-price="$28.500" data-icon="car-front">
+    <!-- Modal -->
+    <div class="backdrop">
+      <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="m-title"
+      >
+        <button class="m-close" type="button" aria-label="Cerrar">
+          <i data-lucide="x"></i>
+        </button>
+
+        <header class="m-head">
+          <span class="m-icon"><i data-lucide="plus-circle"></i></span>
+          <div class="m-titles">
+            <h1 id="m-title">Nuevo deal</h1>
+            <p>Agregá un lead manualmente al pipeline</p>
+          </div>
+        </header>
+
+        <form class="form" onsubmit="event.preventDefault()">
+          <div class="field has-error">
+            <label class="field-label" for="f-name"
+              >Nombre del comprador <span class="req">*</span></label
+            >
+            <input
+              class="input"
+              id="f-name"
+              type="text"
+              placeholder="Ej: Martín Rivas"
+              value=""
+            />
+            <span class="field-error"
+              ><i data-lucide="alert-circle"></i>Este campo es requerido</span
+            >
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="f-email">Email</label>
+            <input
+              class="input"
+              id="f-email"
+              type="email"
+              placeholder="martin@email.com"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="f-phone">Teléfono</label>
+            <div class="tel-wrap">
+              <span class="tel-prefix">+54</span>
+              <input id="f-phone" type="tel" placeholder="11 4567-8901" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Vehículo de interés</label>
+            <div class="vsel veh-disp" id="vehDisp" tabindex="0">
               <span class="thumb"><i data-lucide="car-front"></i></span>
-              <div class="meta"><b>Toyota Corolla 2024</b><span>XEi CVT · 45.000 km</span></div>
-              <span class="price">$28.500</span>
-            </button>
-            <button type="button" class="pop-opt" data-name="Toyota Hilux 2023" data-sub="SRX 4×4 · 18.000 km" data-price="$58.000" data-icon="truck">
-              <span class="thumb"><i data-lucide="truck"></i></span>
-              <div class="meta"><b>Toyota Hilux 2023</b><span>SRX 4×4 · 18.000 km</span></div>
-              <span class="price">$58.000</span>
-            </button>
-            <button type="button" class="pop-opt" data-name="Ford Ranger 2023" data-sub="XLT 4×4 · 28.000 km" data-price="$42.000" data-icon="truck">
-              <span class="thumb"><i data-lucide="truck"></i></span>
-              <div class="meta"><b>Ford Ranger 2023</b><span>XLT 4×4 · 28.000 km</span></div>
-              <span class="price">$42.000</span>
-            </button>
-            <button type="button" class="pop-opt other" data-name="Otro vehículo" data-price="—" data-icon="circle-plus">
-              <span class="thumb"><i data-lucide="circle-plus"></i></span>
-              <div class="meta"><b>Otro (especificar)</b><span>Lo defino en el detalle del deal</span></div>
-              <span class="price">—</span>
+              <span class="name" id="vehName">Toyota Corolla 2024</span>
+              <span class="price" id="vehPrice">$28.500</span>
+              <span class="chev"><i data-lucide="chevron-down"></i></span>
+              <div class="pop" id="vehPop">
+                <button
+                  type="button"
+                  class="pop-opt checked"
+                  data-name="Toyota Corolla 2024"
+                  data-sub="XEi CVT · 45.000 km"
+                  data-price="$28.500"
+                  data-icon="car-front"
+                >
+                  <span class="thumb"><i data-lucide="car-front"></i></span>
+                  <div class="meta">
+                    <b>Toyota Corolla 2024</b><span>XEi CVT · 45.000 km</span>
+                  </div>
+                  <span class="price">$28.500</span>
+                </button>
+                <button
+                  type="button"
+                  class="pop-opt"
+                  data-name="Toyota Hilux 2023"
+                  data-sub="SRX 4×4 · 18.000 km"
+                  data-price="$58.000"
+                  data-icon="truck"
+                >
+                  <span class="thumb"><i data-lucide="truck"></i></span>
+                  <div class="meta">
+                    <b>Toyota Hilux 2023</b><span>SRX 4×4 · 18.000 km</span>
+                  </div>
+                  <span class="price">$58.000</span>
+                </button>
+                <button
+                  type="button"
+                  class="pop-opt"
+                  data-name="Ford Ranger 2023"
+                  data-sub="XLT 4×4 · 28.000 km"
+                  data-price="$42.000"
+                  data-icon="truck"
+                >
+                  <span class="thumb"><i data-lucide="truck"></i></span>
+                  <div class="meta">
+                    <b>Ford Ranger 2023</b><span>XLT 4×4 · 28.000 km</span>
+                  </div>
+                  <span class="price">$42.000</span>
+                </button>
+                <button
+                  type="button"
+                  class="pop-opt other"
+                  data-name="Otro vehículo"
+                  data-price="—"
+                  data-icon="circle-plus"
+                >
+                  <span class="thumb"><i data-lucide="circle-plus"></i></span>
+                  <div class="meta">
+                    <b>Otro (especificar)</b
+                    ><span>Lo defino en el detalle del deal</span>
+                  </div>
+                  <span class="price">—</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label"
+              >Origen del lead <span class="req">*</span></label
+            >
+            <div class="vsel orig-disp" id="origDisp" tabindex="0">
+              <span class="src-ic fb">F</span>
+              <span class="label" id="origLabel">Facebook Marketplace</span>
+              <span class="chev"><i data-lucide="chevron-down"></i></span>
+              <div class="pop" id="origPop">
+                <button
+                  type="button"
+                  class="pop-opt checked"
+                  data-label="Facebook Marketplace"
+                >
+                  <span class="src-ic fb">F</span
+                  ><span style="flex: 1">Facebook Marketplace</span>
+                  <span class="check"><i data-lucide="check"></i></span>
+                </button>
+                <button type="button" class="pop-opt" data-label="AutoTrader">
+                  <span class="src-ic at">AT</span
+                  ><span style="flex: 1">AutoTrader</span>
+                  <span class="check"><i data-lucide="check"></i></span>
+                </button>
+                <button type="button" class="pop-opt" data-label="Cars.com">
+                  <span class="src-ic cars">C</span
+                  ><span style="flex: 1">Cars.com</span>
+                  <span class="check"><i data-lucide="check"></i></span>
+                </button>
+                <button type="button" class="pop-opt" data-label="Sitio web">
+                  <span class="src-ic web"><i data-lucide="globe"></i></span
+                  ><span style="flex: 1">Sitio web</span>
+                  <span class="check"><i data-lucide="check"></i></span>
+                </button>
+                <button
+                  type="button"
+                  class="pop-opt"
+                  data-label="Llamada telefónica"
+                >
+                  <span class="src-ic phone"><i data-lucide="phone"></i></span
+                  ><span style="flex: 1">Llamada telefónica</span>
+                  <span class="check"><i data-lucide="check"></i></span>
+                </button>
+                <button
+                  type="button"
+                  class="pop-opt"
+                  data-label="Visita presencial"
+                >
+                  <span class="src-ic visit"><i data-lucide="map-pin"></i></span
+                  ><span style="flex: 1">Visita presencial</span>
+                  <span class="check"><i data-lucide="check"></i></span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Etapa inicial</label>
+            <div class="stages" role="radiogroup">
+              <button type="button" class="stage-btn active">
+                <span class="dot"></span>Nuevo
+              </button>
+              <button type="button" class="stage-btn">
+                <span class="dot" style="background: #4db8ff"></span>Contactado
+              </button>
+              <button type="button" class="stage-btn">
+                <span class="dot" style="background: #f5a623"></span>Demo
+              </button>
+              <button type="button" class="stage-btn">
+                <span class="dot" style="background: #22d3a0"></span>Cierre
+              </button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Asignar a</label>
+            <div class="vsel asg-disp" id="asgDisp" tabindex="0">
+              <span
+                class="av"
+                style="background: linear-gradient(135deg, #4db8ff, #1e5fd4)"
+                id="asgAv"
+                >MR</span
+              >
+              <span class="name" id="asgName">Martín R.</span>
+              <span class="chev"><i data-lucide="chevron-down"></i></span>
+              <div class="pop" id="asgPop">
+                <button
+                  type="button"
+                  class="pop-opt checked"
+                  data-name="Martín R."
+                  data-init="MR"
+                  data-grad="#4DB8FF,#1E5FD4"
+                >
+                  <span
+                    class="av"
+                    style="
+                      width: 28px;
+                      height: 28px;
+                      border-radius: 50%;
+                      display: inline-flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 10.5px;
+                      font-weight: 700;
+                      color: var(--bg-base);
+                      background: linear-gradient(135deg, #4db8ff, #1e5fd4);
+                    "
+                    >MR</span
+                  >
+                  <div class="meta" style="flex: 1">
+                    <b>Martín R.</b><span>martin@automotoresdelnorte.com</span>
+                  </div>
+                  <span class="check"><i data-lucide="check"></i></span>
+                </button>
+                <button
+                  type="button"
+                  class="pop-opt"
+                  data-name="Sofía G."
+                  data-init="SG"
+                  data-grad="#F5A623,#F04438"
+                >
+                  <span
+                    class="av"
+                    style="
+                      width: 28px;
+                      height: 28px;
+                      border-radius: 50%;
+                      display: inline-flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 10.5px;
+                      font-weight: 700;
+                      color: var(--bg-base);
+                      background: linear-gradient(135deg, #f5a623, #f04438);
+                    "
+                    >SG</span
+                  >
+                  <div class="meta" style="flex: 1">
+                    <b>Sofía G.</b><span>sofia@automotoresdelnorte.com</span>
+                  </div>
+                  <span class="check"><i data-lucide="check"></i></span>
+                </button>
+                <button
+                  type="button"
+                  class="pop-opt"
+                  data-name="Luis T."
+                  data-init="LT"
+                  data-grad="#22D3A0,#1E5FD4"
+                >
+                  <span
+                    class="av"
+                    style="
+                      width: 28px;
+                      height: 28px;
+                      border-radius: 50%;
+                      display: inline-flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 10.5px;
+                      font-weight: 700;
+                      color: var(--bg-base);
+                      background: linear-gradient(135deg, #22d3a0, #1e5fd4);
+                    "
+                    >LT</span
+                  >
+                  <div class="meta" style="flex: 1">
+                    <b>Luis T.</b><span>luis@automotoresdelnorte.com</span>
+                  </div>
+                  <span class="check"><i data-lucide="check"></i></span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="f-notes"
+              >Notas iniciales <span class="opt">opcional</span></label
+            >
+            <textarea
+              class="textarea"
+              id="f-notes"
+              rows="3"
+              placeholder="Contexto del lead, preferencias, observaciones..."
+            ></textarea>
+          </div>
+        </form>
+
+        <footer class="foot">
+          <div class="foot-row">
+            <button class="btn btn-ghost" type="button">Cancelar</button>
+            <button
+              class="btn btn-primary"
+              type="button"
+              id="createBtn"
+              disabled
+            >
+              Crear deal <i data-lucide="arrow-right"></i>
             </button>
           </div>
-        </div>
+          <span class="hint"><kbd>⌘</kbd>+<kbd>↵</kbd> para crear rápido</span>
+        </footer>
       </div>
+    </div>
 
-      <div class="field">
-        <label class="field-label">Origen del lead <span class="req">*</span></label>
-        <div class="vsel orig-disp" id="origDisp" tabindex="0">
-          <span class="src-ic fb">F</span>
-          <span class="label" id="origLabel">Facebook Marketplace</span>
-          <span class="chev"><i data-lucide="chevron-down"></i></span>
-          <div class="pop" id="origPop">
-            <button type="button" class="pop-opt checked" data-label="Facebook Marketplace">
-              <span class="src-ic fb">F</span><span style="flex:1;">Facebook Marketplace</span>
-              <span class="check"><i data-lucide="check"></i></span>
-            </button>
-            <button type="button" class="pop-opt" data-label="AutoTrader">
-              <span class="src-ic at">AT</span><span style="flex:1;">AutoTrader</span>
-              <span class="check"><i data-lucide="check"></i></span>
-            </button>
-            <button type="button" class="pop-opt" data-label="Cars.com">
-              <span class="src-ic cars">C</span><span style="flex:1;">Cars.com</span>
-              <span class="check"><i data-lucide="check"></i></span>
-            </button>
-            <button type="button" class="pop-opt" data-label="Sitio web">
-              <span class="src-ic web"><i data-lucide="globe"></i></span><span style="flex:1;">Sitio web</span>
-              <span class="check"><i data-lucide="check"></i></span>
-            </button>
-            <button type="button" class="pop-opt" data-label="Llamada telefónica">
-              <span class="src-ic phone"><i data-lucide="phone"></i></span><span style="flex:1;">Llamada telefónica</span>
-              <span class="check"><i data-lucide="check"></i></span>
-            </button>
-            <button type="button" class="pop-opt" data-label="Visita presencial">
-              <span class="src-ic visit"><i data-lucide="map-pin"></i></span><span style="flex:1;">Visita presencial</span>
-              <span class="check"><i data-lucide="check"></i></span>
-            </button>
-          </div>
-        </div>
-      </div>
+    <script>
+      lucide.createIcons();
 
-      <div class="field">
-        <label class="field-label">Etapa inicial</label>
-        <div class="stages" role="radiogroup">
-          <button type="button" class="stage-btn active"><span class="dot"></span>Nuevo</button>
-          <button type="button" class="stage-btn"><span class="dot" style="background:#4DB8FF;"></span>Contactado</button>
-          <button type="button" class="stage-btn"><span class="dot" style="background:#F5A623;"></span>Demo</button>
-          <button type="button" class="stage-btn"><span class="dot" style="background:#22D3A0;"></span>Cierre</button>
-        </div>
-      </div>
-
-      <div class="field">
-        <label class="field-label">Asignar a</label>
-        <div class="vsel asg-disp" id="asgDisp" tabindex="0">
-          <span class="av" style="background: linear-gradient(135deg,#4DB8FF,#1E5FD4);" id="asgAv">MR</span>
-          <span class="name" id="asgName">Martín R.</span>
-          <span class="chev"><i data-lucide="chevron-down"></i></span>
-          <div class="pop" id="asgPop">
-            <button type="button" class="pop-opt checked" data-name="Martín R." data-init="MR" data-grad="#4DB8FF,#1E5FD4">
-              <span class="av" style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:var(--bg-base);background: linear-gradient(135deg,#4DB8FF,#1E5FD4);">MR</span>
-              <div class="meta" style="flex:1"><b>Martín R.</b><span>martin@automotoresdelnorte.com</span></div>
-              <span class="check"><i data-lucide="check"></i></span>
-            </button>
-            <button type="button" class="pop-opt" data-name="Sofía G." data-init="SG" data-grad="#F5A623,#F04438">
-              <span class="av" style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:var(--bg-base);background: linear-gradient(135deg,#F5A623,#F04438);">SG</span>
-              <div class="meta" style="flex:1"><b>Sofía G.</b><span>sofia@automotoresdelnorte.com</span></div>
-              <span class="check"><i data-lucide="check"></i></span>
-            </button>
-            <button type="button" class="pop-opt" data-name="Luis T." data-init="LT" data-grad="#22D3A0,#1E5FD4">
-              <span class="av" style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:var(--bg-base);background: linear-gradient(135deg,#22D3A0,#1E5FD4);">LT</span>
-              <div class="meta" style="flex:1"><b>Luis T.</b><span>luis@automotoresdelnorte.com</span></div>
-              <span class="check"><i data-lucide="check"></i></span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="field">
-        <label class="field-label" for="f-notes">Notas iniciales <span class="opt">opcional</span></label>
-        <textarea class="textarea" id="f-notes" rows="3" placeholder="Contexto del lead, preferencias, observaciones..."></textarea>
-      </div>
-
-    </form>
-
-    <footer class="foot">
-      <div class="foot-row">
-        <button class="btn btn-ghost" type="button">Cancelar</button>
-        <button class="btn btn-primary" type="button" id="createBtn" disabled>Crear deal <i data-lucide="arrow-right"></i></button>
-      </div>
-      <span class="hint"><kbd>⌘</kbd>+<kbd>↵</kbd> para crear rápido</span>
-    </footer>
-  </div>
-</div>
-
-<script>
-  lucide.createIcons();
-
-  document.querySelectorAll('.stage-btn').forEach(b => {
-    b.addEventListener('click', () => {
-      document.querySelectorAll('.stage-btn').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-    });
-  });
-
-  function bindSelect(disp, pop, onSelect) {
-    disp.addEventListener('click', (e) => {
-      if (e.target.closest('.pop-opt')) return;
-      pop.classList.toggle('open');
-      disp.classList.toggle('focus', pop.classList.contains('open'));
-    });
-    pop.querySelectorAll('.pop-opt').forEach(o => {
-      o.addEventListener('click', (e) => {
-        e.stopPropagation();
-        pop.querySelectorAll('.pop-opt').forEach(x => x.classList.remove('checked'));
-        o.classList.add('checked');
-        onSelect(o);
-        pop.classList.remove('open');
-        disp.classList.remove('focus');
+      document.querySelectorAll(".stage-btn").forEach((b) => {
+        b.addEventListener("click", () => {
+          document
+            .querySelectorAll(".stage-btn")
+            .forEach((x) => x.classList.remove("active"));
+          b.classList.add("active");
+        });
       });
-    });
-  }
 
-  const vehDisp = document.getElementById('vehDisp');
-  const vehPop = document.getElementById('vehPop');
-  bindSelect(vehDisp, vehPop, (o) => {
-    document.getElementById('vehName').textContent = o.dataset.name;
-    document.getElementById('vehPrice').textContent = o.dataset.price;
-    const icon = o.dataset.icon || 'car-front';
-    vehDisp.querySelector(':scope > .thumb').innerHTML = `<i data-lucide="${icon}"></i>`;
-    lucide.createIcons();
-  });
+      function bindSelect(disp, pop, onSelect) {
+        disp.addEventListener("click", (e) => {
+          if (e.target.closest(".pop-opt")) return;
+          pop.classList.toggle("open");
+          disp.classList.toggle("focus", pop.classList.contains("open"));
+        });
+        pop.querySelectorAll(".pop-opt").forEach((o) => {
+          o.addEventListener("click", (e) => {
+            e.stopPropagation();
+            pop
+              .querySelectorAll(".pop-opt")
+              .forEach((x) => x.classList.remove("checked"));
+            o.classList.add("checked");
+            onSelect(o);
+            pop.classList.remove("open");
+            disp.classList.remove("focus");
+          });
+        });
+      }
 
-  const origDisp = document.getElementById('origDisp');
-  const origPop = document.getElementById('origPop');
-  bindSelect(origDisp, origPop, (o) => {
-    document.getElementById('origLabel').textContent = o.dataset.label;
-    const src = o.querySelector('.src-ic');
-    const oldIc = origDisp.querySelector(':scope > .src-ic');
-    if (oldIc && src) oldIc.outerHTML = src.outerHTML;
-    lucide.createIcons();
-  });
+      const vehDisp = document.getElementById("vehDisp");
+      const vehPop = document.getElementById("vehPop");
+      bindSelect(vehDisp, vehPop, (o) => {
+        document.getElementById("vehName").textContent = o.dataset.name;
+        document.getElementById("vehPrice").textContent = o.dataset.price;
+        const icon = o.dataset.icon || "car-front";
+        vehDisp.querySelector(":scope > .thumb").innerHTML =
+          `<i data-lucide="${icon}"></i>`;
+        lucide.createIcons();
+      });
 
-  const asgDisp = document.getElementById('asgDisp');
-  const asgPop = document.getElementById('asgPop');
-  bindSelect(asgDisp, asgPop, (o) => {
-    document.getElementById('asgName').textContent = o.dataset.name;
-    const av = document.getElementById('asgAv');
-    av.textContent = o.dataset.init;
-    const [c1, c2] = o.dataset.grad.split(',');
-    av.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
-  });
+      const origDisp = document.getElementById("origDisp");
+      const origPop = document.getElementById("origPop");
+      bindSelect(origDisp, origPop, (o) => {
+        document.getElementById("origLabel").textContent = o.dataset.label;
+        const src = o.querySelector(".src-ic");
+        const oldIc = origDisp.querySelector(":scope > .src-ic");
+        if (oldIc && src) oldIc.outerHTML = src.outerHTML;
+        lucide.createIcons();
+      });
 
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#vehDisp'))  { vehPop.classList.remove('open');  vehDisp.classList.remove('focus');  }
-    if (!e.target.closest('#origDisp')) { origPop.classList.remove('open'); origDisp.classList.remove('focus'); }
-    if (!e.target.closest('#asgDisp'))  { asgPop.classList.remove('open');  asgDisp.classList.remove('focus');  }
-  });
+      const asgDisp = document.getElementById("asgDisp");
+      const asgPop = document.getElementById("asgPop");
+      bindSelect(asgDisp, asgPop, (o) => {
+        document.getElementById("asgName").textContent = o.dataset.name;
+        const av = document.getElementById("asgAv");
+        av.textContent = o.dataset.init;
+        const [c1, c2] = o.dataset.grad.split(",");
+        av.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
+      });
 
-  const name = document.getElementById('f-name');
-  const nameField = name.closest('.field');
-  const createBtn = document.getElementById('createBtn');
-  name.addEventListener('input', () => {
-    const ok = name.value.trim().length > 0;
-    nameField.classList.toggle('has-error', !ok);
-    createBtn.disabled = !ok;
-  });
-</script>
-</body>
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest("#vehDisp")) {
+          vehPop.classList.remove("open");
+          vehDisp.classList.remove("focus");
+        }
+        if (!e.target.closest("#origDisp")) {
+          origPop.classList.remove("open");
+          origDisp.classList.remove("focus");
+        }
+        if (!e.target.closest("#asgDisp")) {
+          asgPop.classList.remove("open");
+          asgDisp.classList.remove("focus");
+        }
+      });
+
+      const name = document.getElementById("f-name");
+      const nameField = name.closest(".field");
+      const createBtn = document.getElementById("createBtn");
+      name.addEventListener("input", () => {
+        const ok = name.value.trim().length > 0;
+        nameField.classList.toggle("has-error", !ok);
+        createBtn.disabled = !ok;
+      });
+    </script>
+  </body>
 </html>

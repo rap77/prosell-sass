@@ -29,6 +29,7 @@
 ### Por qué este Sprint es CRÍTICO
 
 **Problema Actual**: "Muerte por Éxito"
+
 ```
 HOY:     5 dealers × 15 autos = ~75 pubs/día (manejable)
 +3 MESES: 10 dealers × 15 autos = ~150 pubs/día (IMPOSIBLE manual)
@@ -36,6 +37,7 @@ HOY:     5 dealers × 15 autos = ~75 pubs/día (manejable)
 ```
 
 **Sin automatización**:
+
 - Empleados de ProSell se queman
 - Calidad de publicaciones cae
 - Dealers se van por incapacidad operativa
@@ -52,6 +54,7 @@ HOY:     5 dealers × 15 autos = ~75 pubs/día (manejable)
 ProSell es una **agencia de servicios** que gestiona inventario, publicaciones y leads para dealers.
 
 **Flujo Principal**:
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. Dealer entrega inventario                                │
@@ -143,30 +146,32 @@ Dealer (Cliente)
 
 ### 3.2 Matriz de Permisos
 
-| Acción | Admin | Manager | Vendedor | Dealer |
-|--------|-------|---------|----------|--------|
-| Ver TODO inventario | ✅ | ✅ | ✅ | ❌ |
-| Ver inventario assigned | ✅ | ✅ | ✅ | ✅ |
-| Modificar TODO inventario | ✅ | ❌ | ❌ | ❌ |
-| Modificar inventario assigned | ✅ | ✅ | ❌ | ✅ |
-| Publicar (cualquier cuenta) | ✅ | ❌ | ❌ | ❌ |
-| Publicar (su cuenta) | ✅ | ✅ | ✅ | ✅ |
-| Ver TODO leads | ✅ | ❌ | ❌ | ❌ |
-| Ver leads assigned | ✅ | ✅ | ✅ | ❌ |
-| Asignar vendedores | ✅ | ✅ | ❌ | ❌ |
-| Crear dealers sin cuenta | ✅ | ❌ | ❌ | ❌ |
-| Ver métricas globales | ✅ | ✅ (su equipo) | ✅ (personal) | ❌ |
-| Eliminar inventario | ✅ | ❌ | ❌ | ❌ |
+| Acción                        | Admin | Manager        | Vendedor      | Dealer |
+| ----------------------------- | ----- | -------------- | ------------- | ------ |
+| Ver TODO inventario           | ✅    | ✅             | ✅            | ❌     |
+| Ver inventario assigned       | ✅    | ✅             | ✅            | ✅     |
+| Modificar TODO inventario     | ✅    | ❌             | ❌            | ❌     |
+| Modificar inventario assigned | ✅    | ✅             | ❌            | ✅     |
+| Publicar (cualquier cuenta)   | ✅    | ❌             | ❌            | ❌     |
+| Publicar (su cuenta)          | ✅    | ✅             | ✅            | ✅     |
+| Ver TODO leads                | ✅    | ❌             | ❌            | ❌     |
+| Ver leads assigned            | ✅    | ✅             | ✅            | ❌     |
+| Asignar vendedores            | ✅    | ✅             | ❌            | ❌     |
+| Crear dealers sin cuenta      | ✅    | ❌             | ❌            | ❌     |
+| Ver métricas globales         | ✅    | ✅ (su equipo) | ✅ (personal) | ❌     |
+| Eliminar inventario           | ✅    | ❌             | ❌            | ❌     |
 
 ### 3.3 Asignación de Vendedores a Dealers
 
 **Reglas**:
+
 - Admin ProSell asigna vendedores o managers a dealers
 - Un vendedor puede tener múltiples dealers
 - Un dealer puede tener múltiples vendedores
 - Manager puede asignar vendedores de su equipo
 
 **Dealer sin cuenta**:
+
 - Admin lo crea como organización sin correo
 - No tiene cuenta de usuario registrada
 - Acceso via `dealer_id` o `tenant_id`
@@ -181,12 +186,14 @@ Dealer (Cliente)
 **Seleccionado**: Opción B (field_config + JSONB)
 
 **Justificación**:
+
 - ✅ Sprint 5-6 ya usa este patrón
 - ✅ Fácil agregar nuevos productos sin código
 - ✅ Validación dinámica por categoría
 - ✅ JSONB soporta queries en PostgreSQL
 
 **Estructura**:
+
 ```python
 class Category(Base):
     """Categorías jerárquicas multi-level"""
@@ -241,6 +248,7 @@ class Publication(Base):
 ### 4.2 Categorías de Productos
 
 **Vehículos** (Jerarquía multi-level):
+
 ```
 Vehículos
 ├── Automóviles
@@ -263,12 +271,14 @@ Vehículos
 ```
 
 **Otros Productos**:
+
 - Real Estate (inmuebles)
 - Perfumes
 - Electrónicos
 - Productos de consumo masivo
 
 **Cada producto tiene**:
+
 - Categorías y subcategorías (multi-level)
 - Campos particulares específicos (via FieldConfig)
 - Maestros/estructuras de Facebook (si existen)
@@ -276,6 +286,7 @@ Vehículos
 ### 4.3 Campos Dinámicos por Producto
 
 **Ejemplo Vehículos**:
+
 ```json
 {
   "make": "Toyota",
@@ -292,6 +303,7 @@ Vehículos
 ```
 
 **Ejemplo Real Estate**:
+
 ```json
 {
   "property_type": "house",
@@ -351,6 +363,7 @@ async def create_product(dto: CreateProductDTO):
 ### 5.1 OAuth Dinámico por Vendedor
 
 **Flujo**:
+
 ```
 1. Admin ProSell crea/configura vendedor
 2. Admin solicita conectar cuenta Facebook del vendedor
@@ -362,6 +375,7 @@ async def create_product(dto: CreateProductDTO):
 ```
 
 **Modelo de Datos**:
+
 ```python
 class FacebookAccount(Base):
     """Cuentas de Facebook de vendedores"""
@@ -390,6 +404,7 @@ class FacebookPage(Base):
 **Componentes**:
 
 **Rate Limiting**:
+
 ```python
 class FacebookRateLimiter:
     """Token bucket algorithm para rate limiting"""
@@ -413,6 +428,7 @@ class FacebookRateLimiter:
 ```
 
 **Graph API Client**:
+
 ```python
 class FacebookGraphAPIClient:
     """Cliente para Facebook Graph API"""
@@ -444,6 +460,7 @@ class FacebookGraphAPIClient:
 ### 5.3 Webhook Listener
 
 **Para actualizaciones de Facebook**:
+
 ```python
 @app.post("/webhooks/facebook")
 async def facebook_webhook(request: Request):
@@ -478,6 +495,7 @@ async def handle_feed_update(update: dict):
 ```
 
 **Deduplication**:
+
 - Webhooks pueden llegar desordenados
 - Usar `id` de publicación como clave única
 - Dead letter queue para fallos
@@ -513,6 +531,7 @@ async def republish_expired_listings():
 ### 6.1 Detector de Cambios Diario
 
 **Servicio que corre diariamente**:
+
 ```python
 @task(schedule=[{"cron": "0 9 * * *"}])  # 9 AM todos los días
 async def daily_change_detection():
@@ -531,6 +550,7 @@ async def daily_change_detection():
 ### 6.2 Scraper Incremental
 
 **Con detección de duplicados**:
+
 ```python
 async def scrape_dealer_website(dealer_id: UUID):
     """Scrapea sitio web de dealer incrementalmente"""
@@ -561,6 +581,7 @@ async def scrape_dealer_website(dealer_id: UUID):
 ### 6.3 Agentes IA para Extracción
 
 **Para sitios difíciles o no estructurados**:
+
 ```python
 class AIExtractionAgent:
     """Agente IA para extraer información de sitios no estructurados"""
@@ -623,6 +644,7 @@ ProSell gestiona hasta cierre
 ### 7.2 Asistente Vendedor IA
 
 **Funcionalidades**:
+
 ```python
 class AIVendorAssistant:
     """Asistente vendedor IA"""
@@ -654,6 +676,7 @@ class AIVendorAssistant:
 ### 7.3 Webhook ProSell → n8n → Odoo
 
 **Endpoint en ProSell**:
+
 ```python
 @app.post("/webhooks/lead-qualified")
 async def lead_qualified(lead: QualifiedLead):
@@ -679,6 +702,7 @@ async def lead_qualified(lead: QualifiedLead):
 ```
 
 **n8n Workflow**:
+
 - Recibe webhook de ProSell
 - Crea/actualiza cliente en Odoo
 - Asigna a vendedor correspondiente
@@ -691,6 +715,7 @@ async def lead_qualified(lead: QualifiedLead):
 ### 8.1 Requisito
 
 Plataforma multi-idioma **por defecto**:
+
 - Español (es)
 - Inglés (en)
 - Escalable a otros idiomas en el futuro
@@ -698,6 +723,7 @@ Plataforma multi-idioma **por defecto**:
 ### 8.2 Estructura Multi-Idioma
 
 **Para textos (UI, labels)**:
+
 ```python
 class MultiLanguageString(Base):
     """String multi-idioma"""
@@ -715,6 +741,7 @@ category = Category(
 ```
 
 **Para maestros (options de select)**:
+
 ```json
 {
   "makes": {
@@ -733,6 +760,7 @@ category = Category(
 ### 8.3 Detección de Idioma
 
 **Para usuarios**:
+
 ```python
 def get_user_language(request: Request) -> str:
     """Detecta idioma del usuario"""
@@ -761,6 +789,7 @@ def get_user_language(request: Request) -> str:
 ### 9.1 Dashboard por Rol
 
 **Admin ProSell**:
+
 - Inventario total (todos dealers)
 - Publicaciones/día (total y por dealer)
 - Leads totales (todos)
@@ -769,6 +798,7 @@ def get_user_language(request: Request) -> str:
 - Revenue por dealer
 
 **Manager ProSell**:
+
 - Dealers asignados
 - Vendedores bajo su mando
 - Publicaciones de su equipo
@@ -776,12 +806,14 @@ def get_user_language(request: Request) -> str:
 - Métricas de sus vendedores
 
 **Vendedor ProSell**:
+
 - Dealers asignados
 - Sus publicaciones
 - Sus leads (asignados)
 - Métricas personales (ventas, citas, etc.)
 
 **Dealer**:
+
 - Su inventario
 - Sus publicaciones
 - Performance de sus productos
@@ -790,6 +822,7 @@ def get_user_language(request: Request) -> str:
 ### 9.2 Métricas Clave
 
 **Publicaciones**:
+
 - Publicaciones/día
 - Time-to-publish (objetivo: <30 segundos)
 - API Success Rate (objetivo: >99.9%)
@@ -797,6 +830,7 @@ def get_user_language(request: Request) -> str:
 - Engagement (views, likes, messages)
 
 **Leads**:
+
 - Leads/día
 - Leads calificados vs no calificados
 - Leads por producto
@@ -805,6 +839,7 @@ def get_user_language(request: Request) -> str:
 - Conversion rate (lead → venta)
 
 **Inventario**:
+
 - Productos totales
 - Productos publicados
 - Productos vendidos
@@ -822,6 +857,7 @@ def get_user_language(request: Request) -> str:
 **Tecnología**: Taskiq o Celery (pendiente decisión)
 
 **Componentes**:
+
 ```python
 # Worker
 from taskiq import TaskiqBroker
@@ -845,6 +881,7 @@ async def daily_republish():
 ```
 
 **Features**:
+
 - Async workers
 - Retry logic con exponential backoff
 - Dead letter queue
@@ -853,6 +890,7 @@ async def daily_republish():
 ### 10.2 Circuit Breakers
 
 **Para Facebook API failures**:
+
 ```python
 class FacebookCircuitBreaker:
     def __init__(self, threshold: int = 5, timeout: int = 60):
@@ -880,6 +918,7 @@ class FacebookCircuitBreaker:
 ### 10.3 Health Checks
 
 **Endpoint para monitoreo**:
+
 ```python
 @app.get("/health/integrations")
 async def health_check():
@@ -909,6 +948,7 @@ async def health_check():
 ### 10.4 Multi-Idioma System
 
 **Estructura de archivos**:
+
 ```
 apps/api/src/prosell/infrastructure/i18n/
 ├── __init__.py
@@ -919,6 +959,7 @@ apps/api/src/prosell/infrastructure/i18n/
 ```
 
 **Ejemplo de locale**:
+
 ```json
 {
   "categories": {
@@ -952,6 +993,7 @@ apps/api/src/prosell/infrastructure/i18n/
 ### 11.1 CRÍTICO (Sí, va en Sprint 7+)
 
 ✅ **Publicación automática en Facebook**
+
 - Task Queue setup
 - OAuth dinámico por vendedor
 - Graph API client + rate limiting
@@ -959,18 +1001,21 @@ apps/api/src/prosell/infrastructure/i18n/
 - Re-publicación programada
 
 ✅ **Scraping automático de webs**
+
 - Detector de cambios diario
 - Scraper incremental (deduplicación)
 - Agentes IA para extracción
 - OBLIGATORIO para dealers con sitios web
 
 ✅ **Dashboard vendedores**
+
 - Ver dealers asignados
 - Ver sus publicaciones
 - Ver sus leads (asignados)
 - Métricas personales
 
 ✅ **Dashboard dealers**
+
 - Ver su inventario
 - Ver sus publicaciones
 - Performance de sus productos
@@ -979,6 +1024,7 @@ apps/api/src/prosell/infrastructure/i18n/
 ### 11.2 POSTERGADO (Sprint posterior)
 
 ⏸️ **Webhook Odoo (desarrollo)**
+
 - Integración con n8n: SÍ
 - Desarrollo del webhook: NO (próximo sprint)
 - Flujo completo: NO (próximo sprint)
@@ -993,6 +1039,7 @@ apps/api/src/prosell/infrastructure/i18n/
 **Acción**: INICIAR DÍA 1 del Sprint 7+
 
 **Permissions requeridos**:
+
 - `pages_manage_posts`
 - `pages_read_engagement`
 - `pages_manage_metadata`
@@ -1000,20 +1047,24 @@ apps/api/src/prosell/infrastructure/i18n/
 - `pages_manage_engagement`
 
 **Plan de Mitigación**:
+
 - Plan B: CSV upload + Selenium
 - Plan C: Manual publishing fallback
 
 ### 12.2 Otros Servicios
 
 **OpenAI/Claude API** (IA titles, asistente vendedor):
+
 - Lead Time: 1 día
 - Priority: Alta
 
 **Redis** (Task Queue, caching):
+
 - Ya en stack
 - Priority: CRÍTICA
 
 **n8n** (Webhook Odoo):
+
 - Lead Time: 1 día setup
 - Priority: Media (desarrollo posterior)
 
@@ -1023,20 +1074,21 @@ apps/api/src/prosell/infrastructure/i18n/
 
 ### 13.1 Objetivos Sprint 7+
 
-| Métrica | Hoy | Objetivo 6 semanas | Objetivo 12 semanas |
-|---------|-----|-------------------|---------------------|
-| Publicaciones/día | ~75 manual | ~75 automático <30s | 150+ automático |
-| Dealers activos | 5 | 5 (retención 100%) | 10 |
-| API Success Rate | N/A | >99.9% | >99.9% |
-| Time-to-Publish | Minutos | <30 segundos | <30 segundos |
-| Churn Rate | 0% | 0% | <5% |
-| Dealer Satisfaction | 7/10 | 9/10 | 9/10 |
+| Métrica             | Hoy        | Objetivo 6 semanas  | Objetivo 12 semanas |
+| ------------------- | ---------- | ------------------- | ------------------- |
+| Publicaciones/día   | ~75 manual | ~75 automático <30s | 150+ automático     |
+| Dealers activos     | 5          | 5 (retención 100%)  | 10                  |
+| API Success Rate    | N/A        | >99.9%              | >99.9%              |
+| Time-to-Publish     | Minutos    | <30 segundos        | <30 segundos        |
+| Churn Rate          | 0%         | 0%                  | <5%                 |
+| Dealer Satisfaction | 7/10       | 9/10                | 9/10                |
 
 ### 13.2 Checkpoint Post-Sprint 7+
 
 **Fecha**: Abr 21, 2026
 
 **Preguntas**:
+
 1. Marketplace Automation funciona?
    - [ ] Dealers pueden publicar sin intervención humana
    - [ ] API Success Rate > 99.9%
