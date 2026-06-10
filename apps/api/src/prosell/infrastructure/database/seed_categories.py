@@ -11,12 +11,15 @@ a later step with a detailed spec; this only lays down the tree structure.
 """
 
 from typing import NotRequired, TypedDict
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.infrastructure.models.category_model import CategoryModel
+from prosell.infrastructure.repositories.organization_vertical_repository_impl import (
+    SqlAlchemyOrganizationVerticalRepository,
+)
 
 
 class _Node(TypedDict):
@@ -677,3 +680,34 @@ async def seed_global_taxonomy(session: AsyncSession) -> None:
     """
     for vertical in ALL_VERTICALS:
         await _seed_node(session, vertical, parent_id=None, level=0)
+
+
+async def enable_default_verticals(session: AsyncSession, organization_id: UUID) -> list[UUID]:
+    """Enable the default global vertical(s) for an organization (Task 7b).
+
+    A new org operates in the Vehicles niche by default — the current
+    catalog. This links the org to the global Vehicles root category via
+    the ``organization_vertical`` M2M so that
+    ``GET /organizations/{id}/verticals`` returns it (and Subsystem A's
+    catalog has data to render). Without this, the read-API is empty for
+    real orgs even though the global taxonomy is seeded.
+
+    Idempotent: the repository's ``enable`` is ``on_conflict_do_nothing``,
+    and a missing taxonomy (Vehicles root absent) is a safe no-op.
+
+    Returns the list of root category ids that were enabled.
+    """
+    result = await session.execute(
+        select(CategoryModel).where(
+            CategoryModel.slug == VEHICLES_VERTICAL["slug"],
+            CategoryModel.tenant_id.is_(None),
+            CategoryModel.parent_id.is_(None),
+        )
+    )
+    vehicles_root = result.scalar_one_or_none()
+    if vehicles_root is None:
+        return []
+
+    repo = SqlAlchemyOrganizationVerticalRepository(session)
+    await repo.enable(organization_id, vehicles_root.id)
+    return [vehicles_root.id]

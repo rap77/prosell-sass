@@ -20,7 +20,10 @@ from sqlalchemy import select
 # Use settings from the app — no hardcoded DATABASE_URL
 from prosell.core.config import settings
 from prosell.domain.entities.user import UserStatus  # Import UserStatus
-from prosell.infrastructure.database.seed_categories import seed_global_taxonomy
+from prosell.infrastructure.database.seed_categories import (
+    enable_default_verticals,
+    seed_global_taxonomy,
+)
 from prosell.infrastructure.database.session import async_session_maker
 from prosell.infrastructure.models import (
     OrganizationModel,
@@ -58,6 +61,12 @@ async def init_data() -> None:
         # idempotently here.
         await seed_global_taxonomy(session)
         print("Seeded global category taxonomy (3 niches)")
+
+        # 2b. Enable the default Vehicles vertical for the org via the
+        # organization_vertical M2M (Foundation Task 7b). Without this the
+        # read-API GET /organizations/{id}/verticals is empty for real orgs.
+        enabled = await enable_default_verticals(session, org.id)
+        print(f"Enabled {len(enabled)} default vertical(s) for {org_name}")
 
         # 3. Ensure System Roles Exist
         roles_data = [
