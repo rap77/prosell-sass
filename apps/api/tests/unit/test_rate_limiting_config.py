@@ -16,10 +16,10 @@ from unittest.mock import Mock
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from fastapi import Request
+from fastapi import Request  # noqa: E402
 
-from prosell.core.config import get_settings
-from prosell.infrastructure.api.middleware.rate_limit_middleware import (
+from prosell.core.config import get_settings  # noqa: E402
+from prosell.infrastructure.api.middleware.rate_limit_middleware import (  # noqa: E402
     get_identifier,
     is_rate_limit_exempt,
     is_test_environment,

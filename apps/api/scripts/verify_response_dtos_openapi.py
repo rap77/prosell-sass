@@ -32,7 +32,7 @@ expected_response_dtos = {
 actual_schemas = set()
 components = openapi_schema.get("components", {}).get("schemas", {})
 
-for schema_name in components.keys():
+for schema_name in components:
     if "Response" in schema_name or "List" in schema_name:
         actual_schemas.add(schema_name)
 

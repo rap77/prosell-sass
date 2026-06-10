@@ -1,5 +1,6 @@
 """Unit tests for Circuit breaker pattern."""
 
+import contextlib
 import time
 
 import pytest
@@ -64,10 +65,8 @@ class TestCircuitBreaker:
         breaker = CircuitBreaker(CircuitBreakerConfig(threshold=2))
 
         # First failure
-        try:
+        with contextlib.suppress(ValueError):
             await breaker.call(failing_func)
-        except ValueError:
-            pass
 
         assert breaker.failures == 1
         assert breaker.state == CircuitState.CLOSED
@@ -82,10 +81,8 @@ class TestCircuitBreaker:
         breaker = CircuitBreaker(CircuitBreakerConfig(threshold=3))
 
         for _ in range(3):
-            try:
+            with contextlib.suppress(ValueError):
                 await breaker.call(failing_func)
-            except ValueError:
-                pass
 
         # After 3 failures, circuit should be OPEN
         assert breaker.failures == 3

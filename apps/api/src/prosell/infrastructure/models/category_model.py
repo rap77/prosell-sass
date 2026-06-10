@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,9 +17,13 @@ class CategoryModel(Base):
 
     # Primary fields
     id: Mapped[UUID] = mapped_column(primary_key=True)
-    tenant_id: Mapped[UUID] = mapped_column(
+    # Nullable since Plan 2: root verticals (level 0) are global templates
+    # shared by every organization. Tenant-scoped categories still carry
+    # their tenant_id. Index kept — every per-tenant query still filters
+    # by it, and the few global rows sit in the same B-tree.
+    tenant_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("organizations.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -58,6 +62,14 @@ class CategoryModel(Base):
         nullable=False,
     )
 
+    # Presentation contract (display templates + card fields). Nullable —
+    # categories without one inherit from an ancestor or fall back to the
+    # request title. See Category entity + template_composer.
+    presentation: Mapped[dict | None] = mapped_column(
+        JSONB,
+        nullable=True,
+    )
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -67,7 +79,11 @@ class CategoryModel(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default="now()",
-        onupdate="now()",
+        # Use the SQL function clause, NOT the string "now()". A plain
+        # string is bound as a literal value, so asyncpg receives the
+        # text "now()" where a datetime is expected and raises DataError
+        # on every category UPDATE. `func.now()` emits real SQL.
+        onupdate=func.now(),
         nullable=False,
     )
 

@@ -58,6 +58,7 @@ class User(DomainModel):
     tenant_id: UUID | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    deleted_at: datetime | None = None  # Soft-delete audit trail; None = active
 
     # Lazy loaded relationships (not in __init__)
     roles: list["Role"] | None = None
@@ -93,6 +94,7 @@ class User(DomainModel):
             tenant_id=None,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
+            deleted_at=None,
             roles=None,
         )
 
@@ -129,6 +131,7 @@ class User(DomainModel):
             tenant_id=user_id,  # OAuth users are their own tenant
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
+            deleted_at=None,
             roles=None,
         )
 
@@ -138,8 +141,29 @@ class User(DomainModel):
             return False
         return datetime.now(UTC) < self.locked_until
 
+    def is_deleted(self) -> bool:
+        """Check if the user has been soft-deleted.
+
+        Soft-delete is a distinct dimension from `status` (suspended/active):
+        the row stays in the DB with a `deleted_at` audit trail, but the
+        account is treated as removed by the application layer.
+        """
+        return self.deleted_at is not None
+
+    def delete(self) -> None:
+        """Mark the user as soft-deleted.
+
+        Stamps `deleted_at` at the moment of the domain event and bumps
+        `updated_at` so audit consumers can correlate the two. Does NOT
+        change `status` — suspend and delete are separate domain events.
+        """
+        self.deleted_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
+
     def can_login(self) -> bool:
-        """Check if user can login (active, verified, not locked)."""
+        """Check if user can login (active, verified, not locked, not deleted)."""
+        if self.is_deleted():
+            return False
         return self.status == UserStatus.ACTIVE and self.email_verified and not self.is_locked()
 
     def record_failed_login(

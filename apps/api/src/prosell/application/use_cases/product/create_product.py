@@ -7,6 +7,7 @@ from prosell.domain.entities.product import Product
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.product_repository import AbstractProductRepository
+from prosell.domain.services.template_composer import resolve_title
 
 
 class CreateProductUseCase:
@@ -34,10 +35,12 @@ class CreateProductUseCase:
             CategoryNotFoundError: If category does not exist
             ValueError: If validation fails
         """
-        # 1. Validate category exists
-        category = await self.category_repository.get_by_id(
+        # 1. Validate category exists. A product may reference the tenant's
+        # OWN category OR a GLOBAL template (Plan 2) — get_by_id_or_global
+        # returns both while still denying other tenants' private categories.
+        category = await self.category_repository.get_by_id_or_global(
             request.category_id,
-            request.tenant_id or UUID(int=0),  # Skip tenant filter if None
+            request.tenant_id or UUID(int=0),
         )
         if not category:
             raise CategoryNotFoundError(f"Category not found: {request.category_id}")
@@ -53,13 +56,22 @@ class CreateProductUseCase:
             attrs["stock_number"] = vin_str[-6:].upper()
             request = request.model_copy(update={"attributes": attrs})
 
-        # 2. Create product entity
+        # 2. Resolve the owning tenant. A global category (tenant_id=NULL)
+        # carries no tenant, so the request MUST supply one — a product always
+        # belongs to a tenant. (Via the router this is the auth context.)
         tenant_id = request.tenant_id or category.tenant_id
+        if tenant_id is None:
+            raise ValueError("Cannot create a product without a tenant: tenant_id is required")
         organization_id = request.organization_id or tenant_id
+
+        # 2b. Compose the title from the category's presentation template
+        # when it declares one; otherwise keep the request-provided title
+        # (backward-compatible fallback). Shared with the PATCH handler.
+        title = resolve_title(category.presentation, attrs, fallback=request.title) or request.title
 
         # 3. Create product entity
         product = Product.create(
-            title=request.title,
+            title=title,
             price_cents=request.price_cents,
             tenant_id=tenant_id,
             organization_id=organization_id,

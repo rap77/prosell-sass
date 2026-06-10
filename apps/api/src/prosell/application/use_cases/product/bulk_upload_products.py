@@ -79,8 +79,14 @@ class BulkUploadProductsUseCase:
                 if not category:
                     raise CategoryNotFoundError(f"Category not found: {request.category_id}")
 
-                # 3. Validate tenant_id and organization_id
+                # 3. Validate tenant_id and organization_id. A global category
+                # (tenant_id=NULL) carries no tenant, so the request must
+                # supply one — caught per-row by the except below.
                 product_tenant_id = request.tenant_id or category.tenant_id
+                if product_tenant_id is None:
+                    raise ValueError(
+                        "Cannot create a product without a tenant: tenant_id is required"
+                    )
                 product_organization_id = request.organization_id or product_tenant_id
 
                 # 4. Create product entity

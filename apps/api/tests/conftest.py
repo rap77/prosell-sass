@@ -176,7 +176,7 @@ def mock_external_services():
         def mock_redis_get(key: str):
             return mock_redis.get(key)
 
-        def mock_redis_set(key: str, value: str, ex: int | None = None):
+        def mock_redis_set(key: str, value: str, _ex: int | None = None):
             mock_redis[key] = value
             return True
 
@@ -187,7 +187,7 @@ def mock_external_services():
         # Apply mocks
         m.setattr(
             "redis.Redis",
-            lambda *args, **kwargs: type(
+            lambda *_args, **_kwargs: type(
                 "MockRedis",
                 (),
                 {

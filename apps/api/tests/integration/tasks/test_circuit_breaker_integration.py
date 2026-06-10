@@ -1,6 +1,7 @@
 """Integration tests for circuit breaker."""
 
 import asyncio
+import contextlib
 
 import pytest
 
@@ -25,10 +26,8 @@ class TestCircuitBreakerIntegration:
 
         # Trigger 3 failures
         for _ in range(3):
-            try:
+            with contextlib.suppress(ValueError):
                 await breaker.call(failing_func)
-            except ValueError:
-                pass
 
         assert breaker.state == CircuitState.OPEN
         assert breaker.failures == 3
@@ -43,10 +42,8 @@ class TestCircuitBreakerIntegration:
             raise ValueError("Test error")
 
         for _ in range(2):
-            try:
+            with contextlib.suppress(ValueError):
                 await breaker.call(failing_func)
-            except ValueError:
-                pass
 
         assert breaker.state == CircuitState.OPEN
 
@@ -68,10 +65,8 @@ class TestCircuitBreakerIntegration:
             raise ValueError("Test error")
 
         for _ in range(2):
-            try:
+            with contextlib.suppress(ValueError):
                 await breaker.call(failing_func)
-            except ValueError:
-                pass
 
         assert breaker.state == CircuitState.OPEN
 
@@ -98,10 +93,8 @@ class TestCircuitBreakerIntegration:
 
         # Fail twice
         for _ in range(2):
-            try:
+            with contextlib.suppress(ValueError):
                 await breaker.call(conditional_func, True)
-            except ValueError:
-                pass
 
         assert breaker.failures == 2
 

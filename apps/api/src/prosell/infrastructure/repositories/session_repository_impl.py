@@ -1,7 +1,7 @@
 """SQLAlchemy implementation of Session repository."""
 
 import hashlib
-from datetime import UTC
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import and_, select
@@ -77,9 +77,14 @@ class SqlAlchemySessionRepository(AbstractSessionRepository):
             await self.session.flush()
 
     async def revoke_all_user_sessions(self, user_id: UUID) -> None:
-        """Revoke all sessions for a user."""
-        from datetime import datetime
+        """Revoke all sessions for a user.
 
+        Bulk-update: stamps `revoked_at` to a tz-aware UTC moment. We
+        bypass the entity (load+mutate+save) pattern here because the
+        whole point of this method is to act on N rows in one flush;
+        instantiating N entities just to call `.revoke()` would be
+        pure overhead.
+        """
         stmt = select(SessionModel).where(
             SessionModel.user_id == user_id,
             SessionModel.revoked_at.is_(None),
@@ -87,15 +92,14 @@ class SqlAlchemySessionRepository(AbstractSessionRepository):
         result = await self.session.execute(stmt)
         models = result.scalars().all()
 
+        revoked_at = datetime.now(UTC)
         for model in models:
-            model.revoked_at = datetime.now(UTC)
+            model.revoked_at = revoked_at
 
         await self.session.flush()
 
     async def delete_expired_sessions(self) -> int:
         """Delete all expired sessions."""
-        from datetime import datetime
-
         stmt = select(SessionModel).where(
             SessionModel.expires_at < datetime.now(UTC),
         )
@@ -115,8 +119,6 @@ class SqlAlchemySessionRepository(AbstractSessionRepository):
         active_only: bool = True,
     ) -> list[Session]:
         """List all sessions for a user."""
-        from datetime import datetime
-
         stmt = select(SessionModel).where(SessionModel.user_id == user_id)
 
         if active_only:

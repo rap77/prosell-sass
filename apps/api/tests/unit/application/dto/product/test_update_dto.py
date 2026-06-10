@@ -19,7 +19,6 @@ from pydantic import ValidationError
 
 from prosell.application.dto.product.update import UpdateProductRequest
 
-
 VALID_KEY_A = "orgs/00000000-0000-0000-0000-000000000001/vehicles/a.jpg"
 VALID_KEY_B = "orgs/00000000-0000-0000-0000-000000000001/vehicles/b.jpg"
 VALID_KEY_C = "orgs/00000000-0000-0000-0000-000000000001/vehicles/c.jpg"

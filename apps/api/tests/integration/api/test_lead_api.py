@@ -118,7 +118,7 @@ class TestCreateLeadEndpoint:
     @pytest.mark.asyncio
     async def test_create_lead_duplicate_returns_409(self, api_client_as_vendedor):
         """Should return 409 for duplicate lead within 24h."""
-        client, user = api_client_as_vendedor
+        client, _user = api_client_as_vendedor
         email = f"dup409-{uuid4().hex[:6]}@test.com"
         product_id = str(uuid4())
 
@@ -149,7 +149,7 @@ class TestCreateLeadEndpoint:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_create_lead_unauthenticated_returns_403(self, db_session):
+    async def test_create_lead_unauthenticated_returns_403(self, db_session):  # noqa: ARG002
         """Should return 403 when no auth provided."""
         app.dependency_overrides.clear()
 
@@ -176,7 +176,7 @@ class TestListLeadsEndpoint:
     @pytest.mark.asyncio
     async def test_list_leads_returns_200(self, api_client_as_vendedor):
         """Should return 200 with lead list."""
-        client, user = api_client_as_vendedor
+        client, _user = api_client_as_vendedor
 
         response = await client.get("/api/v1/leads")
 
@@ -231,7 +231,7 @@ class TestGetLeadDetailsEndpoint:
     @pytest.mark.asyncio
     async def test_get_lead_details_returns_200(self, api_client_as_vendedor):
         """Should return lead with audit logs."""
-        client, user = api_client_as_vendedor
+        client, _user = api_client_as_vendedor
 
         # Create a lead first
         create_resp = await client.post(
@@ -274,7 +274,7 @@ class TestUpdateLeadStatusEndpoint:
     @pytest.mark.asyncio
     async def test_update_status_returns_200(self, api_client_as_vendedor):
         """Should return 200 with updated lead."""
-        client, user = api_client_as_vendedor
+        client, _user = api_client_as_vendedor
 
         # Create lead
         create_resp = await client.post(
@@ -300,7 +300,7 @@ class TestUpdateLeadStatusEndpoint:
     @pytest.mark.asyncio
     async def test_update_status_invalid_transition_returns_422(self, api_client_as_vendedor):
         """Should return 422 for invalid state transition."""
-        client, user = api_client_as_vendedor
+        client, _user = api_client_as_vendedor
 
         # Create lead (status = new)
         create_resp = await client.post(

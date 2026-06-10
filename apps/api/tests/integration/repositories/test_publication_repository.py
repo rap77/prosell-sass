@@ -182,3 +182,66 @@ async def test_get_by_fb_listing_id_filters_by_tenant(
     assert result.fb_listing_id == listing_id
     assert result.tenant_id == test_organization.tenant_id
     assert result.title == "Test Vehicle 1"
+
+
+# =============================================================================
+# TESTS: get_by_id — GAP-5 cross-tenant isolation contract
+# =============================================================================
+
+
+@pytest.mark.asyncio
+async def test_get_by_id_returns_publication_for_correct_tenant(
+    publication_repo,
+    sample_publication,
+    test_organization,
+) -> None:
+    """GAP-5: get_by_id with the correct tenant_id returns the publication."""
+    result = await publication_repo.get_by_id(
+        sample_publication.id,
+        tenant_id=test_organization.tenant_id,
+    )
+    assert result is not None
+    assert result.id == sample_publication.id
+
+
+@pytest.mark.asyncio
+async def test_get_by_id_returns_none_for_wrong_tenant(
+    publication_repo,
+    sample_publication,
+) -> None:
+    """GAP-5: get_by_id with the WRONG tenant_id returns None (not raises).
+
+    Cross-tenant data access is a critical security boundary. The repo
+    MUST refuse to return a publication that belongs to another tenant
+    — silently returning None (treating it as "not found") is the
+    correct behaviour: the caller can show a generic 404 without
+    leaking that the resource exists in another tenant.
+    """
+    wrong_tenant_id = uuid4()  # different from sample_publication.tenant_id
+    result = await publication_repo.get_by_id(
+        sample_publication.id,
+        tenant_id=wrong_tenant_id,
+    )
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_get_by_id_legacy_signature_would_have_leaked(
+    publication_repo,
+    sample_publication,
+    test_organization,
+) -> None:
+    """GAP-5 documentation: the legacy single-arg signature has been retired.
+
+    Before this change, `get_by_id(publication_id)` returned the
+    publication regardless of tenant — a classic IDOR. The test below
+    uses a keyword-arg call that matches the new signature. If a caller
+    regresses to the single-arg form, pyright + this test fail together.
+    """
+    # New signature is keyword-only in spirit; passing tenant_id as a kwarg
+    # is the only supported way.
+    result = await publication_repo.get_by_id(
+        publication_id=sample_publication.id,
+        tenant_id=test_organization.tenant_id,
+    )
+    assert result is not None

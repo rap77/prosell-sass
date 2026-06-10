@@ -40,13 +40,7 @@ from prosell.infrastructure.api.routers.appointment_router import (
     get_create_appointment_use_case,
 )
 
-pytestmark = pytest.mark.skip(
-    reason=(
-        "Appointment API integration tests use a stale harness and can hang under "
-        "current release-hardening conditions; rewrite with a dedicated override "
-        "strategy before re-enabling."
-    )
-)
+pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
@@ -140,15 +134,15 @@ async def async_client() -> AsyncGenerator[AsyncClient]:
     )
 
     app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: mock_user
-    app.dependency_overrides[get_create_appointment_use_case] = (
-        lambda: MockCreateAppointmentUseCase()
+    app.dependency_overrides[get_create_appointment_use_case] = lambda: (
+        MockCreateAppointmentUseCase()
     )
     app.dependency_overrides[get_appointment_repository] = lambda: MockAppointmentRepository()
-    app.dependency_overrides[get_cancel_appointment_use_case] = (
-        lambda: MockCancelAppointmentUseCase()
+    app.dependency_overrides[get_cancel_appointment_use_case] = lambda: (
+        MockCancelAppointmentUseCase()
     )
-    app.dependency_overrides[get_confirm_appointment_use_case] = (
-        lambda: MockConfirmAppointmentUseCase()
+    app.dependency_overrides[get_confirm_appointment_use_case] = lambda: (
+        MockConfirmAppointmentUseCase()
     )
 
     transport = ASGITransport(app=app)
@@ -237,8 +231,10 @@ class TestCreateAppointmentEndpoint:
             headers=auth_headers,
         )
 
-        # Expected: 400 validation error or auth/router fallback in older setups
-        assert response.status_code in [400, 401, 403, 404]
+        # Expected: 422 (FastAPI validation error) when the use case rejects
+        # the weekend slot via AppointmentTimeValidationException, or 400/401/403/404
+        # as fallbacks if router/auth wiring changes.
+        assert response.status_code in [400, 401, 403, 404, 422]
 
     @pytest.mark.asyncio
     async def test_create_appointment_conflict_error(

@@ -29,6 +29,7 @@ from prosell.infrastructure.api.routers import (
     lead_router,
     notification_router,
     org_router,
+    org_verticals_router,
     product_router,
     publisher_router,
     team_router,
@@ -186,6 +187,16 @@ app.include_router(
     org_router,
     prefix="/api/v1/org",
     tags=["Organizations"],
+)
+
+# Organization verticals read-API (Plan 2 / Task 4). Mounted at
+# /api/v1/organizations (plural) so the public URL matches the plan spec.
+# The legacy /api/v1/org CRUD router above keeps its prefix to avoid
+# breaking existing frontend calls.
+app.include_router(
+    org_verticals_router,
+    prefix="/api/v1/organizations",
+    tags=["Organization Verticals"],
 )
 
 app.include_router(

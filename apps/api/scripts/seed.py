@@ -7,7 +7,9 @@ Creates:
 
 Usage:
     cd apps/api
-    DATABASE_URL="postgresql+asyncpg://prosell:prosell@localhost:5432/prosell" uv run python scripts/seed.py
+    DATABASE_URL=\
+        "postgresql+asyncpg://prosell:prosell@localhost:5432/prosell" \
+        uv run python scripts/seed.py
 """
 
 import asyncio
@@ -68,7 +70,10 @@ async def seed_database():
 
         await conn.execute(
             text("""
-            INSERT INTO users (id, email, password_hash, full_name, status, email_verified, tenant_id)
+            INSERT INTO users (
+                id, email, password_hash, full_name,
+                status, email_verified, tenant_id
+            )
             VALUES (
                 gen_random_uuid(),
                 'admin@prosell-demo.com',

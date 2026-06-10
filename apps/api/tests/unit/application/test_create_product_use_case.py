@@ -40,7 +40,7 @@ async def test_create_product_success():
     product_repo = AsyncMock()
     product_repo.create = AsyncMock(return_value=mock_product)
     category_repo = AsyncMock()
-    category_repo.get_by_id = AsyncMock(return_value=category)
+    category_repo.get_by_id_or_global = AsyncMock(return_value=category)
 
     request = CreateProductRequest(
         title="Test Product",
@@ -64,7 +64,7 @@ async def test_create_product_category_not_found():
     """Test product creation with non-existent category."""
     product_repo = AsyncMock()
     category_repo = AsyncMock()
-    category_repo.get_by_id = AsyncMock(return_value=None)
+    category_repo.get_by_id_or_global = AsyncMock(return_value=None)
 
     request = CreateProductRequest(
         title="Test Product",

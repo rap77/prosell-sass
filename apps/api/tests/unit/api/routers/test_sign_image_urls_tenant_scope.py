@@ -16,11 +16,11 @@ Two invariants pinned here (security-critical — see security review):
 """
 
 from unittest.mock import AsyncMock
+from uuid import UUID
 
 import pytest
 
 from prosell.infrastructure.api.routers.image_router import sign_image_urls
-from uuid import UUID
 
 CALLER_TENANT = UUID("11111111-1111-1111-1111-111111111111")
 OTHER_TENANT = UUID("99999999-9999-9999-9999-999999999999")
@@ -58,9 +58,7 @@ class TestSignImageURLsTenantScope:
         assert len(signed) == 1
         assert "X-Amz-Signature=" in signed[0]
         # And signer was called with the right key
-        spaces.generate_download_url.assert_called_once_with(
-            f"orgs/{CALLER_TENANT}/vehicles/a.jpg"
-        )
+        spaces.generate_download_url.assert_called_once_with(f"orgs/{CALLER_TENANT}/vehicles/a.jpg")
 
     @pytest.mark.asyncio
     async def test_keys_for_other_tenant_are_dropped(self) -> None:

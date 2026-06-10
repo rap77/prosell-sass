@@ -37,18 +37,22 @@ def category_id():
 @pytest.fixture
 def valid_csv_content(category_id):
     """Valid CSV content with all required columns."""
-    return f"""vin,title,price,category_id,description,condition,currency,location_city,location_state,location_zip
-1HGCM82633A123456,2020 Honda Civic,18500.00,{category_id},Well maintained,used,USD,Miami,FL,33101
-JH4KA8260MC000000,2021 Acura Integra,21000.50,{category_id},Excellent condition,new,USD,Fort Lauderdale,FL,33301
-"""
+    return (
+        "vin,title,price,category_id,description,condition,currency,"
+        "location_city,location_state,location_zip\n"
+        f"1HGCM82633A123456,2020 Honda Civic,18500.00,{category_id},"
+        "Well maintained,used,USD,Miami,FL,33101\n"
+        f"JH4KA8260MC000000,2021 Acura Integra,21000.50,{category_id},"
+        "Excellent condition,new,USD,Fort Lauderdale,FL,33301\n"
+    )
 
 
 @pytest.fixture
 def minimal_csv_content(category_id):
     """Minimal CSV content with only required columns."""
-    return f"""vin,title,price,category_id
-1HGCM82633A123456,2020 Honda Civic,18500.00,{category_id}
-"""
+    return (
+        f"vin,title,price,category_id\n1HGCM82633A123456,2020 Honda Civic,18500.00,{category_id}\n"
+    )
 
 
 @pytest.fixture
@@ -177,7 +181,7 @@ class TestCSVParsing:
     async def test_parses_valid_csv_with_all_columns(
         self,
         valid_csv_content,
-        category_id,
+        category_id,  # noqa: ARG002
     ):
         """Parse valid CSV with all columns."""
         parser = CSVProductParser()
@@ -223,7 +227,7 @@ class TestCSVParsing:
     async def test_parses_csv_with_optional_fields(
         self,
         valid_csv_content,
-        category_id,
+        category_id,  # noqa: ARG002
     ):
         """Parse CSV with optional fields populated."""
         parser = CSVProductParser()

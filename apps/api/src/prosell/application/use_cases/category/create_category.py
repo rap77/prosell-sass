@@ -26,51 +26,58 @@ class CreateCategoryUseCase:
             CategoryAlreadyExistsError: If category with name/slug already exists
             ValueError: If parent_id creates circular reference
         """
-        # 1. Check uniqueness by name within parent
+        # The category taxonomy is a GLOBAL, platform-managed template tree
+        # (Plan 2): every category is created global (tenant_id IS NULL). Any
+        # tenant_id on the request is ignored. The router gates this to the
+        # ProSell super_admin.
+        global_scope: None = None
+
+        # 1. Check uniqueness by name within parent (global scope)
         exists = await self.category_repository.exists_by_name(
             request.name,
-            request.tenant_id,
+            global_scope,
             request.parent_id,
         )
         if exists:
             raise CategoryAlreadyExistsError(request.name)
 
-        # 2. Check slug uniqueness
-        slug_exists = await self.category_repository.exists_by_slug(request.slug, request.tenant_id)
+        # 2. Check slug uniqueness (global scope)
+        slug_exists = await self.category_repository.exists_by_slug(request.slug, global_scope)
         if slug_exists:
             raise ValueError(f"Category with slug '{request.slug}' already exists")
 
         # 3. Determine level and validate circular reference
         level = 0
         if request.parent_id:
-            parent = await self.category_repository.get_by_id(request.parent_id, request.tenant_id)
+            parent = await self.category_repository.get_by_id_any_tenant(request.parent_id)
             if parent:
                 level = parent.level + 1
 
-                # Get ancestors for circular reference validation
+                # Get the PARENT's ancestors for circular-reference validation.
+                # The check flags `parent_id in ancestors`, so we must pass the
+                # parent's ancestors WITHOUT the parent itself — otherwise every
+                # child would be falsely rejected as circular.
                 ancestor_ids = await self.category_repository.get_ancestor_ids(
-                    request.parent_id, request.tenant_id
+                    request.parent_id, global_scope
                 )
-                # Include parent's ancestors plus parent itself
-                all_ancestor_ids = [request.parent_id, *ancestor_ids]
 
                 # Create a temporary category object to validate
                 temp_category = Category.create(
                     name=request.name,
                     slug=request.slug,
-                    tenant_id=request.tenant_id,
+                    tenant_id=global_scope,
                     parent_id=request.parent_id,
                     level=level,
                 )
-                temp_category.validate_no_circular_reference(request.parent_id, all_ancestor_ids)
+                temp_category.validate_no_circular_reference(request.parent_id, ancestor_ids)
             else:
                 raise ValueError(f"Parent category not found: {request.parent_id}")
 
-        # 4. Create category entity
+        # 4. Create category entity (global)
         category = Category.create(
             name=request.name,
             slug=request.slug,
-            tenant_id=request.tenant_id,
+            tenant_id=global_scope,
             parent_id=request.parent_id,
             level=level,
             description=request.description,

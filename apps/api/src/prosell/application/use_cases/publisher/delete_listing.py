@@ -24,8 +24,12 @@ class DeleteListingUseCase:
         self._repo = publication_repo
         self._task_dispatcher = task_dispatcher
 
-    async def execute(self, publication_id: UUID) -> PublicationResponse:
-        publication = await self._repo.get_by_id(publication_id)
+    async def execute(
+        self,
+        publication_id: UUID,
+        tenant_id: UUID,
+    ) -> PublicationResponse:
+        publication = await self._repo.get_by_id(publication_id, tenant_id=tenant_id)
         if not publication:
             raise ValueError(f"Publication {publication_id} not found")
 

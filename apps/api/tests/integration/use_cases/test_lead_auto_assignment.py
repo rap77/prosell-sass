@@ -7,6 +7,7 @@ the LeadAssignmentRulesEngine automatically assigns it to an available dealer.
 from uuid import UUID, uuid4
 
 import pytest
+from sqlalchemy import select
 
 from prosell.application.dto.lead.request import CreateLeadRequest
 from prosell.application.use_cases.lead.create_lead import CreateLeadUseCase
@@ -289,8 +290,6 @@ class TestLeadAutoAssignmentIntegration:
             await use_case.execute(request, tenant_id)
 
         # Count leads per dealer
-        from sqlalchemy import select
-
         from prosell.infrastructure.models.lead_model import LeadModel
 
         stmt = select(LeadModel.vendedor_id).where(
@@ -307,10 +306,6 @@ class TestLeadAutoAssignmentIntegration:
 
         # ASSERTION: With 3 dealers and 6 leads, each should get 2 leads (round-robin)
         assert len(counts) == 3, "All 3 dealers should have leads assigned"
-        assert all(
-            count == 2 for count in counts.values()
-        ), f"With round-robin, each dealer should have 2 leads. Got: {dict(counts)}"
-
-
-# Import for create_dealer_users helper
-from sqlalchemy import select
+        assert all(count == 2 for count in counts.values()), (
+            f"With round-robin, each dealer should have 2 leads. Got: {dict(counts)}"
+        )

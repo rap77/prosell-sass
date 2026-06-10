@@ -43,6 +43,22 @@ async def get_category_repository(session: AsyncSession) -> AbstractCategoryRepo
     return SqlAlchemyCategoryRepository(session)
 
 
+def _require_platform_admin(user: User) -> None:
+    """Gate category mutations to the ProSell platform admin (super_admin).
+
+    The category taxonomy is GENERAL and platform-managed: only the ProSell
+    admin defines/maintains it (including multi-level niches). Tenants — org
+    admins and sales agents alike — may READ categories to classify their own
+    products, but never create/update/soft-delete them. An organization admin
+    (role ``admin``) is intentionally NOT enough.
+    """
+    if not user.has_role("super_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the ProSell platform admin can manage categories",
+        )
+
+
 @router.get("", response_model=CategoryListResponse)
 @smart_rate_limit("api")
 async def list_categories(
@@ -95,10 +111,11 @@ async def create_category(
     """
     Create a new category.
 
-    Only users with MASTER role can create categories.
+    Only the ProSell platform admin (super_admin) can create categories.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    _require_platform_admin(current_user)
 
     repo = SqlAlchemyCategoryRepository(db)
     use_case = CreateCategoryUseCase(repo)
@@ -123,7 +140,7 @@ async def get_category(
     tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
-    category = await repo.get_by_id(category_id, tenant_id)
+    category = await repo.get_by_id_or_global(category_id, tenant_id)
 
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -141,12 +158,13 @@ async def update_category(
     """Update category basic information."""
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    _require_platform_admin(current_user)
     tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
     use_case = UpdateCategoryUseCase(repo)
 
-    return await use_case.execute(category_id, tenant_id, request)
+    return await use_case.execute(category_id, tenant_id, request, is_platform_admin=True)
 
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -162,12 +180,13 @@ async def delete_category(
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    _require_platform_admin(current_user)
     tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
     use_case = DeleteCategoryUseCase(repo)
 
-    await use_case.execute(category_id, tenant_id)
+    await use_case.execute(category_id, tenant_id, is_platform_admin=True)
 
 
 @router.patch("/{category_id}/attribute-schema", response_model=CategoryResponse)
@@ -186,12 +205,15 @@ async def update_category_attribute_schema(
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    _require_platform_admin(current_user)
     tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
     use_case = UpdateCategoryAttributeSchemaUseCase(repo)
 
-    return await use_case.execute(category_id, tenant_id, request.attribute_schema)
+    return await use_case.execute(
+        category_id, tenant_id, request.attribute_schema, is_platform_admin=True
+    )
 
 
 @router.get("/.*", response_model=dict[str, Any])
@@ -206,7 +228,7 @@ async def get_category_fields(
     tenant_id = current_user.tenant_id
 
     repo = SqlAlchemyCategoryRepository(db)
-    category = await repo.get_by_id(category_id, tenant_id)
+    category = await repo.get_by_id_or_global(category_id, tenant_id)
 
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")

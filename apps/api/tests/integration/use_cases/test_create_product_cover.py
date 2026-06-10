@@ -21,9 +21,7 @@ from prosell.infrastructure.repositories.product_repository_impl import (
 
 
 @pytest.mark.asyncio
-async def test_create_persists_cover_image_key(
-    db_session, test_organization, test_category
-):
+async def test_create_persists_cover_image_key(db_session, test_organization, test_category):
     tenant_id = test_organization.tenant_id
     key_a = f"orgs/{tenant_id}/vehicles/a.jpg"
     key_b = f"orgs/{tenant_id}/vehicles/b.jpg"

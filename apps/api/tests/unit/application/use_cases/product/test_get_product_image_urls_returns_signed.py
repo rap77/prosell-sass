@@ -89,7 +89,9 @@ class TestGetProductImageUrlsReturnsSigned:
         spaces = AsyncMock()
 
         async def sign(key: str) -> str:
-            return f"https://prosell-assets.atl1.digitaloceanspaces.com/{key}?X-Amz-Signature=abc123"
+            return (
+                f"https://prosell-assets.atl1.digitaloceanspaces.com/{key}?X-Amz-Signature=abc123"
+            )
 
         spaces.generate_download_url.side_effect = sign
 

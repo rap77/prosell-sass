@@ -68,14 +68,14 @@ class TestBulkUploadPersistsImageUrls:
                 MappedImage(
                     vin=vin,
                     csv_path="Ford/Explorer/2020",
-                    original_zip_key=f"Ford/Explorer/2020/img1.jpg",
+                    original_zip_key="Ford/Explorer/2020/img1.jpg",
                     do_spaces_key=expected_keys[0],
                     file_bytes=b"\xff\xd8\xff\xe0fake-jpeg",
                 ),
                 MappedImage(
                     vin=vin,
                     csv_path="Ford/Explorer/2020",
-                    original_zip_key=f"Ford/Explorer/2020/img2.jpg",
+                    original_zip_key="Ford/Explorer/2020/img2.jpg",
                     do_spaces_key=expected_keys[1],
                     file_bytes=b"\xff\xd8\xff\xe0fake-jpeg-2",
                 ),

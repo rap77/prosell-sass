@@ -13,9 +13,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT_PATH = (
-    Path(__file__).resolve().parents[3] / "scripts" / "fix_image_urls_keys.py"
-)
+SCRIPT_PATH = Path(__file__).resolve().parents[3] / "scripts" / "fix_image_urls_keys.py"
 
 
 @pytest.fixture(scope="module")

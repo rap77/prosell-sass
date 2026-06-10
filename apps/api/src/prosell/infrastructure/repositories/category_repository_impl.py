@@ -32,6 +32,7 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
             is_active=category.is_active,
             field_config=category.field_config,
             attribute_schema=category.attribute_schema,
+            presentation=category.presentation,
             created_at=category.created_at,
             updated_at=category.updated_at,
         )
@@ -67,8 +68,15 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         skip: int = 0,
         limit: int = 100,
     ) -> list[Category]:
-        """Get all categories with optional filters."""
-        stmt = select(CategoryModel).where(CategoryModel.tenant_id == tenant_id)
+        """Get all categories with optional filters.
+
+        Includes GLOBAL templates (tenant_id IS NULL) alongside the caller's
+        own categories, so tenants see the shared, platform-managed taxonomy
+        they classify products against (Plan 2).
+        """
+        stmt = select(CategoryModel).where(
+            (CategoryModel.tenant_id == tenant_id) | (CategoryModel.tenant_id.is_(None))
+        )
 
         if parent_id is not None:
             stmt = stmt.where(CategoryModel.parent_id == parent_id)
@@ -101,15 +109,56 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
-    async def get_ancestor_ids(self, category_id: UUID, tenant_id: UUID) -> list[UUID]:
-        """Get all ancestor category IDs (up the tree to root)."""
+    async def get_by_id_any_tenant(self, category_id: UUID) -> Category | None:
+        """Get a category by ID without tenant filtering (global templates)."""
+        stmt = select(CategoryModel).where(CategoryModel.id == category_id)
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
+    async def get_by_id_or_global(self, category_id: UUID, tenant_id: UUID) -> Category | None:
+        """Get a category owned by the tenant OR a global (NULL-tenant) template.
+
+        Used by the product create/update path so products can reference
+        global vertical templates without leaking other tenants' private
+        categories. The strict ``get_by_id`` (mutation gate) is left untouched.
+        """
+        stmt = select(CategoryModel).where(
+            CategoryModel.id == category_id,
+            (CategoryModel.tenant_id == tenant_id) | (CategoryModel.tenant_id.is_(None)),
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
+    async def get_children_any_tenant(self, parent_id: UUID) -> list[Category]:
+        """Get direct children of a parent without tenant filtering (global templates)."""
+        stmt = (
+            select(CategoryModel)
+            .where(CategoryModel.parent_id == parent_id)
+            .order_by(CategoryModel.sort_order, CategoryModel.name)
+        )
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
+    async def get_ancestor_ids(self, category_id: UUID, tenant_id: UUID | None) -> list[UUID]:
+        """Get all ancestor category IDs (up the tree to root).
+
+        ``tenant_id=None`` traverses GLOBAL templates (tenant IS NULL).
+        """
+        tenant_filter = (
+            CategoryModel.tenant_id.is_(None)
+            if tenant_id is None
+            else CategoryModel.tenant_id == tenant_id
+        )
         ancestor_ids: list[UUID] = []
         current_id: UUID | None = category_id
 
         while current_id is not None:
             stmt = select(CategoryModel.parent_id).where(
                 CategoryModel.id == current_id,
-                CategoryModel.tenant_id == tenant_id,
+                tenant_filter,
             )
             result = await self.session.execute(stmt)
             parent_id = result.scalar_one_or_none()
@@ -156,6 +205,7 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         model.is_active = category.is_active
         model.field_config = category.field_config
         model.attribute_schema = category.attribute_schema
+        model.presentation = category.presentation
         # Set updated_at explicitly from domain entity — onupdate="now()" string is not a valid
         # asyncpg value. The domain entity already sets updated_at = datetime.now(UTC).
         model.updated_at = category.updated_at
@@ -180,12 +230,17 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         return True
 
     async def exists_by_name(
-        self, name: str, tenant_id: UUID, parent_id: UUID | None = None
+        self, name: str, tenant_id: UUID | None, parent_id: UUID | None = None
     ) -> bool:
-        """Check if category with name exists."""
+        """Check if category with name exists (tenant_id=None → global scope)."""
+        tenant_filter = (
+            CategoryModel.tenant_id.is_(None)
+            if tenant_id is None
+            else CategoryModel.tenant_id == tenant_id
+        )
         stmt = select(func.count(CategoryModel.id)).where(
             CategoryModel.name == name,
-            CategoryModel.tenant_id == tenant_id,
+            tenant_filter,
         )
 
         if parent_id is not None:
@@ -198,20 +253,25 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         count: int = result.scalar() or 0
         return count > 0
 
-    async def exists_by_slug(self, slug: str, tenant_id: UUID) -> bool:
-        """Check if category with slug exists."""
+    async def exists_by_slug(self, slug: str, tenant_id: UUID | None) -> bool:
+        """Check if category with slug exists (tenant_id=None → global scope)."""
+        tenant_filter = (
+            CategoryModel.tenant_id.is_(None)
+            if tenant_id is None
+            else CategoryModel.tenant_id == tenant_id
+        )
         stmt = select(func.count(CategoryModel.id)).where(
             CategoryModel.slug == slug,
-            CategoryModel.tenant_id == tenant_id,
+            tenant_filter,
         )
         result = await self.session.execute(stmt)
         count: int = result.scalar() or 0
         return count > 0
 
     async def count(self, tenant_id: UUID, is_active: bool | None = None) -> int:
-        """Count total categories."""
+        """Count total categories (caller's own + global templates)."""
         stmt = select(func.count(CategoryModel.id)).where(
-            CategoryModel.tenant_id == tenant_id,
+            (CategoryModel.tenant_id == tenant_id) | (CategoryModel.tenant_id.is_(None))
         )
 
         if is_active is not None:

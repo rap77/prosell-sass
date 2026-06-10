@@ -89,11 +89,68 @@ class AbstractCategoryRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_ancestor_ids(self, category_id: UUID, tenant_id: UUID) -> list[UUID]:
+    async def get_by_id_any_tenant(self, category_id: UUID) -> Category | None:
+        """
+        Get a category by ID without tenant filtering.
+
+        Use ONLY for global template reads (Plan 2): root verticals and their
+        children have tenant_id=NULL and are shared across organizations.
+        Per-tenant reads must still go through ``get_by_id``.
+
+        Args:
+            category_id: Category UUID
+
+        Returns:
+            Category entity or None if not found
+        """
+        pass
+
+    @abstractmethod
+    async def get_by_id_or_global(self, category_id: UUID, tenant_id: UUID) -> Category | None:
+        """
+        Get a category visible to a tenant: the tenant's OWN category OR a
+        GLOBAL template (``tenant_id IS NULL``).
+
+        Use for the product create/update path (Plan 2): a product may
+        reference a global vertical template the org opted into, while still
+        being denied access to OTHER tenants' private categories. This is
+        intentionally narrower than ``get_by_id_any_tenant`` (no cross-tenant
+        leak) and broader than ``get_by_id`` (which gates MUTATIONS and must
+        stay strict).
+
+        Args:
+            category_id: Category UUID
+            tenant_id: Caller's tenant UUID
+
+        Returns:
+            Category entity if owned by the tenant or global, else None
+        """
+        pass
+
+    @abstractmethod
+    async def get_children_any_tenant(self, parent_id: UUID) -> list[Category]:
+        """
+        Get direct children of a parent category without tenant filtering.
+
+        Use ONLY for global template reads (Plan 2): children of a global
+        root also have tenant_id=NULL. Per-tenant reads must still go
+        through ``get_children``.
+
+        Args:
+            parent_id: Parent category UUID
+
+        Returns:
+            List of child categories
+        """
+        pass
+
+    @abstractmethod
+    async def get_ancestor_ids(self, category_id: UUID, tenant_id: UUID | None) -> list[UUID]:
         """
         Get all ancestor category IDs (up the tree to root).
 
-        Used for circular reference validation.
+        Used for circular reference validation. ``tenant_id=None`` scopes the
+        traversal to GLOBAL templates (tenant IS NULL).
 
         Args:
             category_id: Category UUID
@@ -146,14 +203,14 @@ class AbstractCategoryRepository(ABC):
 
     @abstractmethod
     async def exists_by_name(
-        self, name: str, tenant_id: UUID, parent_id: UUID | None = None
+        self, name: str, tenant_id: UUID | None, parent_id: UUID | None = None
     ) -> bool:
         """
         Check if category with given name exists (for uniqueness validation).
 
         Args:
             name: Category name
-            tenant_id: Tenant UUID
+            tenant_id: Tenant UUID, or None for GLOBAL templates (tenant IS NULL)
             parent_id: Parent category ID (None = check root level)
 
         Returns:
@@ -162,13 +219,13 @@ class AbstractCategoryRepository(ABC):
         pass
 
     @abstractmethod
-    async def exists_by_slug(self, slug: str, tenant_id: UUID) -> bool:
+    async def exists_by_slug(self, slug: str, tenant_id: UUID | None) -> bool:
         """
         Check if category with given slug exists.
 
         Args:
             slug: Category slug
-            tenant_id: Tenant UUID
+            tenant_id: Tenant UUID, or None for GLOBAL templates (tenant IS NULL)
 
         Returns:
             True if exists, False otherwise

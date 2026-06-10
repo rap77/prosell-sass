@@ -58,11 +58,14 @@ async def update_listing(
     _current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
 ) -> PublicationResponse:
     """Update price/description/photos on an active FB listing."""
+    if _current_user.tenant_id is None:
+        raise HTTPException(status_code=403, detail="User is not bound to a tenant")
     use_case = UpdateListingUseCase(
         publication_repo=publication_repo,
         task_dispatcher=task_dispatcher,
     )
     body.publication_id = publication_id
+    body.tenant_id = _current_user.tenant_id
     return await use_case.execute(body)
 
 
@@ -74,11 +77,13 @@ async def delete_listing(
     _current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
 ) -> PublicationResponse:
     """Mark vehicle as sold and remove FB listing."""
+    if _current_user.tenant_id is None:
+        raise HTTPException(status_code=403, detail="User is not bound to a tenant")
     use_case = DeleteListingUseCase(
         publication_repo=publication_repo,
         task_dispatcher=task_dispatcher,
     )
-    return await use_case.execute(publication_id)
+    return await use_case.execute(publication_id, tenant_id=_current_user.tenant_id)
 
 
 @router.post("/{publication_id}/unlock", response_model=PublicationResponse)
@@ -88,7 +93,12 @@ async def unlock_category_b(
     _current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
 ) -> PublicationResponse:
     """Vendedor confirms Facebook security challenge resolved (Category B error recovery)."""
-    pub = await publication_repo.get_by_id(publication_id)
+    if _current_user.tenant_id is None:
+        raise HTTPException(status_code=403, detail="User is not bound to a tenant")
+    pub = await publication_repo.get_by_id(
+        publication_id,
+        tenant_id=_current_user.tenant_id,
+    )
     if not pub:
         raise HTTPException(status_code=404, detail="Publication not found")
     pub.unlock_from_category_b()

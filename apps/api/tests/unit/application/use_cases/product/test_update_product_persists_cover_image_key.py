@@ -32,15 +32,16 @@ from prosell.application.dto.product.update import UpdateProductRequest
 from prosell.domain.entities.product import Product
 from prosell.domain.value_objects.product_condition import ProductCondition
 
-
 # Sample keys (storage-key shape, post-migration).
 KEY_A = "orgs/00000000-0000-0000-0000-000000000001/vehicles/a.jpg"
 KEY_B = "orgs/00000000-0000-0000-0000-000000000001/vehicles/b.jpg"
 KEY_C = "orgs/00000000-0000-0000-0000-000000000001/vehicles/c.jpg"
 
 
-def _new_product(image_urls: list[str] = []) -> Product:
+def _new_product(image_urls: list[str] | None = None) -> Product:
     """Build a fresh DRAFT product with the given image list."""
+    if image_urls is None:
+        image_urls = []
     return Product.create(
         title="2017 Toyota Camry",
         price_cents=1_850_000,
@@ -81,9 +82,15 @@ class TestUpdateProductPersistsCoverImageKey:
         request = UpdateProductRequest.model_construct(
             image_urls=[KEY_A, KEY_B],
             cover_image_key=KEY_B,
-            title=None, description=None, price_cents=None,
-            category_id=None, condition=None, attributes=None,
-            location_city=None, location_state=None, location_zip=None,
+            title=None,
+            description=None,
+            price_cents=None,
+            category_id=None,
+            condition=None,
+            attributes=None,
+            location_city=None,
+            location_state=None,
+            location_zip=None,
         )
 
         product = _new_product()
@@ -106,9 +113,15 @@ class TestUpdateProductPersistsCoverImageKey:
         request = UpdateProductRequest.model_construct(
             image_urls=None,
             cover_image_key=KEY_B,
-            title=None, description=None, price_cents=None,
-            category_id=None, condition=None, attributes=None,
-            location_city=None, location_state=None, location_zip=None,
+            title=None,
+            description=None,
+            price_cents=None,
+            category_id=None,
+            condition=None,
+            attributes=None,
+            location_city=None,
+            location_state=None,
+            location_zip=None,
         )
 
         # Product already has images; cover not yet set.
@@ -142,9 +155,15 @@ class TestUpdateProductPersistsCoverImageKey:
         request = UpdateProductRequest.model_construct(
             image_urls=None,
             cover_image_key=KEY_C,  # not in the product's list
-            title=None, description=None, price_cents=None,
-            category_id=None, condition=None, attributes=None,
-            location_city=None, location_state=None, location_zip=None,
+            title=None,
+            description=None,
+            price_cents=None,
+            category_id=None,
+            condition=None,
+            attributes=None,
+            location_city=None,
+            location_state=None,
+            location_zip=None,
         )
 
         product = _new_product(image_urls=[KEY_A, KEY_B])
@@ -175,9 +194,15 @@ class TestUpdateProductPersistsCoverImageKey:
         request = UpdateProductRequest.model_construct(
             image_urls=[],
             cover_image_key=None,
-            title=None, description=None, price_cents=None,
-            category_id=None, condition=None, attributes=None,
-            location_city=None, location_state=None, location_zip=None,
+            title=None,
+            description=None,
+            price_cents=None,
+            category_id=None,
+            condition=None,
+            attributes=None,
+            location_city=None,
+            location_state=None,
+            location_zip=None,
         )
 
         # Product previously had a cover pointing to KEY_A.

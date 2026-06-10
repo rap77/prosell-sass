@@ -15,25 +15,24 @@ This file pins the contract:
 
 from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, patch
+from uuid import UUID
 
 import pytest
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
-from uuid import UUID
 
 from prosell.application.dto.product.response import ProductResponse
 from prosell.application.use_cases.product.list_products import (
     ProductListResponse,
 )
-from prosell.domain.entities.user import User
 from prosell.domain.entities.product import Product
+from prosell.domain.entities.user import User
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
 )
 from prosell.infrastructure.api.main import app
-
 
 TEST_TENANT_ID = UUID("11111111-1111-1111-1111-111111111111")
 TEST_USER_ID = UUID("22222222-2222-2222-2222-222222222222")
@@ -101,9 +100,7 @@ class TestListProductsReturnsBareKeys:
     """GET /api/v1/products must return image_urls as bare storage keys."""
 
     @pytest.mark.asyncio
-    async def test_list_products_image_urls_are_bare_keys(
-        self, async_client: AsyncClient
-    ) -> None:
+    async def test_list_products_image_urls_are_bare_keys(self, async_client: AsyncClient) -> None:
         """The list response contains the storage keys verbatim.
 
         The DB has bare keys. The router must NOT sign them here —
@@ -142,9 +139,7 @@ class TestGetProductReturnsBareKeys:
     """GET /api/v1/products/{id} must return image_urls as bare storage keys."""
 
     @pytest.mark.asyncio
-    async def test_get_product_image_urls_are_bare_keys(
-        self, async_client: AsyncClient
-    ) -> None:
+    async def test_get_product_image_urls_are_bare_keys(self, async_client: AsyncClient) -> None:
         """The detail response contains the storage keys verbatim."""
         raw_product = _make_product(image_urls=[BARE_KEY_1, BARE_KEY_2])
         product_entity = _to_product_entity(raw_product)

@@ -17,6 +17,14 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Make this migration idempotent: tables may already exist from the
+    # earlier `094a57cf7b48` ("add_missing_tables_vehicles_products_oauth_sessions")
+    # when the schema was created with `Base.metadata.create_all` instead of
+    # running migrations from zero. Drop and recreate so the post-state matches
+    # this migration's intent.
+    op.execute("DROP TABLE IF EXISTS facebook_pages CASCADE")
+    op.execute("DROP TABLE IF EXISTS facebook_accounts CASCADE")
+
     # Create facebook_accounts table
     op.create_table(
         "facebook_accounts",

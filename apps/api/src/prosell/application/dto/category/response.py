@@ -13,7 +13,9 @@ class CategoryResponse(BaseModel):
     """DTO for category responses."""
 
     id: UUID
-    tenant_id: UUID
+    # Nullable: GLOBAL category templates (root verticals shared across orgs,
+    # Plan 2) have tenant_id=NULL. Tenant-scoped categories carry their id.
+    tenant_id: UUID | None = None
     name: str
     slug: str
     parent_id: UUID | None = None

@@ -18,12 +18,12 @@ from prosell.application.dto.appointment.response import AppointmentResponse
 from prosell.application.use_cases.appointment.create_appointment import CreateAppointmentUseCase
 from prosell.domain.entities.appointment import Appointment, AppointmentStatus
 from prosell.domain.entities.lead import Lead, LeadStatus
-from prosell.domain.value_objects.lead_source import LeadSource
 from prosell.domain.exceptions.appointment_exceptions import (
     AppointmentConflictException,
     AppointmentTimeValidationException,
 )
 from prosell.domain.services.appointment_conflict_detector import AppointmentConflictDetector
+from prosell.domain.value_objects.lead_source import LeadSource
 
 
 @pytest.fixture

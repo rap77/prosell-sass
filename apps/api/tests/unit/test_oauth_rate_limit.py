@@ -75,9 +75,6 @@ class TestOAuthRateLimiting:
             assert response.status_code == status.HTTP_302_FOUND
             assert response.headers["location"].startswith("https://accounts.google.com")
 
-    @pytest.mark.skip(
-        reason="JWT key path issue in test environment - rate limit verified in integration tests"
-    )
     async def test_rate_limit_callback_allows_first_request(self, _oauth_with_rate_limit_enabled):
         """Test that rate limit allows the first callback request."""
         from prosell.infrastructure.api.dependencies import get_oauth_service

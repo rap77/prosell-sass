@@ -205,9 +205,11 @@ class TestVINDecodeIntegration:
         mock_client.get.return_value = mock_response
 
         # Act & Assert
-        with patch("httpx.AsyncClient", return_value=mock_client):
-            with pytest.raises(httpx.HTTPStatusError):
-                await service.decode_vin(vin)
+        with (
+            patch("httpx.AsyncClient", return_value=mock_client),
+            pytest.raises(httpx.HTTPStatusError),
+        ):
+            await service.decode_vin(vin)
 
     @pytest.mark.asyncio
     async def test_vin_decode_handles_500_error(self) -> None:
@@ -235,9 +237,11 @@ class TestVINDecodeIntegration:
         mock_client.get.return_value = mock_response
 
         # Act & Assert
-        with patch("httpx.AsyncClient", return_value=mock_client):
-            with pytest.raises(httpx.HTTPStatusError):
-                await service.decode_vin(vin)
+        with (
+            patch("httpx.AsyncClient", return_value=mock_client),
+            pytest.raises(httpx.HTTPStatusError),
+        ):
+            await service.decode_vin(vin)
 
     # -------------------------------------------------------------------------
     # TEST: VIN decode timeout (B2.2.e)
@@ -262,9 +266,11 @@ class TestVINDecodeIntegration:
         mock_client.get.side_effect = httpx.TimeoutException("Request timed out")
 
         # Act & Assert
-        with patch("httpx.AsyncClient", return_value=mock_client):
-            with pytest.raises(httpx.TimeoutException):
-                await service.decode_vin(vin)
+        with (
+            patch("httpx.AsyncClient", return_value=mock_client),
+            pytest.raises(httpx.TimeoutException),
+        ):
+            await service.decode_vin(vin)
 
     # -------------------------------------------------------------------------
     # TEST: VIN decode populates vehicle attributes (B2.2.f, B2.2.h)

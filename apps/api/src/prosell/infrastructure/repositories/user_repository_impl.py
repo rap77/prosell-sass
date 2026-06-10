@@ -1,7 +1,6 @@
 """SQLAlchemy implementation of User repository."""
 
-import json
-from datetime import UTC, datetime
+from datetime import UTC
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -31,7 +30,7 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
             email_verified_at=user.email_verified_at,
             is_2fa_enabled=user.is_2fa_enabled,
             totp_secret=user.totp_secret,
-            backup_codes=json.dumps(user.backup_codes) if user.backup_codes else None,
+            backup_codes=user.backup_codes,
             last_login_at=user.last_login_at,
             last_login_ip=user.last_login_ip,
             failed_login_attempts=user.failed_login_attempts,
@@ -39,6 +38,7 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
             tenant_id=user.tenant_id,
             created_at=user.created_at,
             updated_at=user.updated_at,
+            deleted_at=user.deleted_at,
         )
         self.session.add(model)
         await self.session.flush()
@@ -77,27 +77,39 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
         model.email_verified_at = user.email_verified_at
         model.is_2fa_enabled = user.is_2fa_enabled
         model.totp_secret = user.totp_secret
-        model.backup_codes = json.dumps(user.backup_codes) if user.backup_codes else None
+        model.backup_codes = user.backup_codes
         model.last_login_at = user.last_login_at
         model.last_login_ip = user.last_login_ip
         model.failed_login_attempts = user.failed_login_attempts
         model.locked_until = user.locked_until
         model.tenant_id = user.tenant_id
-        model.updated_at = datetime.now(UTC)
+        # Persist the entity's `updated_at` — the entity is the source of truth
+        # (its domain methods stamp the timestamp at the moment of the event).
+        # The repo MUST NOT re-stamp with datetime.now(UTC), or audit trails and
+        # delayed event handlers (e.g., webhook-driven mutations) will desync.
+        model.updated_at = user.updated_at
 
         await self.session.flush()
         return self._to_entity(model)
 
     async def delete(self, user_id: UUID) -> None:
-        """Delete user (soft delete)."""
-        # Soft delete by setting status to suspended
+        """Soft-delete the user by stamping `deleted_at`.
+
+        The row is preserved (no hard delete). `status` is NOT changed —
+        suspend and delete are distinct domain events. The domain entity
+        is the source of truth for `deleted_at` and `updated_at`, so we
+        load the model, reconstruct the entity, call `.delete()`, and
+        persist what the entity carries.
+        """
         stmt = select(UserModel).where(UserModel.id == user_id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
 
         if model:
-            model.status = UserStatus.SUSPENDED.value
-            model.updated_at = datetime.now(UTC)
+            entity = self._to_entity(model)
+            entity.delete()
+            model.deleted_at = entity.deleted_at
+            model.updated_at = entity.updated_at
             await self.session.flush()
 
     async def list_with_pagination(
@@ -315,9 +327,7 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
             email_verified_at=model.email_verified_at,
             is_2fa_enabled=model.is_2fa_enabled,
             totp_secret=model.totp_secret,
-            backup_codes=(
-                json.loads(model.backup_codes) if model.backup_codes else None
-            ),  # Parse JSON
+            backup_codes=model.backup_codes,
             last_login_at=model.last_login_at,
             last_login_ip=model.last_login_ip,
             failed_login_attempts=model.failed_login_attempts,
@@ -325,5 +335,6 @@ class SqlAlchemyUserRepository(AbstractUserRepository):
             tenant_id=model.tenant_id,
             created_at=model.created_at,
             updated_at=model.updated_at,
+            deleted_at=model.deleted_at,
             roles=None,  # Don't trigger lazy load
         )

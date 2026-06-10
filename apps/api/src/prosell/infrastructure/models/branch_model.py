@@ -3,7 +3,8 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Index, String, Text
+from sqlalchemy import DateTime, Index, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from prosell.infrastructure.database.base import Base
@@ -30,13 +31,11 @@ class BranchModel(Base):
 
     # Business
     timezone: Mapped[str] = mapped_column(String(50), default="America/Montevideo")
-    settings: Mapped[str | None] = mapped_column(
-        Text, nullable=True, default=None
-    )  # JSON stored as text
+    settings: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default="{}")
 
-    # Audit
-    created_at: Mapped[datetime] = mapped_column(nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(nullable=False)
+    # Audit — tz-aware, consistent with the rest of the schema.
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     # Indexes and constraints
     __table_args__ = (Index("ix_branches_tenant_slug", "tenant_id", "slug", unique=True),)

@@ -3,7 +3,8 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from prosell.infrastructure.database.base import Base
@@ -58,9 +59,13 @@ class UserModel(Base):
         String(255),
         nullable=True,
     )
-    backup_codes: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,  # JSON string
+    # JSONB column — list[str] | None. SQLAlchemy handles serialization;
+    # the repo no longer needs manual json.dumps/loads. An empty list []
+    # round-trips as [] (not None), which the previous Text-based
+    # implementation collapsed via a truthiness check.
+    backup_codes: Mapped[list[str] | None] = mapped_column(
+        JSONB,
+        nullable=True,
     )
     last_login_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
@@ -93,6 +98,14 @@ class UserModel(Base):
         server_default="now()",
         onupdate="now()",
         nullable=False,
+    )
+    # Soft-delete audit trail. None = active; non-null = soft-deleted at that
+    # moment in UTC. Distinct from `status` (suspend is a temporary admin
+    # block; delete is an intentional tenant removal with audit trail).
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
     )
 
     # Relationships

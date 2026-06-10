@@ -134,7 +134,7 @@ class TestDataCleaner:
         cutoff_time = datetime.now(UTC) - timedelta(days=1)
 
         await self.session.execute(
-            sa_text("DELETE FROM rate_limit_buckets " "WHERE created_at < :cutoff_time"),
+            sa_text("DELETE FROM rate_limit_buckets WHERE created_at < :cutoff_time"),
             {"cutoff_time": cutoff_time},
         )
 

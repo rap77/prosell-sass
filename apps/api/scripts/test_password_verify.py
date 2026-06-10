@@ -24,6 +24,9 @@ async def test_password():
         print(f"   User ID: {user.id}")
         print(f"   Status: {user.status}")
         print(f"   Email verified: {user.email_verified}")
+        if user.password_hash is None:
+            print("⚠️  User has no password hash (OAuth-only account?)")
+            return
         print(f"   Password hash: {user.password_hash}")
         print(f"   Hash length: {len(user.password_hash)}")
         print(f"   Hash prefix: {user.password_hash[:10]}...")
@@ -64,7 +67,8 @@ async def test_password():
             print(f"Old hash: {user.password_hash}")
             print(f"Hashes match: {new_hash.decode('utf-8') == user.password_hash}")
             print(
-                f"Both verify same password: {bcrypt.checkpw(test_password.encode('utf-8'), new_hash)}"
+                "Both verify same password: "
+                f"{bcrypt.checkpw(test_password.encode('utf-8'), new_hash)}"
             )
         except Exception as e:
             print(f"❌ Exception: {e}")

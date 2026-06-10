@@ -1,6 +1,5 @@
 """SqlAlchemyBranchRepository implementation."""
 
-import json
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -78,7 +77,7 @@ class SqlAlchemyBranchRepository(AbstractBranchRepository):
         model.location_lat = branch.location_lat
         model.location_lng = branch.location_lng
         model.timezone = branch.timezone
-        model.settings = json.dumps(branch.settings) if branch.settings else None
+        model.settings = branch.settings or {}
         model.updated_at = branch.updated_at
 
         await self.session.flush()
@@ -125,14 +124,8 @@ class SqlAlchemyBranchRepository(AbstractBranchRepository):
 
     def _to_entity(self, model: BranchModel) -> Branch:
         """Convert ORM model to domain entity."""
-        settings: dict[str, object] = {}
-        if model.settings:
-            try:
-                parsed = json.loads(model.settings)
-                if isinstance(parsed, dict):
-                    settings = parsed
-            except (json.JSONDecodeError, TypeError):
-                pass
+        # `settings` is a JSONB column: SQLAlchemy returns a dict directly.
+        settings = model.settings if isinstance(model.settings, dict) else {}
         return Branch(
             id=model.id,
             tenant_id=model.tenant_id,
@@ -164,7 +157,7 @@ class SqlAlchemyBranchRepository(AbstractBranchRepository):
             location_lat=branch.location_lat,
             location_lng=branch.location_lng,
             timezone=branch.timezone,
-            settings=json.dumps(branch.settings) if branch.settings else None,
+            settings=branch.settings or {},
             created_at=branch.created_at,
             updated_at=branch.updated_at,
         )

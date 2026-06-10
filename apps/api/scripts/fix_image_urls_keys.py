@@ -36,10 +36,10 @@ from urllib.parse import urlparse
 # Add src to path so we can import the app's models + session
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from sqlalchemy import select  # noqa: E402
+from sqlalchemy import select
 
-from prosell.infrastructure.database.session import async_session_maker  # noqa: E402
-from prosell.infrastructure.models import ProductModel  # noqa: E402
+from prosell.infrastructure.database.session import async_session_maker
+from prosell.infrastructure.models import ProductModel
 
 
 def extract_storage_key(value: str) -> str:

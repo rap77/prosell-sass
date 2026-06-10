@@ -36,7 +36,7 @@ print("=" * 80)
 # Get all endpoints from OpenAPI
 all_endpoints = set()
 for path, path_item in openapi_schema["paths"].items():
-    for method in path_item.keys():
+    for method in path_item:
         if method.lower() in ["get", "post", "put", "patch", "delete"]:
             all_endpoints.add((method.upper(), path))
 
@@ -53,7 +53,7 @@ if missing:
         print(f"  {method} {path}")
 
 if extra:
-    print(f"\nℹ️  Endpoints without contract tests ({len(extra)}):")
+    print(f"\nInfo:  Endpoints without contract tests ({len(extra)}):")
     for method, path in sorted(extra)[:20]:  # Limit output
         print(f"  {method} {path}")
     if len(extra) > 20:
@@ -63,7 +63,7 @@ if extra:
 covered = len(expected_endpoints & all_endpoints)
 coverage_pct = (covered / len(expected_endpoints)) * 100 if expected_endpoints else 0
 
-print(f"\n{'='*80}")
+print(f"\n{'=' * 80}")
 print(f"Coverage: {covered}/{len(expected_endpoints)} endpoints ({coverage_pct:.1f}%)")
 
 # List covered endpoints

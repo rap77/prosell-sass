@@ -394,7 +394,7 @@ async def seed_database():
 
             print("✅ Admin user created: admin@prosell-demo.com / Admin123!")
         else:
-            print("ℹ️  Admin user already exists")
+            print("Info:  Admin user already exists")
 
         # Get user_id (whether newly created or existing)
         result = await conn.execute(

@@ -104,7 +104,10 @@ known-first-party = ["prosell"]
 [tool.pyright]
 pythonVersion = "3.13"
 typeCheckingMode = "standard"
-include = ["src", "tests"]
+include = ["src", "tests", "scripts"]
+# scripts/ lives outside the prosell package; tell pyright where the
+# package source is so `from prosell...` resolves inside scripts/.
+extraPaths = ["src"]
 exclude = [
     ".venv",
     "**/__pycache__",
