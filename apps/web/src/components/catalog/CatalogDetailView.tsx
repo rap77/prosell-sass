@@ -13,8 +13,9 @@
  */
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, PencilLine, Send, AlertCircle } from "lucide-react";
+import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
 import { StatusBadge } from "@/components/datagrid/StatusBadge";
 import type { Vehicle } from "@/components/datagrid/DataGrid";
 import { PublishModal } from "@/components/publisher/PublishModal";
@@ -283,6 +284,18 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
     refetch,
   } = useProduct(productId, { internal: true });
   const { data: signedUrls } = useProductImageUrls(productId);
+  const setBreadcrumbLabel = useBreadcrumbStore((state) => state.setLabel);
+  const clearBreadcrumbLabel = useBreadcrumbStore((state) => state.clearLabel);
+
+  // Register the real product title for the `[id]` breadcrumb segment so the
+  // Header shows "Toyota Corolla 2020" instead of the generic "Detalle"
+  // fallback. Cleared on unmount so it never leaks into the next route.
+  useEffect(() => {
+    const title = product?.title;
+    if (!title) return;
+    setBreadcrumbLabel(productId, title);
+    return () => clearBreadcrumbLabel(productId);
+  }, [product?.title, productId, setBreadcrumbLabel, clearBreadcrumbLabel]);
 
   // Build map of key → signed URL for O(1) lookup
   const signedUrlMap = new Map<string, string>(

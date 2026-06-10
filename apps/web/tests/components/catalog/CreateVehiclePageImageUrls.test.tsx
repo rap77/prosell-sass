@@ -35,7 +35,7 @@ vi.mock("@/lib/logger", () => ({ logger: { debug: vi.fn(), error: vi.fn() } }));
 vi.mock("next/image", () => ({
   default: ({ src }: { src: string }) => (
     // eslint-disable-next-line @next/next/no-img-element
-    <img data-testid="cover-image-img" src={src} />
+    <img data-testid="cover-image-img" src={src} alt="" />
   ),
 }));
 

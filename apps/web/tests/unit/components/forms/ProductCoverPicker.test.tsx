@@ -34,6 +34,7 @@ vi.mock("next/image", () => ({
     <img
       data-testid="cover-image-img"
       src={src}
+      alt=""
       data-unoptimized={unoptimized ? "true" : "false"}
     />
   ),

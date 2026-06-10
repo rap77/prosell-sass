@@ -10,6 +10,7 @@
  */
 
 import Image from "next/image";
+import Link from "next/link";
 
 // ─── Brand panel (left side) ──────────────────────────────────────────────────
 
@@ -66,7 +67,7 @@ function AuthBrandPanel() {
         }}
       >
         {/* Logo — tabIndex -1 because the aside is aria-hidden, making this link unreachable by keyboard */}
-        <a
+        <Link
           href="/"
           tabIndex={-1}
           style={{
@@ -88,7 +89,7 @@ function AuthBrandPanel() {
             style={{ height: 34, width: "auto", flexShrink: 0 }}
           />
           ProSell
-        </a>
+        </Link>
 
         {/* Hero + testimonial */}
         <div
