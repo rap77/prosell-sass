@@ -1,3 +1,8 @@
+# Install both hook types with a single `pre-commit install`:
+#   pre-commit -> fast per-commit checks (gga, ruff, pyright, formatting)
+#   pre-push   -> heavier full verification before code leaves the machine
+default_install_hook_types: [pre-commit, pre-push]
+
 repos:
   # ============================================
   # Gentleman Guardian Angel (AI Code Review)
@@ -51,6 +56,37 @@ repos:
   #       language: system
   #       pass_filenames: false
   #       files: \.(ts|tsx|js|jsx)$
+
+  # ============================================
+  # Pre-PUSH gate - full verification before code leaves the machine.
+  # Substitute for GitHub branch protection (unavailable on private free plan).
+  # Re-checks lint + types from scratch (independent of whether pre-commit ran)
+  # and runs the backend test suite (too slow to run on every commit).
+  # Only fires when the push contains Python changes.
+  # ============================================
+  - repo: local
+    hooks:
+      - id: ruff-push
+        name: ruff check (pre-push)
+        entry: bash -c 'cd apps/api && uv run ruff check src tests'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        types: [python]
+      - id: pyright-push
+        name: pyright type check (pre-push)
+        entry: bash -c 'cd apps/api && uv run pyright'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        types: [python]
+      - id: pytest-push
+        name: pytest backend suite (pre-push)
+        entry: bash -c 'cd apps/api && uv run pytest -q'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        types: [python]
 
   # ============================================
   # General - Pre-commit hooks
