@@ -14,6 +14,8 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from prosell.infrastructure.models.organization_model import OrganizationModel
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Pre-flight Test (must pass BEFORE C3 migration)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -108,18 +110,16 @@ async def test_categories_field_config_is_jsonb(db_session: AsyncSession) -> Non
 
 
 @pytest.mark.asyncio
-async def test_existing_categories_rows_preserved(db_session: AsyncSession) -> None:
+async def test_existing_categories_rows_preserved(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> None:
     """SC-2: Existing categories schema supports insert/read after migration.
 
     Inserts a category and verifies it reads back with correct JSONB values.
-    Skips if no organizations exist (requires seeded data).
+    Uses the rollback-scoped test_organization fixture so it runs without seed
+    data and never pollutes the DB.
     """
-    result = await db_session.execute(text("SELECT id FROM organizations LIMIT 1"))
-    org_row = result.fetchone()
-    if org_row is None:
-        pytest.skip("No organizations in test DB — seed data required")
-
-    org_id = org_row.id
+    org_id = test_organization.id
     cat_id = uuid4()
 
     await db_session.execute(
@@ -154,14 +154,10 @@ async def test_existing_categories_rows_preserved(db_session: AsyncSession) -> N
 
 @pytest.mark.asyncio
 async def test_attribute_schema_default_is_empty_object(
-    db_session: AsyncSession,
+    db_session: AsyncSession, test_organization: OrganizationModel
 ) -> None:
     """SC-5: attribute_schema defaults to {} (empty object), NOT null, NOT array."""
-    result = await db_session.execute(text("SELECT id FROM organizations LIMIT 1"))
-    org_row = result.fetchone()
-    if org_row is None:
-        pytest.skip("No organizations in test DB")
-
+    org_id = test_organization.id
     cat_id = uuid4()
     # Insert WITHOUT specifying attribute_schema — should use DEFAULT '{}'
     await db_session.execute(
@@ -174,7 +170,7 @@ async def test_attribute_schema_default_is_empty_object(
                 '[]'::jsonb
             )
         """),
-        {"id": cat_id, "tenant_id": org_row.id},
+        {"id": cat_id, "tenant_id": org_id},
     )
     await db_session.flush()
 
@@ -195,14 +191,10 @@ async def test_attribute_schema_default_is_empty_object(
 
 @pytest.mark.asyncio
 async def test_jsonb_containment_operator_on_attribute_schema(
-    db_session: AsyncSession,
+    db_session: AsyncSession, test_organization: OrganizationModel
 ) -> None:
     """JSONB @> operator works on attribute_schema — proves type is JSONB not JSON."""
-    result = await db_session.execute(text("SELECT id FROM organizations LIMIT 1"))
-    org_row = result.fetchone()
-    if org_row is None:
-        pytest.skip("No organizations in test DB")
-
+    org_id = test_organization.id
     cat_id = uuid4()
     await db_session.execute(
         text("""
@@ -215,7 +207,7 @@ async def test_jsonb_containment_operator_on_attribute_schema(
                 '{"year": {"type": "number", "required": true}}'::jsonb
             )
         """),
-        {"id": cat_id, "tenant_id": org_row.id},
+        {"id": cat_id, "tenant_id": org_id},
     )
     await db_session.flush()
 
