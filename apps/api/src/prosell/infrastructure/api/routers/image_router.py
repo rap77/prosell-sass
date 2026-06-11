@@ -167,12 +167,21 @@ async def get_image_status(
 
 # Dependencies
 async def get_image_optimizer() -> ImageOptimizer:
-    """Return ImageOptimizer instance.
+    """Return ImageOptimizer instance (JPEG output).
 
     Returns:
         ImageOptimizer service instance
     """
     return ImageOptimizer()
+
+
+async def get_storage_optimizer() -> ImageOptimizer:
+    """Return an ImageOptimizer that outputs WebP for the storage path.
+
+    Stored objects use WebP (~25-35% smaller than JPEG) to cut DO Spaces cost.
+    The publish path re-encodes to JPEG on the fly, so WebP storage is safe.
+    """
+    return ImageOptimizer(output_format="WEBP")
 
 
 @router.post("/optimize", status_code=status.HTTP_200_OK)
@@ -246,7 +255,7 @@ async def optimize_image(
 async def upload_image(
     file: Annotated[UploadFile, File()],
     current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
-    optimizer: Annotated[ImageOptimizer, Depends(get_image_optimizer)],
+    optimizer: Annotated[ImageOptimizer, Depends(get_storage_optimizer)],
     spaces: Annotated[IDOSpacesService, Depends(get_spaces_service)],
 ) -> ImageUploadResponse:
     """
@@ -293,7 +302,7 @@ async def upload_image(
 
     # Generate file path
     file_id = str(uuid4())
-    ext = ".jpg"  # Always JPEG after optimization
+    ext = ".webp"  # Storage path outputs WebP (see get_storage_optimizer)
     file_path = f"orgs/{current_user.tenant_id}/vehicles/{file_id}{ext}"
 
     logger.info(
@@ -308,7 +317,7 @@ async def upload_image(
         await spaces.upload_file(
             file_path=file_path,
             file_bytes=optimized_bytes,
-            content_type="image/jpeg",
+            content_type="image/webp",
         )
     except Exception as e:
         raise HTTPException(

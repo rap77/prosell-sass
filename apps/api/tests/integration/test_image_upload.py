@@ -138,6 +138,27 @@ class TestImageUpload:
         file_path = call_args.kwargs["file_path"]
         assert f"orgs/{mock_auth_user.tenant_id}/vehicles/" in file_path
 
+    async def test_upload_stores_webp(
+        self, sample_image_bytes: bytes, mock_spaces: MagicMock
+    ) -> None:
+        """Storage path stores WebP: .webp key, image/webp content-type, WebP bytes."""
+        from io import BytesIO
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/images/upload",
+                files={"file": ("test.jpg", BytesIO(sample_image_bytes), "image/jpeg")},
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        call = mock_spaces.upload_file.call_args
+        assert call.kwargs["content_type"] == "image/webp"
+        assert call.kwargs["file_path"].endswith(".webp")
+        uploaded = call.kwargs["file_bytes"]
+        # WebP container: 'RIFF' .... 'WEBP'
+        assert uploaded[:4] == b"RIFF"
+        assert uploaded[8:12] == b"WEBP"
+
     async def test_upload_image_rejects_non_image(self) -> None:
         """Returns 400 for non-image files."""
         from io import BytesIO
@@ -163,7 +184,7 @@ class TestImageUpload:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     async def test_upload_image_handles_png_with_alpha(self) -> None:
-        """Converts PNG with alpha channel to JPEG."""
+        """Flattens PNG alpha and stores it as WebP (storage path)."""
         # Create a PNG with alpha channel
         img = Image.new("RGBA", (1000, 1000), color=(255, 0, 0, 128))
         buffer = BytesIO()
@@ -177,12 +198,13 @@ class TestImageUpload:
             )
 
         assert response.status_code == status.HTTP_200_OK
-        # Verify upload was called with optimized JPEG bytes
+        # Verify upload was called with optimized WebP bytes
         assert _mock_spaces is not None
         assert _mock_spaces.upload_file.called
         uploaded_bytes = _mock_spaces.upload_file.call_args.kwargs["file_bytes"]
-        # Verify it's JPEG format (starts with FF D8)
-        assert uploaded_bytes[:2] == b"\xff\xd8"
+        # Verify it's WebP format (RIFF .... WEBP)
+        assert uploaded_bytes[:4] == b"RIFF"
+        assert uploaded_bytes[8:12] == b"WEBP"
 
     async def test_upload_image_handles_large_image(self, sample_image_bytes: bytes) -> None:
         """Resizes images larger than 1920x1080."""
@@ -200,8 +222,9 @@ class TestImageUpload:
         uploaded_bytes = _mock_spaces.upload_file.call_args.kwargs["file_bytes"]
         # Original 2000x2000 JPEG is ~63KB, optimized should be smaller
         assert len(uploaded_bytes) < len(sample_image_bytes)
-        # Verify it's still a valid JPEG
-        assert uploaded_bytes[:2] == b"\xff\xd8"
+        # Verify it's a valid WebP (RIFF .... WEBP)
+        assert uploaded_bytes[:4] == b"RIFF"
+        assert uploaded_bytes[8:12] == b"WEBP"
 
     async def test_upload_without_tenant_id_returns_400(self, sample_image_bytes: bytes) -> None:
         """Returns 400 when user has no tenant_id."""
