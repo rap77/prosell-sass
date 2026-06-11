@@ -220,6 +220,33 @@ services:
     # Use dev mode for hot-reload in development
     command: pnpm --filter @prosell/web dev
 
+  # =============================================================================
+  # TASKIQ WORKER (dev, opt-in via profile to avoid noisy parallel logs)
+  # =============================================================================
+  # Start with: docker compose --profile worker up worker
+  # Same image as `api`, different entrypoint. Source mounted read-only for
+  # hot-reload parity with the dev `api` service.
+  worker:
+    profiles: ["worker"]
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    container_name: prosell-worker
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=development
+      - DEBUG=true
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../apps/api/src:/app/src:ro
+      - ../apps/api/keys:/app/keys:ro
+    command: ["python", "-m", "prosell.infrastructure.tasks.worker"]
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local
