@@ -1,0 +1,56 @@
+name: Promote to Production
+
+# Deploy a producción (DigitalOcean). SOLO manual: no se dispara solo nunca.
+# Como el plan Free + repo privado no permite Required Reviewers en
+# Environments, este workflow_dispatch ES el gate de aprobación: prod no se
+# mueve hasta que vos vayas a Actions → "Run workflow" y tipees "deploy".
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Escribí "deploy" para confirmar el deploy a PRODUCCIÓN'
+        required: true
+        type: string
+
+concurrency:
+  group: promote-production
+  cancel-in-progress: false
+
+jobs:
+  promote-production:
+    # Doble seguro: aunque le des Run, no procede si no tipeaste exactamente "deploy".
+    if: ${{ inputs.confirm == 'deploy' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to DigitalOcean (production)
+        # Pineado al SHA del release (v1.2.5) — un tag es mutable y este action
+        # recibe SSH_PRIVATE_KEY de prod: si comprometen el tag, te roban la llave.
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /prosell
+            git pull origin main
+            docker compose -f docker/docker-compose.prod.yml up -d --build
+            docker system prune -f
+
+      - name: Health check post-deploy
+        run: |
+          sleep 30
+          curl -f --retry 5 --retry-delay 10 --retry-connrefused \
+            https://api.prosellweb.com/health
+
+      - name: Notify production deploy done
+        if: success()
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        run: |
+          if [ -n "$WEBHOOK_URL" ]; then
+            curl -X POST "$WEBHOOK_URL" \
+              -H 'Content-Type: application/json' \
+              -d '{"text":"🚀 Production deploy done."}' \
+              || echo "⚠️ notify failed (non-fatal) — el deploy igual fue exitoso"
+          fi

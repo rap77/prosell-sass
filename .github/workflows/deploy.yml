@@ -1,0 +1,51 @@
+name: Deploy Staging
+
+# Se dispara cuando CI termina verde en main, y deploya AUTOMÁTICO al staging
+# local (tu PC, vía self-hosted runner). Producción NO está acá: vive en
+# promote-prod.yml y se dispara MANUAL. Así staging es automático y prod
+# requiere tu acción explícita.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: # permite disparar staging a mano desde la UI
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  # ===========================================================================
+  # STAGING — auto-deploy en tu PC local vía self-hosted runner.
+  # El job corre en tu máquina (no en GitHub cloud) porque ahí vive el
+  # contenedor de staging. Si la PC está apagada, el job queda en cola hasta
+  # que el runner vuelva a estar online.
+  # ===========================================================================
+  deploy-staging:
+    # Solo procede si fue disparo manual, o si el run de CI fue exitoso en main.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: [self-hosted, staging]
+    steps:
+      - name: Deploy to local staging
+        working-directory: ${{ secrets.STAGING_REPO_PATH }}
+        run: |
+          set -e
+          git pull origin main
+          docker compose -f docker/docker-compose.staging.yml up -d --build
+          docker system prune -f
+
+      - name: Notify staging deploy done
+        if: always()
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        run: |
+          if [ -n "$WEBHOOK_URL" ]; then
+            curl -X POST "$WEBHOOK_URL" \
+              -H 'Content-Type: application/json' \
+              -d '{"text":"✅ Staging deploy done — revisá local, luego corré \"Promote to Production\" manual si querés promover."}' \
+              || echo "⚠️ notify failed (non-fatal) — el deploy igual fue exitoso"
+          fi
