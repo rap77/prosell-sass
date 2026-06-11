@@ -1,6 +1,7 @@
 """Product repository interface."""
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from uuid import UUID
 
 from prosell.domain.entities.product import Product
@@ -329,5 +330,22 @@ class AbstractProductRepository(ABC):
 
         Returns:
             Product entity or None if not found
+        """
+        pass
+
+    @abstractmethod
+    async def get_sold_before(self, cutoff: datetime) -> list[Product]:
+        """
+        Get products that have been SOLD since before a cutoff timestamp.
+
+        System-wide (no tenant filter) — this backs the maintenance sweep that
+        prunes long-sold products' image galleries. Products that left SOLD
+        (e.g. returned) are naturally excluded by the status filter.
+
+        Args:
+            cutoff: Only products whose sold_at is strictly before this returned
+
+        Returns:
+            List of SOLD products with sold_at < cutoff
         """
         pass
