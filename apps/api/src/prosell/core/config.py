@@ -241,6 +241,16 @@ class Settings(BaseSettings):
         description="Use path-style addressing (required for MinIO, optional for DO Spaces)",
     )
 
+    # Days a product must stay SOLD before its non-cover images are pruned by
+    # the daily sweep. Must be >= the return window (a return un-sells a
+    # product, which excludes it from the sweep). See prune_sold_galleries_task.
+    sold_image_grace_days: int = Field(
+        default=30,
+        ge=1,
+        description="Days a product must remain SOLD before its non-cover "
+        "images are pruned to reclaim storage. Must be >= the return window.",
+    )
+
     # =============================================================================
     # STRIPE (Payments)
     # =============================================================================

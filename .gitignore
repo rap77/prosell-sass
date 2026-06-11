@@ -107,6 +107,7 @@ apps/web/tsconfig.tsbuildinfo
 .mastermind-active
 .mastermind/
 .playwright-mcp/
+.superpowers/
 
 # Serena (handoffs are temporary)
 .serena/handoffs/

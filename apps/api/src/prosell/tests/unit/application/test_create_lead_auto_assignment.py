@@ -1,5 +1,6 @@
 """Unit tests for CreateLeadUseCase auto-assignment integration."""
 
+from datetime import datetime
 from uuid import UUID, uuid4
 
 from prosell.application.dto.lead.request import CreateLeadRequest
@@ -304,6 +305,15 @@ class StubProductRepository(AbstractProductRepository):
             if product.tenant_id == tenant_id and product.attributes.get("vin") == vin:
                 return product
         return None
+
+    async def get_sold_before(self, cutoff: datetime) -> list[Product]:
+        return [
+            product
+            for product in self.products.values()
+            if product.status == ProductStatus.SOLD
+            and product.sold_at is not None
+            and product.sold_at < cutoff
+        ]
 
     async def get_all(
         self,

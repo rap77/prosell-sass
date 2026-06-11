@@ -1,6 +1,6 @@
 """SQLAlchemy implementation of Product repository."""
 
-from datetime import UTC
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import func, or_, select
@@ -463,6 +463,20 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             return True
 
         return False
+
+    async def get_sold_before(self, cutoff: datetime) -> list[Product]:
+        """Return all SOLD products whose sold_at is strictly before cutoff.
+
+        System-wide maintenance query (no tenant filter); products that left
+        SOLD (e.g. returned) are excluded by the status filter.
+        """
+        stmt = select(ProductModel).where(
+            ProductModel.status == ProductStatus.SOLD.value,
+            ProductModel.sold_at.is_not(None),
+            ProductModel.sold_at < cutoff,
+        )
+        result = await self.session.execute(stmt)
+        return [self._to_entity(model) for model in result.scalars().all()]
 
     def _to_entity(self, model: ProductModel) -> Product:
         """Convert ORM model to domain entity."""
