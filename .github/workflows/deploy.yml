@@ -35,7 +35,9 @@ jobs:
         run: |
           set -e
           git pull origin main
-          docker compose -f docker/docker-compose.staging.yml up -d --build
+          # --env-file: el compose usa ${VAR} para los secrets (no hardcodeados);
+          # se interpolan desde .env.staging, que vive en el host (gitignored).
+          docker compose --env-file .env.staging -f docker/docker-compose.staging.yml up -d --build
           docker system prune -f
 
       - name: Notify staging deploy done
