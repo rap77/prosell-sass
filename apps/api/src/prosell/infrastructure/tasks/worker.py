@@ -19,6 +19,9 @@ async def main() -> None:
     receiver = Receiver(broker=broker)
 
     # Import tasks to register them with the broker
+    from prosell.infrastructure.tasks.use_cases.prune_sold_galleries_task import (  # noqa: F401
+        prune_sold_galleries_task,
+    )
 
     logger.info("Starting Taskiq worker...")
     logger.info("Broker: %s", settings.task_queue_broker_url or settings.redis_url)
