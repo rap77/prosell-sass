@@ -189,18 +189,6 @@ async def optimize_image(
     file: Annotated[UploadFile, File()],
     optimizer: Annotated[ImageOptimizer, Depends(get_image_optimizer)],
 ) -> Response:
-    """Optimize uploaded image.
-
-    Args:
-        file: Uploaded image file
-        optimizer: ImageOptimizer service
-
-    Returns:
-        Response with optimized image bytes (JPEG format)
-
-    Raises:
-        HTTPException: If file is invalid or optimization fails
-    """
     """
     Optimize uploaded image.
 
@@ -215,7 +203,7 @@ async def optimize_image(
         optimizer: ImageOptimizer service
 
     Returns:
-        Optimized image bytes (JPEG format)
+        Response with optimized image bytes (JPEG format)
 
     Raises:
         HTTPException: If file is invalid or optimization fails

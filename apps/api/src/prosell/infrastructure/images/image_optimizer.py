@@ -49,13 +49,14 @@ class ImageOptimizer(IImagePipeline):
 
     async def process(self, image_bytes: bytes) -> bytes:
         """
-        Compress, resize to max dimensions, convert to JPG, strip EXIF.
+        Compress, resize to max dimensions, convert to configured format, strip EXIF.
 
         Args:
             image_bytes: Raw image bytes
 
         Returns:
-            Processed image bytes (JPEG format)
+            Processed image bytes in the configured output format (default JPEG,
+            or WebP when output_format="WEBP" — used by the storage upload path).
         """
         # Load image from bytes
         img: Image.Image = Image.open(BytesIO(image_bytes))
