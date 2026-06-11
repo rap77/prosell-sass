@@ -128,11 +128,13 @@ Why a sweep beats a delayed task queued at sale time:
 ## 8. Testing
 
 **Part 1 (WebP):**
+
 - Optimizer produces a valid WebP within ≤1920×1080 at the target quality;
   output bytes < equivalent JPEG.
 - Publish pipeline yields a valid JPEG from a WebP source.
 
 **Part 2 (prune):**
+
 - Sweep deletes non-cover keys for products `SOLD` and `sold_at` older than the
   grace period; keeps `cover_image_key`.
 - A `SOLD` product within the grace period is untouched.

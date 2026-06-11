@@ -20,15 +20,15 @@
 
 ## File structure
 
-| File | Responsibility | Action |
-|------|----------------|--------|
-| `src/prosell/core/config.py` | `SOLD_IMAGE_GRACE_DAYS` setting (default 30) | Modify |
-| `src/prosell/domain/repositories/product_repository.py` | add `get_sold_before(cutoff)` to the port | Modify |
-| `src/prosell/infrastructure/repositories/product_repository_impl.py` | implement `get_sold_before` | Modify |
-| `src/prosell/application/use_cases/product/prune_sold_product_images.py` | the prune use case | Create |
-| `src/prosell/infrastructure/tasks/use_cases/prune_sold_galleries_task.py` | taskiq entrypoint | Create |
-| `tests/unit/application/use_cases/product/test_prune_sold_product_images.py` | use-case unit tests | Create |
-| `tests/integration/repositories/test_product_get_sold_before.py` | repo integration test | Create |
+| File                                                                         | Responsibility                               | Action |
+| ---------------------------------------------------------------------------- | -------------------------------------------- | ------ |
+| `src/prosell/core/config.py`                                                 | `SOLD_IMAGE_GRACE_DAYS` setting (default 30) | Modify |
+| `src/prosell/domain/repositories/product_repository.py`                      | add `get_sold_before(cutoff)` to the port    | Modify |
+| `src/prosell/infrastructure/repositories/product_repository_impl.py`         | implement `get_sold_before`                  | Modify |
+| `src/prosell/application/use_cases/product/prune_sold_product_images.py`     | the prune use case                           | Create |
+| `src/prosell/infrastructure/tasks/use_cases/prune_sold_galleries_task.py`    | taskiq entrypoint                            | Create |
+| `tests/unit/application/use_cases/product/test_prune_sold_product_images.py` | use-case unit tests                          | Create |
+| `tests/integration/repositories/test_product_get_sold_before.py`             | repo integration test                        | Create |
 
 ---
 
