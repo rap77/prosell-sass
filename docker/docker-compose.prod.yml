@@ -76,6 +76,34 @@ services:
       start_period: 40s
 
   # ---------------------------------------------------------------------------
+  # TASKIQ WORKER (Receiver + Scheduler)
+  # ---------------------------------------------------------------------------
+  # Long-lived process that consumes ad-hoc tasks (.kiq() from the API) and
+  # publishes cron-scheduled ones (e.g. prune_sold_galleries_task daily at
+  # 03:00 UTC, configured via PRUNE_SOLD_GALLERIES_CRON in .env.prod).
+  # Reuses the api image; the only difference is the entrypoint command.
+  # No healthcheck: Taskiq has no built-in HTTP probe. `restart: unless-stopped`
+  # is the only liveness signal — single-worker assumption documented in the
+  # scheduler PR runbook.
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    container_name: prosell-prod-worker
+    env_file:
+      - ../.env.prod
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    command: ["python", "-m", "prosell.infrastructure.tasks.worker"]
+
+  # ---------------------------------------------------------------------------
   # NEXT.JS FRONTEND
   # ---------------------------------------------------------------------------
   web:

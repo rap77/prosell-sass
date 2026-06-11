@@ -1,5 +1,6 @@
 """Configuration settings using Pydantic BaseSettings."""
 
+import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -108,6 +109,48 @@ class Settings(BaseSettings):
         default=3,
         description="Maximum retry attempts for failed tasks",
     )
+
+    # =============================================================================
+    # SCHEDULED TASKS
+    # =============================================================================
+    # Cron expression for the daily prune-sold-galleries sweep. Interpreted in
+    # `prune_sold_galleries_tz`. Default 03:00 daily. Read by the worker at
+    # task-decorator-evaluation time; changing this requires a worker restart.
+    prune_sold_galleries_cron: str = Field(
+        default="0 3 * * *",
+        description="Cron for the daily prune-sold-galleries sweep "
+        "(interpreted in prune_sold_galleries_tz).",
+    )
+    # Timezone for the cron above. Default 'UTC'. Set an IANA name (e.g.
+    # 'America/Buenos_Aires') to interpret the cron in that zone; the
+    # conversion uses zoneinfo, which requires `tzdata` to be installed in
+    # the runtime image (python:3.13-slim does NOT ship it by default —
+    # unknown zones silently fall back to UTC).
+    prune_sold_galleries_tz: str | None = Field(
+        default="UTC",
+        description="Timezone for prune_sold_galleries_cron. "
+        "'UTC' (default) or any IANA zone; None keeps cron in UTC.",
+    )
+
+    @property
+    def prune_sold_galleries_cron_offset(self) -> "datetime.timedelta | None":
+        """Convert the tz setting to a fixed UTC offset for Taskiq's cron_offset.
+
+        Returns None when tz is 'UTC' / unset (Taskiq's default = UTC).
+        Uses zoneinfo (stdlib in 3.13). Catches ZoneInfoNotFoundError and
+        falls back to None (effectively UTC) — important for Alpine where
+        tzdata may be missing.
+        """
+        from datetime import datetime as _dt
+        from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+        if not self.prune_sold_galleries_tz or self.prune_sold_galleries_tz.upper() == "UTC":
+            return None
+        try:
+            zone = ZoneInfo(self.prune_sold_galleries_tz)
+        except ZoneInfoNotFoundError:
+            return None
+        return _dt.now(zone).utcoffset()
 
     # =============================================================================
     # JWT (RSA Keys)

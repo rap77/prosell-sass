@@ -1,12 +1,16 @@
 """Taskiq worker entry point.
 
 Starts the taskiq worker to process async tasks from Redis broker.
+Mounts the TaskiqScheduler alongside the Receiver so cron-scheduled
+tasks (e.g. prune_sold_galleries_task) run in the same process.
 """
 
 import asyncio
 import logging
 
 from taskiq.receiver import Receiver
+from taskiq.schedule_sources import LabelScheduleSource
+from taskiq.scheduler.scheduler import TaskiqScheduler
 
 from prosell.core.config import settings
 from prosell.infrastructure.tasks.broker import broker
@@ -15,18 +19,36 @@ logger = logging.getLogger(__name__)
 
 
 async def main() -> None:
-    """Start taskiq worker."""
-    receiver = Receiver(broker=broker)
-
-    # Import tasks to register them with the broker
-    from prosell.infrastructure.tasks.use_cases.prune_sold_galleries_task import (  # noqa: F401
+    """Start taskiq worker (receiver + scheduler)."""
+    # Import tasks to register them with the broker. MUST happen before
+    # scheduler.startup() so LabelScheduleSource sees the @broker.task(
+    # schedule=...) labels at scan time. The _ = ... assignment is a no-op
+    # at runtime; it silences pyright's "not accessed" warning.
+    from prosell.infrastructure.tasks.use_cases.prune_sold_galleries_task import (
         prune_sold_galleries_task,
     )
 
-    logger.info("Starting Taskiq worker...")
-    logger.info("Broker: %s", settings.task_queue_broker_url or settings.redis_url)
+    _ = prune_sold_galleries_task
 
-    await receiver.start()  # type: ignore[attr-defined]
+    scheduler = TaskiqScheduler(
+        broker=broker,
+        sources=[LabelScheduleSource(broker)],
+    )
+    receiver = Receiver(broker=broker)
+
+    logger.info("Starting Taskiq worker (receiver + scheduler)...")
+    logger.info("Broker: %s", settings.task_queue_broker_url or settings.redis_url)
+    logger.info(
+        "Scheduled tasks: prune_sold_galleries cron=%r tz=%r",
+        settings.prune_sold_galleries_cron,
+        settings.prune_sold_galleries_tz,
+    )
+
+    await scheduler.startup()
+    try:
+        await receiver.start()  # type: ignore[attr-defined]
+    finally:
+        await scheduler.shutdown()
 
 
 if __name__ == "__main__":
