@@ -26,6 +26,8 @@ class ImageOptimizer(IImagePipeline):
         max_width: int = 1920,
         max_height: int = 1080,
         jpeg_quality: int = 85,
+        output_format: str = "JPEG",
+        webp_quality: int = 82,
     ):
         """
         Initialize ImageOptimizer with configuration.
@@ -34,10 +36,16 @@ class ImageOptimizer(IImagePipeline):
             max_width: Maximum width in pixels (default: 1920)
             max_height: Maximum height in pixels (default: 1080)
             jpeg_quality: JPEG quality 1-100 (default: 85)
+            output_format: Stored image format, "JPEG" or "WEBP" (default: "JPEG").
+                The storage upload path uses "WEBP" for smaller objects; the
+                default stays "JPEG" so other callers are unaffected.
+            webp_quality: WebP quality 1-100 when output_format="WEBP" (default: 82)
         """
         self.max_width = max_width
         self.max_height = max_height
         self.jpeg_quality = jpeg_quality
+        self.output_format = output_format
+        self.webp_quality = webp_quality
 
     async def process(self, image_bytes: bytes) -> bytes:
         """
@@ -82,7 +90,11 @@ class ImageOptimizer(IImagePipeline):
             # Resize using LANCZOS resampling for high quality
             img = img.resize((new_width, new_height), self.RESAMPLING)
 
-        # Save to bytes as JPEG with compression (strips EXIF automatically)
+        # Save to bytes in the configured format (strips EXIF automatically —
+        # Pillow does not copy metadata when saving fresh).
         buffer = BytesIO()
-        img.save(buffer, format="JPEG", quality=self.jpeg_quality, optimize=True)
+        if self.output_format == "WEBP":
+            img.save(buffer, format="WEBP", quality=self.webp_quality, method=6)
+        else:
+            img.save(buffer, format="JPEG", quality=self.jpeg_quality, optimize=True)
         return buffer.getvalue()

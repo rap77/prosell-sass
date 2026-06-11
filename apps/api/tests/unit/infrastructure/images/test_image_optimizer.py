@@ -183,3 +183,61 @@ class TestImageOptimizerCompression:
         result_img = Image.open(BytesIO(result))
         assert result_img.format == "JPEG"
         assert result_img.mode == "RGB"
+
+
+@pytest.fixture
+def photo_like_image():
+    """Return an 800x600 image with a varied gradient (compresses like a photo)."""
+    img = Image.new("RGB", (800, 600))
+    pixels = img.load()
+    assert pixels is not None
+    for y in range(600):
+        for x in range(800):
+            pixels[x, y] = (x % 256, y % 256, (x + y) % 256)
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+class TestImageOptimizerWebP:
+    """Storage path uses WebP (smaller objects on DO Spaces)."""
+
+    def test_optimizer_accepts_webp_config(self):
+        from prosell.infrastructure.images.image_optimizer import ImageOptimizer
+
+        optimizer = ImageOptimizer(output_format="WEBP", webp_quality=82)
+        assert optimizer.output_format == "WEBP"
+        assert optimizer.webp_quality == 82
+
+    def test_default_output_format_is_jpeg(self):
+        # Default stays JPEG so /optimize and existing callers are unaffected.
+        from prosell.infrastructure.images.image_optimizer import ImageOptimizer
+
+        assert ImageOptimizer().output_format == "JPEG"
+
+    @pytest.mark.asyncio
+    async def test_webp_output_is_valid_webp(self, large_square_image):
+        from prosell.infrastructure.images.image_optimizer import ImageOptimizer
+
+        result = await ImageOptimizer(output_format="WEBP").process(large_square_image)
+
+        result_img = Image.open(BytesIO(result))
+        assert result_img.format == "WEBP"
+
+    @pytest.mark.asyncio
+    async def test_webp_respects_max_dimensions(self, large_square_image):
+        from prosell.infrastructure.images.image_optimizer import ImageOptimizer
+
+        result = await ImageOptimizer(output_format="WEBP").process(large_square_image)
+
+        result_img = Image.open(BytesIO(result))
+        assert result_img.width == 1080
+        assert result_img.height == 1080
+
+    @pytest.mark.asyncio
+    async def test_webp_smaller_than_jpeg(self, photo_like_image):
+        from prosell.infrastructure.images.image_optimizer import ImageOptimizer
+
+        webp = await ImageOptimizer(output_format="WEBP").process(photo_like_image)
+        jpeg = await ImageOptimizer(output_format="JPEG").process(photo_like_image)
+        assert len(webp) < len(jpeg)
