@@ -91,9 +91,11 @@ from prosell.infrastructure.repositories.role_repository_impl import SqlAlchemyR
 from prosell.infrastructure.repositories.session_repository_impl import SqlAlchemySessionRepository
 from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
 from prosell.infrastructure.security.token_hasher import TokenHasher
-from prosell.infrastructure.services.email_service import (
-    MockEmailService,
-    SendGridEmailService,
+from prosell.infrastructure.services.email import (
+    EmailService,
+    EmailTemplateRenderer,
+    LoggingSender,
+    ResendSender,
 )
 from prosell.infrastructure.services.oauth_service_impl import OAuthServiceImpl
 from prosell.infrastructure.services.password_service import PasswordService
@@ -159,10 +161,29 @@ def get_totp_service() -> ITOTPService:
 
 
 def get_email_service() -> AbstractEmailService:
-    """Get email service instance (singleton)."""
-    if settings.use_mock_email:
-        return MockEmailService()
-    return SendGridEmailService()
+    """Build an :class:`EmailService` with the right transport for this environment.
+
+    Selection rule (fail-safe to mock):
+        - ``use_mock_email=True`` → :class:`LoggingSender` (dev/staging default)
+        - ``use_mock_email=False`` AND ``resend_api_key`` set → :class:`ResendSender` (prod)
+        - ``use_mock_email=False`` AND no ``resend_api_key`` → falls back to
+          :class:`LoggingSender` to avoid a runtime crash on first send.
+
+    Note: ``use_mock_email`` defaults to True in settings, so production
+    deploys must explicitly set ``USE_MOCK_EMAIL=False`` AND provide a
+    ``RESEND_API_KEY`` to actually deliver mail.
+    """
+    renderer = EmailTemplateRenderer()
+    if settings.use_mock_email or not settings.resend_api_key:
+        return EmailService(renderer, LoggingSender())
+    return EmailService(
+        renderer,
+        ResendSender(
+            api_key=settings.resend_api_key,
+            from_email=settings.resend_from_email,
+            from_name=settings.resend_from_name,
+        ),
+    )
 
 
 def get_token_hasher() -> ITokenHasher:
