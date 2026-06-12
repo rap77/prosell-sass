@@ -4,6 +4,7 @@ from uuid import uuid4
 import pytest
 
 from prosell.domain.entities.appointment import AppointmentStatus
+from prosell.domain.ports.i_email_service import AppointmentReminderDetails
 from prosell.infrastructure.services.email.renderer import EmailTemplateRenderer
 
 
@@ -81,3 +82,18 @@ def test_render_appointment_status_update_cancelled(renderer: EmailTemplateRende
         notes=None,
     )
     assert "Cancelled" in msg.subject or "cancelled" in msg.html_body.lower()
+
+
+def test_render_appointment_reminder_buyer(renderer: EmailTemplateRenderer) -> None:
+    details: AppointmentReminderDetails = {
+        "buyer_name": "Bob",
+        "branch_name": "Centro",
+        "vehicle_info": "Toyota Corolla 2020",
+        "scheduled_at": datetime(2026, 6, 15, 10, 0),
+        "notes": None,
+    }
+    msg = renderer.render_appointment_reminder(
+        email="b@x.com", person_type="buyer", appointment_details=details
+    )
+    assert "Toyota Corolla 2020" in msg.html_body
+    assert "10 minutos" in msg.html_body

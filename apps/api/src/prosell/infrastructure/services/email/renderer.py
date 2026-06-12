@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     from prosell.domain.entities.appointment import AppointmentStatus
+    from prosell.domain.ports.i_email_service import AppointmentReminderDetails
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 
@@ -134,5 +135,35 @@ class EmailTemplateRenderer:
             scheduled_str=scheduled_at.strftime("%A, %d %B %Y at %I:%M %p"),
             status_text=status_text,
             status_message=status_message,
+            notes=notes,
+        )
+
+    def render_appointment_reminder(
+        self,
+        email: str,
+        person_type: str,
+        appointment_details: AppointmentReminderDetails,
+    ) -> EmailMessage:
+        from datetime import datetime as _dt
+
+        buyer_name = appointment_details.get("buyer_name", "Cliente")
+        branch_name = appointment_details.get("branch_name", "Asesor")
+        vehicle_info = appointment_details.get("vehicle_info", "Vehículo")
+        scheduled_at = appointment_details.get("scheduled_at", _dt.now())
+        notes = appointment_details.get("notes")
+        if person_type == "branch":
+            greeting_name = branch_name
+            instructions = "Por favor asegúrate de estar disponible para esta cita."
+        else:
+            greeting_name = buyer_name
+            instructions = "Por favor llega 10 minutos antes de tu cita."
+        return self._render(
+            "appointment_reminder.html",
+            "Recordatorio de Cita - ProSell",
+            email,
+            greeting_name=greeting_name,
+            vehicle_info=vehicle_info,
+            scheduled_str=scheduled_at.strftime("%A, %d %B %Y at %I:%M %p"),
+            instructions=instructions,
             notes=notes,
         )
