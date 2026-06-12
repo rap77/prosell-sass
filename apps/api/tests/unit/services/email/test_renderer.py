@@ -17,6 +17,18 @@ def test_render_verification_contains_token_link(renderer: EmailTemplateRenderer
     assert "token=tok123" in msg.html_body
 
 
+def test_render_password_reset_contains_reset_link(renderer: EmailTemplateRenderer) -> None:
+    msg = renderer.render_password_reset(email="user@example.com", token="r1")
+    assert "Reset" in msg.subject
+    assert "reset-password?token=r1" in msg.html_body
+
+
+def test_render_2fa_enabled(renderer: EmailTemplateRenderer) -> None:
+    msg = renderer.render_2fa_enabled(email="user@example.com")
+    assert msg.to == "user@example.com"
+    assert "2FA" in msg.html_body or "two-factor" in msg.html_body.lower()
+
+
 @pytest.mark.skip(reason="render_team_invitation lands in Task 5")
 def test_render_autoescapes_html_in_values(renderer: EmailTemplateRenderer) -> None:
     # Autoescaping is the whole point — a hostile value must be neutralized.

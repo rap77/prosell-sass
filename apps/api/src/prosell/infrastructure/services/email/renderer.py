@@ -38,3 +38,19 @@ class EmailTemplateRenderer:
             email,
             verification_url=verification_url,
         )
+
+    def render_password_reset(self, email: str, token: str) -> EmailMessage:
+        reset_url = f"{self._base_url()}/auth/reset-password?token={token}"
+        return self._render(
+            "password_reset.html",
+            "Reset your ProSell password",
+            email,
+            reset_url=reset_url,
+        )
+
+    def render_2fa_enabled(self, email: str) -> EmailMessage:
+        return self._render(
+            "2fa_enabled.html",
+            "Two-factor authentication enabled",
+            email,
+        )
