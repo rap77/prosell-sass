@@ -1,7 +1,9 @@
+from datetime import datetime
 from uuid import uuid4
 
 import pytest
 
+from prosell.domain.entities.appointment import AppointmentStatus
 from prosell.infrastructure.services.email.renderer import EmailTemplateRenderer
 
 
@@ -52,3 +54,30 @@ def test_render_team_invitation_has_accept_link(renderer: EmailTemplateRenderer)
     )
     assert "Sales" in msg.html_body
     assert "invite/accept?token=inv9" in msg.html_body
+
+
+def test_render_appointment_confirmation(renderer: EmailTemplateRenderer) -> None:
+    msg = renderer.render_appointment_confirmation(
+        buyer_email="b@x.com",
+        buyer_name="Bob",
+        branch_name="Centro",
+        vehicle_info="Toyota Corolla 2020",
+        scheduled_at=datetime(2026, 6, 15, 10, 0),
+        notes=None,
+    )
+    assert msg.to == "b@x.com"
+    assert "Bob" in msg.html_body
+    assert "Toyota Corolla 2020" in msg.html_body
+
+
+def test_render_appointment_status_update_cancelled(renderer: EmailTemplateRenderer) -> None:
+    msg = renderer.render_appointment_status_update(
+        buyer_email="b@x.com",
+        buyer_name="Bob",
+        branch_name="Centro",
+        vehicle_info="Toyota Corolla 2020",
+        scheduled_at=datetime(2026, 6, 15, 10, 0),
+        new_status=AppointmentStatus.CANCELLED,
+        notes=None,
+    )
+    assert "Cancelled" in msg.subject or "cancelled" in msg.html_body.lower()

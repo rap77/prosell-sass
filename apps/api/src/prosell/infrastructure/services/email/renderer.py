@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from prosell.core.config import settings
 from prosell.infrastructure.services.email.message import EmailMessage
+
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from prosell.domain.entities.appointment import AppointmentStatus
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 
@@ -72,4 +78,61 @@ class EmailTemplateRenderer:
             team_name=team_name,
             role=role,
             invitation_url=invitation_url,
+        )
+
+    def render_appointment_confirmation(
+        self,
+        buyer_email: str,
+        buyer_name: str,
+        branch_name: str,
+        vehicle_info: str,
+        scheduled_at: datetime,
+        notes: str | None = None,
+    ) -> EmailMessage:
+        return self._render(
+            "appointment_confirmation.html",
+            "Confirmación de Cita - ProSell",
+            buyer_email,
+            buyer_name=buyer_name,
+            branch_name=branch_name,
+            vehicle_info=vehicle_info,
+            scheduled_str=scheduled_at.strftime("%A, %d %B %Y at %I:%M %p"),
+            notes=notes,
+        )
+
+    def render_appointment_status_update(
+        self,
+        buyer_email: str,
+        buyer_name: str,
+        branch_name: str,
+        vehicle_info: str,
+        scheduled_at: datetime,
+        new_status: AppointmentStatus,
+        notes: str | None = None,
+    ) -> EmailMessage:
+        from prosell.domain.entities.appointment import AppointmentStatus as _Status
+
+        if new_status == _Status.COMPLETED:
+            subject = "[ProSell] Appointment Confirmed"
+            status_text = "Confirmed"
+            status_message = "Your appointment has been confirmed"
+        elif new_status == _Status.CANCELLED:
+            subject = "[ProSell] Appointment Cancelled"
+            status_text = "Cancelled"
+            status_message = "Your appointment has been cancelled"
+        else:
+            subject = "[ProSell] Appointment Status Update"
+            status_text = new_status.value.title()
+            status_message = f"Your appointment status has been updated to: {new_status.value}"
+        return self._render(
+            "appointment_status_update.html",
+            subject,
+            buyer_email,
+            buyer_name=buyer_name,
+            branch_name=branch_name,
+            vehicle_info=vehicle_info,
+            scheduled_str=scheduled_at.strftime("%A, %d %B %Y at %I:%M %p"),
+            status_text=status_text,
+            status_message=status_message,
+            notes=notes,
         )
