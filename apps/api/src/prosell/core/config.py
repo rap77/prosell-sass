@@ -337,6 +337,18 @@ class Settings(BaseSettings):
         default="ProSell SaaS",
         description="From name for emails",
     )
+    resend_api_key: str | None = Field(
+        default=None,
+        description="Resend API key",
+    )
+    resend_from_email: str = Field(
+        default="noreply@prosell.saas",
+        description="From email address for Resend",
+    )
+    resend_from_name: str = Field(
+        default="ProSell SaaS",
+        description="From name for Resend",
+    )
     email_templates_dir: str = Field(
         default="./email-templates",
         description="Directory for email templates",
