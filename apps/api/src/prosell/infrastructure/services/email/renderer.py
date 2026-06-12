@@ -54,3 +54,22 @@ class EmailTemplateRenderer:
             "Two-factor authentication enabled",
             email,
         )
+
+    def render_team_invitation(
+        self,
+        email: str,
+        team_name: str,
+        inviter_name: str,
+        invitation_token: str,
+        role: str,
+    ) -> EmailMessage:
+        invitation_url = f"{self._base_url()}/invite/accept?token={invitation_token}"
+        return self._render(
+            "team_invitation.html",
+            f"[ProSell] You've been invited to join {team_name}",
+            email,
+            inviter_name=inviter_name,
+            team_name=team_name,
+            role=role,
+            invitation_url=invitation_url,
+        )

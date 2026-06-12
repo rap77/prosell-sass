@@ -29,10 +29,9 @@ def test_render_2fa_enabled(renderer: EmailTemplateRenderer) -> None:
     assert "2FA" in msg.html_body or "two-factor" in msg.html_body.lower()
 
 
-@pytest.mark.skip(reason="render_team_invitation lands in Task 5")
 def test_render_autoescapes_html_in_values(renderer: EmailTemplateRenderer) -> None:
     # Autoescaping is the whole point — a hostile value must be neutralized.
-    msg = renderer.render_team_invitation(  # pyright: ignore[reportAttributeAccessIssue]
+    msg = renderer.render_team_invitation(
         email="user@example.com",
         team_name="<script>alert(1)</script>",
         inviter_name="Eve",
@@ -41,3 +40,15 @@ def test_render_autoescapes_html_in_values(renderer: EmailTemplateRenderer) -> N
     )
     assert "<script>alert(1)</script>" not in msg.html_body
     assert "&lt;script&gt;" in msg.html_body
+
+
+def test_render_team_invitation_has_accept_link(renderer: EmailTemplateRenderer) -> None:
+    msg = renderer.render_team_invitation(
+        email="user@example.com",
+        team_name="Sales",
+        inviter_name="Ana",
+        invitation_token="inv9",
+        role="member",
+    )
+    assert "Sales" in msg.html_body
+    assert "invite/accept?token=inv9" in msg.html_body
