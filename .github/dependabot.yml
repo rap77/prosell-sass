@@ -1,0 +1,10 @@
+version: 2
+updates:
+  # Vigila las versiones de las GitHub Actions usadas en los workflows.
+  # Cuando appleboy/ssh-action u otra publique release nueva, Dependabot abre
+  # un PR actualizando el pin al nuevo SHA. Mantiene el pin-by-SHA sin que el
+  # pin quede congelado y desactualizado.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

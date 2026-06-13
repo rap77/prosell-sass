@@ -11,20 +11,66 @@ This module provides:
 import asyncio
 import shutil
 import tempfile
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable, Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 import pytest_asyncio
 from sqlalchemy import MetaData, create_engine
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from prosell.core.config import get_settings
+from prosell.core.config import Settings, get_settings
+
+# DDL statements interpolate the test database name as an identifier, which
+# cannot be passed as a bound parameter. Quote it through the dialect preparer
+# so a hostile or malformed name can never break out of the identifier.
+_PG_IDENTIFIER_PREPARER = postgresql.dialect().identifier_preparer
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_jwt_keys() -> None:
+    """Generate an ephemeral RSA JWT keypair when none is present.
+
+    The signing keys were removed from version control (they must never live in
+    the repo), so a fresh checkout or a CI runner starts with no keys. Tests
+    that sign or verify JWTs read them lazily via ``settings.jwt_private_key``
+    and fail with ``FileNotFoundError`` if they are missing. Generating a
+    throwaway keypair here keeps the suite hermetic without committing secrets.
+
+    No-op when both keys already exist, so a developer's real keys are left
+    untouched. The generated keys land in the gitignored ``apps/api/keys/`` dir.
+    """
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    settings = get_settings()
+    private_path = Path(settings.jwt_private_key_path)
+    public_path = Path(settings.jwt_public_key_path)
+    if private_path.exists() and public_path.exists():
+        return
+
+    private_path.parent.mkdir(parents=True, exist_ok=True)
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    private_path.write_bytes(
+        key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+    )
+    public_path.write_bytes(
+        key.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+    )
 
 
 @pytest.fixture(scope="session")
-def event_loop():
+def event_loop() -> Iterator[asyncio.AbstractEventLoop]:
     """Create an instance of the default event loop for the test session."""
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
@@ -74,13 +120,14 @@ async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession
 
     from sqlalchemy import text as sa_text
 
-    # Create test database
+    # Create test database (quote the name so it is a safe SQL identifier)
     db_name = parsed.path[1:]
+    quoted_db = _PG_IDENTIFIER_PREPARER.quote(db_name)
     engine = create_engine(postgres_url, poolclass=NullPool)
     with engine.connect() as conn:
         conn.execution_options(isolation_level="AUTOCOMMIT")
-        conn.execute(sa_text(f"DROP DATABASE IF EXISTS {db_name}"))
-        conn.execute(sa_text(f"CREATE DATABASE {db_name}"))
+        conn.execute(sa_text(f"DROP DATABASE IF EXISTS {quoted_db}"))
+        conn.execute(sa_text(f"CREATE DATABASE {quoted_db}"))
 
     # Create async engine for test database
     async_engine = create_async_engine(test_database_url, poolclass=NullPool)
@@ -118,13 +165,13 @@ async def test_db_session(test_database_url: str) -> AsyncGenerator[AsyncSession
     # Drop test database
     with engine.connect() as conn:
         conn.execution_options(isolation_level="AUTOCOMMIT")
-        conn.execute(sa_text(f"DROP DATABASE IF EXISTS {db_name}"))
+        conn.execute(sa_text(f"DROP DATABASE IF EXISTS {quoted_db}"))
 
 
 @pytest.fixture(scope="function")
-def cleanup_temp_dirs():
+def cleanup_temp_dirs() -> Iterator[Callable[..., Path]]:
     """Create temporary directories and clean them up after tests."""
-    temp_dirs = []
+    temp_dirs: list[Path] = []
 
     def create_temp_dir(prefix: str = "test_") -> Path:
         temp_dir = Path(tempfile.mkdtemp(prefix=prefix))
@@ -140,7 +187,7 @@ def cleanup_temp_dirs():
 
 
 @pytest.fixture(scope="session")
-def test_settings():
+def test_settings() -> Iterator[Settings]:
     """Override settings for testing."""
     original_settings = get_settings()
 
@@ -164,23 +211,21 @@ async def seeded_test_db(test_db_session: AsyncSession) -> AsyncGenerator[AsyncS
 
 
 @pytest.fixture(scope="function")
-def mock_external_services():
+def mock_external_services() -> Iterator[dict[str, str]]:
     """Mock external services for testing."""
-    import pytest
-
     # Mock Redis
     with pytest.MonkeyPatch().context() as m:
         # Mock Redis operations
-        mock_redis = {}
+        mock_redis: dict[str, str] = {}
 
-        def mock_redis_get(key: str):
+        def mock_redis_get(key: str) -> str | None:
             return mock_redis.get(key)
 
-        def mock_redis_set(key: str, value: str, _ex: int | None = None):
+        def mock_redis_set(key: str, value: str, _ex: int | None = None) -> bool:
             mock_redis[key] = value
             return True
 
-        def mock_redis_delete(key: str):
+        def mock_redis_delete(key: str) -> int:
             mock_redis.pop(key, None)
             return 1
 
@@ -202,74 +247,82 @@ def mock_external_services():
         yield mock_redis
 
 
+class UserFactory:
+    """Factory for creating test user payloads with unique emails."""
+
+    def __init__(self) -> None:
+        self.counter = 0
+
+    def create_user(
+        self, email: str | None = None, password: str | None = None, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Create a test user with unique email."""
+        self.counter += 1
+        return {
+            "email": email or f"testuser{self.counter}@example.com",
+            "password": password or "TestPassword123!",
+            "first_name": kwargs.get("first_name", f"Test{self.counter}"),
+            "last_name": kwargs.get("last_name", "User"),
+            "role": kwargs.get("role", "admin"),
+            **kwargs,
+        }
+
+
 @pytest.fixture(scope="function")
-def test_user_factory():
+def test_user_factory() -> UserFactory:
     """Factory for creating test users."""
+    return UserFactory()
 
-    class TestUserFactory:
-        def __init__(self):
-            self.counter = 0
 
-        def create_user(self, email: str | None = None, password: str | None = None, **kwargs):
-            """Create a test user with unique email."""
-            self.counter += 1
-            return {
-                "email": email or f"testuser{self.counter}@example.com",
-                "password": password or "TestPassword123!",
-                "first_name": kwargs.get("first_name", f"Test{self.counter}"),
-                "last_name": kwargs.get("last_name", "User"),
-                "role": kwargs.get("role", "admin"),
-                **kwargs,
-            }
+class OrganizationFactory:
+    """Factory for creating test organization payloads with unique names."""
 
-    return TestUserFactory()
+    def __init__(self) -> None:
+        self.counter = 0
+
+    def create_organization(self, name: str | None = None, **kwargs: Any) -> dict[str, Any]:
+        """Create a test organization with unique name."""
+        self.counter += 1
+        return {
+            "name": name or f"Test Organization {self.counter}",
+            "description": kwargs.get("description", f"Test organization {self.counter}"),
+            "owner_email": kwargs.get("owner_email", f"owner{self.counter}@example.com"),
+            **kwargs,
+        }
 
 
 @pytest.fixture(scope="function")
-def test_organization_factory():
+def test_organization_factory() -> OrganizationFactory:
     """Factory for creating test organizations."""
-
-    class TestOrganizationFactory:
-        def __init__(self):
-            self.counter = 0
-
-        def create_organization(self, name: str | None = None, **kwargs):
-            """Create a test organization with unique name."""
-            self.counter += 1
-            return {
-                "name": name or f"Test Organization {self.counter}",
-                "description": kwargs.get("description", f"Test organization {self.counter}"),
-                "owner_email": kwargs.get("owner_email", f"owner{self.counter}@example.com"),
-                **kwargs,
-            }
-
-    return TestOrganizationFactory()
+    return OrganizationFactory()
 
 
-@pytest.fixture(scope="function")
-def test_rate_limiter():
-    """Mock rate limiter for testing."""
+class MockRateLimiter:
+    """In-memory rate limiter stub for tests."""
 
-    class MockRateLimiter:
-        def __init__(self):
-            self.calls = {}
-            self.exempt_ips = {"127.0.0.1", "::1"}
+    def __init__(self) -> None:
+        self.calls: dict[str, int] = {}
+        self.exempt_ips = {"127.0.0.1", "::1"}
 
-        def is_limited(self, identifier: str) -> bool:
-            """Check if request is rate limited."""
-            if identifier in self.exempt_ips:
-                return False
-
-            # Simple counter-based rate limiting
-            count = self.calls.get(identifier, 0)
-            if count >= 100:  # Allow 100 requests per minute in tests
-                return True
-
-            self.calls[identifier] = count + 1
+    def is_limited(self, identifier: str) -> bool:
+        """Check if request is rate limited."""
+        if identifier in self.exempt_ips:
             return False
 
-        def reset(self):
-            """Reset rate limiter state."""
-            self.calls.clear()
+        # Simple counter-based rate limiting
+        count = self.calls.get(identifier, 0)
+        if count >= 100:  # Allow 100 requests per minute in tests
+            return True
 
+        self.calls[identifier] = count + 1
+        return False
+
+    def reset(self) -> None:
+        """Reset rate limiter state."""
+        self.calls.clear()
+
+
+@pytest.fixture(scope="function")
+def test_rate_limiter() -> MockRateLimiter:
+    """Mock rate limiter for testing."""
     return MockRateLimiter()

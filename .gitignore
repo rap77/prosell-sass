@@ -73,13 +73,18 @@ mvp-e2e-validation/
 .classpath
 .settings/
 
-# Environment
+# Environment — ignore ALL real env files, keep only .example templates.
+# Patrón robusto: cualquier .env.* queda fuera salvo los *.example.
+# (antes se listaban por nombre y .env.staging se coló al repo)
 .env
-.env.local
-.env.*.local
-.env.development
-.env.test
-.env.production
+.env.*
+!.env*.example
+
+# Secrets / JWT signing keys — never commit real keys.
+# Regenerar con: ./scripts/generate-jwt-keys.sh
+apps/api/keys/*
+!apps/api/keys/README.md
+
 zai.sh
 
 # OS
