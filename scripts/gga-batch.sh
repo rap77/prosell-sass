@@ -180,7 +180,7 @@ for file_path in "${STAGED_FILES[@]}"; do
   fi
 
   current_batch+=("$file_path")
-  (( current_bytes += file_size ))
+  current_bytes=$(( current_bytes + file_size ))
 done
 
 flush_batch

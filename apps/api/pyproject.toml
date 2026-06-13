@@ -14,6 +14,7 @@ dependencies = [
     "passlib[bcrypt]>=1.7.4",
     "python-multipart>=0.0.18",
     "httpx>=0.28.0",
+    "jinja2>=3.1.0",
     "boto3>=1.35.0",
     "stripe>=11.0.0",
     "anthropic>=0.40.0",
@@ -23,7 +24,6 @@ dependencies = [
     "bcrypt>=4.2.0",
     "pyjwt>=2.9.0",
     "cryptography>=43.0.0",
-    "sendgrid>=6.11.0",
     # Rate limiting
     "slowapi>=0.1.9",
     "taskiq[redis]>=0.12.1",

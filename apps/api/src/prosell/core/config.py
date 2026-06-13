@@ -323,19 +323,19 @@ class Settings(BaseSettings):
     )
 
     # =============================================================================
-    # EMAIL (SendGrid)
+    # EMAIL (Resend)
     # =============================================================================
-    sendgrid_api_key: str | None = Field(
+    resend_api_key: str | None = Field(
         default=None,
-        description="SendGrid API key",
+        description="Resend API key",
     )
-    sendgrid_from_email: str = Field(
+    resend_from_email: str = Field(
         default="noreply@prosell.saas",
-        description="From email address for emails",
+        description="From email address for Resend",
     )
-    sendgrid_from_name: str = Field(
+    resend_from_name: str = Field(
         default="ProSell SaaS",
-        description="From name for emails",
+        description="From name for Resend",
     )
     email_templates_dir: str = Field(
         default="./email-templates",
