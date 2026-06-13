@@ -17,6 +17,19 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
 
+      # ============================================
+      # Secret scan — gitleaks-style lightweight check.
+      # Runs AFTER GGA (the AI can suggest adding secrets; this catches them
+      # before they ever leave the machine). Local hook (no network).
+      # For deeper scanning, install gitleaks separately.
+      # ============================================
+      - id: no-secrets
+        name: no-secrets (gitleaks-style)
+        entry: bash scripts/verify-no-secrets.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
   # ============================================
   # Python - Ruff (lint + format)
   # ============================================
