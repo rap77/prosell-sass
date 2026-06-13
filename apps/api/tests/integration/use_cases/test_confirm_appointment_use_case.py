@@ -1,8 +1,8 @@
-"""Integration tests for ConfirmAppointmentUseCase with mocked SendGrid.
+"""Integration tests for ConfirmAppointmentUseCase with mocked email service.
 
 Tests the complete flow of appointment confirmation including:
 - Status update to COMPLETED
-- Email notification to buyer (mocked SendGrid)
+- Email notification to buyer (mocked via the AbstractEmailService port)
 """
 
 from datetime import UTC, datetime
@@ -19,7 +19,7 @@ from prosell.domain.exceptions.appointment_exceptions import AppointmentNotFound
 
 
 @pytest.fixture
-def mock_appointment_repository():
+def mock_appointment_repository() -> AsyncMock:
     """Mock appointment repository."""
     repo = AsyncMock()
     repo.get_by_id = AsyncMock()
@@ -28,7 +28,7 @@ def mock_appointment_repository():
 
 
 @pytest.fixture
-def mock_lead_repository():
+def mock_lead_repository() -> AsyncMock:
     """Mock lead repository."""
     repo = AsyncMock()
     repo.get_by_id = AsyncMock()
@@ -36,7 +36,7 @@ def mock_lead_repository():
 
 
 @pytest.fixture
-def mock_email_service():
+def mock_email_service() -> AsyncMock:
     """Mock email service."""
     service = AsyncMock()
     service.send_appointment_status_update = AsyncMock()
@@ -44,7 +44,7 @@ def mock_email_service():
 
 
 @pytest.fixture
-def sample_appointment():
+def sample_appointment() -> Appointment:
     """Sample scheduled appointment."""
     return Appointment.create(
         lead_id=uuid4(),
@@ -57,7 +57,7 @@ def sample_appointment():
 
 
 @pytest.fixture
-def sample_lead():
+def sample_lead() -> Lead:
     """Sample lead with email."""
     return Lead.create(
         buyer_name="John Doe",
@@ -68,10 +68,8 @@ def sample_lead():
 
 
 @pytest.fixture
-def mock_user_repository():
+def mock_user_repository() -> AsyncMock:
     """Mock user repository."""
-    from unittest.mock import AsyncMock
-
     from prosell.domain.entities.user import User, UserStatus
 
     repo = AsyncMock()
@@ -89,10 +87,8 @@ def mock_user_repository():
 
 
 @pytest.fixture
-def mock_product_repository():
+def mock_product_repository() -> AsyncMock:
     """Mock product repository."""
-    from unittest.mock import AsyncMock
-
     repo = AsyncMock()
     product = AsyncMock()
     product.title = "2022 Toyota Corolla"
@@ -102,12 +98,12 @@ def mock_product_repository():
 
 @pytest.fixture
 def confirm_appointment_use_case(
-    mock_appointment_repository,
-    mock_lead_repository,
-    mock_email_service,
-    mock_user_repository,
-    mock_product_repository,
-):
+    mock_appointment_repository: AsyncMock,
+    mock_lead_repository: AsyncMock,
+    mock_email_service: AsyncMock,
+    mock_user_repository: AsyncMock,
+    mock_product_repository: AsyncMock,
+) -> ConfirmAppointmentUseCase:
     """Create use case instance with mocked dependencies."""
     return ConfirmAppointmentUseCase(
         appointment_repository=mock_appointment_repository,
@@ -124,13 +120,13 @@ class TestConfirmAppointmentUseCase:
     @pytest.mark.asyncio
     async def test_confirm_appointment_success(
         self,
-        confirm_appointment_use_case,
-        mock_appointment_repository,
-        mock_lead_repository,
-        mock_email_service,
-        sample_appointment,
-        sample_lead,
-    ):
+        confirm_appointment_use_case: ConfirmAppointmentUseCase,
+        mock_appointment_repository: AsyncMock,
+        mock_lead_repository: AsyncMock,
+        mock_email_service: AsyncMock,
+        sample_appointment: Appointment,
+        sample_lead: Lead,
+    ) -> None:
         """Test successful appointment confirmation."""
         tenant_id = uuid4()
         appointment_id = sample_appointment.id
@@ -185,9 +181,10 @@ class TestConfirmAppointmentUseCase:
     @pytest.mark.asyncio
     async def test_confirm_appointment_not_found(
         self,
-        confirm_appointment_use_case,
-        mock_appointment_repository,
-    ):
+        confirm_appointment_use_case: ConfirmAppointmentUseCase,
+        mock_appointment_repository: AsyncMock,
+        mock_email_service: AsyncMock,
+    ) -> None:
         """Test confirmation when appointment doesn't exist."""
         tenant_id = uuid4()
         appointment_id = uuid4()
@@ -202,20 +199,18 @@ class TestConfirmAppointmentUseCase:
                 tenant_id=tenant_id,
             )
 
-        # Verify email was NOT sent
-        from unittest.mock import AsyncMock
-
-        mock_email_service = AsyncMock()
+        # Verify the injected email service was NOT called
         mock_email_service.send_appointment_status_update.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_confirm_appointment_lead_not_found(
         self,
-        confirm_appointment_use_case,
-        mock_appointment_repository,
-        mock_lead_repository,
-        sample_appointment,
-    ):
+        confirm_appointment_use_case: ConfirmAppointmentUseCase,
+        mock_appointment_repository: AsyncMock,
+        mock_lead_repository: AsyncMock,
+        mock_email_service: AsyncMock,
+        sample_appointment: Appointment,
+    ) -> None:
         """Test confirmation when lead doesn't exist (edge case)."""
         tenant_id = uuid4()
         appointment_id = sample_appointment.id
@@ -252,18 +247,17 @@ class TestConfirmAppointmentUseCase:
 
         # Verify email was NOT sent (no lead to email)
         mock_lead_repository.get_by_id.assert_awaited_once()
-        # Email service should NOT be called when lead is None
-        # This will be verified by checking if the email service was called
-        # In the implementation, we should skip email if lead is None
+        mock_email_service.send_appointment_status_update.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_confirm_appointment_lead_without_email(
         self,
-        confirm_appointment_use_case,
-        mock_appointment_repository,
-        mock_lead_repository,
-        sample_appointment,
-    ):
+        confirm_appointment_use_case: ConfirmAppointmentUseCase,
+        mock_appointment_repository: AsyncMock,
+        mock_lead_repository: AsyncMock,
+        mock_email_service: AsyncMock,
+        sample_appointment: Appointment,
+    ) -> None:
         """Test confirmation when lead has no email (edge case)."""
         tenant_id = uuid4()
         appointment_id = sample_appointment.id
@@ -305,4 +299,4 @@ class TestConfirmAppointmentUseCase:
         assert response.status == AppointmentStatus.COMPLETED
 
         # Email service should NOT be called when lead has no email
-        # (implementation should skip email if buyer_email is None)
+        mock_email_service.send_appointment_status_update.assert_not_awaited()

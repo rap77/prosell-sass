@@ -1,0 +1,28 @@
+<html>
+  <body>
+    <h2>Recordatorio de Cita</h2>
+    <p>Hola <strong>{{ greeting_name }}</strong>,</p>
+    <p>Este es un recordatorio de tu próxima cita:</p>
+    <table
+      cellpadding="5"
+      style="border-collapse: collapse; border: 1px solid #ddd"
+    >
+      <tr style="background-color: #f2f2f2">
+        <td style="border: 1px solid #ddd"><strong>Fecha y Hora: </strong></td>
+        <td style="border: 1px solid #ddd">{{ scheduled_str }}</td>
+      </tr>
+      <tr>
+        <td style="border: 1px solid #ddd"><strong>Vehículo: </strong></td>
+        <td style="border: 1px solid #ddd">{{ vehicle_info }}</td>
+      </tr>
+      {% if notes %}
+      <tr style="background-color: #f2f2f2">
+        <td style="border: 1px solid #ddd"><strong>Notas:</strong></td>
+        <td style="border: 1px solid #ddd">{{ notes }}</td>
+      </tr>
+      {% endif %}
+    </table>
+    <p>{{ instructions }}</p>
+    <p>Si necesitas reprogramar, contáctanos lo antes posible.</p>
+  </body>
+</html>

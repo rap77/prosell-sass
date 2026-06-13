@@ -1,10 +1,9 @@
-"""Integration tests for CreateAppointmentUseCase with mocked SendGrid.
+"""Integration tests for CreateAppointmentUseCase with mocked email service.
 
 A4.36: Test the complete flow of appointment creation including:
 - Time validation via domain entity
 - Conflict detection via repository
 - Lead status update to "appointment_set"
-- Email notification (mocked SendGrid)
 """
 
 from datetime import UTC, datetime
@@ -27,7 +26,7 @@ from prosell.domain.value_objects.lead_source import LeadSource
 
 
 @pytest.fixture
-def mock_appointment_repository():
+def mock_appointment_repository() -> AsyncMock:
     """Mock appointment repository."""
     repo = AsyncMock()
     repo.check_conflicts = AsyncMock(return_value=[])
@@ -36,7 +35,7 @@ def mock_appointment_repository():
 
 
 @pytest.fixture
-def mock_lead_repository():
+def mock_lead_repository() -> AsyncMock:
     """Mock lead repository."""
     repo = AsyncMock()
     repo.get_by_id = AsyncMock()
@@ -45,10 +44,8 @@ def mock_lead_repository():
 
 
 @pytest.fixture
-def sample_lead():
+def sample_lead() -> Lead:
     """Sample lead for testing."""
-    from uuid import uuid4
-
     lead = Lead.create(
         buyer_name="John Doe",
         buyer_email="john@example.com",
@@ -62,7 +59,10 @@ def sample_lead():
 
 
 @pytest.fixture
-def create_appointment_use_case(mock_appointment_repository, mock_lead_repository):
+def create_appointment_use_case(
+    mock_appointment_repository: AsyncMock,
+    mock_lead_repository: AsyncMock,
+) -> CreateAppointmentUseCase:
     """Create use case instance with mocked dependencies."""
     conflict_detector = AppointmentConflictDetector()
     return CreateAppointmentUseCase(
@@ -78,11 +78,11 @@ class TestCreateAppointmentUseCase:
     @pytest.mark.asyncio
     async def test_create_appointment_success(
         self,
-        create_appointment_use_case,
-        mock_appointment_repository,
-        mock_lead_repository,
-        sample_lead,
-    ):
+        create_appointment_use_case: CreateAppointmentUseCase,
+        mock_appointment_repository: AsyncMock,
+        mock_lead_repository: AsyncMock,
+        sample_lead: Lead,
+    ) -> None:
         """Test successful appointment creation."""
         tenant_id = uuid4()
         lead_id = uuid4()
@@ -134,11 +134,11 @@ class TestCreateAppointmentUseCase:
     @pytest.mark.asyncio
     async def test_create_appointment_conflict_detection(
         self,
-        create_appointment_use_case,
-        mock_appointment_repository,
-        mock_lead_repository,
-        sample_lead,
-    ):
+        create_appointment_use_case: CreateAppointmentUseCase,
+        mock_appointment_repository: AsyncMock,
+        mock_lead_repository: AsyncMock,
+        sample_lead: Lead,
+    ) -> None:
         """Test conflict detection when branch has existing appointment."""
         tenant_id = uuid4()
         lead_id = uuid4()
@@ -185,11 +185,11 @@ class TestCreateAppointmentUseCase:
     @pytest.mark.asyncio
     async def test_create_appointment_time_validation_weekend(
         self,
-        create_appointment_use_case,
-        mock_appointment_repository,
-        mock_lead_repository,
-        sample_lead,
-    ):
+        create_appointment_use_case: CreateAppointmentUseCase,
+        mock_appointment_repository: AsyncMock,
+        mock_lead_repository: AsyncMock,
+        sample_lead: Lead,
+    ) -> None:
         """Test time validation for weekend."""
         tenant_id = uuid4()
         lead_id = uuid4()
@@ -223,11 +223,11 @@ class TestCreateAppointmentUseCase:
     @pytest.mark.asyncio
     async def test_create_appointment_time_validation_before_business_hours(
         self,
-        create_appointment_use_case,
-        mock_appointment_repository,
-        mock_lead_repository,
-        sample_lead,
-    ):
+        create_appointment_use_case: CreateAppointmentUseCase,
+        mock_appointment_repository: AsyncMock,
+        mock_lead_repository: AsyncMock,
+        sample_lead: Lead,
+    ) -> None:
         """Test time validation before business hours (8am)."""
         tenant_id = uuid4()
         lead_id = uuid4()
@@ -256,11 +256,11 @@ class TestCreateAppointmentUseCase:
     @pytest.mark.asyncio
     async def test_create_appointment_time_validation_after_business_hours(
         self,
-        create_appointment_use_case,
-        mock_appointment_repository,
-        mock_lead_repository,
-        sample_lead,
-    ):
+        create_appointment_use_case: CreateAppointmentUseCase,
+        mock_appointment_repository: AsyncMock,
+        mock_lead_repository: AsyncMock,
+        sample_lead: Lead,
+    ) -> None:
         """Test time validation after business hours (7pm)."""
         tenant_id = uuid4()
         lead_id = uuid4()
@@ -288,8 +288,11 @@ class TestCreateAppointmentUseCase:
 
     @pytest.mark.asyncio
     async def test_create_appointment_lead_not_found(
-        self, create_appointment_use_case, mock_appointment_repository, mock_lead_repository
-    ):
+        self,
+        create_appointment_use_case: CreateAppointmentUseCase,
+        mock_appointment_repository: AsyncMock,
+        mock_lead_repository: AsyncMock,
+    ) -> None:
         """Test appointment creation when lead doesn't exist."""
         tenant_id = uuid4()
         lead_id = uuid4()
@@ -326,8 +329,11 @@ class TestCreateAppointmentUseCase:
 
     @pytest.mark.asyncio
     async def test_create_appointment_lead_already_appointment_set(
-        self, create_appointment_use_case, mock_appointment_repository, mock_lead_repository
-    ):
+        self,
+        create_appointment_use_case: CreateAppointmentUseCase,
+        mock_appointment_repository: AsyncMock,
+        mock_lead_repository: AsyncMock,
+    ) -> None:
         """Test that lead status is not updated if already appointment_set."""
         tenant_id = uuid4()
         lead_id = uuid4()
@@ -371,11 +377,11 @@ class TestCreateAppointmentUseCase:
     @pytest.mark.asyncio
     async def test_create_appointment_with_notes(
         self,
-        create_appointment_use_case,
-        mock_appointment_repository,
-        mock_lead_repository,
-        sample_lead,
-    ):
+        create_appointment_use_case: CreateAppointmentUseCase,
+        mock_appointment_repository: AsyncMock,
+        mock_lead_repository: AsyncMock,
+        sample_lead: Lead,
+    ) -> None:
         """Test appointment creation with notes."""
         tenant_id = uuid4()
         lead_id = uuid4()
@@ -414,11 +420,11 @@ class TestCreateAppointmentUseCase:
     @pytest.mark.asyncio
     async def test_create_appointment_conflict_check_params(
         self,
-        create_appointment_use_case,
-        mock_appointment_repository,
-        mock_lead_repository,
-        sample_lead,
-    ):
+        create_appointment_use_case: CreateAppointmentUseCase,
+        mock_appointment_repository: AsyncMock,
+        mock_lead_repository: AsyncMock,
+        sample_lead: Lead,
+    ) -> None:
         """Test that conflict check is called with correct parameters."""
         tenant_id = uuid4()
         lead_id = uuid4()
