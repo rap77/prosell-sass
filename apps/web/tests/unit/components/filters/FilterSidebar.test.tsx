@@ -185,6 +185,16 @@ describe("FilterSidebar", () => {
     expect(aside).toHaveClass("border-r");
   });
 
+  it("exposes the filters as a labeled complementary landmark", () => {
+    render(<FilterSidebar />);
+
+    // A11y: distinguishable accessible name so it isn't confused with the
+    // main navigation sidebar when both render on the catalog page.
+    expect(
+      screen.getByRole("complementary", { name: /vehicle filters/i }),
+    ).toBeInTheDocument();
+  });
+
   it("hides filter content when collapsed", async () => {
     const user = userEvent.setup();
     const { container } = render(<FilterSidebar />);

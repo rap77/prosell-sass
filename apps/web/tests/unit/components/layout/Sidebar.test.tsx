@@ -111,4 +111,17 @@ describe("Sidebar", () => {
 
     expect(screen.getByText("ProSell")).toBeInTheDocument();
   });
+
+  it("exposes the sidebar as a labeled complementary landmark", () => {
+    render(<Sidebar groups={["inventario"]} />);
+
+    // A11y: when this sidebar coexists with FilterSidebar, an unlabeled
+    // <aside> announces only "complementary" — indistinguishable. The
+    // accessible name lets screen-reader users tell the landmarks apart.
+    // Named "Sidebar" (not "Main navigation") to avoid colliding with the
+    // inner <nav aria-label="Main navigation"> landmark it contains.
+    expect(
+      screen.getByRole("complementary", { name: /^sidebar$/i }),
+    ).toBeInTheDocument();
+  });
 });

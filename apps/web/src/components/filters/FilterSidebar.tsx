@@ -34,6 +34,7 @@ export function FilterSidebar() {
 
   return (
     <aside
+      aria-label="Vehicle filters"
       className={`border-r bg-background transition-all duration-300 ${
         isCollapsed ? "w-16" : "w-64"
       }`}

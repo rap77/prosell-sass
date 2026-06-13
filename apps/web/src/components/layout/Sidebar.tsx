@@ -27,6 +27,15 @@ import {
  */
 export type NavGroup = "general" | "inventario" | "ventas" | "configuración";
 
+// Render order for nav groups. A typed list lets us iterate without casting
+// the keys back to NavGroup (Object.entries widens them to string).
+const NAV_GROUP_ORDER: NavGroup[] = [
+  "general",
+  "inventario",
+  "ventas",
+  "configuración",
+];
+
 interface NavItem {
   label: string;
   href: string;
@@ -115,6 +124,7 @@ export function Sidebar({ groups }: SidebarProps) {
 
   return (
     <aside
+      aria-label="Sidebar"
       className={cn(
         "fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out",
         sidebarCollapsed ? "w-16" : "w-64",
@@ -220,15 +230,12 @@ Sidebar.Nav = function SidebarNav({
   collapsed: boolean;
 }) {
   // Group items by category
-  const groupedItems = items.reduce(
+  const groupedItems = items.reduce<Record<NavGroup, NavItem[]>>(
     (acc, item) => {
-      if (!acc[item.group]) {
-        acc[item.group] = [];
-      }
       acc[item.group].push(item);
       return acc;
     },
-    {} as Record<NavGroup, NavItem[]>,
+    { general: [], inventario: [], ventas: [], configuración: [] },
   );
 
   const groupLabels: Record<NavGroup, string> = {
@@ -244,82 +251,89 @@ Sidebar.Nav = function SidebarNav({
       style={{ padding: "16px 8px" }}
       aria-label="Main navigation"
     >
-      {Object.entries(groupedItems).map(([group, groupItems], groupIdx) => (
-        <div key={group}>
-          {/* Group divider between sections (not before first) */}
-          {groupIdx > 0 && (
-            <div
-              className="my-3"
-              style={{
-                height: 1,
-                background: "var(--ps-border-subtle)",
-                margin: "12px 8px",
-              }}
-            />
-          )}
+      {NAV_GROUP_ORDER.filter((group) => groupedItems[group].length > 0).map(
+        (group, groupIdx) => (
+          <div key={group}>
+            {/* Group divider between sections (not before first) */}
+            {groupIdx > 0 && (
+              <div
+                className="my-3"
+                style={{
+                  height: 1,
+                  background: "var(--ps-border-subtle)",
+                  margin: "12px 8px",
+                }}
+              />
+            )}
 
-          {/* Group label (only when expanded and group has a label) */}
-          {!collapsed && groupLabels[group as NavGroup] && (
-            <span
-              className="block mb-1 px-4 text-[10px] font-bold uppercase tracking-[0.14em]"
-              style={{ color: "var(--ps-text-disabled)" }}
-            >
-              {groupLabels[group as NavGroup]}
-            </span>
-          )}
+            {/* Group label (only when expanded and group has a label) */}
+            {!collapsed && groupLabels[group] && (
+              <span
+                className="block mb-1 px-4 text-[10px] font-bold uppercase tracking-[0.14em]"
+                style={{ color: "var(--ps-text-disabled)" }}
+              >
+                {groupLabels[group]}
+              </span>
+            )}
 
-          <ul style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {groupItems.map((item) => {
-              const isActive =
-                pathname === item.href || pathname.startsWith(`${item.href}/`);
-              const Icon = item.icon;
+            <ul style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {groupedItems[group].map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  pathname.startsWith(`${item.href}/`);
+                const Icon = item.icon;
 
-              return (
-                <li key={item.href}>
-                  <a
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-3 text-sm font-medium transition-all duration-200",
-                      collapsed ? "justify-center px-2 py-2" : "px-4 py-[10px]",
-                    )}
-                    style={{
-                      borderRadius: isActive ? "8px 0 0 8px" : 8,
-                      background: isActive
-                        ? "var(--ps-nav-active-bg)"
-                        : "transparent",
-                      color: "var(--ps-text-primary)",
-                      borderRight: isActive
-                        ? "2px solid var(--ps-cyan)"
-                        : "2px solid transparent",
-                      textDecoration: "none",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isActive)
-                        e.currentTarget.style.background =
-                          "var(--ps-hover-bg-xs)";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive)
-                        e.currentTarget.style.background = "transparent";
-                    }}
-                  >
-                    <Icon
-                      className="h-[18px] w-[18px] flex-shrink-0"
+                return (
+                  <li key={item.href}>
+                    <a
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 text-sm font-medium transition-all duration-200",
+                        collapsed
+                          ? "justify-center px-2 py-2"
+                          : "px-4 py-[10px]",
+                      )}
                       style={{
-                        strokeWidth: 2,
-                        color: isActive
-                          ? "var(--ps-cyan)"
-                          : "var(--ps-text-secondary)",
+                        borderRadius: isActive ? "8px 0 0 8px" : 8,
+                        background: isActive
+                          ? "var(--ps-nav-active-bg)"
+                          : "transparent",
+                        color: "var(--ps-text-primary)",
+                        borderRight: isActive
+                          ? "2px solid var(--ps-cyan)"
+                          : "2px solid transparent",
+                        textDecoration: "none",
                       }}
-                    />
-                    {!collapsed && <span className="flex-1">{item.label}</span>}
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
+                      onMouseEnter={(e) => {
+                        if (!isActive)
+                          e.currentTarget.style.background =
+                            "var(--ps-hover-bg-xs)";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive)
+                          e.currentTarget.style.background = "transparent";
+                      }}
+                    >
+                      <Icon
+                        className="h-[18px] w-[18px] flex-shrink-0"
+                        style={{
+                          strokeWidth: 2,
+                          color: isActive
+                            ? "var(--ps-cyan)"
+                            : "var(--ps-text-secondary)",
+                        }}
+                      />
+                      {!collapsed && (
+                        <span className="flex-1">{item.label}</span>
+                      )}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ),
+      )}
     </nav>
   );
 };
