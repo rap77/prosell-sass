@@ -136,8 +136,11 @@ PATTERNS=(
     '(api[_-]?key|apikey|api[_-]?token)[[:space:]]*[:=][[:space:]]*["'\''][A-Za-z0-9_-]{20,}["'\'']::API key literal assignment'
     'x-api-key[[:space:]]*[:=][[:space:]]*["'\''][A-Za-z0-9_-]{20,}["'\'']::x-api-key header'
 
-    # ----- SendGrid -----
+    # ----- SendGrid (legacy — retired in favour of Resend, kept as defence) -----
     'SG\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}::SendGrid API key'
+
+    # ----- Resend -----
+    're_[A-Za-z0-9_]{20,}::Resend API key'
 
     # ----- Google OAuth -----
     'GOCSPX-[A-Za-z0-9_-]{20,}::Google OAuth client secret'
