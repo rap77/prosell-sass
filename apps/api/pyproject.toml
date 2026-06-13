@@ -24,7 +24,6 @@ dependencies = [
     "bcrypt>=4.2.0",
     "pyjwt>=2.9.0",
     "cryptography>=43.0.0",
-    "sendgrid>=6.11.0",
     # Rate limiting
     "slowapi>=0.1.9",
     "taskiq[redis]>=0.12.1",
