@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useLeads, useTeamMetrics, LeadStatus } from "@/lib/api/leads";
@@ -180,7 +179,7 @@ function CardHead({
         marginBottom: 14,
       }}
     >
-      <h3
+      <h2
         style={{
           margin: 0,
           fontSize: 15,
@@ -189,7 +188,7 @@ function CardHead({
         }}
       >
         {title}
-      </h3>
+      </h2>
       {linkLabel && linkHref && (
         <Link
           href={linkHref}
@@ -223,28 +222,23 @@ export default function DashboardPage() {
 
   const isLoading = leadsLoading || metricsLoading;
 
-  const recentLeads = useMemo(
-    () =>
-      [...allLeads]
-        .sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        )
-        .slice(0, 5),
-    [allLeads],
-  );
+  // React Compiler (React 19) memoizes these derived values automatically —
+  // no useMemo needed.
+  const recentLeads = [...allLeads]
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
+    .slice(0, 5);
 
-  const pipelineCounts = useMemo(() => {
-    const counts: Record<LeadStatus, number> = {
-      [LeadStatus.NEW]: 0,
-      [LeadStatus.CONTACTED]: 0,
-      [LeadStatus.QUALIFIED]: 0,
-      [LeadStatus.APPOINTMENT_SET]: 0,
-      [LeadStatus.LOST]: 0,
-    };
-    for (const l of allLeads) counts[l.status]++;
-    return counts;
-  }, [allLeads]);
+  const pipelineCounts: Record<LeadStatus, number> = {
+    [LeadStatus.NEW]: 0,
+    [LeadStatus.CONTACTED]: 0,
+    [LeadStatus.QUALIFIED]: 0,
+    [LeadStatus.APPOINTMENT_SET]: 0,
+    [LeadStatus.LOST]: 0,
+  };
+  for (const l of allLeads) pipelineCounts[l.status]++;
 
   const activeLeads = allLeads.filter(
     (l) => l.status !== LeadStatus.LOST,
