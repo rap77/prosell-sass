@@ -1,6 +1,7 @@
 # Secret Rotation Runbook
 
 > **TL;DR — Cuando un secret queda expuesto (commit, log, screenshot, ticket):**
+>
 > 1. No entres en pánico. El secret ya está en git history.
 > 2. **Rotar > borrar.** Reescribir el historial es destructivo y no cambia el hecho de que un atacante que ya vio el valor va a usarlo igual. La defensa real es invalidar el valor en el provider.
 > 3. Seguí esta guía en orden.
@@ -19,18 +20,18 @@ Si en algún momento necesitás reescribir el historial (por compliance, por eje
 
 ## Inventario de secrets a rotar
 
-| # | Secret | Provider | Impacto de la rotación |
-|---|--------|----------|------------------------|
-| 1 | `POSTGRES_PASSWORD` | DigitalOcean Managed Postgres (o container) | DB reinicia, sessions de Prisma/asyncpg reconectan. **Sin pérdida de datos.** |
-| 2 | `REDIS_PASSWORD` | DigitalOcean Managed Redis (o container) | Cache se vacía, próximas requests recalientan. Sesiones JWT siguen válidas (viven en cookie, no en Redis). |
-| 3 | `MINIO_ROOT_PASSWORD` | Container MinIO (staging) | No productivo. Staging solamente. |
-| 4 | `JWT_PRIVATE_KEY` / `public.pem` | apps/api/keys/ en el host | **Todos los usuarios deslogueados.** Sessions existentes invalidadas. |
-| 5 | `ADMIN_PASSWORD` | init_data.py (semilla del admin) | Login admin cae. Reset manual. |
-| 6 | `GOOGLE_OAUTH_CLIENT_SECRET` | Google Cloud Console | **Sin downtime.** Soportan secret rotativo (old + new conviven). |
-| 7 | `FACEBOOK_OAUTH_APP_SECRET` | Facebook Developers Console | Igual que Google. |
-| 8 | `SENDGRID_API_KEY` | SendGrid Dashboard | Igual que Google. |
-| 9 | `DO_ACCESS_KEY_ID` / `DO_SECRET_ACCESS_KEY` | DO Spaces API keys | Igual que Google. |
-| 10 | `NGROK_AUTHTOKEN` | ngrok dashboard | Solo dev. |
+| #   | Secret                                      | Provider                                    | Impacto de la rotación                                                                                     |
+| --- | ------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 1   | `POSTGRES_PASSWORD`                         | DigitalOcean Managed Postgres (o container) | DB reinicia, sessions de Prisma/asyncpg reconectan. **Sin pérdida de datos.**                              |
+| 2   | `REDIS_PASSWORD`                            | DigitalOcean Managed Redis (o container)    | Cache se vacía, próximas requests recalientan. Sesiones JWT siguen válidas (viven en cookie, no en Redis). |
+| 3   | `MINIO_ROOT_PASSWORD`                       | Container MinIO (staging)                   | No productivo. Staging solamente.                                                                          |
+| 4   | `JWT_PRIVATE_KEY` / `public.pem`            | apps/api/keys/ en el host                   | **Todos los usuarios deslogueados.** Sessions existentes invalidadas.                                      |
+| 5   | `ADMIN_PASSWORD`                            | init_data.py (semilla del admin)            | Login admin cae. Reset manual.                                                                             |
+| 6   | `GOOGLE_OAUTH_CLIENT_SECRET`                | Google Cloud Console                        | **Sin downtime.** Soportan secret rotativo (old + new conviven).                                           |
+| 7   | `FACEBOOK_OAUTH_APP_SECRET`                 | Facebook Developers Console                 | Igual que Google.                                                                                          |
+| 8   | `SENDGRID_API_KEY`                          | SendGrid Dashboard                          | Igual que Google.                                                                                          |
+| 9   | `DO_ACCESS_KEY_ID` / `DO_SECRET_ACCESS_KEY` | DO Spaces API keys                          | Igual que Google.                                                                                          |
+| 10  | `NGROK_AUTHTOKEN`                           | ngrok dashboard                             | Solo dev.                                                                                                  |
 
 ---
 
@@ -62,17 +63,17 @@ El script **NO escribe en ningún archivo**: imprime a stdout. Copiá los valore
 
 ### 2. Rotar en el provider
 
-| Secret | Dónde rotar |
-|--------|-------------|
-| Postgres | DO Console → Databases → tu DB → Users & Databases → reset password. O vía SQL: `ALTER USER postgres PASSWORD '...';` |
-| Redis | DO Console → Redis → reset password. O vía CLI: `redis-cli -a OLD CONFIG SET requirepass NEW` |
-| JWT | Local: `openssl genrsa -out private.pem 2048`. Ver arriba (script). |
-| Admin | DB: `update users set hashed_password = $bcrypt$2a$12$... where email='admin@prosell.saas';` (generá el hash con `htpasswd -bnBC 12 "" nuevapass \| tr -d ':\n'`) |
-| Google OAuth | console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client IDs → tu client → "Add secret" (old + new conviven) |
-| Facebook | developers.facebook.com → tu app → Settings → Basic → "Show" en App Secret → "Generate new" |
-| SendGrid | app.sendgrid.com → Settings → API Keys → "Create API Key" |
-| DO Spaces | cloud.digitalocean.com → API → Spaces Keys → "Generate New Key" |
-| Ngrok | dashboard.ngrok.com → Your Authtoken → reset |
+| Secret       | Dónde rotar                                                                                                                                                       |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Postgres     | DO Console → Databases → tu DB → Users & Databases → reset password. O vía SQL: `ALTER USER postgres PASSWORD '...';`                                             |
+| Redis        | DO Console → Redis → reset password. O vía CLI: `redis-cli -a OLD CONFIG SET requirepass NEW`                                                                     |
+| JWT          | Local: `openssl genrsa -out private.pem 2048`. Ver arriba (script).                                                                                               |
+| Admin        | DB: `update users set hashed_password = $bcrypt$2a$12$... where email='admin@prosell.saas';` (generá el hash con `htpasswd -bnBC 12 "" nuevapass \| tr -d ':\n'`) |
+| Google OAuth | console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client IDs → tu client → "Add secret" (old + new conviven)                                   |
+| Facebook     | developers.facebook.com → tu app → Settings → Basic → "Show" en App Secret → "Generate new"                                                                       |
+| SendGrid     | app.sendgrid.com → Settings → API Keys → "Create API Key"                                                                                                         |
+| DO Spaces    | cloud.digitalocean.com → API → Spaces Keys → "Generate New Key"                                                                                                   |
+| Ngrok        | dashboard.ngrok.com → Your Authtoken → reset                                                                                                                      |
 
 ### 3. Deployar los nuevos valores
 
@@ -158,8 +159,8 @@ cp -r apps/api/keys apps/api/keys.bak.$(date +%Y%m%d-%H%M%S)
 
 ## Historial de rotaciones
 
-| Fecha | Quién | Qué se rotó | Notas |
-|-------|-------|-------------|-------|
+| Fecha      | Quién  | Qué se rotó                         | Notas                                                                                         |
+| ---------- | ------ | ----------------------------------- | --------------------------------------------------------------------------------------------- |
 | 2026-06-11 | Rafael | (pendiente — ver commit `21b55653`) | DB / Redis / SendGrid / Google OAuth / FB OAuth / JWT / Admin — todos en el historial de git. |
 
 > Cuando completes una rotación, anotalo acá. Después de unos meses, este log es invaluable para entender qué secrets son "viejos" y cuáles son "nuevos" — y para detectar rotaciones olvidadas.
