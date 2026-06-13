@@ -14,7 +14,7 @@ concrete adapter in `infrastructure/services/email_service.py`.
 
 The port abstraction already exists — so the migration is, in principle, a new
 adapter plus one DI wiring change. **However**, the current adapter mixes two
-concerns: *transport* (how we talk to the provider) and *content* (the HTML body,
+concerns: _transport_ (how we talk to the provider) and _content_ (the HTML body,
 subjects, date formatting, escaping). As evidence: `MockEmailService` already
 duplicates every HTML template a second time. A naive 1:1 copy to Resend would
 create a third copy. This design fixes the root cause.
@@ -35,13 +35,13 @@ create a third copy. This design fixes the root cause.
 
 ## Key Decisions
 
-| # | Decision | Rationale |
-|---|----------|-----------|
-| 1 | Full replacement, Resend only | Less surface, fewer deps. Split makes re-adding multi-provider cheap if ever needed. |
-| 2 | Split content/transport **inside infrastructure**; domain port unchanged | HTML is a presentation detail and must not leak into the domain. Keeping the semantic 7-method port intact means use cases are untouched. |
-| 3 | Jinja2 with `autoescape=True`, templates in `.html` files | Removes manual `_escape_html` calls and the XSS-by-omission risk. Jinja2 is already a transitive dep; we declare it explicitly. |
-| 4 | Delete orphan `send_appointment_notification` | Not in the port, no use case calls it; only its own tests keep it alive. Dead code. |
-| 5 | `httpx` async directly against Resend REST API (no `resend` SDK) | Project is async-first; httpx is already present. Avoids a sync SDK wrapped in `to_thread` and an extra dependency. Full control of retry/error handling. |
+| #   | Decision                                                                 | Rationale                                                                                                                                                 |
+| --- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Full replacement, Resend only                                            | Less surface, fewer deps. Split makes re-adding multi-provider cheap if ever needed.                                                                      |
+| 2   | Split content/transport **inside infrastructure**; domain port unchanged | HTML is a presentation detail and must not leak into the domain. Keeping the semantic 7-method port intact means use cases are untouched.                 |
+| 3   | Jinja2 with `autoescape=True`, templates in `.html` files                | Removes manual `_escape_html` calls and the XSS-by-omission risk. Jinja2 is already a transitive dep; we declare it explicitly.                           |
+| 4   | Delete orphan `send_appointment_notification`                            | Not in the port, no use case calls it; only its own tests keep it alive. Dead code.                                                                       |
+| 5   | `httpx` async directly against Resend REST API (no `resend` SDK)         | Project is async-first; httpx is already present. Avoids a sync SDK wrapped in `to_thread` and an extra dependency. Full control of retry/error handling. |
 
 ## Architecture
 
@@ -171,4 +171,7 @@ def get_email_service() -> AbstractEmailService:
 - [ ] `apps/api/src/prosell/infrastructure/services/email_service.py` removed once
       the new subpackage replaces it (keep `application/ports/email_service.py`
       re-export shim — it points at the unchanged domain port).
+
+```
+
 ```

@@ -50,6 +50,7 @@ Build the new subpackage alongside the old `email_service.py` (which keeps the a
 ### Task 1: EmailMessage value object
 
 **Files:**
+
 - Create: `apps/api/src/prosell/infrastructure/services/email/__init__.py` (empty for now)
 - Create: `apps/api/src/prosell/infrastructure/services/email/message.py`
 - Test: `apps/api/tests/unit/services/email/test_message.py`
@@ -122,6 +123,7 @@ git commit -m "feat(api): add EmailMessage value object for email subsystem"
 ### Task 2: Add Resend settings
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/core/config.py` (after line 339, alongside existing email settings)
 - Test: `apps/api/tests/unit/test_config_resend.py`
 
@@ -183,6 +185,7 @@ git commit -m "feat(api): add Resend email settings"
 ### Task 3: Renderer scaffold + verification template
 
 **Files:**
+
 - Create: `apps/api/src/prosell/infrastructure/services/email/renderer.py`
 - Create: `apps/api/src/prosell/infrastructure/services/email/templates/verification.html`
 - Test: `apps/api/tests/unit/services/email/test_renderer.py`
@@ -239,17 +242,23 @@ Expected: FAIL — `ModuleNotFoundError` for `renderer`.
 
 ```html
 <html>
-<body>
+  <body>
     <h2>Welcome to ProSell!</h2>
     <p>Please verify your email address by clicking the button below:</p>
-    <p><a href="{{ verification_url }}" style="background-color:#4CAF50;
+    <p>
+      <a
+        href="{{ verification_url }}"
+        style="background-color:#4CAF50;
     color:white;padding:10px 20px;text-decoration:none;
-    display:inline-block;">Verify Email</a></p>
+    display:inline-block;"
+        >Verify Email</a
+      >
+    </p>
     <p>Or copy and paste this link into your browser:</p>
     <p>{{ verification_url }}</p>
     <p>This link expires in 24 hours.</p>
     <p>If you didn't create an account, please ignore this email.</p>
-</body>
+  </body>
 </html>
 ```
 
@@ -324,6 +333,7 @@ git commit -m "feat(api): add Jinja2 email renderer with verification template"
 ### Task 4: password_reset + 2fa_enabled templates
 
 **Files:**
+
 - Create: `templates/password_reset.html`, `templates/2fa_enabled.html`
 - Modify: `renderer.py` (add two methods)
 - Test: `tests/unit/services/email/test_renderer.py` (add two tests)
@@ -356,17 +366,23 @@ Expected: FAIL — `AttributeError: 'EmailTemplateRenderer' object has no attrib
 
 ```html
 <html>
-<body>
+  <body>
     <h2>Password Reset Request</h2>
     <p>We received a request to reset your password. Click the button below:</p>
-    <p><a href="{{ reset_url }}" style="background-color:#4CAF50;
+    <p>
+      <a
+        href="{{ reset_url }}"
+        style="background-color:#4CAF50;
     color:white;padding:10px 20px;text-decoration:none;
-    display:inline-block;">Reset Password</a></p>
+    display:inline-block;"
+        >Reset Password</a
+      >
+    </p>
     <p>Or copy and paste this link into your browser:</p>
     <p>{{ reset_url }}</p>
     <p>This link expires in 1 hour.</p>
     <p>If you didn't request a password reset, please ignore this email.</p>
-</body>
+  </body>
 </html>
 ```
 
@@ -374,12 +390,12 @@ Expected: FAIL — `AttributeError: 'EmailTemplateRenderer' object has no attrib
 
 ```html
 <html>
-<body>
+  <body>
     <h2>2FA Enabled Successfully</h2>
     <p>Two-factor authentication has been enabled on your ProSell account.</p>
     <p>Your account is now more secure.</p>
     <p>If you didn't make this change, please contact support immediately.</p>
-</body>
+  </body>
 </html>
 ```
 
@@ -420,6 +436,7 @@ git commit -m "feat(api): add password-reset and 2fa-enabled email templates"
 ### Task 5: team_invitation template (un-skip autoescape test)
 
 **Files:**
+
 - Create: `templates/team_invitation.html`
 - Modify: `renderer.py` (add method)
 - Modify: `test_renderer.py` (remove the skip on the autoescape test, add a content test)
@@ -451,8 +468,10 @@ Expected: FAIL — no `render_team_invitation`.
 `templates/team_invitation.html` (port from `send_team_invitation`, lines ~694-699; vars `inviter_name`, `team_name`, `role`, `invitation_url`):
 
 ```html
-<p>{{ inviter_name }} has invited you to join
-<strong>{{ team_name }}</strong> as {{ role }}.</p>
+<p>
+  {{ inviter_name }} has invited you to join <strong>{{ team_name }}</strong> as
+  {{ role }}.
+</p>
 <p><a href="{{ invitation_url }}">Accept invitation</a></p>
 <p>This invitation expires in 7 days.</p>
 ```
@@ -497,6 +516,7 @@ git commit -m "feat(api): add team-invitation template and verify autoescaping"
 ### Task 6: appointment_confirmation + appointment_status_update templates
 
 **Files:**
+
 - Create: `templates/appointment_confirmation.html`, `templates/appointment_status_update.html`
 - Modify: `renderer.py` (add two methods)
 - Test: `test_renderer.py` (add two tests)
@@ -550,8 +570,8 @@ Create `templates/appointment_confirmation.html` by porting the `html_content` o
 ```html
 {% if notes %}
 <tr style="background-color: #f2f2f2;">
-    <td style="border: 1px solid #ddd;"><strong>Notas:</strong></td>
-    <td style="border: 1px solid #ddd;">{{ notes }}</td>
+  <td style="border: 1px solid #ddd;"><strong>Notas:</strong></td>
+  <td style="border: 1px solid #ddd;">{{ notes }}</td>
 </tr>
 {% endif %}
 ```
@@ -629,6 +649,7 @@ git commit -m "feat(api): add appointment confirmation and status-update templat
 ### Task 7: appointment_reminder template
 
 **Files:**
+
 - Create: `templates/appointment_reminder.html`
 - Modify: `renderer.py` (add method)
 - Test: `test_renderer.py` (add test)
@@ -713,6 +734,7 @@ git commit -m "feat(api): add appointment-reminder template; renderer complete"
 ### Task 8: retry_on_transient_error decorator
 
 **Files:**
+
 - Create: `apps/api/src/prosell/infrastructure/services/email/retry.py`
 - Test: `apps/api/tests/unit/services/email/test_retry.py`
 
@@ -835,6 +857,7 @@ git commit -m "feat(api): add transient-error retry decorator for email transpor
 ### Task 9: EmailSender protocol + LoggingSender
 
 **Files:**
+
 - Create: `apps/api/src/prosell/infrastructure/services/email/sender.py`
 - Test: `apps/api/tests/unit/services/email/test_sender.py`
 
@@ -918,6 +941,7 @@ git commit -m "feat(api): add EmailSender protocol and LoggingSender"
 ### Task 10: ResendSender (httpx)
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/infrastructure/services/email/sender.py`
 - Test: `apps/api/tests/unit/services/email/test_sender.py`
 
@@ -1042,6 +1066,7 @@ git commit -m "feat(api): add ResendSender httpx transport adapter"
 ### Task 11: EmailService composition (implements the domain port)
 
 **Files:**
+
 - Create: `apps/api/src/prosell/infrastructure/services/email/service.py`
 - Modify: `apps/api/src/prosell/infrastructure/services/email/__init__.py` (exports)
 - Test: `apps/api/tests/unit/services/email/test_service.py`
@@ -1232,6 +1257,7 @@ git commit -m "feat(api): add EmailService composing renderer and sender"
 ### Task 12: Wire DI to Resend + declare jinja2
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/infrastructure/api/dependencies.py:94-97,161-165`
 - Modify: `apps/api/pyproject.toml` (add jinja2 to main deps)
 
@@ -1277,19 +1303,23 @@ In `apps/api/pyproject.toml`, add to the main dependencies array (next to `httpx
 - [ ] **Step 3: Run the relevant suites + lint**
 
 Run:
+
 ```bash
 uv run pytest tests/unit/services/email/ tests/unit/services/test_email_service.py -v
 uv run ruff check src/prosell/infrastructure/services/email src/prosell/infrastructure/api/dependencies.py
 uv run pyright
 ```
+
 Expected: new subsystem PASS; the OLD `test_email_service.py` may still pass (it imports the old module, still present). ruff/pyright clean.
 
 - [ ] **Step 4: Smoke-check the wiring**
 
 Run:
+
 ```bash
 uv run python -c "from prosell.infrastructure.api.dependencies import get_email_service; print(type(get_email_service()).__name__)"
 ```
+
 Expected: `EmailService`
 
 - [ ] **Step 5: Commit**
@@ -1304,6 +1334,7 @@ git commit -m "feat(api): wire email DI to Resend-backed EmailService"
 ### Task 13: Remove SendGrid, orphan method, old module, old tests; update env
 
 **Files:**
+
 - Delete: `apps/api/src/prosell/infrastructure/services/email_service.py`
 - Delete: `apps/api/tests/unit/services/test_email_service.py`, `apps/api/tests/unit/services/test_appointment_status_email.py` (audit first — see step)
 - Modify: `apps/api/src/prosell/core/config.py` (remove `sendgrid_*` settings)
@@ -1313,10 +1344,12 @@ git commit -m "feat(api): wire email DI to Resend-backed EmailService"
 - [ ] **Step 1: Find every remaining SendGrid reference**
 
 Run:
+
 ```bash
 rg -n -i "sendgrid|MockEmailService|send_appointment_notification" apps/api/src apps/api/tests
 rg -n -i "sendgrid|resend" .env.example docker/.env.example 2>/dev/null
 ```
+
 This is the deletion worklist. `send_appointment_notification` (orphan) must disappear with the old module — confirm no `src` caller exists (only its own tests).
 
 - [ ] **Step 2: Delete old module and obsolete tests**
@@ -1325,6 +1358,7 @@ This is the deletion worklist. `send_appointment_notification` (orphan) must dis
 git rm apps/api/src/prosell/infrastructure/services/email_service.py
 git rm apps/api/tests/unit/services/test_email_service.py
 ```
+
 For `test_appointment_status_email.py`: open it; if it tests the old `SendGridEmailService`/`MockEmailService`, `git rm` it (the new `test_service.py` + `test_renderer.py` cover status-update rendering). If it tests a use case via the port, keep it and update imports.
 
 - [ ] **Step 3: Remove sendgrid settings and dependency**
@@ -1332,6 +1366,7 @@ For `test_appointment_status_email.py`: open it; if it tests the old `SendGridEm
 In `config.py`, delete the three `sendgrid_api_key` / `sendgrid_from_email` / `sendgrid_from_name` Field blocks (lines ~328-339). Keep `email_templates_dir` and `use_mock_email`.
 
 In `pyproject.toml`, remove the `"sendgrid>=6.11.0",` line. Then:
+
 ```bash
 cd apps/api && uv lock
 ```
@@ -1339,6 +1374,7 @@ cd apps/api && uv lock
 - [ ] **Step 4: Update env templates**
 
 In `.env.example` (and `docker/.env.example` if present), replace `SENDGRID_API_KEY` / `SENDGRID_FROM_EMAIL` / `SENDGRID_FROM_NAME` with:
+
 ```
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=noreply@prosell.saas
@@ -1348,12 +1384,14 @@ RESEND_FROM_NAME=ProSell SaaS
 - [ ] **Step 5: Full verification + commit**
 
 Run from `apps/api`:
+
 ```bash
 uv run pytest
 uv run ruff check . && uv run ruff format --check .
 uv run pyright
 rg -n -i "sendgrid" apps/api/src apps/api/tests   # expect: no matches
 ```
+
 Expected: full suite green, lint clean, zero sendgrid references in code.
 
 ```bash
@@ -1366,6 +1404,7 @@ git commit -m "refactor(api): remove SendGrid adapter, settings, dep, and orphan
 ## Self-Review
 
 **Spec coverage:**
+
 - Full replacement (single provider) → Tasks 12-13. ✓
 - Split content/transport in infra; port unchanged → Tasks 1,3-11 (port never edited). ✓
 - Jinja2 autoescape, removes manual escaping → Tasks 3-7; autoescape asserted Task 5. ✓
