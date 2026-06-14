@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import BranchAppointmentsPage from "./page";
@@ -239,6 +240,8 @@ describe("BranchAppointmentsPage", () => {
   });
 
   it("should handle appointment click", async () => {
+    const user = userEvent.setup();
+
     vi.spyOn(authStoreModule, "useAuthStore").mockReturnValue({
       user: mockUser,
     } as any);
@@ -260,7 +263,7 @@ describe("BranchAppointmentsPage", () => {
 
     // Click on an appointment
     const clickButton = screen.getByTestId("click-appointment");
-    clickButton.click();
+    await user.click(clickButton);
 
     // Should show appointment details modal
     await waitFor(() => {

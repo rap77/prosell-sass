@@ -3,6 +3,82 @@ import { expect, afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 import * as matchers from "@testing-library/jest-dom/matchers";
 
+interface ChildrenProps {
+  children?: React.ReactNode;
+}
+
+interface TriggerProps extends ChildrenProps {
+  asChild?: boolean;
+  [key: string]: unknown;
+}
+
+interface DropdownMenuItemProps extends ChildrenProps {
+  onClick?: () => void;
+  className?: string;
+}
+
+interface SelectProps extends ChildrenProps {
+  value?: string;
+  disabled?: boolean;
+}
+
+interface SelectTriggerProps extends ChildrenProps {
+  [key: string]: unknown;
+}
+
+interface SelectValueProps {
+  placeholder?: string;
+}
+
+interface SelectItemProps extends ChildrenProps {
+  value: string;
+  onClick?: () => void;
+}
+
+interface CommandDialogProps extends ChildrenProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+interface CommandInputProps {
+  value?: string;
+  onValueChange?: (value: string) => void;
+  [key: string]: unknown;
+}
+
+interface CommandGroupProps extends ChildrenProps {
+  heading?: string;
+}
+
+interface CommandItemProps extends ChildrenProps {
+  onSelect?: () => void;
+  [key: string]: unknown;
+}
+
+class MockIntersectionObserver implements IntersectionObserver {
+  readonly root: Element | Document | null = null;
+  readonly rootMargin = "";
+  readonly thresholds = [0];
+
+  disconnect(): void {}
+
+  observe(_target: Element): void {}
+
+  takeRecords(): IntersectionObserverEntry[] {
+    return [];
+  }
+
+  unobserve(_target: Element): void {}
+}
+
+class MockResizeObserver implements ResizeObserver {
+  disconnect(): void {}
+
+  observe(_target: Element, _options?: ResizeObserverOptions): void {}
+
+  unobserve(_target: Element): void {}
+}
+
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);
 
@@ -13,25 +89,21 @@ afterEach(() => {
 
 // Mock Radix UI DropdownMenu components globally
 vi.mock("@/components/ui/dropdown-menu", () => ({
-  DropdownMenu: ({ children }: { children?: React.ReactNode }) => (
+  DropdownMenu: ({ children }: ChildrenProps): React.JSX.Element => (
     <div data-testid="dropdown-menu">{children}</div>
   ),
   DropdownMenuTrigger: ({
     children,
     asChild,
     ...props
-  }: {
-    children?: React.ReactNode;
-    asChild?: boolean;
-    [key: string]: unknown;
-  }) => {
+  }: TriggerProps): React.JSX.Element => {
     // When asChild=true, Radix merges the trigger element with the child (no wrapper)
     // When asChild=false, it wraps children in a button
-    if (asChild && React.isValidElement(children)) {
+    if (asChild && React.isValidElement<{ "data-testid"?: string }>(children)) {
       // Clone child and add data-testid for testing
       return React.cloneElement(children, {
         "data-testid": "dropdown-trigger",
-      } as React.HTMLAttributes<HTMLElement>);
+      });
     }
     return (
       <button data-testid="dropdown-trigger" {...props}>
@@ -39,7 +111,7 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
       </button>
     );
   },
-  DropdownMenuContent: ({ children }: { children?: React.ReactNode }) => (
+  DropdownMenuContent: ({ children }: ChildrenProps): React.JSX.Element => (
     <div data-testid="dropdown-content" role="menu">
       {children}
     </div>
@@ -48,11 +120,7 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
     children,
     onClick,
     className,
-  }: {
-    children?: React.ReactNode;
-    onClick?: () => void;
-    className?: string;
-  }) => (
+  }: DropdownMenuItemProps): React.JSX.Element => (
     <button
       data-testid="dropdown-item"
       className={className}
@@ -62,10 +130,12 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
       {children}
     </button>
   ),
-  DropdownMenuLabel: ({ children }: { children?: React.ReactNode }) => (
+  DropdownMenuLabel: ({ children }: ChildrenProps): React.JSX.Element => (
     <div data-testid="dropdown-label">{children}</div>
   ),
-  DropdownMenuSeparator: () => <hr data-testid="dropdown-separator" />,
+  DropdownMenuSeparator: (): React.JSX.Element => (
+    <hr data-testid="dropdown-separator" />
+  ),
 }));
 
 // Mock Radix UI Select components globally to fix hasPointerCapture error
@@ -73,36 +143,24 @@ vi.mock("@/components/ui/select", () => ({
   Select: ({
     children,
     value,
-    onValueChange,
     disabled,
-  }: {
-    children?: React.ReactNode;
-    value?: string;
-    onValueChange?: (value: string) => void;
-    disabled?: boolean;
-  }) => (
+  }: SelectProps): React.JSX.Element => (
     <div data-testid="select" data-value={value} data-disabled={disabled}>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
-          return React.cloneElement(child as React.ReactElement<any>, {
-            value,
-            onValueChange,
-            disabled,
-          });
-        }
-        return child;
-      })}
+      {children}
     </div>
   ),
-  SelectTrigger: ({ children, ...props }: any) => (
+  SelectTrigger: ({
+    children,
+    ...props
+  }: SelectTriggerProps): React.JSX.Element => (
     <button data-testid="select-trigger" type="button" {...props}>
       {children}
     </button>
   ),
-  SelectValue: ({ placeholder }: { placeholder?: string }) => (
+  SelectValue: ({ placeholder }: SelectValueProps): React.JSX.Element => (
     <span data-testid="select-value">{placeholder}</span>
   ),
-  SelectContent: ({ children }: { children?: React.ReactNode }) => (
+  SelectContent: ({ children }: ChildrenProps): React.JSX.Element => (
     <div data-testid="select-content" role="listbox">
       {children}
     </div>
@@ -111,11 +169,7 @@ vi.mock("@/components/ui/select", () => ({
     children,
     value,
     onClick,
-  }: {
-    children?: React.ReactNode;
-    value: string;
-    onClick?: () => void;
-  }) => (
+  }: SelectItemProps): React.JSX.Element => (
     <div
       data-testid="select-item"
       data-value={value}
@@ -134,11 +188,7 @@ vi.mock("cmdk", () => ({
     children,
     open,
     onOpenChange,
-  }: {
-    children?: React.ReactNode;
-    open?: boolean;
-    onOpenChange?: (open: boolean) => void;
-  }) => (
+  }: CommandDialogProps): React.JSX.Element => (
     <div
       data-testid="command-dialog"
       data-open={open}
@@ -151,31 +201,27 @@ vi.mock("cmdk", () => ({
     value,
     onValueChange,
     ...props
-  }: {
-    value?: string;
-    onValueChange?: (value: string) => void;
-    [key: string]: unknown;
-  }) => (
-    <input
-      data-testid="command-input"
-      value={value}
-      onChange={(e) => onValueChange?.(e.target.value)}
-      {...props}
-    />
-  ),
-  CommandList: ({ children }: { children?: React.ReactNode }) => (
+  }: CommandInputProps): React.JSX.Element => {
+    const { onChange: _onChange, ...rest } = props;
+    return (
+      <input
+        data-testid="command-input"
+        value={value}
+        onChange={(e) => onValueChange?.(e.target.value)}
+        {...rest}
+      />
+    );
+  },
+  CommandList: ({ children }: ChildrenProps): React.JSX.Element => (
     <div data-testid="command-list">{children}</div>
   ),
-  CommandEmpty: ({ children }: { children?: React.ReactNode }) => (
+  CommandEmpty: ({ children }: ChildrenProps): React.JSX.Element => (
     <div data-testid="command-empty">{children}</div>
   ),
   CommandGroup: ({
     children,
     heading,
-  }: {
-    children?: React.ReactNode;
-    heading?: string;
-  }) => (
+  }: CommandGroupProps): React.JSX.Element => (
     <div data-testid="command-group">
       {heading && <div data-testid="command-group-heading">{heading}</div>}
       {children}
@@ -185,11 +231,7 @@ vi.mock("cmdk", () => ({
     children,
     onSelect,
     ...props
-  }: {
-    children?: React.ReactNode;
-    onSelect?: () => void;
-    [key: string]: unknown;
-  }) => (
+  }: CommandItemProps): React.JSX.Element => (
     <div data-testid="command-item" onClick={onSelect} {...props}>
       {children}
     </div>
@@ -197,25 +239,18 @@ vi.mock("cmdk", () => ({
 }));
 
 // Mock IntersectionObserver
-// @ts-expect-error - Mocking browser API for jsdom environment
-global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
-  takeRecords() {
-    return [];
-  }
-  unobserve() {}
-} as unknown as IntersectionObserver;
+Object.defineProperty(globalThis, "IntersectionObserver", {
+  writable: true,
+  configurable: true,
+  value: MockIntersectionObserver,
+});
 
 // Mock ResizeObserver
-// @ts-expect-error - Mocking browser API for jsdom environment
-global.ResizeObserver = class ResizeObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
-} as unknown as ResizeObserver;
+Object.defineProperty(globalThis, "ResizeObserver", {
+  writable: true,
+  configurable: true,
+  value: MockResizeObserver,
+});
 
 // Mock matchMedia
 Object.defineProperty(window, "matchMedia", {
