@@ -510,7 +510,8 @@ export default function AnalyticsPage() {
   const sourceCountsByKey: Record<string, number> = {};
   for (const lead of leads) {
     if (lead.source)
-      sourceCountsByKey[lead.source] = (sourceCountsByKey[lead.source] ?? 0) + 1;
+      sourceCountsByKey[lead.source] =
+        (sourceCountsByKey[lead.source] ?? 0) + 1;
   }
   const sourceCounts = Object.entries(sourceCountsByKey).sort(
     ([, a], [, b]) => b - a,

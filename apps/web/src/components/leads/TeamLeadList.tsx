@@ -293,7 +293,8 @@ export function TeamLeadList({
             value={statusFilter}
             onChange={(e) => {
               const value = e.target.value;
-              if (value === "all" || isLeadStatus(value)) setStatusFilter(value);
+              if (value === "all" || isLeadStatus(value))
+                setStatusFilter(value);
             }}
             className="ps-tll-select"
             style={{ width: 192 }}

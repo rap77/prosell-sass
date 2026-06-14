@@ -140,11 +140,7 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
 
 // Mock Radix UI Select components globally to fix hasPointerCapture error
 vi.mock("@/components/ui/select", () => ({
-  Select: ({
-    children,
-    value,
-    disabled,
-  }: SelectProps): React.JSX.Element => (
+  Select: ({ children, value, disabled }: SelectProps): React.JSX.Element => (
     <div data-testid="select" data-value={value} data-disabled={disabled}>
       {children}
     </div>

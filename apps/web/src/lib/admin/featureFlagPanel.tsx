@@ -79,8 +79,7 @@ export function FeatureFlagPanel() {
               transition: "background 0.1s",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background =
-                "var(--ps-bg-elevated)";
+              e.currentTarget.style.background = "var(--ps-bg-elevated)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = "transparent";
@@ -129,12 +128,10 @@ export function FeatureFlagPanel() {
           transition: "background 0.1s",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background =
-            "var(--ps-bg-base)";
+          e.currentTarget.style.background = "var(--ps-bg-base)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background =
-            "var(--ps-bg-elevated)";
+          e.currentTarget.style.background = "var(--ps-bg-elevated)";
         }}
       >
         Restablecer valores por defecto
