@@ -50,7 +50,7 @@ const FORM_STYLES = `
   }
   .ps-apt-input::placeholder,
   .ps-apt-textarea::placeholder {
-    color: var(--ps-text-disabled);
+    color: var(--ps-text-tertiary);
   }
   .ps-apt-input--error {
     border-color: var(--ps-error);
@@ -170,13 +170,13 @@ export function AppointmentForm({
       setSubmitError(null);
 
       // Combinar fecha y hora en string ISO
-      const scheduled_at = new Date(`${data.date}T${data.time}`).toISOString();
+      const scheduledAt = new Date(`${data.date}T${data.time}`).toISOString();
 
       await createAppointment({
         lead_id: leadId,
         user_id: data.user_id,
         product_id: vehicleId || "",
-        scheduled_at,
+        scheduled_at: scheduledAt,
         notes: data.notes || null,
       });
 
@@ -184,7 +184,8 @@ export function AppointmentForm({
       onClose();
     } catch (error: unknown) {
       // A4.33: Mostrar warnings de conflicto y validación
-      const appointmentError = error as AppointmentFormError;
+      const appointmentError: AppointmentFormError =
+        error instanceof Error ? error : new Error("Error desconocido");
       const status = appointmentError.status || 500;
 
       if (status === 409) {
@@ -245,7 +246,7 @@ export function AppointmentForm({
   const hintStyle: React.CSSProperties = {
     margin: "4px 0 0",
     fontSize: 11,
-    color: "var(--ps-text-disabled)",
+    color: "var(--ps-text-tertiary)",
   };
 
   if (!open) return null;
@@ -414,7 +415,7 @@ export function AppointmentForm({
                   style={{
                     margin: "4px 0 0",
                     fontSize: 11,
-                    color: "var(--ps-text-disabled)",
+                    color: "var(--ps-text-tertiary)",
                   }}
                 >
                   {submitError.type === "conflict"

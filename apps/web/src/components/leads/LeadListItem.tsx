@@ -203,7 +203,7 @@ export function LeadListItem({
           <span
             style={{
               fontSize: 12,
-              color: "var(--ps-text-disabled)",
+              color: "var(--ps-text-tertiary)",
               fontStyle: "italic",
             }}
           >
@@ -231,7 +231,7 @@ export function LeadListItem({
             <MessageSquare
               size={11}
               strokeWidth={2}
-              style={{ flexShrink: 0, color: "var(--ps-text-disabled)" }}
+              style={{ flexShrink: 0, color: "var(--ps-text-tertiary)" }}
             />
             {lead.message}
           </p>
@@ -239,7 +239,7 @@ export function LeadListItem({
           <span
             style={{
               fontSize: 12,
-              color: "var(--ps-text-disabled)",
+              color: "var(--ps-text-tertiary)",
               fontStyle: "italic",
             }}
           >
@@ -272,7 +272,7 @@ export function LeadListItem({
             fontWeight: 600,
             letterSpacing: "0.05em",
             textTransform: "uppercase",
-            color: "var(--ps-text-disabled)",
+            color: "var(--ps-text-tertiary)",
             background: "rgba(138,155,191,0.08)",
             padding: "1px 6px",
             borderRadius: 4,

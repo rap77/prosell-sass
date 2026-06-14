@@ -49,7 +49,7 @@ const STATUS_CONFIG: Record<LeadStatus, StatusConfig> = {
     label: "Perdido",
     bg: "rgba(138,155,191,0.10)",
     color: "var(--ps-text-secondary)",
-    dot: "var(--ps-text-disabled)",
+    dot: "var(--ps-text-tertiary)",
   },
 };
 

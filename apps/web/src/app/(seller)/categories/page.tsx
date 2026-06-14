@@ -35,7 +35,7 @@ const T = {
   blue: "var(--ps-blue)",
   textPrimary: "var(--ps-text-primary)",
   textSecondary: "var(--ps-text-secondary)",
-  textDisabled: "var(--ps-text-disabled)",
+  textDisabled: "var(--ps-text-tertiary)",
   success: "var(--ps-success)",
   warning: "var(--ps-warning)",
   error: "var(--ps-error)",
@@ -886,7 +886,7 @@ function FieldRow({
           <field.icon
             size={14}
             strokeWidth={2}
-            color="var(--ps-text-disabled)"
+            color="var(--ps-text-tertiary)"
           />
           <span style={{ fontWeight: 500 }}>{field.name}</span>
         </span>

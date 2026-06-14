@@ -224,7 +224,7 @@ function DetailItem({ label, value }: { label: string; value: string }) {
           margin: 0,
           fontSize: 11,
           fontWeight: 500,
-          color: "var(--ps-text-disabled)",
+          color: "var(--ps-text-tertiary)",
           textTransform: "uppercase",
           letterSpacing: "0.06em",
         }}
@@ -589,7 +589,7 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
                       margin: 0,
                       fontSize: 11,
                       fontWeight: 600,
-                      color: "var(--ps-text-disabled)",
+                      color: "var(--ps-text-tertiary)",
                       textTransform: "uppercase",
                       letterSpacing: "0.1em",
                     }}
@@ -658,7 +658,7 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
                   style={{
                     margin: "12px 0 0",
                     fontSize: 13,
-                    color: "var(--ps-text-disabled)",
+                    color: "var(--ps-text-tertiary)",
                     fontStyle: "italic",
                   }}
                 >
@@ -712,7 +712,7 @@ export function CatalogDetailView({ productId }: CatalogDetailViewProps) {
                   style={{
                     margin: 0,
                     fontSize: 13,
-                    color: "var(--ps-text-disabled)",
+                    color: "var(--ps-text-tertiary)",
                   }}
                 >
                   Este producto no tiene atributos de vehículo disponibles.

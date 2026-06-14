@@ -33,7 +33,7 @@ const INPUT_STYLE = `
     box-shadow: var(--ps-input-focus-shadow);
   }
   .ps-ob3-input::placeholder {
-    color: var(--ps-text-disabled);
+    color: var(--ps-text-tertiary);
   }
 `;
 

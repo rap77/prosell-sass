@@ -64,7 +64,7 @@ function TestimonialCard({ t }: { t: Testimonial }) {
             {t.role}
           </div>
         </div>
-        <span style={{ fontSize: 12, color: "var(--ps-text-disabled)" }}>
+        <span style={{ fontSize: 12, color: "var(--ps-text-tertiary)" }}>
           {t.niche}
         </span>
       </div>

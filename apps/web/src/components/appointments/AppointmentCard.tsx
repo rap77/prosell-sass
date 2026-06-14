@@ -81,7 +81,7 @@ export function AppointmentCard({
   const scheduledDate = parseISO(appointment.scheduled_at);
 
   const iconStyle: React.CSSProperties = {
-    color: "var(--ps-text-disabled)",
+    color: "var(--ps-text-tertiary)",
     flexShrink: 0,
   };
 
@@ -175,7 +175,7 @@ export function AppointmentCard({
           <span
             style={{
               fontSize: 13,
-              color: "var(--ps-text-disabled)",
+              color: "var(--ps-text-tertiary)",
               fontStyle: "italic",
             }}
           >

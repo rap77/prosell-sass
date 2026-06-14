@@ -156,7 +156,7 @@ export function LandingFinalCta() {
             gap: 8,
             flexWrap: "wrap",
             fontSize: 13,
-            color: "var(--ps-text-disabled)",
+            color: "var(--ps-text-tertiary)",
           }}
         >
           <span>🔒 Sin tarjeta</span>

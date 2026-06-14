@@ -147,7 +147,7 @@ export function ForgotPasswordForm() {
                 style={{
                   margin: "0 0 24px",
                   fontSize: 13,
-                  color: "var(--ps-text-disabled)",
+                  color: "var(--ps-text-tertiary)",
                   lineHeight: 1.6,
                 }}
               >

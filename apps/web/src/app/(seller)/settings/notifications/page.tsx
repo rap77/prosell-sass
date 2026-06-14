@@ -81,7 +81,7 @@ function Toggle({
           width: 18,
           height: 18,
           borderRadius: "50%",
-          background: checked ? "var(--ps-bg-base)" : "var(--ps-text-disabled)",
+          background: checked ? "var(--ps-bg-base)" : "var(--ps-text-tertiary)",
           transition: "left 200ms, background 200ms",
         }}
       />
@@ -168,7 +168,7 @@ export default function SettingsNotificationsPage() {
                   style={{
                     color: states[option.id]
                       ? "var(--ps-cyan)"
-                      : "var(--ps-text-disabled)",
+                      : "var(--ps-text-tertiary)",
                   }}
                 />
               </div>

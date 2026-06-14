@@ -65,7 +65,7 @@ function DetailCard({
             fontWeight: 600,
             letterSpacing: "0.05em",
             textTransform: "uppercase",
-            color: "var(--ps-text-disabled)",
+            color: "var(--ps-text-tertiary)",
           }}
         >
           {title}
@@ -94,7 +94,7 @@ function InfoRow({
         size={14}
         strokeWidth={2}
         style={{
-          color: "var(--ps-text-disabled)",
+          color: "var(--ps-text-tertiary)",
           marginTop: 2,
           flexShrink: 0,
         }}
@@ -104,7 +104,7 @@ function InfoRow({
           style={{
             margin: 0,
             fontSize: 11,
-            color: "var(--ps-text-disabled)",
+            color: "var(--ps-text-tertiary)",
             textTransform: "uppercase",
             letterSpacing: "0.05em",
             fontWeight: 600,
@@ -204,7 +204,7 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
           />
         </div>
         <p style={{ margin: 0, fontSize: 14, color: "var(--ps-error)" }}>
-          Error al cargar el lead: {(error as Error).message}
+          Error al cargar el lead: {error.message}
         </p>
         <button
           type="button"
@@ -515,7 +515,7 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
                 <MessageSquare
                   size={16}
                   style={{
-                    color: "var(--ps-text-disabled)",
+                    color: "var(--ps-text-tertiary)",
                     flexShrink: 0,
                     marginTop: 1,
                   }}
@@ -549,7 +549,7 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
                   style={{
                     margin: 0,
                     fontSize: 11,
-                    color: "var(--ps-text-disabled)",
+                    color: "var(--ps-text-tertiary)",
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
                     fontWeight: 600,
@@ -572,7 +572,7 @@ export default function LeadDetailsPage({ params }: LeadDetailsPageProps) {
                   style={{
                     margin: 0,
                     fontSize: 11,
-                    color: "var(--ps-text-disabled)",
+                    color: "var(--ps-text-tertiary)",
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
                     fontWeight: 600,

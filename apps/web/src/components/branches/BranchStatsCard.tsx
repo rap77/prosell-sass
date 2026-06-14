@@ -171,13 +171,13 @@ export function BranchStatsCard({
               alignItems: "center",
               gap: 6,
               fontSize: 12,
-              color: "var(--ps-text-disabled)",
+              color: "var(--ps-text-tertiary)",
             }}
           >
             <Activity
               size={13}
               strokeWidth={2}
-              style={{ color: "var(--ps-text-disabled)" }}
+              style={{ color: "var(--ps-text-tertiary)" }}
             />
             <span>{formatDate(stats?.last_activity ?? null)}</span>
           </div>
@@ -211,7 +211,7 @@ export function BranchStatsCard({
             <span
               style={{
                 fontSize: 11,
-                color: "var(--ps-text-disabled)",
+                color: "var(--ps-text-tertiary)",
                 marginTop: 2,
               }}
             >
@@ -238,7 +238,7 @@ export function BranchStatsCard({
             <span
               style={{
                 fontSize: 11,
-                color: "var(--ps-text-disabled)",
+                color: "var(--ps-text-tertiary)",
                 marginTop: 2,
               }}
             >
@@ -265,7 +265,7 @@ export function BranchStatsCard({
             <span
               style={{
                 fontSize: 11,
-                color: "var(--ps-text-disabled)",
+                color: "var(--ps-text-tertiary)",
                 marginTop: 2,
               }}
             >

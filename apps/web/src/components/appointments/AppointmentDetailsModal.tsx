@@ -105,7 +105,7 @@ export function AppointmentDetailsModal({
   const scheduledDate = parseISO(appointment.scheduled_at);
 
   const iconStyle: React.CSSProperties = {
-    color: "var(--ps-text-disabled)",
+    color: "var(--ps-text-tertiary)",
     flexShrink: 0,
   };
 
@@ -322,7 +322,7 @@ export function AppointmentDetailsModal({
                   <span
                     style={{
                       fontSize: 13,
-                      color: "var(--ps-text-disabled)",
+                      color: "var(--ps-text-tertiary)",
                       fontStyle: "italic",
                     }}
                   >

@@ -188,7 +188,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
               style={{
                 margin: 0,
                 fontSize: 11,
-                color: "var(--ps-text-disabled)",
+                color: "var(--ps-text-tertiary)",
               }}
             >
               Referencia: {error.digest}

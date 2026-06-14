@@ -358,7 +358,7 @@ export function LandingHero() {
                   DEALS CERRADOS / SEMANA
                 </span>
                 <span
-                  style={{ fontSize: 10.5, color: "var(--ps-text-disabled)" }}
+                  style={{ fontSize: 10.5, color: "var(--ps-text-tertiary)" }}
                 >
                   S1 — S8
                 </span>

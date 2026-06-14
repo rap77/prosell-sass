@@ -232,7 +232,7 @@ export function ForgotPasswordPageContent() {
                 left: 12,
                 top: "50%",
                 transform: "translateY(-50%)",
-                color: "var(--ps-text-disabled)",
+                color: "var(--ps-text-tertiary)",
                 pointerEvents: "none",
                 display: "inline-flex",
                 alignItems: "center",

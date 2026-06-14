@@ -434,7 +434,7 @@ function PublicationCard({
           >
             <Rocket
               size={28}
-              style={{ color: "var(--ps-text-disabled)" }}
+              style={{ color: "var(--ps-text-tertiary)" }}
               strokeWidth={1.5}
             />
           </div>
@@ -471,7 +471,7 @@ function PublicationCard({
         </p>
         <FbBadge />
         <p
-          style={{ margin: 0, fontSize: 11, color: "var(--ps-text-disabled)" }}
+          style={{ margin: 0, fontSize: 11, color: "var(--ps-text-tertiary)" }}
         >
           {formatDate(pub.updatedAt)}
         </p>
@@ -596,7 +596,7 @@ export default function PublicationsPage() {
               lineHeight: 1.6,
             }}
           >
-            {(error as Error).message}
+            {error.message}
           </p>
           <div
             style={{
@@ -852,7 +852,7 @@ export default function PublicationsPage() {
                         fontWeight: 600,
                         letterSpacing: "0.08em",
                         textTransform: "uppercase",
-                        color: "var(--ps-text-disabled)",
+                        color: "var(--ps-text-tertiary)",
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -893,7 +893,7 @@ export default function PublicationsPage() {
                         style={{
                           margin: 0,
                           fontSize: 11,
-                          color: "var(--ps-text-disabled)",
+                          color: "var(--ps-text-tertiary)",
                           fontFamily: "monospace",
                         }}
                       >

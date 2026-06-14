@@ -410,7 +410,7 @@ export function AuthDivider({ label }: { label: string }) {
         display: "flex",
         alignItems: "center",
         gap: 14,
-        color: "var(--ps-text-disabled)",
+        color: "var(--ps-text-tertiary)",
         fontSize: 12,
       }}
     >

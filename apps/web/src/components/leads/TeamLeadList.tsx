@@ -45,7 +45,7 @@ const FILTER_STYLES = `
     border-color: var(--ps-cyan);
   }
   .ps-tll-input::placeholder {
-    color: var(--ps-text-disabled);
+    color: var(--ps-text-tertiary);
   }
   .ps-tll-select option {
     background: var(--ps-bg-surface);
@@ -226,6 +226,8 @@ export function TeamLeadList({
     [LeadStatus.LOST]: "Perdido",
   };
 
+  const isLeadStatus = (v: string): v is LeadStatus => v in STATUS_LABELS;
+
   const isSpinning = isLoading || isManualRefetch;
 
   return (
@@ -252,7 +254,7 @@ export function TeamLeadList({
                 left: 10,
                 top: "50%",
                 transform: "translateY(-50%)",
-                color: "var(--ps-text-disabled)",
+                color: "var(--ps-text-tertiary)",
                 pointerEvents: "none",
               }}
             />
@@ -289,9 +291,10 @@ export function TeamLeadList({
           {/* Filtro por estado */}
           <select
             value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value as LeadStatus | "all")
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "all" || isLeadStatus(value)) setStatusFilter(value);
+            }}
             className="ps-tll-select"
             style={{ width: 192 }}
             data-testid="status-filter"
@@ -384,7 +387,7 @@ export function TeamLeadList({
               fontWeight: 600,
               textTransform: "uppercase",
               letterSpacing: "0.08em",
-              color: "var(--ps-text-disabled)",
+              color: "var(--ps-text-tertiary)",
             }}
           >
             <div style={{ width: 192 }}>Comprador</div>

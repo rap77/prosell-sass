@@ -48,7 +48,7 @@ export default function PrivacyPage() {
                 style={{
                   margin: 0,
                   fontSize: 14,
-                  color: "var(--ps-text-disabled)",
+                  color: "var(--ps-text-tertiary)",
                 }}
               >
                 Próximamente

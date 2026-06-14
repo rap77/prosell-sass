@@ -173,7 +173,7 @@ function PwField({
             border: "none",
             cursor: "pointer",
             padding: 4,
-            color: "var(--ps-text-disabled)",
+            color: "var(--ps-text-tertiary)",
             display: "flex",
           }}
         >
@@ -288,7 +288,7 @@ function Disable2FAModal({
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "var(--ps-text-disabled)",
+              color: "var(--ps-text-tertiary)",
               padding: 4,
               display: "flex",
               flexShrink: 0,
@@ -628,7 +628,7 @@ export default function SettingsSecurityPage() {
                 <Shield
                   size={18}
                   strokeWidth={2}
-                  style={{ color: "var(--ps-text-disabled)" }}
+                  style={{ color: "var(--ps-text-tertiary)" }}
                 />
               )}
             </div>
