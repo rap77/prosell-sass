@@ -89,3 +89,4 @@ jobs:
               -H 'Content-Type: application/json' \
               -d "{\"text\":\"$MSG\"}" \
               || echo "⚠️ notify failed (non-fatal)"
+          fi
