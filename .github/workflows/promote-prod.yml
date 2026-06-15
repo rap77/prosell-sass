@@ -32,7 +32,10 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            cd /prosell
+            # Path del repo en el host. Parametrizado vía secret para no hardcodear
+            # (consistente con STAGING_REPO_PATH en deploy.yml). Fallback a /prosell
+            # si el secret no está seteado → backward-compatible.
+            cd ${{ secrets.PROD_REPO_PATH || '/prosell' }}
             git pull origin main
             docker compose -f docker/docker-compose.prod.yml up -d --build
             docker system prune -f
