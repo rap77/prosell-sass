@@ -83,7 +83,7 @@ export function OnboardingProgress({
                 background: done
                   ? "linear-gradient(135deg, var(--ps-cyan), var(--ps-blue))"
                   : "var(--ps-bg-elevated)",
-                color: done ? "var(--ps-bg-base)" : "var(--ps-text-disabled)",
+                color: done ? "var(--ps-bg-base)" : "var(--ps-text-tertiary)",
                 border: done ? "none" : "1px solid var(--ps-border-default)",
                 transition: "background 300ms, color 300ms",
               }}

@@ -338,7 +338,7 @@ export function LandingProblemSolution() {
                   fontWeight: 600,
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",
-                  color: "var(--ps-text-disabled)",
+                  color: "var(--ps-text-tertiary)",
                   marginBottom: 10,
                 }}
               >

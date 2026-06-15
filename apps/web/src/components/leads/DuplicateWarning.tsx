@@ -220,7 +220,7 @@ export function DuplicateWarning({
             style={{
               margin: "12px 0 0",
               fontSize: 11,
-              color: "var(--ps-text-disabled)",
+              color: "var(--ps-text-tertiary)",
             }}
           >
             Revisá los leads de arriba antes de continuar para evitar

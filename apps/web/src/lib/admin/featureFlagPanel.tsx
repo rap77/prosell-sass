@@ -52,7 +52,7 @@ export function FeatureFlagPanel() {
         >
           Feature Flags
         </h3>
-        <span style={{ fontSize: 10, color: "var(--ps-text-disabled)" }}>
+        <span style={{ fontSize: 10, color: "var(--ps-text-tertiary)" }}>
           (Dev Only)
         </span>
       </div>
@@ -79,11 +79,10 @@ export function FeatureFlagPanel() {
               transition: "background 0.1s",
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background =
-                "var(--ps-bg-elevated)";
+              e.currentTarget.style.background = "var(--ps-bg-elevated)";
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "transparent";
+              e.currentTarget.style.background = "transparent";
             }}
           >
             <input
@@ -129,12 +128,10 @@ export function FeatureFlagPanel() {
           transition: "background 0.1s",
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.background =
-            "var(--ps-bg-base)";
+          e.currentTarget.style.background = "var(--ps-bg-base)";
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.background =
-            "var(--ps-bg-elevated)";
+          e.currentTarget.style.background = "var(--ps-bg-elevated)";
         }}
       >
         Restablecer valores por defecto
@@ -146,7 +143,7 @@ export function FeatureFlagPanel() {
           paddingTop: 8,
           borderTop: "1px solid var(--ps-border-subtle)",
           fontSize: 10,
-          color: "var(--ps-text-disabled)",
+          color: "var(--ps-text-tertiary)",
         }}
       >
         Cambios persisten en localStorage

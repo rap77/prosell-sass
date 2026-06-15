@@ -11,8 +11,14 @@ import type { ProductImage } from "@/types/product-image";
 
 vi.mock("next/image", () => ({
   // Intentional plain <img> stub for next/image; alt is forwarded via props.
-  // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-  default: (props: Record<string, unknown>) => <img {...props} />,
+  default: ({
+    fill: _fill,
+    unoptimized: _unoptimized,
+    ...props
+  }: Record<string, unknown>) => {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img alt="" {...props} />;
+  },
 }));
 
 // Mock images for testing

@@ -12,7 +12,7 @@
  * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import type { ProductImage } from "@/types/product-image";
 import { ChevronLeft, ChevronRight } from "@/components/icons/chevron";
@@ -33,37 +33,30 @@ export function ProductImageGallery({
   // returns `url: null` when the backend didn't have a signed URL for that key
   // (e.g. raw internal-endpoint URLs that the browser can't fetch). Showing
   // them would feed an unreachable URL to <Image> and break the allowlist.
-  const renderableImages = useMemo(
-    () =>
-      (images ?? []).filter(
-        (img): img is ProductImage & { url: string } =>
-          typeof img.url === "string" && img.url.length > 0,
-      ),
-    [images],
+  const renderableImages = (images ?? []).filter(
+    (img): img is ProductImage & { url: string } =>
+      typeof img.url === "string" && img.url.length > 0,
   );
 
   const hasPrevious = currentIndex > 0;
   const hasNext = currentIndex < renderableImages.length - 1;
 
-  const goToPrevious = useCallback(() => {
+  const goToPrevious = () => {
     if (hasPrevious) setCurrentIndex((prev) => prev - 1);
-  }, [hasPrevious]);
+  };
 
-  const goToNext = useCallback(() => {
+  const goToNext = () => {
     if (hasNext) setCurrentIndex((prev) => prev + 1);
-  }, [hasNext]);
+  };
 
-  const selectImage = useCallback((index: number) => {
+  const selectImage = (index: number) => {
     setCurrentIndex(index);
-  }, []);
+  };
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "ArrowLeft") goToPrevious();
-      else if (e.key === "ArrowRight") goToNext();
-    },
-    [goToPrevious, goToNext],
-  );
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowLeft") goToPrevious();
+    else if (e.key === "ArrowRight") goToNext();
+  };
 
   useEffect(() => {
     galleryRef.current?.focus();
@@ -101,7 +94,7 @@ export function ProductImageGallery({
           border: "1px dashed var(--ps-border-subtle)",
         }}
       >
-        <p style={{ fontSize: 13, color: "var(--ps-text-disabled)" }}>
+        <p style={{ fontSize: 13, color: "var(--ps-text-tertiary)" }}>
           Sin imágenes disponibles
         </p>
       </div>

@@ -164,7 +164,7 @@ export function LandingFooter() {
                   fontWeight: 700,
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
-                  color: "var(--ps-text-disabled)",
+                  color: "var(--ps-text-tertiary)",
                   marginBottom: 16,
                 }}
               >
@@ -204,7 +204,7 @@ export function LandingFooter() {
             gap: 12,
           }}
         >
-          <span style={{ fontSize: 12, color: "var(--ps-text-disabled)" }}>
+          <span style={{ fontSize: 12, color: "var(--ps-text-tertiary)" }}>
             © {new Date().getFullYear()} ProSell. Todos los derechos reservados.
           </span>
           <div
@@ -213,7 +213,7 @@ export function LandingFooter() {
               alignItems: "center",
               gap: 8,
               fontSize: 12,
-              color: "var(--ps-text-disabled)",
+              color: "var(--ps-text-tertiary)",
             }}
           >
             <Link href="/terms" className="ps-footer-legal-link">

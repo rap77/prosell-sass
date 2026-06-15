@@ -158,7 +158,7 @@ function VehicleCard({
   const signedPhotoUrl = rawPhotoUrl
     ? (signedUrls?.images.find((img) => img.key === rawPhotoUrl)?.url ?? null)
     : null;
-  const photo_url = signedPhotoUrl || undefined;
+  const photoUrl = signedPhotoUrl || undefined;
 
   return (
     <article
@@ -186,14 +186,14 @@ function VehicleCard({
           overflow: "hidden",
         }}
       >
-        {photo_url ? (
+        {photoUrl ? (
           <Image
-            src={photo_url}
+            src={photoUrl}
             alt={product.title}
             fill
             sizes="(max-width: 768px) 100vw, 33vw"
             style={{ objectFit: "cover" }}
-            // Bypass the `/_next/image` proxy: `photo_url` is a MinIO
+            // Bypass the `/_next/image` proxy: `photoUrl` is a MinIO
             // presigned URL host-bound to `S3_PUBLIC_ENDPOINT_URL`, which
             // the server-side proxy (running inside the Docker `web`
             // container) cannot reach. The browser fetches the signed URL
@@ -372,7 +372,7 @@ function EmptyState({
       >
         <Car
           size={28}
-          style={{ color: "var(--ps-text-disabled)" }}
+          style={{ color: "var(--ps-text-tertiary)" }}
           strokeWidth={1.5}
         />
       </div>
@@ -687,7 +687,7 @@ export default function CatalogPage() {
                       left: 11,
                       top: "50%",
                       transform: "translateY(-50%)",
-                      color: "var(--ps-text-disabled)",
+                      color: "var(--ps-text-tertiary)",
                       pointerEvents: "none",
                       display: "inline-flex",
                     }}
@@ -699,7 +699,16 @@ export default function CatalogPage() {
                     placeholder="Buscar vehículo..."
                     value={filters.search}
                     onChange={(e) => setFilter("search", e.target.value)}
-                    className="focus:border-ps-cyan focus:shadow-[0_0_0_3px_var(--ps-input-focus-shadow)]"
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = "var(--ps-cyan)";
+                      e.currentTarget.style.boxShadow =
+                        "0 0 0 3px var(--ps-input-focus-shadow)";
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor =
+                        "var(--ps-input-border)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
                     style={{
                       height: 36,
                       width: 220,
@@ -973,7 +982,7 @@ export default function CatalogPage() {
                           style={{
                             textAlign: "center",
                             fontSize: 12,
-                            color: "var(--ps-text-disabled)",
+                            color: "var(--ps-text-tertiary)",
                             padding: "16px 0",
                           }}
                         >

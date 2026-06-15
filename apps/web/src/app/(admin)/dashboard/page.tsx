@@ -566,7 +566,7 @@ export default function DashboardPage() {
                       <span
                         style={{
                           fontSize: 11.5,
-                          color: "var(--ps-text-disabled)",
+                          color: "var(--ps-text-tertiary)",
                           fontFamily: "ui-monospace, monospace",
                         }}
                       >
@@ -600,7 +600,7 @@ export default function DashboardPage() {
                     </span>
                     <span
                       style={{
-                        color: "var(--ps-text-disabled)",
+                        color: "var(--ps-text-tertiary)",
                         display: "inline-flex",
                       }}
                     >

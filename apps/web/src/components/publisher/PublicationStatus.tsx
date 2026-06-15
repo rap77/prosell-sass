@@ -59,7 +59,7 @@ const STATUS_CONFIG: Record<PublicationStatusType, StatusConfig> = {
     label: "Expirado",
     bg: "var(--ps-chip-bg)",
     color: "var(--ps-text-secondary)",
-    dot: "var(--ps-text-disabled)",
+    dot: "var(--ps-text-tertiary)",
   },
   sold: {
     label: "Vendido",

@@ -122,7 +122,7 @@ export function LandingStyles() {
 
       .ps-footer-link { color: var(--ps-text-secondary); font-size: 13px; text-decoration: none; transition: color 200ms cubic-bezier(0.16,1,0.3,1); }
       .ps-footer-link:hover { color: var(--ps-cyan); }
-      .ps-footer-legal-link { color: var(--ps-text-disabled); font-size: 12px; text-decoration: none; transition: color 200ms; }
+      .ps-footer-legal-link { color: var(--ps-text-tertiary); font-size: 12px; text-decoration: none; transition: color 200ms; }
       .ps-footer-legal-link:hover { color: var(--ps-text-secondary); }
       .ps-footer-social-link {
         width: 32px; height: 32px; border-radius: 50%;

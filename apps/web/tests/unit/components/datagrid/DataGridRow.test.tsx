@@ -3,6 +3,16 @@ import { render, screen } from "@testing-library/react";
 import { MemoizedDataGridRow } from "@/components/datagrid/DataGridRow";
 import type { Row } from "@tanstack/react-table";
 
+function renderInTable(row: Row<unknown>) {
+  return render(
+    <table>
+      <tbody>
+        <MemoizedDataGridRow row={row} />
+      </tbody>
+    </table>,
+  );
+}
+
 describe("DataGridRow", () => {
   const mockRow = {
     id: "row-1",
@@ -33,7 +43,7 @@ describe("DataGridRow", () => {
   });
 
   it("renders row with correct styling", () => {
-    const { container } = render(<MemoizedDataGridRow row={mockRow} />);
+    const { container } = renderInTable(mockRow);
 
     const row = container.querySelector("tr");
     expect(row).toBeInTheDocument();
@@ -46,7 +56,7 @@ describe("DataGridRow", () => {
   });
 
   it("displays all cells from row.getVisibleCells()", () => {
-    const { container } = render(<MemoizedDataGridRow row={mockRow} />);
+    const { container } = renderInTable(mockRow);
 
     const cells = container.querySelectorAll("td");
     expect(cells).toHaveLength(2);
@@ -54,7 +64,7 @@ describe("DataGridRow", () => {
   });
 
   it("applies correct cell styling (padding, text size)", () => {
-    const { container } = render(<MemoizedDataGridRow row={mockRow} />);
+    const { container } = renderInTable(mockRow);
 
     const cells = container.querySelectorAll("td");
     cells.forEach((cell) => {
@@ -63,12 +73,18 @@ describe("DataGridRow", () => {
   });
 
   it("is memoized to prevent unnecessary re-renders", () => {
-    const { rerender } = render(<MemoizedDataGridRow row={mockRow} />);
+    const { rerender } = renderInTable(mockRow);
 
     const initialRow = screen.getByRole("row");
 
     // Re-render with same props
-    rerender(<MemoizedDataGridRow row={mockRow} />);
+    rerender(
+      <table>
+        <tbody>
+          <MemoizedDataGridRow row={mockRow} />
+        </tbody>
+      </table>,
+    );
 
     const rerenderedRow = screen.getByRole("row");
 

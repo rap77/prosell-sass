@@ -19,7 +19,7 @@ const PS_VARS = `
     --ps-border-default: rgba(77,184,255,0.12);
     --ps-text-primary: #e8eeff;
     --ps-text-secondary: rgba(138,155,191,0.9);
-    --ps-text-disabled: rgba(138,155,191,0.45);
+    --ps-text-tertiary: #7384ad;
     --ps-cyan: #4db8ff;
     --ps-bg-base-rgb: 6,13,36;
     --ps-warning: #f59e0b;
@@ -187,7 +187,7 @@ export default function GlobalRootErrorPage({
                   style={{
                     margin: 0,
                     fontSize: 11,
-                    color: "var(--ps-text-disabled)",
+                    color: "var(--ps-text-tertiary)",
                   }}
                 >
                   Referencia: {error.digest}

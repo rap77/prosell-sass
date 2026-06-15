@@ -47,6 +47,7 @@ import { authApi } from "@/lib/api/authApi";
 
 describe("VerifyEmailForm Component", () => {
   const mockToken = "test-verification-token-123";
+  const pendingVerification = () => new Promise<never>(() => {});
 
   beforeEach(() => {
     verifyEmailMock.mockResolvedValue(undefined);
@@ -60,6 +61,7 @@ describe("VerifyEmailForm Component", () => {
 
   describe("Basic Rendering", () => {
     it("should render loading state initially", () => {
+      verifyEmailMock.mockImplementation(pendingVerification);
       render(<VerifyEmailForm token={mockToken} />);
 
       expect(screen.getByText(/Verificando tu email/i)).toBeInTheDocument();
@@ -172,6 +174,7 @@ describe("VerifyEmailForm Component", () => {
 
   describe("Accessibility", () => {
     it("should have proper heading structure", () => {
+      verifyEmailMock.mockImplementation(pendingVerification);
       render(<VerifyEmailForm token={mockToken} />);
 
       // chadcn/ui CardTitle - search by text instead of level
@@ -182,6 +185,7 @@ describe("VerifyEmailForm Component", () => {
     });
 
     it("should show loading indicator with proper ARIA", () => {
+      verifyEmailMock.mockImplementation(pendingVerification);
       render(<VerifyEmailForm token={mockToken} />);
 
       const status = screen.getByRole("status");

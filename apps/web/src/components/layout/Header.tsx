@@ -185,6 +185,8 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
+              name="search"
+              aria-label="Search"
               placeholder="Search... (Cmd+K)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

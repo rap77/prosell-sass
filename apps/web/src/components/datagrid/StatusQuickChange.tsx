@@ -51,10 +51,12 @@ const statusConfig: Record<
   pending: { label: "Pendiente", icon: Clock, color: "var(--ps-warning)" },
   failed: { label: "Fallido", icon: XCircle, color: "var(--ps-error)" },
   draft: { label: "Borrador", icon: File, color: "var(--ps-text-secondary)" },
-  expired: { label: "Vencido", icon: Clock, color: "var(--ps-text-disabled)" },
+  expired: { label: "Vencido", icon: Clock, color: "var(--ps-text-tertiary)" },
   online: { label: "Online", icon: Globe, color: "var(--ps-cyan)" },
   sold: { label: "Vendido", icon: CheckCircle, color: "var(--ps-blue)" },
 };
+
+const isVehicleStatus = (s: string): s is VehicleStatus => s in statusConfig;
 
 // ============================================
 // COMPONENT
@@ -74,7 +76,8 @@ export function StatusQuickChange({
     function handleClickOutside(e: MouseEvent) {
       if (
         containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
+        e.target instanceof Node &&
+        !containerRef.current.contains(e.target)
       ) {
         setOpen(false);
       }
@@ -151,9 +154,10 @@ export function StatusQuickChange({
                 <button
                   key={status}
                   type="button"
-                  onClick={() =>
-                    !isCurrent && handleStatusChange(status as VehicleStatus)
-                  }
+                  onClick={() => {
+                    if (!isCurrent && isVehicleStatus(status))
+                      handleStatusChange(status);
+                  }}
                   disabled={isCurrent}
                   style={{
                     display: "flex",
@@ -166,7 +170,7 @@ export function StatusQuickChange({
                     textAlign: "left",
                     fontSize: 13,
                     color: isCurrent
-                      ? "var(--ps-text-disabled)"
+                      ? "var(--ps-text-tertiary)"
                       : "var(--ps-text-primary)",
                     cursor: isCurrent ? "default" : "pointer",
                     transition: "background 0.1s",
@@ -188,7 +192,7 @@ export function StatusQuickChange({
                   <span style={{ flex: 1 }}>{label}</span>
                   {isCurrent && (
                     <span
-                      style={{ fontSize: 10, color: "var(--ps-text-disabled)" }}
+                      style={{ fontSize: 10, color: "var(--ps-text-tertiary)" }}
                     >
                       Actual
                     </span>

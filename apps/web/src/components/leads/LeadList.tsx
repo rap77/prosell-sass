@@ -90,7 +90,7 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
         }}
       >
         <p style={{ margin: 0, fontSize: 14, color: "var(--ps-error)" }}>
-          Error al cargar leads: {(error as Error).message}
+          Error al cargar leads: {error.message}
         </p>
         <button
           type="button"
@@ -132,7 +132,7 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
               left: 11,
               top: "50%",
               transform: "translateY(-50%)",
-              color: "var(--ps-text-disabled)",
+              color: "var(--ps-text-tertiary)",
               pointerEvents: "none",
               display: "inline-flex",
             }}
@@ -276,7 +276,7 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
                 fontWeight: 600,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "var(--ps-text-disabled)",
+                color: "var(--ps-text-tertiary)",
               }}
             >
               {h}
@@ -324,7 +324,7 @@ export function LeadList({ vendedorId, onLeadClick }: LeadListProps) {
             >
               <Users
                 size={22}
-                style={{ color: "var(--ps-text-disabled)" }}
+                style={{ color: "var(--ps-text-tertiary)" }}
                 strokeWidth={1.5}
               />
             </div>

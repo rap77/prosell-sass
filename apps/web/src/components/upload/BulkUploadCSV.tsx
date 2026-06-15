@@ -42,7 +42,7 @@ const TABLE_STYLES = `
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--ps-text-disabled);
+    color: var(--ps-text-tertiary);
     background: var(--ps-bg-elevated);
     border-bottom: 1px solid var(--ps-border-default);
   }
@@ -136,7 +136,9 @@ export function BulkUploadCSV({
   const parseCSV = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      const text = e.target?.result as string;
+      const result = e.target?.result;
+      if (typeof result !== "string") return;
+      const text = result;
       try {
         const lines = text.split("\n").filter((line) => line.trim());
         const headers = lines[0].split(",").map((h) => h.trim());
@@ -371,7 +373,7 @@ export function BulkUploadCSV({
           <Upload
             size={40}
             strokeWidth={1.5}
-            style={{ color: "var(--ps-text-disabled)", marginBottom: 16 }}
+            style={{ color: "var(--ps-text-tertiary)", marginBottom: 16 }}
           />
           <p
             style={{
@@ -491,7 +493,7 @@ export function BulkUploadCSV({
                 <tbody>
                   {previewRows.map((row) => (
                     <tr key={row.rowNumber}>
-                      <td style={{ color: "var(--ps-text-disabled)" }}>
+                      <td style={{ color: "var(--ps-text-tertiary)" }}>
                         {row.rowNumber}
                       </td>
                       <td style={{ fontFamily: "monospace", fontSize: 11 }}>

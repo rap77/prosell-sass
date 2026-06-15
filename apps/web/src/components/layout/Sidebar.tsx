@@ -270,7 +270,7 @@ Sidebar.Nav = function SidebarNav({
             {!collapsed && groupLabels[group] && (
               <span
                 className="block mb-1 px-4 text-[10px] font-bold uppercase tracking-[0.14em]"
-                style={{ color: "var(--ps-text-disabled)" }}
+                style={{ color: "var(--ps-text-tertiary)" }}
               >
                 {groupLabels[group]}
               </span>

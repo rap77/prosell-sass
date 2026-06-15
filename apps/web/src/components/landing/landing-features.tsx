@@ -274,7 +274,7 @@ export function LandingFeatures() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    color: "var(--ps-text-disabled)",
+                    color: "var(--ps-text-tertiary)",
                   }}
                 >
                   <svg
@@ -614,7 +614,7 @@ export function LandingFeatures() {
                       <div
                         style={{
                           fontSize: 11,
-                          color: "var(--ps-text-disabled)",
+                          color: "var(--ps-text-tertiary)",
                         }}
                       >
                         {l.time}

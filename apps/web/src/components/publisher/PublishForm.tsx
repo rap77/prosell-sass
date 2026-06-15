@@ -57,7 +57,7 @@ const FORM_STYLES = `
   }
   .ps-pub-input::placeholder,
   .ps-pub-textarea::placeholder {
-    color: var(--ps-text-disabled);
+    color: var(--ps-text-tertiary);
   }
   .ps-pub-select option {
     background: var(--ps-bg-surface);
@@ -335,7 +335,7 @@ export function PublishForm({
     fontWeight: 700,
     textTransform: "uppercase",
     letterSpacing: "0.12em",
-    color: "var(--ps-text-disabled)",
+    color: "var(--ps-text-tertiary)",
     marginBottom: 0,
   };
 
@@ -360,7 +360,7 @@ export function PublishForm({
             <span
               style={{
                 fontWeight: 400,
-                color: "var(--ps-text-disabled)",
+                color: "var(--ps-text-tertiary)",
                 marginLeft: 6,
               }}
             >
@@ -394,7 +394,7 @@ export function PublishForm({
             <label htmlFor="description" style={labelStyle}>
               Descripción{" "}
               <span
-                style={{ fontWeight: 400, color: "var(--ps-text-disabled)" }}
+                style={{ fontWeight: 400, color: "var(--ps-text-tertiary)" }}
               >
                 (opcional)
               </span>

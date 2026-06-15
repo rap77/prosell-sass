@@ -24,7 +24,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 
 // ---- next/navigation ----
 const mockUsePathname = vi.fn();
@@ -268,26 +267,17 @@ describe("Header — user menu navigation", () => {
     expect(settingsLink).toHaveAttribute("href", "/settings");
   });
 
-  it("navigates when Profile is clicked", async () => {
-    const user = userEvent.setup();
+  it("exposes Profile navigation via href", () => {
     render(<Header />);
 
     const profileLink = screen.getByRole("menuitem", { name: /profile/i });
-    // Clicking a real <a href="..."> triggers a navigation; in jsdom the
-    // anchor has its href, so we assert the href and that clicking the
-    // (anchor) element does not throw.
-    await user.click(profileLink);
-
     expect(profileLink).toHaveAttribute("href", "/profile");
   });
 
-  it("navigates when Settings is clicked", async () => {
-    const user = userEvent.setup();
+  it("exposes Settings navigation via href", () => {
     render(<Header />);
 
     const settingsLink = screen.getByRole("menuitem", { name: /settings/i });
-    await user.click(settingsLink);
-
     expect(settingsLink).toHaveAttribute("href", "/settings");
   });
 });

@@ -15,7 +15,6 @@
  * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 
-import { useMemo } from "react";
 import {
   Loader2,
   Users,
@@ -158,7 +157,7 @@ function KpiCard({
             style={{
               margin: "3px 0 0",
               fontSize: 11,
-              color: "var(--ps-text-disabled)",
+              color: "var(--ps-text-tertiary)",
             }}
           >
             {sub}
@@ -246,7 +245,7 @@ function FunnelRow({
           <span
             style={{
               fontSize: 11,
-              color: "var(--ps-text-disabled)",
+              color: "var(--ps-text-tertiary)",
               width: 34,
               textAlign: "right",
             }}
@@ -314,7 +313,7 @@ function VendedorRow({
         style={{
           fontSize: 11,
           fontWeight: 700,
-          color: isTop ? "var(--ps-cyan)" : "var(--ps-text-disabled)",
+          color: isTop ? "var(--ps-cyan)" : "var(--ps-text-tertiary)",
           textAlign: "center",
         }}
       >
@@ -393,7 +392,7 @@ function VendedorRow({
           {vendedor.total_leads}
         </p>
         <p
-          style={{ margin: 0, fontSize: 10, color: "var(--ps-text-disabled)" }}
+          style={{ margin: 0, fontSize: 10, color: "var(--ps-text-tertiary)" }}
         >
           {Math.round(vendedor.conversion_rate * 100)}% conv.
         </p>
@@ -497,39 +496,36 @@ export default function AnalyticsPage() {
   const isLoading = metricsLoading || leadsLoading;
 
   // Status distribution
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const lead of leads) {
-      counts[lead.status] = (counts[lead.status] ?? 0) + 1;
-    }
-    return counts;
-  }, [leads]);
+  const statusCounts: Record<string, number> = {};
+  for (const lead of leads) {
+    statusCounts[lead.status] = (statusCounts[lead.status] ?? 0) + 1;
+  }
 
-  const activeFunnelTotal = useMemo(
-    () =>
-      FUNNEL_STAGES.reduce((sum, s) => sum + (statusCounts[s.status] ?? 0), 0),
-    [statusCounts],
+  const activeFunnelTotal = FUNNEL_STAGES.reduce(
+    (sum, s) => sum + (statusCounts[s.status] ?? 0),
+    0,
   );
 
   // Source breakdown
-  const sourceCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const lead of leads) {
-      if (lead.source) counts[lead.source] = (counts[lead.source] ?? 0) + 1;
-    }
-    return Object.entries(counts).sort(([, a], [, b]) => b - a);
-  }, [leads]);
+  const sourceCountsByKey: Record<string, number> = {};
+  for (const lead of leads) {
+    if (lead.source)
+      sourceCountsByKey[lead.source] =
+        (sourceCountsByKey[lead.source] ?? 0) + 1;
+  }
+  const sourceCounts = Object.entries(sourceCountsByKey).sort(
+    ([, a], [, b]) => b - a,
+  );
 
   const lostCount = statusCounts[LeadStatus.LOST] ?? 0;
   const totalLeads = metrics?.total_leads ?? leads.length;
 
   // Vendedor leaderboard — sorted by total_leads desc
-  const leaderboard = useMemo(() => {
-    if (!metrics?.vendedor_breakdown) return [];
-    return [...metrics.vendedor_breakdown].sort(
-      (a, b) => b.total_leads - a.total_leads,
-    );
-  }, [metrics]);
+  const leaderboard = metrics?.vendedor_breakdown
+    ? [...metrics.vendedor_breakdown].sort(
+        (a, b) => b.total_leads - a.total_leads,
+      )
+    : [];
 
   const maxVendedorLeads = leaderboard[0]?.total_leads ?? 1;
 
@@ -802,7 +798,7 @@ export default function AnalyticsPage() {
               style={{
                 margin: 0,
                 fontSize: 13,
-                color: "var(--ps-text-disabled)",
+                color: "var(--ps-text-tertiary)",
                 textAlign: "center",
                 padding: "32px 0",
               }}
@@ -825,7 +821,7 @@ export default function AnalyticsPage() {
                 style={{
                   margin: "12px 0 0",
                   fontSize: 11,
-                  color: "var(--ps-text-disabled)",
+                  color: "var(--ps-text-tertiary)",
                 }}
               >
                 Ordenado por total de leads asignados.
@@ -895,7 +891,7 @@ export default function AnalyticsPage() {
                       {count}
                     </span>
                     <span
-                      style={{ fontSize: 11, color: "var(--ps-text-disabled)" }}
+                      style={{ fontSize: 11, color: "var(--ps-text-tertiary)" }}
                     >
                       {pct}%
                     </span>

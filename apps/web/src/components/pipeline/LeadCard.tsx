@@ -140,7 +140,7 @@ export function LeadCard({ lead }: LeadCardProps) {
           <Car
             size={11}
             strokeWidth={2}
-            style={{ color: "var(--ps-text-disabled)", flexShrink: 0 }}
+            style={{ color: "var(--ps-text-tertiary)", flexShrink: 0 }}
           />
           <span
             style={{
@@ -185,9 +185,9 @@ export function LeadCard({ lead }: LeadCardProps) {
           <Clock
             size={10}
             strokeWidth={2}
-            style={{ color: "var(--ps-text-disabled)" }}
+            style={{ color: "var(--ps-text-tertiary)" }}
           />
-          <span style={{ fontSize: 10, color: "var(--ps-text-disabled)" }}>
+          <span style={{ fontSize: 10, color: "var(--ps-text-tertiary)" }}>
             {timeInStage}
           </span>
         </div>
@@ -234,7 +234,7 @@ export function LeadCard({ lead }: LeadCardProps) {
               background: "transparent",
               border: 0,
               borderRadius: 6,
-              color: "var(--ps-text-disabled)",
+              color: "var(--ps-text-tertiary)",
               cursor: "pointer",
               transition: "color 150ms, background 150ms",
               opacity: markLost.isPending ? 0.5 : 1,
@@ -244,7 +244,7 @@ export function LeadCard({ lead }: LeadCardProps) {
               e.currentTarget.style.background = "var(--ps-danger-hover-bg)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "var(--ps-text-disabled)";
+              e.currentTarget.style.color = "var(--ps-text-tertiary)";
               e.currentTarget.style.background = "transparent";
             }}
           >

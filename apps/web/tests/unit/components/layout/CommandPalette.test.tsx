@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import type { Vehicle } from "@/components/datagrid/DataGrid";
 import React from "react";
@@ -24,7 +23,22 @@ vi.mock("cmdk", () => ({
       {children}
     </div>
   ),
-  CommandInput: (props: any) => <input {...props} data-testid="cmdk-input" />,
+  CommandInput: ({
+    onValueChange,
+    value,
+    ...props
+  }: {
+    onValueChange?: (value: string) => void;
+    value?: string;
+    [key: string]: unknown;
+  }) => (
+    <input
+      {...props}
+      data-testid="cmdk-input"
+      value={value}
+      onChange={(e) => onValueChange?.(e.target.value)}
+    />
+  ),
   CommandList: ({ children }: any) => (
     <div data-testid="cmdk-list">{children}</div>
   ),
@@ -65,7 +79,6 @@ describe("CommandPalette", () => {
   });
 
   it("opens on Cmd+K keyboard shortcut", async () => {
-    const user = userEvent.setup();
     render(<CommandPalette vehicles={mockVehicles} />);
 
     // Simulate Cmd+K
@@ -79,7 +92,6 @@ describe("CommandPalette", () => {
   });
 
   it("opens on Ctrl+K keyboard shortcut", async () => {
-    const user = userEvent.setup();
     render(<CommandPalette vehicles={mockVehicles} />);
 
     // Simulate Ctrl+K

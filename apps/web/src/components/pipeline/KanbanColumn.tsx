@@ -49,7 +49,7 @@ const COLUMN_THEME: Record<string, ColumnTheme> = {
 };
 
 const FALLBACK_THEME: ColumnTheme = {
-  dot: "var(--ps-text-disabled)",
+  dot: "var(--ps-text-tertiary)",
   accent: "var(--ps-border-default)",
   overBg: "var(--ps-hover-bg-xs)",
   overRing: "var(--ps-border-default)",
@@ -147,7 +147,7 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
               border: "1px solid var(--ps-border-subtle)",
               fontSize: 11,
               fontWeight: 700,
-              color: leads.length > 0 ? theme.dot : "var(--ps-text-disabled)",
+              color: leads.length > 0 ? theme.dot : "var(--ps-text-tertiary)",
             }}
           >
             {leads.length}
@@ -213,7 +213,7 @@ export function KanbanColumn({ status, leads }: KanbanColumnProps) {
               alignItems: "center",
               justifyContent: "center",
               fontSize: 12,
-              color: "var(--ps-text-disabled)",
+              color: "var(--ps-text-tertiary)",
               border: `1px dashed var(--ps-border-subtle)`,
               borderRadius: 8,
               minHeight: 80,
