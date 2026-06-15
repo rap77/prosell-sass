@@ -1,22 +1,37 @@
 #!/usr/bin/env bash
 # =============================================================================
-# rotate-db-password.sh — Rota el password de Postgres en producción.
+# rotate-db-password.sh — Aplica la rotación del password de Postgres en prod.
 # =============================================================================
 #
-# CONTEXTO
+# DÓNDE ENCAJA EN EL PROCESO
+#   Este script automatiza los pasos 2-3 del runbook oficial de rotación
+#   (docs/SECRET_ROTATION.md), SOLO para Postgres. El flujo completo es:
+#
+#     1. Generar el valor nuevo      → ./scripts/rotate-secrets.sh db
+#     2. Aplicar al provider (ALTER) → ESTE SCRIPT
+#     3. Deployar (.env + recreate)  → ESTE SCRIPT
+#     4. Smoke test + log            → manual (ver runbook §4 y §"Historial")
+#
+#   Para Redis, OAuth, JWT, Admin y el resto, seguí el runbook oficial: este
+#   script NO los toca.
+#
+# CONTEXTO TÉCNICO
 #   Cambiar POSTGRES_PASSWORD en .env.prod NO rota el password de una base ya
 #   inicializada: el contenedor de Postgres solo lee esa variable la PRIMERA vez
-#   (volumen vacío). Hay que aplicar ALTER USER por dentro. Este script lo hace.
+#   (volumen vacío). Hay que aplicar ALTER USER por dentro. Este script lo hace
+#   vía socket local (auth trust → NO necesita el password viejo).
 #
 # FLUJO
-#   1. Editás .env.prod con el password NUEVO (POSTGRES_PASSWORD y el password
-#      embebido en DATABASE_URL).  <-- lo hacés vos a mano, antes de correr esto.
+#   1. Editás .env.prod con el password NUEVO:  <-- lo hacés vos, antes de correr.
+#        - POSTGRES_PASSWORD=<nuevo>            (valor crudo)
+#        - DATABASE_URL=...://user:<nuevo>@...  (percent-encodeado si tiene / + = etc.)
 #   2. Corrés este script. El script:
 #        a. Lee el password nuevo de .env.prod (nunca lo imprime).
-#        b. Aplica ALTER USER dentro del contenedor de la DB vía socket local
-#           (auth trust → NO necesita el password viejo).
-#        c. Verifica que el password nuevo funciona por TCP (scram-sha-256).
-#        d. Recrea api + worker para que tomen el DATABASE_URL nuevo.
+#        b. Valida que POSTGRES_PASSWORD y DATABASE_URL estén en sync
+#           (percent-decodea el de la URL antes de comparar).
+#        c. Aplica ALTER USER dentro del contenedor de la DB.
+#        d. Verifica que el password nuevo funciona por TCP (scram-sha-256).
+#        e. Recrea api + worker (--no-build) para que tomen el DATABASE_URL nuevo.
 #
 # USO (desde /opt/prosell en el host de producción)
 #   ./scripts/rotate-db-password.sh             # ejecuta (pide confirmación)
@@ -25,8 +40,9 @@
 #
 # REQUISITOS
 #   - Stack prod corriendo: prosell-prod-db, prosell-prod-api, prosell-prod-worker
-#   - Password nuevo SIN caracteres URL-especiales (/ : @ ? # & = +) para no tener
-#     que percent-encodear el DATABASE_URL. Usá alfanumérico largo.
+#   - Recomendado: password URL-safe (`openssl rand -hex 32`) para evitar tener
+#     que percent-encodear el DATABASE_URL. Si usás el base64 de rotate-secrets.sh,
+#     percent-encodealo en la URL (/ → %2F, + → %2B, = → %3D).
 # =============================================================================
 
 set -euo pipefail
@@ -63,6 +79,9 @@ die() {
   exit 1
 }
 
+# percent-decode: %2F → /, %2B → +, etc. (para el password embebido en la URL)
+urldecode() { printf '%b' "${1//%/\\x}"; }
+
 # --- preflight --------------------------------------------------------------
 [ -f "$ENV_FILE" ] || die "No encuentro $ENV_FILE (¿corriste desde /opt/prosell?)"
 [ -f "$COMPOSE_FILE" ] || die "No encuentro $COMPOSE_FILE"
@@ -90,23 +109,26 @@ DBURL="$(read_env DATABASE_URL)"
 
 [ -n "$NEWPW" ] || die "POSTGRES_PASSWORD está vacío en $ENV_FILE"
 
-# --- sanity checks ----------------------------------------------------------
-# 1) password sin caracteres URL-especiales (evita drift con DATABASE_URL)
-if printf '%s' "$NEWPW" | grep -qE '[/:@?#&=+%]'; then
-  die "El password nuevo tiene caracteres URL-especiales (/ : @ ? # & = + %). Usá alfanumérico o vas a tener que percent-encodear el DATABASE_URL a mano."
+# --- sanity check: POSTGRES_PASSWORD ↔ DATABASE_URL en sync -----------------
+# Soporta passwords URL-safe (hex/alfanum) Y base64 percent-encodeado.
+URL_PW_RAW="$(printf '%s' "$DBURL" | sed -E 's#^[^:]+://[^:]+:([^@]*)@.*#\1#')"
+URL_PW_DECODED="$(urldecode "$URL_PW_RAW")"
+
+if [ "$URL_PW_DECODED" != "$NEWPW" ]; then
+  die "El password de DATABASE_URL no coincide con POSTGRES_PASSWORD. Actualizá los DOS en $ENV_FILE (y percent-encodeá el de la URL si tiene / + = etc.)."
 fi
 
-# 2) el password embebido en DATABASE_URL coincide con POSTGRES_PASSWORD
-URL_PW="$(printf '%s' "$DBURL" | sed -E 's#^[^:]+://[^:]+:([^@]*)@.*#\1#')"
-if [ "$URL_PW" != "$NEWPW" ]; then
-  die "El password de DATABASE_URL NO coincide con POSTGRES_PASSWORD. Actualizá los DOS en $ENV_FILE antes de rotar."
+# Footgun: password con chars especiales pero CRUDO (sin encodear) en la URL.
+# asyncpg/SQLAlchemy fallarían al parsear aunque psql funcione → abortar acá.
+if printf '%s' "$NEWPW" | grep -qE '[/:@?#&=+%]' && [ "$URL_PW_RAW" = "$NEWPW" ]; then
+  die "El password tiene chars URL-especiales pero está SIN percent-encodear en DATABASE_URL. Encodealo (/ → %2F, + → %2B, = → %3D) o usá un password hex (openssl rand -hex 32)."
 fi
 ok "Preflight OK — usuario=$PGUSER db=$PGDB · POSTGRES_PASSWORD y DATABASE_URL en sync"
 
 if $DRY_RUN; then
   log "[dry-run] ALTER USER \"$PGUSER\" WITH PASSWORD '<nuevo>'  (vía socket local en $DB_CONTAINER)"
   log "[dry-run] verificar por TCP con el password nuevo"
-  log "[dry-run] docker compose -f $COMPOSE_FILE up -d --force-recreate api worker"
+  log "[dry-run] docker compose -f $COMPOSE_FILE up -d --no-build --force-recreate api worker"
   ok "Dry-run completo. No se tocó nada."
   exit 0
 fi
@@ -139,11 +161,17 @@ else
 fi
 
 # --- 3. Recrear api + worker para que tomen el DATABASE_URL nuevo -----------
-log "Recreando api + worker con el DATABASE_URL nuevo…"
-docker compose -f "$COMPOSE_FILE" up -d --force-recreate api worker
+# --no-build: usa la imagen existente. NUNCA dispara un rebuild/deploy completo
+# por accidente. Si la imagen no existe, falla fuerte (mejor que un deploy silencioso).
+# Nota: aplica la config ACTUAL del compose — si el host pulleó cambios en
+# docker-compose.prod.yml, revisalos antes de correr esto.
+log "Recreando api + worker con el DATABASE_URL nuevo (--no-build)…"
+docker compose -f "$COMPOSE_FILE" up -d --no-build --force-recreate api worker
 ok "api + worker recreados."
 
 ok "Rotación de password de Postgres COMPLETA."
 echo
-echo "Próximo paso recomendado: verificá el login en https://prosellweb.com y"
-echo "revisá  docker logs prosell-prod-api --tail 50  por errores de conexión."
+echo "Próximos pasos (runbook docs/SECRET_ROTATION.md §4-§Historial):"
+echo "  1. Smoke test: login en https://prosellweb.com"
+echo "  2. Monitoreá  docker logs prosell-prod-api --tail 50  por errores de auth (~30 min)"
+echo "  3. Anotá la rotación en la tabla 'Historial de rotaciones' de docs/SECRET_ROTATION.md"
