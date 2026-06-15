@@ -34,9 +34,41 @@ jobs:
         working-directory: ${{ secrets.STAGING_REPO_PATH }}
         run: |
           set -e
-          git pull origin main
-          # --env-file: el compose usa ${VAR} para los secrets (no hardcodeados);
-          # se interpolan desde .env.staging, que vive en el host (gitignored).
+
+          # Archivos de config del host (gitignored o untracked en main, pero el host
+          # puede tenerlos tracked en commits viejos con cambios locales sin commit).
+          # El pull NO debe pisarlos. Patrón análogo a docs/PROMOTE_PROD_RUNBOOK.md
+          # §A.2-A.3, pero auto-aplicado para que staging no se rompa en silencio.
+          HOST_CONFIG_FILES=(".env.staging" ".env.staging.local" ".env.local")
+          BACKUP_DIR="/tmp/prosell-staging-host-config-$(date +%s)"
+          mkdir -p "$BACKUP_DIR"
+          for f in "${HOST_CONFIG_FILES[@]}"; do
+            if [ -f "$f" ]; then
+              cp "$f" "$BACKUP_DIR/" && echo "✓ backed up host config: $f"
+            fi
+          done
+
+          # Intentar pull limpio
+          if ! git pull origin main; then
+            echo "::warning::git pull abortó (probablemente cambios locales tracked en archivos del host)."
+            echo "::warning::Aplicando destrabe automático: descartar cambios tracked + remover del index local + reintentar."
+            for f in "${HOST_CONFIG_FILES[@]}"; do
+              git checkout -- "$f" 2>/dev/null || true
+              git rm --cached "$f" 2>/dev/null || true
+            done
+            git pull origin main
+          fi
+
+          # Restaurar archivos del host desde backup (pueden haber sido borrados o sobreescritos)
+          for f in "${HOST_CONFIG_FILES[@]}"; do
+            if [ -f "$BACKUP_DIR/$(basename "$f")" ]; then
+              cp "$BACKUP_DIR/$(basename "$f")" "$f" && echo "✓ restored host config: $f"
+            fi
+          done
+
+          # Deploy propiamente dicho. --env-file: el compose usa ${VAR} para los secrets
+          # (no hardcodeados); se interpolan desde .env.staging, que vive en el host
+          # (gitignored).
           docker compose --env-file .env.staging -f docker/docker-compose.staging.yml up -d --build
           docker system prune -f
 
@@ -44,10 +76,16 @@ jobs:
         if: always()
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          DEPLOY_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ -n "$WEBHOOK_URL" ]; then
+            if [ "$DEPLOY_STATUS" = "success" ]; then
+              MSG="✅ Staging deploy OK — revisá local, luego corré \"Promote to Production\" manual si querés promover."
+            else
+              MSG="❌ Staging deploy FAILED (status: $DEPLOY_STATUS). Revisá: $RUN_URL"
+            fi
             curl -X POST "$WEBHOOK_URL" \
               -H 'Content-Type: application/json' \
-              -d '{"text":"✅ Staging deploy done — revisá local, luego corré \"Promote to Production\" manual si querés promover."}' \
-              || echo "⚠️ notify failed (non-fatal) — el deploy igual fue exitoso"
-          fi
+              -d "{\"text\":\"$MSG\"}" \
+              || echo "⚠️ notify failed (non-fatal)"
