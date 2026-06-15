@@ -46,13 +46,13 @@ con error críptico en el primer step.
 
 Verificá en **github.com/rap77/prosell-sass → Settings → Secrets and variables → Actions**:
 
-| Secret | Descripción | Default si falta |
-|---|---|---|
-| `PROD_HOST` | IP o hostname del droplet (`prosellweb.com` o `204.48.26.215`) | ❌ FALLA el workflow |
-| `SSH_USER` | Usuario SSH en el host (ej: `deploy`) | ❌ FALLA el workflow |
-| `SSH_PRIVATE_KEY` | Contenido COMPLETO de la private key (incluyendo `-----BEGIN/END-----`) | ❌ FALLA el workflow |
-| `PROD_REPO_PATH` | Path del repo en el host (recomendado: `/opt/prosell`) | Fallback a `/prosell` (puede fallar) |
-| `WEBHOOK_URL` | (Opcional) Webhook para notificar post-deploy | Skip silencioso si falta |
+| Secret            | Descripción                                                             | Default si falta                     |
+| ----------------- | ----------------------------------------------------------------------- | ------------------------------------ |
+| `PROD_HOST`       | IP o hostname del droplet (`prosellweb.com` o `204.48.26.215`)          | ❌ FALLA el workflow                 |
+| `SSH_USER`        | Usuario SSH en el host (ej: `deploy`)                                   | ❌ FALLA el workflow                 |
+| `SSH_PRIVATE_KEY` | Contenido COMPLETO de la private key (incluyendo `-----BEGIN/END-----`) | ❌ FALLA el workflow                 |
+| `PROD_REPO_PATH`  | Path del repo en el host (recomendado: `/opt/prosell`)                  | Fallback a `/prosell` (puede fallar) |
+| `WEBHOOK_URL`     | (Opcional) Webhook para notificar post-deploy                           | Skip silencioso si falta             |
 
 ```bash
 # Verificación rápida desde la CLI (requiere gh auth con permisos de admin)
