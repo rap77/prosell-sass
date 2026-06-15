@@ -15,7 +15,7 @@ from uuid import uuid4
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import bcrypt
-from sqlalchemy import select
+from sqlalchemy import make_url, select
 
 # Use settings from the app — no hardcoded DATABASE_URL
 from prosell.core.config import settings
@@ -33,9 +33,18 @@ from prosell.infrastructure.models import (
 )
 
 
+def _safe_db_url(url: str) -> str:
+    """Return the DB URL with the password masked, for safe logging.
+
+    The init script runs on container startup and its output lands in
+    `docker logs`; logging the raw URL would leak the password in plaintext.
+    """
+    return make_url(url).render_as_string(hide_password=True)
+
+
 async def init_data() -> None:
     """Initialize minimal data for MVP using ORM models."""
-    print(f"Starting MVP data initialization on {settings.database_url}...")
+    print(f"Starting MVP data initialization on {_safe_db_url(settings.database_url)}...")
 
     async with async_session_maker() as session:
         # 1. Create Default Organization
