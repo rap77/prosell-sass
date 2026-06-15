@@ -43,8 +43,11 @@ jobs:
       - name: Health check post-deploy
         run: |
           sleep 30
-          curl -f --retry 5 --retry-delay 10 --retry-connrefused \
-            https://api.prosellweb.com/health
+          # Path completo con prefijo /api/v1/ y slash final. -L sigue el 307
+          # redirect del endpoint. Sin esto el workflow falla con 404 (path sin
+          # prefijo) o 22 (curl exit code on 3xx sin -L).
+          curl -fL --retry 5 --retry-delay 10 --retry-connrefused \
+            https://api.prosellweb.com/api/v1/health/
 
       - name: Notify production deploy done
         if: success()

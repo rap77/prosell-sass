@@ -69,7 +69,10 @@ services:
       - ../apps/api/keys:/app/keys:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      # Path completo con prefijo Y slash final. El endpoint redirige (307) a la
+      # versión con /, así que usamos -L para seguir el redirect. Sin -L, curl -f
+      # falla con 3xx y el container queda en "starting" para siempre.
+      test: ["CMD", "curl", "-fL", "http://localhost:8000/api/v1/health/"]
       interval: 30s
       timeout: 10s
       retries: 3
