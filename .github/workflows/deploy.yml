@@ -51,10 +51,14 @@ jobs:
           # Intentar pull limpio
           if ! git pull origin main; then
             echo "::warning::git pull abortó (probablemente cambios locales tracked en archivos del host)."
-            echo "::warning::Aplicando destrabe automático: descartar cambios tracked + remover del index local + reintentar."
+            echo "::warning::Aplicando destrabe automático: descartar cambios tracked + remover del index local + borrar del disco (el restore post-pull los recupera) + reintentar."
             for f in "${HOST_CONFIG_FILES[@]}"; do
               git checkout -- "$f" 2>/dev/null || true
               git rm --cached "$f" 2>/dev/null || true
+              # Después de `git rm --cached`, el archivo queda UNTRACKED en disco.
+              # `git pull` se rehúsa a borrar untracked files, así que hay que
+              # borrarlo manualmente. El restore post-pull lo recupera del backup.
+              rm -f "$f"
             done
             git pull origin main
           fi
