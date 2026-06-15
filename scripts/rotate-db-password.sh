@@ -125,10 +125,18 @@ if printf '%s' "$NEWPW" | grep -qE '[/:@?#&=+%]' && [ "$URL_PW_RAW" = "$NEWPW" ]
 fi
 ok "Preflight OK — usuario=$PGUSER db=$PGDB · POSTGRES_PASSWORD y DATABASE_URL en sync"
 
+# Recrear solo los servicios de app que YA existen. El worker puede no estar
+# desplegado todavía (es un servicio nuevo en el compose); en ese caso NO lo
+# tocamos — desplegarlo es una operación de deploy aparte, no de rotación.
+RECREATE_SERVICES=(api)
+if docker inspect prosell-prod-worker >/dev/null 2>&1; then
+  RECREATE_SERVICES+=(worker)
+fi
+
 if $DRY_RUN; then
   log "[dry-run] ALTER USER \"$PGUSER\" WITH PASSWORD '<nuevo>'  (vía socket local en $DB_CONTAINER)"
   log "[dry-run] verificar por TCP con el password nuevo"
-  log "[dry-run] docker compose -f $COMPOSE_FILE up -d --no-build --force-recreate api worker"
+  log "[dry-run] docker compose -f $COMPOSE_FILE up -d --no-build --force-recreate ${RECREATE_SERVICES[*]}"
   ok "Dry-run completo. No se tocó nada."
   exit 0
 fi
@@ -165,9 +173,9 @@ fi
 # por accidente. Si la imagen no existe, falla fuerte (mejor que un deploy silencioso).
 # Nota: aplica la config ACTUAL del compose — si el host pulleó cambios en
 # docker-compose.prod.yml, revisalos antes de correr esto.
-log "Recreando api + worker con el DATABASE_URL nuevo (--no-build)…"
-docker compose -f "$COMPOSE_FILE" up -d --no-build --force-recreate api worker
-ok "api + worker recreados."
+log "Recreando ${RECREATE_SERVICES[*]} con el DATABASE_URL nuevo (--no-build)…"
+docker compose -f "$COMPOSE_FILE" up -d --no-build --force-recreate "${RECREATE_SERVICES[@]}"
+ok "${RECREATE_SERVICES[*]} recreado(s)."
 
 ok "Rotación de password de Postgres COMPLETA."
 echo
