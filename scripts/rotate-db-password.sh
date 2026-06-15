@@ -152,20 +152,29 @@ fi
 
 # --- 1. ALTER USER (socket local = trust, no necesita password viejo) -------
 log "Aplicando ALTER USER dentro de $DB_CONTAINER…"
-# :'newpw' hace que psql escape/quote el valor de forma segura (a prueba de
-# inyección y de caracteres raros). ON_ERROR_STOP=1 corta ante cualquier error.
+# El password va como variable de psql (:'newpw') para que psql lo escape/quote
+# de forma segura (a prueba de inyección y caracteres raros). OJO: la
+# interpolación :'var' NO funciona con -c; hay que pasar el SQL por stdin.
+# ON_ERROR_STOP=1 corta ante cualquier error.
 docker exec -i "$DB_CONTAINER" \
-  psql -U "$PGUSER" -d "$PGDB" -v ON_ERROR_STOP=1 -v newpw="$NEWPW" \
-  -c "ALTER USER \"$PGUSER\" WITH PASSWORD :'newpw';" >/dev/null
+  psql -U "$PGUSER" -d "$PGDB" -v ON_ERROR_STOP=1 -v newpw="$NEWPW" >/dev/null <<EOF
+ALTER USER "$PGUSER" WITH PASSWORD :'newpw';
+EOF
 ok "ALTER USER aplicado."
 
-# --- 2. Verificar por TCP (fuerza scram-sha-256, prueba el password real) ---
-log "Verificando el password nuevo por TCP…"
-if docker exec -e PGPASSWORD="$NEWPW" -i "$DB_CONTAINER" \
-  psql -U "$PGUSER" -d "$PGDB" -h 127.0.0.1 -c "SELECT 1;" >/dev/null 2>&1; then
-  ok "El password nuevo funciona."
+# --- 2. Verificar el password real con scram-sha-256 ------------------------
+# OJO: 127.0.0.1 y el socket local usan 'trust' en la imagen oficial de
+# postgres (NO chequean password) → verificar por ahí es un no-op. Hay que
+# conectar por la IP de red del contenedor para que aplique la regla
+# 'host all all all scram-sha-256' y se valide el password de verdad.
+log "Verificando el password nuevo (scram-sha-256)…"
+DB_NET_IP="$(docker exec "$DB_CONTAINER" hostname -i | awk '{print $1}')"
+[ -n "$DB_NET_IP" ] || die "No pude obtener la IP de red de $DB_CONTAINER para verificar."
+if docker exec -e PGPASSWORD="$NEWPW" "$DB_CONTAINER" \
+  psql -U "$PGUSER" -d "$PGDB" -h "$DB_NET_IP" -c "SELECT 1;" >/dev/null 2>&1; then
+  ok "El password nuevo autentica por scram-sha-256."
 else
-  die "La verificación falló: el password nuevo NO autentica por TCP. Revisá .env.prod."
+  die "La verificación falló: el password nuevo NO autentica. Revisá .env.prod (el api NO se recreó)."
 fi
 
 # --- 3. Recrear api + worker para que tomen el DATABASE_URL nuevo -----------
