@@ -39,7 +39,16 @@ jobs:
           # puede tenerlos tracked en commits viejos con cambios locales sin commit).
           # El pull NO debe pisarlos. Patrón análogo a docs/PROMOTE_PROD_RUNBOOK.md
           # §A.2-A.3, pero auto-aplicado para que staging no se rompa en silencio.
-          HOST_CONFIG_FILES=(".env.staging" ".env.staging.local" ".env.local")
+          # IMPORTANTE: las JWT keys también van acá — apps/api/Dockerfile las COPYea
+          # al container, y si el host no las tiene, el api image arranca sin keys y
+          # el healthcheck falla.
+          HOST_CONFIG_FILES=(
+            ".env.staging"
+            ".env.staging.local"
+            ".env.local"
+            "apps/api/keys/private.pem"
+            "apps/api/keys/public.pem"
+          )
           BACKUP_DIR="/tmp/prosell-staging-host-config-$(date +%s)"
           mkdir -p "$BACKUP_DIR"
           for f in "${HOST_CONFIG_FILES[@]}"; do
@@ -70,11 +79,36 @@ jobs:
             fi
           done
 
+          # Si las JWT keys no existen post-restore (host nunca las tuvo, o se
+          # perdieron), generarlas. scripts/generate-jwt-keys.sh regenera AMBOS
+          # archivos (no es idempotente), por eso solo lo llamamos si FALTAN LAS
+          # DOS — regenerar una sola rompería el par (private/public mismatch).
+          # ATENCIÓN: rotar keys invalida tokens en circulación; en prod esto se
+          # hace con runbook, acá es acceptable porque staging es dev.
+          if [ ! -f "apps/api/keys/private.pem" ] && [ ! -f "apps/api/keys/public.pem" ]; then
+            echo "::warning::JWT keys missing post-restore, generating fresh pair with scripts/generate-jwt-keys.sh"
+            ./scripts/generate-jwt-keys.sh
+          fi
+
           # Deploy propiamente dicho. --env-file: el compose usa ${VAR} para los secrets
           # (no hardcodeados); se interpolan desde .env.staging, que vive en el host
           # (gitignored).
           docker compose --env-file .env.staging -f docker/docker-compose.staging.yml up -d --build
           docker system prune -f
+
+      - name: Print container logs on failure
+        if: failure()
+        working-directory: ${{ secrets.STAGING_REPO_PATH }}
+        run: |
+          # Diagnóstico: si el deploy falló, imprimir los logs de los containers
+          # para que el próximo run tenga contexto sin tener que SSH al host.
+          for svc in api worker web db redis minio; do
+            cname="prosell-staging-$svc"
+            if docker ps -a --format '{{.Names}}' | grep -q "^${cname}$"; then
+              echo "===== ${cname} (last 100 lines) ====="
+              docker logs --tail 100 "$cname" 2>&1 || true
+            fi
+          done
 
       - name: Notify staging deploy done
         if: always()
