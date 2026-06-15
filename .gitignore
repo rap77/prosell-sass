@@ -39,8 +39,12 @@ coverage.xml
 *.py,cover
 .hypothesis/
 
-# uv
+# uv — apps/api/uv.lock is COMMITTED (per Astral's recommended pattern for
+# applications, not libraries). apps/api/Dockerfile does `COPY apps/api/uv.lock`
+# during the api image build, so the file must be in the build context. Any
+# other uv.lock file (root, other workspaces) is ignored as an orphan.
 uv.lock
+!apps/api/uv.lock
 
 # Node
 node_modules/
