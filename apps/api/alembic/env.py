@@ -20,8 +20,12 @@ from prosell.infrastructure.database.base import Base
 # access to the values within the .ini file in use.
 config = context.config
 
-# Set the database URL from settings
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# Set the database URL from settings.
+# Escape '%' as '%%': set_main_option writes to ConfigParser, which treats '%'
+# as interpolation syntax and crashes on percent-encoded passwords in the URL
+# (e.g. '%2F'). ConfigParser un-escapes '%%' back to '%' on read, so the URL
+# stays correct for both offline (get_main_option) and online (get_section).
+config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
