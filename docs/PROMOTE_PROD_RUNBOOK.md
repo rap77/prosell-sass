@@ -123,18 +123,26 @@ listar TODOS los archivos modificados y resolverlos uno por uno.
 # 1. Ver QUÉ hay de modified/untracked que pueda chocar con el pull
 git status --porcelain
 
-# 2a. Si lo único modificado son las JWT keys (estado esperado one-time):
-git checkout -- apps/api/keys/private.pem apps/api/keys/public.pem
-
-# 2b. Si hay OTROS archivos modificados (ej: .env.prod con cambios no commiteados):
-#     NO los borres. Stasheálos y restaurá después del pull:
-git stash push -m "pre-promote-stash-$(date +%s)" --include-untracked
+# 2. Para CADA archivo modified listado arriba, aplicá la regla correspondiente:
+#
+#    a) Si es una JWT key (apps/api/keys/private.pem o public.pem):
+#       # Las reales ya están respaldadas en $BK. Restaurá la versión vieja
+#       # del repo (main las borra del tracking, pero están gitignoreadas
+#       # así que el `git pull` no las toca en disco).
+#       git checkout -- apps/api/keys/private.pem apps/api/keys/public.pem
+#
+#    b) Si es CUALQUIER OTRO archivo (ej: .env.prod, scripts/):
+#       # NO los borres. Stasheá TODO lo no-key, restaurá después del pull.
+#       git stash push -m "pre-promote-stash-$(date +%s)" --include-untracked
+#
+#    IMPORTANTE: si usaste stash, las JWT keys NO se stashean (porque las
+#    manejamos con checkout en (a)). El stash solo guarda lo no-key.
 
 # 3. Ahora sí sincronizá
 git pull origin main
 
-# 4. Si usaste stash, restaurá tus cambios
-git stash pop  # solo si hiciste stash
+# 4. Si usaste stash en el paso 2, restaurá tus cambios
+git stash pop
 
 # 5. Restaurá las keys REALES de prod
 cp "$BK"/*.pem apps/api/keys/
@@ -197,13 +205,8 @@ gh run watch   # seguí el progreso en vivo
 
 > El workflow hace vía SSH al host: `cd $PROD_REPO_PATH` → `git pull origin main` →
 > `docker compose -f docker/docker-compose.prod.yml up -d --build` → `docker system prune -f` →
-> health check contra `https://api.prosellweb.com/health`.
-
-⚠️ **KNOWN BUG** (a partir de este runbook): El health check del workflow usa el path
-`/health` (sin prefijo `/api/v1/`). Esto va a fallar con 404 en este momento. Si ves
-el run fallar en el step "Health check post-deploy" PERO los containers están UP
-y healthy, es ESTE bug, no tu deploy. Workaround: verificá manualmente con la
-**PARTE C.2** (curl con el path correcto). PR abierto para fixearlo en el workflow.
+> health check contra `https://api.prosellweb.com/api/v1/health/` (con `-L` para seguir
+> el redirect 307 del endpoint).
 
 ---
 
@@ -211,9 +214,9 @@ y healthy, es ESTE bug, no tu deploy. Workaround: verificá manualmente con la
 
 ### C.1 — El propio workflow
 
-✅ El job **"Promote to Production"** termina en verde. **PERO** el step de health
-check puede fallar por el bug conocido del path (ver B.2). Si el job falló SOLO en
-ese step, NO es un deploy roto — es un check roto. Verificá manualmente con C.2.
+✅ El job **"Promote to Production"** termina en verde, incluido el health check
+post-deploy (que pega contra `/api/v1/health/` con `-L` para seguir el redirect).
+Si ese step pasa, el API ya responde.
 
 ### C.2 — Verificación manual (desde tu PC)
 
@@ -276,8 +279,19 @@ docker compose -f docker/docker-compose.prod.yml up -d --build
 docker exec prosell-prod-api curl -fSL http://localhost:8000/api/v1/health/ && echo "  ✅ rollback OK"
 ```
 
-> Las keys (`apps/api/keys/*.pem`) están gitignoreadas → el `git reset --hard` **NO**
-> las toca. Tus secrets en `.env.prod` del host tampoco (está gitignored).
+> Las keys (`apps/api/keys/*.pem`) están gitignoreadas en el main actual → el
+> `git reset --hard` NO las toca (mientras el SHA objetivo también las tenga
+> gitignored). Tus secrets en `.env.prod` del host tampoco (está gitignored).
+>
+> ⚠️ **CUIDADO con SHA pre-#28**: si el SHA al que volvés es de ANTES que las
+> keys se gitignoraran (commits muy viejos), `git reset --hard` las va a RECREAR
+> con el contenido VIEJO commiteado. Después del reset, ANTES de
+> `docker compose up -d --build`:
+>
+> - Restaurá las keys reales desde tu backup: `cp $BK/*.pem apps/api/keys/`
+> - O regenerá con el script correspondiente (ver [`docs/SECRET_ROTATION.md`](./SECRET_ROTATION.md))
+> - Si no lo hacés, el api arranca con keys incorrectas y los JWT emitidos
+>   por el deploy previo quedan inválidos.
 
 ⚠️ **Cuidado con el rollback**: si el commit al que volvés también tenía un bug
 conosciDO, el rollback "exitoso" reintroduce el bug. Verificá con `git show <SHA>`
@@ -294,9 +308,6 @@ qué cambios trae antes de hacer reset.
   `LoggingSender` (silencioso). Verificá que esté antes de prometer entregas reales.
 - **El sync de keys (PARTE A)** es one-time. De la segunda promoción en adelante,
   saltá directo a **PARTE B**.
-- **Bug conocido del workflow health check**: el path `/health` debería ser
-  `/api/v1/health/`. PR abierto para fixearlo. Hasta que se mergee, validá
-  manualmente con PARTE C.2.
 - **El worker no tiene healthcheck** (Taskiq no expone HTTP probe). Su liveness
   signal es solo `restart: unless-stopped`. Si lo ves `Restarting`, mirá los logs
   antes de alarmarte.
