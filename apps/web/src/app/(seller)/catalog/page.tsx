@@ -51,6 +51,7 @@ import { useOrgVerticals } from "@/lib/api/verticals";
 import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
+import { getApiStatus } from "@/lib/utils/getApiStatus";
 import { getAttributeMap, type Product } from "@/types/product";
 import type { CategoryPresentation, AttributeSchemaEntry } from "@/types/category";
 
@@ -76,23 +77,6 @@ const STATUS_ORDER: VehicleStatus[] = [
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const VALID_STATUSES = new Set<VehicleStatus>([
-  "published",
-  "pending",
-  "failed",
-  "draft",
-  "expired",
-  "online",
-  "sold",
-]);
-
-function getApiStatus(s: string | undefined): VehicleStatus | undefined {
-  if (!s) return undefined;
-  return VALID_STATUSES.has(s as VehicleStatus)
-    ? (s as VehicleStatus)
-    : undefined;
-}
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
@@ -208,7 +192,13 @@ function EmptyState({
 
 // ─── Error state ──────────────────────────────────────────────────────────────
 
-function ErrorState({ message }: { message: string }) {
+export function ErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   return (
     <div
       style={{
@@ -262,7 +252,7 @@ function ErrorState({ message }: { message: string }) {
       </div>
       <button
         type="button"
-        onClick={() => window.location.reload()}
+        onClick={onRetry}
         style={{
           height: 38,
           padding: "0 18px",
@@ -310,6 +300,7 @@ export default function CatalogPage() {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
+    refetch,
   } = useInfiniteProducts(apiFilters, 50);
 
   // Vertical contracts: presentation + attribute_schema per category.
@@ -637,6 +628,9 @@ export default function CatalogPage() {
                         ? error.message
                         : "Error inesperado."
                     }
+                    onRetry={() => {
+                      void refetch();
+                    }}
                   />
                 )}
 
