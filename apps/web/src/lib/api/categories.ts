@@ -4,28 +4,16 @@ import {
   useMutation,
   type UseQueryResult,
 } from "@tanstack/react-query";
-import { useMemo } from "react";
 import { toast } from "sonner";
-import type {
-  Category,
-  CategoryOption,
-  CategoryListResponse,
-} from "@/types/category";
-
-interface BackendCategoryResponse {
-  categories: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    attribute_schema: Record<string, boolean>;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-  }>;
-  total: number;
-  page: number;
-  page_size: number;
-}
+import type { Category, CategoryOption } from "@/types/category";
+import {
+  mapBackendCategoryToDomain,
+  type BackendCategory,
+} from "@/lib/api/categoryMapper";
+import {
+  BackendCategorySchema,
+  BackendListResponseSchema,
+} from "@/lib/api/schemas/category";
 
 /**
  * Fetch all categories with 5-minute cache
@@ -57,8 +45,9 @@ export function useCategories(): UseQueryResult<Category[], Error> {
         throw new Error(error.message || "Failed to fetch categories");
       }
 
-      const data = (await res.json()) as BackendCategoryResponse;
-      return data.categories;
+      // Validate the wire shape before projecting to the strict Category contract.
+      const data = BackendListResponseSchema.parse(await res.json());
+      return data.categories.map(mapBackendCategoryToDomain);
     },
     // Disable cache in test mode, use 5-minute cache in production
     staleTime: isTestMode ? 0 : 5 * 60 * 1000,
@@ -73,8 +62,9 @@ export function useCategories(): UseQueryResult<Category[], Error> {
 /**
  * Transform categories for Select component dropdowns
  *
- * Returns memoized array of { value, label } options for use with
+ * Returns the array of { value, label } options for use with
  * Radix UI Select, React Select, or similar dropdown components.
+ * (Memoization handled by React Compiler.)
  *
  * Example:
  * ```tsx
@@ -90,16 +80,10 @@ export function useCategories(): UseQueryResult<Category[], Error> {
  */
 export function useCategoryOptions() {
   const categoriesQuery = useCategories();
-
-  const data = useMemo(
-    () =>
-      categoriesQuery.data?.map((category) => ({
-        value: category.id,
-        label: category.name,
-      })),
-    [categoriesQuery.data],
-  );
-
+  const data = categoriesQuery.data?.map((category) => ({
+    value: category.id,
+    label: category.name,
+  }));
   return { ...categoriesQuery, data };
 }
 
@@ -127,7 +111,8 @@ export async function createCategory(data: {
     throw new Error(error.message || "Failed to create category");
   }
 
-  return res.json();
+  const raw: BackendCategory = BackendCategorySchema.parse(await res.json());
+  return mapBackendCategoryToDomain(raw);
 }
 
 /**

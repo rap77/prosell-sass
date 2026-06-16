@@ -51,6 +51,7 @@ describe("useCategories", () => {
         name: "Sedans",
         slug: "sedans",
         attribute_schema: { year: true, make: true, model: true },
+        presentation: null,
         is_active: true,
         created_at: "2026-04-26T00:00:00Z",
         updated_at: "2026-04-26T00:00:00Z",
@@ -65,6 +66,7 @@ describe("useCategories", () => {
           model: true,
           drivetrain: true,
         },
+        presentation: null,
         is_active: true,
         created_at: "2026-04-26T00:00:00Z",
         updated_at: "2026-04-26T00:00:00Z",
@@ -243,13 +245,14 @@ describe("useCategoryOptions", () => {
     expect(result.current.data).toBeUndefined();
   });
 
-  it("should memoize transformed options", async () => {
+  it("should return stable { value, label } options on re-render", async () => {
     const mockCategories: Category[] = [
       {
         id: "cat-1",
         name: "Sedans",
         slug: "sedans",
         attribute_schema: { year: true },
+        presentation: null,
         is_active: true,
         created_at: "2026-04-26T00:00:00Z",
         updated_at: "2026-04-26T00:00:00Z",
@@ -272,14 +275,13 @@ describe("useCategoryOptions", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    const firstData = result.current.data;
+    const expected = [{ value: "cat-1", label: "Sedans" }];
 
-    // Trigger re-render
+    // Initial render — options are transformed correctly.
+    expect(result.current.data).toEqual(expected);
+
+    // Trigger re-render and verify the transformation is stable.
     rerender();
-
-    const secondData = result.current.data;
-
-    // Reference equality means memoization worked
-    expect(firstData).toBe(secondData);
+    expect(result.current.data).toEqual(expected);
   });
 });
