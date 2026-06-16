@@ -6,7 +6,11 @@
  */
 
 import type { Page } from "@playwright/test";
-import { MOCK_VIN_DECODED, MOCK_VEHICLE_LIST } from "../fixtures/mock-data";
+import {
+  MOCK_ORG_VERTICALS,
+  MOCK_VIN_DECODED,
+  MOCK_VEHICLE_LIST,
+} from "../fixtures/mock-data";
 
 interface MockCategory {
   id: string;
@@ -192,6 +196,33 @@ export async function mockCategoriesEndpoint(
           categories,
           total: categories.length,
         }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+}
+
+/**
+ * Mock the org-verticals read-API (Subsystem A).
+ *
+ * The catalog grid's `categoryPresentationMap` is built from this payload
+ * — without it the ProductCard renders with `presentation: null` and no
+ * card_fields. Mirror of `OrgVerticalsResponse` from
+ * `apps/web/src/types/category.ts`.
+ *
+ * Pass a custom payload to test a different vertical (real estate, etc.).
+ */
+export async function mockOrgVerticalsEndpoint(
+  page: Page,
+  verticals: typeof MOCK_ORG_VERTICALS = MOCK_ORG_VERTICALS,
+): Promise<void> {
+  await page.route("**/api/v1/organizations/*/verticals", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(verticals),
       });
     } else {
       await route.continue();
