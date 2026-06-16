@@ -54,7 +54,12 @@ describe("Categories API Client - useCategories", () => {
           id: "cat-1",
           name: "Sedans",
           slug: "sedans",
-          attribute_schema: { year: true, make: true, model: true },
+          attribute_schema: {
+            year: { type: "number", filter_type: "range" },
+            make: { type: "string", filter_type: "select" },
+            model: { type: "string", filter_type: "exact" },
+          },
+          presentation: null,
           is_active: true,
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-01T00:00:00Z",
@@ -63,7 +68,13 @@ describe("Categories API Client - useCategories", () => {
           id: "cat-2",
           name: "SUVs",
           slug: "suvs",
-          attribute_schema: { year: true, make: true, model: true, trim: true },
+          attribute_schema: {
+            year: { type: "number", filter_type: "range" },
+            make: { type: "string", filter_type: "select" },
+            model: { type: "string", filter_type: "exact" },
+            trim: { type: "string", filter_type: "exact" },
+          },
+          presentation: null,
           is_active: true,
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-01T00:00:00Z",
@@ -99,7 +110,8 @@ describe("Categories API Client - useCategories", () => {
           id: "cat-1",
           name: "Sedans",
           slug: "sedans",
-          attribute_schema: { year: true },
+          attribute_schema: { year: { type: "number", filter_type: "range" } },
+          presentation: null,
           is_active: true,
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-01T00:00:00Z",
@@ -210,7 +222,8 @@ describe("Categories API Client - useCategoryOptions", () => {
           id: "cat-1",
           name: "Sedans",
           slug: "sedans",
-          attribute_schema: { year: true },
+          attribute_schema: { year: { type: "number", filter_type: "range" } },
+          presentation: null,
           is_active: true,
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-01T00:00:00Z",
@@ -219,7 +232,8 @@ describe("Categories API Client - useCategoryOptions", () => {
           id: "cat-2",
           name: "SUVs",
           slug: "suvs",
-          attribute_schema: { year: true },
+          attribute_schema: { year: { type: "number", filter_type: "range" } },
+          presentation: null,
           is_active: true,
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-01T00:00:00Z",
@@ -247,14 +261,15 @@ describe("Categories API Client - useCategoryOptions", () => {
     ]);
   });
 
-  it("should memoize transformed options to prevent re-renders", async () => {
+  it("should return stable { value, label } options on re-render", async () => {
     const mockCategories = {
       categories: [
         {
           id: "cat-1",
           name: "Sedans",
           slug: "sedans",
-          attribute_schema: { year: true },
+          attribute_schema: { year: { type: "number", filter_type: "range" } },
+          presentation: null,
           is_active: true,
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-01T00:00:00Z",
@@ -276,13 +291,15 @@ describe("Categories API Client - useCategoryOptions", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    const firstData = result.current.data;
+    const expected = [{ value: "cat-1", label: "Sedans" }];
 
-    // Rerender should return same object reference (memoized)
+    // Initial render — options are transformed correctly.
+    expect(result.current.data).toEqual(expected);
+
+    // Re-render — transformation is stable.
     rerender();
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(result.current.data).toBe(firstData);
+    expect(result.current.data).toEqual(expected);
   });
 
   it("should preserve loading and error states from useCategories", async () => {
