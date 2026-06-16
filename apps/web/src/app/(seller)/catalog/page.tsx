@@ -49,14 +49,12 @@ import {
   useInfiniteProducts,
   useDeleteProduct,
   transformProductToVehicle,
-  useProductImageUrls,
 } from "@/lib/api/products";
 import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
 import { useOrgVerticals } from "@/lib/api/verticals";
 import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
 import { ProductCard } from "@/components/catalog/ProductCard";
-import { getCoverImageKey } from "@/lib/api/productImages";
-import { isVehicleProduct } from "@/types/product";
+import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 import type { Product } from "@/types/product";
 import type { CategoryPresentation, AttributeSchemaEntry } from "@/types/category";
 
@@ -114,228 +112,6 @@ function getApiStatus(
         | "online"
         | "sold")
     : undefined;
-}
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  }).format(price);
-}
-
-// ─── Vehicle card (grid view) ─────────────────────────────────────────────────
-
-function VehicleCard({
-  product,
-  onView,
-  onEdit,
-  onDelete,
-}: {
-  product: Product;
-  onView: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const [hovered, setHovered] = useState(false);
-
-  const vehicle = isVehicleProduct(product)
-    ? transformProductToVehicle(product)
-    : null;
-  // Pick the cover image. Priority: explicit `cover_image_key` set by
-  // the seller, then the first key of the merged list as a fallback.
-  // See `getCoverImageKey` for the full contract (including the
-  // stale-cover-key defensive fallback).
-  const rawPhotoUrl = getCoverImageKey(product);
-
-  // DO Spaces is private (403 on direct URLs). Resolve the first image to a
-  // time-limited signed download URL via the backend endpoint. The TanStack
-  // query cache is keyed by productId, so all cards sharing a product share
-  // the same in-flight request and result.
-  //
-  // We swallow errors here: if the product belongs to a different tenant
-  // (404), the user lacks permission, or the API is briefly unreachable, the
-  // card must still render — we just fall back to the placeholder image.
-  const { data: signedUrls } = useProductImageUrls(
-    rawPhotoUrl ? product.id : undefined,
-  );
-  const signedPhotoUrl = rawPhotoUrl
-    ? (signedUrls?.images.find((img) => img.key === rawPhotoUrl)?.url ?? null)
-    : null;
-  const photoUrl = signedPhotoUrl || undefined;
-
-  return (
-    <article
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={onView}
-      style={{
-        background: "var(--ps-bg-surface)",
-        border: `1px solid ${hovered ? "var(--ps-border-medium)" : "var(--ps-border-default)"}`,
-        borderRadius: 12,
-        overflow: "hidden",
-        cursor: "pointer",
-        transition: "border-color 180ms, box-shadow 180ms",
-        boxShadow: hovered ? "0 4px 20px rgba(6,13,36,0.35)" : "none",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {/* Image */}
-      <div
-        style={{
-          position: "relative",
-          aspectRatio: "16/9",
-          background: "var(--ps-bg-elevated)",
-          overflow: "hidden",
-        }}
-      >
-        {photoUrl ? (
-          <Image
-            src={photoUrl}
-            alt={product.title}
-            fill
-            sizes="(max-width: 768px) 100vw, 33vw"
-            style={{ objectFit: "cover" }}
-            // Bypass the `/_next/image` proxy: `photoUrl` is a MinIO
-            // presigned URL host-bound to `S3_PUBLIC_ENDPOINT_URL`, which
-            // the server-side proxy (running inside the Docker `web`
-            // container) cannot reach. The browser fetches the signed URL
-            // directly. Same reason as ProductImageGallery and
-            // HeroShotSelector — the catalog card has no unit test for
-            // this prop because VehicleCard is an internal function of
-            // this page (not exported). Verified visually after the fix.
-            unoptimized
-          />
-        ) : (
-          <Image
-            src="/placeholders/placeholder-vehicles.png"
-            alt="Sin imagen"
-            fill
-            sizes="(max-width: 768px) 100vw, 33vw"
-            priority
-            style={{ objectFit: "cover" }}
-          />
-        )}
-        {/* Status badge overlay */}
-        <div style={{ position: "absolute", top: 10, left: 10 }}>
-          <StatusBadge status={vehicle?.status ?? "draft"} />
-        </div>
-      </div>
-
-      {/* Content */}
-      <div
-        style={{
-          padding: "14px 16px 16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-          flex: 1,
-        }}
-      >
-        <p
-          style={{
-            margin: 0,
-            fontSize: 14,
-            fontWeight: 600,
-            color: "var(--ps-text-primary)",
-            lineHeight: 1.3,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {product.title}
-        </p>
-        <p
-          style={{ margin: 0, fontSize: 12, color: "var(--ps-text-secondary)" }}
-        >
-          {vehicle
-            ? [vehicle.year, vehicle.make, vehicle.model]
-                .filter(Boolean)
-                .join(" · ")
-            : ""}
-        </p>
-        <p
-          style={{
-            margin: "4px 0 0",
-            fontSize: 16,
-            fontWeight: 700,
-            color: "var(--ps-cyan)",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {formatPrice(product.price_cents / 100)}
-        </p>
-      </div>
-
-      {/* Actions */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          borderTop: "1px solid var(--ps-border-subtle)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          gap: 2,
-          padding: "8px 12px",
-        }}
-      >
-        {(
-          [
-            { icon: Eye, action: onView, label: "Ver", danger: false },
-            { icon: Pencil, action: onEdit, label: "Editar", danger: false },
-            { icon: Trash2, action: onDelete, label: "Eliminar", danger: true },
-          ] satisfies {
-            icon: React.ElementType;
-            action: () => void;
-            label: string;
-            danger: boolean;
-          }[]
-        ).map(({ icon: Icon, action, label, danger }) => (
-          <button
-            key={label}
-            type="button"
-            title={label}
-            onClick={(e) => {
-              e.stopPropagation();
-              action();
-            }}
-            style={{
-              width: 30,
-              height: 30,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "transparent",
-              border: 0,
-              borderRadius: 6,
-              color: danger ? "var(--ps-error)" : "var(--ps-text-secondary)",
-              cursor: "pointer",
-              transition: "background 150ms, color 150ms",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = danger
-                ? "var(--ps-danger-hover-bg)"
-                : "var(--ps-hover-bg-sm)";
-              e.currentTarget.style.color = danger
-                ? "var(--ps-error)"
-                : "var(--ps-text-primary)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = danger
-                ? "var(--ps-error)"
-                : "var(--ps-text-secondary)";
-            }}
-          >
-            <Icon size={14} strokeWidth={2} />
-          </button>
-        ))}
-      </div>
-    </article>
-  );
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
@@ -677,10 +453,15 @@ export default function CatalogPage() {
   };
 
   // ── Grouped by status (estado view) ─────────────────────────────────────
-  const vehiclesByStatus = Object.fromEntries(
+  // T7c: groups viewModels (not raw products) by mapped status. Uses
+  // the generic `mapProductStatusToVehicleStatus` mapper from T6a
+  // instead of the legacy `transformProductToVehicle().status` indirection.
+  const viewModelsByStatus = Object.fromEntries(
     STATUS_ORDER.map((s) => [
       s,
-      products.filter((p) => transformProductToVehicle(p).status === s),
+      viewModels.filter(
+        (vm) => mapProductStatusToVehicleStatus(vm.product.status) === s,
+      ),
     ]),
   );
 
@@ -957,7 +738,7 @@ export default function CatalogPage() {
                         }}
                       >
                         {STATUS_ORDER.filter(
-                          (s) => vehiclesByStatus[s].length > 0,
+                          (s) => viewModelsByStatus[s].length > 0,
                         ).map((status) => (
                           <section key={status}>
                             {/* Group header */}
@@ -977,8 +758,8 @@ export default function CatalogPage() {
                                   fontWeight: 500,
                                 }}
                               >
-                                {vehiclesByStatus[status].length} vehículo
-                                {vehiclesByStatus[status].length !== 1
+                                {viewModelsByStatus[status].length} vehículo
+                                {viewModelsByStatus[status].length !== 1
                                   ? "s"
                                   : ""}
                               </span>
@@ -999,13 +780,18 @@ export default function CatalogPage() {
                                 gap: 12,
                               }}
                             >
-                              {vehiclesByStatus[status].map((p) => (
-                                <VehicleCard
-                                  key={p.id}
-                                  product={p}
-                                  onView={() => handleView(p.id)}
-                                  onEdit={() => handleEdit(p.id)}
-                                  onDelete={() => handleDelete(p.id)}
+                              {viewModelsByStatus[status].map((vm) => (
+                                <ProductCard
+                                  key={vm.product.id}
+                                  product={vm.product}
+                                  presentation={vm.presentation}
+                                  attributeSchema={vm.attributeSchema}
+                                  productAttributes={vm.productAttributes}
+                                  verticalSlug={vm.verticalSlug}
+                                  imageUrl={vm.imageUrl}
+                                  onView={() => handleView(vm.product.id)}
+                                  onEdit={() => handleEdit(vm.product.id)}
+                                  onDelete={() => handleDelete(vm.product.id)}
                                 />
                               ))}
                             </div>
