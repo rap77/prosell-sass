@@ -59,9 +59,6 @@ const nextConfig: NextConfig = {
       "@/components/icons", // Local icon components with barrel file
     ],
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   env: {
     // Backend API URL - must be http://localhost:8000 for OAuth to work
     NEXT_PUBLIC_API_URL:
