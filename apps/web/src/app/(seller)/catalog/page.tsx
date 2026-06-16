@@ -15,7 +15,6 @@
  */
 
 import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -26,9 +25,6 @@ import {
   Plus,
   Search,
   Car,
-  Pencil,
-  Trash2,
-  Eye,
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
@@ -55,7 +51,7 @@ import { useOrgVerticals } from "@/lib/api/verticals";
 import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
-import type { Product } from "@/types/product";
+import { getAttributeMap, type Product } from "@/types/product";
 import type { CategoryPresentation, AttributeSchemaEntry } from "@/types/category";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -81,7 +77,7 @@ const STATUS_ORDER: VehicleStatus[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const VALID_STATUSES = new Set<string>([
+const VALID_STATUSES = new Set<VehicleStatus>([
   "published",
   "pending",
   "failed",
@@ -91,26 +87,10 @@ const VALID_STATUSES = new Set<string>([
   "sold",
 ]);
 
-function getApiStatus(
-  s: string | undefined,
-):
-  | "published"
-  | "pending"
-  | "failed"
-  | "draft"
-  | "expired"
-  | "online"
-  | "sold"
-  | undefined {
-  return s && VALID_STATUSES.has(s)
-    ? (s as
-        | "published"
-        | "pending"
-        | "failed"
-        | "draft"
-        | "expired"
-        | "online"
-        | "sold")
+function getApiStatus(s: string | undefined): VehicleStatus | undefined {
+  if (!s) return undefined;
+  return VALID_STATUSES.has(s as VehicleStatus)
+    ? (s as VehicleStatus)
     : undefined;
 }
 
@@ -177,7 +157,7 @@ function EmptyState({
         >
           {hasFilters
             ? "Ajustá los filtros o el término de búsqueda."
-            : "Agregá tu primer vehículo o cargá un CSV masivo para empezar."}
+            : "Agregá tu primer producto o cargá un CSV masivo para empezar."}
         </p>
       </div>
       {!hasFilters && (
@@ -197,7 +177,7 @@ function EmptyState({
               cursor: "pointer",
             }}
           >
-            Agregar vehículo
+            Agregar producto
           </button>
           <button
             type="button"
@@ -267,7 +247,7 @@ function ErrorState({ message }: { message: string }) {
             color: "var(--ps-text-primary)",
           }}
         >
-          Error al cargar vehículos
+          Error al cargar productos
         </p>
         <p
           style={{
@@ -396,7 +376,7 @@ export default function CatalogPage() {
       product,
       presentation: meta?.presentation ?? null,
       attributeSchema: meta?.schema ?? {},
-      productAttributes: product.attributes as Record<string, unknown>,
+      productAttributes: getAttributeMap(product.attributes),
       verticalSlug: meta?.verticalSlug ?? null,
       imageUrl: productImageUrls.get(product.id) ?? null,
     };
@@ -436,22 +416,6 @@ export default function CatalogPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   // ── Bulk upload handler ──────────────────────────────────────────────────
-  const handleBulkUpload = async (file: File) => {
-    const formData = new FormData();
-    formData.append("csv_file", file);
-    const res = await fetch("/api/v1/vehicles/bulk-upload", {
-      method: "POST",
-      body: formData,
-    });
-    if (!res.ok) {
-      const err = await res
-        .json()
-        .catch(() => ({ message: "Error al cargar" }));
-      throw new Error(err.message || "Error al cargar");
-    }
-    return res.json();
-  };
-
   // ── Grouped by status (estado view) ─────────────────────────────────────
   // T7c: groups viewModels (not raw products) by mapped status. Uses
   // the generic `mapProductStatusToVehicleStatus` mapper from T6a
@@ -526,7 +490,7 @@ export default function CatalogPage() {
                 >
                   {isLoading
                     ? "Cargando..."
-                    : `${vehicles.length} vehículo${vehicles.length !== 1 ? "s" : ""}`}
+                    : `${vehicles.length} producto${vehicles.length !== 1 ? "s" : ""}`}
                 </p>
               </div>
 
@@ -548,7 +512,7 @@ export default function CatalogPage() {
                   </span>
                   <input
                     type="search"
-                    placeholder="Buscar vehículo..."
+                    placeholder="Buscar producto..."
                     value={filters.search}
                     onChange={(e) => setFilter("search", e.target.value)}
                     onFocus={(e) => {
@@ -596,7 +560,7 @@ export default function CatalogPage() {
                   }}
                 >
                   <Plus size={14} strokeWidth={2.5} />
-                  Agregar vehículo
+                  Agregar producto
                 </button>
               </div>
             </div>
@@ -653,7 +617,6 @@ export default function CatalogPage() {
             {/* CARGA MASIVA */}
             {viewMode === "carga" && (
               <BulkUploadCSV
-                onUpload={handleBulkUpload}
                 onSuccess={() => {
                   toast.success("Carga completada");
                   setViewMode("grilla");
@@ -758,7 +721,7 @@ export default function CatalogPage() {
                                   fontWeight: 500,
                                 }}
                               >
-                                {viewModelsByStatus[status].length} vehículo
+                                {viewModelsByStatus[status].length} producto
                                 {viewModelsByStatus[status].length !== 1
                                   ? "s"
                                   : ""}
@@ -848,7 +811,7 @@ export default function CatalogPage() {
                             padding: "16px 0",
                           }}
                         >
-                          {vehicles.length} vehículo
+                          {vehicles.length} producto
                           {vehicles.length !== 1 ? "s" : ""} en total
                         </p>
                       )}

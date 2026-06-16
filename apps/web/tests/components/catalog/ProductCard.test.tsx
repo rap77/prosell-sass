@@ -390,7 +390,7 @@ describe("ProductCard — degradation", () => {
 });
 
 describe("ProductCard — actions on hover", () => {
-  it("does NOT show the actions toolbar in the resting state", () => {
+  it("exposes the actions toolbar in the a11y tree (keyboard reachable)", () => {
     render(
       <ProductCard
         product={baseProduct}
@@ -404,12 +404,21 @@ describe("ProductCard — actions on hover", () => {
         onDelete={noop}
       />,
     );
-    // The actions group is hidden by CSS (opacity-0 → group-hover:opacity-100)
-    // and is NOT present in the a11y tree in resting state.
-    expect(screen.queryByRole("toolbar")).toBeNull();
+    // Subsystem A (G1, a11y): the actions are part of the a11y tree in
+    // resting state — visually hidden via CSS (opacity-0), but
+    // keyboard-reachable. WCAG 2.1.1 Keyboard requires that all
+    // functionality be operable through a keyboard interface; the
+    // previous implementation hid the toolbar from screen readers via
+    // `aria-hidden={!hovered}` and only revealed it on mouse hover,
+    // making Ver/Editar/Eliminar unreachable for keyboard users and
+    // assistive tech.
+    expect(screen.queryByRole("toolbar")).not.toBeNull();
+    expect(screen.getByRole("button", { name: /ver detalle/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /editar/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /eliminar/i })).toBeInTheDocument();
   });
 
-  it("exposes the on-hover reveal class on the actions wrapper", () => {
+  it("exposes the on-hover AND on-focus reveal classes on the actions wrapper", () => {
     const { container } = render(
       <ProductCard
         product={baseProduct}
@@ -423,12 +432,46 @@ describe("ProductCard — actions on hover", () => {
         onDelete={noop}
       />,
     );
-    // The actions container must carry the "group-hover:opacity-100" class
-    // (Tailwind pattern for the on-hover reveal).
+    // The actions container must carry BOTH the mouse-hover reveal
+    // (`group-hover:opacity-100`) AND the keyboard-focus reveal
+    // (`group-focus-within:opacity-100`). Without the focus-within
+    // class, a keyboard user Tab-ing onto a Ver/Editar/Eliminar
+    // button would not see the action panel appear.
     const group = container.querySelector(
       '[data-testid="product-card-actions"]',
     );
     expect(group?.className).toMatch(/group-hover:opacity-100/);
+    expect(group?.className).toMatch(/group-focus-within:opacity-100/);
     expect(group?.className).toMatch(/opacity-0/);
+  });
+
+  it("does not toggle aria-hidden on mouse enter/leave (a11y invariant)", () => {
+    // The previous implementation toggled `aria-hidden` via a
+    // useState bound to onMouseEnter/Leave. That broke screen-reader
+    // access: on first render the toolbar was hidden, and on
+    // touch/keyboard-only devices mouse events never fired so the
+    // toolbar stayed hidden forever. The new implementation leaves
+    // aria-hidden at a static false (or absent) — the visual reveal
+    // is purely CSS-driven via :hover / :focus-within.
+    const { container } = render(
+      <ProductCard
+        product={baseProduct}
+        presentation={vehiclePresentation}
+        attributeSchema={schema}
+        productAttributes={vehicleAttrs}
+        verticalSlug="vehiculos-y-transporte"
+        imageUrl={null}
+        onView={noop}
+        onEdit={noop}
+        onDelete={noop}
+      />,
+    );
+    const group = container.querySelector(
+      '[data-testid="product-card-actions"]',
+    );
+    // The wrapper either omits aria-hidden or sets it to "false".
+    // It must never be "true" in the resting state.
+    const ariaHidden = group?.getAttribute("aria-hidden");
+    expect(ariaHidden === null || ariaHidden === "false").toBe(true);
   });
 });

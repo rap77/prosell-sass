@@ -155,4 +155,35 @@ test.describe("Catalog — Generic ProductCard", () => {
     const html = await card.innerHTML();
     expect(html).not.toMatch(/\{area_m2\}|\{bedrooms\}/);
   });
+
+  // Subsystem A (G2): the catalog page is the entry point of a generic
+  // product system (vehicles, real estate, art). All user-visible copy
+  // must be product-agnostic — "vehículo(s)" hardcoded strings are a
+  // Subsystem A GGA debt that the generic ProductCard surfaced.
+  test("user-visible copy is product-agnostic (no 'vehículo')", async ({
+    page,
+  }) => {
+    // Mock with an EMPTY products list so the EmptyState renders —
+    // that's the path with the most hardcoded "vehículo" copy
+    // (the secondary CTA "Agregar vehículo" + the body copy
+    // "Agregá tu primer vehículo...").
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+    await mockVehiclesEndpoint(page, []);
+    await mockOrgVerticalsEndpoint(page);
+    await mockCategoriesEndpoint(page);
+
+    await page.goto("/catalog");
+    await expect(page.getByRole("article").first()).toBeVisible({ timeout: 1000 }).catch(() => {
+      // Empty state has no <article>; just wait for the page to settle.
+    });
+    // Give the empty state a moment to render.
+    await page.waitForTimeout(200);
+
+    // The whole visible body must not contain the word "vehículo" or
+    // "vehículos" in any case. This catches every hardcoded copy
+    // string at once (header count, error state, empty state, group
+    // counts, search placeholder, CTA buttons).
+    const bodyText = (await page.locator("body").innerText()).toLowerCase();
+    expect(bodyText).not.toMatch(/veh[íi]culo/);
+  });
 });

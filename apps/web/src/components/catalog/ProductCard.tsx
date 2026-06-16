@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/datagrid/StatusBadge";
 import type { Product } from "@/types/product";
@@ -36,6 +35,18 @@ export interface ProductCardProps {
  * effects — the container (`catalog/page.tsx`) is the source of truth
  * for `imageUrl`, `presentation`, `attributeSchema`, and `verticalSlug`.
  *
+ * Styling uses the shadcn token layer (mapped in `tailwind.config.ts`):
+ *   border   → `--border`        (`hsl(var(--border))`)
+ *   card     → `--card`          (`hsl(var(--card))`)         — surface
+ *   muted    → `--muted`         (`hsl(var(--muted))`)        — image bg / hover
+ *   fg       → `--foreground`    (`hsl(var(--foreground))`)   — primary text
+ *   muted-fg → `--muted-foreground` (label text)
+ *   destr.   → `--destructive`   (delete button text)
+ *
+ * Per project convention (Tailwind 4 / CLAUDE.md) we do NOT use
+ * `var(--ps-*)` in className — those ProSell-prefixed tokens are reserved
+ * for inline `style={{ ... }}` (see `catalog/page.tsx`).
+ *
  * Spec: docs/superpowers/specs/2026-06-09-subsystem-a-productcard-design.md
  */
 export function ProductCard({
@@ -49,7 +60,6 @@ export function ProductCard({
   onEdit,
   onDelete,
 }: ProductCardProps) {
-  const [hovered, setHovered] = useState(false);
   const placeholder = placeholderForVertical(verticalSlug);
 
   // --- Subtitle (client-side, per §7) ---
@@ -96,13 +106,9 @@ export function ProductCard({
   const badgeStatus = mapProductStatusToVehicleStatus(product.status);
 
   return (
-    <article
-      className="group relative flex flex-col overflow-hidden rounded-lg border border-[var(--ps-border)] bg-[var(--ps-surface)] transition-shadow hover:shadow-md"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+    <article className="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-shadow hover:shadow-md">
       {/* Image (4:3) */}
-      <div className="relative aspect-[4/3] w-full bg-[var(--ps-bg-muted)]">
+      <div className="relative aspect-[4/3] w-full bg-muted">
         <Image
           src={imgSrc}
           alt={product.title}
@@ -122,42 +128,43 @@ export function ProductCard({
 
       {/* Body */}
       <div className="flex flex-col gap-2 p-4">
-        <h3 className="truncate text-sm font-semibold text-[var(--ps-text)]">
+        <h3 className="truncate text-sm font-semibold text-foreground">
           {product.title}
         </h3>
 
         {subtitle && (
-          <p className="truncate text-xs text-[var(--ps-text-muted)]">
-            {subtitle}
-          </p>
+          <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
         )}
 
-        <p className="text-base font-bold text-[var(--ps-text)]">{price}</p>
+        <p className="text-base font-bold text-foreground">{price}</p>
 
         {metaCells.length > 0 && (
           <dl className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
             {metaCells.map((cell) => (
               <div key={cell.key} className="flex flex-col">
-                <dt className="text-[var(--ps-text-muted)]">{cell.label}</dt>
-                <dd className="font-medium text-[var(--ps-text)]">
-                  {cell.value}
-                </dd>
+                <dt className="text-muted-foreground">{cell.label}</dt>
+                <dd className="font-medium text-foreground">{cell.value}</dd>
               </div>
             ))}
           </dl>
         )}
       </div>
 
-      {/* Actions — on hover only (spec §4) */}
+      {/* Actions — visually hidden by default; revealed on mouse hover OR
+          keyboard focus-within (a11y: WCAG 2.1.1 Keyboard). The toolbar
+          stays in the a11y tree so screen readers and keyboard users
+          can Tab onto Ver/Editar/Eliminar. The visual reveal is purely
+          CSS-driven — no React state, no aria-hidden toggle. */}
       <div
         data-testid="product-card-actions"
-        aria-hidden={!hovered}
-        className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 border-t border-[var(--ps-border)] bg-[var(--ps-surface)]/95 px-2 py-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto"
+        role="toolbar"
+        aria-label="Acciones del producto"
+        className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 border-t border-border bg-card/95 px-2 py-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto"
       >
         <button
           type="button"
           onClick={onView}
-          className="rounded p-1.5 hover:bg-[var(--ps-bg-muted)]"
+          className="rounded p-1.5 hover:bg-muted"
           aria-label="Ver detalle"
         >
           <Eye className="h-4 w-4" />
@@ -165,7 +172,7 @@ export function ProductCard({
         <button
           type="button"
           onClick={onEdit}
-          className="rounded p-1.5 hover:bg-[var(--ps-bg-muted)]"
+          className="rounded p-1.5 hover:bg-muted"
           aria-label="Editar"
         >
           <Pencil className="h-4 w-4" />
@@ -173,7 +180,7 @@ export function ProductCard({
         <button
           type="button"
           onClick={onDelete}
-          className="rounded p-1.5 text-[var(--ps-danger)] hover:bg-[var(--ps-bg-muted)]"
+          className="rounded p-1.5 text-destructive hover:bg-muted"
           aria-label="Eliminar"
         >
           <Trash2 className="h-4 w-4" />
