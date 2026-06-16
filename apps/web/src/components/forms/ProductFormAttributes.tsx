@@ -61,22 +61,27 @@ export const FIELD_LABELS: Record<string, string> = {
 /**
  * Check if a field should be visible based on category schema
  *
- * Rules:
+ * Rules (Subsystem A post-T1 contract):
  * - If no category selected: show all fields
- * - If category has no attribute_schema: show all fields
- * - If attribute_schema[field] is true: show field
- * - If attribute_schema[field] is false: hide field
- * - If field not in attribute_schema: show field (default behavior)
+ * - If category has no attribute_schema (undefined OR empty {}): show all fields
+ * - If attribute_schema lists the field: show field (presence in schema = field exists in this vertical)
+ * - If attribute_schema does not list the field: hide field (the schema is the source of truth)
+ *
+ * Note: the old contract used `Record<string, boolean>` where `true` meant
+ * "show" and `false` (or absence) meant "hide". The new contract uses
+ * `Record<string, AttributeSchemaEntry>` where *presence* in the schema
+ * means the field exists in this vertical. To hide a field, omit it
+ * from the schema entirely. This is a deliberate semantic shift so the
+ * schema can carry richer information (type, filter_type, unit, label,
+ * options) without a parallel boolean shadow.
  */
-function shouldShowField(
+export function shouldShowField(
   fieldName: string,
   selectedCategory: Category | undefined,
 ): boolean {
   const schema = selectedCategory?.attribute_schema;
-  // Show field if: no schema, empty schema, or explicitly enabled in schema
-  return (
-    !schema || Object.keys(schema).length === 0 || schema[fieldName] === true
-  );
+  // Show field if: no schema, empty schema, or field is listed in schema.
+  return !schema || Object.keys(schema).length === 0 || fieldName in schema;
 }
 
 /**
@@ -87,6 +92,8 @@ function shouldShowField(
  */
 export function ProductFormAttributes({
   control,
+  // TODO(Subsystem B): use `watch` for cross-field validation in the
+  // catalog filters wiring. Kept in the contract intentionally.
   watch,
   disabled,
   selectedCategory,
