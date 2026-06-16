@@ -54,6 +54,7 @@ import {
 import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
 import { useOrgVerticals } from "@/lib/api/verticals";
 import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
+import { ProductCard } from "@/components/catalog/ProductCard";
 import { getCoverImageKey } from "@/lib/api/productImages";
 import { isVehicleProduct } from "@/types/product";
 import type { Product } from "@/types/product";
@@ -605,6 +606,26 @@ export default function CatalogPage() {
   const products = data?.pages[0]?.items ?? [];
   // Transform to vehicle-like for views that need it
   const vehicles = products.map(transformProductToVehicle);
+
+  // T7b: per-product view model for the generic ProductCard. Resolves
+  // presentation + schema + verticalSlug + imageUrl for each product
+  // in a single pass. The container is the source of truth for the
+  // signed cover URL (via the batch hook from T7a-0) — ProductCard
+  // stays a pure presentational function of its props, matching the
+  // spec §3 "container/presentational" invariant.
+  // Built inline — React Compiler handles memoization (PR #24 convention).
+  const viewModels = products.map((product) => {
+    const meta = categoryPresentationMap.get(product.category_id);
+    return {
+      product,
+      presentation: meta?.presentation ?? null,
+      attributeSchema: meta?.schema ?? {},
+      productAttributes: product.attributes as Record<string, unknown>,
+      verticalSlug: meta?.verticalSlug ?? null,
+      imageUrl: productImageUrls.get(product.id) ?? null,
+    };
+  });
+
   const hasFilters = !!(
     filters.search ||
     filters.status.length > 0 ||
@@ -895,13 +916,18 @@ export default function CatalogPage() {
                           gap: 16,
                         }}
                       >
-                        {products.map((p) => (
-                          <VehicleCard
-                            key={p.id}
-                            product={p}
-                            onView={() => handleView(p.id)}
-                            onEdit={() => handleEdit(p.id)}
-                            onDelete={() => handleDelete(p.id)}
+                        {viewModels.map((vm) => (
+                          <ProductCard
+                            key={vm.product.id}
+                            product={vm.product}
+                            presentation={vm.presentation}
+                            attributeSchema={vm.attributeSchema}
+                            productAttributes={vm.productAttributes}
+                            verticalSlug={vm.verticalSlug}
+                            imageUrl={vm.imageUrl}
+                            onView={() => handleView(vm.product.id)}
+                            onEdit={() => handleEdit(vm.product.id)}
+                            onDelete={() => handleDelete(vm.product.id)}
                           />
                         ))}
                       </div>
