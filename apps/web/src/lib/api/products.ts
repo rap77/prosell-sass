@@ -367,13 +367,13 @@ export function useDeleteProduct() {
 
 // ─── Signed image URLs ─────────────────────────────────────────────────────────
 
-interface ProductImageUrl {
+export interface ProductImageUrl {
   key: string;
   url: string;
   expires_in: number;
 }
 
-interface ProductImageUrlsResponse {
+export interface ProductImageUrlsResponse {
   product_id: string;
   images: ProductImageUrl[];
 }
