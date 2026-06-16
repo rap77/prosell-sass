@@ -17,7 +17,6 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   LayoutGrid,
@@ -52,9 +51,13 @@ import {
   transformProductToVehicle,
   useProductImageUrls,
 } from "@/lib/api/products";
-import { getCoverImageKey, getProductImageKeys } from "@/lib/api/productImages";
+import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
+import { useOrgVerticals } from "@/lib/api/verticals";
+import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
+import { getCoverImageKey } from "@/lib/api/productImages";
 import { isVehicleProduct } from "@/types/product";
 import type { Product } from "@/types/product";
+import type { CategoryPresentation, AttributeSchemaEntry } from "@/types/category";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -552,7 +555,54 @@ export default function CatalogPage() {
     isFetchingNextPage,
   } = useInfiniteProducts(apiFilters, 50);
 
-  const products = data?.pages[0]?.items.filter(isVehicleProduct) ?? [];
+  // Vertical contracts: presentation + attribute_schema per category.
+  // (Subsystem A — replaces the legacy `isVehicleProduct` filter with a
+  // generic category-driven model. The map is keyed by `category_id` so each
+  // product can resolve its category's presentation, attribute schema, and
+  // vertical slug in O(1).)
+  const { data: orgProfile } = useCurrentOrganizationProfile();
+  const organizationId = orgProfile?.id ?? null;
+  const { data: verticalsData } = useOrgVerticals(organizationId);
+
+  // Image URLs for the visible products (batched; see T7a-0).
+  // We resolve URLs at the container instead of letting the card fetch
+  // per-product (the legacy VehicleCard did the latter). ProductCard is
+  // a pure presentational function of its props; the container is the
+  // source of truth for the signed cover URL.
+  const { urls: productImageUrls } = useProductImageUrlsBatch(
+    (data?.pages[0]?.items ?? []).map((p) => p.id),
+  );
+
+  // category_id → { presentation, schema, verticalSlug }.
+  // Fallback chain per the foundation spec: category-level presentation
+  // wins, else the vertical-level default, else null (card renders the
+  // default fields). Built inline — React Compiler handles memoization
+  // for this small per-render computation (PR #24: useMemo removal convention).
+  const categoryPresentationMap = new Map<
+    string,
+    {
+      presentation: CategoryPresentation | null;
+      schema: Record<string, AttributeSchemaEntry>;
+      verticalSlug: string | null;
+    }
+  >();
+  for (const vertical of verticalsData?.verticals ?? []) {
+    for (const cat of vertical.categories) {
+      categoryPresentationMap.set(cat.id, {
+        presentation: cat.presentation ?? vertical.presentation ?? null,
+        schema: cat.attribute_schema,
+        verticalSlug: vertical.slug,
+      });
+    }
+  }
+
+  // T7a: removed `.filter(isVehicleProduct)` — the catalog is now generic
+  // (Subsystem A: a product is a product; presentation is driven by the
+  // category's vertical contract, not by a hardcoded `category: 'vehicle'`
+  // check). `vehicles` is kept as the legacy transform for the tabla view
+  // (DataGrid expects the transformed shape with `price: number` and
+  // `status: VehicleStatus`).
+  const products = data?.pages[0]?.items ?? [];
   // Transform to vehicle-like for views that need it
   const vehicles = products.map(transformProductToVehicle);
   const hasFilters = !!(
