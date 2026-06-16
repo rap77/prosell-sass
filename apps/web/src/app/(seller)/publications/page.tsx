@@ -30,7 +30,19 @@ import {
 import { useProducts } from "@/lib/api/products";
 import { getProductImageKeys } from "@/lib/api/productImages";
 import type { Product, ProductWithVehicle } from "@/types/product";
-import { isVehicleProduct } from "@/types/product";
+
+// Local category check for the publications view (the only remaining
+// frontend consumer of the vehicle-specific path). Reads
+// `p.attributes.category` directly — no dependency on the deprecated
+// `isVehicleProduct` type guard from `@/types/product`. Unblocks a
+// future cleanup that deletes the now-fully-deprecated helper.
+//
+// Type-guard signature preserved (`p is ProductWithVehicle`) so the
+// downstream `product.attributes` still narrows to `VehicleAttributes`
+// — same as the old `isVehicleProduct`.
+function isVehicleCategory(p: Product): p is ProductWithVehicle {
+  return p.attributes.category === "vehicle";
+}
 
 // ─── Domain types (unchanged) ─────────────────────────────────────────────────
 
@@ -165,7 +177,7 @@ function toPublishableVehicleData(
 function buildPublicationRows(products: Product[]): PublicationRow[] {
   return products.flatMap((product) => {
     const status = mapProductStatusToPublicationStatus(product);
-    if (!status || !isVehicleProduct(product)) return [];
+    if (!status || !isVehicleCategory(product)) return [];
     return [
       {
         id: product.id,
@@ -495,7 +507,7 @@ export default function PublicationsPage() {
 
   const productList = products ?? [];
   const publishableVehicles = productList.flatMap((p) => {
-    if (!isVehicleProduct(p)) return [];
+    if (!isVehicleCategory(p)) return [];
     if (p.status === "archived" || p.status === "sold") return [];
     return [toPublishableVehicleData(p)];
   });
