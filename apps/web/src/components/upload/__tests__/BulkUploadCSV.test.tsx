@@ -247,6 +247,30 @@ SHORT,2020,Honda,Civic,18500`;
     createElementSpy.mockRestore();
   });
 
+  // The backend parses bulk-upload CSVs via csv_field_mapper, which reads
+  // `row.get("body_style")`. If the template header says `body_type`, the
+  // body type silently drops on every upload that uses the official
+  // template. Pin the header to the backend contract.
+  it("template header uses body_style (backend contract), not body_type", () => {
+    render(<BulkUploadCSV />, { wrapper });
+
+    let captured = "";
+    const blobSpy = vi
+      .spyOn(global, "Blob")
+      .mockImplementation(
+        (parts?: BlobPart[]) =>
+          ((captured = (parts ?? []).join("")), {}) as unknown as Blob,
+      );
+
+    fireEvent.click(screen.getByText("Descargar plantilla"));
+
+    const header = captured.split("\n")[0];
+    expect(header).toContain("body_style");
+    expect(header).not.toContain("body_type");
+
+    blobSpy.mockRestore();
+  });
+
   it("should disable upload button when validation errors exist", async () => {
     render(<BulkUploadCSV />, { wrapper });
 

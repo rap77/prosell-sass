@@ -199,7 +199,7 @@ export function BulkUploadCSV({ onSuccess, onCancel }: BulkUploadCSVProps) {
   };
 
   const downloadTemplate = () => {
-    const template = `vin,year,make,model,trim,mileage,price,exterior_color,interior_color,transmission,fuel_type,body_type,drivetrain,engine,cylinders,description
+    const template = `vin,year,make,model,trim,mileage,price,exterior_color,interior_color,transmission,fuel_type,body_style,drivetrain,engine,cylinders,description
 1HGCM82633A123456,2020,Honda,Civic,EX,35000,18500,Black,Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Well maintained
 2T1BURHE0FC123456,2015,Toyota,Camry,SE,80000,12000,White,Grey,Automatic,Gas,Sedan,FWD,2.5L 4-Cylinder,4,Clean title
 `;
