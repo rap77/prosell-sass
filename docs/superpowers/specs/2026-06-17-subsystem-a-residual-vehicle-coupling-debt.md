@@ -48,6 +48,23 @@ Confundir las dos lleva a dos errores opuestos: dejar el leak genérico (deuda e
 | `csv_field_mapper`                 | `apps/api/.../domain/services/csv_field_mapper.py`                | Ilegítimo | Parser CSV vehicle-shaped (`body_style`, etc.). Fuente de verdad de las columnas → la generalización de F5 depende de alinear esto con `attribute_schema`. |
 | `AssignmentStrategy.VEHICLE_OWNER` | `apps/api/.../domain/services/lead_assignment_rules_engine.py:32` | Naming    | Conceptualmente "product owner". Rename de bajo impacto.                                                                                                   |
 
+### 3.4 Backend — clave de atributo NO canónica para carrocería ⚠️ (gap de datos, no de naming)
+
+Descubierto al verificar el fix del template CSV (PR #34). **El mismo concepto "tipo de carrocería" se guarda bajo DOS claves de atributo distintas según el path de creación:**
+
+| Path de creación                             | Clave de atributo | Evidencia                                                                                                                      |
+| -------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Create individual (`ProductForm` → API JSON) | `body_type`       | `ProductForm.tsx:76,557,623` envía `body_type`; backend `application/dto/product/attributes.py:63` lo acepta como `body_type`. |
+| Bulk CSV (`BulkUploadCSV`)                   | `body_style`      | `csv_field_mapper.py:325` lee la columna `body_style` y la persiste como atributo `body_style`.                                |
+
+El response DTO `application/dto/vehicle/response.py:32-33,70-71` lee **ambas por separado** (`attrs.get("body_type")` y `attrs.get("body_style")`), confirmando que conviven dos claves.
+
+**Consecuencia:** un producto cargado por form y otro por CSV terminan con la carrocería en claves diferentes. Cualquier consumidor (card `card_fields`, filtros de Subsystem B, analytics) que lea una sola clave verá vacío en la otra mitad del catálogo.
+
+**Nota de honestidad:** este gap es **preexistente** (no lo introdujo PR #34). El fix del template CSV en PR #34 (`body_type`→`body_style`) es correcto en su propio contexto — alineó el template con su propio mapper. Pero **expone** esta divergencia. El fix NO la creó ni la empeoró; sin él, el CSV no escribía ninguna de las dos claves de forma fiable.
+
+**Solución:** elegir una clave canónica (sugerido: `body_style`, que ya es la que persiste el CSV y la del dominio NHTSA "Body Class") y migrar el create-individual + el form a ella, más una migración de datos para los productos existentes con `body_type`. Encaja naturalmente con la Opción 2 (cuando el form se vuelva dinámico por `attribute_schema`, la clave canónica se define una sola vez en el schema del vertical). Hasta entonces, **es un gap conocido, acotado a la carrocería, sin pérdida de datos** (ambas claves persisten; solo no se unifican).
+
 ## 4. Approaches de solución (con tradeoffs)
 
 ### Opción 1 — Cleanup quirúrgico de naming + tabla genérica _(recomendado para el PR dedicado)_
