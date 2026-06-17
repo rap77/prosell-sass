@@ -1,0 +1,11 @@
+# Generated lockfiles — managed by pnpm, never format by hand
+pnpm-lock.yaml
+
+# Playwright generated artifacts
+tests/e2e/playwright-report/
+tests/e2e/test-results/
+
+# Build outputs
+**/.next/
+**/dist/
+**/coverage/

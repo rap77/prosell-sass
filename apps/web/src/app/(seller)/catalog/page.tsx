@@ -15,9 +15,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   LayoutGrid,
@@ -27,9 +25,6 @@ import {
   Plus,
   Search,
   Car,
-  Pencil,
-  Trash2,
-  Eye,
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
@@ -50,11 +45,18 @@ import {
   useInfiniteProducts,
   useDeleteProduct,
   transformProductToVehicle,
-  useProductImageUrls,
 } from "@/lib/api/products";
-import { getCoverImageKey, getProductImageKeys } from "@/lib/api/productImages";
-import { isVehicleProduct } from "@/types/product";
-import type { Product } from "@/types/product";
+import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
+import { useOrgVerticals } from "@/lib/api/verticals";
+import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
+import { ProductCard } from "@/components/catalog/ProductCard";
+import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
+import { getApiStatus } from "@/lib/utils/getApiStatus";
+import { getAttributeMap, type Product } from "@/types/product";
+import type {
+  CategoryPresentation,
+  AttributeSchemaEntry,
+} from "@/types/category";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -78,261 +80,6 @@ const STATUS_ORDER: VehicleStatus[] = [
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const VALID_STATUSES = new Set<string>([
-  "published",
-  "pending",
-  "failed",
-  "draft",
-  "expired",
-  "online",
-  "sold",
-]);
-
-function getApiStatus(
-  s: string | undefined,
-):
-  | "published"
-  | "pending"
-  | "failed"
-  | "draft"
-  | "expired"
-  | "online"
-  | "sold"
-  | undefined {
-  return s && VALID_STATUSES.has(s)
-    ? (s as
-        | "published"
-        | "pending"
-        | "failed"
-        | "draft"
-        | "expired"
-        | "online"
-        | "sold")
-    : undefined;
-}
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  }).format(price);
-}
-
-// ─── Vehicle card (grid view) ─────────────────────────────────────────────────
-
-function VehicleCard({
-  product,
-  onView,
-  onEdit,
-  onDelete,
-}: {
-  product: Product;
-  onView: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const [hovered, setHovered] = useState(false);
-
-  const vehicle = isVehicleProduct(product)
-    ? transformProductToVehicle(product)
-    : null;
-  // Pick the cover image. Priority: explicit `cover_image_key` set by
-  // the seller, then the first key of the merged list as a fallback.
-  // See `getCoverImageKey` for the full contract (including the
-  // stale-cover-key defensive fallback).
-  const rawPhotoUrl = getCoverImageKey(product);
-
-  // DO Spaces is private (403 on direct URLs). Resolve the first image to a
-  // time-limited signed download URL via the backend endpoint. The TanStack
-  // query cache is keyed by productId, so all cards sharing a product share
-  // the same in-flight request and result.
-  //
-  // We swallow errors here: if the product belongs to a different tenant
-  // (404), the user lacks permission, or the API is briefly unreachable, the
-  // card must still render — we just fall back to the placeholder image.
-  const { data: signedUrls } = useProductImageUrls(
-    rawPhotoUrl ? product.id : undefined,
-  );
-  const signedPhotoUrl = rawPhotoUrl
-    ? (signedUrls?.images.find((img) => img.key === rawPhotoUrl)?.url ?? null)
-    : null;
-  const photoUrl = signedPhotoUrl || undefined;
-
-  return (
-    <article
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={onView}
-      style={{
-        background: "var(--ps-bg-surface)",
-        border: `1px solid ${hovered ? "var(--ps-border-medium)" : "var(--ps-border-default)"}`,
-        borderRadius: 12,
-        overflow: "hidden",
-        cursor: "pointer",
-        transition: "border-color 180ms, box-shadow 180ms",
-        boxShadow: hovered ? "0 4px 20px rgba(6,13,36,0.35)" : "none",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {/* Image */}
-      <div
-        style={{
-          position: "relative",
-          aspectRatio: "16/9",
-          background: "var(--ps-bg-elevated)",
-          overflow: "hidden",
-        }}
-      >
-        {photoUrl ? (
-          <Image
-            src={photoUrl}
-            alt={product.title}
-            fill
-            sizes="(max-width: 768px) 100vw, 33vw"
-            style={{ objectFit: "cover" }}
-            // Bypass the `/_next/image` proxy: `photoUrl` is a MinIO
-            // presigned URL host-bound to `S3_PUBLIC_ENDPOINT_URL`, which
-            // the server-side proxy (running inside the Docker `web`
-            // container) cannot reach. The browser fetches the signed URL
-            // directly. Same reason as ProductImageGallery and
-            // HeroShotSelector — the catalog card has no unit test for
-            // this prop because VehicleCard is an internal function of
-            // this page (not exported). Verified visually after the fix.
-            unoptimized
-          />
-        ) : (
-          <Image
-            src="/placeholders/placeholder-vehicles.png"
-            alt="Sin imagen"
-            fill
-            sizes="(max-width: 768px) 100vw, 33vw"
-            priority
-            style={{ objectFit: "cover" }}
-          />
-        )}
-        {/* Status badge overlay */}
-        <div style={{ position: "absolute", top: 10, left: 10 }}>
-          <StatusBadge status={vehicle?.status ?? "draft"} />
-        </div>
-      </div>
-
-      {/* Content */}
-      <div
-        style={{
-          padding: "14px 16px 16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-          flex: 1,
-        }}
-      >
-        <p
-          style={{
-            margin: 0,
-            fontSize: 14,
-            fontWeight: 600,
-            color: "var(--ps-text-primary)",
-            lineHeight: 1.3,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {product.title}
-        </p>
-        <p
-          style={{ margin: 0, fontSize: 12, color: "var(--ps-text-secondary)" }}
-        >
-          {vehicle
-            ? [vehicle.year, vehicle.make, vehicle.model]
-                .filter(Boolean)
-                .join(" · ")
-            : ""}
-        </p>
-        <p
-          style={{
-            margin: "4px 0 0",
-            fontSize: 16,
-            fontWeight: 700,
-            color: "var(--ps-cyan)",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {formatPrice(product.price_cents / 100)}
-        </p>
-      </div>
-
-      {/* Actions */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          borderTop: "1px solid var(--ps-border-subtle)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          gap: 2,
-          padding: "8px 12px",
-        }}
-      >
-        {(
-          [
-            { icon: Eye, action: onView, label: "Ver", danger: false },
-            { icon: Pencil, action: onEdit, label: "Editar", danger: false },
-            { icon: Trash2, action: onDelete, label: "Eliminar", danger: true },
-          ] satisfies {
-            icon: React.ElementType;
-            action: () => void;
-            label: string;
-            danger: boolean;
-          }[]
-        ).map(({ icon: Icon, action, label, danger }) => (
-          <button
-            key={label}
-            type="button"
-            title={label}
-            onClick={(e) => {
-              e.stopPropagation();
-              action();
-            }}
-            style={{
-              width: 30,
-              height: 30,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "transparent",
-              border: 0,
-              borderRadius: 6,
-              color: danger ? "var(--ps-error)" : "var(--ps-text-secondary)",
-              cursor: "pointer",
-              transition: "background 150ms, color 150ms",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = danger
-                ? "var(--ps-danger-hover-bg)"
-                : "var(--ps-hover-bg-sm)";
-              e.currentTarget.style.color = danger
-                ? "var(--ps-error)"
-                : "var(--ps-text-primary)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = danger
-                ? "var(--ps-error)"
-                : "var(--ps-text-secondary)";
-            }}
-          >
-            <Icon size={14} strokeWidth={2} />
-          </button>
-        ))}
-      </div>
-    </article>
-  );
-}
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
@@ -397,7 +144,7 @@ function EmptyState({
         >
           {hasFilters
             ? "Ajustá los filtros o el término de búsqueda."
-            : "Agregá tu primer vehículo o cargá un CSV masivo para empezar."}
+            : "Agregá tu primer producto o cargá un CSV masivo para empezar."}
         </p>
       </div>
       {!hasFilters && (
@@ -417,7 +164,7 @@ function EmptyState({
               cursor: "pointer",
             }}
           >
-            Agregar vehículo
+            Agregar producto
           </button>
           <button
             type="button"
@@ -448,7 +195,13 @@ function EmptyState({
 
 // ─── Error state ──────────────────────────────────────────────────────────────
 
-function ErrorState({ message }: { message: string }) {
+export function ErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   return (
     <div
       style={{
@@ -487,7 +240,7 @@ function ErrorState({ message }: { message: string }) {
             color: "var(--ps-text-primary)",
           }}
         >
-          Error al cargar vehículos
+          Error al cargar productos
         </p>
         <p
           style={{
@@ -502,7 +255,7 @@ function ErrorState({ message }: { message: string }) {
       </div>
       <button
         type="button"
-        onClick={() => window.location.reload()}
+        onClick={onRetry}
         style={{
           height: 38,
           padding: "0 18px",
@@ -550,11 +303,79 @@ export default function CatalogPage() {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
+    refetch,
   } = useInfiniteProducts(apiFilters, 50);
 
-  const products = data?.pages[0]?.items.filter(isVehicleProduct) ?? [];
+  // Vertical contracts: presentation + attribute_schema per category.
+  // (Subsystem A — replaces the legacy `isVehicleProduct` filter with a
+  // generic category-driven model. The map is keyed by `category_id` so each
+  // product can resolve its category's presentation, attribute schema, and
+  // vertical slug in O(1).)
+  const { data: orgProfile } = useCurrentOrganizationProfile();
+  const organizationId = orgProfile?.id ?? null;
+  const { data: verticalsData } = useOrgVerticals(organizationId);
+
+  // Image URLs for the visible products (batched; see T7a-0).
+  // We resolve URLs at the container instead of letting the card fetch
+  // per-product (the legacy VehicleCard did the latter). ProductCard is
+  // a pure presentational function of its props; the container is the
+  // source of truth for the signed cover URL.
+  const { urls: productImageUrls } = useProductImageUrlsBatch(
+    (data?.pages[0]?.items ?? []).map((p) => p.id),
+  );
+
+  // category_id → { presentation, schema, verticalSlug }.
+  // Fallback chain per the foundation spec: category-level presentation
+  // wins, else the vertical-level default, else null (card renders the
+  // default fields). Built inline — React Compiler handles memoization
+  // for this small per-render computation (PR #24: useMemo removal convention).
+  const categoryPresentationMap = new Map<
+    string,
+    {
+      presentation: CategoryPresentation | null;
+      schema: Record<string, AttributeSchemaEntry>;
+      verticalSlug: string | null;
+    }
+  >();
+  for (const vertical of verticalsData?.verticals ?? []) {
+    for (const cat of vertical.categories) {
+      categoryPresentationMap.set(cat.id, {
+        presentation: cat.presentation ?? vertical.presentation ?? null,
+        schema: cat.attribute_schema,
+        verticalSlug: vertical.slug,
+      });
+    }
+  }
+
+  // T7a: removed `.filter(isVehicleProduct)` — the catalog is now generic
+  // (Subsystem A: a product is a product; presentation is driven by the
+  // category's vertical contract, not by a hardcoded `category: 'vehicle'`
+  // check). `vehicles` is kept as the legacy transform for the tabla view
+  // (DataGrid expects the transformed shape with `price: number` and
+  // `status: VehicleStatus`).
+  const products = data?.pages[0]?.items ?? [];
   // Transform to vehicle-like for views that need it
   const vehicles = products.map(transformProductToVehicle);
+
+  // T7b: per-product view model for the generic ProductCard. Resolves
+  // presentation + schema + verticalSlug + imageUrl for each product
+  // in a single pass. The container is the source of truth for the
+  // signed cover URL (via the batch hook from T7a-0) — ProductCard
+  // stays a pure presentational function of its props, matching the
+  // spec §3 "container/presentational" invariant.
+  // Built inline — React Compiler handles memoization (PR #24 convention).
+  const viewModels = products.map((product) => {
+    const meta = categoryPresentationMap.get(product.category_id);
+    return {
+      product,
+      presentation: meta?.presentation ?? null,
+      attributeSchema: meta?.schema ?? {},
+      productAttributes: getAttributeMap(product.attributes),
+      verticalSlug: meta?.verticalSlug ?? null,
+      imageUrl: productImageUrls.get(product.id) ?? null,
+    };
+  });
+
   const hasFilters = !!(
     filters.search ||
     filters.status.length > 0 ||
@@ -589,27 +410,16 @@ export default function CatalogPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   // ── Bulk upload handler ──────────────────────────────────────────────────
-  const handleBulkUpload = async (file: File) => {
-    const formData = new FormData();
-    formData.append("csv_file", file);
-    const res = await fetch("/api/v1/vehicles/bulk-upload", {
-      method: "POST",
-      body: formData,
-    });
-    if (!res.ok) {
-      const err = await res
-        .json()
-        .catch(() => ({ message: "Error al cargar" }));
-      throw new Error(err.message || "Error al cargar");
-    }
-    return res.json();
-  };
-
   // ── Grouped by status (estado view) ─────────────────────────────────────
-  const vehiclesByStatus = Object.fromEntries(
+  // T7c: groups viewModels (not raw products) by mapped status. Uses
+  // the generic `mapProductStatusToVehicleStatus` mapper from T6a
+  // instead of the legacy `transformProductToVehicle().status` indirection.
+  const viewModelsByStatus = Object.fromEntries(
     STATUS_ORDER.map((s) => [
       s,
-      products.filter((p) => transformProductToVehicle(p).status === s),
+      viewModels.filter(
+        (vm) => mapProductStatusToVehicleStatus(vm.product.status) === s,
+      ),
     ]),
   );
 
@@ -674,7 +484,7 @@ export default function CatalogPage() {
                 >
                   {isLoading
                     ? "Cargando..."
-                    : `${vehicles.length} vehículo${vehicles.length !== 1 ? "s" : ""}`}
+                    : `${vehicles.length} producto${vehicles.length !== 1 ? "s" : ""}`}
                 </p>
               </div>
 
@@ -696,7 +506,7 @@ export default function CatalogPage() {
                   </span>
                   <input
                     type="search"
-                    placeholder="Buscar vehículo..."
+                    placeholder="Buscar producto..."
                     value={filters.search}
                     onChange={(e) => setFilter("search", e.target.value)}
                     onFocus={(e) => {
@@ -744,7 +554,7 @@ export default function CatalogPage() {
                   }}
                 >
                   <Plus size={14} strokeWidth={2.5} />
-                  Agregar vehículo
+                  Agregar producto
                 </button>
               </div>
             </div>
@@ -801,7 +611,6 @@ export default function CatalogPage() {
             {/* CARGA MASIVA */}
             {viewMode === "carga" && (
               <BulkUploadCSV
-                onUpload={handleBulkUpload}
                 onSuccess={() => {
                   toast.success("Carga completada");
                   setViewMode("grilla");
@@ -822,6 +631,9 @@ export default function CatalogPage() {
                         ? error.message
                         : "Error inesperado."
                     }
+                    onRetry={() => {
+                      void refetch();
+                    }}
                   />
                 )}
 
@@ -845,13 +657,18 @@ export default function CatalogPage() {
                           gap: 16,
                         }}
                       >
-                        {products.map((p) => (
-                          <VehicleCard
-                            key={p.id}
-                            product={p}
-                            onView={() => handleView(p.id)}
-                            onEdit={() => handleEdit(p.id)}
-                            onDelete={() => handleDelete(p.id)}
+                        {viewModels.map((vm) => (
+                          <ProductCard
+                            key={vm.product.id}
+                            product={vm.product}
+                            presentation={vm.presentation}
+                            attributeSchema={vm.attributeSchema}
+                            productAttributes={vm.productAttributes}
+                            verticalSlug={vm.verticalSlug}
+                            imageUrl={vm.imageUrl}
+                            onView={() => handleView(vm.product.id)}
+                            onEdit={() => handleEdit(vm.product.id)}
+                            onDelete={() => handleDelete(vm.product.id)}
                           />
                         ))}
                       </div>
@@ -881,7 +698,7 @@ export default function CatalogPage() {
                         }}
                       >
                         {STATUS_ORDER.filter(
-                          (s) => vehiclesByStatus[s].length > 0,
+                          (s) => viewModelsByStatus[s].length > 0,
                         ).map((status) => (
                           <section key={status}>
                             {/* Group header */}
@@ -901,8 +718,8 @@ export default function CatalogPage() {
                                   fontWeight: 500,
                                 }}
                               >
-                                {vehiclesByStatus[status].length} vehículo
-                                {vehiclesByStatus[status].length !== 1
+                                {viewModelsByStatus[status].length} producto
+                                {viewModelsByStatus[status].length !== 1
                                   ? "s"
                                   : ""}
                               </span>
@@ -923,13 +740,18 @@ export default function CatalogPage() {
                                 gap: 12,
                               }}
                             >
-                              {vehiclesByStatus[status].map((p) => (
-                                <VehicleCard
-                                  key={p.id}
-                                  product={p}
-                                  onView={() => handleView(p.id)}
-                                  onEdit={() => handleEdit(p.id)}
-                                  onDelete={() => handleDelete(p.id)}
+                              {viewModelsByStatus[status].map((vm) => (
+                                <ProductCard
+                                  key={vm.product.id}
+                                  product={vm.product}
+                                  presentation={vm.presentation}
+                                  attributeSchema={vm.attributeSchema}
+                                  productAttributes={vm.productAttributes}
+                                  verticalSlug={vm.verticalSlug}
+                                  imageUrl={vm.imageUrl}
+                                  onView={() => handleView(vm.product.id)}
+                                  onEdit={() => handleEdit(vm.product.id)}
+                                  onDelete={() => handleDelete(vm.product.id)}
                                 />
                               ))}
                             </div>
@@ -986,7 +808,7 @@ export default function CatalogPage() {
                             padding: "16px 0",
                           }}
                         >
-                          {vehicles.length} vehículo
+                          {vehicles.length} producto
                           {vehicles.length !== 1 ? "s" : ""} en total
                         </p>
                       )}

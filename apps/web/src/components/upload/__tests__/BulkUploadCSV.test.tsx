@@ -46,13 +46,6 @@ describe("BulkUploadCSV", () => {
   let queryClient: QueryClient;
   let wrapper: React.FC<{ children: React.ReactNode }>;
 
-  const mockOnUpload = vi.fn().mockResolvedValue({
-    total_rows: 2,
-    created_count: 2,
-    failed_count: 0,
-    errors: [],
-  });
-
   beforeEach(() => {
     queryClient = new QueryClient({
       defaultOptions: {
@@ -78,17 +71,27 @@ describe("BulkUploadCSV", () => {
   });
 
   it("should render dropzone", () => {
-    render(<BulkUploadCSV onUpload={mockOnUpload} />, { wrapper });
+    render(<BulkUploadCSV />, { wrapper });
 
-    expect(screen.getByText("Carga masiva de vehículos")).toBeInTheDocument();
+    expect(screen.getByText("Carga masiva de productos")).toBeInTheDocument();
     expect(
       screen.getByText(/Arrastrá y soltá el archivo CSV acá/i),
     ).toBeInTheDocument();
     expect(screen.getByText("Plantilla CSV")).toBeInTheDocument();
   });
 
+  // Subsystem A (G3): BulkUploadCSV is self-sufficient — it owns the
+  // upload path via useBulkUploadProducts against the generic
+  // POST /api/v1/products/bulk-upload endpoint. There is no onUpload
+  // prop (it was dead code: the catalog page was calling a
+  // non-existent /api/v1/vehicles/bulk-upload URL, and the prop was
+  // never invoked by the component itself).
+  it("renders without any props (G3 self-sufficient upload)", () => {
+    expect(() => render(<BulkUploadCSV />, { wrapper })).not.toThrow();
+  });
+
   it("should parse CSV file", async () => {
-    render(<BulkUploadCSV onUpload={mockOnUpload} />, { wrapper });
+    render(<BulkUploadCSV />, { wrapper });
 
     const csvContent = `vin,year,make,model,price
 1HGCM82633A123456,2020,Honda,Civic,18500
@@ -108,7 +111,7 @@ describe("BulkUploadCSV", () => {
   });
 
   it("should show preview table after CSV upload", async () => {
-    render(<BulkUploadCSV onUpload={mockOnUpload} />, { wrapper });
+    render(<BulkUploadCSV />, { wrapper });
 
     const csvContent = `vin,year,make,model,price
 1HGCM82633A123456,2020,Honda,Civic,18500`;
@@ -139,7 +142,7 @@ describe("BulkUploadCSV", () => {
       errors: [],
     });
 
-    render(<BulkUploadCSV onUpload={mockOnUpload} />, { wrapper });
+    render(<BulkUploadCSV />, { wrapper });
 
     const csvContent = `vin,year,make,model,price
 1HGCM82633A123456,2020,Honda,Civic,18500`;
@@ -152,10 +155,10 @@ describe("BulkUploadCSV", () => {
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText("Subir 1 vehículos")).toBeInTheDocument();
+      expect(screen.getByText("Subir 1 productos")).toBeInTheDocument();
     });
 
-    const uploadButton = screen.getByText("Subir 1 vehículos");
+    const uploadButton = screen.getByText("Subir 1 productos");
     fireEvent.click(uploadButton);
 
     await waitFor(() => {
@@ -177,7 +180,7 @@ describe("BulkUploadCSV", () => {
       ],
     });
 
-    render(<BulkUploadCSV onUpload={mockOnUpload} />, { wrapper });
+    render(<BulkUploadCSV />, { wrapper });
 
     const csvContent = `vin,year,make,model,price
 1HGCM82633A123456,2020,Honda,Civic,18500
@@ -191,10 +194,10 @@ describe("BulkUploadCSV", () => {
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText("Subir 2 vehículos")).toBeInTheDocument();
+      expect(screen.getByText("Subir 2 productos")).toBeInTheDocument();
     });
 
-    const uploadButton = screen.getByText("Subir 2 vehículos");
+    const uploadButton = screen.getByText("Subir 2 productos");
     fireEvent.click(uploadButton);
 
     await waitFor(() => {
@@ -203,7 +206,7 @@ describe("BulkUploadCSV", () => {
   });
 
   it("should validate VIN length in preview", async () => {
-    render(<BulkUploadCSV onUpload={mockOnUpload} />, { wrapper });
+    render(<BulkUploadCSV />, { wrapper });
 
     const csvContent = `vin,year,make,model,price
 SHORT,2020,Honda,Civic,18500`;
@@ -223,7 +226,7 @@ SHORT,2020,Honda,Civic,18500`;
   });
 
   it("should download CSV template", () => {
-    render(<BulkUploadCSV onUpload={mockOnUpload} />, { wrapper });
+    render(<BulkUploadCSV />, { wrapper });
 
     const downloadButton = screen.getByText("Descargar plantilla");
     const clickSpy = vi.fn();
@@ -244,8 +247,32 @@ SHORT,2020,Honda,Civic,18500`;
     createElementSpy.mockRestore();
   });
 
+  // The backend parses bulk-upload CSVs via csv_field_mapper, which reads
+  // `row.get("body_style")`. If the template header says `body_type`, the
+  // body type silently drops on every upload that uses the official
+  // template. Pin the header to the backend contract.
+  it("template header uses body_style (backend contract), not body_type", () => {
+    render(<BulkUploadCSV />, { wrapper });
+
+    let captured = "";
+    const blobSpy = vi
+      .spyOn(global, "Blob")
+      .mockImplementation(
+        (parts?: BlobPart[]) =>
+          ((captured = (parts ?? []).join("")), {}) as unknown as Blob,
+      );
+
+    fireEvent.click(screen.getByText("Descargar plantilla"));
+
+    const header = captured.split("\n")[0];
+    expect(header).toContain("body_style");
+    expect(header).not.toContain("body_type");
+
+    blobSpy.mockRestore();
+  });
+
   it("should disable upload button when validation errors exist", async () => {
-    render(<BulkUploadCSV onUpload={mockOnUpload} />, { wrapper });
+    render(<BulkUploadCSV />, { wrapper });
 
     const csvContent = `vin,year,make,model,price
 SHORT,2020,Honda,Civic,18500`;
@@ -258,13 +285,13 @@ SHORT,2020,Honda,Civic,18500`;
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      const uploadButton = screen.getByText("Subir 1 vehículos");
+      const uploadButton = screen.getByText("Subir 1 productos");
       expect(uploadButton).toBeDisabled();
     });
   });
 
   it("should clear file and preview when cancel clicked", async () => {
-    render(<BulkUploadCSV onUpload={mockOnUpload} />, { wrapper });
+    render(<BulkUploadCSV />, { wrapper });
 
     const csvContent = `vin,year,make,model,price
 1HGCM82633A123456,2020,Honda,Civic,18500`;
@@ -294,10 +321,7 @@ SHORT,2020,Honda,Civic,18500`;
   it("should show success toast when upload succeeds", async () => {
     const mockOnSuccess = vi.fn();
 
-    render(
-      <BulkUploadCSV onUpload={mockOnUpload} onSuccess={mockOnSuccess} />,
-      { wrapper },
-    );
+    render(<BulkUploadCSV onSuccess={mockOnSuccess} />, { wrapper });
 
     const csvContent = `vin,year,make,model,price
 1HGCM82633A123456,2020,Honda,Civic,18500
@@ -311,15 +335,15 @@ SHORT,2020,Honda,Civic,18500`;
     fireEvent.drop(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText("Subir 2 vehículos")).toBeInTheDocument();
+      expect(screen.getByText("Subir 2 productos")).toBeInTheDocument();
     });
 
-    const uploadButton = screen.getByText("Subir 2 vehículos");
+    const uploadButton = screen.getByText("Subir 2 productos");
     fireEvent.click(uploadButton);
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith(
-        "Se cargaron 2 vehículos correctamente",
+        "Se cargaron 2 productos correctamente",
       );
       expect(mockOnSuccess).toHaveBeenCalledWith(2);
     });

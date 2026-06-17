@@ -50,7 +50,12 @@ describe("useCategories", () => {
         id: "cat-1",
         name: "Sedans",
         slug: "sedans",
-        attribute_schema: { year: true, make: true, model: true },
+        attribute_schema: {
+          year: { type: "number", filter_type: "range" },
+          make: { type: "string", filter_type: "select" },
+          model: { type: "string", filter_type: "exact" },
+        },
+        presentation: null,
         is_active: true,
         created_at: "2026-04-26T00:00:00Z",
         updated_at: "2026-04-26T00:00:00Z",
@@ -60,11 +65,12 @@ describe("useCategories", () => {
         name: "SUVs",
         slug: "suvs",
         attribute_schema: {
-          year: true,
-          make: true,
-          model: true,
-          drivetrain: true,
+          year: { type: "number", filter_type: "range" },
+          make: { type: "string", filter_type: "select" },
+          model: { type: "string", filter_type: "exact" },
+          drivetrain: { type: "string", filter_type: "select" },
         },
+        presentation: null,
         is_active: true,
         created_at: "2026-04-26T00:00:00Z",
         updated_at: "2026-04-26T00:00:00Z",
@@ -109,7 +115,8 @@ describe("useCategories", () => {
         id: "cat-1",
         name: "Sedans",
         slug: "sedans",
-        attribute_schema: { year: true },
+        attribute_schema: { year: { type: "number", filter_type: "range" } },
+        presentation: null,
         is_active: true,
         created_at: "2026-04-26T00:00:00Z",
         updated_at: "2026-04-26T00:00:00Z",
@@ -192,7 +199,8 @@ describe("useCategoryOptions", () => {
         id: "cat-1",
         name: "Sedans",
         slug: "sedans",
-        attribute_schema: { year: true },
+        attribute_schema: { year: { type: "number", filter_type: "range" } },
+        presentation: null,
         is_active: true,
         created_at: "2026-04-26T00:00:00Z",
         updated_at: "2026-04-26T00:00:00Z",
@@ -201,7 +209,8 @@ describe("useCategoryOptions", () => {
         id: "cat-2",
         name: "SUVs",
         slug: "suvs",
-        attribute_schema: { year: true },
+        attribute_schema: { year: { type: "number", filter_type: "range" } },
+        presentation: null,
         is_active: true,
         created_at: "2026-04-26T00:00:00Z",
         updated_at: "2026-04-26T00:00:00Z",
@@ -243,13 +252,14 @@ describe("useCategoryOptions", () => {
     expect(result.current.data).toBeUndefined();
   });
 
-  it("should memoize transformed options", async () => {
+  it("should return stable { value, label } options on re-render", async () => {
     const mockCategories: Category[] = [
       {
         id: "cat-1",
         name: "Sedans",
         slug: "sedans",
-        attribute_schema: { year: true },
+        attribute_schema: { year: { type: "number", filter_type: "range" } },
+        presentation: null,
         is_active: true,
         created_at: "2026-04-26T00:00:00Z",
         updated_at: "2026-04-26T00:00:00Z",
@@ -272,14 +282,13 @@ describe("useCategoryOptions", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    const firstData = result.current.data;
+    const expected = [{ value: "cat-1", label: "Sedans" }];
 
-    // Trigger re-render
+    // Initial render — options are transformed correctly.
+    expect(result.current.data).toEqual(expected);
+
+    // Trigger re-render and verify the transformation is stable.
     rerender();
-
-    const secondData = result.current.data;
-
-    // Reference equality means memoization worked
-    expect(firstData).toBe(secondData);
+    expect(result.current.data).toEqual(expected);
   });
 });

@@ -206,6 +206,83 @@ export const MOCK_VEHICLE_RESPONSE = {
   has_more: false,
 };
 
+/**
+ * Mock org verticals response (Subsystem A contract).
+ *
+ * Mirrors `OrgVerticalsResponse` from `apps/web/src/types/category.ts`:
+ *   GET /api/v1/organizations/{organization_id}/verticals
+ *
+ * The catalog grid's `categoryPresentationMap` is built from this payload
+ * (not from the legacy `/api/v1/categories` endpoint), so tests that
+ * exercise the ProductCard must mock it. Vehicle vertical (slug
+ * "vehicles") maps to the MOCK_VEHICLE_LIST category_ids ("cat-1",
+ * "cat-2"). For real-estate tests, override the verticals mock inline
+ * — the spec at catalog-productcard.spec.ts does this.
+ */
+export const MOCK_ORG_VERTICALS = {
+  verticals: [
+    {
+      id: "v-vehicles",
+      name: "Vehículos",
+      // MUST match the slug in `placeholderForVertical` NICHE_MAP, else
+      // the test for placeholder fallback would get the generic asset
+      // instead of the vehicles niche one.
+      slug: "vehiculos-y-transporte",
+      presentation: null,
+      categories: [
+        {
+          id: "cat-1",
+          name: "SUVs",
+          slug: "suvs",
+          attribute_schema: {
+            year: { type: "number", filter_type: "range" },
+            mileage: {
+              type: "number",
+              filter_type: "range",
+              unit: "km",
+            },
+            make: { type: "string", filter_type: "exact" },
+            model: { type: "string", filter_type: "exact" },
+          },
+          presentation: {
+            card_fields: [
+              { key: "year", source: "attributes.year" },
+              { key: "mileage", source: "attributes.mileage" },
+            ],
+            subtitle_template: "{make} {model} {year}",
+            filter_fields: [],
+          },
+          filter_fields: [],
+        },
+        {
+          id: "cat-2",
+          name: "Sedans",
+          slug: "sedans",
+          attribute_schema: {
+            year: { type: "number", filter_type: "range" },
+            mileage: {
+              type: "number",
+              filter_type: "range",
+              unit: "km",
+            },
+            make: { type: "string", filter_type: "exact" },
+            model: { type: "string", filter_type: "exact" },
+          },
+          presentation: {
+            card_fields: [
+              { key: "year", source: "attributes.year" },
+              { key: "mileage", source: "attributes.mileage" },
+            ],
+            subtitle_template: "{make} {model} {year}",
+            filter_fields: [],
+          },
+          filter_fields: [],
+        },
+      ],
+    },
+  ],
+};
+
 export const MOCK_VIN_DECODED = {
   vin: "2GNALCEK1H1615946",
   year: 2017,

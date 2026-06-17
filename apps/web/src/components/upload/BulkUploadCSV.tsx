@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * BulkUploadCSV — carga masiva de vehículos en ProSell.
+ * BulkUploadCSV — carga masiva de productos en ProSell.
  *
- * Permite subir múltiples vehículos desde un archivo CSV con:
+ * Permite subir múltiples productos desde un archivo CSV con:
  * - Drag & drop / click para seleccionar
  * - Preview de las primeras filas con validación
  * - Descarga de plantilla CSV
@@ -88,12 +88,6 @@ interface ParsedRow extends CSVRecord {
 }
 
 interface BulkUploadCSVProps {
-  onUpload: (file: File) => Promise<{
-    total_rows: number;
-    created_count: number;
-    failed_count: number;
-    errors: Array<{ row_number: number; vin: string; error: string }>;
-  }>;
   onSuccess?: (count: number) => void;
   onCancel?: () => void;
 }
@@ -102,11 +96,7 @@ interface BulkUploadCSVProps {
 // COMPONENT
 // ============================================
 
-export function BulkUploadCSV({
-  onUpload: _onUpload,
-  onSuccess,
-  onCancel,
-}: BulkUploadCSVProps) {
+export function BulkUploadCSV({ onSuccess, onCancel }: BulkUploadCSVProps) {
   const [file, setFile] = useState<File | null>(null);
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -192,7 +182,7 @@ export function BulkUploadCSV({
         setPreviewRows(rowsWithErrors.slice(0, 5));
       } else {
         toast.success(
-          `Se cargaron ${result.created_count} vehículos correctamente`,
+          `Se cargaron ${result.created_count} productos correctamente`,
         );
         onSuccess?.(result.created_count);
         setFile(null);
@@ -209,7 +199,7 @@ export function BulkUploadCSV({
   };
 
   const downloadTemplate = () => {
-    const template = `vin,year,make,model,trim,mileage,price,exterior_color,interior_color,transmission,fuel_type,body_type,drivetrain,engine,cylinders,description
+    const template = `vin,year,make,model,trim,mileage,price,exterior_color,interior_color,transmission,fuel_type,body_style,drivetrain,engine,cylinders,description
 1HGCM82633A123456,2020,Honda,Civic,EX,35000,18500,Black,Black,Automatic,Gas,Sedan,FWD,2.0L 4-Cylinder,4,Well maintained
 2T1BURHE0FC123456,2015,Toyota,Camry,SE,80000,12000,White,Grey,Automatic,Gas,Sedan,FWD,2.5L 4-Cylinder,4,Clean title
 `;
@@ -284,7 +274,7 @@ export function BulkUploadCSV({
               color: "var(--ps-text-primary)",
             }}
           >
-            Carga masiva de vehículos
+            Carga masiva de productos
           </h2>
           <p
             style={{
@@ -293,7 +283,7 @@ export function BulkUploadCSV({
               color: "var(--ps-text-secondary)",
             }}
           >
-            Cargá múltiples vehículos desde un archivo CSV
+            Cargá múltiples productos desde un archivo CSV
           </p>
         </div>
         {onCancel && (
@@ -558,7 +548,7 @@ export function BulkUploadCSV({
             >
               {isUploading
                 ? "Subiendo..."
-                : `Subir ${parsedRows.length} vehículos`}
+                : `Subir ${parsedRows.length} productos`}
             </button>
           </div>
         </div>

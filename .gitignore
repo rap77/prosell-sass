@@ -150,3 +150,6 @@ tests/e2e/.auth/
 # Windows Zone.Identifier artifacts (WSL)
 *:Zone.Identifier
 *.Identifier
+
+# Superpowers brainstorm companion (mockups, transient)
+.superpowers/

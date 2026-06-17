@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
   // `remotePatterns` below cover the OTHER case: external CDNs / image
   // services that Next.js CAN safely fetch server-side.
   images: {
+    // Negotiate AVIF first (better compression) and fall back to WebP.
+    // The placeholder WebP source assets (T8) and upload-pipeline JPEG
+    // outputs both benefit without code changes — next/image transcodes
+    // server-side and serves the best format the client Accepts.
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",
@@ -53,9 +58,6 @@ const nextConfig: NextConfig = {
       "lucide-react", // Icon library used in chadcn/ui components
       "@/components/icons", // Local icon components with barrel file
     ],
-  },
-  typescript: {
-    ignoreBuildErrors: true,
   },
   env: {
     // Backend API URL - must be http://localhost:8000 for OAuth to work

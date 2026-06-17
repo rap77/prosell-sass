@@ -143,6 +143,34 @@ export interface ProductListResponse {
 }
 
 /**
+ * Subsystem A (G1 follow-up): typed widening of the discriminated
+ * `ProductAttributes` union into a flat `Record<string, unknown>` for
+ * generic consumers (e.g. `ProductCard`, which reads attributes by
+ * whatever `card_fields` the category's presentation contract declares).
+ *
+ * The widening is safe by construction: every variant of
+ * `ProductAttributes` is a plain object with string/number/boolean
+ * leaf values, so a runtime copy is faithful. This replaces the
+ * previous `as Record<string, unknown>` cast at the call site (page.tsx),
+ * which silently swallowed type errors and undermined the spec §3
+ * "container is the source of truth" invariant.
+ *
+ * Keep this function in sync with the `ProductAttributes` discriminated
+ * union (`apps/web/src/types/vehicle.ts`). If a new attribute variant
+ * is added, this function MUST be updated — the test
+ * `types/product.test.ts` pins the contract.
+ */
+export function getAttributeMap(
+  attrs: ProductAttributes,
+): Record<string, unknown> {
+  // Object spread copies all enumerable own properties. Safe because:
+  // (1) every ProductAttributes variant is a plain object,
+  // (2) the leaf values are already JSON-serializable primitives,
+  // (3) the discriminated union is the union source-of-truth.
+  return { ...attrs };
+}
+
+/**
  * Product with vehicle data extracted from attributes
  * Convenience type for vehicle-specific views
  */
