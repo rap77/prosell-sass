@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DataGrid, type Vehicle } from "@/components/datagrid/DataGrid";
+import { DataGrid, type ProductRow } from "@/components/datagrid/DataGrid";
 
 vi.mock("@/components/datagrid/StatusBadge", () => ({
   StatusBadge: ({ status }: { status: string }) => (
@@ -49,7 +49,7 @@ vi.mock("@/lib/api/products", async () => {
 });
 
 describe("DataGrid", () => {
-  const mockVehicles: Vehicle[] = [
+  const mockVehicles: ProductRow[] = [
     {
       id: "1",
       title: "2020 Toyota Camry",

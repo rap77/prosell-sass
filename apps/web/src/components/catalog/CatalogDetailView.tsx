@@ -17,7 +17,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, PencilLine, Send, AlertCircle } from "lucide-react";
 import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
 import { StatusBadge } from "@/components/datagrid/StatusBadge";
-import type { Vehicle } from "@/components/datagrid/DataGrid";
+import type { ProductRow } from "@/components/datagrid/DataGrid";
 import { PublishModal } from "@/components/publisher/PublishModal";
 import { useProduct, useProductImageUrls } from "@/lib/api/products";
 import type { Product } from "@/types/product";
@@ -41,7 +41,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isGridStatus(
   status: Product["status"],
-): status is Extract<Product["status"], Vehicle["status"]> {
+): status is Extract<Product["status"], ProductRow["status"]> {
   return status in SUPPORTED_STATUS;
 }
 
