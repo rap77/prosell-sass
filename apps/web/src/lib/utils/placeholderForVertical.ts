@@ -18,7 +18,9 @@ const NICHE_MAP: Record<string, string> = {
 
 const GENERIC = "/placeholders/placeholder-generic.webp";
 
-export function placeholderForVertical(slug: string | null | undefined): string {
+export function placeholderForVertical(
+  slug: string | null | undefined,
+): string {
   if (!slug) return GENERIC;
   const niche = NICHE_MAP[slug];
   if (!niche) return GENERIC;

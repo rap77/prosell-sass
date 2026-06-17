@@ -297,10 +297,7 @@ SHORT,2020,Honda,Civic,18500`;
   it("should show success toast when upload succeeds", async () => {
     const mockOnSuccess = vi.fn();
 
-    render(
-      <BulkUploadCSV onSuccess={mockOnSuccess} />,
-      { wrapper },
-    );
+    render(<BulkUploadCSV onSuccess={mockOnSuccess} />, { wrapper });
 
     const csvContent = `vin,year,make,model,price
 1HGCM82633A123456,2020,Honda,Civic,18500

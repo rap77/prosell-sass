@@ -23,22 +23,24 @@ export function composeSubtitle(
 ): string {
   if (!template) return "";
 
-  return template
-    .replace(PLACEHOLDER, (match, key: string) => {
-      const value = attributes[key];
-      if (value === undefined || value === null) {
-        // Drop the placeholder only. We don't try to remove the preceding
-        // separator in-place from inside `replace`; instead we collapse
-        // runs of " · " in a post-pass below. Leading/trailing literals
-        // (including spaces) are preserved verbatim — see test 5.
-        return "";
-      }
-      return String(value);
-    })
-    // Collapse " · · " → " · " (and similar) for separators commonly used in
-    // the catalog. This is intentionally narrow; we don't try to handle every
-    // possible separator template. The `^ · | · $` pattern trims the
-    // separator only at the edges, NOT generic whitespace.
-    .replace(/( · )+/g, " · ")
-    .replace(/^ · | · $/g, "");
+  return (
+    template
+      .replace(PLACEHOLDER, (match, key: string) => {
+        const value = attributes[key];
+        if (value === undefined || value === null) {
+          // Drop the placeholder only. We don't try to remove the preceding
+          // separator in-place from inside `replace`; instead we collapse
+          // runs of " · " in a post-pass below. Leading/trailing literals
+          // (including spaces) are preserved verbatim — see test 5.
+          return "";
+        }
+        return String(value);
+      })
+      // Collapse " · · " → " · " (and similar) for separators commonly used in
+      // the catalog. This is intentionally narrow; we don't try to handle every
+      // possible separator template. The `^ · | · $` pattern trims the
+      // separator only at the edges, NOT generic whitespace.
+      .replace(/( · )+/g, " · ")
+      .replace(/^ · | · $/g, "")
+  );
 }

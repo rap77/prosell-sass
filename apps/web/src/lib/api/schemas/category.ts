@@ -78,4 +78,6 @@ export const BackendListResponseSchema = z.object({
   page_size: z.number(),
 });
 
-export type BackendListResponseParsed = z.infer<typeof BackendListResponseSchema>;
+export type BackendListResponseParsed = z.infer<
+  typeof BackendListResponseSchema
+>;

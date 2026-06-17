@@ -84,7 +84,9 @@ describe("Category", () => {
       created_at: "2026-01-01T00:00:00Z",
       updated_at: "2026-01-01T00:00:00Z",
     };
-    expectTypeOf(c.attribute_schema["mileage"]).toMatchTypeOf<AttributeSchemaEntry>();
+    expectTypeOf(
+      c.attribute_schema["mileage"],
+    ).toMatchTypeOf<AttributeSchemaEntry>();
   });
 });
 
@@ -106,7 +108,9 @@ describe("OrgVerticalsResponse", () => {
               id: "c1",
               name: "Autos",
               slug: "autos",
-              attribute_schema: { mileage: { type: "number", filter_type: "range" } },
+              attribute_schema: {
+                mileage: { type: "number", filter_type: "range" },
+              },
               presentation: {
                 card_fields: [{ key: "mileage", source: "attributes.mileage" }],
                 subtitle_template: "{year} · {make} · {model}",
@@ -118,7 +122,9 @@ describe("OrgVerticalsResponse", () => {
         },
       ],
     };
-    expect(r.verticals[0].categories[0].presentation?.card_fields).toHaveLength(1);
+    expect(r.verticals[0].categories[0].presentation?.card_fields).toHaveLength(
+      1,
+    );
   });
 });
 

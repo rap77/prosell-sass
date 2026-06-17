@@ -53,7 +53,10 @@ import { ProductCard } from "@/components/catalog/ProductCard";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 import { getApiStatus } from "@/lib/utils/getApiStatus";
 import { getAttributeMap, type Product } from "@/types/product";
-import type { CategoryPresentation, AttributeSchemaEntry } from "@/types/category";
+import type {
+  CategoryPresentation,
+  AttributeSchemaEntry,
+} from "@/types/category";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

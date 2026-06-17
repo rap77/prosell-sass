@@ -1,5 +1,5 @@
 import { useQueries } from "@tanstack/react-query";
-import type { ProductImageUrlsResponse } from "@/lib/api/products";
+import { ProductImageUrlsResponseSchema } from "@/lib/api/schemas/productImageUrls";
 
 /**
  * Batched version of `useProductImageUrls` for the catalog container.
@@ -28,10 +28,14 @@ export function useProductImageUrlsBatch(productIds: string[]): {
           credentials: "include",
         });
         if (!res.ok) return null;
-        const payload = (await res.json()) as ProductImageUrlsResponse;
-        // Pick the first image (the cover) — `ProductImageUrlsResponse.images`
-        // is ordered with the cover first per the backend contract.
-        return payload.images[0]?.url ?? null;
+        // Validate the untrusted wire shape (spec §8: degrade, never crash).
+        const parsed = ProductImageUrlsResponseSchema.safeParse(
+          await res.json(),
+        );
+        if (!parsed.success) return null;
+        // Pick the first image (the cover) — `images` is ordered with the
+        // cover first per the backend contract.
+        return parsed.data.images[0]?.url ?? null;
       },
       staleTime: 5 * 60 * 1000,
       retry: 1,
@@ -40,7 +44,7 @@ export function useProductImageUrlsBatch(productIds: string[]): {
 
   const urls = new Map<string, string | null>();
   for (let i = 0; i < productIds.length; i++) {
-    urls.set(productIds[i], (queries[i]?.data as string | null | undefined) ?? null);
+    urls.set(productIds[i], queries[i]?.data ?? null);
   }
   const isLoading = queries.some((q) => q.isLoading);
 

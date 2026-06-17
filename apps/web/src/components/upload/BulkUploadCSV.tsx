@@ -96,10 +96,7 @@ interface BulkUploadCSVProps {
 // COMPONENT
 // ============================================
 
-export function BulkUploadCSV({
-  onSuccess,
-  onCancel,
-}: BulkUploadCSVProps) {
+export function BulkUploadCSV({ onSuccess, onCancel }: BulkUploadCSVProps) {
   const [file, setFile] = useState<File | null>(null);
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
   const [isUploading, setIsUploading] = useState(false);

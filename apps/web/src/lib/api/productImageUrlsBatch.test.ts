@@ -45,9 +45,12 @@ describe("useProductImageUrlsBatch", () => {
         json: async () => fakeImageUrlsResponse("p2"),
       });
 
-    const { result } = renderHook(() => useProductImageUrlsBatch(["p1", "p2"]), {
-      wrapper: makeWrapper(),
-    });
+    const { result } = renderHook(
+      () => useProductImageUrlsBatch(["p1", "p2"]),
+      {
+        wrapper: makeWrapper(),
+      },
+    );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.urls.get("p1")).toBe("https://signed/p1/cover.jpg");
@@ -63,6 +66,26 @@ describe("useProductImageUrlsBatch", () => {
     expect(result.current.isLoading).toBe(false);
   });
 
+  it("degrades to null when the payload shape is invalid (url not a string)", async () => {
+    // The signed-URL endpoint is an untrusted network boundary. A payload
+    // whose `url` is not a string must NOT leak through as the image URL —
+    // the card falls back to its placeholder (spec §8: never crash, degrade).
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        product_id: "p1",
+        images: [{ key: "cover-p1", url: 12345, expires_in: 3600 }],
+      }),
+    });
+
+    const { result } = renderHook(() => useProductImageUrlsBatch(["p1"]), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.urls.get("p1")).toBeNull();
+  });
+
   it("populates null for products whose signed-URL fetch fails (4xx/5xx)", async () => {
     mockFetch
       .mockResolvedValueOnce({
@@ -74,9 +97,12 @@ describe("useProductImageUrlsBatch", () => {
         json: async () => ({ message: "Not found" }),
       });
 
-    const { result } = renderHook(() => useProductImageUrlsBatch(["p1", "p2"]), {
-      wrapper: makeWrapper(),
-    });
+    const { result } = renderHook(
+      () => useProductImageUrlsBatch(["p1", "p2"]),
+      {
+        wrapper: makeWrapper(),
+      },
+    );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.urls.get("p1")).toBe("https://signed/p1/cover.jpg");

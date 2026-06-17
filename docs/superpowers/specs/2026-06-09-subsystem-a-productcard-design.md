@@ -64,15 +64,15 @@ Foundation already exposes the contract).
 
 Layout **A** (vertical). Top to bottom:
 
-| Zone | Source | Rules |
-|------|--------|-------|
-| **Image** (4:3) | `product` cover key → signed URL; else niche placeholder | `object-fit: cover` for real photos, `contain` for placeholders |
-| **Status badge** | `product.status` | Overlay top-right of the image. A product *state* — never mixed into the data meta. |
-| **Title** | `product.title` (stored, composed at save time) | Single line, truncate with ellipsis. |
-| **Subtitle** | `composeSubtitle(presentation.subtitle_template, product.attributes)` | Muted; hidden if empty/no template. |
-| **Price** | `product.price_cents` + `currency` | Fixed slot, currency format (`Intl.NumberFormat`). |
-| **Meta** | `presentation.card_fields` | **2-column grid**, each cell = humanized label + formatted value. **Max 4** fields (2×2); extras dropped (shown in detail later). `price` is skipped here (it has its own slot). |
-| **Actions** (Editar / Publicar) | — | Appear on **hover** over the card; do not occupy layout in the resting state. |
+| Zone                            | Source                                                                | Rules                                                                                                                                                                            |
+| ------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Image** (4:3)                 | `product` cover key → signed URL; else niche placeholder              | `object-fit: cover` for real photos, `contain` for placeholders                                                                                                                  |
+| **Status badge**                | `product.status`                                                      | Overlay top-right of the image. A product _state_ — never mixed into the data meta.                                                                                              |
+| **Title**                       | `product.title` (stored, composed at save time)                       | Single line, truncate with ellipsis.                                                                                                                                             |
+| **Subtitle**                    | `composeSubtitle(presentation.subtitle_template, product.attributes)` | Muted; hidden if empty/no template.                                                                                                                                              |
+| **Price**                       | `product.price_cents` + `currency`                                    | Fixed slot, currency format (`Intl.NumberFormat`).                                                                                                                               |
+| **Meta**                        | `presentation.card_fields`                                            | **2-column grid**, each cell = humanized label + formatted value. **Max 4** fields (2×2); extras dropped (shown in detail later). `price` is skipped here (it has its own slot). |
+| **Actions** (Editar / Publicar) | —                                                                     | Appear on **hover** over the card; do not occupy layout in the resting state.                                                                                                    |
 
 Defaults locked: **image 4:3 · max 4 card_fields · actions on hover**.
 

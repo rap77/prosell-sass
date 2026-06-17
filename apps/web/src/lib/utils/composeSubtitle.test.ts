@@ -38,9 +38,9 @@ describe("composeSubtitle", () => {
   });
 
   it("drops unknown placeholders (not in attributes) without crashing", () => {
-    expect(
-      composeSubtitle("{year} · {nonexistent}", { year: 2020 }),
-    ).toBe("2020");
+    expect(composeSubtitle("{year} · {nonexistent}", { year: 2020 })).toBe(
+      "2020",
+    );
   });
 
   it("preserves empty string when template is empty", () => {

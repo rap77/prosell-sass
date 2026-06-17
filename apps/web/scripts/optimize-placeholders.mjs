@@ -22,7 +22,12 @@ const MAX_DIM = 540; // 2× the typical 270px display size.
 async function convertOne(pngPath) {
   const buf = await readFile(pngPath);
   const out = await sharp(buf)
-    .resize({ width: MAX_DIM, height: MAX_DIM, fit: "inside", withoutEnlargement: true })
+    .resize({
+      width: MAX_DIM,
+      height: MAX_DIM,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
     .webp({ quality: 80 })
     .toBuffer();
   const targetPath = pngPath.replace(/\.png$/, ".webp");

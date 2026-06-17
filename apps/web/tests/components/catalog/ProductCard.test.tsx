@@ -22,10 +22,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ProductCard } from "@/components/catalog/ProductCard";
-import type {
-  CategoryPresentation,
-  CardField,
-} from "@/types/category";
+import type { CategoryPresentation, CardField } from "@/types/category";
 import type { Product, ProductAttributes } from "@/types/product";
 
 // Test-only attribute fixtures. The card's `productAttributes` prop is
@@ -58,11 +55,7 @@ const asProductAttrs = (a: Record<string, unknown>): ProductAttributes =>
 vi.mock("next/image", () => ({
   default: (props: { src: string; alt?: string }) => (
     // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={props.src}
-      alt={props.alt ?? ""}
-      data-testid="next-image"
-    />
+    <img src={props.src} alt={props.alt ?? ""} data-testid="next-image" />
   ),
 }));
 
@@ -218,10 +211,7 @@ describe("ProductCard — image", () => {
       />,
     );
     const img = screen.getByTestId("next-image");
-    expect(img).toHaveAttribute(
-      "src",
-      "https://signed.example.com/cover.jpg",
-    );
+    expect(img).toHaveAttribute("src", "https://signed.example.com/cover.jpg");
   });
 
   it("falls back to the niche placeholder when imageUrl is null", () => {
@@ -413,9 +403,13 @@ describe("ProductCard — actions on hover", () => {
     // making Ver/Editar/Eliminar unreachable for keyboard users and
     // assistive tech.
     expect(screen.queryByRole("toolbar")).not.toBeNull();
-    expect(screen.getByRole("button", { name: /ver detalle/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /ver detalle/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /editar/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /eliminar/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /eliminar/i }),
+    ).toBeInTheDocument();
   });
 
   it("exposes the on-hover AND on-focus reveal classes on the actions wrapper", () => {

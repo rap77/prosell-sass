@@ -2,7 +2,10 @@ import { describe, it, expect } from "vitest";
 import { formatCardField } from "./formatCardField";
 import type { CardField, AttributeSchemaEntry } from "@/types/category";
 
-const mileageField: CardField = { key: "mileage", source: "attributes.mileage" };
+const mileageField: CardField = {
+  key: "mileage",
+  source: "attributes.mileage",
+};
 const yearField: CardField = { key: "year", source: "attributes.year" };
 const priceField: CardField = { key: "price", source: "attributes.price" };
 const areaField: CardField = { key: "area_m2", source: "attributes.area_m2" };
@@ -16,11 +19,9 @@ const numberSchema = (unit?: string): AttributeSchemaEntry => ({
 
 describe("formatCardField — label", () => {
   it("returns the schema-provided label when present", () => {
-    const out = formatCardField(
-      customLabelField,
-      "bar",
-      { foo: { type: "string", filter_type: "exact", label: "Custom Label" } },
-    );
+    const out = formatCardField(customLabelField, "bar", {
+      foo: { type: "string", filter_type: "exact", label: "Custom Label" },
+    });
     expect(out.label).toBe("Custom Label");
   });
 
@@ -68,11 +69,9 @@ describe("formatCardField — value formatting", () => {
   });
 
   it("returns a string value as-is", () => {
-    const out = formatCardField(
-      customLabelField,
-      "Toyota",
-      { foo: { type: "string", filter_type: "exact" } },
-    );
+    const out = formatCardField(customLabelField, "Toyota", {
+      foo: { type: "string", filter_type: "exact" },
+    });
     expect(out.value).toBe("Toyota");
   });
 

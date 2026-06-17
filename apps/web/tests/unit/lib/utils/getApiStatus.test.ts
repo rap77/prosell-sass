@@ -18,10 +18,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import {
-  getApiStatus,
-  VALID_STATUS_MAP,
-} from "@/lib/utils/getApiStatus";
+import { getApiStatus, VALID_STATUS_MAP } from "@/lib/utils/getApiStatus";
 import type { VehicleStatus } from "@/components/datagrid/StatusBadge";
 
 const ALL_STATUSES: VehicleStatus[] = [

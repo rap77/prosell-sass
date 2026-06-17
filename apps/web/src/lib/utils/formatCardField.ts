@@ -45,9 +45,7 @@ export function formatCardField(
 ): FormattedCardField {
   const entry = schema[field.key];
   const label =
-    entry?.label ??
-    KNOWN_LABELS[field.key] ??
-    humanizeKey(field.key);
+    entry?.label ?? KNOWN_LABELS[field.key] ?? humanizeKey(field.key);
 
   if (value === undefined || value === null) {
     return { key: field.key, label, value: null };

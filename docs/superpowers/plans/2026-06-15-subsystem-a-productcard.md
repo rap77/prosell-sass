@@ -16,30 +16,31 @@
 
 ## File Structure
 
-| Path | Responsibility |
-|------|----------------|
-| `apps/web/src/types/category.ts` | **REWRITE**: model `presentation`, `card_fields`, `subtitle_template`, `filter_fields` (currently stale) |
-| `apps/web/src/types/category.test.ts` | Shape tests for new types |
-| `apps/web/src/lib/utils/composeSubtitle.ts` | **NEW**: client-side subtitle composition from template + attributes |
-| `apps/web/src/lib/utils/composeSubtitle.test.ts` | Template substitution tests |
-| `apps/web/src/lib/utils/formatCardField.ts` | **NEW**: client-side label + value formatting (number / currency / string) |
-| `apps/web/src/lib/utils/formatCardField.test.ts` | Formatting tests |
-| `apps/web/src/lib/utils/placeholderForVertical.ts` | **NEW**: niche slug → placeholder asset path mapping |
-| `apps/web/src/lib/utils/placeholderForVertical.test.ts` | Mapping tests |
-| `apps/web/src/lib/api/verticals.ts` | **NEW**: `useOrgVerticals(orgId)` React Query hook |
-| `apps/web/src/lib/api/verticals.test.ts` | Hook tests (fetch + transform) |
-| `apps/web/src/components/catalog/ProductCard.tsx` | **NEW**: pure presentational card |
-| `apps/web/src/components/catalog/__tests__/ProductCard.test.tsx` | Component tests (Vehicle + RealEstate + degradation) |
-| `apps/web/src/app/(seller)/catalog/page.tsx` | **MODIFY**: container — fetch verticals, build map, pass to `ProductCard`, remove `VehicleCard` |
-| `apps/web/next.config.ts` | **MODIFY**: add `images.formats: ['image/avif', 'image/webp']` |
-| `scripts/optimize-placeholders.mjs` | **NEW**: sharp-based script to re-export placeholders to 540px WebP |
-| `apps/web/public/placeholders/placeholder-{vehicles,realstate}.webp` | **NEW**: optimized assets (replace PNG) |
-| `apps/web/public/placeholders/placeholder-generic.webp` | **NEW**: neutral fallback |
-| `apps/web/src/lib/api/productImageUrlsBatch.ts` | **NEW (T7b)**: `useProductImageUrlsBatch(ids[])` — TanStack Query `useQueries` batch resolver so the container can populate `viewModels.imageUrl` without N+1 |
-| `apps/web/src/app/(seller)/publications/page.tsx` | **MODIFY (T7e)**: drop the `isVehicleProduct` import; filter by `product.attributes.category === "vehicle"` directly (publications is the other consumer of the legacy helper) |
-| `tests/e2e/specs/catalog-productcard.spec.ts` | **NEW (T10)**: Playwright smoke — Vehicle + Real Estate render, placeholder shown when no cover |
+| Path                                                                 | Responsibility                                                                                                                                                                 |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apps/web/src/types/category.ts`                                     | **REWRITE**: model `presentation`, `card_fields`, `subtitle_template`, `filter_fields` (currently stale)                                                                       |
+| `apps/web/src/types/category.test.ts`                                | Shape tests for new types                                                                                                                                                      |
+| `apps/web/src/lib/utils/composeSubtitle.ts`                          | **NEW**: client-side subtitle composition from template + attributes                                                                                                           |
+| `apps/web/src/lib/utils/composeSubtitle.test.ts`                     | Template substitution tests                                                                                                                                                    |
+| `apps/web/src/lib/utils/formatCardField.ts`                          | **NEW**: client-side label + value formatting (number / currency / string)                                                                                                     |
+| `apps/web/src/lib/utils/formatCardField.test.ts`                     | Formatting tests                                                                                                                                                               |
+| `apps/web/src/lib/utils/placeholderForVertical.ts`                   | **NEW**: niche slug → placeholder asset path mapping                                                                                                                           |
+| `apps/web/src/lib/utils/placeholderForVertical.test.ts`              | Mapping tests                                                                                                                                                                  |
+| `apps/web/src/lib/api/verticals.ts`                                  | **NEW**: `useOrgVerticals(orgId)` React Query hook                                                                                                                             |
+| `apps/web/src/lib/api/verticals.test.ts`                             | Hook tests (fetch + transform)                                                                                                                                                 |
+| `apps/web/src/components/catalog/ProductCard.tsx`                    | **NEW**: pure presentational card                                                                                                                                              |
+| `apps/web/src/components/catalog/__tests__/ProductCard.test.tsx`     | Component tests (Vehicle + RealEstate + degradation)                                                                                                                           |
+| `apps/web/src/app/(seller)/catalog/page.tsx`                         | **MODIFY**: container — fetch verticals, build map, pass to `ProductCard`, remove `VehicleCard`                                                                                |
+| `apps/web/next.config.ts`                                            | **MODIFY**: add `images.formats: ['image/avif', 'image/webp']`                                                                                                                 |
+| `scripts/optimize-placeholders.mjs`                                  | **NEW**: sharp-based script to re-export placeholders to 540px WebP                                                                                                            |
+| `apps/web/public/placeholders/placeholder-{vehicles,realstate}.webp` | **NEW**: optimized assets (replace PNG)                                                                                                                                        |
+| `apps/web/public/placeholders/placeholder-generic.webp`              | **NEW**: neutral fallback                                                                                                                                                      |
+| `apps/web/src/lib/api/productImageUrlsBatch.ts`                      | **NEW (T7b)**: `useProductImageUrlsBatch(ids[])` — TanStack Query `useQueries` batch resolver so the container can populate `viewModels.imageUrl` without N+1                  |
+| `apps/web/src/app/(seller)/publications/page.tsx`                    | **MODIFY (T7e)**: drop the `isVehicleProduct` import; filter by `product.attributes.category === "vehicle"` directly (publications is the other consumer of the legacy helper) |
+| `tests/e2e/specs/catalog-productcard.spec.ts`                        | **NEW (T10)**: Playwright smoke — Vehicle + Real Estate render, placeholder shown when no cover                                                                                |
 
 **Out of scope (NOT in this plan):**
+
 - Subsystem B (dynamic filters)
 - Subsystem C (auto-category on create)
 - Subsystem D (dealer ownership UI)
@@ -55,6 +56,7 @@
 ## Task 1: Rewrite `types/category.ts` with presentation contract
 
 **Files:**
+
 - Modify: `apps/web/src/types/category.ts` (full rewrite — currently 22 lines, stale)
 - Create: `apps/web/src/types/category.test.ts`
 
@@ -139,7 +141,9 @@ describe("Category", () => {
       created_at: "2026-01-01T00:00:00Z",
       updated_at: "2026-01-01T00:00:00Z",
     };
-    expectTypeOf(c.attribute_schema["mileage"]).toMatchTypeOf<AttributeSchemaEntry>();
+    expectTypeOf(
+      c.attribute_schema["mileage"],
+    ).toMatchTypeOf<AttributeSchemaEntry>();
   });
 });
 
@@ -161,7 +165,9 @@ describe("OrgVerticalsResponse", () => {
               id: "c1",
               name: "Autos",
               slug: "autos",
-              attribute_schema: { mileage: { type: "number", filter_type: "range" } },
+              attribute_schema: {
+                mileage: { type: "number", filter_type: "range" },
+              },
               presentation: {
                 card_fields: [{ key: "mileage", source: "attributes.mileage" }],
                 subtitle_template: "{year} · {make} · {model}",
@@ -173,7 +179,9 @@ describe("OrgVerticalsResponse", () => {
         },
       ],
     };
-    expect(r.verticals[0].categories[0].presentation?.card_fields).toHaveLength(1);
+    expect(r.verticals[0].categories[0].presentation?.card_fields).toHaveLength(
+      1,
+    );
   });
 });
 
@@ -393,6 +401,7 @@ which is stale. This rewrite is the first step of Subsystem A. Consumers
 ## Task 2: `composeSubtitle(template, attributes)` helper
 
 **Files:**
+
 - Create: `apps/web/src/lib/utils/composeSubtitle.ts`
 - Create: `apps/web/src/lib/utils/composeSubtitle.test.ts`
 
@@ -441,9 +450,9 @@ describe("composeSubtitle", () => {
   });
 
   it("drops unknown placeholders (not in attributes) without crashing", () => {
-    expect(
-      composeSubtitle("{year} · {nonexistent}", { year: 2020 }),
-    ).toBe("2020");
+    expect(composeSubtitle("{year} · {nonexistent}", { year: 2020 })).toBe(
+      "2020",
+    );
   });
 
   it("preserves empty string when template is empty", () => {
@@ -507,22 +516,25 @@ export function composeSubtitle(
 ): string {
   if (!template) return "";
 
-  return template.replace(PLACEHOLDER, (match, key: string) => {
-    const value = attributes[key];
-    if (value === undefined || value === null) {
-      // Drop the placeholder + the leading separator that precedes it.
-      // We cannot drop the separator in-place from inside `replace`, so we
-      // collapse runs of " · " (and " ·" / "· ") in a post-pass below.
-      return "";
-    }
-    return String(value);
-  })
-    // Collapse " · · " → " · " (and similar) for separators commonly used in
-    // the catalog. This is intentionally narrow; we don't try to handle every
-    // possible separator template.
-    .replace(/( · )+/g, " · ")
-    .replace(/^ · | · $/g, "")
-    .trim();
+  return (
+    template
+      .replace(PLACEHOLDER, (match, key: string) => {
+        const value = attributes[key];
+        if (value === undefined || value === null) {
+          // Drop the placeholder + the leading separator that precedes it.
+          // We cannot drop the separator in-place from inside `replace`, so we
+          // collapse runs of " · " (and " ·" / "· ") in a post-pass below.
+          return "";
+        }
+        return String(value);
+      })
+      // Collapse " · · " → " · " (and similar) for separators commonly used in
+      // the catalog. This is intentionally narrow; we don't try to handle every
+      // possible separator template.
+      .replace(/( · )+/g, " · ")
+      .replace(/^ · | · $/g, "")
+      .trim()
+  );
 }
 ```
 
@@ -548,6 +560,7 @@ placeholders, collapses adjacent separators, preserves literals."
 ## Task 3: `formatCardField(field, value, schema)` helper
 
 **Files:**
+
 - Create: `apps/web/src/lib/utils/formatCardField.ts`
 - Create: `apps/web/src/lib/utils/formatCardField.test.ts`
 
@@ -560,7 +573,10 @@ import { describe, it, expect } from "vitest";
 import { formatCardField } from "./formatCardField";
 import type { CardField, AttributeSchemaEntry } from "@/types/category";
 
-const mileageField: CardField = { key: "mileage", source: "attributes.mileage" };
+const mileageField: CardField = {
+  key: "mileage",
+  source: "attributes.mileage",
+};
 const yearField: CardField = { key: "year", source: "attributes.year" };
 const priceField: CardField = { key: "price", source: "attributes.price" };
 const areaField: CardField = { key: "area_m2", source: "attributes.area_m2" };
@@ -574,11 +590,9 @@ const numberSchema = (unit?: string): AttributeSchemaEntry => ({
 
 describe("formatCardField — label", () => {
   it("returns the schema-provided label when present", () => {
-    const out = formatCardField(
-      customLabelField,
-      "bar",
-      { foo: { type: "string", filter_type: "exact", label: "Custom Label" } },
-    );
+    const out = formatCardField(customLabelField, "bar", {
+      foo: { type: "string", filter_type: "exact", label: "Custom Label" },
+    });
     expect(out.label).toBe("Custom Label");
   });
 
@@ -626,11 +640,9 @@ describe("formatCardField — value formatting", () => {
   });
 
   it("returns a string value as-is", () => {
-    const out = formatCardField(
-      customLabelField,
-      "Toyota",
-      { foo: { type: "string", filter_type: "exact" } },
-    );
+    const out = formatCardField(customLabelField, "Toyota", {
+      foo: { type: "string", filter_type: "exact" },
+    });
     expect(out.value).toBe("Toyota");
   });
 
@@ -701,9 +713,7 @@ export function formatCardField(
 ): FormattedCardField {
   const entry = schema[field.key];
   const label =
-    entry?.label ??
-    KNOWN_LABELS[field.key] ??
-    humanizeKey(field.key);
+    entry?.label ?? KNOWN_LABELS[field.key] ?? humanizeKey(field.key);
 
   if (value === undefined || value === null) {
     return { key: field.key, label, value: null };
@@ -746,6 +756,7 @@ unit; boolean as Sí/No; string as-is. Returns value: null when missing
 ## Task 4: `placeholderForVertical(slug)` helper
 
 **Files:**
+
 - Create: `apps/web/src/lib/utils/placeholderForVertical.ts`
 - Create: `apps/web/src/lib/utils/placeholderForVertical.test.ts`
 
@@ -814,7 +825,9 @@ const NICHE_MAP: Record<string, string> = {
 
 const GENERIC = "/placeholders/placeholder-generic.webp";
 
-export function placeholderForVertical(slug: string | null | undefined): string {
+export function placeholderForVertical(
+  slug: string | null | undefined,
+): string {
   if (!slug) return GENERIC;
   const niche = NICHE_MAP[slug];
   if (!niche) return GENERIC;
@@ -844,6 +857,7 @@ from the existing PNGs)."
 ## Task 5: `useOrgVerticals(orgId)` API hook
 
 **Files:**
+
 - Create: `apps/web/src/lib/api/verticals.ts`
 - Create: `apps/web/src/lib/api/verticals.test.ts`
 
@@ -1019,6 +1033,7 @@ Disabled when orgId is null. Stale time 5min (matches useCategories)."
 ## Task 6: `ProductCard` component (pure presentational)
 
 **Files:**
+
 - Create: `apps/web/src/components/catalog/ProductCard.tsx`
 - Create: `apps/web/src/components/catalog/__tests__/ProductCard.test.tsx`
 
@@ -1606,6 +1621,7 @@ This task is split into 4 commits for atomicity.
 ### Task 7a-0: Add `useProductImageUrlsBatch` hook (N+1-free container URL resolution)
 
 **Files:**
+
 - Create: `apps/web/src/lib/api/productImageUrlsBatch.ts`
 - Create: `apps/web/src/lib/api/productImageUrlsBatch.test.ts`
 
@@ -1641,18 +1657,29 @@ function makeWrapper() {
 }
 
 const fakeImageUrlsResponse = (productId: string) => ({
-  images: [{ key: `cover-${productId}`, url: `https://signed/${productId}/cover.jpg` }],
+  images: [
+    { key: `cover-${productId}`, url: `https://signed/${productId}/cover.jpg` },
+  ],
 });
 
 describe("useProductImageUrlsBatch", () => {
   it("returns a Map<productId, imageUrl|null> populated from per-product queries", async () => {
     mockFetch
-      .mockResolvedValueOnce({ ok: true, json: async () => fakeImageUrlsResponse("p1") })
-      .mockResolvedValueOnce({ ok: true, json: async () => fakeImageUrlsResponse("p2") });
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => fakeImageUrlsResponse("p1"),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => fakeImageUrlsResponse("p2"),
+      });
 
-    const { result } = renderHook(() => useProductImageUrlsBatch(["p1", "p2"]), {
-      wrapper: makeWrapper(),
-    });
+    const { result } = renderHook(
+      () => useProductImageUrlsBatch(["p1", "p2"]),
+      {
+        wrapper: makeWrapper(),
+      },
+    );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.urls.get("p1")).toBe("https://signed/p1/cover.jpg");
@@ -1670,12 +1697,21 @@ describe("useProductImageUrlsBatch", () => {
 
   it("populates null for products whose signed-URL fetch fails (4xx/5xx)", async () => {
     mockFetch
-      .mockResolvedValueOnce({ ok: true, json: async () => fakeImageUrlsResponse("p1") })
-      .mockResolvedValueOnce({ ok: false, json: async () => ({ message: "Not found" }) });
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => fakeImageUrlsResponse("p1"),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ message: "Not found" }),
+      });
 
-    const { result } = renderHook(() => useProductImageUrlsBatch(["p1", "p2"]), {
-      wrapper: makeWrapper(),
-    });
+    const { result } = renderHook(
+      () => useProductImageUrlsBatch(["p1", "p2"]),
+      {
+        wrapper: makeWrapper(),
+      },
+    );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.urls.get("p1")).toBe("https://signed/p1/cover.jpg");
@@ -1736,7 +1772,10 @@ export function useProductImageUrlsBatch(productIds: string[]): {
 
   const urls = new Map<string, string | null>();
   for (let i = 0; i < productIds.length; i++) {
-    urls.set(productIds[i], (queries[i]?.data as string | null | undefined) ?? null);
+    urls.set(
+      productIds[i],
+      (queries[i]?.data as string | null | undefined) ?? null,
+    );
   }
   const isLoading = queries.some((q) => q.isLoading);
 
@@ -1768,6 +1807,7 @@ GET /products/{id}/image-urls endpoint."
 ### Task 7a: Fetch verticals + build `categoryId → presentation` map
 
 **Files:**
+
 - Modify: `apps/web/src/app/(seller)/catalog/page.tsx`
 
 - [ ] **Step 1: Add the verticals query + the presentation map (replacing the `isVehicleProduct` filter)**
@@ -1784,7 +1824,10 @@ import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
 import { useOrgVerticals } from "@/lib/api/verticals";
 import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
 import { ProductCard } from "@/components/catalog/ProductCard";
-import type { CategoryPresentation, AttributeSchemaEntry } from "@/types/category";
+import type {
+  CategoryPresentation,
+  AttributeSchemaEntry,
+} from "@/types/category";
 ```
 
 Locate the `useInfiniteProducts(apiFilters, 50)` call (line 540-ish) and add the three new queries immediately after it:
@@ -1808,7 +1851,11 @@ const { urls: productImageUrls } = useProductImageUrlsBatch(
 const categoryPresentationMap = useMemo(() => {
   const map = new Map<
     string,
-    { presentation: CategoryPresentation | null; schema: Record<string, AttributeSchemaEntry>; verticalSlug: string | null }
+    {
+      presentation: CategoryPresentation | null;
+      schema: Record<string, AttributeSchemaEntry>;
+      verticalSlug: string | null;
+    }
   >();
   for (const vertical of verticalsData?.verticals ?? []) {
     for (const cat of vertical.categories) {
@@ -1865,6 +1912,7 @@ isVehicleProduct filter (the card is generic from now on)."
 ### Task 7b: Replace `VehicleCard` (grilla view) with `ProductCard`
 
 **Files:**
+
 - Modify: `apps/web/src/app/(seller)/catalog/page.tsx`
 
 - [ ] **Step 1: Add a resolver helper for `(presentation, schema, slug, imageUrl)` per product**
@@ -1954,6 +2002,7 @@ replaced in the next commit."
 ### Task 7c: Replace `VehicleCard` (estado view) with `ProductCard`
 
 **Files:**
+
 - Modify: `apps/web/src/app/(seller)/catalog/page.tsx`
 
 - [ ] **Step 1: Replace the estado view's `VehicleCard` usage**
@@ -1967,6 +2016,7 @@ Delete the entire `function VehicleCard(...)` declaration. Also delete the now-u
 - [ ] **Step 3: Run full lint + typecheck + tests**
 
 Run:
+
 ```bash
 cd apps/web
 pnpm typecheck
@@ -1995,6 +2045,7 @@ field), not a hardcoded literal."
 ### Task 7e: Migrate `publications/page.tsx` off `isVehicleProduct`
 
 **Files:**
+
 - Modify: `apps/web/src/app/(seller)/publications/page.tsx`
 
 publications/page.tsx imports `isVehicleProduct` at lines 33, 168, 498.
@@ -2048,6 +2099,7 @@ if (!isVehicleCategory(p)) return [];
 - [ ] **Step 3: Typecheck + tests**
 
 Run:
+
 ```bash
 cd apps/web
 pnpm typecheck
@@ -2075,6 +2127,7 @@ will delete the now-fully-deprecated helper from types/product.ts."
 ## Task 8: Optimize placeholder assets (1.3 MB → ~20-40 KB)
 
 **Files:**
+
 - Create: `scripts/optimize-placeholders.mjs`
 - Create: `apps/web/public/placeholders/placeholder-vehicles.webp`
 - Create: `apps/web/public/placeholders/placeholder-realstate.webp`
@@ -2123,7 +2176,12 @@ const MAX_DIM = 540; // 2× the typical 270px display size.
 async function convertOne(pngPath) {
   const buf = await readFile(pngPath);
   const out = await sharp(buf)
-    .resize({ width: MAX_DIM, height: MAX_DIM, fit: "inside", withoutEnlargement: true })
+    .resize({
+      width: MAX_DIM,
+      height: MAX_DIM,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
     .webp({ quality: 80 })
     .toBuffer();
   const targetPath = pngPath.replace(/\.png$/, ".webp");
@@ -2205,6 +2263,7 @@ Co-located optimize script: scripts/optimize-placeholders.mjs."
 ## Task 9: `next.config.ts` — add `images.formats` for AVIF/WebP negotiation
 
 **Files:**
+
 - Modify: `apps/web/next.config.ts`
 
 - [ ] **Step 1: Add the `formats` array**
@@ -2260,6 +2319,7 @@ benefit without code changes."
 ## Task 10: E2E smoke for the generic catalog grid
 
 **Files:**
+
 - Create: `tests/e2e/specs/catalog-productcard.spec.ts`
 
 Unit tests + a component test for `ProductCard` cover the contract
@@ -2298,7 +2358,9 @@ test.describe("Catalog — Generic ProductCard", () => {
     await mockVehiclesEndpoint(page);
   });
 
-  test("renders a vehicle card with the real StatusBadge testid", async ({ page }) => {
+  test("renders a vehicle card with the real StatusBadge testid", async ({
+    page,
+  }) => {
     await page.goto("/catalog");
     // At least one card visible.
     await expect(page.getByRole("article").first()).toBeVisible();
@@ -2310,7 +2372,9 @@ test.describe("Catalog — Generic ProductCard", () => {
     await expect(img).toBeVisible();
   });
 
-  test("falls back to the vehicles placeholder when the product has no cover", async ({ page }) => {
+  test("falls back to the vehicles placeholder when the product has no cover", async ({
+    page,
+  }) => {
     // Use a fixtures variant with cover_image_key=null; mock-endpoints helper
     // can filter, or override the mockVehiclesEndpoint fixture inline.
     await page.route("**/api/v1/products/*/image-urls", (route) =>
@@ -2325,7 +2389,9 @@ test.describe("Catalog — Generic ProductCard", () => {
     expect(imgSrc).toMatch(/placeholder-(vehicles|generic)\.webp/);
   });
 
-  test("a real-estate category renders without crashing (no vehicle-only fields)", async ({ page }) => {
+  test("a real-estate category renders without crashing (no vehicle-only fields)", async ({
+    page,
+  }) => {
     // Override the verticals mock to return a real-estate vertical with a
     // real-estate product. The card must render (not crash, not show
     // raw template strings) and present the area_m2 meta cell.
@@ -2353,7 +2419,11 @@ test.describe("Catalog — Generic ProductCard", () => {
                   name: "Departamentos",
                   slug: "departamentos",
                   attribute_schema: {
-                    area_m2: { type: "number", filter_type: "range", unit: "m²" },
+                    area_m2: {
+                      type: "number",
+                      filter_type: "range",
+                      unit: "m²",
+                    },
                     bedrooms: { type: "number", filter_type: "range" },
                   },
                   presentation: null,
@@ -2452,6 +2522,7 @@ uv run pytest
 ## Self-Review Notes
 
 **Spec coverage (§1-§10):**
+
 - §1 Goal: T6 + T7 (the card renders any vertical).
 - §2 Scope (in): T6 (ProductCard), T7 (catalog wiring), plus primitives T1-T5.
 - §3 Container/presentational: T6 enforces "pure" (no fetch, no store); T7 makes the container fetch verticals + resolve URLs.
@@ -2495,6 +2566,7 @@ that rely on `vehicle-status` continue to work unchanged.
 **Type consistency:** `CardField`, `CategoryPresentation`, `AttributeSchemaEntry`, `OrgVerticalsResponse`, `VerticalResponse`, `CategoryNode` are defined in T1 and consumed by T2-T7. `formatCardField` returns `FormattedCardField` (defined inline in T3). `ProductCard` props are defined in T6 and consumed by T7. `useProductImageUrlsBatch` return type is pinned in T7a-0 (`{ urls: Map<productId, string|null>; isLoading: boolean }`) and consumed by the catalog container in T7a/T7b. No naming drift.
 
 **Gaps not addressed (intentional, out of scope):**
+
 - `VehicleCard` legacy had hardcoded status mapping (`getApiStatus`); the new card uses `product.status` directly via the existing `StatusBadge`. The 7 literals cover the current `Product.status` union; widening `Product.status` requires a coordinated T1 test update + a `StatusBadge` config entry.
 - Currency: `Product.currency` is `string` (not a strict ISO-4217 union). T6 wraps the `Intl.NumberFormat` call in try/catch with a USD fallback (spec §8 "Never crash"). A follow-up could narrow `Product.currency` to a strict union in the backend and remove the try/catch.
 - The old `VehicleCard` had a `unoptimized` flag on the cover image; the new card preserves this for signed MinIO URLs (T6 step 3) and the dev comment in `next.config.ts` explains why.

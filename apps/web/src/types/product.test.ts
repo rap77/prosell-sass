@@ -13,14 +13,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import {
-  getAttributeMap,
-  type Product,
-} from "@/types/product";
-import type {
-  VehicleAttributes,
-  RealEstateAttributes,
-} from "@/types/vehicle";
+import { getAttributeMap, type Product } from "@/types/product";
+import type { VehicleAttributes, RealEstateAttributes } from "@/types/vehicle";
 
 const baseFields = {
   id: "p1",

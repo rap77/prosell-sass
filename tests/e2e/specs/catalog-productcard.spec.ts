@@ -71,7 +71,9 @@ test.describe("Catalog — Generic ProductCard", () => {
     const upstream = decodeURIComponent(
       (imgSrc ?? "").split("url=")[1]?.split("&")[0] ?? "",
     );
-    expect(upstream).toMatch(/^\/placeholders\/placeholder-(vehicles|generic)\./);
+    expect(upstream).toMatch(
+      /^\/placeholders\/placeholder-(vehicles|generic)\./,
+    );
   });
 
   test("a real-estate category renders without crashing (no vehicle-only fields)", async ({
@@ -173,9 +175,11 @@ test.describe("Catalog — Generic ProductCard", () => {
     await mockCategoriesEndpoint(page);
 
     await page.goto("/catalog");
-    await expect(page.getByRole("article").first()).toBeVisible({ timeout: 1000 }).catch(() => {
-      // Empty state has no <article>; just wait for the page to settle.
-    });
+    await expect(page.getByRole("article").first())
+      .toBeVisible({ timeout: 1000 })
+      .catch(() => {
+        // Empty state has no <article>; just wait for the page to settle.
+      });
     // Give the empty state a moment to render.
     await page.waitForTimeout(200);
 
