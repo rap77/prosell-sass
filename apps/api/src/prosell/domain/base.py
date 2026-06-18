@@ -8,9 +8,18 @@ from pydantic import (
     EmailStr,  # type: ignore[attr-defined]
     Field,
     field_validator,
+    model_validator,
 )
 
-__all__ = ["DomainEvent", "DomainModel", "EmailStr", "Field", "ValueObject", "field_validator"]
+__all__ = [
+    "DomainEvent",
+    "DomainModel",
+    "EmailStr",
+    "Field",
+    "ValueObject",
+    "field_validator",
+    "model_validator",
+]
 
 
 class DomainModel(BaseModel):
