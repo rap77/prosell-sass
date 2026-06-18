@@ -1,0 +1,62 @@
+# graphify AST ignore patterns.
+# Applied (best-effort) when `graphify update .` is invoked from repo root.
+# Mitigates OBSERVABILITY_LEAK risk: graphify-out/ publishes to public GitHub
+# Pages, so we must not index paths that hint at internal topology.
+
+# Secrets / credentials
+.env
+.env.*
+*.env
+*.key
+*.pem
+secrets/
+**/secrets/**
+
+# Build artifacts / vendor
+node_modules/
+.next/
+.nuxt/
+dist/
+build/
+out/
+coverage/
+__pycache__/
+*.pyc
+*.pyo
+
+# Python venvs
+.venv/
+venv/
+env/
+
+# VCS / IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Local CI / tooling state
+.graphify-out/
+graphify-out/
+.cache/
+.turbo/
+
+# Large binaries that don't add graph signal
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webp
+*.ico
+*.pdf
+*.zip
+*.tar.gz
+*.woff
+*.woff2
+*.ttf
+*.eot
+*.mp4
+*.mp3

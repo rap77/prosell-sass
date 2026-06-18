@@ -1,8 +1,15 @@
 name: graphify
 
 # Build the code knowledge graph on push, PR, and weekly schedule.
-# Artifacts: graph.html (interactive), GRAPH_REPORT.md (audit), graph.json (data).
+# Artifacts: graph.json (data), GRAPH_REPORT.md (audit). graph.html is
+# only generated for graphs ≤ 5000 nodes (skipped for this repo's ~20k).
 # Pages: deploys only on push to main, requires Pages enabled on the repo.
+# Only GRAPH_REPORT.md is published to Pages — graph.json is not (it
+# contains internal paths and is 22MB).
+#
+# .graphifyignore at repo root lists paths the AST extractor must skip
+# (.env*, secrets/, vendor dirs, binaries) so the published graph
+# doesn't leak internal topology.
 
 on:
   push:
@@ -44,35 +51,34 @@ jobs:
           python-version: "3.13"
 
       - name: Install graphify
-        # NOTE: the PyPI package is 'graphifyy' (double-y); the binary it ships
-        # is called 'graphify' (single-y). Confirmed via `uv tool list`:
-        # `graphifyy v0.8.41` provides binaries `graphify` and `graphify-mcp`.
-        # No version pin yet — open follow-up to add hash-pinned install (#37).
-        run: pip install graphifyy
+        # PyPI package is 'graphifyy' (double-y); binary is 'graphify' (single-y).
+        # Pin to exact version to prevent supply-chain drift. Hash-pinning
+        # is tracked in #37 (needs PyPI network access to fetch sha256).
+        run: pip install graphifyy==0.8.41
 
       - name: Build knowledge graph
-        # Scope to source roots only — exclude .env*, node_modules, .venv, secrets/.
-        # Publishing this graph to public Pages means we MUST not index sensitive paths.
-        run: |
-          echo "::group::graphify build"
-          graphify apps/api/src apps/web/src
-          echo "::endgroup::"
+        # `graphify update .` is code-only (no LLM needed) and re-runs
+        # AST extraction + clustering, writing graph.json and
+        # GRAPH_REPORT.md to graphify-out/. .graphifyignore excludes
+        # sensitive paths before extraction.
+        run: graphify update .
 
-      - name: Verify graph artifacts exist
+      - name: Verify required graph artifacts exist
+        # graph.html is OPTIONAL — graphify skips it for graphs > 5000
+        # nodes. This repo's graph is ~20k nodes, so we only require
+        # the always-generated artifacts.
         run: |
-          test -f graphify-out/graph.html || (echo "::error::graph.html missing" && exit 1)
-          test -f graphify-out/GRAPH_REPORT.md || (echo "::error::GRAPH_REPORT.md missing" && exit 1)
           test -f graphify-out/graph.json || (echo "::error::graph.json missing" && exit 1)
-          echo "✓ All graphify artifacts present"
+          test -f graphify-out/GRAPH_REPORT.md || (echo "::error::GRAPH_REPORT.md missing" && exit 1)
+          echo "✓ Required graphify artifacts present"
 
       - name: Upload graph artifacts
         uses: actions/upload-artifact@v4
         with:
           name: graphify-output
           path: |
-            graphify-out/graph.html
-            graphify-out/GRAPH_REPORT.md
             graphify-out/graph.json
+            graphify-out/GRAPH_REPORT.md
           retention-days: 30
           if-no-files-found: error
 
@@ -103,18 +109,29 @@ jobs:
           python-version: "3.13"
 
       - name: Install graphify
-        run: pip install graphifyy
+        run: pip install graphifyy==0.8.41
 
       - name: Build knowledge graph
-        run: graphify apps/api/src apps/web/src
+        run: graphify update .
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # Only publish GRAPH_REPORT.md to public Pages — graph.json (22MB,
+      # contains internal paths) is intentionally NOT published.
+      - name: Prepare Pages artifact
+        run: |
+          mkdir -p pages-out
+          cp graphify-out/GRAPH_REPORT.md pages-out/
+          if [ -f graphify-out/graph.html ]; then
+            cp graphify-out/graph.html pages-out/
+          fi
+          ls -la pages-out/
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: graphify-out
+          path: pages-out
 
       - name: Deploy to GitHub Pages
         id: deployment
