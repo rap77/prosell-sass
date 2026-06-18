@@ -143,8 +143,8 @@ async def test_list_org_verticals_returns_enabled_with_subtree(
     }
     # filter_fields: only fields marked filterable=True, in declared order
     assert cars_node["filter_fields"] == [
-        {"field": "make", "filter_type": "select"},
-        {"field": "year", "filter_type": "range"},
+        {"key": "make", "filter_type": "select"},
+        {"key": "year", "filter_type": "range"},
     ]
 
     # Real Estate: no presentation, no children

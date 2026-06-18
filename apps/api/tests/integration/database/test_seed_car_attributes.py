@@ -42,7 +42,7 @@ async def test_car_leaf_has_attribute_schema_and_presentation(db_session):
     assert suvs.attribute_schema["year"]["type"] == "number"
     assert suvs.presentation["title_template"] == "{year} {make} {model}"
 
-    filterables = {f["field"] for f in filter_fields(suvs.attribute_schema)}
+    filterables = {f["key"] for f in filter_fields(suvs.attribute_schema)}
     assert {"make", "model", "year"} <= filterables
 
 

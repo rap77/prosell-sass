@@ -42,14 +42,9 @@ def test_filter_fields_extracts_filterable_only():
     }
     out = filter_fields(schema)
     assert out == [
-        {"field": "make", "filter_type": "select"},
-        {"field": "year", "filter_type": "range"},
+        {"key": "make", "filter_type": "select"},
+        {"key": "year", "filter_type": "range"},
     ]
-
-
-def test_filter_fields_defaults_filter_type_to_text():
-    schema = {"color": {"type": "string", "filterable": True}}
-    assert filter_fields(schema) == [{"field": "color", "filter_type": "text"}]
 
 
 def test_filter_fields_empty_schema_returns_empty_list():
@@ -65,4 +60,21 @@ def test_filter_fields_preserves_declaration_order():
         "m": {"filterable": True, "filter_type": "select"},
     }
     out = filter_fields(schema)
-    assert [d["field"] for d in out] == ["z", "a", "m"]
+    assert [d["key"] for d in out] == ["z", "a", "m"]
+
+
+def test_filter_fields_emits_key_not_field():
+    schema = {"year": {"filterable": True, "filter_type": "range"}}
+    out = filter_fields(schema)
+    assert out == [{"key": "year", "filter_type": "range"}]
+
+
+def test_filter_fields_skips_field_without_filter_type():
+    schema = {"broken": {"filterable": True}, "make": {"filterable": True, "filter_type": "select"}}
+    out = filter_fields(schema)
+    assert out == [{"key": "make", "filter_type": "select"}]
+
+
+def test_filter_fields_ignores_non_filterable():
+    schema = {"vin": {"filterable": False, "filter_type": "text"}}
+    assert filter_fields(schema) == []
