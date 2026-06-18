@@ -148,3 +148,58 @@ async def test_distinct_attribute_values(
     # "make" is present on every seeded product, so it shows up here too.
     assert set(out["make"]) == {"Toyota", "Honda", "Ford"}
     assert None not in out["make"]
+
+
+async def test_distinct_attribute_values_excludes_explicit_null(
+    product_repo: SqlAlchemyProductRepository, seed_products: SeededProducts
+) -> None:
+    """Seed rows carrying `color` as explicit JSON null alongside rows with
+    string colors; the SQL `col.isnot(None)` filter must drop the null row
+    from `out["color"]`.
+
+    Load-bearing guarantee: if the `.isnot(None)` filter is removed, the null
+    row's `attributes->>'color'` is `NULL`, so `out["color"]` would include
+    `None` (and `len(out["color"])` would equal the total rows seeded with a
+    `color` key). Both assertions fail under that regression.
+    """
+    # 3 extra rows in the same tenant/category as the seed fixture:
+    # - 1 with `color=None` (explicit JSON null — must be filtered out)
+    # - 2 with concrete color strings (must survive the filter)
+    extra_color_specs: list[dict[str, object | None]] = [
+        {"color": None, "make": "Kia"},
+        {"color": "Red", "make": "Kia"},
+        {"color": "Blue", "make": "Nissan"},
+    ]
+    for i, attrs in enumerate(extra_color_specs):
+        await product_repo.create(
+            Product.create(
+                title=f"Null-color seed {i}",
+                price_cents=2_000_000 + i,
+                tenant_id=seed_products.tenant_id,
+                organization_id=seed_products.products[0].organization_id,
+                category_id=seed_products.category_id,
+                condition=ProductCondition.USED,
+                attributes=attrs,
+            )
+        )
+
+    out = await product_repo.distinct_attribute_values(
+        tenant_id=seed_products.tenant_id,
+        category_id=seed_products.category_id,
+        keys=["color", "make"],
+    )
+
+    # (a) the explicit null row must not surface as Python `None`
+    assert None not in out["color"]
+    # (b) and not surface as the literal string "None" either
+    assert "None" not in out["color"]
+    # (c) other key on the same row still works
+    assert "Kia" in out["make"]
+    # (d) load-bearing: the null row was excluded. 3 rows have a `color`
+    # key set; only 2 distinct string values can survive the filter.
+    rows_with_color = len(extra_color_specs)
+    assert len(out["color"]) < rows_with_color, (
+        f"expected null row to be excluded; got {out['color']!r} "
+        f"from {rows_with_color} rows with a color key"
+    )
+    assert set(out["color"]) == {"Red", "Blue"}
