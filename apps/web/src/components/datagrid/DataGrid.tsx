@@ -58,7 +58,7 @@ function SignedPhotoCell({
   );
 }
 
-export interface Vehicle {
+export interface ProductRow {
   id: string;
   title: string;
   price: number;
@@ -79,7 +79,7 @@ export interface Vehicle {
 }
 
 interface DataGridProps {
-  data: Vehicle[];
+  data: ProductRow[];
   onPublish?: (vehicleId: string) => void;
   onEdit?: (vehicleId: string) => void;
   onDelete?: (vehicleId: string) => void;
@@ -130,7 +130,7 @@ export function DataGrid({
     };
 
   // Stable columns definition (prevent re-renders)
-  const columns: ColumnDef<Vehicle>[] = [
+  const columns: ColumnDef<ProductRow>[] = [
     {
       id: "select",
       header: ({ table }) => (
@@ -167,7 +167,7 @@ export function DataGrid({
     },
     {
       accessorKey: "title",
-      header: "Vehicle",
+      header: "Title",
       cell: ({ row }) => (
         <span className="font-medium">{row.original.title}</span>
       ),
@@ -326,8 +326,8 @@ export function DataGrid({
               <tr
                 key={key}
                 data-row-id={row.id}
-                data-testid="vehicle-row"
-                data-vehicle-id={row.original.id}
+                data-testid="product-row"
+                data-product-id={row.original.id}
                 className={cn(
                   "border-b border-border transition-colors",
                   onRowClick

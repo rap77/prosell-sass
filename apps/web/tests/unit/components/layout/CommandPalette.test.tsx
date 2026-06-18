@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { CommandPalette } from "@/components/layout/CommandPalette";
-import type { Vehicle } from "@/components/datagrid/DataGrid";
+import type { ProductRow } from "@/components/datagrid/DataGrid";
 import React from "react";
 
 // Mock Next.js router
@@ -59,7 +59,7 @@ vi.mock("cmdk", () => ({
 }));
 
 describe("CommandPalette", () => {
-  const mockVehicles: Vehicle[] = [
+  const mockVehicles: ProductRow[] = [
     {
       id: "1",
       title: "2020 Toyota Camry",
@@ -218,7 +218,7 @@ describe("CommandPalette", () => {
   });
 
   it("shows recent vehicles (max 5) when search is empty", async () => {
-    const manyVehicles: Vehicle[] = Array.from({ length: 10 }, (_, i) => ({
+    const manyVehicles: ProductRow[] = Array.from({ length: 10 }, (_, i) => ({
       id: String(i + 1),
       title: `Vehicle ${i + 1}`,
       price: 10000 + i * 1000,

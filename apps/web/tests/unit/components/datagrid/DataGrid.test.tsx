@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DataGrid, type Vehicle } from "@/components/datagrid/DataGrid";
+import { DataGrid, type ProductRow } from "@/components/datagrid/DataGrid";
 
 vi.mock("@/components/datagrid/StatusBadge", () => ({
   StatusBadge: ({ status }: { status: string }) => (
@@ -49,7 +49,7 @@ vi.mock("@/lib/api/products", async () => {
 });
 
 describe("DataGrid", () => {
-  const mockVehicles: Vehicle[] = [
+  const mockVehicles: ProductRow[] = [
     {
       id: "1",
       title: "2020 Toyota Camry",
@@ -77,7 +77,7 @@ describe("DataGrid", () => {
     render(<DataGrid data={[]} />);
 
     expect(screen.getByRole("table")).toBeInTheDocument();
-    expect(screen.queryAllByTestId("vehicle-row")).toHaveLength(0);
+    expect(screen.queryAllByTestId("product-row")).toHaveLength(0);
   });
 
   it("renders vehicle data rows", () => {
@@ -106,7 +106,7 @@ describe("DataGrid", () => {
 
     render(<DataGrid data={mockVehicles} onRowClick={onRowClick} />);
 
-    const firstRow = screen.getAllByTestId("vehicle-row")[0];
+    const firstRow = screen.getAllByTestId("product-row")[0];
     firstRow.focus();
     await user.keyboard("{Enter}");
 

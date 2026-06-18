@@ -12,10 +12,10 @@ import {
 } from "cmdk";
 import Image from "next/image";
 import { Car, Upload, Plus } from "lucide-react";
-import type { Vehicle } from "@/components/datagrid/DataGrid";
+import type { ProductRow } from "@/components/datagrid/DataGrid";
 
 interface CommandPaletteProps {
-  vehicles?: Vehicle[];
+  vehicles?: ProductRow[];
 }
 
 export function CommandPalette({ vehicles = [] }: CommandPaletteProps) {

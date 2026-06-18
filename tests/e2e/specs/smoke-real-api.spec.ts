@@ -304,7 +304,7 @@ testWithFixtures.describe("Smoke Tests - Critical Path (Real API)", () => {
 
         // Verify at least one row exists
         const row = page
-          .locator('[role="row"], tr, [data-testid="vehicle-row"]')
+          .locator('[role="row"], tr, [data-testid="product-row"]')
           .first();
         await expect(row).toBeVisible();
       } else {

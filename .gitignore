@@ -153,3 +153,6 @@ tests/e2e/.auth/
 
 # Superpowers brainstorm companion (mockups, transient)
 .superpowers/
+
+# graphify knowledge graph (generated artifacts + cache)
+graphify-out/

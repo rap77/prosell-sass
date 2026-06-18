@@ -182,7 +182,7 @@ test.describe("Vehicles", () => {
     await page.waitForLoadState("load");
 
     // Wait for DataGrid to render vehicles
-    const vehicleRows = page.locator('[data-testid="vehicle-row"]');
+    const vehicleRows = page.locator('[data-testid="product-row"]');
     await expect(vehicleRows.first()).toBeVisible({ timeout: 5000 });
 
     // Verify C3 schema data is displayed (product fields + vehicle fields)
@@ -370,12 +370,12 @@ test.describe("Vehicles", () => {
     await page.waitForLoadState("load");
 
     // Wait for DataGrid to render
-    const vehicleRows = page.locator('[data-testid="vehicle-row"]');
+    const vehicleRows = page.locator('[data-testid="product-row"]');
     await expect(vehicleRows.first()).toBeVisible({ timeout: 5000 });
 
     // Verify row virtualization: DOM should only contain ~40 rows, not 100
     // TanStack Virtual keeps viewport + overscan rows in DOM
-    const domRows = await page.locator('[data-testid="vehicle-row"]').count();
+    const domRows = await page.locator('[data-testid="product-row"]').count();
 
     // With 100 total vehicles, virtualization should keep ~40-60 rows in DOM
     // (viewport ~15-20 rows + overscan ~10-20 rows)

@@ -24,7 +24,7 @@ test.describe("Catalog - Accessibility", () => {
 
     // Wait for content to render (vehicles from mock)
     await expect(
-      page.locator('[data-testid="vehicle-row"]').first(),
+      page.locator('[data-testid="product-row"]').first(),
     ).toBeVisible({ timeout: 5000 });
 
     // Run accessibility check, skipping rules known to produce false positives or
