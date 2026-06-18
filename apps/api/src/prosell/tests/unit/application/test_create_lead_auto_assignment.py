@@ -18,6 +18,7 @@ from prosell.domain.repositories.team_repository import (
 )
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 from prosell.domain.services.lead_assignment_rules_engine import AssignmentStrategy
+from prosell.domain.value_objects.attribute_filter import AttributeFilter
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 
@@ -326,6 +327,7 @@ class StubProductRepository(AbstractProductRepository):
         search_query: str | None = None,
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
+        attribute_filters: list[AttributeFilter] | None = None,
         skip: int = 0,
         limit: int = 100,
         order_by: str = "created_at",
@@ -340,6 +342,7 @@ class StubProductRepository(AbstractProductRepository):
             search_query,
             min_price_cents,
             max_price_cents,
+            attribute_filters,
             order_by,
             order_desc,
         )

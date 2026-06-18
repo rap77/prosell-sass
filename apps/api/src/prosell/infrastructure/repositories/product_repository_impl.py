@@ -3,11 +3,12 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import Boolean, Numeric, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.product import Product
 from prosell.domain.repositories.product_repository import AbstractProductRepository
+from prosell.domain.value_objects.attribute_filter import AttributeFilter
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.models.product_image_model import ProductImageModel
@@ -108,6 +109,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         search_query: str | None = None,
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
+        attribute_filters: list[AttributeFilter] | None = None,
         skip: int = 0,
         limit: int = 100,
         order_by: str = "created_at",
@@ -148,6 +150,23 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
         if max_price_cents is not None:
             stmt = stmt.where(ProductModel.price_cents <= max_price_cents)
+
+        # Dynamic attribute filters (JSONB)
+        for af in attribute_filters or []:
+            col = ProductModel.attributes[af.key].astext
+            if af.filter_type == "exact":
+                stmt = stmt.where(ProductModel.attributes.contains({af.key: af.value}))
+            elif af.filter_type == "select":
+                stmt = stmt.where(col.in_(af.values or []))
+            elif af.filter_type == "text":
+                stmt = stmt.where(col.ilike(f"%{af.value}%"))
+            elif af.filter_type == "boolean":
+                stmt = stmt.where(cast(col, Boolean) == af.value)
+            elif af.filter_type == "range":
+                if af.min is not None:
+                    stmt = stmt.where(cast(col, Numeric) >= af.min)
+                if af.max is not None:
+                    stmt = stmt.where(cast(col, Numeric) <= af.max)
 
         # Ordering
         order_column = getattr(ProductModel, order_by, ProductModel.created_at)
