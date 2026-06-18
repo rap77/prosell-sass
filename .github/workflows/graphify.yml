@@ -1,0 +1,108 @@
+name: graphify
+
+# Build the code knowledge graph on push, PR, and weekly schedule.
+# Artifacts: graph.html (interactive), GRAPH_REPORT.md (audit), graph.json (data).
+# Pages: deploys only on push to main, requires Pages enabled on the repo.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly Sunday 03:00 UTC — pick a non-:00 minute to spread CI load.
+    - cron: "3 3 * * 0"
+  workflow_dispatch:
+
+# Pin graphify hook off in CI to avoid recursive triggers.
+env:
+  GRAPHIFY_SKIP_HOOK: "1"
+  PYTHONHASHSEED: "0"  # Deterministic clustering across CI runs.
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build knowledge graph
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install graphify
+        run: pip install --quiet graphifyy
+
+      - name: Build knowledge graph
+        run: |
+          echo "::group::graphify build"
+          graphify . 2>&1 | tail -40
+          echo "::endgroup::"
+
+      - name: Verify graph artifacts exist
+        run: |
+          test -f graphify-out/graph.html || (echo "::error::graph.html missing" && exit 1)
+          test -f graphify-out/GRAPH_REPORT.md || (echo "::error::GRAPH_REPORT.md missing" && exit 1)
+          test -f graphify-out/graph.json || (echo "::error::graph.json missing" && exit 1)
+          echo "✓ All graphify artifacts present"
+
+      - name: Upload graph artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphify-output
+          path: |
+            graphify-out/graph.html
+            graphify-out/GRAPH_REPORT.md
+            graphify-out/graph.json
+          retention-days: 30
+          if-no-files-found: error
+
+  pages:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install graphify
+        run: pip install --quiet graphifyy
+
+      - name: Build knowledge graph
+        run: graphify . 2>&1 | tail -20
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: graphify-out
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
