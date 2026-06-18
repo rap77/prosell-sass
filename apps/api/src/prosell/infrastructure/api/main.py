@@ -24,6 +24,7 @@ from prosell.infrastructure.api.routers import (
     branch_router,
     category_router,
     facebook_router,
+    filter_values_router,
     health_router,
     image_router,
     lead_router,
@@ -241,6 +242,16 @@ app.include_router(
     product_router,
     prefix="/api/v1/products",
     tags=["Products"],
+)
+
+# Filter-values endpoint (Task 5): /api/v1/categories/{id}/filter-values.
+# Lives in product_router.py because it queries the product repo for DISTINCT
+# attribute values; mounted under /api/v1/categories so the URL matches the
+# catalog resource the frontend already knows about.
+app.include_router(
+    filter_values_router,
+    prefix="/api/v1",
+    tags=["Catalog Filters"],
 )
 
 app.include_router(
