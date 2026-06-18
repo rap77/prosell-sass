@@ -31,4 +31,36 @@ describe("useCatalogFilters", () => {
     expect(result.current.values.year_min).toBe("2015");
     expect(result.current.values.year_max).toBe("2020");
   });
+
+  it("setFilters applies multiple keys atomically in a single push", () => {
+    mockSearchParams = new URLSearchParams("year_min=2010&year_max=2026");
+    const { result } = renderHook(() =>
+      useCatalogFilters([{ key: "year", filter_type: "range" }]),
+    );
+    act(() =>
+      result.current.setFilters({ year_min: "2012", year_max: "2025" }),
+    );
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith("?year_min=2012&year_max=2025", {
+      scroll: false,
+    });
+  });
+
+  it("two sequential setFilter calls clobber each other (documents why setFilters exists)", () => {
+    mockSearchParams = new URLSearchParams("year_min=2010&year_max=2026");
+    const { result } = renderHook(() =>
+      useCatalogFilters([{ key: "year", filter_type: "range" }]),
+    );
+    act(() => {
+      result.current.setFilter("year_min", "2012");
+      result.current.setFilter("year_max", "2025");
+    });
+    // The second push is built from the same stale searchParams as the
+    // first, so it silently drops the year_min update — this is why
+    // multi-key updates (e.g. a range slider) must use setFilters instead.
+    expect(mockPush).toHaveBeenLastCalledWith(
+      "?year_min=2010&year_max=2025",
+      { scroll: false },
+    );
+  });
 });

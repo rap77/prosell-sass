@@ -17,15 +17,20 @@ export function useCatalogFilters(fields: FilterField[]) {
     }
   }
 
-  const setFilter = (key: string, value: string | string[]) => {
+  const setFilters = (updates: Record<string, string | string[]>) => {
     const params = new URLSearchParams(searchParams);
-    const next = Array.isArray(value) ? value.join(",") : value;
-    if (next) params.set(key, next);
-    else params.delete(key);
+    for (const [key, value] of Object.entries(updates)) {
+      const next = Array.isArray(value) ? value.join(",") : value;
+      if (next) params.set(key, next);
+      else params.delete(key);
+    }
     router.push(`?${params.toString()}`, { scroll: false });
   };
 
+  const setFilter = (key: string, value: string | string[]) =>
+    setFilters({ [key]: value });
+
   const clearAll = () => router.push("?", { scroll: false });
 
-  return { values, setFilter, clearAll };
+  return { values, setFilter, setFilters, clearAll };
 }

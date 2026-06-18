@@ -50,7 +50,7 @@ export function FilterSidebar({
   schema = {},
   facetValues = {},
 }: FilterSidebarProps) {
-  const { values, setFilter, clearAll } = useCatalogFilters(fields);
+  const { values, setFilter, setFilters, clearAll } = useCatalogFilters(fields);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
@@ -91,8 +91,10 @@ export function FilterSidebar({
                   step={1}
                   value={[minNum, maxNum]}
                   onValueChange={([lo, hi]) => {
-                    setFilter(`${field.key}_min`, String(lo));
-                    setFilter(`${field.key}_max`, String(hi));
+                    setFilters({
+                      [`${field.key}_min`]: String(lo),
+                      [`${field.key}_max`]: String(hi),
+                    });
                   }}
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
