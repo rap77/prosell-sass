@@ -37,6 +37,7 @@ class SeededProducts:
     """Handle for products seeded by the `seed_products` fixture."""
 
     tenant_id: UUID
+    category_id: UUID
     products: list[Product]
 
 
@@ -81,7 +82,7 @@ async def seed_products(
         )
         created.append(await product_repo.create(product))
 
-    yield SeededProducts(tenant_id=tenant_id, products=created)
+    yield SeededProducts(tenant_id=tenant_id, category_id=test_category.id, products=created)
 
 
 async def test_range_filter_both_bounds(
@@ -133,3 +134,17 @@ async def test_and_across_filters(
         p.attributes["make"] == "Toyota" and cast(int, p.attributes["year"]) >= 2020 for p in result
     )
     assert len(result) == 1
+
+
+async def test_distinct_attribute_values(
+    product_repo: SqlAlchemyProductRepository, seed_products: SeededProducts
+) -> None:
+    out = await product_repo.distinct_attribute_values(
+        tenant_id=seed_products.tenant_id,
+        category_id=seed_products.category_id,
+        keys=["make"],
+    )
+    # seed_products also includes a Ford with no "year" (missing-attribute case);
+    # "make" is present on every seeded product, so it shows up here too.
+    assert set(out["make"]) == {"Toyota", "Honda", "Ford"}
+    assert None not in out["make"]

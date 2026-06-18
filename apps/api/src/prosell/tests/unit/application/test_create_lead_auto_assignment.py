@@ -316,6 +316,12 @@ class StubProductRepository(AbstractProductRepository):
             and product.sold_at < cutoff
         ]
 
+    async def distinct_attribute_values(
+        self, tenant_id: UUID, category_id: UUID, keys: list[str]
+    ) -> dict[str, list[str]]:
+        del tenant_id, category_id, keys
+        return {}
+
     async def get_all(
         self,
         tenant_id: UUID,

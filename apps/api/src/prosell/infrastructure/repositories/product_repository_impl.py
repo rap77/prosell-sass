@@ -497,6 +497,27 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         result = await self.session.execute(stmt)
         return [self._to_entity(model) for model in result.scalars().all()]
 
+    async def distinct_attribute_values(
+        self, tenant_id: UUID, category_id: UUID, keys: list[str]
+    ) -> dict[str, list[str]]:
+        """Return DISTINCT non-null `attributes[key]` values, tenant+category scoped."""
+        out: dict[str, list[str]] = {}
+        for key in keys:
+            col = ProductModel.attributes[key].astext
+            stmt = (
+                select(col)
+                .where(
+                    ProductModel.tenant_id == tenant_id,
+                    ProductModel.category_id == category_id,
+                    col.isnot(None),
+                )
+                .distinct()
+                .order_by(col)
+            )
+            rows = (await self.session.execute(stmt)).scalars().all()
+            out[key] = list(rows)
+        return out
+
     def _to_entity(self, model: ProductModel) -> Product:
         """Convert ORM model to domain entity."""
         return Product.model_validate(model, from_attributes=True)

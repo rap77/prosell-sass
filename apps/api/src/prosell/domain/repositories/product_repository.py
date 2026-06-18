@@ -352,3 +352,23 @@ class AbstractProductRepository(ABC):
             List of SOLD products with sold_at < cutoff
         """
         pass
+
+    @abstractmethod
+    async def distinct_attribute_values(
+        self, tenant_id: UUID, category_id: UUID, keys: list[str]
+    ) -> dict[str, list[str]]:
+        """
+        Get DISTINCT non-null values of `attributes[key]` per key.
+
+        Tenant + category scoped — used by the catalog UI to populate
+        `select` filters that have no static options (e.g. `make`, `color`).
+
+        Args:
+            tenant_id: Tenant UUID for isolation
+            category_id: Category UUID to scope the values to
+            keys: Attribute keys to compute distinct values for
+
+        Returns:
+            Mapping of key -> sorted list of distinct non-null values
+        """
+        pass
