@@ -248,13 +248,13 @@ class TestPollFacebookLeadsTaskConfiguration:
     def test_retry_policy_initial_delay(self):
         """Test that retry policy initial delay is configured (B2.1.h)."""
         assert RETRY_INITIAL_DELAY_SECONDS == 1.0
-        assert isinstance(RETRY_INITIAL_DELAY_SECONDS, (int, float))
+        assert isinstance(RETRY_INITIAL_DELAY_SECONDS, int | float)
         assert RETRY_INITIAL_DELAY_SECONDS > 0
 
     def test_retry_policy_backoff_multiplier(self):
         """Test that retry policy backoff multiplier is configured (B2.1.h)."""
         assert RETRY_BACKOFF_MULTIPLIER == 2.0
-        assert isinstance(RETRY_BACKOFF_MULTIPLIER, (int, float))
+        assert isinstance(RETRY_BACKOFF_MULTIPLIER, int | float)
         assert RETRY_BACKOFF_MULTIPLIER > 1.0
 
     def test_retry_policy_jitter_ratio(self):
