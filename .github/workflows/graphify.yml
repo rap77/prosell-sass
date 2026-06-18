@@ -44,9 +44,11 @@ jobs:
           python-version: "3.13"
 
       - name: Install graphify
-        # No --quiet: surface resolver anomalies (typosquats, version drift) in CI logs.
-        # No version pin yet — open follow-up to add hash-pinned install.
-        run: pip install graphify
+        # NOTE: the PyPI package is 'graphifyy' (double-y); the binary it ships
+        # is called 'graphify' (single-y). Confirmed via `uv tool list`:
+        # `graphifyy v0.8.41` provides binaries `graphify` and `graphify-mcp`.
+        # No version pin yet — open follow-up to add hash-pinned install (#37).
+        run: pip install graphifyy
 
       - name: Build knowledge graph
         # Scope to source roots only — exclude .env*, node_modules, .venv, secrets/.
@@ -101,7 +103,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install graphify
-        run: pip install graphify
+        run: pip install graphifyy
 
       - name: Build knowledge graph
         run: graphify apps/api/src apps/web/src
