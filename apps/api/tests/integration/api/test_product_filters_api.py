@@ -91,3 +91,32 @@ async def test_filter_values_endpoint(client, auth_headers, vehicle_category):
     )
     assert resp.status_code == 200
     assert "make" in resp.json()["values"]
+
+
+@pytest.mark.asyncio
+async def test_filter_values_response_includes_truncated_flag(
+    client, auth_headers, vehicle_category
+):
+    """filter-values response MUST include `truncated: []` so clients can detect capping."""
+    resp = await client.get(
+        f"/api/v1/categories/{vehicle_category.id}/filter-values", headers=auth_headers
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "values" in body
+    assert "truncated" in body
+    assert body["truncated"] == []
+    assert isinstance(body["values"], dict)
+
+
+@pytest.mark.asyncio
+async def test_attr_filter_without_category_id_rejected(client, auth_headers):
+    """F1 fail-open: `?attr.*=...` without category_id MUST 422.
+
+    Without a category there's no schema to validate keys against, so any
+    `attr.*` key would reach the SQL filter pipeline as attacker-controlled
+    JSONB column access. Reject the request.
+    """
+    resp = await client.get("/api/v1/products?attr.vin=foo", headers=auth_headers)
+    assert resp.status_code == 422
+    assert "category_id" in resp.json()["detail"].lower()

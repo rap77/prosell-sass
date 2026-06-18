@@ -14,6 +14,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.product import (
@@ -317,6 +318,17 @@ async def list_products(
     }
 
     attribute_filters = None
+    if attr_raw and category_id is None:
+        # F1 fail-open fix: without a category there's no schema to validate
+        # `attr.*` keys against, so any key would reach the JSONB filter
+        # pipeline as attacker-controlled column access. Reject up-front.
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "attr.* filters require category_id so keys can be validated "
+                "against the category's attribute_schema"
+            ),
+        )
     if attr_raw and category_id is not None:
         # SECURITY GATE: load the category's attribute_schema and validate
         # every `attr.*` key against it. Unknown / non-filterable keys
@@ -364,15 +376,32 @@ async def list_products(
 filter_values_router = APIRouter()
 
 
+# F2 sink-arg cap: bound how many DISTINCT values we return per filter key
+# to keep responses predictable and prevent a malicious/large dataset from
+# producing unbounded payloads.
+FILTER_VALUES_MAX_PER_KEY = 1000
+
+
+class CategoryFilterValuesResponse(BaseModel):
+    """Response shape for GET /categories/{id}/filter-values.
+
+    `truncated` lists the keys whose DISTINCT list was capped at
+    ``FILTER_VALUES_MAX_PER_KEY`` so the client can detect missing facets.
+    """
+
+    values: dict[str, list[str]]
+    truncated: list[str]
+
+
 @filter_values_router.get(
     "/categories/{category_id}/filter-values",
-    response_model=dict[str, list[str] | dict[str, list[str]]],
+    response_model=CategoryFilterValuesResponse,
 )
 async def get_category_filter_values(
     category_id: UUID,
     current_user: User = Depends(get_current_auth_user_from_cookie),
     db: AsyncSession = Depends(get_async_session),
-) -> dict[str, dict[str, list[str]]]:
+) -> CategoryFilterValuesResponse:
     """Return DISTINCT values for `select` attributes without static `options`.
 
     For each field in the category's `attribute_schema` where
@@ -382,6 +411,10 @@ async def get_category_filter_values(
 
     Fields with static `options` are NOT included — those are surfaced
     verbatim from the schema by the catalog UI.
+
+    Each per-key list is capped at :data:`FILTER_VALUES_MAX_PER_KEY`
+    entries to bound response size; any key whose result was truncated
+    appears in the response's `truncated` list.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
@@ -407,9 +440,19 @@ async def get_category_filter_values(
     ]
 
     product_repo = SqlAlchemyProductRepository(db)
-    values = await product_repo.distinct_attribute_values(tenant_id, category_id, select_keys)
+    raw_values = await product_repo.distinct_attribute_values(tenant_id, category_id, select_keys)
 
-    return {"values": values}
+    # F2 sink-arg cap: slice each list and record which keys were truncated.
+    capped_values: dict[str, list[str]] = {}
+    truncated: list[str] = []
+    for key, vals in raw_values.items():
+        if len(vals) > FILTER_VALUES_MAX_PER_KEY:
+            capped_values[key] = vals[:FILTER_VALUES_MAX_PER_KEY]
+            truncated.append(key)
+        else:
+            capped_values[key] = vals
+
+    return CategoryFilterValuesResponse(values=capped_values, truncated=truncated)
 
 
 @router.get("/{product_id}", response_model=ProductResponse)
