@@ -3,7 +3,13 @@ name: graphify
 # Build the code knowledge graph on push, PR, and weekly schedule.
 # Artifacts: graph.json (data), GRAPH_REPORT.md (audit). graph.html is
 # only generated for graphs ≤ 5000 nodes (skipped for this repo's ~20k).
-# Pages: deploys only on push to main, requires Pages enabled on the repo.
+# Pages: deploys only on push to main. The `pages` job uses
+# continue-on-error: true because GitHub Pages requires a Pro/Team/Enterprise
+# plan for private repos; this repo is on the Free plan, so the deploy step
+# will fail with 404 ("Get Pages site failed"). Silencing the job keeps
+# main green while still building the KG artifact (available for 30 days
+# in GitHub Actions). To re-enable public Pages: upgrade plan or make the
+# repo public, then drop the continue-on-error flag.
 # Only GRAPH_REPORT.md is published to Pages — graph.json is not (it
 # contains internal paths and is 22MB).
 #
@@ -88,6 +94,12 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Pages may not be enabled on the repo (plan Free + private repo).
+    # `continue-on-error: true` lets the job's deploy steps fail silently
+    # when `actions/configure-pages@v5` can't reach the Pages site, so
+    # main stays green. The KG build artifact (job `build`) is unaffected.
+    # See workflow header comment for context.
+    continue-on-error: true
     # Only the pages job needs write/deploy perms.
     permissions:
       contents: read
