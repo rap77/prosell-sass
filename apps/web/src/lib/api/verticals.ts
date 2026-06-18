@@ -25,6 +25,12 @@ const attributeSchemaEntrySchema = z.object({
   unit: z.string().optional(),
   label: z.string().optional(),
   options: z.array(z.string()).optional(),
+  validation_rules: z
+    .object({
+      min: z.number().optional(),
+      max: z.number().optional(),
+    })
+    .optional(),
 });
 
 const cardFieldSchema = z.object({
@@ -137,11 +143,28 @@ const filterValuesSchema = z
 export async function fetchFilterValues(
   categoryId: string,
 ): Promise<Record<string, string[]>> {
-  const res = await fetch(
-    `/api/v1/categories/${categoryId}/filter-values`,
-    { credentials: "include" },
-  );
+  const res = await fetch(`/api/v1/categories/${categoryId}/filter-values`, {
+    credentials: "include",
+  });
   if (!res.ok) return {};
   const parsed = filterValuesSchema.safeParse(await res.json());
   return parsed.success ? parsed.data.values : {};
+}
+
+/**
+ * `fetchFilterValues` as a TanStack Query hook, disabled until a category
+ * is selected (Subsystem B, Task 12).
+ */
+export function useFilterValues(
+  categoryId: string | null,
+): UseQueryResult<Record<string, string[]>, Error> {
+  return useQuery({
+    queryKey: ["filter-values", categoryId],
+    queryFn: () => {
+      if (!categoryId) throw new Error("categoryId is required");
+      return fetchFilterValues(categoryId);
+    },
+    enabled: Boolean(categoryId),
+    staleTime: 5 * 60 * 1000,
+  });
 }

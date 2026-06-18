@@ -298,7 +298,7 @@ Also add `attribute_filters: list[AttributeFilter] | None = None,` to the impl s
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `cd apps/api && uv run pytest tests/integration/repositories/test_product_repository_attribute_filters.py -v`
-Expected: PASS (5 passed). If integration DB is down, start it: `docker compose -f docker/docker-compose.yml up -d db` (test DB localhost:5433).
+Expected: PASS (5 passed). If integration DB is down, start it: `docker compose -f docker/docker-compose.yml up -d postgres-test` (test DB localhost:5433).
 
 - [ ] **Step 6: Commit**
 
@@ -930,6 +930,6 @@ git commit -m "feat(web): catalog uses dynamic category-driven filters; retire u
 
 ## Notes for the implementer
 
-- Backend integration tests need the test DB (localhost:5433): `docker compose -f docker/docker-compose.yml up -d db`.
+- Backend integration tests need the test DB (localhost:5433): `docker compose -f docker/docker-compose.yml up -d postgres-test`.
 - Reuse the async DB + API client fixtures from `tests/integration/repositories/test_product_repository_cover.py` and the existing API test conftest — do not invent new fixtures.
 - Vehicle parity is a *fix*: `make`/`year`/`mileage` filters were backend no-ops before; after Task 3/5 they actually filter. Verify the Vehicles vertical still shows its filters end-to-end.

@@ -20,6 +20,27 @@ import { setProductCover } from "@/lib/api/products";
 
 const KEY_A = "orgs/00000000-0000-0000-0000-000000000001/vehicles/a.jpg";
 
+function productFixture(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "prod-1",
+    tenant_id: "tenant-1",
+    organization_id: "org-1",
+    title: "2017 Toyota Camry",
+    price_cents: 1_850_000,
+    currency: "USD",
+    condition: "used",
+    category_id: "cat-1",
+    attributes: { category: "generic" },
+    status: "draft",
+    is_featured: false,
+    view_count: 0,
+    favorite_count: 0,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
 describe("setProductCover (fetcher)", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -37,7 +58,7 @@ describe("setProductCover (fetcher)", () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({ id: "prod-1", cover_image_key: KEY_A }),
+      json: async () => productFixture({ cover_image_key: KEY_A }),
     });
 
     await setProductCover("prod-1", KEY_A);
@@ -79,7 +100,7 @@ describe("setProductCover (fetcher)", () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({ id: "prod-1", cover_image_key: null }),
+      json: async () => productFixture({ cover_image_key: null }),
     });
 
     await setProductCover("prod-1", null);

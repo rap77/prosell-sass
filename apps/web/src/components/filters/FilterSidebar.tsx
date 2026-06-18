@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { useCatalogFilters } from "@/lib/hooks/useCatalogFilters";
+import { resolveRangeBounds } from "@/lib/filters/rangeBounds";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -56,7 +57,7 @@ export function FilterSidebar({
   return (
     <aside
       aria-label="Catalog filters"
-      className={`border-r bg-background transition-all duration-300 ${
+      className={`relative border-r bg-background transition-all duration-300 ${
         isCollapsed ? "w-16" : "w-64"
       }`}
     >
@@ -78,18 +79,20 @@ export function FilterSidebar({
           const controlId = `filter-${field.key}`;
 
           if (field.filter_type === "range") {
-            const min = values[`${field.key}_min`];
-            const max = values[`${field.key}_max`];
-            const minNum = min ? Number(min) : 0;
-            const maxNum = max ? Number(max) : 100;
+            const entry = schema[field.key];
+            const { min, max, value } = resolveRangeBounds(
+              entry,
+              values[`${field.key}_min`],
+              values[`${field.key}_max`],
+            );
             return (
               <div key={field.key}>
                 <h3 className="font-semibold mb-3 text-sm">{label}</h3>
                 <Slider
-                  min={0}
-                  max={100}
+                  min={min}
+                  max={max}
                   step={1}
-                  value={[minNum, maxNum]}
+                  value={value}
                   onValueChange={([lo, hi]) => {
                     setFilters({
                       [`${field.key}_min`]: String(lo),
@@ -98,8 +101,8 @@ export function FilterSidebar({
                   }}
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{minNum}</span>
-                  <span>{maxNum}</span>
+                  <span>{value[0]}</span>
+                  <span>{value[1]}</span>
                 </div>
               </div>
             );
@@ -117,10 +120,7 @@ export function FilterSidebar({
                     const checked = selected.includes(option);
                     const inputId = `${controlId}-${option}`;
                     return (
-                      <div
-                        key={option}
-                        className="flex items-center space-x-2"
-                      >
+                      <div key={option} className="flex items-center space-x-2">
                         <Checkbox
                           id={inputId}
                           checked={checked}

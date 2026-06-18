@@ -10,12 +10,12 @@
  *   carga   → inline BulkUploadCSV
  *
  * Data: useInfiniteVehicles + useDeleteVehicle
- * Filters: useVehicleFilters (URL state)
+ * Filters: useCatalogFilters, driven by the selected category's filter_fields
  * Design: var(--ps-*) tokens throughout
  */
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   LayoutGrid,
@@ -32,6 +32,7 @@ import { DataGrid } from "@/components/datagrid/DataGrid";
 import { DataGridSkeleton } from "@/components/datagrid/DataGridSkeleton";
 import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { FilterPills } from "@/components/filters/FilterPills";
+import { CategorySelector } from "@/components/filters/CategorySelector";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { BulkUploadCSV } from "@/components/upload/BulkUploadCSV";
 import { BulkBranchAssign } from "@/components/branches/BulkBranchAssign";
@@ -40,19 +41,19 @@ import {
   StatusBadge,
   type VehicleStatus,
 } from "@/components/datagrid/StatusBadge";
-import { useVehicleFilters } from "@/lib/hooks/useVehicleFilters";
+import { useCatalogFilters } from "@/lib/hooks/useCatalogFilters";
 import {
   useInfiniteProducts,
   useDeleteProduct,
   transformProductToVehicle,
 } from "@/lib/api/products";
 import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
-import { useOrgVerticals } from "@/lib/api/verticals";
+import { useOrgVerticals, useFilterValues } from "@/lib/api/verticals";
 import { useProductImageUrlsBatch } from "@/lib/api/productImageUrlsBatch";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 import { getApiStatus } from "@/lib/utils/getApiStatus";
-import { getAttributeMap, type Product } from "@/types/product";
+import { getAttributeMap } from "@/types/product";
 import type {
   CategoryPresentation,
   AttributeSchemaEntry,
@@ -282,18 +283,45 @@ export function ErrorState({
 
 export default function CatalogPage() {
   const router = useRouter();
-  const { filters, setFilter } = useVehicleFilters();
+  const searchParams = useSearchParams();
   const deleteProduct = useDeleteProduct();
   const [viewMode, setViewMode] = useState<ViewMode>("grilla");
   const [showBulkBranchAssign, setShowBulkBranchAssign] = useState(false);
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null,
+  );
+
+  // Vertical contracts: presentation + attribute_schema per category.
+  // (Subsystem A — replaces the legacy `isVehicleProduct` filter with a
+  // generic category-driven model. The map is keyed by `category_id` so each
+  // product can resolve its category's presentation, attribute schema, and
+  // vertical slug in O(1).)
+  const { data: orgProfile } = useCurrentOrganizationProfile();
+  const organizationId = orgProfile?.id ?? null;
+  const { data: verticalsData } = useOrgVerticals(organizationId);
+  const allCategories = (verticalsData?.verticals ?? []).flatMap(
+    (vertical) => vertical.categories,
+  );
+  const selectedCategory =
+    allCategories.find((c) => c.id === selectedCategoryId) ?? null;
+  const filterFields = selectedCategory?.filter_fields ?? [];
+
+  const { values, setFilter } = useCatalogFilters(filterFields);
+  const { data: facetValues = {} } = useFilterValues(selectedCategoryId);
+
+  const search = searchParams.get("search") ?? "";
+  const status = getApiStatus(searchParams.get("status") ?? undefined);
+  const attributes: Record<string, string> = {};
+  for (const [key, value] of Object.entries(values)) {
+    if (value) attributes[key] = value;
+  }
 
   const apiFilters = {
-    search: filters.search || undefined,
-    status: getApiStatus(filters.status[0]),
-    make: filters.brand[0] || undefined,
-    year_min: filters.year[0] !== 2010 ? filters.year[0] : undefined,
-    year_max: filters.year[1] !== 2026 ? filters.year[1] : undefined,
+    search: search || undefined,
+    status,
+    category_id: selectedCategoryId ?? undefined,
+    attributes,
   };
 
   const {
@@ -305,15 +333,6 @@ export default function CatalogPage() {
     isFetchingNextPage,
     refetch,
   } = useInfiniteProducts(apiFilters, 50);
-
-  // Vertical contracts: presentation + attribute_schema per category.
-  // (Subsystem A — replaces the legacy `isVehicleProduct` filter with a
-  // generic category-driven model. The map is keyed by `category_id` so each
-  // product can resolve its category's presentation, attribute schema, and
-  // vertical slug in O(1).)
-  const { data: orgProfile } = useCurrentOrganizationProfile();
-  const organizationId = orgProfile?.id ?? null;
-  const { data: verticalsData } = useOrgVerticals(organizationId);
 
   // Image URLs for the visible products (batched; see T7a-0).
   // We resolve URLs at the container instead of letting the card fetch
@@ -377,9 +396,9 @@ export default function CatalogPage() {
   });
 
   const hasFilters = !!(
-    filters.search ||
-    filters.status.length > 0 ||
-    filters.brand.length > 0
+    search ||
+    status ||
+    Object.values(values).some(Boolean)
   );
 
   const handleEdit = (id: string) => router.push(`/catalog/${id}/edit`);
@@ -433,7 +452,11 @@ export default function CatalogPage() {
         }}
       >
         {/* ── Left filter sidebar ──────────────────────────────────────────── */}
-        <FilterSidebar />
+        <FilterSidebar
+          fields={filterFields}
+          schema={selectedCategory?.attribute_schema ?? {}}
+          facetValues={facetValues}
+        />
 
         {/* ── Main content ─────────────────────────────────────────────────── */}
         <div
@@ -452,6 +475,14 @@ export default function CatalogPage() {
               background: "var(--ps-bg-base)",
             }}
           >
+            <div style={{ maxWidth: 280, marginBottom: 16 }}>
+              <CategorySelector
+                categories={allCategories}
+                value={selectedCategoryId}
+                onChange={setSelectedCategoryId}
+              />
+            </div>
+
             <div
               style={{
                 display: "flex",
@@ -507,7 +538,7 @@ export default function CatalogPage() {
                   <input
                     type="search"
                     placeholder="Buscar producto..."
-                    value={filters.search}
+                    value={search}
                     onChange={(e) => setFilter("search", e.target.value)}
                     onFocus={(e) => {
                       e.currentTarget.style.borderColor = "var(--ps-cyan)";
@@ -598,7 +629,7 @@ export default function CatalogPage() {
           </div>
 
           {/* Active filter pills */}
-          <FilterPills />
+          <FilterPills fields={filterFields} />
 
           {/* ── Content area ─────────────────────────────────────────────── */}
           <div

@@ -49,8 +49,21 @@ _CAR_PRESENTATION: dict = {
 _CAR_SCHEMA: dict = {
     "make": {"type": "string", "required": True, "filterable": True, "filter_type": "select"},
     "model": {"type": "string", "required": True, "filterable": True, "filter_type": "text"},
-    "year": {"type": "number", "required": True, "filterable": True, "filter_type": "range"},
-    "mileage": {"type": "number", "required": False, "filterable": True, "filter_type": "range"},
+    "year": {
+        "type": "number",
+        "required": True,
+        "filterable": True,
+        "filter_type": "range",
+        "validation_rules": {"min": 1980, "max": 2026},
+    },
+    "mileage": {
+        "type": "number",
+        "required": False,
+        "filterable": True,
+        "filter_type": "range",
+        "unit": "km",
+        "validation_rules": {"min": 0, "max": 500_000},
+    },
     "transmission": {
         "type": "string",
         "required": False,
@@ -76,6 +89,7 @@ def _f(
     filterable: bool = True,
     filter_type: str = "text",
     options: list[str] | None = None,
+    validation_rules: dict | None = None,
 ) -> dict:
     """Compact attribute-schema field builder."""
     entry: dict = {
@@ -86,6 +100,8 @@ def _f(
     }
     if options is not None:
         entry["options"] = options
+    if validation_rules is not None:
+        entry["validation_rules"] = validation_rules
     return entry
 
 

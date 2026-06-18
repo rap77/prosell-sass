@@ -28,6 +28,16 @@
  */
 export type FilterType = "range" | "select" | "text" | "boolean" | "exact";
 
+/**
+ * Per-attribute constraints. Currently used by `range` filters to give
+ * the Slider sensible bounds (e.g. `year` 1980-2026, `price` 0-1M USD).
+ * Future: regex for `text`, allowed enums for tighter validation, etc.
+ */
+export interface ValidationRules {
+  min?: number;
+  max?: number;
+}
+
 /** A single entry in `attribute_schema`. */
 export interface AttributeSchemaEntry {
   /** Logical type used for client-side formatting. */
@@ -40,6 +50,8 @@ export interface AttributeSchemaEntry {
   label?: string;
   /** For `select` type: allowed values. */
   options?: string[];
+  /** Optional per-attribute constraints (e.g. Slider bounds for `range`). */
+  validation_rules?: ValidationRules;
 }
 
 /* ---------- presentation contract ---------- */

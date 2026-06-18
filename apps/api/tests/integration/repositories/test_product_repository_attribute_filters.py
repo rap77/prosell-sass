@@ -203,3 +203,91 @@ async def test_distinct_attribute_values_excludes_explicit_null(
         f"from {rows_with_color} rows with a color key"
     )
     assert set(out["color"]) == {"Red", "Blue"}
+
+
+async def test_pagination_with_attribute_filter_no_overlap_no_gaps(
+    product_repo: SqlAlchemyProductRepository, seed_products: SeededProducts
+) -> None:
+    """Spec §Testing line 156: pagination correctness with attribute filters.
+
+    The existing `seed_products` fixture already carries 3 Toyota Corolla
+    rows + 1 Honda Civic + 1 Ford Fiesta. This test seeds 10 more Toyotas
+    and 3 Hondas in the same tenant/category, then pages through the
+    combined `make=Toyota` population in chunks of 4.
+
+    Asserts:
+
+    * every page stays within the filter (no Honda leaks in)
+    * union of pages == all Toyota ids, no duplicates
+    * stable ordering (created_at desc) keeps page boundaries deterministic
+    """
+    # Seed extras: 10 Toyotas + 3 Hondas.
+    extra_toyotas = 10
+    extra_specs: list[dict[str, object]] = [
+        *[{"make": "Toyota", "model": f"Extra-{i}"} for i in range(extra_toyotas)],
+        *[{"make": "Honda", "model": f"Extra-H-{i}"} for i in range(3)],
+    ]
+    for i, attrs in enumerate(extra_specs):
+        await product_repo.create(
+            Product.create(
+                title=f"Pagination seed {i}",
+                price_cents=3_000_000 + i,
+                tenant_id=seed_products.tenant_id,
+                organization_id=seed_products.products[0].organization_id,
+                category_id=seed_products.category_id,
+                condition=ProductCondition.USED,
+                attributes=attrs,
+            )
+        )
+
+    # Ground-truth: ask the repo how many Toyotas exist (no pagination).
+    # This anchors our expectations to the actual DB state — avoids brittle
+    # off-by-one in the seed-count math.
+    toyota_filter = AttributeFilter(key="make", filter_type="select", values=["Toyota"])
+    all_toyotas = await product_repo.get_all(
+        tenant_id=seed_products.tenant_id,
+        attribute_filters=[toyota_filter],
+        skip=0,
+        limit=1000,
+    )
+    total_toyotas = len(all_toyotas)
+    # page_size=5 lets us assert an exact-size last page: 13 Toyotas split
+    # as 5+5+3 (the third page holds the trailing 3, not the per-page limit).
+    page_size = 5
+
+    page1 = await product_repo.get_all(
+        tenant_id=seed_products.tenant_id,
+        attribute_filters=[toyota_filter],
+        skip=0,
+        limit=page_size,
+    )
+    page2 = await product_repo.get_all(
+        tenant_id=seed_products.tenant_id,
+        attribute_filters=[toyota_filter],
+        skip=page_size,
+        limit=page_size,
+    )
+    page3 = await product_repo.get_all(
+        tenant_id=seed_products.tenant_id,
+        attribute_filters=[toyota_filter],
+        skip=2 * page_size,
+        limit=page_size,
+    )
+
+    # (a) every page respects the filter — no Honda ids leak into any page
+    for page in (page1, page2, page3):
+        assert all(
+            p.attributes["make"] == "Toyota" for p in page
+        ), f"filter leaked non-Toyota into a page: {[p.attributes for p in page]}"
+
+    # (b) no duplicate ids across pages
+    all_ids = [p.id for p in (*page1, *page2, *page3)]
+    assert len(all_ids) == len(set(all_ids)), f"pages overlap: {[str(i) for i in all_ids]}"
+
+    # (c) expected size: first two full pages + last page holds the remainder
+    assert len(page1) == page_size
+    assert len(page2) == page_size
+    assert len(page3) == total_toyotas - 2 * page_size
+
+    # (d) union covers all Toyotas — no gaps in the iteration
+    assert len(all_ids) == total_toyotas
