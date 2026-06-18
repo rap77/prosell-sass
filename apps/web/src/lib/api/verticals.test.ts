@@ -10,7 +10,7 @@ beforeEach(() => {
   global.fetch = mockFetch as unknown as typeof fetch;
 });
 
-import { useOrgVerticals } from "./verticals";
+import { useOrgVerticals, fetchFilterValues } from "./verticals";
 
 function makeWrapper() {
   const client = new QueryClient({
@@ -94,5 +94,26 @@ describe("useOrgVerticals", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error?.message).toBe("Forbidden");
+  });
+});
+
+describe("fetchFilterValues", () => {
+  it("parses filter-values response", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ values: { make: ["Toyota"] } }), {
+        status: 200,
+      }),
+    );
+    const out = await fetchFilterValues("cat-1");
+    expect(out.make).toEqual(["Toyota"]);
+  });
+
+  it("returns {} on malformed response (no throw, no `as`)", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ values: { make: [1, 2] } }), {
+        status: 200,
+      }),
+    );
+    expect(await fetchFilterValues("cat-1")).toEqual({});
   });
 });
