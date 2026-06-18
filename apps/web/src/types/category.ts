@@ -18,12 +18,22 @@
 
 /* ---------- attribute_schema entries ---------- */
 
+/**
+ * Canonical set of `filter_type` values that the catalog understands.
+ *
+ * The 5 values match the backend resolver (post-Subsystem B G2) and
+ * the backend seed schema. `text` was added for free-form attributes
+ * (e.g. model name, color); `exact` and `boolean` remain for
+ * historical compatibility.
+ */
+export type FilterType = "range" | "select" | "text" | "boolean" | "exact";
+
 /** A single entry in `attribute_schema`. */
 export interface AttributeSchemaEntry {
   /** Logical type used for client-side formatting. */
   type: "number" | "string" | "boolean" | "select";
   /** How the attribute is filterable in the catalog. */
-  filter_type: "range" | "exact" | "boolean" | "select";
+  filter_type: FilterType;
   /** Optional display unit (e.g. "km", "m²", "USD"). */
   unit?: string;
   /** Optional human-readable label override (defaults to humanized key). */
@@ -50,8 +60,8 @@ export interface CardField {
  */
 export interface FilterField {
   key: string;
-  filter_type: "range" | "exact" | "boolean" | "select";
-  label: string;
+  filter_type: FilterType;
+  label?: string;
 }
 
 /**
