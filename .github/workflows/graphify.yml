@@ -17,7 +17,7 @@ on:
 # Pin graphify hook off in CI to avoid recursive triggers.
 env:
   GRAPHIFY_SKIP_HOOK: "1"
-  PYTHONHASHSEED: "0"  # Deterministic clustering across CI runs.
+  PYTHONHASHSEED: "0" # Deterministic clustering across CI runs.
 
 permissions:
   contents: read
