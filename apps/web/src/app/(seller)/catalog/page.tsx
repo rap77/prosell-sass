@@ -6,7 +6,7 @@
  * 4 view modes toggled via tab bar in the header:
  *   grilla  → card grid (default)
  *   tabla   → DataGrid (TanStack Table + virtualizer)
- *   estado  → vehicles grouped by status
+ *   estado  → rows grouped by status
  *   carga   → inline BulkUploadCSV
  *
  * Data: useInfiniteVehicles + useDeleteVehicle
@@ -350,12 +350,12 @@ export default function CatalogPage() {
   // T7a: removed `.filter(isVehicleProduct)` — the catalog is now generic
   // (Subsystem A: a product is a product; presentation is driven by the
   // category's vertical contract, not by a hardcoded `category: 'vehicle'`
-  // check). `vehicles` is kept as the legacy transform for the tabla view
+  // check). `rows` is kept as the legacy transform for the tabla view
   // (DataGrid expects the transformed shape with `price: number` and
   // `status: VehicleStatus`).
   const products = data?.pages[0]?.items ?? [];
-  // Transform to vehicle-like for views that need it
-  const vehicles = products.map(transformProductToVehicle);
+  // Transform to the generic catalog-row shape the table view needs
+  const rows = products.map(transformProductToVehicle);
 
   // T7b: per-product view model for the generic ProductCard. Resolves
   // presentation + schema + verticalSlug + imageUrl for each product
@@ -484,7 +484,7 @@ export default function CatalogPage() {
                 >
                   {isLoading
                     ? "Cargando..."
-                    : `${vehicles.length} producto${vehicles.length !== 1 ? "s" : ""}`}
+                    : `${rows.length} producto${rows.length !== 1 ? "s" : ""}`}
                 </p>
               </div>
 
@@ -637,7 +637,7 @@ export default function CatalogPage() {
                   />
                 )}
 
-                {!isLoading && !error && vehicles.length === 0 && (
+                {!isLoading && !error && rows.length === 0 && (
                   <EmptyState
                     hasFilters={hasFilters}
                     onAdd={() => router.push("/catalog/create")}
@@ -645,7 +645,7 @@ export default function CatalogPage() {
                   />
                 )}
 
-                {!isLoading && !error && vehicles.length > 0 && (
+                {!isLoading && !error && rows.length > 0 && (
                   <>
                     {/* GRILLA */}
                     {viewMode === "grilla" && (
@@ -678,7 +678,7 @@ export default function CatalogPage() {
                     {viewMode === "tabla" && (
                       <div style={{ padding: 24 }}>
                         <DataGrid
-                          data={vehicles}
+                          data={rows}
                           onPublish={handlePublish}
                           onEdit={handleEdit}
                           onDelete={handleDelete}
@@ -798,7 +798,7 @@ export default function CatalogPage() {
                     )}
 
                     {!hasNextPage &&
-                      vehicles.length > 0 &&
+                      rows.length > 0 &&
                       viewMode !== "tabla" && (
                         <p
                           style={{
@@ -808,8 +808,8 @@ export default function CatalogPage() {
                             padding: "16px 0",
                           }}
                         >
-                          {vehicles.length} producto
-                          {vehicles.length !== 1 ? "s" : ""} en total
+                          {rows.length} producto
+                          {rows.length !== 1 ? "s" : ""} en total
                         </p>
                       )}
                   </>
@@ -820,7 +820,9 @@ export default function CatalogPage() {
         </div>
 
         {/* Command palette */}
-        <CommandPalette vehicles={vehicles} />
+        {/* Prop name kept as `vehicles` (CommandPalette API), value comes
+            from the generic `rows` view-model built above. */}
+        <CommandPalette vehicles={rows} />
 
         {/* Bulk Branch Assign modal */}
         <BulkBranchAssign

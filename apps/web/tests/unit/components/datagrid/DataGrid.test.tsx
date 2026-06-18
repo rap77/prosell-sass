@@ -77,7 +77,7 @@ describe("DataGrid", () => {
     render(<DataGrid data={[]} />);
 
     expect(screen.getByRole("table")).toBeInTheDocument();
-    expect(screen.queryAllByTestId("vehicle-row")).toHaveLength(0);
+    expect(screen.queryAllByTestId("product-row")).toHaveLength(0);
   });
 
   it("renders vehicle data rows", () => {
@@ -106,7 +106,7 @@ describe("DataGrid", () => {
 
     render(<DataGrid data={mockVehicles} onRowClick={onRowClick} />);
 
-    const firstRow = screen.getAllByTestId("vehicle-row")[0];
+    const firstRow = screen.getAllByTestId("product-row")[0];
     firstRow.focus();
     await user.keyboard("{Enter}");
 

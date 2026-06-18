@@ -167,7 +167,7 @@ export function DataGrid({
     },
     {
       accessorKey: "title",
-      header: "Vehicle",
+      header: "Title",
       cell: ({ row }) => (
         <span className="font-medium">{row.original.title}</span>
       ),
@@ -326,8 +326,8 @@ export function DataGrid({
               <tr
                 key={key}
                 data-row-id={row.id}
-                data-testid="vehicle-row"
-                data-vehicle-id={row.original.id}
+                data-testid="product-row"
+                data-product-id={row.original.id}
                 className={cn(
                   "border-b border-border transition-colors",
                   onRowClick
