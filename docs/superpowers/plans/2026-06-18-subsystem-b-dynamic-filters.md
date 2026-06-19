@@ -26,10 +26,12 @@
 ### Task 1: `AttributeFilter` value object (domain)
 
 **Files:**
+
 - Create: `apps/api/src/prosell/domain/value_objects/attribute_filter.py`
 - Test: `apps/api/tests/unit/domain/value_objects/test_attribute_filter.py`
 
 **Interfaces:**
+
 - Produces: `AttributeFilter` (Pydantic `ValueObject`) with fields `key: str`, `filter_type: Literal["range","select","text","boolean","exact"]`, `value: str | bool | None`, `values: list[str] | None`, `min: Decimal | None`, `max: Decimal | None`. Per-type validators.
 
 - [ ] **Step 1: Write the failing tests**
@@ -132,10 +134,12 @@ git commit -m "feat(catalog): add AttributeFilter value object for dynamic filte
 ### Task 2: Resolver emits `key` (not `field`), no silent type default (G2)
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/domain/services/presentation_resolver.py` (`filter_fields`)
 - Test: `apps/api/tests/unit/domain/services/test_presentation_resolver.py`
 
 **Interfaces:**
+
 - Produces: `filter_fields(attribute_schema) -> list[dict[str, str]]` returning `{"key": <name>, "filter_type": <type>}` for fields with `filterable: True` that declare a `filter_type`. Fields missing `filter_type` are skipped (seed bug), not defaulted.
 
 - [ ] **Step 1: Write the failing tests** (add to existing resolver test file)
@@ -201,11 +205,13 @@ git commit -m "fix(catalog): filter_fields emits key not field, skips untyped fi
 ### Task 3: `get_all` translates `attribute_filters` to JSONB SQL
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/domain/repositories/product_repository.py` (`get_all` signature)
 - Modify: `apps/api/src/prosell/infrastructure/repositories/product_repository_impl.py` (`get_all` body + imports)
 - Test: `apps/api/tests/integration/repositories/test_product_repository_attribute_filters.py`
 
 **Interfaces:**
+
 - Consumes: `AttributeFilter` (Task 1).
 - Produces: `get_all(..., attribute_filters: list[AttributeFilter] | None = None)` — appended WHERE clauses over `ProductModel.attributes`.
 
@@ -265,9 +271,11 @@ Expected: FAIL — `get_all()` got an unexpected keyword argument `attribute_fil
 - [ ] **Step 3: Add the param to the interface**
 
 In `product_repository.py`, add to `get_all` signature (before `skip`):
+
 ```python
         attribute_filters: list["AttributeFilter"] | None = None,
 ```
+
 and add the import: `from prosell.domain.value_objects.attribute_filter import AttributeFilter`.
 
 - [ ] **Step 4: Implement the translation in the impl**
@@ -313,11 +321,13 @@ git commit -m "feat(catalog): get_all filters products by attributes JSONB"
 ### Task 4: DISTINCT attribute values repo method (facets, G3)
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/domain/repositories/product_repository.py` (new abstract method)
 - Modify: `apps/api/src/prosell/infrastructure/repositories/product_repository_impl.py`
 - Test: `apps/api/tests/integration/repositories/test_product_repository_attribute_filters.py` (extend)
 
 **Interfaces:**
+
 - Produces: `distinct_attribute_values(tenant_id, category_id, keys: list[str]) -> dict[str, list[str]]` — DISTINCT non-null values of `attributes[key]` per key, tenant+category scoped.
 
 - [ ] **Step 1: Write the failing test**
@@ -341,13 +351,16 @@ Expected: FAIL — method missing.
 - [ ] **Step 3: Implement**
 
 Interface (abstract):
+
 ```python
     @abstractmethod
     async def distinct_attribute_values(
         self, tenant_id: UUID, category_id: UUID, keys: list[str]
     ) -> dict[str, list[str]]: ...
 ```
+
 Impl:
+
 ```python
     async def distinct_attribute_values(
         self, tenant_id: UUID, category_id: UUID, keys: list[str]
@@ -388,11 +401,13 @@ git commit -m "feat(catalog): distinct_attribute_values repo method for facets"
 ### Task 5: Router — validate & parse attribute filters + filter-values endpoint (security)
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/infrastructure/api/routers/product_router.py` (list endpoint + new filter-values route)
 - Create: `apps/api/src/prosell/application/use_cases/product/build_attribute_filters.py`
 - Test: `apps/api/tests/integration/api/test_product_filters_api.py`
 
 **Interfaces:**
+
 - Consumes: `AttributeFilter` (Task 1), category `attribute_schema`, `distinct_attribute_values` (Task 4).
 - Produces: helper `build_attribute_filters(raw: dict[str, str], schema: dict) -> list[AttributeFilter]` raising `ValueError` for non-filterable / type-mismatched keys; route `GET /api/v1/categories/{category_id}/filter-values`.
 
@@ -499,11 +514,13 @@ git commit -m "feat(catalog): validated attribute-filter query params + filter-v
 ### Task 6: Reconcile frontend `filter_type` union + Zod (G1)
 
 **Files:**
+
 - Modify: `apps/web/src/types/category.ts` (`FilterField`, `AttributeSchemaEntry` unions)
 - Modify: `apps/web/src/lib/api/schemas/category.ts` (Zod)
 - Test: `apps/web/src/types/category.test.ts`, `apps/web/tests/unit/api/categories.test.tsx`
 
 **Interfaces:**
+
 - Produces: `FilterType = "range" | "select" | "text" | "boolean" | "exact"`; `FilterField = { key: string; filter_type: FilterType; label?: string }`.
 
 - [ ] **Step 1: Write the failing test**
@@ -513,12 +530,18 @@ git commit -m "feat(catalog): validated attribute-filter query params + filter-v
 import { filterFieldSchema } from "@/lib/api/schemas/category";
 
 it("accepts text filter_type and key-shaped FilterField", () => {
-  const parsed = filterFieldSchema.safeParse({ key: "model", filter_type: "text" });
+  const parsed = filterFieldSchema.safeParse({
+    key: "model",
+    filter_type: "text",
+  });
   expect(parsed.success).toBe(true);
 });
 
 it("rejects the legacy field-shaped payload", () => {
-  const parsed = filterFieldSchema.safeParse({ field: "model", filter_type: "text" });
+  const parsed = filterFieldSchema.safeParse({
+    field: "model",
+    filter_type: "text",
+  });
   expect(parsed.success).toBe(false);
 });
 ```
@@ -531,8 +554,15 @@ Expected: FAIL — `filterFieldSchema` missing / shape is `field`.
 - [ ] **Step 3: Implement**
 
 In `category.ts`: change `FilterField.field`→`key`, add `"text"` to both `filter_type` unions. In `schemas/category.ts`:
+
 ```typescript
-export const filterTypeSchema = z.enum(["range", "select", "text", "boolean", "exact"]);
+export const filterTypeSchema = z.enum([
+  "range",
+  "select",
+  "text",
+  "boolean",
+  "exact",
+]);
 export const filterFieldSchema = z.object({
   key: z.string(),
   filter_type: filterTypeSchema,
@@ -558,10 +588,12 @@ git commit -m "feat(web): reconcile filter_type union (add text, key shape) + Zo
 ### Task 7: `useCatalogFilters` generic hook
 
 **Files:**
+
 - Create: `apps/web/src/lib/hooks/useCatalogFilters.ts`
 - Test: `apps/web/tests/unit/hooks/useCatalogFilters.test.ts`
 
 **Interfaces:**
+
 - Consumes: `FilterField[]` (Task 6).
 - Produces: `useCatalogFilters(fields: FilterField[])` → `{ values: Record<string, string>, setFilter(key, value), clearAll() }`. URL state via searchParams; `range` keys use `<key>_min`/`<key>_max`; `select` joins with `,`.
 
@@ -580,14 +612,19 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("useCatalogFilters", () => {
-  beforeEach(() => { mockSearchParams = new URLSearchParams(); mockPush.mockClear(); });
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams();
+    mockPush.mockClear();
+  });
 
   it("writes a select filter as comma-joined param", () => {
     const { result } = renderHook(() =>
       useCatalogFilters([{ key: "make", filter_type: "select" }]),
     );
     act(() => result.current.setFilter("make", ["Toyota", "Honda"]));
-    expect(mockPush).toHaveBeenCalledWith("?make=Toyota%2CHonda", { scroll: false });
+    expect(mockPush).toHaveBeenCalledWith("?make=Toyota%2CHonda", {
+      scroll: false,
+    });
   });
 
   it("reads range bounds from <key>_min/<key>_max", () => {
@@ -661,10 +698,12 @@ git commit -m "feat(web): useCatalogFilters generic URL-state hook"
 ### Task 8: API client — filter-values fetch + attribute query params
 
 **Files:**
+
 - Modify: `apps/web/src/lib/api/verticals.ts` (or `categories.ts`) — add `fetchFilterValues`
 - Test: `apps/web/src/lib/api/verticals.test.ts`
 
 **Interfaces:**
+
 - Produces: `fetchFilterValues(categoryId: string) → Promise<Record<string, string[]>>` (parsed via `z.object({ values: z.record(z.array(z.string())) })`, `safeParse` → `{}` on failure).
 
 - [ ] **Step 1: Write the failing test**
@@ -672,7 +711,9 @@ git commit -m "feat(web): useCatalogFilters generic URL-state hook"
 ```typescript
 it("parses filter-values response", async () => {
   vi.spyOn(global, "fetch").mockResolvedValue(
-    new Response(JSON.stringify({ values: { make: ["Toyota"] } }), { status: 200 }),
+    new Response(JSON.stringify({ values: { make: ["Toyota"] } }), {
+      status: 200,
+    }),
   );
   const out = await fetchFilterValues("cat-1");
   expect(out.make).toEqual(["Toyota"]);
@@ -698,7 +739,9 @@ import { z } from "zod";
 
 const filterValuesSchema = z.object({ values: z.record(z.array(z.string())) });
 
-export async function fetchFilterValues(categoryId: string): Promise<Record<string, string[]>> {
+export async function fetchFilterValues(
+  categoryId: string,
+): Promise<Record<string, string[]>> {
   const res = await fetch(`/api/v1/categories/${categoryId}/filter-values`);
   if (!res.ok) return {};
   const parsed = filterValuesSchema.safeParse(await res.json());
@@ -724,10 +767,12 @@ git commit -m "feat(web): fetchFilterValues API client with Zod validation"
 ### Task 9: Generic `FilterSidebar`
 
 **Files:**
+
 - Modify: `apps/web/src/components/filters/FilterSidebar.tsx` (replace hardcoded body)
 - Test: `apps/web/tests/components/filters/FilterSidebar.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `FilterField[]`, `useCatalogFilters` (Task 7), `fetchFilterValues` (Task 8), schema `options`.
 - Produces: `<FilterSidebar fields={FilterField[]} schema={Record<string, AttributeSchemaEntry>} facetValues={Record<string,string[]>} />` rendering one control per `filter_type`; generic `aria-label="Catalog filters"` (G5).
 
@@ -779,10 +824,12 @@ git commit -m "feat(web): generic FilterSidebar driven by filter_fields (G5 a11y
 ### Task 10: Generic `FilterPills`
 
 **Files:**
+
 - Modify: `apps/web/src/components/filters/FilterPills.tsx`
 - Test: `apps/web/tests/components/filters/FilterPills.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `useCatalogFilters` (Task 7), `FilterField[]`.
 - Produces: `<FilterPills fields={FilterField[]} />` — one pill per active value; clicking removes that key.
 
@@ -824,10 +871,12 @@ git commit -m "feat(web): generic FilterPills from active filter_fields"
 ### Task 11: Category selector + auto-select
 
 **Files:**
+
 - Create: `apps/web/src/components/filters/CategorySelector.tsx`
 - Test: `apps/web/tests/components/filters/CategorySelector.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `OrgVerticalsResponse` (`CategoryNode[]` with `filter_fields`).
 - Produces: `<CategorySelector categories={CategoryNode[]} value={id|null} onChange={(id)=>void} />`; calls `onChange` with the only category's id on mount when exactly one exists.
 
@@ -872,11 +921,13 @@ git commit -m "feat(web): CategorySelector with single-category auto-select"
 ### Task 12: Wire `catalog/page.tsx`, map filters to API, retire vehicle code
 
 **Files:**
+
 - Modify: `apps/web/src/app/(seller)/catalog/page.tsx`
 - Delete: `apps/web/src/lib/hooks/useVehicleFilters.ts`, `apps/web/tests/unit/hooks/useVehicleFilters.test.ts`
 - Test: `apps/web/tests/components/catalog/CatalogPage.test.tsx` (extend existing)
 
 **Interfaces:**
+
 - Consumes: all prior tasks. Maps the generic filter `values` → `attr.<key>` (and `<key>_min`/`_max`) query params for `useInfiniteProducts`.
 
 - [ ] **Step 1: Write/extend the failing test** — assert the page renders `CategorySelector` + generic `FilterSidebar`, and that selecting a `make` value triggers a products fetch carrying `attr.make`. Mock the verticals + products hooks.
@@ -893,6 +944,7 @@ Expected: FAIL.
 ```bash
 rm apps/web/src/lib/hooks/useVehicleFilters.ts apps/web/tests/unit/hooks/useVehicleFilters.test.ts
 ```
+
 Confirm no references remain: `rg -n 'useVehicleFilters|VehicleFilters' apps/web/src` → no output.
 
 - [ ] **Step 5: Run full gate**
@@ -913,6 +965,7 @@ git commit -m "feat(web): catalog uses dynamic category-driven filters; retire u
 ## Self-Review
 
 **Spec coverage:**
+
 - Scope full-stack → Tasks 3/5 (backend filtering) + 7–12 (frontend). ✅
 - Filter source = selected category + auto-select → Tasks 11, 12. ✅
 - `AttributeFilter` VO + repo translation → Tasks 1, 3. ✅
@@ -932,4 +985,4 @@ git commit -m "feat(web): catalog uses dynamic category-driven filters; retire u
 
 - Backend integration tests need the test DB (localhost:5433): `docker compose -f docker/docker-compose.yml up -d postgres-test`.
 - Reuse the async DB + API client fixtures from `tests/integration/repositories/test_product_repository_cover.py` and the existing API test conftest — do not invent new fixtures.
-- Vehicle parity is a *fix*: `make`/`year`/`mileage` filters were backend no-ops before; after Task 3/5 they actually filter. Verify the Vehicles vertical still shows its filters end-to-end.
+- Vehicle parity is a _fix_: `make`/`year`/`mileage` filters were backend no-ops before; after Task 3/5 they actually filter. Verify the Vehicles vertical still shows its filters end-to-end.

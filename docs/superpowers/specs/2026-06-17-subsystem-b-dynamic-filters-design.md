@@ -21,7 +21,7 @@ right filters from its category schema, with zero per-niche frontend code.
    filters the loaded page — incorrect for real catalogs.
 2. **Filter source = selected category.** The catalog gets a category selector; the
    dynamic filters derive from that category's `filter_fields`. If the org has a
-   single active category, it auto-selects (no extra step). Multi-category *union*
+   single active category, it auto-selects (no extra step). Multi-category _union_
    was rejected (mixes unrelated filters); "single vertical only" was rejected
    (breaks as soon as an org enables a 2nd vertical — the M2M already supports it).
 3. **Backend filtering = `AttributeFilter` value object + repository translation.**
@@ -97,11 +97,11 @@ references that key.
 
 | filter_type | SQL (SQLAlchemy 2.0)                                                              | GIN `jsonb_path_ops` |
 | ----------- | --------------------------------------------------------------------------------- | -------------------- |
-| `exact`     | `ProductModel.attributes.contains({key: value})` (`@>`)                           | ✅ used               |
+| `exact`     | `ProductModel.attributes.contains({key: value})` (`@>`)                           | ✅ used              |
 | `select`    | `attributes[key].astext.in_(values)` (OR)                                         | partial              |
-| `text`      | `attributes[key].astext.ilike(f"%{value}%")`                                      | ❌ not used           |
-| `range`     | `cast(attributes[key].astext, Numeric)` between `min`/`max` (each bound optional) | ❌ not used           |
-| `boolean`   | `cast(attributes[key].astext, Boolean) == value`                                  | ❌ not used           |
+| `text`      | `attributes[key].astext.ilike(f"%{value}%")`                                      | ❌ not used          |
+| `range`     | `cast(attributes[key].astext, Numeric)` between `min`/`max` (each bound optional) | ❌ not used          |
+| `boolean`   | `cast(attributes[key].astext, Boolean) == value`                                  | ❌ not used          |
 
 **Performance note (not blocking at current volume):** the GIN `jsonb_path_ops` index
 accelerates only containment (`exact`). `range`/`text`/`boolean` use the text-cast of a
@@ -136,7 +136,7 @@ the category. No counts. Tenant-scoped. Shape:
   - `text` → text input (debounced)
   - `boolean` → toggle
   - `exact` → single-select / input
-  Generic `aria-label` (G5). `BRANDS`/`STATUSES` constants deleted.
+    Generic `aria-label` (G5). `BRANDS`/`STATUSES` constants deleted.
 - **`FilterPills`** (generic): active-filter pills derived from active URL keys; label
   via humanized key (or `FilterField.label`).
 - **Category selector**: lists the org's categories (from
@@ -149,6 +149,7 @@ the category. No counts. Tenant-scoped. Shape:
 ## Testing (TDD strict — failing test first)
 
 **Backend (pytest):**
+
 - `AttributeFilter` VO validation per type (valid + invalid payloads).
 - `get_all` per `filter_type` over JSONB: `range` (min-only, max-only, both),
   `select` (OR within values), `text` (ILIKE), `boolean`, `exact`.
@@ -160,6 +161,7 @@ the category. No counts. Tenant-scoped. Shape:
 - `presentation_resolver.filter_fields`: emits `key` (G2), no silent `text` default.
 
 **Frontend (Vitest + Testing Library):**
+
 - `useCatalogFilters`: URL read/write round-trip per filter_type; clear-all.
 - `FilterSidebar`: renders correct control per `filter_type`; select sourced from
   options vs facet endpoint; generic aria-label (G5).
@@ -186,4 +188,7 @@ the category. No counts. Tenant-scoped. Shape:
   filter server-side — a fix vs the current no-op).
 - All new code TDD'd; web typecheck 0 / lint 0; backend ruff/format/pyright 0; full
   suites green; GGA clean.
+
+```
+
 ```
