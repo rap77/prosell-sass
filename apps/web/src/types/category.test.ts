@@ -20,6 +20,7 @@ import type {
   CategoryNode,
   OrgVerticalsResponse,
 } from "./category";
+import { filterFieldSchema } from "@/lib/api/schemas/category";
 
 describe("AttributeSchemaEntry", () => {
   it("models type, filter_type, and unit", () => {
@@ -159,3 +160,21 @@ describe("VerticalResponse and CategoryNode", () => {
 // `lib/api/products.ts`) is exercised in T7a as a runtime test that
 // fails the moment a new ProductStatus lands on the backend without a
 // matching case in the switch.
+
+describe("filterFieldSchema (Subsystem B G1)", () => {
+  it("accepts text filter_type and key-shaped FilterField", () => {
+    const parsed = filterFieldSchema.safeParse({
+      key: "model",
+      filter_type: "text",
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("rejects the legacy field-shaped payload", () => {
+    const parsed = filterFieldSchema.safeParse({
+      field: "model",
+      filter_type: "text",
+    });
+    expect(parsed.success).toBe(false);
+  });
+});

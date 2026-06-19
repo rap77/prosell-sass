@@ -5,28 +5,105 @@ import {
   useInfiniteQuery,
   type UseMutationResult,
   type UseQueryResult,
-  type UseInfiniteQueryResult,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { z } from "zod";
 import type {
   CreateProductRequest,
   Product,
   ProductListResponse,
-  ProductAttributes,
 } from "@/types/product";
-import type { VehicleAttributes } from "@/types/vehicle";
-import { isVehicleProduct } from "@/types/product";
-import { getCoverImageKey, getProductImageKeys } from "./productImages";
+import { getAttributeMap } from "@/types/product";
+import {
+  isVehicleAttributes,
+  isRealEstateAttributes,
+  isGenericAttributes,
+  type ProductAttributes,
+} from "@/types/vehicle";
+import { getCoverImageKey } from "./productImages";
+import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 
-interface BackendProductResponse {
-  id: string;
-  title: string;
-  price_cents: number;
-  category_id: string;
-  attributes: ProductAttributes;
-  status: "draft" | "active" | "sold";
-  created_at: string;
-  updated_at: string;
+function isProductAttributes(value: unknown): value is ProductAttributes {
+  return (
+    isVehicleAttributes(value) ||
+    isRealEstateAttributes(value) ||
+    isGenericAttributes(value)
+  );
+}
+
+/**
+ * Mirrors the full `Product` shape so `parse()`'s inferred type is
+ * structurally assignable to `Product` — no `as` needed, the function's
+ * `: Product` return annotation makes TypeScript check assignability.
+ * `attributes` reuses the discriminated-union guards from `types/vehicle`
+ * rather than duplicating their shape here.
+ */
+const productSchema = z.object({
+  id: z.string(),
+  tenant_id: z.string(),
+  organization_id: z.string(),
+  category_id: z.string(),
+  title: z.string(),
+  slug: z.string().optional(),
+  description: z.string().optional(),
+  price_cents: z.number(),
+  currency: z.string(),
+  condition: z.enum(["new", "used", "refurbished"]),
+  status: z.enum([
+    "draft",
+    "pending",
+    "published",
+    "paused",
+    "reserved",
+    "sold",
+    "rejected",
+    "archived",
+  ]),
+  attributes: z.custom<ProductAttributes>(isProductAttributes),
+  image_urls: z.array(z.string()).optional(),
+  cover_image_key: z.string().nullable().optional(),
+  location_city: z.string().optional(),
+  location_state: z.string().optional(),
+  location_zip: z.string().optional(),
+  is_featured: z.boolean(),
+  view_count: z.number(),
+  favorite_count: z.number(),
+  submitted_for_approval_at: z.string().optional(),
+  submitted_by: z.string().optional(),
+  approved_at: z.string().optional(),
+  approved_by: z.string().optional(),
+  rejection_reason: z.string().optional(),
+  published_at: z.string().optional(),
+  sold_at: z.string().optional(),
+  archived_at: z.string().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+function parseProductResponse(raw: unknown): Product {
+  return productSchema.parse(raw);
+}
+
+const productListResponseSchema = z.object({
+  products: z.array(productSchema),
+  total: z.number(),
+  page: z.number(),
+  page_size: z.number(),
+});
+
+function parseProductListResponse(raw: unknown): ProductListResponse {
+  return productListResponseSchema.parse(raw);
+}
+
+const apiErrorBodySchema = z
+  .object({ detail: z.string().optional(), message: z.string().optional() })
+  .passthrough();
+
+function extractErrorMessage(body: unknown, fallback: string): string {
+  const parsed = apiErrorBodySchema.safeParse(body);
+  return (
+    (parsed.success && (parsed.data.detail ?? parsed.data.message)) || fallback
+  );
 }
 
 /**
@@ -70,14 +147,11 @@ export async function createProductWithVehicle(
   });
 
   if (!res.ok) {
-    const error = await res
-      .json()
-      .catch(() => ({ message: "Failed to create product" }));
-    throw new Error(error.message || "Failed to create product");
+    const body = await res.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to create product"));
   }
 
-  const product = (await res.json()) as BackendProductResponse;
-  return product as Product;
+  return parseProductResponse(await res.json());
 }
 
 /**
@@ -152,13 +226,11 @@ export function useProducts(): UseQueryResult<Product[], Error> {
       });
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to fetch products" }));
-        throw new Error(error.message || "Failed to fetch products");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to fetch products"));
       }
 
-      const data = (await res.json()) as ProductListResponse;
+      const data = parseProductListResponse(await res.json());
       return data.products;
     },
   });
@@ -181,14 +253,11 @@ export async function updateProduct(
   });
 
   if (!res.ok) {
-    const error = await res
-      .json()
-      .catch(() => ({ message: "Failed to update product" }));
-    throw new Error(error.message || "Failed to update product");
+    const body = await res.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to update product"));
   }
 
-  const product = (await res.json()) as BackendProductResponse;
-  return product as Product;
+  return parseProductResponse(await res.json());
 }
 
 /**
@@ -208,13 +277,11 @@ export async function updateProductStatus(
   });
 
   if (!res.ok) {
-    const error = await res
-      .json()
-      .catch(() => ({ message: "Failed to update product" }));
-    throw new Error(error.message || "Failed to update product");
+    const body = await res.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to update product"));
   }
 
-  return res.json();
+  return parseProductResponse(await res.json());
 }
 
 /**
@@ -271,14 +338,11 @@ export function useProduct(
       });
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to fetch product" }));
-        throw new Error(error.message || "Failed to fetch product");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to fetch product"));
       }
 
-      const product = (await res.json()) as BackendProductResponse;
-      return product as Product;
+      return parseProductResponse(await res.json());
     },
     enabled: !!productId,
   });
@@ -328,10 +392,8 @@ export function useDeleteProduct() {
       });
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to delete product" }));
-        throw new Error(error.message || "Failed to delete product");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to delete product"));
       }
 
       return id;
@@ -378,6 +440,17 @@ export interface ProductImageUrlsResponse {
   images: ProductImageUrl[];
 }
 
+const productImageUrlsResponseSchema = z.object({
+  product_id: z.string(),
+  images: z.array(
+    z.object({
+      key: z.string(),
+      url: z.string(),
+      expires_in: z.number(),
+    }),
+  ),
+});
+
 /**
  * Fetch signed URLs for product images.
  *
@@ -394,7 +467,7 @@ export function useProductImageUrls(productId: string | undefined) {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to fetch image URLs");
-      return res.json() as Promise<ProductImageUrlsResponse>;
+      return productImageUrlsResponseSchema.parse(await res.json());
     },
     enabled: !!productId,
     staleTime: 5 * 60 * 1000,
@@ -439,17 +512,11 @@ export async function setProductCover(
     // 'X' is not in the product's current image list") that the UI
     // shows to the user. Falling back to a generic message would
     // hide a useful diagnostic.
-    const err = await res
-      .json()
-      .catch(() => ({ message: "Failed to set cover" }));
-    const detail =
-      (err as { detail?: string; message?: string }).detail ??
-      (err as { message?: string }).message ??
-      "Failed to set cover";
-    throw new Error(detail);
+    const body = await res.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(body, "Failed to set cover"));
   }
 
-  return res.json() as Promise<Product>;
+  return parseProductResponse(await res.json());
 }
 
 /**
@@ -511,11 +578,10 @@ export function transformProductToVehicle(product: Product): {
   created_at: string;
   updated_at: string;
 } {
-  const attrs = product.attributes as {
-    year?: number;
-    make?: string;
-    model?: string;
-  };
+  const attrMap = getAttributeMap(product.attributes);
+  const year = typeof attrMap.year === "number" ? attrMap.year : undefined;
+  const make = typeof attrMap.make === "string" ? attrMap.make : undefined;
+  const model = typeof attrMap.model === "string" ? attrMap.model : undefined;
   // Use the shared image-key resolver. It handles both post-migration
   // (`product.image_urls`) and legacy (`attrs.image_urls`) sources —
   // the naive `Array.isArray(product.image_urls) ? … : …` short-circuit
@@ -534,52 +600,15 @@ export function transformProductToVehicle(product: Product): {
     // Map product status to vehicle status (product.status is more granular)
     status: mapProductStatusToVehicleStatus(product.status),
     photo_url: coverKey,
-    year: attrs.year,
-    make: attrs.make,
-    model: attrs.model,
+    year,
+    make,
+    model,
     created_at: product.created_at,
     updated_at: product.updated_at,
   };
 }
 
-/**
- * Map product status to vehicle status enum.
- * Product uses: draft | pending | published | paused | reserved | sold | rejected | archived
- * Vehicle uses: published | pending | failed | draft | expired | online | sold
- */
-function mapProductStatusToVehicleStatus(
-  status: Product["status"],
-):
-  | "published"
-  | "pending"
-  | "failed"
-  | "draft"
-  | "expired"
-  | "online"
-  | "sold" {
-  switch (status) {
-    case "published":
-      return "published";
-    case "pending":
-      return "pending";
-    case "rejected":
-      return "failed";
-    case "draft":
-      return "draft";
-    case "archived":
-      return "expired";
-    case "sold":
-      return "sold";
-    case "paused":
-      return "online";
-    case "reserved":
-      return "online";
-    default:
-      return "draft";
-  }
-}
-
-export interface VehicleFilters {
+export interface ProductFilters {
   status?:
     | "published"
     | "pending"
@@ -589,30 +618,29 @@ export interface VehicleFilters {
     | "online"
     | "sold";
   search?: string;
-  make?: string;
-  model?: string;
-  year_min?: number;
-  year_max?: number;
+  /** Scopes the list to one category; required for `attributes` to apply. */
+  category_id?: string;
+  /** Category-driven attribute filters, mapped to `attr.<key>` (Task 12). */
+  attributes?: Record<string, string>;
 }
 
 /**
- * Infinite scroll for vehicle products (products with category: 'vehicle')
+ * Infinite scroll for products.
  * Note: Does NOT filter by isVehicleProduct — caller should filter if needed.
  *       Currently catalog page needs all products returned and filters via isVehicleProduct.
  */
 export function useInfiniteProducts(
-  filters?: VehicleFilters,
+  filters?: ProductFilters,
   limit: number = 50,
 ) {
   const queryParams = new URLSearchParams();
   if (filters?.status) queryParams.append("status", filters.status);
   if (filters?.search) queryParams.append("search", filters.search);
-  if (filters?.make) queryParams.append("make", filters.make);
-  if (filters?.model) queryParams.append("model", filters.model);
-  if (filters?.year_min)
-    queryParams.append("year_min", filters.year_min.toString());
-  if (filters?.year_max)
-    queryParams.append("year_max", filters.year_max.toString());
+  if (filters?.category_id)
+    queryParams.append("category_id", filters.category_id);
+  for (const [key, value] of Object.entries(filters?.attributes ?? {})) {
+    if (value) queryParams.append(`attr.${key}`, value);
+  }
   queryParams.append("limit", limit.toString());
 
   return useInfiniteQuery({
@@ -628,13 +656,11 @@ export function useInfiniteProducts(
       });
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to fetch products" }));
-        throw new Error(error.message || "Failed to fetch products");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to fetch products"));
       }
 
-      const data = (await res.json()) as ProductListResponse;
+      const data = parseProductListResponse(await res.json());
 
       return {
         items: data.products,

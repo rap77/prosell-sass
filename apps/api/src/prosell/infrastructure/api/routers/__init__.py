@@ -11,6 +11,9 @@ from prosell.infrastructure.api.routers.lead_router import router as lead_router
 from prosell.infrastructure.api.routers.notification_router import router as notification_router
 from prosell.infrastructure.api.routers.org_router import router as org_router
 from prosell.infrastructure.api.routers.org_verticals_router import router as org_verticals_router
+from prosell.infrastructure.api.routers.product_router import (
+    filter_values_router,
+)
 from prosell.infrastructure.api.routers.product_router import router as product_router
 from prosell.infrastructure.api.routers.publisher_router import router as publisher_router
 from prosell.infrastructure.api.routers.team_router import router as team_router
@@ -25,6 +28,7 @@ __all__ = [
     "branch_router",
     "category_router",
     "facebook_router",
+    "filter_values_router",
     "health_router",
     "image_router",
     "lead_router",

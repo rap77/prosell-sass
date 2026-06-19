@@ -5,6 +5,7 @@ from datetime import datetime
 from uuid import UUID
 
 from prosell.domain.entities.product import Product
+from prosell.domain.value_objects.attribute_filter import AttributeFilter
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 
@@ -65,6 +66,7 @@ class AbstractProductRepository(ABC):
         search_query: str | None = None,
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
+        attribute_filters: list["AttributeFilter"] | None = None,
         skip: int = 0,
         limit: int = 100,
         order_by: str = "created_at",
@@ -83,6 +85,7 @@ class AbstractProductRepository(ABC):
             search_query: Text search in title/description
             min_price_cents: Minimum price filter
             max_price_cents: Maximum price filter
+            attribute_filters: Dynamic filters over the JSONB `attributes` column
             skip: Number of records to skip (pagination)
             limit: Max records to return (pagination)
             order_by: Field to order by
@@ -347,5 +350,25 @@ class AbstractProductRepository(ABC):
 
         Returns:
             List of SOLD products with sold_at < cutoff
+        """
+        pass
+
+    @abstractmethod
+    async def distinct_attribute_values(
+        self, tenant_id: UUID, category_id: UUID, keys: list[str]
+    ) -> dict[str, list[str]]:
+        """
+        Get DISTINCT non-null values of `attributes[key]` per key.
+
+        Tenant + category scoped — used by the catalog UI to populate
+        `select` filters that have no static options (e.g. `make`, `color`).
+
+        Args:
+            tenant_id: Tenant UUID for isolation
+            category_id: Category UUID to scope the values to
+            keys: Attribute keys to compute distinct values for
+
+        Returns:
+            Mapping of key -> sorted list of distinct non-null values
         """
         pass

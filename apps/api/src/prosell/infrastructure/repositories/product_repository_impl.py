@@ -3,15 +3,22 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import Boolean, Numeric, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.product import Product
 from prosell.domain.repositories.product_repository import AbstractProductRepository
+from prosell.domain.value_objects.attribute_filter import AttributeFilter
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.models.product_image_model import ProductImageModel
 from prosell.infrastructure.models.product_model import ProductModel
+
+#: Single source of truth for the per-key cap on `distinct_attribute_values`.
+#: Enforced in SQL via `LIMIT cap + 1` so PostgreSQL never streams more than
+#: N + 1 rows; the router detects overflow by `len > cap` and reports the key
+#: as truncated. See `product_router.get_category_filter_values`.
+FILTER_VALUES_MAX_PER_KEY = 1000
 
 
 class SqlAlchemyProductRepository(AbstractProductRepository):
@@ -108,6 +115,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         search_query: str | None = None,
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
+        attribute_filters: list[AttributeFilter] | None = None,
         skip: int = 0,
         limit: int = 100,
         order_by: str = "created_at",
@@ -148,6 +156,23 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
         if max_price_cents is not None:
             stmt = stmt.where(ProductModel.price_cents <= max_price_cents)
+
+        # Dynamic attribute filters (JSONB)
+        for af in attribute_filters or []:
+            col = ProductModel.attributes[af.key].astext
+            if af.filter_type == "exact":
+                stmt = stmt.where(ProductModel.attributes.contains({af.key: af.value}))
+            elif af.filter_type == "select":
+                stmt = stmt.where(col.in_(af.values or []))
+            elif af.filter_type == "text":
+                stmt = stmt.where(col.ilike(f"%{af.value}%"))
+            elif af.filter_type == "boolean":
+                stmt = stmt.where(cast(col, Boolean) == af.value)
+            elif af.filter_type == "range":
+                if af.min is not None:
+                    stmt = stmt.where(cast(col, Numeric) >= af.min)
+                if af.max is not None:
+                    stmt = stmt.where(cast(col, Numeric) <= af.max)
 
         # Ordering
         order_column = getattr(ProductModel, order_by, ProductModel.created_at)
@@ -477,6 +502,36 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         )
         result = await self.session.execute(stmt)
         return [self._to_entity(model) for model in result.scalars().all()]
+
+    async def distinct_attribute_values(
+        self, tenant_id: UUID, category_id: UUID, keys: list[str]
+    ) -> dict[str, list[str]]:
+        """Return DISTINCT non-null `attributes[key]` values, tenant+category scoped.
+
+        The cap is enforced in SQL via `LIMIT FILTER_VALUES_MAX_PER_KEY + 1` so
+        PostgreSQL never streams more than N + 1 rows over the wire — defense
+        against DoS via a key with millions of distinct values. Callers detect
+        overflow by `len(out[key]) > FILTER_VALUES_MAX_PER_KEY` and slice the
+        trailing sentinel row off.
+        """
+        out: dict[str, list[str]] = {}
+        cap_plus_one = FILTER_VALUES_MAX_PER_KEY + 1
+        for key in keys:
+            col = ProductModel.attributes[key].astext
+            stmt = (
+                select(col)
+                .where(
+                    ProductModel.tenant_id == tenant_id,
+                    ProductModel.category_id == category_id,
+                    col.isnot(None),
+                )
+                .distinct()
+                .order_by(col)
+                .limit(cap_plus_one)
+            )
+            rows = (await self.session.execute(stmt)).scalars().all()
+            out[key] = list(rows)
+        return out
 
     def _to_entity(self, model: ProductModel) -> Product:
         """Convert ORM model to domain entity."""

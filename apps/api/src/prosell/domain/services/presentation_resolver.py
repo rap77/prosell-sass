@@ -6,9 +6,9 @@ Two pure functions, no I/O, no external deps:
   the nearest ancestor (first non-None in the input sequence) wins.
 
 - ``filter_fields(attribute_schema)`` — extract the fields marked
-  ``filterable: True`` in declaration order, with their ``filter_type``
-  (defaulting to ``"text"``). Used by the catalog UI to render dynamic
-  filters per vertical.
+  ``filterable: True`` in declaration order, with their ``filter_type``.
+  Fields missing ``filter_type`` are skipped (seed bug — not guessed).
+  Used by the catalog UI to render dynamic filters per vertical.
 """
 
 from collections.abc import Mapping, Sequence
@@ -35,14 +35,19 @@ def resolve_presentation(
 def filter_fields(attribute_schema: Mapping[str, object]) -> list[dict[str, str]]:
     """Extract the filterable fields (in declared order) for the catalog UI.
 
-    A field is included iff its schema entry is a dict with
-    ``filterable: True``. The returned list keeps the schema's insertion
-    order (CPython 3.7+ dict ordering) and each entry has shape
-    ``{"field": <name>, "filter_type": <type>}`` with ``filter_type``
-    defaulting to ``"text"`` if absent.
+    A field is included iff its schema entry is a Mapping with
+    ``filterable: True`` and a truthy ``filter_type``. A field marked
+    filterable without a ``filter_type`` is a seed bug — it is skipped, not
+    defaulted, so the gap surfaces instead of being silently guessed. The
+    returned list keeps the schema's insertion order (CPython 3.7+ dict
+    ordering) and each entry has shape ``{"key": <name>, "filter_type": <type>}``.
     """
     out: list[dict[str, str]] = []
     for name, defn in attribute_schema.items():
-        if isinstance(defn, dict) and defn.get("filterable"):
-            out.append({"field": name, "filter_type": str(defn.get("filter_type", "text"))})
+        if not isinstance(defn, Mapping) or not defn.get("filterable"):
+            continue
+        ftype = defn.get("filter_type")
+        if not ftype:  # seed bug: filterable without a filter_type — skip, don't guess
+            continue
+        out.append({"key": name, "filter_type": str(ftype)})
     return out

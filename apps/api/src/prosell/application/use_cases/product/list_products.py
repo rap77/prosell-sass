@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from prosell.application.dto.product import ProductResponse
 from prosell.domain.repositories.product_repository import AbstractProductRepository
+from prosell.domain.value_objects.attribute_filter import AttributeFilter
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 
@@ -36,6 +37,7 @@ class ListProductsUseCase:
         search_query: str | None = None,
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
+        attribute_filters: list[AttributeFilter] | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> ProductListResponse:
@@ -52,6 +54,7 @@ class ListProductsUseCase:
             search_query: Text search
             min_price_cents: Minimum price
             max_price_cents: Maximum price
+            attribute_filters: Dynamic filters over JSONB `attributes` column
             skip: Pagination offset
             limit: Max records
 
@@ -73,6 +76,7 @@ class ListProductsUseCase:
             search_query=search_query,
             min_price_cents=min_price_cents,
             max_price_cents=max_price_cents,
+            attribute_filters=attribute_filters,
             skip=skip,
             limit=limit,
         )

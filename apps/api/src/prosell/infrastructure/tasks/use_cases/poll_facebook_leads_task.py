@@ -126,7 +126,7 @@ class PollingMetrics:
                 self.transient_errors += 1
             else:
                 self.non_transient_errors += 1
-        elif isinstance(error, (httpx.TimeoutException, httpx.NetworkError)):
+        elif isinstance(error, httpx.TimeoutException | httpx.NetworkError):
             self.transient_errors += 1
         else:
             self.non_transient_errors += 1
@@ -272,7 +272,7 @@ def is_transient_error(error: Exception) -> bool:
         return 500 <= status_code < 600
 
     # Network errors - transient
-    return isinstance(error, (httpx.TimeoutException, httpx.NetworkError))
+    return isinstance(error, httpx.TimeoutException | httpx.NetworkError)
 
 
 def calculate_backoff_with_jitter(

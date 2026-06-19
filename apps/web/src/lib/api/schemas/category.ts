@@ -27,16 +27,38 @@ const CardFieldSchema = z.object({
   source: z.string(),
 });
 
-const FilterFieldSchema = z.object({
+/**
+ * Canonical `filter_type` enum (Subsystem B G1).
+ *
+ * Mirrors `FilterType` in `@/types/category`. Kept as a single source of
+ * truth so the wire validator and the domain type cannot drift.
+ */
+export const filterTypeSchema = z.enum([
+  "range",
+  "select",
+  "text",
+  "boolean",
+  "exact",
+]);
+
+/**
+ * Canonical `FilterField` wire shape (Subsystem B G1).
+ *
+ * The backend resolver (post-G2) emits `{ key, filter_type, label? }`;
+ * `label` is optional because the UI can fall back to a humanized `key`.
+ * Legacy `{ field, ... }` payloads are rejected — see the contract test
+ * in `types/category.test.ts`.
+ */
+export const filterFieldSchema = z.object({
   key: z.string(),
-  filter_type: z.enum(["range", "exact", "boolean", "select"]),
-  label: z.string(),
+  filter_type: filterTypeSchema,
+  label: z.string().optional(),
 });
 
 const CategoryPresentationSchema = z.object({
   card_fields: z.array(CardFieldSchema),
   subtitle_template: z.string().nullable(),
-  filter_fields: z.array(FilterFieldSchema),
+  filter_fields: z.array(filterFieldSchema),
 });
 
 /**
