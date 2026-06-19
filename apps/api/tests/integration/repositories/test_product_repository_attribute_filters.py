@@ -25,6 +25,7 @@ from prosell.domain.value_objects.attribute_filter import AttributeFilter
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.infrastructure.models.category_model import CategoryModel
 from prosell.infrastructure.models.organization_model import OrganizationModel
+from prosell.infrastructure.repositories import product_repository_impl
 from prosell.infrastructure.repositories.product_repository_impl import (
     SqlAlchemyProductRepository,
 )
@@ -291,3 +292,58 @@ async def test_pagination_with_attribute_filter_no_overlap_no_gaps(
 
     # (d) union covers all Toyotas — no gaps in the iteration
     assert len(all_ids) == total_toyotas
+
+
+async def test_distinct_attribute_values_caps_at_sql_level(
+    product_repo: SqlAlchemyProductRepository,
+    seed_products: SeededProducts,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Security regression: the per-key cap must be enforced in SQL via
+    `LIMIT cap + 1`, NOT in Python after streaming all rows.
+
+    Load-bearing guarantee: if the SQL `.limit()` is removed, this test
+    passes (the Python router would still cap) but a tenant with a key
+    containing millions of distinct values would stream all rows over the
+    wire, exhausting memory + bandwidth under authenticated load.
+
+    We monkeypatch the module-level cap to a tiny number so the test can
+    seed only a handful of rows and still exercise the overflow path.
+    """
+    # Shrink the cap to 3 so we can seed 5 distinct values and observe
+    # overflow without filling the DB.
+    monkeypatch.setattr(
+        product_repository_impl,
+        "FILTER_VALUES_MAX_PER_KEY",
+        3,
+    )
+
+    # Seed 5 rows with 5 distinct "shade" values.
+    shade_specs = [{"shade": f"Shade-{i}"} for i in range(5)]
+    for i, attrs in enumerate(shade_specs):
+        await product_repo.create(
+            Product.create(
+                title=f"Shade seed {i}",
+                price_cents=5_000_000 + i,
+                tenant_id=seed_products.tenant_id,
+                organization_id=seed_products.products[0].organization_id,
+                category_id=seed_products.category_id,
+                condition=ProductCondition.USED,
+                attributes=attrs,
+            )
+        )
+
+    out = await product_repo.distinct_attribute_values(
+        tenant_id=seed_products.tenant_id,
+        category_id=seed_products.category_id,
+        keys=["shade"],
+    )
+
+    # SQL `LIMIT cap + 1` returns up to 4 rows (3 + 1 overflow sentinel).
+    # If `.limit()` is missing, we'd get 5 rows back — failing this assertion
+    # AND exposing the DoS vector.
+    assert len(out["shade"]) <= product_repository_impl.FILTER_VALUES_MAX_PER_KEY + 1
+    assert len(out["shade"]) == product_repository_impl.FILTER_VALUES_MAX_PER_KEY + 1, (
+        f"expected overflow sentinel (cap+1) rows back; got {len(out['shade'])}. "
+        f"Did the SQL LIMIT get removed?"
+    )

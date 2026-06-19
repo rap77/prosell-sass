@@ -14,6 +14,12 @@ from prosell.domain.value_objects.product_status import ProductStatus
 from prosell.infrastructure.models.product_image_model import ProductImageModel
 from prosell.infrastructure.models.product_model import ProductModel
 
+#: Single source of truth for the per-key cap on `distinct_attribute_values`.
+#: Enforced in SQL via `LIMIT cap + 1` so PostgreSQL never streams more than
+#: N + 1 rows; the router detects overflow by `len > cap` and reports the key
+#: as truncated. See `product_router.get_category_filter_values`.
+FILTER_VALUES_MAX_PER_KEY = 1000
+
 
 class SqlAlchemyProductRepository(AbstractProductRepository):
     """SQLAlchemy implementation of ProductRepository."""
@@ -500,8 +506,16 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
     async def distinct_attribute_values(
         self, tenant_id: UUID, category_id: UUID, keys: list[str]
     ) -> dict[str, list[str]]:
-        """Return DISTINCT non-null `attributes[key]` values, tenant+category scoped."""
+        """Return DISTINCT non-null `attributes[key]` values, tenant+category scoped.
+
+        The cap is enforced in SQL via `LIMIT FILTER_VALUES_MAX_PER_KEY + 1` so
+        PostgreSQL never streams more than N + 1 rows over the wire — defense
+        against DoS via a key with millions of distinct values. Callers detect
+        overflow by `len(out[key]) > FILTER_VALUES_MAX_PER_KEY` and slice the
+        trailing sentinel row off.
+        """
         out: dict[str, list[str]] = {}
+        cap_plus_one = FILTER_VALUES_MAX_PER_KEY + 1
         for key in keys:
             col = ProductModel.attributes[key].astext
             stmt = (
@@ -513,6 +527,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
                 )
                 .distinct()
                 .order_by(col)
+                .limit(cap_plus_one)
             )
             rows = (await self.session.execute(stmt)).scalars().all()
             out[key] = list(rows)

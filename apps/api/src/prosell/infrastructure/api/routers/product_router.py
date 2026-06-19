@@ -67,7 +67,10 @@ from prosell.infrastructure.repositories.category_repository_impl import (
 from prosell.infrastructure.repositories.organization_repository_impl import (
     SqlAlchemyOrganizationRepository,
 )
-from prosell.infrastructure.repositories.product_repository_impl import SqlAlchemyProductRepository
+from prosell.infrastructure.repositories.product_repository_impl import (
+    FILTER_VALUES_MAX_PER_KEY,
+    SqlAlchemyProductRepository,
+)
 
 router = APIRouter()
 
@@ -378,8 +381,8 @@ filter_values_router = APIRouter()
 
 # F2 sink-arg cap: bound how many DISTINCT values we return per filter key
 # to keep responses predictable and prevent a malicious/large dataset from
-# producing unbounded payloads.
-FILTER_VALUES_MAX_PER_KEY = 1000
+# producing unbounded payloads. Re-imported from the repo module so the
+# SQL `.limit()` and the Python truncation share a single source of truth.
 
 
 class CategoryFilterValuesResponse(BaseModel):
