@@ -114,15 +114,15 @@ class TestFacebookWebhookProcessingE2E:
         # Assert: ProcessFacebookWebhookUseCase was called
         # (This verifies Critical Issue #1 is fixed)
         # We check logs to verify the use case was executed
-        assert any("Processing Facebook webhook" in record.message for record in caplog.records), (
-            "ProcessFacebookWebhookUseCase should have been called"
-        )
-        assert any("leadgen_id=123456789" in record.message for record in caplog.records), (
-            "Use case should have received correct leadgen_id"
-        )
-        assert any("sender_id=111222333" in record.message for record in caplog.records), (
-            "Use case should have received correct sender_id"
-        )
+        assert any(
+            "Processing Facebook webhook" in record.message for record in caplog.records
+        ), "ProcessFacebookWebhookUseCase should have been called"
+        assert any(
+            "leadgen_id=123456789" in record.message for record in caplog.records
+        ), "Use case should have received correct leadgen_id"
+        assert any(
+            "sender_id=111222333" in record.message for record in caplog.records
+        ), "Use case should have received correct sender_id"
 
     async def test_webhook_returns_400_for_invalid_json(
         self,

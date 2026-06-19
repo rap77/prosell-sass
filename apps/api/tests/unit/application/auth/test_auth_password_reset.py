@@ -145,9 +145,9 @@ class TestTokenExpiry:
 
         user_repo.create_verification_token.assert_called_once()
         kwargs = user_repo.create_verification_token.call_args.kwargs
-        assert kwargs["expires_in_minutes"] == 60, (
-            "Token must expire after 60 minutes (1 hour) per security policy"
-        )
+        assert (
+            kwargs["expires_in_minutes"] == 60
+        ), "Token must expire after 60 minutes (1 hour) per security policy"
 
 
 # =============================================================================
@@ -242,9 +242,9 @@ class TestResetPasswordUseCase:
         await use_case.execute(ResetPasswordRequest(token="valid-token", new_password="NewPass1!"))
 
         # The user entity's password_hash must have been updated
-        assert user.password_hash == new_hash, (
-            "Password hash must be updated to new value after reset"
-        )
+        assert (
+            user.password_hash == new_hash
+        ), "Password hash must be updated to new value after reset"
 
     # =========================================================================
     # B1.1.47 — Test password successfully updates hash

@@ -141,6 +141,6 @@ class TestBulkUploadPersistsImageUrls:
         )
         # And every DO Spaces key in image_urls should belong to this VIN
         for url in final_product.image_urls:
-            assert vin in url, (
-                f"Each image_urls entry should reference the product's VIN, got: {url}"
-            )
+            assert (
+                vin in url
+            ), f"Each image_urls entry should reference the product's VIN, got: {url}"

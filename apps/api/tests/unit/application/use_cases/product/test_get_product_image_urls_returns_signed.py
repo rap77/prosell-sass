@@ -113,8 +113,8 @@ class TestGetProductImageUrlsReturnsSigned:
             f"persisted.image_urls = {persisted.image_urls!r}"
         )
         for img in response.images:
-            assert "X-Amz-Signature" in img.url, (
-                f"Image URL must be signed (contain X-Amz-Signature). Got: {img.url}"
-            )
+            assert (
+                "X-Amz-Signature" in img.url
+            ), f"Image URL must be signed (contain X-Amz-Signature). Got: {img.url}"
         # Sanity: spaces was called once per image
         assert spaces.generate_download_url.await_count == len(image_urls)

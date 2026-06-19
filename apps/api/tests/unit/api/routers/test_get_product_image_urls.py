@@ -143,18 +143,18 @@ class TestGetProductImageUrlsFallbackToAttributes:
         assert response.status_code == status.HTTP_200_OK, response.text
         body = response.json()
         assert body["product_id"] == str(TEST_PRODUCT_ID)
-        assert len(body["images"]) == 1, (
-            f"Expected 1 signed image from attributes.image_urls, got: {body['images']!r}"
-        )
+        assert (
+            len(body["images"]) == 1
+        ), f"Expected 1 signed image from attributes.image_urls, got: {body['images']!r}"
         signed = body["images"][0]
         assert signed["key"] == f"orgs/{TEST_TENANT_ID}/vehicles/legacy1.jpg"
         assert "X-Amz-Signature=" in signed["url"]
-        assert "minio:9000" not in signed["url"], (
-            f"Signed URL still leaks internal endpoint: {signed['url']!r}"
-        )
-        assert signed["url"].startswith("http://localhost:9000/"), (
-            f"Signed URL should target the public endpoint (localhost:9000), got: {signed['url']!r}"
-        )
+        assert (
+            "minio:9000" not in signed["url"]
+        ), f"Signed URL still leaks internal endpoint: {signed['url']!r}"
+        assert signed["url"].startswith(
+            "http://localhost:9000/"
+        ), f"Signed URL should target the public endpoint (localhost:9000), got: {signed['url']!r}"
 
     @pytest.mark.asyncio
     async def test_signs_urls_from_both_top_level_and_attributes(
@@ -205,9 +205,9 @@ class TestGetProductImageUrlsFallbackToAttributes:
 
         assert response.status_code == status.HTTP_200_OK
         body = response.json()
-        assert len(body["images"]) == 1, (
-            f"Duplicate URL was signed twice (no dedupe), got: {body['images']!r}"
-        )
+        assert (
+            len(body["images"]) == 1
+        ), f"Duplicate URL was signed twice (no dedupe), got: {body['images']!r}"
 
 
 class TestGetProductImageUrlsSecurityFilters:
@@ -261,9 +261,9 @@ class TestGetProductImageUrlsSecurityFilters:
         assert response.status_code == status.HTTP_200_OK
         body = response.json()
         keys = [img["key"] for img in body["images"]]
-        assert keys == [f"orgs/{TEST_TENANT_ID}/vehicles/mine.jpg"], (
-            f"Cross-tenant URL leaked through; got: {keys!r}"
-        )
+        assert keys == [
+            f"orgs/{TEST_TENANT_ID}/vehicles/mine.jpg"
+        ], f"Cross-tenant URL leaked through; got: {keys!r}"
         # And the signer was called exactly once (only the caller-tenant key)
         assert spaces.generate_download_url.await_count == 1
 
@@ -317,13 +317,13 @@ class TestGetProductImageUrlsSecurityFilters:
         keys = [img["key"] for img in body["images"]]
         urls = [img["url"] for img in body["images"]]
         # Only the well-formed entry is signed
-        assert keys == [f"orgs/{TEST_TENANT_ID}/vehicles/ok.jpg"], (
-            f"Malformed URL was not dropped; got: {keys!r}"
-        )
+        assert keys == [
+            f"orgs/{TEST_TENANT_ID}/vehicles/ok.jpg"
+        ], f"Malformed URL was not dropped; got: {keys!r}"
         # No external URL is echoed
-        assert not any("attacker.example.com" in u for u in urls), (
-            f"Attacker URL leaked into response: {urls!r}"
-        )
+        assert not any(
+            "attacker.example.com" in u for u in urls
+        ), f"Attacker URL leaked into response: {urls!r}"
         # Signer called exactly once (only the well-formed key)
         assert spaces.generate_download_url.await_count == 1
 
@@ -392,9 +392,9 @@ class TestGetProductImageUrlsStripsQueryString:
         assert len(body["images"]) == 1, f"Expected 1 normalized image, got: {body['images']!r}"
         signed = body["images"][0]
         # The returned key MUST be the bare storage key (no query string).
-        assert signed["key"] == key, (
-            f"Query string was not stripped from the key: {signed['key']!r}"
-        )
+        assert (
+            signed["key"] == key
+        ), f"Query string was not stripped from the key: {signed['key']!r}"
         # And the signer was called with the bare key, not the corrupted one.
         spaces.generate_download_url.assert_awaited_once_with(key)
 
@@ -426,9 +426,9 @@ class TestGetProductImageUrlsStripsQueryString:
         body = response.json()
         assert len(body["images"]) == 1
         signed = body["images"][0]
-        assert signed["key"] == key, (
-            f"Query string was not stripped from attributes URL: {signed['key']!r}"
-        )
+        assert (
+            signed["key"] == key
+        ), f"Query string was not stripped from attributes URL: {signed['key']!r}"
         spaces.generate_download_url.assert_awaited_once_with(key)
 
     @pytest.mark.asyncio
@@ -457,9 +457,10 @@ class TestGetProductImageUrlsStripsQueryString:
         assert response.status_code == status.HTTP_200_OK
         body = response.json()
         keys = [img["key"] for img in body["images"]]
-        assert keys == [clean_key, corrupt_key], (
-            f"Both URLs must end up as bare keys; got: {keys!r}"
-        )
+        assert keys == [
+            clean_key,
+            corrupt_key,
+        ], f"Both URLs must end up as bare keys; got: {keys!r}"
         # The signer must have been called with bare keys, never with
         # `?X-Amz-...` suffixes.
         called_keys = [c.args[0] for c in spaces.generate_download_url.await_args_list]
@@ -496,9 +497,9 @@ class TestGetProductImageUrlsAcceptsBareKeys:
 
         assert response.status_code == status.HTTP_200_OK, response.text
         body = response.json()
-        assert len(body["images"]) == 1, (
-            f"Bare key was not signed (regression); got: {body['images']!r}"
-        )
+        assert (
+            len(body["images"]) == 1
+        ), f"Bare key was not signed (regression); got: {body['images']!r}"
         signed = body["images"][0]
         assert signed["key"] == key
         assert "X-Amz-Signature=" in signed["url"]
@@ -567,8 +568,8 @@ class TestGetProductImageUrlsAcceptsBareKeys:
         assert response.status_code == status.HTTP_200_OK
         body = response.json()
         keys = [img["key"] for img in body["images"]]
-        assert keys == [f"orgs/{TEST_TENANT_ID}/vehicles/mine.jpg"], (
-            f"Cross-tenant bare key leaked; got: {keys!r}"
-        )
+        assert keys == [
+            f"orgs/{TEST_TENANT_ID}/vehicles/mine.jpg"
+        ], f"Cross-tenant bare key leaked; got: {keys!r}"
         # Signer called exactly once — only the caller's tenant key.
         assert spaces.generate_download_url.await_count == 1

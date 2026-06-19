@@ -128,9 +128,10 @@ class TestListProductsReturnsBareKeys:
         assert "products" in body
         assert len(body["products"]) == 1
         returned_urls = body["products"][0]["image_urls"]
-        assert returned_urls == [BARE_KEY_1, BARE_KEY_2], (
-            f"List should return bare keys verbatim, got: {returned_urls!r}"
-        )
+        assert returned_urls == [
+            BARE_KEY_1,
+            BARE_KEY_2,
+        ], f"List should return bare keys verbatim, got: {returned_urls!r}"
         for url in returned_urls:
             _assert_bare_key(url)
 
@@ -159,9 +160,10 @@ class TestGetProductReturnsBareKeys:
         assert response.status_code == status.HTTP_200_OK
         body = response.json()
         returned_urls = body["image_urls"]
-        assert returned_urls == [BARE_KEY_1, BARE_KEY_2], (
-            f"Detail should return bare keys verbatim, got: {returned_urls!r}"
-        )
+        assert returned_urls == [
+            BARE_KEY_1,
+            BARE_KEY_2,
+        ], f"Detail should return bare keys verbatim, got: {returned_urls!r}"
         for url in returned_urls:
             _assert_bare_key(url)
 

@@ -112,9 +112,9 @@ class TestMigrationChainIntegrity:
     def test_each_migration_has_unique_revision(self, migration_graph: dict) -> None:
         """No two migrations may share the same `revision` ID."""
         revisions = list(migration_graph.keys())
-        assert len(revisions) == len(set(revisions)), (
-            f"Duplicate revision IDs detected. Revisions: {sorted(revisions)}"
-        )
+        assert len(revisions) == len(
+            set(revisions)
+        ), f"Duplicate revision IDs detected. Revisions: {sorted(revisions)}"
 
     def test_every_down_revision_resolves_to_existing_migration(
         self, migration_graph: dict

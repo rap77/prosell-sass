@@ -90,9 +90,9 @@ class TestRoundRobinState:
             thread.join()
 
         # Verify all indices are within valid range
-        assert all(0 <= idx < dealer_count for idx in results), (
-            "All indices should be within valid range"
-        )
+        assert all(
+            0 <= idx < dealer_count for idx in results
+        ), "All indices should be within valid range"
 
         # Verify we got a reasonable distribution (not all the same)
         unique_indices = set(results)
@@ -124,9 +124,9 @@ class TestAssignmentRule:
         high_rule = HighPriorityRule()
         low_rule = LowPriorityRule()
 
-        assert high_rule.priority < low_rule.priority, (
-            "High priority should have lower numeric value"
-        )
+        assert (
+            high_rule.priority < low_rule.priority
+        ), "High priority should have lower numeric value"
 
     def test_rule_score_method_must_be_implemented(self):
         """Test that custom rules must implement score()."""
@@ -210,9 +210,9 @@ class TestRoundRobinAssignmentRule:
         from collections import Counter
 
         counts = Counter(assigned_dealers)
-        assert all(count == 2 for count in counts.values()), (
-            "Each dealer should get exactly 2 leads in 2 full cycles"
-        )
+        assert all(
+            count == 2 for count in counts.values()
+        ), "Each dealer should get exactly 2 leads in 2 full cycles"
 
 
 class TestVehicleOwnerAssignmentRule:
@@ -573,9 +573,9 @@ class TestLeadAssignmentRulesEngine:
         )
 
         assert result.assigned_to is not None
-        assert result.assigned_to.user_id == free_dealer.user_id, (
-            "Should assign to dealer with fewer leads"
-        )
+        assert (
+            result.assigned_to.user_id == free_dealer.user_id
+        ), "Should assign to dealer with fewer leads"
 
     def test_assign_lead_geographic_proximity_strategy(self):
         """Test lead assignment with geographic-proximity strategy."""
@@ -616,9 +616,9 @@ class TestLeadAssignmentRulesEngine:
         )
 
         assert result.assigned_to is not None
-        assert result.assigned_to.user_id == nyc_dealer.user_id, (
-            "Should assign to geographically closest dealer"
-        )
+        assert (
+            result.assigned_to.user_id == nyc_dealer.user_id
+        ), "Should assign to geographically closest dealer"
 
     def test_assign_lead_empty_candidates(self):
         """Test that empty candidates list returns no assignment."""

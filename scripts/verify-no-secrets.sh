@@ -140,7 +140,10 @@ PATTERNS=(
     'SG\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}::SendGrid API key'
 
     # ----- Resend -----
-    're_[A-Za-z0-9_]{20,}::Resend API key'
+    # Word-boundary anchor (`\b`) prevents matching `re_` substrings buried
+    # inside identifiers like `test_rbac_middleware_allows_matching_role`
+    # (would otherwise match as `re_allows_matching_role`).
+    '\bre_[A-Za-z0-9_]{20,}::Resend API key'
 
     # ----- Google OAuth -----
     'GOCSPX-[A-Za-z0-9_-]{20,}::Google OAuth client secret'
