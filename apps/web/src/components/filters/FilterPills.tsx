@@ -33,8 +33,7 @@ interface FilterPillsProps {
 }
 
 export function FilterPills({ fields = [] }: FilterPillsProps) {
-  const { values, setFilter, setFilters, clearAll } =
-    useCatalogFilters(fields);
+  const { values, setFilter, setFilters, clearAll } = useCatalogFilters(fields);
 
   const pills: Pill[] = [];
 

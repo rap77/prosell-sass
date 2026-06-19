@@ -20,7 +20,9 @@ describe("useCatalogFilters", () => {
       useCatalogFilters([{ key: "make", filter_type: "select" }]),
     );
     act(() => result.current.setFilter("make", ["Toyota", "Honda"]));
-    expect(mockPush).toHaveBeenCalledWith("?make=Toyota%2CHonda", { scroll: false });
+    expect(mockPush).toHaveBeenCalledWith("?make=Toyota%2CHonda", {
+      scroll: false,
+    });
   });
 
   it("reads range bounds from <key>_min/<key>_max", () => {
@@ -58,9 +60,8 @@ describe("useCatalogFilters", () => {
     // The second push is built from the same stale searchParams as the
     // first, so it silently drops the year_min update — this is why
     // multi-key updates (e.g. a range slider) must use setFilters instead.
-    expect(mockPush).toHaveBeenLastCalledWith(
-      "?year_min=2010&year_max=2025",
-      { scroll: false },
-    );
+    expect(mockPush).toHaveBeenLastCalledWith("?year_min=2010&year_max=2025", {
+      scroll: false,
+    });
   });
 });
