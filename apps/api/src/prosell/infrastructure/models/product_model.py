@@ -65,7 +65,7 @@ class ProductModel(Base):
     # `20260606_0000-add_cover_image_key_to_product.py`.
     image_urls: Mapped[list[str] | None] = mapped_column(
         JSONB,
-        default=[],
+        default=list,
         nullable=True,
     )
     cover_image_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -77,6 +77,11 @@ class ProductModel(Base):
 
     # Visibility and search
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    # Subsystem D: marketplace visibility flag. Toggled by users with
+    # `MARKETPLACE_PUBLISH` permission; default False (opt-in).
+    published_to_marketplace: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, index=True
+    )
     view_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     favorite_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
