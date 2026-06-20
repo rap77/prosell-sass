@@ -27,12 +27,12 @@
 
 ## Phase 4: Backend admin endpoints
 
-- [ ] 4.1 Create `apps/api/src/prosell/infrastructure/api/routers/admin_dealers_router.py` skeleton
-- [ ] 4.2 RED: test `GET /admin/dealers` returns orgs list (200) for admin, 403 for seller
-- [ ] 4.3 GREEN: implement `list_dealers` reusing `OrganizationRepository`
-- [ ] 4.4 RED: test `GET /admin/dealers/{id}/products` returns dealer's products (200), 404 for unknown id
-- [ ] 4.5 GREEN: implement `list_dealer_products` reusing `product_repo.get_all(organization_id={id})`
-- [ ] 4.6 Register new router in `apps/api/src/prosell/infrastructure/api/main.py`
+- [x] 4.1 Create `apps/api/src/prosell/infrastructure/api/routers/admin_dealers_router.py` skeleton
+- [x] 4.2 RED: test `GET /admin/dealers` returns orgs list (200) for admin, 403 for seller
+- [x] 4.3 GREEN: implement `list_dealers` reusing `OrganizationRepository`
+- [x] 4.4 RED: test `GET /admin/dealers/{id}/products` returns dealer's products (200), 404 for unknown id
+- [x] 4.5 GREEN: implement `list_dealer_products` reusing `product_repo.get_all(organization_id={id})`
+- [x] 4.6 Register new router in `apps/api/src/prosell/infrastructure/api/main.py`
 
 ## Phase 5: Frontend foundation (useAuth + Sidebar + store)
 
