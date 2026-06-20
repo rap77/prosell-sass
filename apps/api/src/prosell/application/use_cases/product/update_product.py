@@ -97,6 +97,8 @@ class UpdateProductUseCase:
             product.location_state = request.location_state
         if request.location_zip is not None:
             product.location_zip = request.location_zip
+        if request.published_to_marketplace is not None:
+            product.published_to_marketplace = request.published_to_marketplace
 
         # Recompose the title from the category's presentation template when
         # it declares one; otherwise keep the current title (the request's

@@ -48,6 +48,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             location_state=product.location_state,
             location_zip=product.location_zip,
             is_featured=product.is_featured,
+            published_to_marketplace=product.published_to_marketplace,
             view_count=product.view_count,
             favorite_count=product.favorite_count,
             submitted_for_approval_at=product.submitted_for_approval_at,
@@ -281,6 +282,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model.location_state = product.location_state
         model.location_zip = product.location_zip
         model.is_featured = product.is_featured
+        model.published_to_marketplace = product.published_to_marketplace
         model.view_count = product.view_count
         model.favorite_count = product.favorite_count
         model.submitted_for_approval_at = product.submitted_for_approval_at

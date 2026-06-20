@@ -21,9 +21,9 @@
 
 ## Phase 3: Backend marketplace flag
 
-- [ ] 3.1 RED: test vendor with `MARKETPLACE_PUBLISH` can PATCH `published_to_marketplace=true` on any product
-- [ ] 3.2 GREEN: gate the field on the permission; ignore if user lacks it
-- [ ] 3.3 RED: test seller WITHOUT `MARKETPLACE_PUBLISH` cannot toggle (403)
+- [x] 3.1 RED: test vendor with `MARKETPLACE_PUBLISH` can PATCH `published_to_marketplace=true` on any product
+- [x] 3.2 GREEN: gate the field on the permission (403 if user lacks it)
+- [x] 3.3 RED: test seller WITHOUT `MARKETPLACE_PUBLISH` cannot toggle (403)
 
 ## Phase 4: Backend admin endpoints
 

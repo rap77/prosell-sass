@@ -605,6 +605,16 @@ async def update_product(
     if request.image_urls is not None:
         validate_image_urls_for_tenant(request.image_urls, tenant_id)
 
+    # Gate `published_to_marketplace` behind MARKETPLACE_PUBLISH. Checked at
+    # the router boundary (depends on the auth context, not the entity).
+    if request.published_to_marketplace is not None and not _user_has_permission(
+        current_user, Permission.MARKETPLACE_PUBLISH
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User lacks permission to publish products to the marketplace",
+        )
+
     # All field application, the cover cross-field checks, and server-side
     # title recomposition live in the use case (it needs both the product
     # AND the category loaded — see UpdateProductUseCase).
