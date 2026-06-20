@@ -65,15 +65,14 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         await self.session.flush()
         return self._to_entity(model)
 
-    async def get_by_id(self, product_id: UUID, tenant_id: UUID) -> Product | None:
-        """Get product by ID with optional tenant isolation.
+    async def get_by_id(self, product_id: UUID, tenant_id: UUID | None) -> Product | None:
+        """Get product by ID, optionally with tenant isolation.
 
-        When tenant_id == UUID(int=0), the tenant filter is skipped.
-        This is used by internal use cases (e.g. CreateVehicleUseCase) that
-        reference a product by ID without tenant context.
+        tenant_id=None skips the tenant filter entirely — only internal
+        callers without a tenant context should pass None.
         """
         stmt = select(ProductModel).where(ProductModel.id == product_id)
-        if tenant_id != UUID(int=0):
+        if tenant_id is not None:
             stmt = stmt.where(ProductModel.tenant_id == tenant_id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()

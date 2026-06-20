@@ -27,13 +27,15 @@ class AbstractProductRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_id(self, product_id: UUID, tenant_id: UUID) -> Product | None:
+    async def get_by_id(self, product_id: UUID, tenant_id: UUID | None) -> Product | None:
         """
-        Get product by ID (with tenant isolation).
+        Get product by ID, optionally with tenant isolation.
 
         Args:
             product_id: Product UUID
-            tenant_id: Tenant UUID for isolation
+            tenant_id: Tenant UUID for isolation. None skips the tenant
+                filter entirely — only internal callers without a tenant
+                context should pass None.
 
         Returns:
             Product entity or None if not found

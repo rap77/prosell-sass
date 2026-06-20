@@ -56,8 +56,6 @@ from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.exceptions.product_exceptions import ProductNotFoundError
-from prosell.domain.repositories.category_repository import AbstractCategoryRepository
-from prosell.domain.repositories.product_repository import AbstractProductRepository
 from prosell.domain.services.csv_product_parser import CSVProductParser
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
@@ -159,16 +157,6 @@ def validate_image_urls_for_tenant(
                     f"image_urls entry is not under the caller's tenant ({tenant_id}): {url!r}"
                 ),
             )
-
-
-async def get_product_repository(session: AsyncSession) -> AbstractProductRepository:
-    """Get product repository instance."""
-    return SqlAlchemyProductRepository(session)
-
-
-async def get_category_repository(session: AsyncSession) -> AbstractCategoryRepository:
-    """Get category repository instance."""
-    return SqlAlchemyCategoryRepository(session)
 
 
 def _merged_image_url_candidates(product: Product) -> list[str]:
@@ -819,7 +807,7 @@ async def mark_product_sold(
     return ProductResponse.from_entity(product)
 
 
-@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{product_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
     product_id: UUID,
     current_user: CurrentUser,

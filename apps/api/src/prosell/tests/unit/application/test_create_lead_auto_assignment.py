@@ -293,7 +293,7 @@ class StubProductRepository(AbstractProductRepository):
         self.products[product.id] = product
         return product
 
-    async def get_by_id(self, product_id: UUID, tenant_id: UUID) -> Product | None:
+    async def get_by_id(self, product_id: UUID, tenant_id: UUID | None) -> Product | None:
         del tenant_id
         return self.products.get(product_id)
 
