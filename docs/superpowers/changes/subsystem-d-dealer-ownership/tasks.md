@@ -45,16 +45,32 @@
 
 ## Phase 6: Frontend admin components
 
-- [ ] 6.1 Create `lib/api/dealers.ts` + Zod schemas in `lib/api/schemas/dealers.ts`
-- [ ] 6.2 RED: test `<DealerPicker>` renders for admin only; onChange updates store
-- [ ] 6.3 GREEN: create `components/admin/DealerPicker.tsx` consuming store
-- [ ] 6.4 Wire `<DealerPicker>` into `Header.tsx` (conditional on `isAdmin`)
-- [ ] 6.5 RED: test `app/(admin)/dealers/page.tsx` renders list + redirects non-admin
-- [ ] 6.6 GREEN: create list page; uses `GET /admin/dealers`
-- [ ] 6.7 RED: test detail page `[id]/page.tsx` shows dealer + link to products
-- [ ] 6.8 GREEN: create detail page
-- [ ] 6.9 RED: test products page renders dealer's products
-- [ ] 6.10 GREEN: create products page using `GET /admin/dealers/{id}/products`
+- [x] 6.1 Create `lib/api/dealers.ts` + Zod schemas in `lib/api/schemas/dealers.ts`
+- [x] 6.2 RED: test `<DealerPicker>` renders for admin only; onChange updates store
+- [x] 6.3 GREEN: create `components/admin/DealerPicker.tsx` consuming store
+- [x] 6.4 Wire `<DealerPicker>` into `Header.tsx` (conditional on `isAdmin`)
+- [x] 6.5 RED: test `app/(admin)/admin/dealers/page.tsx` renders list + redirects non-admin
+- [x] 6.6 GREEN: create list page; uses `GET /admin/dealers`
+- [x] 6.7 RED: test detail page `[id]/page.tsx` shows dealer + link to products
+- [x] 6.8 GREEN: create detail page
+- [x] 6.9 RED: test products page renders dealer's products
+- [x] 6.10 GREEN: create products page using `GET /admin/dealers/{id}/products`
+
+Deviations from the original plan:
+- Pages live under the literal `/admin/dealers` URL (`app/(admin)/admin/dealers/...`),
+  not `app/(admin)/dealers/...` — activates the (previously dead/untested)
+  `/admin` prefix branch in `proxy.ts`. That branch had a real bug fixed as
+  part of this phase: it excluded `super_admin`, only allowing the exact
+  `"admin"` role, even though both roles carry `DEALER_ADMIN_VIEW_ALL` on
+  the backend. Added regression tests in `tests/proxy.test.ts`.
+- `[id]` pages use `useParams()` instead of `params: Promise<...>` + `use()`
+  — these pages are 100% client-rendered via React Query, so there's no
+  server-streaming benefit, and `use()` on a pending promise needs a
+  Suspense boundary to resolve in jsdom tests (none of this repo's other
+  `[id]/page.tsx` files have test coverage to validate that pattern works).
+- No dedicated `GET /admin/dealers/{id}` endpoint exists (Phase 4 only
+  built list + list-products) — `useDealer(id)` finds the dealer
+  client-side from the already-fetched `useDealers()` list instead.
 
 ## Phase 7: Verify
 

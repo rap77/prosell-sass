@@ -39,8 +39,9 @@ const matchRoute = (() => {
   return (pathname: string, route: string): boolean => {
     // Check cache first
     const cacheKey = `${pathname}-${route}`;
-    if (cache.routeMatcher.has(cacheKey)) {
-      return cache.routeMatcher.get(cacheKey) as boolean;
+    const cached = cache.routeMatcher.get(cacheKey);
+    if (cached !== undefined) {
+      return cached;
     }
 
     // Check exact match first (faster)
@@ -163,6 +164,14 @@ export default async function middleware(req: NextRequest) {
     is_2fa_enabled: boolean;
   };
 
+  // Runtime guard before trusting cookie-derived data — this value drives
+  // the role-based route gating below. Not the real security boundary
+  // (the backend re-checks every permission against the signed JWT in
+  // access_token), but the cast must not be unconditional either.
+  function isUserData(value: unknown): value is UserData {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+
   let userData: UserData | null = null;
   try {
     let raw = userDataCookie ?? "";
@@ -172,7 +181,8 @@ export default async function middleware(req: NextRequest) {
       raw = raw.slice(1, -1);
     }
     const decoded = raw ? decodeURIComponent(raw) : null;
-    userData = decoded ? (memoizedJsonParse(decoded) as UserData | null) : null;
+    const parsed = decoded ? memoizedJsonParse(decoded) : null;
+    userData = isUserData(parsed) ? parsed : null;
   } catch {
     userData = null;
   }
@@ -225,15 +235,21 @@ export default async function middleware(req: NextRequest) {
 
   // 8. Role-based route protection (Zero Trust on Edge)
   if (isAuthenticated && userData) {
-    // Admin routes - only admin role can access
-    if (pathname.startsWith("/admin") && userData.role !== "admin") {
+    const isSuperAdmin = userData.role === "super_admin";
+
+    // Admin routes - admin/super_admin roles can access (both carry
+    // DEALER_ADMIN_VIEW_ALL on the backend — see role.py ROLE_PERMISSIONS)
+    if (
+      pathname.startsWith("/admin") &&
+      userData.role !== "admin" &&
+      !isSuperAdmin
+    ) {
       const url = req.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
 
     // Branch routes - only branch/super_admin role can access
-    const isSuperAdmin = userData.role === "super_admin";
     if (
       pathname.startsWith("/branch") &&
       userData.role !== "branch" &&

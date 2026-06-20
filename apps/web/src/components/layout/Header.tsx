@@ -28,6 +28,7 @@ import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
 import { TeamSwitcher } from "@/components/teams/TeamSwitcher";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { DealerPicker } from "@/components/admin/DealerPicker";
 
 /**
  * Props for Header component.
@@ -62,7 +63,7 @@ interface HeaderProps {
 export function Header({ user, organization, tenantId }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout, user: authUser } = useAuth();
+  const { logout, user: authUser, isAdmin } = useAuth();
   const breadcrumbOverrides = useBreadcrumbStore((state) => state.labels);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -198,29 +199,34 @@ export function Header({ user, organization, tenantId }: HeaderProps) {
           </div>
         </div>
 
-        {/* Org switcher placeholder */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              <Building2 className="h-4 w-4" />
-              <span className="hidden md:inline">{orgData.name}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Organizations</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Building2 className="mr-2 h-4 w-4" />
-              <span>{orgData.name}</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>
-              <span className="text-xs text-muted-foreground">
-                Multi-brancheship coming in Phase 5
-              </span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Admins get the cross-dealer DealerPicker (Subsystem D); everyone
+            else keeps the single-org switcher placeholder. */}
+        {isAdmin ? (
+          <DealerPicker />
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                <span className="hidden md:inline">{orgData.name}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Building2 className="mr-2 h-4 w-4" />
+                <span>{orgData.name}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled>
+                <span className="text-xs text-muted-foreground">
+                  Multi-brancheship coming in Phase 5
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
         {/* Team switcher */}
         {organization?.id && tenantId && (
