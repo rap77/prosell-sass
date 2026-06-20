@@ -21,6 +21,8 @@ import {
   UpdateOrganizationRequest,
 } from "@/lib/api/orgApi";
 import { logger } from "@/lib/logger";
+import { useAuthStore } from "@/stores/authStore";
+import { Permission, getPermissionsForRole } from "@/lib/auth/permissions";
 
 // ============================================
 // TYPES
@@ -52,6 +54,9 @@ export interface OrganizationState {
     page: number;
     page_size: number;
   } | null;
+  // The dealer an admin is currently "viewing as" (Subsystem D DealerPicker).
+  // null means "viewing my own organization" — the default for everyone.
+  viewingOrgId: string | null;
 
   // Actions
   fetchOrganizations: (params?: OrganizationListParams) => Promise<void>;
@@ -72,6 +77,10 @@ export interface OrganizationState {
   ) => Promise<void>;
   suspendOrganization: (id: string) => Promise<void>;
   setCurrentOrg: (org: Organization | null) => void;
+  // Guarded setter: no-op when the current user lacks
+  // Permission.DEALER_ADMIN_VIEW_ALL (checked against the live authStore
+  // user, not a prop — callers can't bypass the guard by omitting a check).
+  setViewingOrgId: (orgId: string | null) => void;
   clearError: () => void;
   reset: () => void;
 }
@@ -89,6 +98,7 @@ export const useOrganizationStore = create<OrganizationState>()(
       isLoading: false,
       error: null,
       pagination: null,
+      viewingOrgId: null,
 
       // Fetch organizations list
       fetchOrganizations: async (params) => {
@@ -352,6 +362,16 @@ export const useOrganizationStore = create<OrganizationState>()(
         set({ currentOrg: org });
       },
 
+      // Set the dealer being "viewed as" — no-op without DEALER_ADMIN_VIEW_ALL
+      setViewingOrgId: (orgId) => {
+        const role = useAuthStore.getState().user?.role ?? null;
+        const permissions = getPermissionsForRole(role);
+        if (!permissions.includes(Permission.DEALER_ADMIN_VIEW_ALL)) {
+          return;
+        }
+        set({ viewingOrgId: orgId });
+      },
+
       // Clear error
       clearError: () => {
         set({ error: null });
@@ -365,6 +385,7 @@ export const useOrganizationStore = create<OrganizationState>()(
           isLoading: false,
           error: null,
           pagination: null,
+          viewingOrgId: null,
         });
       },
     }),

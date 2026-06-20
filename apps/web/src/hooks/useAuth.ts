@@ -18,6 +18,7 @@
  */
 import { useAuthStore } from "@/stores/authStore";
 import type { User, AuthError } from "@/stores/authStore";
+import { Permission, getPermissionsForRole } from "@/lib/auth/permissions";
 
 /**
  * Return type for the useAuth hook
@@ -75,6 +76,18 @@ export interface UseAuthReturn {
 
   /** Convenience: Whether 2FA is enabled for this user */
   is2FAEnabled: boolean;
+
+  /** Permissions granted to the user's role (mirrors backend ROLE_PERMISSIONS) */
+  permissions: Permission[];
+
+  /** Convenience: role is "admin" or "super_admin" */
+  isAdmin: boolean;
+
+  /** Convenience: role is exactly "super_admin" */
+  isSuperAdmin: boolean;
+
+  /** Whether the user's role grants the given permission */
+  hasPermission: (permission: Permission) => boolean;
 }
 
 /**
@@ -126,6 +139,12 @@ export function useAuth(): UseAuthReturn {
   const isEmailVerified = user?.is_email_verified ?? false;
   const is2FAEnabled = user?.is_2fa_enabled ?? false;
 
+  const permissions = getPermissionsForRole(userRole);
+  const isSuperAdmin = userRole === "super_admin";
+  const isAdmin = isSuperAdmin || userRole === "admin";
+  const hasPermission = (permission: Permission) =>
+    permissions.includes(permission);
+
   return {
     // State
     user,
@@ -147,5 +166,9 @@ export function useAuth(): UseAuthReturn {
     userRole,
     isEmailVerified,
     is2FAEnabled,
+    permissions,
+    isAdmin,
+    isSuperAdmin,
+    hasPermission,
   };
 }

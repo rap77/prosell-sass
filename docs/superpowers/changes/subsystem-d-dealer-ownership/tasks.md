@@ -36,12 +36,12 @@
 
 ## Phase 5: Frontend foundation (useAuth + Sidebar + store)
 
-- [ ] 5.1 RED: test `useAuth().isAdmin` true for ADMIN role, false for SALES_USER
-- [ ] 5.2 GREEN: add `permissions: Permission[]`, `isAdmin`, `isSuperAdmin`, `hasPermission()` to `useAuth.ts`
-- [ ] 5.3 RED: test `Sidebar` excludes `dealers` group when user lacks `DEALER_ADMIN_VIEW_ALL`
-- [ ] 5.4 GREEN: filter `groups` by `hasPermission` in `Sidebar.tsx`
-- [ ] 5.5 RED: test `organizationStore.viewingOrgId` setter is no-op for non-admin
-- [ ] 5.6 GREEN: add `viewingOrgId` + guarded setter to `organizationStore.ts`
+- [x] 5.1 RED: test `useAuth().isAdmin` true for ADMIN role, false for SALES_USER
+- [x] 5.2 GREEN: add `permissions: Permission[]`, `isAdmin`, `isSuperAdmin`, `hasPermission()` to `useAuth.ts`
+- [x] 5.3 RED: test `Sidebar` excludes `concesionarios` group when user lacks `DEALER_ADMIN_VIEW_ALL`
+- [x] 5.4 GREEN: filter `groups` by `hasPermission` in `Sidebar.tsx`
+- [x] 5.5 RED: test `organizationStore.viewingOrgId` setter is no-op for non-admin
+- [x] 5.6 GREEN: add `viewingOrgId` + guarded setter to `organizationStore.ts`
 
 ## Phase 6: Frontend admin components
 

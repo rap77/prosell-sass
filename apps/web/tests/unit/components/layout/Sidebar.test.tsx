@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { useAuth } from "@/hooks/useAuth";
+import { Permission } from "@/lib/auth/permissions";
 
 // Mock Next.js usePathname
 vi.mock("next/navigation", () => ({
@@ -19,6 +21,7 @@ vi.mock("@/hooks/useAuth", () => ({
     },
     isAuthenticated: false,
     isLoading: false,
+    hasPermission: vi.fn(() => false),
   })),
 }));
 
@@ -123,5 +126,56 @@ describe("Sidebar", () => {
     expect(
       screen.getByRole("complementary", { name: /^sidebar$/i }),
     ).toBeInTheDocument();
+  });
+
+  describe("Subsystem D Phase 5.3 — concesionarios group permission gate", () => {
+    it("shows Concesionarios when the user has DEALER_ADMIN_VIEW_ALL", () => {
+      vi.mocked(useAuth).mockReturnValue({
+        user: {
+          id: "1",
+          email: "admin@example.com",
+          first_name: "Admin",
+          last_name: "User",
+          role: "admin",
+        },
+        isAuthenticated: true,
+        isLoading: false,
+        hasPermission: vi.fn(
+          (permission: Permission) =>
+            permission === Permission.DEALER_ADMIN_VIEW_ALL,
+        ),
+      } as unknown as ReturnType<typeof useAuth>);
+
+      render(
+        <Sidebar
+          groups={["general", "inventario", "ventas", "concesionarios"]}
+        />,
+      );
+
+      expect(screen.getAllByText("Concesionarios").length).toBeGreaterThan(0);
+    });
+
+    it("excludes Concesionarios when the user lacks DEALER_ADMIN_VIEW_ALL, even if the group is requested", () => {
+      vi.mocked(useAuth).mockReturnValue({
+        user: {
+          id: "1",
+          email: "seller@example.com",
+          first_name: "Seller",
+          last_name: "User",
+          role: "sales_user",
+        },
+        isAuthenticated: true,
+        isLoading: false,
+        hasPermission: vi.fn(() => false),
+      } as unknown as ReturnType<typeof useAuth>);
+
+      render(
+        <Sidebar
+          groups={["general", "inventario", "ventas", "concesionarios"]}
+        />,
+      );
+
+      expect(screen.queryByText("Concesionarios")).not.toBeInTheDocument();
+    });
   });
 });
