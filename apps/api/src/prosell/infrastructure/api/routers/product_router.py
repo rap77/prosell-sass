@@ -1,5 +1,6 @@
 """Product router."""
 
+from typing import Annotated
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -24,6 +25,7 @@ from prosell.application.dto.product import (
     ProductImageUrlResponse,
     ProductImageUrlsResponse,
     ProductResponse,
+    RejectProductRequest,
     UpdateProductRequest,
     VehicleImportRowResponse,
 )
@@ -50,6 +52,7 @@ from prosell.application.use_cases.product.list_products import (
 )
 from prosell.application.use_cases.product.update_product import UpdateProductUseCase
 from prosell.domain.entities.product import Product
+from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.exceptions.product_exceptions import ProductNotFoundError
@@ -73,6 +76,17 @@ from prosell.infrastructure.repositories.product_repository_impl import (
 )
 
 router = APIRouter()
+
+CurrentUser = Annotated[User, Depends(get_current_auth_user_from_cookie)]
+DbSession = Annotated[AsyncSession, Depends(get_async_session)]
+SpacesService = Annotated[IDOSpacesService, Depends(get_spaces_service)]
+
+
+def _user_has_permission(user: User, permission: Permission) -> bool:
+    """Non-blocking permission check — branches behavior, never raises."""
+    return any(
+        permission in ROLE_PERMISSIONS.get(role.role_type, set()) for role in user.roles or []
+    )
 
 
 def _extract_storage_key_from_value(value: str) -> str | None:
@@ -171,8 +185,8 @@ def _merged_image_url_candidates(product: Product) -> list[str]:
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     request: CreateProductRequest,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    db: DbSession,
 ) -> ProductResponse:
     """
     Create a new product.
@@ -211,9 +225,9 @@ async def create_product(
 
 @router.post("/bulk-upload", response_model=BulkUploadResult, status_code=status.HTTP_201_CREATED)
 async def bulk_upload_products(
+    current_user: CurrentUser,
+    db: DbSession,
     csv_file: UploadFile = File(..., description="CSV file with product data"),
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
 ) -> BulkUploadResult:
     """
     Bulk upload products from CSV file.
@@ -274,6 +288,8 @@ async def bulk_upload_products(
 @router.get("", response_model=ProductListResponse)
 async def list_products(
     request: Request,
+    current_user: CurrentUser,
+    db: DbSession,
     organization_id: UUID | None = None,
     category_id: UUID | None = None,
     product_status: str | None = Query(default=None, alias="status"),
@@ -284,8 +300,6 @@ async def list_products(
     max_price: int | None = None,
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
 ) -> ProductListResponse:
     """
     List products with optional filters.
@@ -308,6 +322,20 @@ async def list_products(
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    can_view_all_dealers = _user_has_permission(current_user, Permission.DEALER_ADMIN_VIEW_ALL)
+
+    if (
+        organization_id is not None
+        and not can_view_all_dealers
+        and organization_id != current_user.tenant_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot filter products by another dealer's organization_id",
+        )
+
+    effective_tenant = None if can_view_all_dealers else current_user.tenant_id
     tenant_id = current_user.tenant_id
 
     # Collect `attr.*` query params (strip prefix). Validation happens below
@@ -358,7 +386,7 @@ async def list_products(
     # image_urls are returned as bare storage keys. The browser fetches
     # signed URLs on demand from GET /api/v1/products/{id}/image-urls.
     return await use_case.execute(
-        tenant_id=tenant_id,
+        tenant_id=effective_tenant,
         organization_id=organization_id,
         category_id=category_id,
         status=product_status,
@@ -402,8 +430,8 @@ class CategoryFilterValuesResponse(BaseModel):
 )
 async def get_category_filter_values(
     category_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    db: DbSession,
 ) -> CategoryFilterValuesResponse:
     """Return DISTINCT values for `select` attributes without static `options`.
 
@@ -458,12 +486,29 @@ async def get_category_filter_values(
     return CategoryFilterValuesResponse(values=capped_values, truncated=truncated)
 
 
+@router.get("/featured", response_model=list[ProductResponse])
+async def get_featured_products(
+    current_user: CurrentUser,
+    db: DbSession,
+    limit: int = 10,
+) -> list[ProductResponse]:
+    """Get featured products."""
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id = current_user.tenant_id
+
+    repo = SqlAlchemyProductRepository(db)
+    products = await repo.get_featured(tenant_id, limit)
+
+    return [ProductResponse.from_entity(p) for p in products]
+
+
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(
     product_id: UUID,
+    current_user: CurrentUser,
+    db: DbSession,
     internal: bool = False,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
 ) -> ProductResponse:
     """Get a product by ID.
 
@@ -493,9 +538,9 @@ async def get_product(
 @router.get("/{product_id}/image-urls", response_model=ProductImageUrlsResponse)
 async def get_product_image_urls(
     product_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
-    spaces: IDOSpacesService = Depends(get_spaces_service),
+    current_user: CurrentUser,
+    db: DbSession,
+    spaces: SpacesService,
 ) -> ProductImageUrlsResponse:
     """Get signed URLs for product images.
 
@@ -553,8 +598,8 @@ async def get_product_image_urls(
 async def update_product(
     product_id: UUID,
     request: UpdateProductRequest,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    db: DbSession,
 ) -> ProductResponse:
     """
     Update a product.
@@ -590,8 +635,8 @@ async def update_product(
 @router.post("/{product_id}/submit", response_model=ProductResponse)
 async def submit_product_for_approval(
     product_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    db: DbSession,
 ) -> ProductResponse:
     """
     Submit product for approval.
@@ -617,8 +662,8 @@ async def submit_product_for_approval(
 @router.post("/{product_id}/approve", response_model=ProductResponse)
 async def approve_product(
     product_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    db: DbSession,
 ) -> ProductResponse:
     """
     Approve a product.
@@ -639,9 +684,9 @@ async def approve_product(
 @router.post("/{product_id}/reject", response_model=ProductResponse)
 async def reject_product(
     product_id: UUID,
-    reason: str,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    request: RejectProductRequest,
+    current_user: CurrentUser,
+    db: DbSession,
 ) -> ProductResponse:
     """
     Reject a product.
@@ -659,7 +704,7 @@ async def reject_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    product.reject(current_user.id, reason)
+    product.reject(current_user.id, request.reason)
     product = await repo.update(product)
 
     return ProductResponse.from_entity(product)
@@ -668,8 +713,8 @@ async def reject_product(
 @router.post("/{product_id}/publish", response_model=ProductResponse)
 async def publish_product(
     product_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    db: DbSession,
 ) -> ProductResponse:
     """
     Publish product directly (skip approval).
@@ -696,8 +741,8 @@ async def publish_product(
 @router.post("/{product_id}/pause", response_model=ProductResponse)
 async def pause_product(
     product_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    db: DbSession,
 ) -> ProductResponse:
     """
     Pause a published product.
@@ -723,8 +768,8 @@ async def pause_product(
 @router.post("/{product_id}/resume", response_model=ProductResponse)
 async def resume_product(
     product_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    db: DbSession,
 ) -> ProductResponse:
     """
     Resume a paused product.
@@ -750,8 +795,8 @@ async def resume_product(
 @router.post("/{product_id}/mark-sold", response_model=ProductResponse)
 async def mark_product_sold(
     product_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    db: DbSession,
 ) -> ProductResponse:
     """
     Mark product as sold.
@@ -777,8 +822,8 @@ async def mark_product_sold(
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
     product_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    db: DbSession,
 ) -> None:
     """
     Hard-delete a product and cascade to vehicle.
@@ -804,8 +849,8 @@ async def delete_product(
 @router.post("/{product_id}/archive", response_model=ProductResponse)
 async def archive_product(
     product_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    db: DbSession,
 ) -> ProductResponse:
     """
     Archive a product (soft delete).
@@ -828,27 +873,10 @@ async def archive_product(
     return ProductResponse.from_entity(product)
 
 
-@router.get("/featured", response_model=list[ProductResponse])
-async def get_featured_products(
-    limit: int = 10,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
-) -> list[ProductResponse]:
-    """Get featured products."""
-    if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
-
-    repo = SqlAlchemyProductRepository(db)
-    products = await repo.get_featured(tenant_id, limit)
-
-    return [ProductResponse.from_entity(p) for p in products]
-
-
 @router.post("/bulk-upload/preview", response_model=BulkUploadPreviewResponse)
 async def bulk_upload_preview(
+    current_user: CurrentUser,
     csv_file: UploadFile = File(..., description="CSV file (semicolon-delimited, client format)"),
-    current_user: User = Depends(get_current_auth_user_from_cookie),
 ) -> BulkUploadPreviewResponse:
     """
        Preview bulk upload — dry-run analysis of a client-format CSV.
@@ -897,12 +925,12 @@ async def bulk_upload_preview(
 
 @router.post("/bulk-upload/with-images", response_model=BulkUploadVehiclesResponse)
 async def bulk_upload_with_images(
+    current_user: CurrentUser,
+    db: DbSession,
     csv_file: UploadFile = File(..., description="CSV file (semicolon-delimited, client format)"),
     images_zip: UploadFile | None = File(None, description="Optional ZIP file with vehicle images"),
     organization_id: UUID = Form(..., description="Organization ID for the products"),
     category_id: UUID = Form(..., description="Category ID for vehicles"),
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
 ) -> BulkUploadVehiclesResponse:
     """
     Bulk upload vehicles from CSV with optional image ZIP.

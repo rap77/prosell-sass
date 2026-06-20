@@ -28,7 +28,7 @@ class ListProductsUseCase:
 
     async def execute(
         self,
-        tenant_id: UUID,
+        tenant_id: UUID | None,
         organization_id: UUID | None = None,
         category_id: UUID | None = None,
         status: str | None = None,

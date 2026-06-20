@@ -106,7 +106,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
     async def get_all(
         self,
-        tenant_id: UUID,
+        tenant_id: UUID | None,
         organization_id: UUID | None = None,
         category_id: UUID | None = None,
         status: ProductStatus | None = None,
@@ -121,8 +121,10 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         order_by: str = "created_at",
         order_desc: bool = True,
     ) -> list[Product]:
-        """Get products with optional filters."""
-        stmt = select(ProductModel).where(ProductModel.tenant_id == tenant_id)
+        """Get products with optional filters. tenant_id=None lifts tenant isolation."""
+        stmt = select(ProductModel)
+        if tenant_id is not None:
+            stmt = stmt.where(ProductModel.tenant_id == tenant_id)
 
         # Apply filters
         if organization_id is not None:
@@ -259,8 +261,6 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
     async def update(self, product: Product) -> Product:
         """Update an existing product."""
-        from datetime import datetime
-
         stmt = select(ProductModel).where(ProductModel.id == product.id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -317,14 +317,14 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
     async def count(
         self,
-        tenant_id: UUID,
+        tenant_id: UUID | None,
         organization_id: UUID | None = None,
         status: ProductStatus | None = None,
     ) -> int:
-        """Count products."""
-        stmt = select(func.count(ProductModel.id)).where(
-            ProductModel.tenant_id == tenant_id,
-        )
+        """Count products. tenant_id=None lifts tenant isolation."""
+        stmt = select(func.count(ProductModel.id))
+        if tenant_id is not None:
+            stmt = stmt.where(ProductModel.tenant_id == tenant_id)
 
         if organization_id is not None:
             stmt = stmt.where(ProductModel.organization_id == organization_id)
@@ -337,8 +337,6 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
     async def increment_view_count(self, product_id: UUID, tenant_id: UUID) -> None:
         """Increment product view count."""
-        from datetime import datetime
-
         stmt = select(ProductModel).where(
             ProductModel.id == product_id,
             ProductModel.tenant_id == tenant_id,
@@ -451,25 +449,37 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
-    async def set_primary_image(self, product_id: UUID, image_id: UUID, tenant_id: UUID) -> bool:  # noqa: ARG002
+    async def set_primary_image(self, product_id: UUID, image_id: UUID, tenant_id: UUID) -> bool:
         """
-        Set an image as primary for a product.
+        Set an image as primary for a product (tenant-isolated).
 
         Unsets is_primary on all other images before setting the new one.
+        `ProductImageModel` has no `tenant_id` column of its own, so every
+        query joins through `ProductModel` to enforce isolation.
         """
-        # First, verify the image belongs to the product
-        verify_stmt = select(ProductImageModel).where(
-            ProductImageModel.id == image_id,
-            ProductImageModel.product_id == product_id,
+        # First, verify the image belongs to the product AND the caller's tenant
+        verify_stmt = (
+            select(ProductImageModel)
+            .join(ProductModel, ProductModel.id == ProductImageModel.product_id)
+            .where(
+                ProductImageModel.id == image_id,
+                ProductImageModel.product_id == product_id,
+                ProductModel.tenant_id == tenant_id,
+            )
         )
         verify_result = await self.session.execute(verify_stmt)
         if not verify_result.scalar_one_or_none():
-            return False  # Image not found or doesn't belong to product
+            return False  # Image not found, doesn't belong to product, or wrong tenant
 
         # Unset is_primary on all images of this product
-        unset_stmt = select(ProductImageModel).where(
-            ProductImageModel.product_id == product_id,
-            ProductImageModel.is_primary.is_(True),
+        unset_stmt = (
+            select(ProductImageModel)
+            .join(ProductModel, ProductModel.id == ProductImageModel.product_id)
+            .where(
+                ProductImageModel.product_id == product_id,
+                ProductImageModel.is_primary.is_(True),
+                ProductModel.tenant_id == tenant_id,
+            )
         )
         unset_result = await self.session.execute(unset_stmt)
         images_to_unset = unset_result.scalars().all()
@@ -478,7 +488,14 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             img.is_primary = False
 
         # Set is_primary on the target image
-        set_stmt = select(ProductImageModel).where(ProductImageModel.id == image_id)
+        set_stmt = (
+            select(ProductImageModel)
+            .join(ProductModel, ProductModel.id == ProductImageModel.product_id)
+            .where(
+                ProductImageModel.id == image_id,
+                ProductModel.tenant_id == tenant_id,
+            )
+        )
         set_result = await self.session.execute(set_stmt)
         target_image = set_result.scalar_one_or_none()
 

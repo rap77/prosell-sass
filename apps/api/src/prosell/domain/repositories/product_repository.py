@@ -57,7 +57,7 @@ class AbstractProductRepository(ABC):
     @abstractmethod
     async def get_all(
         self,
-        tenant_id: UUID,
+        tenant_id: UUID | None,
         organization_id: UUID | None = None,
         category_id: UUID | None = None,
         status: ProductStatus | None = None,
@@ -76,7 +76,9 @@ class AbstractProductRepository(ABC):
         Get products with optional filters.
 
         Args:
-            tenant_id: Tenant UUID
+            tenant_id: Tenant UUID. None lifts tenant isolation entirely —
+                callers MUST only pass None for a user holding
+                Permission.DEALER_ADMIN_VIEW_ALL.
             organization_id: Filter by organization
             category_id: Filter by category
             status: Filter by status
@@ -194,7 +196,7 @@ class AbstractProductRepository(ABC):
     @abstractmethod
     async def count(
         self,
-        tenant_id: UUID,
+        tenant_id: UUID | None,
         organization_id: UUID | None = None,
         status: ProductStatus | None = None,
     ) -> int:
@@ -202,7 +204,7 @@ class AbstractProductRepository(ABC):
         Count products.
 
         Args:
-            tenant_id: Tenant UUID
+            tenant_id: Tenant UUID. None lifts tenant isolation (admin bypass).
             organization_id: Filter by organization
             status: Filter by status
 

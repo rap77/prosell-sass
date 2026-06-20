@@ -13,11 +13,11 @@
 
 ## Phase 2: Backend admin bypass (product_router)
 
-- [ ] 2.1 RED: test admin lists products → sees all dealers' (200, no tenant filter)
-- [ ] 2.2 GREEN: compute `effective_tenant = None if has_permission(DEALER_ADMIN_VIEW_ALL) else user.tenant_id`; pass to repo
-- [ ] 2.3 RED: test seller lists products → only own tenant (regression preserved)
-- [ ] 2.4 RED: test cross-tenant IDOR `?organization_id=other` → 403 for seller
-- [ ] 2.5 GREEN: accept optional `organization_id` query param; reject if user lacks `DEALER_ADMIN_VIEW_ALL` and id != user.tenant_id's org
+- [x] 2.1 RED: test admin lists products → sees all dealers' (200, no tenant filter)
+- [x] 2.2 GREEN: compute `effective_tenant = None if has_permission(DEALER_ADMIN_VIEW_ALL) else user.tenant_id`; pass to repo
+- [x] 2.3 RED: test seller lists products → only own tenant (regression preserved)
+- [x] 2.4 RED: test cross-tenant IDOR `?organization_id=other` → 403 for seller
+- [x] 2.5 GREEN: accept optional `organization_id` query param; reject if user lacks `DEALER_ADMIN_VIEW_ALL` and id != user.tenant_id's org
 
 ## Phase 3: Backend marketplace flag
 

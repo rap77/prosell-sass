@@ -324,7 +324,7 @@ class StubProductRepository(AbstractProductRepository):
 
     async def get_all(
         self,
-        tenant_id: UUID,
+        tenant_id: UUID | None,
         organization_id: UUID | None = None,
         category_id: UUID | None = None,
         status: ProductStatus | None = None,
@@ -406,7 +406,7 @@ class StubProductRepository(AbstractProductRepository):
 
     async def count(
         self,
-        tenant_id: UUID,
+        tenant_id: UUID | None,
         organization_id: UUID | None = None,
         status: ProductStatus | None = None,
     ) -> int:
