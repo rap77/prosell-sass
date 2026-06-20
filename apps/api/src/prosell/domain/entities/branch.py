@@ -5,9 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import Field
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field
 
 
 class Branch(DomainModel):
@@ -37,8 +35,8 @@ class Branch(DomainModel):
     settings: dict[str, object] = Field(default_factory=dict)
 
     # Audit fields
-    created_at: datetime = datetime.now(UTC)
-    updated_at: datetime = datetime.now(UTC)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @classmethod
     def create(
@@ -46,6 +44,9 @@ class Branch(DomainModel):
         name: str,
         tenant_id: UUID,
         slug: str | None = None,
+        # Generic passthrough for the remaining optional fields not listed
+        # above (location_*, timezone, settings, etc.) so this factory
+        # doesn't have to re-declare every field Pydantic validates.
         **kwargs: Any,
     ) -> "Branch":
         """

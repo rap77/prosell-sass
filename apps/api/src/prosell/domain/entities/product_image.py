@@ -1,12 +1,9 @@
 """Product image entity."""
 
 from datetime import UTC, datetime
-from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import Field
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field
 
 
 class ProductImage(DomainModel):
@@ -51,7 +48,11 @@ class ProductImage(DomainModel):
         url: str,
         storage_key: str | None = None,
         sort_order: int = 0,
-        **kwargs: Any,
+        alt_text: str | None = None,
+        width: int | None = None,
+        height: int | None = None,
+        file_size_bytes: int | None = None,
+        content_type: str | None = None,
     ) -> "ProductImage":
         """
         Factory method for new product image creation.
@@ -61,7 +62,11 @@ class ProductImage(DomainModel):
             url: Public URL of the image
             storage_key: Storage path/key (optional)
             sort_order: Display order
-            **kwargs: Additional optional fields
+            alt_text: Alt text for accessibility (optional)
+            width: Image width in pixels (optional)
+            height: Image height in pixels (optional)
+            file_size_bytes: File size for storage tracking (optional)
+            content_type: MIME type, e.g. "image/jpeg" (optional)
 
         Returns:
             New ProductImage entity
@@ -72,9 +77,13 @@ class ProductImage(DomainModel):
             url=url,
             storage_key=storage_key,
             sort_order=sort_order,
+            alt_text=alt_text,
+            width=width,
+            height=height,
+            file_size_bytes=file_size_bytes,
+            content_type=content_type,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
-            **kwargs,
         )
 
     def set_as_primary(self) -> None:

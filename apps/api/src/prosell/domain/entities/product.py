@@ -1,12 +1,9 @@
 """Product entity - Pure domain logic for products."""
 
 from datetime import UTC, datetime
-from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import Field
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field
 from prosell.domain.value_objects.product_condition import ProductCondition
 from prosell.domain.value_objects.product_status import ProductStatus
 
@@ -87,7 +84,15 @@ class Product(DomainModel):
         organization_id: UUID,
         category_id: UUID,
         condition: ProductCondition = ProductCondition.USED,
-        **kwargs: Any,
+        slug: str | None = None,
+        description: str | None = None,
+        currency: str = "USD",
+        attributes: dict[str, object] | None = None,
+        image_urls: list[str] | None = None,
+        cover_image_key: str | None = None,
+        location_city: str | None = None,
+        location_state: str | None = None,
+        location_zip: str | None = None,
     ) -> "Product":
         """
         Factory method for new product creation.
@@ -99,7 +104,15 @@ class Product(DomainModel):
             organization_id: Owner organization ID
             category_id: Category ID
             condition: Product condition
-            **kwargs: Additional optional fields
+            slug: Optional SEO-friendly URL slug
+            description: Optional product description
+            currency: ISO currency code (default "USD")
+            attributes: Category-specific attributes (optional)
+            image_urls: Ordered gallery image URLs (optional)
+            cover_image_key: Storage key of the cover image (optional)
+            location_city: Shipping/pickup city (optional)
+            location_state: Shipping/pickup state (optional)
+            location_zip: Shipping/pickup zip (optional)
 
         Returns:
             New Product entity in DRAFT status
@@ -112,10 +125,18 @@ class Product(DomainModel):
             organization_id=organization_id,
             category_id=category_id,
             condition=condition,
+            slug=slug,
+            description=description,
+            currency=currency,
+            attributes=attributes if attributes is not None else {},
+            image_urls=image_urls if image_urls is not None else [],
+            cover_image_key=cover_image_key,
+            location_city=location_city,
+            location_state=location_state,
+            location_zip=location_zip,
             status=ProductStatus.DRAFT,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
-            **kwargs,
         )
 
     # ==================== Status Transition Methods ====================

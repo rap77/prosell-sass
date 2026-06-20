@@ -6,9 +6,7 @@ from enum import StrEnum
 from hashlib import sha256
 from uuid import UUID, uuid4
 
-from pydantic import Field
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field
 
 
 class TeamInvitationStatus(StrEnum):
