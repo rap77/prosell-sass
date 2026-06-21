@@ -74,10 +74,33 @@ Deviations from the original plan:
 
 ## Phase 7: Verify
 
-- [ ] 7.1 `apps/api`: ruff + pyright + pytest 1532+ all green
-- [ ] 7.2 `apps/web`: typecheck + lint + vitest 1015+ all green
-- [ ] 7.3 Manual smoke: admin sees all dealers; seller cannot reach `/admin/dealers/*`
-- [ ] 7.4 Manual smoke: admin can edit any product; seller cannot edit others'
+- [x] 7.1 `apps/api`: ruff + pyright + pytest 1532+ all green
+- [x] 7.2 `apps/web`: typecheck + lint + vitest 1015+ all green
+- [x] 7.3 Manual smoke: admin sees all dealers; seller cannot reach `/admin/dealers/*`
+- [x] 7.4 Manual smoke: admin can toggle `MARKETPLACE_PUBLISH` on own-org product; seller cannot
+
+Deviations from the original plan:
+- 7.4 originally read "admin can edit any product; seller cannot edit
+  others'" — implying cross-tenant write access. `update_product` in
+  `product_router.py` is hard-scoped to `current_user.tenant_id` with no
+  `DEALER_ADMIN_VIEW_ALL` bypass for writes; Subsystem D's cross-tenant
+  capability is read-only (dealer list + dealer products). Re-scoped 7.4
+  to what the feature actually gates: admin (who carries
+  `MARKETPLACE_PUBLISH`) can PATCH `published_to_marketplace` on a product
+  in their own org (200); a seller in the same org without that
+  permission gets 403. Verified end-to-end with real login + cookies
+  against a seeded `prosell_test` DB on `localhost:8001`, not mocked.
+- 7.3's real-browser smoke test (Playwright MCP, both roles) surfaced a
+  pre-existing bug unrelated to this phase's own code: `proxy.ts` read
+  `userData.role` (singular) but the `user_data` cookie carries
+  `roles: string[]` — `role` never existed on the wire, so every
+  role-based redirect (`/admin`, `/branch`, `/manager`) compared against
+  `undefined` for every authenticated user. Fixed with `deriveRole()`
+  mirroring `authStore.ts`'s existing `roles[0] ?? role` adapter, plus a
+  regression test for the legacy `role` fallback. Automated
+  `proxy.test.ts` fixtures had baked in the same wrong cookie shape, so
+  the suite could never have caught this — only the real-cookie smoke
+  test did.
 
 ## Implementation Order
 
