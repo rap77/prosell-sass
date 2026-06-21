@@ -16,7 +16,7 @@ from prosell.application.use_cases.product.list_products import (
     ListProductsUseCase,
     ProductListResponse,
 )
-from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission
+from prosell.domain.entities.role import Permission
 from prosell.domain.entities.user import User
 from prosell.infrastructure.api.dependencies import get_current_auth_user_from_cookie
 from prosell.infrastructure.database.session import get_async_session
@@ -33,15 +33,8 @@ CurrentUser = Annotated[User, Depends(get_current_auth_user_from_cookie)]
 DbSession = Annotated[AsyncSession, Depends(get_async_session)]
 
 
-def _user_has_permission(user: User, permission: Permission) -> bool:
-    """Non-blocking permission check — branches behavior, never raises."""
-    return any(
-        permission in ROLE_PERMISSIONS.get(role.role_type, set()) for role in user.roles or []
-    )
-
-
 def _require_dealer_admin_view_all(current_user: User) -> None:
-    if not _user_has_permission(current_user, Permission.DEALER_ADMIN_VIEW_ALL):
+    if not current_user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission 'dealer:admin_view_all' required",
@@ -54,12 +47,15 @@ async def list_dealers(current_user: CurrentUser, db: DbSession) -> Organization
     _require_dealer_admin_view_all(current_user)
 
     org_repo = SqlAlchemyOrganizationRepository(db)
+    # No skip/limit on this endpoint — it always returns every dealer, so
+    # `total` is just the fetched count. A separate count() round trip
+    # would be redundant (was previously a second DB query for the same
+    # number).
     organizations = await org_repo.get_all(tenant_id=None)
-    total = await org_repo.count(tenant_id=None)
 
     return OrganizationListResponse(
         organizations=[OrganizationResponse.from_entity(org) for org in organizations],
-        total=total,
+        total=len(organizations),
         skip=0,
         limit=len(organizations),
     )

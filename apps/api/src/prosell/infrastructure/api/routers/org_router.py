@@ -126,8 +126,11 @@ async def list_organizations(
     - SUPER_ADMIN/ADMIN: sees all orgs (no tenant filter)
     - Others: only see their own org
     """
-    is_admin = current_user.has_role(["super_admin", "admin"])
-    effective_tenant = None if is_admin else current_user.tenant_id
+    effective_tenant = (
+        None
+        if current_user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL)
+        else current_user.tenant_id
+    )
     use_case = ListOrganizationsUseCase(org_repository=org_repo)
     return await use_case.execute(tenant_id=effective_tenant, skip=skip, limit=limit)
 

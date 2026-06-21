@@ -52,7 +52,7 @@ from prosell.application.use_cases.product.list_products import (
 )
 from prosell.application.use_cases.product.update_product import UpdateProductUseCase
 from prosell.domain.entities.product import Product
-from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission
+from prosell.domain.entities.role import Permission
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.exceptions.product_exceptions import ProductNotFoundError
@@ -78,13 +78,6 @@ router = APIRouter()
 CurrentUser = Annotated[User, Depends(get_current_auth_user_from_cookie)]
 DbSession = Annotated[AsyncSession, Depends(get_async_session)]
 SpacesService = Annotated[IDOSpacesService, Depends(get_spaces_service)]
-
-
-def _user_has_permission(user: User, permission: Permission) -> bool:
-    """Non-blocking permission check — branches behavior, never raises."""
-    return any(
-        permission in ROLE_PERMISSIONS.get(role.role_type, set()) for role in user.roles or []
-    )
 
 
 def _extract_storage_key_from_value(value: str) -> str | None:
@@ -311,7 +304,7 @@ async def list_products(
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    can_view_all_dealers = _user_has_permission(current_user, Permission.DEALER_ADMIN_VIEW_ALL)
+    can_view_all_dealers = current_user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL)
 
     if (
         organization_id is not None
@@ -353,8 +346,15 @@ async def list_products(
         # every `attr.*` key against it. Unknown / non-filterable keys
         # raise ValueError → HTTP 422, so they can never reach the SQL
         # filter pipeline as an attacker-controlled JSONB key.
+        # Resolve against the dealer being viewed, not the admin's own
+        # tenant — `organization_id` is only honored here when the caller
+        # has DEALER_ADMIN_VIEW_ALL (validated above), so this can't be used
+        # to read another tenant's category as a regular seller.
+        category_tenant_id = (
+            organization_id if organization_id is not None and can_view_all_dealers else tenant_id
+        )
         category_repo = SqlAlchemyCategoryRepository(db)
-        category = await category_repo.get_by_id(category_id, tenant_id)
+        category = await category_repo.get_by_id(category_id, category_tenant_id)
         if category is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -420,6 +420,7 @@ async def get_category_filter_values(
     category_id: UUID,
     current_user: CurrentUser,
     db: DbSession,
+    organization_id: UUID | None = None,
 ) -> CategoryFilterValuesResponse:
     """Return DISTINCT values for `select` attributes without static `options`.
 
@@ -437,7 +438,22 @@ async def get_category_filter_values(
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
+
+    can_view_all_dealers = current_user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL)
+    if (
+        organization_id is not None
+        and not can_view_all_dealers
+        and organization_id != current_user.tenant_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot filter products by another dealer's organization_id",
+        )
+    tenant_id = (
+        organization_id
+        if organization_id is not None and can_view_all_dealers
+        else current_user.tenant_id
+    )
 
     category_repo = SqlAlchemyCategoryRepository(db)
     category = await category_repo.get_by_id(category_id, tenant_id)
@@ -478,12 +494,28 @@ async def get_category_filter_values(
 async def get_featured_products(
     current_user: CurrentUser,
     db: DbSession,
+    organization_id: UUID | None = None,
     limit: int = 10,
 ) -> list[ProductResponse]:
     """Get featured products."""
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-    tenant_id = current_user.tenant_id
+
+    can_view_all_dealers = current_user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL)
+    if (
+        organization_id is not None
+        and not can_view_all_dealers
+        and organization_id != current_user.tenant_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot filter products by another dealer's organization_id",
+        )
+    tenant_id = (
+        organization_id
+        if organization_id is not None and can_view_all_dealers
+        else current_user.tenant_id
+    )
 
     repo = SqlAlchemyProductRepository(db)
     products = await repo.get_featured(tenant_id, limit)
@@ -607,8 +639,8 @@ async def update_product(
 
     # Gate `published_to_marketplace` behind MARKETPLACE_PUBLISH. Checked at
     # the router boundary (depends on the auth context, not the entity).
-    if request.published_to_marketplace is not None and not _user_has_permission(
-        current_user, Permission.MARKETPLACE_PUBLISH
+    if request.published_to_marketplace is not None and not current_user.has_permission(
+        Permission.MARKETPLACE_PUBLISH
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

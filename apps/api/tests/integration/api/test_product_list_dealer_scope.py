@@ -61,7 +61,7 @@ async def other_tenant_product(db_session: AsyncSession) -> ProductModel:
         is_active=True,
         sort_order=0,
         field_config=[],
-        attribute_schema={},
+        attribute_schema={"trim": {"filterable": True, "filter_type": "exact"}},
     )
     db_session.add(category_b)
     await db_session.flush()
@@ -73,6 +73,8 @@ async def other_tenant_product(db_session: AsyncSession) -> ProductModel:
         category_id=category_b.id,
         title="Org B Product",
         price_cents=2_000_000,
+        is_featured=True,
+        status="published",
     )
     db_session.add(product)
     await db_session.flush()
@@ -117,6 +119,93 @@ async def test_seller_cross_tenant_organization_id_is_rejected(
     """Task 2.4: seller passing another tenant's organization_id -> 403 (IDOR guard)."""
     response = await async_client_as_seller.get(
         "/api/v1/products",
+        params={"organization_id": str(other_tenant_product.organization_id)},
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_admin_cross_tenant_attr_filter_resolves_category_in_target_org(
+    async_client_as_admin: AsyncClient,
+    other_tenant_product: ProductModel,
+) -> None:
+    """Code review finding #1: admin filtering another dealer's products by
+    category_id + attr.* must resolve the category against the TARGET
+    org's tenant, not the admin's own tenant. Before the fix, this 404s
+    because the category lookup used current_user.tenant_id regardless
+    of the organization_id the admin is viewing.
+    """
+    response = await async_client_as_admin.get(
+        "/api/v1/products",
+        params={
+            "organization_id": str(other_tenant_product.organization_id),
+            "category_id": str(other_tenant_product.category_id),
+            "attr.trim": "LX",
+        },
+    )
+
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_admin_sees_featured_products_for_target_org(
+    async_client_as_admin: AsyncClient,
+    other_tenant_product: ProductModel,
+) -> None:
+    """Code review finding #2: GET /products/featured had no DEALER_ADMIN_VIEW_ALL
+    bypass — always scoped to the admin's own tenant, inconsistent with
+    list_products in the same router.
+    """
+    response = await async_client_as_admin.get(
+        "/api/v1/products/featured",
+        params={"organization_id": str(other_tenant_product.organization_id)},
+    )
+
+    assert response.status_code == 200
+    titles = {p["title"] for p in response.json()}
+    assert other_tenant_product.title in titles
+
+
+@pytest.mark.asyncio
+async def test_seller_cannot_view_featured_products_for_other_org(
+    async_client_as_seller: AsyncClient,
+    other_tenant_product: ProductModel,
+) -> None:
+    """Seller passing another tenant's organization_id -> 403 (IDOR guard)."""
+    response = await async_client_as_seller.get(
+        "/api/v1/products/featured",
+        params={"organization_id": str(other_tenant_product.organization_id)},
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_admin_sees_filter_values_for_target_org_category(
+    async_client_as_admin: AsyncClient,
+    other_tenant_product: ProductModel,
+) -> None:
+    """Code review finding #2: GET /categories/{id}/filter-values had no
+    DEALER_ADMIN_VIEW_ALL bypass — category lookup always used the admin's
+    own tenant, 404ing on another dealer's category.
+    """
+    response = await async_client_as_admin.get(
+        f"/api/v1/categories/{other_tenant_product.category_id}/filter-values",
+        params={"organization_id": str(other_tenant_product.organization_id)},
+    )
+
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_seller_cannot_view_filter_values_for_other_org_category(
+    async_client_as_seller: AsyncClient,
+    other_tenant_product: ProductModel,
+) -> None:
+    """Seller passing another tenant's organization_id -> 403 (IDOR guard)."""
+    response = await async_client_as_seller.get(
+        f"/api/v1/categories/{other_tenant_product.category_id}/filter-values",
         params={"organization_id": str(other_tenant_product.organization_id)},
     )
 

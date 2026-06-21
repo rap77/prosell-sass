@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from prosell.domain.base import DomainModel, Field
 
 # Import Role for Pydantic forward reference evaluation
-from prosell.domain.entities.role import Role
+from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission, Role
 
 
 class UserStatus(StrEnum):
@@ -255,6 +255,16 @@ class User(DomainModel):
 
         # Compare with role_type.value since role_type is a StrEnum
         return any(any(role.role_type.value == r for r in roles_to_check) for role in self.roles)
+
+    def has_permission(self, permission: Permission) -> bool:
+        """Check if any of the user's roles grants the given permission.
+
+        Non-blocking — returns a bool for callers to branch on, unlike the
+        `require_permission` FastAPI dependency which raises 403 outright.
+        """
+        return any(
+            permission in ROLE_PERMISSIONS.get(role.role_type, set()) for role in self.roles or []
+        )
 
     def suspend(self) -> None:
         """Suspend user account."""

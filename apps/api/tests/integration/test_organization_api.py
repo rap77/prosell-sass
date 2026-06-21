@@ -1,6 +1,7 @@
 """Integration tests for Organization API endpoints."""
 
-from unittest.mock import ANY, AsyncMock
+from collections.abc import Generator
+from unittest.mock import ANY, AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -19,7 +20,7 @@ from prosell.infrastructure.api.main import app
 
 
 @pytest.fixture(autouse=True)
-def auto_mock_auth(mock_auth_user):
+def auto_mock_auth(mock_auth_user: User) -> Generator[None]:
     """Automatically mock auth for all tests."""
     from prosell.infrastructure.api.dependencies import (
         get_current_auth_user,
@@ -36,10 +37,8 @@ def auto_mock_auth(mock_auth_user):
 
 
 @pytest.fixture
-def mock_role_repo_super_admin():
+def mock_role_repo_super_admin() -> MagicMock:
     """Mock role repository returning SUPER_ADMIN role."""
-    from unittest.mock import AsyncMock, MagicMock
-
     from prosell.domain.entities.role import Role, RoleType
 
     role = Role.create_system_role(RoleType.SUPER_ADMIN)
@@ -49,7 +48,7 @@ def mock_role_repo_super_admin():
 
 
 @pytest.fixture
-def with_super_admin_role(mock_role_repo_super_admin):
+def with_super_admin_role(mock_role_repo_super_admin: MagicMock) -> None:
     """Override get_role_repository with SUPER_ADMIN for RBAC-gated endpoints."""
     from prosell.infrastructure.api.dependencies import get_role_repository
 
@@ -58,10 +57,8 @@ def with_super_admin_role(mock_role_repo_super_admin):
 
 
 @pytest.fixture
-def mock_org_repo():
+def mock_org_repo() -> MagicMock:
     """Mock organization repository."""
-    from unittest.mock import MagicMock
-
     repo = MagicMock()
     repo.exists_by_name = AsyncMock(return_value=False)
     repo.create = AsyncMock()
@@ -74,17 +71,15 @@ def mock_org_repo():
 
 
 @pytest.fixture
-def mock_wallet_repo():
+def mock_wallet_repo() -> MagicMock:
     """Mock wallet repository."""
-    from unittest.mock import MagicMock
-
     repo = MagicMock()
     repo.create = AsyncMock()
     return repo
 
 
 @pytest.fixture
-def sample_org():
+def sample_org() -> Organization:
     """Sample organization for tests."""
     tenant_id = uuid4()
     org = Organization.create(name="Test Org", tenant_id=tenant_id)
@@ -92,13 +87,13 @@ def sample_org():
 
 
 @pytest.fixture
-def sample_wallet(sample_org):
+def sample_wallet(sample_org: Organization) -> Wallet:
     """Sample wallet for tests."""
     return Wallet.create(org_id=sample_org.id, tenant_id=sample_org.tenant_id)
 
 
 @pytest.fixture
-def mock_auth_user():
+def mock_auth_user() -> User:
     """Mock authenticated user for tests."""
     return User(
         id=uuid4(),
@@ -153,13 +148,13 @@ async def create_org_with_client(
 class TestCreateOrganization:
     async def test_create_success(
         self,
-        mock_org_repo,
-        mock_wallet_repo,
-        sample_org,
-        sample_wallet,
-        mock_auth_user,
-        with_super_admin_role,
-    ):
+        mock_org_repo: MagicMock,
+        mock_wallet_repo: MagicMock,
+        sample_org: Organization,
+        sample_wallet: Wallet,
+        mock_auth_user: User,
+        with_super_admin_role: None,
+    ) -> None:
         """Creates org with 201 status."""
         # Setup mocks
         mock_org_repo.exists_by_name.return_value = False
@@ -194,10 +189,10 @@ class TestCreateOrganization:
 
     async def test_create_conflict_when_name_exists(
         self,
-        mock_org_repo,
-        mock_wallet_repo,
-        with_super_admin_role,
-    ):
+        mock_org_repo: MagicMock,
+        mock_wallet_repo: MagicMock,
+        with_super_admin_role: None,
+    ) -> None:
         """Returns 409 when org name already exists."""
         mock_org_repo.exists_by_name.return_value = True
 
@@ -228,7 +223,7 @@ class TestCreateOrganization:
 
 
 class TestListOrganizations:
-    async def test_list_empty(self, mock_org_repo):
+    async def test_list_empty(self, mock_org_repo: MagicMock) -> None:
         """Returns empty list when no orgs exist."""
         mock_org_repo.get_all.return_value = []
         mock_org_repo.count.return_value = 0
@@ -247,7 +242,9 @@ class TestListOrganizations:
 
         # Clean up handled by autouse fixture
 
-    async def test_list_with_results(self, mock_org_repo, sample_org):
+    async def test_list_with_results(
+        self, mock_org_repo: MagicMock, sample_org: Organization
+    ) -> None:
         """Returns list of organizations."""
         mock_org_repo.get_all.return_value = [sample_org]
         mock_org_repo.count.return_value = 1
@@ -267,7 +264,9 @@ class TestListOrganizations:
 
         # Clean up handled by autouse fixture
 
-    async def test_list_with_pagination(self, mock_org_repo, sample_org):
+    async def test_list_with_pagination(
+        self, mock_org_repo: MagicMock, sample_org: Organization
+    ) -> None:
         """Applies skip and limit parameters."""
         mock_org_repo.get_all.return_value = [sample_org]
         mock_org_repo.count.return_value = 50
@@ -294,6 +293,73 @@ class TestListOrganizations:
 
         # Clean up handled by autouse fixture
 
+    async def test_super_admin_sees_all_orgs_no_tenant_filter(
+        self, mock_org_repo: MagicMock
+    ) -> None:
+        """Code review finding #4: list_organizations gates the no-tenant-filter
+        branch on Permission.DEALER_ADMIN_VIEW_ALL (not a hardcoded role-string
+        list) — same set of roles today (SUPER_ADMIN/ADMIN), but now a single
+        source of truth shared with product_router.py/admin_dealers_router.py.
+        """
+        from prosell.domain.entities.role import Role, RoleType
+
+        admin_user = User(
+            id=uuid4(),
+            email="super-admin@example.com",
+            full_name="Super Admin",
+            tenant_id=uuid4(),
+            status=UserStatus.ACTIVE,
+            email_verified=True,
+            roles=[Role.create_system_role(RoleType.SUPER_ADMIN)],
+        )
+
+        from prosell.infrastructure.api.dependencies import (
+            get_current_auth_user,
+            get_current_auth_user_from_cookie,
+        )
+        from prosell.infrastructure.api.routers.org_router import get_org_repository
+
+        app.dependency_overrides[get_current_auth_user] = lambda: admin_user
+        app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: admin_user
+        app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/org")
+
+        assert response.status_code == status.HTTP_200_OK
+        mock_org_repo.get_all.assert_awaited_once_with(tenant_id=None, skip=0, limit=100)
+
+    async def test_seller_sees_only_own_tenant(self, mock_org_repo: MagicMock) -> None:
+        """Regression: a non-admin caller stays scoped to their own tenant."""
+        from prosell.domain.entities.role import Role, RoleType
+
+        own_tenant = uuid4()
+        seller = User(
+            id=uuid4(),
+            email="seller@example.com",
+            full_name="Seller",
+            tenant_id=own_tenant,
+            status=UserStatus.ACTIVE,
+            email_verified=True,
+            roles=[Role.create_system_role(RoleType.SALES_AGENT)],
+        )
+
+        from prosell.infrastructure.api.dependencies import (
+            get_current_auth_user,
+            get_current_auth_user_from_cookie,
+        )
+        from prosell.infrastructure.api.routers.org_router import get_org_repository
+
+        app.dependency_overrides[get_current_auth_user] = lambda: seller
+        app.dependency_overrides[get_current_auth_user_from_cookie] = lambda: seller
+        app.dependency_overrides[get_org_repository] = lambda: mock_org_repo
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/org")
+
+        assert response.status_code == status.HTTP_200_OK
+        mock_org_repo.get_all.assert_awaited_once_with(tenant_id=own_tenant, skip=0, limit=100)
+
 
 # =============================================================================
 # GET /api/v1/org/me - Get Current User's Organization
@@ -301,7 +367,9 @@ class TestListOrganizations:
 
 
 class TestGetMyOrganization:
-    async def test_get_my_org_success(self, mock_org_repo, sample_org):
+    async def test_get_my_org_success(
+        self, mock_org_repo: MagicMock, sample_org: Organization
+    ) -> None:
         """Returns current user's org by tenant_id."""
         mock_org_repo.get_by_tenant_id.return_value = sample_org
 
@@ -318,7 +386,7 @@ class TestGetMyOrganization:
 
         # Clean up handled by autouse fixture
 
-    async def test_get_my_org_not_found(self, mock_org_repo):
+    async def test_get_my_org_not_found(self, mock_org_repo: MagicMock) -> None:
         """Returns 404 when tenant has no org."""
         mock_org_repo.get_by_tenant_id.return_value = None
 
@@ -341,7 +409,9 @@ class TestGetMyOrganization:
 
 
 class TestGetOrganizationById:
-    async def test_get_by_id_success(self, mock_org_repo, sample_org):
+    async def test_get_by_id_success(
+        self, mock_org_repo: MagicMock, sample_org: Organization
+    ) -> None:
         """Returns org by ID."""
         mock_org_repo.get_by_id.return_value = sample_org
 
@@ -360,7 +430,7 @@ class TestGetOrganizationById:
 
         # Clean up handled by autouse fixture
 
-    async def test_get_by_id_not_found(self, mock_org_repo):
+    async def test_get_by_id_not_found(self, mock_org_repo: MagicMock) -> None:
         """Returns 404 when org doesn't exist."""
         mock_org_repo.get_by_id.return_value = None
 
@@ -382,7 +452,7 @@ class TestGetOrganizationById:
 
 
 class TestUpdateOrganization:
-    async def test_update_success(self, mock_org_repo, sample_org):
+    async def test_update_success(self, mock_org_repo: MagicMock, sample_org: Organization) -> None:
         """Updates org and returns updated data."""
         mock_org_repo.get_by_id.return_value = sample_org
 
@@ -407,7 +477,9 @@ class TestUpdateOrganization:
 
         # Clean up handled by autouse fixture
 
-    async def test_update_partial_fields(self, mock_org_repo, sample_org):
+    async def test_update_partial_fields(
+        self, mock_org_repo: MagicMock, sample_org: Organization
+    ) -> None:
         """Updates only provided fields."""
         mock_org_repo.get_by_id.return_value = sample_org
 
@@ -441,7 +513,9 @@ class TestUpdateOrganization:
 
 
 class TestVerifyOrganization:
-    async def test_verify_success(self, mock_org_repo, sample_org, with_super_admin_role):
+    async def test_verify_success(
+        self, mock_org_repo: MagicMock, sample_org: Organization, with_super_admin_role: None
+    ) -> None:
         """Verifies pending org and transitions to ACTIVE."""
         sample_org.status = OrganizationStatus.PENDING_VERIFICATION
         mock_org_repo.get_by_id.return_value = sample_org
@@ -469,10 +543,10 @@ class TestVerifyOrganization:
 
     async def test_verify_already_active_fails(
         self,
-        mock_org_repo,
-        sample_org,
-        with_super_admin_role,
-    ):
+        mock_org_repo: MagicMock,
+        sample_org: Organization,
+        with_super_admin_role: None,
+    ) -> None:
         """Returns 422 when verifying already ACTIVE org."""
         sample_org.status = OrganizationStatus.ACTIVE
         mock_org_repo.get_by_id.return_value = sample_org
@@ -498,7 +572,9 @@ class TestVerifyOrganization:
 
 
 class TestRejectOrganization:
-    async def test_reject_success(self, mock_org_repo, sample_org, with_super_admin_role):
+    async def test_reject_success(
+        self, mock_org_repo: MagicMock, sample_org: Organization, with_super_admin_role: None
+    ) -> None:
         """Rejects pending org."""
         sample_org.status = OrganizationStatus.PENDING_VERIFICATION
         mock_org_repo.get_by_id.return_value = sample_org
@@ -530,7 +606,9 @@ class TestRejectOrganization:
 
 
 class TestSuspendOrganization:
-    async def test_suspend_success(self, mock_org_repo, sample_org, with_super_admin_role):
+    async def test_suspend_success(
+        self, mock_org_repo: MagicMock, sample_org: Organization, with_super_admin_role: None
+    ) -> None:
         """Suspends active org."""
         sample_org.status = OrganizationStatus.ACTIVE
         mock_org_repo.get_by_id.return_value = sample_org
