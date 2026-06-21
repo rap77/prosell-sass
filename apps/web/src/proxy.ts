@@ -154,15 +154,28 @@ export default async function middleware(req: NextRequest) {
   const userDataCookie = req.cookies.get("user_data")?.value;
 
   // 3. Parse user data from cookie with memoization
+  //
+  // The backend's user_data cookie carries `roles: string[]` (current
+  // shape) — a bare `role: string` field never existed on the wire. The
+  // `role` field below is kept only as a legacy fallback, mirroring the
+  // same roles[0] ?? role adapter authStore.ts uses for the same cookie.
   type UserData = {
     id: string;
     email: string;
     first_name: string;
     last_name: string;
-    role: string;
+    role?: string;
+    roles?: string[];
     is_email_verified: boolean;
     is_2fa_enabled: boolean;
   };
+
+  function deriveRole(data: UserData): string | null {
+    if (Array.isArray(data.roles) && data.roles.length > 0) {
+      return String(data.roles[0]);
+    }
+    return data.role ?? null;
+  }
 
   // Runtime guard before trusting cookie-derived data — this value drives
   // the role-based route gating below. Not the real security boundary
@@ -235,26 +248,19 @@ export default async function middleware(req: NextRequest) {
 
   // 8. Role-based route protection (Zero Trust on Edge)
   if (isAuthenticated && userData) {
-    const isSuperAdmin = userData.role === "super_admin";
+    const role = deriveRole(userData);
+    const isSuperAdmin = role === "super_admin";
 
     // Admin routes - admin/super_admin roles can access (both carry
     // DEALER_ADMIN_VIEW_ALL on the backend — see role.py ROLE_PERMISSIONS)
-    if (
-      pathname.startsWith("/admin") &&
-      userData.role !== "admin" &&
-      !isSuperAdmin
-    ) {
+    if (pathname.startsWith("/admin") && role !== "admin" && !isSuperAdmin) {
       const url = req.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
 
     // Branch routes - only branch/super_admin role can access
-    if (
-      pathname.startsWith("/branch") &&
-      userData.role !== "branch" &&
-      !isSuperAdmin
-    ) {
+    if (pathname.startsWith("/branch") && role !== "branch" && !isSuperAdmin) {
       const url = req.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
@@ -263,7 +269,7 @@ export default async function middleware(req: NextRequest) {
     // Manager routes - only manager/super_admin role can access
     if (
       pathname.startsWith("/manager") &&
-      userData.role !== "manager" &&
+      role !== "manager" &&
       !isSuperAdmin
     ) {
       const url = req.nextUrl.clone();

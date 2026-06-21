@@ -373,7 +373,7 @@ describe("Proxy", () => {
             value: JSON.stringify({
               id: "1",
               email: "test@example.com",
-              role,
+              roles: [role], // real cookie shape — see authStore.ts's roles[0] adapter
               is_2fa_enabled: false,
             }),
           },
@@ -400,6 +400,29 @@ describe("Proxy", () => {
 
       expect(mockRedirect).toHaveBeenCalled();
       expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it("allows admin via legacy singular `role` field (pre-roles[] cookies)", async () => {
+      const req = createMockRequest({
+        pathname: "/admin/dealers",
+        cookies: [
+          { name: "access_token", value: "valid-token" },
+          {
+            name: "user_data",
+            value: JSON.stringify({
+              id: "1",
+              email: "test@example.com",
+              role: "admin",
+              is_2fa_enabled: false,
+            }),
+          },
+        ],
+      });
+
+      await proxy(req);
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockRedirect).not.toHaveBeenCalled();
     });
   });
 });
