@@ -163,6 +163,37 @@ def _merged_image_url_candidates(product: Product) -> list[str]:
     return product.merged_image_keys()
 
 
+def _check_dealer_scope_permission(
+    current_user: User, organization_id: UUID | None
+) -> tuple[UUID, bool]:
+    """Validate dealer-scoping authorization shared by every product list
+    endpoint that accepts `organization_id`.
+
+    Raises 403 if the caller has no tenant, or if they request another
+    dealer's `organization_id` without `DEALER_ADMIN_VIEW_ALL`. Returns
+    `(tenant_id, can_view_all_dealers)` — `tenant_id` is `current_user.tenant_id`
+    narrowed to non-None here so callers don't each repeat the None-check.
+    Callers still derive their own effective tenant_id from `can_view_all_dealers`
+    because they don't all mean the same thing by "no organization_id given"
+    (e.g. `list_products` defaults to a global browse for admins,
+    `get_featured_products` defaults to the caller's own tenant).
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    can_view_all_dealers = current_user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL)
+    if (
+        organization_id is not None
+        and not can_view_all_dealers
+        and organization_id != current_user.tenant_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot filter products by another dealer's organization_id",
+        )
+    return current_user.tenant_id, can_view_all_dealers
+
+
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     request: CreateProductRequest,
@@ -301,23 +332,9 @@ async def list_products(
       category's `attribute_schema`; non-filterable or unknown keys
       are rejected with 422. Range keys accept `<name>_min`/`<name>_max`.
     """
-    if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+    tenant_id, can_view_all_dealers = _check_dealer_scope_permission(current_user, organization_id)
 
-    can_view_all_dealers = current_user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL)
-
-    if (
-        organization_id is not None
-        and not can_view_all_dealers
-        and organization_id != current_user.tenant_id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot filter products by another dealer's organization_id",
-        )
-
-    effective_tenant = None if can_view_all_dealers else current_user.tenant_id
-    tenant_id = current_user.tenant_id
+    effective_tenant = None if can_view_all_dealers else tenant_id
 
     # Collect `attr.*` query params (strip prefix). Validation happens below
     # only when we have a category to validate against — otherwise any
@@ -436,23 +453,11 @@ async def get_category_filter_values(
     entries to bound response size; any key whose result was truncated
     appears in the response's `truncated` list.
     """
-    if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-
-    can_view_all_dealers = current_user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL)
-    if (
-        organization_id is not None
-        and not can_view_all_dealers
-        and organization_id != current_user.tenant_id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot filter products by another dealer's organization_id",
-        )
+    owner_tenant_id, can_view_all_dealers = _check_dealer_scope_permission(
+        current_user, organization_id
+    )
     tenant_id = (
-        organization_id
-        if organization_id is not None and can_view_all_dealers
-        else current_user.tenant_id
+        organization_id if organization_id is not None and can_view_all_dealers else owner_tenant_id
     )
 
     category_repo = SqlAlchemyCategoryRepository(db)
@@ -498,23 +503,11 @@ async def get_featured_products(
     limit: int = 10,
 ) -> list[ProductResponse]:
     """Get featured products."""
-    if current_user.tenant_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
-
-    can_view_all_dealers = current_user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL)
-    if (
-        organization_id is not None
-        and not can_view_all_dealers
-        and organization_id != current_user.tenant_id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot filter products by another dealer's organization_id",
-        )
+    owner_tenant_id, can_view_all_dealers = _check_dealer_scope_permission(
+        current_user, organization_id
+    )
     tenant_id = (
-        organization_id
-        if organization_id is not None and can_view_all_dealers
-        else current_user.tenant_id
+        organization_id if organization_id is not None and can_view_all_dealers else owner_tenant_id
     )
 
     repo = SqlAlchemyProductRepository(db)
