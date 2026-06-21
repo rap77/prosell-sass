@@ -59,6 +59,7 @@ export interface Product {
 
   // Visibility
   is_featured: boolean;
+  published_to_marketplace?: boolean;
   view_count: number;
   favorite_count: number;
 

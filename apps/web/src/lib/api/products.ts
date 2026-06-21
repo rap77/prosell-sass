@@ -66,6 +66,7 @@ const productSchema = z.object({
   location_state: z.string().optional(),
   location_zip: z.string().optional(),
   is_featured: z.boolean(),
+  published_to_marketplace: z.boolean().optional(),
   view_count: z.number(),
   favorite_count: z.number(),
   submitted_for_approval_at: z.string().optional(),

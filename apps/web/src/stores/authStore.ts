@@ -16,7 +16,9 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { z } from "zod";
 import { authApi, ApiError } from "@/lib/api/authApi";
+import { deriveRoleFromCookieData } from "@/lib/auth/deriveRole";
 import { logger } from "@/lib/logger";
 import { useFeatureFlagStore } from "@/stores/featureFlagStore";
 
@@ -119,8 +121,12 @@ export interface AuthError {
  *   when the backend doesn't send them.
  * - Maps `tenant_id` → `organization_id`.
  */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export function mapApiUserToStoreUser(apiUser: unknown): User {
-  const u = (apiUser ?? {}) as Record<string, unknown>;
+  const u = isRecord(apiUser) ? apiUser : {};
 
   // Derive first/last name from either full_name OR first_name+last_name
   let firstName = "";
@@ -130,8 +136,8 @@ export function mapApiUserToStoreUser(apiUser: unknown): User {
     firstName = parts[0] ?? "";
     lastName = parts.slice(1).join(" ");
   } else {
-    firstName = (u.first_name as string) ?? "";
-    lastName = (u.last_name as string) ?? "";
+    firstName = typeof u.first_name === "string" ? u.first_name : "";
+    lastName = typeof u.last_name === "string" ? u.last_name : "";
   }
 
   // Fallback for first name when nothing was derived
@@ -142,16 +148,8 @@ export function mapApiUserToStoreUser(apiUser: unknown): User {
     firstName = "User";
   }
 
-  // Derive role from either roles[0] or role field
-  let role = "";
-  if (Array.isArray(u.roles) && u.roles.length > 0) {
-    role = String(u.roles[0]);
-  } else if (typeof u.role === "string") {
-    role = u.role;
-  }
-  if (!role) {
-    role = "Seller";
-  }
+  // Derive role from either roles[0] or role field, defaulting to "Seller"
+  const role = deriveRoleFromCookieData(u) ?? "Seller";
 
   return {
     id: String(u.id ?? ""),
@@ -164,9 +162,59 @@ export function mapApiUserToStoreUser(apiUser: unknown): User {
     is_2fa_enabled:
       typeof u.is_2fa_enabled === "boolean" ? u.is_2fa_enabled : false,
     organization_id:
-      (u.tenant_id as string | null | undefined) ??
-      (u.organization_id as string | null | undefined) ??
+      (typeof u.tenant_id === "string" ? u.tenant_id : undefined) ??
+      (typeof u.organization_id === "string" ? u.organization_id : undefined) ??
       null,
+  };
+}
+
+/**
+ * Shape of zustand's `persist` localStorage payload across every schema
+ * version this store has ever shipped — used only by `migrate()` below to
+ * validate untrusted localStorage content before reading it (it can be
+ * corrupted, stale, or hand-edited in devtools). Every field optional/
+ * nullable on purpose: older versions persisted a subset of these fields.
+ */
+const persistedAuthStateSchema = z.object({
+  user: z
+    .object({
+      id: z.string(),
+      email: z.string(),
+      first_name: z.string(),
+      last_name: z.string(),
+      role: z.string(),
+      is_email_verified: z.boolean(),
+      is_2fa_enabled: z.boolean(),
+    })
+    .partial()
+    .nullable()
+    .optional(),
+  isAuthenticated: z.boolean().optional(),
+});
+
+type PersistedAuthState = z.infer<typeof persistedAuthStateSchema>;
+
+/** Validate untrusted localStorage content before a migration branch reads it. */
+function parsePersistedAuthState(persistedState: unknown): PersistedAuthState {
+  const result = persistedAuthStateSchema.safeParse(persistedState);
+  return result.success ? result.data : {};
+}
+
+/** Reject an incomplete persisted user rather than smuggling a Partial<User>
+ * past the User | null contract — defaults `role` the same way
+ * mapApiUserToStoreUser does for a freshly-fetched user missing it. */
+function toMigratedUser(user: PersistedAuthState["user"]): User | null {
+  if (!user || typeof user.id !== "string" || typeof user.email !== "string") {
+    return null;
+  }
+  return {
+    id: user.id,
+    email: user.email,
+    first_name: user.first_name ?? "",
+    last_name: user.last_name ?? "",
+    role: user.role ?? "Seller",
+    is_email_verified: user.is_email_verified,
+    is_2fa_enabled: user.is_2fa_enabled,
   };
 }
 
@@ -490,60 +538,24 @@ export const useAuthStore = create<AuthState>()(
         // Handle localStorage schema migrations
         // When changing the store structure, increment version and add migration logic
 
-        // Version 0 -> 1: Initial version with proper typing
-        if (version === 0) {
-          const oldState = persistedState as Partial<AuthState>;
+        // Versions 0 -> 1 -> 2 -> 3 -> 4 (current) all persisted the same
+        // {user, isAuthenticated} shape (only the set of `user` fields
+        // narrowed over time) — one validated read covers every branch.
+        // Version 0->1: initial version with proper typing.
+        // Version 1->2: removed tokens from localStorage (security fix).
+        // Version 2->3: final cleanup (ensure no token fields exist).
+        // Version 3->4 / current: optimized user serialization (essential fields only).
+        if (version <= 4) {
+          const oldState = parsePersistedAuthState(persistedState);
           return {
-            user: oldState.user ?? null,
+            user: toMigratedUser(oldState.user),
             isAuthenticated: oldState.isAuthenticated ?? false,
             isLoading: false,
             error: null,
           };
         }
 
-        // Version 1 -> 2: Remove tokens from localStorage (security fix)
-        if (version === 1) {
-          const oldState = persistedState as Partial<AuthState>;
-          return {
-            user: oldState.user ?? null,
-            isAuthenticated: oldState.isAuthenticated ?? false,
-            isLoading: false,
-            error: null,
-          };
-        }
-
-        // Version 2 -> 3: Final cleanup (ensure no token fields exist)
-        if (version === 2) {
-          const oldState = persistedState as Partial<AuthState>;
-          return {
-            user: oldState.user ?? null,
-            isAuthenticated: oldState.isAuthenticated ?? false,
-            isLoading: false,
-            error: null,
-          };
-        }
-
-        // Version 3 -> 4: Optimize user serialization (only essential fields)
-        if (version === 3) {
-          const oldState = persistedState as Partial<AuthState>;
-          return {
-            user: oldState.user
-              ? {
-                  id: oldState.user.id,
-                  email: oldState.user.email,
-                  first_name: oldState.user.first_name,
-                  last_name: oldState.user.last_name,
-                  is_email_verified: oldState.user.is_email_verified,
-                  is_2fa_enabled: oldState.user.is_2fa_enabled,
-                }
-              : null,
-            isAuthenticated: oldState.isAuthenticated ?? false,
-            isLoading: false,
-            error: null,
-          };
-        }
-
-        return persistedState as AuthState;
+        return { user: null, isAuthenticated: false, isLoading: false, error: null };
       },
     },
   ),

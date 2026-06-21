@@ -18,7 +18,7 @@
  */
 import { useAuthStore } from "@/stores/authStore";
 import type { User, AuthError } from "@/stores/authStore";
-import { Permission, getPermissionsForRole } from "@/lib/auth/permissions";
+import { Permission, getPermissionsForRole, userHasPermission } from "@/lib/auth/permissions";
 
 /**
  * Return type for the useAuth hook
@@ -143,7 +143,7 @@ export function useAuth(): UseAuthReturn {
   const isSuperAdmin = userRole === "super_admin";
   const isAdmin = isSuperAdmin || userRole === "admin";
   const hasPermission = (permission: Permission) =>
-    permissions.includes(permission);
+    userHasPermission(userRole, permission);
 
   return {
     // State

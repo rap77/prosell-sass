@@ -22,7 +22,7 @@ import {
 } from "@/lib/api/orgApi";
 import { logger } from "@/lib/logger";
 import { useAuthStore } from "@/stores/authStore";
-import { Permission, getPermissionsForRole } from "@/lib/auth/permissions";
+import { Permission, userHasPermission } from "@/lib/auth/permissions";
 
 // ============================================
 // TYPES
@@ -365,8 +365,7 @@ export const useOrganizationStore = create<OrganizationState>()(
       // Set the dealer being "viewed as" — no-op without DEALER_ADMIN_VIEW_ALL
       setViewingOrgId: (orgId) => {
         const role = useAuthStore.getState().user?.role ?? null;
-        const permissions = getPermissionsForRole(role);
-        if (!permissions.includes(Permission.DEALER_ADMIN_VIEW_ALL)) {
+        if (!userHasPermission(role, Permission.DEALER_ADMIN_VIEW_ALL)) {
           return;
         }
         set({ viewingOrgId: orgId });

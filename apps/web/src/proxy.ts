@@ -15,6 +15,7 @@
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { deriveRoleFromCookieData } from "@/lib/auth/deriveRole";
 
 // ============================================
 // PERFORMANCE OPTIMIZATIONS
@@ -157,8 +158,8 @@ export default async function middleware(req: NextRequest) {
   //
   // The backend's user_data cookie carries `roles: string[]` (current
   // shape) — a bare `role: string` field never existed on the wire. The
-  // `role` field below is kept only as a legacy fallback, mirroring the
-  // same roles[0] ?? role adapter authStore.ts uses for the same cookie.
+  // `role` field below is kept only as a legacy fallback, resolved via the
+  // same deriveRoleFromCookieData() adapter authStore.ts uses for this cookie.
   type UserData = {
     id: string;
     email: string;
@@ -169,13 +170,6 @@ export default async function middleware(req: NextRequest) {
     is_email_verified: boolean;
     is_2fa_enabled: boolean;
   };
-
-  function deriveRole(data: UserData): string | null {
-    if (Array.isArray(data.roles) && data.roles.length > 0) {
-      return String(data.roles[0]);
-    }
-    return data.role ?? null;
-  }
 
   // Runtime guard before trusting cookie-derived data — this value drives
   // the role-based route gating below. Not the real security boundary
@@ -248,33 +242,24 @@ export default async function middleware(req: NextRequest) {
 
   // 8. Role-based route protection (Zero Trust on Edge)
   if (isAuthenticated && userData) {
-    const role = deriveRole(userData);
+    const role = deriveRoleFromCookieData(userData);
     const isSuperAdmin = role === "super_admin";
 
-    // Admin routes - admin/super_admin roles can access (both carry
-    // DEALER_ADMIN_VIEW_ALL on the backend — see role.py ROLE_PERMISSIONS)
-    if (pathname.startsWith("/admin") && role !== "admin" && !isSuperAdmin) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
-    }
+    // Each route group prefix is gated to its matching role (super_admin
+    // always passes — carries every permission on the backend, see
+    // role.py ROLE_PERMISSIONS).
+    const roleGatedPrefixes: Array<{ prefix: string; requiredRole: string }> = [
+      { prefix: "/admin", requiredRole: "admin" },
+      { prefix: "/branch", requiredRole: "branch" },
+      { prefix: "/manager", requiredRole: "manager" },
+    ];
 
-    // Branch routes - only branch/super_admin role can access
-    if (pathname.startsWith("/branch") && role !== "branch" && !isSuperAdmin) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
-    }
-
-    // Manager routes - only manager/super_admin role can access
-    if (
-      pathname.startsWith("/manager") &&
-      role !== "manager" &&
-      !isSuperAdmin
-    ) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
+    for (const { prefix, requiredRole } of roleGatedPrefixes) {
+      if (pathname.startsWith(prefix) && role !== requiredRole && !isSuperAdmin) {
+        const url = req.nextUrl.clone();
+        url.pathname = "/dashboard";
+        return NextResponse.redirect(url);
+      }
     }
 
     // Seller routes - only seller role can access
