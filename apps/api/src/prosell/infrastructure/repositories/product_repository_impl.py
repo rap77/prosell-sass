@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, Numeric, cast, func, or_, select
+from sqlalchemy import Boolean, Numeric, Select, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.product import Product
@@ -104,6 +104,78 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
+    @staticmethod
+    def _apply_product_filters(
+        stmt: Select,
+        tenant_id: UUID | None,
+        organization_id: UUID | None = None,
+        category_id: UUID | None = None,
+        status: ProductStatus | None = None,
+        condition: ProductCondition | None = None,
+        is_featured: bool | None = None,
+        search_query: str | None = None,
+        min_price_cents: int | None = None,
+        max_price_cents: int | None = None,
+        attribute_filters: list[AttributeFilter] | None = None,
+    ) -> Select:
+        """Apply the WHERE clauses shared by `get_all()` and `count()`.
+
+        Kept as one place so the two can never drift on which filters they
+        honor (count() used to silently ignore everything but
+        tenant_id/organization_id/status, making `total` wrong whenever a
+        caller filtered by category, featured, price, search, or attributes).
+        """
+        if tenant_id is not None:
+            stmt = stmt.where(ProductModel.tenant_id == tenant_id)
+
+        if organization_id is not None:
+            stmt = stmt.where(ProductModel.organization_id == organization_id)
+
+        if category_id is not None:
+            stmt = stmt.where(ProductModel.category_id == category_id)
+
+        if status is not None:
+            stmt = stmt.where(ProductModel.status == status.value)
+
+        if condition is not None:
+            stmt = stmt.where(ProductModel.condition == condition.value)
+
+        if is_featured is not None:
+            stmt = stmt.where(ProductModel.is_featured == is_featured)
+
+        if search_query:
+            search_term = f"%{search_query}%"
+            stmt = stmt.where(
+                or_(
+                    ProductModel.title.ilike(search_term),
+                    ProductModel.description.ilike(search_term),
+                )
+            )
+
+        if min_price_cents is not None:
+            stmt = stmt.where(ProductModel.price_cents >= min_price_cents)
+
+        if max_price_cents is not None:
+            stmt = stmt.where(ProductModel.price_cents <= max_price_cents)
+
+        for af in attribute_filters or []:
+            col = ProductModel.attributes[af.key].astext
+            if af.filter_type == "exact":
+                stmt = stmt.where(ProductModel.attributes.contains({af.key: af.value}))
+            elif af.filter_type == "select":
+                stmt = stmt.where(col.in_(af.values or []))
+            elif af.filter_type == "text":
+                stmt = stmt.where(col.ilike(f"%{af.value}%"))
+            elif af.filter_type == "boolean":
+                stmt = stmt.where(cast(col, Boolean) == af.value)
+            elif af.filter_type == "range":
+                if af.min is not None:
+                    stmt = stmt.where(cast(col, Numeric) >= af.min)
+                if af.max is not None:
+                    stmt = stmt.where(cast(col, Numeric) <= af.max)
+
+        return stmt
+
     async def get_all(
         self,
         tenant_id: UUID | None,
@@ -122,59 +194,19 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         order_desc: bool = True,
     ) -> list[Product]:
         """Get products with optional filters. tenant_id=None lifts tenant isolation."""
-        stmt = select(ProductModel)
-        if tenant_id is not None:
-            stmt = stmt.where(ProductModel.tenant_id == tenant_id)
-
-        # Apply filters
-        if organization_id is not None:
-            stmt = stmt.where(ProductModel.organization_id == organization_id)
-
-        if category_id is not None:
-            stmt = stmt.where(ProductModel.category_id == category_id)
-
-        if status is not None:
-            stmt = stmt.where(ProductModel.status == status.value)
-
-        if condition is not None:
-            stmt = stmt.where(ProductModel.condition == condition.value)
-
-        if is_featured is not None:
-            stmt = stmt.where(ProductModel.is_featured == is_featured)
-
-        # Text search
-        if search_query:
-            search_term = f"%{search_query}%"
-            stmt = stmt.where(
-                or_(
-                    ProductModel.title.ilike(search_term),
-                    ProductModel.description.ilike(search_term),
-                )
-            )
-
-        # Price range
-        if min_price_cents is not None:
-            stmt = stmt.where(ProductModel.price_cents >= min_price_cents)
-
-        if max_price_cents is not None:
-            stmt = stmt.where(ProductModel.price_cents <= max_price_cents)
-
-        # Dynamic attribute filters (JSONB)
-        for af in attribute_filters or []:
-            col = ProductModel.attributes[af.key].astext
-            if af.filter_type == "exact":
-                stmt = stmt.where(ProductModel.attributes.contains({af.key: af.value}))
-            elif af.filter_type == "select":
-                stmt = stmt.where(col.in_(af.values or []))
-            elif af.filter_type == "text":
-                stmt = stmt.where(col.ilike(f"%{af.value}%"))
-            elif af.filter_type == "boolean":
-                stmt = stmt.where(cast(col, Boolean) == af.value)
-            elif af.filter_type == "range":
-                if af.min is not None:
-                    stmt = stmt.where(cast(col, Numeric) >= af.min)
-                if af.max is not None:
-                    stmt = stmt.where(cast(col, Numeric) <= af.max)
+        stmt = self._apply_product_filters(
+            select(ProductModel),
+            tenant_id=tenant_id,
+            organization_id=organization_id,
+            category_id=category_id,
+            status=status,
+            condition=condition,
+            is_featured=is_featured,
+            search_query=search_query,
+            min_price_cents=min_price_cents,
+            max_price_cents=max_price_cents,
+            attribute_filters=attribute_filters,
+        )
 
         # Ordering
         order_column = getattr(ProductModel, order_by, ProductModel.created_at)
@@ -320,19 +352,33 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         self,
         tenant_id: UUID | None,
         organization_id: UUID | None = None,
+        category_id: UUID | None = None,
         status: ProductStatus | None = None,
+        condition: ProductCondition | None = None,
+        is_featured: bool | None = None,
+        search_query: str | None = None,
+        min_price_cents: int | None = None,
+        max_price_cents: int | None = None,
+        attribute_filters: list[AttributeFilter] | None = None,
     ) -> int:
-        """Count products. tenant_id=None lifts tenant isolation."""
-        stmt = select(func.count(ProductModel.id))
-        if tenant_id is not None:
-            stmt = stmt.where(ProductModel.tenant_id == tenant_id)
+        """Count products. tenant_id=None lifts tenant isolation.
 
-        if organization_id is not None:
-            stmt = stmt.where(ProductModel.organization_id == organization_id)
-
-        if status is not None:
-            stmt = stmt.where(ProductModel.status == status.value)
-
+        Mirrors every filter `get_all()` accepts via `_apply_product_filters`
+        so `total` always matches the filtered set, not the whole tenant.
+        """
+        stmt = self._apply_product_filters(
+            select(func.count(ProductModel.id)),
+            tenant_id=tenant_id,
+            organization_id=organization_id,
+            category_id=category_id,
+            status=status,
+            condition=condition,
+            is_featured=is_featured,
+            search_query=search_query,
+            min_price_cents=min_price_cents,
+            max_price_cents=max_price_cents,
+            attribute_filters=attribute_filters,
+        )
         result = await self.session.execute(stmt)
         return result.scalar() or 0
 

@@ -81,11 +81,19 @@ class ListProductsUseCase:
             limit=limit,
         )
 
-        # Get total count
+        # Get total count — mirror every get_all() filter so `total` matches
+        # the filtered set instead of the whole tenant/organization.
         total = await self.product_repository.count(
             tenant_id=tenant_id,
             organization_id=organization_id,
+            category_id=category_id,
             status=status_enum,
+            condition=condition_enum,
+            is_featured=is_featured,
+            search_query=search_query,
+            min_price_cents=min_price_cents,
+            max_price_cents=max_price_cents,
+            attribute_filters=attribute_filters,
         )
 
         return ProductListResponse(

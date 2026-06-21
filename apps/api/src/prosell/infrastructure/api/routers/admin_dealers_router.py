@@ -79,4 +79,8 @@ async def list_dealer_products(
 
     product_repo = SqlAlchemyProductRepository(db)
     use_case = ListProductsUseCase(product_repo)
-    return await use_case.execute(tenant_id=None, organization_id=dealer_id)
+    # Pass the verified dealer's own tenant_id (not None) so isolation never
+    # relies solely on organization_id — a product whose organization_id was
+    # mis-set to this dealer but whose tenant_id points elsewhere must not
+    # leak through this admin endpoint.
+    return await use_case.execute(tenant_id=dealer.tenant_id, organization_id=dealer_id)

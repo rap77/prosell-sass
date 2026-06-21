@@ -115,3 +115,64 @@ async def test_seller_cannot_list_dealer_products(
     response = await async_client_as_seller.get(f"/api/v1/admin/dealers/{other_dealer.id}/products")
 
     assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_admin_dealer_products_excludes_other_org_with_corrupt_tenant_id(
+    async_client_as_admin: AsyncClient,
+    other_dealer: OrganizationModel,
+    db_session: AsyncSession,
+) -> None:
+    """Code review finding: list_dealer_products passed tenant_id=None and
+    relied solely on organization_id for isolation, ignoring the already
+    -verified `dealer` object's own tenant_id. If a product row ever has
+    organization_id=<this dealer> but a DIFFERENT (corrupt/migrated)
+    tenant_id, the admin endpoint must not leak it -- the verified dealer's
+    tenant_id must be enforced as a second filter, not just organization_id.
+    """
+    # tenant_id has a real FK to organizations, so the "corrupt" row needs a
+    # THIRD, genuinely different org as its tenant -- organization_id still
+    # points at other_dealer, simulating data where the two diverge.
+    third_org_id = uuid4()
+    third_org = OrganizationModel(
+        id=third_org_id,
+        tenant_id=third_org_id,
+        name="Third Dealer",
+        status="active",
+        description="Holds the mismatched tenant_id for the corrupt-data test",
+        settings={},
+    )
+    db_session.add(third_org)
+    await db_session.flush()
+
+    corrupt_category = CategoryModel(
+        id=uuid4(),
+        name="Corrupt Tenant Category",
+        slug=f"corrupt-tenant-category-{uuid4().hex[:8]}",
+        tenant_id=third_org_id,
+        level=0,
+        parent_id=None,
+        is_active=True,
+        sort_order=0,
+        field_config=[],
+        attribute_schema={},
+    )
+    db_session.add(corrupt_category)
+    await db_session.flush()
+
+    corrupt_product = ProductModel(
+        id=uuid4(),
+        tenant_id=third_org_id,  # deliberately NOT other_dealer.tenant_id
+        organization_id=other_dealer.id,
+        category_id=corrupt_category.id,
+        title="Corrupt Tenant Product",
+        price_cents=999,
+    )
+    db_session.add(corrupt_product)
+    await db_session.flush()
+
+    response = await async_client_as_admin.get(f"/api/v1/admin/dealers/{other_dealer.id}/products")
+
+    assert response.status_code == 200
+    titles = {p["title"] for p in response.json()["products"]}
+    assert "Corrupt Tenant Product" not in titles

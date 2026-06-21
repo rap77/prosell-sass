@@ -408,9 +408,25 @@ class StubProductRepository(AbstractProductRepository):
         self,
         tenant_id: UUID | None,
         organization_id: UUID | None = None,
+        category_id: UUID | None = None,
         status: ProductStatus | None = None,
+        condition: ProductCondition | None = None,
+        is_featured: bool | None = None,
+        search_query: str | None = None,
+        min_price_cents: int | None = None,
+        max_price_cents: int | None = None,
+        attribute_filters: list[AttributeFilter] | None = None,
     ) -> int:
-        del status
+        del (
+            category_id,
+            status,
+            condition,
+            is_featured,
+            search_query,
+            min_price_cents,
+            max_price_cents,
+            attribute_filters,
+        )
         products = [product for product in self.products.values() if product.tenant_id == tenant_id]
         if organization_id is not None:
             products = [

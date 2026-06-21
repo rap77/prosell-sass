@@ -200,18 +200,32 @@ class AbstractProductRepository(ABC):
         self,
         tenant_id: UUID | None,
         organization_id: UUID | None = None,
+        category_id: UUID | None = None,
         status: ProductStatus | None = None,
+        condition: ProductCondition | None = None,
+        is_featured: bool | None = None,
+        search_query: str | None = None,
+        min_price_cents: int | None = None,
+        max_price_cents: int | None = None,
+        attribute_filters: list["AttributeFilter"] | None = None,
     ) -> int:
         """
-        Count products.
+        Count products matching the same filters `get_all()` accepts.
 
         Args:
             tenant_id: Tenant UUID. None lifts tenant isolation (admin bypass).
             organization_id: Filter by organization
+            category_id: Filter by category
             status: Filter by status
+            condition: Filter by condition
+            is_featured: Filter by featured status
+            search_query: Text search in title/description
+            min_price_cents: Minimum price filter
+            max_price_cents: Maximum price filter
+            attribute_filters: Dynamic filters over the JSONB `attributes` column
 
         Returns:
-            Total count
+            Total count of products matching every filter above
         """
         pass
 
