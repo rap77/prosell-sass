@@ -223,6 +223,16 @@ class Settings(BaseSettings):
         default="http://localhost:3000/dashboard",
         description="Frontend URL to redirect after successful OAuth login",
     )
+
+    # Frontend base URL for email links (verification, password reset, invitations).
+    # Must be the bare origin (no path) so callers can append routes like
+    # /auth/verify, /invite/org/{token}, etc. Previously the renderer derived
+    # this from oauth_frontend_success_url by splitting on '/auth', which broke
+    # silently when the OAuth URL didn't contain '/auth'.
+    frontend_base_url: str = Field(
+        default="http://localhost:3000",
+        description="Frontend base URL (origin only, no path) for email links",
+    )
     oauth_frontend_failure_url: str = Field(
         default="http://localhost:3000/auth/login?error=",
         description="Frontend URL to redirect after OAuth failure (error appended)",

@@ -30,7 +30,7 @@ class EmailTemplateRenderer:
         )
 
     def _base_url(self) -> str:
-        return settings.oauth_frontend_success_url.split("/auth")[0]
+        return settings.frontend_base_url
 
     def _render(self, template: str, subject: str, to: str, /, **ctx: object) -> EmailMessage:
         body = self._env.get_template(template).render(**ctx)
