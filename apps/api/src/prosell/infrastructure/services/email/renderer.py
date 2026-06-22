@@ -81,6 +81,23 @@ class EmailTemplateRenderer:
             invitation_url=invitation_url,
         )
 
+    def render_org_invitation(
+        self,
+        email: str,
+        organization_name: str,
+        inviter_name: str,
+        invitation_token: str,
+    ) -> EmailMessage:
+        invitation_url = f"{self._base_url()}/invite/org/{invitation_token}"
+        return self._render(
+            "organization_invitation.html",
+            f"[ProSell] You've been invited to manage {organization_name}",
+            email,
+            inviter_name=inviter_name,
+            organization_name=organization_name,
+            invitation_url=invitation_url,
+        )
+
     def render_appointment_confirmation(
         self,
         buyer_email: str,

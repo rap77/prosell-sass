@@ -84,6 +84,20 @@ def test_render_appointment_status_update_cancelled(renderer: EmailTemplateRende
     assert "Cancelled" in msg.subject or "cancelled" in msg.html_body.lower()
 
 
+def test_render_org_invitation_builds_correct_url(renderer: EmailTemplateRenderer) -> None:
+    msg = renderer.render_org_invitation(
+        email="owner@dealer.com",
+        organization_name="Acme Motors",
+        inviter_name="Staff Person",
+        invitation_token="tok123",
+    )
+
+    assert msg.to == "owner@dealer.com"
+    assert "Acme Motors" in msg.subject
+    assert "/invite/org/tok123" in msg.html_body
+    assert "?token=" not in msg.html_body  # not the broken team-invite pattern
+
+
 def test_render_appointment_reminder_buyer(renderer: EmailTemplateRenderer) -> None:
     details: AppointmentReminderDetails = {
         "buyer_name": "Bob",

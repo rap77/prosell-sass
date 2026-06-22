@@ -107,3 +107,16 @@ class EmailService:
                 email, team_name, inviter_name, invitation_token, role
             )
         )
+
+    async def send_org_invitation(
+        self,
+        email: str,
+        organization_name: str,
+        inviter_name: str,
+        invitation_token: str,
+    ) -> None:
+        await self._deliver(
+            self._renderer.render_org_invitation(
+                email, organization_name, inviter_name, invitation_token
+            )
+        )
