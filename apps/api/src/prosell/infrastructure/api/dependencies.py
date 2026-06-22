@@ -55,6 +55,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.ports.ido_spaces import IDOSpacesService
+from prosell.application.use_cases.auth.issue_user_session import IssueUserSessionUseCase
 from prosell.core.config import get_oauth_settings, get_settings, settings
 from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission, RoleType
 from prosell.domain.entities.user import User
@@ -423,23 +424,27 @@ async def get_register_user_use_case(
     return RegisterUserUseCase(user_repository, password_service, email_service)
 
 
-async def get_login_user_use_case(
+async def get_issue_user_session_use_case(
     user_repository: Annotated[AbstractUserRepository, Depends(get_user_repository)],
-    password_service: Annotated[IPasswordService, Depends(get_password_service)],
     jwt_service: Annotated[IJWTService, Depends(get_jwt_service)],
     session_repository: Annotated[AbstractSessionRepository, Depends(get_session_repository)],
     token_hasher: Annotated[ITokenHasher, Depends(get_token_hasher)],
+) -> IssueUserSessionUseCase:
+    """Get IssueUserSession use case instance."""
+    return IssueUserSessionUseCase(user_repository, jwt_service, session_repository, token_hasher)
+
+
+async def get_login_user_use_case(
+    user_repository: Annotated[AbstractUserRepository, Depends(get_user_repository)],
+    password_service: Annotated[IPasswordService, Depends(get_password_service)],
+    issue_session_use_case: Annotated[
+        IssueUserSessionUseCase, Depends(get_issue_user_session_use_case)
+    ],
 ) -> LoginUserUseCase:
     """Get LoginUser use case instance."""
     from prosell.application.use_cases.auth.login_user import LoginUserUseCase
 
-    return LoginUserUseCase(
-        user_repository,
-        password_service,
-        jwt_service,
-        session_repository,
-        token_hasher,
-    )
+    return LoginUserUseCase(user_repository, password_service, issue_session_use_case)
 
 
 async def get_refresh_token_use_case(
