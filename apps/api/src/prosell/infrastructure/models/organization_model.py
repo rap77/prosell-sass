@@ -77,3 +77,30 @@ class OrganizationModel(Base):
         primaryjoin="OrganizationModel.id == foreign(WalletModel.org_id)",
         lazy="noload",
     )
+
+
+class OrganizationInvitationModel(Base):
+    """SQLAlchemy model for organization_invitations table."""
+
+    __tablename__ = "organization_invitations"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    token: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
+    tenant_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
+    created_by_user_id: Mapped[UUID] = mapped_column(nullable=False)
+    accepted_by_user_id: Mapped[UUID | None] = mapped_column(nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default="now()", nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default="now()", onupdate=text("now()"), nullable=False
+    )
