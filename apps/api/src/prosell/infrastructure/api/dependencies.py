@@ -29,6 +29,12 @@ if TYPE_CHECKING:
     from prosell.application.use_cases.facebook.oauth_callback import OAuthCallbackUseCase
     from prosell.application.use_cases.facebook.refresh_token import RefreshTokenUseCase
     from prosell.application.use_cases.facebook.set_default_page import SetDefaultPageUseCase
+    from prosell.application.use_cases.organization.accept_organization_invitation import (
+        AcceptOrganizationInvitationUseCase,
+    )
+    from prosell.application.use_cases.organization.create_dealer_organization import (
+        CreateDealerOrganizationUseCase,
+    )
     from prosell.application.use_cases.publisher.publish_vehicle import PublishVehicleUseCase
     from prosell.application.use_cases.user_branch.assign_user_branch import (
         AssignUserBranchUseCase,
@@ -56,6 +62,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.ports.ido_spaces import IDOSpacesService
 from prosell.application.use_cases.auth.issue_user_session import IssueUserSessionUseCase
+from prosell.application.use_cases.organization.invite_dealer_owner import (
+    InviteDealerOwnerUseCase,
+)
 from prosell.core.config import get_oauth_settings, get_settings, settings
 from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission, RoleType
 from prosell.domain.entities.user import User
@@ -82,12 +91,28 @@ from prosell.domain.repositories import (
 from prosell.domain.repositories.branch_repository import AbstractBranchRepository
 from prosell.domain.repositories.facebook_account_repository import IFacebookAccountRepository
 from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
+from prosell.domain.repositories.organization_invitation_repository import (
+    AbstractOrganizationInvitationRepository,
+)
+from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
+from prosell.domain.repositories.organization_vertical_repository import (
+    AbstractOrganizationVerticalRepository,
+)
 from prosell.domain.repositories.publication_repository import IPublicationRepository
 from prosell.domain.repositories.user_branch_repository import (
     AbstractUserBranchRepository,
 )
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.oauth_repository_impl import SqlAlchemyOAuthRepository
+from prosell.infrastructure.repositories.organization_invitation_repository_impl import (
+    SqlAlchemyOrganizationInvitationRepository,
+)
+from prosell.infrastructure.repositories.organization_repository_impl import (
+    SqlAlchemyOrganizationRepository,
+)
+from prosell.infrastructure.repositories.organization_vertical_repository_impl import (
+    SqlAlchemyOrganizationVerticalRepository,
+)
 from prosell.infrastructure.repositories.role_repository_impl import SqlAlchemyRoleRepository
 from prosell.infrastructure.repositories.session_repository_impl import SqlAlchemySessionRepository
 from prosell.infrastructure.repositories.user_repository_impl import SqlAlchemyUserRepository
@@ -135,6 +160,27 @@ async def get_oauth_repository(
 ) -> AbstractOAuthRepository:
     """Get OAuth repository instance."""
     return SqlAlchemyOAuthRepository(session)
+
+
+async def get_organization_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> AbstractOrganizationRepository:
+    """Get organization repository instance."""
+    return SqlAlchemyOrganizationRepository(session)
+
+
+async def get_organization_vertical_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> AbstractOrganizationVerticalRepository:
+    """Get organization vertical repository instance."""
+    return SqlAlchemyOrganizationVerticalRepository(session)
+
+
+async def get_organization_invitation_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> AbstractOrganizationInvitationRepository:
+    """Get organization invitation repository instance."""
+    return SqlAlchemyOrganizationInvitationRepository(session)
 
 
 # =============================================================================
@@ -445,6 +491,67 @@ async def get_login_user_use_case(
     from prosell.application.use_cases.auth.login_user import LoginUserUseCase
 
     return LoginUserUseCase(user_repository, password_service, issue_session_use_case)
+
+
+async def get_invite_dealer_owner_use_case(
+    invitation_repository: Annotated[
+        AbstractOrganizationInvitationRepository, Depends(get_organization_invitation_repository)
+    ],
+    email_service: Annotated[AbstractEmailService, Depends(get_email_service)],
+) -> InviteDealerOwnerUseCase:
+    """Get InviteDealerOwner use case instance."""
+    return InviteDealerOwnerUseCase(invitation_repository, email_service)
+
+
+async def get_create_dealer_organization_use_case(
+    organization_repository: Annotated[
+        AbstractOrganizationRepository, Depends(get_organization_repository)
+    ],
+    vertical_repository: Annotated[
+        AbstractOrganizationVerticalRepository, Depends(get_organization_vertical_repository)
+    ],
+    user_repository: Annotated[AbstractUserRepository, Depends(get_user_repository)],
+    invite_dealer_owner_use_case: Annotated[
+        InviteDealerOwnerUseCase, Depends(get_invite_dealer_owner_use_case)
+    ],
+) -> CreateDealerOrganizationUseCase:
+    """Get CreateDealerOrganization use case instance."""
+    from prosell.application.use_cases.organization.create_dealer_organization import (
+        CreateDealerOrganizationUseCase,
+    )
+
+    return CreateDealerOrganizationUseCase(
+        organization_repository, vertical_repository, user_repository, invite_dealer_owner_use_case
+    )
+
+
+async def get_accept_organization_invitation_use_case(
+    invitation_repository: Annotated[
+        AbstractOrganizationInvitationRepository, Depends(get_organization_invitation_repository)
+    ],
+    organization_repository: Annotated[
+        AbstractOrganizationRepository, Depends(get_organization_repository)
+    ],
+    user_repository: Annotated[AbstractUserRepository, Depends(get_user_repository)],
+    role_repository: Annotated[AbstractRoleRepository, Depends(get_role_repository)],
+    password_service: Annotated[IPasswordService, Depends(get_password_service)],
+    issue_session_use_case: Annotated[
+        IssueUserSessionUseCase, Depends(get_issue_user_session_use_case)
+    ],
+) -> AcceptOrganizationInvitationUseCase:
+    """Get AcceptOrganizationInvitation use case instance."""
+    from prosell.application.use_cases.organization.accept_organization_invitation import (
+        AcceptOrganizationInvitationUseCase,
+    )
+
+    return AcceptOrganizationInvitationUseCase(
+        invitation_repository,
+        organization_repository,
+        user_repository,
+        role_repository,
+        password_service,
+        issue_session_use_case,
+    )
 
 
 async def get_refresh_token_use_case(

@@ -187,28 +187,12 @@ async def register(
     return result
 
 
-@router.post("/login", response_model=LoginUserResponse)
-@smart_rate_limit("auth")  # Higher rate limit for testing
-async def login(
-    request: Request,
-    login_data: LoginRequest,
-    response: Response,
-    use_case: Annotated[LoginUserUseCase, Depends(get_login_user_use_case)],
-) -> LoginUserResponse:
-    """
-    User login.
+def set_auth_cookies(response: Response, result: LoginUserResponse) -> None:
+    """Set the 3 httpOnly auth cookies (access/refresh/user_data) on `response`.
 
-    Returns access and refresh tokens via httpOnly cookies.
-    If 2FA is enabled, requires_2fa will be True.
+    Shared by /login and /auth/accept-org-invitation — both end in
+    "this user is now logged in" and must behave identically.
     """
-    _ = request
-    uc_request = LoginUserRequest(
-        email=login_data.email,
-        password=login_data.password,
-        remember_me=login_data.remember_me,
-    )
-    result = await use_case.execute(uc_request)
-
     # Set httpOnly cookies for tokens
     access_token_expiry = datetime.now(UTC) + timedelta(minutes=15)
     refresh_token_expiry = datetime.now(UTC) + timedelta(days=7)
@@ -245,6 +229,29 @@ async def login(
         domain=settings.cookie_domain,
     )
 
+
+@router.post("/login", response_model=LoginUserResponse)
+@smart_rate_limit("auth")  # Higher rate limit for testing
+async def login(
+    request: Request,
+    login_data: LoginRequest,
+    response: Response,
+    use_case: Annotated[LoginUserUseCase, Depends(get_login_user_use_case)],
+) -> LoginUserResponse:
+    """
+    User login.
+
+    Returns access and refresh tokens via httpOnly cookies.
+    If 2FA is enabled, requires_2fa will be True.
+    """
+    _ = request
+    uc_request = LoginUserRequest(
+        email=login_data.email,
+        password=login_data.password,
+        remember_me=login_data.remember_me,
+    )
+    result = await use_case.execute(uc_request)
+    set_auth_cookies(response, result)
     return result
 
 
