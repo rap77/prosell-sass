@@ -82,10 +82,12 @@ class InviteDealerOwnerUseCase:
         if existing is not None and not existing.is_expired():
             # Reusing an existing pending invitation — we don't have its raw
             # token (only the stored hash), so we cannot re-send the exact
-            # same link. Issue a fresh token for the same invitation row
-            # instead of silently resending an un-sendable one.
+            # same link. Issue a fresh token AND a fresh expiry window for
+            # the same invitation row, instead of silently resending an
+            # un-sendable one (or one that's about to expire).
             raw_token, token_hash = self._generate_token()
             existing.token = token_hash
+            existing.expires_at = datetime.now(UTC) + timedelta(days=7)
             existing.updated_at = datetime.now(UTC)
             await self.invitation_repository.update(existing)
             invitation, send_token = existing, raw_token
