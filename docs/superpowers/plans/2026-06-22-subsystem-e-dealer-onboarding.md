@@ -1561,12 +1561,18 @@ class InviteDealerOwnerUseCase:
         self.invitation_repository = invitation_repository
         self.email_service = email_service
 
+    @staticmethod
+    def _generate_token() -> tuple[str, str]:
+        """Generate a (raw_token, token_hash) pair. Raw goes in the email link;
+        only the hash is ever persisted — mirrors invite_team_member.py."""
+        raw_token = secrets.token_urlsafe(32)
+        return raw_token, sha256(raw_token.encode()).hexdigest()
+
     def _new_invitation(
         self, organization_id: UUID, email: str, tenant_id: UUID, created_by_user_id: UUID
     ) -> tuple[OrganizationInvitation, str]:
         """Build a PENDING invitation entity + the raw token for its email link."""
-        raw_token = secrets.token_urlsafe(32)
-        token_hash = sha256(raw_token.encode()).hexdigest()
+        raw_token, token_hash = self._generate_token()
         now = datetime.now(UTC)
         invitation = OrganizationInvitation(
             id=uuid4(),
@@ -1601,8 +1607,8 @@ class InviteDealerOwnerUseCase:
             # token (only the stored hash), so we cannot re-send the exact
             # same link. Issue a fresh token for the same invitation row
             # instead of silently resending an un-sendable one.
-            raw_token = secrets.token_urlsafe(32)
-            existing.token = sha256(raw_token.encode()).hexdigest()
+            raw_token, token_hash = self._generate_token()
+            existing.token = token_hash
             existing.updated_at = datetime.now(UTC)
             await self.invitation_repository.update(existing)
             invitation, send_token = existing, raw_token
@@ -3557,6 +3563,54 @@ Expected: clean
 git add "apps/web/src/app/(admin)/admin/dealers/[id]/page.tsx" "apps/web/src/app/(admin)/admin/dealers/[id]/page.test.tsx"
 git commit -m "feat(web): resend-invitation button on dealer detail page"
 ```
+
+---
+
+## Discovered gaps to address during T12-T18
+
+Found while reviewing T1-T11 code for the next batch. Listed by the task that should bake them in.
+
+### B1 — FIXED in pre-T12 (already committed): `last_login_at` not stamped on invitation accept
+
+`AcceptOrganizationInvitationUseCase.execute()` created the User and went straight to `issue_session_use_case.execute(user, ...)` without calling `user.update_last_login(ip_address)`. `IssueUserSessionUseCase` (extracted in T6) does NOT stamp `last_login_at` because `LoginUserUseCase` already does it in its step 7 — but AcceptOrgInvitation has no such upstream step. Result: the owner's first session left `last_login_at = None` in the DB until their NEXT normal login.
+
+**Fix applied:** added `user.update_last_login(ip_address)` + `await self.user_repository.update(user)` right after `user_repository.create(user)`. Test `test_happy_path_records_last_login_on_the_new_user` covers it.
+
+**Lesson:** `IssueUserSessionUseCase` is reusable; any caller that ends in "this user is now logged in" must have already stamped `last_login_at` first. Document this contract in the use case docstring if a third caller appears.
+
+### G1 — T12: explicit transaction wrapping for `POST /admin/dealers`
+
+`CreateDealerOrganizationUseCase` docstring (line 19-23) says *"Caller (the router) is responsible for wrapping this in a DB transaction so a failure at any step ... rolls back the org and vertical rows too."* But the T12 endpoint snippets (lines 2467-2547) call `use_case.execute(...)` with no `async with db.begin():` or equivalent. Without explicit transaction scope, FastAPI's default per-request session commits after each `.flush()` in the use case — meaning `Organization.create()` + `vertical_repository.enable()` + `Invitation.create()` commit independently, and a failure in any later step leaves partial state.
+
+**Bake into T12 Step 5:** wrap the `use_case.execute(...)` call in `async with db.begin():` (or equivalent explicit transaction boundary). Add an integration test that injects a failure mid-flow and asserts no Organization/Invitation rows persist.
+
+### G2 — T12: `CreateDealerRequest.owner_email` should be `EmailStr`
+
+DTO at line 2389-2394 has `owner_email: str` — accepts `"not-an-email"` without complaint. FastAPI/Pydantic 2 has `EmailStr` for this exact reason.
+
+**Bake into T12 Step 3:** change to `owner_email: EmailStr` (import from `pydantic`). Add an integration test that posts `"not-an-email"` and expects 422.
+
+### G3 — T13: backend MUST validate password strength, not trust the frontend
+
+`AcceptOrgInvitationRequest` at line 2624-2631 has `password: str` — zero regex/strength validation. The frontend Zod schema (`passwordFieldSchema`, T14) is the only gate. Anyone POSTing directly to `/auth/accept-org-invitation` with `password="x"` would create a user whose password passes backend hashing but fails the frontend strength meter on their NEXT login.
+
+**Bake into T13 Step 3:** replicate the exact regex from `passwordFieldSchema` as a Pydantic `Field(..., pattern=...)` on `password`. Frontend and backend must agree, but neither alone is sufficient.
+
+### G4 — T9 (now) or T12: validate that `vertical_ids` reference real root categories
+
+`CreateDealerOrganizationUseCase.execute()` iterates `vertical_ids` and calls `vertical_repository.enable(organization_id, root_category_id=...)` without checking those IDs exist in `categories`. A request with `vertical_ids=[uuid4()]` passes the empty-list guard but the first `enable()` call raises an unhandled `IntegrityError` (FK violation) → 500.
+
+**Bake into T9 (preferred) OR T12:** add a `vertical_repository.get_existing_ids(ids: list[UUID]) -> set[UUID]` (or just `get_by_id` in a loop with one query), reject in the use case if any are missing with `ValueError(f"Unknown vertical id: {id}")`. The router already maps `ValueError → 400`, so this turns a 500 into a clean 400.
+
+### G5 — T13: confirm `@smart_rate_limit("auth")` is on `/auth/accept-org-invitation`
+
+The plan's T13 Step 4 snippet (line 2639) already shows `@smart_rate_limit("auth")` — good. **No action needed**, just calling it out so it doesn't get accidentally dropped during implementation. Same check for T12: the create-dealer and resend-invitation endpoints should also be rate-limited (consider `@smart_rate_limit("admin")` or `"auth"`). Add it explicitly in T12 Step 5 if not already covered.
+
+### G6 — T13: handle `IntegrityError` on `user_repository.create`
+
+`AcceptOrganizationInvitationUseCase.execute()` line 70 does `user = await self.user_repository.create(user)`. If a race creates a User with the same email between `CreateDealerOrganizationUseCase`'s `get_by_email` check and `AcceptOrganizationInvitationUseCase`'s `create`, the unique constraint on `users.email` fires `IntegrityError` → unhandled → 500.
+
+**Bake into T13:** wrap the user create in `try/except IntegrityError as e: raise HTTPException(409, "Email already registered")`. Equivalent to a "soft retry after race" check.
 
 ---
 
