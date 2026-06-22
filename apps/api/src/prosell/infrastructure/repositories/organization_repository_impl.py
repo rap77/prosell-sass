@@ -33,6 +33,7 @@ class SqlAlchemyOrganizationRepository(AbstractOrganizationRepository):
             verified_at=organization.verified_at,
             verified_by=organization.verified_by,
             wallet_id=organization.wallet_id,
+            created_by_user_id=organization.created_by_user_id,
             settings=organization.settings,
             created_at=organization.created_at,
             updated_at=organization.updated_at,

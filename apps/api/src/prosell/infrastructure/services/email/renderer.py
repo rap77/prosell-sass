@@ -30,7 +30,7 @@ class EmailTemplateRenderer:
         )
 
     def _base_url(self) -> str:
-        return settings.oauth_frontend_success_url.split("/auth")[0]
+        return settings.frontend_base_url
 
     def _render(self, template: str, subject: str, to: str, /, **ctx: object) -> EmailMessage:
         body = self._env.get_template(template).render(**ctx)
@@ -78,6 +78,23 @@ class EmailTemplateRenderer:
             inviter_name=inviter_name,
             team_name=team_name,
             role=role,
+            invitation_url=invitation_url,
+        )
+
+    def render_org_invitation(
+        self,
+        email: str,
+        organization_name: str,
+        inviter_name: str,
+        invitation_token: str,
+    ) -> EmailMessage:
+        invitation_url = f"{self._base_url()}/invite/org/{invitation_token}"
+        return self._render(
+            "organization_invitation.html",
+            f"[ProSell] You've been invited to manage {organization_name}",
+            email,
+            inviter_name=inviter_name,
+            organization_name=organization_name,
             invitation_url=invitation_url,
         )
 

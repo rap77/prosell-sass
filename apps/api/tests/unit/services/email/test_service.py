@@ -60,6 +60,9 @@ class _SpyRenderer:
     def render_team_invitation(self, *args: Any) -> EmailMessage:
         return self._record("render_team_invitation", *args)
 
+    def render_org_invitation(self, *args: Any) -> EmailMessage:
+        return self._record("render_org_invitation", *args)
+
 
 # ---------------------------------------------------------------------------
 # Happy-path: service renders and sends.
@@ -104,6 +107,9 @@ async def test_service_dispatches_to_correct_renderer_method() -> None:
     await svc.send_team_invitation(
         email="a@x.com", team_name="T", inviter_name="I", invitation_token="tok", role="r"
     )
+    await svc.send_org_invitation(
+        email="a@x.com", organization_name="Acme Motors", inviter_name="I", invitation_token="tok"
+    )
 
     methods_called = [m for m, _ in spy_renderer.calls]
     assert methods_called == [
@@ -111,8 +117,9 @@ async def test_service_dispatches_to_correct_renderer_method() -> None:
         "render_password_reset",
         "render_2fa_enabled",
         "render_team_invitation",
+        "render_org_invitation",
     ]
-    assert len(spy_sender.sent) == 4
+    assert len(spy_sender.sent) == 5
 
 
 # ---------------------------------------------------------------------------

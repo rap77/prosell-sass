@@ -9,5 +9,7 @@ const apiErrorBodySchema = z
  * back to `fallback` when the body doesn't match or carries neither field. */
 export function extractErrorMessage(body: unknown, fallback: string): string {
   const parsed = apiErrorBodySchema.safeParse(body);
-  return (parsed.success && (parsed.data.detail ?? parsed.data.message)) || fallback;
+  return (
+    (parsed.success && (parsed.data.detail ?? parsed.data.message)) || fallback
+  );
 }

@@ -38,6 +38,7 @@ class Organization(DomainModel):
 
     # Onboarding
     setup_complete: bool = False
+    created_by_user_id: UUID | None = None  # Staff who created this org (audit trail)
 
     # Metadata
     settings: dict[str, object] = Field(default_factory=dict)
@@ -51,7 +52,7 @@ class Organization(DomainModel):
         cls,
         name: str,
         tenant_id: UUID,
-        _creator_id: UUID | None = None,  # Reserved for audit trail (unused)
+        creator_id: UUID | None = None,
     ) -> "Organization":
         """
         Factory method for new organization creation.
@@ -75,6 +76,7 @@ class Organization(DomainModel):
             verified_at=None,
             verified_by=None,
             wallet_id=None,
+            created_by_user_id=creator_id,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )

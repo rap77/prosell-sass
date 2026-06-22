@@ -41,7 +41,11 @@ vi.mock("@/components/layout/ThemeToggle", () => ({
 
 describe("Header", () => {
   beforeEach(() => {
-    mockUseAuth.mockReturnValue({ logout: vi.fn(), user: null, isAdmin: false });
+    mockUseAuth.mockReturnValue({
+      logout: vi.fn(),
+      user: null,
+      isAdmin: false,
+    });
   });
 
   it("renders DealerPicker instead of the org switcher for an admin", () => {

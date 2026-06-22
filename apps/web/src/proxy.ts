@@ -255,7 +255,11 @@ export default async function middleware(req: NextRequest) {
     ];
 
     for (const { prefix, requiredRole } of roleGatedPrefixes) {
-      if (pathname.startsWith(prefix) && role !== requiredRole && !isSuperAdmin) {
+      if (
+        pathname.startsWith(prefix) &&
+        role !== requiredRole &&
+        !isSuperAdmin
+      ) {
         const url = req.nextUrl.clone();
         url.pathname = "/dashboard";
         return NextResponse.redirect(url);

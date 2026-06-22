@@ -10,7 +10,10 @@ from prosell.infrastructure.models.facebook_account_model import (
 from prosell.infrastructure.models.lead_model import LeadAuditLogModel, LeadModel
 from prosell.infrastructure.models.notification_model import NotificationModel
 from prosell.infrastructure.models.oauth_account_model import OAuthAccountModel
-from prosell.infrastructure.models.organization_model import OrganizationModel
+from prosell.infrastructure.models.organization_model import (
+    OrganizationInvitationModel,
+    OrganizationModel,
+)
 from prosell.infrastructure.models.organization_vertical_model import (
     OrganizationVerticalModel,
 )
@@ -39,6 +42,7 @@ __all__ = [
     "LeadModel",
     "NotificationModel",
     "OAuthAccountModel",
+    "OrganizationInvitationModel",
     "OrganizationModel",
     "OrganizationVerticalModel",
     "ProductImageModel",

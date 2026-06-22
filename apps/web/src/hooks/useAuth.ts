@@ -18,7 +18,11 @@
  */
 import { useAuthStore } from "@/stores/authStore";
 import type { User, AuthError } from "@/stores/authStore";
-import { Permission, getPermissionsForRole, userHasPermission } from "@/lib/auth/permissions";
+import {
+  Permission,
+  getPermissionsForRole,
+  userHasPermission,
+} from "@/lib/auth/permissions";
 
 /**
  * Return type for the useAuth hook
