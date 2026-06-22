@@ -6,7 +6,10 @@
  * Shared between Edge middleware (proxy.ts) and the client auth store
  * (authStore.ts) so the two never drift — see code review finding #5.
  */
-export function deriveRoleFromCookieData(data: { role?: unknown; roles?: unknown }): string | null {
+export function deriveRoleFromCookieData(data: {
+  role?: unknown;
+  roles?: unknown;
+}): string | null {
   if (Array.isArray(data.roles) && data.roles.length > 0) {
     return String(data.roles[0]);
   }

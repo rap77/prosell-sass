@@ -63,14 +63,10 @@ describe("useAuth — RBAC getters", () => {
 
   it("isSuperAdmin is only true for super_admin", () => {
     setUserRole("super_admin");
-    expect(renderHook(() => useAuth()).result.current.isSuperAdmin).toBe(
-      true,
-    );
+    expect(renderHook(() => useAuth()).result.current.isSuperAdmin).toBe(true);
 
     setUserRole("admin");
-    expect(renderHook(() => useAuth()).result.current.isSuperAdmin).toBe(
-      false,
-    );
+    expect(renderHook(() => useAuth()).result.current.isSuperAdmin).toBe(false);
   });
 
   it("hasPermission reflects DEALER_ADMIN_VIEW_ALL for admin but not sales_user", () => {

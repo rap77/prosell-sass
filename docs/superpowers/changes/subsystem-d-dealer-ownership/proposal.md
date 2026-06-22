@@ -3,17 +3,20 @@
 ## Intent
 
 ProSell es la **plataforma** que opera el marketplace. Hoy:
+
 - Cada dealer (Organization) es su propio tenant (self-referential `organization_id == tenant_id`)
 - ProSell opera solo como super-admin con bypass limitado en 2 routers
 - El marketplace NO existe — cada dealer solo ve sus propios productos
 
 **Goal de Subsystem D**: dar a ProSell super-admin + ProSell-vendor roles el poder de:
+
 1. **Browse** productos de cualquier dealer (cross-dealer read)
 2. **Administrar** productos de cualquier dealer (cross-dealer write)
 3. **Publicar en marketplace** — algunos productos son cross-dealer visibles
 
 **NO** incluye (va a Subsystem E):
-- Permission.VEHICLE_* cleanup
+
+- Permission.VEHICLE\_\* cleanup
 - Onboarding flow (invite dealers, create dealer accounts)
 - True multi-tenant migration (cada dealer sigue siendo su propio tenant)
 
@@ -22,6 +25,7 @@ ProSell es la **plataforma** que opera el marketplace. Hoy:
 ### In scope (Subsystem D)
 
 **Backend — `apps/api`:**
+
 - Replicate admin-bypass pattern from `org_router.py:129` to `product_router.py` (~17 endpoints)
 - New permission `MARKETPLACE_PUBLISH` (admin/super_admin/vendor-prosell can publish)
 - New permission `DEALER_ADMIN_VIEW_ALL` (admin/super_admin can browse all dealers)
@@ -31,6 +35,7 @@ ProSell es la **plataforma** que opera el marketplace. Hoy:
 - Tests for all new scoping
 
 **Frontend — `apps/web`:**
+
 - `useAuth` enhancements: `isAdmin`, `isSuperAdmin`, `hasPermission(perm)` typed helpers
 - `Sidebar.tsx` role-aware nav filtering
 - `Header.tsx` dealer picker dropdown (admin only)
@@ -42,13 +47,13 @@ ProSell es la **plataforma** que opera el marketplace. Hoy:
 
 ### Out of scope (deferred)
 
-| Item | Goes to |
-|---|---|
-| Permission.VEHICLE_* cleanup / rename | Subsystem E |
-| Onboarding flow (invite dealers, create dealer accounts) | Subsystem E |
-| Self-service RBAC UI for dealers | Subsystem E |
+| Item                                                                       | Goes to                        |
+| -------------------------------------------------------------------------- | ------------------------------ |
+| Permission.VEHICLE\_\* cleanup / rename                                    | Subsystem E                    |
+| Onboarding flow (invite dealers, create dealer accounts)                   | Subsystem E                    |
+| Self-service RBAC UI for dealers                                           | Subsystem E                    |
 | True multi-tenant migration (single ProSell tenant with N dealer children) | Deferred — current model works |
-| Subsystem C (category auto-inference on create) | Last per roadmap |
+| Subsystem C (category auto-inference on create)                            | Last per roadmap               |
 
 ## Approach (chosen)
 
@@ -63,11 +68,11 @@ ProSell es la **plataforma** que opera el marketplace. Hoy:
 
 ## Trade-offs considered
 
-| Approach | Pros | Cons | Decision |
-|---|---|---|---|
-| A. Status quo + bypass (chosen) | Zero migration, ships fast, closes 80% of the gap | Doesn't support true hierarchical dealers (dealer → sub-dealer) | ✅ |
-| B. New tenant root + migration | True hierarchical model | Alembic migration + data backfill + 2-3 days of test rewriting | ❌ |
-| C. New "Dealer" entity, 1-1 with Org | Same as A but with extra indirection | YAGNI — same data, more joins | ❌ |
+| Approach                             | Pros                                              | Cons                                                            | Decision |
+| ------------------------------------ | ------------------------------------------------- | --------------------------------------------------------------- | -------- |
+| A. Status quo + bypass (chosen)      | Zero migration, ships fast, closes 80% of the gap | Doesn't support true hierarchical dealers (dealer → sub-dealer) | ✅       |
+| B. New tenant root + migration       | True hierarchical model                           | Alembic migration + data backfill + 2-3 days of test rewriting  | ❌       |
+| C. New "Dealer" entity, 1-1 with Org | Same as A but with extra indirection              | YAGNI — same data, more joins                                   | ❌       |
 
 ## TDD commitment
 
@@ -78,11 +83,13 @@ ProSell es la **plataforma** que opera el marketplace. Hoy:
 3. **REFACTOR**: clean up with tests still green.
 
 **No shortcuts allowed:**
+
 - ❌ No `--no-verify` on any commit
 - ❌ No "I'll write tests later" — test IS the spec
 - ❌ No production code without a corresponding test file
 
 **Test coverage gates per task:**
+
 - New behavior: covered by at least one failing-first test
 - Bug fix: covered by reproduction test
 - Permission/scoping change: covered by both positive AND negative tests (admin can, non-admin can't, IDOR scenarios)

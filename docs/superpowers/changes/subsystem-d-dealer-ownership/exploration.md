@@ -5,51 +5,61 @@
 ## Current State
 
 **Data model: org == tenant today (conceptual collapse)**
+
 - `Product.tenant_id` and `Product.organization_id` are both on the entity (`apps/api/src/prosell/domain/entities/product.py:24-25`), but they are **self-referential**: `Organization.create()` sets `id=tenant_id` (`apps/api/src/prosell/domain/entities/organization.py:73`) and OAuth `User.create_oauth()` sets `tenant_id=user_id` (`apps/api/src/prosell/domain/entities/user.py:131`). No separate "dealer" entity exists.
 - `product_router.py:186-192` overwrites both fields server-side from the cookie-authenticated user — never trusted from body. Bulk upload (`product_router.py:902`) accepts `organization_id` from form but re-validates against user's tenant.
 
 **Admin bypass pattern exists in 2 routers, NOT in products**
+
 - `org_router.py:129-130` and `category_router.py:90` use `effective_tenant = None if is_admin else current_user.tenant_id`. `None` tenant_id = no filter, sees all.
 - `product_router.py` ignores role entirely — admins only see their own tenant's products. **No "admin sees all products across dealers" path.**
 
 **Frontend: no dealer UI surface**
+
 - `apps/web/src/app/(admin)/` contains only `dashboard/page.tsx` (25KB, single endpoint `/api/v1/admin/stats`).
 - No dealers/users/settings pages, no org switcher, no dealer picker, no "view as dealer" toggle anywhere.
 - `Sidebar.tsx:46-99` has a static nav array; both `(seller)/layout.tsx` and `(admin)/layout.tsx:27` pass the same four groups. **Same nav for both roles.**
 - `useAuth` (`apps/web/src/hooks/useAuth.ts:60-78`) exposes only `userRole: string | null` — no `isAdmin`, `isSuperAdmin`, or `hasPermission` helpers.
 
 **RBAC**
+
 - `Permission` enum at `apps/api/src/prosell/domain/entities/role.py:23-56`: `USER_*`, `ROLE_*`, `ORG_*`, `VEHICLE_*`, `ANALYTICS_*`, `SETTINGS_*`. **No `DEALER_*` or `ADMIN_*` permissions.**
 - Roles: `SUPER_ADMIN`, `ADMIN`, `MANAGER`, `SALES_AGENT`, `SALES_USER`, `VIEWER` (`role.py:12-20`).
 - Enforcement: `require_permission`/`require_role` factories at `apps/api/src/prosell/infrastructure/api/dependencies.py:332-407`. Used inconsistently: `org_router` uses both, `product_router` uses NEITHER (relies on tenant_id only).
 - **`VEHICLE_*` permissions defined but UNUSED** (Subsystem E debt) — zero references in routers/middleware/tests.
 
 **Multi-tenant propagation**
+
 - `get_current_auth_user_from_cookie` (`dependencies.py:252-329`) loads user + roles per request.
 - Repository-layer filter: `product_repository_impl.py:76` skips filter when `tenant_id == UUID(int=0)` sentinel. `get_all(tenant_id, organization_id=...)` already supports optional org filter (`product_repository_impl.py:109-129`).
 
 ## Affected Areas
 
 **Backend domain**
+
 - `apps/api/src/prosell/domain/entities/organization.py` — re-model if 1 tenant → N dealers or platform-admin lives outside any tenant.
 - `apps/api/src/prosell/domain/entities/product.py:24-25` — differentiate `dealer_id` from `organization_id`.
 - `apps/api/src/prosell/domain/entities/role.py` — add `DEALER_*`/`ADMIN_VIEW_ALL`; possibly new `PLATFORM_ADMIN` role.
 
 **Backend infra**
+
 - `apps/api/src/prosell/infrastructure/api/routers/product_router.py` — replicate admin-bypass from `org_router.py:129`. ~17 endpoints to audit for IDOR.
 - `apps/api/src/prosell/infrastructure/api/routers/admin_router.py` — currently 64 lines, 1 endpoint; expand for dealer-scoped views.
 - `apps/api/src/prosell/infrastructure/api/dependencies.py:332` — factories ready, just need new permission values.
 - `apps/api/src/prosell/infrastructure/repositories/product_repository_impl.py:109` — `organization_id` filter already optional, extend for cross-tenant queries.
 
 **Backend tests**
+
 - New: `apps/api/tests/integration/api/test_dealer_scoping.py`, `apps/api/tests/unit/test_dealer_permissions.py`.
 
 **Frontend app**
+
 - `apps/web/src/app/(admin)/` — add `dealers/`, `users/`, `settings/`, scoped product browser.
 - `apps/web/src/app/(seller)/layout.tsx` + `(admin)/layout.tsx:27` — Sidebar `groups` prop needs role-aware filtering.
 - `apps/web/src/app/(admin)/dashboard/page.tsx` — dealer picker + per-dealer stats.
 
 **Frontend lib/components**
+
 - `apps/web/src/components/layout/Sidebar.tsx:46-99` — role-aware nav.
 - `apps/web/src/components/layout/Header.tsx` — add org/dealer switcher dropdown.
 - `apps/web/src/hooks/useAuth.ts:60-78` — add `isAdmin`/`isSuperAdmin`/`hasPermission` selectors.
@@ -57,11 +67,13 @@
 - `apps/web/src/lib/api/orgApi.ts` + new `dealers.ts`.
 
 **Frontend tests**
+
 - New: `apps/web/tests/components/admin/DealerPicker.test.tsx`, `apps/web/tests/unit/lib/api/dealers.test.tsx`. Update admin/seller layout tests.
 
 ## Existing Coverage
 
 **Implemented**
+
 - Multi-tenant data model with repo-level enforcement + sentinel bypass
 - Org/category admin-bypass pattern (2 routers, ready to copy)
 - `/admin/stats` endpoint (SUPER_ADMIN-gated foundation)
@@ -71,6 +83,7 @@
 - Cross-tenant test infrastructure: `test_sign_image_urls_tenant_scope.py`, `test_validate_image_urls_for_tenant.py`, `test_role_based_permissions.py`
 
 **Missing**
+
 - No "dealer" concept in domain — `organization_id == tenant_id` collapses two ideas
 - No platform-admin UI surface beyond dashboard; no list/create/edit screens for dealers, no impersonation
 - No org/dealer switcher in Header or anywhere

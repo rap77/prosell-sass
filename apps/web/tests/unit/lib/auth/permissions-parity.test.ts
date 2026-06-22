@@ -2,7 +2,11 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { Permission, ROLE_PERMISSIONS, type RoleType } from "@/lib/auth/permissions";
+import {
+  Permission,
+  ROLE_PERMISSIONS,
+  type RoleType,
+} from "@/lib/auth/permissions";
 
 /**
  * permissions.ts is a hand-maintained mirror of the backend RBAC model
@@ -21,7 +25,11 @@ const ROLE_PY_PATH = join(
 );
 const rolePySource = readFileSync(ROLE_PY_PATH, "utf-8");
 
-function extractBlock(source: string, startMarker: string, endMarker: string): string {
+function extractBlock(
+  source: string,
+  startMarker: string,
+  endMarker: string,
+): string {
   const start = source.indexOf(startMarker);
   if (start === -1) {
     throw new Error(`Marker not found in role.py: ${startMarker}`);
@@ -34,7 +42,11 @@ function extractBlock(source: string, startMarker: string, endMarker: string): s
 }
 
 function backendPermissionValues(): Set<string> {
-  const block = extractBlock(rolePySource, "class Permission(StrEnum):", "ROLE_PERMISSIONS");
+  const block = extractBlock(
+    rolePySource,
+    "class Permission(StrEnum):",
+    "ROLE_PERMISSIONS",
+  );
   const values = new Set<string>();
   for (const match of block.matchAll(/^\s{4}[A-Z_]+\s*=\s*"([^"]+)"/gm)) {
     values.add(match[1]);
@@ -45,7 +57,9 @@ function backendPermissionValues(): Set<string> {
 function backendRolePermissions(): Record<string, Set<string>> {
   const block = extractBlock(rolePySource, "ROLE_PERMISSIONS", "\nclass Role(");
   const roles: Record<string, Set<string>> = {};
-  for (const roleMatch of block.matchAll(/RoleType\.([A-Z_]+):\s*\{([^}]*)\}/gs)) {
+  for (const roleMatch of block.matchAll(
+    /RoleType\.([A-Z_]+):\s*\{([^}]*)\}/gs,
+  )) {
     const roleName = roleMatch[1].toLowerCase();
     const permissions = new Set<string>();
     for (const permMatch of roleMatch[2].matchAll(/Permission\.([A-Z_]+)/g)) {
@@ -68,11 +82,15 @@ describe("permissions.ts / role.py parity", () => {
     const backendRoles = backendRolePermissions();
     const frontendRoleNames = Object.keys(ROLE_PERMISSIONS) as RoleType[];
 
-    expect(new Set(frontendRoleNames)).toEqual(new Set(Object.keys(backendRoles)));
+    expect(new Set(frontendRoleNames)).toEqual(
+      new Set(Object.keys(backendRoles)),
+    );
 
     for (const role of frontendRoleNames) {
       const frontendSet = new Set<string>(ROLE_PERMISSIONS[role]);
-      expect(frontendSet, `role "${role}" permission set diverged`).toEqual(backendRoles[role]);
+      expect(frontendSet, `role "${role}" permission set diverged`).toEqual(
+        backendRoles[role],
+      );
     }
   });
 });

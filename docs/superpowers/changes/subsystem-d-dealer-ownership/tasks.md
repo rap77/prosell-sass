@@ -57,6 +57,7 @@
 - [x] 6.10 GREEN: create products page using `GET /admin/dealers/{id}/products`
 
 Deviations from the original plan:
+
 - Pages live under the literal `/admin/dealers` URL (`app/(admin)/admin/dealers/...`),
   not `app/(admin)/dealers/...` — activates the (previously dead/untested)
   `/admin` prefix branch in `proxy.ts`. That branch had a real bug fixed as
@@ -80,6 +81,7 @@ Deviations from the original plan:
 - [x] 7.4 Manual smoke: admin can toggle `MARKETPLACE_PUBLISH` on own-org product; seller cannot
 
 Deviations from the original plan:
+
 - 7.4 originally read "admin can edit any product; seller cannot edit
   others'" — implying cross-tenant write access. `update_product` in
   `product_router.py` is hard-scoped to `current_user.tenant_id` with no

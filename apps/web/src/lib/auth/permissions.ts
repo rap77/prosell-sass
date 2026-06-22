@@ -101,6 +101,9 @@ export function getPermissionsForRole(role: string | null): Permission[] {
 /** Single source of truth for "does this role grant this permission" —
  * shared by useAuth.ts and organizationStore.ts so both derive permission
  * checks the same way instead of each re-deriving from getPermissionsForRole. */
-export function userHasPermission(role: string | null, permission: Permission): boolean {
+export function userHasPermission(
+  role: string | null,
+  permission: Permission,
+): boolean {
   return getPermissionsForRole(role).includes(permission);
 }

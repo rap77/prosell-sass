@@ -550,7 +550,12 @@ export const useAuthStore = create<AuthState>()(
           };
         }
 
-        return { user: null, isAuthenticated: false, isLoading: false, error: null };
+        return {
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        };
       },
     },
   ),

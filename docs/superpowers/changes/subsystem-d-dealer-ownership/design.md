@@ -55,29 +55,29 @@ Non-admin product request (unchanged):
 
 ## File Changes
 
-| File | Action | Description |
-|------|--------|-------------|
-| `apps/api/src/prosell/domain/entities/role.py` | Modify | Add `DEALER_ADMIN_VIEW_ALL`, `MARKETPLACE_PUBLISH` permissions; extend `ROLE_PERMISSIONS` map |
-| `apps/api/alembic/versions/XXXX_add_marketplace_flag.py` | Create | Alembic migration: add `products.published_to_marketplace BOOL NOT NULL DEFAULT FALSE` |
-| `apps/api/src/prosell/domain/entities/product.py` | Modify | Add `published_to_marketplace: bool = False` field |
-| `apps/api/src/prosell/infrastructure/models/product_model.py` | Modify | Mirror column on SQLAlchemy model |
-| `apps/api/src/prosell/infrastructure/api/routers/product_router.py` | Modify | Compute `effective_tenant` per request (admin bypass); accept `organization_id` query param; gate `published_to_marketplace` write on `MARKETPLACE_PUBLISH` |
-| `apps/api/src/prosell/infrastructure/api/routers/admin_dealers_router.py` | Create | `GET /admin/dealers`, `GET /admin/dealers/{id}/products` |
-| `apps/api/tests/integration/api/test_dealer_scoping.py` | Create | IDOR scenarios, admin allow/deny, marketplace toggle |
-| `apps/api/tests/unit/test_dealer_permissions.py` | Create | Permission enum + ROLE_PERMISSIONS map correctness |
-| `apps/web/src/hooks/useAuth.ts` | Modify | Add `isAdmin`, `isSuperAdmin`, `hasPermission(perm)` typed helpers |
-| `apps/web/src/components/layout/Header.tsx` | Modify | Add `<DealerPicker />` (admin-only) |
-| `apps/web/src/components/layout/Sidebar.tsx` | Modify | Filter `groups` by `permissions` |
-| `apps/web/src/stores/organizationStore.ts` | Modify | Add `viewingOrgId` + setter; gate setter on admin check |
-| `apps/web/src/app/(admin)/dealers/page.tsx` | Create | Dealer list |
-| `apps/web/src/app/(admin)/dealers/[id]/page.tsx` | Create | Dealer detail |
-| `apps/web/src/app/(admin)/dealers/[id]/products/page.tsx` | Create | Dealer products |
-| `apps/web/src/components/admin/DealerPicker.tsx` | Create | Header dropdown (admin-only) |
-| `apps/web/src/lib/api/dealers.ts` | Create | API client for `/admin/dealers` and `/admin/dealers/{id}/products` |
-| `apps/web/src/lib/api/schemas/dealers.ts` | Create | Zod schemas + safeParse for response shapes |
-| `apps/web/tests/components/admin/DealerPicker.test.tsx` | Create | Dropdown renders only for admin; picks set viewingOrgId |
-| `apps/web/tests/components/admin/DealersListPage.test.tsx` | Create | Renders dealer list with mock API |
-| `apps/web/tests/unit/hooks/useAuth.test.ts` | Modify | Test new helpers |
+| File                                                                      | Action | Description                                                                                                                                                 |
+| ------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api/src/prosell/domain/entities/role.py`                            | Modify | Add `DEALER_ADMIN_VIEW_ALL`, `MARKETPLACE_PUBLISH` permissions; extend `ROLE_PERMISSIONS` map                                                               |
+| `apps/api/alembic/versions/XXXX_add_marketplace_flag.py`                  | Create | Alembic migration: add `products.published_to_marketplace BOOL NOT NULL DEFAULT FALSE`                                                                      |
+| `apps/api/src/prosell/domain/entities/product.py`                         | Modify | Add `published_to_marketplace: bool = False` field                                                                                                          |
+| `apps/api/src/prosell/infrastructure/models/product_model.py`             | Modify | Mirror column on SQLAlchemy model                                                                                                                           |
+| `apps/api/src/prosell/infrastructure/api/routers/product_router.py`       | Modify | Compute `effective_tenant` per request (admin bypass); accept `organization_id` query param; gate `published_to_marketplace` write on `MARKETPLACE_PUBLISH` |
+| `apps/api/src/prosell/infrastructure/api/routers/admin_dealers_router.py` | Create | `GET /admin/dealers`, `GET /admin/dealers/{id}/products`                                                                                                    |
+| `apps/api/tests/integration/api/test_dealer_scoping.py`                   | Create | IDOR scenarios, admin allow/deny, marketplace toggle                                                                                                        |
+| `apps/api/tests/unit/test_dealer_permissions.py`                          | Create | Permission enum + ROLE_PERMISSIONS map correctness                                                                                                          |
+| `apps/web/src/hooks/useAuth.ts`                                           | Modify | Add `isAdmin`, `isSuperAdmin`, `hasPermission(perm)` typed helpers                                                                                          |
+| `apps/web/src/components/layout/Header.tsx`                               | Modify | Add `<DealerPicker />` (admin-only)                                                                                                                         |
+| `apps/web/src/components/layout/Sidebar.tsx`                              | Modify | Filter `groups` by `permissions`                                                                                                                            |
+| `apps/web/src/stores/organizationStore.ts`                                | Modify | Add `viewingOrgId` + setter; gate setter on admin check                                                                                                     |
+| `apps/web/src/app/(admin)/dealers/page.tsx`                               | Create | Dealer list                                                                                                                                                 |
+| `apps/web/src/app/(admin)/dealers/[id]/page.tsx`                          | Create | Dealer detail                                                                                                                                               |
+| `apps/web/src/app/(admin)/dealers/[id]/products/page.tsx`                 | Create | Dealer products                                                                                                                                             |
+| `apps/web/src/components/admin/DealerPicker.tsx`                          | Create | Header dropdown (admin-only)                                                                                                                                |
+| `apps/web/src/lib/api/dealers.ts`                                         | Create | API client for `/admin/dealers` and `/admin/dealers/{id}/products`                                                                                          |
+| `apps/web/src/lib/api/schemas/dealers.ts`                                 | Create | Zod schemas + safeParse for response shapes                                                                                                                 |
+| `apps/web/tests/components/admin/DealerPicker.test.tsx`                   | Create | Dropdown renders only for admin; picks set viewingOrgId                                                                                                     |
+| `apps/web/tests/components/admin/DealersListPage.test.tsx`                | Create | Renders dealer list with mock API                                                                                                                           |
+| `apps/web/tests/unit/hooks/useAuth.test.ts`                               | Modify | Test new helpers                                                                                                                                            |
 
 ## Interfaces / Contracts
 
@@ -93,31 +93,31 @@ class Permission(StrEnum):
 interface UseAuthReturn {
   user: User | null;
   userRole: string | null;
-  permissions: Permission[];  // NEW
-  isAdmin: boolean;            // NEW: SUPER_ADMIN || ADMIN
-  isSuperAdmin: boolean;       // NEW
-  hasPermission: (p: Permission) => boolean;  // NEW
+  permissions: Permission[]; // NEW
+  isAdmin: boolean; // NEW: SUPER_ADMIN || ADMIN
+  isSuperAdmin: boolean; // NEW
+  hasPermission: (p: Permission) => boolean; // NEW
 }
 
 // apps/web/src/stores/organizationStore.ts
 interface OrganizationStore {
   currentOrgId: string | null;
-  viewingOrgId: string | null;       // NEW (admin only)
-  setViewingOrgId: (id: string | null) => void;  // NEW
+  viewingOrgId: string | null; // NEW (admin only)
+  setViewingOrgId: (id: string | null) => void; // NEW
 }
 ```
 
 ## Testing Strategy
 
-| Layer | What to Test | Approach |
-|-------|-------------|----------|
-| Backend unit | Permission enum + ROLE_PERMISSIONS map (each role has expected perms, no leaks) | `tests/unit/test_dealer_permissions.py` — table-driven test |
-| Backend integration | Admin can list products across dealers (200), seller cannot (403), cross-tenant IDOR rejected (403), marketplace toggle allowed/denied | `tests/integration/api/test_dealer_scoping.py` — use existing async client fixture |
-| Backend integration | New `/admin/dealers` and `/admin/dealers/{id}/products` endpoints | Same file |
-| Frontend unit | `useAuth` helpers: `isAdmin`, `isSuperAdmin`, `hasPermission` per role | `tests/unit/hooks/useAuth.test.ts` |
-| Frontend component | `<DealerPicker>` renders only for admin, picks update `viewingOrgId` | `tests/components/admin/DealerPicker.test.tsx` |
-| Frontend component | Sidebar hides admin items for seller; shows for admin | `tests/components/layout/Sidebar.test.tsx` (extend existing) |
-| Frontend integration | Dealer list page renders, dealer detail page renders, products page renders | 3 separate tests with MSW mock |
+| Layer                | What to Test                                                                                                                           | Approach                                                                           |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Backend unit         | Permission enum + ROLE_PERMISSIONS map (each role has expected perms, no leaks)                                                        | `tests/unit/test_dealer_permissions.py` — table-driven test                        |
+| Backend integration  | Admin can list products across dealers (200), seller cannot (403), cross-tenant IDOR rejected (403), marketplace toggle allowed/denied | `tests/integration/api/test_dealer_scoping.py` — use existing async client fixture |
+| Backend integration  | New `/admin/dealers` and `/admin/dealers/{id}/products` endpoints                                                                      | Same file                                                                          |
+| Frontend unit        | `useAuth` helpers: `isAdmin`, `isSuperAdmin`, `hasPermission` per role                                                                 | `tests/unit/hooks/useAuth.test.ts`                                                 |
+| Frontend component   | `<DealerPicker>` renders only for admin, picks update `viewingOrgId`                                                                   | `tests/components/admin/DealerPicker.test.tsx`                                     |
+| Frontend component   | Sidebar hides admin items for seller; shows for admin                                                                                  | `tests/components/layout/Sidebar.test.tsx` (extend existing)                       |
+| Frontend integration | Dealer list page renders, dealer detail page renders, products page renders                                                            | 3 separate tests with MSW mock                                                     |
 
 ## Migration / Rollout
 
