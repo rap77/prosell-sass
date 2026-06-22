@@ -7,6 +7,7 @@ staff member creates a new dealer organization, picks its enabled verticals, and
 invites the dealer's owner — who has no account yet — to claim it.
 
 **Explicitly out of scope** (tracked separately, not part of this design):
+
 - `Permission.VEHICLE_*` → `PRODUCT_*`/`LISTING_*` rename. Pure mechanical
   refactor with zero dependency on the onboarding flow below — does not need a
   design doc, just a TDD task.
@@ -49,7 +50,7 @@ Verified against the actual code (not assumed) before designing:
   endpoint needs the identical behavior, so this design extracts
   `set_auth_cookies(response, result)` used by both.
 - Router-level error mapping is a flat `except ValueError as e: raise
-  HTTPException(400, str(e))` everywhere (`team_router.py`). Mirrored as-is —
+HTTPException(400, str(e))` everywhere (`team_router.py`). Mirrored as-is —
   no new exception types invented.
 - `GET /categories` (no `parent_id`) already returns root categories
   including global templates (`tenant_id IS NULL`) — reused unchanged for the
@@ -74,7 +75,7 @@ Verified against the actual code (not assumed) before designing:
   out of `CreateDealerOrganizationUseCase` so a resend endpoint can call it
   independently.
 - No existing code maps `TransientEmailError` to a specific HTTP status
-  anywhere, including `invite_team_member.py`. Deliberately *not* inventing a
+  anywhere, including `invite_team_member.py`. Deliberately _not_ inventing a
   nicer mapping just for this endpoint — stays consistent with the sibling
   flow (propagates, generic 500, transaction already rolled back so no
   orphaned org).
@@ -301,26 +302,26 @@ deliberately not mirroring `render_team_invitation`'s broken
 
 ## Endpoints
 
-| Method/Path | Router | Gate |
-|---|---|---|
-| `POST /admin/dealers` | `admin_dealers_router.py` (existing file) | `DEALER_ADMIN_VIEW_ALL` via existing `_require_dealer_admin_view_all()` |
-| `POST /admin/dealers/{id}/resend-invitation` | `admin_dealers_router.py` | same |
-| `POST /auth/accept-org-invitation` | `auth_router.py` (existing file) | public, `@smart_rate_limit("auth")` |
+| Method/Path                                  | Router                                    | Gate                                                                    |
+| -------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- |
+| `POST /admin/dealers`                        | `admin_dealers_router.py` (existing file) | `DEALER_ADMIN_VIEW_ALL` via existing `_require_dealer_admin_view_all()` |
+| `POST /admin/dealers/{id}/resend-invitation` | `admin_dealers_router.py`                 | same                                                                    |
+| `POST /auth/accept-org-invitation`           | `auth_router.py` (existing file)          | public, `@smart_rate_limit("auth")`                                     |
 
 `set_auth_cookies(response, result)` extracted from `login()`'s inline
 cookie-setting block, used by both `login()` and the new accept endpoint.
 
 ## Error Handling
 
-| Case | Status | Mechanism |
-|---|---|---|
-| `vertical_ids` empty | 400 | use-case validation |
-| `owner_email` already registered (case-insensitive) | 400 | explicit pre-check |
-| Invitation token invalid/not found | 400 | mirrors `accept_team_invitation.py` |
-| Invitation expired at accept | 400 | mark `EXPIRED`, persist, raise — same order as team flow |
-| Invitation already accepted | 400 | same as team flow |
-| Concurrent duplicate-email race | 409 | thin `except IntegrityError` in router (DB unique constraint as backstop) |
-| Email delivery failure | 500, no special handling | consistent with `invite_team_member.py`; transaction rollback already prevents an orphaned org |
+| Case                                                | Status                   | Mechanism                                                                                      |
+| --------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------- |
+| `vertical_ids` empty                                | 400                      | use-case validation                                                                            |
+| `owner_email` already registered (case-insensitive) | 400                      | explicit pre-check                                                                             |
+| Invitation token invalid/not found                  | 400                      | mirrors `accept_team_invitation.py`                                                            |
+| Invitation expired at accept                        | 400                      | mark `EXPIRED`, persist, raise — same order as team flow                                       |
+| Invitation already accepted                         | 400                      | same as team flow                                                                              |
+| Concurrent duplicate-email race                     | 409                      | thin `except IntegrityError` in router (DB unique constraint as backstop)                      |
+| Email delivery failure                              | 500, no special handling | consistent with `invite_team_member.py`; transaction rollback already prevents an orphaned org |
 
 ## Frontend
 

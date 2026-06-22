@@ -22,10 +22,12 @@
 ## Task 1: `OrganizationInvitation` domain entity
 
 **Files:**
+
 - Create: `apps/api/src/prosell/domain/entities/organization_invitation.py`
 - Test: `apps/api/tests/unit/domain/test_organization_invitation.py`
 
 **Interfaces:**
+
 - Produces: `OrganizationInvitation` (DomainModel), `OrganizationInvitationStatus` (StrEnum: `PENDING`/`ACCEPTED`/`EXPIRED`/`CANCELLED`), classmethod `OrganizationInvitation.create(organization_id: UUID, email: str, tenant_id: UUID, created_by_user_id: UUID, expires_in_days: int = 7) -> OrganizationInvitation`, methods `is_expired() -> bool`, `accept(accepted_by_user_id: UUID) -> None`, `cancel() -> None`, `mark_expired() -> None`.
 
 Mirrors `apps/api/src/prosell/domain/entities/team_invitation.py:1-157` exactly, with two field additions (`created_by_user_id`, `accepted_by_user_id`) and `organization_id` instead of `team_id`/`role`.
@@ -277,10 +279,12 @@ git commit -m "feat(api): add OrganizationInvitation domain entity"
 ## Task 2: Wire `Organization.created_by_user_id`
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/domain/entities/organization.py:11-80`
 - Test: `apps/api/tests/unit/domain/test_organization.py` (create if it doesn't exist; check first with `fd test_organization.py apps/api/tests`)
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces: `Organization.created_by_user_id: UUID | None` field; `Organization.create(name, tenant_id, creator_id=None)` (the existing `_creator_id` param is renamed to `creator_id` and actually stored, instead of being accepted-and-discarded).
 
@@ -385,10 +389,12 @@ git commit -m "feat(api): wire Organization.created_by_user_id (was reserved, un
 ## Task 3: Extend `User.create()` with `tenant_id` and `pre_verified`
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/domain/entities/user.py:66-99`
 - Test: `apps/api/tests/unit/domain/test_user.py` (check first with `fd test_user.py apps/api/tests` — append if it exists)
 
 **Interfaces:**
+
 - Produces: `User.create(email, password_hash, full_name, tenant_id: UUID | None = None, pre_verified: bool = False) -> User`. Defaults preserve every existing caller's behavior exactly (`tenant_id=None`, `status=PENDING_VERIFICATION`, `email_verified=False`).
 
 - [ ] **Step 1: Write the failing tests**
@@ -419,9 +425,11 @@ def test_create_pre_verified_with_tenant_id():
 ```
 
 Add these to the existing `test_user.py` (if it exists) preserving its imports, or create it with:
+
 ```python
 from prosell.domain.entities.user import User, UserStatus
 ```
+
 at the top.
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -499,6 +507,7 @@ git commit -m "feat(api): extend User.create() with tenant_id + pre_verified kwa
 ## Task 4: `organization_invitations` table — migration, ORM model, repository
 
 **Files:**
+
 - Create: `apps/api/alembic/versions/<new_revision>_add_organization_invitations_table.py`
 - Modify: `apps/api/src/prosell/infrastructure/models/organization_model.py` (add `OrganizationInvitationModel`, or create a sibling `organization_invitation_model.py` if `organization_model.py` only holds `OrganizationModel` — check first with `rg "^class" apps/api/src/prosell/infrastructure/models/organization_model.py`)
 - Create: `apps/api/src/prosell/domain/repositories/organization_invitation_repository.py`
@@ -506,6 +515,7 @@ git commit -m "feat(api): extend User.create() with tenant_id + pre_verified kwa
 - Test: `apps/api/tests/integration/repositories/test_organization_invitation_repository.py`
 
 **Interfaces:**
+
 - Produces: `AbstractOrganizationInvitationRepository` with `create`, `get_by_id`, `get_by_token`, `get_pending_by_org_and_email`, `update`, `count`. `SqlAlchemyOrganizationInvitationRepository` implementing it. `OrganizationInvitationModel` ORM class, table `organization_invitations`.
 
 Mirrors `team_invitation_repository.py`/`team_invitation_repository_impl.py`/`TeamInvitationModel` (`team_model.py:12-55`) exactly, minus `get_by_team`/`get_by_email`/`delete` (not needed — no endpoint deletes or lists by raw email), plus the partial unique index from the design doc.
@@ -920,10 +930,12 @@ git commit -m "feat(api): organization_invitations table + repository"
 ## Task 5: `organizations.created_by_user_id` column migration
 
 **Files:**
+
 - Create: `apps/api/alembic/versions/<new_revision>_add_organizations_created_by_user_id.py`
 - Modify: `apps/api/src/prosell/infrastructure/models/organization_model.py`
 
 **Interfaces:**
+
 - Consumes: `Organization.created_by_user_id` from Task 2.
 - Produces: `organizations.created_by_user_id` nullable column; `OrganizationModel.created_by_user_id: Mapped[UUID | None]`.
 
@@ -994,6 +1006,7 @@ git commit -m "feat(api): add organizations.created_by_user_id column"
 ## Task 6: Extract `IssueUserSessionUseCase` from `LoginUserUseCase`
 
 **Files:**
+
 - Create: `apps/api/src/prosell/application/use_cases/auth/issue_user_session.py`
 - Modify: `apps/api/src/prosell/application/use_cases/auth/login_user.py:144-190`
 - Modify: `apps/api/src/prosell/infrastructure/api/dependencies.py` (the `get_login_user_use_case` factory)
@@ -1001,6 +1014,7 @@ git commit -m "feat(api): add organizations.created_by_user_id column"
 - Test: existing `apps/api/tests/unit/application/test_login_user.py` (or real filename — `fd test_login_user apps/api/tests`) must still pass unchanged
 
 **Interfaces:**
+
 - Produces: `IssueUserSessionUseCase.execute(user: User, ip_address: str | None = None, user_agent: str | None = None) -> LoginUserResponse`. This is the exact tail of `LoginUserUseCase.execute()` (steps 8-10 of `login_user.py:144-190`), made reusable so `AcceptOrganizationInvitationUseCase` (Task 9) doesn't duplicate it.
 - Consumes (injected): `AbstractUserRepository`, `IJWTService`, `AbstractSessionRepository`, `ITokenHasher` — the same 4 dependencies `LoginUserUseCase` already has, minus `IPasswordService` (not needed once past credential verification).
 
@@ -1193,9 +1207,11 @@ Update `LoginUserUseCase.__init__` (lines 24-36) to accept the new collaborator 
 ```
 
 Add the import at the top of `login_user.py`:
+
 ```python
 from prosell.application.use_cases.auth.issue_user_session import IssueUserSessionUseCase
 ```
+
 and remove the now-unused `IJWTService`, `AbstractSessionRepository`, `ITokenHasher`, `Session` imports from that file if nothing else in it still uses them (`rg "jwt_service|session_repository|token_hasher|Session\(" apps/api/src/prosell/application/use_cases/auth/login_user.py` to check).
 
 - [ ] **Step 6: Update the DI factory**
@@ -1250,6 +1266,7 @@ git commit -m "refactor(api): extract IssueUserSessionUseCase out of LoginUserUs
 ## Task 7: `send_org_invitation` email capability
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/domain/ports/i_email_service.py` (add abstract method)
 - Modify: `apps/api/src/prosell/infrastructure/services/email/service.py:97-109` area (add `send_org_invitation`)
 - Modify: `apps/api/src/prosell/infrastructure/services/email/renderer.py:65-82` area (add `render_org_invitation`)
@@ -1258,6 +1275,7 @@ git commit -m "refactor(api): extract IssueUserSessionUseCase out of LoginUserUs
 - Test: `apps/api/tests/unit/services/email/test_service.py` (check with `fd test_service.py apps/api/tests/unit/services/email` — append or create matching that directory's convention)
 
 **Interfaces:**
+
 - Produces: `AbstractEmailService.send_org_invitation(email: str, organization_name: str, inviter_name: str, invitation_token: str) -> Awaitable[None]`; `EmailService.send_org_invitation(...)`; `EmailTemplateRenderer.render_org_invitation(...)`.
 
 Deliberately does NOT mirror `render_team_invitation`'s `?token=`-query-string URL (`renderer.py:73`) — that pattern is a confirmed dead link (see design doc's Audit findings). Uses `/invite/org/{token}` instead, matching Task 12's actual frontend route.
@@ -1291,7 +1309,8 @@ Expected: FAIL — `AttributeError: 'EmailTemplateRenderer' object has no attrib
 
 ```html
 <p>
-  {{ inviter_name }} te invitó a administrar <strong>{{ organization_name }}</strong>
+  {{ inviter_name }} te invitó a administrar
+  <strong>{{ organization_name }}</strong>
   en ProSell.
 </p>
 <p><a href="{{ invitation_url }}">Aceptar invitación</a></p>
@@ -1397,10 +1416,12 @@ git commit -m "feat(api): add send_org_invitation email capability"
 ## Task 8: `InviteDealerOwnerUseCase`
 
 **Files:**
+
 - Create: `apps/api/src/prosell/application/use_cases/organization/invite_dealer_owner.py`
 - Test: `apps/api/tests/unit/application/test_invite_dealer_owner.py`
 
 **Interfaces:**
+
 - Consumes: `AbstractOrganizationInvitationRepository` (Task 4), `AbstractEmailService.send_org_invitation` (Task 7).
 - Produces: `InviteDealerOwnerUseCase.execute(organization_id: UUID, organization_name: str, email: str, tenant_id: UUID, inviter_name: str, created_by_user_id: UUID) -> OrganizationInvitation`. Reused by both Task 9 (creation) and Task 11 (resend endpoint).
 
@@ -1635,7 +1656,7 @@ class InviteDealerOwnerUseCase:
         return invitation
 ```
 
-This also fixes a second latent issue the same root cause would have caused: reusing an existing PENDING invitation (the "already invited, not expired" branch) needs a *resend* path too, not just a reuse-the-row path — since the original raw token was never persisted anywhere, the old email's link is the only copy that ever existed. Issuing a fresh token for the same row on every resend (rather than trying to recover the old one) is the only option, and it's what the test in Step 4 below checks for.
+This also fixes a second latent issue the same root cause would have caused: reusing an existing PENDING invitation (the "already invited, not expired" branch) needs a _resend_ path too, not just a reuse-the-row path — since the original raw token was never persisted anywhere, the old email's link is the only copy that ever existed. Issuing a fresh token for the same row on every resend (rather than trying to recover the old one) is the only option, and it's what the test in Step 4 below checks for.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -1654,10 +1675,12 @@ git commit -m "feat(api): add InviteDealerOwnerUseCase"
 ## Task 9: `CreateDealerOrganizationUseCase`
 
 **Files:**
+
 - Create: `apps/api/src/prosell/application/use_cases/organization/create_dealer_organization.py`
 - Test: `apps/api/tests/unit/application/test_create_dealer_organization.py`
 
 **Interfaces:**
+
 - Consumes: `AbstractOrganizationRepository` (existing), `AbstractOrganizationVerticalRepository.enable()` (existing, `organization_vertical_repository.py:13`), `AbstractUserRepository.get_by_email()` (existing, for the email-registered check), `InviteDealerOwnerUseCase` (Task 8).
 - Produces: `CreateDealerOrganizationUseCase.execute(name: str, vertical_ids: list[UUID], owner_email: str, inviter_name: str, created_by_user_id: UUID) -> OrganizationInvitation`. Raises `ValueError` for: empty `vertical_ids`, `owner_email` already registered (active, non-deleted).
 
@@ -1881,10 +1904,12 @@ git commit -m "feat(api): add CreateDealerOrganizationUseCase"
 ## Task 10: `AcceptOrganizationInvitationUseCase`
 
 **Files:**
+
 - Create: `apps/api/src/prosell/application/use_cases/organization/accept_organization_invitation.py`
 - Test: `apps/api/tests/unit/application/test_accept_organization_invitation.py`
 
 **Interfaces:**
+
 - Consumes: `AbstractOrganizationInvitationRepository` (Task 4), `AbstractOrganizationRepository` (existing), `AbstractUserRepository` (existing), `AbstractRoleRepository.get_by_type`/`assign_role_to_user` (existing, `role_repository.py:42-73`), `IPasswordService.hash_password` (existing), `IssueUserSessionUseCase` (Task 6).
 - Produces: `AcceptOrganizationInvitationUseCase.execute(token: str, password: str, first_name: str, last_name: str, ip_address: str | None = None, user_agent: str | None = None) -> LoginUserResponse`. Raises `ValueError` for: invalid token, expired (marks `EXPIRED` first), already accepted.
 
@@ -2140,10 +2165,12 @@ git commit -m "feat(api): add AcceptOrganizationInvitationUseCase"
 ## Task 11: DI wiring for the 3 new use cases + `set_auth_cookies` helper
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/infrastructure/api/dependencies.py`
 - Modify: `apps/api/src/prosell/infrastructure/api/routers/auth_router.py:190-248` (extract `set_auth_cookies`)
 
 **Interfaces:**
+
 - Produces: `get_organization_invitation_repository`, `get_invite_dealer_owner_use_case`, `get_create_dealer_organization_use_case`, `get_accept_organization_invitation_use_case` factories. `set_auth_cookies(response: Response, result: LoginUserResponse) -> None` module-level function in `auth_router.py`.
 
 - [ ] **Step 1: Find an existing repository factory to mirror**
@@ -2165,6 +2192,7 @@ async def get_organization_invitation_repository(
 ```
 
 Add the matching import at the top with the other repository ABCs:
+
 ```python
 from prosell.domain.repositories.organization_invitation_repository import (
     AbstractOrganizationInvitationRepository,
@@ -2302,11 +2330,13 @@ git commit -m "feat(api): DI wiring for Subsystem E use cases + extract set_auth
 ## Task 12: `POST /admin/dealers` and `POST /admin/dealers/{id}/resend-invitation`
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/infrastructure/api/routers/admin_dealers_router.py`
 - Create: `apps/api/src/prosell/application/dto/organization/create_dealer.py` (request/response DTOs)
 - Test: `apps/api/tests/integration/api/test_admin_dealers_router.py` (check real filename with `fd test_admin_dealers apps/api/tests`)
 
 **Interfaces:**
+
 - Produces: `CreateDealerRequest` (name, vertical_ids, owner_email), `CreateDealerResponse` (invitation id, organization id, email, status). Both endpoints gated by `_require_dealer_admin_view_all()` (existing, `admin_dealers_router.py:36-41`).
 
 - [ ] **Step 1: Write the failing integration tests**
@@ -2405,9 +2435,10 @@ class CreateDealerResponse(BaseModel):
 
 - [ ] **Step 4: Add `get_latest_by_organization` to the invitation repository**
 
-The resend endpoint needs to know *which email* to resend to. `Organization` doesn't store the owner's email anywhere — only `OrganizationInvitation` rows do, and there could be an old `EXPIRED`/`CANCELLED` one for a typo'd address plus a `PENDING` one for the corrected address. Add a lookup for the most recent invitation (any status) before writing the endpoint that needs it.
+The resend endpoint needs to know _which email_ to resend to. `Organization` doesn't store the owner's email anywhere — only `OrganizationInvitation` rows do, and there could be an old `EXPIRED`/`CANCELLED` one for a typo'd address plus a `PENDING` one for the corrected address. Add a lookup for the most recent invitation (any status) before writing the endpoint that needs it.
 
 Add to `AbstractOrganizationInvitationRepository` (Task 4's interface file):
+
 ```python
     @abstractmethod
     async def get_latest_by_organization(
@@ -2417,6 +2448,7 @@ Add to `AbstractOrganizationInvitationRepository` (Task 4's interface file):
 ```
 
 Add to `SqlAlchemyOrganizationInvitationRepository` (Task 4's implementation file):
+
 ```python
     async def get_latest_by_organization(
         self, organization_id: UUID, tenant_id: UUID
@@ -2436,6 +2468,7 @@ Add to `SqlAlchemyOrganizationInvitationRepository` (Task 4's implementation fil
 ```
 
 Add to Task 4's test file:
+
 ```python
 @pytest.mark.asyncio
 async def test_get_latest_by_organization_returns_most_recent(db_session):
@@ -2563,11 +2596,13 @@ git commit -m "feat(api): POST /admin/dealers + resend-invitation endpoints"
 ## Task 13: `POST /auth/accept-org-invitation`
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/infrastructure/api/routers/auth_router.py`
 - Create: `apps/api/src/prosell/application/dto/auth/accept_org_invitation.py` (or add to an existing file in that package — check `fd . apps/api/src/prosell/application/dto/auth -t f` first)
 - Test: `apps/api/tests/integration/api/test_auth_router.py` (real filename — `fd test_auth_router apps/api/tests`)
 
 **Interfaces:**
+
 - Produces: `AcceptOrgInvitationRequest` (token, password, first_name, last_name), reuses `LoginUserResponse` for the response (same shape `/login` returns — same cookies get set).
 
 - [ ] **Step 1: Write the failing integration tests**
@@ -2695,11 +2730,13 @@ git commit -m "feat(api): POST /auth/accept-org-invitation"
 ## Task 14: Extract `passwordFieldSchema` to a shared module
 
 **Files:**
+
 - Create: `apps/web/src/lib/schemas/password.ts`
 - Modify: `apps/web/src/components/auth/RegisterForm.tsx:150-157`
 - Test: `apps/web/tests/unit/lib/schemas/password.test.ts`
 
 **Interfaces:**
+
 - Produces: `passwordFieldSchema: z.ZodString` — the exact regex/rules from `RegisterForm.tsx:154-157`, usable standalone or composed into a larger `z.object()`.
 
 - [ ] **Step 1: Write the failing test**
@@ -2760,6 +2797,7 @@ Expected: 4 passed
 - [ ] **Step 5: Update `RegisterForm.tsx` to use it**
 
 Replace lines 150-157 of `RegisterForm.tsx`:
+
 ```typescript
     password: z
       .string()
@@ -2770,10 +2808,13 @@ Replace lines 150-157 of `RegisterForm.tsx`:
         "Password must contain uppercase, lowercase, number, and special character (@$!%*?&)",
       ),
 ```
+
 with:
+
 ```typescript
     password: passwordFieldSchema,
 ```
+
 Add the import at the top of `RegisterForm.tsx`: `import { passwordFieldSchema } from "@/lib/schemas/password";`
 
 - [ ] **Step 6: Run the RegisterForm test suite to confirm zero regression**
@@ -2793,11 +2834,13 @@ git commit -m "refactor(web): extract passwordFieldSchema from RegisterForm"
 ## Task 15: `useCreateDealer()` + `useResendDealerInvitation()` mutations
 
 **Files:**
+
 - Modify: `apps/web/src/lib/api/schemas/dealers.ts`
 - Modify: `apps/web/src/lib/api/dealers.ts`
 - Test: `apps/web/tests/unit/lib/api/dealers.test.ts` (check real path/existence first: `fd dealers.test apps/web`)
 
 **Interfaces:**
+
 - Produces: `CreateDealerResponseSchema`/`CreateDealerResponse` type; `useCreateDealer(): UseMutationResult<CreateDealerResponse, Error, {name: string; vertical_ids: string[]; owner_email: string}>`; `useResendDealerInvitation(): UseMutationResult<CreateDealerResponse, Error, string>` (dealer id).
 
 - [ ] **Step 1: Add the response schema**
@@ -2907,7 +2950,10 @@ Add to `apps/web/src/lib/api/dealers.ts`, after the existing `useDealerProducts`
 
 ```typescript
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CreateDealerResponseSchema, type CreateDealerResponse } from "@/lib/api/schemas/dealers";
+import {
+  CreateDealerResponseSchema,
+  type CreateDealerResponse,
+} from "@/lib/api/schemas/dealers";
 
 interface CreateDealerInput {
   name: string;
@@ -2935,7 +2981,9 @@ async function postJson(url: string, body: unknown): Promise<unknown> {
 export function useCreateDealer() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: CreateDealerInput): Promise<CreateDealerResponse> => {
+    mutationFn: async (
+      input: CreateDealerInput,
+    ): Promise<CreateDealerResponse> => {
       const raw = await postJson("/api/v1/admin/dealers", input);
       return CreateDealerResponseSchema.parse(raw);
     },
@@ -2949,7 +2997,10 @@ export function useCreateDealer() {
 export function useResendDealerInvitation() {
   return useMutation({
     mutationFn: async (dealerId: string): Promise<CreateDealerResponse> => {
-      const raw = await postJson(`/api/v1/admin/dealers/${dealerId}/resend-invitation`, {});
+      const raw = await postJson(
+        `/api/v1/admin/dealers/${dealerId}/resend-invitation`,
+        {},
+      );
       return CreateDealerResponseSchema.parse(raw);
     },
   });
@@ -2980,10 +3031,12 @@ git commit -m "feat(web): useCreateDealer + useResendDealerInvitation mutations"
 ## Task 16: `/admin/dealers/new` staff form
 
 **Files:**
+
 - Create: `apps/web/src/app/(admin)/admin/dealers/new/page.tsx`
 - Test: `apps/web/src/app/(admin)/admin/dealers/new/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `useAuth().hasPermission` (existing), `Permission.DEALER_ADMIN_VIEW_ALL` (existing), `useCategories()` (existing, `lib/api/categories.ts:27` — already returns root categories since it calls `GET /api/v1/categories` with no `parent_id`, and the backend defaults that to root-only), `useCreateDealer()` (Task 15).
 
 This page gates on `hasPermission(Permission.DEALER_ADMIN_VIEW_ALL)` directly rather than reusing `useRequireAdmin()` — see the design doc's Architecture Decisions for why (the existing hook checks role-identity `isAdmin`, not the permission itself).
@@ -3205,10 +3258,12 @@ git commit -m "feat(web): admin/dealers/new staff form"
 ## Task 17: `/invite/org/[token]` accept-invitation page
 
 **Files:**
+
 - Create: `apps/web/src/app/invite/org/[token]/page.tsx`
 - Test: `apps/web/src/app/invite/org/[token]/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `passwordFieldSchema` (Task 14), `PasswordInput` (existing, `components/auth/PasswordInput.tsx`), `extractErrorMessage` (existing).
 
 Mirrors the state-machine shape of `apps/web/src/app/invite/[token]/page.tsx` (`loading`/`success`/`error`/`expired` — no `already_member` state, since accepting always creates a brand-new account). Unlike that page, `loading` does NOT auto-submit on mount — there's a form to fill in first (name + password), so `loading` here only covers the brief window of the actual POST after submit.
@@ -3475,10 +3530,12 @@ git commit -m "feat(web): /invite/org/[token] accept-invitation page"
 ## Task 18: "Reenviar invitación" button on the dealer detail page
 
 **Files:**
+
 - Modify: `apps/web/src/app/(admin)/admin/dealers/[id]/page.tsx`
 - Modify: `apps/web/src/app/(admin)/admin/dealers/[id]/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `useResendDealerInvitation()` (Task 15).
 
 Visible only when `dealer.status === "pending_verification"`.
@@ -3524,27 +3581,29 @@ In `page.tsx`, import `useResendDealerInvitation` from `@/lib/api/dealers` and a
 const resendInvitation = useResendDealerInvitation();
 
 // ... inside the JSX, after the existing status <p>:
-{dealer.status === "pending_verification" && (
-  <button
-    type="button"
-    onClick={() => resendInvitation.mutate(dealer.id)}
-    disabled={resendInvitation.isPending}
-    style={{
-      alignSelf: "flex-start",
-      height: 36,
-      padding: "0 16px",
-      borderRadius: 8,
-      background: "var(--ps-bg-elevated)",
-      border: "1px solid var(--ps-border-default)",
-      color: "var(--ps-text-secondary)",
-      fontSize: 13,
-      fontWeight: 600,
-      cursor: "pointer",
-    }}
-  >
-    {resendInvitation.isPending ? "Reenviando…" : "Reenviar invitación"}
-  </button>
-)}
+{
+  dealer.status === "pending_verification" && (
+    <button
+      type="button"
+      onClick={() => resendInvitation.mutate(dealer.id)}
+      disabled={resendInvitation.isPending}
+      style={{
+        alignSelf: "flex-start",
+        height: 36,
+        padding: "0 16px",
+        borderRadius: 8,
+        background: "var(--ps-bg-elevated)",
+        border: "1px solid var(--ps-border-default)",
+        color: "var(--ps-text-secondary)",
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: "pointer",
+      }}
+    >
+      {resendInvitation.isPending ? "Reenviando…" : "Reenviar invitación"}
+    </button>
+  );
+}
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -3580,7 +3639,7 @@ Found while reviewing T1-T11 code for the next batch. Listed by the task that sh
 
 ### G1 — T12: explicit transaction wrapping for `POST /admin/dealers`
 
-`CreateDealerOrganizationUseCase` docstring (line 19-23) says *"Caller (the router) is responsible for wrapping this in a DB transaction so a failure at any step ... rolls back the org and vertical rows too."* But the T12 endpoint snippets (lines 2467-2547) call `use_case.execute(...)` with no `async with db.begin():` or equivalent. Without explicit transaction scope, FastAPI's default per-request session commits after each `.flush()` in the use case — meaning `Organization.create()` + `vertical_repository.enable()` + `Invitation.create()` commit independently, and a failure in any later step leaves partial state.
+`CreateDealerOrganizationUseCase` docstring (line 19-23) says _"Caller (the router) is responsible for wrapping this in a DB transaction so a failure at any step ... rolls back the org and vertical rows too."_ But the T12 endpoint snippets (lines 2467-2547) call `use_case.execute(...)` with no `async with db.begin():` or equivalent. Without explicit transaction scope, FastAPI's default per-request session commits after each `.flush()` in the use case — meaning `Organization.create()` + `vertical_repository.enable()` + `Invitation.create()` commit independently, and a failure in any later step leaves partial state.
 
 **Bake into T12 Step 5:** wrap the `use_case.execute(...)` call in `async with db.begin():` (or equivalent explicit transaction boundary). Add an integration test that injects a failure mid-flow and asserts no Organization/Invitation rows persist.
 
