@@ -430,11 +430,10 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
 
-          // Delete auth cookies via API route
+          // Delete auth cookies via the Next.js route (same-origin —
+          // see initializeAuth() above for why this must stay relative).
           try {
-            const apiUrl =
-              process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-            await fetch(`${apiUrl}/api/auth/state`, {
+            await fetch("/api/auth/state", {
               method: "DELETE",
               credentials: "include",
             });
@@ -453,9 +452,7 @@ export const useAuthStore = create<AuthState>()(
 
           // Try to delete cookies via API
           try {
-            const apiUrl =
-              process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-            await fetch(`${apiUrl}/api/auth/state`, {
+            await fetch("/api/auth/state", {
               method: "DELETE",
               credentials: "include",
             });
@@ -498,12 +495,10 @@ export const useAuthStore = create<AuthState>()(
           error: null,
         });
 
-        // Delete httpOnly cookies via API — awaited so callers can sequence navigation after this
+        // Delete httpOnly cookies via the Next.js route (handled locally,
+        // not proxied to the backend) — awaited so callers can sequence
+        // navigation after this.
         try {
-          // Use relative URL so Next.js rewrites proxy to the backend.
-          // TODO(pre-existing bug): this hits DELETE /api/auth/state which
-          // returns 404 — the actual logout endpoint is POST /api/v1/auth/logout
-          // (see auth_router.py). Tracked separately to keep this fix surgical.
           await fetch("/api/auth/state", {
             method: "DELETE",
             credentials: "include",
