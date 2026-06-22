@@ -8,6 +8,7 @@
  * — a non-admin caller gets a 403, surfaced here as a thrown Error.
  */
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { extractErrorMessage } from "@/lib/api/extractErrorMessage";
 import {
   DealerListResponseSchema,
   DealerProductListResponseSchema,
@@ -15,22 +16,12 @@ import {
   type DealerProduct,
 } from "@/lib/api/schemas/dealers";
 
-function extractErrorMessage(value: unknown): string | undefined {
-  if (typeof value !== "object" || value === null) {
-    return undefined;
-  }
-  const record = value as Record<string, unknown>;
-  if (typeof record.detail === "string") return record.detail;
-  if (typeof record.message === "string") return record.message;
-  return undefined;
-}
-
 async function getJson(url: string): Promise<unknown> {
   const res = await fetch(url, { credentials: "include" });
 
   if (!res.ok) {
     const body: unknown = await res.json().catch(() => null);
-    throw new Error(extractErrorMessage(body) ?? "Error en la petición");
+    throw new Error(extractErrorMessage(body, "Error en la petición"));
   }
 
   return res.json();

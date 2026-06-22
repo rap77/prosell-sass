@@ -20,6 +20,7 @@ import {
   isGenericAttributes,
   type ProductAttributes,
 } from "@/types/vehicle";
+import { extractErrorMessage } from "./extractErrorMessage";
 import { getCoverImageKey } from "./productImages";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
 
@@ -94,17 +95,6 @@ const productListResponseSchema = z.object({
 
 function parseProductListResponse(raw: unknown): ProductListResponse {
   return productListResponseSchema.parse(raw);
-}
-
-const apiErrorBodySchema = z
-  .object({ detail: z.string().optional(), message: z.string().optional() })
-  .passthrough();
-
-function extractErrorMessage(body: unknown, fallback: string): string {
-  const parsed = apiErrorBodySchema.safeParse(body);
-  return (
-    (parsed.success && (parsed.data.detail ?? parsed.data.message)) || fallback
-  );
 }
 
 /**

@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Building2, Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import { useDealers } from "@/lib/api/dealers";
 
 /**
@@ -15,15 +13,8 @@ import { useDealers } from "@/lib/api/dealers";
  * nicety (the real boundary is the edge middleware in proxy.ts).
  */
 export default function AdminDealersPage() {
-  const router = useRouter();
-  const { isAdmin } = useAuth();
+  const isAdmin = useRequireAdmin();
   const { data: dealers = [], isLoading, error } = useDealers();
-
-  useEffect(() => {
-    if (!isAdmin) {
-      router.replace("/dashboard");
-    }
-  }, [isAdmin, router]);
 
   if (!isAdmin) {
     return null;
@@ -51,10 +42,7 @@ export default function AdminDealersPage() {
             color: "var(--ps-text-secondary)",
           }}
         >
-          <Loader2
-            size={16}
-            style={{ animation: "spin 0.8s linear infinite" }}
-          />
+          <Loader2 size={16} className="animate-spin" />
           Cargando concesionarios…
         </div>
       )}
@@ -93,8 +81,6 @@ export default function AdminDealersPage() {
           </li>
         ))}
       </ul>
-
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

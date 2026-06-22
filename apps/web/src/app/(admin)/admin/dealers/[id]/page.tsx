@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import { useDealer } from "@/lib/api/dealers";
 
 /**
@@ -17,15 +16,8 @@ import { useDealer } from "@/lib/api/dealers";
  */
 export default function AdminDealerDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const { isAdmin } = useAuth();
+  const isAdmin = useRequireAdmin();
   const { dealer, isLoading, error } = useDealer(id);
-
-  useEffect(() => {
-    if (!isAdmin) {
-      router.replace("/dashboard");
-    }
-  }, [isAdmin, router]);
 
   if (!isAdmin) {
     return null;
@@ -41,9 +33,8 @@ export default function AdminDealerDetailPage() {
           color: "var(--ps-text-secondary)",
         }}
       >
-        <Loader2 size={16} style={{ animation: "spin 0.8s linear infinite" }} />
+        <Loader2 size={16} className="animate-spin" />
         Cargando concesionario…
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
