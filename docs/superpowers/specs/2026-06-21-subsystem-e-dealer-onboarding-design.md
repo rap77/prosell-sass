@@ -168,6 +168,25 @@ costs nothing. The three existing admin/dealers pages built earlier this
 session keep `useRequireAdmin()` as-is — they work correctly today and
 migrating them is unrelated cleanup, not part of this design.
 
+### Decision: Extract `IssueUserSessionUseCase` out of `LoginUserUseCase`
+
+**Choice**: The tail of `LoginUserUseCase.execute()` (fetch roles → generate
+JWT access/refresh tokens → hash + persist a `Session` row) becomes its own
+`IssueUserSessionUseCase(user, ip_address, user_agent) -> LoginUserResponse`.
+`LoginUserUseCase` is refactored to call it instead of duplicating it;
+`AcceptOrganizationInvitationUseCase` calls the same use case to auto-login
+the new owner.
+**Alternatives considered**: duplicate the token/session logic inline inside
+`AcceptOrganizationInvitationUseCase`.
+**Rationale**: discovered while writing the implementation plan (not visible
+from the architecture alone) that "auto-login after accept" is far more than
+setting cookies — it requires the exact same JWT generation and `Session`
+persistence `LoginUserUseCase` does, or `/auth/refresh` would 500 with
+"Invalid or expired session" for every new owner (the same class of bug
+`verify_2fa.py` had to fix previously). Duplicating that logic in a second
+use case risks the two diverging the next time auth/session behavior
+changes; extracting it once removes that risk for zero extra runtime cost.
+
 ## Domain Model
 
 ```python
@@ -214,7 +233,7 @@ No changes to `Role`, `Permission`, or `ROLE_PERMISSIONS`.
 class CreateDealerOrganizationUseCase:
     async def execute(
         self, name: str, vertical_ids: list[UUID], owner_email: str,
-        created_by_user_id: UUID,
+        inviter_name: str, created_by_user_id: UUID,
     ) -> OrganizationInvitation:
         # 1 transaction:
         # - validate vertical_ids non-empty
@@ -228,9 +247,12 @@ class CreateDealerOrganizationUseCase:
 
 class InviteDealerOwnerUseCase:
     async def execute(
-        self, organization_id: UUID, email: str, created_by_user_id: UUID,
+        self, organization_id: UUID, organization_name: str, email: str,
+        tenant_id: UUID, inviter_name: str, created_by_user_id: UUID,
     ) -> OrganizationInvitation:
-        # reuse existing PENDING+unexpired invite for (org, email) if any;
+        # reuse existing PENDING+unexpired invite for (org, email) if any —
+        # reissuing a fresh token, since the original raw token was never
+        # persisted anywhere (same constraint TeamInvitation has);
         # else mark any expired one EXPIRED and create a new one
         # send_org_invitation email (not caught — propagates to roll back
         # the caller's transaction when called from creation)
@@ -239,15 +261,20 @@ class InviteDealerOwnerUseCase:
 class AcceptOrganizationInvitationUseCase:
     async def execute(
         self, token: str, password: str, first_name: str, last_name: str,
-    ) -> User:
-        # 1. hash token, look up invitation
+        ip_address: str | None = None, user_agent: str | None = None,
+    ) -> LoginUserResponse:
+        # 1. hash token, look up invitation via get_by_token_unscoped (tenant
+        #    isn't known yet — that's what this lookup determines)
         # 2. if expired: mark_expired, persist, raise ValueError
         # 3. if already accepted: raise ValueError
         # 4. password_service.hash_password(password)
-        # 5. User.create(email=invitation.email, password_hash=..., tenant_id=org.tenant_id, pre_verified=True)
+        # 5. User.create(email=invitation.email, password_hash=..., tenant_id=invitation.tenant_id, pre_verified=True)
         # 6. role = role_repo.get_by_type(ADMIN); assign_role_to_user(user.id, role.id)
         # 7. organization.verify(verifier_id=user.id)
-        # 8. invitation.mark_accepted(accepted_by_user_id=user.id)
+        # 8. invitation.accept(accepted_by_user_id=user.id)
+        # 9. return await issue_session_use_case.execute(user, ip_address, user_agent)
+        #    — same token/Session-issuing path /login uses, see the
+        #    IssueUserSessionUseCase decision above
         ...
 ```
 
