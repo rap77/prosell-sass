@@ -46,6 +46,7 @@ class OrganizationModel(Base):
 
     # Onboarding
     setup_complete: Mapped[bool] = mapped_column(default=False, nullable=False)
+    created_by_user_id: Mapped[UUID | None] = mapped_column(nullable=True)
 
     # Settings
     settings: Mapped[dict[str, object]] = mapped_column(JSON, default=dict, nullable=False)
