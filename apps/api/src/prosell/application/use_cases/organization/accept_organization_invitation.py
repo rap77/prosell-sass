@@ -4,6 +4,7 @@ from hashlib import sha256
 
 from prosell.application.dto.auth import LoginUserResponse
 from prosell.application.use_cases.auth.issue_user_session import IssueUserSessionUseCase
+from prosell.domain.entities.organization_invitation import OrganizationInvitationStatus
 from prosell.domain.entities.role import RoleType
 from prosell.domain.entities.user import User
 from prosell.domain.ports import IPasswordService
@@ -47,6 +48,12 @@ class AcceptOrganizationInvitationUseCase:
         # get_by_token_unscoped (not get_by_token) — at this point we don't
         # know which tenant the token belongs to. That's what we're
         # determining. See Task 4, Step 6 for why this method exists.
+        #
+        # Timing attack surface: a DB lookup leaks a few microseconds of
+        # difference between "row found" and "row not found". Mitigated by
+        # (1) 256-bit token entropy — collisions/enumeration are not feasible,
+        # (2) DB lookup latency dominates any signal, (3) per-IP rate limit
+        # on the public endpoint (scheduled in T13, gap G5).
         invitation = await self.invitation_repository.get_by_token_unscoped(token_hash)
         if not invitation:
             raise ValueError("Invalid invitation token")
@@ -56,7 +63,7 @@ class AcceptOrganizationInvitationUseCase:
             await self.invitation_repository.update(invitation)
             raise ValueError("Invitation has expired")
 
-        if invitation.status.value == "accepted":
+        if invitation.status == OrganizationInvitationStatus.ACCEPTED:
             raise ValueError("Invitation already accepted")
 
         password_hash = self.password_service.hash_password(password)
