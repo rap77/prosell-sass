@@ -20,6 +20,50 @@ def test_render_verification_contains_token_link(renderer: EmailTemplateRenderer
     assert "token=tok123" in msg.html_body
 
 
+def test_render_verification_link_uses_frontend_base_url_not_oauth_redirect(
+    renderer: EmailTemplateRenderer,
+) -> None:
+    """The link must be `{frontend_base_url}/auth/verify?token=...`.
+
+    Previously the renderer derived the base by splitting
+    settings.oauth_frontend_success_url on '/auth'. When that setting is the
+    OAuth redirect target (e.g. 'http://localhost:3000/dashboard') the split
+    silently no-ops, producing malformed links like
+    'http://localhost:3000/dashboard/auth/verify?token=...' — a real
+    production bug. This test pins the correct URL shape.
+    """
+    msg = renderer.render_verification(email="user@example.com", user_id=uuid4(), token="tok123")
+    assert 'href="http://localhost:3000/auth/verify?token=tok123"' in msg.html_body
+
+
+def test_render_password_reset_link_uses_frontend_base_url(renderer: EmailTemplateRenderer) -> None:
+    msg = renderer.render_password_reset(email="user@example.com", token="r1")
+    assert 'href="http://localhost:3000/auth/reset-password?token=r1"' in msg.html_body
+
+
+def test_render_org_invitation_link_uses_frontend_base_url(renderer: EmailTemplateRenderer) -> None:
+    msg = renderer.render_org_invitation(
+        email="owner@dealer.com",
+        organization_name="Acme Motors",
+        inviter_name="Staff",
+        invitation_token="tok123",
+    )
+    assert 'href="http://localhost:3000/invite/org/tok123"' in msg.html_body
+
+
+def test_render_team_invitation_link_uses_frontend_base_url(
+    renderer: EmailTemplateRenderer,
+) -> None:
+    msg = renderer.render_team_invitation(
+        email="user@example.com",
+        team_name="Sales",
+        inviter_name="Ana",
+        invitation_token="inv9",
+        role="member",
+    )
+    assert 'href="http://localhost:3000/invite/accept?token=inv9"' in msg.html_body
+
+
 def test_render_password_reset_contains_reset_link(renderer: EmailTemplateRenderer) -> None:
     msg = renderer.render_password_reset(email="user@example.com", token="r1")
     assert "Reset" in msg.subject
@@ -82,6 +126,20 @@ def test_render_appointment_status_update_cancelled(renderer: EmailTemplateRende
         notes=None,
     )
     assert "Cancelled" in msg.subject or "cancelled" in msg.html_body.lower()
+
+
+def test_render_org_invitation_builds_correct_url(renderer: EmailTemplateRenderer) -> None:
+    msg = renderer.render_org_invitation(
+        email="owner@dealer.com",
+        organization_name="Acme Motors",
+        inviter_name="Staff Person",
+        invitation_token="tok123",
+    )
+
+    assert msg.to == "owner@dealer.com"
+    assert "Acme Motors" in msg.subject
+    assert "/invite/org/tok123" in msg.html_body
+    assert "?token=" not in msg.html_body  # not the broken team-invite pattern
 
 
 def test_render_appointment_reminder_buyer(renderer: EmailTemplateRenderer) -> None:

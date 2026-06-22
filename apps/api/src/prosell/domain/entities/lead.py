@@ -2,12 +2,9 @@
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import Field
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field
 from prosell.domain.exceptions import LeadStateTransitionException
 from prosell.domain.value_objects.lead_source import LeadSource
 
@@ -107,7 +104,7 @@ class Lead(DomainModel):
         vendedor_id: UUID | None = None,
         message: str | None = None,
         source: LeadSource = LeadSource.MANUAL,
-        **kwargs: Any,
+        **kwargs: object,
     ) -> "Lead":
         """
         Factory method for new lead creation.

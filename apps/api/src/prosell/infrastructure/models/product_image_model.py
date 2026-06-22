@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from prosell.infrastructure.database.base import Base
@@ -49,7 +49,7 @@ class ProductImageModel(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default="now()",
-        onupdate="now()",
+        onupdate=text("now()"),
         nullable=False,
     )
 

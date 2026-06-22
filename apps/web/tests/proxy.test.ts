@@ -361,4 +361,68 @@ describe("Proxy", () => {
       expect(mockNext).not.toHaveBeenCalled();
     });
   });
+
+  describe("Role-based Route Protection — /admin", () => {
+    function requestAs(role: string, pathname = "/admin/dealers") {
+      return createMockRequest({
+        pathname,
+        cookies: [
+          { name: "access_token", value: "valid-token" },
+          {
+            name: "user_data",
+            value: JSON.stringify({
+              id: "1",
+              email: "test@example.com",
+              roles: [role], // real cookie shape — see authStore.ts's roles[0] adapter
+              is_2fa_enabled: false,
+            }),
+          },
+        ],
+      });
+    }
+
+    it("allows admin to access /admin/dealers", async () => {
+      await proxy(requestAs("admin"));
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockRedirect).not.toHaveBeenCalled();
+    });
+
+    it("allows super_admin to access /admin/dealers", async () => {
+      await proxy(requestAs("super_admin"));
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockRedirect).not.toHaveBeenCalled();
+    });
+
+    it("redirects sales_user away from /admin/dealers", async () => {
+      await proxy(requestAs("sales_user"));
+
+      expect(mockRedirect).toHaveBeenCalled();
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it("allows admin via legacy singular `role` field (pre-roles[] cookies)", async () => {
+      const req = createMockRequest({
+        pathname: "/admin/dealers",
+        cookies: [
+          { name: "access_token", value: "valid-token" },
+          {
+            name: "user_data",
+            value: JSON.stringify({
+              id: "1",
+              email: "test@example.com",
+              role: "admin",
+              is_2fa_enabled: false,
+            }),
+          },
+        ],
+      });
+
+      await proxy(req);
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockRedirect).not.toHaveBeenCalled();
+    });
+  });
 });

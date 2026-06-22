@@ -418,6 +418,45 @@ class TestUserRoleManagement:
         assert user.has_role("viewer") is True
 
 
+class TestUserHasPermission:
+    """Test has_permission() — code review finding #3: this replaces the
+    _user_has_permission() free function duplicated in product_router.py
+    and admin_dealers_router.py."""
+
+    def test_has_permission_returns_true_when_role_grants_it(self) -> None:
+        from prosell.domain.entities.role import Permission, Role, RoleType
+
+        user = User.create(
+            email="admin-perm@example.com",
+            password_hash="hash",
+            full_name="Admin Perm User",
+        )
+        user.roles = [Role.create_system_role(RoleType.ADMIN)]
+        assert user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL) is True
+
+    def test_has_permission_returns_false_when_no_roles(self) -> None:
+        from prosell.domain.entities.role import Permission
+
+        user = User.create(
+            email="noroles-perm@example.com",
+            password_hash="hash",
+            full_name="No Roles Perm User",
+        )
+        assert user.roles is None
+        assert user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL) is False
+
+    def test_has_permission_returns_false_when_role_lacks_it(self) -> None:
+        from prosell.domain.entities.role import Permission, Role, RoleType
+
+        user = User.create(
+            email="viewer-perm@example.com",
+            password_hash="hash",
+            full_name="Viewer Perm User",
+        )
+        user.roles = [Role.create_system_role(RoleType.VIEWER)]
+        assert user.has_permission(Permission.DEALER_ADMIN_VIEW_ALL) is False
+
+
 class TestUserAccountStatus:
     """Test account status changes."""
 

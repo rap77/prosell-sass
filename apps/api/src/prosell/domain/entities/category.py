@@ -4,9 +4,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import Field, field_validator
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field, field_validator
 
 
 class Category(DomainModel):
@@ -42,19 +40,19 @@ class Category(DomainModel):
 
     # Metadata (for dynamic fields config)
     # Format: {"fields": [{"field_name": "year", "field_type": "NUMBER", ...}]}
-    field_config: list[dict[str, Any]] = Field(default_factory=lambda: [])
+    field_config: list[dict[str, object]] = Field(default_factory=lambda: [])
 
     # C3 schema: API validation schema for product attributes in this category
     # Format: {"field_name": {"type": "string|number|boolean", "required": bool, "options": [...]}}
     # Different from field_config (UI renderer) — this drives data validation
-    attribute_schema: dict[str, Any] = Field(default_factory=dict)
+    attribute_schema: dict[str, dict[str, object]] = Field(default_factory=dict)
 
     # Presentation contract — how products in this category are displayed.
     # Inherited down the tree (a child without its own falls back to the
     # nearest ancestor; inheritance is resolved by the read layer, Plan 2).
     # Shape: {"title_template": "{year} {make} {model}",
     #         "subtitle_template": "{trim}", "card_fields": ["price"]}
-    presentation: dict[str, Any] | None = None
+    presentation: dict[str, object] | None = None
 
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -79,6 +77,9 @@ class Category(DomainModel):
         tenant_id: UUID | None,
         parent_id: UUID | None = None,
         level: int = 0,
+        # Generic passthrough for the remaining optional fields not listed
+        # above (location_*, timezone, settings, etc.) so this factory
+        # doesn't have to re-declare every field Pydantic validates.
         **kwargs: Any,
     ) -> "Category":
         """
@@ -259,7 +260,7 @@ class Category(DomainModel):
         self.sort_order = sort_order
         self.updated_at = datetime.now(UTC)
 
-    def validate_attributes(self, attributes: dict[str, Any]) -> None:
+    def validate_attributes(self, attributes: dict[str, object]) -> None:
         """
         Validate product attributes against this category's attribute_schema.
 
@@ -279,7 +280,8 @@ class Category(DomainModel):
 
         for field_name, field_def in self.attribute_schema.items():
             required = field_def.get("required", False)
-            field_type = field_def.get("type", "string")
+            raw_field_type = field_def.get("type", "string")
+            field_type = raw_field_type if isinstance(raw_field_type, str) else "string"
             value = attributes.get(field_name)
 
             if required and value is None:
@@ -298,7 +300,7 @@ class Category(DomainModel):
                         f"got {type(value).__name__}"
                     )
                 options = field_def.get("options")
-                if options and value not in options:
+                if isinstance(options, list | tuple | set) and value not in options:
                     raise ValueError(
                         f"Attribute '{field_name}' must be one of {options}, got '{value}'"
                     )

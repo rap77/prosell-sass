@@ -12,9 +12,7 @@ captured at the moment the link is first created and is never updated
 from datetime import UTC, datetime
 from uuid import UUID
 
-from pydantic import Field
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field
 
 
 class OrganizationVertical(DomainModel):

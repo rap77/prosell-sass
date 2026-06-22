@@ -102,3 +102,14 @@ class AbstractEmailService(Protocol):
     ) -> Awaitable[None]:
         """Send team invitation email."""
         ...
+
+    @abstractmethod
+    def send_org_invitation(
+        self,
+        email: str,
+        organization_name: str,
+        inviter_name: str,
+        invitation_token: str,
+    ) -> Awaitable[None]:
+        """Send dealer-owner organization invitation email."""
+        ...

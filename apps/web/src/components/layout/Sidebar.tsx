@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/lib/stores/layoutStore";
 import { useAuth } from "@/hooks/useAuth";
+import { Permission } from "@/lib/auth/permissions";
 import { usePathname } from "next/navigation";
 import { LucideIcon } from "lucide-react";
 import Image from "next/image";
@@ -15,17 +16,26 @@ import {
   BarChart3,
   Settings,
   ScrollText,
+  Building2,
 } from "lucide-react";
 
 /**
  * Navigation group types for role-based sidebar filtering.
  *
- * - 'general'       → top-level items (Dashboard), no group header shown
- * - 'inventario'    → catalog & publications
- * - 'ventas'        → sales execution (leads, pipeline, analytics)
- * - 'configuración' → admin/branch only
+ * - 'general'        → top-level items (Dashboard), no group header shown
+ * - 'inventario'     → catalog & publications
+ * - 'ventas'         → sales execution (leads, pipeline, analytics)
+ * - 'configuración'  → admin/branch only
+ * - 'concesionarios' → Subsystem D: cross-dealer admin view, gated behind
+ *   Permission.DEALER_ADMIN_VIEW_ALL regardless of whether the caller's
+ *   layout requests this group (defense in depth — see `Sidebar()` below).
  */
-export type NavGroup = "general" | "inventario" | "ventas" | "configuración";
+export type NavGroup =
+  | "general"
+  | "inventario"
+  | "ventas"
+  | "configuración"
+  | "concesionarios";
 
 // Render order for nav groups. A typed list lets us iterate without casting
 // the keys back to NavGroup (Object.entries widens them to string).
@@ -33,6 +43,7 @@ const NAV_GROUP_ORDER: NavGroup[] = [
   "general",
   "inventario",
   "ventas",
+  "concesionarios",
   "configuración",
 ];
 
@@ -83,6 +94,13 @@ const navigationItems: NavItem[] = [
     icon: BarChart3,
     group: "ventas",
   },
+  // Concesionarios group (Subsystem D: admin/super_admin only)
+  {
+    label: "Concesionarios",
+    href: "/admin/dealers",
+    icon: Building2,
+    group: "concesionarios",
+  },
   // Configuración group (admin/branch only)
   {
     label: "Configuración",
@@ -115,12 +133,22 @@ interface SidebarProps {
  */
 export function Sidebar({ groups }: SidebarProps) {
   const { sidebarCollapsed, toggleSidebar } = useLayoutStore();
+  const { hasPermission } = useAuth();
   const pathname = usePathname();
 
-  // Filter navigation items based on user role
-  const visibleItems = navigationItems.filter((item) =>
-    groups.includes(item.group),
-  );
+  // Filter navigation items based on user role. "concesionarios" gets an
+  // extra permission check on top of the group list — defense in depth so
+  // a layout misconfiguration can't expose the cross-dealer admin view to
+  // a caller without DEALER_ADMIN_VIEW_ALL.
+  const visibleItems = navigationItems.filter((item) => {
+    if (item.group === "concesionarios") {
+      return (
+        groups.includes("concesionarios") &&
+        hasPermission(Permission.DEALER_ADMIN_VIEW_ALL)
+      );
+    }
+    return groups.includes(item.group);
+  });
 
   return (
     <aside
@@ -235,13 +263,20 @@ Sidebar.Nav = function SidebarNav({
       acc[item.group].push(item);
       return acc;
     },
-    { general: [], inventario: [], ventas: [], configuración: [] },
+    {
+      general: [],
+      inventario: [],
+      ventas: [],
+      concesionarios: [],
+      configuración: [],
+    },
   );
 
   const groupLabels: Record<NavGroup, string> = {
     general: "", // top-level items — no visible header
     inventario: "Inventario",
     ventas: "Ventas",
+    concesionarios: "Concesionarios",
     configuración: "Configuración",
   };
 

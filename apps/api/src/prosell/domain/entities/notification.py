@@ -2,12 +2,9 @@
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import Field
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field
 
 
 class NotificationType(StrEnum):
@@ -60,7 +57,7 @@ class Notification(DomainModel):
         body: str,
         resource_type: str | None = None,
         resource_id: UUID | None = None,
-        **kwargs: Any,
+        **kwargs: object,
     ) -> "Notification":
         """Factory method for new notification creation.
 

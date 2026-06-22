@@ -27,13 +27,15 @@ class AbstractProductRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_id(self, product_id: UUID, tenant_id: UUID) -> Product | None:
+    async def get_by_id(self, product_id: UUID, tenant_id: UUID | None) -> Product | None:
         """
-        Get product by ID (with tenant isolation).
+        Get product by ID, optionally with tenant isolation.
 
         Args:
             product_id: Product UUID
-            tenant_id: Tenant UUID for isolation
+            tenant_id: Tenant UUID for isolation. None skips the tenant
+                filter entirely — only internal callers without a tenant
+                context should pass None.
 
         Returns:
             Product entity or None if not found
@@ -57,7 +59,7 @@ class AbstractProductRepository(ABC):
     @abstractmethod
     async def get_all(
         self,
-        tenant_id: UUID,
+        tenant_id: UUID | None,
         organization_id: UUID | None = None,
         category_id: UUID | None = None,
         status: ProductStatus | None = None,
@@ -76,7 +78,9 @@ class AbstractProductRepository(ABC):
         Get products with optional filters.
 
         Args:
-            tenant_id: Tenant UUID
+            tenant_id: Tenant UUID. None lifts tenant isolation entirely —
+                callers MUST only pass None for a user holding
+                Permission.DEALER_ADMIN_VIEW_ALL.
             organization_id: Filter by organization
             category_id: Filter by category
             status: Filter by status
@@ -194,20 +198,34 @@ class AbstractProductRepository(ABC):
     @abstractmethod
     async def count(
         self,
-        tenant_id: UUID,
+        tenant_id: UUID | None,
         organization_id: UUID | None = None,
+        category_id: UUID | None = None,
         status: ProductStatus | None = None,
+        condition: ProductCondition | None = None,
+        is_featured: bool | None = None,
+        search_query: str | None = None,
+        min_price_cents: int | None = None,
+        max_price_cents: int | None = None,
+        attribute_filters: list["AttributeFilter"] | None = None,
     ) -> int:
         """
-        Count products.
+        Count products matching the same filters `get_all()` accepts.
 
         Args:
-            tenant_id: Tenant UUID
+            tenant_id: Tenant UUID. None lifts tenant isolation (admin bypass).
             organization_id: Filter by organization
+            category_id: Filter by category
             status: Filter by status
+            condition: Filter by condition
+            is_featured: Filter by featured status
+            search_query: Text search in title/description
+            min_price_cents: Minimum price filter
+            max_price_cents: Maximum price filter
+            attribute_filters: Dynamic filters over the JSONB `attributes` column
 
         Returns:
-            Total count
+            Total count of products matching every filter above
         """
         pass
 

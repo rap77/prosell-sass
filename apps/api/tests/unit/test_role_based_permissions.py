@@ -21,7 +21,7 @@ They test domain entities, domain logic, and the RBAC middleware directly.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TypedDict
 from uuid import UUID, uuid4
 
 import pytest
@@ -34,6 +34,15 @@ from prosell.domain.entities.role import (
     RoleType,
 )
 from prosell.domain.entities.user import User, UserStatus
+
+
+class _CurrentUserDict(TypedDict):
+    """Shape of the `current_user` dict RBACMiddleware.require_roles/
+    require_permissions extract `roles` from. Tests only ever populate
+    `roles`, so this is the real shape — not a justification for `Any`."""
+
+    roles: list[str]
+
 
 # =============================================================================
 # B2.5.b — PERMISSION_MATRIX
@@ -66,6 +75,9 @@ PERMISSION_MATRIX: dict[str, dict[str, bool]] = {
         "vehicle:read": True,
         "vehicle:update": True,
         "vehicle:delete": True,
+        # Subsystem D — cross-dealer marketplace
+        "dealer:admin_view_all": True,
+        "marketplace:publish": True,
         # Analytics
         "analytics:view": True,
         "analytics:export": True,
@@ -91,6 +103,10 @@ PERMISSION_MATRIX: dict[str, dict[str, bool]] = {
         "vehicle:read": True,
         "vehicle:update": True,
         "vehicle:delete": True,
+        # Subsystem D — manager can publish their own dealer's products,
+        # but not browse cross-dealer
+        "dealer:admin_view_all": False,
+        "marketplace:publish": True,
         "analytics:view": True,
         "analytics:export": True,
         "settings:read": True,
@@ -114,6 +130,9 @@ PERMISSION_MATRIX: dict[str, dict[str, bool]] = {
         "vehicle:read": True,
         "vehicle:update": True,
         "vehicle:delete": False,
+        # Subsystem D — sellers don't publish or browse cross-dealer
+        "dealer:admin_view_all": False,
+        "marketplace:publish": False,
         "analytics:view": True,
         "analytics:export": False,
         "settings:read": False,
@@ -137,6 +156,9 @@ PERMISSION_MATRIX: dict[str, dict[str, bool]] = {
         "vehicle:read": True,
         "vehicle:update": False,
         "vehicle:delete": False,
+        # Subsystem D — viewers don't publish or browse cross-dealer
+        "dealer:admin_view_all": False,
+        "marketplace:publish": False,
         "analytics:view": True,
         "analytics:export": False,
         "settings:read": False,
@@ -213,9 +235,9 @@ class TestPermissionMatrixConsistency:
         for role_name in PERMISSION_MATRIX:
             matrix_keys = set(PERMISSION_MATRIX[role_name].keys())
             missing = all_perm_strings - matrix_keys
-            assert (
-                not missing
-            ), f"Role '{role_name}' is missing permissions in PERMISSION_MATRIX: {missing}"
+            assert not missing, (
+                f"Role '{role_name}' is missing permissions in PERMISSION_MATRIX: {missing}"
+            )
 
 
 # =============================================================================
@@ -226,7 +248,8 @@ class TestPermissionMatrixConsistency:
 class TestAdminPermissions:
     """B2.5.c: Admin role has broad but NOT super-admin level access."""
 
-    def setup_method(self) -> None:
+    @pytest.fixture(autouse=True)
+    def _setup(self) -> None:
         self.admin_user = _make_user(RoleType.ADMIN)
         self.admin_perms = _perms_for(RoleType.ADMIN)
 
@@ -296,7 +319,8 @@ class TestAdminPermissions:
 class TestManagerPermissions:
     """B2.5.d: Manager can manage team operations but not org admin tasks."""
 
-    def setup_method(self) -> None:
+    @pytest.fixture(autouse=True)
+    def _setup(self) -> None:
         self.manager_user = _make_user(RoleType.MANAGER)
         self.manager_perms = _perms_for(RoleType.MANAGER)
 
@@ -361,7 +385,8 @@ class TestManagerPermissions:
 class TestVendedorPermissions:
     """B2.5.e: Sales agent can work with vehicles and analytics only."""
 
-    def setup_method(self) -> None:
+    @pytest.fixture(autouse=True)
+    def _setup(self) -> None:
         self.vendedor_user = _make_user(RoleType.SALES_AGENT)
         self.vendedor_perms = _perms_for(RoleType.SALES_AGENT)
 
@@ -425,7 +450,8 @@ class TestVendedorPermissions:
 class TestViewerPermissions:
     """B2.5.f: Viewer has minimal read-only access."""
 
-    def setup_method(self) -> None:
+    @pytest.fixture(autouse=True)
+    def _setup(self) -> None:
         self.viewer_user = _make_user(RoleType.VIEWER)
         self.viewer_perms = _perms_for(RoleType.VIEWER)
 
@@ -576,9 +602,9 @@ class TestAllRoleCombinations:
         ]:
             higher_perms = _perms_for(role_type)
             for perm in viewer_perms:
-                assert (
-                    perm in higher_perms
-                ), f"Role '{role_type.value}' missing viewer permission '{perm}'"
+                assert perm in higher_perms, (
+                    f"Role '{role_type.value}' missing viewer permission '{perm}'"
+                )
 
     def test_no_role_above_super_admin(self) -> None:
         """SUPER_ADMIN has all defined permissions."""
@@ -621,120 +647,106 @@ class TestAPILayerAuthorization:
 
     # ── require_roles (RBACMiddleware) ─────────────────────────────────────────
 
-    def test_rbac_middleware_allows_matching_role(self) -> None:
+    async def test_rbac_middleware_allows_matching_role(self) -> None:
         """RBACMiddleware.require_roles passes when user has the role."""
         from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
 
         # The middleware operates on a dict with 'roles' key
-        user_dict: dict[str, Any] = {"roles": ["admin"]}
+        user_dict: _CurrentUserDict = {"roles": ["admin"]}
 
         # Instantiate the wrapper inline to verify it doesn't raise
         @RBACMiddleware.require_roles("admin", "super_admin")
         async def _endpoint() -> str:
             return "ok"
 
-        import asyncio
-
-        result: str = asyncio.run(_endpoint(current_user=user_dict))  # type: ignore[call-arg]
+        result: str = await _endpoint(current_user=user_dict)  # type: ignore[call-arg]
         assert result == "ok"
 
-    def test_rbac_middleware_blocks_wrong_role(self) -> None:
+    async def test_rbac_middleware_blocks_wrong_role(self) -> None:
         """RBACMiddleware.require_roles raises 403 when user lacks the role."""
         from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
 
-        user_dict: dict[str, Any] = {"roles": ["viewer"]}
+        user_dict: _CurrentUserDict = {"roles": ["viewer"]}
 
         @RBACMiddleware.require_roles("admin", "super_admin")
-        async def _endpoint(_current_user: dict[str, Any]) -> str:
+        async def _endpoint(_current_user: _CurrentUserDict) -> str:
             return "ok"
 
-        import asyncio
-
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.run(_endpoint(current_user=user_dict))  # type: ignore[call-arg]
+            await _endpoint(current_user=user_dict)  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
-    def test_rbac_middleware_blocks_empty_roles(self) -> None:
+    async def test_rbac_middleware_blocks_empty_roles(self) -> None:
         """RBACMiddleware.require_roles raises 403 when user has no roles."""
         from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
 
-        user_dict: dict[str, Any] = {"roles": []}
+        user_dict: _CurrentUserDict = {"roles": []}
 
         @RBACMiddleware.require_roles("admin")
-        async def _endpoint(_current_user: dict[str, Any]) -> str:
+        async def _endpoint(_current_user: _CurrentUserDict) -> str:
             return "ok"
 
-        import asyncio
-
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.run(_endpoint(current_user=user_dict))  # type: ignore[call-arg]
+            await _endpoint(current_user=user_dict)  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
-    def test_rbac_middleware_allows_any_of_multiple_roles(self) -> None:
+    async def test_rbac_middleware_allows_any_of_multiple_roles(self) -> None:
         """require_roles is satisfied when user has *any* of the listed roles."""
         from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
 
-        user_dict: dict[str, Any] = {"roles": ["manager"]}
+        user_dict: _CurrentUserDict = {"roles": ["manager"]}
 
         @RBACMiddleware.require_roles("admin", "manager", "super_admin")
         async def _endpoint() -> str:
             return "ok"
 
-        import asyncio
-
-        result: str = asyncio.run(_endpoint(current_user=user_dict))  # type: ignore[call-arg]
+        result: str = await _endpoint(current_user=user_dict)  # type: ignore[call-arg]
         assert result == "ok"
 
     # ── require_permissions (RBACMiddleware) ───────────────────────────────────
 
-    def test_rbac_middleware_allows_matching_permission(self) -> None:
+    async def test_rbac_middleware_allows_matching_permission(self) -> None:
         """require_permissions passes when user role grants the permission."""
         from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
 
-        user_dict: dict[str, Any] = {"roles": ["admin"]}
+        user_dict: _CurrentUserDict = {"roles": ["admin"]}
 
         @RBACMiddleware.require_permissions("vehicle:create")
         async def _endpoint() -> str:
             return "ok"
 
-        import asyncio
-
-        result: str = asyncio.run(_endpoint(current_user=user_dict))  # type: ignore[call-arg]
+        result: str = await _endpoint(current_user=user_dict)  # type: ignore[call-arg]
         assert result == "ok"
 
-    def test_rbac_middleware_blocks_missing_permission(self) -> None:
+    async def test_rbac_middleware_blocks_missing_permission(self) -> None:
         """require_permissions raises 403 when user's role lacks the permission."""
         from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
 
-        user_dict: dict[str, Any] = {"roles": ["viewer"]}
+        user_dict: _CurrentUserDict = {"roles": ["viewer"]}
 
         @RBACMiddleware.require_permissions("vehicle:create")
-        async def _endpoint(_current_user: dict[str, Any]) -> str:
+        async def _endpoint(_current_user: _CurrentUserDict) -> str:
             return "ok"
 
-        import asyncio
-
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.run(_endpoint(current_user=user_dict))  # type: ignore[call-arg]
+            await _endpoint(current_user=user_dict)  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
-    def test_rbac_detail_contains_missing_permission(self) -> None:
+    async def test_rbac_detail_contains_missing_permission(self) -> None:
         """403 error detail lists the missing permissions."""
         from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
 
-        user_dict: dict[str, Any] = {"roles": ["viewer"]}
+        user_dict: _CurrentUserDict = {"roles": ["viewer"]}
 
         @RBACMiddleware.require_permissions("user:delete")
-        async def _endpoint(_current_user: dict[str, Any]) -> str:
+        async def _endpoint(_current_user: _CurrentUserDict) -> str:
             return "ok"
 
-        import asyncio
-
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.run(_endpoint(user_dict))  # type: ignore[call-arg]
+            await _endpoint(user_dict)  # type: ignore[call-arg]
 
         assert "user:delete" in exc_info.value.detail
 
@@ -861,9 +873,9 @@ class TestRoleEscalationBlocked:
             Permission.SETTINGS_UPDATE,
         ]
         for perm in admin_only_perms:
-            assert not viewer.has_permission(
-                perm
-            ), f"VIEWER unexpectedly has admin permission: {perm}"
+            assert not viewer.has_permission(perm), (
+                f"VIEWER unexpectedly has admin permission: {perm}"
+            )
 
     def test_vendedor_cannot_delete_vehicles(self) -> None:
         """SALES_AGENT does not have VEHICLE_DELETE — that requires manager+."""
@@ -883,9 +895,9 @@ class TestRoleEscalationBlocked:
             Permission.ORG_DELETE,
         ]
         for perm in escalation_perms:
-            assert not manager.has_permission(
-                perm
-            ), f"MANAGER unexpectedly has super_admin permission: {perm}"
+            assert not manager.has_permission(perm), (
+                f"MANAGER unexpectedly has super_admin permission: {perm}"
+            )
 
     def test_custom_role_defaults_to_viewer_permissions(self) -> None:
         """Custom roles start with VIEWER permissions (minimal) — no escalation."""
@@ -906,57 +918,49 @@ class TestRoleEscalationBlocked:
         assert vendedor.has_role("super_admin") is False
         assert vendedor.has_role("manager") is False
 
-    def test_rbac_middleware_prevents_privilege_escalation(self) -> None:
+    async def test_rbac_middleware_prevents_privilege_escalation(self) -> None:
         """require_roles('admin') blocks a viewer user at the middleware layer."""
         from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
 
-        viewer_dict: dict[str, Any] = {"roles": ["viewer"]}
+        viewer_dict: _CurrentUserDict = {"roles": ["viewer"]}
 
         @RBACMiddleware.require_roles("admin")
-        async def _admin_endpoint(_current_user: dict[str, Any]) -> str:
+        async def _admin_endpoint(_current_user: _CurrentUserDict) -> str:
             return "admin data"
 
-        import asyncio
-
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.run(_admin_endpoint(viewer_dict))  # type: ignore[call-arg]
+            await _admin_endpoint(viewer_dict)  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
-    def test_permission_check_fails_for_escalation_attempt(self) -> None:
+    async def test_permission_check_fails_for_escalation_attempt(self) -> None:
         """require_permissions blocks viewer trying to access create endpoint."""
         from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
 
-        viewer_dict: dict[str, Any] = {"roles": ["viewer"]}
+        viewer_dict: _CurrentUserDict = {"roles": ["viewer"]}
 
         @RBACMiddleware.require_permissions("user:create")
-        async def _create_user_endpoint(_current_user: dict[str, Any]) -> str:
+        async def _create_user_endpoint(_current_user: _CurrentUserDict) -> str:
             return "user created"
 
-        import asyncio
-
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.run(
-                _create_user_endpoint(viewer_dict)  # type: ignore[call-arg]
-            )
+            await _create_user_endpoint(viewer_dict)  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
-    def test_invalid_role_string_does_not_grant_permissions(self) -> None:
+    async def test_invalid_role_string_does_not_grant_permissions(self) -> None:
         """Injecting a non-existent role string grants no permissions via middleware."""
         from prosell.infrastructure.api.middleware.rbac_middleware import RBACMiddleware
 
         # Attempt to use a crafted role name that doesn't exist in RoleType enum
-        fake_role_dict: dict[str, Any] = {"roles": ["super_hacker"]}
+        fake_role_dict: _CurrentUserDict = {"roles": ["super_hacker"]}
 
         @RBACMiddleware.require_permissions("vehicle:create")
-        async def _endpoint(_current_user: dict[str, Any]) -> str:
+        async def _endpoint(_current_user: _CurrentUserDict) -> str:
             return "ok"
 
-        import asyncio
-
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.run(_endpoint(fake_role_dict))  # type: ignore[call-arg]
+            await _endpoint(fake_role_dict)  # type: ignore[call-arg]
 
         assert exc_info.value.status_code == 403
 
@@ -991,17 +995,20 @@ class TestPermissionMatrixDocumentation:
       none = no access
     """
 
-    def test_doc_super_admin_has_all_20_permissions(self) -> None:
-        """SUPER_ADMIN covers all 20 system permissions."""
+    def test_doc_super_admin_has_all_permissions(self) -> None:
+        """SUPER_ADMIN covers all system permissions (count auto-derived)."""
         assert len(_perms_for(RoleType.SUPER_ADMIN)) == len(Permission)
 
-    def test_doc_admin_has_12_permissions(self) -> None:
-        """ADMIN has 12 perms: user R+U, no role mgmt, org R+U, vehicle CRUD, analytics."""
-        assert len(_perms_for(RoleType.ADMIN)) == 12
+    def test_doc_admin_has_14_permissions(self) -> None:
+        """ADMIN has 14 perms: user R+U, no role mgmt, org R+U, vehicle CRUD,
+        DEALER_ADMIN_VIEW_ALL + MARKETPLACE_PUBLISH (Subsystem D), analytics."""
+        assert len(_perms_for(RoleType.ADMIN)) == 14
 
-    def test_doc_manager_has_9_permissions(self) -> None:
-        """MANAGER has 9 permissions (user R, org R, vehicle CRUD, analytics, settings R)."""
-        assert len(_perms_for(RoleType.MANAGER)) == 9
+    def test_doc_manager_has_10_permissions(self) -> None:
+        """MANAGER has 10 permissions (user R, org R, vehicle CRUD, MARKETPLACE_PUBLISH,
+        analytics, settings R). Subsystem D adds MARKETPLACE_PUBLISH but NOT
+        DEALER_ADMIN_VIEW_ALL (managers stay scoped to their own dealer)."""
+        assert len(_perms_for(RoleType.MANAGER)) == 10
 
     def test_doc_vendedor_has_4_permissions(self) -> None:
         """SALES_AGENT has 4 permissions (vehicle CRU, analytics view)."""
@@ -1014,16 +1021,16 @@ class TestPermissionMatrixDocumentation:
     def test_doc_permission_hierarchy_strictly_decreasing(self) -> None:
         """Permission counts decrease monotonically down the hierarchy."""
         counts = [
-            len(_perms_for(RoleType.SUPER_ADMIN)),  # 20
-            len(_perms_for(RoleType.ADMIN)),  # 12
-            len(_perms_for(RoleType.MANAGER)),  # 9
+            len(_perms_for(RoleType.SUPER_ADMIN)),  # 22
+            len(_perms_for(RoleType.ADMIN)),  # 14
+            len(_perms_for(RoleType.MANAGER)),  # 10
             len(_perms_for(RoleType.SALES_AGENT)),  # 4
             len(_perms_for(RoleType.VIEWER)),  # 2
         ]
         for i in range(len(counts) - 1):
-            assert (
-                counts[i] > counts[i + 1]
-            ), f"Hierarchy broken at index {i}: {counts[i]} <= {counts[i + 1]}"
+            assert counts[i] > counts[i + 1], (
+                f"Hierarchy broken at index {i}: {counts[i]} <= {counts[i + 1]}"
+            )
 
     def test_doc_every_role_can_at_least_read_vehicles(self) -> None:
         """All roles have at minimum VEHICLE_READ (the most basic read access)."""
@@ -1035,9 +1042,9 @@ class TestPermissionMatrixDocumentation:
         """ANALYTICS_VIEW is granted to every role (basic business insight)."""
         for role_type in RoleType:
             perms = _perms_for(role_type)
-            assert (
-                Permission.ANALYTICS_VIEW in perms
-            ), f"Role {role_type.value} missing ANALYTICS_VIEW"
+            assert Permission.ANALYTICS_VIEW in perms, (
+                f"Role {role_type.value} missing ANALYTICS_VIEW"
+            )
 
     def test_doc_destructive_ops_require_manager_or_above(self) -> None:
         """VEHICLE_DELETE requires at least MANAGER role."""

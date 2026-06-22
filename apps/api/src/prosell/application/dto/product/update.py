@@ -30,6 +30,10 @@ class UpdateProductRequest(BaseModel):
     location_city: str | None = None
     location_state: str | None = None
     location_zip: str | None = None
+    # Gated behind Permission.MARKETPLACE_PUBLISH at the router boundary —
+    # the DTO accepts the field unconditionally; the permission check
+    # depends on the auth context, not the request shape.
+    published_to_marketplace: bool | None = None
 
     # Reuse the format validator from create.py. None means
     # "do not change this field" (PATCH semantics); an empty list means

@@ -123,6 +123,61 @@ describe("createProductWithVehicle", () => {
     expect(result).toEqual(mockProduct);
   });
 
+  it("should preserve published_to_marketplace from the backend response (finding #7)", async () => {
+    const mockProduct: Product = {
+      id: "prod-123",
+      title: "2017 Toyota Camry SE",
+      price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
+      category_id: "cat-1",
+      currency: "USD",
+      condition: "used",
+      attributes: {
+        category: "vehicle" as const,
+        vin: "2GNALCEK1H1615946",
+        year: 2017,
+        make: "Toyota",
+        model: "Camry",
+        mileage: 50000,
+      },
+      status: "draft",
+      is_featured: false,
+      published_to_marketplace: true,
+      view_count: 0,
+      favorite_count: 0,
+      created_at: "2026-04-26T00:00:00Z",
+      updated_at: "2026-04-26T00:00:00Z",
+    };
+
+    const requestData: CreateProductRequest = {
+      title: "2017 Toyota Camry SE",
+      price_cents: 18500_00,
+      tenant_id: "tenant-1",
+      organization_id: "org-1",
+      category_id: "cat-1",
+      currency: "USD",
+      condition: "used",
+      attributes: {
+        category: "vehicle" as const,
+        vin: "2GNALCEK1H1615946",
+        year: 2017,
+        make: "Toyota",
+        model: "Camry",
+        mileage: 50000,
+      },
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockProduct,
+    });
+
+    const result = await createProductWithVehicle(requestData);
+
+    expect(result.published_to_marketplace).toBe(true);
+  });
+
   it("should include attributes.vin for auto-vehicle creation", async () => {
     const mockProduct: Product = {
       id: "prod-123",

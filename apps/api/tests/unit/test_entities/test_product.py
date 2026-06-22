@@ -344,6 +344,22 @@ class TestProduct:
         product.set_featured(False)
         assert product.is_featured is False
 
+    def test_create_product_defaults_published_to_marketplace_false(self) -> None:
+        """Subsystem D Task 1.6: new products opt out of the cross-dealer marketplace by default."""
+        tenant_id = uuid4()
+        org_id = uuid4()
+        category_id = uuid4()
+
+        product = Product.create(
+            title="Test Product",
+            price_cents=10000,
+            tenant_id=tenant_id,
+            organization_id=org_id,
+            category_id=category_id,
+        )
+
+        assert product.published_to_marketplace is False
+
     def test_is_new_property(self) -> None:
         """Test is_new property."""
         tenant_id = uuid4()

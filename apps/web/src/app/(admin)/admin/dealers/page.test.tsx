@@ -1,0 +1,72 @@
+/**
+ * AdminDealersPage.test.tsx — Subsystem D Phase 6.5
+ *
+ * Renders the dealers list for an admin; redirects a non-admin to /dashboard.
+ */
+import { render, screen, waitFor } from "@testing-library/react";
+import { vi, beforeEach, describe, it, expect } from "vitest";
+import AdminDealersPage from "./page";
+
+const mockUseAuth = vi.fn();
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: () => mockUseAuth(),
+}));
+
+const mockUseDealers = vi.fn();
+vi.mock("@/lib/api/dealers", () => ({
+  useDealers: () => mockUseDealers(),
+}));
+
+const mockReplace = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: mockReplace }),
+}));
+
+describe("AdminDealersPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("redirects a non-admin to /dashboard", async () => {
+    mockUseAuth.mockReturnValue({ isAdmin: false });
+    mockUseDealers.mockReturnValue({ data: [], isLoading: false, error: null });
+
+    render(<AdminDealersPage />);
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith("/dashboard");
+    });
+  });
+
+  it("renders the dealers list for an admin", async () => {
+    mockUseAuth.mockReturnValue({ isAdmin: true });
+    mockUseDealers.mockReturnValue({
+      data: [
+        { id: "dealer-1", name: "Dealer One" },
+        { id: "dealer-2", name: "Dealer Two" },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    render(<AdminDealersPage />);
+
+    expect(screen.getByText("Dealer One")).toBeInTheDocument();
+    expect(screen.getByText("Dealer Two")).toBeInTheDocument();
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it("links each dealer to its detail page", async () => {
+    mockUseAuth.mockReturnValue({ isAdmin: true });
+    mockUseDealers.mockReturnValue({
+      data: [{ id: "dealer-1", name: "Dealer One" }],
+      isLoading: false,
+      error: null,
+    });
+
+    render(<AdminDealersPage />);
+
+    const link = screen.getByText("Dealer One").closest("a");
+    expect(link).toHaveAttribute("href", "/admin/dealers/dealer-1");
+  });
+});

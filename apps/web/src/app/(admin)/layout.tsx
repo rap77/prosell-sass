@@ -10,6 +10,7 @@ import { MainContentWrapper } from "@/components/layout/MainContentWrapper";
  * Navigation groups:
  * - Inventario: Catálogo, Publicaciones
  * - Ventas: Leads, Citas
+ * - Concesionarios: cross-dealer admin view (Subsystem D)
  * - Configuración: Settings, Logs (full access)
  *
  * Server Component by default (minimize client JS).
@@ -24,7 +25,13 @@ export default function AdminLayout({
       {/* Desktop sidebar - hidden on mobile */}
       <div className="hidden md:block">
         <Sidebar
-          groups={["general", "inventario", "ventas", "configuración"]}
+          groups={[
+            "general",
+            "inventario",
+            "ventas",
+            "concesionarios",
+            "configuración",
+          ]}
         />
       </div>
 

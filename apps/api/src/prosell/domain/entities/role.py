@@ -4,9 +4,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from pydantic import Field
-
-from prosell.domain.base import DomainModel
+from prosell.domain.base import DomainModel, Field
 
 
 class RoleType(StrEnum):
@@ -47,6 +45,10 @@ class Permission(StrEnum):
     VEHICLE_UPDATE = "vehicle:update"
     VEHICLE_DELETE = "vehicle:delete"
 
+    # Dealer (Subsystem D) — cross-dealer marketplace visibility
+    DEALER_ADMIN_VIEW_ALL = "dealer:admin_view_all"
+    MARKETPLACE_PUBLISH = "marketplace:publish"
+
     # Analytics
     ANALYTICS_VIEW = "analytics:view"
     ANALYTICS_EXPORT = "analytics:export"
@@ -76,6 +78,8 @@ ROLE_PERMISSIONS: dict[RoleType, set[Permission]] = {
         Permission.VEHICLE_READ,
         Permission.VEHICLE_UPDATE,
         Permission.VEHICLE_DELETE,
+        Permission.DEALER_ADMIN_VIEW_ALL,
+        Permission.MARKETPLACE_PUBLISH,
         Permission.ANALYTICS_VIEW,
         Permission.ANALYTICS_EXPORT,
         Permission.SETTINGS_READ,
@@ -90,6 +94,8 @@ ROLE_PERMISSIONS: dict[RoleType, set[Permission]] = {
         Permission.VEHICLE_READ,
         Permission.VEHICLE_UPDATE,
         Permission.VEHICLE_DELETE,
+        Permission.DEALER_ADMIN_VIEW_ALL,
+        Permission.MARKETPLACE_PUBLISH,
         Permission.ANALYTICS_VIEW,
         Permission.ANALYTICS_EXPORT,
         Permission.SETTINGS_READ,
@@ -102,6 +108,7 @@ ROLE_PERMISSIONS: dict[RoleType, set[Permission]] = {
         Permission.VEHICLE_READ,
         Permission.VEHICLE_UPDATE,
         Permission.VEHICLE_DELETE,
+        Permission.MARKETPLACE_PUBLISH,
         Permission.ANALYTICS_VIEW,
         Permission.ANALYTICS_EXPORT,
         Permission.SETTINGS_READ,

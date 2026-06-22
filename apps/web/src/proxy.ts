@@ -15,6 +15,7 @@
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { deriveRoleFromCookieData } from "@/lib/auth/deriveRole";
 
 // ============================================
 // PERFORMANCE OPTIMIZATIONS
@@ -39,8 +40,9 @@ const matchRoute = (() => {
   return (pathname: string, route: string): boolean => {
     // Check cache first
     const cacheKey = `${pathname}-${route}`;
-    if (cache.routeMatcher.has(cacheKey)) {
-      return cache.routeMatcher.get(cacheKey) as boolean;
+    const cached = cache.routeMatcher.get(cacheKey);
+    if (cached !== undefined) {
+      return cached;
     }
 
     // Check exact match first (faster)
@@ -153,15 +155,29 @@ export default async function middleware(req: NextRequest) {
   const userDataCookie = req.cookies.get("user_data")?.value;
 
   // 3. Parse user data from cookie with memoization
+  //
+  // The backend's user_data cookie carries `roles: string[]` (current
+  // shape) — a bare `role: string` field never existed on the wire. The
+  // `role` field below is kept only as a legacy fallback, resolved via the
+  // same deriveRoleFromCookieData() adapter authStore.ts uses for this cookie.
   type UserData = {
     id: string;
     email: string;
     first_name: string;
     last_name: string;
-    role: string;
+    role?: string;
+    roles?: string[];
     is_email_verified: boolean;
     is_2fa_enabled: boolean;
   };
+
+  // Runtime guard before trusting cookie-derived data — this value drives
+  // the role-based route gating below. Not the real security boundary
+  // (the backend re-checks every permission against the signed JWT in
+  // access_token), but the cast must not be unconditional either.
+  function isUserData(value: unknown): value is UserData {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
 
   let userData: UserData | null = null;
   try {
@@ -172,7 +188,8 @@ export default async function middleware(req: NextRequest) {
       raw = raw.slice(1, -1);
     }
     const decoded = raw ? decodeURIComponent(raw) : null;
-    userData = decoded ? (memoizedJsonParse(decoded) as UserData | null) : null;
+    const parsed = decoded ? memoizedJsonParse(decoded) : null;
+    userData = isUserData(parsed) ? parsed : null;
   } catch {
     userData = null;
   }
@@ -225,34 +242,28 @@ export default async function middleware(req: NextRequest) {
 
   // 8. Role-based route protection (Zero Trust on Edge)
   if (isAuthenticated && userData) {
-    // Admin routes - only admin role can access
-    if (pathname.startsWith("/admin") && userData.role !== "admin") {
-      const url = req.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
-    }
+    const role = deriveRoleFromCookieData(userData);
+    const isSuperAdmin = role === "super_admin";
 
-    // Branch routes - only branch/super_admin role can access
-    const isSuperAdmin = userData.role === "super_admin";
-    if (
-      pathname.startsWith("/branch") &&
-      userData.role !== "branch" &&
-      !isSuperAdmin
-    ) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
-    }
+    // Each route group prefix is gated to its matching role (super_admin
+    // always passes — carries every permission on the backend, see
+    // role.py ROLE_PERMISSIONS).
+    const roleGatedPrefixes: Array<{ prefix: string; requiredRole: string }> = [
+      { prefix: "/admin", requiredRole: "admin" },
+      { prefix: "/branch", requiredRole: "branch" },
+      { prefix: "/manager", requiredRole: "manager" },
+    ];
 
-    // Manager routes - only manager/super_admin role can access
-    if (
-      pathname.startsWith("/manager") &&
-      userData.role !== "manager" &&
-      !isSuperAdmin
-    ) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
+    for (const { prefix, requiredRole } of roleGatedPrefixes) {
+      if (
+        pathname.startsWith(prefix) &&
+        role !== requiredRole &&
+        !isSuperAdmin
+      ) {
+        const url = req.nextUrl.clone();
+        url.pathname = "/dashboard";
+        return NextResponse.redirect(url);
+      }
     }
 
     // Seller routes - only seller role can access

@@ -4,14 +4,13 @@ import logging
 import secrets
 
 from prosell.application.dto.auth import LoginUserRequest, LoginUserResponse, UserInfo
-from prosell.domain.entities.session import Session
+from prosell.application.use_cases.auth.issue_user_session import IssueUserSessionUseCase
 from prosell.domain.exceptions.auth_exceptions import (
     AccountLockedException,
     EmailNotVerifiedException,
     InvalidCredentialsException,
 )
-from prosell.domain.ports import IJWTService, IPasswordService, ITokenHasher
-from prosell.domain.repositories.session_repository import AbstractSessionRepository
+from prosell.domain.ports import IPasswordService
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 
 # Get logger instance
@@ -25,15 +24,11 @@ class LoginUserUseCase:
         self,
         user_repository: AbstractUserRepository,
         password_service: IPasswordService,
-        jwt_service: IJWTService,
-        session_repository: AbstractSessionRepository,
-        token_hasher: ITokenHasher,
+        issue_session_use_case: IssueUserSessionUseCase,
     ) -> None:
         self.user_repository = user_repository
         self.password_service = password_service
-        self.jwt_service = jwt_service
-        self.session_repository = session_repository
-        self.token_hasher = token_hasher
+        self.issue_session_use_case = issue_session_use_case
 
     async def execute(self, request: LoginUserRequest) -> LoginUserResponse:
         """
@@ -76,9 +71,7 @@ class LoginUserUseCase:
         logger.debug("Email is verified.")
 
         # 4. Verify password
-        logger.info(f"[LOGIN-DEBUG] Verifying password for user {user.id}")
-        logger.info(f"[LOGIN-DEBUG] Password hash exists: {bool(user.password_hash)}")
-        logger.info(f"[LOGIN-DEBUG] Provided password: {request.password!r}")
+        logger.debug(f"Verifying password for user {user.id}")
 
         password_valid = False
         if user.password_hash:
@@ -86,7 +79,6 @@ class LoginUserUseCase:
                 request.password,
                 user.password_hash,
             )
-            logger.info(f"[LOGIN-DEBUG] Password verification result: {password_valid}")
 
         if not password_valid:
             logger.warning(f"Login failed: Invalid password for user {user.id}")
@@ -141,50 +133,8 @@ class LoginUserUseCase:
         await self.user_repository.update(user)
         logger.debug(f"Updated last login for user {user.id}")
 
-        # 8. Get user roles
-        logger.debug(f"Fetching roles for user {user.id}")
-        user_roles = await self.user_repository.get_user_roles(user.id)
-        logger.debug(f"User roles fetched: {user_roles}")
-
-        # 9. Generate tokens (include user data in access token for frontend convenience)
-        # Parse full_name into first_name and last_name
-        name_parts = user.full_name.split(" ", 1) if user.full_name else ["", ""]
-        first_name = name_parts[0]
-        last_name = name_parts[1] if len(name_parts) > 1 else ""
-
-        access_token = self.jwt_service.generate_access_token(
-            user.id,
-            user_roles,
-            email=user.email,
-            first_name=first_name,
-            last_name=last_name,
-        )
-        refresh_token = self.jwt_service.generate_refresh_token(user.id)
-        logger.debug("JWT access and refresh tokens generated.")
-
-        # 10. Persist session so /auth/refresh can find it later.
-        # Parity with verify_2fa.py — without this, every refresh on a
-        # non-2FA login returned 500 "Invalid or expired session".
-        token_hash = self.token_hasher.hash(refresh_token)
-        session = Session.create(
-            user_id=user.id,
-            token_hash=token_hash,
-            user_agent=request.user_agent,
-            ip_address=request.ip_address,
-        )
-        await self.session_repository.create(session)
-        logger.debug(f"Session created for user {user.id}")
-
+        # 8-10. Issue tokens + persist session (extracted — see issue_user_session.py)
         logger.info(f"Login successful for user: {request.email}")
-        return LoginUserResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            user=UserInfo(
-                id=str(user.id),
-                email=user.email,
-                full_name=user.full_name,
-                roles=user_roles,
-                tenant_id=str(user.tenant_id),
-            ),
-            requires_2fa=False,
+        return await self.issue_session_use_case.execute(
+            user, ip_address=request.ip_address, user_agent=request.user_agent
         )

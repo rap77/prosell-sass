@@ -83,9 +83,9 @@ class TestRolePermissionsMapping:
     """Test ROLE_PERMISSIONS mapping correctness."""
 
     def test_super_admin_has_all_permissions(self) -> None:
-        """Test that SUPER_ADMIN has all 20 permissions."""
+        """Test that SUPER_ADMIN has all permissions in the enum (auto-derived)."""
         super_admin_perms = ROLE_PERMISSIONS[RoleType.SUPER_ADMIN]
-        assert len(super_admin_perms) == 20
+        assert len(super_admin_perms) == len(Permission)
         assert Permission.USER_CREATE in super_admin_perms
         assert Permission.USER_READ in super_admin_perms
         assert Permission.USER_UPDATE in super_admin_perms
@@ -102,20 +102,26 @@ class TestRolePermissionsMapping:
         assert Permission.VEHICLE_READ in super_admin_perms
         assert Permission.VEHICLE_UPDATE in super_admin_perms
         assert Permission.VEHICLE_DELETE in super_admin_perms
+        assert Permission.DEALER_ADMIN_VIEW_ALL in super_admin_perms
+        assert Permission.MARKETPLACE_PUBLISH in super_admin_perms
         assert Permission.ANALYTICS_VIEW in super_admin_perms
         assert Permission.ANALYTICS_EXPORT in super_admin_perms
         assert Permission.SETTINGS_READ in super_admin_perms
         assert Permission.SETTINGS_UPDATE in super_admin_perms
 
     def test_admin_has_core_permissions(self) -> None:
-        """Test that ADMIN has 12 core permissions (no user/role management)."""
+        """Test that ADMIN has core permissions (no user/role management)."""
         admin_perms = ROLE_PERMISSIONS[RoleType.ADMIN]
-        assert len(admin_perms) == 12
+        # Was 12; Subsystem D adds DEALER_ADMIN_VIEW_ALL + MARKETPLACE_PUBLISH = 14
+        assert len(admin_perms) == 14
         # Should NOT have user management
         assert Permission.USER_CREATE not in admin_perms
         assert Permission.USER_DELETE not in admin_perms
         assert Permission.ROLE_CREATE not in admin_perms
         assert Permission.ROLE_DELETE not in admin_perms
+        # Subsystem D: admin gets both new perms
+        assert Permission.DEALER_ADMIN_VIEW_ALL in admin_perms
+        assert Permission.MARKETPLACE_PUBLISH in admin_perms
         # Should have other permissions
         assert Permission.USER_READ in admin_perms
         assert Permission.USER_UPDATE in admin_perms
@@ -124,13 +130,17 @@ class TestRolePermissionsMapping:
         assert Permission.ANALYTICS_VIEW in admin_perms
 
     def test_manager_has_limited_permissions(self) -> None:
-        """Test that MANAGER has 9 permissions (no org management)."""
+        """Test that MANAGER has 10 permissions (no org management, +marketplace)."""
         manager_perms = ROLE_PERMISSIONS[RoleType.MANAGER]
-        assert len(manager_perms) == 9
+        # Was 9; Subsystem D adds MARKETPLACE_PUBLISH = 10
+        assert len(manager_perms) == 10
         # Should NOT have organization management
         assert Permission.ORG_CREATE not in manager_perms
         assert Permission.ORG_UPDATE not in manager_perms
         assert Permission.ORG_DELETE not in manager_perms
+        # Subsystem D: manager gets marketplace but NOT dealer admin view
+        assert Permission.MARKETPLACE_PUBLISH in manager_perms
+        assert Permission.DEALER_ADMIN_VIEW_ALL not in manager_perms
         # Should have user read, org read, vehicle operations, analytics, settings
         assert Permission.USER_READ in manager_perms
         assert Permission.ORG_READ in manager_perms
@@ -197,14 +207,17 @@ class TestPermissionHierarchy:
         assert len(manager_perms) > len(agent_perms)
 
     def test_hierarchy_chain(self) -> None:
-        """Test complete permission hierarchy chain."""
+        """Test complete permission hierarchy chain against the real ROLE_PERMISSIONS map."""
         perm_counts = {
-            RoleType.SUPER_ADMIN: 16,
-            RoleType.ADMIN: 11,
-            RoleType.MANAGER: 7,
-            RoleType.SALES_AGENT: 4,
-            RoleType.SALES_USER: 2,
-            RoleType.VIEWER: 2,
+            role_type: len(ROLE_PERMISSIONS[role_type])
+            for role_type in (
+                RoleType.SUPER_ADMIN,
+                RoleType.ADMIN,
+                RoleType.MANAGER,
+                RoleType.SALES_AGENT,
+                RoleType.SALES_USER,
+                RoleType.VIEWER,
+            )
         }
         assert perm_counts[RoleType.SUPER_ADMIN] > perm_counts[RoleType.ADMIN]
         assert perm_counts[RoleType.ADMIN] > perm_counts[RoleType.MANAGER]
@@ -248,7 +261,7 @@ class TestRoleEntity:
         role = Role.create_system_role(RoleType.SUPER_ADMIN)
         perms = role.get_permissions()
 
-        assert len(perms) == 20
+        assert len(perms) == len(Permission)
         assert Permission.USER_CREATE in perms
         assert Permission.VEHICLE_DELETE in perms
 

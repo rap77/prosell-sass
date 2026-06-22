@@ -68,6 +68,7 @@ def _make_product(image_urls: list[str]) -> ProductResponse:
         status=ProductStatus.PUBLISHED.value,
         image_urls=image_urls,
         is_featured=False,
+        published_to_marketplace=False,
         view_count=0,
         favorite_count=0,
         created_at="2026-01-01T00:00:00Z",  # type: ignore[arg-type]

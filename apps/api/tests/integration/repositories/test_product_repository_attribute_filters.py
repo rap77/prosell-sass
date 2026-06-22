@@ -277,9 +277,9 @@ async def test_pagination_with_attribute_filter_no_overlap_no_gaps(
 
     # (a) every page respects the filter — no Honda ids leak into any page
     for page in (page1, page2, page3):
-        assert all(
-            p.attributes["make"] == "Toyota" for p in page
-        ), f"filter leaked non-Toyota into a page: {[p.attributes for p in page]}"
+        assert all(p.attributes["make"] == "Toyota" for p in page), (
+            f"filter leaked non-Toyota into a page: {[p.attributes for p in page]}"
+        )
 
     # (b) no duplicate ids across pages
     all_ids = [p.id for p in (*page1, *page2, *page3)]
@@ -319,7 +319,7 @@ async def test_distinct_attribute_values_caps_at_sql_level(
     )
 
     # Seed 5 rows with 5 distinct "shade" values.
-    shade_specs = [{"shade": f"Shade-{i}"} for i in range(5)]
+    shade_specs: list[dict[str, object]] = [{"shade": f"Shade-{i}"} for i in range(5)]
     for i, attrs in enumerate(shade_specs):
         await product_repo.create(
             Product.create(

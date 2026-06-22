@@ -227,6 +227,36 @@ Read skills BEFORE writing code. Apply ALL patterns. Multiple skills can apply s
 - **SQLAlchemy**: Secondary adapters (repositories)
 - **External Services**: Stripe, SendGrid, NHTSA
 
+## Karpathy-Inspired Coding Guidelines
+
+Source: [andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills), derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls. Bias toward caution over speed on non-trivial work; use judgment on trivial tasks.
+
+### 1. Think Before Coding
+
+- State assumptions explicitly. If uncertain, ask.
+- Present multiple interpretations, don't pick silently.
+- Push back when a simpler approach exists.
+- Stop and ask when confused.
+
+### 2. Simplicity First
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No speculative flexibility/configurability.
+- No error handling for impossible scenarios.
+
+### 3. Surgical Changes
+
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style.
+- Mention unrelated dead code, don't delete it.
+
+### 4. Goal-Driven Execution
+
+- Transform tasks into verifiable goals (test-first).
+- State a brief plan with verify-steps for multi-step tasks.
+
 ## Reference Documentation
 
 Detailed specs in `docs/`:

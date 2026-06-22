@@ -56,7 +56,7 @@ class CategoryModel(Base):
     # C3 schema: API validation schema for product attributes in this category
     # Format: {"field_name": {"type": "string|number|boolean", "required": bool, "options": [...]}}
     # Different from field_config (UI renderer) — this drives data validation
-    attribute_schema: Mapped[dict[str, object]] = mapped_column(
+    attribute_schema: Mapped[dict[str, dict[str, object]]] = mapped_column(
         JSONB,
         server_default="{}",
         nullable=False,

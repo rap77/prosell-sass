@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, Float, ForeignKey, String, Text
+from sqlalchemy import DateTime, Float, ForeignKey, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from prosell.infrastructure.database.base import Base
@@ -43,7 +43,7 @@ class TeamInvitationModel(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default="now()",
-        onupdate="now()",
+        onupdate=text("now()"),
         nullable=False,
     )
 
@@ -83,7 +83,7 @@ class TeamModel(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default="now()",
-        onupdate="now()",
+        onupdate=text("now()"),
         nullable=False,
     )
 
@@ -145,7 +145,7 @@ class TeamMemberModel(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default="now()",
-        onupdate="now()",
+        onupdate=text("now()"),
         nullable=False,
     )
 

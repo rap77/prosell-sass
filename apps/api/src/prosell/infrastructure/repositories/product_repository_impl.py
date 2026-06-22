@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, Numeric, cast, func, or_, select
+from sqlalchemy import Boolean, Numeric, Select, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.product import Product
@@ -48,6 +48,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             location_state=product.location_state,
             location_zip=product.location_zip,
             is_featured=product.is_featured,
+            published_to_marketplace=product.published_to_marketplace,
             view_count=product.view_count,
             favorite_count=product.favorite_count,
             submitted_for_approval_at=product.submitted_for_approval_at,
@@ -65,15 +66,14 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         await self.session.flush()
         return self._to_entity(model)
 
-    async def get_by_id(self, product_id: UUID, tenant_id: UUID) -> Product | None:
-        """Get product by ID with optional tenant isolation.
+    async def get_by_id(self, product_id: UUID, tenant_id: UUID | None) -> Product | None:
+        """Get product by ID, optionally with tenant isolation.
 
-        When tenant_id == UUID(int=0), the tenant filter is skipped.
-        This is used by internal use cases (e.g. CreateVehicleUseCase) that
-        reference a product by ID without tenant context.
+        tenant_id=None skips the tenant filter entirely — only internal
+        callers without a tenant context should pass None.
         """
         stmt = select(ProductModel).where(ProductModel.id == product_id)
-        if tenant_id != UUID(int=0):
+        if tenant_id is not None:
             stmt = stmt.where(ProductModel.tenant_id == tenant_id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -104,9 +104,10 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def get_all(
-        self,
-        tenant_id: UUID,
+    @staticmethod
+    def _apply_product_filters(
+        stmt: Select,
+        tenant_id: UUID | None,
         organization_id: UUID | None = None,
         category_id: UUID | None = None,
         status: ProductStatus | None = None,
@@ -116,15 +117,17 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         min_price_cents: int | None = None,
         max_price_cents: int | None = None,
         attribute_filters: list[AttributeFilter] | None = None,
-        skip: int = 0,
-        limit: int = 100,
-        order_by: str = "created_at",
-        order_desc: bool = True,
-    ) -> list[Product]:
-        """Get products with optional filters."""
-        stmt = select(ProductModel).where(ProductModel.tenant_id == tenant_id)
+    ) -> Select:
+        """Apply the WHERE clauses shared by `get_all()` and `count()`.
 
-        # Apply filters
+        Kept as one place so the two can never drift on which filters they
+        honor (count() used to silently ignore everything but
+        tenant_id/organization_id/status, making `total` wrong whenever a
+        caller filtered by category, featured, price, search, or attributes).
+        """
+        if tenant_id is not None:
+            stmt = stmt.where(ProductModel.tenant_id == tenant_id)
+
         if organization_id is not None:
             stmt = stmt.where(ProductModel.organization_id == organization_id)
 
@@ -140,7 +143,6 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         if is_featured is not None:
             stmt = stmt.where(ProductModel.is_featured == is_featured)
 
-        # Text search
         if search_query:
             search_term = f"%{search_query}%"
             stmt = stmt.where(
@@ -150,14 +152,12 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
                 )
             )
 
-        # Price range
         if min_price_cents is not None:
             stmt = stmt.where(ProductModel.price_cents >= min_price_cents)
 
         if max_price_cents is not None:
             stmt = stmt.where(ProductModel.price_cents <= max_price_cents)
 
-        # Dynamic attribute filters (JSONB)
         for af in attribute_filters or []:
             col = ProductModel.attributes[af.key].astext
             if af.filter_type == "exact":
@@ -173,6 +173,40 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
                     stmt = stmt.where(cast(col, Numeric) >= af.min)
                 if af.max is not None:
                     stmt = stmt.where(cast(col, Numeric) <= af.max)
+
+        return stmt
+
+    async def get_all(
+        self,
+        tenant_id: UUID | None,
+        organization_id: UUID | None = None,
+        category_id: UUID | None = None,
+        status: ProductStatus | None = None,
+        condition: ProductCondition | None = None,
+        is_featured: bool | None = None,
+        search_query: str | None = None,
+        min_price_cents: int | None = None,
+        max_price_cents: int | None = None,
+        attribute_filters: list[AttributeFilter] | None = None,
+        skip: int = 0,
+        limit: int = 100,
+        order_by: str = "created_at",
+        order_desc: bool = True,
+    ) -> list[Product]:
+        """Get products with optional filters. tenant_id=None lifts tenant isolation."""
+        stmt = self._apply_product_filters(
+            select(ProductModel),
+            tenant_id=tenant_id,
+            organization_id=organization_id,
+            category_id=category_id,
+            status=status,
+            condition=condition,
+            is_featured=is_featured,
+            search_query=search_query,
+            min_price_cents=min_price_cents,
+            max_price_cents=max_price_cents,
+            attribute_filters=attribute_filters,
+        )
 
         # Ordering
         order_column = getattr(ProductModel, order_by, ProductModel.created_at)
@@ -259,8 +293,6 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
     async def update(self, product: Product) -> Product:
         """Update an existing product."""
-        from datetime import datetime
-
         stmt = select(ProductModel).where(ProductModel.id == product.id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -282,6 +314,7 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         model.location_state = product.location_state
         model.location_zip = product.location_zip
         model.is_featured = product.is_featured
+        model.published_to_marketplace = product.published_to_marketplace
         model.view_count = product.view_count
         model.favorite_count = product.favorite_count
         model.submitted_for_approval_at = product.submitted_for_approval_at
@@ -317,28 +350,40 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
 
     async def count(
         self,
-        tenant_id: UUID,
+        tenant_id: UUID | None,
         organization_id: UUID | None = None,
+        category_id: UUID | None = None,
         status: ProductStatus | None = None,
+        condition: ProductCondition | None = None,
+        is_featured: bool | None = None,
+        search_query: str | None = None,
+        min_price_cents: int | None = None,
+        max_price_cents: int | None = None,
+        attribute_filters: list[AttributeFilter] | None = None,
     ) -> int:
-        """Count products."""
-        stmt = select(func.count(ProductModel.id)).where(
-            ProductModel.tenant_id == tenant_id,
+        """Count products. tenant_id=None lifts tenant isolation.
+
+        Mirrors every filter `get_all()` accepts via `_apply_product_filters`
+        so `total` always matches the filtered set, not the whole tenant.
+        """
+        stmt = self._apply_product_filters(
+            select(func.count(ProductModel.id)),
+            tenant_id=tenant_id,
+            organization_id=organization_id,
+            category_id=category_id,
+            status=status,
+            condition=condition,
+            is_featured=is_featured,
+            search_query=search_query,
+            min_price_cents=min_price_cents,
+            max_price_cents=max_price_cents,
+            attribute_filters=attribute_filters,
         )
-
-        if organization_id is not None:
-            stmt = stmt.where(ProductModel.organization_id == organization_id)
-
-        if status is not None:
-            stmt = stmt.where(ProductModel.status == status.value)
-
         result = await self.session.execute(stmt)
         return result.scalar() or 0
 
     async def increment_view_count(self, product_id: UUID, tenant_id: UUID) -> None:
         """Increment product view count."""
-        from datetime import datetime
-
         stmt = select(ProductModel).where(
             ProductModel.id == product_id,
             ProductModel.tenant_id == tenant_id,
@@ -451,25 +496,37 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
-    async def set_primary_image(self, product_id: UUID, image_id: UUID, tenant_id: UUID) -> bool:  # noqa: ARG002
+    async def set_primary_image(self, product_id: UUID, image_id: UUID, tenant_id: UUID) -> bool:
         """
-        Set an image as primary for a product.
+        Set an image as primary for a product (tenant-isolated).
 
         Unsets is_primary on all other images before setting the new one.
+        `ProductImageModel` has no `tenant_id` column of its own, so every
+        query joins through `ProductModel` to enforce isolation.
         """
-        # First, verify the image belongs to the product
-        verify_stmt = select(ProductImageModel).where(
-            ProductImageModel.id == image_id,
-            ProductImageModel.product_id == product_id,
+        # First, verify the image belongs to the product AND the caller's tenant
+        verify_stmt = (
+            select(ProductImageModel)
+            .join(ProductModel, ProductModel.id == ProductImageModel.product_id)
+            .where(
+                ProductImageModel.id == image_id,
+                ProductImageModel.product_id == product_id,
+                ProductModel.tenant_id == tenant_id,
+            )
         )
         verify_result = await self.session.execute(verify_stmt)
         if not verify_result.scalar_one_or_none():
-            return False  # Image not found or doesn't belong to product
+            return False  # Image not found, doesn't belong to product, or wrong tenant
 
         # Unset is_primary on all images of this product
-        unset_stmt = select(ProductImageModel).where(
-            ProductImageModel.product_id == product_id,
-            ProductImageModel.is_primary.is_(True),
+        unset_stmt = (
+            select(ProductImageModel)
+            .join(ProductModel, ProductModel.id == ProductImageModel.product_id)
+            .where(
+                ProductImageModel.product_id == product_id,
+                ProductImageModel.is_primary.is_(True),
+                ProductModel.tenant_id == tenant_id,
+            )
         )
         unset_result = await self.session.execute(unset_stmt)
         images_to_unset = unset_result.scalars().all()
@@ -478,7 +535,14 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
             img.is_primary = False
 
         # Set is_primary on the target image
-        set_stmt = select(ProductImageModel).where(ProductImageModel.id == image_id)
+        set_stmt = (
+            select(ProductImageModel)
+            .join(ProductModel, ProductModel.id == ProductImageModel.product_id)
+            .where(
+                ProductImageModel.id == image_id,
+                ProductModel.tenant_id == tenant_id,
+            )
+        )
         set_result = await self.session.execute(set_stmt)
         target_image = set_result.scalar_one_or_none()
 

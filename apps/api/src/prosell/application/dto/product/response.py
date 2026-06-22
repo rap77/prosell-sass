@@ -51,6 +51,7 @@ class ProductResponse(BaseModel):
     location_state: str | None = None
     location_zip: str | None = None
     is_featured: bool
+    published_to_marketplace: bool
     view_count: int
     favorite_count: int
     submitted_for_approval_at: datetime | None = None
@@ -94,6 +95,7 @@ class ProductResponse(BaseModel):
             location_state=product.location_state,
             location_zip=product.location_zip,
             is_featured=product.is_featured,
+            published_to_marketplace=product.published_to_marketplace,
             view_count=product.view_count,
             favorite_count=product.favorite_count,
             submitted_for_approval_at=product.submitted_for_approval_at,

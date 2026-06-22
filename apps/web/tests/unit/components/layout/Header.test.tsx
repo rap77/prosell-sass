@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Header } from "@/components/layout/Header";
 
@@ -12,16 +12,23 @@ vi.mock("next/navigation", () => ({
 }));
 
 // Mock useAuth hook
+const mockUseAuth = vi.fn(() => ({
+  logout: vi.fn(),
+  user: null,
+  isAdmin: false,
+}));
 vi.mock("@/hooks/useAuth", () => ({
-  useAuth: () => ({
-    logout: vi.fn(),
-    user: null,
-  }),
+  useAuth: () => mockUseAuth(),
 }));
 
 // Mock TeamSwitcher component
 vi.mock("@/components/teams/TeamSwitcher", () => ({
   TeamSwitcher: () => <div data-testid="team-switcher">Team Switcher</div>,
+}));
+
+// Mock DealerPicker component (Subsystem D Phase 6.4)
+vi.mock("@/components/admin/DealerPicker", () => ({
+  DealerPicker: () => <div data-testid="dealer-picker" />,
 }));
 
 vi.mock("@/components/layout/NotificationBell", () => ({
@@ -33,6 +40,29 @@ vi.mock("@/components/layout/ThemeToggle", () => ({
 }));
 
 describe("Header", () => {
+  beforeEach(() => {
+    mockUseAuth.mockReturnValue({
+      logout: vi.fn(),
+      user: null,
+      isAdmin: false,
+    });
+  });
+
+  it("renders DealerPicker instead of the org switcher for an admin", () => {
+    mockUseAuth.mockReturnValue({ logout: vi.fn(), user: null, isAdmin: true });
+
+    render(<Header />);
+
+    expect(screen.getByTestId("dealer-picker")).toBeInTheDocument();
+    expect(screen.queryByText("Organizations")).not.toBeInTheDocument();
+  });
+
+  it("renders the org switcher placeholder for a non-admin", () => {
+    render(<Header />);
+
+    expect(screen.queryByTestId("dealer-picker")).not.toBeInTheDocument();
+  });
+
   it("renders without crashing", () => {
     render(<Header />);
     expect(screen.getByTestId("notification-bell")).toBeInTheDocument();

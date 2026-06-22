@@ -19,6 +19,7 @@ from prosell.infrastructure.api.middleware.exception_handlers import (
     pydantic_validation_error_handler,
 )
 from prosell.infrastructure.api.routers import (
+    admin_dealers_router,
     admin_router,
     auth_router,
     branch_router,
@@ -288,6 +289,12 @@ app.include_router(
     admin_router,
     prefix="/api/v1/admin",
     tags=["Admin"],
+)
+
+app.include_router(
+    admin_dealers_router,
+    prefix="/api/v1/admin/dealers",
+    tags=["Admin", "Dealers"],
 )
 
 app.include_router(

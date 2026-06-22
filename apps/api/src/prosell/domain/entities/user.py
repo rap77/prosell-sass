@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from prosell.domain.base import DomainModel, Field
 
 # Import Role for Pydantic forward reference evaluation
-from prosell.domain.entities.role import Role
+from prosell.domain.entities.role import ROLE_PERMISSIONS, Permission, Role
 
 
 class UserStatus(StrEnum):
@@ -69,21 +69,28 @@ class User(DomainModel):
         email: str,
         password_hash: str,
         full_name: str,
+        tenant_id: UUID | None = None,
+        pre_verified: bool = False,
     ) -> "User":
         """
         Factory method for new user registration.
 
-        Creates a new user in PENDING_VERIFICATION status.
+        By default creates a new user in PENDING_VERIFICATION status with no
+        tenant (the public /auth/register flow). Pass `tenant_id` and
+        `pre_verified=True` for a user created via an already-verified path
+        (e.g. accepting an organization invitation) — skips the
+        PENDING_VERIFICATION/email-verification step entirely.
         """
+        now = datetime.now(UTC)
         return cls(
             id=uuid4(),
             email=email,
             password_hash=password_hash,
             full_name=full_name,
             avatar_url=None,
-            status=UserStatus.PENDING_VERIFICATION,
-            email_verified=False,
-            email_verified_at=None,
+            status=UserStatus.ACTIVE if pre_verified else UserStatus.PENDING_VERIFICATION,
+            email_verified=pre_verified,
+            email_verified_at=now if pre_verified else None,
             is_2fa_enabled=False,
             totp_secret=None,
             backup_codes=None,
@@ -91,9 +98,9 @@ class User(DomainModel):
             last_login_ip=None,
             failed_login_attempts=0,
             locked_until=None,
-            tenant_id=None,
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
+            tenant_id=tenant_id,
+            created_at=now,
+            updated_at=now,
             deleted_at=None,
             roles=None,
         )
@@ -255,6 +262,16 @@ class User(DomainModel):
 
         # Compare with role_type.value since role_type is a StrEnum
         return any(any(role.role_type.value == r for r in roles_to_check) for role in self.roles)
+
+    def has_permission(self, permission: Permission) -> bool:
+        """Check if any of the user's roles grants the given permission.
+
+        Non-blocking — returns a bool for callers to branch on, unlike the
+        `require_permission` FastAPI dependency which raises 403 outright.
+        """
+        return any(
+            permission in ROLE_PERMISSIONS.get(role.role_type, set()) for role in self.roles or []
+        )
 
     def suspend(self) -> None:
         """Suspend user account."""

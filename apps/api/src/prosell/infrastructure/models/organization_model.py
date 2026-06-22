@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import JSON, DateTime, ForeignKey, String, Text
+from sqlalchemy import JSON, DateTime, ForeignKey, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from prosell.infrastructure.database.base import Base
@@ -46,6 +46,7 @@ class OrganizationModel(Base):
 
     # Onboarding
     setup_complete: Mapped[bool] = mapped_column(default=False, nullable=False)
+    created_by_user_id: Mapped[UUID | None] = mapped_column(nullable=True)
 
     # Settings
     settings: Mapped[dict[str, object]] = mapped_column(JSON, default=dict, nullable=False)
@@ -59,7 +60,7 @@ class OrganizationModel(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default="now()",
-        onupdate="now()",
+        onupdate=text("now()"),
         nullable=False,
     )
 
@@ -76,4 +77,31 @@ class OrganizationModel(Base):
         uselist=False,
         primaryjoin="OrganizationModel.id == foreign(WalletModel.org_id)",
         lazy="noload",
+    )
+
+
+class OrganizationInvitationModel(Base):
+    """SQLAlchemy model for organization_invitations table."""
+
+    __tablename__ = "organization_invitations"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    token: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
+    tenant_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
+    created_by_user_id: Mapped[UUID] = mapped_column(nullable=False)
+    accepted_by_user_id: Mapped[UUID | None] = mapped_column(nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default="now()", nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default="now()", onupdate=text("now()"), nullable=False
     )
