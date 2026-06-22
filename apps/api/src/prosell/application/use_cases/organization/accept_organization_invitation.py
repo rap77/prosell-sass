@@ -68,6 +68,11 @@ class AcceptOrganizationInvitationUseCase:
             pre_verified=True,
         )
         user = await self.user_repository.create(user)
+        # Accepting the invitation is the owner's first 'login' — stamp it.
+        # LoginUserUseCase does this in its step 7; IssueUserSessionUseCase
+        # (extracted in T6) does not, so callers that go through it must.
+        user.update_last_login(ip_address)
+        await self.user_repository.update(user)
 
         admin_role = await self.role_repository.get_by_type(RoleType.ADMIN)
         if admin_role is None:
