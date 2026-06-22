@@ -78,6 +78,22 @@ Verified against the actual code (not assumed) before designing:
   nicer mapping just for this endpoint — stays consistent with the sibling
   flow (propagates, generic 500, transaction already rolled back so no
   orphaned org).
+- `AbstractEmailService` has no `send_org_invitation` method — it does not
+  exist anywhere (Protocol, implementation, or template). This design adds
+  it from scratch, mirroring `send_team_invitation`'s exact shape
+  (`EmailService.send_org_invitation` → `self._deliver(self._renderer.render_org_invitation(...))`)
+  plus a new `organization_invitation.html` template alongside the existing
+  `team_invitation.html`.
+- **Found, not fixed (out of scope, flagged separately)**: `render_team_invitation`
+  builds its link as `{base_url}/invite/accept?token={token}`
+  (`renderer.py:73`), but the real frontend route is `/invite/[token]/page.tsx`,
+  which reads only `params.token` (`page.tsx:45`, no `searchParams` fallback).
+  Visiting that URL resolves `token` to the literal string `"accept"`, not the
+  real token — every team-invitation email sent today links to a dead end.
+  This is a live, pre-existing bug unrelated to Subsystem E; not fixed here
+  to avoid mixing an unrelated hotfix into this branch. `render_org_invitation`
+  uses the correct pattern instead: `{base_url}/invite/org/{token}` (matching
+  this design's actual frontend route, no query string).
 
 ## Architecture Decisions
 
@@ -205,7 +221,8 @@ class CreateDealerOrganizationUseCase:
         # - validate owner_email (lowercased) has no existing, non-deleted
         #   User (deleted_at IS NULL — a soft-deleted user's email is free)
         # - Organization.create(created_by_user_id=...)
-        # - bulk insert organization_vertical rows
+        # - call existing organization_vertical_repository.enable() once per
+        #   vertical_id (no bulk variant exists; N is small, a loop is fine)
         # - delegate to InviteDealerOwnerUseCase
         ...
 
@@ -233,6 +250,27 @@ class AcceptOrganizationInvitationUseCase:
         # 8. invitation.mark_accepted(accepted_by_user_id=user.id)
         ...
 ```
+
+### Email service addition
+
+`AbstractEmailService` (`domain/ports/i_email_service.py`) gets a new
+abstract method, implemented in `EmailService`
+(`infrastructure/services/email/service.py`) and rendered by a new
+`EmailRenderer.render_org_invitation(...)`
+(`infrastructure/services/email/renderer.py`), backed by a new
+`templates/organization_invitation.html` alongside the existing
+`team_invitation.html`:
+
+```python
+def send_org_invitation(
+    self, email: str, organization_name: str, inviter_name: str,
+    invitation_token: str,
+) -> Awaitable[None]: ...
+```
+
+`render_org_invitation` builds `{base_url}/invite/org/{invitation_token}` —
+deliberately not mirroring `render_team_invitation`'s broken
+`?token=`-query-string pattern (see Audit findings).
 
 ## Endpoints
 
