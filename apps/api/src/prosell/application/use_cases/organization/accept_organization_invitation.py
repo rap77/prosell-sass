@@ -7,6 +7,7 @@ from prosell.application.use_cases.auth.issue_user_session import IssueUserSessi
 from prosell.domain.entities.organization_invitation import OrganizationInvitationStatus
 from prosell.domain.entities.role import RoleType
 from prosell.domain.entities.user import User
+from prosell.domain.exceptions.auth_exceptions import WeakPasswordException
 from prosell.domain.ports import IPasswordService
 from prosell.domain.repositories.organization_invitation_repository import (
     AbstractOrganizationInvitationRepository,
@@ -65,6 +66,10 @@ class AcceptOrganizationInvitationUseCase:
 
         if invitation.status == OrganizationInvitationStatus.ACCEPTED:
             raise ValueError("Invitation already accepted")
+
+        password_errors = self.password_service.validate_password_strength(password)
+        if password_errors:
+            raise WeakPasswordException(reasons=password_errors)
 
         password_hash = self.password_service.hash_password(password)
         user = User.create(

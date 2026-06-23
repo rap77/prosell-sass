@@ -3,7 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -13,9 +13,12 @@ from prosell.application.use_cases.organization.accept_organization_invitation i
 from prosell.domain.entities.organization import Organization
 from prosell.domain.entities.organization_invitation import OrganizationInvitation
 from prosell.domain.entities.role import Role, RoleType
+from prosell.domain.exceptions.auth_exceptions import WeakPasswordException
 
 
-def _raw_token_and_invitation(organization_id, tenant_id) -> tuple[str, OrganizationInvitation]:
+def _raw_token_and_invitation(
+    organization_id: UUID, tenant_id: UUID
+) -> tuple[str, OrganizationInvitation]:
     raw_token = "raw-token-value"
     invitation = OrganizationInvitation(
         id=uuid4(),
@@ -30,31 +33,41 @@ def _raw_token_and_invitation(organization_id, tenant_id) -> tuple[str, Organiza
 
 
 @pytest.fixture
-def collaborators():
+def collaborators() -> dict[str, AsyncMock | MagicMock]:
+    password_service = MagicMock()
+    password_service.validate_password_strength.return_value = []
     return {
         "invitation_repository": AsyncMock(),
         "organization_repository": AsyncMock(),
         "user_repository": AsyncMock(),
         "role_repository": AsyncMock(),
-        "password_service": MagicMock(),
+        "password_service": password_service,
         "issue_session_use_case": AsyncMock(),
     }
 
 
 @pytest.fixture
-def use_case(collaborators):
+def use_case(
+    collaborators: dict[str, AsyncMock | MagicMock],
+) -> AcceptOrganizationInvitationUseCase:
     return AcceptOrganizationInvitationUseCase(**collaborators)
 
 
 @pytest.mark.asyncio
-async def test_raises_for_unknown_token(use_case, collaborators):
+async def test_raises_for_unknown_token(
+    use_case: AcceptOrganizationInvitationUseCase,
+    collaborators: dict[str, AsyncMock | MagicMock],
+) -> None:
     collaborators["invitation_repository"].get_by_token_unscoped.return_value = None
     with pytest.raises(ValueError, match="Invalid invitation token"):
         await use_case.execute(token="nope", password="Aa1!aaaa", first_name="A", last_name="B")
 
 
 @pytest.mark.asyncio
-async def test_raises_and_marks_expired_for_expired_invitation(use_case, collaborators):
+async def test_raises_and_marks_expired_for_expired_invitation(
+    use_case: AcceptOrganizationInvitationUseCase,
+    collaborators: dict[str, AsyncMock | MagicMock],
+) -> None:
     org_id, tenant_id = uuid4(), uuid4()
     raw_token, invitation = _raw_token_and_invitation(org_id, tenant_id)
     invitation.expires_at = datetime.now(UTC) - timedelta(days=1)
@@ -68,7 +81,30 @@ async def test_raises_and_marks_expired_for_expired_invitation(use_case, collabo
 
 
 @pytest.mark.asyncio
-async def test_raises_for_already_accepted_invitation(use_case, collaborators):
+async def test_raises_for_weak_password(
+    use_case: AcceptOrganizationInvitationUseCase,
+    collaborators: dict[str, AsyncMock | MagicMock],
+) -> None:
+    """Gap G3: backend must validate password strength itself -- a direct
+    POST bypasses the frontend Zod schema entirely."""
+    org_id, tenant_id = uuid4(), uuid4()
+    raw_token, invitation = _raw_token_and_invitation(org_id, tenant_id)
+    collaborators["invitation_repository"].get_by_token_unscoped.return_value = invitation
+    collaborators["password_service"].validate_password_strength.return_value = [
+        "Password must contain at least one number"
+    ]
+
+    with pytest.raises(WeakPasswordException):
+        await use_case.execute(token=raw_token, password="Weakpass!", first_name="A", last_name="B")
+
+    collaborators["user_repository"].create.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_raises_for_already_accepted_invitation(
+    use_case: AcceptOrganizationInvitationUseCase,
+    collaborators: dict[str, AsyncMock | MagicMock],
+) -> None:
     org_id, tenant_id = uuid4(), uuid4()
     raw_token, invitation = _raw_token_and_invitation(org_id, tenant_id)
     invitation.accept(uuid4())
@@ -80,8 +116,9 @@ async def test_raises_for_already_accepted_invitation(use_case, collaborators):
 
 @pytest.mark.asyncio
 async def test_happy_path_creates_admin_user_activates_org_and_issues_session(
-    use_case, collaborators
-):
+    use_case: AcceptOrganizationInvitationUseCase,
+    collaborators: dict[str, AsyncMock | MagicMock],
+) -> None:
     org_id, tenant_id = uuid4(), uuid4()
     raw_token, invitation = _raw_token_and_invitation(org_id, tenant_id)
     collaborators["invitation_repository"].get_by_token_unscoped.return_value = invitation
@@ -119,7 +156,10 @@ async def test_happy_path_creates_admin_user_activates_org_and_issues_session(
 
 
 @pytest.mark.asyncio
-async def test_happy_path_records_last_login_on_the_new_user(use_case, collaborators):
+async def test_happy_path_records_last_login_on_the_new_user(
+    use_case: AcceptOrganizationInvitationUseCase,
+    collaborators: dict[str, AsyncMock | MagicMock],
+) -> None:
     """Accepting an invitation is the owner's first 'login' — must stamp last_login_at.
 
     Without this, the owner's first session shows last_login_at=None until their

@@ -2605,7 +2605,9 @@ git commit -m "feat(api): POST /admin/dealers + resend-invitation endpoints"
 
 - Produces: `AcceptOrgInvitationRequest` (token, password, first_name, last_name), reuses `LoginUserResponse` for the response (same shape `/login` returns — same cookies get set).
 
-- [ ] **Step 1: Write the failing integration tests**
+**RESOLVED (2026-06-23):** `test_auth_router.py` did not exist yet — created fresh, not modified. Route is `/api/v1/auth/accept-org-invitation` (the literal `/auth/...` in this doc's snippets omits the `/api/v1` prefix every other router actually uses — verified against `main.py`'s `include_router(..., prefix="/api/v1/auth")`). Endpoint wired exactly per the Step 4 snippet below. 4 integration tests added (invalid token, happy path, weak password, email-race) + 6 use-case unit tests in the pre-existing `test_accept_organization_invitation.py` (5 existing + 1 new for G3). 1635 passed, ruff/pyright clean.
+
+- [x] **Step 1: Write the failing integration tests**
 
 ```python
 @pytest.mark.asyncio
@@ -2643,12 +2645,12 @@ async def test_accept_org_invitation_happy_path_sets_cookies(client, pending_dea
 
 `pending_dealer_invitation` is a new fixture you'll need to add to whatever conftest the other `test_auth_router.py` integration tests use — it should create an `Organization` + `OrganizationInvitation` directly via the repositories (mirroring however existing fixtures in that file seed an `Organization`/`User` for other tests) and return `(raw_token, invitation)`. Check that conftest's existing fixtures first (`rg "^@pytest.fixture" -A 3 apps/api/tests/integration/conftest.py` or the local one in `tests/integration/api/`) and match its session/transaction pattern exactly.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd apps/api && uv run pytest tests/integration/api/test_auth_router.py -v -k accept_org_invitation`
 Expected: FAIL — `404 Not Found`
 
-- [ ] **Step 3: Write the request DTO**
+- [x] **Step 3: Write the request DTO**
 
 ```python
 """DTO for accepting an organization invitation."""
@@ -2665,7 +2667,7 @@ class AcceptOrgInvitationRequest(BaseModel):
     last_name: str
 ```
 
-- [ ] **Step 4: Add the endpoint**
+- [x] **Step 4: Add the endpoint**
 
 Add to `auth_router.py`, near `register`/`login` (after `login`, `auth_router.py:248`):
 
@@ -2705,18 +2707,22 @@ async def accept_org_invitation(
 
 Add imports: `AcceptOrgInvitationRequest`, `AcceptOrganizationInvitationUseCase`, `get_accept_organization_invitation_use_case`, and `HTTPException` (check `rg "^from fastapi import" apps/api/src/prosell/infrastructure/api/routers/auth_router.py` — `HTTPException` may not be imported yet in this file if every other endpoint raises via a different mechanism; the existing imports show `from fastapi import APIRouter, Depends, Query, Request, Response, status` with no `HTTPException` — add it to that import line).
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd apps/api && uv run pytest tests/integration/api/test_auth_router.py -v -k accept_org_invitation`
 Expected: 2 passed
 
-- [ ] **Step 6: Run the full backend suite to confirm zero regressions**
+**RESOLVED (2026-06-23):** 4 passed, not 2 — G3 and G6 each got their own dedicated integration test (weak password → 400, email race → 409) instead of folding into the happy-path/invalid-token pair this doc originally sized for.
+
+- [x] **Step 6: Run the full backend suite to confirm zero regressions**
 
 Run: `cd apps/api && uv run pytest -q`
 Expected: all passed (compare count to the baseline before Task 1 — should be baseline + every new test added across Tasks 1-13)
 
 Run: `cd apps/api && uv run ruff check . && uv run ruff format --check . && uv run pyright`
 Expected: all clean
+
+**RESOLVED (2026-06-23):** 1635 passed (was 1630 after T12). ruff/format/pyright all clean.
 
 - [ ] **Step 7: Commit**
 
@@ -3659,6 +3665,8 @@ DTO at line 2389-2394 has `owner_email: str` — accepts `"not-an-email"` withou
 
 **Bake into T13 Step 3:** replicate the exact regex from `passwordFieldSchema` as a Pydantic `Field(..., pattern=...)` on `password`. Frontend and backend must agree, but neither alone is sufficient.
 
+**RESOLVED (2026-06-23), NOT as a DTO regex:** the codebase already had a backend-side strength gate — `IPasswordService.validate_password_strength()` (uppercase/lowercase/digit/special/length), used by `RegisterUserUseCase` and raising the existing `WeakPasswordException` (maps to 400 via the global `auth_domain_exception_handler`). Added the same call to `AcceptOrganizationInvitationUseCase.execute()` instead of duplicating the regex in a new `Field(pattern=...)` — same behavior, no new validation logic, consistent with `register_user.py`. Had to backfill `validate_password_strength.return_value = []` on the existing mocked `password_service` fixture in `test_accept_organization_invitation.py` so the 5 pre-existing happy-path unit tests didn't start failing on an unconfigured `MagicMock` return.
+
 ### G4 — T9 (now) or T12: validate that `vertical_ids` reference real root categories
 
 `CreateDealerOrganizationUseCase.execute()` iterates `vertical_ids` and calls `vertical_repository.enable(organization_id, root_category_id=...)` without checking those IDs exist in `categories`. A request with `vertical_ids=[uuid4()]` passes the empty-list guard but the first `enable()` call raises an unhandled `IntegrityError` (FK violation) → 500.
@@ -3673,11 +3681,15 @@ The plan's T13 Step 4 snippet (line 2639) already shows `@smart_rate_limit("auth
 
 **RESOLVED (2026-06-22) for T12:** `smart_rate_limit` only has `"auth"`/`"api"`/`"public"` tiers (no `"admin"`) — used `@smart_rate_limit("auth")` on both `create_dealer` and `resend_dealer_invitation`. The decorator requires a `Request` parameter on the endpoint (it extracts it by type from the bound arguments); added `request: Request` to both signatures with `_ = request`, matching `auth_router.py`'s existing convention.
 
+**RESOLVED (2026-06-23) for T13:** confirmed — `@smart_rate_limit("auth")` is on `accept_org_invitation`, exactly as this doc's own Step 4 snippet already showed. No change needed.
+
 ### G6 — T13: handle `IntegrityError` on `user_repository.create`
 
 `AcceptOrganizationInvitationUseCase.execute()` line 70 does `user = await self.user_repository.create(user)`. If a race creates a User with the same email between `CreateDealerOrganizationUseCase`'s `get_by_email` check and `AcceptOrganizationInvitationUseCase`'s `create`, the unique constraint on `users.email` fires `IntegrityError` → unhandled → 500.
 
 **Bake into T13:** wrap the user create in `try/except IntegrityError as e: raise HTTPException(409, "Email already registered")`. Equivalent to a "soft retry after race" check.
+
+**RESOLVED (2026-06-23), NOT with a new try/except:** `main.py` already registers `app.exception_handler(IntegrityError, integrity_error_handler)` globally — it inspects the DB error message and already returns 409 "DuplicateEntry" for unique-constraint violations (and 400 for FK violations). An `IntegrityError` from `user_repository.create()` propagates uncaught through the use case and the router straight into that handler — adding a local `try/except` in the router would have been dead code shadowing infra that already exists, and worse, would've violated Clean Architecture if put in the use case (`HTTPException` is a FastAPI/infra concern, not application-layer). Verified with a new integration test that pre-seeds a `User` with the invitation's email before accepting — confirms 409 end-to-end with zero new production code.
 
 ---
 

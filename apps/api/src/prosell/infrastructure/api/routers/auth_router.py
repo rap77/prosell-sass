@@ -6,14 +6,11 @@ from typing import Annotated
 from urllib.parse import quote
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 
-# DTOs - all from central dto module
 from prosell.application.dto.auth import (
-    ChangePasswordRequest as ChangePasswordUCRequest,
-)
-from prosell.application.dto.auth import (
+    AcceptOrgInvitationRequest,
     ChangePasswordResponse,
     Disable2FAResponse,
     Enable2FAResponse,
@@ -24,6 +21,11 @@ from prosell.application.dto.auth import (
     RegisterUserRequest,
     RegisterUserResponse,
     Verify2FAResponse,
+)
+
+# DTOs - all from central dto module
+from prosell.application.dto.auth import (
+    ChangePasswordRequest as ChangePasswordUCRequest,
 )
 from prosell.application.dto.auth import (
     Disable2FARequest as Disable2FAUCRequest,
@@ -52,6 +54,9 @@ from prosell.application.use_cases.auth.oauth_login import OAuthLoginUseCase
 from prosell.application.use_cases.auth.refresh_token import RefreshTokenUseCase
 from prosell.application.use_cases.auth.register_user import RegisterUserUseCase
 from prosell.application.use_cases.auth.verify_2fa import Verify2FAUseCase
+from prosell.application.use_cases.organization.accept_organization_invitation import (
+    AcceptOrganizationInvitationUseCase,
+)
 from prosell.core.config import settings
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.auth_exceptions import (
@@ -63,6 +68,7 @@ from prosell.domain.exceptions.auth_exceptions import (
 from prosell.domain.ports import IOAuthService
 from prosell.domain.repositories.user_repository import AbstractUserRepository
 from prosell.infrastructure.api.dependencies import (
+    get_accept_organization_invitation_use_case,
     get_change_password_use_case,
     get_current_auth_user_from_cookie,
     get_disable_2fa_use_case,
@@ -251,6 +257,39 @@ async def login(
         remember_me=login_data.remember_me,
     )
     result = await use_case.execute(uc_request)
+    set_auth_cookies(response, result)
+    return result
+
+
+@router.post("/accept-org-invitation", response_model=LoginUserResponse)
+@smart_rate_limit("auth")
+async def accept_org_invitation(
+    request: Request,
+    accept_request: AcceptOrgInvitationRequest,
+    response: Response,
+    use_case: Annotated[
+        AcceptOrganizationInvitationUseCase, Depends(get_accept_organization_invitation_use_case)
+    ],
+) -> LoginUserResponse:
+    """
+    Accept a dealer-owner organization invitation.
+
+    Creates the owner's account, assigns them ADMIN within their new org's
+    tenant, activates the organization, and logs them in -- same cookies
+    /login sets.
+    """
+    try:
+        result = await use_case.execute(
+            token=accept_request.token,
+            password=accept_request.password,
+            first_name=accept_request.first_name,
+            last_name=accept_request.last_name,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+
     set_auth_cookies(response, result)
     return result
 
