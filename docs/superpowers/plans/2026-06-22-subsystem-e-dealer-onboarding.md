@@ -2745,7 +2745,7 @@ git commit -m "feat(api): POST /auth/accept-org-invitation"
 
 - Produces: `passwordFieldSchema: z.ZodString` — the exact regex/rules from `RegisterForm.tsx:154-157`, usable standalone or composed into a larger `z.object()`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 import { describe, expect, it } from "vitest";
@@ -2773,12 +2773,12 @@ describe("passwordFieldSchema", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/web && pnpm vitest run tests/unit/lib/schemas/password.test.ts`
 Expected: FAIL — cannot resolve `@/lib/schemas/password`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```typescript
 import { z } from "zod";
@@ -2795,12 +2795,12 @@ export const passwordFieldSchema = z
   );
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd apps/web && pnpm vitest run tests/unit/lib/schemas/password.test.ts`
 Expected: 4 passed
 
-- [ ] **Step 5: Update `RegisterForm.tsx` to use it**
+- [x] **Step 5: Update `RegisterForm.tsx` to use it**
 
 Replace lines 150-157 of `RegisterForm.tsx`:
 
@@ -2823,17 +2823,25 @@ with:
 
 Add the import at the top of `RegisterForm.tsx`: `import { passwordFieldSchema } from "@/lib/schemas/password";`
 
-- [ ] **Step 6: Run the RegisterForm test suite to confirm zero regression**
+- [x] **Step 6: Run the RegisterForm test suite to confirm zero regression**
 
 Run: `cd apps/web && pnpm vitest run -- --grep RegisterForm` (or the real test path — `fd RegisterForm.test apps/web/src apps/web/tests`)
 Expected: all pass, identical to before
 
-- [ ] **Step 7: Commit**
+**MAJOR PLAN CORRECTION (2026-06-23): `RegisterForm.tsx` is dead code, not the live register form.** Wired the schema in per Steps 1-5, ran its test suite (35/35 passed, byte-identical), then before committing discovered via `git log --follow` that `/auth/register` (`page.tsx` → `RegisterPageContent.tsx`) has NOT rendered `<RegisterForm />` since commit `b1244527` (2026-05-21, "apply ProSell dark premium design system across entire frontend") — that commit rewrote `RegisterPageContent.tsx` inline with hand-rolled styles and dropped the `<RegisterForm />` import, without deleting the now-orphaned component. Verified `RegisterForm.tsx` had zero real consumers (only its own test + an unused barrel re-export).
+
+Pulling that thread surfaced a **whole orphaned subtree** from the same migration, confirmed file-by-file (`rg "<ComponentName"` cross-checked against every live `*PageContent.tsx`): `RegisterForm.tsx`, `LoginForm.tsx`, `ForgotPasswordForm.tsx`, `ResetPasswordForm.tsx`, `VerifyEmailForm.tsx`, `TwoFactorSetupForm.tsx` (non-`dynamic/` copy — a live `dynamic/TwoFactorSetupForm.tsx` exists and IS used by `Setup2FAPageContent.tsx`), `PasswordInput.tsx`, `OAuthButtons.tsx`, and `dynamic/OAuthButtons.tsx` — 9 source files (3455 lines) + 9 test files (`password-reset.test.tsx` tested two of the dead components too) covering 184 tests that exercised zero production code. Deleted all of it, trimmed the `components/auth/index.ts` barrel down to its one real survivor (`TwoFactorInput`, used by the live `dynamic/TwoFactorSetupForm.tsx`). Full suite after deletion: 881 passed (106 files), typecheck clean, lint clean. Split into a separate `chore` commit from T14's actual deliverable, per the code-review skill's "separate refactoring from feature work."
+
+**T14's real scope, after the correction:** the live `/auth/register` page (`RegisterPageContent.tsx`) already enforces the *identical* regex inline — character-for-character the same pattern — just with Spanish messages ("Mínimo 8 caracteres" vs `passwordFieldSchema`'s English). There is no rule drift to fix. Swapping in `passwordFieldSchema` directly would inject English error text into an otherwise fully-Spanish form (mixed-language regression) for zero functional gain. Decision: leave `RegisterPageContent.tsx` untouched. `passwordFieldSchema` ships in `lib/schemas/password.ts` as planned, fully tested, with no live consumer yet — T17 (`/invite/org/[token]`, not yet built) is its intended first real caller.
+
+- [x] **Step 7: Commit**
 
 ```bash
-git add apps/web/src/lib/schemas/password.ts apps/web/src/components/auth/RegisterForm.tsx apps/web/tests/unit/lib/schemas/password.test.ts
-git commit -m "refactor(web): extract passwordFieldSchema from RegisterForm"
+git add apps/web/src/lib/schemas/password.ts apps/web/tests/unit/lib/schemas/password.test.ts
+git commit -m "feat(web): add shared passwordFieldSchema module (T14)"
 ```
+
+Plus a separate cleanup commit for the orphaned subtree found above (`chore(web): remove orphaned pre-design-system auth components`).
 
 ---
 
