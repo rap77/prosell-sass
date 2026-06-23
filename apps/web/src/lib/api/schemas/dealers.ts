@@ -55,3 +55,12 @@ export const DealerProductListResponseSchema = z.object({
   skip: z.number(),
   limit: z.number(),
 });
+
+export const CreateDealerResponseSchema = z.object({
+  invitation_id: z.string(),
+  organization_id: z.string(),
+  email: z.string(),
+  status: z.string(),
+});
+
+export type CreateDealerResponse = z.infer<typeof CreateDealerResponseSchema>;
