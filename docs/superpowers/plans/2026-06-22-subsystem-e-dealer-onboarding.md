@@ -2851,13 +2851,15 @@ Plus a separate cleanup commit for the orphaned subtree found above (`chore(web)
 
 - Modify: `apps/web/src/lib/api/schemas/dealers.ts`
 - Modify: `apps/web/src/lib/api/dealers.ts`
-- Test: `apps/web/tests/unit/lib/api/dealers.test.ts` (check real path/existence first: `fd dealers.test apps/web`)
+- Test: `apps/web/tests/unit/lib/api/dealers.test.tsx` (check real path/existence first: `fd dealers.test apps/web`)
+
+**RESOLVED note (2026-06-23):** the plan's snippets named this file `.test.ts`, but it renders `<QueryClientProvider>` JSX in its `wrapper` helper. Repo convention for any test file containing JSX is `.test.tsx` (confirmed via `tests/unit/api/products.test.tsx`/`vehicles.test.tsx`) — `.ts` files aren't parsed for JSX by this project's Vitest/esbuild config. Created as `.tsx` from the start; no rename needed.
 
 **Interfaces:**
 
 - Produces: `CreateDealerResponseSchema`/`CreateDealerResponse` type; `useCreateDealer(): UseMutationResult<CreateDealerResponse, Error, {name: string; vertical_ids: string[]; owner_email: string}>`; `useResendDealerInvitation(): UseMutationResult<CreateDealerResponse, Error, string>` (dealer id).
 
-- [ ] **Step 1: Add the response schema**
+- [x] **Step 1: Add the response schema**
 
 Add to `apps/web/src/lib/api/schemas/dealers.ts`, after `DealerProductListResponseSchema`:
 
@@ -2872,7 +2874,7 @@ export const CreateDealerResponseSchema = z.object({
 export type CreateDealerResponse = z.infer<typeof CreateDealerResponseSchema>;
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```typescript
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -2953,12 +2955,12 @@ describe("useResendDealerInvitation", () => {
 
 Check the real API path prefix first — `dealers.ts`'s existing `useDealers()` calls `getJson("/api/v1/admin/dealers")` per the file already read for this design; confirm with `rg "admin/dealers" apps/web/src/lib/api/dealers.ts` and match the exact prefix used (some endpoints in this codebase go through `/api/v1/...`, others through a Next.js rewrite at a different prefix — use whatever `useDealers()` already uses, don't guess).
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd apps/web && pnpm vitest run tests/unit/lib/api/dealers.test.ts`
 Expected: FAIL — `useCreateDealer is not a function`
 
-- [ ] **Step 4: Write the implementation**
+- [x] **Step 4: Write the implementation**
 
 Add to `apps/web/src/lib/api/dealers.ts`, after the existing `useDealerProducts`:
 
@@ -3023,17 +3025,17 @@ export function useResendDealerInvitation() {
 
 Note: `useMutation`/`useQueryClient` need to be added to the existing `import { useQuery, type UseQueryResult } from "@tanstack/react-query";` line at the top of `dealers.ts` rather than as a second import statement — check that line and merge them into one import.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd apps/web && pnpm vitest run tests/unit/lib/api/dealers.test.ts`
 Expected: 2 passed
 
-- [ ] **Step 6: Run typecheck + lint**
+- [x] **Step 6: Run typecheck + lint**
 
 Run: `cd apps/web && pnpm typecheck && pnpm eslint src/lib/api/dealers.ts src/lib/api/schemas/dealers.ts`
 Expected: clean
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/web/src/lib/api/dealers.ts apps/web/src/lib/api/schemas/dealers.ts apps/web/tests/unit/lib/api/dealers.test.ts
