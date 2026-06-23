@@ -40,6 +40,12 @@ class AbstractOrganizationInvitationRepository(ABC):
         """Get the pending invitation for an org+email pair, if any."""
 
     @abstractmethod
+    async def get_latest_by_organization(
+        self, organization_id: UUID, tenant_id: UUID
+    ) -> OrganizationInvitation | None:
+        """Most recent invitation (any status) for an org — used to resend."""
+
+    @abstractmethod
     async def update(self, invitation: OrganizationInvitation) -> OrganizationInvitation:
         """Update an existing invitation."""
 

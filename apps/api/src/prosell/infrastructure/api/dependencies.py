@@ -89,6 +89,7 @@ from prosell.domain.repositories import (
     AbstractUserRepository,
 )
 from prosell.domain.repositories.branch_repository import AbstractBranchRepository
+from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.facebook_account_repository import IFacebookAccountRepository
 from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
 from prosell.domain.repositories.organization_invitation_repository import (
@@ -103,6 +104,9 @@ from prosell.domain.repositories.user_branch_repository import (
     AbstractUserBranchRepository,
 )
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.repositories.category_repository_impl import (
+    SqlAlchemyCategoryRepository,
+)
 from prosell.infrastructure.repositories.oauth_repository_impl import SqlAlchemyOAuthRepository
 from prosell.infrastructure.repositories.organization_invitation_repository_impl import (
     SqlAlchemyOrganizationInvitationRepository,
@@ -181,6 +185,13 @@ async def get_organization_invitation_repository(
 ) -> AbstractOrganizationInvitationRepository:
     """Get organization invitation repository instance."""
     return SqlAlchemyOrganizationInvitationRepository(session)
+
+
+async def get_category_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> AbstractCategoryRepository:
+    """Get category repository instance."""
+    return SqlAlchemyCategoryRepository(session)
 
 
 # =============================================================================
@@ -511,6 +522,7 @@ async def get_create_dealer_organization_use_case(
         AbstractOrganizationVerticalRepository, Depends(get_organization_vertical_repository)
     ],
     user_repository: Annotated[AbstractUserRepository, Depends(get_user_repository)],
+    category_repository: Annotated[AbstractCategoryRepository, Depends(get_category_repository)],
     invite_dealer_owner_use_case: Annotated[
         InviteDealerOwnerUseCase, Depends(get_invite_dealer_owner_use_case)
     ],
@@ -521,7 +533,11 @@ async def get_create_dealer_organization_use_case(
     )
 
     return CreateDealerOrganizationUseCase(
-        organization_repository, vertical_repository, user_repository, invite_dealer_owner_use_case
+        organization_repository,
+        vertical_repository,
+        user_repository,
+        category_repository,
+        invite_dealer_owner_use_case,
     )
 
 

@@ -7,6 +7,7 @@ from prosell.application.use_cases.organization.invite_dealer_owner import (
 )
 from prosell.domain.entities.organization import Organization
 from prosell.domain.entities.organization_invitation import OrganizationInvitation
+from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
 from prosell.domain.repositories.organization_vertical_repository import (
     AbstractOrganizationVerticalRepository,
@@ -17,9 +18,13 @@ from prosell.domain.repositories.user_repository import AbstractUserRepository
 class CreateDealerOrganizationUseCase:
     """Staff-only: create a new dealer org, enable its verticals, invite its owner.
 
-    Caller (the router) is responsible for wrapping this in a DB transaction
-    so a failure at any step — including email delivery inside
-    InviteDealerOwnerUseCase — rolls back the org and vertical rows too.
+    Atomic for free: the request-scoped session (`get_async_session`) commits
+    once at the end and rolls back the whole session on any unhandled
+    exception, and every repository call here uses `.flush()`, never
+    `.commit()`. So a failure at any step -- including email delivery inside
+    InviteDealerOwnerUseCase -- already rolls back the org and vertical rows
+    too, with no explicit transaction wrapping needed in the router. See
+    `tests/integration/use_cases/test_create_dealer_organization_atomicity.py`.
     """
 
     def __init__(
@@ -27,11 +32,13 @@ class CreateDealerOrganizationUseCase:
         organization_repository: AbstractOrganizationRepository,
         vertical_repository: AbstractOrganizationVerticalRepository,
         user_repository: AbstractUserRepository,
+        category_repository: AbstractCategoryRepository,
         invite_dealer_owner_use_case: InviteDealerOwnerUseCase,
     ) -> None:
         self.organization_repository = organization_repository
         self.vertical_repository = vertical_repository
         self.user_repository = user_repository
+        self.category_repository = category_repository
         self.invite_dealer_owner_use_case = invite_dealer_owner_use_case
 
     async def execute(
@@ -44,6 +51,11 @@ class CreateDealerOrganizationUseCase:
     ) -> OrganizationInvitation:
         if not vertical_ids:
             raise ValueError("At least one vertical must be selected")
+
+        for root_category_id in vertical_ids:
+            category = await self.category_repository.get_by_id_any_tenant(root_category_id)
+            if category is None:
+                raise ValueError(f"Unknown vertical id: {root_category_id}")
 
         normalized_email = owner_email.lower().strip()
         existing_user = await self.user_repository.get_by_email(normalized_email)

@@ -78,6 +78,22 @@ class SqlAlchemyOrganizationInvitationRepository(AbstractOrganizationInvitationR
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
+    async def get_latest_by_organization(
+        self, organization_id: UUID, tenant_id: UUID
+    ) -> OrganizationInvitation | None:
+        stmt = (
+            select(OrganizationInvitationModel)
+            .where(
+                OrganizationInvitationModel.organization_id == organization_id,
+                OrganizationInvitationModel.tenant_id == tenant_id,
+            )
+            .order_by(OrganizationInvitationModel.created_at.desc())
+            .limit(1)
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
     async def update(self, invitation: OrganizationInvitation) -> OrganizationInvitation:
         stmt = select(OrganizationInvitationModel).where(
             OrganizationInvitationModel.id == invitation.id
@@ -87,6 +103,11 @@ class SqlAlchemyOrganizationInvitationRepository(AbstractOrganizationInvitationR
         if not model:
             raise ValueError(f"Invitation not found: {invitation.id}")
 
+        # token/expires_at must be persisted too -- regenerate_token() (the
+        # resend/reuse path) mutates both, and an update() that drops them
+        # would email a raw token whose hash never matches the stored row.
+        model.token = invitation.token
+        model.expires_at = invitation.expires_at
         model.status = invitation.status.value
         model.accepted_by_user_id = invitation.accepted_by_user_id
         model.updated_at = invitation.updated_at

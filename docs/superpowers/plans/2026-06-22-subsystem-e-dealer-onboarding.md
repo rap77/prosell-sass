@@ -2339,7 +2339,7 @@ git commit -m "feat(api): DI wiring for Subsystem E use cases + extract set_auth
 
 - Produces: `CreateDealerRequest` (name, vertical_ids, owner_email), `CreateDealerResponse` (invitation id, organization id, email, status). Both endpoints gated by `_require_dealer_admin_view_all()` (existing, `admin_dealers_router.py:36-41`).
 
-- [ ] **Step 1: Write the failing integration tests**
+- [x] **Step 1: Write the failing integration tests**
 
 ```python
 @pytest.mark.asyncio
@@ -2399,12 +2399,12 @@ async def test_resend_invitation_404s_for_unknown_dealer(client, admin_token):
 
 Check `apps/api/tests/integration/api/` for the real `client`/`admin_token`/`sales_user_token` fixture names (`fd conftest.py apps/api/tests/integration` then read it) — these are illustrative names, match the real ones exactly. `root_category_id` likely needs to come from a fixture that seeds a global category, or from `apps/api/tests/integration/conftest.py`'s existing category fixtures — check `rg "root_category|fixture.*categor" apps/api/tests/integration/conftest.py` first.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd apps/api && uv run pytest tests/integration/api/test_admin_dealers_router.py -v -k dealer`
 Expected: FAIL — `404 Not Found` (routes don't exist yet) instead of the expected statuses
 
-- [ ] **Step 3: Write the request/response DTOs**
+- [x] **Step 3: Write the request/response DTOs**
 
 Check `apps/api/src/prosell/application/dto/organization/` exists first (`fd . apps/api/src/prosell/application/dto/organization -t d`); if not, mirror the structure of `apps/api/src/prosell/application/dto/auth/` (a package with one file per concern).
 
@@ -2433,7 +2433,7 @@ class CreateDealerResponse(BaseModel):
     status: str
 ```
 
-- [ ] **Step 4: Add `get_latest_by_organization` to the invitation repository**
+- [x] **Step 4: Add `get_latest_by_organization` to the invitation repository**
 
 The resend endpoint needs to know _which email_ to resend to. `Organization` doesn't store the owner's email anywhere — only `OrganizationInvitation` rows do, and there could be an old `EXPIRED`/`CANCELLED` one for a typo'd address plus a `PENDING` one for the corrected address. Add a lookup for the most recent invitation (any status) before writing the endpoint that needs it.
 
@@ -2492,7 +2492,7 @@ async def test_get_latest_by_organization_returns_most_recent(db_session):
 Run: `cd apps/api && uv run pytest tests/integration/repositories/test_organization_invitation_repository.py -v`
 Expected: 6 passed (5 from Task 4 + this one)
 
-- [ ] **Step 5: Add the two endpoints**
+- [x] **Step 5: Add the two endpoints**
 
 Append to `admin_dealers_router.py`, after the existing `list_dealer_products` (end of file). Add these imports at the top of the file first: `CreateDealerOrganizationUseCase`, `InviteDealerOwnerUseCase`, `CreateDealerRequest`/`CreateDealerResponse` (Step 3), `get_create_dealer_organization_use_case`, `get_invite_dealer_owner_use_case`, `get_organization_invitation_repository` (Task 11), `AbstractOrganizationInvitationRepository` (Task 4).
 
@@ -2579,12 +2579,12 @@ async def resend_dealer_invitation(
     )
 ```
 
-- [ ] **Step 6: Run the endpoint tests to verify they pass**
+- [x] **Step 6: Run the endpoint tests to verify they pass**
 
 Run: `cd apps/api && uv run pytest tests/integration/api/test_admin_dealers_router.py -v -k dealer`
 Expected: 5 passed
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/api/src/prosell/infrastructure/api/routers/admin_dealers_router.py apps/api/src/prosell/application/dto/organization/ apps/api/src/prosell/domain/repositories/organization_invitation_repository.py apps/api/src/prosell/infrastructure/repositories/organization_invitation_repository_impl.py apps/api/tests/integration/api/test_admin_dealers_router.py apps/api/tests/integration/repositories/test_organization_invitation_repository.py
@@ -3643,11 +3643,15 @@ Found while reviewing T1-T11 code for the next batch. Listed by the task that sh
 
 **Bake into T12 Step 5:** wrap the `use_case.execute(...)` call in `async with db.begin():` (or equivalent explicit transaction boundary). Add an integration test that injects a failure mid-flow and asserts no Organization/Invitation rows persist.
 
+**RESOLVED (2026-06-22) — premise was wrong, no transaction wrap added.** `get_async_session` (`infrastructure/database/session.py`) wraps the entire request in ONE session that commits once at the end and rolls back the whole session on any unhandled exception; every repo call in this flow uses `.flush()`, never `.commit()`. So the claimed per-step independent commits don't happen — the existing session lifecycle already gives the atomicity this gap asked for, for free. Verified with the exact test this gap requested: `tests/integration/use_cases/test_create_dealer_organization_atomicity.py` (savepoint-wrapped to coexist with the `db_session` fixture's own outer transaction) — a mid-flow `RuntimeError` from the email step leaves no `Organization` row after rollback, with zero extra code in the router. Adding an explicit `db.begin()` here would have been redundant and risky: `AsyncSession` autobegins on first use, so an explicit `begin()` later in the request can raise `InvalidRequestError: A transaction is already begun on this Session` depending on what already touched the session (e.g. an auth dependency). Lesson for future gap docs: verify session-lifecycle claims against the actual session factory before prescribing a fix.
+
 ### G2 — T12: `CreateDealerRequest.owner_email` should be `EmailStr`
 
 DTO at line 2389-2394 has `owner_email: str` — accepts `"not-an-email"` without complaint. FastAPI/Pydantic 2 has `EmailStr` for this exact reason.
 
 **Bake into T12 Step 3:** change to `owner_email: EmailStr` (import from `pydantic`). Add an integration test that posts `"not-an-email"` and expects 422.
+
+**RESOLVED (2026-06-22):** `CreateDealerRequest.owner_email` is `EmailStr`. Covered by `test_create_dealer_rejects_invalid_email` (422).
 
 ### G3 — T13: backend MUST validate password strength, not trust the frontend
 
@@ -3661,9 +3665,13 @@ DTO at line 2389-2394 has `owner_email: str` — accepts `"not-an-email"` withou
 
 **Bake into T9 (preferred) OR T12:** add a `vertical_repository.get_existing_ids(ids: list[UUID]) -> set[UUID]` (or just `get_by_id` in a loop with one query), reject in the use case if any are missing with `ValueError(f"Unknown vertical id: {id}")`. The router already maps `ValueError → 400`, so this turns a 500 into a clean 400.
 
+**RESOLVED (2026-06-22), implemented in T9's use case (not T12, not a new vertical_repository method):** `CreateDealerOrganizationUseCase` now takes a `category_repository: AbstractCategoryRepository` and calls `get_by_id_any_tenant(root_category_id)` for each `vertical_id` before creating anything, raising `ValueError(f"Unknown vertical id: {id}")` on a miss. Reused the existing tenant-agnostic lookup (already used by `ListOrgVerticalsUseCase`) instead of adding a new repository method — `categories` is the real FK target `vertical_ids` must resolve against, not `organization_vertical`. Covered by `test_raises_when_a_vertical_id_does_not_resolve_to_a_real_category` (unit) and `test_create_dealer_rejects_unknown_vertical_id` (integration, 400).
+
 ### G5 — T13: confirm `@smart_rate_limit("auth")` is on `/auth/accept-org-invitation`
 
 The plan's T13 Step 4 snippet (line 2639) already shows `@smart_rate_limit("auth")` — good. **No action needed**, just calling it out so it doesn't get accidentally dropped during implementation. Same check for T12: the create-dealer and resend-invitation endpoints should also be rate-limited (consider `@smart_rate_limit("admin")` or `"auth"`). Add it explicitly in T12 Step 5 if not already covered.
+
+**RESOLVED (2026-06-22) for T12:** `smart_rate_limit` only has `"auth"`/`"api"`/`"public"` tiers (no `"admin"`) — used `@smart_rate_limit("auth")` on both `create_dealer` and `resend_dealer_invitation`. The decorator requires a `Request` parameter on the endpoint (it extracts it by type from the bound arguments); added `request: Request` to both signatures with `_ = request`, matching `auth_router.py`'s existing convention.
 
 ### G6 — T13: handle `IntegrityError` on `user_repository.create`
 
