@@ -3,13 +3,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import AdminNewDealerPage from "./page";
 
 const mockPush = vi.fn();
+const mockReplace = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
 }));
 
 const mockHasPermission = vi.fn();
+const mockAuthIsLoading = vi.fn();
 vi.mock("@/hooks/useAuth", () => ({
-  useAuth: () => ({ hasPermission: mockHasPermission }),
+  useAuth: () => ({
+    hasPermission: mockHasPermission,
+    isLoading: mockAuthIsLoading(),
+  }),
 }));
 
 const mockMutate = vi.fn();
@@ -17,25 +22,48 @@ vi.mock("@/lib/api/dealers", () => ({
   useCreateDealer: () => ({ mutate: mockMutate, isPending: false, error: null }),
 }));
 
+const mockUseCategories = vi.fn();
 vi.mock("@/lib/api/categories", () => ({
-  useCategories: () => ({
-    data: [
-      { id: "cat-1", name: "Vehicles" },
-      { id: "cat-2", name: "Real Estate" },
-    ],
-    isLoading: false,
-  }),
+  useCategories: () => mockUseCategories(),
 }));
 
 describe("AdminNewDealerPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuthIsLoading.mockReturnValue(false);
+    mockUseCategories.mockReturnValue({
+      data: [
+        { id: "cat-1", name: "Vehicles" },
+        { id: "cat-2", name: "Real Estate" },
+      ],
+      isLoading: false,
+    });
   });
 
-  it("redirects when the user lacks DEALER_ADMIN_VIEW_ALL", () => {
+  it("does not redirect while auth is still hydrating", () => {
+    mockAuthIsLoading.mockReturnValue(true);
+    mockHasPermission.mockReturnValue(false);
+
+    render(<AdminNewDealerPage />);
+
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("redirects with router.replace (not push) when the user lacks DEALER_ADMIN_VIEW_ALL", () => {
     mockHasPermission.mockReturnValue(false);
     render(<AdminNewDealerPage />);
-    expect(mockPush).toHaveBeenCalledWith("/dashboard");
+    expect(mockReplace).toHaveBeenCalledWith("/dashboard");
+    expect(mockPush).not.toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("shows a hint instead of a silently-disabled button when there are no active verticals", () => {
+    mockHasPermission.mockReturnValue(true);
+    mockUseCategories.mockReturnValue({ data: [], isLoading: false });
+
+    render(<AdminNewDealerPage />);
+
+    expect(screen.getByText(/no hay verticals activos/i)).toBeInTheDocument();
   });
 
   it("renders the form and submits with selected verticals", async () => {

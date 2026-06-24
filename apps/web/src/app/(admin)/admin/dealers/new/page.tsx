@@ -16,7 +16,7 @@ import { useCreateDealer } from "@/lib/api/dealers";
  */
 export default function AdminNewDealerPage() {
   const router = useRouter();
-  const { hasPermission } = useAuth();
+  const { hasPermission, isLoading: authLoading } = useAuth();
   const canCreate = hasPermission(Permission.DEALER_ADMIN_VIEW_ALL);
 
   const { data: categories = [], isLoading: categoriesLoading } =
@@ -28,10 +28,10 @@ export default function AdminNewDealerPage() {
   const [verticalIds, setVerticalIds] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!canCreate) {
-      router.push("/dashboard");
+    if (!authLoading && !canCreate) {
+      router.replace("/dashboard");
     }
-  }, [canCreate, router]);
+  }, [authLoading, canCreate, router]);
 
   useEffect(() => {
     if (createDealer.isSuccess) {
@@ -39,7 +39,7 @@ export default function AdminNewDealerPage() {
     }
   }, [createDealer.isSuccess, router]);
 
-  if (!canCreate) {
+  if (authLoading || !canCreate) {
     return null;
   }
 
@@ -109,6 +109,12 @@ export default function AdminNewDealerPage() {
             Verticals
           </legend>
           {categoriesLoading && <p>Cargando verticals…</p>}
+          {!categoriesLoading && categories.length === 0 && (
+            <p style={{ color: "var(--ps-text-secondary)" }}>
+              No hay verticals activos disponibles. No se puede crear un
+              concesionario hasta que exista al menos uno.
+            </p>
+          )}
           {categories.map((category) => (
             <label
               key={category.id}

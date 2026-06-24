@@ -28,7 +28,7 @@ describe("AdminDealersPage", () => {
   });
 
   it("redirects a non-admin to /dashboard", async () => {
-    mockUseAuth.mockReturnValue({ isAdmin: false });
+    mockUseAuth.mockReturnValue({ isAdmin: false, hasPermission: () => false });
     mockUseDealers.mockReturnValue({ data: [], isLoading: false, error: null });
 
     render(<AdminDealersPage />);
@@ -39,7 +39,7 @@ describe("AdminDealersPage", () => {
   });
 
   it("renders the dealers list for an admin", async () => {
-    mockUseAuth.mockReturnValue({ isAdmin: true });
+    mockUseAuth.mockReturnValue({ isAdmin: true, hasPermission: () => false });
     mockUseDealers.mockReturnValue({
       data: [
         { id: "dealer-1", name: "Dealer One" },
@@ -57,7 +57,7 @@ describe("AdminDealersPage", () => {
   });
 
   it("links each dealer to its detail page", async () => {
-    mockUseAuth.mockReturnValue({ isAdmin: true });
+    mockUseAuth.mockReturnValue({ isAdmin: true, hasPermission: () => false });
     mockUseDealers.mockReturnValue({
       data: [{ id: "dealer-1", name: "Dealer One" }],
       isLoading: false,
@@ -68,5 +68,27 @@ describe("AdminDealersPage", () => {
 
     const link = screen.getByText("Dealer One").closest("a");
     expect(link).toHaveAttribute("href", "/admin/dealers/dealer-1");
+  });
+
+  it("links to /admin/dealers/new when the user can create dealers", () => {
+    mockUseAuth.mockReturnValue({ isAdmin: true, hasPermission: () => true });
+    mockUseDealers.mockReturnValue({ data: [], isLoading: false, error: null });
+
+    render(<AdminDealersPage />);
+
+    expect(
+      screen.getByRole("link", { name: /nuevo concesionario/i }),
+    ).toHaveAttribute("href", "/admin/dealers/new");
+  });
+
+  it("hides the entry point when the user lacks the permission", () => {
+    mockUseAuth.mockReturnValue({ isAdmin: true, hasPermission: () => false });
+    mockUseDealers.mockReturnValue({ data: [], isLoading: false, error: null });
+
+    render(<AdminDealersPage />);
+
+    expect(
+      screen.queryByRole("link", { name: /nuevo concesionario/i }),
+    ).not.toBeInTheDocument();
   });
 });

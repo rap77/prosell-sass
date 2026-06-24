@@ -56,6 +56,8 @@ class CreateDealerOrganizationUseCase:
             category = await self.category_repository.get_by_id_any_tenant(root_category_id)
             if category is None:
                 raise ValueError(f"Unknown vertical id: {root_category_id}")
+            if not category.is_active:
+                raise ValueError(f"Inactive vertical id: {root_category_id}")
 
         normalized_email = owner_email.lower().strip()
         existing_user = await self.user_repository.get_by_email(normalized_email)
