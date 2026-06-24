@@ -3556,7 +3556,7 @@ git commit -m "feat(web): /invite/org/[token] accept-invitation page"
 
 Visible only when `dealer.status === "pending_verification"`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to the existing `page.test.tsx` for this route:
 
@@ -3584,12 +3584,12 @@ it("shows a resend button only when status is pending_verification, and it calls
 
 Check the existing test file's exact mocking style for `useDealer`/`useRequireAdmin` first (`page.test.tsx` for this route already exists per this session's earlier work) and match it — add `useResendDealerInvitation` to whatever `vi.mock("@/lib/api/dealers", ...)` block is already there instead of creating a second one.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/web && pnpm vitest run "src/app/(admin)/admin/dealers/[id]/page.test.tsx"`
 Expected: FAIL — button not found
 
-- [ ] **Step 3: Add the button**
+- [x] **Step 3: Add the button**
 
 In `page.tsx`, import `useResendDealerInvitation` from `@/lib/api/dealers` and add right after the existing "Estado: {dealer.status}" paragraph:
 
@@ -3622,17 +3622,17 @@ const resendInvitation = useResendDealerInvitation();
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd apps/web && pnpm vitest run "src/app/(admin)/admin/dealers/[id]/page.test.tsx"`
 Expected: all pass, including the new test
 
-- [ ] **Step 5: Run typecheck + lint**
+- [x] **Step 5: Run typecheck + lint**
 
 Run: `cd apps/web && pnpm typecheck && pnpm eslint "src/app/(admin)/admin/dealers/[id]/page.tsx"`
 Expected: clean
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add "apps/web/src/app/(admin)/admin/dealers/[id]/page.tsx" "apps/web/src/app/(admin)/admin/dealers/[id]/page.test.tsx"
