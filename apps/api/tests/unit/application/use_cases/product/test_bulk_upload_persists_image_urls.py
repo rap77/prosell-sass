@@ -27,6 +27,7 @@ import pytest
 from prosell.application.use_cases.product.bulk_upload_vehicles import (
     BulkUploadVehiclesUseCase,
 )
+from prosell.domain.entities.product import Product
 from prosell.domain.services.csv_image_mapper import (
     CSVImageMapper,
     ImageMappingResult,
@@ -95,9 +96,9 @@ class TestBulkUploadPersistsImageUrls:
         # Mock product repo, capturing every create/update call
         product_repo = AsyncMock()
         product_repo.get_by_vin.return_value = None  # New product (create path)
-        captured: list = []
+        captured: list[Product] = []
 
-        async def capture(entity):
+        async def capture(entity: Product) -> Product:
             captured.append(entity)
             return entity
 
@@ -141,6 +142,6 @@ class TestBulkUploadPersistsImageUrls:
         )
         # And every DO Spaces key in image_urls should belong to this VIN
         for url in final_product.image_urls:
-            assert (
-                vin in url
-            ), f"Each image_urls entry should reference the product's VIN, got: {url}"
+            assert vin in url, (
+                f"Each image_urls entry should reference the product's VIN, got: {url}"
+            )

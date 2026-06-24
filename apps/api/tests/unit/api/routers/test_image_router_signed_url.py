@@ -112,9 +112,9 @@ class TestImageUploadReturnsSignedURL:
         assert "url" in body
         url = body["url"]
         # The URL must be presigned (has the signature query parameter)
-        assert (
-            "X-Amz-Signature=" in url
-        ), f"Expected presigned URL with X-Amz-Signature, got: {url!r}"
+        assert "X-Amz-Signature=" in url, (
+            f"Expected presigned URL with X-Amz-Signature, got: {url!r}"
+        )
         # And it must NOT be the internal docker network endpoint
         assert "minio:9000" not in url, f"URL leaked internal endpoint (minio:9000), got: {url!r}"
 
@@ -138,9 +138,9 @@ class TestImageStatusReturnsSignedURL:
         assert body["url"] is not None
         url = body["url"]
         # The URL must be presigned
-        assert (
-            "X-Amz-Signature=" in url
-        ), f"Expected presigned URL with X-Amz-Signature, got: {url!r}"
+        assert "X-Amz-Signature=" in url, (
+            f"Expected presigned URL with X-Amz-Signature, got: {url!r}"
+        )
         # And it must NOT be the internal docker network endpoint
         assert "minio:9000" not in url, f"URL leaked internal endpoint (minio:9000), got: {url!r}"
 
@@ -175,9 +175,9 @@ class TestImageUploadReturnsStorageKey:
         # The key MUST be the raw S3 path — no signature query string.
         assert "?" not in key, f"key contains a query string (signed URL leaked): {key!r}"
         # And it MUST start with the tenant prefix.
-        assert key.startswith(
-            f"orgs/{TEST_TENANT_ID}/vehicles/"
-        ), f"key does not match expected tenant prefix: {key!r}"
+        assert key.startswith(f"orgs/{TEST_TENANT_ID}/vehicles/"), (
+            f"key does not match expected tenant prefix: {key!r}"
+        )
         # The signed `url` should still be returned (for browser preview).
         assert "url" in body
         assert "X-Amz-Signature=" in body["url"]

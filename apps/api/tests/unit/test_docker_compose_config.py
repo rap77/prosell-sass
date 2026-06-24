@@ -58,9 +58,9 @@ class TestApiServiceConfig:
         env_file = api.get("env_file") or []
         # env_file can be a string or a list
         env_files = [env_file] if isinstance(env_file, str) else list(env_file)
-        assert (
-            ".env" in env_files
-        ), f"api service must load .env via env_file. Current env_file={env_file!r}"
+        assert ".env" in env_files, (
+            f"api service must load .env via env_file. Current env_file={env_file!r}"
+        )
 
     def test_api_service_has_redis_url_override(self, compose: dict) -> None:
         """REDIS_URL must point to the `redis` service inside the docker network.
@@ -69,9 +69,9 @@ class TestApiServiceConfig:
         """
         api = compose["services"]["api"]
         env = _env_as_dict(api.get("environment"))
-        assert env.get("REDIS_URL", "").startswith(
-            "redis://"
-        ), f"REDIS_URL must use redis:// scheme. Got: {env.get('REDIS_URL')!r}"
+        assert env.get("REDIS_URL", "").startswith("redis://"), (
+            f"REDIS_URL must use redis:// scheme. Got: {env.get('REDIS_URL')!r}"
+        )
 
     def test_api_service_depends_on_minio_healthchecks(self, compose: dict) -> None:
         """api must wait for minio (healthy) and minio-init (completed)."""
@@ -82,9 +82,9 @@ class TestApiServiceConfig:
 
         minio_cond = depends["minio"]
         if isinstance(minio_cond, dict):
-            assert (
-                minio_cond.get("condition") == "service_healthy"
-            ), f"minio dependency must require service_healthy. Got: {minio_cond!r}"
+            assert minio_cond.get("condition") == "service_healthy", (
+                f"minio dependency must require service_healthy. Got: {minio_cond!r}"
+            )
 
         init_cond = depends["minio-init"]
         if isinstance(init_cond, dict):
@@ -101,9 +101,9 @@ class TestApiServiceConfig:
     def test_compose_declares_minio_init_service(self, compose: dict) -> None:
         """The minio-init service must exist to bootstrap the bucket on first run."""
         services = compose.get("services", {})
-        assert (
-            "minio-init" in services
-        ), "minio-init service is required to auto-create the bucket on startup"
+        assert "minio-init" in services, (
+            "minio-init service is required to auto-create the bucket on startup"
+        )
         init = services["minio-init"]
         # must depend on minio to wait for it to be healthy
         depends = init.get("depends_on", {})
