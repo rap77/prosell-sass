@@ -18,6 +18,33 @@ from prosell.infrastructure.models.product_model import ProductModel
 
 
 @pytest.fixture
+async def root_category(
+    db_session: AsyncSession, test_organization: OrganizationModel
+) -> CategoryModel:
+    """A root category usable as a vertical_id for create_dealer.
+
+    tenant_id has a real FK to organizations, so this can't use a throwaway
+    uuid4() -- it must point at an existing org, even though the application
+    layer treats roots as tenant-agnostic (get_by_id_any_tenant ignores it).
+    """
+    category = CategoryModel(
+        id=uuid4(),
+        name="Vehicles",
+        slug=f"vehicles-{uuid4().hex[:8]}",
+        tenant_id=test_organization.tenant_id,
+        level=0,
+        parent_id=None,
+        is_active=True,
+        sort_order=0,
+        field_config=[],
+        attribute_schema={},
+    )
+    db_session.add(category)
+    await db_session.flush()
+    return category
+
+
+@pytest.fixture
 async def other_dealer(db_session: AsyncSession) -> OrganizationModel:
     """A second, unrelated dealer org with one product."""
     org_id = uuid4()
@@ -176,3 +203,189 @@ async def test_admin_dealer_products_excludes_other_org_with_corrupt_tenant_id(
     assert response.status_code == 200
     titles = {p["title"] for p in response.json()["products"]}
     assert "Corrupt Tenant Product" not in titles
+
+
+@pytest.mark.asyncio
+async def test_create_dealer_requires_dealer_admin_view_all(
+    async_client_as_seller: AsyncClient,
+    root_category: CategoryModel,
+) -> None:
+    """Task 12: seller without DEALER_ADMIN_VIEW_ALL gets 403."""
+    response = await async_client_as_seller.post(
+        "/api/v1/admin/dealers",
+        json={
+            "name": "Acme Motors",
+            "vertical_ids": [str(root_category.id)],
+            "owner_email": "owner@x.com",
+        },
+    )
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_create_dealer_rejects_empty_verticals(
+    async_client_as_admin: AsyncClient,
+) -> None:
+    """Task 12: at least one vertical is required (CreateDealerOrganizationUseCase)."""
+    response = await async_client_as_admin.post(
+        "/api/v1/admin/dealers",
+        json={"name": "Acme Motors", "vertical_ids": [], "owner_email": "owner@x.com"},
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_create_dealer_rejects_unknown_vertical_id(
+    async_client_as_admin: AsyncClient,
+) -> None:
+    """Task 12 / gap G4: a vertical_id with no matching root category 400s."""
+    response = await async_client_as_admin.post(
+        "/api/v1/admin/dealers",
+        json={
+            "name": "Acme Motors",
+            "vertical_ids": [str(uuid4())],
+            "owner_email": "owner@x.com",
+        },
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_create_dealer_rejects_invalid_email(
+    async_client_as_admin: AsyncClient,
+    root_category: CategoryModel,
+) -> None:
+    """Task 12 / gap G2: owner_email is EmailStr, not a bare str."""
+    response = await async_client_as_admin.post(
+        "/api/v1/admin/dealers",
+        json={
+            "name": "Acme Motors",
+            "vertical_ids": [str(root_category.id)],
+            "owner_email": "not-an-email",
+        },
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_create_dealer_happy_path(
+    async_client_as_admin: AsyncClient,
+    root_category: CategoryModel,
+) -> None:
+    """Task 12: creates the org, enables the vertical, and invites the owner."""
+    response = await async_client_as_admin.post(
+        "/api/v1/admin/dealers",
+        json={
+            "name": "Acme Motors",
+            "vertical_ids": [str(root_category.id)],
+            "owner_email": "newowner@x.com",
+        },
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["organization_id"]
+    assert body["email"] == "newowner@x.com"
+    assert body["status"] == "pending"
+
+
+@pytest.mark.asyncio
+async def test_resend_invitation_requires_dealer_admin_view_all(
+    async_client_as_seller: AsyncClient,
+) -> None:
+    """Task 12: seller without DEALER_ADMIN_VIEW_ALL gets 403."""
+    response = await async_client_as_seller.post(
+        f"/api/v1/admin/dealers/{uuid4()}/resend-invitation",
+    )
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_resend_invitation_404s_for_unknown_dealer(
+    async_client_as_admin: AsyncClient,
+) -> None:
+    """Task 12: an unknown dealer_id 404s."""
+    response = await async_client_as_admin.post(
+        f"/api/v1/admin/dealers/{uuid4()}/resend-invitation",
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_resend_invitation_404s_when_dealer_has_no_invitation_yet(
+    async_client_as_admin: AsyncClient,
+    other_dealer: OrganizationModel,
+) -> None:
+    """Task 12: a dealer org with no OrganizationInvitation row yet 404s."""
+    response = await async_client_as_admin.post(
+        f"/api/v1/admin/dealers/{other_dealer.id}/resend-invitation",
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_resend_invitation_happy_path_reissues_the_pending_invitation(
+    async_client_as_admin: AsyncClient,
+    root_category: CategoryModel,
+) -> None:
+    """Task 12: resend reuses the existing pending invitation with a fresh token."""
+    create_response = await async_client_as_admin.post(
+        "/api/v1/admin/dealers",
+        json={
+            "name": "Acme Motors",
+            "vertical_ids": [str(root_category.id)],
+            "owner_email": "resend-owner@x.com",
+        },
+    )
+    dealer_id = create_response.json()["organization_id"]
+    first_invitation_id = create_response.json()["invitation_id"]
+
+    response = await async_client_as_admin.post(
+        f"/api/v1/admin/dealers/{dealer_id}/resend-invitation",
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["invitation_id"] == first_invitation_id  # same row, fresh token
+    assert body["email"] == "resend-owner@x.com"
+    assert body["status"] == "pending"
+
+
+@pytest.mark.asyncio
+async def test_resend_invitation_409s_when_dealer_is_not_pending_verification(
+    async_client_as_admin: AsyncClient,
+    db_session: AsyncSession,
+    root_category: CategoryModel,
+) -> None:
+    """Code review CR-1: server-side gate -- resend must reject non-pending dealers.
+
+    The UI hides the button on active dealers, but a scripted caller (or an
+    admin acting on a stale dashboard) can still POST. Without this gate, the
+    API would silently issue a brand-new pending invitation to a historical
+    email (or to a prior owner whose email was changed), which is both
+    operationally confusing and a vector for impersonation phish.
+    """
+    create_response = await async_client_as_admin.post(
+        "/api/v1/admin/dealers",
+        json={
+            "name": "Acme Motors",
+            "vertical_ids": [str(root_category.id)],
+            "owner_email": "already-active@x.com",
+        },
+    )
+    assert create_response.status_code == 201
+    dealer_id = create_response.json()["organization_id"]
+
+    # Simulate the owner having already accepted -- flips the dealer to active
+    # without going through the full T13 accept flow (we only care that the
+    # resend endpoint sees a non-pending status).
+    dealer = await db_session.get(OrganizationModel, dealer_id)
+    assert dealer is not None
+    dealer.status = "active"
+    await db_session.flush()
+
+    response = await async_client_as_admin.post(
+        f"/api/v1/admin/dealers/{dealer_id}/resend-invitation",
+    )
+
+    assert response.status_code == 409
+    assert "pending" in response.json()["detail"].lower()

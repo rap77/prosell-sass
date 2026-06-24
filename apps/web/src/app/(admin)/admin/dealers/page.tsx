@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { Building2, Loader2 } from "lucide-react";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
+import { useAuth } from "@/hooks/useAuth";
+import { Permission } from "@/lib/auth/permissions";
 import { useDealers } from "@/lib/api/dealers";
 
 /**
@@ -14,6 +16,7 @@ import { useDealers } from "@/lib/api/dealers";
  */
 export default function AdminDealersPage() {
   const isAdmin = useRequireAdmin();
+  const { hasPermission } = useAuth();
   const { data: dealers = [], isLoading, error } = useDealers();
 
   if (!isAdmin) {
@@ -22,16 +25,43 @@ export default function AdminDealersPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <h1
+      <div
         style={{
-          margin: 0,
-          fontSize: 22,
-          fontWeight: 700,
-          color: "var(--ps-text-primary)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
-        Concesionarios
-      </h1>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 22,
+            fontWeight: 700,
+            color: "var(--ps-text-primary)",
+          }}
+        >
+          Concesionarios
+        </h1>
+
+        {hasPermission(Permission.DEALER_ADMIN_VIEW_ALL) && (
+          <Link
+            href="/admin/dealers/new"
+            style={{
+              height: 36,
+              display: "flex",
+              alignItems: "center",
+              padding: "0 14px",
+              borderRadius: 8,
+              background: "var(--ps-cyan)",
+              color: "var(--ps-bg-base)",
+              fontWeight: 700,
+              textDecoration: "none",
+            }}
+          >
+            Nuevo concesionario
+          </Link>
+        )}
+      </div>
 
       {isLoading && (
         <div

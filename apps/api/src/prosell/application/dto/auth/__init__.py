@@ -15,6 +15,7 @@ Import example:
 # Common DTOs
 from uuid import UUID
 
+from prosell.application.dto.auth.accept_org_invitation import AcceptOrgInvitationRequest
 from prosell.application.dto.auth.common import UserInfo
 
 # Email
@@ -60,6 +61,7 @@ from prosell.application.dto.auth.two_factor import (
 
 # Re-export UUID for use in DTOs
 __all__ = ["UUID"]
+__all__ += ["AcceptOrgInvitationRequest"]
 __all__ += ["UserInfo"]
 __all__ += ["VerifyEmailRequest", "VerifyEmailResponse"]
 __all__ += ["LoginUserRequest", "LoginUserResponse"]

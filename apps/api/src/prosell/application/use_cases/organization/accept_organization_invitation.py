@@ -7,6 +7,7 @@ from prosell.application.use_cases.auth.issue_user_session import IssueUserSessi
 from prosell.domain.entities.organization_invitation import OrganizationInvitationStatus
 from prosell.domain.entities.role import RoleType
 from prosell.domain.entities.user import User
+from prosell.domain.exceptions.auth_exceptions import WeakPasswordException
 from prosell.domain.ports import IPasswordService
 from prosell.domain.repositories.organization_invitation_repository import (
     AbstractOrganizationInvitationRepository,
@@ -58,13 +59,22 @@ class AcceptOrganizationInvitationUseCase:
         if not invitation:
             raise ValueError("Invalid invitation token")
 
+        # CR-2: ACCEPTED check MUST come before is_expired(). An invitation that
+        # was already accepted but is now past its 7-day expiry (long-lived
+        # shared mailbox, re-clicked old link) must surface as "already
+        # accepted" — never silently transition to EXPIRED, which would destroy
+        # the audit trail of who accepted what and when.
+        if invitation.status == OrganizationInvitationStatus.ACCEPTED:
+            raise ValueError("Invitation already accepted")
+
         if invitation.is_expired():
             invitation.mark_expired()
             await self.invitation_repository.update(invitation)
             raise ValueError("Invitation has expired")
 
-        if invitation.status == OrganizationInvitationStatus.ACCEPTED:
-            raise ValueError("Invitation already accepted")
+        password_errors = self.password_service.validate_password_strength(password)
+        if password_errors:
+            raise WeakPasswordException(reasons=password_errors)
 
         password_hash = self.password_service.hash_password(password)
         user = User.create(

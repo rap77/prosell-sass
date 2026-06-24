@@ -2339,7 +2339,7 @@ git commit -m "feat(api): DI wiring for Subsystem E use cases + extract set_auth
 
 - Produces: `CreateDealerRequest` (name, vertical_ids, owner_email), `CreateDealerResponse` (invitation id, organization id, email, status). Both endpoints gated by `_require_dealer_admin_view_all()` (existing, `admin_dealers_router.py:36-41`).
 
-- [ ] **Step 1: Write the failing integration tests**
+- [x] **Step 1: Write the failing integration tests**
 
 ```python
 @pytest.mark.asyncio
@@ -2399,12 +2399,12 @@ async def test_resend_invitation_404s_for_unknown_dealer(client, admin_token):
 
 Check `apps/api/tests/integration/api/` for the real `client`/`admin_token`/`sales_user_token` fixture names (`fd conftest.py apps/api/tests/integration` then read it) — these are illustrative names, match the real ones exactly. `root_category_id` likely needs to come from a fixture that seeds a global category, or from `apps/api/tests/integration/conftest.py`'s existing category fixtures — check `rg "root_category|fixture.*categor" apps/api/tests/integration/conftest.py` first.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd apps/api && uv run pytest tests/integration/api/test_admin_dealers_router.py -v -k dealer`
 Expected: FAIL — `404 Not Found` (routes don't exist yet) instead of the expected statuses
 
-- [ ] **Step 3: Write the request/response DTOs**
+- [x] **Step 3: Write the request/response DTOs**
 
 Check `apps/api/src/prosell/application/dto/organization/` exists first (`fd . apps/api/src/prosell/application/dto/organization -t d`); if not, mirror the structure of `apps/api/src/prosell/application/dto/auth/` (a package with one file per concern).
 
@@ -2433,7 +2433,7 @@ class CreateDealerResponse(BaseModel):
     status: str
 ```
 
-- [ ] **Step 4: Add `get_latest_by_organization` to the invitation repository**
+- [x] **Step 4: Add `get_latest_by_organization` to the invitation repository**
 
 The resend endpoint needs to know _which email_ to resend to. `Organization` doesn't store the owner's email anywhere — only `OrganizationInvitation` rows do, and there could be an old `EXPIRED`/`CANCELLED` one for a typo'd address plus a `PENDING` one for the corrected address. Add a lookup for the most recent invitation (any status) before writing the endpoint that needs it.
 
@@ -2492,7 +2492,7 @@ async def test_get_latest_by_organization_returns_most_recent(db_session):
 Run: `cd apps/api && uv run pytest tests/integration/repositories/test_organization_invitation_repository.py -v`
 Expected: 6 passed (5 from Task 4 + this one)
 
-- [ ] **Step 5: Add the two endpoints**
+- [x] **Step 5: Add the two endpoints**
 
 Append to `admin_dealers_router.py`, after the existing `list_dealer_products` (end of file). Add these imports at the top of the file first: `CreateDealerOrganizationUseCase`, `InviteDealerOwnerUseCase`, `CreateDealerRequest`/`CreateDealerResponse` (Step 3), `get_create_dealer_organization_use_case`, `get_invite_dealer_owner_use_case`, `get_organization_invitation_repository` (Task 11), `AbstractOrganizationInvitationRepository` (Task 4).
 
@@ -2579,12 +2579,12 @@ async def resend_dealer_invitation(
     )
 ```
 
-- [ ] **Step 6: Run the endpoint tests to verify they pass**
+- [x] **Step 6: Run the endpoint tests to verify they pass**
 
 Run: `cd apps/api && uv run pytest tests/integration/api/test_admin_dealers_router.py -v -k dealer`
 Expected: 5 passed
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/api/src/prosell/infrastructure/api/routers/admin_dealers_router.py apps/api/src/prosell/application/dto/organization/ apps/api/src/prosell/domain/repositories/organization_invitation_repository.py apps/api/src/prosell/infrastructure/repositories/organization_invitation_repository_impl.py apps/api/tests/integration/api/test_admin_dealers_router.py apps/api/tests/integration/repositories/test_organization_invitation_repository.py
@@ -2605,7 +2605,9 @@ git commit -m "feat(api): POST /admin/dealers + resend-invitation endpoints"
 
 - Produces: `AcceptOrgInvitationRequest` (token, password, first_name, last_name), reuses `LoginUserResponse` for the response (same shape `/login` returns — same cookies get set).
 
-- [ ] **Step 1: Write the failing integration tests**
+**RESOLVED (2026-06-23):** `test_auth_router.py` did not exist yet — created fresh, not modified. Route is `/api/v1/auth/accept-org-invitation` (the literal `/auth/...` in this doc's snippets omits the `/api/v1` prefix every other router actually uses — verified against `main.py`'s `include_router(..., prefix="/api/v1/auth")`). Endpoint wired exactly per the Step 4 snippet below. 4 integration tests added (invalid token, happy path, weak password, email-race) + 6 use-case unit tests in the pre-existing `test_accept_organization_invitation.py` (5 existing + 1 new for G3). 1635 passed, ruff/pyright clean.
+
+- [x] **Step 1: Write the failing integration tests**
 
 ```python
 @pytest.mark.asyncio
@@ -2643,12 +2645,12 @@ async def test_accept_org_invitation_happy_path_sets_cookies(client, pending_dea
 
 `pending_dealer_invitation` is a new fixture you'll need to add to whatever conftest the other `test_auth_router.py` integration tests use — it should create an `Organization` + `OrganizationInvitation` directly via the repositories (mirroring however existing fixtures in that file seed an `Organization`/`User` for other tests) and return `(raw_token, invitation)`. Check that conftest's existing fixtures first (`rg "^@pytest.fixture" -A 3 apps/api/tests/integration/conftest.py` or the local one in `tests/integration/api/`) and match its session/transaction pattern exactly.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd apps/api && uv run pytest tests/integration/api/test_auth_router.py -v -k accept_org_invitation`
 Expected: FAIL — `404 Not Found`
 
-- [ ] **Step 3: Write the request DTO**
+- [x] **Step 3: Write the request DTO**
 
 ```python
 """DTO for accepting an organization invitation."""
@@ -2665,7 +2667,7 @@ class AcceptOrgInvitationRequest(BaseModel):
     last_name: str
 ```
 
-- [ ] **Step 4: Add the endpoint**
+- [x] **Step 4: Add the endpoint**
 
 Add to `auth_router.py`, near `register`/`login` (after `login`, `auth_router.py:248`):
 
@@ -2705,18 +2707,22 @@ async def accept_org_invitation(
 
 Add imports: `AcceptOrgInvitationRequest`, `AcceptOrganizationInvitationUseCase`, `get_accept_organization_invitation_use_case`, and `HTTPException` (check `rg "^from fastapi import" apps/api/src/prosell/infrastructure/api/routers/auth_router.py` — `HTTPException` may not be imported yet in this file if every other endpoint raises via a different mechanism; the existing imports show `from fastapi import APIRouter, Depends, Query, Request, Response, status` with no `HTTPException` — add it to that import line).
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd apps/api && uv run pytest tests/integration/api/test_auth_router.py -v -k accept_org_invitation`
 Expected: 2 passed
 
-- [ ] **Step 6: Run the full backend suite to confirm zero regressions**
+**RESOLVED (2026-06-23):** 4 passed, not 2 — G3 and G6 each got their own dedicated integration test (weak password → 400, email race → 409) instead of folding into the happy-path/invalid-token pair this doc originally sized for.
+
+- [x] **Step 6: Run the full backend suite to confirm zero regressions**
 
 Run: `cd apps/api && uv run pytest -q`
 Expected: all passed (compare count to the baseline before Task 1 — should be baseline + every new test added across Tasks 1-13)
 
 Run: `cd apps/api && uv run ruff check . && uv run ruff format --check . && uv run pyright`
 Expected: all clean
+
+**RESOLVED (2026-06-23):** 1635 passed (was 1630 after T12). ruff/format/pyright all clean.
 
 - [ ] **Step 7: Commit**
 
@@ -2739,7 +2745,7 @@ git commit -m "feat(api): POST /auth/accept-org-invitation"
 
 - Produces: `passwordFieldSchema: z.ZodString` — the exact regex/rules from `RegisterForm.tsx:154-157`, usable standalone or composed into a larger `z.object()`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 import { describe, expect, it } from "vitest";
@@ -2767,12 +2773,12 @@ describe("passwordFieldSchema", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/web && pnpm vitest run tests/unit/lib/schemas/password.test.ts`
 Expected: FAIL — cannot resolve `@/lib/schemas/password`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```typescript
 import { z } from "zod";
@@ -2789,12 +2795,12 @@ export const passwordFieldSchema = z
   );
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd apps/web && pnpm vitest run tests/unit/lib/schemas/password.test.ts`
 Expected: 4 passed
 
-- [ ] **Step 5: Update `RegisterForm.tsx` to use it**
+- [x] **Step 5: Update `RegisterForm.tsx` to use it**
 
 Replace lines 150-157 of `RegisterForm.tsx`:
 
@@ -2817,17 +2823,25 @@ with:
 
 Add the import at the top of `RegisterForm.tsx`: `import { passwordFieldSchema } from "@/lib/schemas/password";`
 
-- [ ] **Step 6: Run the RegisterForm test suite to confirm zero regression**
+- [x] **Step 6: Run the RegisterForm test suite to confirm zero regression**
 
 Run: `cd apps/web && pnpm vitest run -- --grep RegisterForm` (or the real test path — `fd RegisterForm.test apps/web/src apps/web/tests`)
 Expected: all pass, identical to before
 
-- [ ] **Step 7: Commit**
+**MAJOR PLAN CORRECTION (2026-06-23): `RegisterForm.tsx` is dead code, not the live register form.** Wired the schema in per Steps 1-5, ran its test suite (35/35 passed, byte-identical), then before committing discovered via `git log --follow` that `/auth/register` (`page.tsx` → `RegisterPageContent.tsx`) has NOT rendered `<RegisterForm />` since commit `b1244527` (2026-05-21, "apply ProSell dark premium design system across entire frontend") — that commit rewrote `RegisterPageContent.tsx` inline with hand-rolled styles and dropped the `<RegisterForm />` import, without deleting the now-orphaned component. Verified `RegisterForm.tsx` had zero real consumers (only its own test + an unused barrel re-export).
+
+Pulling that thread surfaced a **whole orphaned subtree** from the same migration, confirmed file-by-file (`rg "<ComponentName"` cross-checked against every live `*PageContent.tsx`): `RegisterForm.tsx`, `LoginForm.tsx`, `ForgotPasswordForm.tsx`, `ResetPasswordForm.tsx`, `VerifyEmailForm.tsx`, `TwoFactorSetupForm.tsx` (non-`dynamic/` copy — a live `dynamic/TwoFactorSetupForm.tsx` exists and IS used by `Setup2FAPageContent.tsx`), `PasswordInput.tsx`, `OAuthButtons.tsx`, and `dynamic/OAuthButtons.tsx` — 9 source files (3455 lines) + 9 test files (`password-reset.test.tsx` tested two of the dead components too) covering 184 tests that exercised zero production code. Deleted all of it, trimmed the `components/auth/index.ts` barrel down to its one real survivor (`TwoFactorInput`, used by the live `dynamic/TwoFactorSetupForm.tsx`). Full suite after deletion: 881 passed (106 files), typecheck clean, lint clean. Split into a separate `chore` commit from T14's actual deliverable, per the code-review skill's "separate refactoring from feature work."
+
+**T14's real scope, after the correction:** the live `/auth/register` page (`RegisterPageContent.tsx`) already enforces the _identical_ regex inline — character-for-character the same pattern — just with Spanish messages ("Mínimo 8 caracteres" vs `passwordFieldSchema`'s English). There is no rule drift to fix. Swapping in `passwordFieldSchema` directly would inject English error text into an otherwise fully-Spanish form (mixed-language regression) for zero functional gain. Decision: leave `RegisterPageContent.tsx` untouched. `passwordFieldSchema` ships in `lib/schemas/password.ts` as planned, fully tested, with no live consumer yet — T17 (`/invite/org/[token]`, not yet built) is its intended first real caller.
+
+- [x] **Step 7: Commit**
 
 ```bash
-git add apps/web/src/lib/schemas/password.ts apps/web/src/components/auth/RegisterForm.tsx apps/web/tests/unit/lib/schemas/password.test.ts
-git commit -m "refactor(web): extract passwordFieldSchema from RegisterForm"
+git add apps/web/src/lib/schemas/password.ts apps/web/tests/unit/lib/schemas/password.test.ts
+git commit -m "feat(web): add shared passwordFieldSchema module (T14)"
 ```
+
+Plus a separate cleanup commit for the orphaned subtree found above (`chore(web): remove orphaned pre-design-system auth components`).
 
 ---
 
@@ -2837,13 +2851,15 @@ git commit -m "refactor(web): extract passwordFieldSchema from RegisterForm"
 
 - Modify: `apps/web/src/lib/api/schemas/dealers.ts`
 - Modify: `apps/web/src/lib/api/dealers.ts`
-- Test: `apps/web/tests/unit/lib/api/dealers.test.ts` (check real path/existence first: `fd dealers.test apps/web`)
+- Test: `apps/web/tests/unit/lib/api/dealers.test.tsx` (check real path/existence first: `fd dealers.test apps/web`)
+
+**RESOLVED note (2026-06-23):** the plan's snippets named this file `.test.ts`, but it renders `<QueryClientProvider>` JSX in its `wrapper` helper. Repo convention for any test file containing JSX is `.test.tsx` (confirmed via `tests/unit/api/products.test.tsx`/`vehicles.test.tsx`) — `.ts` files aren't parsed for JSX by this project's Vitest/esbuild config. Created as `.tsx` from the start; no rename needed.
 
 **Interfaces:**
 
 - Produces: `CreateDealerResponseSchema`/`CreateDealerResponse` type; `useCreateDealer(): UseMutationResult<CreateDealerResponse, Error, {name: string; vertical_ids: string[]; owner_email: string}>`; `useResendDealerInvitation(): UseMutationResult<CreateDealerResponse, Error, string>` (dealer id).
 
-- [ ] **Step 1: Add the response schema**
+- [x] **Step 1: Add the response schema**
 
 Add to `apps/web/src/lib/api/schemas/dealers.ts`, after `DealerProductListResponseSchema`:
 
@@ -2858,7 +2874,7 @@ export const CreateDealerResponseSchema = z.object({
 export type CreateDealerResponse = z.infer<typeof CreateDealerResponseSchema>;
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```typescript
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -2939,12 +2955,12 @@ describe("useResendDealerInvitation", () => {
 
 Check the real API path prefix first — `dealers.ts`'s existing `useDealers()` calls `getJson("/api/v1/admin/dealers")` per the file already read for this design; confirm with `rg "admin/dealers" apps/web/src/lib/api/dealers.ts` and match the exact prefix used (some endpoints in this codebase go through `/api/v1/...`, others through a Next.js rewrite at a different prefix — use whatever `useDealers()` already uses, don't guess).
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd apps/web && pnpm vitest run tests/unit/lib/api/dealers.test.ts`
 Expected: FAIL — `useCreateDealer is not a function`
 
-- [ ] **Step 4: Write the implementation**
+- [x] **Step 4: Write the implementation**
 
 Add to `apps/web/src/lib/api/dealers.ts`, after the existing `useDealerProducts`:
 
@@ -3009,17 +3025,17 @@ export function useResendDealerInvitation() {
 
 Note: `useMutation`/`useQueryClient` need to be added to the existing `import { useQuery, type UseQueryResult } from "@tanstack/react-query";` line at the top of `dealers.ts` rather than as a second import statement — check that line and merge them into one import.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd apps/web && pnpm vitest run tests/unit/lib/api/dealers.test.ts`
 Expected: 2 passed
 
-- [ ] **Step 6: Run typecheck + lint**
+- [x] **Step 6: Run typecheck + lint**
 
 Run: `cd apps/web && pnpm typecheck && pnpm eslint src/lib/api/dealers.ts src/lib/api/schemas/dealers.ts`
 Expected: clean
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/web/src/lib/api/dealers.ts apps/web/src/lib/api/schemas/dealers.ts apps/web/tests/unit/lib/api/dealers.test.ts
@@ -3041,7 +3057,7 @@ git commit -m "feat(web): useCreateDealer + useResendDealerInvitation mutations"
 
 This page gates on `hasPermission(Permission.DEALER_ADMIN_VIEW_ALL)` directly rather than reusing `useRequireAdmin()` — see the design doc's Architecture Decisions for why (the existing hook checks role-identity `isAdmin`, not the permission itself).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -3107,12 +3123,12 @@ describe("AdminNewDealerPage", () => {
 
 Check `Category`'s real field shape first (`rg "interface Category" -A 10 apps/web/src/types/category.ts`) — the mock above assumes `{id, name}`; adjust if the real type differs.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/web && pnpm vitest run "src/app/(admin)/admin/dealers/new/page.test.tsx"`
 Expected: FAIL — cannot resolve `./page`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```typescript
 "use client";
@@ -3236,17 +3252,17 @@ export default function AdminNewDealerPage() {
 
 `createDealer.error` is a JS `Error` thrown by `postJson` (Task 15) — its `.message` is already the string `extractErrorMessage` produced inside `postJson`. Rendering `.message` directly here is correct; `extractErrorMessage` itself only runs once, at the fetch layer.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd apps/web && pnpm vitest run "src/app/(admin)/admin/dealers/new/page.test.tsx"`
 Expected: 2 passed
 
-- [ ] **Step 5: Run typecheck + lint**
+- [x] **Step 5: Run typecheck + lint**
 
 Run: `cd apps/web && pnpm typecheck && pnpm eslint "src/app/(admin)/admin/dealers/new/page.tsx"`
 Expected: clean
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add "apps/web/src/app/(admin)/admin/dealers/new/"
@@ -3268,7 +3284,7 @@ git commit -m "feat(web): admin/dealers/new staff form"
 
 Mirrors the state-machine shape of `apps/web/src/app/invite/[token]/page.tsx` (`loading`/`success`/`error`/`expired` — no `already_member` state, since accepting always creates a brand-new account). Unlike that page, `loading` does NOT auto-submit on mount — there's a form to fill in first (name + password), so `loading` here only covers the brief window of the actual POST after submit.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```typescript
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -3336,12 +3352,12 @@ describe("AcceptOrgInvitationPage", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd apps/web && pnpm vitest run "src/app/invite/org/[token]/page.test.tsx"`
 Expected: FAIL — cannot resolve `./page`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```typescript
 "use client";
@@ -3508,17 +3524,17 @@ export default function AcceptOrgInvitationPage() {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd apps/web && pnpm vitest run "src/app/invite/org/[token]/page.test.tsx"`
 Expected: 2 passed
 
-- [ ] **Step 5: Run typecheck + lint**
+- [x] **Step 5: Run typecheck + lint**
 
 Run: `cd apps/web && pnpm typecheck && pnpm eslint "src/app/invite/org/[token]/page.tsx"`
 Expected: clean
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add "apps/web/src/app/invite/org/"
@@ -3540,7 +3556,7 @@ git commit -m "feat(web): /invite/org/[token] accept-invitation page"
 
 Visible only when `dealer.status === "pending_verification"`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to the existing `page.test.tsx` for this route:
 
@@ -3568,12 +3584,12 @@ it("shows a resend button only when status is pending_verification, and it calls
 
 Check the existing test file's exact mocking style for `useDealer`/`useRequireAdmin` first (`page.test.tsx` for this route already exists per this session's earlier work) and match it — add `useResendDealerInvitation` to whatever `vi.mock("@/lib/api/dealers", ...)` block is already there instead of creating a second one.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/web && pnpm vitest run "src/app/(admin)/admin/dealers/[id]/page.test.tsx"`
 Expected: FAIL — button not found
 
-- [ ] **Step 3: Add the button**
+- [x] **Step 3: Add the button**
 
 In `page.tsx`, import `useResendDealerInvitation` from `@/lib/api/dealers` and add right after the existing "Estado: {dealer.status}" paragraph:
 
@@ -3606,17 +3622,17 @@ const resendInvitation = useResendDealerInvitation();
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd apps/web && pnpm vitest run "src/app/(admin)/admin/dealers/[id]/page.test.tsx"`
 Expected: all pass, including the new test
 
-- [ ] **Step 5: Run typecheck + lint**
+- [x] **Step 5: Run typecheck + lint**
 
 Run: `cd apps/web && pnpm typecheck && pnpm eslint "src/app/(admin)/admin/dealers/[id]/page.tsx"`
 Expected: clean
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add "apps/web/src/app/(admin)/admin/dealers/[id]/page.tsx" "apps/web/src/app/(admin)/admin/dealers/[id]/page.test.tsx"
@@ -3643,11 +3659,15 @@ Found while reviewing T1-T11 code for the next batch. Listed by the task that sh
 
 **Bake into T12 Step 5:** wrap the `use_case.execute(...)` call in `async with db.begin():` (or equivalent explicit transaction boundary). Add an integration test that injects a failure mid-flow and asserts no Organization/Invitation rows persist.
 
+**RESOLVED (2026-06-22) — premise was wrong, no transaction wrap added.** `get_async_session` (`infrastructure/database/session.py`) wraps the entire request in ONE session that commits once at the end and rolls back the whole session on any unhandled exception; every repo call in this flow uses `.flush()`, never `.commit()`. So the claimed per-step independent commits don't happen — the existing session lifecycle already gives the atomicity this gap asked for, for free. Verified with the exact test this gap requested: `tests/integration/use_cases/test_create_dealer_organization_atomicity.py` (savepoint-wrapped to coexist with the `db_session` fixture's own outer transaction) — a mid-flow `RuntimeError` from the email step leaves no `Organization` row after rollback, with zero extra code in the router. Adding an explicit `db.begin()` here would have been redundant and risky: `AsyncSession` autobegins on first use, so an explicit `begin()` later in the request can raise `InvalidRequestError: A transaction is already begun on this Session` depending on what already touched the session (e.g. an auth dependency). Lesson for future gap docs: verify session-lifecycle claims against the actual session factory before prescribing a fix.
+
 ### G2 — T12: `CreateDealerRequest.owner_email` should be `EmailStr`
 
 DTO at line 2389-2394 has `owner_email: str` — accepts `"not-an-email"` without complaint. FastAPI/Pydantic 2 has `EmailStr` for this exact reason.
 
 **Bake into T12 Step 3:** change to `owner_email: EmailStr` (import from `pydantic`). Add an integration test that posts `"not-an-email"` and expects 422.
+
+**RESOLVED (2026-06-22):** `CreateDealerRequest.owner_email` is `EmailStr`. Covered by `test_create_dealer_rejects_invalid_email` (422).
 
 ### G3 — T13: backend MUST validate password strength, not trust the frontend
 
@@ -3655,15 +3675,23 @@ DTO at line 2389-2394 has `owner_email: str` — accepts `"not-an-email"` withou
 
 **Bake into T13 Step 3:** replicate the exact regex from `passwordFieldSchema` as a Pydantic `Field(..., pattern=...)` on `password`. Frontend and backend must agree, but neither alone is sufficient.
 
+**RESOLVED (2026-06-23), NOT as a DTO regex:** the codebase already had a backend-side strength gate — `IPasswordService.validate_password_strength()` (uppercase/lowercase/digit/special/length), used by `RegisterUserUseCase` and raising the existing `WeakPasswordException` (maps to 400 via the global `auth_domain_exception_handler`). Added the same call to `AcceptOrganizationInvitationUseCase.execute()` instead of duplicating the regex in a new `Field(pattern=...)` — same behavior, no new validation logic, consistent with `register_user.py`. Had to backfill `validate_password_strength.return_value = []` on the existing mocked `password_service` fixture in `test_accept_organization_invitation.py` so the 5 pre-existing happy-path unit tests didn't start failing on an unconfigured `MagicMock` return.
+
 ### G4 — T9 (now) or T12: validate that `vertical_ids` reference real root categories
 
 `CreateDealerOrganizationUseCase.execute()` iterates `vertical_ids` and calls `vertical_repository.enable(organization_id, root_category_id=...)` without checking those IDs exist in `categories`. A request with `vertical_ids=[uuid4()]` passes the empty-list guard but the first `enable()` call raises an unhandled `IntegrityError` (FK violation) → 500.
 
 **Bake into T9 (preferred) OR T12:** add a `vertical_repository.get_existing_ids(ids: list[UUID]) -> set[UUID]` (or just `get_by_id` in a loop with one query), reject in the use case if any are missing with `ValueError(f"Unknown vertical id: {id}")`. The router already maps `ValueError → 400`, so this turns a 500 into a clean 400.
 
+**RESOLVED (2026-06-22), implemented in T9's use case (not T12, not a new vertical_repository method):** `CreateDealerOrganizationUseCase` now takes a `category_repository: AbstractCategoryRepository` and calls `get_by_id_any_tenant(root_category_id)` for each `vertical_id` before creating anything, raising `ValueError(f"Unknown vertical id: {id}")` on a miss. Reused the existing tenant-agnostic lookup (already used by `ListOrgVerticalsUseCase`) instead of adding a new repository method — `categories` is the real FK target `vertical_ids` must resolve against, not `organization_vertical`. Covered by `test_raises_when_a_vertical_id_does_not_resolve_to_a_real_category` (unit) and `test_create_dealer_rejects_unknown_vertical_id` (integration, 400).
+
 ### G5 — T13: confirm `@smart_rate_limit("auth")` is on `/auth/accept-org-invitation`
 
 The plan's T13 Step 4 snippet (line 2639) already shows `@smart_rate_limit("auth")` — good. **No action needed**, just calling it out so it doesn't get accidentally dropped during implementation. Same check for T12: the create-dealer and resend-invitation endpoints should also be rate-limited (consider `@smart_rate_limit("admin")` or `"auth"`). Add it explicitly in T12 Step 5 if not already covered.
+
+**RESOLVED (2026-06-22) for T12:** `smart_rate_limit` only has `"auth"`/`"api"`/`"public"` tiers (no `"admin"`) — used `@smart_rate_limit("auth")` on both `create_dealer` and `resend_dealer_invitation`. The decorator requires a `Request` parameter on the endpoint (it extracts it by type from the bound arguments); added `request: Request` to both signatures with `_ = request`, matching `auth_router.py`'s existing convention.
+
+**RESOLVED (2026-06-23) for T13:** confirmed — `@smart_rate_limit("auth")` is on `accept_org_invitation`, exactly as this doc's own Step 4 snippet already showed. No change needed.
 
 ### G6 — T13: handle `IntegrityError` on `user_repository.create`
 
@@ -3671,16 +3699,18 @@ The plan's T13 Step 4 snippet (line 2639) already shows `@smart_rate_limit("auth
 
 **Bake into T13:** wrap the user create in `try/except IntegrityError as e: raise HTTPException(409, "Email already registered")`. Equivalent to a "soft retry after race" check.
 
+**RESOLVED (2026-06-23), NOT with a new try/except:** `main.py` already registers `app.exception_handler(IntegrityError, integrity_error_handler)` globally — it inspects the DB error message and already returns 409 "DuplicateEntry" for unique-constraint violations (and 400 for FK violations). An `IntegrityError` from `user_repository.create()` propagates uncaught through the use case and the router straight into that handler — adding a local `try/except` in the router would have been dead code shadowing infra that already exists, and worse, would've violated Clean Architecture if put in the use case (`HTTPException` is a FastAPI/infra concern, not application-layer). Verified with a new integration test that pre-seeds a `User` with the invitation's email before accepting — confirms 409 end-to-end with zero new production code.
+
 ---
 
 ## Final verification (after Task 18)
 
-- [ ] **Step 1: Full backend suite**
+- [x] **Step 1: Full backend suite**
 
 Run: `cd apps/api && uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest -q`
 Expected: all clean, all passed
 
-- [ ] **Step 2: Full frontend suite**
+- [x] **Step 2: Full frontend suite**
 
 Run: `cd apps/web && pnpm typecheck && pnpm eslint . --max-warnings 0 && pnpm vitest run`
 Expected: all clean, all passed
