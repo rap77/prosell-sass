@@ -31,6 +31,7 @@ from prosell.domain.entities.user import User
 from prosell.domain.repositories.organization_invitation_repository import (
     AbstractOrganizationInvitationRepository,
 )
+from prosell.domain.value_objects.organization_status import OrganizationStatus
 from prosell.infrastructure.api.dependencies import (
     get_create_dealer_organization_use_case,
     get_current_auth_user_from_cookie,
@@ -174,6 +175,21 @@ async def resend_dealer_invitation(
     dealer = await org_repo.get_by_id(dealer_id, tenant_id=dealer_id)
     if dealer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dealer not found")
+
+    # CR-1 server-side gate: the UI hides the resend button on non-pending
+    # dealers, but a scripted caller (or an admin on a stale dashboard) can
+    # still POST. Without this gate, the use case would silently issue a
+    # brand-new pending invitation to a historical email -- operationally
+    # confusing and a vector for impersonation phish. 409 is the right code:
+    # the request is well-formed, it just conflicts with the resource's
+    # current state. The check lives here (not in InviteDealerOwnerUseCase)
+    # because that use case is also called from CreateDealerOrganizationUseCase
+    # for brand-new dealers, which are always pending and must not gate.
+    if dealer.status != OrganizationStatus.PENDING_VERIFICATION.value:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Dealer is not pending verification; resend only valid for pending dealers",
+        )
 
     latest = await invitation_repo.get_latest_by_organization(dealer.id, dealer.tenant_id)
     if latest is None:

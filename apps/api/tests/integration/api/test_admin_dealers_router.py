@@ -348,3 +348,44 @@ async def test_resend_invitation_happy_path_reissues_the_pending_invitation(
     assert body["invitation_id"] == first_invitation_id  # same row, fresh token
     assert body["email"] == "resend-owner@x.com"
     assert body["status"] == "pending"
+
+
+@pytest.mark.asyncio
+async def test_resend_invitation_409s_when_dealer_is_not_pending_verification(
+    async_client_as_admin: AsyncClient,
+    db_session: AsyncSession,
+    root_category: CategoryModel,
+) -> None:
+    """Code review CR-1: server-side gate -- resend must reject non-pending dealers.
+
+    The UI hides the button on active dealers, but a scripted caller (or an
+    admin acting on a stale dashboard) can still POST. Without this gate, the
+    API would silently issue a brand-new pending invitation to a historical
+    email (or to a prior owner whose email was changed), which is both
+    operationally confusing and a vector for impersonation phish.
+    """
+    create_response = await async_client_as_admin.post(
+        "/api/v1/admin/dealers",
+        json={
+            "name": "Acme Motors",
+            "vertical_ids": [str(root_category.id)],
+            "owner_email": "already-active@x.com",
+        },
+    )
+    assert create_response.status_code == 201
+    dealer_id = create_response.json()["organization_id"]
+
+    # Simulate the owner having already accepted -- flips the dealer to active
+    # without going through the full T13 accept flow (we only care that the
+    # resend endpoint sees a non-pending status).
+    dealer = await db_session.get(OrganizationModel, dealer_id)
+    assert dealer is not None
+    dealer.status = "active"
+    await db_session.flush()
+
+    response = await async_client_as_admin.post(
+        f"/api/v1/admin/dealers/{dealer_id}/resend-invitation",
+    )
+
+    assert response.status_code == 409
+    assert "pending" in response.json()["detail"].lower()

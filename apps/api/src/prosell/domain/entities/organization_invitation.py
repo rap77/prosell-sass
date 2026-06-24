@@ -143,6 +143,15 @@ class OrganizationInvitation(DomainModel):
         self.updated_at = datetime.now(UTC)
 
     def mark_expired(self) -> None:
-        """Mark the invitation as expired."""
+        """Mark the invitation as expired.
+
+        Raises:
+            ValueError: If the invitation was already accepted. Belt-and-suspenders
+                guard so no future caller can silently destroy the ACCEPTED
+                audit trail. A use-case-level reorder is the primary fix; this
+                is defense in depth.
+        """
+        if self.status == OrganizationInvitationStatus.ACCEPTED:
+            raise ValueError("Cannot expire an already-accepted invitation")
         self.status = OrganizationInvitationStatus.EXPIRED
         self.updated_at = datetime.now(UTC)

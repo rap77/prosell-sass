@@ -115,6 +115,64 @@ async def test_raises_for_already_accepted_invitation(
 
 
 @pytest.mark.asyncio
+async def test_accepted_but_expired_invitation_raises_already_accepted_not_overwrites_status(
+    use_case: AcceptOrganizationInvitationUseCase,
+    collaborators: dict[str, AsyncMock | MagicMock],
+) -> None:
+    """Code review CR-2: ACCEPTED + expired must surface as "already accepted",
+    not silently flip the audit-trail status to EXPIRED.
+
+    Scenario: a long-lived shared mailbox, an old support/debug link, or a
+    re-clicked link weeks later can hit an invitation that was already accepted
+    but is now past its 7-day expiry. The order of checks in the use case used
+    to be is_expired() first, which called mark_expired() and overwrote the
+    ACCEPTED status — destroying the audit trail of who accepted what and when.
+    """
+    org_id, tenant_id = uuid4(), uuid4()
+    raw_token, invitation = _raw_token_and_invitation(org_id, tenant_id)
+    invitation.accept(uuid4())
+    # Push the expiry into the past AFTER accepting — the realistic scenario.
+    invitation.expires_at = datetime.now(UTC) - timedelta(days=1)
+    collaborators["invitation_repository"].get_by_token_unscoped.return_value = invitation
+
+    with pytest.raises(ValueError, match="already accepted"):
+        await use_case.execute(token=raw_token, password="Aa1!aaaa", first_name="A", last_name="B")
+
+    # Status must remain ACCEPTED — never silently transition to EXPIRED.
+    assert invitation.status.value == "accepted"
+    # And the use case must NOT have written a status flip back to the repo.
+    collaborators["invitation_repository"].update.assert_not_called()
+
+
+def test_mark_expired_refuses_to_overwrite_accepted_status() -> None:
+    """Code review CR-2 (belt-and-suspenders): the entity itself must refuse
+    to transition ACCEPTED -> EXPIRED. Defense-in-depth in case a future
+    caller (a batch job, a different use case) re-introduces the bad order.
+    """
+    invitation = OrganizationInvitation(
+        id=uuid4(),
+        organization_id=uuid4(),
+        email="owner@x.com",
+        token="a" * 64,
+        expires_at=datetime.now(UTC) + timedelta(days=7),
+        tenant_id=uuid4(),
+        created_by_user_id=uuid4(),
+    )
+    invitation.accept(uuid4())
+    assert invitation.status.value == "accepted"
+
+    # Now push expiry into the past and try to mark_expired — the entity must
+    # refuse rather than silently overwrite the ACCEPTED status.
+    invitation.expires_at = datetime.now(UTC) - timedelta(days=1)
+
+    with pytest.raises(ValueError, match="accepted"):
+        invitation.mark_expired()
+
+    # Status must not have been touched.
+    assert invitation.status.value == "accepted"
+
+
+@pytest.mark.asyncio
 async def test_happy_path_creates_admin_user_activates_org_and_issues_session(
     use_case: AcceptOrganizationInvitationUseCase,
     collaborators: dict[str, AsyncMock | MagicMock],
