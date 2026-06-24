@@ -3705,12 +3705,12 @@ The plan's T13 Step 4 snippet (line 2639) already shows `@smart_rate_limit("auth
 
 ## Final verification (after Task 18)
 
-- [ ] **Step 1: Full backend suite**
+- [x] **Step 1: Full backend suite**
 
 Run: `cd apps/api && uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest -q`
 Expected: all clean, all passed
 
-- [ ] **Step 2: Full frontend suite**
+- [x] **Step 2: Full frontend suite**
 
 Run: `cd apps/web && pnpm typecheck && pnpm eslint . --max-warnings 0 && pnpm vitest run`
 Expected: all clean, all passed
