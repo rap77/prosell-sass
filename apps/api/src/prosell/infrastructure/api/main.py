@@ -23,6 +23,7 @@ from prosell.infrastructure.api.routers import (
     admin_router,
     auth_router,
     branch_router,
+    category_inference_router,
     category_router,
     facebook_router,
     filter_values_router,
@@ -235,6 +236,11 @@ app.include_router(
 
 app.include_router(
     category_router,
+    prefix="/api/v1/categories",
+    tags=["Categories"],
+)
+app.include_router(
+    category_inference_router.router,
     prefix="/api/v1/categories",
     tags=["Categories"],
 )

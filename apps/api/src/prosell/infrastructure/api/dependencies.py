@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     )
     from prosell.application.use_cases.auth.register_user import RegisterUserUseCase
     from prosell.application.use_cases.auth.verify_2fa import Verify2FAUseCase
+    from prosell.application.use_cases.category.infer_category import InferCategoryUseCase
     from prosell.application.use_cases.facebook.authorize_account import (
         AuthorizeFacebookAccountUseCase,
     )
@@ -192,6 +193,20 @@ async def get_category_repository(
 ) -> AbstractCategoryRepository:
     """Get category repository instance."""
     return SqlAlchemyCategoryRepository(session)
+
+
+async def get_infer_category_use_case(
+    category_repository: Annotated[AbstractCategoryRepository, Depends(get_category_repository)],
+) -> InferCategoryUseCase:
+    """Get InferCategoryUseCase instance (Subsystem C T4)."""
+    # Lazy import: keeps the inference DTOs and domain scorer out of the
+    # import graph for other factories. Mirrors the pattern used by
+    # get_create_dealer_organization_use_case above.
+    from prosell.application.use_cases.category.infer_category import (
+        InferCategoryUseCase,
+    )
+
+    return InferCategoryUseCase(category_repository=category_repository)
 
 
 # =============================================================================
