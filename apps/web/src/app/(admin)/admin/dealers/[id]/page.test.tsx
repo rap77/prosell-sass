@@ -3,7 +3,7 @@
  *
  * Shows the dealer's info and links to its products page.
  */
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { vi, beforeEach, describe, it, expect } from "vitest";
 import AdminDealerDetailPage from "./page";
 
@@ -13,8 +13,10 @@ vi.mock("@/hooks/useAuth", () => ({
 }));
 
 const mockUseDealer = vi.fn();
+const mockUseResendInvitation = vi.fn();
 vi.mock("@/lib/api/dealers", () => ({
   useDealer: () => mockUseDealer(),
+  useResendDealerInvitation: () => mockUseResendInvitation(),
 }));
 
 const mockReplace = vi.fn();
@@ -27,6 +29,10 @@ describe("AdminDealerDetailPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseAuth.mockReturnValue({ isAdmin: true });
+    mockUseResendInvitation.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
   });
 
   it("redirects a non-admin to /dashboard", async () => {
@@ -80,5 +86,39 @@ describe("AdminDealerDetailPage", () => {
     render(<AdminDealerDetailPage />);
 
     expect(await screen.findByText(/no encontrado/i)).toBeInTheDocument();
+  });
+
+  it("does not show the resend-invitation button when the dealer is active", async () => {
+    mockUseDealer.mockReturnValue({
+      dealer: { id: "dealer-1", name: "Acme Motors", status: "active" },
+      isLoading: false,
+      error: null,
+    });
+
+    render(<AdminDealerDetailPage />);
+
+    expect(
+      screen.queryByRole("button", { name: /reenviar invitación/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the resend-invitation button only when status is pending_verification and calls mutate with the dealer id", async () => {
+    const mockMutate = vi.fn();
+    mockUseResendInvitation.mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+    });
+    mockUseDealer.mockReturnValue({
+      dealer: { id: "dealer-1", name: "Acme Motors", status: "pending_verification" },
+      isLoading: false,
+      error: null,
+    });
+
+    render(<AdminDealerDetailPage />);
+
+    const button = screen.getByRole("button", { name: /reenviar invitación/i });
+    fireEvent.click(button);
+
+    expect(mockMutate).toHaveBeenCalledWith("dealer-1");
   });
 });

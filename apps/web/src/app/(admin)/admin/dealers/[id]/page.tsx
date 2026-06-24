@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
-import { useDealer } from "@/lib/api/dealers";
+import { useDealer, useResendDealerInvitation } from "@/lib/api/dealers";
 
 /**
  * Admin dealer detail — Subsystem D Phase 6.
@@ -18,6 +18,7 @@ export default function AdminDealerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const isAdmin = useRequireAdmin();
   const { dealer, isLoading, error } = useDealer(id);
+  const resendInvitation = useResendDealerInvitation();
 
   if (!isAdmin) {
     return null;
@@ -70,6 +71,27 @@ export default function AdminDealerDetailPage() {
       <p style={{ margin: 0, color: "var(--ps-text-secondary)" }}>
         Estado: {dealer.status}
       </p>
+      {dealer.status === "pending_verification" && (
+        <button
+          type="button"
+          onClick={() => resendInvitation.mutate(dealer.id)}
+          disabled={resendInvitation.isPending}
+          style={{
+            alignSelf: "flex-start",
+            height: 36,
+            padding: "0 16px",
+            borderRadius: 8,
+            background: "var(--ps-bg-elevated)",
+            border: "1px solid var(--ps-border-default)",
+            color: "var(--ps-text-secondary)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          {resendInvitation.isPending ? "Reenviando…" : "Reenviar invitación"}
+        </button>
+      )}
       <Link
         href={`/admin/dealers/${dealer.id}/products`}
         style={{
