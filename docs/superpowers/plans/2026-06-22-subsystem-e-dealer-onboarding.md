@@ -3057,7 +3057,7 @@ git commit -m "feat(web): useCreateDealer + useResendDealerInvitation mutations"
 
 This page gates on `hasPermission(Permission.DEALER_ADMIN_VIEW_ALL)` directly rather than reusing `useRequireAdmin()` — see the design doc's Architecture Decisions for why (the existing hook checks role-identity `isAdmin`, not the permission itself).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -3123,12 +3123,12 @@ describe("AdminNewDealerPage", () => {
 
 Check `Category`'s real field shape first (`rg "interface Category" -A 10 apps/web/src/types/category.ts`) — the mock above assumes `{id, name}`; adjust if the real type differs.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/web && pnpm vitest run "src/app/(admin)/admin/dealers/new/page.test.tsx"`
 Expected: FAIL — cannot resolve `./page`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```typescript
 "use client";
@@ -3252,17 +3252,17 @@ export default function AdminNewDealerPage() {
 
 `createDealer.error` is a JS `Error` thrown by `postJson` (Task 15) — its `.message` is already the string `extractErrorMessage` produced inside `postJson`. Rendering `.message` directly here is correct; `extractErrorMessage` itself only runs once, at the fetch layer.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd apps/web && pnpm vitest run "src/app/(admin)/admin/dealers/new/page.test.tsx"`
 Expected: 2 passed
 
-- [ ] **Step 5: Run typecheck + lint**
+- [x] **Step 5: Run typecheck + lint**
 
 Run: `cd apps/web && pnpm typecheck && pnpm eslint "src/app/(admin)/admin/dealers/new/page.tsx"`
 Expected: clean
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add "apps/web/src/app/(admin)/admin/dealers/new/"
