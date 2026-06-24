@@ -14,7 +14,8 @@ import {
 import { toast } from "sonner";
 
 // Mock fetch
-global.fetch = vi.fn();
+const mockFetch = vi.fn();
+global.fetch = mockFetch as unknown as typeof fetch;
 
 // Mock toast
 vi.mock("sonner", () => ({
@@ -85,7 +86,7 @@ describe("useLeads", () => {
   });
 
   it("should fetch leads successfully", async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockLeadsResponse,
     });
@@ -107,7 +108,7 @@ describe("useLeads", () => {
   });
 
   it("should pass status filter to API", async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockLeadsResponse,
     });
@@ -126,7 +127,7 @@ describe("useLeads", () => {
   });
 
   it("should pass search query to API", async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockLeadsResponse,
     });
@@ -144,7 +145,7 @@ describe("useLeads", () => {
   });
 
   it("should handle fetch errors", async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: false,
       json: async () => ({ message: "Unauthorized" }),
     });
@@ -166,7 +167,7 @@ describe("useLead", () => {
 
   it("should fetch single lead successfully", async () => {
     // GET /api/v1/leads/{id} returns LeadDetailResponse: { lead, audit_logs }
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ lead: mockLeadResponse, audit_logs: [] }),
     });
@@ -207,7 +208,7 @@ describe("useUpdateLeadStatus", () => {
       status: LeadStatus.CONTACTED,
     };
 
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => updatedLead,
     });
@@ -236,7 +237,7 @@ describe("useUpdateLeadStatus", () => {
   });
 
   it("should show error toast on failure", async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: false,
       json: async () => ({ message: "Invalid status transition" }),
     });
@@ -263,7 +264,7 @@ describe("useReassignLead", () => {
   it("should reassign lead to new vendedor successfully", async () => {
     const newVendedorId = "vendedor-2";
 
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         ...mockLeadResponse,
@@ -293,7 +294,7 @@ describe("useReassignLead", () => {
   });
 
   it("should unassign lead when vendedor_id is null", async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         ...mockLeadResponse,
@@ -319,7 +320,7 @@ describe("useReassignLead", () => {
   });
 
   it("should show error toast on failure", async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: false,
       json: async () => ({ message: "Lead not found" }),
     });

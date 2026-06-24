@@ -11,6 +11,22 @@ import {
 } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { fetchWithAuth } from "@/lib/api/fetchWithAuth";
+import {
+  LeadStatus,
+  BackendLeadResponseSchema,
+  BackendLeadListResponseSchema,
+  BackendLeadDetailResponseSchema,
+  TeamMetricsResponseSchema,
+  LeadDuplicatesResponseSchema,
+  type BackendLeadResponse,
+  type BackendLeadDetailResponse,
+  type TeamMetricsResponse,
+  type VendedorMetricsBreakdown,
+  type LeadDuplicateMatch,
+  type LeadDuplicatesResponse,
+} from "@/lib/api/schemas/leads";
+
+export { LeadStatus };
 
 /**
  * Audit log entry for a lead status change.
@@ -24,26 +40,6 @@ export interface LeadAuditLogEntry {
   changed_by_user_id: string | null;
   reason: string | null;
   created_at: string;
-}
-
-/**
- * Backend response shape for GET /api/v1/leads/{id}
- * (LeadDetailResponse — includes lead + audit_logs)
- */
-interface BackendLeadDetailResponse {
-  lead: BackendLeadResponse;
-  audit_logs: LeadAuditLogEntry[];
-}
-
-/**
- * Lead status enum - 5-state lifecycle
- */
-export enum LeadStatus {
-  NEW = "new",
-  CONTACTED = "contacted",
-  QUALIFIED = "qualified",
-  APPOINTMENT_SET = "appointment_set",
-  LOST = "lost",
 }
 
 /**
@@ -92,23 +88,7 @@ export interface LeadProduct {
   updated_at: string;
 }
 
-/**
- * Duplicate lead match returned by /leads/{id}/duplicates
- */
-export interface LeadDuplicateMatch {
-  lead_id: string;
-  match_type: "email" | "phone" | "both";
-  confidence: "high" | "medium" | "low";
-}
-
-/**
- * Response from GET /leads/{id}/duplicates
- */
-export interface LeadDuplicatesResponse {
-  lead_id: string;
-  duplicates: LeadDuplicateMatch[];
-  count: number;
-}
+export type { LeadDuplicateMatch, LeadDuplicatesResponse };
 
 /**
  * Lead entity
@@ -161,57 +141,6 @@ export interface UpdateLeadStatusRequest {
  */
 export interface ReassignLeadRequest {
   vendedor_id: string | null;
-}
-
-// ─── Backend shape ────────────────────────────────────────────────────────────
-
-interface BackendProductForLead {
-  id: string;
-  title: string;
-  price_cents: number;
-  currency: string;
-  status: string;
-  attributes: ProductAttributes;
-  created_at: string;
-  updated_at: string;
-}
-
-interface BackendLeadResponse {
-  id: string;
-  tenant_id: string;
-  buyer_name: string;
-  buyer_email: string | null;
-  buyer_phone: string | null;
-  product_id: string | null;
-  vendedor_id: string | null;
-  message: string | null;
-  source: string;
-  status: LeadStatus;
-  created_at: string;
-  updated_at: string;
-  product: BackendProductForLead | null;
-}
-
-interface BackendLeadListResponse {
-  items: BackendLeadResponse[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-interface VendedorMetricsBreakdown {
-  vendedor_id: string;
-  vendedor_name: string;
-  total_leads: number;
-  new_leads: number;
-  conversion_rate: number;
-}
-
-interface TeamMetricsResponse {
-  total_leads: number;
-  new_leads_last_24h: number;
-  conversion_rate: number;
-  vendedor_breakdown: VendedorMetricsBreakdown[];
 }
 
 export type { TeamMetricsResponse, VendedorMetricsBreakdown };
@@ -276,7 +205,7 @@ export function useLeads(
         throw new Error(error.message || "Failed to fetch leads");
       }
 
-      const data = (await res.json()) as BackendLeadListResponse;
+      const data = BackendLeadListResponseSchema.parse(await res.json());
       return data.items.map(transformLead);
     },
     staleTime: 35_000, // slightly above refetchInterval to avoid redundant refetches
@@ -305,7 +234,7 @@ export async function getLeadAuditTrail(
     throw new Error(error.message || "Failed to fetch lead audit trail");
   }
 
-  const data = (await res.json()) as BackendLeadDetailResponse;
+  const data = BackendLeadDetailResponseSchema.parse(await res.json());
   return data.audit_logs;
 }
 
@@ -319,7 +248,7 @@ async function fetchLeadDetail(
       .catch(() => ({ message: "Failed to fetch lead" }));
     throw new Error(error.message || "Failed to fetch lead");
   }
-  return (await res.json()) as BackendLeadDetailResponse;
+  return BackendLeadDetailResponseSchema.parse(await res.json());
 }
 
 /**
@@ -373,7 +302,7 @@ export function useUpdateLeadStatus(leadId: string) {
         throw new Error(error.message || "Failed to update lead status");
       }
 
-      const data = (await res.json()) as BackendLeadResponse;
+      const data = BackendLeadResponseSchema.parse(await res.json());
       return transformLead(data);
     },
     onSuccess: (updatedLead) => {
@@ -405,7 +334,7 @@ export function useReassignLead(leadId: string) {
         throw new Error(error.message || "Failed to reassign lead");
       }
 
-      const data = (await res.json()) as BackendLeadResponse;
+      const data = BackendLeadResponseSchema.parse(await res.json());
       return transformLead(data);
     },
     onSuccess: (updatedLead) => {
@@ -432,7 +361,7 @@ export function useTeamMetrics(): UseQueryResult<TeamMetricsResponse, Error> {
         throw new Error(error.message || "Failed to fetch team metrics");
       }
 
-      return (await res.json()) as TeamMetricsResponse;
+      return TeamMetricsResponseSchema.parse(await res.json());
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000,
@@ -462,7 +391,7 @@ export function useLeadDuplicates(
         throw new Error(error.message || "Failed to fetch duplicates");
       }
 
-      return (await res.json()) as LeadDuplicatesResponse;
+      return LeadDuplicatesResponseSchema.parse(await res.json());
     },
     enabled: !!leadId,
     staleTime: 2 * 60 * 1000,
