@@ -3284,7 +3284,7 @@ git commit -m "feat(web): admin/dealers/new staff form"
 
 Mirrors the state-machine shape of `apps/web/src/app/invite/[token]/page.tsx` (`loading`/`success`/`error`/`expired` — no `already_member` state, since accepting always creates a brand-new account). Unlike that page, `loading` does NOT auto-submit on mount — there's a form to fill in first (name + password), so `loading` here only covers the brief window of the actual POST after submit.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```typescript
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -3352,12 +3352,12 @@ describe("AcceptOrgInvitationPage", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd apps/web && pnpm vitest run "src/app/invite/org/[token]/page.test.tsx"`
 Expected: FAIL — cannot resolve `./page`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```typescript
 "use client";
@@ -3524,17 +3524,17 @@ export default function AcceptOrgInvitationPage() {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd apps/web && pnpm vitest run "src/app/invite/org/[token]/page.test.tsx"`
 Expected: 2 passed
 
-- [ ] **Step 5: Run typecheck + lint**
+- [x] **Step 5: Run typecheck + lint**
 
 Run: `cd apps/web && pnpm typecheck && pnpm eslint "src/app/invite/org/[token]/page.tsx"`
 Expected: clean
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add "apps/web/src/app/invite/org/"
