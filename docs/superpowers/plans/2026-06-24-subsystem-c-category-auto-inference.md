@@ -6,6 +6,7 @@ Implements the design in
 TDD. No production code without a failing test first.
 
 User decisions (locked):
+
 - **Apply mode**: suggest only, never auto-apply.
 - **Heuristic**: triple-signal S1 (0.35) + S2 (0.40) + S3 (0.25), threshold 0.5.
 - **PR split**: backend (PR1) → frontend (PR2).
@@ -17,10 +18,12 @@ User decisions (locked):
 ### Task 1: `CategoryInferrer` domain service
 
 **Files:**
+
 - Create: `apps/api/src/prosell/domain/services/category_inferrer.py`
 - Create: `apps/api/tests/unit/domain/services/test_category_inferrer.py`
 
 **Public interface:**
+
 ```python
 class CategoryInferrer:
     def score(
@@ -215,6 +218,7 @@ Expected: FAIL — `ImportError: No module named 'prosell.domain.services.catego
 - [ ] **Step 3: Write the implementation**
 
 Write `category_inferrer.py` with:
+
 - Frozen `STOPWORDS` tuple (literal from above)
 - `CategoryInferrer.score()` orchestrator: loop over `candidates`, compute score for each via the three signals, sort DESC (stable sort for ties), return
 - Private `_signal_title_overlap`, `_signal_attribute_name_overlap`, `_signal_value_schema_fit`
@@ -244,11 +248,13 @@ git commit -m "feat(api): CategoryInferrer domain service (T1)"
 ### Task 2: `get_active_roots` repository method
 
 **Files:**
+
 - Modify: `apps/api/src/prosell/domain/repositories/category_repository.py` (add port method)
 - Modify: `apps/api/src/prosell/infrastructure/repositories/category_repository_impl.py` (add implementation)
 - Create: `apps/api/tests/unit/infrastructure/repositories/test_get_active_roots.py` (mocked test)
 
 **Interface:**
+
 ```python
 # In AbstractCategoryRepository
 async def get_active_roots(
@@ -308,11 +314,13 @@ git commit -m "feat(api): get_active_roots repo method (T2)"
 ### Task 3: `InferCategoryUseCase` + DTO
 
 **Files:**
+
 - Create: `apps/api/src/prosell/application/dto/category/inference.py` (`CategoryInferenceRequest`, `CategoryInferenceResponse`, `CategoryInferenceItem`)
 - Create: `apps/api/src/prosell/application/use_cases/category/infer_category.py`
 - Create: `apps/api/tests/unit/application/use_cases/category/test_infer_category.py`
 
 **Key constants** (in `infer_category.py`):
+
 ```python
 SINGLE_SUGGESTION_THRESHOLD = 0.5
 MAX_ALTERNATIVES = 5
@@ -424,6 +432,7 @@ git commit -m "feat(api): InferCategoryUseCase + DTOs (T3)"
 ### Task 4: `POST /api/v1/categories/infer` endpoint
 
 **Files:**
+
 - Create: `apps/api/src/prosell/infrastructure/api/routers/category_inference_router.py`
 - Create: `apps/api/src/prosell/infrastructure/api/dependencies.py` (add `get_infer_category_use_case` factory)
 - Modify: `apps/api/src/prosell/infrastructure/api/main.py` (mount the router)
@@ -509,6 +518,7 @@ async def test_infer_does_not_log_request_body(async_client_as_seller, caplog) -
 - [ ] **Step 2-4: Run fail → write impl → run pass**
 
 The router:
+
 ```python
 router = APIRouter(prefix="/categories", tags=["categories"])
 
@@ -527,6 +537,7 @@ async def infer_category(
 ```
 
 DI factory in `dependencies.py`:
+
 ```python
 def get_infer_category_use_case(
     category_repository: Annotated[AbstractCategoryRepository, Depends(get_category_repository)],
@@ -535,6 +546,7 @@ def get_infer_category_use_case(
 ```
 
 Mount in `main.py`:
+
 ```python
 app.include_router(category_inference_router.router)
 ```
@@ -576,6 +588,7 @@ Body: bullet list of tasks, spec link, test counts, "frontend integration coming
 ### Task 6: `useInferCategory` hook + `useDebouncedValue`
 
 **Files:**
+
 - Create: `apps/web/src/lib/api/schemas/categoryInference.ts` (Zod schema mirroring the backend response — project pattern, see `lib/api/schemas/category.ts` for the categories-list mirror)
 - Create: `apps/web/src/lib/hooks/useDebouncedValue.ts`
 - Create: `apps/web/src/lib/api/useInferCategory.ts`
@@ -585,11 +598,15 @@ Body: bullet list of tasks, spec link, test counts, "frontend integration coming
 - [ ] **Step 1: Write the failing tests**
 
 `useDebouncedValue`:
+
 ```typescript
 it("returns the initial value immediately, then updates after the delay", async () => {
-  const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 100), {
-    initialProps: { value: "a" },
-  });
+  const { result, rerender } = renderHook(
+    ({ value }) => useDebouncedValue(value, 100),
+    {
+      initialProps: { value: "a" },
+    },
+  );
   expect(result.current).toBe("a");
   rerender({ value: "b" });
   expect(result.current).toBe("a"); // not yet
@@ -598,23 +615,30 @@ it("returns the initial value immediately, then updates after the delay", async 
 ```
 
 `useInferCategory`:
+
 ```typescript
 it("returns suggestion when the endpoint returns one", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-    ok: true, json: async () => ({
-      suggestion: { category_id: "c1", name: "Vehicles", score: 0.87 },
-      alternatives: [{ category_id: "c1", name: "Vehicles", score: 0.87 }],
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        suggestion: { category_id: "c1", name: "Vehicles", score: 0.87 },
+        alternatives: [{ category_id: "c1", name: "Vehicles", score: 0.87 }],
+      }),
     }),
-  }));
+  );
   const { result } = renderHook(() =>
-    useInferCategory({ title: "Honda", attributes: { make: "Honda" } })
+    useInferCategory({ title: "Honda", attributes: { make: "Honda" } }),
   );
   await waitFor(() => expect(result.current.suggestion?.name).toBe("Vehicles"));
 });
 
 it("returns null suggestion and no error on network failure", async () => {
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network")));
-  const { result } = renderHook(() => useInferCategory({ title: "X", attributes: {} }));
+  const { result } = renderHook(() =>
+    useInferCategory({ title: "X", attributes: {} }),
+  );
   await waitFor(() => expect(result.current.isLoading).toBe(false));
   expect(result.current.suggestion).toBeNull();
 });
@@ -622,8 +646,8 @@ it("returns null suggestion and no error on network failure", async () => {
 it("does NOT call fetch when enabled=false (default)", async () => {
   const mockFetch = vi.fn();
   vi.stubGlobal("fetch", mockFetch);
-  const { result } = renderHook(() =>
-    useInferCategory({ title: "Honda", attributes: {} })  // enabled defaults to false
+  const { result } = renderHook(
+    () => useInferCategory({ title: "Honda", attributes: {} }), // enabled defaults to false
   );
   // Wait a tick for any potential effect to fire
   await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -633,9 +657,14 @@ it("does NOT call fetch when enabled=false (default)", async () => {
 
 it("returns null suggestion on non-2xx response (4xx, 5xx)", async () => {
   // Backend bug / validation error must not break the form
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }));
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }),
+  );
   const { result } = renderHook(() =>
-    useInferCategory({ title: "X", attributes: {} }, { enabled: true })
+    useInferCategory({ title: "X", attributes: {} }, { enabled: true }),
   );
   await waitFor(() => expect(result.current.isLoading).toBe(false));
   expect(result.current.suggestion).toBeNull();
@@ -650,6 +679,7 @@ it("debounces: same title within staleTime reuses cached response", async () => 
 - [ ] **Step 2-4: Run fail → write impl → run pass**
 
 Zod schema in `lib/api/schemas/categoryInference.ts`:
+
 ```typescript
 import { z } from "zod";
 
@@ -665,10 +695,13 @@ export const CategoryInferenceResponseSchema = z.object({
 });
 
 export type CategoryInferenceItem = z.infer<typeof CategoryInferenceItemSchema>;
-export type CategoryInferenceResponse = z.infer<typeof CategoryInferenceResponseSchema>;
+export type CategoryInferenceResponse = z.infer<
+  typeof CategoryInferenceResponseSchema
+>;
 ```
 
 `useDebouncedValue` (~10 lines, no dep):
+
 ```typescript
 export function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -681,6 +714,7 @@ export function useDebouncedValue<T>(value: T, delayMs: number): T {
 ```
 
 `useInferCategory` follows the pattern of `useDealers` etc. — TanStack Query `useQuery` with:
+
 - `queryKey: ["infer-category", debouncedTitle, debouncedAttributes]` (debounced values; `useDebouncedValue` with 300ms delay inside the hook)
 - `enabled: options.enabled ?? false` (default off; form opts in)
 - `staleTime: 30_000` (D7 — backspace-then-retype within 30s reuses cached response)
@@ -712,6 +746,7 @@ git commit -m "feat(web): useInferCategory hook + useDebouncedValue (T6)"
 ### Task 7: Product create form integration
 
 **Files:**
+
 - Modify: `apps/web/src/components/forms/ProductForm.tsx` (the shared form used by both create and edit; the form is in `components/forms/`, not in the page file — verified during T1 audit)
 - Modify: `apps/web/src/components/forms/__tests__/ProductForm.edit.test.tsx` (or the appropriate existing test file; new tests can go in a new `ProductForm.infer.test.tsx` if cleaner)
 
@@ -765,6 +800,7 @@ it("suggests on edit too (shared form), not just create", async () => {
 - [ ] **Step 2-4: Run fail → wire the hook into the form, render the suggestion as a marked first option → run pass**
 
 The form integration:
+
 - Track the current title and attributes in form state (react-hook-form `watch`)
 - Pass them to `useInferCategory({ title, attributes }, { enabled: title.trim().length > 0 })` — debounce is inside the hook
 - The category `<select>` is initialized with `initialData?.category_id ?? ""` (existing behavior). On create, this is empty; on edit, it's the product's existing category.

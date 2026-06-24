@@ -70,11 +70,11 @@ chosen to make vehicle-style data the obvious winner when its signals are
 present without making non-vertical content (a free-text listing with no
 attributes) tip into a wrong category:
 
-| Signal | Weight | Description |
-| --- | --- | --- |
-| **S1 — Title tokens overlap with category vocabulary** | 0.35 | Tokenize **title** (lowercase, drop stopwords and punctuation, drop tokens < 2 chars). For each category, the vocabulary is `name` + `description` (when non-null) + the union of `field_config[*].field_name`. **Explicitly NOT included**: `presentation.title_template` (raw template syntax like `{year} {make}`), `attribute_schema` keys (overlaps with S2 by design — S2 is the explicit signal, S3 is the value signal). **Explicitly NOT used**: `Product.description` (too long, too free-form, deferred). Score = `|title_tokens ∩ category_vocab| / max(1, |title_tokens|)`, capped at 1. |
-| **S2 — Attribute-name overlap with category `field_config`** | 0.40 | For each user-provided attribute key, +1 if a `field_config` entry exists in the category with the same `field_name`. Score = `matches / max(1, |provided_attribute_keys|)`. Strongest signal because it tells us the seller already KNOWS the category's vocabulary (they typed the right field names). If `attribute_schema` is empty, S3 contributes 0 (no constraints to fit) — explicit in the tests. |
-| **S3 — Attribute-value schema fit** | 0.25 | For each user-provided attribute, build a one-key dict `{key: value}` and call `Category.validate_attributes({key: value})` (catching `ValueError`). +1 per attribute that passes validation for the category (satisfies the category's type, options, required-in-isolation constraints). Score = `fits / max(1, |provided_attribute_keys|)`. Catches cases where the seller's attribute names don't match (e.g. they wrote `modelo` instead of `model`) but the VALUES are category-shaped. |
+| Signal                                                       | Weight | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ---------------- |
+| **S1 — Title tokens overlap with category vocabulary**       | 0.35   | Tokenize **title** (lowercase, drop stopwords and punctuation, drop tokens < 2 chars). For each category, the vocabulary is `name` + `description` (when non-null) + the union of `field_config[*].field_name`. **Explicitly NOT included**: `presentation.title_template` (raw template syntax like `{year} {make}`), `attribute_schema` keys (overlaps with S2 by design — S2 is the explicit signal, S3 is the value signal). **Explicitly NOT used**: `Product.description` (too long, too free-form, deferred). Score = ` | title_tokens ∩ category_vocab | / max(1,                                                                                                                                                                                                                          | title_tokens | )`, capped at 1. |
+| **S2 — Attribute-name overlap with category `field_config`** | 0.40   | For each user-provided attribute key, +1 if a `field_config` entry exists in the category with the same `field_name`. Score = `matches / max(1,                                                                                                                                                                                                                                                                                                                                                                                | provided_attribute_keys       | )`. Strongest signal because it tells us the seller already KNOWS the category's vocabulary (they typed the right field names). If `attribute_schema` is empty, S3 contributes 0 (no constraints to fit) — explicit in the tests. |
+| **S3 — Attribute-value schema fit**                          | 0.25   | For each user-provided attribute, build a one-key dict `{key: value}` and call `Category.validate_attributes({key: value})` (catching `ValueError`). +1 per attribute that passes validation for the category (satisfies the category's type, options, required-in-isolation constraints). Score = `fits / max(1,                                                                                                                                                                                                              | provided_attribute_keys       | )`. Catches cases where the seller's attribute names don't match (e.g. they wrote `modelo`instead of`model`) but the VALUES are category-shaped.                                                                                  |
 
 Final score = `0.35·S1 + 0.40·S2 + 0.25·S3` ∈ [0, 1].
 
@@ -87,6 +87,7 @@ mismatches the user wouldn't notice.
 
 The scorer returns raw floats in [0, 1] for every candidate. It does NOT
 apply the threshold or sort. The use case applies:
+
 - Sort DESC by raw score (over the FULL candidate set, not a cap).
 - Find `suggestion`: the highest-scoring candidate above the 0.5 threshold
   (D4). If exactly one candidate is above threshold, it becomes the
@@ -211,6 +212,7 @@ class CategoryInferenceRequest(BaseModel):
 ```
 
 Notes on field defaults:
+
 - `title` is required (we can't infer from an empty title — the scorer returns empty and the form falls back to manual). `min_length=1` rejects whitespace-only after Pydantic-level trimming; the scorer also drops stopwords/tokens < 2 chars internally. `max_length=500` matches `CreateProductRequest` and caps the tokenization cost.
 - `attributes` is OPTIONAL with `default_factory=dict` (NOT required), matching the pattern in `CreateProductRequest`. A seller posting `"title": "Honda Civic"` with no attributes body is a normal case.
 - Other DTO fields (no `category_id`, no `tenant_id`): the endpoint derives tenant from auth context. The seller can't infer for another tenant.
@@ -297,5 +299,5 @@ Frontend (component):
 - Manual smoke: log in as a seller, open product create, type
   "Honda Civic 2020" + fill `make`/`model`/`year` attributes → suggestion
   panel shows "Vehicles" with score ≥ 0.6. Type "Departamento 2 ambientes"
-  + fill `bedrooms`/`bathrooms` → "Real Estate". Type "Lorem ipsum" with
-  no attributes → no suggestion.
+  - fill `bedrooms`/`bathrooms` → "Real Estate". Type "Lorem ipsum" with
+    no attributes → no suggestion.
