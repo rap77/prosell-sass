@@ -109,7 +109,11 @@ describe("AdminDealerDetailPage", () => {
       isPending: false,
     });
     mockUseDealer.mockReturnValue({
-      dealer: { id: "dealer-1", name: "Acme Motors", status: "pending_verification" },
+      dealer: {
+        id: "dealer-1",
+        name: "Acme Motors",
+        status: "pending_verification",
+      },
       isLoading: false,
       error: null,
     });

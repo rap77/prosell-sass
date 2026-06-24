@@ -21,21 +21,32 @@ describe("AcceptOrgInvitationPage", () => {
         json: async () => ({
           access_token: "a",
           refresh_token: "b",
-          user: { id: "1", email: "owner@x.com", full_name: "Owner Name", tenant_id: "org-1" },
+          user: {
+            id: "1",
+            email: "owner@x.com",
+            full_name: "Owner Name",
+            tenant_id: "org-1",
+          },
           requires_2fa: false,
         }),
       }),
     );
     render(<AcceptOrgInvitationPage />);
 
-    fireEvent.change(screen.getByLabelText(/nombre/i), { target: { value: "Owner" } });
-    fireEvent.change(screen.getByLabelText(/apellido/i), { target: { value: "Name" } });
+    fireEvent.change(screen.getByLabelText(/nombre/i), {
+      target: { value: "Owner" },
+    });
+    fireEvent.change(screen.getByLabelText(/apellido/i), {
+      target: { value: "Name" },
+    });
     fireEvent.change(screen.getByLabelText(/contraseña/i), {
       target: { value: "Aa1!aaaa" },
     });
     fireEvent.click(screen.getByRole("button", { name: /aceptar/i }));
 
-    await waitFor(() => expect(screen.getByText(/bienvenido/i)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(/bienvenido/i)).toBeInTheDocument(),
+    );
     expect(fetch).toHaveBeenCalledWith(
       "/api/v1/auth/accept-org-invitation",
       expect.objectContaining({ method: "POST" }),
@@ -52,8 +63,12 @@ describe("AcceptOrgInvitationPage", () => {
     );
     render(<AcceptOrgInvitationPage />);
 
-    fireEvent.change(screen.getByLabelText(/nombre/i), { target: { value: "Owner" } });
-    fireEvent.change(screen.getByLabelText(/apellido/i), { target: { value: "Name" } });
+    fireEvent.change(screen.getByLabelText(/nombre/i), {
+      target: { value: "Owner" },
+    });
+    fireEvent.change(screen.getByLabelText(/apellido/i), {
+      target: { value: "Name" },
+    });
     fireEvent.change(screen.getByLabelText(/contraseña/i), {
       target: { value: "Aa1!aaaa" },
     });

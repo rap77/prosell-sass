@@ -19,7 +19,11 @@ vi.mock("@/hooks/useAuth", () => ({
 
 const mockMutate = vi.fn();
 vi.mock("@/lib/api/dealers", () => ({
-  useCreateDealer: () => ({ mutate: mockMutate, isPending: false, error: null }),
+  useCreateDealer: () => ({
+    mutate: mockMutate,
+    isPending: false,
+    error: null,
+  }),
 }));
 
 const mockUseCategories = vi.fn();

@@ -105,9 +105,7 @@ export default function AdminNewDealerPage() {
             padding: 0,
           }}
         >
-          <legend style={{ fontSize: 13.5, marginBottom: 6 }}>
-            Verticals
-          </legend>
+          <legend style={{ fontSize: 13.5, marginBottom: 6 }}>Verticals</legend>
           {categoriesLoading && <p>Cargando verticals…</p>}
           {!categoriesLoading && categories.length === 0 && (
             <p style={{ color: "var(--ps-text-secondary)" }}>
