@@ -23,8 +23,8 @@ def use_case() -> UseCaseFixture:
     category_repository = AsyncMock()
     # Default: every vertical_id resolves to a real, active category. Tests
     # that need an unknown id or an inactive category override
-    # get_by_id_any_tenant.return_value.
-    category_repository.get_by_id_any_tenant.return_value = AsyncMock(is_active=True)
+    # get_by_id_cross_tenant.return_value.
+    category_repository.get_by_id_cross_tenant.return_value = AsyncMock(is_active=True)
     invite_use_case = AsyncMock()
     uc = CreateDealerOrganizationUseCase(
         org_repository, vertical_repository, user_repository, category_repository, invite_use_case
@@ -85,7 +85,7 @@ async def test_raises_when_a_vertical_id_does_not_resolve_to_a_real_category(
     ) = use_case
     user_repository.get_by_email.return_value = None
     unknown_id = uuid4()
-    category_repository.get_by_id_any_tenant.return_value = None
+    category_repository.get_by_id_cross_tenant.return_value = None
 
     with pytest.raises(ValueError, match=str(unknown_id)):
         await uc.execute(
@@ -102,7 +102,7 @@ async def test_raises_when_a_vertical_is_an_inactive_category(
     use_case: UseCaseFixture,
 ) -> None:
     """A deactivated vertical (is_active=False) must not be enableable for a
-    new dealer -- get_by_id_any_tenant only checks existence, not status."""
+    new dealer -- get_by_id_cross_tenant only checks existence, not status."""
     (
         uc,
         _org_repository,
@@ -113,7 +113,7 @@ async def test_raises_when_a_vertical_is_an_inactive_category(
     ) = use_case
     user_repository.get_by_email.return_value = None
     inactive_id = uuid4()
-    category_repository.get_by_id_any_tenant.return_value = AsyncMock(is_active=False)
+    category_repository.get_by_id_cross_tenant.return_value = AsyncMock(is_active=False)
 
     with pytest.raises(ValueError, match=str(inactive_id)):
         await uc.execute(

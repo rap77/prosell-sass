@@ -53,7 +53,7 @@ class CreateDealerOrganizationUseCase:
             raise ValueError("At least one vertical must be selected")
 
         for root_category_id in vertical_ids:
-            category = await self.category_repository.get_by_id_any_tenant(root_category_id)
+            category = await self.category_repository.get_by_id_cross_tenant(root_category_id)
             if category is None:
                 raise ValueError(f"Unknown vertical id: {root_category_id}")
             if not category.is_active:

@@ -49,7 +49,7 @@ class CreateCategoryUseCase:
         # 3. Determine level and validate circular reference
         level = 0
         if request.parent_id:
-            parent = await self.category_repository.get_by_id_any_tenant(request.parent_id)
+            parent = await self.category_repository.get_by_id_cross_tenant(request.parent_id)
             if parent:
                 level = parent.level + 1
 

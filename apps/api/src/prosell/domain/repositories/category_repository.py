@@ -89,13 +89,24 @@ class AbstractCategoryRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_id_any_tenant(self, category_id: UUID) -> Category | None:
+    async def get_by_id_cross_tenant(self, category_id: UUID) -> Category | None:
         """
-        Get a category by ID without tenant filtering.
+        Get a category by ID, allowing reads ACROSS ALL tenants.
 
-        Use ONLY for global template reads (Plan 2): root verticals and their
-        children have tenant_id=NULL and are shared across organizations.
-        Per-tenant reads must still go through ``get_by_id``.
+        ⚠️  **Cross-tenant leak risk.** This method returns ANY category
+        regardless of which tenant owns it. Use ONLY for:
+
+        - Platform-admin contexts (SUPER_ADMIN) that legitimately need
+          to see every org's category.
+        - Global template reads (Plan 2): root verticals and their
+          children have tenant_id=NULL and are shared across
+          organizations. This is the design intent — ``tenant_id IS
+          NULL`` rows are shared by construction.
+
+        Per-tenant reads (the common case) must go through ``get_by_id``
+        or ``get_by_id_or_global`` (the latter for the product
+        create/update path that needs both own + global visibility
+        without cross-tenant leak).
 
         Args:
             category_id: Category UUID
@@ -114,9 +125,9 @@ class AbstractCategoryRepository(ABC):
         Use for the product create/update path (Plan 2): a product may
         reference a global vertical template the org opted into, while still
         being denied access to OTHER tenants' private categories. This is
-        intentionally narrower than ``get_by_id_any_tenant`` (no cross-tenant
-        leak) and broader than ``get_by_id`` (which gates MUTATIONS and must
-        stay strict).
+        intentionally narrower than ``get_by_id_cross_tenant`` (no
+        cross-tenant leak) and broader than ``get_by_id`` (which gates
+        MUTATIONS and must stay strict).
 
         Args:
             category_id: Category UUID
@@ -128,13 +139,14 @@ class AbstractCategoryRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_children_any_tenant(self, parent_id: UUID) -> list[Category]:
+    async def get_children_cross_tenant(self, parent_id: UUID) -> list[Category]:
         """
-        Get direct children of a parent category without tenant filtering.
+        Get direct children of a parent, allowing reads ACROSS ALL tenants.
 
-        Use ONLY for global template reads (Plan 2): children of a global
-        root also have tenant_id=NULL. Per-tenant reads must still go
-        through ``get_children``.
+        ⚠️  **Cross-tenant leak risk** — same as ``get_by_id_cross_tenant``.
+        Use ONLY for platform-admin / global-template reads.
+
+        Per-tenant reads must still go through ``get_children``.
 
         Args:
             parent_id: Parent category UUID
