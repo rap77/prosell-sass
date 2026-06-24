@@ -25,7 +25,7 @@ async def root_category(
 
     tenant_id has a real FK to organizations, so this can't use a throwaway
     uuid4() -- it must point at an existing org, even though the application
-    layer treats roots as tenant-agnostic (get_by_id_any_tenant ignores it).
+    layer treats roots as tenant-agnostic (get_by_id_cross_tenant ignores it).
     """
     category = CategoryModel(
         id=uuid4(),

@@ -109,8 +109,12 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
-    async def get_by_id_any_tenant(self, category_id: UUID) -> Category | None:
-        """Get a category by ID without tenant filtering (global templates)."""
+    async def get_by_id_cross_tenant(self, category_id: UUID) -> Category | None:
+        """Get a category by ID, allowing reads across all tenants.
+
+        See ``AbstractCategoryRepository.get_by_id_cross_tenant`` for the
+        cross-tenant leak warning and allowed use cases.
+        """
         stmt = select(CategoryModel).where(CategoryModel.id == category_id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -131,8 +135,12 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def get_children_any_tenant(self, parent_id: UUID) -> list[Category]:
-        """Get direct children of a parent without tenant filtering (global templates)."""
+    async def get_children_cross_tenant(self, parent_id: UUID) -> list[Category]:
+        """Get direct children of a parent, allowing reads across all tenants.
+
+        See ``AbstractCategoryRepository.get_children_cross_tenant`` for the
+        cross-tenant leak warning and allowed use cases.
+        """
         stmt = (
             select(CategoryModel)
             .where(CategoryModel.parent_id == parent_id)

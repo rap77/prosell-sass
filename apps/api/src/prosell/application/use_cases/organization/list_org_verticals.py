@@ -20,12 +20,12 @@ from prosell.application.dto.organization.verticals import (
     VerticalResponse,
 )
 from prosell.domain.repositories.category_repository import AbstractCategoryRepository
+from prosell.domain.repositories.organization_vertical_repository import (
+    AbstractOrganizationVerticalRepository,
+)
 from prosell.domain.services.presentation_resolver import (
     filter_fields,
     resolve_presentation,
-)
-from prosell.infrastructure.repositories.organization_vertical_repository_impl import (
-    SqlAlchemyOrganizationVerticalRepository,
 )
 
 
@@ -43,7 +43,7 @@ class ListOrgVerticalsUseCase:
 
     def __init__(
         self,
-        org_vertical_repository: SqlAlchemyOrganizationVerticalRepository,
+        org_vertical_repository: AbstractOrganizationVerticalRepository,
         category_repository: AbstractCategoryRepository,
     ) -> None:
         self._org_vertical_repo = org_vertical_repository
@@ -55,13 +55,13 @@ class ListOrgVerticalsUseCase:
 
         verticals: list[VerticalResponse] = []
         for root_id in root_ids:
-            root = await self._category_repo.get_by_id_any_tenant(root_id)
+            root = await self._category_repo.get_by_id_cross_tenant(root_id)
             if root is None:
                 # Stale linkage (root was deleted but the org_vertical row
                 # wasn't cascaded). Skip — UI never sees a broken vertical.
                 continue
 
-            children = await self._category_repo.get_children_any_tenant(root.id)
+            children = await self._category_repo.get_children_cross_tenant(root.id)
             root_presentation = _to_presentation_dict(root.presentation)
 
             category_nodes = [

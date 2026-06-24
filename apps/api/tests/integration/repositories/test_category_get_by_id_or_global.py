@@ -84,7 +84,7 @@ async def test_get_by_id_or_global_denies_other_tenants_private_category(
     db_session, test_organization
 ):
     """A DIFFERENT tenant's private category is NOT returned (no cross-tenant
-    leak — this is why we don't reuse get_by_id_any_tenant for the product
+    leak — this is why we don't reuse get_by_id_cross_tenant for the product
     path)."""
     other_org = await _add_organization(db_session)
     other = await _add_category(db_session, tenant_id=other_org.tenant_id, name="Other")
