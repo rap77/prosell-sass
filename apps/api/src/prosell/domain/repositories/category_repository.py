@@ -145,6 +145,29 @@ class AbstractCategoryRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_active_roots(self, tenant_id: UUID | None) -> list[Category]:
+        """
+        Get active root categories visible to a tenant.
+
+        Returns categories where ``is_active=True`` and ``parent_id IS NULL``
+        (root verticals only — sub-categories are not inference targets).
+        Visible to the tenant means: ``tenant_id == :tenant_id`` OR
+        ``tenant_id IS NULL`` (GLOBAL templates shared across orgs).
+
+        Used by the category auto-inference endpoint (Subsystem C). The
+        caller (use case) is responsible for scoring, thresholding, and
+        capping — this port is a pure pass-through.
+
+        Args:
+            tenant_id: Caller's tenant UUID, or None for the SUPER_ADMIN
+                scenario (GLOBAL templates only).
+
+        Returns:
+            Active root categories sorted by ``sort_order ASC, id ASC``.
+        """
+        pass
+
+    @abstractmethod
     async def get_ancestor_ids(self, category_id: UUID, tenant_id: UUID | None) -> list[UUID]:
         """
         Get all ancestor category IDs (up the tree to root).

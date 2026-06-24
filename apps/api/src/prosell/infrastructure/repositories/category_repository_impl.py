@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.domain.entities.category import Category
@@ -137,6 +137,35 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
             select(CategoryModel)
             .where(CategoryModel.parent_id == parent_id)
             .order_by(CategoryModel.sort_order, CategoryModel.name)
+        )
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(m) for m in models]
+
+    async def get_active_roots(self, tenant_id: UUID | None) -> list[Category]:
+        """Get active root categories visible to a tenant (Subsystem C port).
+
+        Filters:
+        - ``is_active=True`` (deactivated roots are hidden)
+        - ``parent_id IS NULL`` (root verticals only — sub-categories are
+          not inference targets per spec D3)
+        - Visible to tenant: ``tenant_id == :tenant_id`` OR ``tenant_id IS NULL``
+          (GLOBAL templates shared across orgs)
+
+        Sorted by ``sort_order ASC, id ASC`` (stable, deterministic order
+        for the inference use case to score against).
+        """
+        stmt = (
+            select(CategoryModel)
+            .where(CategoryModel.is_active.is_(True))
+            .where(CategoryModel.parent_id.is_(None))
+            .where(
+                or_(
+                    CategoryModel.tenant_id == tenant_id,
+                    CategoryModel.tenant_id.is_(None),
+                )
+            )
+            .order_by(CategoryModel.sort_order.asc(), CategoryModel.id.asc())
         )
         result = await self.session.execute(stmt)
         models = result.scalars().all()
