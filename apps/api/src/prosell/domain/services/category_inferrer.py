@@ -146,12 +146,23 @@ class CategoryInferrer:
         return min(1.0, overlap / len(field_names))
 
     def _signal_value_schema_fit(self, attributes: dict[str, object], category: Category) -> float:
-        """S3: |attrs passing category.validate_attributes| / |attrs|.
+        """S3: |attrs matching THIS KEY's schema| / |attrs|.
 
-        When ``attribute_schema`` is empty, ``validate_attributes`` is a
-        no-op that returns successfully for any input. Per spec D3, S3
-        must count 0 fits in that case (no constraints = no signal),
-        not 1.0. Short-circuit.
+        Per-key validation (NOT the full ``validate_attributes``).
+        The full validation conflates "this key is invalid" with
+        "another required field is missing" because it iterates the
+        whole schema per call. We only care about whether the value
+        matches the constraint for the specific key the user provided.
+
+        Rules:
+        - Empty ``attribute_schema`` → 0 (no constraints = no signal).
+        - Unknown key (not in schema) → 0 (no schema = no signal).
+        - Known key with matching type/options → 1.
+        - Known key with wrong type or out-of-options → 0.
+
+        Independent of any other field's ``required`` flag — that's a
+        global concern handled by ``validate_attributes`` at the
+        product-create boundary, not by the inferrer.
         """
         if not category.attribute_schema:
             return 0.0
@@ -159,9 +170,33 @@ class CategoryInferrer:
             return 0.0
         fits = 0
         for key, value in attributes.items():
-            try:
-                category.validate_attributes({key: value})
+            if self._field_matches_schema(key, value, category):
                 fits += 1
-            except ValueError:
-                pass
         return min(1.0, fits / len(attributes))
+
+    def _field_matches_schema(self, key: str, value: object, category: Category) -> bool:
+        """Does (key, value) match the schema for THIS KEY alone?
+
+        Returns False if the key has no schema entry (unknown = no signal).
+        Returns True if the value matches the declared type (and options,
+        if defined). Does NOT check the ``required`` flag of OTHER fields.
+        """
+        field_def = category.attribute_schema.get(key)
+        if field_def is None:
+            return False
+
+        # Type check — mirrors Category.validate_attributes type_map.
+        raw_field_type = field_def.get("type", "string")
+        field_type = raw_field_type if isinstance(raw_field_type, str) else "string"
+        type_map: dict[str, type | tuple[type, ...]] = {
+            "string": str,
+            "number": (int, float),
+            "boolean": bool,
+        }
+        expected = type_map.get(field_type)
+        if expected and not isinstance(value, expected):
+            return False
+
+        # Options check (e.g., enum-like constraints).
+        options = field_def.get("options")
+        return not (isinstance(options, list | tuple | set) and value not in options)

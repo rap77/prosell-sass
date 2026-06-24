@@ -71,6 +71,19 @@ class InferCategoryUseCase:
         if not candidates:
             return CategoryInferenceResponse(suggestion=None, alternatives=[])
 
+        # M1 (I-2 fix): degenerate input — whitespace-only title AND no
+        # attributes — collapses to empty result. Pydantic ``min_length=1``
+        # accepts ``" "`` (one space), and the scorer's tokenizer drops
+        # whitespace to no tokens. Without this guard, the form would
+        # flash noise (N rows of score 0.0) on every backspace in the
+        # title field. The integration test
+        # ``test_infer_returns_empty_for_whitespace_only_title`` pins this
+        # at the API boundary; the unit test ``test_empty_response_for_
+        # whitespace_only_title_and_empty_attributes`` pins it here so
+        # the contract doesn't depend on a running DB.
+        if not title.strip() and not attributes:
+            return CategoryInferenceResponse(suggestion=None, alternatives=[])
+
         # Scorer returns [] when there's no signal (title="" AND attrs={}).
         scored = self.inferrer.score(title, attributes, candidates)
         if not scored:

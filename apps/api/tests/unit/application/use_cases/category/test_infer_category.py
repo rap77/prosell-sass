@@ -143,6 +143,44 @@ async def test_empty_response_when_no_active_roots() -> None:
     mock_inferrer.score.assert_not_called()
 
 
+async def test_empty_response_for_whitespace_only_title_and_empty_attributes() -> None:
+    """I-2: degenerate input (whitespace-only title + empty attrs) → empty.
+
+    The scorer's tokenizer drops whitespace to no tokens, so S1=0. With
+    no attributes, S2 and S3 are also 0. The use case must return
+    ``{suggestion: None, alternatives: []}`` — NOT N rows of score 0.0.
+    The integration test ``test_infer_returns_empty_for_whitespace_only_title``
+    pins this at the API boundary; this unit test pins it at the use case
+    so the contract doesn't depend on a running DB.
+    """
+    cats = [_category("Vehicles"), _category("Real Estate")]
+    use_case = _use_case(cats, {"Vehicles": 0.0, "Real Estate": 0.0})
+
+    # Sanity: without the guard, the inferrer would score every candidate
+    # at 0.0 (all signals 0) and the use case would return them all.
+    # The guard short-circuits BEFORE the inferrer is called.
+    response = await use_case.execute(title="   ", attributes={}, tenant_id=uuid4())
+
+    assert response.suggestion is None
+    assert response.alternatives == []
+
+
+async def test_non_whitespace_title_with_empty_attributes_returns_zero_scored_alts() -> None:
+    """Counter-test: empty attributes but a real title → inferrer is
+    called and may return zero-scored alternatives. Only whitespace-only
+    title (M1) collapses to empty.
+    """
+    cats = [_category("Vehicles"), _category("Real Estate")]
+    use_case = _use_case(cats, {"Vehicles": 0.0, "Real Estate": 0.0})
+
+    response = await use_case.execute(title="Real text", attributes={}, tenant_id=uuid4())
+
+    # No suggestion (all scores below threshold) but alternatives IS
+    # populated (caller can still browse).
+    assert response.suggestion is None
+    assert len(response.alternatives) == 2
+
+
 # --- H1 fix tests (2) ---
 
 

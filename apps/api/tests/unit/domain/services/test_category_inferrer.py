@@ -208,6 +208,72 @@ def test_tiny_title_with_one_char() -> None:
     assert result[0][1] == pytest.approx(0.40)
 
 
+def test_s3_unaffected_by_unrelated_required_fields() -> None:
+    """I-1: S3 must depend ONLY on the schema for the key being tested.
+
+    Bug: the previous implementation iterated with one-key dicts
+    (``category.validate_attributes({key: value})``), which made the
+    "required on OTHER fields" check fire for any provided key. With a
+    schema that has NO required fields, the same input that scored 0.5
+    (1 of 2 fits) would have scored 1.0 (2 of 2 fits) — a 2x change in
+    S3 for a semantically equivalent input.
+
+    The fix: per-attribute validation tests ONLY the schema for that
+    key. Unknown keys count as 0 fits (no schema = no signal). Known
+    keys with a matching value count as 1 fit. Independent of any
+    other field's ``required`` flag.
+    """
+    # Schema WITHOUT required: True — every provided key should be
+    # tested against its OWN schema entry, not the whole schema.
+    real_estate = _root_category(
+        "Real Estate",
+        required_attrs={
+            "bedrooms": {"type": "number"},  # NO required flag
+        },
+    )
+    inferrer = CategoryInferrer()
+    score = inferrer.score(
+        "Departamento",
+        {"bedrooms": 2, "area": 50},  # bedrooms in schema, area not
+        [real_estate],
+    )[0][1]
+    # S1: 0, S2: 0 (no field_config), S3: 1/2 = 0.5 (bedrooms fits,
+    # area has no schema → 0 fit). Stable across required/non-required
+    # schema variations.
+    assert score == pytest.approx(0.125)
+
+
+def test_s3_zero_for_unknown_key_with_no_schema() -> None:
+    """I-1 follow-up: a key with no schema entry counts as 0 fits,
+    not 1. The signal is "this attribute conforms to the schema FOR
+    IT" — if there's no schema for it, there's nothing to conform to.
+    """
+    real_estate = _root_category(
+        "Real Estate",
+        required_attrs={"bedrooms": {"type": "number"}},
+    )
+    inferrer = CategoryInferrer()
+    # Only "area" — no schema for it, no "bedrooms" to compare against.
+    score = inferrer.score("X", {"area": 50}, [real_estate])[0][1]
+    # S1: 0, S2: 0, S3: 0/1 = 0.0
+    assert score == pytest.approx(0.0)
+
+
+def test_s3_type_mismatch_counts_as_zero_fit() -> None:
+    """I-1 follow-up: a known key with a wrong-type value counts as 0.
+    Locks the type-check semantic for the per-key schema validation.
+    """
+    real_estate = _root_category(
+        "Real Estate",
+        required_attrs={"bedrooms": {"type": "number"}},
+    )
+    inferrer = CategoryInferrer()
+    # bedrooms="two" (string) — schema says number → fail
+    score = inferrer.score("X", {"bedrooms": "two"}, [real_estate])[0][1]
+    # S1: 0, S2: 0, S3: 0/1 = 0.0
+    assert score == pytest.approx(0.0)
+
+
 def test_stopwords_constant_contains_expected_entries() -> None:
     # Pin the STOPWORDS contract: the spec's locked list is the source of
     # truth. Drift here means silent scorer changes. Imported symbol check
