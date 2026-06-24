@@ -8,10 +8,12 @@ attributes) input using a triple-signal heuristic:
 - S2 (weight 0.40): provided attribute keys ∩ category field_config
   field_names. Highest weight because typed attribute names reveal
   seller intent.
-- S3 (weight 0.25): per-attribute schema validation. Counts the fraction
-  of provided attributes that pass ``Category.validate_attributes`` for
-  THIS category's ``attribute_schema``. Short-circuits to 0 when the
-  category has no schema (no constraints to fit).
+- S3 (weight 0.25): per-attribute schema fit. For each provided
+  attribute, checks whether its value matches THIS KEY's schema
+  entry (type and options) — NOT the full ``Category.validate_attributes``,
+  which would conflate "this key is invalid" with "another required
+  field is missing." Returns the fraction of provided attributes
+  that fit. See ``_signal_value_schema_fit`` for the full rules.
 
 Final = 0.35·S1 + 0.40·S2 + 0.25·S3, clamped to [0, 1].
 
