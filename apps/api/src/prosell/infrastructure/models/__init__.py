@@ -2,7 +2,9 @@
 
 from prosell.infrastructure.models.appointment_model import AppointmentModel
 from prosell.infrastructure.models.branch_model import BranchModel
+from prosell.infrastructure.models.bulk_upload_error_model import BulkUploadErrorModel
 from prosell.infrastructure.models.category_model import CategoryModel
+from prosell.infrastructure.models.category_schema_change_model import CategorySchemaChangeModel
 from prosell.infrastructure.models.facebook_account_model import (
     FacebookAccountModel,
     FacebookPageModel,
@@ -35,7 +37,9 @@ from prosell.infrastructure.models.wallet_model import WalletModel, WalletTransa
 __all__ = [
     "AppointmentModel",
     "BranchModel",
+    "BulkUploadErrorModel",
     "CategoryModel",
+    "CategorySchemaChangeModel",
     "FacebookAccountModel",
     "FacebookPageModel",
     "LeadAuditLogModel",
