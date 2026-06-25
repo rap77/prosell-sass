@@ -337,11 +337,38 @@ This spec covers **Roadmap G-1** (F-1 + F-2 minus requests workflow):
 - **PR 2 (Frontend)**: Hook rewrite, error modal, schema admin page with full CRUD + drag-and-drop + clone + template download + history, platform-role gating.
 
 **Roadmap G-2 (separate spec, future)**:
-- `SchemaChangeRequest` entity (request/approve/reject/apply workflow).
-- Tenant admin "Request schema change" form.
-- Prosell superadmin "Schema requests inbox" with diff preview.
-- Proper `RoleType.PLATFORM_ADMIN` migration (replaces the stub).
-- Notifications (email/in-app) for request lifecycle.
+
+When this roadmap ships, the deferred items below become a full brainstorming + spec cycle (likely a sibling spec file like `2026-MM-DD-schema-change-request-workflow-design.md`). Outlined here at high level so the deferred work is captured, not lost.
+
+**Trigger conditions to resume G-2** (any one of these should prompt opening a session for it):
+
+1. **Operational signal**: A tenant admin explicitly asks "how do I change my category schema?" or files a support request. The placeholder "Request change" button in the read-only UI will be the surface that surfaces this.
+2. **Operational scale**: Bulk upload starts hitting the 5000-row cap with any real-world tenant. That's the signal streaming is needed.
+3. **Security review**: A code review flags the platform-role stub as insufficient for production (e.g., the hardcoded email check isn't auditable, doesn't scale beyond one operator). PLATFORM_ADMIN migration becomes urgent.
+4. **Strategic decision**: The team decides to let tenants self-serve more aggressively, or conversely to lock down schema changes entirely (move the workflow earlier in the roadmap).
+
+**G-2 scope outline** (to be detailed in its own brainstorm):
+
+- **Backend entities**:
+  - `SchemaChangeRequest` (id, tenant_id, requested_by_user_id, category_id, current_attributes snapshot, proposed_attributes, justification text, status enum: pending/approved/rejected/applied, reviewed_by_user_id, reviewed_at, review_notes, applied_at).
+  - `RoleType.PLATFORM_ADMIN` added to enum; `RoleModel.is_platform_role: bool` flag; seed script for prosell internal operators; permission helper functions in domain layer.
+- **Backend endpoints**:
+  - `POST /api/v1/categories/{id}/schema/requests` (tenant admin creates request).
+  - `GET /api/v1/categories/{id}/schema/requests` (list requests for that category, visible to anyone with category access).
+  - `GET /api/v1/schema-requests?status=pending` (prosell superadmin cross-tenant inbox).
+  - `POST /api/v1/schema-requests/{id}/approve` (prosell superadmin only — marks approved + applies the proposed schema via the existing PATCH endpoint, writes to audit log).
+  - `POST /api/v1/schema-requests/{id}/reject` (prosell superadmin only — marks rejected with review_notes).
+- **Backend streaming** (>5000 rows): `POST /api/v1/products/bulk-upload/init` returns upload_id, client streams chunks to `PUT /api/v1/products/bulk-upload/{upload_id}/chunk`, final `POST /api/v1/products/bulk-upload/{upload_id}/finalize` triggers the same parser. Progress endpoint optional.
+- **Frontend UIs**:
+  - `/admin/categories/[id]/schema` for tenant admin → in addition to read-only, the placeholder "Request change" becomes a real form (proposed_attributes editor + justification textarea).
+  - `/admin/schema-requests` (prosell superadmin) → inbox of pending requests with side-by-side diff preview, approve/reject buttons, review_notes textarea.
+  - Notifications (email/in-app) for request lifecycle — could be email-only for MVP via the existing Resend integration.
+- **Testing**: Cross-tenant isolation tests (tenant A can't see tenant B's requests); permission tests (prosell superadmin only); streaming integration tests (if implemented).
+
+**G-2 non-goals** (explicit, to avoid bloat when that roadmap comes):
+- Schema marketplace (cloning across tenants, sharing between organizations).
+- Versioned schemas with rollback.
+- Granular per-attribute permissions.
 
 ## Risks
 
