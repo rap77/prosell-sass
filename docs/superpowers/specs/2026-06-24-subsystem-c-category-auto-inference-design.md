@@ -1,6 +1,6 @@
 # Design: Subsystem C — Category Auto-Inference on Create
 
-**Status:** IMPLEMENTED (PR #48 backend + #49 cross-tenant rename, merged 2026-06-24)
+**Status:** IMPLEMENTED (PR #48 backend + #49 cross-tenant rename, merged 2026-06-24; PR #55 frontend T6-T8, merged 2026-06-25)
 
 ## Scope
 

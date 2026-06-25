@@ -1,7 +1,7 @@
 # Roadmap: Generalize Catalog → Category-Driven Multi-Vertical Product Platform
 
 **Date:** 2026-06-06
-**Status:** COMPLETED — all 6 subsystems (0 Foundation, A, B, C, D, E) merged to main as of 2026-06-24. This roadmap document is retained as the index of how the work was decomposed.
+**Status:** COMPLETED — all 6 subsystems (0 Foundation, A, B, C, D, E) merged to main as of 2026-06-25 (Subsystem C frontend PR #55 was the last to land). This roadmap document is retained as the index of how the work was decomposed.
 
 ## Goal
 
