@@ -257,41 +257,6 @@ Source: [andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy
 - Transform tasks into verifiable goals (test-first).
 - State a brief plan with verify-steps for multi-step tasks.
 
-## Spec Status Lifecycle (MANDATORY)
-
-Every design spec in `docs/superpowers/specs/` MUST have a `**Status**:` line in
-its header with one of these values:
-
-| Status         | Meaning                                                             | Update trigger |
-|----------------|---------------------------------------------------------------------|----------------|
-| `DRAFT`        | Spec in writing, decisions not locked                               | Brainstorming in progress |
-| `APPROVED`     | Decisions locked, no PR open yet                                   | After brainstorm approval, before writing-plans |
-| `IN PROGRESS`  | PR open implementing the spec                                      | When opening the implementation PR |
-| `IMPLEMENTED`  | PR merged to `main` (PR ref + merge date)                          | When the implementation PR merges |
-| `COMPLETED`    | For roadmaps only: all dependent work merged                       | When the last dependent subsystem merges |
-| `SUPERSEDED`   | Replaced by a newer spec (link to successor)                       | When the newer spec is created |
-| `STALE`        | Items closed by other unrelated work (requires audit section)     | When other work subsumes the spec's items |
-
-### Enforcement
-
-1. **Pre-commit hook** `spec-status-required` runs `scripts/validate_spec_status.py`
-   on every commit that touches `docs/superpowers/specs/*.md`. Blocks commits
-   that are missing the Status field, have an invalid enum value, or (for STALE)
-   lack an audit section.
-2. **PR template** at `.github/PULL_REQUEST_TEMPLATE.md` has a "Spec status update"
-   checklist that catches the case where a PR implements a spec WITHOUT touching
-   the spec file directly (e.g., backend/frontend code that fulfills a design).
-3. **Validator script** at `scripts/validate_spec_status.py` can be run standalone
-   to audit the specs directory at any time.
-
-### When a PR implements a spec
-
-The PR author MUST update the spec's Status to `IMPLEMENTED (PR #<this>, merged <date>)`
-in the same PR that lands the work — or in a follow-up PR explicitly for the
-status update. The pre-commit hook enforces this only for direct spec file edits;
-the PR template enforces it for indirect implementation (code-only PRs that fulfill
-a design).
-
 ## Reference Documentation
 
 Detailed specs in `docs/`:
@@ -301,8 +266,3 @@ Detailed specs in `docs/`:
 - `02_REQUISITOS_PRD_PROSELL_SAAS_V2.md` - User stories, acceptance criteria
 - `04_ROADMAP_PROSELL_SAAS_V2.md` - Development phases
 - `PLAN-monorepo-setup.md` - Monorepo setup guide
-
-**Design specs (with Status lifecycle) live in `docs/superpowers/specs/`** —
-each spec has a `**Status**:` field in its header that's updated as work
-progresses (see "Spec Status Lifecycle" above). Run
-`python scripts/validate_spec_status.py` to audit.
