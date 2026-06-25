@@ -125,10 +125,19 @@ jobs:
       - name: Run tests
         run: pnpm --filter @prosell/web test:coverage
 
+  validate-specs:
+    name: Validate Spec Status
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate spec status lifecycle
+        run: python3 scripts/validate_spec_status.py
+
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint-python, lint-node, test-python, test-node]
+    needs: [lint-python, lint-node, test-python, test-node, validate-specs]
     steps:
       - uses: actions/checkout@v6
 
