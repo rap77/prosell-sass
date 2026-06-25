@@ -215,7 +215,7 @@ class TestLeadAssignmentFlowAPI:
     async def test_create_lead_auto_assigns_to_dealer(
         self,
         assignment_client: AssignmentClient,
-    ):
+    ) -> None:
         """
         POST /api/v1/leads without vendedor_id should auto-assign
         the lead to one of the dealers via LeadAssignmentRulesEngine.
@@ -245,14 +245,14 @@ class TestLeadAssignmentFlowAPI:
 
         # Assigned dealer must belong to the team we created
         dealer_ids = {str(d.id) for d in dealers}
-        assert (
-            data["vendedor_id"] in dealer_ids
-        ), f"Assigned vendedor {data['vendedor_id']} is not in the team's dealers: {dealer_ids}"
+        assert data["vendedor_id"] in dealer_ids, (
+            f"Assigned vendedor {data['vendedor_id']} is not in the team's dealers: {dealer_ids}"
+        )
 
     async def test_explicit_vendedor_id_is_respected(
         self,
         assignment_client: AssignmentClient,
-    ):
+    ) -> None:
         """
         When vendedor_id is explicitly provided in the POST body,
         the assignment engine must NOT override it.
@@ -282,7 +282,7 @@ class TestLeadAssignmentFlowAPI:
         assignment_client: AssignmentClient,
         db_session: AsyncSession,
         test_organization: OrganizationModel,
-    ):
+    ) -> None:
         """
         Creating multiple leads without vendedor_id should distribute
         them evenly across the 3 dealers via round-robin.
@@ -325,19 +325,19 @@ class TestLeadAssignmentFlowAPI:
         dealer_id_set = {d.id for d in dealers}
 
         # Only our 3 dealers should appear
-        assert (
-            set(counts.keys()) == dealer_id_set
-        ), f"Unexpected dealers in assignment. Got {counts.keys()}, expected {dealer_id_set}"
+        assert set(counts.keys()) == dealer_id_set, (
+            f"Unexpected dealers in assignment. Got {counts.keys()}, expected {dealer_id_set}"
+        )
 
         # Even distribution: 6 leads / 3 dealers = 2 each
-        assert all(
-            count == 2 for count in counts.values()
-        ), f"Round-robin should distribute leads evenly. Got distribution: {dict(counts)}"
+        assert all(count == 2 for count in counts.values()), (
+            f"Round-robin should distribute leads evenly. Got distribution: {dict(counts)}"
+        )
 
     async def test_lead_creation_response_contains_correct_fields(
         self,
         assignment_client: AssignmentClient,
-    ):
+    ) -> None:
         """
         The API response must include vendedor_id, status, tenant_id,
         and other core fields when auto-assignment runs.

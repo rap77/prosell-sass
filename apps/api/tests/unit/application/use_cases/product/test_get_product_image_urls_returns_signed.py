@@ -22,6 +22,7 @@ from prosell.application.dto.product.image_urls_response import (
     ProductImageUrlsResponse,
 )
 from prosell.application.use_cases.product.create_product import CreateProductUseCase
+from prosell.domain.entities.product import Product
 from prosell.domain.value_objects.product_condition import ProductCondition
 
 
@@ -70,9 +71,9 @@ class TestGetProductImageUrlsReturnsSigned:
         category_repo.get_by_id.return_value = mock_category
 
         product_repo = AsyncMock()
-        captured: list = []
+        captured: list[Product] = []
 
-        async def capture_create(entity):
+        async def capture_create(entity: Product) -> Product:
             captured.append(entity)
             return entity
 
@@ -113,8 +114,8 @@ class TestGetProductImageUrlsReturnsSigned:
             f"persisted.image_urls = {persisted.image_urls!r}"
         )
         for img in response.images:
-            assert (
-                "X-Amz-Signature" in img.url
-            ), f"Image URL must be signed (contain X-Amz-Signature). Got: {img.url}"
+            assert "X-Amz-Signature" in img.url, (
+                f"Image URL must be signed (contain X-Amz-Signature). Got: {img.url}"
+            )
         # Sanity: spaces was called once per image
         assert spaces.generate_download_url.await_count == len(image_urls)

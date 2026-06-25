@@ -84,8 +84,8 @@ class TestFacebookWebhookProcessingE2E:
         self,
         async_client: AsyncClient,
         webhook_app_secret: str,
-        caplog,
-    ):
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
         """Test that webhook calls ProcessFacebookWebhookUseCase (Critical Issue #1)."""
         # Arrange: Webhook payload
         tenant_id = str(uuid4())
@@ -114,21 +114,21 @@ class TestFacebookWebhookProcessingE2E:
         # Assert: ProcessFacebookWebhookUseCase was called
         # (This verifies Critical Issue #1 is fixed)
         # We check logs to verify the use case was executed
-        assert any(
-            "Processing Facebook webhook" in record.message for record in caplog.records
-        ), "ProcessFacebookWebhookUseCase should have been called"
-        assert any(
-            "leadgen_id=123456789" in record.message for record in caplog.records
-        ), "Use case should have received correct leadgen_id"
-        assert any(
-            "sender_id=111222333" in record.message for record in caplog.records
-        ), "Use case should have received correct sender_id"
+        assert any("Processing Facebook webhook" in record.message for record in caplog.records), (
+            "ProcessFacebookWebhookUseCase should have been called"
+        )
+        assert any("leadgen_id=123456789" in record.message for record in caplog.records), (
+            "Use case should have received correct leadgen_id"
+        )
+        assert any("sender_id=111222333" in record.message for record in caplog.records), (
+            "Use case should have received correct sender_id"
+        )
 
     async def test_webhook_returns_400_for_invalid_json(
         self,
         async_client: AsyncClient,
         webhook_app_secret: str,
-    ):
+    ) -> None:
         """Test that webhook returns 400 for invalid JSON (Critical Issue #8)."""
         # Arrange: Invalid JSON payload
         # We'll send malformed JSON that can't be parsed
@@ -175,8 +175,8 @@ class TestFacebookWebhookUseCasePhase2Behavior:
 
     async def test_webhook_use_case_skips_duplicate_check_when_no_email_phone(
         self,
-        db_session,
-    ):
+        db_session: AsyncSession,
+    ) -> None:
         """
         Test that duplicate detection is skipped when buyer_email and buyer_phone are None.
 
@@ -194,19 +194,20 @@ class TestFacebookWebhookUseCasePhase2Behavior:
         from prosell.infrastructure.repositories.publication_repository_impl import (
             SqlAlchemyPublicationRepository,
         )
-        from prosell.infrastructure.services.facebook_graph_api_client import (
-            FacebookGraphApiClient,
-        )
 
         # Arrange: Create use case with dependencies
         lead_repo = SqlAlchemyLeadRepository(db_session)
         publication_repo = SqlAlchemyPublicationRepository(db_session)
-        facebook_client = FacebookGraphApiClient()
         create_lead_use_case = CreateLeadUseCase(lead_repo)
         from unittest.mock import AsyncMock, MagicMock
 
+        from prosell.application.ports.facebook_buyer_profile_service import (
+            AbstractFacebookBuyerProfileService,
+        )
         from prosell.domain.ports.i_encryption_service import IEncryptionService
         from prosell.domain.repositories.facebook_page_repository import IFacebookPageRepository
+
+        facebook_client = AsyncMock(spec=AbstractFacebookBuyerProfileService)
 
         use_case = ProcessFacebookWebhookUseCase(
             lead_repository=lead_repo,

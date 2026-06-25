@@ -6,7 +6,6 @@ These tests validate the business logic of RequestPasswordResetUseCase
 and ResetPasswordUseCase, including token expiry, hash update, and
 validation rules.
 """
-# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportMissingParameterType=false, reportUnknownVariableType=false
 
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
@@ -58,20 +57,22 @@ class TestRequestPasswordResetUseCase:
     """Tests for RequestPasswordResetUseCase."""
 
     @pytest.fixture
-    def user_repo(self):
+    def user_repo(self) -> AsyncMock:
         r = AsyncMock()
         r.get_by_email = AsyncMock(return_value=None)
         r.create_verification_token = AsyncMock(return_value=None)
         return r
 
     @pytest.fixture
-    def email_service(self):
+    def email_service(self) -> AsyncMock:
         svc = AsyncMock()
         svc.send_password_reset = AsyncMock(return_value=None)
         return svc
 
     @pytest.mark.asyncio
-    async def test_request_reset_for_existing_user_sends_email(self, user_repo, email_service):
+    async def test_request_reset_for_existing_user_sends_email(
+        self, user_repo: AsyncMock, email_service: AsyncMock
+    ) -> None:
         """B1.1.42: User can request a password reset — email is sent."""
         existing_user = make_user("user@example.com")
         user_repo.get_by_email = AsyncMock(return_value=existing_user)
@@ -94,8 +95,8 @@ class TestRequestPasswordResetUseCase:
 
     @pytest.mark.asyncio
     async def test_request_reset_for_existing_user_returns_generic_message(
-        self, user_repo, email_service
-    ):
+        self, user_repo: AsyncMock, email_service: AsyncMock
+    ) -> None:
         """B1.1.42: Reset request returns generic message (security best practice)."""
         user_repo.get_by_email = AsyncMock(return_value=make_user())
         use_case = RequestPasswordResetUseCase(user_repo, email_service)
@@ -104,8 +105,8 @@ class TestRequestPasswordResetUseCase:
 
     @pytest.mark.asyncio
     async def test_request_reset_for_nonexistent_user_returns_same_message(
-        self, user_repo, email_service
-    ):
+        self, user_repo: AsyncMock, email_service: AsyncMock
+    ) -> None:
         """B1.1.42: Request for nonexistent email still returns generic message (no enumeration)."""
         user_repo.get_by_email = AsyncMock(return_value=None)
         use_case = RequestPasswordResetUseCase(user_repo, email_service)
@@ -125,29 +126,31 @@ class TestTokenExpiry:
     """B1.1.43: Token stored with 60-minute TTL."""
 
     @pytest.fixture
-    def user_repo(self):
+    def user_repo(self) -> AsyncMock:
         r = AsyncMock()
         r.get_by_email = AsyncMock(return_value=make_user())
         r.create_verification_token = AsyncMock(return_value=None)
         return r
 
     @pytest.fixture
-    def email_service(self):
+    def email_service(self) -> AsyncMock:
         svc = AsyncMock()
         svc.send_password_reset = AsyncMock(return_value=None)
         return svc
 
     @pytest.mark.asyncio
-    async def test_token_stored_with_60_minute_expiry(self, user_repo, email_service):
+    async def test_token_stored_with_60_minute_expiry(
+        self, user_repo: AsyncMock, email_service: AsyncMock
+    ) -> None:
         """B1.1.43: Token created with expires_in_minutes=60."""
         use_case = RequestPasswordResetUseCase(user_repo, email_service)
         await use_case.execute(RequestPasswordResetRequest(email="user@example.com"))
 
         user_repo.create_verification_token.assert_called_once()
         kwargs = user_repo.create_verification_token.call_args.kwargs
-        assert (
-            kwargs["expires_in_minutes"] == 60
-        ), "Token must expire after 60 minutes (1 hour) per security policy"
+        assert kwargs["expires_in_minutes"] == 60, (
+            "Token must expire after 60 minutes (1 hour) per security policy"
+        )
 
 
 # =============================================================================
@@ -159,7 +162,7 @@ class TestResetPasswordUseCase:
     """Tests for ResetPasswordUseCase."""
 
     @pytest.fixture
-    def user_repo(self):
+    def user_repo(self) -> AsyncMock:
         r = AsyncMock()
         r.get_by_password_reset_token = AsyncMock(return_value=None)
         r.consume_token = AsyncMock(return_value=True)
@@ -167,13 +170,15 @@ class TestResetPasswordUseCase:
         return r
 
     @pytest.fixture
-    def password_service(self):
+    def password_service(self) -> MagicMock:
         svc = MagicMock()
         svc.hash_password = MagicMock(return_value="$2b$12$newhashvalue")
         return svc
 
     @pytest.mark.asyncio
-    async def test_reset_password_with_valid_token_succeeds(self, user_repo, password_service):
+    async def test_reset_password_with_valid_token_succeeds(
+        self, user_repo: AsyncMock, password_service: MagicMock
+    ) -> None:
         """B1.1.44: User can reset password with valid token."""
         existing_user = make_user()
         user_repo.get_by_password_reset_token = AsyncMock(return_value=existing_user)
@@ -195,8 +200,8 @@ class TestResetPasswordUseCase:
 
     @pytest.mark.asyncio
     async def test_reset_password_with_invalid_token_raises_value_error(
-        self, user_repo, password_service
-    ):
+        self, user_repo: AsyncMock, password_service: MagicMock
+    ) -> None:
         """B1.1.45: Invalid or expired token raises ValueError (→ 400)."""
         user_repo.get_by_password_reset_token = AsyncMock(return_value=None)
 
@@ -209,8 +214,8 @@ class TestResetPasswordUseCase:
 
     @pytest.mark.asyncio
     async def test_reset_password_expired_token_raises_value_error(
-        self, user_repo, password_service
-    ):
+        self, user_repo: AsyncMock, password_service: MagicMock
+    ) -> None:
         """B1.1.45: Expired token (repo returns None) raises ValueError."""
         # When token is expired, the repo returns None (same as invalid)
         user_repo.get_by_password_reset_token = AsyncMock(return_value=None)
@@ -227,7 +232,9 @@ class TestResetPasswordUseCase:
     # =========================================================================
 
     @pytest.mark.asyncio
-    async def test_reset_password_updates_hash_to_new_value(self, user_repo, password_service):
+    async def test_reset_password_updates_hash_to_new_value(
+        self, user_repo: AsyncMock, password_service: MagicMock
+    ) -> None:
         """B1.1.46: Password hash is updated to the new value after reset."""
         original_hash = "$2b$12$existinghashplaceholder"
         new_hash = "$2b$12$newhashvalue"
@@ -242,9 +249,9 @@ class TestResetPasswordUseCase:
         await use_case.execute(ResetPasswordRequest(token="valid-token", new_password="NewPass1!"))
 
         # The user entity's password_hash must have been updated
-        assert (
-            user.password_hash == new_hash
-        ), "Password hash must be updated to new value after reset"
+        assert user.password_hash == new_hash, (
+            "Password hash must be updated to new value after reset"
+        )
 
     # =========================================================================
     # B1.1.47 — Test password successfully updates hash
@@ -252,8 +259,8 @@ class TestResetPasswordUseCase:
 
     @pytest.mark.asyncio
     async def test_password_service_hash_is_called_with_new_password(
-        self, user_repo, password_service
-    ):
+        self, user_repo: AsyncMock, password_service: MagicMock
+    ) -> None:
         """B1.1.47: password_service.hash_password called with the new password."""
         existing_user = make_user()
         user_repo.get_by_password_reset_token = AsyncMock(return_value=existing_user)
@@ -265,7 +272,9 @@ class TestResetPasswordUseCase:
         password_service.hash_password.assert_called_once_with("BrandNew1!")
 
     @pytest.mark.asyncio
-    async def test_token_consumed_after_successful_reset(self, user_repo, password_service):
+    async def test_token_consumed_after_successful_reset(
+        self, user_repo: AsyncMock, password_service: MagicMock
+    ) -> None:
         """B1.1.47: Token is consumed (single-use) after successful reset."""
         existing_user = make_user()
         user_repo.get_by_password_reset_token = AsyncMock(return_value=existing_user)
@@ -278,7 +287,9 @@ class TestResetPasswordUseCase:
         user_repo.consume_token.assert_called_once_with("one-time-token")
 
     @pytest.mark.asyncio
-    async def test_user_record_updated_in_repository(self, user_repo, password_service):
+    async def test_user_record_updated_in_repository(
+        self, user_repo: AsyncMock, password_service: MagicMock
+    ) -> None:
         """B1.1.47: Updated user is persisted to the repository."""
         existing_user = make_user()
         user_repo.get_by_password_reset_token = AsyncMock(return_value=existing_user)
