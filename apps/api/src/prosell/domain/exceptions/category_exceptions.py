@@ -23,6 +23,15 @@ class CategoryNotFoundError(CategoryError):
         super().__init__(f"Category not found: {category_id}")
 
 
+class SchemaMigrationRequiresForceError(CategoryError):
+    """Raised when a schema change has breaking migrations that require ?force=true."""
+
+    def __init__(self, warnings: list[str], requires_force: bool = True) -> None:
+        self.warnings = warnings
+        self.requires_force = requires_force
+        super().__init__(f"Schema migration requires ?force=true: {'; '.join(warnings)}")
+
+
 class CategoryCircularReferenceError(CategoryError):
     """Raised when attempting to create a circular reference in category hierarchy."""
 
