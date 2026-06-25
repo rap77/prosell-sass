@@ -30,6 +30,20 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
 
+      # ============================================
+      # Spec Status Lifecycle enforcement — every spec in
+      # docs/superpowers/specs/ MUST have a valid **Status**: field.
+      # Catches drift between design and implementation state.
+      # See CLAUDE.md "Spec Status Lifecycle" for the convention.
+      # ============================================
+      - id: spec-status-required
+        name: spec status required
+        entry: python3 scripts/validate_spec_status.py
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+        files: ^docs/superpowers/specs/.*\.md$
+
   # ============================================
   # Python - Ruff (lint + format)
   # ============================================
