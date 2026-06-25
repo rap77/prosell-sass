@@ -87,6 +87,9 @@ is_allowed() {
         # init-test-db.py runs only against the local test container
         # (postgres on port 5433, see docker/docker-compose.yml).
         scripts/init-test-db.py) return 0 ;;
+        # create_test_schema.py bootstraps the same local test container's
+        # schema for CI/local integration runs -- same dev-only credential.
+        apps/api/scripts/create_test_schema.py) return 0 ;;
     esac
     return 1
 }

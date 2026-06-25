@@ -13,6 +13,7 @@ from prosell.domain.entities.organization_invitation import OrganizationInvitati
 from prosell.domain.entities.user import User
 from prosell.infrastructure.api.main import app
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.models.role_model import RoleModel
 from prosell.infrastructure.repositories.organization_invitation_repository_impl import (
     SqlAlchemyOrganizationInvitationRepository,
 )
@@ -42,13 +43,16 @@ async def unauthenticated_client(db_session: AsyncSession) -> AsyncGenerator[Asy
 @pytest_asyncio.fixture
 async def pending_dealer_invitation(
     db_session: AsyncSession,
+    system_roles: dict[str, RoleModel],  # noqa: ARG001
 ) -> tuple[str, OrganizationInvitation]:
     """A real PENDING_VERIFICATION Organization + a real pending invitation for it.
 
     Organization.create() defaults to PENDING_VERIFICATION (not the generic
     `test_organization` fixture, which is seeded as already "active") --
     accept_org_invitation calls organization.verify(), which raises unless
-    the org starts PENDING_VERIFICATION.
+    the org starts PENDING_VERIFICATION. Also depends on `system_roles`: the
+    use case assigns the ADMIN role to the new owner, which raises ValueError
+    if that role hasn't been seeded yet.
     """
     staff_id = uuid4()
     tenant_id = uuid4()
