@@ -56,23 +56,32 @@ VALID_STATUSES: frozenset[str] = frozenset(
 STATUS_LINE_RE = re.compile(r"^\s*\*+\s*[Ss]tatus[^\n]*?([A-Z][A-Z][A-Z][A-Z ]*?)\b")
 
 
-def _read_header(file_path: Path, line_limit: int = 30) -> list[str]:
+def _check_status_line(file_path: Path) -> tuple[str | None, int | None, list[int]]:
+    """Return (status_value_uppercased, line_no, duplicate_line_nos).
+
+    Scans all lines so duplicate **Status**: entries outside the header are caught.
+    """
     try:
-        text = file_path.read_text(encoding="utf-8")
-    except OSError as exc:
-        print(f"  ! {file_path}: could not read ({exc})", file=sys.stderr)
-        return []
-    return text.splitlines()[:line_limit]
+        lines = file_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None, None, []
 
+    header_value: str | None = None
+    header_line: int | None = None
+    duplicates: list[int] = []
 
-def _check_status_line(file_path: Path) -> tuple[str | None, int | None]:
-    """Return (status_value_uppercased, line_no) or (None, None)."""
-    for line_no, line in enumerate(_read_header(file_path), start=1):
+    for line_no, line in enumerate(lines, start=1):
         m = STATUS_LINE_RE.match(line)
-        if m:
-            value = m.group(1).strip().upper()
-            return value, line_no
-    return None, None
+        if not m:
+            continue
+        value = m.group(1).strip().upper()
+        if header_line is None and line_no <= 30:
+            header_value = value
+            header_line = line_no
+        elif header_line is not None:
+            duplicates.append(line_no)
+
+    return header_value, header_line, duplicates
 
 
 def _has_audit_section(file_path: Path) -> bool:
@@ -88,7 +97,7 @@ def _has_audit_section(file_path: Path) -> bool:
 
 def _validate_one(file_path: Path) -> list[str]:
     errors: list[str] = []
-    status, line_no = _check_status_line(file_path)
+    status, line_no, duplicates = _check_status_line(file_path)
 
     if line_no is None:
         return [f"{file_path}: missing `**Status**: <value>` line in first 30 lines"]
@@ -103,6 +112,12 @@ def _validate_one(file_path: Path) -> list[str]:
         errors.append(
             f"{file_path}:{line_no}: status '{status}' is not valid. "
             f"Allowed: {', '.join(sorted(VALID_STATUSES))}"
+        )
+
+    if duplicates:
+        errors.append(
+            f"{file_path}: duplicate `**Status**:` line(s) found outside header "
+            f"at line(s) {duplicates} — only the header (first 30 lines) is authoritative"
         )
 
     if status == "STALE" and not _has_audit_section(file_path):
