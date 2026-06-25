@@ -8,32 +8,27 @@
  * - Error handling with ApiError
  */
 
+import type { z } from "zod";
+import {
+  TeamSchema,
+  TeamMemberSchema,
+  TeamListResponseSchema,
+  type Team,
+  type TeamMember,
+  type TeamMemberRole,
+  type TeamListResponse,
+} from "./schemas/teamApi";
+
+export type {
+  TeamMemberRole,
+  TeamMember,
+  Team,
+  TeamListResponse,
+} from "./schemas/teamApi";
+
 // ============================================
 // TYPES (matching backend Pydantic DTOs)
 // ============================================
-
-export type TeamMemberRole = "manager" | "vendor";
-
-export interface TeamMember {
-  id: string;
-  team_id: string;
-  user_id: string;
-  tenant_id: string;
-  role: TeamMemberRole;
-  commission_rate: number | null;
-  joined_at: string;
-}
-
-export interface Team {
-  id: string;
-  name: string;
-  tenant_id: string;
-  organization_id: string;
-  created_at: string;
-  updated_at: string;
-  members?: TeamMember[];
-  member_count?: number;
-}
 
 export interface CreateTeamRequest {
   name: string;
@@ -68,13 +63,6 @@ export interface TeamInvitation {
   days_until_expiration: number;
 }
 
-export interface TeamListResponse {
-  teams: Team[];
-  total: number;
-  skip: number;
-  limit: number;
-}
-
 // ============================================
 // API CLIENT CONFIGURATION
 // ============================================
@@ -97,18 +85,27 @@ export class ApiError extends Error {
   }
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
+async function handleResponse<T>(
+  response: Response,
+  schema: z.ZodType<T>,
+): Promise<T> {
   if (!response.ok) {
     const errorData = await response
       .json()
       .catch(() => ({ detail: "Error desconocido" }));
-    throw new ApiError(
-      errorData.detail || errorData.message || "Error en la petición",
-      response.status,
-    );
+    let message: string;
+    if (Array.isArray(errorData.detail)) {
+      message = errorData.detail.map((e: { msg: string }) => e.msg).join(", ");
+    } else if (typeof errorData.detail === "string") {
+      message = errorData.detail;
+    } else {
+      message = errorData.message || "Error en la petición";
+    }
+
+    throw new ApiError(message, response.status);
   }
 
-  return response.json() as Promise<T>;
+  return schema.parse(await response.json());
 }
 
 // ============================================
@@ -130,7 +127,7 @@ export const teamApi = {
       credentials: "include",
     });
 
-    return handleResponse<Team>(response);
+    return handleResponse(response, TeamSchema);
   },
 
   /**
@@ -160,7 +157,7 @@ export const teamApi = {
       credentials: "include",
     });
 
-    return handleResponse<TeamListResponse>(response);
+    return handleResponse(response, TeamListResponseSchema);
   },
 
   /**
@@ -179,7 +176,7 @@ export const teamApi = {
       credentials: "include",
     });
 
-    return handleResponse<Team>(response);
+    return handleResponse(response, TeamSchema);
   },
 
   /**
@@ -196,7 +193,7 @@ export const teamApi = {
       credentials: "include",
     });
 
-    return handleResponse<Team>(response);
+    return handleResponse(response, TeamSchema);
   },
 
   /**
@@ -222,7 +219,7 @@ export const teamApi = {
       },
     );
 
-    return handleResponse<TeamMember>(response);
+    return handleResponse(response, TeamMemberSchema);
   },
 
   /**
@@ -244,6 +241,6 @@ export const teamApi = {
       },
     );
 
-    return handleResponse<TeamMember>(response);
+    return handleResponse(response, TeamMemberSchema);
   },
 };

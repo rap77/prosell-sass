@@ -8,33 +8,23 @@
  * - Error handling with ApiError
  */
 
+import type { z } from "zod";
+import {
+  OrganizationSchema,
+  OrganizationListResponseSchema,
+  type Organization,
+  type OrganizationListResponse,
+} from "./schemas/orgApi";
+
+export type {
+  OrganizationStatus,
+  Organization,
+  OrganizationListResponse,
+} from "./schemas/orgApi";
+
 // ============================================
 // TYPES (matching backend Pydantic DTOs)
 // ============================================
-
-export type OrganizationStatus =
-  | "pending_verification"
-  | "active"
-  | "suspended"
-  | "rejected";
-
-export interface Organization {
-  id: string;
-  name: string;
-  tenant_id: string;
-  status: OrganizationStatus;
-  logo_url: string | null;
-  banner_url: string | null;
-  description: string | null;
-  website: string | null;
-  phone: string | null;
-  wallet_id: string | null;
-  setup_complete: boolean;
-  created_at: string;
-  updated_at: string;
-  verified_at: string | null;
-  verified_by: string | null;
-}
 
 export interface CreateOrganizationRequest {
   name: string;
@@ -51,13 +41,6 @@ export interface UpdateOrganizationRequest {
   phone?: string;
   logo_url?: string;
   banner_url?: string;
-}
-
-export interface OrganizationListResponse {
-  organizations: Organization[];
-  total: number;
-  page: number;
-  page_size: number;
 }
 
 // ============================================
@@ -82,18 +65,27 @@ export class ApiError extends Error {
   }
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
+async function handleResponse<T>(
+  response: Response,
+  schema: z.ZodType<T>,
+): Promise<T> {
   if (!response.ok) {
     const errorData = await response
       .json()
       .catch(() => ({ detail: "Error desconocido" }));
-    throw new ApiError(
-      errorData.detail || errorData.message || "Error en la petición",
-      response.status,
-    );
+    let message: string;
+    if (Array.isArray(errorData.detail)) {
+      message = errorData.detail.map((e: { msg: string }) => e.msg).join(", ");
+    } else if (typeof errorData.detail === "string") {
+      message = errorData.detail;
+    } else {
+      message = errorData.message || "Error en la petición";
+    }
+
+    throw new ApiError(message, response.status);
   }
 
-  return response.json() as Promise<T>;
+  return schema.parse(await response.json());
 }
 
 // ============================================
@@ -115,7 +107,7 @@ export const orgApi = {
       credentials: "include",
     });
 
-    return handleResponse<Organization>(response);
+    return handleResponse(response, OrganizationSchema);
   },
 
   /**
@@ -141,7 +133,7 @@ export const orgApi = {
       credentials: "include",
     });
 
-    return handleResponse<OrganizationListResponse>(response);
+    return handleResponse(response, OrganizationListResponseSchema);
   },
 
   /**
@@ -154,7 +146,7 @@ export const orgApi = {
       credentials: "include",
     });
 
-    return handleResponse<Organization>(response);
+    return handleResponse(response, OrganizationSchema);
   },
 
   /**
@@ -170,7 +162,7 @@ export const orgApi = {
       },
     );
 
-    return handleResponse<Organization>(response);
+    return handleResponse(response, OrganizationSchema);
   },
 
   /**
@@ -190,7 +182,7 @@ export const orgApi = {
       credentials: "include",
     });
 
-    return handleResponse<Organization>(response);
+    return handleResponse(response, OrganizationSchema);
   },
 
   /**
@@ -207,7 +199,7 @@ export const orgApi = {
       credentials: "include",
     });
 
-    return handleResponse<Organization>(response);
+    return handleResponse(response, OrganizationSchema);
   },
 
   /**
@@ -228,7 +220,7 @@ export const orgApi = {
       credentials: "include",
     });
 
-    return handleResponse<Organization>(response);
+    return handleResponse(response, OrganizationSchema);
   },
 
   /**
@@ -242,7 +234,7 @@ export const orgApi = {
       credentials: "include",
       body: JSON.stringify({ setup_complete: true }),
     });
-    return handleResponse<Organization>(response);
+    return handleResponse(response, OrganizationSchema);
   },
 
   /**
@@ -258,6 +250,6 @@ export const orgApi = {
       credentials: "include",
     });
 
-    return handleResponse<Organization>(response);
+    return handleResponse(response, OrganizationSchema);
   },
 };
