@@ -1,7 +1,7 @@
 # Subsystem B — Dynamic Filters (Design Spec)
 
 **Date:** 2026-06-17
-**Status:** Design approved (brainstorming) → ready for implementation plan
+**Status:** IMPLEMENTED (PR #39, merged 2026-06-19)
 **Roadmap:** `docs/superpowers/specs/2026-06-06-product-platform-roadmap.md` (Subsystem B)
 **Depends on:** Foundation (Subsystem 0, MERGED — PRs #10/#13) + Subsystem A (MERGED — PR #34/#36)
 

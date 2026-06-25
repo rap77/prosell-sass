@@ -1,5 +1,7 @@
 # Subsystem A — Generic ProductCard (Presentation) — Design
 
+**Status:** IMPLEMENTED (PR #34 + #36, merged 2026-06-17)
+
 > Part of the product-platform generalization roadmap
 > (`docs/superpowers/specs/2026-06-06-product-platform-roadmap.md`).
 > Depends on: **Subsystem 0 — Foundation** (merged, PR #10 + #13).
@@ -181,3 +183,15 @@ double separators when a field is missing, literals preserved.
 5. The pure `ProductCard` component
 
 Table (Subsystem B-adjacent) and detail slices consume 1–4 directly.
+
+## Out of scope (YAGNI — explicit)
+
+Subsystem A deliberately limits itself to the **catalog grid card**. The following are tracked in other subsystems / specs:
+
+- **Catalog table view** (DataGrid) — still vehicle-shaped on the type level (interface `Vehicle` in `apps/web/src/components/datagrid/`). Full generalization is the residual cleanup tracked in [`2026-06-17-subsystem-a-residual-vehicle-coupling-debt.md`](2026-06-17-subsystem-a-residual-vehicle-coupling-debt.md). Closed by PR `c87cd4ce` (Vehicle→ProductRow rename).
+- **Product detail page** — separate slice, consumes the same primitives 1-4 from this spec. Not part of Subsystem A.
+- **Dynamic product create/edit form** — Subsystem A only handles display (card). Dynamic form based on `attribute_schema` lives in the bulk upload spec ([`2026-06-25-bulk-upload-category-generalization-design.md`](2026-06-25-bulk-upload-category-generalization-design.md)) and in the individual create form refactor (deferred).
+- **Bulk upload generalization for arbitrary categories** — separate roadmap (G-1 in the bulk upload spec).
+- **Card click-through analytics** — no event tracking on card hover/click in this slice.
+- **A/B testing of card layouts** — single design per vertical, no experimentation infra.
+- **i18n of presentation strings** — labels are stored as-is in `attribute_schema.label`; no runtime locale switching.

@@ -1,5 +1,7 @@
 # Design: Subsystem C — Category Auto-Inference on Create
 
+**Status:** IMPLEMENTED (PR #48 backend + #49 cross-tenant rename, merged 2026-06-24)
+
 ## Scope
 
 Reduces friction in the product create flow by inferring the most likely

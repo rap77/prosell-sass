@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-03
 **Author**: Rafael Padrón + Claude
-**Status**: Approved - Ready for Implementation
+**Status**: SUPERSEDED by [v2](2026-04-03-contract-testing-skill-design-v2.md) — preserved for historical reference
 **Type**: Technical Design Specification
 
 ---

@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-11
 **Branch:** `feat/email-resend-migration`
-**Status:** Design approved — pending spec review
+**Status:** IMPLEMENTED (PR #18, merged 2026-06-13)
 
 ## Context
 

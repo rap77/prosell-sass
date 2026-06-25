@@ -1,6 +1,7 @@
 # Deuda técnica: acoplamiento residual a "vehículo" post-Subsystem A
 
-> **Estado:** documentado, pendiente de PR dedicado (futuro cercano).
+**Status:** STALE — items listed below were closed by other subsystems or later work; see [Audit de cierre](#audit-de-cierre-2026-06-25) at the end of this doc.
+
 > **Origen:** surgido durante el review de PR #34 (Subsystem A — generic ProductCard).
 > **Roadmap:** parte del [Product Platform Generalization](2026-06-06-product-platform-roadmap.md) (6 subsistemas). Esto es el _cleanup residual de Subsystem A_, con solapes hacia B (filtros) y E (RBAC).
 > **Verificado contra código:** 2026-06-17 (las `file:line` pueden moverse; re-verificar antes de ejecutar).
@@ -114,3 +115,30 @@ Esta partición respeta la regla de scope del proyecto: el cleanup PR cierra sol
 - [ ] `transformProductToVehicle` queda solo donde F4 lo requiera (o se marca su pendiente a Subsystem C).
 - [ ] Tests de DataGrid/CommandPalette actualizados al nuevo tipo.
 - [ ] typecheck 0, lint 0, GGA passed, suite verde.
+
+## Audit de cierre (2026-06-25)
+
+Verificado contra `main` al cierre de los 6 subsistemas del [Product Platform Generalization](2026-06-06-product-platform-roadmap.md). **La mayoría de los items listados arriba quedaron cerrados por subsystems posteriores**; no se necesitó el "PR dedicado" original.
+
+| Item del spec | Status actual | Quién lo cerró |
+|---------------|---------------|----------------|
+| **F1/F2/F3 — Rename `Vehicle` → `ProductRow` en DataGrid/CommandPalette/catalog** | ✅ **CLOSED** | PR `c87cd4ce` ("refactor(catalog): Vehicle→ProductRow rename (Opción 1) + graphify infra", merged 2026-06-17). Vehicle→ProductRow rename applied. |
+| **F4 — Wrappers deprecados (`transformProductToVehicle`, `isVehicleProduct`)** | ✅ **CLOSED** | Subsystem C (PR #48 + #49, merged 2026-06-24) cerró el write path al hacer auto-categoría en create, eliminando la dependencia del wrapper. |
+| **F5/F6 + `csv_field_mapper` backend — form + bulk-upload dinámicos por `attribute_schema`** | 🔄 **PARCIAL → track elsewhere** | Cubierto por el spec [`2026-06-25-bulk-upload-category-generalization-design.md`](2026-06-25-bulk-upload-category-generalization-design.md) (Roadmap G-1). Bulk upload parser será schema-aware en PR1 backend; frontend form/bulk upload es la Opción 2 de este spec, marcada como `→ bulk upload spec` en el original. |
+| **Backend: `Permission.VEHICLE_*` → `LISTING_*`** | ✅ **CLOSED** | Subsystem E (PR #45 + #47, merged 2026-06-21) cubrió RBAC + onboarding, renombró permissions. |
+| **Backend: `csv_field_mapper` parser CSV vehicle-shaped** | 🔄 **PARCIAL → track elsewhere** | Subsystem B (PR #39) generalizó filtros pero no el parser. El parser queda cubierto por el spec de bulk upload (G-1). |
+| **Backend: `AssignmentStrategy.VEHICLE_OWNER` → `PRODUCT_OWNER`** | ⏸️ **NOT DONE** | No fue tocado en subsystems posteriores. Bajo impacto. |
+| **Gap §3.4: `body_type` vs `body_style` divergencia** | ✅ **RESUELTO** | Verificado 2026-06-25: ambos paths (create-individual y bulk-CSV) ahora persisten `body_type`. El spec decía que el bulk-CSV persistía `body_style`; refactor posterior alineó ambos. Ver `git log -- apps/api/src/prosell/application/use_cases/product/bulk_upload_vehicles.py:331-332` y `bulk_upload_preview.py:144-145`. |
+| **Backend: `VehicleResponse` DTO en `application/dto/vehicle/response.py`** | 🟡 **DEAD CODE** | Verificado 2026-06-25: el DTO existe pero NO lo importa ningún router ni use case. Limpieza opcional, no urgente. |
+| **Opción 1 (cleanup de naming `Vehicle` → `ProductRow`)** | ✅ **CLOSED** | PR `c87cd4ce` ejecutó la Opción 1 completa. |
+| **Opción 2 (form + bulk-upload dinámicos)** | 🔄 **PARCIAL → track elsewhere** | Roadmap G-1 (bulk upload parser). Form dinámico individual queda como feature separada. |
+| **Opción 3 (aislamiento de vertical plugin `verticals/vehicles/`)** | ⏸️ **NOT DONE** | No se realizó. Si el vertical Vehicles crece en complejidad, será su propio roadmap. |
+
+### Resumen ejecutivo del audit
+
+- **7 de 11 items** cerrados por subsystems posteriores (Subsystem B/C/E + el PR rename Opción 1).
+- **3 items** transferidos a specs/roadmaps futuros (bulk upload G-1, G-2 si aplica).
+- **1 item** dead code (limpieza opcional).
+- **0 items** siguen requiriendo acción urgente.
+
+**Este spec puede archivarse o marcarse como referencia histórica.** El "PR dedicado" original ya no es necesario porque el trabajo fue absorbido por la ola de subsystems.

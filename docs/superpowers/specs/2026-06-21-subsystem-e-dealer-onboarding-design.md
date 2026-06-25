@@ -1,5 +1,7 @@
 # Design: Subsystem E — Dealer Onboarding (Org + Owner Invite + Verticals)
 
+**Status:** IMPLEMENTED (PR #45 backend + #47 end-to-end, merged 2026-06-21)
+
 ## Scope
 
 Covers only the onboarding flow from the roadmap's Subsystem E line: an internal

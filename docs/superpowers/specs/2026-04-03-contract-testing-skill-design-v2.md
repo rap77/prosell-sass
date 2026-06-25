@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-03
 **Author**: Rafael Padrón + Claude
-**Status**: Updated - Iterative Agent Architecture
+**Status**: IMPLEMENTED — skill installed at `.skills/contract-testing/` (PR ref pre-history, not in local git)
 **Type**: Technical Design Specification
 
 ---

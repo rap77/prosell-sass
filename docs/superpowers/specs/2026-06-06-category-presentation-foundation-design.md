@@ -1,7 +1,7 @@
 # Foundation: Category-Driven Presentation Model
 
 **Date:** 2026-06-06
-**Status:** Approved (design) — pending implementation plan
+**Status:** IMPLEMENTED (PR #10 + #13, merged 2026-06-10)
 **Scope:** Backend / domain foundation. This is subsystem **0** — the base that subsystems A–E depend on.
 
 ---

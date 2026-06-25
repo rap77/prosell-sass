@@ -1,5 +1,7 @@
 # Storage Optimization — Design
 
+**Status:** IMPLEMENTED (PR #14 + #15 + #23, merged 2026-06-11/13)
+
 > Cross-cutting cost optimization. **Not** part of Subsystem A (the generic
 > ProductCard, parked at
 > `docs/superpowers/specs/2026-06-09-subsystem-a-productcard-design.md`).
