@@ -17,6 +17,10 @@ from prosell.application.dto.product.bulk_upload import (
     PreviewSummaryResponse,
     VehicleImportRowResponse,
 )
+from prosell.application.dto.product.bulk_upload_result import (
+    BulkUploadRowError,
+    BulkUploadUploadResult,
+)
 from prosell.application.dto.product.create import CreateProductRequest
 from prosell.application.dto.product.image_urls_response import (
     ProductImageUrlResponse,
@@ -29,6 +33,8 @@ from prosell.application.dto.product.update import UpdateProductRequest
 __all__ = [
     # Request/Response models
     "BulkUploadPreviewResponse",
+    "BulkUploadRowError",
+    "BulkUploadUploadResult",
     "BulkUploadVehiclesResponse",
     "CreateProductRequest",
     # Attribute models
