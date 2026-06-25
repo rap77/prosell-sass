@@ -29,6 +29,7 @@ def _root_category(
     required_attrs: dict[str, dict[str, object]] | None = None,
     description: str | None = None,
 ) -> Category:
+    schema = required_attrs or {}
     return Category(
         id=uuid4(),
         tenant_id=None,
@@ -39,10 +40,14 @@ def _root_category(
         is_active=True,
         description=description,
         field_config=[
-            {"field_name": fn, "field_label": fn, "field_type": "string"}
+            {
+                "field_name": fn,
+                "field_label": fn,
+                "field_type": schema.get(fn, {}).get("type", "string"),
+            }
             for fn in (field_names or [])
         ],
-        attribute_schema=required_attrs or {},
+        attribute_schema=schema,
     )
 
 
