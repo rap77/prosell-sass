@@ -58,7 +58,7 @@
     --ps-text-primary: #f0f4ff;
     --ps-text-secondary: #8a9bbf;
     --ps-text-tertiary: #7384ad;
-    --ps-text-disabled: #3d4f72;
+    --ps-text-disabled: #8598be; /* WCAG AA 4.5:1+ vs all dark surfaces (was #3d4f72 @ 2.35:1) */
 
     --ps-success: #22d3a0;
     --ps-warning: #f5a623;
@@ -191,7 +191,7 @@
     --ps-text-primary: #0e1730;
     --ps-text-secondary: #4e5c7e;
     --ps-text-tertiary: #646f8e;
-    --ps-text-disabled: #94a0bd;
+    --ps-text-disabled: #5e6f98; /* WCAG AA 4.5:1+ vs all light surfaces (was #94a0bd @ 2.4:1) */
 
     --ps-success: #067a52;
     --ps-warning: #a85508;
