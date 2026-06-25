@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchWithAuth } from "@/lib/api/fetchWithAuth";
+import { logger } from "@/lib/logger";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import {
   CategoryInferenceResponseSchema,
@@ -50,15 +51,14 @@ export function useInferCategory(
         await res.json(),
       );
       if (!parsed.success) {
-        console.error(
-          "useInferCategory: invalid response shape",
-          parsed.error.message,
-        );
+        logger.error("useInferCategory: invalid response shape", {
+          error: parsed.error.message,
+        });
         return NO_SUGGESTION;
       }
       return parsed.data;
     },
-    enabled: options.enabled ?? false,
+    enabled: (options.enabled ?? false) && debouncedTitle.length > 0,
     staleTime: 30_000,
   });
 
