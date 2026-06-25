@@ -10,15 +10,14 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import {
+  AppointmentStatus,
+  BackendAppointmentResponseSchema,
+  BackendAppointmentListResponseSchema,
+  type BackendAppointmentResponse,
+} from "@/lib/api/schemas/appointments";
 
-/**
- * Appointment status enum - 3-state lifecycle
- */
-export enum AppointmentStatus {
-  SCHEDULED = "scheduled",
-  COMPLETED = "completed",
-  CANCELLED = "cancelled",
-}
+export { AppointmentStatus };
 
 /**
  * Appointment entity
@@ -56,32 +55,6 @@ export interface UpdateAppointmentStatusRequest {
 
 export interface UpdateAppointmentStatusVariables extends UpdateAppointmentStatusRequest {
   appointmentId: string;
-}
-
-/**
- * Backend appointment response
- */
-interface BackendAppointmentResponse {
-  id: string;
-  tenant_id: string;
-  lead_id: string;
-  user_id: string;
-  product_id: string;
-  scheduled_at: string;
-  status: AppointmentStatus;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-/**
- * Backend appointment list response
- */
-interface BackendAppointmentListResponse {
-  items: BackendAppointmentResponse[];
-  total: number;
-  limit: number;
-  offset: number;
 }
 
 interface ApiError extends Error {
@@ -143,7 +116,7 @@ export function useAppointments(
         throw new Error(error.message || "Failed to fetch appointments");
       }
 
-      const data = (await res.json()) as BackendAppointmentListResponse;
+      const data = BackendAppointmentListResponseSchema.parse(await res.json());
       return data.items.map(transformAppointment);
     },
     staleTime: 30 * 1000, // 30 seconds
@@ -157,7 +130,7 @@ export function useAppointments(
 export function useCreateAppointment() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<Appointment, ApiError, CreateAppointmentRequest>({
     mutationFn: async (request: CreateAppointmentRequest) => {
       const res = await fetch("/api/v1/appointments", {
         method: "POST",
@@ -179,7 +152,7 @@ export function useCreateAppointment() {
         throw err;
       }
 
-      const data = (await res.json()) as BackendAppointmentResponse;
+      const data = BackendAppointmentResponseSchema.parse(await res.json());
       return transformAppointment(data);
     },
     onSuccess: () => {
@@ -194,8 +167,7 @@ export function useCreateAppointment() {
     },
     onError: (error) => {
       // A4.33: Don't show toast for validation/conflict errors (handled by form)
-      const err = error as ApiError;
-      if (err.status !== 400 && err.status !== 409) {
+      if (error.status !== 400 && error.status !== 409) {
         toast.error(error.message || "Failed to schedule appointment");
       }
     },
@@ -231,7 +203,7 @@ export function useUpdateAppointmentStatus() {
         throw new Error(error.message || "Failed to update appointment status");
       }
 
-      const data = (await res.json()) as BackendAppointmentResponse;
+      const data = BackendAppointmentResponseSchema.parse(await res.json());
       return transformAppointment(data);
     },
     onSuccess: () => {

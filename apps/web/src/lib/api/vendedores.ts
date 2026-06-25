@@ -4,6 +4,10 @@
  */
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import {
+  BackendVendedorListResponseSchema,
+  type BackendVendedorResponse,
+} from "@/lib/api/schemas/vendedores";
 
 /**
  * Vendedor entity
@@ -13,30 +17,6 @@ export interface Vendedor {
   name: string;
   email: string;
   role: string;
-}
-
-/**
- * Backend vendedor response
- */
-interface BackendVendedorResponse {
-  id: string;
-  user_id: string;
-  tenant_id: string;
-  name: string;
-  email: string;
-  role: string;
-  created_at: string;
-  updated_at: string;
-}
-
-/**
- * Backend vendedor list response
- */
-interface BackendVendedorListResponse {
-  items: BackendVendedorResponse[];
-  total: number;
-  limit: number;
-  offset: number;
 }
 
 /**
@@ -77,7 +57,7 @@ export function useVendedores(
         throw new Error(error.message || "Failed to fetch vendedores");
       }
 
-      const data = (await res.json()) as BackendVendedorListResponse;
+      const data = BackendVendedorListResponseSchema.parse(await res.json());
       return data.items.map(transformVendedor);
     },
     staleTime: 5 * 60 * 1000, // 5 minutes - vendedores don't change often
