@@ -28,6 +28,7 @@ import { SelectControlled } from "@/components/ui/select-controlled";
 import { toast } from "sonner";
 import { FB_YEARS } from "@/lib/constants/fbVehicleOptions";
 import { useCategories, useCategoryOptions } from "@/lib/api/categories";
+import { useInferCategory } from "@/lib/api/useInferCategory";
 import { useDecodeVin } from "@/lib/api/vehicles";
 import {
   useCreateProduct,
@@ -120,6 +121,22 @@ export interface ProductFormProps {
   productId?: string;
   initialData?: Partial<ProductFormValues>;
   onSuccess?: () => void;
+}
+
+// The GET product endpoint doesn't echo a "category" discriminator on
+// attributes (that's only attached when this form submits), so the shared
+// isVehicleAttributes() guard doesn't apply to read paths. Check the fields
+// the edit-mode prefill actually needs instead.
+function hasVehicleAttributeShape(attrs: unknown): attrs is VehicleAttributes {
+  return (
+    typeof attrs === "object" &&
+    attrs !== null &&
+    "vin" in attrs &&
+    "year" in attrs &&
+    "make" in attrs &&
+    "model" in attrs &&
+    "mileage" in attrs
+  );
 }
 
 // ============================================
@@ -225,6 +242,32 @@ export function ProductForm({
     (cat) => cat.id === selectedCategoryId,
   );
 
+  // Category suggestion (SUGGEST-only — never auto-selects category_id).
+  // Mirrors the same title composition used at submit time.
+  const inferYear = watch("year");
+  const inferMake = watch("make");
+  const inferModel = watch("model");
+  const inferBodyType = watch("body_type");
+  const inferDrivetrain = watch("drivetrain");
+  const inferTransmission = watch("transmission");
+  const inferEngine = watch("engine");
+  const inferFuelType = watch("fuel_type");
+  const inferTitle =
+    `${inferYear ?? ""} ${inferMake ?? ""} ${inferModel ?? ""}`.trim();
+  const inferAttributes = {
+    make: inferMake || undefined,
+    model: inferModel || undefined,
+    body_type: inferBodyType || undefined,
+    drivetrain: inferDrivetrain || undefined,
+    transmission: inferTransmission || undefined,
+    engine: inferEngine || undefined,
+    fuel_type: inferFuelType || undefined,
+  };
+  const { suggestion: categorySuggestion } = useInferCategory(
+    { title: inferTitle, attributes: inferAttributes },
+    { enabled: inferTitle.length > 0 },
+  );
+
   // VIN decode hook
   const decodeVinMutation = useDecodeVin();
 
@@ -290,7 +333,14 @@ export function ProductForm({
    */
   useEffect(() => {
     if (mode === "edit" && existingProduct) {
-      const attrs = existingProduct.attributes as VehicleAttributes;
+      if (!hasVehicleAttributeShape(existingProduct.attributes)) {
+        logger.error(
+          "ProductForm: existingProduct.attributes is not vehicle attributes",
+          { productId: existingProduct.id },
+        );
+        return;
+      }
+      const attrs = existingProduct.attributes;
 
       // NOTE: image seeding lives in its own effect (driven by the
       // signed-URL query), not here — this effect only resets the
@@ -814,6 +864,12 @@ export function ProductForm({
           {errors.category_id && (
             <p className="text-sm text-destructive">
               {errors.category_id.message}
+            </p>
+          )}
+          {categorySuggestion && (
+            <p className="text-xs text-muted-foreground">
+              Sugerido: {categorySuggestion.name} (
+              {Math.round(categorySuggestion.score * 100)}%)
             </p>
           )}
         </div>
