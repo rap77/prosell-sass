@@ -98,18 +98,10 @@ describe("authApi Client - Register", () => {
 
   it("should call POST /api/auth/register with user data", async () => {
     const mockResponse = {
-      user: {
-        id: "2",
-        email: "new@example.com",
-        first_name: "New",
-        last_name: "User",
-        role: "sales_user",
-        is_email_verified: false,
-      },
-      tokens: {
-        access_token: "mock-access-token",
-        refresh_token: "mock-refresh-token",
-      },
+      user_id: "2",
+      email: "new@example.com",
+      status: "pending_verification",
+      message: "Registration successful",
     };
 
     mockFetch.mockResolvedValueOnce({
@@ -400,18 +392,10 @@ describe("authApi - mutation caching", () => {
   it("should NOT cache register response (mutation)", async () => {
     let callCount = 0;
     const mockResponse = {
-      user: {
-        id: "2",
-        email: "new@test.com",
-        first_name: "New",
-        last_name: "User",
-        role: "user",
-        is_email_verified: false,
-      },
-      tokens: {
-        access_token: "mock-access-token",
-        refresh_token: "mock-refresh-token",
-      },
+      user_id: "2",
+      email: "new@test.com",
+      status: "pending_verification",
+      message: "Registration successful",
     };
 
     mockFetch.mockImplementation(async () => {

@@ -8,32 +8,24 @@
  * - Error handling with ApiError
  */
 
+import type { z } from "zod";
+import {
+  WalletSchema,
+  WalletTransactionsResponseSchema,
+  type Wallet,
+  type WalletTransactionsResponse,
+} from "./schemas/walletApi";
+
+export type {
+  TransactionType,
+  WalletTransaction,
+  Wallet,
+  WalletTransactionsResponse,
+} from "./schemas/walletApi";
+
 // ============================================
 // TYPES (matching backend Pydantic DTOs)
 // ============================================
-
-export type TransactionType = "credit" | "debit";
-
-export interface WalletTransaction {
-  id: string;
-  wallet_id: string;
-  tenant_id: string;
-  transaction_type: TransactionType;
-  amount: number;
-  balance_after: number;
-  description: string | null;
-  metadata: Record<string, unknown> | null;
-  created_at: string;
-}
-
-export interface Wallet {
-  id: string;
-  organization_id: string;
-  tenant_id: string;
-  balance: number;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface CreditWalletRequest {
   org_id: string;
@@ -49,13 +41,6 @@ export interface DebitWalletRequest {
   amount: number;
   description?: string;
   metadata?: Record<string, unknown>;
-}
-
-export interface WalletTransactionsResponse {
-  transactions: WalletTransaction[];
-  total: number;
-  skip: number;
-  limit: number;
 }
 
 // ============================================
@@ -80,18 +65,27 @@ export class ApiError extends Error {
   }
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
+async function handleResponse<T>(
+  response: Response,
+  schema: z.ZodType<T>,
+): Promise<T> {
   if (!response.ok) {
     const errorData = await response
       .json()
       .catch(() => ({ detail: "Error desconocido" }));
-    throw new ApiError(
-      errorData.detail || errorData.message || "Error en la petición",
-      response.status,
-    );
+    let message: string;
+    if (Array.isArray(errorData.detail)) {
+      message = errorData.detail.map((e: { msg: string }) => e.msg).join(", ");
+    } else if (typeof errorData.detail === "string") {
+      message = errorData.detail;
+    } else {
+      message = errorData.message || "Error en la petición";
+    }
+
+    throw new ApiError(message, response.status);
   }
 
-  return response.json() as Promise<T>;
+  return schema.parse(await response.json());
 }
 
 // ============================================
@@ -115,7 +109,7 @@ export const walletApi = {
       credentials: "include",
     });
 
-    return handleResponse<Wallet>(response);
+    return handleResponse(response, WalletSchema);
   },
 
   /**
@@ -145,7 +139,7 @@ export const walletApi = {
       credentials: "include",
     });
 
-    return handleResponse<WalletTransactionsResponse>(response);
+    return handleResponse(response, WalletTransactionsResponseSchema);
   },
 
   /**
@@ -162,7 +156,7 @@ export const walletApi = {
       credentials: "include",
     });
 
-    return handleResponse<Wallet>(response);
+    return handleResponse(response, WalletSchema);
   },
 
   /**
@@ -179,6 +173,6 @@ export const walletApi = {
       credentials: "include",
     });
 
-    return handleResponse<Wallet>(response);
+    return handleResponse(response, WalletSchema);
   },
 };

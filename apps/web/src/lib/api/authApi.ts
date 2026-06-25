@@ -11,48 +11,29 @@
  * - Early exit patterns
  */
 
-interface LoginResponse {
-  user: {
-    id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    role: string;
-    is_email_verified: boolean;
-    is_2fa_enabled?: boolean;
-    organization_id?: string | null;
-  };
-}
+import {
+  LoginResponseSchema,
+  RegisterResponseSchema,
+  UserResponseSchema,
+  MessageResponseSchema,
+  Enable2FAResponseSchema,
+  type LoginResponse,
+  type RegisterResponse,
+  type UserResponse,
+  type MessageResponse,
+  type Enable2FAResponse,
+} from "./schemas/authApi";
 
-interface RegisterResponse {
-  user_id: string;
-  email: string;
-  status: string;
-  message: string;
-}
+export type {
+  LoginResponse,
+  RegisterResponse,
+  UserResponse,
+  MessageResponse,
+  Enable2FAResponse,
+} from "./schemas/authApi";
 
 // RefreshTokenResponse removed - tokens handled by httpOnly cookies
 // Refresh logic is handled server-side, not client-side
-
-interface UserResponse {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  role: string;
-  is_email_verified: boolean;
-  is_2fa_enabled?: boolean;
-  organization_id?: string | null;
-}
-
-interface MessageResponse {
-  message: string;
-}
-
-interface Enable2FAResponse {
-  qr_code: string;
-  backup_codes: string[];
-}
 
 // ============================================
 // API CLIENT CONFIGURATION
@@ -68,18 +49,10 @@ export const API_BASE_URL = "";
 // IMPORTS & SETUP
 // ============================================
 
+import { z } from "zod";
 import { apiCache, generateCacheKey } from "../cache/lru-cache";
-import { createAuthCacheKey, createUserCacheKey } from "../cache/cache-utils";
-import {
-  createLookupSet,
-  earlyExit,
-  immutableSort,
-  storageCache,
-  createEventHandlerRef,
-  batchCSS,
-  withArrayLengthCheck,
-  hoistRegExp,
-} from "@/lib/utils";
+import { createAuthCacheKey } from "../cache/cache-utils";
+import { hoistRegExp } from "@/lib/utils";
 
 // Pre-compiled regular expressions for better performance
 const EMAIL_REGEX = hoistRegExp("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
@@ -97,11 +70,6 @@ type ApiResponse =
 // Module-level cache for frequent operations
 const requestCache = new Map<string, ApiResponse>();
 const responseCache = new Map<string, ApiResponse>();
-
-// Event handler ref for common operations
-const errorHandlerRef = createEventHandlerRef((error: unknown) => {
-  console.error("API Error:", error);
-});
 
 // ============================================
 // DEDUPLICATION UTILITIES
@@ -153,7 +121,10 @@ export class ApiError extends Error {
   }
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
+async function handleResponse<T>(
+  response: Response,
+  schema: z.ZodType<T>,
+): Promise<T> {
   if (!response.ok) {
     const errorData = await response
       .json()
@@ -173,7 +144,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
     throw new ApiError(message, response.status);
   }
 
-  return response.json() as Promise<T>;
+  return schema.parse(await response.json());
 }
 
 // ============================================
@@ -200,7 +171,7 @@ export const authApi = {
       credentials: "include", // Important for cookies to be sent and received
     });
 
-    const result = await handleResponse<LoginResponse>(response);
+    const result = await handleResponse(response, LoginResponseSchema);
 
     // Mutations should NOT be cached - each call hits the API
     return result;
@@ -246,7 +217,7 @@ export const authApi = {
     });
 
     // Mutations should NOT be cached - each call hits the API
-    return handleResponse<RegisterResponse>(response);
+    return handleResponse(response, RegisterResponseSchema);
   },
 
   /**
@@ -268,7 +239,7 @@ export const authApi = {
         credentials: "include", // Important for cookies to be sent and received
       });
 
-      await handleResponse<void>(response);
+      await handleResponse(response, z.unknown());
 
       // Clear cache on successful logout
       requestCache.clear();
@@ -292,7 +263,7 @@ export const authApi = {
   getCurrentUser: (() => {
     const cacheKeyPrefix = "user:current";
 
-    return (): Promise<UserResponse> => {
+    return async (): Promise<UserResponse> => {
       const cacheKey = generateCacheKey(
         "GET",
         `${API_BASE_URL}/api/v1/auth/me`,
@@ -302,24 +273,26 @@ export const authApi = {
       // Try to get from cache first
       const cached = apiCache.get(cacheKey);
       if (cached !== null) {
-        return Promise.resolve(cached as unknown as UserResponse);
+        return UserResponseSchema.parse(cached);
       }
 
       // Use deduplication for concurrent requests
-      return deduplicateRequest(cacheKey, async () => {
+      const result = await deduplicateRequest(cacheKey, async () => {
         const response = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
           method: "GET",
           credentials: "include", // CRITICAL: Sends httpOnly cookies automatically
         });
 
-        const result = await handleResponse<UserResponse>(response);
+        const result = await handleResponse(response, UserResponseSchema);
 
         // Cache the result
         apiCache.set(cacheKey, result, 2 * 60 * 1000); // 2 minutes
         userLookupCache.set(result.id, result);
 
         return result;
-      }) as Promise<UserResponse>;
+      });
+
+      return UserResponseSchema.parse(result);
     };
   })(),
 
@@ -342,7 +315,7 @@ export const authApi = {
       body: JSON.stringify({ token }),
     });
 
-    return handleResponse<MessageResponse>(response);
+    return handleResponse(response, MessageResponseSchema);
   },
 
   /**
@@ -367,7 +340,7 @@ export const authApi = {
       },
     );
 
-    return handleResponse<MessageResponse>(response);
+    return handleResponse(response, MessageResponseSchema);
   },
 
   /**
@@ -399,7 +372,7 @@ export const authApi = {
       }),
     });
 
-    return handleResponse<MessageResponse>(response);
+    return handleResponse(response, MessageResponseSchema);
   },
 
   /**
@@ -418,7 +391,7 @@ export const authApi = {
       credentials: "include", // CRITICAL: Sends httpOnly cookies automatically
     });
 
-    return handleResponse<Enable2FAResponse>(response);
+    return handleResponse(response, Enable2FAResponseSchema);
   },
 
   /**
@@ -437,7 +410,7 @@ export const authApi = {
     const cached = requestCache.get(cacheKey);
 
     if (cached) {
-      return cached as unknown as MessageResponse;
+      return MessageResponseSchema.parse(cached);
     }
 
     const response = await fetch(`${API_BASE_URL}/api/v1/auth/2fa/verify`, {
@@ -449,7 +422,7 @@ export const authApi = {
       body: JSON.stringify({ code }),
     });
 
-    const result = await handleResponse<MessageResponse>(response);
+    const result = await handleResponse(response, MessageResponseSchema);
 
     // Clear 2FA cache after successful verification
     requestCache.delete(cacheKey);
@@ -473,7 +446,7 @@ export const authApi = {
       credentials: "include", // CRITICAL: Sends httpOnly cookies automatically
     });
 
-    return handleResponse<MessageResponse>(response);
+    return handleResponse(response, MessageResponseSchema);
   },
 
   /**
