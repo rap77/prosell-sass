@@ -1,7 +1,7 @@
 """Add bulk_upload_errors and category_schema_changes tables
 
 Revision ID: schema_tables_20260625
-Revises: products_mkt_published_20260619
+Revises: c8a7e1f93b21
 Create Date: 2026-06-25
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
 
 revision: str = "schema_tables_20260625"
-down_revision: str | Sequence[str] | None = "products_mkt_published_20260619"
+down_revision: str | Sequence[str] | None = "c8a7e1f93b21"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

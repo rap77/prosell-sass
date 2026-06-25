@@ -1,416 +1,263 @@
-"""Unit tests for CSVProductParser service."""
+"""Unit tests for the schema-aware CSVProductParser."""
 
-from io import StringIO
-from uuid import uuid4
+from unittest.mock import AsyncMock, MagicMock
+from uuid import UUID, uuid4
 
 import pytest
 
+from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.services.csv_product_parser import (
     CSVParseError,
     CSVProductParser,
-    ParsedProductRow,
 )
 
-# =============================================================================
-# FIXTURES
-# =============================================================================
-
 
 @pytest.fixture
-def tenant_id():
-    """Tenant ID for testing."""
+def tenant_id() -> UUID:
     return uuid4()
 
 
 @pytest.fixture
-def organization_id():
-    """Organization ID for testing."""
+def org_id() -> UUID:
     return uuid4()
 
 
 @pytest.fixture
-def category_id():
-    """Category ID for testing."""
+def category_id() -> UUID:
     return uuid4()
 
 
 @pytest.fixture
-def valid_csv_content(category_id):
-    """Valid CSV content with all required columns."""
-    return (
-        "vin,title,price,category_id,description,condition,currency,"
-        "location_city,location_state,location_zip\n"
-        f"1HGCM82633A123456,2020 Honda Civic,18500.00,{category_id},"
-        "Well maintained,used,USD,Miami,FL,33101\n"
-        f"JH4KA8260MC000000,2021 Acura Integra,21000.50,{category_id},"
-        "Excellent condition,new,USD,Fort Lauderdale,FL,33301\n"
+def vehicle_schema() -> dict[str, dict[str, object]]:
+    return {
+        "vin": {"type": "string", "required": True},
+        "year": {"type": "number", "required": False},
+        "mileage": {"type": "number", "required": False},
+        "is_certified": {"type": "boolean", "required": False},
+    }
+
+
+def _make_category_repo(schema: dict[str, dict[str, object]]) -> AbstractCategoryRepository:
+    mock = AsyncMock(spec=AbstractCategoryRepository)
+    cat = MagicMock()
+    cat.attribute_schema = schema
+    mock.get_by_id_or_global.return_value = cat
+    return mock
+
+
+# ── Missing universal column ──────────────────────────────────────────────────
+
+
+async def test_missing_title_column_raises(
+    tenant_id: UUID, org_id: UUID, category_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    repo = _make_category_repo(vehicle_schema)
+    csv = f"price,category_id\n18500,{category_id}\n"
+    with pytest.raises(CSVParseError, match="Missing required columns"):
+        await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+
+
+async def test_missing_price_column_raises(
+    tenant_id: UUID, org_id: UUID, category_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    repo = _make_category_repo(vehicle_schema)
+    csv = f"title,category_id\nHonda Civic,{category_id}\n"
+    with pytest.raises(CSVParseError, match="Missing required columns"):
+        await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+
+
+async def test_missing_category_id_column_raises(
+    tenant_id: UUID, org_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    repo = _make_category_repo(vehicle_schema)
+    csv = "title,price\nHonda Civic,18500\n"
+    with pytest.raises(CSVParseError, match="Missing required columns"):
+        await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+
+
+# ── Multi-category rejection ──────────────────────────────────────────────────
+
+
+async def test_multiple_categories_raises(
+    tenant_id: UUID, org_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    cat_a, cat_b = uuid4(), uuid4()
+    repo = AsyncMock(spec=AbstractCategoryRepository)
+    cat = MagicMock()
+    cat.attribute_schema = vehicle_schema
+    repo.get_by_id_or_global.return_value = cat
+
+    csv = f"title,price,category_id\nCar A,1000,{cat_a}\nCar B,2000,{cat_b}\n"
+    with pytest.raises(CSVParseError, match="multiple categories"):
+        await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+
+
+# ── Unknown category ──────────────────────────────────────────────────────────
+
+
+async def test_unknown_category_raises(tenant_id: UUID, org_id: UUID, category_id: UUID) -> None:
+    repo = AsyncMock(spec=AbstractCategoryRepository)
+    repo.get_by_id_or_global.return_value = None
+    csv = f"title,price,category_id\nFoo,100,{category_id}\n"
+    with pytest.raises(CSVParseError, match=r"[Uu]nknown category"):
+        await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+
+
+# ── Max rows ──────────────────────────────────────────────────────────────────
+
+
+async def test_max_rows_exceeded_raises(
+    tenant_id: UUID, org_id: UUID, category_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    repo = _make_category_repo(vehicle_schema)
+    rows = "\n".join(f"Row {i},100,{category_id}" for i in range(6))
+    csv = f"title,price,category_id\n{rows}\n"
+    with pytest.raises(CSVParseError, match="Too many rows"):
+        await CSVProductParser(category_repository=repo, max_rows=5).parse_csv(
+            csv, tenant_id, org_id
+        )
+
+
+# ── Required schema field missing → per-row error ────────────────────────────
+
+
+async def test_required_schema_field_missing_is_row_error(
+    tenant_id: UUID, org_id: UUID, category_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    repo = _make_category_repo(vehicle_schema)
+    # vin is required but not in this CSV
+    csv = f"title,price,category_id\n2020 Civic,18500,{category_id}\n"
+    result = await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+    assert result.failed_count == 1
+    assert result.products == []
+    err = result.errors[0]
+    assert err.row_number == 2
+    assert err.column == "attributes.vin"
+    assert "vin" in err.message
+
+
+# ── Type mismatch → per-row error ─────────────────────────────────────────────
+
+
+async def test_number_type_mismatch_is_row_error(
+    tenant_id: UUID, org_id: UUID, category_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    repo = _make_category_repo(vehicle_schema)
+    csv = (
+        f"title,price,category_id,vin,year\n"
+        f"2020 Civic,18500,{category_id},1HGCM82633A123456,not_a_number\n"
     )
+    result = await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+    assert result.failed_count == 1
+    err = result.errors[0]
+    assert err.column == "attributes.year"
+    assert "number" in err.message.lower()
 
 
-@pytest.fixture
-def minimal_csv_content(category_id):
-    """Minimal CSV content with only required columns."""
-    return (
-        f"vin,title,price,category_id\n1HGCM82633A123456,2020 Honda Civic,18500.00,{category_id}\n"
+async def test_boolean_type_mismatch_is_row_error(
+    tenant_id: UUID, org_id: UUID, category_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    repo = _make_category_repo(vehicle_schema)
+    csv = (
+        f"title,price,category_id,vin,is_certified\n"
+        f"2020 Civic,18500,{category_id},1HGCM82633A123456,maybe\n"
     )
-
-
-@pytest.fixture
-def invalid_vin_csv_content(category_id):
-    """CSV with invalid VIN."""
-    return f"""vin,title,price,category_id
-INVALIDVIN,2020 Honda Civic,18500.00,{category_id}
-"""
-
-
-@pytest.fixture
-def missing_required_column_csv_content(category_id):
-    """CSV missing required column 'title'."""
-    return f"""vin,price,category_id
-1HGCM82633A123456,18500.00,{category_id}
-"""
-
-
-@pytest.fixture
-def duplicate_vin_csv_content(category_id):
-    """CSV with duplicate VINs."""
-    return f"""vin,title,price,category_id
-1HGCM82633A123456,2020 Honda Civic,18500.00,{category_id}
-1HGCM82633A123456,2021 Acura Integra,21000.00,{category_id}
-"""
-
-
-# =============================================================================
-# TESTS
-# =============================================================================
-
-
-class TestCSVProductParserInitialization:
-    """Tests for CSVProductParser initialization."""
-
-    def test_initializes_with_default_settings(self):
-        """Parser initializes with default settings."""
-        parser = CSVProductParser()
-
-        assert parser.required_columns == {"vin", "title", "price", "category_id"}
-        assert parser.max_rows == 1000
-
-    def test_initializes_with_custom_settings(self):
-        """Parser initializes with custom settings."""
-        parser = CSVProductParser(
-            required_columns={"vin", "title"},
-            max_rows=500,
-        )
-
-        assert parser.required_columns == {"vin", "title"}
-        assert parser.max_rows == 500
-
-
-class TestCSVValidation:
-    """Tests for CSV validation."""
-
-    def test_validates_required_columns_present(self):
-        """Validate CSV with all required columns."""
-        parser = CSVProductParser()
-        csv_file = StringIO("vin,title,price,category_id\n")
-
-        errors = parser._validate_columns(csv_file)
-
-        assert errors == []
-
-    def test_detects_missing_required_columns(self):
-        """Detect missing required columns."""
-        parser = CSVProductParser()
-        csv_file = StringIO("vin,price,category_id\n")  # Missing 'title'
-
-        errors = parser._validate_columns(csv_file)
-
-        assert len(errors) == 1
-        assert "Missing required columns" in errors[0]
-        assert "title" in errors[0]
-
-    def test_allows_extra_columns_beyond_required(self):
-        """Allow extra columns beyond required ones."""
-        parser = CSVProductParser()
-        csv_file = StringIO("vin,title,price,category_id,description,extra_column\n")
-
-        errors = parser._validate_columns(csv_file)
-
-        assert errors == []
-
-
-class TestVINValidation:
-    """Tests for VIN validation."""
-
-    def test_accepts_valid_vin(self):
-        """Accept valid VIN format."""
-        parser = CSVProductParser()
-
-        is_valid = parser._is_valid_vin_format("1HGCM82633A123456")
-
-        assert is_valid is True
-
-    def test_rejects_invalid_vin_length(self):
-        """Reject VIN with invalid length."""
-        parser = CSVProductParser()
-
-        is_valid = parser._is_valid_vin_format("1HGCM82633A12345")  # 16 chars
-
-        assert is_valid is False
-
-    def test_rejects_invalid_vin_characters(self):
-        """Reject VIN with invalid characters."""
-        parser = CSVProductParser()
-
-        is_valid = parser._is_valid_vin_format("1HGCM82633A12345O")  # Contains O, I, Q
-
-        assert is_valid is False
-
-    def test_rejects_empty_vin(self):
-        """Reject empty VIN."""
-        parser = CSVProductParser()
-
-        is_valid = parser._is_valid_vin_format("")
-
-        assert is_valid is False
-
-
-class TestCSVParsing:
-    """Tests for CSV parsing."""
-
-    async def test_parses_valid_csv_with_all_columns(
-        self,
-        valid_csv_content,
-        category_id,  # noqa: ARG002
-    ):
-        """Parse valid CSV with all columns."""
-        parser = CSVProductParser()
-
-        result = await parser.parse_csv(
-            csv_content=valid_csv_content,
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
-        )
-
-        assert result.total_rows == 2
-        assert len(result.products) == 2
-        assert result.failed_count == 0
-        assert len(result.errors) == 0
-
-    async def test_parses_minimal_csv_with_required_columns_only(
-        self,
-        minimal_csv_content,
-        category_id,
-    ):
-        """Parse minimal CSV with only required columns."""
-        parser = CSVProductParser()
-
-        result = await parser.parse_csv(
-            csv_content=minimal_csv_content,
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
-        )
-
-        assert result.total_rows == 1
-        assert len(result.products) == 1
-        assert result.failed_count == 0
-
-        product = result.products[0]
-        assert product.vin == "1HGCM82633A123456"
-        assert product.title == "2020 Honda Civic"
-        assert product.price_cents == 1850000
-        assert product.category_id == category_id
-        assert product.description is None
-        assert product.condition == "used"  # Default
-        assert product.currency == "USD"  # Default
-
-    async def test_parses_csv_with_optional_fields(
-        self,
-        valid_csv_content,
-        category_id,  # noqa: ARG002
-    ):
-        """Parse CSV with optional fields populated."""
-        parser = CSVProductParser()
-
-        result = await parser.parse_csv(
-            csv_content=valid_csv_content,
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
-        )
-
-        assert len(result.products) == 2
-
-        product = result.products[0]
-        assert product.description == "Well maintained"
-        assert product.condition == "used"
-        assert product.currency == "USD"
-        assert product.location_city == "Miami"
-        assert product.location_state == "FL"
-        assert product.location_zip == "33101"
-
-    async def test_converts_price_dollars_to_cents(
-        self,
-        category_id,
-    ):
-        """Convert price from dollars to cents."""
-        parser = CSVProductParser()
-        csv_content = f"""vin,title,price,category_id
-1HGCM82633A123456,Test Car,19.99,{category_id}
-"""
-
-        result = await parser.parse_csv(
-            csv_content=csv_content,
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
-        )
-
-        # 19.99 * 100 = 1999 (with proper rounding)
-        assert result.products[0].price_cents == 1999
-
-    async def test_rejects_invalid_price_format(
-        self,
-        category_id,
-    ):
-        """Reject invalid price format."""
-        parser = CSVProductParser()
-        csv_content = f"""vin,title,price,category_id
-1HGCM82633A123456,Test Car,invalid,{category_id}
-"""
-
-        result = await parser.parse_csv(
-            csv_content=csv_content,
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
-        )
-
-        assert result.failed_count == 1
-        assert result.total_rows == 1
-        assert len(result.products) == 0
-
-
-class TestErrorHandling:
-    """Tests for error handling."""
-
-    async def test_handles_invalid_vin(
-        self,
-        invalid_vin_csv_content,
-    ):
-        """Handle CSV with invalid VIN."""
-        parser = CSVProductParser()
-
-        result = await parser.parse_csv(
-            csv_content=invalid_vin_csv_content,
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
-        )
-
-        assert result.failed_count == 1
-        assert result.total_rows == 1
-        assert len(result.products) == 0
-        assert len(result.errors) == 1
-        assert "Invalid VIN" in str(result.errors[0]["error"])
-
-    async def test_handles_missing_required_columns(
-        self,
-        missing_required_column_csv_content,
-    ):
-        """Handle CSV missing required columns."""
-        parser = CSVProductParser()
-
-        with pytest.raises(CSVParseError) as exc_info:
-            await parser.parse_csv(
-                csv_content=missing_required_column_csv_content,
-                tenant_id=uuid4(),
-                organization_id=uuid4(),
-            )
-
-        assert "Missing required columns" in str(exc_info.value)
-
-    async def test_detects_duplicate_vins_in_csv(
-        self,
-        duplicate_vin_csv_content,
-    ):
-        """Detect duplicate VINs within CSV."""
-        parser = CSVProductParser()
-
-        result = await parser.parse_csv(
-            csv_content=duplicate_vin_csv_content,
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
-        )
-
-        assert result.failed_count == 1
-        assert result.total_rows == 2
-        assert len(result.products) == 1
-        assert any("Duplicate VIN" in str(error["error"]) for error in result.errors)
-
-    async def test_continues_parsing_after_row_error(
-        self,
-        category_id,
-    ):
-        """Continue parsing after encountering row error."""
-        parser = CSVProductParser()
-        csv_content = f"""vin,title,price,category_id
-1HGCM82633A123456,Valid Car,18500.00,{category_id}
-INVALID,Invalid Car,20000.00,{category_id}
-JH4KA8260MC000000,Another Valid Car,21000.00,{category_id}
-"""
-
-        result = await parser.parse_csv(
-            csv_content=csv_content,
-            tenant_id=uuid4(),
-            organization_id=uuid4(),
-        )
-
-        assert result.total_rows == 3
-        assert len(result.products) == 2
-        assert result.failed_count == 1
-        assert result.products[0].vin == "1HGCM82633A123456"
-        assert result.products[1].vin == "JH4KA8260MC000000"
-
-
-class TestRowLimits:
-    """Tests for row limits."""
-
-    async def test_enforces_max_rows_limit(
-        self,
-        category_id,
-    ):
-        """Enforce maximum rows limit."""
-        parser = CSVProductParser(max_rows=2)
-        rows = [f"1HGCM82633A12345{i},Car {i},1000.00,{category_id}" for i in range(3)]
-        csv_content = "vin,title,price,category_id\n" + "\n".join(rows)
-
-        with pytest.raises(CSVParseError) as exc_info:
-            await parser.parse_csv(
-                csv_content=csv_content,
-                tenant_id=uuid4(),
-                organization_id=uuid4(),
-            )
-
-        assert "Too many rows" in str(exc_info.value)
-
-
-class TestParsedProductRow:
-    """Tests for ParsedProductRow dataclass."""
-
-    def test_creates_parsed_product_row(self):
-        """Create ParsedProductRow instance."""
-        row = ParsedProductRow(
-            row_number=1,
-            vin="1HGCM82633A123456",
-            title="Test Car",
-            price_cents=1850000,
-            category_id=uuid4(),
-            description="Test",
-            condition="used",
-            currency="USD",
-            location_city="Miami",
-            location_state="FL",
-            location_zip="33101",
-            attributes={},
-        )
-
-        assert row.row_number == 1
-        assert row.vin == "1HGCM82633A123456"
-        assert row.price_cents == 1850000
+    result = await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+    assert result.failed_count == 1
+    err = result.errors[0]
+    assert err.column == "attributes.is_certified"
+
+
+# ── Legacy vehicle CSV still works ────────────────────────────────────────────
+
+
+async def test_legacy_vehicle_csv_backward_compat(
+    tenant_id: UUID, org_id: UUID, category_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    """vin as a top-level CSV column goes into attributes['vin']."""
+    repo = _make_category_repo(vehicle_schema)
+    csv = f"vin,title,price,category_id\n1HGCM82633A123456,2020 Honda Civic,18500,{category_id}\n"
+    result = await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+    assert result.failed_count == 0
+    assert len(result.products) == 1
+    product = result.products[0]
+    assert product.attributes["vin"] == "1HGCM82633A123456"
+    assert product.price_cents == 1_850_000
+
+
+# ── Type coercion ─────────────────────────────────────────────────────────────
+
+
+async def test_number_column_coerced_to_float(
+    tenant_id: UUID, org_id: UUID, category_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    repo = _make_category_repo(vehicle_schema)
+    csv = (
+        f"title,price,category_id,vin,mileage\n"
+        f"2020 Civic,18500,{category_id},1HGCM82633A123456,50000\n"
+    )
+    result = await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+    assert result.failed_count == 0
+    assert result.products[0].attributes["mileage"] == 50000.0
+
+
+async def test_boolean_true_coerced(
+    tenant_id: UUID, org_id: UUID, category_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    repo = _make_category_repo(vehicle_schema)
+    csv = (
+        f"title,price,category_id,vin,is_certified\n"
+        f"2020 Civic,18500,{category_id},1HGCM82633A123456,true\n"
+    )
+    result = await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+    assert result.failed_count == 0
+    assert result.products[0].attributes["is_certified"] is True
+
+
+# ── Unknown columns accepted as string ────────────────────────────────────────
+
+
+async def test_unknown_column_accepted_as_string(
+    tenant_id: UUID, org_id: UUID, category_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    repo = _make_category_repo(vehicle_schema)
+    csv = (
+        f"title,price,category_id,vin,unknown_field\n"
+        f"2020 Civic,18500,{category_id},1HGCM82633A123456,some_value\n"
+    )
+    result = await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+    assert result.failed_count == 0
+    assert result.products[0].attributes["unknown_field"] == "some_value"
+
+
+# ── Partial success ──────────────────────────────────────────────────────────
+
+
+async def test_partial_success_accumulates_both(
+    tenant_id: UUID, org_id: UUID, category_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    repo = _make_category_repo(vehicle_schema)
+    csv = (
+        f"title,price,category_id,vin\n"
+        f"Good row,18500,{category_id},1HGCM82633A123456\n"
+        f"Bad row,18500,{category_id},\n"  # vin is empty → required missing
+    )
+    result = await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+    assert result.total_rows == 2
+    assert len(result.products) == 1
+    assert result.failed_count == 1
+
+
+# ── vin ends up in attributes, not duplicated ─────────────────────────────────
+
+
+async def test_vin_column_stored_in_attributes_once(
+    tenant_id: UUID, org_id: UUID, category_id: UUID, vehicle_schema: dict[str, dict[str, object]]
+) -> None:
+    """vin CSV column must land in attributes — not injected as a separate field."""
+    repo = _make_category_repo(vehicle_schema)
+    csv = f"title,price,category_id,vin\n2020 Civic,18500,{category_id},1HGCM82633A123456\n"
+    result = await CSVProductParser(category_repository=repo).parse_csv(csv, tenant_id, org_id)
+    row = result.products[0]
+    assert row.attributes.get("vin") == "1HGCM82633A123456"
+    assert list(row.attributes.keys()).count("vin") == 1

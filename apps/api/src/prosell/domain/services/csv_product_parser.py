@@ -1,87 +1,57 @@
-"""CSV Product Parser service for bulk product upload.
+"""Schema-aware CSV Product Parser.
 
-This service parses CSV files containing product data and validates
-the content according to business rules.
-
-Required columns: vin, title, price, category_id
-Optional columns: description, condition, currency, location_city, location_state, location_zip,
-attributes
+Validates CSV rows against a category's attribute_schema fetched from the
+repository. Universal columns (title, price, category_id) are always required.
+All other CSV columns go into the product's `attributes` dict and are
+validated (type + required) against the schema.
 """
 
 import csv
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from io import StringIO
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from prosell.domain.exceptions.product_exceptions import InvalidVINError
-from prosell.domain.value_objects.product_condition import ProductCondition
-
 if TYPE_CHECKING:
-    from prosell.application.dto.product.create import CreateProductRequest
+    from prosell.domain.repositories.category_repository import AbstractCategoryRepository
+
+UNIVERSAL_COLUMNS = {"title", "price", "category_id"}
+KNOWN_PRODUCT_COLUMNS = {
+    "description",
+    "condition",
+    "currency",
+    "location_city",
+    "location_state",
+    "location_zip",
+}
+ALL_KNOWN_COLUMNS = UNIVERSAL_COLUMNS | KNOWN_PRODUCT_COLUMNS
+
+
+@dataclass
+class CSVRowError:
+    """Per-row parse/validation error."""
+
+    row_number: int
+    column: str | None  # e.g. "attributes.vin", "price", or None (row-level)
+    message: str
+    raw_row: dict[str, str]
 
 
 @dataclass
 class ParsedProductRow:
-    """Represents a successfully parsed product row from CSV."""
+    """A successfully parsed product row from CSV."""
 
     row_number: int
-    vin: str
     title: str
     price_cents: int
     category_id: UUID
     description: str | None = None
-    condition: str = "used"  # Default to "used"
-    currency: str = "USD"  # Default to "USD"
+    condition: str = "used"
+    currency: str = "USD"
     location_city: str | None = None
     location_state: str | None = None
     location_zip: str | None = None
-    attributes: dict[str, object] | None = None
-
-    def __post_init__(self):
-        """Initialize attributes dict if None."""
-        if self.attributes is None:
-            self.attributes = {}
-
-    def to_create_product_request(
-        self,
-        tenant_id: UUID,
-        organization_id: UUID,
-    ) -> "CreateProductRequest":
-        """
-        Convert ParsedProductRow to CreateProductRequest DTO.
-
-        Args:
-            tenant_id: Tenant ID for the product
-            organization_id: Organization ID for the product
-
-        Returns:
-            CreateProductRequest DTO ready for use case
-        """
-        # Import here to avoid circular dependency
-        from prosell.application.dto.product.create import CreateProductRequest
-
-        # Merge VIN into attributes (attributes is guaranteed to be dict after __post_init__)
-        current_attributes: dict[str, object] = self.attributes or {}
-        attributes_with_vin: dict[str, object] = {**current_attributes, "vin": self.vin}
-
-        # Map condition string to ProductCondition enum
-        condition_enum = ProductCondition(self.condition)
-
-        return CreateProductRequest(
-            title=self.title,
-            price_cents=self.price_cents,
-            tenant_id=tenant_id,
-            organization_id=organization_id,
-            category_id=self.category_id,
-            description=self.description,
-            condition=condition_enum,
-            currency=self.currency,
-            location_city=self.location_city,
-            location_state=self.location_state,
-            location_zip=self.location_zip,
-            attributes=attributes_with_vin,
-        )
+    attributes: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass
@@ -91,244 +61,242 @@ class CSVParseResult:
     total_rows: int
     products: list[ParsedProductRow]
     failed_count: int
-    errors: list[dict[str, str | int]]
+    errors: list[CSVRowError]
 
 
 class CSVParseError(Exception):
-    """Raised when CSV parsing fails at the file level."""
+    """Raised for file-level failures: bad structure, multi-category, unknown category."""
 
     pass
 
 
 class CSVProductParser:
-    """
-    Service for parsing CSV files containing product data.
+    """Schema-aware CSV parser for bulk product upload.
 
-    Features:
-    - Validates required columns
-    - Validates VIN format
-    - Detects duplicate VINs within CSV
-    - Converts price from dollars to cents
-    - Continues parsing after row errors (partial failure handling)
-    - Enforces row limits
+    Fetches the category's attribute_schema from the repository (one query
+    per unique category_id in the file) and validates every non-universal
+    column against it. The file must contain exactly one unique category_id.
     """
 
     def __init__(
         self,
-        required_columns: set[str] | None = None,
-        max_rows: int = 1000,
+        category_repository: "AbstractCategoryRepository",
+        max_rows: int = 5000,
     ) -> None:
-        """
-        Initialize CSV parser.
-
-        Args:
-            required_columns: Set of required column names (default: vin, title, price, category_id)
-            max_rows: Maximum number of data rows allowed (excluding header)
-        """
-        self.required_columns = required_columns or {"vin", "title", "price", "category_id"}
+        self._category_repository = category_repository
         self.max_rows = max_rows
 
     async def parse_csv(
         self,
         csv_content: str,
-        tenant_id: UUID,  # noqa: ARG002
-        organization_id: UUID,  # noqa: ARG002
+        tenant_id: UUID,
+        organization_id: UUID,  # noqa: ARG002 — kept for interface compat
     ) -> CSVParseResult:
-        """
-        Parse CSV content and extract product data.
-
-        Args:
-            csv_content: CSV file content as string
-            tenant_id: Tenant ID for all products
-            organization_id: Organization ID for all products
-
-        Returns:
-            CSVParseResult with parsed products and any errors
-
-        Raises:
-            CSVParseError: If CSV file structure is invalid
-        """
         csv_file = StringIO(csv_content)
 
-        # Validate columns first
         column_errors = self._validate_columns(csv_file)
         if column_errors:
             raise CSVParseError(f"CSV validation failed: {'; '.join(column_errors)}")
 
-        # Reset file pointer for reading
         csv_file.seek(0)
-
-        # Parse CSV
         reader = csv.DictReader(csv_file)
         rows = list(reader)
 
-        # Check row limit
         if len(rows) > self.max_rows:
             raise CSVParseError(f"Too many rows: {len(rows)} exceeds maximum of {self.max_rows}")
 
-        # Track seen VINs for duplicate detection
-        seen_vins: set[str] = set()
+        # Collect unique category_ids from the CSV (ignore empty)
+        category_id_strs: set[str] = set()
+        for row in rows:
+            cid = (row.get("category_id") or "").strip()
+            if cid:
+                category_id_strs.add(cid)
+
+        if len(category_id_strs) > 1:
+            raise CSVParseError(
+                f"CSV contains multiple categories: {', '.join(sorted(category_id_strs))}. "
+                "Split into separate CSVs, one per category."
+            )
+
+        # Load schema for the single category
+        schemas: dict[UUID, dict] = {}
+        for cid_str in category_id_strs:
+            try:
+                cid = UUID(cid_str)
+            except ValueError as exc:
+                raise CSVParseError(f"Invalid category_id UUID: {cid_str!r}") from exc
+
+            category = await self._category_repository.get_by_id_or_global(cid, tenant_id)
+            if not category:
+                raise CSVParseError(f"Unknown category_id: {cid_str!r}")
+            schemas[cid] = category.attribute_schema or {}
 
         products: list[ParsedProductRow] = []
-        errors: list[dict[str, str | int]] = []
+        all_errors: list[CSVRowError] = []
 
-        for idx, row in enumerate(rows, start=2):  # Start at 2 (1 is header)
+        for idx, row in enumerate(rows, start=2):
+            cid_str = (row.get("category_id") or "").strip()
             try:
-                # Validate and parse row
-                product = self._parse_row(
-                    row=row,
-                    row_number=idx,
-                    seen_vins=seen_vins,
+                cid = UUID(cid_str)
+            except (ValueError, AttributeError):
+                all_errors.append(
+                    CSVRowError(
+                        row_number=idx,
+                        column="category_id",
+                        message=f"Invalid category_id UUID: {cid_str!r}",
+                        raw_row={k: (v or "") for k, v in row.items()},
+                    )
                 )
-                if product:
-                    products.append(product)
-                    seen_vins.add(product.vin)
+                continue
 
-            except (InvalidVINError, ValueError, KeyError) as e:
-                error_dict: dict[str, str | int] = {
-                    "row_number": idx,
-                    "vin": row.get("vin", "N/A"),
-                    "error": str(e),
-                }
-                errors.append(error_dict)
+            schema = schemas.get(cid, {})
+            product, row_errors = self._parse_row(row=row, row_number=idx, schema=schema)
+            if row_errors:
+                all_errors.extend(row_errors)
+            elif product:
+                products.append(product)
 
         return CSVParseResult(
             total_rows=len(rows),
             products=products,
-            failed_count=len(errors),
-            errors=errors,
+            failed_count=len(all_errors),
+            errors=all_errors,
         )
 
     def _validate_columns(self, csv_file: StringIO) -> list[str]:
-        """
-        Validate that required columns are present.
-
-        Args:
-            csv_file: CSV file object
-
-        Returns:
-            List of error messages (empty if valid)
-        """
-        # Read header row
         reader = csv.DictReader(csv_file)
         if reader.fieldnames is None:
             return ["Empty CSV file"]
-
-        present_columns = set(reader.fieldnames)
-        missing_columns = self.required_columns - present_columns
-
-        errors: list[str] = []
-        if missing_columns:
-            errors.append(f"Missing required columns: {', '.join(sorted(missing_columns))}")
-
-        return errors
+        present = set(reader.fieldnames)
+        missing = UNIVERSAL_COLUMNS - present
+        return [f"Missing required columns: {', '.join(sorted(missing))}"] if missing else []
 
     def _parse_row(
         self,
-        row: dict[str, str],
+        row: dict[str, str | None],
         row_number: int,
-        seen_vins: set[str],
-    ) -> ParsedProductRow:
-        """
-        Parse a single CSV row into ParsedProductRow.
+        schema: dict,
+    ) -> tuple["ParsedProductRow | None", list[CSVRowError]]:
+        errors: list[CSVRowError] = []
+        raw = {k: (v or "") for k, v in row.items()}
 
-        Args:
-            row: Dictionary of column values
-            row_number: Row number for error reporting
-            seen_vins: Set of VINs seen so far (for duplicate detection)
+        # Universal fields
+        title = (row.get("title") or "").strip()
+        if not title:
+            errors.append(
+                CSVRowError(
+                    row_number=row_number,
+                    column="title",
+                    message="title is required and cannot be empty",
+                    raw_row=raw,
+                )
+            )
 
-        Returns:
-            ParsedProductRow
-
-        Raises:
-            InvalidVINError: If VIN is invalid
-            ValueError: If price is invalid
-            KeyError: If required field is missing
-        """
-        # Extract and validate VIN
-        vin = row["vin"].strip()
-        if not self._is_valid_vin_format(vin):
-            raise InvalidVINError(vin, "Invalid VIN format")
-
-        # Check for duplicate VIN
-        if vin in seen_vins:
-            raise ValueError(f"Duplicate VIN in CSV: {vin}")
-
-        # Extract required fields
-        title = row["title"].strip()
-        price_str = row["price"].strip()
-        category_id_str = row["category_id"].strip()
-
-        # Validate and convert price
+        price_str = (row.get("price") or "").strip()
+        price_cents = 0
         try:
             price_dollars = float(price_str)
             if price_dollars < 0:
                 raise ValueError("Price cannot be negative")
-            # Round to nearest cent to avoid floating point precision issues
             price_cents = round(price_dollars * 100)
-        except ValueError as e:
-            raise ValueError(f"Invalid price format: {price_str}") from e
+        except (ValueError, TypeError):
+            errors.append(
+                CSVRowError(
+                    row_number=row_number,
+                    column="price",
+                    message=f"Invalid price: {price_str!r}",
+                    raw_row=raw,
+                )
+            )
 
-        # Validate category_id UUID
+        category_id_str = (row.get("category_id") or "").strip()
+        category_id: UUID | None = None
         try:
             category_id = UUID(category_id_str)
-        except ValueError as e:
-            raise ValueError(f"Invalid category_id UUID: {category_id_str}") from e
+        except (ValueError, AttributeError):
+            errors.append(
+                CSVRowError(
+                    row_number=row_number,
+                    column="category_id",
+                    message=f"Invalid category_id UUID: {category_id_str!r}",
+                    raw_row=raw,
+                )
+            )
 
-        # Extract optional fields
-        description = row.get("description", "").strip() or None
-        condition = row.get("condition", "used").strip() or "used"
-        currency = row.get("currency", "USD").strip() or "USD"
-        location_city = row.get("location_city", "").strip() or None
-        location_state = row.get("location_state", "").strip() or None
-        location_zip = row.get("location_zip", "").strip() or None
+        if errors:
+            return None, errors
 
-        # Parse attributes JSON if present
+        # Attribute columns (non-universal, non-known-product)
         attributes: dict[str, object] = {}
-        attributes_str = row.get("attributes", "").strip()
-        if attributes_str:
-            import json
+        for col_name, col_value in row.items():
+            if col_name in ALL_KNOWN_COLUMNS:
+                continue
+            value_str = (col_value or "").strip()
+            if not value_str:
+                continue
+            if col_name in schema:
+                field_type = str(schema[col_name].get("type", "string"))
+                try:
+                    attributes[col_name] = self._coerce_value(col_name, value_str, field_type)
+                except ValueError as e:
+                    errors.append(
+                        CSVRowError(
+                            row_number=row_number,
+                            column=f"attributes.{col_name}",
+                            message=str(e),
+                            raw_row=raw,
+                        )
+                    )
+            else:
+                attributes[col_name] = value_str
 
-            try:
-                attributes = json.loads(attributes_str)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid attributes JSON: {e}") from e
+        # Required schema fields check
+        for field_name, field_def in schema.items():
+            if field_def.get("required", False) and field_name not in attributes:
+                errors.append(
+                    CSVRowError(
+                        row_number=row_number,
+                        column=f"attributes.{field_name}",
+                        message=f"Required attribute '{field_name}' is missing",
+                        raw_row=raw,
+                    )
+                )
 
-        return ParsedProductRow(
-            row_number=row_number,
-            vin=vin,
-            title=title,
-            price_cents=price_cents,
-            category_id=category_id,
-            description=description,
-            condition=condition,
-            currency=currency,
-            location_city=location_city,
-            location_state=location_state,
-            location_zip=location_zip,
-            attributes=attributes,
+        if errors:
+            return None, errors
+
+        assert category_id is not None  # guaranteed by early return above
+        return (
+            ParsedProductRow(
+                row_number=row_number,
+                title=title,
+                price_cents=price_cents,
+                category_id=category_id,
+                description=(row.get("description") or "").strip() or None,
+                condition=(row.get("condition") or "used").strip() or "used",
+                currency=(row.get("currency") or "USD").strip() or "USD",
+                location_city=(row.get("location_city") or "").strip() or None,
+                location_state=(row.get("location_state") or "").strip() or None,
+                location_zip=(row.get("location_zip") or "").strip() or None,
+                attributes=attributes,
+            ),
+            [],
         )
 
-    def _is_valid_vin_format(self, vin: str) -> bool:
-        """
-        Validate VIN format.
-
-        VIN must be exactly 17 characters and contain only valid characters
-        (excluding I, O, Q to avoid confusion with numbers).
-
-        Args:
-            vin: Vehicle Identification Number to validate
-
-        Returns:
-            True if VIN format is valid, False otherwise
-        """
-        if not vin or len(vin) != 17:
-            return False
-
-        # Check for invalid characters (I, O, Q)
-        invalid_chars = {"I", "O", "Q"}
-        if any(char in invalid_chars for char in vin.upper()):
-            return False
-
-        # Check for alphanumeric characters only
-        return vin.upper().isalnum()
+    @staticmethod
+    def _coerce_value(col_name: str, value: str, field_type: str) -> object:
+        """Coerce a CSV string to the schema-declared type. Raises ValueError on failure."""
+        if field_type == "number":
+            try:
+                return float(value)
+            except (ValueError, TypeError) as exc:
+                raise ValueError(f"Column '{col_name}' must be a number, got: {value!r}") from exc
+        if field_type == "boolean":
+            if value.lower() in ("true", "1", "yes"):
+                return True
+            if value.lower() in ("false", "0", "no"):
+                return False
+            raise ValueError(
+                f"Column '{col_name}' must be boolean (true/false/1/0/yes/no), got: {value!r}"
+            )
+        return value  # string, array, object, or unknown → keep as string

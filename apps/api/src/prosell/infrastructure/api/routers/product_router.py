@@ -279,7 +279,7 @@ async def bulk_upload_products(
     # Execute use case
     product_repo = SqlAlchemyProductRepository(db)
     category_repo = SqlAlchemyCategoryRepository(db)
-    csv_parser = CSVProductParser()
+    csv_parser = CSVProductParser(category_repository=category_repo)
     use_case = BulkUploadProductsUseCase(product_repo, category_repo, csv_parser)
 
     # Parse CSV
