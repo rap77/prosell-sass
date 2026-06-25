@@ -78,7 +78,7 @@ jobs:
         working-directory: apps/api
 
       - name: Run tests
-        run: uv run pytest --cov=prosell_saas --cov-report=xml
+        run: uv run pytest --cov=prosell --cov-report=xml
         working-directory: apps/api
 
   lint-node:

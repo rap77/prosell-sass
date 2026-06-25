@@ -23,6 +23,9 @@ from prosell.infrastructure.models.organization_model import OrganizationModel
 from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
 from prosell.infrastructure.models.user_model import UserModel
 
+# Single source of truth — keep in sync with apps/api/scripts/create_test_schema.py.
+from ._constants import TEST_DB_URL
+
 
 def _db_available() -> bool:
     try:
@@ -41,8 +44,6 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
         if "/tests/integration/" in str(item.fspath) or "/integration/" in str(item.nodeid):
             item.add_marker(skip)
 
-
-TEST_DB_URL = "postgresql+asyncpg://prosell:prosell_test_password@localhost:5433/prosell_test"
 
 # =============================================================================
 # SESSION-SCOPED FIXTURES - Run once per test session
