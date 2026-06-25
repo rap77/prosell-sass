@@ -84,9 +84,15 @@ is_allowed() {
         apps/api/conftest.py) return 0 ;;
         apps/api/tests/*/conftest.py|apps/api/tests/conftest.py) return 0 ;;
         apps/api/tests/**/conftest.py) return 0 ;;
+        # Single source of truth for the integration-test DB URL (same
+        # dev-only credential as the conftests that consume it).
+        apps/api/tests/integration/_constants.py) return 0 ;;
         # init-test-db.py runs only against the local test container
         # (postgres on port 5433, see docker/docker-compose.yml).
         scripts/init-test-db.py) return 0 ;;
+        # create_test_schema.py bootstraps the same local test container's
+        # schema for CI/local integration runs -- same dev-only credential.
+        apps/api/scripts/create_test_schema.py) return 0 ;;
     esac
     return 1
 }

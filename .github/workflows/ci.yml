@@ -44,6 +44,20 @@ jobs:
   test-python:
     name: Test Python
     runs-on: ubuntu-latest
+    services:
+      postgres-test:
+        image: postgres:17
+        env:
+          POSTGRES_USER: prosell
+          POSTGRES_PASSWORD: prosell_test_password
+          POSTGRES_DB: prosell_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U prosell"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v6
 
@@ -59,8 +73,12 @@ jobs:
         run: uv sync --all-extras
         working-directory: apps/api
 
+      - name: Create integration test DB schema
+        run: uv run python scripts/create_test_schema.py
+        working-directory: apps/api
+
       - name: Run tests
-        run: uv run pytest --cov=prosell_saas --cov-report=xml
+        run: uv run pytest --cov=prosell --cov-report=xml
         working-directory: apps/api
 
   lint-node:

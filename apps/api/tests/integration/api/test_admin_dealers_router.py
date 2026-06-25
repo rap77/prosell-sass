@@ -87,6 +87,31 @@ async def other_dealer(db_session: AsyncSession) -> OrganizationModel:
     return org
 
 
+@pytest.fixture
+async def pending_dealer_without_invitation(
+    db_session: AsyncSession,
+) -> OrganizationModel:
+    """A dealer org in PENDING_VERIFICATION status with no invitation row yet.
+
+    Distinct from `other_dealer` (status="active"): resend-invitation has a
+    409 gate for non-pending dealers that fires before the 404-for-no-
+    invitation check, so the no-invitation-yet test needs a dealer that is
+    actually still pending.
+    """
+    org_id = uuid4()
+    org = OrganizationModel(
+        id=org_id,
+        tenant_id=org_id,
+        name="Pending Dealer",
+        status="pending_verification",
+        description="Dealer awaiting verification, no invitation issued yet",
+        settings={},
+    )
+    db_session.add(org)
+    await db_session.flush()
+    return org
+
+
 @pytest.mark.asyncio
 async def test_admin_lists_all_dealers(
     async_client_as_admin: AsyncClient,
@@ -313,11 +338,11 @@ async def test_resend_invitation_404s_for_unknown_dealer(
 @pytest.mark.asyncio
 async def test_resend_invitation_404s_when_dealer_has_no_invitation_yet(
     async_client_as_admin: AsyncClient,
-    other_dealer: OrganizationModel,
+    pending_dealer_without_invitation: OrganizationModel,
 ) -> None:
     """Task 12: a dealer org with no OrganizationInvitation row yet 404s."""
     response = await async_client_as_admin.post(
-        f"/api/v1/admin/dealers/{other_dealer.id}/resend-invitation",
+        f"/api/v1/admin/dealers/{pending_dealer_without_invitation.id}/resend-invitation",
     )
     assert response.status_code == 404
 

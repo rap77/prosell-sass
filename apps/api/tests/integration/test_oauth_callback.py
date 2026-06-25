@@ -2,6 +2,7 @@
 
 # ruff: noqa: ARG002 - override_oauth_dependencies is a pytest fixture, not directly used
 
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
@@ -23,7 +24,7 @@ from prosell.infrastructure.api.main import app
 
 
 @pytest.fixture
-def mock_oauth_service():
+def mock_oauth_service() -> MagicMock:
     """Mock OAuth service."""
     service = MagicMock()
     service.initiate_authorization = AsyncMock(
@@ -51,7 +52,7 @@ def mock_oauth_service():
 
 
 @pytest.fixture
-def mock_oauth_use_case():
+def mock_oauth_use_case() -> MagicMock:
     """Mock OAuth login use case."""
     from prosell.application.dto.auth import UserInfo
     from prosell.application.use_cases.auth.oauth_login import OAuthLoginResponse
@@ -76,7 +77,9 @@ def mock_oauth_use_case():
 
 
 @pytest.fixture
-def override_oauth_dependencies(mock_oauth_service, mock_oauth_use_case):
+def override_oauth_dependencies(
+    mock_oauth_service: MagicMock, mock_oauth_use_case: MagicMock
+) -> Iterator[None]:
     """Override OAuth dependencies for testing."""
     from prosell.infrastructure.api.dependencies import get_oauth_login_use_case, get_oauth_service
 
@@ -98,7 +101,7 @@ def override_oauth_dependencies(mock_oauth_service, mock_oauth_use_case):
 class TestOAuthAuthorizeEndpoint:
     """Tests for GET /auth/oauth/{provider}/authorize."""
 
-    async def test_google_authorize_redirects_to_google(self, override_oauth_dependencies):
+    async def test_google_authorize_redirects_to_google(self, override_oauth_dependencies) -> None:
         """Test that authorize endpoint redirects to Google OAuth."""
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -114,7 +117,9 @@ class TestOAuthAuthorizeEndpoint:
             assert "client_id=" in response.headers["location"]
             assert "state=test-state-123" in response.headers["location"]
 
-    async def test_facebook_authorize_redirects_to_facebook(self, override_oauth_dependencies):
+    async def test_facebook_authorize_redirects_to_facebook(
+        self, override_oauth_dependencies
+    ) -> None:
         """Test that authorize endpoint redirects to Facebook OAuth."""
         # Update mock to return Facebook URL
         from prosell.infrastructure.api.dependencies import get_oauth_service
@@ -139,7 +144,7 @@ class TestOAuthAuthorizeEndpoint:
                 "https://www.facebook.com/v18.0/dialog/oauth"
             )
 
-    async def test_unsupported_provider_raises_exception(self, override_oauth_dependencies):
+    async def test_unsupported_provider_raises_exception(self, override_oauth_dependencies) -> None:
         """Test that unsupported provider raises exception."""
         from prosell.infrastructure.api.dependencies import get_oauth_service
 
@@ -169,7 +174,7 @@ class TestOAuthCallbackEndpoint:
 
     async def test_successful_callback_sets_cookies_and_redirects(
         self, override_oauth_dependencies
-    ):
+    ) -> None:
         """Test that successful callback sets httpOnly cookies and redirects."""
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -199,7 +204,9 @@ class TestOAuthCallbackEndpoint:
             assert "refresh_token" in cookie_names
             assert "user_data" in cookie_names
 
-    async def test_callback_with_error_redirects_to_login(self, override_oauth_dependencies):
+    async def test_callback_with_error_redirects_to_login(
+        self, override_oauth_dependencies
+    ) -> None:
         """Test that callback with error parameter redirects to login with error."""
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -218,7 +225,7 @@ class TestOAuthCallbackEndpoint:
             assert "localhost:3000/auth/login" in location
             assert "access_denied" in location
 
-    async def test_callback_invalid_state_returns_error(self, override_oauth_dependencies):
+    async def test_callback_invalid_state_returns_error(self, override_oauth_dependencies) -> None:
         """Test that callback with invalid state returns error."""
         from prosell.infrastructure.api.dependencies import get_oauth_service
 
@@ -245,7 +252,9 @@ class TestOAuthCallbackEndpoint:
             location = response.headers["location"]
             assert "localhost:3000/auth/login" in location
 
-    async def test_callback_service_error_redirects_to_login(self, override_oauth_dependencies):
+    async def test_callback_service_error_redirects_to_login(
+        self, override_oauth_dependencies
+    ) -> None:
         """Test that callback service error redirects to login."""
         from prosell.infrastructure.api.dependencies import get_oauth_service
 
@@ -269,7 +278,7 @@ class TestOAuthCallbackEndpoint:
             location = response.headers["location"]
             assert "localhost:3000/auth/login" in location
 
-    async def test_callback_missing_code_parameter_fails(self, override_oauth_dependencies):
+    async def test_callback_missing_code_parameter_fails(self, override_oauth_dependencies) -> None:
         """Test that callback without code parameter fails gracefully with redirect."""
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -288,7 +297,9 @@ class TestOAuthCallbackEndpoint:
             assert "localhost:3000/auth/login" in location
             assert "invalid_request" in location
 
-    async def test_callback_missing_state_parameter_fails(self, override_oauth_dependencies):
+    async def test_callback_missing_state_parameter_fails(
+        self, override_oauth_dependencies
+    ) -> None:
         """Test that callback without state parameter fails gracefully with redirect."""
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -319,7 +330,7 @@ class TestOAuthServiceCalls:
 
     async def test_authorize_calls_service_with_correct_redirect_uri(
         self, override_oauth_dependencies
-    ):
+    ) -> None:
         """Test that authorize endpoint calls service with correct redirect URI."""
         from prosell.infrastructure.api.dependencies import get_oauth_service
 
@@ -336,11 +347,13 @@ class TestOAuthServiceCalls:
             mock_service.initiate_authorization.assert_called_once()
             call_args = mock_service.initiate_authorization.call_args
             assert call_args[1]["provider"] == "google"
-            assert "localhost:8000/api/auth/oauth/google/callback" in call_args[1]["redirect_uri"]
+            assert (
+                "localhost:8000/api/v1/auth/oauth/google/callback" in call_args[1]["redirect_uri"]
+            )
 
     async def test_callback_calls_service_with_correct_parameters(
         self, override_oauth_dependencies
-    ):
+    ) -> None:
         """Test that callback endpoint calls service with correct parameters."""
         from prosell.infrastructure.api.dependencies import get_oauth_service
 

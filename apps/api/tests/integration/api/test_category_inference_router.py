@@ -111,7 +111,11 @@ async def seed_root_categories(
             {"field_name": "model", "field_label": "Model", "field_type": "string"},
             {"field_name": "year", "field_label": "Year", "field_type": "number"},
         ],
-        attribute_schema={},
+        attribute_schema={
+            "make": {"type": "string"},
+            "model": {"type": "string"},
+            "year": {"type": "number"},
+        },
     )
     real_estate = CategoryModel(
         id=uuid4(),
