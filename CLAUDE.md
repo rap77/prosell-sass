@@ -262,15 +262,15 @@ Source: [andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy
 Every design spec in `docs/superpowers/specs/` MUST have a `**Status**:` line in
 its header with one of these values:
 
-| Status         | Meaning                                                             | Update trigger |
-|----------------|---------------------------------------------------------------------|----------------|
-| `DRAFT`        | Spec in writing, decisions not locked                               | Brainstorming in progress |
-| `APPROVED`     | Decisions locked, no PR open yet                                   | After brainstorm approval, before writing-plans |
-| `IN PROGRESS`  | PR open implementing the spec                                      | When opening the implementation PR |
-| `IMPLEMENTED`  | PR merged to `main` (PR ref + merge date)                          | When the implementation PR merges |
-| `COMPLETED`    | For roadmaps only: all dependent work merged                       | When the last dependent subsystem merges |
-| `SUPERSEDED`   | Replaced by a newer spec (link to successor)                       | When the newer spec is created |
-| `STALE`        | Items closed by other unrelated work (requires audit section)     | When other work subsumes the spec's items |
+| Status        | Meaning                                                       | Update trigger                                  |
+| ------------- | ------------------------------------------------------------- | ----------------------------------------------- |
+| `DRAFT`       | Spec in writing, decisions not locked                         | Brainstorming in progress                       |
+| `APPROVED`    | Decisions locked, no PR open yet                              | After brainstorm approval, before writing-plans |
+| `IN PROGRESS` | PR open implementing the spec                                 | When opening the implementation PR              |
+| `IMPLEMENTED` | PR merged to `main` (PR ref + merge date)                     | When the implementation PR merges               |
+| `COMPLETED`   | For roadmaps only: all dependent work merged                  | When the last dependent subsystem merges        |
+| `SUPERSEDED`  | Replaced by a newer spec (link to successor)                  | When the newer spec is created                  |
+| `STALE`       | Items closed by other unrelated work (requires audit section) | When other work subsumes the spec's items       |
 
 ### Enforcement
 
