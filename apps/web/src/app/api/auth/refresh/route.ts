@@ -9,11 +9,7 @@
 
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-
-interface BackendRefreshResponse {
-  access_token: string;
-  refresh_token: string;
-}
+import { BackendRefreshResponseSchema } from "@/lib/api/schemas/authRoutes";
 
 export async function POST(): Promise<NextResponse> {
   const cookieStore = await cookies();
@@ -39,7 +35,7 @@ export async function POST(): Promise<NextResponse> {
       return NextResponse.json({ ok: false }, { status: 401 });
     }
 
-    const data = (await res.json()) as BackendRefreshResponse;
+    const data = BackendRefreshResponseSchema.parse(await res.json());
 
     const isDev = process.env.NODE_ENV !== "production";
     const response = NextResponse.json({ ok: true });
