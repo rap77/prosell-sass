@@ -1,8 +1,11 @@
 """Product router."""
 
+import csv
+import io
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 from urllib.parse import urlparse
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import (
     APIRouter,
@@ -15,11 +18,15 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prosell.application.dto.product import (
     BulkUploadPreviewResponse,
+    BulkUploadRowError,
+    BulkUploadUploadResult,
     BulkUploadVehiclesResponse,
     CreateProductRequest,
     ProductImageUrlResponse,
@@ -37,10 +44,7 @@ from prosell.application.use_cases.product.build_attribute_filters import (
 from prosell.application.use_cases.product.bulk_upload_preview import (
     BulkUploadPreviewUseCase,
 )
-from prosell.application.use_cases.product.bulk_upload_products import (
-    BulkUploadProductsUseCase,
-    BulkUploadResult,
-)
+from prosell.application.use_cases.product.bulk_upload_products import BulkUploadProductsUseCase
 from prosell.application.use_cases.product.bulk_upload_vehicles import (
     BulkUploadVehiclesUseCase,
 )
@@ -56,12 +60,13 @@ from prosell.domain.entities.role import Permission
 from prosell.domain.entities.user import User
 from prosell.domain.exceptions.category_exceptions import CategoryNotFoundError
 from prosell.domain.exceptions.product_exceptions import ProductNotFoundError
-from prosell.domain.services.csv_product_parser import CSVProductParser
+from prosell.domain.services.csv_product_parser import CSVParseError, CSVProductParser
 from prosell.infrastructure.api.dependencies import (
     get_current_auth_user_from_cookie,
     get_spaces_service,
 )
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.models.bulk_upload_error_model import BulkUploadErrorModel
 from prosell.infrastructure.repositories.category_repository_impl import (
     SqlAlchemyCategoryRepository,
 )
@@ -235,65 +240,162 @@ async def create_product(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
 
-@router.post("/bulk-upload", response_model=BulkUploadResult, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/bulk-upload",
+    response_model=BulkUploadUploadResult,
+    status_code=status.HTTP_201_CREATED,
+)
 async def bulk_upload_products(
     current_user: CurrentUser,
     db: DbSession,
     csv_file: UploadFile = File(..., description="CSV file with product data"),
-) -> BulkUploadResult:
-    """
-    Bulk upload products from CSV file.
+) -> BulkUploadUploadResult:
+    """Bulk upload products from a schema-aware CSV file.
 
-    CSV format requirements:
-    - Required columns: vin, title, price, category_id
-    - Optional columns: description, condition, currency, location_city, location_state,
-    location_zip, attributes
-
-    The endpoint:
-    - Parses CSV and validates all rows
-    - Continues processing after individual row errors (partial success)
-    - Returns detailed error reporting with row numbers and VINs
-    - Creates products in DRAFT status
-
-    Example CSV:
-    ```csv
-    vin,title,price,category_id,description,condition
-    1HGCM82633A123456,2020 Honda Accord,25000.00,123e4567-e89b-12d3-a456-426614174000,Well
-    maintained,used
-    1HGCM82633A123457,2021 Honda Civic,22000.00,123e4567-e89b-12d3-a456-426614174000,Like new,used
-    ```
+    Required columns: title, price, category_id. Any additional columns are
+    validated against the category's attribute_schema. Errors are per-row and
+    partial success is supported.
     """
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    # Validate CSV file
     if not csv_file.filename or not csv_file.filename.endswith(".csv"):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Only CSV files are supported"
         )
 
-    # Read CSV content
     content = await csv_file.read()
-    csv_content = content.decode("utf-8")
+    try:
+        csv_content = content.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="CSV must be UTF-8 encoded"
+        ) from exc
 
-    # Execute use case
     product_repo = SqlAlchemyProductRepository(db)
     category_repo = SqlAlchemyCategoryRepository(db)
     csv_parser = CSVProductParser(category_repository=category_repo)
     use_case = BulkUploadProductsUseCase(product_repo, category_repo, csv_parser)
 
-    # Parse CSV
-    parse_result = await csv_parser.parse_csv(
-        csv_content=csv_content,
+    try:
+        parse_result = await csv_parser.parse_csv(
+            csv_content=csv_content,
+            tenant_id=current_user.tenant_id,
+            organization_id=current_user.tenant_id,
+        )
+    except CSVParseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
+
+    use_result = await use_case.execute(
+        parsed_products=parse_result.products,
         tenant_id=current_user.tenant_id,
         organization_id=current_user.tenant_id,
     )
 
-    # Bulk upload
-    return await use_case.execute(
-        parsed_products=parse_result.products,
-        tenant_id=current_user.tenant_id,
-        organization_id=current_user.tenant_id,
+    upload_id = uuid4()
+
+    # Merge parse-phase + use-case-phase errors into BulkUploadRowError list
+    all_errors: list[BulkUploadRowError] = [
+        BulkUploadRowError(
+            row_number=e.row_number,
+            column=e.column,
+            message=e.message,
+            raw_row=e.raw_row,
+        )
+        for e in parse_result.errors
+    ] + [
+        BulkUploadRowError(
+            row_number=int(e["row_number"]),
+            message=str(e["message"]),
+        )
+        for e in use_result.errors
+    ]
+
+    if all_errors:
+        # Determine category_id for the audit record
+        if parse_result.products:
+            audit_category_id = parse_result.products[0].category_id
+        else:
+            try:
+                audit_category_id = UUID(parse_result.errors[0].raw_row.get("category_id") or "")
+            except (ValueError, IndexError):
+                audit_category_id = uuid4()
+
+        error_record = BulkUploadErrorModel(
+            id=upload_id,
+            tenant_id=current_user.tenant_id,
+            category_id=audit_category_id,
+            expires_at=datetime.now(UTC) + timedelta(hours=24),
+            payload=[e.model_dump() for e in all_errors],
+        )
+        db.add(error_record)
+        await db.flush()
+
+    return BulkUploadUploadResult(
+        upload_id=upload_id,
+        total_rows=parse_result.total_rows,
+        created_count=use_result.created_count,
+        failed_count=len(all_errors),
+        errors=all_errors,
+    )
+
+
+def _csv_safe(v: object) -> str:
+    s = "" if v is None else str(v)
+    if s and s[0] in ("=", "+", "-", "@", "\t", "\r"):
+        s = "'" + s
+    return s
+
+
+@router.get("/bulk-upload/errors.csv", response_model=None)
+async def download_bulk_upload_errors_csv(
+    current_user: CurrentUser,
+    db: DbSession,
+    upload_id: UUID = Query(..., description="Upload ID from the bulk-upload response"),
+) -> StreamingResponse:
+    """Download a CSV of per-row errors from a previous bulk upload.
+
+    The error record expires 24 hours after the upload. Returns 404 when the
+    record doesn't exist, has expired, or belongs to a different tenant.
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
+
+    result = await db.execute(
+        select(BulkUploadErrorModel).where(
+            BulkUploadErrorModel.id == upload_id,
+            BulkUploadErrorModel.tenant_id == current_user.tenant_id,
+            BulkUploadErrorModel.expires_at > datetime.now(UTC),
+        )
+    )
+    record = result.scalar_one_or_none()
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Upload error record not found or expired",
+        )
+
+    output = io.StringIO()
+    fieldnames = ["row_number", "column", "message", "raw_row"]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+    for err in record.payload:
+        writer.writerow(
+            {
+                "row_number": _csv_safe(err.get("row_number", "")),
+                "column": _csv_safe(err.get("column") or ""),
+                "message": _csv_safe(err.get("message", "")),
+                "raw_row": _csv_safe(err.get("raw_row", {})),
+            }
+        )
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=bulk-upload-errors-{upload_id}.csv"},
     )
 
 
