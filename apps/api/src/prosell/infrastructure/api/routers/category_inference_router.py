@@ -6,6 +6,8 @@ rule: ``title`` and ``attributes`` may contain PII or competitor
 product details).
 """
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Request
 
 from prosell.application.dto.category.inference import (
@@ -22,7 +24,7 @@ from prosell.infrastructure.api.dependencies import (
 )
 from prosell.infrastructure.api.middleware import smart_rate_limit
 
-router = APIRouter(prefix="/categories", tags=["categories"])
+router = APIRouter(tags=["categories"])
 
 
 @router.post("/infer", response_model=CategoryInferenceResponse)
@@ -30,8 +32,8 @@ router = APIRouter(prefix="/categories", tags=["categories"])
 async def infer_category(
     request: Request,  # noqa: ARG001 — required by slowapi rate-limit introspection
     request_body: CategoryInferenceRequest,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    use_case: InferCategoryUseCase = Depends(get_infer_category_use_case),
+    current_user: Annotated[User, Depends(get_current_auth_user_from_cookie)],
+    use_case: Annotated[InferCategoryUseCase, Depends(get_infer_category_use_case)],
 ) -> CategoryInferenceResponse:
     """Suggest a category for a new product based on title + attributes.
 
