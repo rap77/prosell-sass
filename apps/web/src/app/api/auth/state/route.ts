@@ -14,23 +14,10 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { after } from "next/server";
 import { logger } from "@/lib/logger";
-
-// ============================================
-// TYPES
-// ============================================
-
-interface AuthStateResponse {
-  isAuthenticated: boolean;
-  user?: {
-    id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    role: string;
-    is_email_verified: boolean;
-    is_2fa_enabled: boolean;
-  };
-}
+import {
+  AuthStateResponseSchema,
+  type AuthStateResponse,
+} from "@/lib/api/schemas/authRoutes";
 
 // ============================================
 // ROUTE HANDLER
@@ -62,7 +49,7 @@ export async function GET(): Promise<NextResponse<AuthStateResponse>> {
       return NextResponse.json({ isAuthenticated: false });
     }
 
-    const authState = (await response.json()) as AuthStateResponse;
+    const authState = AuthStateResponseSchema.parse(await response.json());
     return NextResponse.json(authState);
   } catch (error) {
     // Non-blocking error logging with after() - doesn't delay response
