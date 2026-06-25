@@ -35,16 +35,16 @@ These were explicitly discussed in brainstorming and deferred to a separate road
 
 ## Decisions (locked in brainstorming)
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Scope | **Roadmap split: F-1+F-2 now, requests workflow next roadmap** | Bug fix unblocks prod; requests workflow is cross-cutting enough to deserve its own spec |
-| Categories per upload | **Single per upload, detected post-load** | CSV's `category_id` column already exists; reject multi-category uploads with clear error ("split into N CSVs") |
-| Required fields definition | **Extend `attribute_schema` with `required: bool`** | Schema is already the source of truth for category attributes; adding `required` is a backward-compatible extension; avoids drift between schema and config file |
-| Error UX | **Inline modal with table + "Download CSV errors" button** | User sees error context in UI; can also export for spreadsheet fix |
-| Schema admin UI scope | **Full CRUD + type change + drag-and-drop reorder + schema cloning** | User confirmed all four operations are wanted |
-| Auth model | **Prosell superadmin only writes schema; tenant admins read-only** | Per user decision; request workflow comes in next roadmap |
-| `max_rows` | **Raise from 1000 to 5000** | Stop-gap until streaming roadmap |
-| Test approach | **TDD per phase, failing test first** | Project standard ([[NEVER_DO]], [[apply-known-fixes-immediately]]) |
+| Decision                   | Choice                                                               | Rationale                                                                                                                                                        |
+| -------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scope                      | **Roadmap split: F-1+F-2 now, requests workflow next roadmap**       | Bug fix unblocks prod; requests workflow is cross-cutting enough to deserve its own spec                                                                         |
+| Categories per upload      | **Single per upload, detected post-load**                            | CSV's `category_id` column already exists; reject multi-category uploads with clear error ("split into N CSVs")                                                  |
+| Required fields definition | **Extend `attribute_schema` with `required: bool`**                  | Schema is already the source of truth for category attributes; adding `required` is a backward-compatible extension; avoids drift between schema and config file |
+| Error UX                   | **Inline modal with table + "Download CSV errors" button**           | User sees error context in UI; can also export for spreadsheet fix                                                                                               |
+| Schema admin UI scope      | **Full CRUD + type change + drag-and-drop reorder + schema cloning** | User confirmed all four operations are wanted                                                                                                                    |
+| Auth model                 | **Prosell superadmin only writes schema; tenant admins read-only**   | Per user decision; request workflow comes in next roadmap                                                                                                        |
+| `max_rows`                 | **Raise from 1000 to 5000**                                          | Stop-gap until streaming roadmap                                                                                                                                 |
+| Test approach              | **TDD per phase, failing test first**                                | Project standard ([[NEVER_DO]], [[apply-known-fixes-immediately]])                                                                                               |
 
 ## Architecture Overview
 
@@ -274,26 +274,26 @@ TDD per phase, failing test written before implementation:
 
 ### Backend tests (PR 1)
 
-| Test | Path | What it covers |
-|------|------|----------------|
-| Parser schema-aware | `tests/unit/domain/services/test_csv_product_parser.py` | universal column missing → error; category not found → top-level fail; `required` field missing → per-row error with column; type mismatch → per-row error with expected/received; mix categories → top-level fail |
-| Bulk upload endpoint | `tests/integration/api/test_bulk_upload_endpoint.py` | 201 happy path; 201 partial errors; 422 top-level; max_rows enforcement |
-| Errors CSV download | `tests/integration/api/test_bulk_upload_errors_csv.py` | valid upload_id → CSV with header + error columns; expired/missing upload_id → 404; wrong tenant → 403 |
-| Category schema GET | `tests/integration/api/test_category_schema_endpoint.py` | returns schema + version; wrong tenant → 404 |
-| Category schema PATCH | `tests/integration/api/test_category_schema_endpoint.py` | additive change → 200; type change compatible → 200; type change incompatible → 422 warning; force=true → 200; `required: false → true` with missing data → 422 warning |
-| Schema cloning | `tests/integration/api/test_category_schema_clone.py` | clone from valid source → 200, target schema = source; clone with data conflicts → requires force |
-| Audit history | `tests/integration/api/test_category_schema_history.py` | each PATCH appends to history; GET /history returns ordered list |
-| Prosell superadmin only | `tests/integration/api/test_category_schema_auth.py` | tenant admin PATCH → 403; prosell superadmin PATCH → 200 |
+| Test                    | Path                                                     | What it covers                                                                                                                                                                                                     |
+| ----------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Parser schema-aware     | `tests/unit/domain/services/test_csv_product_parser.py`  | universal column missing → error; category not found → top-level fail; `required` field missing → per-row error with column; type mismatch → per-row error with expected/received; mix categories → top-level fail |
+| Bulk upload endpoint    | `tests/integration/api/test_bulk_upload_endpoint.py`     | 201 happy path; 201 partial errors; 422 top-level; max_rows enforcement                                                                                                                                            |
+| Errors CSV download     | `tests/integration/api/test_bulk_upload_errors_csv.py`   | valid upload_id → CSV with header + error columns; expired/missing upload_id → 404; wrong tenant → 403                                                                                                             |
+| Category schema GET     | `tests/integration/api/test_category_schema_endpoint.py` | returns schema + version; wrong tenant → 404                                                                                                                                                                       |
+| Category schema PATCH   | `tests/integration/api/test_category_schema_endpoint.py` | additive change → 200; type change compatible → 200; type change incompatible → 422 warning; force=true → 200; `required: false → true` with missing data → 422 warning                                            |
+| Schema cloning          | `tests/integration/api/test_category_schema_clone.py`    | clone from valid source → 200, target schema = source; clone with data conflicts → requires force                                                                                                                  |
+| Audit history           | `tests/integration/api/test_category_schema_history.py`  | each PATCH appends to history; GET /history returns ordered list                                                                                                                                                   |
+| Prosell superadmin only | `tests/integration/api/test_category_schema_auth.py`     | tenant admin PATCH → 403; prosell superadmin PATCH → 200                                                                                                                                                           |
 
 ### Frontend tests (PR 2)
 
-| Test | Path | What it covers |
-|------|------|----------------|
-| Hook rewrite | `tests/unit/lib/api/useBulkUploadProducts.test.ts` | FormData with `csv_file`, no `csv-parse/sync` import; Zod parse response; 422 throws typed error |
-| Error modal | `tests/components/admin/bulk-upload-error-modal.test.tsx` | renders error table; download button calls endpoint; close button; accessibility (role=dialog, focus trap, escape) |
-| Schema editor | `tests/components/admin/category-schema-editor.test.tsx` | renders initial schema; add row; delete with confirm; toggle required; type change triggers migration modal; drag-and-drop reorder; clone button |
-| Bulk upload real test | `tests/components/upload/BulkUpload.test.tsx` (REPLACES stub) | file upload → FormData; mock 201 no errors → toast; mock 201 with errors → modal; mock 422 → toast |
-| Template download | `tests/unit/lib/api/useCategorySchemaTemplate.test.ts` | hook fetches + returns Blob |
+| Test                  | Path                                                          | What it covers                                                                                                                                   |
+| --------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Hook rewrite          | `tests/unit/lib/api/useBulkUploadProducts.test.ts`            | FormData with `csv_file`, no `csv-parse/sync` import; Zod parse response; 422 throws typed error                                                 |
+| Error modal           | `tests/components/admin/bulk-upload-error-modal.test.tsx`     | renders error table; download button calls endpoint; close button; accessibility (role=dialog, focus trap, escape)                               |
+| Schema editor         | `tests/components/admin/category-schema-editor.test.tsx`      | renders initial schema; add row; delete with confirm; toggle required; type change triggers migration modal; drag-and-drop reorder; clone button |
+| Bulk upload real test | `tests/components/upload/BulkUpload.test.tsx` (REPLACES stub) | file upload → FormData; mock 201 no errors → toast; mock 201 with errors → modal; mock 422 → toast                                               |
+| Template download     | `tests/unit/lib/api/useCategorySchemaTemplate.test.ts`        | hook fetches + returns Blob                                                                                                                      |
 
 ## Acceptance Criteria
 
@@ -366,6 +366,7 @@ When this roadmap ships, the deferred items below become a full brainstorming + 
 - **Testing**: Cross-tenant isolation tests (tenant A can't see tenant B's requests); permission tests (prosell superadmin only); streaming integration tests (if implemented).
 
 **G-2 non-goals** (explicit, to avoid bloat when that roadmap comes):
+
 - Schema marketplace (cloning across tenants, sharing between organizations).
 - Versioned schemas with rollback.
 - Granular per-attribute permissions.
