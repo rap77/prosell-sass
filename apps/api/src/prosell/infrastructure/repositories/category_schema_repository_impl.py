@@ -26,7 +26,7 @@ class SqlAlchemyCategorySchemaRepository(AbstractCategorySchemaRepository):
             text(
                 "SELECT COUNT(*) FROM products "
                 "WHERE category_id = :cid AND tenant_id = :tid AND attributes ? :fname"
-            ).bindparams(cid=str(category_id), tid=str(tenant_id), fname=field_name)
+            ).bindparams(cid=category_id, tid=tenant_id, fname=field_name)
         )
         return result.scalar() or 0
 
@@ -37,7 +37,7 @@ class SqlAlchemyCategorySchemaRepository(AbstractCategorySchemaRepository):
             text(
                 "SELECT COUNT(*) FROM products "
                 "WHERE category_id = :cid AND tenant_id = :tid AND NOT (attributes ? :fname)"
-            ).bindparams(cid=str(category_id), tid=str(tenant_id), fname=field_name)
+            ).bindparams(cid=category_id, tid=tenant_id, fname=field_name)
         )
         return result.scalar() or 0
 
@@ -50,7 +50,7 @@ class SqlAlchemyCategorySchemaRepository(AbstractCategorySchemaRepository):
                 "SET attributes = jsonb_set(attributes, ARRAY[:fname], "
                 "to_jsonb((attributes->>:fname)::text)) "
                 "WHERE category_id = :cid AND tenant_id = :tid AND attributes ? :fname"
-            ).bindparams(fname=field_name, cid=str(category_id), tid=str(tenant_id))
+            ).bindparams(fname=field_name, cid=category_id, tid=tenant_id)
         )
 
     async def migrate_attribute_to_number(
@@ -63,7 +63,7 @@ class SqlAlchemyCategorySchemaRepository(AbstractCategorySchemaRepository):
                 "to_jsonb((attributes->>:fname)::numeric)) "
                 "WHERE category_id = :cid AND tenant_id = :tid AND attributes ? :fname "
                 "AND (attributes->>:fname) ~ '^[0-9]+(\\.[0-9]+)?$'"
-            ).bindparams(fname=field_name, cid=str(category_id), tid=str(tenant_id))
+            ).bindparams(fname=field_name, cid=category_id, tid=tenant_id)
         )
 
     async def save_schema_change(
