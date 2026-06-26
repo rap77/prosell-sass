@@ -2,7 +2,7 @@
 
 **Date**: 2026-06-25
 **Author**: Claude (brainstorming session)
-**Status:** APPROVED — awaiting PR1 backend + PR2 frontend implementation (per Implementation Plan preview in this doc)
+**Status:** IMPLEMENTED (PR #60 backend + PR #61 frontend, merged 2026-06-26)
 **Scope**: Roadmap F-1 + F-2 of the [[product-platform-generalization-roadmap]] follow-up
 
 ## Context
