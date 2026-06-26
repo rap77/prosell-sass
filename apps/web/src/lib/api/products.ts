@@ -23,6 +23,17 @@ import {
 import { extractErrorMessage } from "./extractErrorMessage";
 import { getCoverImageKey } from "./productImages";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
+import { BulkUploadUploadResultSchema } from "@/lib/api/schemas/bulkUpload";
+import type { BulkUploadUploadResult } from "@/lib/api/schemas/bulkUpload";
+import {
+  CategorySchemaResponseSchema,
+  SchemaHistorySchema,
+} from "@/lib/api/schemas/categorySchema";
+import type {
+  AttributeField,
+  CategorySchemaResponse,
+  SchemaChangeEntry,
+} from "@/lib/api/schemas/categorySchema";
 
 function isProductAttributes(value: unknown): value is ProductAttributes {
   return (
@@ -663,4 +674,204 @@ export function useInfiniteProducts(
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
     staleTime: 60 * 1000, // 1 minute
   });
+}
+
+/**
+ * Bulk upload products via CSV file (schema-aware, backend PR1).
+ *
+ * Sends the file as `multipart/form-data` to
+ * `POST /api/v1/products/bulk-upload`. The backend parses the CSV against
+ * each row's category `attribute_schema` and returns a
+ * `BulkUploadUploadResult` describing per-row outcomes. Clients handle
+ * partial failures via the `BulkUploadErrorModal`.
+ */
+export function useBulkUploadProducts() {
+  const queryClient = useQueryClient();
+
+  return useMutation<BulkUploadUploadResult, Error, File>({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("csv_file", file);
+
+      const res = await fetch("/api/v1/products/bulk-upload", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const error = await res
+          .json()
+          .catch(() => ({ detail: "Upload failed" }));
+        throw new Error(
+          typeof error.detail === "string"
+            ? error.detail
+            : "Failed to upload products",
+        );
+      }
+
+      return BulkUploadUploadResultSchema.parse(await res.json());
+    },
+
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      if (result.failed_count === 0) {
+        toast.success(`Successfully uploaded ${result.created_count} products`);
+      } else {
+        toast.warning(
+          `Uploaded ${result.created_count} products — ${result.failed_count} rows failed`,
+        );
+      }
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Failed to upload products");
+    },
+  });
+}
+
+/**
+ * Category schema hooks (PR2 — bulk upload category generalization).
+ *
+ * `useCategorySchema` reads the current attribute_schema for a category.
+ * `usePatchCategorySchema` replaces it; when type/required changes affect
+ * existing products, backend returns 422 + migration_warnings — caller must
+ * re-send with `force: true`. `useCloneCategorySchema` copies attributes
+ * from a source category. `useCategorySchemaHistory` returns the audit log.
+ * `downloadSchemaTemplate` fetches a CSV template with the category's
+ * universal + per-attribute headers.
+ */
+
+type PatchSchemaVars = {
+  categoryId: string;
+  schema: Record<string, AttributeField>;
+  force?: boolean;
+};
+
+type CloneSchemaVars = {
+  targetId: string;
+  sourceId: string;
+  force?: boolean;
+};
+
+export function useCategorySchema(categoryId: string) {
+  return useQuery<CategorySchemaResponse, Error>({
+    queryKey: ["category-schema", categoryId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/categories/${categoryId}/schema`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to load schema");
+      return CategorySchemaResponseSchema.parse(await res.json());
+    },
+    enabled: Boolean(categoryId),
+  });
+}
+
+export function usePatchCategorySchema() {
+  const queryClient = useQueryClient();
+
+  return useMutation<CategorySchemaResponse, Error, PatchSchemaVars>({
+    mutationFn: async ({ categoryId, schema, force }) => {
+      const url = `/api/v1/categories/${categoryId}/schema${force ? "?force=true" : ""}`;
+      const res = await fetch(url, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attribute_schema: schema }),
+      });
+      if (!res.ok) {
+        const err = await res
+          .json()
+          .catch(() => ({ detail: "Failed to update schema" }));
+        throw new Error(
+          typeof err.detail === "string"
+            ? err.detail
+            : JSON.stringify(err.detail),
+        );
+      }
+      return CategorySchemaResponseSchema.parse(await res.json());
+    },
+
+    onSuccess: (_, { categoryId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["category-schema", categoryId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["category-schema-history", categoryId],
+      });
+      toast.success("Schema updated");
+    },
+
+    onError: () => {
+      // Don't toast here — caller inspects the error for migration_warnings
+      // and decides whether to prompt the user to confirm force=true.
+    },
+  });
+}
+
+export function useCloneCategorySchema() {
+  const queryClient = useQueryClient();
+
+  return useMutation<CategorySchemaResponse, Error, CloneSchemaVars>({
+    mutationFn: async ({ targetId, sourceId, force }) => {
+      const url = `/api/v1/categories/${targetId}/schema/clone-from/${sourceId}${force ? "?force=true" : ""}`;
+      const res = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to clone schema");
+      return CategorySchemaResponseSchema.parse(await res.json());
+    },
+
+    onSuccess: (_, { targetId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["category-schema", targetId],
+      });
+      toast.success("Schema cloned");
+    },
+  });
+}
+
+export function useCategorySchemaHistory(categoryId: string) {
+  return useQuery<SchemaChangeEntry[], Error>({
+    queryKey: ["category-schema-history", categoryId],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/v1/categories/${categoryId}/schema/history`,
+        {
+          credentials: "include",
+        },
+      );
+      if (!res.ok) throw new Error("Failed to load history");
+      return SchemaHistorySchema.parse(await res.json());
+    },
+    enabled: Boolean(categoryId),
+  });
+}
+
+/**
+ * Download a CSV template pre-populated with this category's universal
+ * columns + per-attribute headers. Plain async function (no hook) because
+ * it has no cache/mutation semantics — caller invokes on button click.
+ */
+export async function downloadSchemaTemplate(
+  categoryId: string,
+): Promise<void> {
+  const res = await fetch(
+    `/api/v1/categories/${categoryId}/schema/template.csv`,
+    {
+      credentials: "include",
+    },
+  );
+  if (!res.ok) return;
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `schema-template-${categoryId}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
