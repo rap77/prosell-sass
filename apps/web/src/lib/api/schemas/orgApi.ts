@@ -39,8 +39,8 @@ export const OrganizationSchema = z
 export const OrganizationListResponseSchema = z.object({
   organizations: z.array(OrganizationSchema),
   total: z.number(),
-  page: z.number(),
-  page_size: z.number(),
+  skip: z.number(),
+  limit: z.number(),
 });
 
 export type OrganizationStatus = z.infer<typeof OrganizationStatusSchema>;

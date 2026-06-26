@@ -115,14 +115,15 @@ export const orgApi = {
    * GET /api/v1/org
    */
   async list(params?: {
-    page?: number;
-    page_size?: number;
+    skip?: number;
+    limit?: number;
     tenant_id?: string;
   }): Promise<OrganizationListResponse> {
     const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.set("page", params.page.toString());
-    if (params?.page_size)
-      searchParams.set("page_size", params.page_size.toString());
+    if (params?.skip !== undefined)
+      searchParams.set("skip", params.skip.toString());
+    if (params?.limit !== undefined)
+      searchParams.set("limit", params.limit.toString());
     if (params?.tenant_id) searchParams.set("tenant_id", params.tenant_id);
 
     const query = searchParams.toString();

@@ -81,8 +81,8 @@ describe("Categories API Client - useCategories", () => {
         },
       ],
       total: 2,
-      page: 1,
-      page_size: 50,
+      skip: 0,
+      limit: 100,
     };
 
     mockFetch.mockResolvedValueOnce({
@@ -118,8 +118,8 @@ describe("Categories API Client - useCategories", () => {
         },
       ],
       total: 1,
-      page: 1,
-      page_size: 50,
+      skip: 0,
+      limit: 100,
     };
 
     let callCount = 0;
@@ -186,8 +186,8 @@ describe("Categories API Client - useCategories", () => {
                 json: async () => ({
                   categories: [],
                   total: 0,
-                  page: 1,
-                  page_size: 50,
+                  skip: 0,
+                  limit: 100,
                 }),
               } as Response),
             100,
@@ -240,8 +240,8 @@ describe("Categories API Client - useCategoryOptions", () => {
         },
       ],
       total: 2,
-      page: 1,
-      page_size: 50,
+      skip: 0,
+      limit: 100,
     };
 
     mockFetch.mockResolvedValueOnce({
@@ -276,8 +276,8 @@ describe("Categories API Client - useCategoryOptions", () => {
         },
       ],
       total: 1,
-      page: 1,
-      page_size: 50,
+      skip: 0,
+      limit: 100,
     };
 
     mockFetch.mockResolvedValueOnce({

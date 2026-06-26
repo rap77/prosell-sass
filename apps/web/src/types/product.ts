@@ -139,8 +139,8 @@ export interface UpdateProductRequest {
 export interface ProductListResponse {
   products: Product[];
   total: number;
-  page: number;
-  page_size: number;
+  skip: number;
+  limit: number;
 }
 
 /**
