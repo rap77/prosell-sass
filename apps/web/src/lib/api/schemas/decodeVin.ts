@@ -28,4 +28,6 @@ export const DecodeVinResponseSchema = z.object({
 });
 
 // vin is at the top level of the response and merged in by the hook
-export type DecodedVehicle = z.infer<typeof DecodedVehicleSchema> & { vin: string };
+export type DecodedVehicle = z.infer<typeof DecodedVehicleSchema> & {
+  vin: string;
+};

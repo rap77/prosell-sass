@@ -49,7 +49,8 @@ export function useDecodeVin() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        const msg = z.object({ message: z.string().optional() }).safeParse(body).data?.message;
+        const msg = z.object({ message: z.string().optional() }).safeParse(body)
+          .data?.message;
         throw new Error(msg ?? "Failed to decode VIN");
       }
 
