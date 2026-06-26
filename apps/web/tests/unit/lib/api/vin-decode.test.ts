@@ -70,7 +70,10 @@ describe("useDecodeVin", () => {
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ vehicle: mockDecodedVehicle }),
+      json: async () => ({
+        vin: mockDecodedVehicle.vin,
+        vehicle: mockDecodedVehicle,
+      }),
     });
 
     const { result } = renderHook(() => useDecodeVin(), {
@@ -108,7 +111,10 @@ describe("useDecodeVin", () => {
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ vehicle: mockDecodedVehicle }),
+      json: async () => ({
+        vin: mockDecodedVehicle.vin,
+        vehicle: mockDecodedVehicle,
+      }),
     });
 
     const { result } = renderHook(() => useDecodeVin(), {
@@ -136,7 +142,10 @@ describe("useDecodeVin", () => {
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ vehicle: partialDecodedVehicle }),
+      json: async () => ({
+        vin: partialDecodedVehicle.vin,
+        vehicle: partialDecodedVehicle,
+      }),
     });
 
     const { result } = renderHook(() => useDecodeVin(), {
@@ -160,8 +169,8 @@ describe("useDecodeVin", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
+        vin: "2GNALCEK1H1615946",
         vehicle: {
-          vin: "2GNALCEK1H1615946",
           year: 2017,
           make: "Chevrolet",
           model: "Equinox",
@@ -242,7 +251,8 @@ describe("useDecodeVin", () => {
               resolve({
                 ok: true,
                 json: async () => ({
-                  vehicle: { vin: "2GNALCEK1H1615946", year: 2017 },
+                  vin: "2GNALCEK1H1615946",
+                  vehicle: { year: 2017 },
                 }),
               }),
             100,
