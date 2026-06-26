@@ -424,7 +424,7 @@ git commit -m "feat(hook): move useBulkUploadProducts to products.ts as FormData
 
 Note: The error modal is in Task 4. For now, the component calls an `onErrors` callback with the result — the parent manages modal state. If `onErrors` is not provided, the existing `toast.warning` behavior from the hook is sufficient.
 
-- [ ] **Step 1: Read current BulkUploadCSV.tsx**
+- [x] **Step 1: Read current BulkUploadCSV.tsx**
 
 ```bash
 cat apps/web/src/components/upload/BulkUploadCSV.tsx
@@ -436,7 +436,7 @@ Identify:
 - Where `parseCSV()` / FileReader / VIN validation live
 - Where `handleUpload()` calls `bulkUpload.mutateAsync(file)`
 
-- [ ] **Step 2: Write failing component tests**
+- [x] **Step 2: Write failing component tests**
 
 Replace all content of `apps/web/tests/unit/components/upload/BulkUpload.test.tsx`:
 
@@ -574,7 +574,7 @@ describe("BulkUploadCSV", () => {
 });
 ```
 
-- [ ] **Step 3: Run tests — they must FAIL**
+- [x] **Step 3: Run tests — they must FAIL**
 
 ```bash
 cd apps/web && pnpm test run -- tests/unit/components/upload/BulkUpload.test.tsx
@@ -582,7 +582,7 @@ cd apps/web && pnpm test run -- tests/unit/components/upload/BulkUpload.test.tsx
 
 Expected: multiple failures (stub tests + missing `onErrors` prop).
 
-- [ ] **Step 4: Update BulkUploadCSV.tsx**
+- [x] **Step 4: Update BulkUploadCSV.tsx**
 
 Replace the component's import and internal logic:
 
@@ -648,7 +648,7 @@ export function BulkUploadCSV({ onErrors }: BulkUploadCSVProps) {
 }
 ```
 
-- [ ] **Step 5: Run tests — must PASS**
+- [x] **Step 5: Run tests — must PASS**
 
 ```bash
 cd apps/web && pnpm test run -- tests/unit/components/upload/BulkUpload.test.tsx
@@ -656,7 +656,7 @@ cd apps/web && pnpm test run -- tests/unit/components/upload/BulkUpload.test.tsx
 
 Expected: all green.
 
-- [ ] **Step 6: Typecheck + lint**
+- [x] **Step 6: Typecheck + lint**
 
 ```bash
 cd apps/web && pnpm typecheck && pnpm lint
@@ -664,7 +664,7 @@ cd apps/web && pnpm typecheck && pnpm lint
 
 Expected: 0 errors, 0 warnings.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/web/src/components/upload/BulkUploadCSV.tsx \
