@@ -22,6 +22,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { z } from "zod";
 import {
   DecodeVinResponseSchema,
   type DecodedVehicle,
@@ -47,14 +48,13 @@ export function useDecodeVin() {
       });
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ message: "Failed to decode VIN" }));
-        throw new Error(error.message || "Failed to decode VIN");
+        const body = await res.json().catch(() => null);
+        const msg = z.object({ message: z.string().optional() }).safeParse(body).data?.message;
+        throw new Error(msg ?? "Failed to decode VIN");
       }
 
       const data = DecodeVinResponseSchema.parse(await res.json());
-      return data.vehicle;
+      return { vin: data.vin, ...data.vehicle };
     },
 
     onSuccess: (decodedVehicle) => {

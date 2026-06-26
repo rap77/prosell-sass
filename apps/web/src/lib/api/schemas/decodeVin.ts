@@ -7,23 +7,25 @@ import { z } from "zod";
  * tolerate the NHTSA decoder returning partial data for incomplete VINs.
  */
 export const DecodedVehicleSchema = z.object({
-  vin: z.string(),
   year: z.number().optional(),
   make: z.string().optional(),
   model: z.string().optional(),
   trim: z.string().optional(),
   body_type: z.string().optional(),
-  drivetrain: z.string().optional(),
-  transmission: z.string().optional(),
-  fuel_type: z.string().optional(),
-  engine: z.string().optional(),
+  drivetrain: z.string().nullable().optional(),
+  transmission: z.string().nullable().optional(),
+  fuel_type: z.string().nullable().optional(),
+  engine: z.string().nullable().optional(),
 });
 
 /**
  * Wire shape of the full response from `POST /api/v1/vehicles/decode-vin`.
+ * `vin` lives at the top level of the response, not inside `vehicle`.
  */
 export const DecodeVinResponseSchema = z.object({
+  vin: z.string(),
   vehicle: DecodedVehicleSchema,
 });
 
-export type DecodedVehicle = z.infer<typeof DecodedVehicleSchema>;
+// vin is at the top level of the response and merged in by the hook
+export type DecodedVehicle = z.infer<typeof DecodedVehicleSchema> & { vin: string };
