@@ -1314,7 +1314,7 @@ git commit -m "feat(hook): add useCategorySchema, usePatchCategorySchema, useCat
 - Internal state: `localFields: Array<{ key: string } & AttributeField>` — editable list
 - Produces: a table of attribute rows with add/edit/delete/required toggle + DnD reorder (using `@dnd-kit/sortable`)
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `apps/web/tests/unit/components/admin/CategorySchemaEditor.test.tsx`:
 
@@ -1463,7 +1463,7 @@ describe("CategorySchemaEditor", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests — must FAIL**
+- [x] **Step 2: Run tests — must FAIL**
 
 ```bash
 cd apps/web && pnpm test run -- tests/unit/components/admin/CategorySchemaEditor.test.tsx
@@ -1471,7 +1471,7 @@ cd apps/web && pnpm test run -- tests/unit/components/admin/CategorySchemaEditor
 
 Expected: FAIL (module not found).
 
-- [ ] **Step 3: Create CategorySchemaEditor**
+- [x] **Step 3: Create CategorySchemaEditor**
 
 Create `apps/web/src/components/admin/category-schema-editor.tsx`:
 
@@ -1792,7 +1792,7 @@ export function CategorySchemaEditor({
 }
 ```
 
-- [ ] **Step 4: Run tests — must PASS**
+- [x] **Step 4: Run tests — must PASS**
 
 ```bash
 cd apps/web && pnpm test run -- tests/unit/components/admin/CategorySchemaEditor.test.tsx
@@ -1800,7 +1800,7 @@ cd apps/web && pnpm test run -- tests/unit/components/admin/CategorySchemaEditor
 
 Expected: all green.
 
-- [ ] **Step 5: Typecheck + lint**
+- [x] **Step 5: Typecheck + lint**
 
 ```bash
 cd apps/web && pnpm typecheck && pnpm lint
@@ -1808,7 +1808,7 @@ cd apps/web && pnpm typecheck && pnpm lint
 
 Expected: 0 errors, 0 warnings.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/components/admin/category-schema-editor.tsx \

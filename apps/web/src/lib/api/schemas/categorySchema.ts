@@ -55,8 +55,21 @@ export const SchemaChangeEntrySchema = z.object({
 
 export const SchemaHistorySchema = z.array(SchemaChangeEntrySchema);
 
+/**
+ * Wire shape of the backend's 422 response when PATCH /api/v1/categories/{id}/schema
+ * detects breaking type/required changes. The hook throws an Error whose
+ * `.message` is the JSON-stringified body — use this schema to safely parse it.
+ */
+export const MigrationWarningResponseSchema = z.object({
+  migration_warnings: z.array(z.string()),
+  requires_force: z.boolean().optional(),
+});
+
 export type CategorySchemaResponse = z.infer<
   typeof CategorySchemaResponseSchema
 >;
 export type AttributeField = z.infer<typeof AttributeFieldSchema>;
 export type SchemaChangeEntry = z.infer<typeof SchemaChangeEntrySchema>;
+export type MigrationWarningResponse = z.infer<
+  typeof MigrationWarningResponseSchema
+>;
