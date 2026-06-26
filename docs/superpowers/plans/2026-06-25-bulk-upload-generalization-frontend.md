@@ -943,7 +943,7 @@ git commit -m "feat(modal): add BulkUploadErrorModal with error table + CSV down
   };
   ```
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `apps/web/tests/unit/api/categorySchema.test.tsx`:
 
@@ -1116,7 +1116,7 @@ describe("downloadSchemaTemplate", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests — must FAIL**
+- [x] **Step 2: Run tests — must FAIL**
 
 ```bash
 cd apps/web && pnpm test run -- tests/unit/api/categorySchema.test.tsx
@@ -1124,7 +1124,7 @@ cd apps/web && pnpm test run -- tests/unit/api/categorySchema.test.tsx
 
 Expected: FAIL (exports not found).
 
-- [ ] **Step 3: Add schema hooks to products.ts**
+- [x] **Step 3: Add schema hooks to products.ts**
 
 Add to `apps/web/src/lib/api/products.ts` after the `useBulkUploadProducts` function:
 
@@ -1270,7 +1270,7 @@ export async function downloadSchemaTemplate(
 
 Make sure `useQuery` is already imported from `@tanstack/react-query` at the top of `products.ts`. If not, add it.
 
-- [ ] **Step 4: Run tests — must PASS**
+- [x] **Step 4: Run tests — must PASS**
 
 ```bash
 cd apps/web && pnpm test run -- tests/unit/api/categorySchema.test.tsx
@@ -1278,7 +1278,7 @@ cd apps/web && pnpm test run -- tests/unit/api/categorySchema.test.tsx
 
 Expected: all green.
 
-- [ ] **Step 5: Typecheck + lint**
+- [x] **Step 5: Typecheck + lint**
 
 ```bash
 cd apps/web && pnpm typecheck && pnpm lint
@@ -1286,7 +1286,7 @@ cd apps/web && pnpm typecheck && pnpm lint
 
 Expected: 0 errors, 0 warnings.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/lib/api/products.ts \
