@@ -2,7 +2,7 @@
 
 **Date**: 2026-06-26
 **Author**: Claude (brainstorming session, surfaced from canonical doc)
-**Status:** DRAFT — awaiting approval
+**Status:** IN PROGRESS
 **Scope**: Migration path for a specific client coming from a legacy CSV-based workflow. Complements (does not replace) the generic schema-aware bulk upload shipped in `2026-06-25-bulk-upload-category-generalization-design.md`.
 
 ## Context

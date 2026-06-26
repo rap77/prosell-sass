@@ -52,8 +52,15 @@ VALID_STATUSES: frozenset[str] = frozenset(
 # Matches lines like:
 #   **Status**: IMPLEMENTED (PR #34, merged 2026-06-17)
 #   **Status:** STALE — items closed by Subsystems B/C/E (see audit below)
+#   **Status:** IN PROGRESS
 # Tolerates both `**Status**:` (colon outside) and `**Status:**` (colon inside).
-STATUS_LINE_RE = re.compile(r"^\s*\*+\s*[Ss]tatus[^\n]*?([A-Z][A-Z][A-Z][A-Z ]*?)\b")
+# Uses alternation to handle multi-word statuses like "IN PROGRESS" correctly —
+# the previous character-class approach ([A-Z][A-Z][A-Z][A-Z ]*?) captured only
+# "PROGRESS" because the space in "IN PROGRESS" broke the 3-uppercase requirement.
+STATUS_LINE_RE = re.compile(
+    r"^\s*\*+\s*[Ss]tatus[^\n]*?\b"
+    r"(DRAFT|APPROVED|IN PROGRESS|IMPLEMENTED|COMPLETED|SUPERSEDED|STALE)\b"
+)
 
 
 def _check_status_line(file_path: Path) -> tuple[str | None, int | None, list[int]]:
