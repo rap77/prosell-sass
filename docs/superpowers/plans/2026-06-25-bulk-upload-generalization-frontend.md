@@ -66,7 +66,7 @@
 
 No TDD for Zod schemas — shape is validated by TypeScript. Write code and commit.
 
-- [ ] **Step 1: Create bulkUpload.ts**
+- [x] **Step 1: Create bulkUpload.ts**
 
 ```typescript
 // apps/web/src/lib/api/schemas/bulkUpload.ts
@@ -93,7 +93,7 @@ export type BulkUploadUploadResult = z.infer<
 >;
 ```
 
-- [ ] **Step 2: Create categorySchema.ts**
+- [x] **Step 2: Create categorySchema.ts**
 
 ```typescript
 // apps/web/src/lib/api/schemas/categorySchema.ts
