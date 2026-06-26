@@ -165,7 +165,7 @@ git commit -m "feat(schemas): add Zod schemas for bulk upload + category schema 
 - Consumes: `BulkUploadUploadResultSchema` from Task 1
 - Produces: `useBulkUploadProducts(): UseMutationResult<BulkUploadUploadResult, Error, File>` — exported from `products.ts`
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `apps/web/tests/unit/api/bulkUpload.test.tsx`:
 
@@ -308,7 +308,7 @@ describe("useBulkUploadProducts", () => {
 });
 ```
 
-- [ ] **Step 2: Run test — it must FAIL**
+- [x] **Step 2: Run test — it must FAIL**
 
 ```bash
 cd apps/web && pnpm test run -- tests/unit/api/bulkUpload.test.tsx
@@ -316,7 +316,7 @@ cd apps/web && pnpm test run -- tests/unit/api/bulkUpload.test.tsx
 
 Expected: FAIL (import error or wrong endpoint).
 
-- [ ] **Step 3: Add useBulkUploadProducts to products.ts**
+- [x] **Step 3: Add useBulkUploadProducts to products.ts**
 
 Add to the end of `apps/web/src/lib/api/products.ts` (before any existing export):
 
@@ -373,7 +373,7 @@ export function useBulkUploadProducts() {
 
 Make sure `useQueryClient`, `useMutation`, `toast` are already imported at the top of `products.ts`. If not, add them.
 
-- [ ] **Step 4: Remove useBulkUploadProducts from vehicles.ts**
+- [x] **Step 4: Remove useBulkUploadProducts from vehicles.ts**
 
 In `apps/web/src/lib/api/vehicles.ts`, delete:
 
@@ -383,7 +383,7 @@ In `apps/web/src/lib/api/vehicles.ts`, delete:
 
 Keep `useDecodeVin()` and the `DecodedVehicle` type — those are still valid.
 
-- [ ] **Step 5: Run test — must PASS**
+- [x] **Step 5: Run test — must PASS**
 
 ```bash
 cd apps/web && pnpm test run -- tests/unit/api/bulkUpload.test.tsx
@@ -391,7 +391,7 @@ cd apps/web && pnpm test run -- tests/unit/api/bulkUpload.test.tsx
 
 Expected: all green.
 
-- [ ] **Step 6: Typecheck + lint**
+- [x] **Step 6: Typecheck + lint**
 
 ```bash
 cd apps/web && pnpm typecheck && pnpm lint
@@ -399,7 +399,7 @@ cd apps/web && pnpm typecheck && pnpm lint
 
 Expected: 0 errors, 0 warnings.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/web/src/lib/api/products.ts \

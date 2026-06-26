@@ -23,6 +23,8 @@ import {
 import { extractErrorMessage } from "./extractErrorMessage";
 import { getCoverImageKey } from "./productImages";
 import { mapProductStatusToVehicleStatus } from "@/lib/utils/mapProductStatusToVehicleStatus";
+import { BulkUploadUploadResultSchema } from "@/lib/api/schemas/bulkUpload";
+import type { BulkUploadUploadResult } from "@/lib/api/schemas/bulkUpload";
 
 function isProductAttributes(value: unknown): value is ProductAttributes {
   return (
@@ -662,5 +664,60 @@ export function useInfiniteProducts(
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
     staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+/**
+ * Bulk upload products via CSV file (schema-aware, backend PR1).
+ *
+ * Sends the file as `multipart/form-data` to
+ * `POST /api/v1/products/bulk-upload`. The backend parses the CSV against
+ * each row's category `attribute_schema` and returns a
+ * `BulkUploadUploadResult` describing per-row outcomes. Clients handle
+ * partial failures via the `BulkUploadErrorModal`.
+ */
+export function useBulkUploadProducts() {
+  const queryClient = useQueryClient();
+
+  return useMutation<BulkUploadUploadResult, Error, File>({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("csv_file", file);
+
+      const res = await fetch("/api/v1/products/bulk-upload", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const error = await res
+          .json()
+          .catch(() => ({ detail: "Upload failed" }));
+        throw new Error(
+          typeof error.detail === "string"
+            ? error.detail
+            : "Failed to upload products",
+        );
+      }
+
+      return BulkUploadUploadResultSchema.parse(await res.json());
+    },
+
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      if (result.failed_count === 0) {
+        toast.success(`Successfully uploaded ${result.created_count} products`);
+      } else {
+        toast.warning(
+          `Uploaded ${result.created_count} products — ${result.failed_count} rows failed`,
+        );
+      }
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Failed to upload products");
+    },
   });
 }

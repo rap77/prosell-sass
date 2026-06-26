@@ -23,7 +23,7 @@ import {
   AlertCircle,
   Download,
 } from "lucide-react";
-import { useBulkUploadProducts } from "@/lib/api/vehicles";
+import { useBulkUploadProducts } from "@/lib/api/products";
 
 // ============================================
 // STYLES
@@ -174,9 +174,9 @@ export function BulkUploadCSV({ onSuccess, onCancel }: BulkUploadCSVProps) {
       if (result.errors.length > 0) {
         const rowsWithErrors = parsedRows.map((row) => {
           const error = result.errors.find(
-            (e) => e.row_number === row.rowNumber,
+            (e: { row_number: number }) => e.row_number === row.rowNumber,
           );
-          return { ...row, error: error?.error };
+          return { ...row, error: error?.message };
         });
         setParsedRows(rowsWithErrors);
         setPreviewRows(rowsWithErrors.slice(0, 5));
