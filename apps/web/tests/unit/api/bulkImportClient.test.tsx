@@ -131,7 +131,9 @@ describe("usePreviewBulkUpload", () => {
       wrapper: makeWrapper(),
     });
 
-    await expect(result.current.mutateAsync({ csv: makeCsvFile() })).rejects.toThrow();
+    await expect(
+      result.current.mutateAsync({ csv: makeCsvFile() }),
+    ).rejects.toThrow();
   });
 
   it("surfaces the backend error detail string", async () => {
@@ -144,9 +146,9 @@ describe("usePreviewBulkUpload", () => {
       wrapper: makeWrapper(),
     });
 
-    await expect(result.current.mutateAsync({ csv: makeCsvFile() })).rejects.toThrow(
-      "Tenant not allowed",
-    );
+    await expect(
+      result.current.mutateAsync({ csv: makeCsvFile() }),
+    ).rejects.toThrow("Tenant not allowed");
   });
 
   it("calls toast.error on failure", async () => {

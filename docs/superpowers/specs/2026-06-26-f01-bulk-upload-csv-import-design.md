@@ -39,22 +39,25 @@ This design captures the **client-specific import flow** — both the backend (a
 ### Backend (already shipped — `main` as of 2026-06-26)
 
 **Domain services** (`apps/api/src/prosell/domain/services/`):
+
 - `csv_product_parser.py` — generic schema-aware parser (PR #60). **Not used by F01.**
 - `csv_field_mapper.py` — maps the 23 client columns to ProSell fields, with format conversions (location, clean_title, groups, mileage, year, publicado).
 - `csv_image_mapper.py` — matches ZIP entries to CSV rows by `path` prefix, produces DO Spaces keys. Includes path-traversal protection (`..` rejected) and decompression-bomb guards (100 MB/file, 500 MB total).
 
 **Use cases** (`apps/api/src/prosell/application/use_cases/product/`):
+
 - `bulk_upload_preview.py` — runs field mapper against CSV, returns per-row analysis. No DB writes.
 - `bulk_upload_vehicles.py` — runs field mapper + image mapper, upserts products by VIN, uploads images to DO Spaces, records associations in `product_images` table.
 
 **Endpoints** (`apps/api/src/prosell/infrastructure/api/routers/product_router.py`):
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| `POST` | `/api/v1/products/bulk-upload/preview` | Dry-run analysis. CSV-only, no DB writes. |
+| Method | Path                                       | Purpose                                                    |
+| ------ | ------------------------------------------ | ---------------------------------------------------------- |
+| `POST` | `/api/v1/products/bulk-upload/preview`     | Dry-run analysis. CSV-only, no DB writes.                  |
 | `POST` | `/api/v1/products/bulk-upload/with-images` | Real import. CSV + optional ZIP. Idempotent upsert by VIN. |
 
 **DTOs** (`apps/api/src/prosell/application/dto/product/bulk_upload.py`):
+
 - `BulkUploadPreviewResponse` — `{total_rows, rows: [PreviewRowResponse], summary: PreviewSummaryResponse}`
 - `BulkUploadVehiclesResponse` — `{total_rows, imported_count, updated_count, failed_count, results: [VehicleImportRowResponse]}`
 
@@ -65,6 +68,7 @@ This design captures the **client-specific import flow** — both the backend (a
 **Route group**: `(admin)/admin/import-client-csv/page.tsx` — super_admin-only (matches the migration use case; not a regular catalog operation).
 
 **Components** (`apps/web/src/components/admin/`):
+
 - `BulkImportClientCSV.tsx` — wizard with 3 steps:
   1. **Upload**: dropzone for CSV (required) + dropzone for ZIP (optional). Shows selected filenames.
   2. **Preview**: calls `usePreviewBulkUpload` → renders `PreviewTable` with per-row mapped_fields, missing_fields, unmapped_csv_columns, images_found, errors. Summary header shows importable_count / error_count / images_count.
@@ -72,14 +76,17 @@ This design captures the **client-specific import flow** — both the backend (a
 - `PreviewTable.tsx` — table view of preview rows with status badges (✓ importable, ⚠ warnings, ✗ errors).
 
 **Hooks** (`apps/web/src/lib/api/`):
+
 - `usePreviewBulkUpload()` — `useMutation`, takes `File` (CSV), returns `BulkUploadPreviewResponse`.
 - `useBulkUploadVehicles()` — `useMutation`, takes `{csv, zip?, organizationId, categoryId}`, returns `BulkUploadVehiclesResponse`.
 
 **Zod schemas** (`apps/web/src/lib/api/schemas/bulkImportClient.ts`):
+
 - Mirror of the backend DTOs: `PreviewRowSchema`, `PreviewSummarySchema`, `BulkUploadPreviewSchema`, `VehicleImportRowSchema`, `BulkUploadVehiclesSchema`.
 - Used by `parseX()` helpers in the hooks to validate the response before returning.
 
 **Page** (`apps/web/src/app/(admin)/admin/import-client-csv/page.tsx`):
+
 - Server component fetches the user's organizations (tenant-scoped via existing `useOrganizations()`) and vehicle categories.
 - Client island renders the wizard.
 - Gated to super_admin via `useCurrentUser().roles`.

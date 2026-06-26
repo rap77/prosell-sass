@@ -26,7 +26,10 @@ export const PreviewRowSchema = z.object({
   vin: z.string(),
   title: z.string(),
   importable: z.boolean(),
-  mapped_fields: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.string())])),
+  mapped_fields: z.record(
+    z.string(),
+    z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]),
+  ),
   missing_fields: z.array(z.string()),
   unmapped_csv_columns: z.array(z.string()),
   images_found: z.array(z.string()),
@@ -84,7 +87,4 @@ function parseBulkUploadVehicles(raw: unknown): BulkUploadVehicles {
 
 // ─── Public surface ─────────────────────────────────────────────────────────
 
-export {
-  parseBulkUploadPreview,
-  parseBulkUploadVehicles,
-};
+export { parseBulkUploadPreview, parseBulkUploadVehicles };

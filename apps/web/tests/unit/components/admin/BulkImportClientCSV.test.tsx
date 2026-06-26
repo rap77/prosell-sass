@@ -21,7 +21,8 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("react-dropzone", async () => {
-  const actual = await vi.importActual<typeof import("react-dropzone")>("react-dropzone");
+  const actual =
+    await vi.importActual<typeof import("react-dropzone")>("react-dropzone");
   return actual;
 });
 
@@ -37,9 +38,9 @@ const importMock = {
 };
 
 vi.mock("@/lib/api/bulkImportClient", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/api/bulkImportClient")>(
-    "@/lib/api/bulkImportClient",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/lib/api/bulkImportClient")
+  >("@/lib/api/bulkImportClient");
   return {
     ...actual,
     usePreviewBulkUpload: () => previewMock,
@@ -119,10 +120,9 @@ describe("BulkImportClientCSV", () => {
   });
 
   it("renders the upload step initially with disabled preview button", () => {
-    render(
-      <BulkImportClientCSV organizations={ORGS} categories={CATS} />,
-      { wrapper: makeWrapper() },
-    );
+    render(<BulkImportClientCSV organizations={ORGS} categories={CATS} />, {
+      wrapper: makeWrapper(),
+    });
 
     expect(screen.getByText("1. Subir archivos")).toBeInTheDocument();
     expect(screen.getByText("Vista previa")).toBeDisabled();
@@ -132,15 +132,16 @@ describe("BulkImportClientCSV", () => {
     previewMock.mutateAsync.mockResolvedValue(successPreview);
     const user = userEvent.setup();
 
-    render(
-      <BulkImportClientCSV organizations={ORGS} categories={CATS} />,
-      { wrapper: makeWrapper() },
-    );
+    render(<BulkImportClientCSV organizations={ORGS} categories={CATS} />, {
+      wrapper: makeWrapper(),
+    });
 
     const csvInput = document.querySelector(
       'input[accept*="text/csv"]',
     ) as HTMLInputElement;
-    const csvFile = new File(["vin;title\n1A;test"], "test.csv", { type: "text/csv" });
+    const csvFile = new File(["vin;title\n1A;test"], "test.csv", {
+      type: "text/csv",
+    });
     await user.upload(csvInput, csvFile);
 
     await waitFor(() => {
@@ -164,15 +165,16 @@ describe("BulkImportClientCSV", () => {
     previewMock.mutateAsync.mockResolvedValue(successPreview);
     const user = userEvent.setup();
 
-    render(
-      <BulkImportClientCSV organizations={ORGS} categories={CATS} />,
-      { wrapper: makeWrapper() },
-    );
+    render(<BulkImportClientCSV organizations={ORGS} categories={CATS} />, {
+      wrapper: makeWrapper(),
+    });
 
     const csvInput = document.querySelector(
       'input[accept*="text/csv"]',
     ) as HTMLInputElement;
-    const csvFile = new File(["vin;title\n1A;test"], "test.csv", { type: "text/csv" });
+    const csvFile = new File(["vin;title\n1A;test"], "test.csv", {
+      type: "text/csv",
+    });
     await user.upload(csvInput, csvFile);
     await user.click(screen.getByText("Vista previa"));
 
@@ -221,7 +223,9 @@ describe("BulkImportClientCSV", () => {
     const csvInput = document.querySelector(
       'input[accept*="text/csv"]',
     ) as HTMLInputElement;
-    const csvFile = new File(["vin;title\n1A;test"], "test.csv", { type: "text/csv" });
+    const csvFile = new File(["vin;title\n1A;test"], "test.csv", {
+      type: "text/csv",
+    });
     await user.upload(csvInput, csvFile);
     await user.click(screen.getByText("Vista previa"));
 

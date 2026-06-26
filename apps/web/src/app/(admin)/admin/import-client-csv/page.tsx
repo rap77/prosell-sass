@@ -46,7 +46,10 @@ export default function ImportClientCSVPage() {
     return null;
   }
 
-  const orgs = (orgsData?.organizations ?? []).map((o) => ({ id: o.id, name: o.name }));
+  const orgs = (orgsData?.organizations ?? []).map((o) => ({
+    id: o.id,
+    name: o.name,
+  }));
   const categories = (categoryOptions ?? []).map((c) => ({
     id: c.value,
     name: c.label,
