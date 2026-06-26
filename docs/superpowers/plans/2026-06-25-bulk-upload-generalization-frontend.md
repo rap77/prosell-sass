@@ -687,7 +687,7 @@ git commit -m "feat(upload): rewrite BulkUploadCSV — FormData upload, remove c
 - Props: `{ result: BulkUploadUploadResult; open: boolean; onClose: () => void }`
 - Produces: Modal with error table + "Download errors CSV" button that fetches `GET /api/v1/products/bulk-upload/errors.csv?upload_id={result.upload_id}`
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `apps/web/tests/unit/components/admin/BulkUploadErrorModal.test.tsx`:
 
@@ -777,7 +777,7 @@ describe("BulkUploadErrorModal", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests — must FAIL**
+- [x] **Step 2: Run tests — must FAIL**
 
 ```bash
 cd apps/web && pnpm test run -- tests/unit/components/admin/BulkUploadErrorModal.test.tsx
@@ -785,7 +785,7 @@ cd apps/web && pnpm test run -- tests/unit/components/admin/BulkUploadErrorModal
 
 Expected: FAIL (module not found).
 
-- [ ] **Step 3: Create BulkUploadErrorModal**
+- [x] **Step 3: Create BulkUploadErrorModal**
 
 Create `apps/web/src/components/admin/bulk-upload-error-modal.tsx`:
 
@@ -886,7 +886,7 @@ export function BulkUploadErrorModal({ result, open, onClose }: BulkUploadErrorM
 }
 ```
 
-- [ ] **Step 4: Run tests — must PASS**
+- [x] **Step 4: Run tests — must PASS**
 
 ```bash
 cd apps/web && pnpm test run -- tests/unit/components/admin/BulkUploadErrorModal.test.tsx
@@ -894,7 +894,7 @@ cd apps/web && pnpm test run -- tests/unit/components/admin/BulkUploadErrorModal
 
 Expected: all green.
 
-- [ ] **Step 5: Typecheck + lint**
+- [x] **Step 5: Typecheck + lint**
 
 ```bash
 cd apps/web && pnpm typecheck && pnpm lint
@@ -902,7 +902,7 @@ cd apps/web && pnpm typecheck && pnpm lint
 
 Expected: 0 errors, 0 warnings.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/components/admin/bulk-upload-error-modal.tsx \
