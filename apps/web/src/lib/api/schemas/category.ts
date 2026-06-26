@@ -96,8 +96,8 @@ export type BackendCategoryParsed = z.infer<typeof BackendCategorySchema>;
 export const BackendListResponseSchema = z.object({
   categories: z.array(BackendCategorySchema),
   total: z.number(),
-  page: z.number(),
-  page_size: z.number(),
+  skip: z.number(),
+  limit: z.number(),
 });
 
 export type BackendListResponseParsed = z.infer<

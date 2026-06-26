@@ -29,8 +29,8 @@ import { Permission, userHasPermission } from "@/lib/auth/permissions";
 // ============================================
 
 export interface OrganizationListParams {
-  page?: number;
-  page_size?: number;
+  skip?: number;
+  limit?: number;
   tenant_id?: string;
 }
 
@@ -51,8 +51,8 @@ export interface OrganizationState {
   error: OrganizationError | null;
   pagination: {
     total: number;
-    page: number;
-    page_size: number;
+    skip: number;
+    limit: number;
   } | null;
   // The dealer an admin is currently "viewing as" (Subsystem D DealerPicker).
   // null means "viewing my own organization" — the default for everyone.
@@ -111,8 +111,8 @@ export const useOrganizationStore = create<OrganizationState>()(
             organizations: response.organizations,
             pagination: {
               total: response.total,
-              page: response.page,
-              page_size: response.page_size,
+              skip: response.skip,
+              limit: response.limit,
             },
             isLoading: false,
           });

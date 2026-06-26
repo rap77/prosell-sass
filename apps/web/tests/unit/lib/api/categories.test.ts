@@ -82,8 +82,8 @@ describe("useCategories", () => {
       json: async () => ({
         categories: mockCategories,
         total: 2,
-        page: 1,
-        page_size: 10,
+        skip: 0,
+        limit: 100,
       }),
     });
 
@@ -128,8 +128,8 @@ describe("useCategories", () => {
       json: async () => ({
         categories: mockCategories,
         total: 1,
-        page: 1,
-        page_size: 10,
+        skip: 0,
+        limit: 100,
       }),
     });
 
@@ -222,8 +222,8 @@ describe("useCategoryOptions", () => {
       json: async () => ({
         categories: mockCategories,
         total: 2,
-        page: 1,
-        page_size: 10,
+        skip: 0,
+        limit: 100,
       }),
     });
 
@@ -271,8 +271,8 @@ describe("useCategoryOptions", () => {
       json: async () => ({
         categories: mockCategories,
         total: 1,
-        page: 1,
-        page_size: 10,
+        skip: 0,
+        limit: 100,
       }),
     });
 

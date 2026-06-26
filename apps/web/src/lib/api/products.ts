@@ -100,8 +100,8 @@ function parseProductResponse(raw: unknown): Product {
 const productListResponseSchema = z.object({
   products: z.array(productSchema),
   total: z.number(),
-  page: z.number(),
-  page_size: z.number(),
+  skip: z.number(),
+  limit: z.number(),
 });
 
 function parseProductListResponse(raw: unknown): ProductListResponse {
