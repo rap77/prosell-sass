@@ -94,6 +94,47 @@ async def test_filter_values_endpoint(client, auth_headers, vehicle_category):
 
 
 @pytest.mark.asyncio
+async def test_filter_values_endpoint_handles_global_categories(
+    client, auth_headers, db_session: AsyncSession
+):
+    """GET /categories/{id}/filter-values must work for GLOBAL (tenant_id=NULL) templates.
+
+    Pre-existing bug since PR #39 (Subsystem B): the endpoint used
+    ``category_repo.get_by_id(category_id, tenant_id)`` which filters by
+    tenant_id strictly. Global templates have tenant_id=NULL and were
+    rejected with 404 "Category not found". The fix uses
+    ``get_by_id_or_global`` so tenant-owned AND global templates resolve.
+    Regression test: a global category with a filterable select field must
+    return 200 with the expected key in the values map.
+    """
+    suffix = uuid4().hex[:8]
+    global_cat = CategoryModel(
+        id=uuid4(),
+        tenant_id=None,  # GLOBAL template — the case that used to fail
+        name=f"GlobalTemplate-{suffix}",
+        slug=f"global-template-{suffix}",
+        level=0,
+        parent_id=None,
+        is_active=True,
+        sort_order=0,
+        field_config=[],
+        attribute_schema={
+            "make": {"type": "string", "filterable": True, "filter_type": "select"},
+        },
+    )
+    db_session.add(global_cat)
+    await db_session.flush()
+
+    resp = await client.get(
+        f"/api/v1/categories/{global_cat.id}/filter-values", headers=auth_headers
+    )
+    assert resp.status_code == 200, (
+        f"Global category not visible to filter-values; got {resp.status_code}: {resp.text}"
+    )
+    assert "make" in resp.json()["values"]
+
+
+@pytest.mark.asyncio
 async def test_filter_values_response_includes_truncated_flag(
     client, auth_headers, vehicle_category
 ):
