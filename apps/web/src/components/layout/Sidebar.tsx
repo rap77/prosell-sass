@@ -17,6 +17,7 @@ import {
   Settings,
   ScrollText,
   Building2,
+  FileUp,
 } from "lucide-react";
 
 /**
@@ -99,6 +100,12 @@ const navigationItems: NavItem[] = [
     label: "Concesionarios",
     href: "/admin/dealers",
     icon: Building2,
+    group: "concesionarios",
+  },
+  {
+    label: "Importar CSV cliente",
+    href: "/admin/import-client-csv",
+    icon: FileUp,
     group: "concesionarios",
   },
   // Configuración group (admin/branch only)
