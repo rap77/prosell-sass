@@ -563,7 +563,7 @@ async def get_category_filter_values(
     )
 
     category_repo = SqlAlchemyCategoryRepository(db)
-    category = await category_repo.get_by_id(category_id, tenant_id)
+    category = await category_repo.get_by_id_or_global(category_id, tenant_id)
     if category is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
