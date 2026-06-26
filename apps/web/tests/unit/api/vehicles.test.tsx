@@ -54,6 +54,7 @@ describe("useDecodeVin", () => {
 
   it("should send POST to /api/v1/vehicles/decode-vin", async () => {
     const mockResponse = {
+      vin: "1HGCM82633A123456",
       vehicle: {
         vin: "1HGCM82633A123456",
         year: 2003,
@@ -91,6 +92,7 @@ describe("useDecodeVin", () => {
 
   it("should send VIN in POST request body", async () => {
     const mockResponse = {
+      vin: "1HGCM82633A123456",
       vehicle: {
         vin: "1HGCM82633A123456",
         year: 2003,
@@ -122,6 +124,7 @@ describe("useDecodeVin", () => {
 
   it("should return decoded vehicle data", async () => {
     const mockResponse = {
+      vin: "1HGCM82633A123456",
       vehicle: {
         vin: "1HGCM82633A123456",
         year: 2003,
