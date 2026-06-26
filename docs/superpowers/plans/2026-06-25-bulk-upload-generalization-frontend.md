@@ -1836,7 +1836,7 @@ git commit -m "feat(component): add CategorySchemaEditor with DnD reorder, migra
 
 No TDD for this task — the page is a composition of already-tested components. Do a smoke-test with `pnpm typecheck` + visual verification.
 
-- [ ] **Step 1: Create schema-admin-client.tsx (client island)**
+- [x] **Step 1: Create schema-admin-client.tsx (client island)**
 
 Create `apps/web/src/app/(seller)/categories/[id]/schema/schema-admin-client.tsx`:
 
@@ -1967,7 +1967,7 @@ export function SchemaAdminClient({ categoryId }: SchemaAdminClientProps) {
 }
 ```
 
-- [ ] **Step 2: Create server component page.tsx**
+- [x] **Step 2: Create server component page.tsx**
 
 Create `apps/web/src/app/(seller)/categories/[id]/schema/page.tsx`:
 
@@ -2001,7 +2001,7 @@ export default async function CategorySchemaPage({ params }: PageProps) {
 }
 ```
 
-- [ ] **Step 3: Verify useCurrentUser hook exists**
+- [x] **Step 3: Verify useCurrentUser hook exists**
 
 ```bash
 fd "useCurrentUser" apps/web/src --type f
