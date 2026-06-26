@@ -473,7 +473,7 @@ async def list_products(
             organization_id if organization_id is not None and can_view_all_dealers else tenant_id
         )
         category_repo = SqlAlchemyCategoryRepository(db)
-        category = await category_repo.get_by_id(category_id, category_tenant_id)
+        category = await category_repo.get_by_id_or_global(category_id, category_tenant_id)
         if category is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
