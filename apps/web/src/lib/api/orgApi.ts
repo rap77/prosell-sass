@@ -120,8 +120,10 @@ export const orgApi = {
     tenant_id?: string;
   }): Promise<OrganizationListResponse> {
     const searchParams = new URLSearchParams();
-    if (params?.skip !== undefined) searchParams.set("skip", params.skip.toString());
-    if (params?.limit !== undefined) searchParams.set("limit", params.limit.toString());
+    if (params?.skip !== undefined)
+      searchParams.set("skip", params.skip.toString());
+    if (params?.limit !== undefined)
+      searchParams.set("limit", params.limit.toString());
     if (params?.tenant_id) searchParams.set("tenant_id", params.tenant_id);
 
     const query = searchParams.toString();
