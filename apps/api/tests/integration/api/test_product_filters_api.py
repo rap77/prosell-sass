@@ -161,3 +161,43 @@ async def test_attr_filter_without_category_id_rejected(client, auth_headers):
     resp = await client.get("/api/v1/products?attr.vin=foo", headers=auth_headers)
     assert resp.status_code == 422
     assert "category_id" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_attr_filter_works_for_global_categories(
+    client, auth_headers, db_session: AsyncSession
+):
+    """`GET /products?category_id=X&attr.*=Y` must work for GLOBAL (tenant_id=NULL) categories.
+
+    Pre-existing bug, sibling of the filter-values one fixed in PR #63:
+    product_router.py:476 used ``category_repo.get_by_id`` (strict tenant
+    filter) when validating the attribute schema. Global templates were
+    rejected with 404 "Category not found" so the catalog page filters were
+    broken for ANY global category (the typical case for root verticals).
+    Regression test: filter products on a global category and expect 200.
+    """
+    suffix = uuid4().hex[:8]
+    global_cat = CategoryModel(
+        id=uuid4(),
+        tenant_id=None,  # GLOBAL template — the case that used to fail
+        name=f"GlobalFilter-{suffix}",
+        slug=f"global-filter-{suffix}",
+        level=0,
+        parent_id=None,
+        is_active=True,
+        sort_order=0,
+        field_config=[],
+        attribute_schema={
+            "color": {"type": "string", "filterable": True, "filter_type": "select"},
+        },
+    )
+    db_session.add(global_cat)
+    await db_session.flush()
+
+    resp = await client.get(
+        f"/api/v1/products?category_id={global_cat.id}&attr.color=red",
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200, (
+        f"Global category must resolve for product attr filter; got {resp.status_code}: {resp.text}"
+    )
