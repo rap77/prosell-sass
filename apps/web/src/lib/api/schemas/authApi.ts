@@ -22,9 +22,22 @@ export const UserResponseSchema = z
   })
   .passthrough();
 
+// Backend UserInfo shape returned by POST /auth/login (full_name + roles[])
+// differs from GET /auth/me (first_name + last_name + role).
+const LoginUserInfoSchema = z
+  .object({
+    id: z.string(),
+    email: z.string(),
+    full_name: z.string(),
+    avatar_url: z.string().nullable().optional(),
+    roles: z.array(z.string()).optional(),
+    tenant_id: z.string(),
+  })
+  .passthrough();
+
 export const LoginResponseSchema = z
   .object({
-    user: UserResponseSchema,
+    user: LoginUserInfoSchema,
   })
   .passthrough();
 

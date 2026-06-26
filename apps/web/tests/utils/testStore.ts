@@ -17,6 +17,7 @@ import type {
   RegisterData,
   AuthError,
 } from "@/stores/authStore";
+import { mapApiUserToStoreUser } from "@/stores/authStore";
 
 /**
  * Test-specific auth store interface (same as production but without persist)
@@ -61,7 +62,7 @@ export const useTestAuthStore = create<TestAuthState>((set, get) => ({
       );
 
       set({
-        user: response.user,
+        user: mapApiUserToStoreUser(response.user),
         isAuthenticated: true,
         isLoading: false,
         error: null,

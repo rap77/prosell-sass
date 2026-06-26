@@ -31,10 +31,9 @@ describe("authApi Client - Login", () => {
       user: {
         id: "1",
         email: "test@example.com",
-        first_name: "Test",
-        last_name: "User",
-        role: "sales_agent",
-        is_email_verified: true,
+        full_name: "Test User",
+        roles: ["sales_agent"],
+        tenant_id: "tenant-1",
       },
       tokens: {
         access_token: "mock-access-token",
@@ -362,10 +361,9 @@ describe("authApi - mutation caching", () => {
       user: {
         id: "1",
         email: "test@test.com",
-        first_name: "Test",
-        last_name: "User",
-        role: "user",
-        is_email_verified: true,
+        full_name: "Test User",
+        roles: ["user"],
+        tenant_id: "tenant-1",
       },
       tokens: {
         access_token: "mock-access-token",

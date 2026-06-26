@@ -11,6 +11,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { create } from "zustand";
 import { authApi, ApiError } from "@/lib/api/authApi";
+import type { User } from "@/stores/authStore";
+import { mapApiUserToStoreUser } from "@/stores/authStore";
 
 // Mock authApi module
 vi.mock("@/lib/api/authApi", () => ({
@@ -33,16 +35,7 @@ vi.mock("@/lib/api/authApi", () => ({
 
 // Type for our test store
 interface TestAuthState {
-  user: {
-    id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    role: string;
-    is_email_verified: boolean;
-    is_2fa_enabled?: boolean;
-    organization_id?: string | null;
-  } | null;
+  user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: { message: string } | null;
@@ -94,7 +87,7 @@ const createTestAuthStore = () =>
 
         // Tokens are handled by httpOnly cookies - only set user and auth state
         set({
-          user: response.user,
+          user: mapApiUserToStoreUser(response.user),
           isAuthenticated: true,
           isLoading: false,
           initialized: true,
@@ -213,15 +206,14 @@ const createTestAuthStore = () =>
 // Use test store instead of real store
 const useAuthStore = createTestAuthStore();
 
-// Helper to create a mock user response
-const createMockUserResponse = (overrides = {}) => ({
+// Helper to create a mock user response (matches backend UserInfo wire shape)
+const createMockUserResponse = (overrides: Record<string, unknown> = {}) => ({
   user: {
     id: "1",
     email: "test@example.com",
-    first_name: "Test",
-    last_name: "User",
-    role: "sales_agent",
-    is_email_verified: true,
+    full_name: "Test User",
+    roles: ["sales_agent"],
+    tenant_id: "tenant-1",
     ...overrides,
   },
 });
@@ -471,7 +463,7 @@ describe("useAuth Hook - Convenience Getters", () => {
 
   it("should expose organization ID when set", async () => {
     vi.mocked(authApi.login).mockResolvedValue(
-      createMockUserResponse({ organization_id: "org-123" }),
+      createMockUserResponse({ tenant_id: "org-123" }),
     );
 
     await useAuthStore

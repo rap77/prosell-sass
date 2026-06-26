@@ -35,16 +35,16 @@ vi.mock("@/lib/api/authApi", () => ({
 
 import { authApi, ApiError } from "@/lib/api/authApi";
 import type { AuthState } from "@/stores/authStore";
+import { mapApiUserToStoreUser } from "@/stores/authStore";
 
-// Helper to create a mock user response
-const createMockUserResponse = (overrides = {}) => ({
+// Helper to create a mock user response (matches backend UserInfo wire shape)
+const createMockUserResponse = (overrides: Record<string, unknown> = {}) => ({
   user: {
     id: "1",
     email: "test@example.com",
-    first_name: "Test",
-    last_name: "User",
-    role: "sales_agent",
-    is_email_verified: true,
+    full_name: "Test User",
+    roles: ["sales_agent"],
+    tenant_id: "tenant-1",
     ...overrides,
   },
 });
@@ -118,7 +118,7 @@ const createTestAuthStore = () =>
 
             // Tokens are handled by httpOnly cookies
             set({
-              user: response.user,
+              user: mapApiUserToStoreUser(response.user),
               isAuthenticated: true,
               isLoading: false,
               initialized: true,
@@ -470,10 +470,7 @@ describe("authStore - Persist Middleware", () => {
   it("should persist state to localStorage", async () => {
     // Mock authApi.login
     vi.mocked(authApi.login).mockResolvedValue(
-      createMockUserResponse({
-        email: "persist@example.com",
-        first_name: "Persist",
-      }),
+      createMockUserResponse({ email: "persist@example.com" }),
     );
 
     // Act: login
@@ -501,10 +498,7 @@ describe("authStore - Persist Middleware", () => {
     // but rather that the state can be properly serialized/deserialized
 
     vi.mocked(authApi.login).mockResolvedValue(
-      createMockUserResponse({
-        email: "serialize@example.com",
-        first_name: "Serialize",
-      }),
+      createMockUserResponse({ email: "serialize@example.com" }),
     );
 
     // Act: login to populate state
