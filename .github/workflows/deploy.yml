@@ -90,10 +90,22 @@ jobs:
             ./scripts/generate-jwt-keys.sh
           fi
 
-          # Deploy propiamente dicho. --env-file: el compose usa ${VAR} para los secrets
-          # (no hardcodeados); se interpolan desde .env.staging, que vive en el host
-          # (gitignored).
-          docker compose --env-file .env.staging -f docker/docker-compose.staging.yml up -d --build
+          # Build imágenes PRIMERO. Si falla acá, ningún container se reinicia —
+          # los viejos siguen up sirviendo código anterior (downtime = 0). Esto
+          # separa el failure surface: build error vs deploy error vs runtime error.
+          # --env-file: el compose usa ${VAR} para los secrets (no hardcodeados);
+          # se interpolan desde .env.staging, que vive en el host (gitignored).
+          docker compose --env-file .env.staging -f docker/docker-compose.staging.yml build
+
+      - name: Deploy containers
+        working-directory: ${{ secrets.STAGING_REPO_PATH }}
+        run: |
+          set -e
+
+          # Solo arrancar containers DESPUÉS de que el build pasó. Sin --build:
+          # compose compara image hash con el container running y recrea solo
+          # si cambió. docker system prune -f limpia capas dangling después.
+          docker compose --env-file .env.staging -f docker/docker-compose.staging.yml up -d
           docker system prune -f
 
       - name: Print container logs on failure
