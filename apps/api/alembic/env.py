@@ -8,13 +8,13 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+# Import ALL models so Alembic can detect them
+# This must be AFTER Base is imported to avoid circular imports
+import prosell.infrastructure.models  # noqa: F401
 from prosell.core.config import settings
 
 # Import your Base
 from prosell.infrastructure.database.base import Base
-
-# Import ALL models so Alembic can detect them
-# This must be AFTER Base is imported to avoid circular imports
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
