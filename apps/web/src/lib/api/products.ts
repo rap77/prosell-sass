@@ -703,7 +703,9 @@ export function useBulkUploadProducts() {
 
       if (!res.ok) {
         const error: unknown = await res.json().catch(() => ({}));
-        throw new Error(extractErrorMessage(error, "Failed to upload products"));
+        throw new Error(
+          extractErrorMessage(error, "Failed to upload products"),
+        );
       }
 
       return BulkUploadUploadResultSchema.parse(await res.json());

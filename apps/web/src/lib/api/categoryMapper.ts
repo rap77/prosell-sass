@@ -50,7 +50,10 @@ const _attributeSchemaEntrySchema = z.object({
   options: z.array(z.string()).optional(),
   group: z.string().optional(),
 });
-const _attributeSchemaMapSchema = z.record(z.string(), _attributeSchemaEntrySchema);
+const _attributeSchemaMapSchema = z.record(
+  z.string(),
+  _attributeSchemaEntrySchema,
+);
 
 /**
  * Raw shape of a category as returned by the backend's
@@ -88,8 +91,13 @@ export function mapBackendCategoryToDomain(raw: BackendCategory): Category {
     id: raw.id,
     name: raw.name,
     slug: raw.slug,
-    attribute_schema: _attributeSchemaMapSchema.catch({}).parse(raw.attribute_schema ?? {}),
-    attribute_groups: z.array(AttributeGroupSchema).catch([]).parse(raw.attribute_groups ?? []),
+    attribute_schema: _attributeSchemaMapSchema
+      .catch({})
+      .parse(raw.attribute_schema ?? {}),
+    attribute_groups: z
+      .array(AttributeGroupSchema)
+      .catch([])
+      .parse(raw.attribute_groups ?? []),
     presentation: raw.presentation ?? null,
     is_active: raw.is_active,
     created_at: raw.created_at,
