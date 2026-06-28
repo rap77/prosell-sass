@@ -1,5 +1,6 @@
 """Unit tests for Category entity."""
 
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -215,3 +216,33 @@ class TestCategory:
             parent_id=parent_id,
         )
         assert child_category.is_root is False
+
+
+class TestCategoryAttributeGroups:
+    """Tests for attribute_groups field on Category entity."""
+
+    def _make(self, **kwargs: Any) -> Category:  # Any: forwards arbitrary kwargs to Category.create
+        return Category.create(
+            name="Cars",
+            slug="cars",
+            tenant_id=uuid4(),
+            **kwargs,
+        )
+
+    def test_default_attribute_groups_is_empty(self) -> None:
+        cat = self._make()
+        assert cat.attribute_groups == []
+
+    def test_attribute_groups_stored_and_retrieved(self) -> None:
+        groups = [
+            {"key": "basic", "label": "Basic Info", "order": 0},
+            {"key": "motor", "label": "Motor", "order": 1},
+        ]
+        cat = self._make(attribute_groups=groups)
+        assert cat.attribute_groups == groups
+
+    def test_attribute_groups_independent_per_instance(self) -> None:
+        cat1 = self._make()
+        cat2 = self._make()
+        cat1.attribute_groups.append({"key": "x", "label": "X", "order": 0})
+        assert cat2.attribute_groups == []

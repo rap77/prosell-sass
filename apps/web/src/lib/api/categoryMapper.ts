@@ -19,29 +19,38 @@
  *      serialized by the response DTO. The frontend expects
  *      `CategoryPresentation | null`.
  *
- * This mapper is the single point of truth for that translation. The
- * `attribute_schema` field is cast with `as Record<string,
- * AttributeSchemaEntry>` — see DEBT note below.
+ * This mapper is the single point of truth for that translation.
+ * `attribute_schema` is validated at the boundary via a Zod schema that
+ * narrows the free-form JSONB to the frontend `AttributeSchemaEntry` shape.
+ * Extra backend-only fields (`required`, `filterable`) are stripped by the
+ * parser; missing optional fields default to `undefined`.
  *
- * DEBT (runtime, documented)
- * --------------------------
- * The cast is a deliberate type lie: the backend's `dict[str, Any]`
- * cannot be strictly validated at the boundary without an explicit
- * Pydantic schema for `AttributeSchemaEntry`. The three overlapping
- * fields (`type`, `filter_type`, `options`) are compatible at runtime;
- * the rest is silently dropped on the frontend.
- *
- * The proper end-to-end schema alignment (Pydantic schema for
- * `AttributeSchemaEntry`, `presentation` in `CategoryResponse`,
- * migration of legacy `attribute_schema` rows) is a separate task and
- * is the right place to retire this cast.
+ * Note: `presentation` lives on the backend entity but is NOT serialized by
+ * the list DTO. It defaults to `null` here; a separate task will add it to
+ * `CategoryResponse` when needed.
  */
 
+import { z } from "zod";
+import { AttributeGroupSchema } from "@/lib/api/schemas/categorySchema";
 import type {
   AttributeSchemaEntry,
   Category,
   CategoryPresentation,
 } from "@/types/category";
+
+const _attributeSchemaEntrySchema = z.object({
+  type: z
+    .enum(["number", "string", "boolean", "select"])
+    .catch("string" as "string" | "number" | "boolean" | "select"),
+  filter_type: z
+    .enum(["range", "select", "text", "boolean", "exact"])
+    .default("text"),
+  unit: z.string().optional(),
+  label: z.string().optional(),
+  options: z.array(z.string()).optional(),
+  group: z.string().optional(),
+});
+const _attributeSchemaMapSchema = z.record(z.string(), _attributeSchemaEntrySchema);
 
 /**
  * Raw shape of a category as returned by the backend's
@@ -56,6 +65,7 @@ export interface BackendCategory {
    * stricter (see file header DEBT note). Cast at the mapper boundary.
    */
   attribute_schema?: Record<string, unknown>;
+  attribute_groups?: Record<string, unknown>[];
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -78,10 +88,8 @@ export function mapBackendCategoryToDomain(raw: BackendCategory): Category {
     id: raw.id,
     name: raw.name,
     slug: raw.slug,
-    attribute_schema: (raw.attribute_schema ?? {}) as Record<
-      string,
-      AttributeSchemaEntry
-    >,
+    attribute_schema: _attributeSchemaMapSchema.catch({}).parse(raw.attribute_schema ?? {}),
+    attribute_groups: z.array(AttributeGroupSchema).catch([]).parse(raw.attribute_groups ?? []),
     presentation: raw.presentation ?? null,
     is_active: raw.is_active,
     created_at: raw.created_at,

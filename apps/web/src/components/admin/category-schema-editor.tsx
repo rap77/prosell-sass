@@ -3,10 +3,11 @@
 /**
  * CategorySchemaEditor — superadmin-gated CRUD UI for category attribute_schema.
  *
- * Rows are draggable (via @dnd-kit/sortable) for visual ordering. On save,
- * sends PATCH /api/v1/categories/{id}/schema. If the backend rejects with
- * migration_warnings (422), shows a modal asking the user to confirm
- * ?force=true to apply with data migration.
+ * Rows are draggable (via @dnd-kit/sortable) for visual ordering. Groups panel
+ * lets admins define named sections; each field can be assigned to a group.
+ * On save, sends PATCH /api/v1/categories/{id}/schema with both attribute_schema
+ * and attribute_groups. If the backend rejects with migration_warnings (422),
+ * shows a modal asking the user to confirm ?force=true to apply with data migration.
  *
  * `isReadOnly` hides add/delete/drag controls and renders inputs as text —
  * used for tenant admins who can see but not modify the schema.
@@ -51,11 +52,16 @@ import {
   MigrationWarningResponseSchema,
   type CategorySchemaResponse,
   type AttributeField,
+  type AttributeGroup,
 } from "@/lib/api/schemas/categorySchema";
 
 interface FieldRow extends AttributeField {
   key: string;
   _id: string; // local stable id for DnD
+}
+
+interface GroupRow extends AttributeGroup {
+  _id: string; // local stable id
 }
 
 interface CategorySchemaEditorProps {
@@ -66,11 +72,13 @@ interface CategorySchemaEditorProps {
 
 function SortableRow({
   row,
+  groups,
   isReadOnly,
   onUpdate,
   onDelete,
 }: {
   row: FieldRow;
+  groups: GroupRow[];
   isReadOnly: boolean;
   onUpdate: (id: string, patch: Partial<FieldRow>) => void;
   onDelete: (id: string) => void;
@@ -145,6 +153,32 @@ function SortableRow({
           aria-label={`Required: ${row.key}`}
         />
       </td>
+      <td className="px-2 py-2">
+        {isReadOnly ? (
+          <span className="text-sm text-muted-foreground">
+            {groups.find((g) => g.key === row.group)?.label ?? "—"}
+          </span>
+        ) : (
+          <Select
+            value={row.group ?? "__none__"}
+            onValueChange={(v) =>
+              onUpdate(row._id, { group: v === "__none__" ? undefined : v })
+            }
+          >
+            <SelectTrigger className="h-7 w-36">
+              <SelectValue placeholder="No group" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">No group</SelectItem>
+              {groups.map((g) => (
+                <SelectItem key={g.key} value={g.key}>
+                  {g.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </td>
       {!isReadOnly && (
         <td className="px-2 py-2">
           <button
@@ -182,6 +216,10 @@ export function CategorySchemaEditor({
     })),
   );
 
+  const [groups, setGroups] = useState<GroupRow[]>(() =>
+    (schema.attribute_groups ?? []).map((g) => ({ ...g, _id: newId() })),
+  );
+
   const [migrationWarnings, setMigrationWarnings] = useState<string[]>([]);
   const [showMigrationModal, setShowMigrationModal] = useState(false);
 
@@ -192,11 +230,16 @@ export function CategorySchemaEditor({
     Object.fromEntries(
       fields
         .filter((r) => r.key.trim())
-        .map(({ key, type, required, label, description }) => [
+        .map(({ key, type, required, label, description, group }) => [
           key.trim(),
-          { type, required, label, description },
+          { type, required, label, description, group },
         ]),
     );
+
+  const toGroupList = (gs: GroupRow[]): AttributeGroup[] =>
+    gs
+      .filter((g) => g.key.trim() && g.label.trim())
+      .map(({ key, label, order }) => ({ key: key.trim(), label, order }));
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -224,20 +267,37 @@ export function CategorySchemaEditor({
     setRows((prev) => prev.filter((r) => r._id !== id));
   };
 
+  const handleAddGroup = () => {
+    setGroups((prev) => [
+      ...prev,
+      { _id: newId(), key: "", label: "", order: prev.length },
+    ]);
+  };
+
+  const handleUpdateGroup = (id: string, patch: Partial<GroupRow>) => {
+    setGroups((prev) =>
+      prev.map((g) => (g._id === id ? { ...g, ...patch } : g)),
+    );
+  };
+
+  const handleDeleteGroup = (id: string) => {
+    setGroups((prev) => prev.filter((g) => g._id !== id));
+  };
+
   const handleSave = async (force = false) => {
     const schemaMap = toSchemaMap(rows);
+    const groupList = toGroupList(groups);
     try {
       await patchSchema.mutateAsync({
         categoryId,
         schema: schemaMap,
+        groups: groupList,
         force: force || undefined,
       });
       setMigrationWarnings([]);
       setShowMigrationModal(false);
     } catch (err) {
       if (err instanceof Error) {
-        // The hook throws an Error whose .message is the JSON-stringified 422 body.
-        // Validate it via Zod to guard against backend shape drift.
         try {
           const json = JSON.parse(err.message);
           const result = MigrationWarningResponseSchema.safeParse(json);
@@ -255,7 +315,68 @@ export function CategorySchemaEditor({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Groups panel */}
+      <div className="rounded border p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-sm font-medium">Attribute Groups</span>
+          {!isReadOnly && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddGroup}
+              aria-label="Add group"
+            >
+              <Plus className="mr-1 h-3 w-3" />
+              Add group
+            </Button>
+          )}
+        </div>
+        {groups.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            No groups defined. Add one to organize fields into sections.
+          </p>
+        )}
+        <div className="space-y-1">
+          {groups.map((g) => (
+            <div key={g._id} className="flex items-center gap-2">
+              {isReadOnly ? (
+                <span className="text-sm">{g.label}</span>
+              ) : (
+                <>
+                  <Input
+                    placeholder="group key"
+                    value={g.key}
+                    onChange={(e) =>
+                      handleUpdateGroup(g._id, { key: e.target.value })
+                    }
+                    className="h-7 w-28 font-mono text-xs"
+                  />
+                  <Input
+                    placeholder="group label"
+                    value={g.label}
+                    onChange={(e) =>
+                      handleUpdateGroup(g._id, { label: e.target.value })
+                    }
+                    className="h-7 flex-1 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteGroup(g._id)}
+                    aria-label={`Delete group ${g.label || g.key}`}
+                    className="text-destructive hover:text-destructive/80"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Fields table */}
       <div className="rounded border">
         <DndContext
           sensors={sensors}
@@ -269,6 +390,7 @@ export function CategorySchemaEditor({
                 <th className="px-2 py-2 text-left font-medium">Field name</th>
                 <th className="px-2 py-2 text-left font-medium">Type</th>
                 <th className="px-2 py-2 text-center font-medium">Required</th>
+                <th className="px-2 py-2 text-left font-medium">Group</th>
                 {!isReadOnly && <th className="w-8" />}
               </tr>
             </thead>
@@ -281,6 +403,7 @@ export function CategorySchemaEditor({
                   <SortableRow
                     key={row._id}
                     row={row}
+                    groups={groups}
                     isReadOnly={isReadOnly}
                     onUpdate={handleUpdate}
                     onDelete={handleDelete}

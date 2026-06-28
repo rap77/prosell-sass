@@ -43,9 +43,14 @@ class Category(DomainModel):
     field_config: list[dict[str, object]] = Field(default_factory=lambda: [])
 
     # C3 schema: API validation schema for product attributes in this category
-    # Format: {"field_name": {"type": "string|number|boolean", "required": bool, "options": [...]}}
+    # Format: {"field_name": {"type": "string|number|boolean", "required": bool, "group": "key"}}
     # Different from field_config (UI renderer) — this drives data validation
     attribute_schema: dict[str, dict[str, object]] = Field(default_factory=dict)
+
+    # Ordered list of attribute groups for UI section rendering.
+    # Format: [{"key": "basic", "label": "Basic Info", "order": 0}, ...]
+    # Each attribute in attribute_schema may carry a "group" key referencing one of these.
+    attribute_groups: list[dict[str, object]] = Field(default_factory=list)
 
     # Presentation contract — how products in this category are displayed.
     # Inherited down the tree (a child without its own falls back to the

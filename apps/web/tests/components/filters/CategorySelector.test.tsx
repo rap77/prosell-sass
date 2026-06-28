@@ -20,6 +20,7 @@ function makeCategory(overrides: Partial<CategoryNode>): CategoryNode {
     name: "Autos",
     slug: "autos",
     attribute_schema: {},
+    attribute_groups: [],
     presentation: null,
     filter_fields: [],
     ...overrides,

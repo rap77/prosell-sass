@@ -2,7 +2,7 @@
 
 import csv as csv_module
 import io
-from typing import Any
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -54,9 +54,13 @@ from prosell.infrastructure.repositories.category_schema_repository_impl import 
     SqlAlchemyCategorySchemaRepository,
 )
 
+# attribute_schema maps field_name → field definition (type, required, options…) — free-form JSONB
+AttributeSchemaDict = dict[str, dict[str, object]]
+
 
 class _CategorySchemaResponse(_BaseModel):
-    attributes: dict[str, Any]
+    attributes: AttributeSchemaDict
+    attribute_groups: list[dict[str, object]] = []
     schema_version: str
     updated_at: str
     migration_warnings: list[str] = []
@@ -73,15 +77,36 @@ class _SchemaChangeEntry(_BaseModel):
 
 
 class _PatchSchemaRequest(_BaseModel):
-    attribute_schema: dict[str, Any]
+    attribute_schema: AttributeSchemaDict
+    attribute_groups: list[dict[str, object]] = []
+
+
+class _CategoryFieldsResponse(_BaseModel):
+    fields: list[dict[str, object]]
 
 
 router = APIRouter()
 
 
-async def get_category_repository(session: AsyncSession) -> AbstractCategoryRepository:
+async def get_category_repository(
+    db: Annotated[AsyncSession, Depends(get_async_session)],
+) -> AbstractCategoryRepository:
     """Get category repository instance."""
-    return SqlAlchemyCategoryRepository(session)
+    return SqlAlchemyCategoryRepository(db)
+
+
+async def get_schema_repository(
+    db: Annotated[AsyncSession, Depends(get_async_session)],
+) -> SqlAlchemyCategorySchemaRepository:
+    """Get category schema repository instance."""
+    return SqlAlchemyCategorySchemaRepository(db)
+
+
+# Annotated dep aliases (FastAPI 0.100+ pattern — avoids B008 default-value Depends)
+CurrentUser = Annotated[User, Depends(get_current_auth_user_from_cookie)]
+CategoryRepo = Annotated[AbstractCategoryRepository, Depends(get_category_repository)]
+SchemaRepo = Annotated[SqlAlchemyCategorySchemaRepository, Depends(get_schema_repository)]
+DB = Annotated[AsyncSession, Depends(get_async_session)]
 
 
 def _require_platform_admin(user: User) -> None:
@@ -104,12 +129,12 @@ def _require_platform_admin(user: User) -> None:
 @smart_rate_limit("api")
 async def list_categories(
     request: Request,  # pyright: ignore[reportUnusedParameter]  # noqa: ARG001 — required by slowapi rate-limit introspection
+    current_user: CurrentUser,
+    repo: CategoryRepo,
     parent_id: UUID | None = None,
     is_active: bool | None = None,
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
 ) -> CategoryListResponse:
     """
     List categories with optional filters.
@@ -130,7 +155,6 @@ async def list_categories(
     # Role-based check: User entity has no .role attr — use has_role()
     is_admin = current_user.has_role(["super_admin", "admin"])
 
-    repo = SqlAlchemyCategoryRepository(db)
     use_case = ListCategoriesUseCase(repo)
 
     return await use_case.execute(
@@ -146,8 +170,8 @@ async def list_categories(
 @router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
     request: CreateCategoryRequest,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    repo: CategoryRepo,
 ) -> CategoryResponse:
     """
     Create a new category.
@@ -158,7 +182,6 @@ async def create_category(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     _require_platform_admin(current_user)
 
-    repo = SqlAlchemyCategoryRepository(db)
     use_case = CreateCategoryUseCase(repo)
 
     try:
@@ -172,15 +195,14 @@ async def create_category(
 @router.get("/{category_id}", response_model=CategoryResponse)
 async def get_category(
     category_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    repo: CategoryRepo,
 ) -> CategoryResponse:
     """Get a category by ID."""
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     tenant_id = current_user.tenant_id
 
-    repo = SqlAlchemyCategoryRepository(db)
     category = await repo.get_by_id_or_global(category_id, tenant_id)
 
     if not category:
@@ -193,8 +215,8 @@ async def get_category(
 async def update_category(
     category_id: UUID,
     request: UpdateCategoryRequest,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    repo: CategoryRepo,
 ) -> CategoryResponse:
     """Update category basic information."""
     if current_user.tenant_id is None:
@@ -202,7 +224,6 @@ async def update_category(
     _require_platform_admin(current_user)
     tenant_id = current_user.tenant_id
 
-    repo = SqlAlchemyCategoryRepository(db)
     use_case = UpdateCategoryUseCase(repo)
 
     return await use_case.execute(category_id, tenant_id, request, is_platform_admin=True)
@@ -211,8 +232,8 @@ async def update_category(
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(
     category_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    repo: CategoryRepo,
 ) -> None:
     """
     Soft-delete a category (deactivates it).
@@ -224,7 +245,6 @@ async def delete_category(
     _require_platform_admin(current_user)
     tenant_id = current_user.tenant_id
 
-    repo = SqlAlchemyCategoryRepository(db)
     use_case = DeleteCategoryUseCase(repo)
 
     await use_case.execute(category_id, tenant_id, is_platform_admin=True)
@@ -234,8 +254,8 @@ async def delete_category(
 async def update_category_attribute_schema(
     category_id: UUID,
     request: UpdateAttributeSchemaRequest,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    repo: CategoryRepo,
 ) -> CategoryResponse:
     """
     Replace the attribute_schema for a category.
@@ -249,7 +269,6 @@ async def update_category_attribute_schema(
     _require_platform_admin(current_user)
     tenant_id = current_user.tenant_id
 
-    repo = SqlAlchemyCategoryRepository(db)
     use_case = UpdateCategoryAttributeSchemaUseCase(repo)
 
     return await use_case.execute(
@@ -260,20 +279,20 @@ async def update_category_attribute_schema(
 @router.get("/{category_id}/schema", response_model=_CategorySchemaResponse)
 async def get_category_schema(
     category_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    repo: CategoryRepo,
 ) -> _CategorySchemaResponse:
     """Get category attribute_schema with version metadata."""
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    repo = SqlAlchemyCategoryRepository(db)
     category = await repo.get_by_id_or_global(category_id, current_user.tenant_id)
     if not category:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
 
     return _CategorySchemaResponse(
         attributes=category.attribute_schema or {},
+        attribute_groups=category.attribute_groups or [],
         schema_version=category.updated_at.isoformat(),
         updated_at=category.updated_at.isoformat(),
     )
@@ -283,9 +302,10 @@ async def get_category_schema(
 async def patch_category_schema(
     category_id: UUID,
     request: _PatchSchemaRequest,
+    current_user: CurrentUser,
+    repo: CategoryRepo,
+    schema_repo: SchemaRepo,
     force: bool = False,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
 ) -> _CategorySchemaResponse:
     """
     Replace category attribute_schema with migration warnings.
@@ -299,14 +319,13 @@ async def patch_category_schema(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     _require_platform_admin(current_user)
 
-    repo = SqlAlchemyCategoryRepository(db)
-    schema_repo = SqlAlchemyCategorySchemaRepository(db)
     use_case = PatchCategorySchemaUseCase(category_repository=repo, schema_repository=schema_repo)
     try:
         result = await use_case.execute(
             category_id=category_id,
             tenant_id=current_user.tenant_id,
             new_schema=request.attribute_schema,
+            new_groups=request.attribute_groups,
             force=force,
             user_id=current_user.id,
         )
@@ -324,6 +343,7 @@ async def patch_category_schema(
 
     return _CategorySchemaResponse(
         attributes=result.schema,
+        attribute_groups=result.attribute_groups,
         schema_version=result.schema_version,
         updated_at=result.schema_version,
         migration_warnings=result.migration_warnings,
@@ -334,14 +354,13 @@ async def patch_category_schema(
 @router.get("/{category_id}/schema/template.csv", response_model=None)
 async def get_category_schema_template(
     category_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    repo: CategoryRepo,
 ) -> StreamingResponse:
     """Download an empty CSV template with this category's attribute headers."""
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    repo = SqlAlchemyCategoryRepository(db)
     category = await repo.get_by_id_or_global(category_id, current_user.tenant_id)
     if not category:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
@@ -379,29 +398,29 @@ async def get_category_schema_template(
 async def clone_category_schema(
     category_id: UUID,
     source_category_id: UUID,
+    current_user: CurrentUser,
+    repo: CategoryRepo,
+    schema_repo: SchemaRepo,
     force: bool = False,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
 ) -> _CategorySchemaResponse:
-    """Copy source category's attribute_schema to target category (full overwrite)."""
+    """Copy source category's attribute_schema (and attribute_groups) to target (full overwrite)."""
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     _require_platform_admin(current_user)
 
-    repo = SqlAlchemyCategoryRepository(db)
     source = await repo.get_by_id_or_global(source_category_id, current_user.tenant_id)
     if not source:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Source category not found"
         )
 
-    schema_repo = SqlAlchemyCategorySchemaRepository(db)
     use_case = PatchCategorySchemaUseCase(category_repository=repo, schema_repository=schema_repo)
     try:
         result = await use_case.execute(
             category_id=category_id,
             tenant_id=current_user.tenant_id,
             new_schema=source.attribute_schema or {},
+            new_groups=list(source.attribute_groups or []),
             force=force,
             user_id=current_user.id,
         )
@@ -419,6 +438,7 @@ async def clone_category_schema(
 
     return _CategorySchemaResponse(
         attributes=result.schema,
+        attribute_groups=result.attribute_groups,
         schema_version=result.schema_version,
         updated_at=result.schema_version,
         migration_warnings=result.migration_warnings,
@@ -428,14 +448,14 @@ async def clone_category_schema(
 @router.get("/{category_id}/schema/history", response_model=list[_SchemaChangeEntry])
 async def get_category_schema_history(
     category_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
+    current_user: CurrentUser,
+    repo: CategoryRepo,
+    db: DB,
 ) -> list[_SchemaChangeEntry]:
     """Return audit log for category schema changes, newest first (max 100)."""
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
 
-    repo = SqlAlchemyCategoryRepository(db)
     category = await repo.get_by_id_or_global(category_id, current_user.tenant_id)
     if not category:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
@@ -460,21 +480,20 @@ async def get_category_schema_history(
     ]
 
 
-@router.get("/.*", response_model=dict[str, Any])
+@router.get("/{category_id}/fields", response_model=_CategoryFieldsResponse)
 async def get_category_fields(
     category_id: UUID,
-    current_user: User = Depends(get_current_auth_user_from_cookie),
-    db: AsyncSession = Depends(get_async_session),
-) -> dict[str, Any]:
+    current_user: CurrentUser,
+    repo: CategoryRepo,
+) -> _CategoryFieldsResponse:
     """Get field configuration for a category."""
     if current_user.tenant_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no tenant")
     tenant_id = current_user.tenant_id
 
-    repo = SqlAlchemyCategoryRepository(db)
     category = await repo.get_by_id_or_global(category_id, tenant_id)
 
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    return {"fields": category.field_config}
+    return _CategoryFieldsResponse(fields=category.field_config)

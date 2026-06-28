@@ -14,6 +14,17 @@ const AttributeTypeSchema = z.enum([
 ]);
 
 /**
+ * One attribute group definition stored in `category.attribute_groups`.
+ * Each entry in `attribute_schema` may carry a `group` key referencing
+ * one of these by `key`.
+ */
+export const AttributeGroupSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  order: z.number().default(0),
+});
+
+/**
  * Single entry of `attribute_schema` (the per-category field definition).
  * Backend stores this in `category.attribute_schema` as a JSONB dict.
  */
@@ -22,6 +33,7 @@ export const AttributeFieldSchema = z.object({
   required: z.boolean().default(false),
   label: z.string().optional(),
   description: z.string().optional(),
+  group: z.string().optional(),
 });
 
 /**
@@ -34,6 +46,7 @@ export const AttributeFieldSchema = z.object({
  */
 export const CategorySchemaResponseSchema = z.object({
   attributes: z.record(AttributeFieldSchema),
+  attribute_groups: z.array(AttributeGroupSchema).default([]),
   schema_version: z.string(),
   updated_at: z.string(),
   migration_warnings: z.array(z.string()).default([]),
@@ -69,6 +82,7 @@ export type CategorySchemaResponse = z.infer<
   typeof CategorySchemaResponseSchema
 >;
 export type AttributeField = z.infer<typeof AttributeFieldSchema>;
+export type AttributeGroup = z.infer<typeof AttributeGroupSchema>;
 export type SchemaChangeEntry = z.infer<typeof SchemaChangeEntrySchema>;
 export type MigrationWarningResponse = z.infer<
   typeof MigrationWarningResponseSchema

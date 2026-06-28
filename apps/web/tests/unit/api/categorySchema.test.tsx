@@ -14,6 +14,11 @@ import {
   useCloneCategorySchema,
   downloadSchemaTemplate,
 } from "@/lib/api/products";
+import {
+  AttributeFieldSchema,
+  AttributeGroupSchema,
+  CategorySchemaResponseSchema,
+} from "@/lib/api/schemas/categorySchema";
 
 function makeWrapper() {
   const client = new QueryClient({
@@ -183,6 +188,98 @@ describe("useCloneCategorySchema", () => {
       `/api/v1/categories/cat-target/schema/clone-from/cat-source`,
     );
     expect(init.method).toBe("POST");
+  });
+});
+
+describe("AttributeGroupSchema", () => {
+  it("parses a valid group", () => {
+    const result = AttributeGroupSchema.parse({
+      key: "motor",
+      label: "Motor",
+      order: 1,
+    });
+    expect(result).toEqual({ key: "motor", label: "Motor", order: 1 });
+  });
+
+  it("defaults order to 0", () => {
+    const result = AttributeGroupSchema.parse({ key: "x", label: "X" });
+    expect(result.order).toBe(0);
+  });
+});
+
+describe("AttributeFieldSchema group field", () => {
+  it("parses group when present", () => {
+    const result = AttributeFieldSchema.parse({
+      type: "string",
+      required: false,
+      group: "motor",
+    });
+    expect(result.group).toBe("motor");
+  });
+
+  it("group is optional — omits gracefully", () => {
+    const result = AttributeFieldSchema.parse({ type: "number" });
+    expect(result.group).toBeUndefined();
+  });
+});
+
+describe("CategorySchemaResponseSchema attribute_groups", () => {
+  it("parses attribute_groups from backend response", () => {
+    const raw = {
+      attributes: { year: { type: "number", required: true, group: "basic" } },
+      attribute_groups: [
+        { key: "basic", label: "Basic Info", order: 0 },
+        { key: "motor", label: "Motor", order: 1 },
+      ],
+      schema_version: "2026-06-28T19:00:00Z",
+      updated_at: "2026-06-28T19:00:00Z",
+    };
+    const result = CategorySchemaResponseSchema.parse(raw);
+    expect(result.attribute_groups).toHaveLength(2);
+    expect(result.attribute_groups[0].key).toBe("basic");
+    expect(result.attributes.year.group).toBe("basic");
+  });
+
+  it("defaults attribute_groups to empty array when absent", () => {
+    const raw = {
+      attributes: {},
+      schema_version: "2026-06-28T19:00:00Z",
+      updated_at: "2026-06-28T19:00:00Z",
+    };
+    const result = CategorySchemaResponseSchema.parse(raw);
+    expect(result.attribute_groups).toEqual([]);
+  });
+});
+
+describe("usePatchCategorySchema attribute_groups", () => {
+  it("sends attribute_groups in PATCH body", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          ...mockSchemaResponse,
+          attribute_groups: [{ key: "basic", label: "Basic Info", order: 0 }],
+        }),
+    });
+    global.fetch = fetchMock;
+
+    const { result } = renderHook(() => usePatchCategorySchema(), {
+      wrapper: makeWrapper(),
+    });
+
+    result.current.mutate({
+      categoryId: CAT_ID,
+      schema: { year: { type: "number", required: true, group: "basic" } },
+      groups: [{ key: "basic", label: "Basic Info", order: 0 }],
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(body.attribute_groups).toEqual([
+      { key: "basic", label: "Basic Info", order: 0 },
+    ]);
   });
 });
 
