@@ -156,3 +156,6 @@ tests/e2e/.auth/
 
 # graphify knowledge graph (generated artifacts + cache)
 graphify-out/
+
+# Penpot design files (local, not committed)
+*.penpot
