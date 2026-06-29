@@ -38,6 +38,16 @@ export interface ValidationRules {
   max?: number;
 }
 
+/** One attribute group definition on a category. */
+export interface AttributeGroup {
+  /** Stable key used as `group` reference in `AttributeSchemaEntry`. */
+  key: string;
+  /** Human-readable section label shown in the form. */
+  label: string;
+  /** Render order (ascending). */
+  order: number;
+}
+
 /** A single entry in `attribute_schema`. */
 export interface AttributeSchemaEntry {
   /** Logical type used for client-side formatting. */
@@ -52,6 +62,8 @@ export interface AttributeSchemaEntry {
   options?: string[];
   /** Optional per-attribute constraints (e.g. Slider bounds for `range`). */
   validation_rules?: ValidationRules;
+  /** References an `AttributeGroup.key` for section grouping in forms. */
+  group?: string;
 }
 
 /* ---------- presentation contract ---------- */
@@ -98,6 +110,7 @@ export interface Category {
   name: string;
   slug: string;
   attribute_schema: Record<string, AttributeSchemaEntry>;
+  attribute_groups: AttributeGroup[];
   presentation: CategoryPresentation | null;
   is_active: boolean;
   created_at: string;
@@ -129,6 +142,7 @@ export interface CategoryNode {
   name: string;
   slug: string;
   attribute_schema: Record<string, AttributeSchemaEntry>;
+  attribute_groups: AttributeGroup[];
   /** Own-or-inherited presentation; `null` if neither defines one. */
   presentation: CategoryPresentation | null;
   filter_fields: FilterField[];

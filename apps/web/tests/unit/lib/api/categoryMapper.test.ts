@@ -43,6 +43,7 @@ describe("mapBackendCategoryToDomain", () => {
         make: { type: "string", filter_type: "select" },
         model: { type: "string", filter_type: "exact" },
       },
+      attribute_groups: [],
       presentation: null,
       is_active: true,
       created_at: "2026-04-26T00:00:00Z",

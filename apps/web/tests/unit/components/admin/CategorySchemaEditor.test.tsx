@@ -43,8 +43,9 @@ import type { CategorySchemaResponse } from "@/lib/api/schemas/categorySchema";
 const mockSchema: CategorySchemaResponse = {
   attributes: {
     vin: { type: "string", required: true },
-    year: { type: "number", required: false },
+    year: { type: "number", required: false, group: "basic" },
   },
+  attribute_groups: [{ key: "basic", label: "Basic Info", order: 0 }],
   schema_version: "2026-06-25T12:00:00Z",
   updated_at: "2026-06-25T12:00:00Z",
   migration_warnings: [],
@@ -95,7 +96,7 @@ describe("CategorySchemaEditor", () => {
   it("can add a new field row", async () => {
     render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
 
-    await userEvent.click(screen.getByRole("button", { name: /add/i }));
+    await userEvent.click(screen.getByRole("button", { name: /add field/i }));
 
     const inputs = screen.getAllByPlaceholderText(/field name/i);
     expect(inputs.length).toBeGreaterThan(0);
@@ -117,10 +118,44 @@ describe("CategorySchemaEditor", () => {
     await userEvent.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalledWith({
-        categoryId: "cat-1",
-        schema: expect.objectContaining({ vin: expect.any(Object) }),
-      });
+      expect(mockMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          categoryId: "cat-1",
+          schema: expect.objectContaining({ vin: expect.any(Object) }),
+        }),
+      );
+    });
+  });
+
+  it("renders existing groups in group management panel", () => {
+    render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
+    const input = screen.getByDisplayValue("Basic Info");
+    expect(input).toBeDefined();
+  });
+
+  it("can add a new group", async () => {
+    render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /add group/i }));
+
+    const groupInputs = screen.getAllByPlaceholderText(/group label/i);
+    expect(groupInputs.length).toBeGreaterThan(0);
+  });
+
+  it("includes groups in the mutateAsync call on save", async () => {
+    mockMutate.mockResolvedValue({ ...mockSchema, requires_force: false });
+    render(<CategorySchemaEditor categoryId="cat-1" schema={mockSchema} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          groups: expect.arrayContaining([
+            expect.objectContaining({ key: "basic" }),
+          ]),
+        }),
+      );
     });
   });
 

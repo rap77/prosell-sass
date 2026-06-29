@@ -44,6 +44,7 @@ const oneCategoryVerticals: OrgVerticalsResponse = {
               options: ["Toyota", "Honda"],
             },
           },
+          attribute_groups: [],
           presentation: null,
           filter_fields: [{ key: "make", filter_type: "select" }],
         },

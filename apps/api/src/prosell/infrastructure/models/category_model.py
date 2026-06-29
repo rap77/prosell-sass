@@ -62,6 +62,14 @@ class CategoryModel(Base):
         nullable=False,
     )
 
+    # Ordered list of attribute groups for UI section rendering.
+    # [{"key": "basic", "label": "Basic Info", "order": 0}, ...]
+    attribute_groups: Mapped[list[dict[str, object]]] = mapped_column(
+        JSONB,
+        server_default="[]",
+        nullable=False,
+    )
+
     # Presentation contract (display templates + card fields). Nullable —
     # categories without one inherit from an ancestor or fall back to the
     # request title. See Category entity + template_composer.

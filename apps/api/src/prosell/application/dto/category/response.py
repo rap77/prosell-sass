@@ -1,7 +1,6 @@
 """Category response DTOs."""
 
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -26,7 +25,9 @@ class CategoryResponse(BaseModel):
     sort_order: int
     is_active: bool
     field_config: list[dict[str, object]] = []
-    attribute_schema: dict[str, Any] = {}
+    # Maps field_name → field definition (type, required, options…) — free-form JSONB
+    attribute_schema: dict[str, dict[str, object]] = {}
+    attribute_groups: list[dict[str, object]] = []
     created_at: datetime
     updated_at: datetime
 
@@ -47,6 +48,7 @@ class CategoryResponse(BaseModel):
             is_active=category.is_active,
             field_config=category.field_config,
             attribute_schema=category.attribute_schema or {},
+            attribute_groups=list(category.attribute_groups or []),
             created_at=category.created_at,
             updated_at=category.updated_at,
         )

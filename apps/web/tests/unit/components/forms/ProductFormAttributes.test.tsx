@@ -28,6 +28,7 @@ function categoryWithSchema(
     name: "Sedans",
     slug: "sedans",
     attribute_schema: attribute_schema as Record<string, AttributeSchemaEntry>,
+    attribute_groups: [],
     presentation: null,
     is_active: true,
     created_at: "2026-04-26T00:00:00Z",

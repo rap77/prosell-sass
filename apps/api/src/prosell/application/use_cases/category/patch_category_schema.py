@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
 from uuid import UUID
 
 from prosell.domain.exceptions.category_exceptions import (
@@ -32,7 +31,8 @@ _FORCE_REQUIRED_PAIRS: frozenset[tuple[str, str]] = frozenset(
 
 @dataclass
 class PatchSchemaResult:
-    schema: dict[str, Any]
+    schema: dict[str, dict[str, object]]
+    attribute_groups: list[dict[str, object]]
     schema_version: str  # ISO timestamp of updated_at
     migration_warnings: list[str] = field(default_factory=list)
     requires_force: bool = False
@@ -59,15 +59,16 @@ class PatchCategorySchemaUseCase:
         self,
         category_id: UUID,
         tenant_id: UUID,
-        new_schema: dict[str, Any],
+        new_schema: dict[str, dict[str, object]],
         force: bool,
         user_id: UUID,
+        new_groups: list[dict[str, object]] | None = None,
     ) -> PatchSchemaResult:
         category = await self._repo.get_by_id_or_global(category_id, tenant_id)
         if not category:
             raise CategoryNotFoundError(str(category_id))
 
-        old_schema: dict[str, Any] = category.attribute_schema or {}
+        old_schema: dict[str, dict[str, object]] = dict(category.attribute_schema or {})
 
         warnings, requires_force = await self._detect_warnings(
             category_id=category_id,
@@ -82,6 +83,8 @@ class PatchCategorySchemaUseCase:
             )
 
         category.attribute_schema = new_schema
+        if new_groups is not None:
+            category.attribute_groups = new_groups
         category.updated_at = datetime.now(UTC)
         updated_category = await self._repo.update(category)
 
@@ -106,6 +109,7 @@ class PatchCategorySchemaUseCase:
 
         return PatchSchemaResult(
             schema=updated_category.attribute_schema,
+            attribute_groups=updated_category.attribute_groups or [],
             schema_version=updated_category.updated_at.isoformat(),
             migration_warnings=warnings,
             requires_force=False,
@@ -115,8 +119,8 @@ class PatchCategorySchemaUseCase:
         self,
         category_id: UUID,
         tenant_id: UUID,
-        old_schema: dict[str, Any],
-        new_schema: dict[str, Any],
+        old_schema: dict[str, dict[str, object]],
+        new_schema: dict[str, dict[str, object]],
     ) -> tuple[list[str], bool]:
         warnings: list[str] = []
         requires_force = False
@@ -171,8 +175,8 @@ class PatchCategorySchemaUseCase:
         self,
         category_id: UUID,
         tenant_id: UUID,
-        old_schema: dict[str, Any],
-        new_schema: dict[str, Any],
+        old_schema: dict[str, dict[str, object]],
+        new_schema: dict[str, dict[str, object]],
     ) -> None:
         for field_name, new_def in new_schema.items():
             old_def = old_schema.get(field_name)
@@ -193,7 +197,10 @@ class PatchCategorySchemaUseCase:
                 )
 
     @staticmethod
-    def _build_summary(old_schema: dict[str, Any], new_schema: dict[str, Any]) -> str:
+    def _build_summary(
+        old_schema: dict[str, dict[str, object]],
+        new_schema: dict[str, dict[str, object]],
+    ) -> str:
         added = [k for k in new_schema if k not in old_schema]
         removed = [k for k in old_schema if k not in new_schema]
         changed = [k for k in new_schema if k in old_schema and old_schema[k] != new_schema[k]]

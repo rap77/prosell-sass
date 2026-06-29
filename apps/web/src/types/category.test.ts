@@ -76,6 +76,7 @@ describe("Category", () => {
         mileage: { type: "number", filter_type: "range", unit: "km" },
         year: { type: "number", filter_type: "range" },
       },
+      attribute_groups: [],
       presentation: {
         card_fields: [{ key: "mileage", source: "attributes.mileage" }],
         subtitle_template: "{year}",
@@ -112,6 +113,7 @@ describe("OrgVerticalsResponse", () => {
               attribute_schema: {
                 mileage: { type: "number", filter_type: "range" },
               },
+              attribute_groups: [],
               presentation: {
                 card_fields: [{ key: "mileage", source: "attributes.mileage" }],
                 subtitle_template: "{year} · {make} · {model}",
@@ -147,6 +149,7 @@ describe("VerticalResponse and CategoryNode", () => {
       name: "X",
       slug: "x",
       attribute_schema: {},
+      attribute_groups: [],
       presentation: null, // inherits from vertical
       filter_fields: [],
     };

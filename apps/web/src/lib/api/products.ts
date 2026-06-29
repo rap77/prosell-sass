@@ -27,10 +27,12 @@ import { BulkUploadUploadResultSchema } from "@/lib/api/schemas/bulkUpload";
 import type { BulkUploadUploadResult } from "@/lib/api/schemas/bulkUpload";
 import {
   CategorySchemaResponseSchema,
+  MigrationWarningResponseSchema,
   SchemaHistorySchema,
 } from "@/lib/api/schemas/categorySchema";
 import type {
   AttributeField,
+  AttributeGroup,
   CategorySchemaResponse,
   SchemaChangeEntry,
 } from "@/lib/api/schemas/categorySchema";
@@ -700,13 +702,9 @@ export function useBulkUploadProducts() {
       });
 
       if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ detail: "Upload failed" }));
+        const error: unknown = await res.json().catch(() => ({}));
         throw new Error(
-          typeof error.detail === "string"
-            ? error.detail
-            : "Failed to upload products",
+          extractErrorMessage(error, "Failed to upload products"),
         );
       }
 
@@ -746,6 +744,7 @@ export function useBulkUploadProducts() {
 type PatchSchemaVars = {
   categoryId: string;
   schema: Record<string, AttributeField>;
+  groups?: AttributeGroup[];
   force?: boolean;
 };
 
@@ -773,22 +772,26 @@ export function usePatchCategorySchema() {
   const queryClient = useQueryClient();
 
   return useMutation<CategorySchemaResponse, Error, PatchSchemaVars>({
-    mutationFn: async ({ categoryId, schema, force }) => {
+    mutationFn: async ({ categoryId, schema, groups, force }) => {
       const url = `/api/v1/categories/${categoryId}/schema${force ? "?force=true" : ""}`;
       const res = await fetch(url, {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ attribute_schema: schema }),
+        body: JSON.stringify({
+          attribute_schema: schema,
+          attribute_groups: groups ?? [],
+        }),
       });
       if (!res.ok) {
-        const err = await res
-          .json()
-          .catch(() => ({ detail: "Failed to update schema" }));
+        const err: unknown = await res.json().catch(() => ({}));
+        const migration = z
+          .object({ detail: MigrationWarningResponseSchema })
+          .safeParse(err);
         throw new Error(
-          typeof err.detail === "string"
-            ? err.detail
-            : JSON.stringify(err.detail),
+          migration.success
+            ? JSON.stringify(migration.data.detail)
+            : extractErrorMessage(err, "Failed to update schema"),
         );
       }
       return CategorySchemaResponseSchema.parse(await res.json());

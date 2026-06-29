@@ -31,6 +31,13 @@ const attributeSchemaEntrySchema = z.object({
       max: z.number().optional(),
     })
     .optional(),
+  group: z.string().optional(),
+});
+
+const attributeGroupSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  order: z.number(),
 });
 
 const cardFieldSchema = z.object({
@@ -55,6 +62,7 @@ const categoryNodeSchema = z.object({
   name: z.string(),
   slug: z.string(),
   attribute_schema: z.record(attributeSchemaEntrySchema),
+  attribute_groups: z.array(attributeGroupSchema).default([]),
   presentation: categoryPresentationSchema.nullable(),
   filter_fields: z.array(filterFieldSchema),
 });
