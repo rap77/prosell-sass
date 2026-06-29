@@ -28,7 +28,9 @@ export function GenericProductForm({ category }: GenericProductFormProps) {
 
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
-  const [dynamicValues, setDynamicValues] = useState<Record<string, unknown>>({});
+  const [dynamicValues, setDynamicValues] = useState<Record<string, unknown>>(
+    {},
+  );
 
   useEffect(() => {
     clearAll();
@@ -53,7 +55,8 @@ export function GenericProductForm({ category }: GenericProductFormProps) {
           : null;
 
         await createProduct.mutateAsync({
-          title: `${category.name} — ${Object.values(dynamicValues).filter(Boolean).slice(0, 2).join(" ")}`.trim(),
+          title:
+            `${category.name} — ${Object.values(dynamicValues).filter(Boolean).slice(0, 2).join(" ")}`.trim(),
           price_cents: Math.round(parseFloat(price || "0") * 100),
           category_id: category.id,
           description: description || undefined,

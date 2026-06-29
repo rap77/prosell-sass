@@ -121,7 +121,8 @@ export function GenericFormFields({
   const fieldsByGroup: Record<string, string[]> = { _ungrouped: [] };
   for (const group of sortedGroups) fieldsByGroup[group.key] = [];
   for (const [key, entry] of Object.entries(schema)) {
-    const gk = entry.group && groupKeys.has(entry.group) ? entry.group : "_ungrouped";
+    const gk =
+      entry.group && groupKeys.has(entry.group) ? entry.group : "_ungrouped";
     fieldsByGroup[gk].push(key);
   }
 

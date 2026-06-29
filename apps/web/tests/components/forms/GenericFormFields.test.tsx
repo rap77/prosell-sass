@@ -54,7 +54,12 @@ const GROUPS: AttributeGroup[] = [
 ];
 
 const SCHEMA_WITH_GROUPS: Record<string, AttributeSchemaEntry> = {
-  color: { type: "string", filter_type: "text", label: "Color", group: "basic" },
+  color: {
+    type: "string",
+    filter_type: "text",
+    label: "Color",
+    group: "basic",
+  },
   size: {
     type: "select",
     filter_type: "select",
@@ -104,7 +109,9 @@ describe("GenericFormFields", () => {
         disabled={false}
       />,
     );
-    expect(screen.getByRole("checkbox", { name: "Disponible" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: "Disponible" }),
+    ).toBeInTheDocument();
   });
 
   it("calls onChange when a text input changes", async () => {

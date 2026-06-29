@@ -14,7 +14,9 @@ vi.mock("@/lib/stores/uploadStore", () => {
     coverImageId: null,
     clearAll: vi.fn(),
   }));
-  Object.assign(hook, { getState: vi.fn(() => ({ images: [], coverImageId: null })) });
+  Object.assign(hook, {
+    getState: vi.fn(() => ({ images: [], coverImageId: null })),
+  });
   return { useUploadStore: hook };
 });
 
@@ -35,7 +37,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/components/ui/select", () => ({
-  Select: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Select: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
   SelectTrigger: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
