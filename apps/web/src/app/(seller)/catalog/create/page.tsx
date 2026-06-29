@@ -1,47 +1,111 @@
 "use client";
 
-/**
- * Catalog › Crear vehículo — ProSell vehicle creation form.
- *
- * Thin page: it only renders the header + <ProductForm mode="create" />.
- * The form owns the ENTIRE image flow (dropzone, cover picker, upload,
- * and persistence) via the Zustand upload store — there is no separate
- * uploader mounted here. On success the form redirects to /catalog.
- *
- * All colors via var(--ps-*) tokens — dark/light automatic.
- */
-
+import { useState } from "react";
+import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
+import { useOrgVerticals } from "@/lib/api/verticals";
 import { ProductForm } from "@/components/forms/ProductForm";
+import { GenericProductForm } from "@/components/forms/GenericProductForm";
+import { CategorySelectorModal } from "@/components/forms/CategorySelectorModal";
+import type { CategoryNode } from "@/types/category";
 
-export default function CreateVehiclePage() {
+function isVehicleCategory(category: CategoryNode): boolean {
+  return "vin" in (category.attribute_schema ?? {});
+}
+
+export default function CreateProductPage() {
+  const { data: orgProfile } = useCurrentOrganizationProfile();
+  const organizationId = orgProfile?.id ?? null;
+  const { data: verticalsData } = useOrgVerticals(organizationId);
+
+  const allCategories = (verticalsData?.verticals ?? []).flatMap(
+    (v) => v.categories,
+  );
+
+  const [selectedCategory, setSelectedCategory] = useState<CategoryNode | null>(
+    null,
+  );
+  const [modalOpen, setModalOpen] = useState(true);
+
+  function handleCategorySelect(category: CategoryNode) {
+    setSelectedCategory(category);
+    setModalOpen(false);
+  }
+
   return (
     <div style={{ maxWidth: 896, margin: "0 auto" }}>
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 22,
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-            color: "var(--ps-text-primary)",
-          }}
-        >
-          Crear vehículo
-        </h1>
-        <p
-          style={{
-            margin: "4px 0 0",
-            fontSize: 13,
-            color: "var(--ps-text-secondary)",
-          }}
-        >
-          Agregá un nuevo vehículo al catálogo.
-        </p>
-      </div>
+      <CategorySelectorModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        categories={allCategories}
+        onSelect={handleCategorySelect}
+      />
 
-      {/* Vehicle form — owns images (dropzone + cover picker) internally */}
-      <ProductForm mode="create" />
+      {selectedCategory ? (
+        <>
+          <div style={{ marginBottom: 28 }}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 22,
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+                color: "var(--ps-text-primary)",
+              }}
+            >
+              Agregar {selectedCategory.name}
+            </h1>
+            <p style={{ margin: "4px 0 0", fontSize: 13 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setModalOpen(true);
+                }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  color: "var(--ps-text-secondary)",
+                  textDecoration: "underline",
+                  fontSize: 13,
+                }}
+              >
+                Cambiar categoría
+              </button>
+            </p>
+          </div>
+
+          {isVehicleCategory(selectedCategory) ? (
+            <ProductForm mode="create" />
+          ) : (
+            <GenericProductForm category={selectedCategory} />
+          )}
+        </>
+      ) : (
+        <div style={{ marginBottom: 28 }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              color: "var(--ps-text-primary)",
+            }}
+          >
+            Agregar producto
+          </h1>
+          <p
+            style={{
+              margin: "4px 0 0",
+              fontSize: 13,
+              color: "var(--ps-text-secondary)",
+            }}
+          >
+            Seleccioná una categoría para comenzar.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
