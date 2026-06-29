@@ -24,7 +24,7 @@ import {
   Upload,
   Plus,
   Search,
-  Car,
+  Package,
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
@@ -118,7 +118,7 @@ function EmptyState({
           justifyContent: "center",
         }}
       >
-        <Car
+        <Package
           size={28}
           style={{ color: "var(--ps-text-tertiary)" }}
           strokeWidth={1.5}

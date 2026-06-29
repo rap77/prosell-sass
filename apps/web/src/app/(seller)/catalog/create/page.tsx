@@ -17,29 +17,14 @@ export default function CreateProductPage() {
   const organizationId = orgProfile?.id ?? null;
   const { data: verticalsData } = useOrgVerticals(organizationId);
 
-  const allCategories = (verticalsData?.verticals ?? []).flatMap(
-    (v) => v.categories,
-  );
-
   const [selectedCategory, setSelectedCategory] = useState<CategoryNode | null>(
     null,
   );
-  const [modalOpen, setModalOpen] = useState(true);
 
-  function handleCategorySelect(category: CategoryNode) {
-    setSelectedCategory(category);
-    setModalOpen(false);
-  }
+  const verticals = verticalsData?.verticals ?? [];
 
   return (
     <div style={{ maxWidth: 896, margin: "0 auto" }}>
-      <CategorySelectorModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        categories={allCategories}
-        onSelect={handleCategorySelect}
-      />
-
       {selectedCategory ? (
         <>
           <div style={{ marginBottom: 28 }}>
@@ -57,10 +42,7 @@ export default function CreateProductPage() {
             <p style={{ margin: "4px 0 0", fontSize: 13 }}>
               <button
                 type="button"
-                onClick={() => {
-                  setSelectedCategory(null);
-                  setModalOpen(true);
-                }}
+                onClick={() => setSelectedCategory(null)}
                 style={{
                   background: "none",
                   border: "none",
@@ -83,28 +65,35 @@ export default function CreateProductPage() {
           )}
         </>
       ) : (
-        <div style={{ marginBottom: 28 }}>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 22,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "var(--ps-text-primary)",
-            }}
-          >
-            Agregar producto
-          </h1>
-          <p
-            style={{
-              margin: "4px 0 0",
-              fontSize: 13,
-              color: "var(--ps-text-secondary)",
-            }}
-          >
-            Seleccioná una categoría para comenzar.
-          </p>
-        </div>
+        <>
+          <div style={{ marginBottom: 28 }}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 22,
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+                color: "var(--ps-text-primary)",
+              }}
+            >
+              Agregar producto
+            </h1>
+            <p
+              style={{
+                margin: "4px 0 0",
+                fontSize: 13,
+                color: "var(--ps-text-secondary)",
+              }}
+            >
+              Seleccioná una categoría para comenzar.
+            </p>
+          </div>
+
+          <CategorySelectorModal
+            verticals={verticals}
+            onSelect={setSelectedCategory}
+          />
+        </>
       )}
     </div>
   );
