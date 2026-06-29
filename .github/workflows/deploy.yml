@@ -97,6 +97,21 @@ jobs:
           # se interpolan desde .env.staging, que vive en el host (gitignored).
           docker compose --env-file .env.staging -f docker/docker-compose.staging.yml build
 
+      - name: Sync postgres password
+        working-directory: ${{ secrets.STAGING_REPO_PATH }}
+        run: |
+          # ponytail: si el volumen de DB tiene una password vieja (mismatch con
+          # .env.staging), la API no puede conectar. Sincronizar antes de up.
+          if docker ps --format '{{.Names}}' | grep -q '^prosell-staging-db$'; then
+            PG_PASS=$(grep -E '^POSTGRES_PASSWORD=' .env.staging | cut -d= -f2- | tr -d '"' | tr -d "'")
+            if [ -n "$PG_PASS" ]; then
+              PG_PASS_ESC="${PG_PASS//\'/\'\'}"
+              docker exec prosell-staging-db psql -U postgres -c "ALTER USER postgres WITH PASSWORD '${PG_PASS_ESC}';" \
+                && echo "✓ postgres password synced" \
+                || echo "⚠️ password sync failed (non-fatal si DB aún no inicializado)"
+            fi
+          fi
+
       - name: Deploy containers
         working-directory: ${{ secrets.STAGING_REPO_PATH }}
         run: |
