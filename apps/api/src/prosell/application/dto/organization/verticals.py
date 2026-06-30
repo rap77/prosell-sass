@@ -13,7 +13,8 @@ Shape:
             └── filter_fields: list[dict]   (filterable fields from schema)
 """
 
-from typing import Any
+from __future__ import annotations
+
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -25,9 +26,13 @@ class CategoryNode(BaseModel):
     id: UUID
     name: str
     slug: str
-    attribute_schema: dict[str, Any] = {}
-    presentation: dict[str, Any] | None = None
+    attribute_schema: dict[str, dict[str, object]] = {}
+    presentation: dict[str, object] | None = None
     filter_fields: list[dict[str, str]] = []
+    children: list[CategoryNode] = []
+
+
+CategoryNode.model_rebuild()
 
 
 class VerticalResponse(BaseModel):
@@ -36,7 +41,7 @@ class VerticalResponse(BaseModel):
     id: UUID
     name: str
     slug: str
-    presentation: dict[str, Any] | None = None
+    presentation: dict[str, object] | None = None
     categories: list[CategoryNode] = []
 
 

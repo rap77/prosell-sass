@@ -43,7 +43,10 @@ class _Node(TypedDict):
 _CAR_PRESENTATION: dict = {
     "title_template": "{year} {make} {model}",
     "subtitle_template": "{transmission} · {fuel_type}",
-    "card_fields": ["price", "mileage"],
+    "card_fields": [
+        {"key": "price", "source": "attributes.price"},
+        {"key": "mileage", "source": "attributes.mileage"},
+    ],
 }
 
 _CAR_SCHEMA: dict = {
@@ -123,7 +126,7 @@ def _car_leaf(name: str, slug: str) -> _Node:
 # ── Other vehicle branches ───────────────────────────────────────────────────
 _VEHICLE_PRESENTATION: dict = {
     "title_template": "{year} {make} {model}",
-    "card_fields": ["price"],
+    "card_fields": [{"key": "price", "source": "attributes.price"}],
 }
 _MOTO_SCHEMA: dict = {
     "make": _f("string", required=True, filter_type="select"),
@@ -162,15 +165,24 @@ _WATERCRAFT_SCHEMA: dict = {
 _OPERATION = _f("string", required=True, filter_type="select", options=["Venta", "Alquiler"])
 _HOUSE_PRESENTATION: dict = {
     "title_template": "{operation} · {bedrooms} hab · {area_m2} m²",
-    "card_fields": ["price", "area_m2"],
+    "card_fields": [
+        {"key": "price", "source": "attributes.price"},
+        {"key": "area_m2", "source": "attributes.area_m2"},
+    ],
 }
 _COMMERCIAL_PRESENTATION: dict = {
     "title_template": "{operation} · {area_m2} m²",
-    "card_fields": ["price", "area_m2"],
+    "card_fields": [
+        {"key": "price", "source": "attributes.price"},
+        {"key": "area_m2", "source": "attributes.area_m2"},
+    ],
 }
 _LAND_PRESENTATION: dict = {
     "title_template": "{operation} · {land_area_m2} m²",
-    "card_fields": ["price", "land_area_m2"],
+    "card_fields": [
+        {"key": "price", "source": "attributes.price"},
+        {"key": "land_area_m2", "source": "attributes.land_area_m2"},
+    ],
 }
 _HOUSE_SCHEMA: dict = {
     "operation": _OPERATION,
@@ -217,11 +229,11 @@ _CONDITION = _f(
 )
 _ARTICLE_PRESENTATION: dict = {
     "title_template": "{brand} {model}",
-    "card_fields": ["price"],
+    "card_fields": [{"key": "price", "source": "attributes.price"}],
 }
 _CLOTHING_PRESENTATION: dict = {
     "title_template": "{brand} talla {size}",
-    "card_fields": ["price"],
+    "card_fields": [{"key": "price", "source": "attributes.price"}],
 }
 _COMPUTER_SCHEMA: dict = {
     "brand": _f("string", required=True, filter_type="select"),
@@ -699,31 +711,30 @@ async def seed_global_taxonomy(session: AsyncSession) -> None:
 
 
 async def enable_default_verticals(session: AsyncSession, organization_id: UUID) -> list[UUID]:
-    """Enable the default global vertical(s) for an organization (Task 7b).
+    """Enable all global verticals for an organization (Task 7b).
 
-    A new org operates in the Vehicles niche by default — the current
-    catalog. This links the org to the global Vehicles root category via
-    the ``organization_vertical`` M2M so that
-    ``GET /organizations/{id}/verticals`` returns it (and Subsystem A's
-    catalog has data to render). Without this, the read-API is empty for
-    real orgs even though the global taxonomy is seeded.
+    Links the org to all global root categories (Vehículos, Bienes Raíces,
+    Artículos) via the organization_vertical M2M so that
+    ``GET /organizations/{id}/verticals`` returns the full niche tree.
 
     Idempotent: the repository's ``enable`` is ``on_conflict_do_nothing``,
-    and a missing taxonomy (Vehicles root absent) is a safe no-op.
+    and a missing root is skipped as a safe no-op.
 
     Returns the list of root category ids that were enabled.
     """
+    slugs = [v["slug"] for v in ALL_VERTICALS]
     result = await session.execute(
         select(CategoryModel).where(
-            CategoryModel.slug == VEHICLES_VERTICAL["slug"],
+            CategoryModel.slug.in_(slugs),
             CategoryModel.tenant_id.is_(None),
             CategoryModel.parent_id.is_(None),
         )
     )
-    vehicles_root = result.scalar_one_or_none()
-    if vehicles_root is None:
+    roots = result.scalars().all()
+    if not roots:
         return []
 
     repo = SqlAlchemyOrganizationVerticalRepository(session)
-    await repo.enable(organization_id, vehicles_root.id)
-    return [vehicles_root.id]
+    for root in roots:
+        await repo.enable(organization_id, root.id)
+    return [root.id for root in roots]

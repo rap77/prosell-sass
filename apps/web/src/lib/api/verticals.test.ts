@@ -85,7 +85,7 @@ describe("useOrgVerticals", () => {
   it("throws when the response is not ok", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
-      json: async () => ({ message: "Forbidden" }),
+      json: async () => ({ detail: "Forbidden" }),
     });
 
     const { result } = renderHook(() => useOrgVerticals("org-1"), {

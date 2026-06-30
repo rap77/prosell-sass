@@ -36,10 +36,22 @@ interface Props {
   onSelect: (category: CategoryNode) => void;
 }
 
+type NavLevel =
+  | { kind: "vertical"; item: VerticalResponse }
+  | { kind: "node"; item: CategoryNode };
+
+function getChildren(level: NavLevel): CategoryNode[] {
+  return level.kind === "vertical"
+    ? level.item.categories
+    : (level.item.children ?? []);
+}
+
+function getName(level: NavLevel): string {
+  return level.item.name;
+}
+
 export function CategorySelectorModal({ verticals, onSelect }: Props) {
-  const [activeVertical, setActiveVertical] = useState<VerticalResponse | null>(
-    null,
-  );
+  const [breadcrumb, setBreadcrumb] = useState<NavLevel[]>([]);
 
   if (verticals.length === 0) {
     return (
@@ -49,76 +61,90 @@ export function CategorySelectorModal({ verticals, onSelect }: Props) {
     );
   }
 
-  // Single vertical → skip step 1
-  const active = verticals.length === 1 ? verticals[0] : activeVertical;
-  const canGoBack = verticals.length > 1 && active !== null;
-
-  if (active) {
+  // Level 0: show verticals
+  if (breadcrumb.length === 0) {
     return (
-      <section aria-label={`Categorías de ${active.name}`}>
-        {canGoBack && (
-          <button
-            type="button"
-            onClick={() => setActiveVertical(null)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--ps-text-secondary)",
-              fontSize: 13,
-              padding: 0,
-              marginBottom: 20,
-            }}
-          >
-            <ChevronLeft size={14} strokeWidth={2} />
-            Volver a tipos
-          </button>
-        )}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-            gap: 12,
-          }}
-        >
-          {active.categories.map((cat) => (
+      <section aria-label="Tipo de producto">
+        <Grid>
+          {verticals.map((v) => (
             <CategoryCard
-              key={cat.id}
-              label={cat.name}
-              Icon={resolveIcon(cat.slug)}
-              onClick={() => onSelect(cat)}
+              key={v.id}
+              label={v.name}
+              sublabel={`${v.categories.length} ${v.categories.length === 1 ? "categoría" : "categorías"}`}
+              Icon={resolveIcon(v.slug)}
+              size="lg"
+              onClick={() => setBreadcrumb([{ kind: "vertical", item: v }])}
             />
           ))}
-        </div>
+        </Grid>
       </section>
     );
   }
 
-  // Step 1: vertical picker
+  const current = breadcrumb[breadcrumb.length - 1];
+  const nodes = getChildren(current);
+
   return (
-    <section aria-label="Tipo de producto">
-      <div
+    <section aria-label={`Categorías de ${getName(current)}`}>
+      <button
+        type="button"
+        onClick={() => setBreadcrumb(breadcrumb.slice(0, -1))}
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-          gap: 12,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: "var(--ps-text-secondary)",
+          fontSize: 13,
+          padding: 0,
+          marginBottom: 20,
         }}
       >
-        {verticals.map((v) => (
-          <CategoryCard
-            key={v.id}
-            label={v.name}
-            sublabel={`${v.categories.length} ${v.categories.length === 1 ? "categoría" : "categorías"}`}
-            Icon={resolveIcon(v.slug)}
-            size="lg"
-            onClick={() => setActiveVertical(v)}
-          />
-        ))}
-      </div>
+        <ChevronLeft size={14} strokeWidth={2} />
+        {breadcrumb.length === 1 ? "Volver a tipos" : getName(breadcrumb[breadcrumb.length - 2])}
+      </button>
+
+      <Grid>
+        {nodes.map((node) => {
+          const isLeaf = !node.children || node.children.length === 0;
+          return (
+            <CategoryCard
+              key={node.id}
+              label={node.name}
+              sublabel={
+                !isLeaf && node.children
+                  ? `${node.children.length} ${node.children.length === 1 ? "categoría" : "categorías"}`
+                  : undefined
+              }
+              Icon={resolveIcon(node.slug)}
+              onClick={() => {
+                if (isLeaf) {
+                  onSelect(node);
+                } else {
+                  setBreadcrumb([...breadcrumb, { kind: "node", item: node }]);
+                }
+              }}
+            />
+          );
+        })}
+      </Grid>
     </section>
+  );
+}
+
+function Grid({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+        gap: 12,
+      }}
+    >
+      {children}
+    </div>
   );
 }
 

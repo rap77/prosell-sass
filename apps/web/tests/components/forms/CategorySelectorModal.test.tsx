@@ -36,95 +36,76 @@ describe("CategorySelectorModal", () => {
     expect(screen.getByText(/cargando/i)).toBeInTheDocument();
   });
 
-  it("auto-advances to categories when there is a single vertical", () => {
+  it("shows vertical cards at level 0 even with a single vertical", () => {
     const vertical = makeVertical({
       categories: [
-        makeCategory({
-          id: "c1",
-          name: "Terrestres",
-          slug: "vehiculos-terrestres",
-        }),
-        makeCategory({
-          id: "c2",
-          name: "Acuáticos",
-          slug: "vehiculos-acuaticos",
-        }),
+        makeCategory({ id: "c1", name: "Terrestres", slug: "vehiculos-terrestres" }),
+        makeCategory({ id: "c2", name: "Acuáticos", slug: "vehiculos-acuaticos" }),
       ],
     });
     render(<CategorySelectorModal verticals={[vertical]} onSelect={vi.fn()} />);
-    expect(screen.getByText("Terrestres")).toBeInTheDocument();
-    expect(screen.getByText("Acuáticos")).toBeInTheDocument();
+    expect(screen.getByText("Vehículos")).toBeInTheDocument();
+    expect(screen.queryByText("Terrestres")).not.toBeInTheDocument();
     expect(screen.queryByText(/volver/i)).not.toBeInTheDocument();
   });
 
-  it("shows vertical cards when there are multiple verticals", () => {
+  it("shows multiple vertical cards at level 0", () => {
     const verticals = [
       makeVertical({ id: "v1", name: "Vehículos", slug: "vehiculos" }),
-      makeVertical({
-        id: "v2",
-        name: "Inmuebles",
-        slug: "inmuebles",
-        categories: [],
-      }),
+      makeVertical({ id: "v2", name: "Inmuebles", slug: "inmuebles", categories: [] }),
     ];
     render(<CategorySelectorModal verticals={verticals} onSelect={vi.fn()} />);
     expect(screen.getByText("Vehículos")).toBeInTheDocument();
     expect(screen.getByText("Inmuebles")).toBeInTheDocument();
   });
 
-  it("navigates to categories on vertical click", async () => {
+  it("navigates into a vertical on click", async () => {
     const user = userEvent.setup();
     const v1 = makeVertical({
       id: "v1",
       name: "Vehículos",
       categories: [makeCategory({ name: "Terrestres" })],
     });
-    const v2 = makeVertical({
-      id: "v2",
-      name: "Inmuebles",
-      slug: "inmuebles",
-      categories: [],
-    });
-    render(<CategorySelectorModal verticals={[v1, v2]} onSelect={vi.fn()} />);
+    render(<CategorySelectorModal verticals={[v1]} onSelect={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: /vehículos/i }));
     expect(screen.getByText("Terrestres")).toBeInTheDocument();
-    expect(screen.getByText(/volver/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /volver/i })).toBeInTheDocument();
   });
 
-  it("calls onSelect with the clicked category", async () => {
+  it("calls onSelect when a leaf category is clicked", async () => {
     const onSelect = vi.fn();
     const user = userEvent.setup();
-    const cat = makeCategory({
-      id: "c1",
-      name: "Terrestres",
-      slug: "vehiculos-terrestres",
-    });
-    render(
-      <CategorySelectorModal
-        verticals={[makeVertical({ categories: [cat] })]}
-        onSelect={onSelect}
-      />,
-    );
+    const cat = makeCategory({ id: "c1", name: "Terrestres", slug: "vehiculos-terrestres" });
+    const vertical = makeVertical({ categories: [cat] });
+    render(<CategorySelectorModal verticals={[vertical]} onSelect={onSelect} />);
+    await user.click(screen.getByRole("button", { name: /vehículos/i }));
     await user.click(screen.getByRole("button", { name: "Terrestres" }));
     expect(onSelect).toHaveBeenCalledWith(cat);
   });
 
-  it("goes back to vertical list on back button click", async () => {
+  it("drills into a non-leaf category without calling onSelect", async () => {
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    const leaf = makeCategory({ id: "c2", name: "Sedán", slug: "sedan" });
+    const mid = makeCategory({ id: "c1", name: "Carros", slug: "carros", children: [leaf] });
+    const vertical = makeVertical({ categories: [mid] });
+    render(<CategorySelectorModal verticals={[vertical]} onSelect={onSelect} />);
+    await user.click(screen.getByRole("button", { name: /vehículos/i }));
+    await user.click(screen.getByRole("button", { name: /carros/i }));
+    expect(screen.getByText("Sedán")).toBeInTheDocument();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("goes back on back button click", async () => {
     const user = userEvent.setup();
     const v1 = makeVertical({
       id: "v1",
       name: "Vehículos",
       categories: [makeCategory({ name: "Terrestres" })],
     });
-    const v2 = makeVertical({
-      id: "v2",
-      name: "Inmuebles",
-      slug: "inmuebles",
-      categories: [],
-    });
+    const v2 = makeVertical({ id: "v2", name: "Inmuebles", slug: "inmuebles", categories: [] });
     render(<CategorySelectorModal verticals={[v1, v2]} onSelect={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: /vehículos/i }));
-    expect(screen.getByText("Terrestres")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /volver/i }));
     expect(screen.getByText("Vehículos")).toBeInTheDocument();
     expect(screen.getByText("Inmuebles")).toBeInTheDocument();

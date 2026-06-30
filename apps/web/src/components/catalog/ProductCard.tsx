@@ -64,7 +64,7 @@ export function ProductCard({
 
   // --- Subtitle (client-side, per §7) ---
   const subtitle = presentation
-    ? composeSubtitle(presentation.subtitle_template, productAttributes)
+    ? composeSubtitle(presentation.subtitle_template ?? null, productAttributes)
     : "";
 
   // --- Card fields meta grid (max 4, skip cells with missing values) ---

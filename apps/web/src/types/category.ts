@@ -98,9 +98,9 @@ export interface FilterField {
  * vertical supplies the inherited contract — the resolver handles fallback).
  */
 export interface CategoryPresentation {
-  card_fields: CardField[];
-  subtitle_template: string | null;
-  filter_fields: FilterField[];
+  card_fields?: CardField[];
+  subtitle_template?: string | null;
+  filter_fields?: FilterField[];
 }
 
 /* ---------- category ---------- */
@@ -146,6 +146,7 @@ export interface CategoryNode {
   /** Own-or-inherited presentation; `null` if neither defines one. */
   presentation: CategoryPresentation | null;
   filter_fields: FilterField[];
+  children?: CategoryNode[];
 }
 
 /** A vertical (root Category) with its child categories. */

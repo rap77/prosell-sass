@@ -52,20 +52,35 @@ const filterFieldSchema = z.object({
 });
 
 const categoryPresentationSchema = z.object({
-  card_fields: z.array(cardFieldSchema),
-  subtitle_template: z.string().nullable(),
-  filter_fields: z.array(filterFieldSchema),
+  card_fields: z.array(cardFieldSchema).optional(),
+  subtitle_template: z.string().nullable().optional(),
+  filter_fields: z.array(filterFieldSchema).optional(),
 });
 
-const categoryNodeSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  slug: z.string(),
-  attribute_schema: z.record(attributeSchemaEntrySchema),
-  attribute_groups: z.array(attributeGroupSchema).default([]),
-  presentation: categoryPresentationSchema.nullable(),
-  filter_fields: z.array(filterFieldSchema),
-});
+interface CategoryNodeShape {
+  id: string;
+  name: string;
+  slug: string;
+  attribute_schema: Record<string, z.infer<typeof attributeSchemaEntrySchema>>;
+  attribute_groups: z.infer<typeof attributeGroupSchema>[];
+  presentation: z.infer<typeof categoryPresentationSchema> | null;
+  filter_fields: z.infer<typeof filterFieldSchema>[];
+  children?: CategoryNodeShape[];
+}
+
+// ponytail: ZodType<Shape, ZodTypeDef, unknown> — constrains output only; needed for z.lazy + .default()
+const categoryNodeSchema: z.ZodType<CategoryNodeShape, z.ZodTypeDef, unknown> = z.lazy(() =>
+  z.object({
+    id: z.string(),
+    name: z.string(),
+    slug: z.string(),
+    attribute_schema: z.record(attributeSchemaEntrySchema),
+    attribute_groups: z.array(attributeGroupSchema).default([]),
+    presentation: categoryPresentationSchema.nullable(),
+    filter_fields: z.array(filterFieldSchema),
+    children: z.array(categoryNodeSchema).default([]),
+  }),
+);
 
 const verticalResponseSchema = z.object({
   id: z.string(),
@@ -79,11 +94,7 @@ const orgVerticalsResponseSchema = z.object({
   verticals: z.array(verticalResponseSchema),
 });
 
-/** Error body schema for non-OK responses. FastAPI default errors are
- *  `{ detail: ... }`, so we only narrow the optional `message` field. */
-const errorBodySchema = z
-  .object({ message: z.string().optional() })
-  .passthrough();
+const errorBodySchema = z.object({ detail: z.string().optional() }).passthrough();
 
 /**
  * Fetch the verticals + their categories for a given organization.
@@ -106,8 +117,8 @@ export function useOrgVerticals(
           await res.json().catch(() => ({})),
         );
         const message =
-          parsed.success && parsed.data.message
-            ? parsed.data.message
+          parsed.success && parsed.data.detail
+            ? parsed.data.detail
             : "Failed to fetch verticals";
         throw new Error(message);
       }
