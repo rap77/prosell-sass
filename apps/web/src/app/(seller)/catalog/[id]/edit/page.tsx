@@ -57,9 +57,8 @@ export default function EditProductPage() {
 
   // Fetch org verticals to get category schema
   const { data: orgProfile } = useCurrentOrganizationProfile();
-  const { data: verticalsData, isLoading: isLoadingVerticals } = useOrgVerticals(
-    orgProfile?.id ?? null,
-  );
+  const { data: verticalsData, isLoading: isLoadingVerticals } =
+    useOrgVerticals(orgProfile?.id ?? null);
 
   // Find the category in the verticals tree
   const categoryId = product?.category_id;
@@ -109,7 +108,10 @@ export default function EditProductPage() {
   if (!category) {
     return (
       <div style={{ maxWidth: 896, margin: "0 auto" }}>
-        <p>Categoría no encontrada. El producto puede pertenecer a una categoría deshabilitada.</p>
+        <p>
+          Categoría no encontrada. El producto puede pertenecer a una categoría
+          deshabilitada.
+        </p>
       </div>
     );
   }

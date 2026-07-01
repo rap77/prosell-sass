@@ -69,18 +69,19 @@ interface CategoryNodeShape {
 }
 
 // ponytail: ZodType<Shape, ZodTypeDef, unknown> — constrains output only; needed for z.lazy + .default()
-const categoryNodeSchema: z.ZodType<CategoryNodeShape, z.ZodTypeDef, unknown> = z.lazy(() =>
-  z.object({
-    id: z.string(),
-    name: z.string(),
-    slug: z.string(),
-    attribute_schema: z.record(attributeSchemaEntrySchema),
-    attribute_groups: z.array(attributeGroupSchema).default([]),
-    presentation: categoryPresentationSchema.nullable(),
-    filter_fields: z.array(filterFieldSchema),
-    children: z.array(categoryNodeSchema).default([]),
-  }),
-);
+const categoryNodeSchema: z.ZodType<CategoryNodeShape, z.ZodTypeDef, unknown> =
+  z.lazy(() =>
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      slug: z.string(),
+      attribute_schema: z.record(attributeSchemaEntrySchema),
+      attribute_groups: z.array(attributeGroupSchema).default([]),
+      presentation: categoryPresentationSchema.nullable(),
+      filter_fields: z.array(filterFieldSchema),
+      children: z.array(categoryNodeSchema).default([]),
+    }),
+  );
 
 const verticalResponseSchema = z.object({
   id: z.string(),
@@ -94,7 +95,9 @@ const orgVerticalsResponseSchema = z.object({
   verticals: z.array(verticalResponseSchema),
 });
 
-const errorBodySchema = z.object({ detail: z.string().optional() }).passthrough();
+const errorBodySchema = z
+  .object({ detail: z.string().optional() })
+  .passthrough();
 
 /**
  * Fetch the verticals + their categories for a given organization.

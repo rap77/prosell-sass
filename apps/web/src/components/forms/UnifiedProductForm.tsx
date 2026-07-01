@@ -36,7 +36,10 @@ import type { CategoryNode } from "@/types/category";
 
 import { ProductCoverPicker } from "./ProductCoverPicker";
 import { buildZodSchema, getSchemaDefaults } from "./schema/buildZodSchema";
-import { groupFieldsByGroup, SchemaFormSection } from "./schema/SchemaFormSection";
+import {
+  groupFieldsByGroup,
+  SchemaFormSection,
+} from "./schema/SchemaFormSection";
 
 export type UnifiedProductFormMode = "create" | "edit";
 
@@ -64,7 +67,9 @@ function generateTitle(
   values: Record<string, unknown>,
 ): string {
   if (!template) return "";
-  return template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? "")).trim();
+  return template
+    .replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ""))
+    .trim();
 }
 
 export function UnifiedProductForm({
@@ -149,7 +154,8 @@ export function UnifiedProductForm({
     [category.attribute_groups],
   );
   const fieldsByGroup = useMemo(
-    () => groupFieldsByGroup(category.attribute_schema, category.attribute_groups),
+    () =>
+      groupFieldsByGroup(category.attribute_schema, category.attribute_groups),
     [category.attribute_schema, category.attribute_groups],
   );
 
@@ -183,17 +189,19 @@ export function UnifiedProductForm({
 
       // Determine category type based on schema fields
       // ponytail: simple heuristic — vin = vehicle, operation = real estate, else generic
-      const categoryType = "vin" in category.attribute_schema
-        ? "vehicle"
-        : "operation" in category.attribute_schema
-          ? "real_estate"
-          : "generic";
+      const categoryType =
+        "vin" in category.attribute_schema
+          ? "vehicle"
+          : "operation" in category.attribute_schema
+            ? "real_estate"
+            : "generic";
 
       const attributes = { category: categoryType, ...formAttributes };
 
       // Generate title from template
       const titleTemplate = category.presentation?.title_template;
-      const title = generateTitle(titleTemplate, formAttributes) || category.name;
+      const title =
+        generateTitle(titleTemplate, formAttributes) || category.name;
 
       if (mode === "create") {
         await createProduct.mutateAsync({
@@ -202,7 +210,8 @@ export function UnifiedProductForm({
           category_id: category.id,
           description: description as string | undefined,
           // ponytail: cast to ProductAttributes — runtime adds `category` discriminator
-          attributes: attributes as unknown as import("@/types/vehicle").ProductAttributes,
+          attributes:
+            attributes as unknown as import("@/types/vehicle").ProductAttributes,
           image_urls: imageKeys,
           ...(coverKey ? { cover_image_key: coverKey } : {}),
         });
@@ -223,7 +232,8 @@ export function UnifiedProductForm({
             price_cents: Math.round((price as number) * 100),
             description: description as string | undefined,
             // ponytail: cast to ProductAttributes — runtime adds `category` discriminator
-            attributes: attributes as unknown as import("@/types/vehicle").ProductAttributes,
+            attributes:
+              attributes as unknown as import("@/types/vehicle").ProductAttributes,
             image_urls: imageKeys,
             ...(coverKey ? { cover_image_key: coverKey } : {}),
           },
@@ -287,7 +297,9 @@ export function UnifiedProductForm({
                 disabled={isDisabled}
               />
               {fieldState.error && (
-                <p className="text-sm text-destructive">{fieldState.error.message}</p>
+                <p className="text-sm text-destructive">
+                  {fieldState.error.message}
+                </p>
               )}
             </div>
           )}
@@ -351,7 +363,9 @@ export function UnifiedProductForm({
                 placeholder="Describe el producto..."
               />
               {fieldState.error && (
-                <p className="text-sm text-destructive">{fieldState.error.message}</p>
+                <p className="text-sm text-destructive">
+                  {fieldState.error.message}
+                </p>
               )}
             </div>
           )}
@@ -373,7 +387,12 @@ export function UnifiedProductForm({
           )}
         </Button>
         {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isDisabled}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isDisabled}
+          >
             Cancelar
           </Button>
         )}

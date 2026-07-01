@@ -1,6 +1,10 @@
 "use client";
 
-import { Controller, type Control, type UseFormSetValue } from "react-hook-form";
+import {
+  Controller,
+  type Control,
+  type UseFormSetValue,
+} from "react-hook-form";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -121,7 +125,9 @@ export function SchemaFieldRenderer({
               </SelectContent>
             </Select>
             {fieldState.error && (
-              <p className="text-sm text-destructive">{fieldState.error.message}</p>
+              <p className="text-sm text-destructive">
+                {fieldState.error.message}
+              </p>
             )}
           </div>
         )}
@@ -147,14 +153,18 @@ export function SchemaFieldRenderer({
               type="number"
               value={field.value != null ? String(field.value) : ""}
               onChange={(e) =>
-                field.onChange(e.target.value ? Number(e.target.value) : undefined)
+                field.onChange(
+                  e.target.value ? Number(e.target.value) : undefined,
+                )
               }
               disabled={disabled}
               min={entry.validation_rules?.min}
               max={entry.validation_rules?.max}
             />
             {fieldState.error && (
-              <p className="text-sm text-destructive">{fieldState.error.message}</p>
+              <p className="text-sm text-destructive">
+                {fieldState.error.message}
+              </p>
             )}
           </div>
         )}
@@ -181,7 +191,9 @@ export function SchemaFieldRenderer({
             disabled={disabled}
           />
           {fieldState.error && (
-            <p className="text-sm text-destructive">{fieldState.error.message}</p>
+            <p className="text-sm text-destructive">
+              {fieldState.error.message}
+            </p>
           )}
         </div>
       )}
@@ -191,7 +203,5 @@ export function SchemaFieldRenderer({
 
 /** Convert snake_case to Title Case */
 function humanize(key: string): string {
-  return key
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }

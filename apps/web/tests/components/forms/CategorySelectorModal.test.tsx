@@ -39,8 +39,16 @@ describe("CategorySelectorModal", () => {
   it("shows vertical cards at level 0 even with a single vertical", () => {
     const vertical = makeVertical({
       categories: [
-        makeCategory({ id: "c1", name: "Terrestres", slug: "vehiculos-terrestres" }),
-        makeCategory({ id: "c2", name: "Acuáticos", slug: "vehiculos-acuaticos" }),
+        makeCategory({
+          id: "c1",
+          name: "Terrestres",
+          slug: "vehiculos-terrestres",
+        }),
+        makeCategory({
+          id: "c2",
+          name: "Acuáticos",
+          slug: "vehiculos-acuaticos",
+        }),
       ],
     });
     render(<CategorySelectorModal verticals={[vertical]} onSelect={vi.fn()} />);
@@ -52,7 +60,12 @@ describe("CategorySelectorModal", () => {
   it("shows multiple vertical cards at level 0", () => {
     const verticals = [
       makeVertical({ id: "v1", name: "Vehículos", slug: "vehiculos" }),
-      makeVertical({ id: "v2", name: "Inmuebles", slug: "inmuebles", categories: [] }),
+      makeVertical({
+        id: "v2",
+        name: "Inmuebles",
+        slug: "inmuebles",
+        categories: [],
+      }),
     ];
     render(<CategorySelectorModal verticals={verticals} onSelect={vi.fn()} />);
     expect(screen.getByText("Vehículos")).toBeInTheDocument();
@@ -75,9 +88,15 @@ describe("CategorySelectorModal", () => {
   it("calls onSelect when a leaf category is clicked", async () => {
     const onSelect = vi.fn();
     const user = userEvent.setup();
-    const cat = makeCategory({ id: "c1", name: "Terrestres", slug: "vehiculos-terrestres" });
+    const cat = makeCategory({
+      id: "c1",
+      name: "Terrestres",
+      slug: "vehiculos-terrestres",
+    });
     const vertical = makeVertical({ categories: [cat] });
-    render(<CategorySelectorModal verticals={[vertical]} onSelect={onSelect} />);
+    render(
+      <CategorySelectorModal verticals={[vertical]} onSelect={onSelect} />,
+    );
     await user.click(screen.getByRole("button", { name: /vehículos/i }));
     await user.click(screen.getByRole("button", { name: "Terrestres" }));
     expect(onSelect).toHaveBeenCalledWith(cat);
@@ -87,9 +106,16 @@ describe("CategorySelectorModal", () => {
     const onSelect = vi.fn();
     const user = userEvent.setup();
     const leaf = makeCategory({ id: "c2", name: "Sedán", slug: "sedan" });
-    const mid = makeCategory({ id: "c1", name: "Carros", slug: "carros", children: [leaf] });
+    const mid = makeCategory({
+      id: "c1",
+      name: "Carros",
+      slug: "carros",
+      children: [leaf],
+    });
     const vertical = makeVertical({ categories: [mid] });
-    render(<CategorySelectorModal verticals={[vertical]} onSelect={onSelect} />);
+    render(
+      <CategorySelectorModal verticals={[vertical]} onSelect={onSelect} />,
+    );
     await user.click(screen.getByRole("button", { name: /vehículos/i }));
     await user.click(screen.getByRole("button", { name: /carros/i }));
     expect(screen.getByText("Sedán")).toBeInTheDocument();
@@ -103,7 +129,12 @@ describe("CategorySelectorModal", () => {
       name: "Vehículos",
       categories: [makeCategory({ name: "Terrestres" })],
     });
-    const v2 = makeVertical({ id: "v2", name: "Inmuebles", slug: "inmuebles", categories: [] });
+    const v2 = makeVertical({
+      id: "v2",
+      name: "Inmuebles",
+      slug: "inmuebles",
+      categories: [],
+    });
     render(<CategorySelectorModal verticals={[v1, v2]} onSelect={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: /vehículos/i }));
     await user.click(screen.getByRole("button", { name: /volver/i }));

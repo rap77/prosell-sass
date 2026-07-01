@@ -64,7 +64,9 @@ function buildFieldSchema(entry: AttributeSchemaEntry): ZodTypeAny {
  * @param attributeSchema - The category's attribute_schema
  * @returns A Zod object schema for validating product attributes
  */
-export function buildZodSchema(attributeSchema: AttributeSchema): z.ZodObject<Record<string, ZodTypeAny>> {
+export function buildZodSchema(
+  attributeSchema: AttributeSchema,
+): z.ZodObject<Record<string, ZodTypeAny>> {
   const shape: Record<string, ZodTypeAny> = {};
 
   for (const [key, entry] of Object.entries(attributeSchema)) {
@@ -77,7 +79,9 @@ export function buildZodSchema(attributeSchema: AttributeSchema): z.ZodObject<Re
 /**
  * Get default values for a schema (empty strings for required, undefined for optional).
  */
-export function getSchemaDefaults(attributeSchema: AttributeSchema): Record<string, unknown> {
+export function getSchemaDefaults(
+  attributeSchema: AttributeSchema,
+): Record<string, unknown> {
   const defaults: Record<string, unknown> = {};
 
   for (const [key, entry] of Object.entries(attributeSchema)) {
