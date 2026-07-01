@@ -1,43 +1,118 @@
 "use client";
 
 /**
- * Catalog › Editar vehículo — ProSell vehicle edit form.
+ * Catalog › Editar producto — Schema-driven product edit form.
  *
- * Wraps ProductForm in edit mode with product pre-loading.
+ * Wraps UnifiedProductForm in edit mode with product + category pre-loading.
  * On success → redirect to /catalog.
- *
- * All colors via var(--ps-*) tokens — dark/light automatic.
  */
 
-import { useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { ProductForm } from "@/components/forms/ProductForm";
-import { useProduct } from "@/lib/api/products";
-import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
+import { useRouter, useParams } from "next/navigation";
+import { useEffect, useMemo } from "react";
 
-export default function EditVehiclePage() {
+import { UnifiedProductForm } from "@/components/forms/UnifiedProductForm";
+import { useProduct } from "@/lib/api/products";
+import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
+import { useOrgVerticals } from "@/lib/api/verticals";
+import { useBreadcrumbStore } from "@/lib/stores/breadcrumbStore";
+import type { CategoryNode } from "@/types/category";
+
+/**
+ * Recursively find a category node by ID in the verticals tree.
+ */
+function findCategoryById(
+  verticals: { categories: CategoryNode[] }[],
+  categoryId: string,
+): CategoryNode | null {
+  for (const vertical of verticals) {
+    const found = findInTree(vertical.categories, categoryId);
+    if (found) return found;
+  }
+  return null;
+}
+
+function findInTree(nodes: CategoryNode[], id: string): CategoryNode | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    if (node.children?.length) {
+      const found = findInTree(node.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
   const productId = typeof params.id === "string" ? params.id : "";
 
-  // Same query key as ProductForm's edit-mode read, so React Query dedupes
-  // this — no extra request, just the cached title for the breadcrumb.
-  const { data: product } = useProduct(productId || undefined, {
-    internal: true,
-  });
+  // Fetch product
+  const { data: product, isLoading: isLoadingProduct } = useProduct(
+    productId || undefined,
+    { internal: true },
+  );
+
+  // Fetch org verticals to get category schema
+  const { data: orgProfile } = useCurrentOrganizationProfile();
+  const { data: verticalsData, isLoading: isLoadingVerticals } = useOrgVerticals(
+    orgProfile?.id ?? null,
+  );
+
+  // Find the category in the verticals tree
+  const categoryId = product?.category_id;
+  const verticals = verticalsData?.verticals;
+  const category = useMemo(() => {
+    if (!categoryId || !verticals) return null;
+    return findCategoryById(verticals, categoryId);
+  }, [categoryId, verticals]);
+
+  // Breadcrumb
   const setBreadcrumbLabel = useBreadcrumbStore((state) => state.setLabel);
   const clearBreadcrumbLabel = useBreadcrumbStore((state) => state.clearLabel);
 
-  // Register the real product title for the `[id]` segment so the breadcrumb
-  // reads "… / Toyota Corolla 2020 / Editar" instead of "… / Detalle / Editar".
   useEffect(() => {
     const title = product?.title;
     if (!title || !productId) return;
     setBreadcrumbLabel(productId, title);
     return () => clearBreadcrumbLabel(productId);
   }, [product?.title, productId, setBreadcrumbLabel, clearBreadcrumbLabel]);
+
+  const isLoading = isLoadingProduct || isLoadingVerticals;
+
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          maxWidth: 896,
+          margin: "0 auto",
+          display: "flex",
+          justifyContent: "center",
+          padding: 64,
+        }}
+      >
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div style={{ maxWidth: 896, margin: "0 auto" }}>
+        <p>Producto no encontrado.</p>
+      </div>
+    );
+  }
+
+  if (!category) {
+    return (
+      <div style={{ maxWidth: 896, margin: "0 auto" }}>
+        <p>Categoría no encontrada. El producto puede pertenecer a una categoría deshabilitada.</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 896, margin: "0 auto" }}>
@@ -82,7 +157,7 @@ export default function EditVehiclePage() {
               color: "var(--ps-text-primary)",
             }}
           >
-            Editar vehículo
+            Editar {category.name}
           </h1>
           <p
             style={{
@@ -91,15 +166,13 @@ export default function EditVehiclePage() {
               color: "var(--ps-text-secondary)",
             }}
           >
-            Actualizá la información y las fotos del vehículo.
+            Actualizá la información y las fotos del producto.
           </p>
         </div>
       </div>
 
-      {/* Edit form — owns images (dropzone + cover picker) internally.
-          The cover is persisted on submit as part of the PATCH, not as
-          a separate immediate operation. */}
-      <ProductForm
+      <UnifiedProductForm
+        category={category}
         mode="edit"
         productId={productId}
         onSuccess={() => {

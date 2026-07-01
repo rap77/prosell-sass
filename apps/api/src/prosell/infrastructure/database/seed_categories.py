@@ -29,6 +29,7 @@ class _Node(TypedDict):
     # Optional per-leaf data. attribute_schema drives product validation +
     # catalog filters; presentation drives server-side title composition.
     attribute_schema: NotRequired[dict]
+    attribute_groups: NotRequired[list[dict]]
     presentation: NotRequired[dict]
 
 
@@ -49,23 +50,82 @@ _CAR_PRESENTATION: dict = {
     ],
 }
 
+_CAR_GROUPS: list[dict] = [
+    {"key": "identification", "label": "Identificación", "order": 0},
+    {"key": "basic", "label": "Información Básica", "order": 1},
+    {"key": "specs", "label": "Especificaciones", "order": 2},
+    {"key": "performance", "label": "Rendimiento", "order": 3},
+    {"key": "colors", "label": "Colores", "order": 4},
+    {"key": "features", "label": "Características", "order": 5},
+]
+
 _CAR_SCHEMA: dict = {
-    "make": {"type": "string", "required": True, "filterable": True, "filter_type": "select"},
-    "model": {"type": "string", "required": True, "filterable": True, "filter_type": "text"},
+    # Identification group
+    "vin": {
+        "type": "string",
+        "required": True,
+        "filterable": False,
+        "filter_type": "text",
+        "render_as": "vin_decode",
+        "group": "identification",
+    },
+    "stock_number": {
+        "type": "string",
+        "required": False,
+        "filterable": False,
+        "filter_type": "text",
+        "group": "identification",
+    },
+    # Basic group (VIN-decodeable)
+    "make": {
+        "type": "string",
+        "required": True,
+        "filterable": True,
+        "filter_type": "select",
+        "vin_decode_key": "make",
+        "group": "basic",
+    },
+    "model": {
+        "type": "string",
+        "required": True,
+        "filterable": True,
+        "filter_type": "text",
+        "vin_decode_key": "model",
+        "group": "basic",
+    },
     "year": {
         "type": "number",
         "required": True,
         "filterable": True,
         "filter_type": "range",
         "validation_rules": {"min": 1980, "max": 2026},
+        "vin_decode_key": "year",
+        "group": "basic",
     },
-    "mileage": {
-        "type": "number",
+    "trim": {
+        "type": "string",
         "required": False,
         "filterable": True,
-        "filter_type": "range",
-        "unit": "km",
-        "validation_rules": {"min": 0, "max": 500_000},
+        "filter_type": "text",
+        "vin_decode_key": "trim",
+        "group": "basic",
+    },
+    # Specs group (VIN-decodeable)
+    "body_type": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "vin_decode_key": "body_type",
+        "group": "specs",
+    },
+    "drivetrain": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "vin_decode_key": "drivetrain",
+        "group": "specs",
     },
     "transmission": {
         "type": "string",
@@ -73,6 +133,16 @@ _CAR_SCHEMA: dict = {
         "filterable": True,
         "filter_type": "select",
         "options": ["Manual", "Automática"],
+        "vin_decode_key": "transmission",
+        "group": "specs",
+    },
+    "engine": {
+        "type": "string",
+        "required": False,
+        "filterable": False,
+        "filter_type": "text",
+        "vin_decode_key": "engine",
+        "group": "specs",
     },
     "fuel_type": {
         "type": "string",
@@ -80,8 +150,70 @@ _CAR_SCHEMA: dict = {
         "filterable": True,
         "filter_type": "select",
         "options": ["Gasolina", "Diésel", "Híbrido", "Eléctrico", "GLP"],
+        "vin_decode_key": "fuel_type",
+        "group": "specs",
     },
-    "color": {"type": "string", "required": False, "filterable": True, "filter_type": "select"},
+    # Performance group
+    "mileage": {
+        "type": "number",
+        "required": False,
+        "filterable": True,
+        "filter_type": "range",
+        "unit": "km",
+        "validation_rules": {"min": 0, "max": 500_000},
+        "group": "performance",
+    },
+    # Colors group
+    "exterior_color": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "group": "colors",
+    },
+    "interior_color": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "group": "colors",
+    },
+    # Features group
+    "has_sunroof": {
+        "type": "boolean",
+        "required": False,
+        "filterable": True,
+        "filter_type": "boolean",
+        "group": "features",
+    },
+    "has_navigation": {
+        "type": "boolean",
+        "required": False,
+        "filterable": True,
+        "filter_type": "boolean",
+        "group": "features",
+    },
+    "has_leather": {
+        "type": "boolean",
+        "required": False,
+        "filterable": True,
+        "filter_type": "boolean",
+        "group": "features",
+    },
+    "has_backup_camera": {
+        "type": "boolean",
+        "required": False,
+        "filterable": True,
+        "filter_type": "boolean",
+        "group": "features",
+    },
+    "has_bluetooth": {
+        "type": "boolean",
+        "required": False,
+        "filterable": True,
+        "filter_type": "boolean",
+        "group": "features",
+    },
 }
 
 
@@ -93,6 +225,9 @@ def _f(
     filter_type: str = "text",
     options: list[str] | None = None,
     validation_rules: dict | None = None,
+    group: str | None = None,
+    vin_decode_key: str | None = None,
+    render_as: str | None = None,
 ) -> dict:
     """Compact attribute-schema field builder."""
     entry: dict = {
@@ -105,22 +240,37 @@ def _f(
         entry["options"] = options
     if validation_rules is not None:
         entry["validation_rules"] = validation_rules
+    if group is not None:
+        entry["group"] = group
+    if vin_decode_key is not None:
+        entry["vin_decode_key"] = vin_decode_key
+    if render_as is not None:
+        entry["render_as"] = render_as
     return entry
 
 
-def _leaf(name: str, slug: str, schema: dict, presentation: dict) -> _Node:
+def _leaf(
+    name: str,
+    slug: str,
+    schema: dict,
+    presentation: dict,
+    groups: list[dict] | None = None,
+) -> _Node:
     """A leaf category carrying its attribute_schema + presentation."""
-    return {
+    node: _Node = {
         "name": name,
         "slug": slug,
         "attribute_schema": schema,
         "presentation": presentation,
     }
+    if groups is not None:
+        node["attribute_groups"] = groups
+    return node
 
 
 def _car_leaf(name: str, slug: str) -> _Node:
     """A 'Carros y Camionetas' leaf carrying the shared automotive spec."""
-    return _leaf(name, slug, _CAR_SCHEMA, _CAR_PRESENTATION)
+    return _leaf(name, slug, _CAR_SCHEMA, _CAR_PRESENTATION, _CAR_GROUPS)
 
 
 # ── Other vehicle branches ───────────────────────────────────────────────────
@@ -659,6 +809,7 @@ async def _seed_node(
     existing = (await session.execute(stmt)).scalar_one_or_none()
 
     node_schema = node.get("attribute_schema", {})
+    node_groups = node.get("attribute_groups", [])
     node_presentation = node.get("presentation")
 
     if existing is None:
@@ -673,6 +824,7 @@ async def _seed_node(
             sort_order=0,
             field_config=[],
             attribute_schema=node_schema,
+            attribute_groups=node_groups,
             presentation=node_presentation,
         )
         session.add(existing)
@@ -684,6 +836,9 @@ async def _seed_node(
         changed = False
         if node_schema and not existing.attribute_schema:
             existing.attribute_schema = node_schema
+            changed = True
+        if node_groups and not existing.attribute_groups:
+            existing.attribute_groups = node_groups
             changed = True
         if node_presentation and existing.presentation is None:
             existing.presentation = node_presentation

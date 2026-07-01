@@ -1,16 +1,12 @@
 "use client";
 
 import { useState } from "react";
+
+import { CategorySelectorModal } from "@/components/forms/CategorySelectorModal";
+import { UnifiedProductForm } from "@/components/forms/UnifiedProductForm";
 import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
 import { useOrgVerticals } from "@/lib/api/verticals";
-import { ProductForm } from "@/components/forms/ProductForm";
-import { GenericProductForm } from "@/components/forms/GenericProductForm";
-import { CategorySelectorModal } from "@/components/forms/CategorySelectorModal";
 import type { CategoryNode } from "@/types/category";
-
-function isVehicleCategory(category: CategoryNode): boolean {
-  return "vin" in (category.attribute_schema ?? {});
-}
 
 export default function CreateProductPage() {
   const { data: orgProfile } = useCurrentOrganizationProfile();
@@ -58,11 +54,11 @@ export default function CreateProductPage() {
             </p>
           </div>
 
-          {isVehicleCategory(selectedCategory) ? (
-            <ProductForm mode="create" />
-          ) : (
-            <GenericProductForm category={selectedCategory} />
-          )}
+          <UnifiedProductForm
+            category={selectedCategory}
+            mode="create"
+            onCancel={() => setSelectedCategory(null)}
+          />
         </>
       ) : (
         <>

@@ -66,6 +66,7 @@ class ListOrgVerticalsUseCase:
             name=category.name,
             slug=category.slug,
             attribute_schema=category.attribute_schema or {},
+            attribute_groups=list(category.attribute_groups or []),
             presentation=_to_presentation_dict(
                 resolve_presentation(category.presentation, ancestor_presentations)
             ),

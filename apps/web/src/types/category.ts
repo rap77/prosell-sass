@@ -54,6 +54,8 @@ export interface AttributeSchemaEntry {
   type: "number" | "string" | "boolean" | "select";
   /** How the attribute is filterable in the catalog. */
   filter_type: FilterType;
+  /** Whether this field is required for form submission. */
+  required?: boolean;
   /** Optional display unit (e.g. "km", "m²", "USD"). */
   unit?: string;
   /** Optional human-readable label override (defaults to humanized key). */
@@ -64,6 +66,10 @@ export interface AttributeSchemaEntry {
   validation_rules?: ValidationRules;
   /** References an `AttributeGroup.key` for section grouping in forms. */
   group?: string;
+  /** Maps to a field in VIN decode response (e.g. "make", "model", "year"). */
+  vin_decode_key?: string;
+  /** Special renderer type for form fields. */
+  render_as?: "vin_decode" | "textarea";
 }
 
 /* ---------- presentation contract ---------- */
@@ -99,6 +105,7 @@ export interface FilterField {
  */
 export interface CategoryPresentation {
   card_fields?: CardField[];
+  title_template?: string | null;
   subtitle_template?: string | null;
   filter_fields?: FilterField[];
 }

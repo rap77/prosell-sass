@@ -27,6 +27,7 @@ class CategoryNode(BaseModel):
     name: str
     slug: str
     attribute_schema: dict[str, dict[str, object]] = {}
+    attribute_groups: list[dict[str, object]] = []
     presentation: dict[str, object] | None = None
     filter_fields: list[dict[str, str]] = []
     children: list[CategoryNode] = []
