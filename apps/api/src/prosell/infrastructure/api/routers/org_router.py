@@ -42,14 +42,8 @@ from prosell.infrastructure.api.dependencies import (
     require_role,
 )
 from prosell.infrastructure.database.session import get_async_session
-from prosell.infrastructure.repositories.category_repository_impl import (
-    SqlAlchemyCategoryRepository,
-)
 from prosell.infrastructure.repositories.organization_repository_impl import (
     SqlAlchemyOrganizationRepository,
-)
-from prosell.infrastructure.repositories.organization_vertical_repository_impl import (
-    SqlAlchemyOrganizationVerticalRepository,
 )
 from prosell.infrastructure.repositories.wallet_repository_impl import (
     SqlAlchemyWalletRepository,
@@ -81,20 +75,6 @@ def get_wallet_repository(
     return SqlAlchemyWalletRepository(session)
 
 
-def get_category_repository(
-    session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> SqlAlchemyCategoryRepository:
-    """Get category repository instance."""
-    return SqlAlchemyCategoryRepository(session)
-
-
-def get_org_vertical_repository(
-    session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> SqlAlchemyOrganizationVerticalRepository:
-    """Get organization vertical repository instance."""
-    return SqlAlchemyOrganizationVerticalRepository(session)
-
-
 # =============================================================================
 # ORGANIZATION CRUD ENDPOINTS
 # =============================================================================
@@ -111,22 +91,16 @@ async def create_organization(
     _current_user: Annotated[User, Depends(require_permission(Permission.ORG_CREATE))],
     org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
     wallet_repo: Annotated[SqlAlchemyWalletRepository, Depends(get_wallet_repository)],
-    category_repo: Annotated[SqlAlchemyCategoryRepository, Depends(get_category_repository)],
-    org_vertical_repo: Annotated[
-        SqlAlchemyOrganizationVerticalRepository, Depends(get_org_vertical_repository)
-    ],
 ) -> OrganizationResponse:
     """
     Create a new organization (MASTER/SUPER_ADMIN only).
 
-    Provisions org in PENDING_VERIFICATION status, creates a default wallet,
-    and enables all default verticals (Vehículos, Bienes Raíces, Artículos).
+    Provisions org in PENDING_VERIFICATION status and creates a default wallet.
+    Default verticals are enabled by init_data.py on container startup.
     """
     use_case = CreateOrganizationUseCase(
         org_repository=org_repo,
         wallet_repository=wallet_repo,
-        category_repository=category_repo,
-        org_vertical_repository=org_vertical_repo,
     )
     try:
         return await use_case.execute(request)

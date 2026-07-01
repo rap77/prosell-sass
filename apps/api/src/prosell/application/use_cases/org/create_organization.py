@@ -4,28 +4,20 @@ from prosell.application.dto.org import CreateOrganizationRequest, OrganizationR
 from prosell.domain.entities.organization import Organization
 from prosell.domain.entities.wallet import Wallet
 from prosell.domain.exceptions.org_exceptions import OrganizationAlreadyExistsException
-from prosell.domain.repositories.category_repository import AbstractCategoryRepository
 from prosell.domain.repositories.organization_repository import AbstractOrganizationRepository
-from prosell.domain.repositories.organization_vertical_repository import (
-    AbstractOrganizationVerticalRepository,
-)
 from prosell.domain.repositories.wallet_repository import AbstractWalletRepository
 
 
 class CreateOrganizationUseCase:
-    """Create a new organization, its default wallet, and enable default verticals."""
+    """Create a new organization and its default wallet."""
 
     def __init__(
         self,
         org_repository: AbstractOrganizationRepository,
         wallet_repository: AbstractWalletRepository,
-        category_repository: AbstractCategoryRepository | None = None,
-        org_vertical_repository: AbstractOrganizationVerticalRepository | None = None,
     ) -> None:
         self.org_repository = org_repository
         self.wallet_repository = wallet_repository
-        self.category_repository = category_repository
-        self.org_vertical_repository = org_vertical_repository
 
     async def execute(
         self,
@@ -74,13 +66,5 @@ class CreateOrganizationUseCase:
         # 5. Link wallet back to org
         org.wallet_id = wallet.id
         org = await self.org_repository.update(org)
-
-        # 6. Enable default verticals (Vehículos, Bienes Raíces, Artículos)
-        # Optional: only if both repositories are provided
-        if self.category_repository and self.org_vertical_repository:
-            # tenant_id=None returns only GLOBAL templates
-            roots = await self.category_repository.get_active_roots(tenant_id=None)
-            for root in roots:
-                await self.org_vertical_repository.enable(org.id, root.id)
 
         return OrganizationResponse.from_entity(org)
