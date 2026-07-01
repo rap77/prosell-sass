@@ -41,6 +41,7 @@ from prosell.infrastructure.api.dependencies import (
     require_permission,
     require_role,
 )
+from prosell.infrastructure.database.seed_categories import enable_default_verticals
 from prosell.infrastructure.database.session import get_async_session
 from prosell.infrastructure.repositories.organization_repository_impl import (
     SqlAlchemyOrganizationRepository,
@@ -89,20 +90,25 @@ def get_wallet_repository(
 async def create_organization(
     request: CreateOrganizationRequest,
     _current_user: Annotated[User, Depends(require_permission(Permission.ORG_CREATE))],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
     org_repo: Annotated[SqlAlchemyOrganizationRepository, Depends(get_org_repository)],
     wallet_repo: Annotated[SqlAlchemyWalletRepository, Depends(get_wallet_repository)],
 ) -> OrganizationResponse:
     """
     Create a new organization (MASTER/SUPER_ADMIN only).
 
-    Provisions org in PENDING_VERIFICATION status and creates a default wallet.
+    Provisions org in PENDING_VERIFICATION status, creates a default wallet,
+    and enables all default verticals (Vehículos, Bienes Raíces, Artículos).
     """
     use_case = CreateOrganizationUseCase(
         org_repository=org_repo,
         wallet_repository=wallet_repo,
     )
     try:
-        return await use_case.execute(request)
+        result = await use_case.execute(request)
+        # Enable default verticals for the new org
+        await enable_default_verticals(session, result.id)
+        return result
     except OrganizationAlreadyExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=e.message) from e
     except OrgDomainException as e:

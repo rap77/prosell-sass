@@ -71,11 +71,16 @@ async def init_data() -> None:
         await seed_global_taxonomy(session)
         print("Seeded global category taxonomy (3 niches)")
 
-        # 2b. Enable the default Vehicles vertical for the org via the
-        # organization_vertical M2M (Foundation Task 7b). Without this the
-        # read-API GET /organizations/{id}/verticals is empty for real orgs.
-        enabled = await enable_default_verticals(session, org.id)
-        print(f"Enabled {len(enabled)} default vertical(s) for {org_name}")
+        # 2b. Enable default verticals for ALL existing organizations.
+        # This ensures orgs created before this code have their verticals.
+        # The enable function is idempotent (ON CONFLICT DO NOTHING).
+        all_orgs_stmt = select(OrganizationModel)
+        all_orgs_result = await session.execute(all_orgs_stmt)
+        all_orgs = all_orgs_result.scalars().all()
+        for o in all_orgs:
+            enabled = await enable_default_verticals(session, o.id)
+            if enabled:
+                print(f"Enabled {len(enabled)} default vertical(s) for {o.name}")
 
         # 3. Ensure System Roles Exist
         roles_data = [
