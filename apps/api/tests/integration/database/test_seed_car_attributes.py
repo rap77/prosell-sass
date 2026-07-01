@@ -63,7 +63,12 @@ async def test_create_product_under_car_leaf_validates_and_composes_title(
             tenant_id=test_organization.tenant_id,
             organization_id=test_organization.id,
             category_id=suvs.id,
-            attributes={"make": "Toyota", "model": "RAV4", "year": 2022},
+            attributes={
+                "vin": "1HGCM82633A004352",  # required since _CAR_SCHEMA update
+                "make": "Toyota",
+                "model": "RAV4",
+                "year": 2022,
+            },
             image_urls=[],
         )
     )
@@ -89,7 +94,11 @@ async def test_create_product_under_car_leaf_rejects_missing_required(
                 tenant_id=test_organization.tenant_id,
                 organization_id=test_organization.id,
                 category_id=suvs.id,
-                attributes={"model": "RAV4", "year": 2022},  # missing make
+                attributes={
+                    "vin": "1HGCM82633A004352",
+                    "model": "RAV4",
+                    "year": 2022,
+                },  # missing make
                 image_urls=[],
             )
         )
