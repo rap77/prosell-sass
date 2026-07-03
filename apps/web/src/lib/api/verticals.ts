@@ -19,20 +19,23 @@ const filterTypeSchema = z.enum([
 ]);
 const attributeTypeSchema = z.enum(["number", "string", "boolean", "select"]);
 
-const attributeSchemaEntrySchema = z.object({
-  type: attributeTypeSchema,
-  filter_type: filterTypeSchema,
-  unit: z.string().optional(),
-  label: z.string().optional(),
-  options: z.array(z.string()).optional(),
-  validation_rules: z
-    .object({
-      min: z.number().optional(),
-      max: z.number().optional(),
-    })
-    .optional(),
-  group: z.string().optional(),
-});
+// ponytail: passthrough — API adds required/filterable/etc, frontend only validates what it uses
+const attributeSchemaEntrySchema = z
+  .object({
+    type: attributeTypeSchema,
+    filter_type: filterTypeSchema,
+    unit: z.string().optional(),
+    label: z.string().optional(),
+    options: z.array(z.string()).optional(),
+    validation_rules: z
+      .object({
+        min: z.number().optional(),
+        max: z.number().optional(),
+      })
+      .optional(),
+    group: z.string().optional(),
+  })
+  .passthrough();
 
 const attributeGroupSchema = z.object({
   key: z.string(),
@@ -40,10 +43,11 @@ const attributeGroupSchema = z.object({
   order: z.number(),
 });
 
-const cardFieldSchema = z.object({
-  key: z.string(),
-  source: z.string(),
-});
+// ponytail: card_fields can be strings or objects — API is inconsistent
+const cardFieldSchema = z.union([
+  z.string(),
+  z.object({ key: z.string(), source: z.string() }),
+]);
 
 const filterFieldSchema = z.object({
   key: z.string(),
@@ -51,11 +55,14 @@ const filterFieldSchema = z.object({
   label: z.string().optional(),
 });
 
-const categoryPresentationSchema = z.object({
-  card_fields: z.array(cardFieldSchema).optional(),
-  subtitle_template: z.string().nullable().optional(),
-  filter_fields: z.array(filterFieldSchema).optional(),
-});
+// ponytail: passthrough — API has title_template, etc
+const categoryPresentationSchema = z
+  .object({
+    card_fields: z.array(cardFieldSchema).optional(),
+    subtitle_template: z.string().nullable().optional(),
+    filter_fields: z.array(filterFieldSchema).optional(),
+  })
+  .passthrough();
 
 interface CategoryNodeShape {
   id: string;
