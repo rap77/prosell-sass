@@ -6,7 +6,19 @@ import {
   Anchor,
   Plane,
   Home,
+  Building2,
   Package,
+  ShoppingBag,
+  Smartphone,
+  Shirt,
+  Refrigerator,
+  Bike,
+  Truck,
+  Ship,
+  MapPin,
+  Caravan,
+  Container,
+  MoreHorizontal,
   ChevronLeft,
   type LucideIcon,
 } from "lucide-react";
@@ -14,17 +26,32 @@ import type { VerticalResponse, CategoryNode } from "@/types/category";
 
 // ponytail: slug → icon, Package as fallback
 const SLUG_ICON: Record<string, LucideIcon> = {
-  vehiculos: Car,
+  // Vehículos y Transporte
+  "vehiculos-y-transporte": Car,
   "vehiculos-terrestres": Car,
-  terrestres: Car,
-  "vehiculos-acuaticos": Anchor,
-  acuaticos: Anchor,
-  nautica: Anchor,
+  "vehiculos-acuaticos-nautica": Anchor,
   "vehiculos-aereos": Plane,
-  aereos: Plane,
-  inmuebles: Home,
-  "real-estate": Home,
+  "carros-y-camionetas": Car,
+  motos: Bike,
+  "vehiculos-pesados-y-comerciales": Truck,
+  "embarcaciones-de-recreo": Ship,
+  "vehiculos-personales": Ship,
+  // Bienes Raíces
+  "bienes-raices": Home,
+  "propiedades-residenciales": Home,
+  "propiedades-comerciales-e-industriales": Building2,
+  "terrenos-y-lotes": MapPin,
   casas: Home,
+  apartamentos: Building2,
+  // Artículos
+  articulos: ShoppingBag,
+  "tecnologia-y-electronica": Smartphone,
+  "moda-y-calzado": Shirt,
+  "hogar-y-electrodomesticos": Refrigerator,
+  // Otros terrestres
+  "otros-terrestres": MoreHorizontal,
+  "rvs-y-motorhomes": Caravan,
+  remolques: Container,
 };
 
 function resolveIcon(slug: string): LucideIcon {
