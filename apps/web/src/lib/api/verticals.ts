@@ -37,11 +37,15 @@ const attributeSchemaEntrySchema = z
   })
   .passthrough();
 
-const attributeGroupSchema = z.object({
-  key: z.string(),
-  label: z.string(),
-  order: z.number(),
-});
+// ponytail: passthrough — API may add fields, order is optional
+const attributeGroupSchema = z
+  .object({
+    key: z.string(),
+    label: z.string(),
+    order: z.number().optional(),
+    fields: z.array(z.string()).optional(),
+  })
+  .passthrough();
 
 // ponytail: card_fields can be strings or objects — API is inconsistent
 const cardFieldSchema = z.union([

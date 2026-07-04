@@ -150,7 +150,10 @@ export function UnifiedProductForm({
 
   // Group fields
   const sortedGroups = useMemo(
-    () => [...category.attribute_groups].sort((a, b) => a.order - b.order),
+    () =>
+      [...category.attribute_groups].sort(
+        (a, b) => (a.order ?? 0) - (b.order ?? 0),
+      ),
     [category.attribute_groups],
   );
   const fieldsByGroup = useMemo(

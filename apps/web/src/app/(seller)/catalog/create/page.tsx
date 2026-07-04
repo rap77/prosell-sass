@@ -20,7 +20,7 @@ export default function CreateProductPage() {
   const verticals = verticalsData?.verticals ?? [];
 
   return (
-    <div style={{ maxWidth: 896, margin: "0 auto" }}>
+    <div style={{ maxWidth: 1200 }}>
       {selectedCategory ? (
         <>
           <div style={{ marginBottom: 28 }}>
