@@ -52,7 +52,16 @@ def upgrade() -> None:
     op.execute("DROP INDEX IF EXISTS ix_teams_is_active")
 
     # 3. Rename organization_id -> org_id (preserves FK)
-    op.execute("ALTER TABLE teams RENAME COLUMN organization_id TO org_id")
+    # ponytail: PG doesn't support IF EXISTS on RENAME COLUMN, use DO block
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_name = 'teams' AND column_name = 'organization_id') THEN
+                ALTER TABLE teams RENAME COLUMN organization_id TO org_id;
+            END IF;
+        END $$;
+    """)
 
     # 4. Add parent_team_id column with self-referencing FK
     op.execute("ALTER TABLE teams ADD COLUMN IF NOT EXISTS parent_team_id UUID NULL")
@@ -84,7 +93,15 @@ def downgrade() -> None:
     op.execute("ALTER TABLE teams DROP COLUMN IF EXISTS parent_team_id")
 
     # Rename back
-    op.execute("ALTER TABLE teams RENAME COLUMN org_id TO organization_id")
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_name = 'teams' AND column_name = 'org_id') THEN
+                ALTER TABLE teams RENAME COLUMN org_id TO organization_id;
+            END IF;
+        END $$;
+    """)
 
     # Recreate original indexes
     op.execute("CREATE INDEX IF NOT EXISTS ix_teams_organization_id ON teams (organization_id)")
