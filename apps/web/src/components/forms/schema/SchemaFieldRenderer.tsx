@@ -96,8 +96,11 @@ export function SchemaFieldRenderer({
   }
 
   // Select with options
+  // ponytail: check options array, not type — schema uses filter_type for select
   const options = entry.options;
-  if (entry.type === "select" && options && options.length > 0) {
+  if (options && options.length > 0) {
+    // ponytail: for number fields, convert string value back to number on change
+    const isNumeric = entry.type === "number";
     return (
       <Controller
         name={fieldKey}
@@ -110,7 +113,7 @@ export function SchemaFieldRenderer({
             </Label>
             <Select
               value={String(field.value ?? "")}
-              onValueChange={field.onChange}
+              onValueChange={(v) => field.onChange(isNumeric ? Number(v) : v)}
               disabled={disabled}
             >
               <SelectTrigger id={inputId}>
@@ -118,8 +121,8 @@ export function SchemaFieldRenderer({
               </SelectTrigger>
               <SelectContent>
                 {options.map((opt) => (
-                  <SelectItem key={opt} value={opt}>
-                    {opt}
+                  <SelectItem key={String(opt)} value={String(opt)}>
+                    {String(opt)}
                   </SelectItem>
                 ))}
               </SelectContent>

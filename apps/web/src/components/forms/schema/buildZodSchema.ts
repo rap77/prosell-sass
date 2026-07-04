@@ -21,8 +21,17 @@ type AttributeSchema = Record<string, AttributeSchemaEntry>;
 function buildFieldSchema(entry: AttributeSchemaEntry): ZodTypeAny {
   const { type, options, validation_rules } = entry;
 
-  // Select with options → enum
-  if (type === "select" && options && options.length > 0) {
+  // Select with options (string fields only — number fields handle options in UI, not Zod)
+  // ponytail: check options array, not type — schema uses filter_type for select
+  // ponytail: if field has vin_decode_key, use z.string() instead of z.enum()
+  // because VIN decode may return normalized values not in options list
+  if (type !== "number" && options && options.length > 0) {
+    if (entry.vin_decode_key) {
+      // VIN-decoded field: accept any string, UI shows select but backend normalizes
+      return entry.required
+        ? z.string().min(1, "Required")
+        : z.string().optional();
+    }
     const [first, ...rest] = options;
     let schema: ZodTypeAny = z.enum([first, ...rest]);
     if (!entry.required) {
@@ -37,15 +46,25 @@ function buildFieldSchema(entry: AttributeSchemaEntry): ZodTypeAny {
   }
 
   // Number with optional min/max
+  // ponytail: preprocess handles empty strings and null → undefined for optional fields
   if (type === "number") {
-    let schema = z.coerce.number();
+    let numSchema = z.coerce.number();
     if (validation_rules?.min !== undefined) {
-      schema = schema.min(validation_rules.min);
+      numSchema = numSchema.min(validation_rules.min);
     }
     if (validation_rules?.max !== undefined) {
-      schema = schema.max(validation_rules.max);
+      numSchema = numSchema.max(validation_rules.max);
     }
-    return entry.required ? schema : schema.optional();
+
+    if (entry.required) {
+      return numSchema;
+    }
+    // Optional: allow empty/null/undefined → skip validation entirely
+    return z.preprocess(
+      (val) =>
+        val === "" || val === null || val === undefined ? undefined : val,
+      numSchema.optional(),
+    );
   }
 
   // String (default)

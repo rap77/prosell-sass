@@ -310,7 +310,7 @@ export function UnifiedProductForm({
       </section>
 
       {/* Dynamic sections from attribute_groups */}
-      {sortedGroups.map((group) => (
+      {sortedGroups.map((group, idx) => (
         <SchemaFormSection
           key={group.key}
           group={group}
@@ -319,6 +319,7 @@ export function UnifiedProductForm({
           control={control}
           setValue={setValue}
           disabled={isDisabled}
+          defaultOpen={idx < 3}
         />
       ))}
 
