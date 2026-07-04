@@ -26,7 +26,8 @@ const attributeSchemaEntrySchema = z
     filter_type: filterTypeSchema,
     unit: z.string().optional(),
     label: z.string().optional(),
-    options: z.array(z.string()).optional(),
+    // ponytail: options can be strings or numbers (cylinders: [3,4,5,6,8], doors: [2,3,4,5])
+    options: z.array(z.union([z.string(), z.number()])).optional(),
     validation_rules: z
       .object({
         min: z.number().optional(),
