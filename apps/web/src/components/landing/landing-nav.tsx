@@ -1,8 +1,14 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
 
 export function LandingNav() {
+  const t = useTranslations("landing.nav");
+
   return (
     <header
       style={{
@@ -67,16 +73,16 @@ export function LandingNav() {
           }}
         >
           <a href="#producto" className="ps-nav-link">
-            Producto
-          </a>
-          <a href="#soluciones" className="ps-nav-link">
-            Soluciones
+            {t("features")}
           </a>
           <a href="#precios" className="ps-nav-link">
-            Precios
+            {t("pricing")}
           </a>
-          <a href="#como-funciona" className="ps-nav-link">
-            Cómo funciona
+          <a href="#testimonios" className="ps-nav-link">
+            {t("testimonials")}
+          </a>
+          <a href="#faq" className="ps-nav-link">
+            {t("faq")}
           </a>
         </nav>
 
@@ -88,20 +94,21 @@ export function LandingNav() {
             marginLeft: "auto",
           }}
         >
+          <LocaleSwitcher />
           <ThemeToggle />
           <Link
             href="/auth/login"
             className="ps-btn-ghost"
             style={{ padding: "9px 16px", fontSize: 13 }}
           >
-            Iniciar sesión
+            {t("login")}
           </Link>
           <Link
             href="/auth/register"
             className="ps-btn-primary"
             style={{ padding: "9px 16px", fontSize: 13 }}
           >
-            Empezar gratis
+            {t("getStarted")}
           </Link>
         </div>
       </div>

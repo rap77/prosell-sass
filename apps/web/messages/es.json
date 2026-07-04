@@ -1,0 +1,218 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "add": "Agregar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "view": "Ver",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "accept": "Aceptar",
+    "send": "Enviar",
+    "upload": "Subir",
+    "download": "Descargar",
+    "update": "Actualizar",
+    "configure": "Configurar",
+    "logout": "Cerrar sesión",
+    "loading": "Cargando...",
+    "processing": "Procesando...",
+    "error": "Error",
+    "success": "Éxito",
+    "warning": "Atención",
+    "info": "Información",
+    "yes": "Sí",
+    "no": "No",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "actions": "Acciones",
+    "options": "Opciones",
+    "details": "Detalles",
+    "all": "Todos",
+    "none": "Ninguno",
+    "select": "Seleccionar",
+    "required": "Requerido",
+    "optional": "Opcional"
+  },
+  "nav": {
+    "catalog": "Catálogo",
+    "publications": "Publicaciones",
+    "inventory": "Inventario",
+    "leads": "Leads",
+    "pipeline": "Pipeline",
+    "analytics": "Analíticas",
+    "appointments": "Citas",
+    "settings": "Configuración",
+    "team": "Equipo",
+    "dashboard": "Panel",
+    "profile": "Perfil",
+    "notifications": "Notificaciones",
+    "security": "Seguridad",
+    "help": "Ayuda"
+  },
+  "status": {
+    "pending": "Pendiente",
+    "published": "Publicado",
+    "publishing": "Publicando",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "draft": "Borrador",
+    "sold": "Vendido",
+    "reserved": "Reservado",
+    "available": "Disponible",
+    "error": "Error",
+    "failed": "Fallido"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "resetPassword": "Restablecer contraseña",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Nueva contraseña",
+    "rememberMe": "Recordarme",
+    "orContinueWith": "O continuar con",
+    "noAccount": "¿No tenés cuenta?",
+    "hasAccount": "¿Ya tenés cuenta?",
+    "verifyEmail": "Verificá tu correo",
+    "resendCode": "Reenviar código",
+    "twoFactor": "Autenticación de dos factores",
+    "enterCode": "Ingresá el código de 6 dígitos de tu app de autenticación"
+  },
+  "validation": {
+    "required": "Este campo es requerido",
+    "email": "Ingresá un correo válido",
+    "minLength": "Debe tener al menos {min} caracteres",
+    "maxLength": "Debe tener como máximo {max} caracteres",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "invalidFormat": "Formato inválido",
+    "tooShort": "Muy corto",
+    "tooLong": "Muy largo"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Inteligencia comercial en tiempo real",
+      "titleStart": "Tu equipo de ventas,",
+      "titleHighlight": "sin fricción.",
+      "subtitle": "ProSell unifica tu pipeline, automatiza la publicación en múltiples canales y te da visibilidad total sobre cada deal. Cerrá más, trabajá menos, escalá sin límites.",
+      "cta": "Empezar gratis",
+      "ctaSecondary": "Ver demo",
+      "socialProof": "{count} equipos ya cerraron más este mes",
+      "mockup": {
+        "pipeline": "Pipeline Q2 2026",
+        "live": "En vivo",
+        "revenue": "Revenue",
+        "openDeals": "Deals abiertos",
+        "inProgress": "en proceso",
+        "winRate": "Win rate",
+        "closedDeals": "DEALS CERRADOS / SEMANA",
+        "conversionTitle": "Conversión este mes",
+        "conversionDelta": "+34% vs anterior",
+        "dealClosed": "Deal cerrado",
+        "stages": {
+          "closing": "Cierre",
+          "demo": "Demo",
+          "proposal": "Propuesta"
+        }
+      }
+    },
+    "nav": {
+      "features": "Características",
+      "pricing": "Precios",
+      "testimonials": "Testimonios",
+      "faq": "Preguntas frecuentes",
+      "login": "Iniciar sesión",
+      "getStarted": "Empezar"
+    },
+    "features": {
+      "title": "Todo lo que necesitás para vender más",
+      "subtitle": "Una plataforma para gestionar toda tu operación de ventas",
+      "inventory": {
+        "title": "Inventario Inteligente",
+        "description": "Decodificá VINs instantáneamente, autocompletá detalles del vehículo y mantené tu catálogo siempre actualizado."
+      },
+      "publishing": {
+        "title": "Publicación Multicanal",
+        "description": "Publicá en Facebook Marketplace, tu sitio web y más con un solo click."
+      },
+      "leads": {
+        "title": "Gestión de Leads",
+        "description": "Capturá, seguí y convertí leads con nuestro pipeline CRM integrado."
+      },
+      "analytics": {
+        "title": "Analíticas en Tiempo Real",
+        "description": "Sabé qué se vende, qué no, y optimizá tu estrategia de precios."
+      }
+    },
+    "pricing": {
+      "title": "Precios simples y transparentes",
+      "subtitle": "Sin costos ocultos. Cancelá cuando quieras.",
+      "monthly": "Mensual",
+      "yearly": "Anual",
+      "perMonth": "/mes",
+      "perYear": "/año",
+      "popular": "Más popular",
+      "starter": {
+        "name": "Starter",
+        "description": "Para concesionarios pequeños que están empezando",
+        "price": "49",
+        "features": ["Hasta 50 vehículos", "1 usuario", "Analíticas básicas", "Soporte por email"]
+      },
+      "pro": {
+        "name": "Profesional",
+        "description": "Para concesionarios en crecimiento",
+        "price": "149",
+        "features": ["Hasta 200 vehículos", "5 usuarios", "Analíticas avanzadas", "Soporte prioritario", "Publicación multicanal"]
+      },
+      "enterprise": {
+        "name": "Empresarial",
+        "description": "Para operaciones grandes",
+        "price": "Contactanos",
+        "features": ["Vehículos ilimitados", "Usuarios ilimitados", "Integraciones personalizadas", "Account manager dedicado", "Garantía de SLA"]
+      }
+    },
+    "testimonials": {
+      "title": "Confiado por concesionarios en todo el país"
+    },
+    "faq": {
+      "title": "Preguntas frecuentes",
+      "items": {
+        "trial": {
+          "question": "¿Cuánto dura la prueba gratis?",
+          "answer": "Tenés 14 días para probar todas las funciones sin tarjeta de crédito."
+        },
+        "cancel": {
+          "question": "¿Puedo cancelar en cualquier momento?",
+          "answer": "Sí, podés cancelar tu suscripción cuando quieras sin penalidades."
+        },
+        "support": {
+          "question": "¿Qué tipo de soporte ofrecen?",
+          "answer": "Todos los planes incluyen soporte por email. Los planes Pro y Enterprise incluyen soporte telefónico prioritario."
+        }
+      }
+    },
+    "cta": {
+      "title": "¿Listo para vender más autos?",
+      "subtitle": "Unite a cientos de concesionarios que ya usan ProSell",
+      "button": "Empezá tu prueba gratis"
+    },
+    "footer": {
+      "product": "Producto",
+      "company": "Empresa",
+      "legal": "Legal",
+      "about": "Nosotros",
+      "careers": "Carreras",
+      "contact": "Contacto",
+      "privacy": "Política de Privacidad",
+      "terms": "Términos de Servicio",
+      "copyright": "Todos los derechos reservados."
+    }
+  }
+}

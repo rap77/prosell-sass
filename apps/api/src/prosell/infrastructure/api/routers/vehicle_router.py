@@ -14,6 +14,7 @@ from prosell.infrastructure.api.dependencies import (
 )
 from prosell.infrastructure.api.routers.image_router import sign_image_urls
 from prosell.infrastructure.database.session import get_async_session
+from prosell.infrastructure.services import fueleconomy_service
 from prosell.infrastructure.services.nhtsa_normalizer import normalize_nhtsa_value
 from prosell.infrastructure.services.nhtsa_vin_service import NHTSAVinService
 
@@ -312,6 +313,38 @@ def _normalize_model(model: str | None) -> str | None:
     if not model:
         return None
     return model.lower().strip()
+
+
+class MPGDataResponse(BaseModel):
+    """MPG data from fueleconomy.gov."""
+
+    city_mpg: int | None = None
+    highway_mpg: int | None = None
+    combined_mpg: int | None = None
+    annual_fuel_cost: int | None = None
+    co2_tailpipe: float | None = None
+    fuel_type: str | None = None
+    trim_options: list[str] = []
+
+
+@router.get("/mpg", response_model=MPGDataResponse, status_code=status.HTTP_200_OK)
+async def get_mpg(
+    year: Annotated[int, Query(ge=1980, le=2026)],
+    make: Annotated[str, Query(min_length=1)],
+    model: Annotated[str, Query(min_length=1)],
+) -> MPGDataResponse:
+    """Get MPG data from fueleconomy.gov.
+
+    Call after VIN decode to enrich with fuel consumption data.
+    """
+    try:
+        data = await fueleconomy_service.get_mpg_data(year, make, model)
+        if not data:
+            return MPGDataResponse()
+        return MPGDataResponse(**data)
+    except Exception:
+        # ponytail: silent fail, MPG is optional enrichment
+        return MPGDataResponse()
 
 
 # ============================================================================

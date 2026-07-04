@@ -1,0 +1,218 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "view": "View",
+    "close": "Close",
+    "confirm": "Confirm",
+    "accept": "Accept",
+    "send": "Send",
+    "upload": "Upload",
+    "download": "Download",
+    "update": "Update",
+    "configure": "Configure",
+    "logout": "Log out",
+    "loading": "Loading...",
+    "processing": "Processing...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info",
+    "yes": "Yes",
+    "no": "No",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "actions": "Actions",
+    "options": "Options",
+    "details": "Details",
+    "all": "All",
+    "none": "None",
+    "select": "Select",
+    "required": "Required",
+    "optional": "Optional"
+  },
+  "nav": {
+    "catalog": "Catalog",
+    "publications": "Publications",
+    "inventory": "Inventory",
+    "leads": "Leads",
+    "pipeline": "Pipeline",
+    "analytics": "Analytics",
+    "appointments": "Appointments",
+    "settings": "Settings",
+    "team": "Team",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "notifications": "Notifications",
+    "security": "Security",
+    "help": "Help"
+  },
+  "status": {
+    "pending": "Pending",
+    "published": "Published",
+    "publishing": "Publishing",
+    "active": "Active",
+    "inactive": "Inactive",
+    "draft": "Draft",
+    "sold": "Sold",
+    "reserved": "Reserved",
+    "available": "Available",
+    "error": "Error",
+    "failed": "Failed"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Sign up",
+    "forgotPassword": "Forgot password?",
+    "resetPassword": "Reset password",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "rememberMe": "Remember me",
+    "orContinueWith": "Or continue with",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "verifyEmail": "Verify your email",
+    "resendCode": "Resend code",
+    "twoFactor": "Two-factor authentication",
+    "enterCode": "Enter the 6-digit code from your authenticator app"
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Enter a valid email address",
+    "minLength": "Must be at least {min} characters",
+    "maxLength": "Must be at most {max} characters",
+    "passwordMismatch": "Passwords don't match",
+    "invalidFormat": "Invalid format",
+    "tooShort": "Too short",
+    "tooLong": "Too long"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Real-time commercial intelligence",
+      "titleStart": "Your sales team,",
+      "titleHighlight": "without friction.",
+      "subtitle": "ProSell unifies your pipeline, automates multi-channel publishing, and gives you full visibility on every deal. Close more, work less, scale without limits.",
+      "cta": "Start free",
+      "ctaSecondary": "Watch demo",
+      "socialProof": "{count} teams already closed more this month",
+      "mockup": {
+        "pipeline": "Pipeline Q2 2026",
+        "live": "Live",
+        "revenue": "Revenue",
+        "openDeals": "Open deals",
+        "inProgress": "in progress",
+        "winRate": "Win rate",
+        "closedDeals": "DEALS CLOSED / WEEK",
+        "conversionTitle": "Conversion this month",
+        "conversionDelta": "+34% vs previous",
+        "dealClosed": "Deal closed",
+        "stages": {
+          "closing": "Closing",
+          "demo": "Demo",
+          "proposal": "Proposal"
+        }
+      }
+    },
+    "nav": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "testimonials": "Testimonials",
+      "faq": "FAQ",
+      "login": "Log in",
+      "getStarted": "Get started"
+    },
+    "features": {
+      "title": "Everything you need to sell more",
+      "subtitle": "One platform to manage your entire sales operation",
+      "inventory": {
+        "title": "Smart Inventory",
+        "description": "Decode VINs instantly, auto-fill vehicle details, and keep your catalog always up to date."
+      },
+      "publishing": {
+        "title": "Multi-Channel Publishing",
+        "description": "Publish to Facebook Marketplace, your website, and more with one click."
+      },
+      "leads": {
+        "title": "Lead Management",
+        "description": "Capture, track, and convert leads with our integrated CRM pipeline."
+      },
+      "analytics": {
+        "title": "Real-time Analytics",
+        "description": "Know what's selling, what's not, and optimize your pricing strategy."
+      }
+    },
+    "pricing": {
+      "title": "Simple, transparent pricing",
+      "subtitle": "No hidden fees. Cancel anytime.",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "perMonth": "/month",
+      "perYear": "/year",
+      "popular": "Most popular",
+      "starter": {
+        "name": "Starter",
+        "description": "For small dealerships getting started",
+        "price": "49",
+        "features": ["Up to 50 vehicles", "1 user", "Basic analytics", "Email support"]
+      },
+      "pro": {
+        "name": "Professional",
+        "description": "For growing dealerships",
+        "price": "149",
+        "features": ["Up to 200 vehicles", "5 users", "Advanced analytics", "Priority support", "Multi-channel publishing"]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "For large operations",
+        "price": "Contact us",
+        "features": ["Unlimited vehicles", "Unlimited users", "Custom integrations", "Dedicated account manager", "SLA guarantee"]
+      }
+    },
+    "testimonials": {
+      "title": "Trusted by dealerships nationwide"
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "items": {
+        "trial": {
+          "question": "How long is the free trial?",
+          "answer": "You get 14 days to try all features with no credit card required."
+        },
+        "cancel": {
+          "question": "Can I cancel anytime?",
+          "answer": "Yes, you can cancel your subscription at any time with no penalties."
+        },
+        "support": {
+          "question": "What kind of support do you offer?",
+          "answer": "All plans include email support. Pro and Enterprise plans include priority phone support."
+        }
+      }
+    },
+    "cta": {
+      "title": "Ready to sell more cars?",
+      "subtitle": "Join hundreds of dealerships already using ProSell",
+      "button": "Start your free trial"
+    },
+    "footer": {
+      "product": "Product",
+      "company": "Company",
+      "legal": "Legal",
+      "about": "About us",
+      "careers": "Careers",
+      "contact": "Contact",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "copyright": "All rights reserved."
+    }
+  }
+}

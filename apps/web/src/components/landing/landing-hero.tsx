@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export function LandingHero() {
+  const t = useTranslations("landing.hero");
+
   return (
     <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
       <div
@@ -53,7 +58,7 @@ export function LandingHero() {
                 }}
               />
             </span>
-            Inteligencia comercial en tiempo real
+            {t("badge")}
           </div>
 
           <h1
@@ -66,7 +71,7 @@ export function LandingHero() {
               margin: "0 0 24px",
             }}
           >
-            Tu equipo de ventas,{" "}
+            {t("titleStart")}{" "}
             <span
               style={{
                 background:
@@ -77,7 +82,7 @@ export function LandingHero() {
                 color: "transparent",
               }}
             >
-              sin fricción.
+              {t("titleHighlight")}
             </span>
           </h1>
 
@@ -90,9 +95,7 @@ export function LandingHero() {
               margin: "0 0 36px",
             }}
           >
-            ProSell unifica tu pipeline, automatiza la publicación en múltiples
-            canales y te da visibilidad total sobre cada deal. Cerrá más,
-            trabajá menos, escalá sin límites.
+            {t("subtitle")}
           </p>
 
           <div
@@ -109,14 +112,14 @@ export function LandingHero() {
               className="ps-btn-primary"
               style={{ padding: "13px 24px", fontSize: 15 }}
             >
-              Empezar gratis
+              {t("cta")}
             </Link>
             <Link
               href="/auth/login"
               className="ps-btn-ghost"
               style={{ padding: "13px 24px", fontSize: 15 }}
             >
-              Ver demo
+              {t("ctaSecondary")}
             </Link>
           </div>
 
@@ -178,9 +181,8 @@ export function LandingHero() {
                 <strong
                   style={{ color: "var(--ps-text-primary)", fontWeight: 600 }}
                 >
-                  2.400 equipos
-                </strong>{" "}
-                ya cerraron más este mes
+                  {t("socialProof", { count: "2,400" })}
+                </strong>
               </p>
             </div>
           </div>
@@ -235,7 +237,7 @@ export function LandingHero() {
               }}
             >
               <span style={{ fontSize: 15, fontWeight: 600 }}>
-                Pipeline Q2 2026
+                {t("mockup.pipeline")}
               </span>
               <span
                 style={{
@@ -278,7 +280,7 @@ export function LandingHero() {
                     }}
                   />
                 </span>
-                En vivo
+                {t("mockup.live")}
               </span>
             </div>
 
@@ -291,9 +293,9 @@ export function LandingHero() {
               }}
             >
               {[
-                { label: "Revenue", value: "$284K", delta: "+12.4%" },
-                { label: "Deals abiertos", value: "47", delta: "en proceso" },
-                { label: "Win rate", value: "68%", delta: "+5.2%" },
+                { label: t("mockup.revenue"), value: "$284K", delta: "+12.4%" },
+                { label: t("mockup.openDeals"), value: "47", delta: t("mockup.inProgress") },
+                { label: t("mockup.winRate"), value: "68%", delta: "+5.2%" },
               ].map((m) => (
                 <div
                   key={m.label}
@@ -355,7 +357,7 @@ export function LandingHero() {
                     letterSpacing: "0.04em",
                   }}
                 >
-                  DEALS CERRADOS / SEMANA
+                  {t("mockup.closedDeals")}
                 </span>
                 <span
                   style={{ fontSize: 10.5, color: "var(--ps-text-tertiary)" }}
@@ -426,7 +428,7 @@ export function LandingHero() {
                   av: "A",
                   name: "Acme Tech",
                   amount: "$48K",
-                  stage: "Cierre",
+                  stage: t("mockup.stages.closing"),
                   sc: "#22D3A0",
                   sb: "rgba(34,211,160,0.14)",
                   bg: "linear-gradient(135deg,#4DB8FF,#1E5FD4)",
@@ -435,7 +437,7 @@ export function LandingHero() {
                   av: "N",
                   name: "Northwind Labs",
                   amount: "$32K",
-                  stage: "Demo",
+                  stage: t("mockup.stages.demo"),
                   sc: "var(--ps-cyan)",
                   sb: "rgba(77,184,255,0.14)",
                   bg: "linear-gradient(135deg,#22D3A0,#1E5FD4)",
@@ -444,7 +446,7 @@ export function LandingHero() {
                   av: "G",
                   name: "Globex SA",
                   amount: "$76K",
-                  stage: "Propuesta",
+                  stage: t("mockup.stages.proposal"),
                   sc: "var(--ps-warning)",
                   sb: "var(--ps-warning-bg)",
                   bg: "linear-gradient(135deg,#F5A623,#F04438)",
@@ -563,10 +565,10 @@ export function LandingHero() {
             </div>
             <div>
               <b style={{ display: "block", fontWeight: 600, fontSize: 12.5 }}>
-                Conversión este mes
+                {t("mockup.conversionTitle")}
               </b>
               <span style={{ fontSize: 10.5, color: "#8A9BBF" }}>
-                +34% vs anterior
+                {t("mockup.conversionDelta")}
               </span>
             </div>
           </div>
@@ -621,7 +623,7 @@ export function LandingHero() {
             </div>
             <div>
               <b style={{ display: "block", fontWeight: 600, fontSize: 12.5 }}>
-                Deal cerrado · $48K
+                {t("mockup.dealClosed")} · $48K
               </b>
               <span style={{ fontSize: 10.5, color: "#8A9BBF" }}>
                 Acme Tech
