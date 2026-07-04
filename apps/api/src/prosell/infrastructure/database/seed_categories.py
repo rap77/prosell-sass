@@ -53,14 +53,20 @@ _CAR_PRESENTATION: dict = {
 _CAR_GROUPS: list[dict] = [
     {"key": "identification", "label": "Identificación", "order": 0},
     {"key": "basic", "label": "Información Básica", "order": 1},
-    {"key": "specs", "label": "Especificaciones", "order": 2},
-    {"key": "performance", "label": "Rendimiento", "order": 3},
-    {"key": "colors", "label": "Colores", "order": 4},
-    {"key": "features", "label": "Características", "order": 5},
+    {"key": "engine", "label": "Motor", "order": 2},
+    {"key": "dimensions", "label": "Dimensiones", "order": 3},
+    {"key": "capacity", "label": "Capacidad", "order": 4},
+    {"key": "electric", "label": "Eléctrico/Híbrido", "order": 5},
+    {"key": "performance", "label": "Rendimiento", "order": 6},
+    {"key": "colors", "label": "Colores", "order": 7},
+    {"key": "features", "label": "Características", "order": 8},
+    {"key": "manufacturing", "label": "Fabricación", "order": 9},
 ]
 
 _CAR_SCHEMA: dict = {
-    # Identification group
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Group 0: identification (not VIN-decodeable)
+    # ═══════════════════════════════════════════════════════════════════════════
     "vin": {
         "type": "string",
         "required": True,
@@ -76,7 +82,9 @@ _CAR_SCHEMA: dict = {
         "filter_type": "text",
         "group": "identification",
     },
-    # Basic group (VIN-decodeable)
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Group 1: basic (VIN-decodeable)
+    # ═══════════════════════════════════════════════════════════════════════════
     "make": {
         "type": "string",
         "required": True,
@@ -110,50 +118,236 @@ _CAR_SCHEMA: dict = {
         "vin_decode_key": "trim",
         "group": "basic",
     },
-    # Specs group (VIN-decodeable)
-    "body_type": {
-        "type": "string",
-        "required": False,
-        "filterable": True,
-        "filter_type": "select",
-        "vin_decode_key": "body_type",
-        "group": "specs",
-    },
-    "drivetrain": {
-        "type": "string",
-        "required": False,
-        "filterable": True,
-        "filter_type": "select",
-        "vin_decode_key": "drivetrain",
-        "group": "specs",
-    },
-    "transmission": {
-        "type": "string",
-        "required": False,
-        "filterable": True,
-        "filter_type": "select",
-        "options": ["Manual", "Automática"],
-        "vin_decode_key": "transmission",
-        "group": "specs",
-    },
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Group 2: engine (VIN-decodeable)
+    # ═══════════════════════════════════════════════════════════════════════════
     "engine": {
         "type": "string",
         "required": False,
         "filterable": False,
         "filter_type": "text",
         "vin_decode_key": "engine",
-        "group": "specs",
+        "group": "engine",
     },
     "fuel_type": {
         "type": "string",
         "required": False,
         "filterable": True,
         "filter_type": "select",
-        "options": ["Gasolina", "Diésel", "Híbrido", "Eléctrico", "GLP"],
+        "options": ["gasoline", "diesel", "hybrid", "electric", "plug_in", "flex"],
         "vin_decode_key": "fuel_type",
-        "group": "specs",
+        "group": "engine",
     },
-    # Performance group
+    "cylinders": {
+        "type": "number",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "options": [3, 4, 5, 6, 8, 10, 12],
+        "vin_decode_key": "cylinders",
+        "group": "engine",
+    },
+    "displacement_l": {
+        "type": "number",
+        "required": False,
+        "filterable": True,
+        "filter_type": "range",
+        "validation_rules": {"min": 0.5, "max": 10.0},
+        "vin_decode_key": "displacement_l",
+        "group": "engine",
+    },
+    "horsepower": {
+        "type": "number",
+        "required": False,
+        "filterable": True,
+        "filter_type": "range",
+        "validation_rules": {"min": 50, "max": 2000},
+        "vin_decode_key": "horsepower",
+        "group": "engine",
+    },
+    "engine_kw": {
+        "type": "number",
+        "required": False,
+        "filterable": False,
+        "filter_type": "range",
+        "vin_decode_key": "engine_kw",
+        "group": "engine",
+    },
+    "turbo": {
+        "type": "boolean",
+        "required": False,
+        "filterable": True,
+        "filter_type": "boolean",
+        "vin_decode_key": "turbo",
+        "group": "engine",
+    },
+    "transmission": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "options": ["automatic", "manual"],
+        "vin_decode_key": "transmission",
+        "group": "engine",
+    },
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Group 3: dimensions (VIN-decodeable)
+    # ═══════════════════════════════════════════════════════════════════════════
+    "body_type": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "vin_decode_key": "body_type",
+        "group": "dimensions",
+    },
+    "drivetrain": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "options": ["FWD", "RWD", "AWD", "4WD"],
+        "vin_decode_key": "drivetrain",
+        "group": "dimensions",
+    },
+    "doors": {
+        "type": "number",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "options": [2, 3, 4, 5],
+        "vin_decode_key": "doors",
+        "group": "dimensions",
+    },
+    "windows": {
+        "type": "number",
+        "required": False,
+        "filterable": False,
+        "filter_type": "range",
+        "vin_decode_key": "windows",
+        "group": "dimensions",
+    },
+    "wheelbase_type": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "options": ["short", "standard", "long"],
+        "vin_decode_key": "wheelbase_type",
+        "group": "dimensions",
+    },
+    "bed_type": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "options": ["short", "standard", "long"],
+        "vin_decode_key": "bed_type",
+        "group": "dimensions",
+    },
+    "cab_type": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "options": ["regular", "extended", "crew"],
+        "vin_decode_key": "cab_type",
+        "group": "dimensions",
+    },
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Group 4: capacity (VIN-decodeable)
+    # ═══════════════════════════════════════════════════════════════════════════
+    "seats": {
+        "type": "number",
+        "required": False,
+        "filterable": True,
+        "filter_type": "range",
+        "validation_rules": {"min": 1, "max": 15},
+        "vin_decode_key": "seats",
+        "group": "capacity",
+    },
+    "seat_rows": {
+        "type": "number",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "options": [1, 2, 3],
+        "vin_decode_key": "seat_rows",
+        "group": "capacity",
+    },
+    "seatbelts": {
+        "type": "number",
+        "required": False,
+        "filterable": False,
+        "filter_type": "range",
+        "vin_decode_key": "seatbelts",
+        "group": "capacity",
+    },
+    "gvwr": {
+        "type": "number",
+        "required": False,
+        "filterable": False,
+        "filter_type": "range",
+        "unit": "lbs",
+        "vin_decode_key": "gvwr",
+        "group": "capacity",
+    },
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Group 5: electric (VIN-decodeable, only for EV/hybrid)
+    # ═══════════════════════════════════════════════════════════════════════════
+    "electrification_level": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "options": ["bev", "phev", "hybrid", "mild_hybrid", "none"],
+        "vin_decode_key": "electrification_level",
+        "group": "electric",
+    },
+    "battery_kwh": {
+        "type": "number",
+        "required": False,
+        "filterable": True,
+        "filter_type": "range",
+        "validation_rules": {"min": 1, "max": 250},
+        "vin_decode_key": "battery_kwh",
+        "group": "electric",
+    },
+    "battery_type": {
+        "type": "string",
+        "required": False,
+        "filterable": False,
+        "filter_type": "text",
+        "vin_decode_key": "battery_type",
+        "group": "electric",
+    },
+    "charger_level": {
+        "type": "string",
+        "required": False,
+        "filterable": False,
+        "filter_type": "text",
+        "vin_decode_key": "charger_level",
+        "group": "electric",
+    },
+    "charger_power_kw": {
+        "type": "number",
+        "required": False,
+        "filterable": False,
+        "filter_type": "range",
+        "vin_decode_key": "charger_power_kw",
+        "group": "electric",
+    },
+    "ev_drive_unit": {
+        "type": "string",
+        "required": False,
+        "filterable": False,
+        "filter_type": "text",
+        "vin_decode_key": "ev_drive_unit",
+        "group": "electric",
+    },
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Group 6: performance (not VIN-decodeable)
+    # ═══════════════════════════════════════════════════════════════════════════
     "mileage": {
         "type": "number",
         "required": False,
@@ -163,7 +357,9 @@ _CAR_SCHEMA: dict = {
         "validation_rules": {"min": 0, "max": 500_000},
         "group": "performance",
     },
-    # Colors group
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Group 7: colors (not VIN-decodeable)
+    # ═══════════════════════════════════════════════════════════════════════════
     "exterior_color": {
         "type": "string",
         "required": False,
@@ -178,7 +374,9 @@ _CAR_SCHEMA: dict = {
         "filter_type": "select",
         "group": "colors",
     },
-    # Features group
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Group 8: features (not VIN-decodeable)
+    # ═══════════════════════════════════════════════════════════════════════════
     "has_sunroof": {
         "type": "boolean",
         "required": False,
@@ -213,6 +411,41 @@ _CAR_SCHEMA: dict = {
         "filterable": True,
         "filter_type": "boolean",
         "group": "features",
+    },
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Group 9: manufacturing (VIN-decodeable)
+    # ═══════════════════════════════════════════════════════════════════════════
+    "manufacturer": {
+        "type": "string",
+        "required": False,
+        "filterable": False,
+        "filter_type": "text",
+        "vin_decode_key": "manufacturer",
+        "group": "manufacturing",
+    },
+    "plant_city": {
+        "type": "string",
+        "required": False,
+        "filterable": False,
+        "filter_type": "text",
+        "vin_decode_key": "plant_city",
+        "group": "manufacturing",
+    },
+    "plant_state": {
+        "type": "string",
+        "required": False,
+        "filterable": False,
+        "filter_type": "text",
+        "vin_decode_key": "plant_state",
+        "group": "manufacturing",
+    },
+    "plant_country": {
+        "type": "string",
+        "required": False,
+        "filterable": True,
+        "filter_type": "select",
+        "vin_decode_key": "plant_country",
+        "group": "manufacturing",
     },
 }
 
@@ -800,8 +1033,13 @@ async def _seed_node(
     *,
     parent_id: object | None,
     level: int,
+    force: bool = False,
 ) -> None:
-    """Idempotently create one global category node, then recurse children."""
+    """Idempotently create one global category node, then recurse children.
+
+    Args:
+        force: If True, overwrite existing attribute_schema/groups even if set.
+    """
     stmt = select(CategoryModel).where(
         CategoryModel.slug == node["slug"],
         CategoryModel.tenant_id.is_(None),
@@ -830,39 +1068,45 @@ async def _seed_node(
         session.add(existing)
         await session.flush()
     else:
-        # Fill template fields ONLY when currently unset — never clobber edits
-        # the ProSell admin made via the API. Lets a structure-only seed gain
-        # its attribute_schema/presentation on a later run.
+        # Fill template fields. With force=True, always overwrite.
+        # Without force, only fill when currently unset (never clobber admin edits).
         changed = False
-        if node_schema and not existing.attribute_schema:
+        if node_schema and (force or not existing.attribute_schema):
             existing.attribute_schema = node_schema
             changed = True
-        if node_groups and not existing.attribute_groups:
+        if node_groups and (force or not existing.attribute_groups):
             existing.attribute_groups = node_groups
             changed = True
-        if node_presentation and existing.presentation is None:
+        if node_presentation and (force or existing.presentation is None):
             existing.presentation = node_presentation
             changed = True
         if changed:
             await session.flush()
 
     for child in node.get("children", []):
-        await _seed_node(session, child, parent_id=existing.id, level=level + 1)
+        await _seed_node(session, child, parent_id=existing.id, level=level + 1, force=force)
 
 
-async def seed_vehicles_vertical(session: AsyncSession) -> None:
-    """Seed the global 'Vehículos y Transporte' vertical (idempotent)."""
-    await _seed_node(session, VEHICLES_VERTICAL, parent_id=None, level=0)
+async def seed_vehicles_vertical(session: AsyncSession, *, force: bool = False) -> None:
+    """Seed the global 'Vehículos y Transporte' vertical (idempotent).
+
+    Args:
+        force: If True, overwrite existing attribute_schema/groups.
+    """
+    await _seed_node(session, VEHICLES_VERTICAL, parent_id=None, level=0, force=force)
 
 
-async def seed_global_taxonomy(session: AsyncSession) -> None:
+async def seed_global_taxonomy(session: AsyncSession, *, force: bool = False) -> None:
     """Seed every global niche vertical (Vehículos, Bienes Raíces, Artículos).
 
     Idempotent — re-running never duplicates nodes. Slugs are globally unique
     across niches.
+
+    Args:
+        force: If True, overwrite existing attribute_schema/groups.
     """
     for vertical in ALL_VERTICALS:
-        await _seed_node(session, vertical, parent_id=None, level=0)
+        await _seed_node(session, vertical, parent_id=None, level=0, force=force)
 
 
 async def enable_default_verticals(session: AsyncSession, organization_id: UUID) -> list[UUID]:

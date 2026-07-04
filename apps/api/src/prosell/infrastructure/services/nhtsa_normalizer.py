@@ -7,7 +7,7 @@ entre scraping, publicación y frontend.
 """
 
 # Mapping NHTSA → Facebook Marketplace
-NHTSA_TO_FACEBOOK = {
+NHTSA_TO_FACEBOOK: dict[str, str] = {
     # ===== MAKE (Marca) =====
     # Convertir UPPERCASE → lowercase con guiones bajos
     "ACURA": "acura",
@@ -94,6 +94,40 @@ NHTSA_TO_FACEBOOK = {
     "Flex Fuel": "flex",
     "Natural Gas": "other",
     "Propane": "other",
+    # ===== ELECTRIFICATION LEVEL =====
+    "BEV (Battery Electric Vehicle)": "bev",
+    "Battery Electric Vehicle (BEV)": "bev",
+    "PHEV (Plug-in Hybrid Electric Vehicle)": "phev",
+    "Plug-in Hybrid Electric Vehicle (PHEV)": "phev",
+    "HEV (Hybrid Electric Vehicle)": "hybrid",
+    "Hybrid Electric Vehicle (HEV)": "hybrid",
+    "Mild Hybrid": "mild_hybrid",
+    "Strong HEV": "hybrid",
+    "ICE": "none",
+    # ===== WHEELBASE TYPE =====
+    "Short Wheel Base": "short",
+    "SWB": "short",
+    "Standard Wheel Base": "standard",
+    "Long Wheel Base": "long",
+    "LWB": "long",
+    "Extended Wheel Base": "long",
+    # ===== BED TYPE (pickups) =====
+    "Short Bed": "short",
+    "Standard Bed": "standard",
+    "Regular Bed": "standard",
+    "Long Bed": "long",
+    # ===== CAB TYPE (pickups) =====
+    "Regular Cab": "regular",
+    "Standard Cab": "regular",
+    "Extended Cab": "extended",
+    "SuperCab": "extended",
+    "King Cab": "extended",
+    "Access Cab": "extended",
+    "Crew Cab": "crew",
+    "Double Cab": "crew",
+    "Quad Cab": "crew",
+    "SuperCrew": "crew",
+    "Mega Cab": "crew",
 }
 
 
@@ -200,6 +234,50 @@ def normalize_nhtsa_value(
             return "flex"
         # Default: asumir gasoline
         return "gasoline"
+
+    elif field_type == "electrification":
+        cleaned_lower = cleaned.lower()
+        if "bev" in cleaned_lower or "battery electric" in cleaned_lower:
+            return "bev"
+        elif "phev" in cleaned_lower or "plug-in hybrid" in cleaned_lower:
+            return "phev"
+        elif "mild hybrid" in cleaned_lower:
+            return "mild_hybrid"
+        elif "hybrid" in cleaned_lower or "hev" in cleaned_lower:
+            return "hybrid"
+        return "none"
+
+    elif field_type == "boolean":
+        cleaned_lower = cleaned.lower()
+        if cleaned_lower in ("yes", "y", "true", "1"):
+            return "true"
+        return "false"
+
+    elif field_type == "wheelbase_type":
+        cleaned_lower = cleaned.lower()
+        if "short" in cleaned_lower or "swb" in cleaned_lower:
+            return "short"
+        elif "long" in cleaned_lower or "lwb" in cleaned_lower or "extended" in cleaned_lower:
+            return "long"
+        return "standard"
+
+    elif field_type == "bed_type":
+        cleaned_lower = cleaned.lower()
+        if "short" in cleaned_lower:
+            return "short"
+        elif "long" in cleaned_lower:
+            return "long"
+        return "standard"
+
+    elif field_type == "cab_type":
+        cleaned_lower = cleaned.lower()
+        crew_kw = ("crew", "double", "quad", "mega")
+        extended_kw = ("extended", "super", "king", "access")
+        if any(kw in cleaned_lower for kw in crew_kw):
+            return "crew"
+        if any(kw in cleaned_lower for kw in extended_kw):
+            return "extended"
+        return "regular"
 
     # Default: retornar valor limpio en lowercase
     return cleaned.lower()

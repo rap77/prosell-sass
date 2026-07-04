@@ -68,8 +68,10 @@ async def init_data() -> None:
         # platform-managed global templates (tenant NULL), not per-org. All
         # niche verticals (Vehículos, Bienes Raíces, Artículos) are seeded
         # idempotently here.
-        await seed_global_taxonomy(session)
-        print("Seeded global category taxonomy (3 niches)")
+        # ponytail: FORCE_SEED=1 overwrites existing schemas (for migrations)
+        force_seed = os.environ.get("FORCE_SEED", "").lower() in ("1", "true", "yes")
+        await seed_global_taxonomy(session, force=force_seed)
+        print(f"Seeded global category taxonomy (3 niches){' [FORCED]' if force_seed else ''}")
 
         # 2b. Enable default verticals for ALL existing organizations.
         # This ensures orgs created before this code have their verticals.

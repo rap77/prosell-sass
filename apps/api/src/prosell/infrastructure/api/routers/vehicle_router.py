@@ -31,17 +31,52 @@ class VINDecodeRequest(BaseModel):
 
 
 class DecodedVehicle(BaseModel):
-    """Decoded vehicle information."""
+    """Decoded vehicle information (28 fields across 10 groups)."""
 
+    # Group: basic
     year: int | None = Field(None, description="Model year")
     make: str | None = Field(None, description="Vehicle make (lowercase)")
     model: str | None = Field(None, description="Vehicle model (lowercase)")
     trim: str | None = Field(None, description="Trim level")
+
+    # Group: engine
+    engine: str | None = Field(None, description="Engine description")
+    fuel_type: str | None = Field(None, description="Fuel type (lowercase)")
+    cylinders: int | None = Field(None, description="Number of cylinders")
+    displacement_l: float | None = Field(None, description="Engine displacement in liters")
+    horsepower: int | None = Field(None, description="Engine horsepower")
+    engine_kw: float | None = Field(None, description="Engine power in kW")
+    turbo: bool | None = Field(None, description="Has turbocharger")
+    transmission: str | None = Field(None, description="Transmission (lowercase)")
+
+    # Group: dimensions
     body_type: str | None = Field(None, description="Body type (lowercase)")
     drivetrain: str | None = Field(None, description="Drivetrain (UPPERCASE)")
-    transmission: str | None = Field(None, description="Transmission (lowercase)")
-    fuel_type: str | None = Field(None, description="Fuel type (lowercase)")
-    engine: str | None = Field(None, description="Engine description")
+    doors: int | None = Field(None, description="Number of doors")
+    windows: int | None = Field(None, description="Number of windows")
+    wheelbase_type: str | None = Field(None, description="Wheelbase type (short/standard/long)")
+    bed_type: str | None = Field(None, description="Bed type for pickups (short/standard/long)")
+    cab_type: str | None = Field(None, description="Cab type for pickups (regular/extended/crew)")
+
+    # Group: capacity
+    seats: int | None = Field(None, description="Number of seats")
+    seat_rows: int | None = Field(None, description="Number of seat rows")
+    seatbelts: int | None = Field(None, description="Number of seatbelts")
+    gvwr: int | None = Field(None, description="Gross Vehicle Weight Rating (lbs)")
+
+    # Group: electric
+    electrification_level: str | None = Field(None, description="Electrification level")
+    battery_kwh: float | None = Field(None, description="Battery capacity in kWh")
+    battery_type: str | None = Field(None, description="Battery chemistry type")
+    charger_level: str | None = Field(None, description="Onboard charger level")
+    charger_power_kw: float | None = Field(None, description="Charger power in kW")
+    ev_drive_unit: str | None = Field(None, description="EV drive unit configuration")
+
+    # Group: manufacturing
+    manufacturer: str | None = Field(None, description="Manufacturer name")
+    plant_city: str | None = Field(None, description="Manufacturing plant city")
+    plant_state: str | None = Field(None, description="Manufacturing plant state")
+    plant_country: str | None = Field(None, description="Manufacturing plant country")
 
 
 class VINDecodeResponse(BaseModel):
@@ -173,17 +208,49 @@ async def decode_vin(request: VINDecodeRequest) -> VINDecodeResponse:
         # Decode VIN via NHTSA
         raw_data = await vin_service.decode_vin(request.vin)
 
-        # Extract and normalize fields
+        # Extract and normalize fields (28 fields across 10 groups)
         vehicle = DecodedVehicle(
+            # basic
             year=_parse_int(raw_data.get("Model Year")),
             make=normalize_nhtsa_value(raw_data.get("Make"), "make"),
             model=_normalize_model(raw_data.get("Model")),
             trim=raw_data.get("Trim"),
+            # engine
+            engine=raw_data.get("Engine"),
+            fuel_type=normalize_nhtsa_value(raw_data.get("Fuel Type - Primary"), "fuel_type"),
+            cylinders=_parse_int(raw_data.get("Engine Number of Cylinders")),
+            displacement_l=_parse_float(raw_data.get("Displacement (L)")),
+            horsepower=_parse_int(raw_data.get("Engine Brake (hp) From")),
+            engine_kw=_parse_float(raw_data.get("Engine Power (kW)")),
+            turbo=_parse_bool(raw_data.get("Turbo")),
+            transmission=normalize_nhtsa_value(raw_data.get("Transmission Style"), "transmission"),
+            # dimensions
             body_type=normalize_nhtsa_value(raw_data.get("Body Class"), "body_type"),
             drivetrain=normalize_nhtsa_value(raw_data.get("Drive Type"), "drivetrain"),
-            transmission=normalize_nhtsa_value(raw_data.get("Transmission Style"), "transmission"),
-            fuel_type=normalize_nhtsa_value(raw_data.get("Fuel Type - Primary"), "fuel_type"),
-            engine=raw_data.get("Engine"),
+            doors=_parse_int(raw_data.get("Doors")),
+            windows=_parse_int(raw_data.get("Windows")),
+            wheelbase_type=normalize_nhtsa_value(raw_data.get("Wheel Base Type"), "wheelbase_type"),
+            bed_type=normalize_nhtsa_value(raw_data.get("Bed Type"), "bed_type"),
+            cab_type=normalize_nhtsa_value(raw_data.get("Cab Type"), "cab_type"),
+            # capacity
+            seats=_parse_int(raw_data.get("Number of Seats")),
+            seat_rows=_parse_int(raw_data.get("Number of Seat Rows")),
+            seatbelts=_parse_int(raw_data.get("Seat Belt Type")),
+            gvwr=_parse_int(raw_data.get("Gross Vehicle Weight Rating From")),
+            # electric
+            electrification_level=normalize_nhtsa_value(
+                raw_data.get("Electrification Level"), "electrification"
+            ),
+            battery_kwh=_parse_float(raw_data.get("Battery Energy (kWh) From")),
+            battery_type=raw_data.get("Battery Type"),
+            charger_level=raw_data.get("Charger Level"),
+            charger_power_kw=_parse_float(raw_data.get("Charger Power (kW)")),
+            ev_drive_unit=raw_data.get("Electric Drive Unit"),
+            # manufacturing
+            manufacturer=raw_data.get("Manufacturer Name"),
+            plant_city=raw_data.get("Plant City"),
+            plant_state=raw_data.get("Plant State"),
+            plant_country=raw_data.get("Plant Country"),
         )
 
         # Store in cache (vehicle + raw_data)
@@ -217,9 +284,27 @@ def _parse_int(value: str | None) -> int | None:
     if not value:
         return None
     try:
-        return int(value)
+        return int(float(value))  # Handle "8.0" → 8
     except (ValueError, TypeError):
         return None
+
+
+def _parse_float(value: str | None) -> float | None:
+    """Safely parse string to float."""
+    if not value:
+        return None
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return None
+
+
+def _parse_bool(value: str | None) -> bool | None:
+    """Parse NHTSA boolean string to Python bool."""
+    if not value:
+        return None
+    normalized = normalize_nhtsa_value(value, "boolean")
+    return normalized == "true" if normalized else None
 
 
 def _normalize_model(model: str | None) -> str | None:
