@@ -30,6 +30,7 @@ jobs:
           host: ${{ secrets.PROD_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 20m
           script: |
             set -e
             # Path del repo en el host. Parametrizado vía secret para no hardcodear
