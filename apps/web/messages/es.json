@@ -163,19 +163,36 @@
         "name": "Starter",
         "description": "Para concesionarios pequeños que están empezando",
         "price": "49",
-        "features": ["Hasta 50 vehículos", "1 usuario", "Analíticas básicas", "Soporte por email"]
+        "features": [
+          "Hasta 50 vehículos",
+          "1 usuario",
+          "Analíticas básicas",
+          "Soporte por email"
+        ]
       },
       "pro": {
         "name": "Profesional",
         "description": "Para concesionarios en crecimiento",
         "price": "149",
-        "features": ["Hasta 200 vehículos", "5 usuarios", "Analíticas avanzadas", "Soporte prioritario", "Publicación multicanal"]
+        "features": [
+          "Hasta 200 vehículos",
+          "5 usuarios",
+          "Analíticas avanzadas",
+          "Soporte prioritario",
+          "Publicación multicanal"
+        ]
       },
       "enterprise": {
         "name": "Empresarial",
         "description": "Para operaciones grandes",
         "price": "Contactanos",
-        "features": ["Vehículos ilimitados", "Usuarios ilimitados", "Integraciones personalizadas", "Account manager dedicado", "Garantía de SLA"]
+        "features": [
+          "Vehículos ilimitados",
+          "Usuarios ilimitados",
+          "Integraciones personalizadas",
+          "Account manager dedicado",
+          "Garantía de SLA"
+        ]
       }
     },
     "testimonials": {

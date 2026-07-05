@@ -294,7 +294,11 @@ export function LandingHero() {
             >
               {[
                 { label: t("mockup.revenue"), value: "$284K", delta: "+12.4%" },
-                { label: t("mockup.openDeals"), value: "47", delta: t("mockup.inProgress") },
+                {
+                  label: t("mockup.openDeals"),
+                  value: "47",
+                  delta: t("mockup.inProgress"),
+                },
                 { label: t("mockup.winRate"), value: "68%", delta: "+5.2%" },
               ].map((m) => (
                 <div

@@ -163,19 +163,36 @@
         "name": "Starter",
         "description": "For small dealerships getting started",
         "price": "49",
-        "features": ["Up to 50 vehicles", "1 user", "Basic analytics", "Email support"]
+        "features": [
+          "Up to 50 vehicles",
+          "1 user",
+          "Basic analytics",
+          "Email support"
+        ]
       },
       "pro": {
         "name": "Professional",
         "description": "For growing dealerships",
         "price": "149",
-        "features": ["Up to 200 vehicles", "5 users", "Advanced analytics", "Priority support", "Multi-channel publishing"]
+        "features": [
+          "Up to 200 vehicles",
+          "5 users",
+          "Advanced analytics",
+          "Priority support",
+          "Multi-channel publishing"
+        ]
       },
       "enterprise": {
         "name": "Enterprise",
         "description": "For large operations",
         "price": "Contact us",
-        "features": ["Unlimited vehicles", "Unlimited users", "Custom integrations", "Dedicated account manager", "SLA guarantee"]
+        "features": [
+          "Unlimited vehicles",
+          "Unlimited users",
+          "Custom integrations",
+          "Dedicated account manager",
+          "SLA guarantee"
+        ]
       }
     },
     "testimonials": {
