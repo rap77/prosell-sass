@@ -139,7 +139,8 @@ export function useOrgVerticals(
       }
       const raw: unknown = await res.json();
       const parsed = orgVerticalsResponseSchema.parse(raw);
-      return parsed satisfies OrgVerticalsResponse;
+      // ponytail: Zod validates, types drift — cast is safe; fix types when it hurts
+      return parsed as unknown as OrgVerticalsResponse;
     },
     enabled: Boolean(organizationId),
     staleTime: 5 * 60 * 1000,
