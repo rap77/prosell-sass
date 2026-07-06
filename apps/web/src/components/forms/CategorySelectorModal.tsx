@@ -188,9 +188,7 @@ export function CategorySelectorModal({ verticals, onSelect }: Props) {
         }}
       >
         <ChevronLeft size={14} strokeWidth={2} />
-        {breadcrumb.length === 1
-          ? "Volver a tipos"
-          : getName(breadcrumb[breadcrumb.length - 2])}
+        Volver
       </button>
 
       <Grid>
