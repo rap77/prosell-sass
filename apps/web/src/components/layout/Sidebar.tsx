@@ -98,15 +98,9 @@ const navigationItems: NavItem[] = [
   },
   // Concesionarios group (Subsystem D: admin/super_admin only)
   {
-    label: "Concesionarios",
+    label: "Organizaciones",
     href: "/admin/dealers",
     icon: Building2,
-    group: "concesionarios",
-  },
-  {
-    label: "Categorías",
-    href: "/admin/categories",
-    icon: Layers,
     group: "concesionarios",
   },
   {
@@ -116,6 +110,12 @@ const navigationItems: NavItem[] = [
     group: "concesionarios",
   },
   // Configuración group (admin/branch only)
+  {
+    label: "Categorías",
+    href: "/admin/categories",
+    icon: Layers,
+    group: "configuración",
+  },
   {
     label: "Configuración",
     href: "/settings",
@@ -290,7 +290,7 @@ Sidebar.Nav = function SidebarNav({
     general: "", // top-level items — no visible header
     inventario: "Inventario",
     ventas: "Ventas",
-    concesionarios: "Concesionarios",
+    concesionarios: "Organizaciones",
     configuración: "Configuración",
   };
 
