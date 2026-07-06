@@ -101,8 +101,13 @@ describe("Categories API Client - useCategories", () => {
     expect(mockFetch).toHaveBeenCalledWith("/api/v1/categories", {
       credentials: "include",
     });
-    expect(result.current.data).toEqual(mockCategories.categories);
+    // Mapper adds default values for new fields (parent_id, level, sort_order, etc.)
     expect(result.current.data?.length).toBe(2);
+    expect(result.current.data?.[0].id).toBe("cat-1");
+    expect(result.current.data?.[0].name).toBe("Sedans");
+    expect(result.current.data?.[0].parent_id).toBeNull();
+    expect(result.current.data?.[0].level).toBe(0);
+    expect(result.current.data?.[0].sort_order).toBe(0);
   });
 
   it("should cache categories for 5 minutes (staleTime)", async () => {

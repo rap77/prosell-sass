@@ -129,7 +129,7 @@ describe("Sidebar", () => {
   });
 
   describe("Subsystem D Phase 5.3 — concesionarios group permission gate", () => {
-    it("shows Concesionarios when the user has DEALER_ADMIN_VIEW_ALL", () => {
+    it("shows Organizaciones when the user has DEALER_ADMIN_VIEW_ALL", () => {
       vi.mocked(useAuth).mockReturnValue({
         user: {
           id: "1",
@@ -152,10 +152,10 @@ describe("Sidebar", () => {
         />,
       );
 
-      expect(screen.getAllByText("Concesionarios").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Organizaciones").length).toBeGreaterThan(0);
     });
 
-    it("excludes Concesionarios when the user lacks DEALER_ADMIN_VIEW_ALL, even if the group is requested", () => {
+    it("excludes Organizaciones when the user lacks DEALER_ADMIN_VIEW_ALL, even if the group is requested", () => {
       vi.mocked(useAuth).mockReturnValue({
         user: {
           id: "1",
@@ -175,7 +175,7 @@ describe("Sidebar", () => {
         />,
       );
 
-      expect(screen.queryByText("Concesionarios")).not.toBeInTheDocument();
+      expect(screen.queryByText("Organizaciones")).not.toBeInTheDocument();
     });
   });
 });
