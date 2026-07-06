@@ -26,6 +26,11 @@ import type { CategoryTreeNode } from "@/lib/utils/build-category-tree";
 import type { Category } from "@/types/category";
 import { CategoryRow } from "./category-row";
 
+/** ponytail: derive stable key from node order for change detection */
+function getNodesKey(nodes: CategoryTreeNode[]): string {
+  return nodes.map((n) => n.id).join(",");
+}
+
 interface CategoryTreeProps {
   nodes: CategoryTreeNode[];
   isReadOnly: boolean;
@@ -39,14 +44,17 @@ export function CategoryTree({
   onEdit,
   onAddChild,
 }: CategoryTreeProps) {
-  // ponytail: local state for optimistic reorder, nodes are source of truth on refetch
+  // ponytail: local state for optimistic reorder, sync when server order changes
   const [localNodes, setLocalNodes] = useState(nodes);
+  const [prevKey, setPrevKey] = useState(() => getNodesKey(nodes));
   const reorder = useReorderCategories();
   const sensors = useSensors(useSensor(PointerSensor));
 
-  // Sync with props when they change (after mutations)
-  if (nodes !== localNodes && !reorder.isPending) {
+  // ponytail: sync only when server order differs (avoids flash on same-order refetch)
+  const currentKey = getNodesKey(nodes);
+  if (!reorder.isPending && currentKey !== prevKey) {
     setLocalNodes(nodes);
+    setPrevKey(currentKey);
   }
 
   const handleDragEnd = (event: DragEndEvent, siblings: CategoryTreeNode[]) => {

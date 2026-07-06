@@ -59,7 +59,8 @@ export function CategoryRow({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    // ponytail: smooth transition for drag + layout changes
+    transition: transition || "transform 200ms ease, opacity 200ms ease",
   };
 
   const handleDelete = () => {
