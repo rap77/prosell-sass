@@ -11,7 +11,7 @@
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -22,12 +22,21 @@ import { ImageDropzone } from "@/components/upload/ImageDropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useDealers } from "@/lib/api/dealers";
 import {
   useCreateProduct,
   useUpdateProduct,
   useProduct,
   useProductImageUrls,
+  useSetProductOwnership,
 } from "@/lib/api/products";
 import { useImageUploadOptimized } from "@/lib/hooks/useImageUploadOptimized";
 import { logger } from "@/lib/logger";
@@ -72,6 +81,11 @@ function generateTitle(
     .trim();
 }
 
+interface OwnerEntry {
+  owner_id: string;
+  percentage: string;
+}
+
 export function UnifiedProductForm({
   category,
   mode = "create",
@@ -82,6 +96,11 @@ export function UnifiedProductForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isUploadingImages, setIsUploadingImages] = useState(false);
+
+  // Ownership state (create mode only)
+  const [pendingOwners, setPendingOwners] = useState<OwnerEntry[]>([]);
+  const { data: dealers = [] } = useDealers();
+  const setOwnership = useSetProductOwnership();
 
   // Hooks
   const createProduct = useCreateProduct();
@@ -207,7 +226,7 @@ export function UnifiedProductForm({
         generateTitle(titleTemplate, formAttributes) || category.name;
 
       if (mode === "create") {
-        await createProduct.mutateAsync({
+        const newProduct = await createProduct.mutateAsync({
           title,
           price_cents: Math.round((price as number) * 100),
           category_id: category.id,
@@ -218,6 +237,23 @@ export function UnifiedProductForm({
           image_urls: imageKeys,
           ...(coverKey ? { cover_image_key: coverKey } : {}),
         });
+
+        // Set ownership if any owners were selected
+        if (pendingOwners.length > 0) {
+          const total = pendingOwners.reduce(
+            (sum, o) => sum + (parseFloat(o.percentage) || 0),
+            0,
+          );
+          if (Math.abs(total - 100) < 0.01) {
+            await setOwnership.mutateAsync({
+              productId: newProduct.id,
+              owners: pendingOwners.map((o) => ({
+                owner_id: o.owner_id,
+                percentage: parseFloat(o.percentage).toFixed(2),
+              })),
+            });
+          }
+        }
 
         clearAll();
         toast.success("Producto creado exitosamente");
@@ -375,6 +411,124 @@ export function UnifiedProductForm({
           )}
         />
       </section>
+
+      {/* Ownership (create mode only, only for admins who can see dealers) */}
+      {mode === "create" && dealers.length > 0 && (
+        <section className="flex flex-col gap-4">
+          <h2 className="text-lg font-semibold">Propietarios</h2>
+          <p className="text-sm text-muted-foreground">
+            Opcional. Asigná ownership a uno o más dealers. Si no asignás, el
+            producto pertenece a tu organización.
+          </p>
+
+          {pendingOwners.length > 0 && (
+            <div className="space-y-3">
+              {pendingOwners.map((owner, index) => {
+                const selectedIds = new Set(
+                  pendingOwners.map((o) => o.owner_id),
+                );
+                return (
+                  <div key={index} className="flex items-center gap-2">
+                    <Select
+                      value={owner.owner_id}
+                      onValueChange={(v) => {
+                        const updated = [...pendingOwners];
+                        updated[index] = { ...updated[index], owner_id: v };
+                        setPendingOwners(updated);
+                      }}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Seleccionar dealer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dealers
+                          .filter(
+                            (d) =>
+                              d.id === owner.owner_id || !selectedIds.has(d.id),
+                          )
+                          .map((dealer) => (
+                            <SelectItem key={dealer.id} value={dealer.id}>
+                              {dealer.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+
+                    <div className="flex w-24 items-center gap-1">
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={owner.percentage}
+                        onChange={(e) => {
+                          const updated = [...pendingOwners];
+                          updated[index] = {
+                            ...updated[index],
+                            percentage: e.target.value,
+                          };
+                          setPendingOwners(updated);
+                        }}
+                        className="text-right"
+                        disabled={isDisabled}
+                      />
+                      <span className="text-sm text-muted-foreground">%</span>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setPendingOwners(
+                          pendingOwners.filter((_, i) => i !== index),
+                        )
+                      }
+                      className="h-8 w-8 text-destructive"
+                      disabled={isDisabled}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+
+              {/* Total indicator */}
+              {(() => {
+                const total = pendingOwners.reduce(
+                  (sum, o) => sum + (parseFloat(o.percentage) || 0),
+                  0,
+                );
+                return (
+                  <p
+                    className={`text-sm ${Math.abs(total - 100) < 0.01 ? "text-green-600" : "text-destructive"}`}
+                  >
+                    Total: {total.toFixed(2)}%
+                    {Math.abs(total - 100) >= 0.01 && " (debe ser 100%)"}
+                  </p>
+                );
+              })()}
+            </div>
+          )}
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setPendingOwners([
+                ...pendingOwners,
+                { owner_id: "", percentage: "0" },
+              ])
+            }
+            disabled={isDisabled || dealers.length === pendingOwners.length}
+            className="w-fit"
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            Agregar propietario
+          </Button>
+        </section>
+      )}
 
       {/* Actions */}
       <div className="flex gap-4">

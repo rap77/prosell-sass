@@ -215,6 +215,29 @@ async def test_organization(db_session: AsyncSession) -> AsyncGenerator[Organiza
 
 
 @pytest_asyncio.fixture
+async def second_organization(db_session: AsyncSession) -> AsyncGenerator[OrganizationModel]:
+    """
+    Create a second test organization for multi-owner tests.
+    Used in product_ownership tests where multiple orgs own a product.
+    """
+    org_id: UUID = uuid4()
+
+    org = OrganizationModel(
+        id=org_id,
+        name=f"Second Org {uuid4().hex[:8]}",
+        tenant_id=org_id,
+        status="active",
+        description="Second organization for ownership tests",
+        settings={},
+    )
+
+    db_session.add(org)
+    await db_session.flush()
+
+    yield org
+
+
+@pytest_asyncio.fixture
 async def test_role(system_roles: dict[str, RoleModel]) -> RoleModel:
     """
     Return the SUPER_ADMIN system role.

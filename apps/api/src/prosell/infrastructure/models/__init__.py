@@ -21,6 +21,7 @@ from prosell.infrastructure.models.organization_vertical_model import (
 )
 from prosell.infrastructure.models.product_image_model import ProductImageModel
 from prosell.infrastructure.models.product_model import ProductModel
+from prosell.infrastructure.models.product_ownership_model import ProductOwnershipModel
 from prosell.infrastructure.models.publication_model import PublicationModel
 from prosell.infrastructure.models.role_model import RoleModel, UserRoleModel
 from prosell.infrastructure.models.session_model import SessionModel
@@ -51,6 +52,7 @@ __all__ = [
     "OrganizationVerticalModel",
     "ProductImageModel",
     "ProductModel",
+    "ProductOwnershipModel",
     "PublicationModel",
     "RoleModel",
     "SessionModel",

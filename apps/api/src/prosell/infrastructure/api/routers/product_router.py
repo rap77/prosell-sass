@@ -54,6 +54,10 @@ from prosell.application.use_cases.product.list_products import (
     ListProductsUseCase,
     ProductListResponse,
 )
+from prosell.application.use_cases.product.set_product_ownership import (
+    OwnerShare,
+    SetProductOwnershipUseCase,
+)
 from prosell.application.use_cases.product.update_product import UpdateProductUseCase
 from prosell.domain.entities.product import Product
 from prosell.domain.entities.role import Permission
@@ -72,6 +76,9 @@ from prosell.infrastructure.repositories.category_repository_impl import (
 )
 from prosell.infrastructure.repositories.organization_repository_impl import (
     SqlAlchemyOrganizationRepository,
+)
+from prosell.infrastructure.repositories.product_ownership_repository_impl import (
+    SqlAlchemyProductOwnershipRepository,
 )
 from prosell.infrastructure.repositories.product_repository_impl import (
     FILTER_VALUES_MAX_PER_KEY,
@@ -1136,5 +1143,126 @@ async def bulk_upload_with_images(
                 errors=r.errors,
             )
             for r in result.results
+        ],
+    )
+
+
+# =============================================================================
+# PRODUCT OWNERSHIP - Multi-owner support
+# =============================================================================
+
+
+class OwnerShareRequest(BaseModel):
+    """Single owner share in request."""
+
+    owner_id: UUID
+    percentage: str  # Decimal as string for precision
+
+
+class SetOwnershipRequest(BaseModel):
+    """Request to set product ownership."""
+
+    owners: list[OwnerShareRequest]
+
+
+class OwnerShareResponse(BaseModel):
+    """Single owner share in response."""
+
+    owner_id: UUID
+    percentage: str
+    created_at: datetime
+
+
+class OwnershipResponse(BaseModel):
+    """Response with product ownership."""
+
+    product_id: UUID
+    owners: list[OwnerShareResponse]
+
+
+@router.put(
+    "/{product_id}/ownership",
+    response_model=OwnershipResponse,
+    summary="Set product ownership",
+)
+async def set_product_ownership(
+    product_id: UUID,
+    request: SetOwnershipRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> OwnershipResponse:
+    """Set ownership for a product, replacing any existing ownership.
+
+    Percentages must sum to 100%.
+    """
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=403, detail="No tenant context")
+
+    product_repo = SqlAlchemyProductRepository(db)
+    ownership_repo = SqlAlchemyProductOwnershipRepository(db)
+
+    use_case = SetProductOwnershipUseCase(
+        ownership_repository=ownership_repo,
+        product_repository=product_repo,
+    )
+
+    from decimal import Decimal
+
+    try:
+        await use_case.execute(
+            product_id=product_id,
+            tenant_id=current_user.tenant_id,
+            owners=[
+                OwnerShare(
+                    owner_id=o.owner_id,
+                    percentage=Decimal(o.percentage),
+                )
+                for o in request.owners
+            ],
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    # Return current ownership
+    owners = await ownership_repo.list_owners(product_id)
+    return OwnershipResponse(
+        product_id=product_id,
+        owners=[
+            OwnerShareResponse(
+                owner_id=o.owner_id,
+                percentage=str(o.percentage),
+                created_at=o.created_at,
+            )
+            for o in owners
+        ],
+    )
+
+
+@router.get(
+    "/{product_id}/ownership",
+    response_model=OwnershipResponse,
+    summary="Get product ownership",
+)
+async def get_product_ownership(
+    product_id: UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> OwnershipResponse:
+    """Get ownership for a product."""
+    if current_user.tenant_id is None:
+        raise HTTPException(status_code=403, detail="No tenant context")
+
+    ownership_repo = SqlAlchemyProductOwnershipRepository(db)
+    owners = await ownership_repo.list_owners(product_id)
+
+    return OwnershipResponse(
+        product_id=product_id,
+        owners=[
+            OwnerShareResponse(
+                owner_id=o.owner_id,
+                percentage=str(o.percentage),
+                created_at=o.created_at,
+            )
+            for o in owners
         ],
     )

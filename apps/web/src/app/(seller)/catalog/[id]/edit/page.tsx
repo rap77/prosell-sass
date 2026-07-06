@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 
+import { ProductOwnershipEditor } from "@/components/forms/ProductOwnershipEditor";
 import { UnifiedProductForm } from "@/components/forms/UnifiedProductForm";
 import { useProduct } from "@/lib/api/products";
 import { useCurrentOrganizationProfile } from "@/lib/api/userApi";
@@ -182,6 +183,11 @@ export default function EditProductPage() {
           router.refresh();
         }}
       />
+
+      {/* Ownership section - separate from main form, has own save */}
+      <div className="mt-6">
+        <ProductOwnershipEditor productId={productId} />
+      </div>
     </div>
   );
 }

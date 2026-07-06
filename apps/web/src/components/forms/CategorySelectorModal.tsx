@@ -111,8 +111,66 @@ export function CategorySelectorModal({ verticals, onSelect }: Props) {
   const current = breadcrumb[breadcrumb.length - 1];
   const nodes = getChildren(current);
 
+  // Build breadcrumb path for display
+  const breadcrumbPath = breadcrumb.map((level) => getName(level));
+
   return (
     <section aria-label={`Categorías de ${getName(current)}`}>
+      {/* Breadcrumb trail */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 16,
+          fontSize: 13,
+          color: "var(--ps-text-secondary)",
+          flexWrap: "wrap",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setBreadcrumb([])}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "var(--ps-text-tertiary)",
+            padding: 0,
+            fontSize: 13,
+          }}
+        >
+          Inicio
+        </button>
+        {breadcrumbPath.map((name, idx) => (
+          <span
+            key={idx}
+            style={{ display: "flex", alignItems: "center", gap: 8 }}
+          >
+            <span style={{ color: "var(--ps-text-tertiary)" }}>/</span>
+            <button
+              type="button"
+              onClick={() => setBreadcrumb(breadcrumb.slice(0, idx + 1))}
+              style={{
+                background: "none",
+                border: "none",
+                cursor:
+                  idx === breadcrumbPath.length - 1 ? "default" : "pointer",
+                color:
+                  idx === breadcrumbPath.length - 1
+                    ? "var(--ps-text-primary)"
+                    : "var(--ps-text-tertiary)",
+                fontWeight: idx === breadcrumbPath.length - 1 ? 600 : 400,
+                padding: 0,
+                fontSize: 13,
+              }}
+            >
+              {name}
+            </button>
+          </span>
+        ))}
+      </div>
+
       <button
         type="button"
         onClick={() => setBreadcrumb(breadcrumb.slice(0, -1))}

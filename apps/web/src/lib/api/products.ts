@@ -878,3 +878,90 @@ export async function downloadSchemaTemplate(
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// ─── Product Ownership ─────────────────────────────────────────────────────────
+
+export interface OwnerShare {
+  owner_id: string;
+  percentage: string;
+  created_at?: string;
+}
+
+export interface ProductOwnership {
+  product_id: string;
+  owners: OwnerShare[];
+}
+
+const ownerShareSchema = z.object({
+  owner_id: z.string(),
+  percentage: z.string(),
+  created_at: z.string().optional(),
+});
+
+const productOwnershipSchema = z.object({
+  product_id: z.string(),
+  owners: z.array(ownerShareSchema),
+});
+
+/**
+ * Fetch ownership for a product.
+ */
+export function useProductOwnership(
+  productId: string | undefined,
+): UseQueryResult<ProductOwnership, Error> {
+  return useQuery({
+    queryKey: ["products", productId, "ownership"],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/products/${productId}/ownership`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to fetch ownership"));
+      }
+      return productOwnershipSchema.parse(await res.json());
+    },
+    enabled: !!productId,
+  });
+}
+
+/**
+ * Set ownership for a product (replaces existing).
+ */
+export function useSetProductOwnership() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ProductOwnership,
+    Error,
+    {
+      productId: string;
+      owners: Array<{ owner_id: string; percentage: string }>;
+    }
+  >({
+    mutationFn: async ({ productId, owners }) => {
+      const res = await fetch(`/api/v1/products/${productId}/ownership`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owners }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(body, "Failed to set ownership"));
+      }
+      return productOwnershipSchema.parse(await res.json());
+    },
+
+    onSuccess: (_, { productId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["products", productId, "ownership"],
+      });
+      toast.success("Ownership updated");
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Failed to update ownership");
+    },
+  });
+}
