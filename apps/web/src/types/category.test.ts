@@ -72,6 +72,12 @@ describe("Category", () => {
       id: "c1",
       name: "Autos",
       slug: "autos",
+      parent_id: null,
+      level: 0,
+      sort_order: 0,
+      icon: null,
+      description: null,
+      image_url: null,
       attribute_schema: {
         mileage: { type: "number", filter_type: "range", unit: "km" },
         year: { type: "number", filter_type: "range" },

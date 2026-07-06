@@ -116,6 +116,12 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
+  parent_id: string | null;
+  level: number;
+  sort_order: number;
+  icon: string | null;
+  description: string | null;
+  image_url: string | null;
   attribute_schema: Record<string, AttributeSchemaEntry>;
   attribute_groups: AttributeGroup[];
   presentation: CategoryPresentation | null;

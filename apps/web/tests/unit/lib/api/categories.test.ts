@@ -39,6 +39,27 @@ function createWrapper() {
   return Wrapper;
 }
 
+// Helper to create mock category with all required fields
+function mockCategory(
+  overrides: Partial<Category> & { id: string; name: string; slug: string },
+): Category {
+  return {
+    parent_id: null,
+    level: 0,
+    sort_order: 0,
+    icon: null,
+    description: null,
+    image_url: null,
+    attribute_schema: {},
+    attribute_groups: [],
+    presentation: null,
+    is_active: true,
+    created_at: "2026-04-26T00:00:00Z",
+    updated_at: "2026-04-26T00:00:00Z",
+    ...overrides,
+  };
+}
+
 describe("useCategories", () => {
   beforeEach(() => {
     mockFetch.mockClear();
@@ -46,7 +67,7 @@ describe("useCategories", () => {
 
   it("should fetch categories array from API", async () => {
     const mockCategories: Category[] = [
-      {
+      mockCategory({
         id: "cat-1",
         name: "Sedans",
         slug: "sedans",
@@ -55,13 +76,8 @@ describe("useCategories", () => {
           make: { type: "string", filter_type: "select" },
           model: { type: "string", filter_type: "exact" },
         },
-        presentation: null,
-        attribute_groups: [],
-        is_active: true,
-        created_at: "2026-04-26T00:00:00Z",
-        updated_at: "2026-04-26T00:00:00Z",
-      },
-      {
+      }),
+      mockCategory({
         id: "cat-2",
         name: "SUVs",
         slug: "suvs",
@@ -71,12 +87,7 @@ describe("useCategories", () => {
           model: { type: "string", filter_type: "exact" },
           drivetrain: { type: "string", filter_type: "select" },
         },
-        presentation: null,
-        attribute_groups: [],
-        is_active: true,
-        created_at: "2026-04-26T00:00:00Z",
-        updated_at: "2026-04-26T00:00:00Z",
-      },
+      }),
     ];
 
     mockFetch.mockResolvedValueOnce({
@@ -113,17 +124,12 @@ describe("useCategories", () => {
 
   it("should cache categories for 5 minutes (staleTime)", async () => {
     const mockCategories: Category[] = [
-      {
+      mockCategory({
         id: "cat-1",
         name: "Sedans",
         slug: "sedans",
         attribute_schema: { year: { type: "number", filter_type: "range" } },
-        presentation: null,
-        attribute_groups: [],
-        is_active: true,
-        created_at: "2026-04-26T00:00:00Z",
-        updated_at: "2026-04-26T00:00:00Z",
-      },
+      }),
     ];
 
     mockFetch.mockResolvedValue({
@@ -198,28 +204,18 @@ describe("useCategoryOptions", () => {
 
   it("should transform categories to { value, label } format", async () => {
     const mockCategories: Category[] = [
-      {
+      mockCategory({
         id: "cat-1",
         name: "Sedans",
         slug: "sedans",
         attribute_schema: { year: { type: "number", filter_type: "range" } },
-        presentation: null,
-        attribute_groups: [],
-        is_active: true,
-        created_at: "2026-04-26T00:00:00Z",
-        updated_at: "2026-04-26T00:00:00Z",
-      },
-      {
+      }),
+      mockCategory({
         id: "cat-2",
         name: "SUVs",
         slug: "suvs",
         attribute_schema: { year: { type: "number", filter_type: "range" } },
-        presentation: null,
-        attribute_groups: [],
-        is_active: true,
-        created_at: "2026-04-26T00:00:00Z",
-        updated_at: "2026-04-26T00:00:00Z",
-      },
+      }),
     ];
 
     mockFetch.mockResolvedValue({
@@ -259,17 +255,12 @@ describe("useCategoryOptions", () => {
 
   it("should return stable { value, label } options on re-render", async () => {
     const mockCategories: Category[] = [
-      {
+      mockCategory({
         id: "cat-1",
         name: "Sedans",
         slug: "sedans",
         attribute_schema: { year: { type: "number", filter_type: "range" } },
-        presentation: null,
-        attribute_groups: [],
-        is_active: true,
-        created_at: "2026-04-26T00:00:00Z",
-        updated_at: "2026-04-26T00:00:00Z",
-      },
+      }),
     ];
 
     mockFetch.mockResolvedValue({

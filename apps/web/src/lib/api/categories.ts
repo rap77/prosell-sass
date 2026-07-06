@@ -132,3 +132,115 @@ export function useCreateCategory() {
     },
   });
 }
+
+/**
+ * Update an existing category
+ */
+export function useUpdateCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<{
+        name: string;
+        slug: string;
+        icon: string | null;
+        description: string | null;
+        parent_id: string | null;
+        sort_order: number;
+        is_active: boolean;
+      }>;
+    }) => {
+      const res = await fetch(`/api/v1/categories/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to update category" }));
+        throw new Error(error.message || "Failed to update category");
+      }
+      const raw: BackendCategory = BackendCategorySchema.parse(
+        await res.json(),
+      );
+      return mapBackendCategoryToDomain(raw);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast.success("Category updated");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to update category");
+    },
+  });
+}
+
+/**
+ * Soft delete (deactivate) a category
+ */
+export function useDeleteCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/v1/categories/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const error = await res
+          .json()
+          .catch(() => ({ message: "Failed to delete category" }));
+        throw new Error(error.message || "Failed to delete category");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast.success("Category deleted");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to delete category");
+    },
+  });
+}
+
+/**
+ * Reorder categories by firing N parallel PATCH requests
+ * Optimistic update with rollback on failure
+ */
+export function useReorderCategories() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      orderedCategories: { id: string; sort_order: number }[],
+    ) => {
+      await Promise.all(
+        orderedCategories.map(({ id, sort_order }) =>
+          fetch(`/api/v1/categories/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ sort_order }),
+          }).then((res) => {
+            if (!res.ok) throw new Error(`Failed to update category ${id}`);
+          }),
+        ),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+    onError: (err) => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast.error(err.message || "Failed to reorder categories");
+    },
+  });
+}

@@ -63,6 +63,12 @@ export interface BackendCategory {
   id: string;
   name: string;
   slug: string;
+  parent_id?: string | null;
+  level?: number;
+  sort_order?: number;
+  icon?: string | null;
+  description?: string | null;
+  image_url?: string | null;
   /**
    * Backend uses a validation-oriented shape. The frontend contract is
    * stricter (see file header DEBT note). Cast at the mapper boundary.
@@ -91,6 +97,12 @@ export function mapBackendCategoryToDomain(raw: BackendCategory): Category {
     id: raw.id,
     name: raw.name,
     slug: raw.slug,
+    parent_id: raw.parent_id ?? null,
+    level: raw.level ?? 0,
+    sort_order: raw.sort_order ?? 0,
+    icon: raw.icon ?? null,
+    description: raw.description ?? null,
+    image_url: raw.image_url ?? null,
     attribute_schema: _attributeSchemaMapSchema
       .catch({})
       .parse(raw.attribute_schema ?? {}),
