@@ -18,6 +18,7 @@ import {
   ScrollText,
   Building2,
   FileUp,
+  Layers,
 } from "lucide-react";
 
 /**
@@ -100,6 +101,12 @@ const navigationItems: NavItem[] = [
     label: "Concesionarios",
     href: "/admin/dealers",
     icon: Building2,
+    group: "concesionarios",
+  },
+  {
+    label: "Categorías",
+    href: "/admin/categories",
+    icon: Layers,
     group: "concesionarios",
   },
   {
