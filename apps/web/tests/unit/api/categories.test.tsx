@@ -98,7 +98,7 @@ describe("Categories API Client - useCategories", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFetch).toHaveBeenCalledWith("/api/v1/categories", {
+    expect(mockFetch).toHaveBeenCalledWith("/api/v1/categories?flat=true", {
       credentials: "include",
     });
     // Mapper adds default values for new fields (parent_id, level, sort_order, etc.)
