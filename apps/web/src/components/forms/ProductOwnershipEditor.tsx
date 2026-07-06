@@ -144,7 +144,11 @@ export function ProductOwnershipEditor({
                       (d) => d.id === owner.owner_id || !selectedIds.has(d.id),
                     )
                     .map((dealer) => (
-                      <SelectItem key={dealer.id} value={dealer.id}>
+                      <SelectItem
+                        key={dealer.id}
+                        value={dealer.id}
+                        textValue={dealer.name}
+                      >
                         {dealer.name}
                       </SelectItem>
                     ))}
