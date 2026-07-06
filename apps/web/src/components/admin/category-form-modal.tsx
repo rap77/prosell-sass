@@ -6,7 +6,8 @@
  * Uses React Hook Form + Zod for validation. Radix Dialog for modal.
  */
 
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -76,10 +77,17 @@ export function CategoryFormModal({
     },
   });
 
-  // Auto-generate slug from name (only in create mode, only if slug is empty)
-  const watchName = form.watch("name");
-  const currentSlug = form.watch("slug");
-  if (mode === "create" && watchName && !currentSlug) {
+  // Watch form values (useWatch is React Compiler compatible)
+  const watchName = useWatch({ control: form.control, name: "name" });
+  const watchParentId = useWatch({ control: form.control, name: "parent_id" });
+  const watchIsActive = useWatch({ control: form.control, name: "is_active" });
+
+  // Auto-generate slug from name (only in create mode)
+  useEffect(() => {
+    if (mode !== "create" || !watchName) return;
+    const currentSlug = form.getValues("slug");
+    // Only auto-generate if slug is empty
+    if (currentSlug && currentSlug !== "") return;
     const generated = watchName
       .toLowerCase()
       .normalize("NFD")
@@ -87,7 +95,7 @@ export function CategoryFormModal({
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "");
     if (generated) form.setValue("slug", generated);
-  }
+  }, [watchName, mode, form]);
 
   // Filter categories for parent select (exclude self and descendants in edit mode)
   const availableParents = categories.filter((c) => {
@@ -175,7 +183,7 @@ export function CategoryFormModal({
           <div className="space-y-2">
             <Label htmlFor="parent">Categoría padre</Label>
             <Select
-              value={form.watch("parent_id") ?? "__none__"}
+              value={watchParentId ?? "__none__"}
               onValueChange={(v) =>
                 form.setValue("parent_id", v === "__none__" ? null : v)
               }
@@ -197,7 +205,7 @@ export function CategoryFormModal({
           <div className="flex items-center gap-2">
             <Switch
               id="is_active"
-              checked={form.watch("is_active")}
+              checked={watchIsActive}
               onCheckedChange={(checked) => form.setValue("is_active", checked)}
             />
             <Label htmlFor="is_active">Activa</Label>
