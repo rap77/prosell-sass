@@ -34,7 +34,8 @@ export function useCategories(): UseQueryResult<Category[], Error> {
   return useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const res = await fetch("/api/v1/categories", {
+      // flat=true returns all categories for client-side tree building
+      const res = await fetch("/api/v1/categories?flat=true", {
         credentials: "include",
       });
 

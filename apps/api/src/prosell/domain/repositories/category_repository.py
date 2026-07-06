@@ -58,6 +58,7 @@ class AbstractCategoryRepository(ABC):
         is_active: bool | None = None,
         skip: int = 0,
         limit: int = 100,
+        flat: bool = False,
     ) -> list[Category]:
         """
         Get all categories with optional filters.
@@ -68,6 +69,7 @@ class AbstractCategoryRepository(ABC):
             is_active: Filter by active status (None = all)
             skip: Number of records to skip (pagination)
             limit: Max records to return (pagination)
+            flat: If True, ignore parent_id filter (return all for tree building)
 
         Returns:
             List of categories

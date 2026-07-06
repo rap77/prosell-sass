@@ -135,6 +135,7 @@ async def list_categories(
     is_active: bool | None = None,
     skip: int = 0,
     limit: int = 100,
+    flat: bool = False,
 ) -> CategoryListResponse:
     """
     List categories with optional filters.
@@ -143,6 +144,7 @@ async def list_categories(
     - **is_active**: Filter by active status (ignored for non-admins — always True)
     - **skip**: Pagination offset
     - **limit**: Max records per page
+    - **flat**: If true, return all categories ignoring parent_id (for admin tree view)
 
     Non-admin users only see active categories.
 
@@ -164,6 +166,7 @@ async def list_categories(
         skip=skip,
         limit=limit,
         is_admin=is_admin,
+        flat=flat,
     )
 
 

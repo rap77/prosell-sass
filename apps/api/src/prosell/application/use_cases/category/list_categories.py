@@ -31,6 +31,7 @@ class ListCategoriesUseCase:
         skip: int = 0,
         limit: int = 100,
         is_admin: bool = False,
+        flat: bool = False,
     ) -> CategoryListResponse:
         """
         Execute category listing.
@@ -42,6 +43,7 @@ class ListCategoriesUseCase:
             skip: Pagination offset
             limit: Max records to return
             is_admin: If False, forces is_active=True (non-admins never see inactive categories)
+            flat: If True, return all categories ignoring parent_id (for admin tree)
 
         Returns:
             CategoryListResponse DTO
@@ -57,6 +59,7 @@ class ListCategoriesUseCase:
             is_active=is_active,
             skip=skip,
             limit=limit,
+            flat=flat,
         )
 
         # Get total count

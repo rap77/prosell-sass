@@ -67,22 +67,29 @@ class SqlAlchemyCategoryRepository(AbstractCategoryRepository):
         is_active: bool | None = None,
         skip: int = 0,
         limit: int = 100,
+        flat: bool = False,
     ) -> list[Category]:
         """Get all categories with optional filters.
 
         Includes GLOBAL templates (tenant_id IS NULL) alongside the caller's
         own categories, so tenants see the shared, platform-managed taxonomy
         they classify products against (Plan 2).
+
+        Args:
+            flat: If True, return all categories ignoring parent_id filter.
+                  Used by admin panel to build the full tree client-side.
         """
         stmt = select(CategoryModel).where(
             (CategoryModel.tenant_id == tenant_id) | (CategoryModel.tenant_id.is_(None))
         )
 
-        if parent_id is not None:
-            stmt = stmt.where(CategoryModel.parent_id == parent_id)
-        else:
-            # None means root categories only
-            stmt = stmt.where(CategoryModel.parent_id.is_(None))
+        # ponytail: flat=True skips parent filter for admin tree view
+        if not flat:
+            if parent_id is not None:
+                stmt = stmt.where(CategoryModel.parent_id == parent_id)
+            else:
+                # None means root categories only
+                stmt = stmt.where(CategoryModel.parent_id.is_(None))
 
         if is_active is not None:
             stmt = stmt.where(CategoryModel.is_active == is_active)
